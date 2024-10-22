@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Koji Ishii <kojii@chromium.org>
+Date: Thu, 12 Sep 2024 05:51:00 +0000
+Subject: [M126-LTS] Fix a range `CHECK` for when it overflows
+
+This patch fixes a `CHECK` for a range of a string when
+`offset + length` overflows the `unsigned`.
+
+(cherry picked from commit 59c286e8419f07143ce859342f0fe9ddea36392d)
+
+Bug: 355731798
+Change-Id: If04222f10f2b73b6dcd6b412cf4d82fa5b71bbe2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5776342
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Auto-Submit: Koji Ishii <kojii@chromium.org>
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1339526}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5804713
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Reviewed-by: Fahad Mansoor <fahadmansoor@google.com>
+Auto-Submit: Roger Felipe Zanoni da Silva (xWF) <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/6478@{#1958}
+Cr-Branched-From: e6143acc03189c5e52959545b110d6d17ecd5286-refs/heads/main@{#1300313}
+
+diff --git a/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.cc b/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.cc
+index 427fbb617742c7690338ad6729be720826955b1f..7731bd142f1352d0bbc67a1f9a3742de0adc11ad 100644
+--- a/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.cc
++++ b/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.cc
+@@ -486,6 +486,12 @@ CanvasRotationInVertical CanvasRotationForRun(
+ 
+ }  // namespace
+ 
++inline void HarfBuzzShaper::CheckTextLen(unsigned start,
++                                         unsigned length) const {
++  CHECK_LE(start, text_.length());
++  CHECK_LE(length, text_.length() - start);
++}
++
+ void HarfBuzzShaper::CommitGlyphs(RangeContext* range_data,
+                                   const SimpleFontData* current_font,
+                                   UScriptCode current_run_script,
+@@ -697,7 +703,7 @@ bool HarfBuzzShaper::CollectFallbackHintChars(
+       break;
+     }
+ 
+-    CHECK_LE((it->start_index_ + it->num_characters_), text_.length());
++    CheckTextLen(it->start_index_, it->num_characters_);
+     if (text_.Is8Bit()) {
+       for (unsigned i = 0; i < it->num_characters_; i++) {
+         const UChar hint_char = text_[it->start_index_ + i];
+diff --git a/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.h b/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.h
+index 6ad434d4586c3f82a11a215f27bbb2e548b5bce9..102b6bb08105db6f9327acf6250c961d0b322170 100644
+--- a/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.h
++++ b/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.h
+@@ -172,6 +172,8 @@ class PLATFORM_EXPORT HarfBuzzShaper final {
+                     const BufferSlice&,
+                     ShapeResult*) const;
+ 
++  void CheckTextLen(unsigned start, unsigned length) const;
++
+   const String text_;
+   EmojiMetricsCallback emoji_metrics_reporter_for_testing_;
+ };

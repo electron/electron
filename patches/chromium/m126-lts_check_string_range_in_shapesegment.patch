@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Koji Ishii <kojii@chromium.org>
+Date: Thu, 12 Sep 2024 06:00:02 +0000
+Subject: [M126-LTS] Check string range in `ShapeSegment`
+
+crrev.com/c/5776342 fixed a range `CHECK` in
+`CollectFallbackHintChars`, but depends on the CSS and font
+configurations, it's possible that the code doesn't go to
+`CollectFallbackHintChars` and the following code may hit
+the same issue.
+
+This patch adds another `CHECK` for the case.
+
+(cherry picked from commit ef6f7b4521bb9e8d0235550c93acf885e198abdb)
+
+Bug: 355731798, 357622693
+Change-Id: Ieb4ada7699c80564e8a4b866cb6a6ffbc665ebc7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5776204
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Auto-Submit: Koji Ishii <kojii@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1340006}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5806849
+Auto-Submit: Roger Felipe Zanoni da Silva (xWF) <rzanoni@google.com>
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Reviewed-by: Fernando Serboncini <fserb@chromium.org>
+Reviewed-by: Fahad Mansoor <fahadmansoor@google.com>
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6478@{#1959}
+Cr-Branched-From: e6143acc03189c5e52959545b110d6d17ecd5286-refs/heads/main@{#1300313}
+
+diff --git a/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.cc b/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.cc
+index 7731bd142f1352d0bbc67a1f9a3742de0adc11ad..be09f8302145e71c42899aa17dfc765037413a2c 100644
+--- a/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.cc
++++ b/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.cc
+@@ -492,6 +492,12 @@ inline void HarfBuzzShaper::CheckTextLen(unsigned start,
+   CHECK_LE(length, text_.length() - start);
+ }
+ 
++inline void HarfBuzzShaper::CheckTextEnd(unsigned start, unsigned end) const {
++  CHECK_LE(start, end);
++  CHECK_LE(start, text_.length());
++  CHECK_LE(end, text_.length());
++}
++
+ void HarfBuzzShaper::CommitGlyphs(RangeContext* range_data,
+                                   const SimpleFontData* current_font,
+                                   UScriptCode current_run_script,
+@@ -942,12 +948,13 @@ void HarfBuzzShaper::ShapeSegment(
+ 
+     // Clamp the start and end offsets of the queue item to the offsets
+     // representing the shaping window.
+-    unsigned shape_start =
++    const unsigned shape_start =
+         std::max(range_data->start, current_queue_item.start_index_);
+-    unsigned shape_end =
++    const unsigned shape_end =
+         std::min(range_data->end, current_queue_item.start_index_ +
+                                       current_queue_item.num_characters_);
+     DCHECK_GT(shape_end, shape_start);
++    CheckTextEnd(shape_start, shape_end);
+ 
+     CaseMapIntend case_map_intend = CaseMapIntend::kKeepSameCase;
+     if (needs_caps_handling) {
+diff --git a/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.h b/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.h
+index 102b6bb08105db6f9327acf6250c961d0b322170..f97e92a26fcde1aa533869dfad9eaf20ae65dd95 100644
+--- a/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.h
++++ b/third_party/blink/renderer/platform/fonts/shaping/harfbuzz_shaper.h
+@@ -173,6 +173,7 @@ class PLATFORM_EXPORT HarfBuzzShaper final {
+                     ShapeResult*) const;
+ 
+   void CheckTextLen(unsigned start, unsigned length) const;
++  void CheckTextEnd(unsigned start, unsigned end) const;
+ 
+   const String text_;
+   EmojiMetricsCallback emoji_metrics_reporter_for_testing_;

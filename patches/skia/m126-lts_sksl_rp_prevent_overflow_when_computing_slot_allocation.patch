@@ -1,0 +1,202 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brian Osman <brianosman@google.com>
+Date: Fri, 9 Aug 2024 14:50:21 -0400
+Subject: [M126-LTS][SkSL:RP] Prevent overflow when computing slot allocation
+ size
+
+Bug: 355465305
+Change-Id: Ife25289f7b3489701c67b7dc5d30e473019a1193
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/888376
+Commit-Queue: Brian Osman <brianosman@google.com>
+(cherry picked from commit d1b243ba90f0698ced6fadc460adb9d66c248946)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/896658
+Commit-Queue: Roger Felipe Zanoni da Silva (xWF) <rzanoni@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+
+diff --git a/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp b/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp
+index e8c5c56fa27b633a2be95d1e878a0a2976ecafd8..fab86abd2889bc7397e09b7ef006a8a5c2485f5c 100644
+--- a/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp
++++ b/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp
+@@ -6,11 +6,15 @@
+  */
+ 
+ #include "src/sksl/codegen/SkSLRasterPipelineBuilder.h"
++#include <cstdint>
++#include <optional>
+ 
+ #include "include/core/SkStream.h"
+ #include "include/private/base/SkMalloc.h"
++#include "include/private/base/SkTFitsIn.h"
+ #include "include/private/base/SkTo.h"
+ #include "src/base/SkArenaAlloc.h"
++#include "src/base/SkSafeMath.h"
+ #include "src/core/SkOpts.h"
+ #include "src/core/SkRasterPipelineContextUtils.h"
+ #include "src/core/SkRasterPipelineOpContexts.h"
+@@ -1631,13 +1635,17 @@ static void* context_bit_pun(intptr_t val) {
+     return sk_bit_cast<void*>(val);
+ }
+ 
+-Program::SlotData Program::allocateSlotData(SkArenaAlloc* alloc) const {
++std::optional<Program::SlotData> Program::allocateSlotData(SkArenaAlloc* alloc) const {
+     // Allocate a contiguous slab of slot data for immutables, values, and stack entries.
+     const int N = SkOpts::raster_pipeline_highp_stride;
+     const int scalarWidth = 1 * sizeof(float);
+     const int vectorWidth = N * sizeof(float);
+-    const int allocSize = vectorWidth * (fNumValueSlots + fNumTempStackSlots) +
+-                          scalarWidth * fNumImmutableSlots;
++    SkSafeMath safe;
++    size_t allocSize = safe.add(safe.mul(vectorWidth, safe.add(fNumValueSlots, fNumTempStackSlots)),
++                                safe.mul(scalarWidth, fNumImmutableSlots));
++    if (!safe || !SkTFitsIn<int>(allocSize)) {
++        return std::nullopt;
++    }
+     float* slotPtr = static_cast<float*>(alloc->makeBytesAlignedTo(allocSize, vectorWidth));
+     sk_bzero(slotPtr, allocSize);
+ 
+@@ -1658,8 +1666,11 @@ bool Program::appendStages(SkRasterPipeline* pipeline,
+ #else
+     // Convert our Instruction list to an array of ProgramOps.
+     TArray<Stage> stages;
+-    SlotData slotData = this->allocateSlotData(alloc);
+-    this->makeStages(&stages, alloc, uniforms, slotData);
++    std::optional<SlotData> slotData = this->allocateSlotData(alloc);
++    if (!slotData) {
++        return false;
++    }
++    this->makeStages(&stages, alloc, uniforms, *slotData);
+ 
+     // Allocate buffers for branch targets and labels; these are needed to convert labels into
+     // actual offsets into the pipeline and fix up branches.
+@@ -1673,7 +1684,7 @@ bool Program::appendStages(SkRasterPipeline* pipeline,
+     auto resetBasePointer = [&]() {
+         // Whenever we hand off control to another shader, we have to assume that it might overwrite
+         // the base pointer (if it uses SkSL, it will!), so we reset it on return.
+-        pipeline->append(SkRasterPipelineOp::set_base_pointer, slotData.values.data());
++        pipeline->append(SkRasterPipelineOp::set_base_pointer, (*slotData).values.data());
+     };
+ 
+     resetBasePointer();
+@@ -2844,7 +2855,7 @@ void Program::Dumper::dump(SkWStream* out, bool writeInstructionCount) {
+     // executed. The program requires pointer ranges for managing its data, and ASAN will report
+     // errors if those pointers are pointing at unallocated memory.
+     SkArenaAlloc alloc(/*firstHeapAllocation=*/1000);
+-    fSlots = fProgram.allocateSlotData(&alloc);
++    fSlots = fProgram.allocateSlotData(&alloc).value();
+     float* uniformPtr = alloc.makeArray<float>(fProgram.fNumUniformSlots);
+     fUniforms = SkSpan(uniformPtr, fProgram.fNumUniformSlots);
+ 
+diff --git a/src/sksl/codegen/SkSLRasterPipelineBuilder.h b/src/sksl/codegen/SkSLRasterPipelineBuilder.h
+index e73543b777d078fa629864a5aad97b75fb829220..acb35c6cc35d0e33e045010b8d571a8c973bbea3 100644
+--- a/src/sksl/codegen/SkSLRasterPipelineBuilder.h
++++ b/src/sksl/codegen/SkSLRasterPipelineBuilder.h
+@@ -19,6 +19,7 @@
+ #include <cstddef>
+ #include <cstdint>
+ #include <memory>
++#include <optional>
+ 
+ class SkArenaAlloc;
+ class SkRasterPipeline;
+@@ -176,7 +177,7 @@ private:
+         SkSpan<float> stack;
+         SkSpan<float> immutable;
+     };
+-    SlotData allocateSlotData(SkArenaAlloc* alloc) const;
++    std::optional<SlotData> allocateSlotData(SkArenaAlloc* alloc) const;
+ 
+     struct Stage {
+         ProgramOp op;
+diff --git a/tests/RasterPipelineCodeGeneratorTest.cpp b/tests/RasterPipelineCodeGeneratorTest.cpp
+index 9da6e61a36fa59fc6ecf067d5643cc839d0e254f..24903c787414558864b4b9e1ef2c90c24f95f436 100644
+--- a/tests/RasterPipelineCodeGeneratorTest.cpp
++++ b/tests/RasterPipelineCodeGeneratorTest.cpp
+@@ -22,6 +22,7 @@
+ 
+ #include <memory>
+ #include <optional>
++#include <sstream>
+ #include <string>
+ 
+ //#define DUMP_PROGRAMS 1
+@@ -250,3 +251,80 @@ DEF_TEST(SkSLRasterPipelineCodeGeneratorComparisonIntrinsicTest, r) {
+          /*startingColor=*/SkColor4f{0.0, 0.0, 0.0, 0.0},
+          /*expectedResult=*/SkColor4f{0.0, 1.0, 0.0, 1.0});
+ }
++
++DEF_TEST(SkSLRasterPipelineSlotOverflow_355465305, r) {
++    constexpr int kStructMembers1 = 6200;
++    constexpr int kStructMembers2 = 433;
++    std::stringstream str;
++    str << "struct M { float4x4 m";
++    for (int i = 1; i < kStructMembers1; ++i) {
++        str << ",m" << i;
++    }
++    str << ";};";
++    str << "struct M2 { float4x4 m";
++    for (int i = 1; i < kStructMembers2; ++i) {
++        str << ",m" << i;
++    }
++    str << ";};";
++    str << "M f() { M m; return m; }";
++    constexpr int kConstMembers = 40;
++    str << "struct T { float4x4 m0";
++    for (int i = 1; i < kConstMembers; ++i) {
++        str << ",m" << i;
++    }
++    str << ";};";
++    str << "const T K = T(";
++    for (int i = 0; i < kConstMembers; ++i) {
++        if (i > 0) {
++            str << ",";
++        }
++        str << "mat4x4(1337)";
++    }
++    str << ");";
++    str << "half4 main(half4 color) {";
++    str << "float4x4 a = M2(";
++    for (int j = 0; j < kStructMembers2; ++j) {
++        if (j > 0) {
++            str << ",";
++        }
++        const int numAddOps = (j == kStructMembers1 - 1) ? 23 : 25;
++        for (int i = 0; i < numAddOps; ++i) {
++            if (i > 0) {
++                str << "+";
++            }
++            str << "f().m";
++        }
++    }
++    str << ").m;";
++    str << "return half4(a[0]+(K.m0+K.m1+K.m2+K.m3)[0]);";
++    str << "}";
++    std::string src = str.str();
++
++    SkSL::Compiler compiler;
++    std::unique_ptr<SkSL::Program> program =
++            compiler.convertProgram(SkSL::ProgramKind::kRuntimeColorFilter, src, {});
++    if (!program) {
++        ERRORF(r, "Unexpected error compiling %s\n%s", src.c_str(), compiler.errorText().c_str());
++        return;
++    }
++    const SkSL::FunctionDeclaration* main = program->getFunction("main");
++    if (!main) {
++        ERRORF(r, "Program must have a 'main' function");
++        return;
++    }
++    SkArenaAlloc alloc(1000);
++    SkRasterPipeline pipeline(&alloc);
++    pipeline.appendConstantColor(&alloc, SkColors::kWhite);
++    std::unique_ptr<SkSL::RP::Program> rasterProg =
++            SkSL::MakeRasterPipelineProgram(*program, *main->definition());
++    // Ideally, this program would fail in the front-end, because of the number of slots needed
++    // for expression evaluation. For now, it succeeds (but then fails in appendStages).
++    if (!rasterProg) {
++        ERRORF(r, "MakeRasterPipelineProgram failed");
++        return;
++    }
++
++    // Append the SkSL program to the raster pipeline.
++    bool success = rasterProg->appendStages(&pipeline, &alloc, /*callbacks=*/nullptr, {});
++    REPORTER_ASSERT(r, !success, "appendStages should fail for very large program");
++}
