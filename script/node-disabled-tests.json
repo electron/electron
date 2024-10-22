@@ -1,6 +1,7 @@
 [
   "abort/test-abort-backtrace",
   "es-module/test-vm-compile-function-lineoffset",
+  "parallel/test-async-context-frame",
   "parallel/test-bootstrap-modules",
   "parallel/test-child-process-fork-exec-path",
   "parallel/test-code-cache",
