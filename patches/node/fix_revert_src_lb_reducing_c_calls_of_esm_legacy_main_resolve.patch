@@ -15,10 +15,15 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index f3dad958b2ec275992554477b9344214c8c1e2c8..870af88c7dfb3174816a933912fee7379dae4085 100644
+index f3dad958b2ec275992554477b9344214c8c1e2c8..a086217046fd5ed7cfb09cfd2ed62f3987eb1f31 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -31,10 +31,9 @@ const { sep, posix: { relative: relativePosixPath }, resolve } = require('path')
+@@ -27,14 +27,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
+ const fs = require('fs');
+ const { getOptionValue } = require('internal/options');
+ // Do not eagerly grab .manifest, it may be in TDZ
+-const { sep, posix: { relative: relativePosixPath }, resolve } = require('path');
++const { sep, posix: { relative: relativePosixPath }, toNamespacedPath, resolve } = require('path');
  const preserveSymlinks = getOptionValue('--preserve-symlinks');
  const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
  const inputTypeFlag = getOptionValue('--input-type');
