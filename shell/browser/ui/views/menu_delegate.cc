@@ -23,14 +23,14 @@ MenuDelegate::~MenuDelegate() = default;
 
 void MenuDelegate::RunMenu(ElectronMenuModel* model,
                            views::Button* button,
-                           ui::MenuSourceType source_type) {
+                           ui::mojom::MenuSourceType source_type) {
   gfx::Point screen_loc;
   views::View::ConvertPointToScreen(button, &screen_loc);
   // Subtract 1 from the height to make the popup flush with the button border.
   gfx::Rect bounds(screen_loc.x(), screen_loc.y(), button->width(),
                    button->height() - 1);
 
-  if (source_type == ui::MENU_SOURCE_KEYBOARD) {
+  if (source_type == ui::mojom::MenuSourceType::kKeyboard) {
     hold_first_switch_ = true;
   }
 

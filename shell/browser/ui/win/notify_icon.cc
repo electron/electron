@@ -227,7 +227,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   }
   menu_runner_->RunMenuAt(nullptr, nullptr, rect,
                           views::MenuAnchorPosition::kTopLeft,
-                          ui::MENU_SOURCE_MOUSE);
+                          ui::mojom::MenuSourceType::kMouse);
 }
 
 void NotifyIcon::CloseContextMenu() {

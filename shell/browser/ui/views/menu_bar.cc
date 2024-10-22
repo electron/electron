@@ -8,6 +8,7 @@
 
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/views/submenu_button.h"
+#include "ui/base/mojom/menu_source_type.mojom-forward.h"
 #include "ui/color/color_provider.h"
 #include "ui/native_theme/common_theme.h"
 #include "ui/views/background.h"
@@ -196,9 +197,10 @@ void MenuBar::ButtonPressed(size_t id, const ui::Event& event) {
 
   // Deleted in MenuDelegate::OnMenuClosed
   auto* menu_delegate = new MenuDelegate(this);
-  menu_delegate->RunMenu(
-      menu_model_->GetSubmenuModelAt(id), source,
-      event.IsKeyEvent() ? ui::MENU_SOURCE_KEYBOARD : ui::MENU_SOURCE_MOUSE);
+  menu_delegate->RunMenu(menu_model_->GetSubmenuModelAt(id), source,
+                         event.IsKeyEvent()
+                             ? ui::mojom::MenuSourceType::kKeyboard
+                             : ui::mojom::MenuSourceType::kMouse);
   menu_delegate->AddObserver(this);
 }
 

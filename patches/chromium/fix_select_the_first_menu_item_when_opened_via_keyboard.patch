@@ -21,7 +21,7 @@ index 901a933aa92a0857b5cbdce63f9788662e8a7d87..ec4d8122d519c763da40f5abeaa27f89
    // Set the selection, which opens the initial menu.
    SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
  
-+  if (source_type == ui::MENU_SOURCE_KEYBOARD && context_menu && root->HasSubmenu()) {
++  if (source_type == ui::mojom::MenuSourceType::kKeyboard && context_menu && root->HasSubmenu()) {
 +    // For context menus opened via the keyboard we select the first item by default
 +    // to match accessibility expectations
 +    MenuItemView* first_item = FindInitialSelectableMenuItem(root, INCREMENT_SELECTION_DOWN);
