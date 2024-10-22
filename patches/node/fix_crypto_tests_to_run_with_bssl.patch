@@ -10,6 +10,53 @@ This should be upstreamed in some form, though it may need to be tweaked
 before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
+diff --git a/test/common/index.js b/test/common/index.js
+index 172cdb6b049824539a9850789e0e7c5baf613367..43191263d761c95805f74ca0963e2ac731a835ca 100644
+--- a/test/common/index.js
++++ b/test/common/index.js
+@@ -65,6 +65,8 @@ const opensslVersionNumber = (major = 0, minor = 0, patch = 0) => {
+   return (major << 28) | (minor << 20) | (patch << 4);
+ };
+ 
++const openSSLIsBoringSSL = process.versions.openssl === '0.0.0';
++
+ let OPENSSL_VERSION_NUMBER;
+ const hasOpenSSL = (major = 0, minor = 0, patch = 0) => {
+   if (!hasCrypto) return false;
+@@ -754,6 +756,8 @@ function skipIfInspectorDisabled() {
+   }
+ }
+ 
++
++
+ function skipIf32Bits() {
+   if (bits < 64) {
+     skip('The tested feature is not available in 32bit builds');
+@@ -996,6 +1000,7 @@ const common = {
+   mustNotMutateObjectDeep,
+   mustSucceed,
+   nodeProcessAborted,
++  openSSLIsBoringSSL,
+   PIPE,
+   parseTestFlags,
+   platformTimeout,
+diff --git a/test/parallel/test-buffer-tostring-range.js b/test/parallel/test-buffer-tostring-range.js
+index d033cd204b3200cdd736b581abe027d6e46e4ff3..4c1d03774717cb4dbbdf1e3a06ef34ac4e533738 100644
+--- a/test/parallel/test-buffer-tostring-range.js
++++ b/test/parallel/test-buffer-tostring-range.js
+@@ -102,7 +102,8 @@ assert.throws(() => {
+ // Must not throw when start and end are within kMaxLength
+ // Cannot test on 32bit machine as we are testing the case
+ // when start and end are above the threshold
+-common.skipIf32Bits();
+-const threshold = 0xFFFFFFFF;
+-const largeBuffer = Buffer.alloc(threshold + 20);
+-largeBuffer.toString('utf8', threshold, threshold + 20);
++if (!common.openSSLIsBoringSSL) {
++  const threshold = 0xFFFFFFFF;
++  const largeBuffer = Buffer.alloc(threshold + 20);
++  largeBuffer.toString('utf8', threshold, threshold + 20);
++}
 diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
 index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a208ed47909 100644
 --- a/test/parallel/test-crypto-async-sign-verify.js
@@ -686,56 +733,62 @@ index b06f2fa2c53ea72f9a66f0d002dd9281d0259a0f..864fffeebfad75d95416fd47efdea7f2
  
  const server = https.createServer(opts, (req, res) => {
 diff --git a/test/parallel/test-webcrypto-derivebits.js b/test/parallel/test-webcrypto-derivebits.js
-index eb09bc24f0cb8244b05987e3a7c1d203360d3a38..da891fffa29d5666d91e4445e54c43e3688b870a 100644
+index eb09bc24f0cb8244b05987e3a7c1d203360d3a38..011990db171faa708c5211f6ab9ae1ac0e0ab90e 100644
 --- a/test/parallel/test-webcrypto-derivebits.js
 +++ b/test/parallel/test-webcrypto-derivebits.js
-@@ -101,6 +101,7 @@ const { subtle } = globalThis.crypto;
+@@ -101,8 +101,9 @@ const { subtle } = globalThis.crypto;
    tests.then(common.mustCall());
  }
  
-+/*
++
  // Test X25519 and X448 bit derivation
- {
+-{
++if (!common.openSSLIsBoringSSL) {
    async function test(name) {
+     const [alice, bob] = await Promise.all([
+       subtle.generateKey({ name }, true, ['deriveBits']),
 @@ -126,3 +127,4 @@ const { subtle } = globalThis.crypto;
    test('X25519').then(common.mustCall());
    test('X448').then(common.mustCall());
  }
-+*/
++
 diff --git a/test/parallel/test-webcrypto-derivekey.js b/test/parallel/test-webcrypto-derivekey.js
-index 558d37d90d5796b30101d1b512c9df3e7661d0db..c18f9670b10cb84c6902391f20e0ff75729cc960 100644
+index 558d37d90d5796b30101d1b512c9df3e7661d0db..f42bf8f4be0b439dd7e7c8d0f6f8a41e01588870 100644
 --- a/test/parallel/test-webcrypto-derivekey.js
 +++ b/test/parallel/test-webcrypto-derivekey.js
-@@ -175,6 +175,7 @@ const { KeyObject } = require('crypto');
-   })().then(common.mustCall());
+@@ -176,7 +176,7 @@ const { KeyObject } = require('crypto');
  }
  
-+/*
  // Test X25519 and X448 key derivation
- {
+-{
++if (!common.openSSLIsBoringSSL) {
    async function test(name) {
-@@ -209,3 +210,4 @@ const { KeyObject } = require('crypto');
-   test('X25519').then(common.mustCall());
-   test('X448').then(common.mustCall());
- }
-+*/
+     const [alice, bob] = await Promise.all([
+       subtle.generateKey({ name }, true, ['deriveKey']),
 diff --git a/test/parallel/test-webcrypto-sign-verify.js b/test/parallel/test-webcrypto-sign-verify.js
-index de736102bdcb71a5560c95f7041537f25026aed4..638fdf0d798f3309528c63f0f8598f3df5528339 100644
+index de736102bdcb71a5560c95f7041537f25026aed4..12d7fa39446c196bdf1479dbe74c9ee8ab02f949 100644
 --- a/test/parallel/test-webcrypto-sign-verify.js
 +++ b/test/parallel/test-webcrypto-sign-verify.js
-@@ -105,6 +105,7 @@ const { subtle } = globalThis.crypto;
+@@ -105,8 +105,9 @@ const { subtle } = globalThis.crypto;
    test('hello world').then(common.mustCall());
  }
  
-+/*
++
  // Test Sign/Verify Ed25519
- {
+-{
++if (!common.openSSLIsBoringSSL) {
    async function test(data) {
-@@ -144,3 +145,4 @@ const { subtle } = globalThis.crypto;
- 
-   test('hello world').then(common.mustCall());
+     const ec = new TextEncoder();
+     const { publicKey, privateKey } = await subtle.generateKey({
+@@ -126,7 +127,7 @@ const { subtle } = globalThis.crypto;
  }
-+*/
+ 
+ // Test Sign/Verify Ed448
+-{
++if (!common.openSSLIsBoringSSL) {
+   async function test(data) {
+     const ec = new TextEncoder();
+     const { publicKey, privateKey } = await subtle.generateKey({
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index d1ca571af4be713082d32093bfb8a65f2aef9800..57b8df2ce18df58ff54b2d828af67e3c2e082fe0 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
