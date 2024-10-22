@@ -45,7 +45,6 @@ MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
 
   menu_delegate_ = new MenuDelegate(this);
   menu_delegate_->AddObserver(this);
-
 }
 
 MenuBar::~MenuBar() {
