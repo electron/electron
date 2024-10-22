@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matthias Liedtke <mliedtke@chromium.org>
+Date: Tue, 17 Sep 2024 11:58:26 +0200
+Subject: Merged: [wasm] Do not inline wrappers with 'ref extern' parameter
+ type
+
+This was introduced in https://crrev.com/c/4212394.
+
+The wrapper would need to test for null and throw a type error but
+doesn't do that correctly.
+(The test case added only tested that a null check happens either in
+the wrapper or in the cast instruction because the test case was trying
+to test both cases without duplicating too much which was a bad design
+choice.)
+
+For simplicity, just disallow inlining of wrappers with parameters
+typed 'ref extern'. (Users should use `externref` aka 'ref null extern'
+instead anyways as the non-nullability doesn't add any benefits.)
+
+(cherry picked from commit 3eee872739ac3523af126d7f25a623c18f5bee39)
+
+Bug: 366635354
+Change-Id: I58deec223e9c01c5292239eebee895febc880215
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5872631
+Auto-Submit: Matthias Liedtke <mliedtke@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.0@{#2}
+Cr-Branched-From: 4be854bd71ea878a25b236a27afcecffa2e29360-refs/heads/13.0.245@{#1}
+Cr-Branched-From: 1f5183f7ad6cca21029fd60653d075730c644432-refs/heads/main@{#96103}
+
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index 798e7db458f38bd31aacb69c6fb0945fcd263992..b9619969ab1396bb04b8c5c1142b1b3ede367a25 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -3767,14 +3767,13 @@ bool CanInlineJSToWasmCall(const wasm::FunctionSig* wasm_signature) {
+     return false;
+   }
+ 
+-  wasm::ValueType externRefNonNull = wasm::kWasmExternRef.AsNonNull();
+   for (auto type : wasm_signature->all()) {
+ #if defined(V8_TARGET_ARCH_32_BIT)
+     if (type == wasm::kWasmI64) return false;
+ #endif
+     if (type != wasm::kWasmI32 && type != wasm::kWasmI64 &&
+         type != wasm::kWasmF32 && type != wasm::kWasmF64 &&
+-        type != wasm::kWasmExternRef && type != externRefNonNull) {
++        type != wasm::kWasmExternRef) {
+       return false;
+     }
+   }
+diff --git a/test/cctest/test-js-to-wasm.cc b/test/cctest/test-js-to-wasm.cc
+index f7be048dbf5740c9306481dbf3bf1ea4b688b490..901fcbb214860370cc8f0dbf8f0d7a6af22704ae 100644
+--- a/test/cctest/test-js-to-wasm.cc
++++ b/test/cctest/test-js-to-wasm.cc
+@@ -93,13 +93,6 @@ DECLARE_EXPORTED_FUNCTION(i64_square, sigs.l_l(),
+ DECLARE_EXPORTED_FUNCTION(externref_null_id, sigs.a_a(),
+                           WASM_CODE({WASM_LOCAL_GET(0)}))
+ 
+-static constexpr ValueType extern_extern_types[] = {kWasmExternRef.AsNonNull(),
+-                                                    kWasmExternRef.AsNonNull()};
+-static constexpr FunctionSig sig_extern_extern(1, 1, extern_extern_types);
+-
+-DECLARE_EXPORTED_FUNCTION(externref_id, &sig_extern_extern,
+-                          WASM_CODE({WASM_LOCAL_GET(0)}))
+-
+ DECLARE_EXPORTED_FUNCTION(f32_square, sigs.f_f(),
+                           WASM_CODE({WASM_LOCAL_GET(0), WASM_LOCAL_GET(0),
+                                      kExprF32Mul}))
+@@ -862,19 +855,6 @@ TEST(TestFastJSWasmCall_ExternrefNullArg) {
+   tester.CallAndCheckWasmFunction("externref_null_id", args4, str);
+ }
+ 
+-TEST(TestFastJSWasmCall_ExternrefArg) {
+-  v8::HandleScope scope(CcTest::isolate());
+-  FastJSWasmCallTester tester;
+-  tester.AddExportedFunction(k_externref_id);
+-  auto args1 = v8::to_array<v8::Local<v8::Value>>({v8_num(42)});
+-  tester.CallAndCheckWasmFunction("externref_id", args1, 42);
+-  auto args2 = v8::to_array<v8::Local<v8::Value>>({v8_bigint(42)});
+-  tester.CallAndCheckWasmFunctionBigInt("externref_id", args2, v8_bigint(42));
+-  auto str = v8_str("test");
+-  auto args3 = v8::to_array<v8::Local<v8::Value>>({str});
+-  tester.CallAndCheckWasmFunction("externref_id", args3, str);
+-}
+-
+ TEST(TestFastJSWasmCall_MultipleArgs) {
+   v8::HandleScope scope(CcTest::isolate());
+   FastJSWasmCallTester tester;
+diff --git a/test/mjsunit/regress/wasm/regress-366635354.js b/test/mjsunit/regress/wasm/regress-366635354.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..18dcc41b0e79df5b715eca6c657d1490e60ed8a0
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-366635354.js
+@@ -0,0 +1,32 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --always-turbofan --allow-natives-syntax
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++let builder = new WasmModuleBuilder();
++builder.addFunction('foo', makeSig([wasmRefType(kWasmExternRef)], []))
++    .addBody([kExprUnreachable])
++    .exportFunc();
++let instance = builder.instantiate();
++const wasm_caller = () => instance.exports.foo(null);
++
++%PrepareFunctionForOptimization(wasm_caller);
++testCallStack();
++%OptimizeFunctionOnNextCall(wasm_caller);
++testCallStack();
++
++function testCallStack() {
++  try {
++    wasm_caller();
++    assertUnreachable();
++  } catch (e) {
++    assertMatches(
++`TypeError: type incompatibility when transforming from/to JS
++    at wasm_caller .*\\.js:14:44\\)
++    at testCallStack .*\\.js:23:5\\).*`,
++      e.stack,);
++  }
++}

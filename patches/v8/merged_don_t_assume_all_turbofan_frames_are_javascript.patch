@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eric Leese <leese@chromium.org>
+Date: Mon, 30 Sep 2024 15:43:41 +0000
+Subject: Merged: Don't assume all turbofan frames are JavaScript
+
+(cherry picked from commit 969cea30e86cf1b004ab2c739f9798cc8c633e9e)
+
+Bug: 367734947
+Change-Id: I61ccc3b0d0c87bd0fc5b3aa03308897d6c472ce7
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5912942
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Eric Leese <leese@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.9@{#55}
+Cr-Branched-From: 64a21d7ad7fca1ddc73a9264132f703f35000b69-refs/heads/12.9.202@{#1}
+Cr-Branched-From: da4200b2cfe6eb1ad73c457ed27cf5b7ff32614f-refs/heads/main@{#95679}
+
+diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
+index c3db834a8b8a9f28d32860336347df169b808043..e26ac8b4cf14726a4d72c911a8bb8bc56bcb0486 100644
+--- a/src/execution/isolate.cc
++++ b/src/execution/isolate.cc
+@@ -2463,6 +2463,13 @@ HandlerTable::CatchPrediction PredictExceptionFromBytecode(
+ 
+ HandlerTable::CatchPrediction PredictException(const FrameSummary& summary,
+                                                Isolate* isolate) {
++  if (!summary.IsJavaScript()) {
++    // This can happen when WASM is inlined by TurboFan. For now we ignore
++    // frames that are not JavaScript.
++    // TODO(https://crbug.com/349588762): We should also check Wasm code
++    // for exception handling.
++    return HandlerTable::UNCAUGHT;
++  }
+   PtrComprCageBase cage_base(isolate);
+   Handle<AbstractCode> code = summary.AsJavaScript().abstract_code();
+   if (code->kind(cage_base) == CodeKind::BUILTIN) {
