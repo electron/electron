@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index eb3533bb4623b152605c3c590f37f086cce5f073..4c223fd926a1bd0a68ef1f35b2b8429e01800eee 100644
+index eb3533bb4623b152605c3c590f37f086cce5f073..ded231aeaa15af22845704cfcc7d24a44bd88f8e 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -6,13 +6,11 @@
@@ -76,7 +76,7 @@ index eb3533bb4623b152605c3c590f37f086cce5f073..4c223fd926a1bd0a68ef1f35b2b8429e
      V("modp5", BN_get_rfc3526_prime_1536);
    }
    V("modp14", BN_get_rfc3526_prime_2048);
-@@ -1130,6 +1134,7 @@ DHPointer::CheckPublicKeyResult DHPointer::checkPublicKey(const BignumPointer& p
+@@ -1130,11 +1134,13 @@ DHPointer::CheckPublicKeyResult DHPointer::checkPublicKey(const BignumPointer& p
    int codes = 0;
    if (DH_check_pub_key(dh_.get(), pub_key.get(), &codes) != 1)
      return DHPointer::CheckPublicKeyResult::CHECK_FAILED;
@@ -84,14 +84,27 @@ index eb3533bb4623b152605c3c590f37f086cce5f073..4c223fd926a1bd0a68ef1f35b2b8429e
    if (codes & DH_CHECK_PUBKEY_TOO_SMALL) {
      return DHPointer::CheckPublicKeyResult::TOO_SMALL;
    } else if (codes & DH_CHECK_PUBKEY_TOO_SMALL) {
-@@ -1137,6 +1142,7 @@ DHPointer::CheckPublicKeyResult DHPointer::checkPublicKey(const BignumPointer& p
-   } else if (codes != 0) {
+     return DHPointer::CheckPublicKeyResult::TOO_LARGE;
+-  } else if (codes != 0) {
++#endif
++  if (codes != 0) {
      return DHPointer::CheckPublicKeyResult::INVALID;
    }
-+#endif
    return CheckPublicKeyResult::NONE;
- }
- 
+diff --git a/deps/ncrypto/ncrypto.h b/deps/ncrypto/ncrypto.h
+index 661c996889d0a89c1c38658a0933fcf5e3cdc1b9..1261d5d99fdf4e17b8dec66660028ce184f1cf89 100644
+--- a/deps/ncrypto/ncrypto.h
++++ b/deps/ncrypto/ncrypto.h
+@@ -413,8 +413,8 @@ public:
+   #ifndef OPENSSL_IS_BORINGSSL
+     TOO_SMALL = DH_R_CHECK_PUBKEY_TOO_SMALL,
+     TOO_LARGE = DH_R_CHECK_PUBKEY_TOO_LARGE,
+-    INVALID = DH_R_CHECK_PUBKEY_INVALID,
+   #endif
++    INVALID = DH_R_INVALID_PUBKEY,
+     CHECK_FAILED = 512,
+   };
+   // Check to see if the given public key is suitable for this DH instance.
 diff --git a/deps/ncrypto/unofficial.gni b/deps/ncrypto/unofficial.gni
 index ea024af73e215b3cad5f08796ac405f419530c86..41061b524eea74330b8d2452635a38c48f21386b 100644
 --- a/deps/ncrypto/unofficial.gni
@@ -264,7 +277,7 @@ index c924a54639e8c22d765dc240dffacfffb200ca0c..287afcc792a0a2b7e19126ee9a48ebe2
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index e5664dfa2bc7e11922fa965f28acdf21470d1147..c9e32ee754cec137f3e7673956e6af1360cb767f 100644
+index e5664dfa2bc7e11922fa965f28acdf21470d1147..33ffbbb85d05f5356183e3aa1ca23707c5629b5d 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -7,7 +7,9 @@
@@ -328,7 +341,7 @@ index e5664dfa2bc7e11922fa965f28acdf21470d1147..c9e32ee754cec137f3e7673956e6af13
        return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
      }
    }
-@@ -258,15 +256,15 @@ void ComputeSecret(const FunctionCallbackInfo<Value>& args) {
+@@ -258,15 +256,17 @@ void ComputeSecret(const FunctionCallbackInfo<Value>& args) {
    BignumPointer key(key_buf.data(), key_buf.size());
  
    switch (dh.checkPublicKey(key)) {
@@ -343,10 +356,12 @@ index e5664dfa2bc7e11922fa965f28acdf21470d1147..c9e32ee754cec137f3e7673956e6af13
      case DHPointer::CheckPublicKeyResult::TOO_LARGE:
        return THROW_ERR_CRYPTO_INVALID_KEYLEN(env, "Supplied key is too large");
 +#endif
++    case DHPointer::CheckPublicKeyResult::INVALID:
++      return THROW_ERR_CRYPTO_INVALID_KEYTYPE(env, "Supplied key is invalid");
      case DHPointer::CheckPublicKeyResult::NONE:
        break;
    }
-@@ -398,9 +396,11 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -398,9 +398,11 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      key_params = EVPKeyPointer(EVP_PKEY_new());
      CHECK(key_params);
      CHECK_EQ(EVP_PKEY_assign_DH(key_params.get(), dh.release()), 1);
@@ -359,7 +374,7 @@ index e5664dfa2bc7e11922fa965f28acdf21470d1147..c9e32ee754cec137f3e7673956e6af13
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -414,6 +414,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -414,6 +416,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      }
  
      key_params = EVPKeyPointer(raw_params);

@@ -26,30 +26,36 @@ index 5fc1b6f2446d7c786024eb60800e2edab613dcd1..f59abcb21d64b910d8d42eb23c03109f
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index c9e32ee754cec137f3e7673956e6af1360cb767f..9851b90aad27084504e5b4b0bfd861097d57b180 100644
+index 33ffbbb85d05f5356183e3aa1ca23707c5629b5d..008d212ebe25b0022020379aa08963c12828940c 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -51,6 +51,19 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+@@ -51,6 +51,25 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
  namespace {
  MaybeLocal<Value> DataPointerToBuffer(Environment* env,
                                        ncrypto::DataPointer&& data) {
 +#if defined(V8_ENABLE_SANDBOX)
-+  std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
-+  void* v8_data = allocator->Allocate(data.size());
-+  CHECK(v8_data);
-+  memcpy(v8_data, data.get(), data.size());
-+  std::unique_ptr<v8::BackingStore> backing = ArrayBuffer::NewBackingStore(
-+      v8_data,
-+      data.size(),
-+      [](void* data, size_t length, void*) {
-+        std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
-+        allocator->Free(data, length);
-+      }, nullptr);
++  std::unique_ptr<v8::BackingStore> backing;
++  if (data.size() > 0) {
++    std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++    void* v8_data = allocator->Allocate(data.size());
++    CHECK(v8_data);
++    memcpy(v8_data, data.get(), data.size());
++    backing = ArrayBuffer::NewBackingStore(
++        v8_data,
++        data.size(),
++        [](void* data, size_t length, void*) {
++          std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++          allocator->Free(data, length);
++        }, nullptr);
++  } else {
++    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
++    backing = v8::ArrayBuffer::NewBackingStore(env->isolate(), data.size());
++  }
 +#else
    auto backing = ArrayBuffer::NewBackingStore(
        data.get(),
        data.size(),
-@@ -59,6 +72,7 @@ MaybeLocal<Value> DataPointerToBuffer(Environment* env,
+@@ -59,6 +78,7 @@ MaybeLocal<Value> DataPointerToBuffer(Environment* env,
        },
        nullptr);
    data.release();

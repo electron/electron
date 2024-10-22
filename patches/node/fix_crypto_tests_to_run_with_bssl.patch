@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/common/index.js b/test/common/index.js
-index 172cdb6b049824539a9850789e0e7c5baf613367..43191263d761c95805f74ca0963e2ac731a835ca 100644
+index 172cdb6b049824539a9850789e0e7c5baf613367..c29abc18191aec78ad8eb810093a9a4ef9e854e4 100644
 --- a/test/common/index.js
 +++ b/test/common/index.js
 @@ -65,6 +65,8 @@ const opensslVersionNumber = (major = 0, minor = 0, patch = 0) => {
@@ -23,16 +23,7 @@ index 172cdb6b049824539a9850789e0e7c5baf613367..43191263d761c95805f74ca0963e2ac7
  let OPENSSL_VERSION_NUMBER;
  const hasOpenSSL = (major = 0, minor = 0, patch = 0) => {
    if (!hasCrypto) return false;
-@@ -754,6 +756,8 @@ function skipIfInspectorDisabled() {
-   }
- }
- 
-+
-+
- function skipIf32Bits() {
-   if (bits < 64) {
-     skip('The tested feature is not available in 32bit builds');
-@@ -996,6 +1000,7 @@ const common = {
+@@ -996,6 +998,7 @@ const common = {
    mustNotMutateObjectDeep,
    mustSucceed,
    nodeProcessAborted,
@@ -41,7 +32,7 @@ index 172cdb6b049824539a9850789e0e7c5baf613367..43191263d761c95805f74ca0963e2ac7
    parseTestFlags,
    platformTimeout,
 diff --git a/test/parallel/test-buffer-tostring-range.js b/test/parallel/test-buffer-tostring-range.js
-index d033cd204b3200cdd736b581abe027d6e46e4ff3..4c1d03774717cb4dbbdf1e3a06ef34ac4e533738 100644
+index d033cd204b3200cdd736b581abe027d6e46e4ff3..73fec107a36c3db4af6f492137d0ca174f2d0547 100644
 --- a/test/parallel/test-buffer-tostring-range.js
 +++ b/test/parallel/test-buffer-tostring-range.js
 @@ -102,7 +102,8 @@ assert.throws(() => {
@@ -49,23 +40,20 @@ index d033cd204b3200cdd736b581abe027d6e46e4ff3..4c1d03774717cb4dbbdf1e3a06ef34ac
  // Cannot test on 32bit machine as we are testing the case
  // when start and end are above the threshold
 -common.skipIf32Bits();
--const threshold = 0xFFFFFFFF;
--const largeBuffer = Buffer.alloc(threshold + 20);
--largeBuffer.toString('utf8', threshold, threshold + 20);
 +if (!common.openSSLIsBoringSSL) {
-+  const threshold = 0xFFFFFFFF;
-+  const largeBuffer = Buffer.alloc(threshold + 20);
-+  largeBuffer.toString('utf8', threshold, threshold + 20);
+ const threshold = 0xFFFFFFFF;
+ const largeBuffer = Buffer.alloc(threshold + 20);
+ largeBuffer.toString('utf8', threshold, threshold + 20);
 +}
 diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
-index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a208ed47909 100644
+index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..29149838ca76986928c7649a5f60a0f5e22a0705 100644
 --- a/test/parallel/test-crypto-async-sign-verify.js
 +++ b/test/parallel/test-crypto-async-sign-verify.js
 @@ -88,6 +88,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
  // ED25519
  test('ed25519_public.pem', 'ed25519_private.pem', undefined, true);
  // ED448
-+/*
++if (!common.openSSLIsBoringSSL) {
  test('ed448_public.pem', 'ed448_private.pem', undefined, true);
  
  // ECDSA w/ der signature encoding
@@ -73,7 +61,7 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a20
  // DSA w/ ieee-p1363 signature encoding
  test('dsa_public.pem', 'dsa_private.pem', 'sha256', false,
       { dsaEncoding: 'ieee-p1363' });
-+*/
++}
  
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
@@ -169,7 +157,7 @@ index fcf1922bcdba733af6c22f142db4f7b099947757..9f72ae4e41a113e752f40795103c2af5
    assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
    assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index 9ebe14011eed223994e0901bc22dcc582b4b0739..e06f10cbfa933e87f459e6a7fca0e51930be7564 100644
+index 9ebe14011eed223994e0901bc22dcc582b4b0739..e78f90eb76380916ce7098fb517c83a954edb053 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
 @@ -55,18 +55,17 @@ const crypto = require('crypto');
@@ -199,13 +187,21 @@ index 9ebe14011eed223994e0901bc22dcc582b4b0739..e06f10cbfa933e87f459e6a7fca0e519
      };
    }
  
-@@ -100,10 +99,16 @@ const crypto = require('crypto');
+@@ -93,17 +92,23 @@ const crypto = require('crypto');
+       dh3.computeSecret('');
+     }, { message: common.hasOpenSSL3 && !hasOpenSSL3WithNewErrorMessage ?
+       'Unspecified validation error' :
+-      'Supplied key is too small' });
++      'Supplied key is invalid' });
+   }
+ }
+ 
  // Through a fluke of history, g=0 defaults to DH_GENERATOR (2).
  {
    const g = 0;
 -  crypto.createDiffieHellman('abcdef', g);
 +  assert.throws(() => crypto.createDiffieHellman('abcdef', g), {
-+    code: /INVALID_PARAMETERS/,
++    code: /ERR_CRYPTO_OPERATION_FAILED/,
 +    name: 'Error'
 +  });
    crypto.createDiffieHellman('abcdef', 'hex', g);
@@ -214,28 +210,28 @@ index 9ebe14011eed223994e0901bc22dcc582b4b0739..e06f10cbfa933e87f459e6a7fca0e519
  {
 -  crypto.createDiffieHellman('abcdef', Buffer.from([2]));  // OK
 +  assert.throws(() => crypto.createDiffieHellman('abcdef', Buffer.from([2])), {
-+    code: /INVALID_PARAMETERS/,
++    code: /ERR_CRYPTO_OPERATION_FAILED/,
 +    name: 'Error'
 +  });
  }
 diff --git a/test/parallel/test-crypto-getcipherinfo.js b/test/parallel/test-crypto-getcipherinfo.js
-index 64b79fc36ccf4d38f763fcd8c1930473c82cefd7..892490fc7dd8da09f8aa10a20bec69385c0fee28 100644
+index 64b79fc36ccf4d38f763fcd8c1930473c82cefd7..1c6717ebd46497384b9b13174b65894ca89e7f2d 100644
 --- a/test/parallel/test-crypto-getcipherinfo.js
 +++ b/test/parallel/test-crypto-getcipherinfo.js
 @@ -62,9 +62,13 @@ assert(getCipherInfo('aes-128-cbc', { ivLength: 16 }));
  
  assert(!getCipherInfo('aes-128-ccm', { ivLength: 1 }));
  assert(!getCipherInfo('aes-128-ccm', { ivLength: 14 }));
-+/*
++if (!common.openSSLIsBoringSSL) {
  for (let n = 7; n <= 13; n++)
    assert(getCipherInfo('aes-128-ccm', { ivLength: n }));
-+*/
++}
  
  assert(!getCipherInfo('aes-128-ocb', { ivLength: 16 }));
-+/*
++if (!common.openSSLIsBoringSSL) {
  for (let n = 1; n < 16; n++)
    assert(getCipherInfo('aes-128-ocb', { ivLength: n }));
-+*/
++}
 \ No newline at end of file
 diff --git a/test/parallel/test-crypto-hash-stream-pipe.js b/test/parallel/test-crypto-hash-stream-pipe.js
 index d22281abbd5c3cab3aaa3ac494301fa6b4a8a968..5f0c6a4aed2e868a1a1049212edf218791cd6868 100644
@@ -337,7 +333,7 @@ index 1785f5eef3d202976666081d09850ed744d83446..e88227a215ba4f7fa196f7642ae694a5
    });
  
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
-index 5f4fafdfffbf726b7cb39c472baa3df25c9794cf..73bb53b0405b20f51b13326cc70e52755c674366 100644
+index 5f4fafdfffbf726b7cb39c472baa3df25c9794cf..d52376da2cddd90adcdf8a9b7dcd03e348d9f2b4 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
 +++ b/test/parallel/test-crypto-rsa-dsa.js
 @@ -28,12 +28,11 @@ const dsaPkcs8KeyPem = fixtures.readKey('dsa_private_pkcs8.pem');
@@ -368,20 +364,23 @@ index 5f4fafdfffbf726b7cb39c472baa3df25c9794cf..73bb53b0405b20f51b13326cc70e5275
      if (!process.config.variables.node_shared_openssl) {
        assert.throws(() => {
          crypto.privateDecrypt({
-@@ -466,7 +466,7 @@ assert.throws(() => {
+@@ -466,10 +466,10 @@ assert.throws(() => {
    assert.strictEqual(verify2.verify(publicKey, signature, 'hex'), true);
  }
  
 -
-+/*
  //
  // Test DSA signing and verification
  //
++if (!common.openSSLIsBoringSSL) {
+ {
+   const input = 'I AM THE WALRUS';
+ 
 @@ -541,3 +541,4 @@ const input = 'I AM THE WALRUS';
  
    assert.strictEqual(verify.verify(dsaPubPem, signature, 'hex'), true);
  }
-+*/
++}
 diff --git a/test/parallel/test-crypto-scrypt.js b/test/parallel/test-crypto-scrypt.js
 index 338a19b0e88ad6f08d2f6b6a5d38b9980996ce11..a4ee215575d072450ba66c558ddca88bfb23d85f 100644
 --- a/test/parallel/test-crypto-scrypt.js
@@ -396,26 +395,19 @@ index 338a19b0e88ad6f08d2f6b6a5d38b9980996ce11..a4ee215575d072450ba66c558ddca88b
    };
    assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index 9dd586a1a1f9a00d9bb0af5b0532e81e7b96a5ce..1a0d0cfc09fb61d65472723ba54e1d0be69b5c68 100644
+index 9dd586a1a1f9a00d9bb0af5b0532e81e7b96a5ce..a37e6d50914345829c8260a97949cee7d17ab676 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
-@@ -28,6 +28,7 @@ const keySize = 2048;
-                                      'instance when called without `new`');
+@@ -29,7 +29,7 @@ const keySize = 2048;
  }
  
-+/*
  // Test handling of exceptional conditions
- {
+-{
++if (!common.openSSLIsBoringSSL) {
    const library = {
-@@ -68,6 +69,7 @@ const keySize = 2048;
- 
-   delete Object.prototype.opensslErrorStack;
- }
-+*/
- 
- assert.throws(
-   () => crypto.createVerify('SHA256').verify({
-@@ -341,15 +343,17 @@ assert.throws(
+     configurable: true,
+     set() {
+@@ -341,15 +341,17 @@ assert.throws(
          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
        });
    }, common.hasOpenSSL3 ? {
@@ -437,7 +429,7 @@ index 9dd586a1a1f9a00d9bb0af5b0532e81e7b96a5ce..1a0d0cfc09fb61d65472723ba54e1d0b
    });
  }
  
-@@ -419,10 +423,12 @@ assert.throws(
+@@ -419,10 +421,12 @@ assert.throws(
      public: fixtures.readKey('ed25519_public.pem', 'ascii'),
      algo: null,
      sigLen: 64 },
@@ -450,7 +442,7 @@ index 9dd586a1a1f9a00d9bb0af5b0532e81e7b96a5ce..1a0d0cfc09fb61d65472723ba54e1d0b
    { private: fixtures.readKey('rsa_private_2048.pem', 'ascii'),
      public: fixtures.readKey('rsa_public_2048.pem', 'ascii'),
      algo: 'sha1',
-@@ -493,7 +499,7 @@ assert.throws(
+@@ -493,7 +497,7 @@ assert.throws(
  
  {
    const data = Buffer.from('Hello world');
