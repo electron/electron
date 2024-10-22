@@ -63,6 +63,7 @@
   "parallel/test-snapshot-incompatible",
   "parallel/test-snapshot-namespaced-builtin",
   "parallel/test-snapshot-net",
+  "parallel/test-snapshot-reproducible",
   "parallel/test-snapshot-typescript",
   "parallel/test-snapshot-umd",
   "parallel/test-snapshot-warning",
