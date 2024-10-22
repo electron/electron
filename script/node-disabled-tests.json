@@ -37,6 +37,7 @@
   "parallel/test-inspector-port-zero-cluster",
   "parallel/test-inspector-tracing-domain",
   "parallel/test-module-loading-globalpaths",
+  "parallel/test-module-print-timing",
   "parallel/test-openssl-ca-options",
   "parallel/test-process-versions",
   "parallel/test-process-get-builtin",
