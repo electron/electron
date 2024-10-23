@@ -878,6 +878,19 @@ index 1cb85b9058d06555382e565dc32192a9fa48ed9f..cec9be01abd107e8612f70daf19b4834
  
  // Handles compilation and caching of built-in JavaScript modules and
  // bootstrap scripts, whose source are bundled into the binary as static data.
+diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
+index 45b3ac5006140fb55aad0e6b78084b753a947a76..8667857107e4f2481fd98032d4333b086fb7b479 100755
+--- a/tools/generate_config_gypi.py
++++ b/tools/generate_config_gypi.py
+@@ -21,7 +21,7 @@ import getnapibuildversion
+ GN_RE = re.compile(r'(\w+)\s+=\s+(.*?)$', re.MULTILINE)
+ 
+ if sys.platform == 'win32':
+-  GN = 'gn.exe'
++  GN = 'gn.bat'
+ else:
+   GN = 'gn'
+ 
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
 index 0000000000000000000000000000000000000000..54b761d91734aead50aeeba8c91a1262531df713
