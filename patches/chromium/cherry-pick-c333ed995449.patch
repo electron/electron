@@ -1,14 +1,21 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
-Date: Mon, 23 Sep 2024 19:26:24 +0000
-Subject: ipcz: Validate link state fragment before adoption
+Date: Mon, 30 Sep 2024 06:33:13 +0000
+Subject: [M128] ipcz: Validate link state fragment before adoption
+
+(cherry picked from commit c333ed99544992f66e6e03621fa938d75ad01f70)
 
 Fixed: 368208152
 Change-Id: I0e2ece4b0857b225d229134b2e55abc3e08348ee
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5876623
 Commit-Queue: Ken Rockot <rockot@google.com>
 Reviewed-by: Daniel Cheng <dcheng@chromium.org>
-Cr-Commit-Position: refs/heads/main@{#1358968}
+Cr-Original-Commit-Position: refs/heads/main@{#1358968}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5893005
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Ken Rockot <rockot@google.com>
+Cr-Commit-Position: refs/branch-heads/6613@{#2136}
+Cr-Branched-From: 03c1799e6f9c7239802827eab5e935b9e14fceae-refs/heads/main@{#1331488}
 
 diff --git a/third_party/ipcz/src/ipcz/node_link.cc b/third_party/ipcz/src/ipcz/node_link.cc
 index 420377ac3d0c5a1f745e8c5d0030c21b5d3639f2..412cedc59eaabd79a35d7e299e42f720de9ac148 100644
@@ -154,10 +161,10 @@ index bcdd45ee866ec39d557ee1c762af04ae0af26b6a..fd51b78a2a4475b54f047310da4c91e4
  }  // namespace
  }  // namespace ipcz
 diff --git a/third_party/ipcz/src/ipcz/router.cc b/third_party/ipcz/src/ipcz/router.cc
-index 723b47190d477564d8399edc093b7192c233b835..b1dc593427ecae67b6758edd82257f88daefcde1 100644
+index 79c443d942c6613ea8a52990b93c1811e2d3d166..b1dc593427ecae67b6758edd82257f88daefcde1 100644
 --- a/third_party/ipcz/src/ipcz/router.cc
 +++ b/third_party/ipcz/src/ipcz/router.cc
-@@ -765,6 +765,13 @@ Ref<Router> Router::Deserialize(const RouterDescriptor& descriptor,
+@@ -765,12 +765,16 @@ Ref<Router> Router::Deserialize(const RouterDescriptor& descriptor,
                ? descriptor.decaying_incoming_sequence_length
                : descriptor.next_incoming_sequence_number);
  
@@ -169,5 +176,13 @@ index 723b47190d477564d8399edc093b7192c233b835..b1dc593427ecae67b6758edd82257f88
 +        return nullptr;
 +      }
        new_outward_link = from_node_link.AddRemoteRouterLink(
-           context, descriptor.new_sublink, std::move(link_state), LinkType::kCentral,
-           LinkSide::kB, router);
+-          context, descriptor.new_sublink,
+-          from_node_link.memory().AdoptFragmentRef<RouterLinkState>(
+-              from_node_link.memory().GetFragment(
+-                  descriptor.new_link_state_fragment)),
+-          LinkType::kCentral, LinkSide::kB, router);
++          context, descriptor.new_sublink, std::move(link_state), LinkType::kCentral,
++          LinkSide::kB, router);
+       if (!new_outward_link) {
+         return nullptr;
+       }
