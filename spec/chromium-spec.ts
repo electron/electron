@@ -15,7 +15,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { PipeTransport } from './pipe-transport';
 
@@ -2944,10 +2944,12 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     );
     await once(w.webContents, 'leave-html-full-screen');
 
-    const width = await w.webContents.executeJavaScript(
-      "document.querySelector('iframe').offsetWidth"
-    );
-    expect(width).to.equal(0);
+    await expect(waitUntil(async () => {
+      const width = await w.webContents.executeJavaScript(
+        "document.querySelector('iframe').offsetWidth"
+      );
+      return width === 0;
+    })).to.eventually.be.fulfilled();
 
     w.setFullScreen(false);
     await once(w, 'leave-full-screen');
