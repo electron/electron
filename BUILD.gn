@@ -865,6 +865,7 @@ if (is_mac) {
       ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
+      "//third_party/electron_node:node_lib",
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
@@ -911,6 +912,7 @@ if (is_mac) {
       deps = [
         ":electron_framework+link",
         "//electron/build/config:generate_mas_config",
+        "//third_party/electron_node:node_lib",
       ]
       if (!is_mas_build) {
         deps += [ "//sandbox/mac:seatbelt" ]
@@ -1073,6 +1075,7 @@ if (is_mac) {
       ":electron_fuses",
       "//electron/build/config:generate_mas_config",
       "//electron/buildflags",
+      "//third_party/electron_node:node_lib",
     ]
     if (is_mas_build) {
       deps += [ ":electron_login_helper_app" ]
@@ -1189,6 +1192,7 @@ if (is_mac) {
       "//components/crash/core/app",
       "//content:sandbox_helper_win",
       "//electron/buildflags",
+      "//third_party/electron_node:node_lib",
       "//ui/strings",
     ]
 

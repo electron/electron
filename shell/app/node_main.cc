@@ -182,9 +182,6 @@ int NodeMain(int argc, char* argv[]) {
     // Explicitly register electron's builtin bindings.
     NodeBindings::RegisterBuiltinBindings();
 
-    // Hack around with the argv pointer. Used for process.title = "blah".
-    argv = uv_setup_args(argc, argv);
-
     // Parse Node.js cli flags and strip out disallowed options.
     std::vector<std::string> args(argv, argv + argc);
     ExitIfContainsDisallowedFlags(args);

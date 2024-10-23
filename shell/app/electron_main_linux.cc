@@ -15,6 +15,7 @@
 #include "shell/app/uv_stdio_fix.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
+#include "uv.h"
 
 namespace {
 
@@ -27,6 +28,8 @@ bool IsEnvSet(const char* name) {
 
 int main(int argc, char* argv[]) {
   FixStdioStreams();
+
+  argv = uv_setup_args(argc, argv);
 
   if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
     base::i18n::InitializeICU();
