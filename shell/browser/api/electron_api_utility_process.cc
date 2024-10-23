@@ -235,12 +235,16 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
 }
 
 void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
+  // HandleTermination is called from multiple callsites,
+  // we need to ensure we only process it for the first callsite.
+  if (terminated_)
+    return;
+  terminated_ = true;
+
   if (pid_ != base::kNullProcessId)
     GetAllUtilityProcessWrappers().Remove(pid_);
   CloseConnectorPort();
-
   EmitWithoutEvent("exit", exit_code);
-
   Unpin();
 }
 
@@ -279,13 +283,8 @@ void UtilityProcessWrapper::CloseConnectorPort() {
 }
 
 void UtilityProcessWrapper::Shutdown(uint64_t exit_code) {
-  if (pid_ != base::kNullProcessId)
-    GetAllUtilityProcessWrappers().Remove(pid_);
   node_service_remote_.reset();
-  CloseConnectorPort();
-  // Emit 'exit' event
-  EmitWithoutEvent("exit", exit_code);
-  Unpin();
+  HandleTermination(exit_code);
 }
 
 void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {

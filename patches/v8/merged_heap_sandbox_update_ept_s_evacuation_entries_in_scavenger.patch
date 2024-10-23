@@ -1,0 +1,226 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anton Bikineev <bikineev@chromium.org>
+Date: Tue, 27 Aug 2024 11:24:48 +0200
+Subject: Merged: heap,sandbox: Update EPT's evacuation entries in Scavenger.
+
+If Scavenger interleaves MarkCompact that performs compaction on EPT,
+there may be some evacuation entries allocated in the young EPT that
+would back-point to the Scavenger's from-space. Add a new phase that
+updates all the evacuation entries in the young EPT up until
+`start_of_evacation_area`.
+
+Bug: 358485426
+
+(cherry picked from commit 1a2b08edbec1a8ebcf3d4adc91da4f2569fb744a)
+
+Change-Id: Iadabe3ded39b32d8908e5d4e8fbff593b977940c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5827960
+Auto-Submit: Deepti Gandluri <gdeepti@chromium.org>
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Commit-Queue: Deepti Gandluri <gdeepti@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.8@{#50}
+Cr-Branched-From: 70cbb397b153166027e34c75adf8e7993858222e-refs/heads/12.8.374@{#1}
+Cr-Branched-From: 451b63ed4251c2b21c56144d8428f8be3331539b-refs/heads/main@{#95151}
+
+diff --git a/src/heap/incremental-marking.cc b/src/heap/incremental-marking.cc
+index 909817c5afb8deb8c09bee4c11a3459082c75818..94bfd80c085fe21a9fab2ad8887f23cd95748515 100644
+--- a/src/heap/incremental-marking.cc
++++ b/src/heap/incremental-marking.cc
+@@ -532,6 +532,68 @@ void IncrementalMarking::UpdateMarkingWorklistAfterScavenge() {
+   weak_objects_->UpdateAfterScavenge();
+ }
+ 
++void IncrementalMarking::UpdateExternalPointerTableAfterScavenge() {
++#ifdef V8_COMPRESS_POINTERS
++  if (!IsMajorMarking()) return;
++  DCHECK(!v8_flags.separate_gc_phases);
++
++  heap_->isolate()->external_pointer_table().UpdateAllEvacuationEntries(
++      heap_->young_external_pointer_space(), [](Address old_handle_location) {
++        // 1) Resolve object start from the marking bitmap. Note that it's safe
++        //    since there is no black allocation for the young space (and hence
++        //    no range or page marking).
++        // 2) Get a relocated object from the forwaring reference stored in the
++        //    map.
++        // 3) Compute offset from the original object start to the handle
++        //    location.
++        // 4) Compute and return the new handle location.
++        //
++        // Please note that instead of updating the evacuation entries, we
++        // could simply clobber them all, which would still work, but limit
++        // compaction to some extent. We can reconsider this in the future, if
++        // relying on the marking bitmap becomes an issue (e.g. with inlined
++        // mark-bits).
++        const MemoryChunk* chunk =
++            MemoryChunk::FromAddress(old_handle_location);
++        if (!chunk->InYoungGeneration()) {
++          return old_handle_location;
++        }
++        // TODO(358485426): Check that the page is not black.
++
++        Address base = MarkingBitmap::FindPreviousValidObject(
++            static_cast<const PageMetadata*>(chunk->Metadata()),
++            old_handle_location);
++        Tagged<HeapObject> object(HeapObject::FromAddress(base));
++
++        MapWord map_word = object->map_word(kRelaxedLoad);
++        if (!map_word.IsForwardingAddress()) {
++      // There may be objects in the EPT that do not exist anymore. If these
++      // objects are dead at scavenging time, their marking deque entries will
++      // not point to forwarding addresses. Hence, we can discard them.
++#if DEBUG
++          // Check that the handle did reside inside the original dead object.
++          const int object_size = object->Size();
++          // Map slots can never contain external pointers.
++          DCHECK_LT(object.address(), old_handle_location);
++          DCHECK_LT(old_handle_location, object.address() + object_size);
++#endif  // DEBUG
++          return kNullAddress;
++        }
++
++        Tagged<HeapObject> moved_object = map_word.ToForwardingAddress(object);
++#if DEBUG
++        const int object_size = moved_object->Size();
++        // Map slots can never contain external pointers.
++        DCHECK_LT(object.address(), old_handle_location);
++        DCHECK_LT(old_handle_location, object.address() + object_size);
++#endif  // DEBUG
++
++        const ptrdiff_t handle_offset = old_handle_location - base;
++        return moved_object.address() + handle_offset;
++      });
++#endif  // V8_COMPRESS_POINTERS
++}
++
+ void IncrementalMarking::UpdateMarkedBytesAfterScavenge(
+     size_t dead_bytes_in_new_space) {
+   if (!IsMajorMarking()) return;
+diff --git a/src/heap/incremental-marking.h b/src/heap/incremental-marking.h
+index d61a43d782f8e565d6823ff87ccd50aa384201ba..b32596db5f9dffb047ac1ce089e4adef6453925c 100644
+--- a/src/heap/incremental-marking.h
++++ b/src/heap/incremental-marking.h
+@@ -99,6 +99,7 @@ class V8_EXPORT_PRIVATE IncrementalMarking final {
+   bool Stop();
+ 
+   void UpdateMarkingWorklistAfterScavenge();
++  void UpdateExternalPointerTableAfterScavenge();
+   void UpdateMarkedBytesAfterScavenge(size_t dead_bytes_in_new_space);
+ 
+   // Performs incremental marking step and finalizes marking if complete.
+diff --git a/src/heap/scavenger.cc b/src/heap/scavenger.cc
+index e335c8c067aa884e94d30230cafddff82ece280f..892b5880c98a30bb94d16c97292f2b86774974e0 100644
+--- a/src/heap/scavenger.cc
++++ b/src/heap/scavenger.cc
+@@ -496,6 +496,7 @@ void ScavengerCollector::CollectGarbage() {
+         &Heap::UpdateYoungReferenceInExternalStringTableEntry);
+ 
+     heap_->incremental_marking()->UpdateMarkingWorklistAfterScavenge();
++    heap_->incremental_marking()->UpdateExternalPointerTableAfterScavenge();
+ 
+     if (V8_UNLIKELY(v8_flags.track_retaining_path)) {
+       heap_->UpdateRetainersAfterScavenge();
+diff --git a/src/sandbox/compactible-external-entity-table.h b/src/sandbox/compactible-external-entity-table.h
+index b90abf0277381f430646cf2f1759ecab9ef32905..5fc3de392e7eb1a98598ab69b1074b7f69aac8b9 100644
+--- a/src/sandbox/compactible-external-entity-table.h
++++ b/src/sandbox/compactible-external-entity-table.h
+@@ -42,7 +42,7 @@ enum class ExternalEntityTableCompactionOutcome {
+  *    compacted. This decision is mostly based on the absolute and relative
+  *    size of the freelist.
+  *  - If compaction is needed, this algorithm determines by how many segments
+- *    it would like to shrink the space (N). It will then attempts to move all
++ *    it would like to shrink the space (N). It will then attempt to move all
+  *    live entries out of these segments so that they can be deallocated
+  *    afterwards during sweeping.
+  *  - The algorithm then simply selects the last N segments for evacuation, and
+diff --git a/src/sandbox/external-pointer-table.cc b/src/sandbox/external-pointer-table.cc
+index 21298edd3b6c03fb8ffa51359642c1f1da64466a..c5e90dc31addc1a25e20020ad202d04db332d9ea 100644
+--- a/src/sandbox/external-pointer-table.cc
++++ b/src/sandbox/external-pointer-table.cc
+@@ -42,7 +42,7 @@ class SegmentsIterator {
+   using const_iterator = typename std::set<Segment>::const_reverse_iterator;
+ 
+  public:
+-  SegmentsIterator() {}
++  SegmentsIterator() = default;
+ 
+   void AddSegments(const std::set<Segment>& segments, Data data) {
+     streams_.emplace_back(segments.rbegin(), segments.rend(), data);
+@@ -126,7 +126,7 @@ uint32_t ExternalPointerTable::EvacuateAndSweepAndCompact(Space* space,
+     segments_iter.AddSegments(from_space_segments, from_space_compaction);
+ 
+     FreelistHead empty_freelist;
+-    from_space->freelist_head_.store(empty_freelist, std::memory_order_release);
++    from_space->freelist_head_.store(empty_freelist, std::memory_order_relaxed);
+ 
+     for (Address field : from_space->invalidated_fields_)
+       space->invalidated_fields_.push_back(field);
+@@ -176,6 +176,13 @@ uint32_t ExternalPointerTable::EvacuateAndSweepAndCompact(Space* space,
+         Address handle_location =
+             payload.ExtractEvacuationEntryHandleLocation();
+ 
++        // The evacuation entry may be invalidated by the Scavenger that has
++        // freed the object.
++        if (handle_location == kNullAddress) {
++          AddToFreelist(i);
++          continue;
++        }
++
+         // The external pointer field may have been invalidated in the meantime
+         // (for example if the host object has been in-place converted to a
+         // different type of object). In that case, the field no longer
+@@ -295,6 +302,40 @@ void ExternalPointerTable::ResolveEvacuationEntryDuringSweeping(
+   }
+ }
+ 
++void ExternalPointerTable::UpdateAllEvacuationEntries(
++    Space* space, std::function<Address(Address)> function) {
++  DCHECK(space->BelongsTo(this));
++  DCHECK(!space->is_internal_read_only_space());
++
++  if (!space->IsCompacting()) return;
++
++  // Lock the space. Technically this is not necessary since no other thread can
++  // allocate entries at this point, but some of the methods we call on the
++  // space assert that the lock is held.
++  base::MutexGuard guard(&space->mutex_);
++  // Same for the invalidated fields mutex.
++  base::MutexGuard invalidated_fields_guard(&space->invalidated_fields_mutex_);
++
++  const uint32_t start_of_evacuation_area =
++      space->start_of_evacuation_area_.load(std::memory_order_relaxed);
++
++  // Iterate until the start of evacuation area.
++  for (auto& segment : space->segments_) {
++    if (segment.first_entry() == start_of_evacuation_area) return;
++    for (uint32_t i = segment.first_entry(); i < segment.last_entry() + 1;
++         ++i) {
++      ExternalPointerTableEntry& entry = at(i);
++      ExternalPointerTableEntry::Payload payload = entry.GetRawPayload();
++      if (!payload.ContainsEvacuationEntry()) {
++        continue;
++      }
++      Address new_location =
++          function(payload.ExtractEvacuationEntryHandleLocation());
++      entry.MakeEvacuationEntry(new_location);
++    }
++  }
++}
++
+ }  // namespace internal
+ }  // namespace v8
+ 
+diff --git a/src/sandbox/external-pointer-table.h b/src/sandbox/external-pointer-table.h
+index 0527057b6afeccf8f70a7d88510502b40919a974..4ed4195c7d5d7699978a6d6aee67cf2322d2101f 100644
+--- a/src/sandbox/external-pointer-table.h
++++ b/src/sandbox/external-pointer-table.h
+@@ -401,6 +401,10 @@ class V8_EXPORT_PRIVATE ExternalPointerTable
+   uint32_t SweepAndCompact(Space* space, Counters* counters);
+   uint32_t Sweep(Space* space, Counters* counters);
+ 
++  // Updates all evacuation entries with new handle locations. The function
++  // takes the old hanlde location and returns the new one.
++  void UpdateAllEvacuationEntries(Space*, std::function<Address(Address)>);
++
+   inline bool Contains(Space* space, ExternalPointerHandle handle) const;
+ 
+   // A resource outside of the V8 heap whose lifetime is tied to something

@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Tue, 17 Sep 2024 18:15:03 -0400
+Subject: Fix ASAN UAF in DxilConditionalMem2Reg (#6910)
+
+ScalarizePreciseVectorAlloca would iterate over all instructions, then
+for each instruction use, would iterate and potentially erase the
+instruction. If the erased instruction was the immediate next
+instruction after the alloca, this would invalidate the outer
+instruction iterator. Fixed by collecting the allocas in a vector first.
+
+Bug: 365254285
+Change-Id: I551455295c600e49354beae665275bc80ce186e4
+Reviewed-on: https://chromium-review.googlesource.com/c/external/github.com/microsoft/DirectXShaderCompiler/+/5870863
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+Reviewed-by: James Price <jrprice@google.com>
+
+diff --git a/lib/Transforms/Scalar/DxilConditionalMem2Reg.cpp b/lib/Transforms/Scalar/DxilConditionalMem2Reg.cpp
+index 8d44d651511ce3cdb24d4689a1fdd0215dee35a2..c3fc16c40b5cd83194b1edc820e22388f79c66c2 100644
+--- a/lib/Transforms/Scalar/DxilConditionalMem2Reg.cpp
++++ b/lib/Transforms/Scalar/DxilConditionalMem2Reg.cpp
+@@ -270,7 +270,7 @@ public:
+   static bool ScalarizePreciseVectorAlloca(Function &F) {
+     BasicBlock *Entry = &*F.begin();
+ 
+-    bool Changed = false;
++    SmallVector<AllocaInst *, 4> PreciseAllocaInsts;
+     for (auto it = Entry->begin(); it != Entry->end();) {
+       Instruction *I = &*(it++);
+       AllocaInst *AI = dyn_cast<AllocaInst>(I);
+@@ -278,7 +278,11 @@ public:
+         continue;
+       if (!HLModule::HasPreciseAttributeWithMetadata(AI))
+         continue;
++      PreciseAllocaInsts.push_back(AI);
++    }
+ 
++    bool Changed = false;
++    for (auto AI : PreciseAllocaInsts) {
+       IRBuilder<> B(AI);
+       VectorType *VTy = cast<VectorType>(AI->getAllocatedType());
+       Type *ScalarTy = VTy->getVectorElementType();
+diff --git a/tools/clang/test/DXC/Passes/DxilConditionalMem2Reg/precise-vector-alloca-followed-by-use.hlsl b/tools/clang/test/DXC/Passes/DxilConditionalMem2Reg/precise-vector-alloca-followed-by-use.hlsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..413daca955a0c9eef1ec96310583eb9ac491108e
+--- /dev/null
++++ b/tools/clang/test/DXC/Passes/DxilConditionalMem2Reg/precise-vector-alloca-followed-by-use.hlsl
+@@ -0,0 +1,52 @@
++// RUN: %dxc -T vs_6_0 %s | FileCheck %s
++
++// The following HLSL resulted in an ASAN use-after-free in DxilConditionalMem2Reg
++// in ScalarizePreciseVectorAlloca. ScalarizePreciseVectorAlloca would iterate over
++// all instructions, then for each instruction use, would iterate and potentially
++// erase the instruction. If the erased instruction was the immediate next
++// instruction after the alloca, this would invalidate the outer instruction iterator.
++
++// Unfortunately, we cannot create an IR test for this because dxil-cond-mem2reg
++// executes between scalarrepl-param-hlsl and hlsl-dxil-precise, and the former
++// temporarily marks empty functions as 'precise' while the latter pass uses this
++// information, and then deletes these functions. But splitting the passes in between
++// these two fails validation because empty functions cannot have attributes on them.
++// So we use a full HLSL test for this.
++
++// The IR before dxil-cond-mem2reg for this HLSL contains a precise vector alloca
++// followed immediately by a use of the alloca (a store in this case):
++//
++//  %sp.0 = alloca <4 x float>, !dx.precise !3
++//  store <4 x float> zeroinitializer, <4 x float>* %sp.0, !dbg !4
++//
++// After dxil-cond-mem2reg, it should look like:
++//
++//  %1 = alloca float, !dx.precise !3
++//  %2 = alloca float, !dx.precise !3
++//  %3 = alloca float, !dx.precise !3
++//  %4 = alloca float, !dx.precise !3
++//  store float 0.000000e+00, float* %1, !dbg !4
++//  store float 0.000000e+00, float* %2, !dbg !4
++//  store float 0.000000e+00, float* %3, !dbg !4
++//  store float 0.000000e+00, float* %4, !dbg !4
++
++// CHECK:      call void @dx.op.storeOutput.f32(i32 5, i32 0, i32 0, i8 0, float 1.000000e+00)
++// CHECK-NEXT: call void @dx.op.storeOutput.f32(i32 5, i32 0, i32 0, i8 1, float 1.000000e+00)
++// CHECK-NEXT: call void @dx.op.storeOutput.f32(i32 5, i32 0, i32 0, i8 2, float 1.000000e+00)
++// CHECK-NEXT: call void @dx.op.storeOutput.f32(i32 5, i32 0, i32 0, i8 3, float 1.000000e+00)
++
++struct S {
++  float4 b;
++};
++
++struct SP {
++  precise float4 b : SV_Position;
++};
++
++static S s = {(1.0f).xxxx};
++
++SP main() {
++  SP sp = (SP)0;
++  sp.b = s.b;
++  return sp;
++}

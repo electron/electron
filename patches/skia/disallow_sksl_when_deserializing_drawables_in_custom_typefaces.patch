@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brian Osman <brianosman@google.com>
+Date: Tue, 6 Aug 2024 14:19:00 -0400
+Subject: Disallow SkSL when deserializing drawables in custom typefaces
+
+Bug: 355465305
+Change-Id: Ifb87db5e8d0d0c29449e6a3e82254189e3f2d33b
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/886696
+Reviewed-by: Ben Wagner <bungeman@google.com>
+Commit-Queue: Brian Osman <brianosman@google.com>
+(cherry picked from commit 05097fb7293043906fd8aa118c6adc3012c5b074)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/888577
+
+diff --git a/src/utils/SkCustomTypeface.cpp b/src/utils/SkCustomTypeface.cpp
+index f7c57ecc98587728be75a24c279abc7cc276aae4..61d17f3e5321a70adcd1ae2d82343170ff7e80ef 100644
+--- a/src/utils/SkCustomTypeface.cpp
++++ b/src/utils/SkCustomTypeface.cpp
+@@ -23,6 +23,7 @@
+ #include "include/core/SkRect.h"
+ #include "include/core/SkRefCnt.h"
+ #include "include/core/SkScalar.h"
++#include "include/core/SkSerialProcs.h"
+ #include "include/core/SkStream.h"
+ #include "include/core/SkString.h"
+ #include "include/core/SkTypeface.h"
+@@ -482,7 +483,9 @@ sk_sp<SkTypeface> SkCustomTypefaceBuilder::Deserialize(SkStream* stream) {
+ 
+         switch (gtype) {
+         case GlyphType::kDrawable: {
+-            auto drawable = SkDrawable::Deserialize(data->data(), data->size());
++            SkDeserialProcs procs;
++            procs.fAllowSkSL = false;
++            auto drawable = SkDrawable::Deserialize(data->data(), data->size(), &procs);
+             if (!drawable) {
+                 return nullptr;
+             }

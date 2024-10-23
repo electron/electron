@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nico Hartmann <nicohartmann@chromium.org>
+Date: Tue, 20 Aug 2024 16:26:39 +0200
+Subject: Merged: [turbofan] Handle Type::None() in SameValue
+
+Bug: chromium:351865302
+(cherry picked from commit f784b0b05be96cda5b769a3df92fc3c012657166)
+
+Change-Id: Idf6bf9276d5510376594f31ee563e4a0bee617f5
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5806588
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Commit-Queue: Nico Hartmann <nicohartmann@chromium.org>
+Auto-Submit: Nico Hartmann <nicohartmann@chromium.org>
+Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/branch-heads/12.8@{#42}
+Cr-Branched-From: 70cbb397b153166027e34c75adf8e7993858222e-refs/heads/12.8.374@{#1}
+Cr-Branched-From: 451b63ed4251c2b21c56144d8428f8be3331539b-refs/heads/main@{#95151}
+
+diff --git a/src/compiler/operation-typer.cc b/src/compiler/operation-typer.cc
+index 11d83ba7a052f8fb7342783eb4a0e207a9842ddd..832e26ce25522af10afd85bc779f08fa75432c75 100644
+--- a/src/compiler/operation-typer.cc
++++ b/src/compiler/operation-typer.cc
+@@ -1259,6 +1259,7 @@ Type JSType(Type type) {
+ }  // namespace
+ 
+ Type OperationTyper::SameValue(Type lhs, Type rhs) {
++  if (lhs.IsNone() || rhs.IsNone()) return Type::None();
+   if (!JSType(lhs).Maybe(JSType(rhs))) return singleton_false();
+   if (lhs.Is(Type::NaN())) {
+     if (rhs.Is(Type::NaN())) return singleton_true();
