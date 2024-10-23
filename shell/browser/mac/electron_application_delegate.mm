@@ -15,6 +15,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/mac/dict_util.h"
 #import "shell/browser/mac/electron_application.h"
+#include "shell/common/mac_util.h"
 
 #import <UserNotifications/UserNotifications.h>
 
@@ -177,17 +178,15 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 - (void)application:(NSApplication*)application
     didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken {
   // https://stackoverflow.com/a/16411517
-  const char* token_data = static_cast<const char*>(deviceToken.bytes);
   NSMutableString* token_string = [NSMutableString string];
-  for (NSUInteger i = 0; i < deviceToken.length; i++) {
-    [token_string appendFormat:@"%02.2hhX", token_data[i]];
-  }
+  for (const auto ch : electron::util::as_byte_span(deviceToken))
+    [token_string appendFormat:@"%02.2hhX", ch);
   // Resolve outstanding APNS promises created during registration attempts
   electron::api::PushNotifications* push_notifications =
       electron::api::PushNotifications::Get();
   if (push_notifications) {
-    push_notifications->ResolveAPNSPromiseSetWithToken(
-        base::SysNSStringToUTF8(token_string));
+      push_notifications->ResolveAPNSPromiseSetWithToken(
+          base::SysNSStringToUTF8(token_string));
   }
 }
 
