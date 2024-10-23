@@ -134,6 +134,7 @@ feat_enable_customizing_symbol_color_in_framecaptionbutton.patch
 cherry-pick-99cafbf4b4b9.patch
 cherry-pick-44b7fbf35b10.patch
 fix_potential_draggable_region_crash_when_no_mainframeimpl.patch
+cherry-pick-c333ed995449.patch
 m126-lts_fix_a_range_check_for_when_it_overflows.patch
 m126-lts_check_string_range_in_shapesegment.patch
 m126-lts_reland_fix_stringview_to_crash_when_offset_length.patch
