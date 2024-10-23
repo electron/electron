@@ -14,15 +14,12 @@
 #include "electron/fuses.h"
 #include "shell/app/electron_main_delegate.h"
 #include "shell/app/node_main.h"
-#include "shell/common/electron_command_line.h"
 #include "shell/common/mac/main_application_bundle.h"
 
-int ElectronMain(int argc, char* argv[]) {
+int ElectronMain() {
+  DCHECK(base::CommandLine::InitializedForCurrentProcess());
+
   electron::ElectronMainDelegate delegate;
-  content::ContentMainParams params(&delegate);
-  params.argc = argc;
-  params.argv = const_cast<const char**>(argv);
-  electron::ElectronCommandLine::Init(argc, argv);
 
   // Ensure that Bundle Id is set before ContentMain.
   // Refs https://chromium-review.googlesource.com/c/chromium/src/+/5581006
@@ -30,7 +27,7 @@ int ElectronMain(int argc, char* argv[]) {
   delegate.OverrideFrameworkBundlePath();
   delegate.SetUpBundleOverrides();
 
-  return content::ContentMain(std::move(params));
+  return content::ContentMain(content::ContentMainParams{&delegate});
 }
 
 int ElectronInitializeICUandStartNode(int argc, char* argv[]) {

@@ -5,10 +5,12 @@
 #include <cstdlib>
 #include <memory>
 
+#include "base/command_line.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
 #include "shell/app/electron_library_main.h"
 #include "shell/app/uv_stdio_fix.h"
+#include "shell/common/electron_command_line.h"
 #include "uv.h"
 
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
@@ -84,5 +86,7 @@ int main(int argc, char* argv[]) {
   }
 #endif  // defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD
 
-  return ElectronMain(argc, argv);
+  base::CommandLine::Init(argc, argv);
+  electron::ElectronCommandLine::Init(argc, argv);
+  return ElectronMain();
 }

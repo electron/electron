@@ -37,11 +37,9 @@ int main(int argc, char* argv[]) {
     return electron::NodeMain(argc, argv);
   }
 
-  electron::ElectronMainDelegate delegate;
-  content::ContentMainParams params(&delegate);
   electron::ElectronCommandLine::Init(argc, argv);
-  params.argc = argc;
-  params.argv = const_cast<const char**>(argv);
-  base::CommandLine::Init(params.argc, params.argv);
-  return content::ContentMain(std::move(params));
+  base::CommandLine::Init(argc, argv);
+
+  electron::ElectronMainDelegate delegate;
+  return content::ContentMain(content::ContentMainParams{&delegate});
 }
