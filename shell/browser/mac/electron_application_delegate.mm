@@ -10,6 +10,7 @@
 #include "base/allocator/partition_allocator/src/partition_alloc/shim/allocator_shim.h"
 #include "base/functional/callback.h"
 #include "base/mac/mac_util.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/browser/api/electron_api_push_notifications.h"
 #include "shell/browser/browser.h"
@@ -177,16 +178,10 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 
 - (void)application:(NSApplication*)application
     didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken {
-  // https://stackoverflow.com/a/16411517
-  NSMutableString* token_string = [NSMutableString string];
-  for (const auto ch : electron::util::as_byte_span(deviceToken))
-    [token_string appendFormat:@"%02.2hhX", ch);
   // Resolve outstanding APNS promises created during registration attempts
-  electron::api::PushNotifications* push_notifications =
-      electron::api::PushNotifications::Get();
-  if (push_notifications) {
-      push_notifications->ResolveAPNSPromiseSetWithToken(
-          base::SysNSStringToUTF8(token_string));
+  if (auto* push_notifications = electron::api::PushNotifications::Get()) {
+    push_notifications->ResolveAPNSPromiseSetWithToken(
+        base::HexEncode(electron::util::as_byte_span(deviceToken)));
   }
 }
 
