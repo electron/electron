@@ -17,7 +17,7 @@ import * as nodeUrl from 'node:url';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
-import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
@@ -6015,8 +6015,10 @@ describe('BrowserWindow module', () => {
           w.webContents.on('enter-html-full-screen', async () => {
             enterCount++;
             if (w.isFullScreen()) reject(new Error('w.isFullScreen should be false'));
-            const isFS = await w.webContents.executeJavaScript('!!document.fullscreenElement');
-            if (!isFS) reject(new Error('Document should have fullscreen element'));
+            await waitUntil(async () => {
+              const isFS = await w.webContents.executeJavaScript('!!document.fullscreenElement');
+              return isFS === true;
+            });
             checkDone();
           });
 
