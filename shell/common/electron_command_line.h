@@ -20,6 +20,8 @@ class ElectronCommandLine {
 
   static const base::CommandLine::StringVector& argv() { return argv_; }
 
+  static std::vector<std::string> AsUtf8();
+
   static void Init(int argc, base::CommandLine::CharType** argv);
 
 #if BUILDFLAG(IS_LINUX)
