@@ -86,18 +86,26 @@ InspectableWebContentsView::InspectableWebContentsView(
         inspectable_web_contents_->GetWebContents());
     contents_web_view_ = contents_web_view;
   } else {
-    contents_web_view_ = new views::Label(u"No content under offscreen mode");
+    no_contents_view_ = new views::Label(u"No content under offscreen mode");
   }
 
   devtools_web_view_->SetVisible(false);
   AddChildView(devtools_web_view_.get());
-  AddChildView(contents_web_view_.get());
+  AddChildView(GetContentsView());
 }
 
 InspectableWebContentsView::~InspectableWebContentsView() {
   if (devtools_window_)
     inspectable_web_contents()->SaveDevToolsBounds(
         devtools_window_->GetWindowBoundsInScreen());
+}
+
+void InspectableWebContentsView::SetCornerRadii(
+    const gfx::RoundedCornersF& corner_radii) {
+  // WebView won't exist for offscreen rendering.
+  if (contents_web_view_) {
+    contents_web_view_->holder()->SetCornerRadii(corner_radii);
+  }
 }
 
 void InspectableWebContentsView::ShowDevTools(bool activate) {
@@ -170,8 +178,9 @@ void InspectableWebContentsView::SetIsDocked(bool docked, bool activate) {
     devtools_window_delegate_ = new DevToolsWindowDelegate(
         this, devtools_window_web_view_, devtools_window_.get());
 
-    views::Widget::InitParams params;
-    params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
+    views::Widget::InitParams params(
+        views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET,
+        views::Widget::InitParams::TYPE_WINDOW);
     params.delegate = devtools_window_delegate_;
     params.bounds = inspectable_web_contents()->dev_tools_bounds();
 
@@ -209,7 +218,7 @@ const std::u16string InspectableWebContentsView::GetTitle() {
 
 void InspectableWebContentsView::Layout(PassKey) {
   if (!devtools_web_view_->GetVisible()) {
-    contents_web_view_->SetBoundsRect(GetContentsBounds());
+    GetContentsView()->SetBoundsRect(GetContentsBounds());
     // Propagate layout call to all children, for example browser views.
     LayoutSuperclass<View>(this);
     return;
@@ -227,13 +236,19 @@ void InspectableWebContentsView::Layout(PassKey) {
   new_contents_bounds.set_x(GetMirroredXForRect(new_contents_bounds));
 
   devtools_web_view_->SetBoundsRect(new_devtools_bounds);
-  contents_web_view_->SetBoundsRect(new_contents_bounds);
+  GetContentsView()->SetBoundsRect(new_contents_bounds);
 
   // Propagate layout call to all children, for example browser views.
   LayoutSuperclass<View>(this);
 
   if (GetDelegate())
     GetDelegate()->DevToolsResized();
+}
+
+views::View* InspectableWebContentsView::GetContentsView() const {
+  DCHECK(contents_web_view_ || no_contents_view_);
+
+  return contents_web_view_ ? contents_web_view_ : no_contents_view_;
 }
 
 }  // namespace electron

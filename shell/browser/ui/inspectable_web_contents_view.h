@@ -9,14 +9,9 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
-<<<<<<< HEAD
-#include "build/build_config.h"
-
-#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
-#include "ui/views/view.h"
-#else
+#include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "ui/gfx/native_widget_types.h"
-#endif
+#include "ui/views/view.h"
 
 class DevToolsContentsResizingStrategy;
 
@@ -24,25 +19,11 @@ namespace gfx {
 class RoundedCornersF;
 }  // namespace gfx
 
-#if defined(TOOLKIT_VIEWS)
-namespace views {
-class View;
-class WebView;
-}  // namespace views
-#endif
-=======
-#include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
-#include "electron/shell/common/api/api.mojom.h"
-#include "ui/gfx/native_widget_types.h"
-#include "ui/views/view.h"
-
-class DevToolsContentsResizingStrategy;
 namespace views {
 class WebView;
 class Widget;
 class WidgetDelegate;
 }  // namespace views
->>>>>>> e67ab9a93d (refactor: remove InspectableWebContentsViewMac in favor of the Views version (#41326))
 
 namespace electron {
 
@@ -65,6 +46,8 @@ class InspectableWebContentsView : public views::View {
   }
   InspectableWebContentsViewDelegate* GetDelegate() const { return delegate_; }
 
+  void SetCornerRadii(const gfx::RoundedCornersF& corner_radii);
+
   void ShowDevTools(bool activate);
   void CloseDevTools();
   bool IsDevToolsViewShowing();
@@ -81,23 +64,9 @@ class InspectableWebContentsView : public views::View {
   bool OnMousePressed(const ui::MouseEvent& event) override;
 #endif
 
-<<<<<<< HEAD
-  virtual void ShowDevTools(bool activate) = 0;
-  virtual void SetCornerRadii(const gfx::RoundedCornersF& corner_radii) = 0;
-  // Hide the DevTools view.
-  virtual void CloseDevTools() = 0;
-  virtual bool IsDevToolsViewShowing() = 0;
-  virtual bool IsDevToolsViewFocused() = 0;
-  virtual void SetIsDocked(bool docked, bool activate) = 0;
-  virtual void SetContentsResizingStrategy(
-      const DevToolsContentsResizingStrategy& strategy) = 0;
-  virtual void SetTitle(const std::u16string& title) = 0;
-  virtual const std::u16string GetTitle() = 0;
-
- protected:
-=======
  private:
->>>>>>> e67ab9a93d (refactor: remove InspectableWebContentsViewMac in favor of the Views version (#41326))
+  views::View* GetContentsView() const;
+
   // Owns us.
   raw_ptr<InspectableWebContents> inspectable_web_contents_;
 
@@ -106,7 +75,8 @@ class InspectableWebContentsView : public views::View {
 
   std::unique_ptr<views::Widget> devtools_window_;
   raw_ptr<views::WebView> devtools_window_web_view_ = nullptr;
-  raw_ptr<views::View> contents_web_view_ = nullptr;
+  raw_ptr<views::WebView> contents_web_view_ = nullptr;
+  raw_ptr<views::View> no_contents_view_ = nullptr;
   raw_ptr<views::WebView> devtools_web_view_ = nullptr;
 
   DevToolsContentsResizingStrategy strategy_;

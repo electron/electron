@@ -7,6 +7,7 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "ui/base/cocoa/base_view.h"
 
 namespace electron {
