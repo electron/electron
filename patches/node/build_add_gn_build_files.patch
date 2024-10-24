@@ -1174,8 +1174,20 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
  }
  }  // namespace js2c
  }  // namespace node
+diff --git a/tools/search_files.py b/tools/search_files.py
+index 65d0e1be42f0a85418491ebb548278cf431aa6a0..d4a31342f1c6107b029394c6e1d00a1d1e877e03 100755
+--- a/tools/search_files.py
++++ b/tools/search_files.py
+@@ -14,6 +14,7 @@ if __name__ == '__main__':
+   try:
+     files = SearchFiles(*sys.argv[2:])
+     files = [ os.path.relpath(x, sys.argv[1]) for x in files ]
++    files = [os.path.normpath(x).replace(os.sep, '/') for x in files]
+     print('\n'.join(files))
+   except Exception as e:
+     print(str(e))
 diff --git a/unofficial.gni b/unofficial.gni
-index c3b311e4a7f5444b07d4d7028d4621806959804e..0c2b5d0c11fabd488203aba942f3f68bf2253d3a 100644
+index c3b311e4a7f5444b07d4d7028d4621806959804e..3fcb6b5adc497e4ea013008ac9793b85bc655b99 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -139,6 +139,7 @@ template("node_gn_build") {
@@ -1216,10 +1228,26 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..0c2b5d0c11fabd488203aba942f3f68b
        sources += gypi_values.node_crypto_sources
      }
      if (node_enable_inspector) {
-@@ -289,23 +293,68 @@ template("node_gn_build") {
-     include_dirs = [ "src" ]
+@@ -276,6 +280,7 @@ template("node_gn_build") {
    }
  
+   executable("node_js2c") {
++    defines = []
+     deps = [
+       "deps/simdutf",
+       "deps/uv",
+@@ -286,26 +291,75 @@ template("node_gn_build") {
+       "src/embedded_data.cc",
+       "src/embedded_data.h",
+     ]
+-    include_dirs = [ "src" ]
++    include_dirs = [ "src", "tools" ]
++
++    if (!is_win) {
++      defines += [ "NODE_JS2C_USE_STRING_LITERALS" ]
++    }
++  }
++
 +  node_deps_files = gypi_values.deps_files + node_builtin_shareable_builtins
 +  node_library_files = exec_script("./tools/search_files.py",
 +                                    [ rebase_path(".", root_build_dir),
@@ -1267,8 +1295,8 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..0c2b5d0c11fabd488203aba942f3f68b
 +    }
 +
 +    args = [rebase_path("$target_gen_dir/js2c_inputs")] + fs_files
-+  }
-+
+   }
+ 
    action("run_node_js2c") {
 -    script = "$node_v8_path/tools/run.py"
 +    script = "//electron/build/run-in-dir.py"
@@ -1294,7 +1322,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..0c2b5d0c11fabd488203aba942f3f68b
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -319,11 +368,11 @@ template("node_gn_build") {
+@@ -319,11 +373,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  
