@@ -42,6 +42,8 @@ See https://developer.apple.com/library/archive/documentation/Performance/Concep
 
 ### Event: 'speed-limit-change' _macOS_ _Windows_
 
+Returns:
+
 * `limit` number - The operating system's advertised speed limit for CPUs, in percent.
 
 Notification of a change in the operating system's advertised speed limit for
