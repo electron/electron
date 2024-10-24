@@ -23,7 +23,7 @@ index e392efaf2e1ac3cfbef2d787ba40f0491b67f3cc..d45c7570484a7c1bfca25c860a1ddd2d
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 34315274bdabcaa5e27014bf19391cb8ab6adda2..1b681b39e368e6972e61a04f9f57a82524ef8376 100644
+index 772fb36d091606c6fe7322279f1044824c9be590..c0c264d49e87b4b8fd6d8baade128736085d578c 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -755,6 +755,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -39,7 +39,7 @@ index 34315274bdabcaa5e27014bf19391cb8ab6adda2..1b681b39e368e6972e61a04f9f57a825
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 961e55732d9c3aa5437e9cc6eca7a2c8d06bd335..f0fc8d303dc9de2419d5f5d769657faf98caa22a 100644
+index 5fb8a3dc69dc5fc5bfa08e01d8f03707a23c9274..41774b60b8cb7e0a22cedc597dc07ad15c96988c 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
 @@ -135,6 +135,7 @@ class CONTENT_EXPORT RenderViewHostImpl
@@ -116,10 +116,10 @@ index 746af7113a66d26de389237ebd90ec9e6a569cc3..f2f14184eafc919a303da6679a516bdd
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index b5281ba47164159d10ca16b7641cfdc8a4bfbbef..734c055e1828d790f2abb80243bc10fa1f4d6e5e 100644
+index fb7d3474e5191637f63e50a8efb3af8749b5de3d..fcf0fde51cf30a3797a7627a9170f8534700d59b 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2447,6 +2447,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2451,6 +2451,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index b5281ba47164159d10ca16b7641cfdc8a4bfbbef..734c055e1828d790f2abb80243bc10fa
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -3969,10 +3973,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3973,10 +3977,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
