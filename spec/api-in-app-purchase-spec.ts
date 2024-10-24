@@ -1,8 +1,5 @@
 import { inAppPurchase } from 'electron/main';
-
 import { expect } from 'chai';
-
-import { ifdescribe } from './lib/spec-helpers';
 
 describe('inAppPurchase module', function () {
   if (process.platform !== 'darwin') return;
@@ -38,7 +35,7 @@ describe('inAppPurchase module', function () {
 
   // This fails on x64 in CI - likely owing to some weirdness with the machines.
   // We should look into fixing it there but at least run it on arm6 machines.
-  ifdescribe(process.arch !== 'x64')('handles product purchases', () => {
+  describe('handles product purchases', () => {
     it('purchaseProduct() fails when buying invalid product', async () => {
       const success = await inAppPurchase.purchaseProduct('non-exist');
       expect(success).to.be.false('failed to purchase non-existent product');

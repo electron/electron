@@ -39,6 +39,7 @@
     "folder-hash": "^2.1.1",
     "got": "^11.8.5",
     "husky": "^8.0.1",
+    "jest": "^29.6.2",
     "lint": "^1.1.2",
     "lint-staged": "^10.2.11",
     "markdownlint-cli2": "^0.13.0",
@@ -95,6 +96,8 @@
     "repl": "node ./script/start.js --interactive",
     "start": "node ./script/start.js",
     "test": "node ./script/spec-runner.js",
+    "test:jest": "jest",
+    "test:jest:watch": "jest --watch",
     "tsc": "tsc",
     "webpack": "webpack"
   },
