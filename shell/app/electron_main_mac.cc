@@ -5,13 +5,10 @@
 #include <cstdlib>
 #include <memory>
 
-#include "base/command_line.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
 #include "shell/app/electron_library_main.h"
 #include "shell/app/uv_stdio_fix.h"
-#include "shell/common/electron_command_line.h"
-#include "uv.h"
 
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
 #include <mach-o/dyld.h>
@@ -54,13 +51,9 @@ bool IsEnvSet(const char* name) {
 int main(int argc, char* argv[]) {
   FixStdioStreams();
 
-  argv = uv_setup_args(argc, argv);
-  base::CommandLine::Init(argc, argv);
-  electron::ElectronCommandLine::Init(argc, argv);
-
   if (electron::fuses::IsRunAsNodeEnabled() &&
       IsEnvSet("ELECTRON_RUN_AS_NODE")) {
-    return ElectronInitializeICUandStartNode();
+    return ElectronInitializeICUandStartNode(argc, argv);
   }
 
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
@@ -88,5 +81,5 @@ int main(int argc, char* argv[]) {
   }
 #endif  // defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD
 
-  return ElectronMain();
+  return ElectronMain(argc, argv);
 }

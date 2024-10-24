@@ -9,15 +9,20 @@
 #include "base/apple/bundle_locations.h"
 #include "base/apple/scoped_nsautorelease_pool.h"
 #include "base/at_exit.h"
+#include "base/command_line.h"
 #include "base/i18n/icu_util.h"
 #include "content/public/app/content_main.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_main_delegate.h"
 #include "shell/app/node_main.h"
+#include "shell/common/electron_command_line.h"
 #include "shell/common/mac/main_application_bundle.h"
+#include "uv.h"
 
-int ElectronMain() {
-  DCHECK(base::CommandLine::InitializedForCurrentProcess());
+int ElectronMain(int argc, char* argv[]) {
+  argv = uv_setup_args(argc, argv);
+  base::CommandLine::Init(argc, argv);
+  electron::ElectronCommandLine::Init(argc, argv);
 
   electron::ElectronMainDelegate delegate;
 
@@ -30,11 +35,15 @@ int ElectronMain() {
   return content::ContentMain(content::ContentMainParams{&delegate});
 }
 
-int ElectronInitializeICUandStartNode() {
+int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
   if (!electron::fuses::IsRunAsNodeEnabled()) {
     CHECK(false) << "run_as_node fuse is disabled";
     return 1;
   }
+
+  argv = uv_setup_args(argc, argv);
+  base::CommandLine::Init(argc, argv);
+  electron::ElectronCommandLine::Init(argc, argv);
 
   base::AtExitManager atexit_manager;
   base::apple::ScopedNSAutoreleasePool pool;
