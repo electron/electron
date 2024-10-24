@@ -10,9 +10,7 @@
 #if BUILDFLAG(IS_MAC)
 extern "C" {
 __attribute__((visibility("default"))) int ElectronMain();
-__attribute__((visibility("default"))) int ElectronInitializeICUandStartNode(
-    int argc,
-    char* argv[]);
+__attribute__((visibility("default"))) int ElectronInitializeICUandStartNode();
 }
 #endif
 

@@ -30,7 +30,7 @@ int ElectronMain() {
   return content::ContentMain(content::ContentMainParams{&delegate});
 }
 
-int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
+int ElectronInitializeICUandStartNode() {
   if (!electron::fuses::IsRunAsNodeEnabled()) {
     CHECK(false) << "run_as_node fuse is disabled";
     return 1;
@@ -44,5 +44,5 @@ int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
           .Append("Frameworks")
           .Append(ELECTRON_PRODUCT_NAME " Framework.framework"));
   base::i18n::InitializeICU();
-  return electron::NodeMain(argc, argv);
+  return electron::NodeMain();
 }

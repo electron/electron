@@ -27,6 +27,7 @@
 #include "shell/app/uv_task_runner.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_bindings.h"
+#include "shell/common/electron_command_line.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
@@ -115,7 +116,7 @@ v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
 
 namespace electron {
 
-int NodeMain(int argc, char* argv[]) {
+int NodeMain() {
   DCHECK(base::CommandLine::InitializedForCurrentProcess());
 
   auto os_env = base::Environment::Create();
@@ -179,7 +180,7 @@ int NodeMain(int argc, char* argv[]) {
     NodeBindings::RegisterBuiltinBindings();
 
     // Parse Node.js cli flags and strip out disallowed options.
-    std::vector<std::string> args(argv, argv + argc);
+    const std::vector<std::string> args = ElectronCommandLine::AsUtf8();
     ExitIfContainsDisallowedFlags(args);
 
     std::unique_ptr<node::InitializationResult> result =

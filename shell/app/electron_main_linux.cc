@@ -31,14 +31,13 @@ int main(int argc, char* argv[]) {
 
   argv = uv_setup_args(argc, argv);
   base::CommandLine::Init(argc, argv);
+  electron::ElectronCommandLine::Init(argc, argv);
 
   if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
-    return electron::NodeMain(argc, argv);
+    return electron::NodeMain();
   }
-
-  electron::ElectronCommandLine::Init(argc, argv);
 
   electron::ElectronMainDelegate delegate;
   return content::ContentMain(content::ContentMainParams{&delegate});

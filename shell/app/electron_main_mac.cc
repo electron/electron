@@ -56,10 +56,11 @@ int main(int argc, char* argv[]) {
 
   argv = uv_setup_args(argc, argv);
   base::CommandLine::Init(argc, argv);
+  electron::ElectronCommandLine::Init(argc, argv);
 
   if (electron::fuses::IsRunAsNodeEnabled() &&
       IsEnvSet("ELECTRON_RUN_AS_NODE")) {
-    return ElectronInitializeICUandStartNode(argc, argv);
+    return ElectronInitializeICUandStartNode();
   }
 
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
@@ -87,6 +88,5 @@ int main(int argc, char* argv[]) {
   }
 #endif  // defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD
 
-  electron::ElectronCommandLine::Init(argc, argv);
   return ElectronMain();
 }

@@ -126,18 +126,15 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   // If we are already a fiber then continue normal execution.
 #endif  // defined(ARCH_CPU_32_BITS)
 
-  base::CommandLine::Init(0, nullptr);  // args ignored on Windows
-
-  struct Arguments {
+  {
     int argc = 0;
-    RAW_PTR_EXCLUSION wchar_t** argv =
-        ::CommandLineToArgvW(::GetCommandLineW(), &argc);
-
-    ~Arguments() { LocalFree(argv); }
-  } arguments;
-
-  if (!arguments.argv)
-    return -1;
+    wchar_t** argv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
+    if (!argv)
+      return -1;
+    base::CommandLine::Init(0, nullptr);  // args ignored on Windows
+    electron::ElectronCommandLine::Init(argc, argv);
+    LocalFree(argv);
+  }
 
 #ifdef _DEBUG
   // Don't display assert dialog boxes in CI test runs
@@ -160,15 +157,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   if (run_as_node || !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE"))
     base::RouteStdioToConsole(false);
 
-  std::vector<char*> argv(arguments.argc);
-  std::transform(arguments.argv, arguments.argv + arguments.argc, argv.begin(),
-                 [](auto& a) { return _strdup(base::WideToUTF8(a).c_str()); });
   if (run_as_node) {
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
-    auto ret = electron::NodeMain(argv.size(), argv.data());
-    std::ranges::for_each(argv, free);
-    return ret;
+    return electron::NodeMain();
   }
 
   const base::CommandLine* command_line =
@@ -235,6 +227,5 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   content::ContentMainParams params(&delegate);
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
-  electron::ElectronCommandLine::Init(arguments.argc, arguments.argv);
   return content::ContentMain(std::move(params));
 }
