@@ -28,7 +28,8 @@ std::vector<std::string> ElectronCommandLine::AsUtf8() {
   DCHECK(!argv_.empty());
 
 #if BUILDFLAG(IS_WIN)
-  return base::ToVector(argv_, base::WideToUTF8);
+  return base::ToVector(
+      argv_, [](const auto& wstr) { return base::WideToUTF8(wstr); });
 #else
   return argv_;
 #endif
