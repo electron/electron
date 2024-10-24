@@ -799,15 +799,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     v8::Local<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     std::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
-#if BUILDFLAG(IS_WIN)
-  auto& electron_args = ElectronCommandLine::argv();
-  std::vector<std::string> args(electron_args.size());
-  std::ranges::transform(electron_args, args.begin(),
-                         [](auto& a) { return base::WideToUTF8(a); });
-#else
-  auto args = ElectronCommandLine::argv();
-#endif
-  return CreateEnvironment(context, platform, args, {}, on_app_code_ready);
+  return CreateEnvironment(context, platform, ElectronCommandLine::AsUtf8(), {},
+                           on_app_code_ready);
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
