@@ -22,7 +22,7 @@ class ElectronCommandLine {
 
   static std::vector<std::string> AsUtf8();
 
-  static void Init(int argc, base::CommandLine::CharType** argv);
+  static void Init(int argc, base::CommandLine::CharType const* const* argv);
 
 #if BUILDFLAG(IS_LINUX)
   // On Linux the command line has to be read from base::CommandLine since

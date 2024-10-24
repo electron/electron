@@ -14,7 +14,8 @@ namespace electron {
 base::CommandLine::StringVector ElectronCommandLine::argv_;
 
 // static
-void ElectronCommandLine::Init(int argc, base::CommandLine::CharType** argv) {
+void ElectronCommandLine::Init(int argc,
+                               base::CommandLine::CharType const* const* argv) {
   DCHECK(argv_.empty());
 
   // Safety: as is normal in command lines, argc and argv must correspond
