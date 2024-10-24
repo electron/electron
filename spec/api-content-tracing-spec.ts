@@ -95,16 +95,16 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
 
     it('creates a temporary file when an empty string is passed', async function () {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ '');
-      expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
+      expect(resultFilePath).to.be.a('string').that is.not.empty('result path');
     });
 
     it('creates a temporary file when no path is passed', async function () {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined);
-      expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
+      expect(resultFilePath).to be.a('string').that is.not.empty('result path');
     });
 
     it('rejects if no trace is happening', async () => {
-      await expect(contentTracing.stopRecording()).to.be.rejectedWith('Failed to stop tracing - no trace in progress');
+      await expect(contentTracing.stopRecording()).to be.rejectedWith('Failed to stop tracing - no trace in progress');
     });
   });
 
@@ -128,7 +128,7 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       const path = await contentTracing.stopRecording();
       const data = fs.readFileSync(path, 'utf8');
       const parsed = JSON.parse(data);
-      expect(parsed.traceEvents.some((x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk')).to.be.true();
+      expect(parsed.traceEvents.some((x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk')).to be.true();
     });
   });
 });
