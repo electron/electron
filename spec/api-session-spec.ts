@@ -841,19 +841,13 @@ describe('session module', () => {
     };
 
     describe('session.downloadURL', () => {
-      it('can perform a download', (done) => {
-        session.defaultSession.once('will-download', function (e, item) {
-          item.savePath = downloadFilePath;
-          item.on('done', function (e, state) {
-            try {
-              assertDownload(state, item);
-              done();
-            } catch (e) {
-              done(e);
-            }
-          });
-        });
+      it('can perform a download', async () => {
+        const willDownload = once(session.defaultSession, 'will-download');
         session.defaultSession.downloadURL(`${url}:${port}`);
+        const [, item] = await willDownload;
+        item.savePath = downloadFilePath;
+        const [, state] = await once(item, 'done');
+        assertDownload(state, item);
       });
 
       it('can perform a download with a valid auth header', async () => {
