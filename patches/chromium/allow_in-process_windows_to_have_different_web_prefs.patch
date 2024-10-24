@@ -35,17 +35,17 @@ diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b
 index 27cc511b84dfe970fd9eff520b81446ce3ba497a..e021e693bb56704e208a3bb46e523a62b01b62c3 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
-@@ -10,6 +10,7 @@
+@@ -9,6 +9,7 @@
+ #include <string>
  #include <vector>
  
- #include "build/build_config.h"
 +#include "base/files/file_path.h"
+ #include "build/build_config.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
- #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
-@@ -437,6 +438,20 @@ struct BLINK_COMMON_EXPORT WebPreferences {
-   // blocking user's access to the background web content.
-   bool modal_context_menu = true;
+@@ -442,6 +443,20 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+   // when feature DynamicSafeAreaInsets is enabled.
+   bool dynamic_safe_area_insets_enabled = false;
  
 +  // Begin Electron-specific WebPreferences.
 +  bool context_isolation = false;
