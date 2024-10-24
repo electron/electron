@@ -24,6 +24,8 @@ void ElectronCommandLine::Init(int argc, base::CommandLine::CharType** argv) {
 
 // static
 std::vector<std::string> ElectronCommandLine::AsUtf8() {
+  DCHECK(!argv_.empty());
+
 #if BUILDFLAG(IS_WIN)
   return base::ToVector(argv_, base::WideToUTF8);
 #else
