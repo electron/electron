@@ -126,6 +126,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   // If we are already a fiber then continue normal execution.
 #endif  // defined(ARCH_CPU_32_BITS)
 
+  base::CommandLine::Init(0, nullptr);  // args ignored on Windows
+
   struct Arguments {
     int argc = 0;
     RAW_PTR_EXCLUSION wchar_t** argv =
@@ -169,7 +171,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     return ret;
   }
 
-  base::CommandLine::Init(argv.size(), argv.data());
   const base::CommandLine* command_line =
       base::CommandLine::ForCurrentProcess();
 

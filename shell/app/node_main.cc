@@ -116,11 +116,7 @@ v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
 namespace electron {
 
 int NodeMain(int argc, char* argv[]) {
-  bool initialized = base::CommandLine::Init(argc, argv);
-  if (!initialized) {
-    LOG(ERROR) << "Failed to initialize CommandLine";
-    exit(1);
-  }
+  DCHECK(base::CommandLine::InitializedForCurrentProcess());
 
   auto os_env = base::Environment::Create();
   bool node_options_enabled = electron::fuses::IsNodeOptionsEnabled();

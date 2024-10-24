@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
   FixStdioStreams();
 
   argv = uv_setup_args(argc, argv);
+  base::CommandLine::Init(argc, argv);
 
   if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
     base::i18n::InitializeICU();
@@ -38,7 +39,6 @@ int main(int argc, char* argv[]) {
   }
 
   electron::ElectronCommandLine::Init(argc, argv);
-  base::CommandLine::Init(argc, argv);
 
   electron::ElectronMainDelegate delegate;
   return content::ContentMain(content::ContentMainParams{&delegate});

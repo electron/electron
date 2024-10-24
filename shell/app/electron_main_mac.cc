@@ -55,6 +55,7 @@ int main(int argc, char* argv[]) {
   FixStdioStreams();
 
   argv = uv_setup_args(argc, argv);
+  base::CommandLine::Init(argc, argv);
 
   if (electron::fuses::IsRunAsNodeEnabled() &&
       IsEnvSet("ELECTRON_RUN_AS_NODE")) {
@@ -86,7 +87,6 @@ int main(int argc, char* argv[]) {
   }
 #endif  // defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD
 
-  base::CommandLine::Init(argc, argv);
   electron::ElectronCommandLine::Init(argc, argv);
   return ElectronMain();
 }
