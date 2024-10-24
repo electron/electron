@@ -9,7 +9,7 @@ import("//pdf/features.gni")
 import("//ppapi/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//testing/test.gni")
-import("//third_party/electron_node/electron_node.gni")
+import("//third_party/electron_node/node.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -408,7 +408,7 @@ action("electron_generate_node_defines") {
 source_set("electron_lib") {
   configs += [
     "//v8:external_startup_data",
-    "//third_party/electron_node:node_internals",
+    "//third_party/electron_node:node_external_config",
   ]
 
   public_configs = [
@@ -483,7 +483,7 @@ source_set("electron_lib") {
     "//third_party/blink/public:blink_devtools_inspector_resources",
     "//third_party/blink/public/platform/media",
     "//third_party/boringssl",
-    "//third_party/electron_node:node_lib",
+    "//third_party/electron_node:libnode",
     "//third_party/inspector_protocol:crdtp",
     "//third_party/leveldatabase",
     "//third_party/libyuv",

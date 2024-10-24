@@ -20,4 +20,5 @@ export const emittedUntil = async (emitter: NodeJS.EventEmitter, eventName: stri
   for await (const args of on(emitter, eventName)) {
     if (untilFn(...args)) { return args; }
   }
+  return [];
 };

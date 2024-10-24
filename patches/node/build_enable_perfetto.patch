@@ -12,6 +12,19 @@ adding associated guards there should be relatively small.
 
 We should upstream this as it will eventually impact Node.js as well.
 
+diff --git a/filenames.json b/filenames.json
+index 5af3886d8d3d74d31249a4d79030a8373b8dad52..8ab04d0b1b58454c6ea21f33870f9557f3a57b56 100644
+--- a/filenames.json
++++ b/filenames.json
+@@ -739,8 +739,6 @@
+     "src/tcp_wrap.h",
+     "src/timers.h",
+     "src/tracing/agent.h",
+-    "src/tracing/node_trace_buffer.h",
+-    "src/tracing/node_trace_writer.h",
+     "src/tracing/trace_event.h",
+     "src/tracing/trace_event_common.h",
+     "src/tracing/traced_value.h",
 diff --git a/lib/internal/constants.js b/lib/internal/constants.js
 index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b564ef600 100644
 --- a/lib/internal/constants.js
@@ -63,11 +76,62 @@ index 251f51ec454f9cba4023b8b6729241ee753aac13..1de8cac6e3953ce9cab9db03530da327
  }
  
  module.exports = {
+diff --git a/node.gyp b/node.gyp
+index 11474953b186c7b3ec2edb0539f34572e6c551b7..eeaaef8a06cdc2d17e89f9c719f9922e6e04ce92 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -174,7 +174,6 @@
+       'src/timers.cc',
+       'src/timer_wrap.cc',
+       'src/tracing/agent.cc',
+-      'src/tracing/node_trace_buffer.cc',
+       'src/tracing/node_trace_writer.cc',
+       'src/tracing/trace_event.cc',
+       'src/tracing/traced_value.cc',
+@@ -302,7 +301,6 @@
+       'src/tcp_wrap.h',
+       'src/timers.h',
+       'src/tracing/agent.h',
+-      'src/tracing/node_trace_buffer.h',
+       'src/tracing/node_trace_writer.h',
+       'src/tracing/trace_event.h',
+       'src/tracing/trace_event_common.h',
+diff --git a/src/inspector/tracing_agent.cc b/src/inspector/tracing_agent.cc
+index e7b6d3b3ea63bdc80e569f56209e958b4fcde328..b52d5b1c7293539315626cd67f794cce4cfd1760 100644
+--- a/src/inspector/tracing_agent.cc
++++ b/src/inspector/tracing_agent.cc
+@@ -84,14 +84,14 @@ class InspectorTraceWriter : public node::tracing::AsyncTraceWriter {
+   explicit InspectorTraceWriter(int frontend_object_id,
+                                 std::shared_ptr<MainThreadHandle> main_thread)
+       : frontend_object_id_(frontend_object_id), main_thread_(main_thread) {}
+-
++#ifndef V8_USE_PERFETTO
+   void AppendTraceEvent(
+       v8::platform::tracing::TraceObject* trace_event) override {
+     if (!json_writer_)
+       json_writer_.reset(TraceWriter::CreateJSONTraceWriter(stream_, "value"));
+     json_writer_->AppendTraceEvent(trace_event);
+   }
+-
++#endif
+   void Flush(bool) override {
+     if (!json_writer_)
+       return;
 diff --git a/src/tracing/agent.cc b/src/tracing/agent.cc
-index 7ce59674356f9743438350949be42fa7ead2afbe..c5fedc3be86a77730c57321b9c73cc8e94a001d7 100644
+index 7ce59674356f9743438350949be42fa7ead2afbe..30bff4272ed8eb5146e3b73a4849c187177fc3bd 100644
 --- a/src/tracing/agent.cc
 +++ b/src/tracing/agent.cc
-@@ -50,7 +50,9 @@ using v8::platform::tracing::TraceWriter;
+@@ -2,7 +2,9 @@
+ 
+ #include <string>
+ #include "trace_event.h"
++#ifndef V8_USE_PERFETTO
+ #include "tracing/node_trace_buffer.h"
++#endif
+ #include "debug_utils-inl.h"
+ #include "env-inl.h"
+ 
+@@ -50,7 +52,9 @@ using v8::platform::tracing::TraceWriter;
  using std::string;
  
  Agent::Agent() : tracing_controller_(new TracingController()) {
@@ -77,7 +141,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..c5fedc3be86a77730c57321b9c73cc8e
  
    CHECK_EQ(uv_loop_init(&tracing_loop_), 0);
    CHECK_EQ(uv_async_init(&tracing_loop_,
-@@ -86,10 +88,14 @@ Agent::~Agent() {
+@@ -86,10 +90,14 @@ Agent::~Agent() {
  void Agent::Start() {
    if (started_)
      return;
@@ -93,7 +157,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..c5fedc3be86a77730c57321b9c73cc8e
  
    // This thread should be created *after* async handles are created
    // (within NodeTraceWriter and NodeTraceBuffer constructors).
-@@ -143,8 +149,10 @@ void Agent::StopTracing() {
+@@ -143,8 +151,10 @@ void Agent::StopTracing() {
      return;
    // Perform final Flush on TraceBuffer. We don't want the tracing controller
    // to flush the buffer again on destruction of the V8::Platform.
@@ -105,7 +169,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..c5fedc3be86a77730c57321b9c73cc8e
    started_ = false;
  
    // Thread should finish when the tracing loop is stopped.
-@@ -202,6 +210,7 @@ std::string Agent::GetEnabledCategories() const {
+@@ -202,6 +212,7 @@ std::string Agent::GetEnabledCategories() const {
    return categories;
  }
  
@@ -113,7 +177,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..c5fedc3be86a77730c57321b9c73cc8e
  void Agent::AppendTraceEvent(TraceObject* trace_event) {
    for (const auto& id_writer : writers_)
      id_writer.second->AppendTraceEvent(trace_event);
-@@ -211,18 +220,21 @@ void Agent::AddMetadataEvent(std::unique_ptr<TraceObject> event) {
+@@ -211,18 +222,21 @@ void Agent::AddMetadataEvent(std::unique_ptr<TraceObject> event) {
    Mutex::ScopedLock lock(metadata_events_mutex_);
    metadata_events_.push_back(std::move(event));
  }
@@ -136,7 +200,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..c5fedc3be86a77730c57321b9c73cc8e
  void TracingController::AddMetadataEvent(
      const unsigned char* category_group_enabled,
      const char* name,
-@@ -246,6 +258,6 @@ void TracingController::AddMetadataEvent(
+@@ -246,6 +260,6 @@ void TracingController::AddMetadataEvent(
    if (node_agent != nullptr)
      node_agent->AddMetadataEvent(std::move(trace_event));
  }
@@ -198,26 +262,20 @@ index b542a849fe8da7e8bbbcca7067b73dc32b18d6d3..059ce6f6ea17199ead09c6c13bcc680f
  };
  
  void AgentWriterHandle::reset() {
-diff --git a/src/tracing/node_trace_buffer.cc b/src/tracing/node_trace_buffer.cc
-index e187a1d78c81972b69cd4e03f7079cdb727956ad..3256c6326a08c6cafd83f1e49e3350193e813b51 100644
---- a/src/tracing/node_trace_buffer.cc
-+++ b/src/tracing/node_trace_buffer.cc
-@@ -55,6 +55,7 @@ TraceObject* InternalTraceBuffer::GetEventByHandle(uint64_t handle) {
- }
- 
- void InternalTraceBuffer::Flush(bool blocking) {
+diff --git a/src/tracing/node_trace_buffer.h b/src/tracing/node_trace_buffer.h
+index 18e4f43efaae3a60b924e697918867e604513194..7cbaf01235750138c680c8ec2ed5d206d638f8b6 100644
+--- a/src/tracing/node_trace_buffer.h
++++ b/src/tracing/node_trace_buffer.h
+@@ -42,7 +42,9 @@ class InternalTraceBuffer {
+   bool flushing_;
+   size_t max_chunks_;
+   Agent* agent_;
 +#ifndef V8_USE_PERFETTO
-   {
-     Mutex::ScopedLock scoped_lock(mutex_);
-     if (total_chunks_ > 0) {
-@@ -75,6 +76,7 @@ void InternalTraceBuffer::Flush(bool blocking) {
-       flushing_ = false;
-     }
-   }
+   std::vector<std::unique_ptr<TraceBufferChunk>> chunks_;
 +#endif
-   agent_->Flush(blocking);
- }
- 
+   size_t total_chunks_ = 0;
+   uint32_t current_chunk_seq_ = 1;
+   uint32_t id_;
 diff --git a/src/tracing/node_trace_writer.cc b/src/tracing/node_trace_writer.cc
 index 8f053efe93324b9acbb4e85f7b974b4f7712e200..e331ed5567caa39ade90ce28cea69f1d10533812 100644
 --- a/src/tracing/node_trace_writer.cc
