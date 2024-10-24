@@ -36,7 +36,7 @@ class MenuDelegate : public views::MenuDelegate {
 
   void RunMenu(ElectronMenuModel* model,
                views::Button* button,
-               ui::MenuSourceType source_type);
+               ui::mojom::MenuSourceType source_type);
 
   class Observer {
    public:

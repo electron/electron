@@ -48,9 +48,9 @@ static_assert(std::size(MenuSourceTypes) ==
               static_cast<int32_t>(ui::mojom::MenuSourceType::kMaxValue) + 1);
 
 // static
-v8::Local<v8::Value> Converter<ui::MenuSourceType>::ToV8(
+v8::Local<v8::Value> Converter<ui::mojom::MenuSourceType>::ToV8(
     v8::Isolate* isolate,
-    const ui::MenuSourceType& in) {
+    const ui::mojom::MenuSourceType& in) {
   for (auto const& [key, val] : MenuSourceTypes)
     if (in == val)
       return StringToV8(isolate, key);
@@ -58,9 +58,10 @@ v8::Local<v8::Value> Converter<ui::MenuSourceType>::ToV8(
 }
 
 // static
-bool Converter<ui::MenuSourceType>::FromV8(v8::Isolate* isolate,
-                                           v8::Local<v8::Value> val,
-                                           ui::MenuSourceType* out) {
+bool Converter<ui::mojom::MenuSourceType>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    ui::mojom::MenuSourceType* out) {
   return FromV8WithLookup(isolate, val, MenuSourceTypes, out);
 }
 
