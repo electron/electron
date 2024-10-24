@@ -785,6 +785,19 @@ WebContents::WebContents(v8::Isolate* isolate,
   }
   session_.Reset(isolate, session.ToV8());
 
+  content::WebContents* site_instance_web_contents;
+  scoped_refptr<content::SiteInstance> site_instance_to_use;
+  if (options.Get("sameSiteInstanceAs", &site_instance_web_contents)) {
+    // Has to be the same BrowserContext or strange things happen
+    if (site_instance_web_contents->GetBrowserContext() ==
+        session->browser_context()) {
+      auto* instance = site_instance_web_contents->GetSiteInstance();
+      if (instance) {
+        site_instance_to_use = instance;
+      }
+    }
+  }
+
   std::unique_ptr<content::WebContents> web_contents;
   if (is_guest()) {
     scoped_refptr<content::SiteInstance> site_instance =
@@ -816,7 +829,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     options.GetHidden(options::kBackgroundColor, &background_color);
     bool transparent = ParseCSSColor(background_color) == SK_ColorTRANSPARENT;
 
-    content::WebContents::CreateParams params(session->browser_context());
+    content::WebContents::CreateParams params(session->browser_context(),
+                                              site_instance_to_use);
     auto* view = new OffScreenWebContentsView(
         transparent,
         base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
@@ -826,7 +840,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     web_contents = content::WebContents::Create(params);
     view->SetWebContents(web_contents.get());
   } else {
-    content::WebContents::CreateParams params(session->browser_context());
+    content::WebContents::CreateParams params(session->browser_context(),
+                                              site_instance_to_use);
     params.initially_hidden = !initially_shown;
     web_contents = content::WebContents::Create(params);
   }

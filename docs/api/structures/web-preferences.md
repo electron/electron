@@ -33,6 +33,11 @@
   same `partition`. If there is no `persist:` prefix, the page will use an
   in-memory session. By assigning the same `partition`, multiple pages can share
   the same session. Default is the default session.
+* `sameSiteInstanceAs` WebContents (optional) - Must be a WebContents in the same `session`
+  or `partition` as this webPreferences. Used to minimize overhead when creating a webContents
+  for a known URL as it allow some of the resources to be shared, namely the second webContents
+  will be created in the same process as the original webContents as long as they are same-site.
+  This is an advanced property we recommend reading about in [Chromium's Process Model](https://chromium.googlesource.com/chromium/src/+/main/docs/process_model_and_site_isolation.md)
 * `zoomFactor` number (optional) - The default zoom factor of the page, `3.0` represents
   `300%`. Default is `1.0`.
 * `javascript` boolean (optional) - Enables JavaScript support. Default is `true`.
