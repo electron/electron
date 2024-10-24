@@ -1,22 +1,16 @@
 import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron/main';
-
 import { expect } from 'chai';
-
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-
 import { ifdescribe } from './lib/spec-helpers';
 
-// FIXME: The tests are skipped on linux arm/arm64
 ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== 'linux'))('contentTracing', () => {
   const record = async (options: TraceConfig | TraceCategoriesAndOptions, outputFilePath: string | undefined, recordTimeInMilliseconds = 1e1) => {
     await app.whenReady();
-
     await contentTracing.startRecording(options);
     await setTimeout(recordTimeInMilliseconds);
     const resultFilePath = await contentTracing.stopRecording(outputFilePath);
-
     return resultFilePath;
   };
 
@@ -29,7 +23,6 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
 
   describe('startRecording', function () {
     if (process.platform === 'win32' && process.arch === 'arm64') {
-      // WOA needs more time
       this.timeout(10e3);
     } else {
       this.timeout(5e3);
@@ -45,44 +38,30 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
     it('accepts an empty config', async () => {
       const config = {};
       await record(config, outputFilePath);
-
       expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
-
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
       expect(fileSizeInKiloBytes).to.be.above(0,
         `the trace output file is empty, check "${outputFilePath}"`);
     });
 
     it('accepts a trace config', async () => {
-      // (alexeykuzmin): All categories are excluded on purpose,
-      // so only metadata gets into the output file.
       const config = {
         excluded_categories: ['*']
       };
       await record(config, outputFilePath);
-
-      // If the `excluded_categories` param above is not respected, categories
-      // like `node,node.environment` will be included in the output.
       const content = fs.readFileSync(outputFilePath).toString();
       expect(content.includes('"cat":"node,node.environment"')).to.be.false();
     });
 
     it('accepts "categoryFilter" and "traceOptions" as a config', async () => {
-      // (alexeykuzmin): All categories are excluded on purpose,
-      // so only metadata gets into the output file.
       const config = {
         categoryFilter: '__ThisIsANonexistentCategory__',
         traceOptions: ''
       };
       await record(config, outputFilePath);
-
       expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
-
-      // If the `categoryFilter` param above is not respected
-      // the file size will be above 50KB.
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      const expectedMaximumFileSize = 50; // Depends on a platform.
-
+      const expectedMaximumFileSize = 50;
       expect(fileSizeInKiloBytes).to.be.above(0,
         `the trace output file is empty, check "${outputFilePath}"`);
       expect(fileSizeInKiloBytes).to.be.below(expectedMaximumFileSize,
@@ -93,7 +72,6 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
 
   describe('stopRecording', function () {
     if (process.platform === 'win32' && process.arch === 'arm64') {
-      // WOA needs more time
       this.timeout(10e3);
     } else {
       this.timeout(5e3);
@@ -104,7 +82,6 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
         categoryFilter: '*',
         traceOptions: 'record-until-full,enable-sampling'
       };
-
       await contentTracing.startRecording(options);
       const path = await contentTracing.stopRecording('');
       expect(path).to.be.a('string').that.is.not.empty('result path');
