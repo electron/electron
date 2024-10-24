@@ -16,7 +16,10 @@ base::CommandLine::StringVector ElectronCommandLine::argv_;
 // static
 void ElectronCommandLine::Init(int argc, base::CommandLine::CharType** argv) {
   DCHECK(argv_.empty());
-  argv_.assign(argv, argv + argc);
+
+  // Safety: as is normal in command lines, argc and argv must correspond
+  // to one another. Otherwise there will be out-of-bounds accesses.
+  argv_.assign(argv, UNSAFE_BUFFERS(argv + argc));
 }
 
 // static
