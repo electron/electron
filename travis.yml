@@ -1,0 +1,25 @@
+language: node_js
+node_js:
+  - "14"
+
+env:
+  global:
+    - NODE_ENV=production
+    - DATABASE_URL=postgres://user:password@localhost:5432/mydatabase
+
+services:
+  - postgresql
+
+before_script:
+  - psql -c 'create database mydatabase;' -U postgres
+
+jobs:
+  include:
+    - stage: test
+      script: npm test
+    - stage: build
+      script: npm run build
+    - stage: deploy
+      script: npm run deploy
+      on:
+        branch: main
