@@ -296,11 +296,6 @@ class InspectableWebContents::NetworkResourceLoader
   base::TimeDelta retry_delay_;
 };
 
-// Implemented separately on each platform.
-InspectableWebContentsView* CreateInspectableContentsView(
-    InspectableWebContents* inspectable_web_contents);
-
-// static
 // static
 void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
@@ -316,7 +311,7 @@ InspectableWebContents::InspectableWebContents(
     : pref_service_(pref_service),
       web_contents_(std::move(web_contents)),
       is_guest_(is_guest),
-      view_(CreateInspectableContentsView(this)) {
+      view_(new InspectableWebContentsView(this)) {
   const base::Value* bounds_dict =
       &pref_service_->GetValue(kDevToolsBoundsPref);
   if (bounds_dict->is_dict()) {
