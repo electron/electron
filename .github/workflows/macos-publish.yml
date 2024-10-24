@@ -6,7 +6,7 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'cf814a4d2501e8e843caea071a6b70a48e78b855'
+        default: 'bc2f48b2415a670de18d13605b1cf0eb5fdbaae1'
         required: true
       upload-to-storage:
         description: 'Uploads to Azure storage'
