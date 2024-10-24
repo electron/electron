@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_H_
 #define ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_H_
 
-#include <list>
 #include <memory>
 #include <optional>
 #include <queue>
@@ -402,10 +401,6 @@ class NativeWindow : public base::SupportsUserData,
 
   int32_t window_id() const { return next_id_; }
 
-  void add_child_window(NativeWindow* child) {
-    child_windows_.push_back(child);
-  }
-
   int NonClientHitTest(const gfx::Point& point);
   void AddDraggableRegionProvider(DraggableRegionProvider* provider);
   void RemoveDraggableRegionProvider(DraggableRegionProvider* provider);
@@ -457,8 +452,6 @@ class NativeWindow : public base::SupportsUserData,
       FullScreenTransitionState::kNone;
   FullScreenTransitionType fullscreen_transition_type_ =
       FullScreenTransitionType::kNone;
-
-  std::list<NativeWindow*> child_windows_;
 
  private:
   std::unique_ptr<views::Widget> widget_;
