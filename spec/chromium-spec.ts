@@ -15,7 +15,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { ifit, ifdescribe, defer, itremote, listen } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { PipeTransport } from './pipe-transport';
 
@@ -379,7 +379,7 @@ describe('web security', () => {
                 console.log(e.message)
               }
             </script>`);
-              const [,, message] = await once(w.webContents, 'console-message');
+              const [{ message }] = await once(w.webContents, 'console-message');
               expect(message).to.match(/Refused to evaluate a string/);
             });
 
@@ -399,7 +399,7 @@ describe('web security', () => {
                 console.log(e.message)
               }
             </script>`);
-              const [,, message] = await once(w.webContents, 'console-message');
+              const [{ message }] = await once(w.webContents, 'console-message');
               expect(message).to.equal('true');
             });
 
@@ -554,6 +554,36 @@ describe('command line switches', () => {
           });
         }
       });
+    });
+  });
+
+  describe('--trace-startup switch', () => {
+    const outputFilePath = path.join(app.getPath('temp'), 'trace.json');
+    afterEach(() => {
+      if (fs.existsSync(outputFilePath)) {
+        fs.unlinkSync(outputFilePath);
+      }
+    });
+
+    it('creates startup trace', async () => {
+      const rc = await startRemoteControlApp(['--trace-startup=*', `--trace-startup-file=${outputFilePath}`, '--trace-startup-duration=1', '--enable-logging']);
+      const stderrComplete = new Promise<string>(resolve => {
+        let stderr = '';
+        rc.process.stderr!.on('data', (chunk) => {
+          stderr += chunk.toString('utf8');
+        });
+        rc.process.on('close', () => { resolve(stderr); });
+      });
+      rc.remotely(() => {
+        global.setTimeout(() => {
+          require('electron').app.quit();
+        }, 5000);
+      });
+      const stderr = await stderrComplete;
+      expect(stderr).to.match(/Completed startup tracing to/);
+      expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
+      expect(fs.statSync(outputFilePath).size).to.be.above(0,
+        `the trace output file is empty, check "${outputFilePath}"`);
     });
   });
 });
@@ -1400,7 +1430,7 @@ describe('chromium features', () => {
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('window.child = window.open(); child.opener = null');
       const [, { webContents }] = await once(app, 'browser-window-created');
-      const [,, message] = await once(webContents, 'console-message');
+      const [{ message }] = await once(webContents, 'console-message');
       expect(message).to.equal('{"require":"function","module":"object","exports":"object","process":"object","Buffer":"function"}');
     });
 
@@ -2918,10 +2948,12 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     );
     await once(w.webContents, 'leave-html-full-screen');
 
-    const width = await w.webContents.executeJavaScript(
-      "document.querySelector('iframe').offsetWidth"
-    );
-    expect(width).to.equal(0);
+    await expect(waitUntil(async () => {
+      const width = await w.webContents.executeJavaScript(
+        "document.querySelector('iframe').offsetWidth"
+      );
+      return width === 0;
+    })).to.eventually.be.fulfilled();
 
     w.setFullScreen(false);
     await once(w, 'leave-full-screen');

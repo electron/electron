@@ -28,7 +28,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 
@@ -247,12 +247,16 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
 }
 
 void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
+  // HandleTermination is called from multiple callsites,
+  // we need to ensure we only process it for the first callsite.
+  if (terminated_)
+    return;
+  terminated_ = true;
+
   if (pid_ != base::kNullProcessId)
     GetAllUtilityProcessWrappers().Remove(pid_);
   CloseConnectorPort();
-
   EmitWithoutEvent("exit", exit_code);
-
   Unpin();
 }
 
@@ -292,13 +296,8 @@ void UtilityProcessWrapper::CloseConnectorPort() {
 }
 
 void UtilityProcessWrapper::Shutdown(uint64_t exit_code) {
-  if (pid_ != base::kNullProcessId)
-    GetAllUtilityProcessWrappers().Remove(pid_);
   node_service_remote_.reset();
-  CloseConnectorPort();
-  // Emit 'exit' event
-  EmitWithoutEvent("exit", exit_code);
-  Unpin();
+  HandleTermination(exit_code);
 }
 
 void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {

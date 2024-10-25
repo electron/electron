@@ -12,7 +12,52 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (34.0)
+
+### Deprecated: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
+
+The `console-message` event on `WebContents` has been updated to provide details on the `Event`
+argument.
+
+```js
+// Deprecated
+webContents.on('console-message', (event, level, message, line, sourceId) => {})
+
+// Replace with:
+webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame }) => {})
+```
+
+Additionally, `level` is now a string with possible values of `info`, `warning`, `error`, and `debug`.
+
 ## Planned Breaking API Changes (33.0)
+
+### Behavior Changed: frame properties may retrieve detached WebFrameMain instances or none at all
+
+APIs which provide access to a `WebFrameMain` instance may return an instance
+with `frame.detached` set to `true`, or possibly return `null`.
+
+When a frame performs a cross-origin navigation, it enters into a detached state
+in which it's no longer attached to the page. In this state, it may be running
+[unload](https://developer.mozilla.org/en-US/docs/Web/API/Window/unload_event)
+handlers prior to being deleted. In the event of an IPC sent during this state,
+`frame.detached` will be set to `true` with the frame being destroyed shortly
+thereafter.
+
+When receiving an event, it's important to access WebFrameMain properties
+immediately upon being received. Otherwise, it's not guaranteed to point to the
+same webpage as when received. To avoid misaligned expectations, Electron will
+return `null` in the case of late access where the webpage has changed.
+
+```ts
+ipcMain.on('unload-event', (event) => {
+  event.senderFrame; // ✅ accessed immediately
+});
+
+ipcMain.on('unload-event', async (event) => {
+  await crossOriginNavigationPromise;
+  event.senderFrame; // ❌ returns `null` due to late access
+});
+```
 
 ### Behavior Changed: custom protocol URL handling on Windows
 

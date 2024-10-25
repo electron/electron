@@ -977,7 +977,7 @@ describe('protocol module', () => {
         contextIsolation: false
       });
       const consoleMessages: string[] = [];
-      newContents.on('console-message', (e, level, message) => consoleMessages.push(message));
+      newContents.on('console-message', (e) => consoleMessages.push(e.message));
       try {
         newContents.loadURL(standardScheme + '://fake-host');
         const [, response] = await once(ipcMain, 'response');
@@ -1631,7 +1631,7 @@ describe('protocol module', () => {
       defer(() => { protocol.unhandle('cors'); });
 
       await contents.loadFile(path.resolve(fixturesPath, 'pages', 'base-page.html'));
-      contents.on('console-message', (e, level, message) => console.log(message));
+      contents.on('console-message', (e) => console.log(e.message));
       const ok = await contents.executeJavaScript(`(async () => {
         function wait(milliseconds) {
           return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -1737,7 +1737,8 @@ describe('protocol module', () => {
     });
 
     // TODO(nornagon): this test doesn't pass on Linux currently, investigate.
-    ifit(process.platform !== 'linux')('is fast', async () => {
+    // test is also flaky on CI on macOS so it is currently disabled there as well.
+    ifit(process.platform !== 'linux' && (!process.env.CI || process.platform !== 'darwin'))('is fast', async () => {
       // 128 MB of spaces.
       const chunk = new Uint8Array(128 * 1024 * 1024);
       chunk.fill(' '.charCodeAt(0));

@@ -23,10 +23,10 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 1162861b389f4c580dd058525e30b2f7cab76177..7f851ed44373445722df544f759537604664543e 100644
+index 53bba48293111e74daba50dde617fb78f1bcc7ee..67083fb13db2020f432ec488a784bcfb9570d737 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -10785,6 +10785,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
+@@ -10788,6 +10788,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
          "blob");
    }
  
@@ -40,7 +40,7 @@ index 1162861b389f4c580dd058525e30b2f7cab76177..7f851ed44373445722df544f75953760
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 7de11767815fb58e060ae935ef59e2433dfd4d1f..024ee08507a2392f4482c1c1b3c1048ba3a48acb 100644
+index ca0f254f2d38c238851ae0daf50b49b10922c186..c5063f9b0b428b8ece8816a812e6616e207504b0 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
 @@ -2264,6 +2264,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
