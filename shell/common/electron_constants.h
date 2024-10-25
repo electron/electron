@@ -5,14 +5,16 @@
 #ifndef ELECTRON_SHELL_COMMON_ELECTRON_CONSTANTS_H_
 #define ELECTRON_SHELL_COMMON_ELECTRON_CONSTANTS_H_
 
+#include <string_view>
+
 #include "base/files/file_path.h"
 #include "electron/buildflags/buildflags.h"
 
 namespace electron {
 
 // The app-command in NativeWindow.
-extern const char kBrowserForward[];
-extern const char kBrowserBackward[];
+inline constexpr std::string_view kBrowserForward = "browser-forward";
+inline constexpr std::string_view kBrowserBackward = "browser-backward";
 
 // Keys for Device APIs
 extern const char kDeviceVendorIdKey[];
