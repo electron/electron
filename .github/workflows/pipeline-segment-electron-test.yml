@@ -177,6 +177,7 @@ jobs:
       run: |
         cd src/electron
         node script/yarn global add @datadog/datadog-ci
+        npm list -g
     - name: Run Electron Tests
       shell: bash
       env:
