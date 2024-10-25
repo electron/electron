@@ -117,7 +117,7 @@ index 7fbb05e606fc26364c674c6330b8a5eb9c016fb3..a190a42c2127011ab54aae937a3cab36
    virtual gpu::SharedImageManager* GetSharedImageManager() = 0;
    virtual gpu::SyncPointManager* GetSyncPointManager() = 0;
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 87722045daafa87f7111df943217ceaa8518e55c..badf8c3dc5fb768388a19814d8428a46d3c5648b 100644
+index 4be4660c007ee5cd9da9947dc61d2497931d0ddb..f382cef64946576c85588ef4d3b334a2ec9e61bd 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -25,6 +25,7 @@
@@ -155,7 +155,7 @@ index 87722045daafa87f7111df943217ceaa8518e55c..badf8c3dc5fb768388a19814d8428a46
    } else {
      DCHECK(gpu_dependency);
  
-@@ -143,10 +146,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -142,10 +145,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,

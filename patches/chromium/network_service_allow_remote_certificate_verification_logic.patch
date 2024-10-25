@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index a9af5589e17c4480bfe553f76769ed50a63d596f..0b78b88754394cbbd5ffcc5694b2fdbd862ff6a8 100644
+index ea6b011b990760de3b45420a5516207bfd74f46c..16d1c3ca48d35004c370fbb85c02fcd35c65d2ff 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -157,6 +157,11 @@
@@ -147,7 +147,7 @@ index a9af5589e17c4480bfe553f76769ed50a63d596f..0b78b88754394cbbd5ffcc5694b2fdbd
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 3ab2d4f27dc258bbb82aa2c929a5ee717a933bd8..345fa438ad2afea7946117b8bac7bb6f08669b28 100644
+index d9c63e9ff7f3afb320b1d88f69cc1105f0a59bad..884a1da963ac6e05dd47ec6b0dcd595f2a7e44c0 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -114,6 +114,7 @@ class URLMatcher;
@@ -167,7 +167,7 @@ index 3ab2d4f27dc258bbb82aa2c929a5ee717a933bd8..345fa438ad2afea7946117b8bac7bb6f
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -925,6 +928,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -930,6 +933,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  

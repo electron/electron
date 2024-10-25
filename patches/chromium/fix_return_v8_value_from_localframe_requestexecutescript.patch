@@ -204,7 +204,7 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index 9c95dcc932a7744ea43f84fcf558efc14a3096d9..8dddf3b038a99fb52746985526d328707a94b58d 100644
+index a0497dc0fbf3b44cb9f1104373f49ea526816927..fe812de1a0925fa7a51684dd1a4f8429c0f2e059 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
 @@ -291,6 +291,7 @@ void ExecuteScriptsInMainWorld(
@@ -216,7 +216,7 @@ index 9c95dcc932a7744ea43f84fcf558efc14a3096d9..8dddf3b038a99fb52746985526d32870
        mojom::blink::WantResultOption::kWantResult, wait_for_promise);
  }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 9622c7de8d00e4a68502a09433ede099d5768eba..fe2622ab079105373ade745b2fc96f3275d60d7b 100644
+index e87744a47310b8bdde4c710b50127eba0df2c86e..6dc08d0170c13a935823ab94a7052486b0def9e4 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1098,14 +1098,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
@@ -238,7 +238,7 @@ index 9622c7de8d00e4a68502a09433ede099d5768eba..fe2622ab079105373ade745b2fc96f32
  
  bool WebLocalFrameImpl::IsInspectorConnected() {
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-index 8084ef0dde77ba46a6f6f7b7f00b04f56de77ec9..9073bd49093a42a7448783e3cfb876a27048c447 100644
+index ab1caf96443833d040bbddfd46e35d0e0d5a2e09..7dcec55703e492604b48eda7afd32efb5f3224af 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 @@ -196,6 +196,7 @@ class CORE_EXPORT WebLocalFrameImpl final

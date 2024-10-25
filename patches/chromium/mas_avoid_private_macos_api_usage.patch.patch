@@ -558,7 +558,7 @@ index 13c3fe06c417a2565e6af4552930a56c44a01fb3..ef67191f5d010451cde2b084d6165c7d
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6fe5e0a182fc5d7a8b192b86fef23ab8166f6d93..c4a7a379e31afaf6899099a485797e98da30f94a 100644
+index 2745b112a023c4e45ce2aba7397c26ad84a81087..abb80017b12f93150f8ec3428070b2ae6db553d2 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -323,6 +323,7 @@ source_set("browser") {
@@ -771,10 +771,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index b4280c8d7623ec1804cc1581a98bc8bacc56a342..4ea6f2c44dc16b5aea6aa4a44dbaf539212732b7 100644
+index 8bab71d1e7729b4c90316403ad7dc5bfeb0c2dcc..4c65463a230cb084f0e5c6c3936c0deb2b694f0b 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -640,6 +640,7 @@ static_library("test_support") {
+@@ -643,6 +643,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -782,7 +782,7 @@ index b4280c8d7623ec1804cc1581a98bc8bacc56a342..4ea6f2c44dc16b5aea6aa4a44dbaf539
    ]
  
    data_deps = [
-@@ -1109,6 +1110,7 @@ static_library("browsertest_support") {
+@@ -1112,6 +1113,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -790,7 +790,7 @@ index b4280c8d7623ec1804cc1581a98bc8bacc56a342..4ea6f2c44dc16b5aea6aa4a44dbaf539
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1932,6 +1934,7 @@ test("content_browsertests") {
+@@ -1936,6 +1938,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -798,7 +798,7 @@ index b4280c8d7623ec1804cc1581a98bc8bacc56a342..4ea6f2c44dc16b5aea6aa4a44dbaf539
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3210,6 +3213,7 @@ test("content_unittests") {
+@@ -3214,6 +3217,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1837,7 +1837,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index b0032a1d1d23acb43b702295ac7a5e3445610fbe..a1568062e4657f787fb28d04d1ffecc9d77d1376 100644
+index 7cc3d3f84d761ccf6f6f017c76c4efeb3126dee0..c27d1c89f2ba87777d541368a8bada51aab9f455 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -723,6 +723,8 @@ component("views") {
@@ -1849,7 +1849,7 @@ index b0032a1d1d23acb43b702295ac7a5e3445610fbe..a1568062e4657f787fb28d04d1ffecc9
    }
  
    if (is_win) {
-@@ -1157,6 +1159,8 @@ source_set("test_support") {
+@@ -1158,6 +1160,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
