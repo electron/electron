@@ -4,7 +4,7 @@ import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { ifit } from './lib/spec-helpers';
+import { ifit, waitUntil } from './lib/spec-helpers';
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
 
@@ -57,11 +57,11 @@ const shouldRunCase = (crashCase: string) => {
 };
 
 describe('crash cases', () => {
-  afterEach(() => {
+  afterEach(async () => {
     for (const child of children) {
       child.kill();
     }
-    expect(children).to.have.lengthOf(0, 'all child processes should have exited cleanly');
+    await waitUntil(() => (children.length === 0));
     children.length = 0;
   });
   const cases = fs.readdirSync(fixturePath);
