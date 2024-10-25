@@ -328,7 +328,7 @@ class ChunkedDataPipeReadableStream final
     int status = ReadInternal(buf);
 
     if (status == net::ERR_IO_PENDING) {
-      promise_ = std::move(promise);
+      promise_ = std::make_unique<gin_helper::Promise<int>>(std::move(promise));
     } else {
       if (status < 0)
         std::move(promise).RejectWithErrorMessage(net::ErrorToString(status));
@@ -466,10 +466,13 @@ class ChunkedDataPipeReadableStream final
   }
 
   void OnReadCompleted(int result) {
-    if (result < 0)
-      std::move(promise_).RejectWithErrorMessage(net::ErrorToString(result));
-    else
-      std::move(promise_).Resolve(result);
+    DCHECK(promise_);
+    if (result < 0) {
+      std::move(*promise_).RejectWithErrorMessage(net::ErrorToString(result));
+    } else {
+      std::move(*promise_).Resolve(result);
+    }
+    promise_.reset();
   }
 
   void OnDataPipeGetterClosed() {
@@ -491,7 +494,7 @@ class ChunkedDataPipeReadableStream final
   uint64_t bytes_read_ = 0;
   bool is_eof_ = false;
   v8::Global<v8::ArrayBufferView> buf_;
-  gin_helper::Promise<int> promise_;
+  std::unique_ptr<gin_helper::Promise<int>> promise_;
 };
 
 gin::WrapperInfo ChunkedDataPipeReadableStream::kWrapperInfo = {
