@@ -29,7 +29,7 @@ void abort_report_np(const char* fmt, ...);
 
 namespace {
 
-[[nodiscard]] IsEnvSet(const base::cstring_view name) {
+[[nodiscard]] bool IsEnvSet(const base::cstring_view name) {
   const char* const indicator = getenv(name.c_str());
   return indicator && *indicator;
 }
