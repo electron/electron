@@ -194,4 +194,6 @@ OffScreenWebContentsView::GetBackForwardTransitionAnimationManager() {
   return nullptr;
 }
 
+void OffScreenWebContentsView::DestroyBackForwardTransitionAnimationManager() {}
+
 }  // namespace electron
