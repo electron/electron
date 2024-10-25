@@ -6,10 +6,6 @@
 
 namespace electron {
 
-const char kDeviceVendorIdKey[] = "vendorId";
-const char kDeviceProductIdKey[] = "productId";
-const char kDeviceSerialNumberKey[] = "serialNumber";
-
 const char kRunAsNode[] = "ELECTRON_RUN_AS_NODE";
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)

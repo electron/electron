@@ -17,9 +17,9 @@ inline constexpr std::string_view kBrowserForward = "browser-forward";
 inline constexpr std::string_view kBrowserBackward = "browser-backward";
 
 // Keys for Device APIs
-extern const char kDeviceVendorIdKey[];
-extern const char kDeviceProductIdKey[];
-extern const char kDeviceSerialNumberKey[];
+inline constexpr std::string_view kDeviceVendorIdKey = "vendorId";
+inline constexpr std::string_view kDeviceProductIdKey = "productId";
+inline constexpr std::string_view kDeviceSerialNumberKey = "serialNumber";
 
 extern const char kRunAsNode[];
 
