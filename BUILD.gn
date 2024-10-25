@@ -1189,6 +1189,7 @@ if (is_mac) {
       "//components/crash/core/app",
       "//content:sandbox_helper_win",
       "//electron/buildflags",
+      "//third_party/electron_node:node_lib",
       "//ui/strings",
     ]
 
