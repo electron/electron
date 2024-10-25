@@ -7,7 +7,6 @@
 
 #include <string_view>
 
-#include "base/files/file_path.h"
 #include "base/strings/cstring_view.h"
 #include "electron/buildflags/buildflags.h"
 
@@ -29,7 +28,6 @@ inline constexpr std::string_view kPDFExtensionPluginName =
     "Chromium PDF Viewer";
 inline constexpr std::string_view kPDFInternalPluginName =
     "Chromium PDF Plugin";
-extern const base::FilePath::CharType kPdfPluginPath[];
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 }  // namespace electron

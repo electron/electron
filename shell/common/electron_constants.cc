@@ -4,11 +4,4 @@
 
 #include "shell/common/electron_constants.h"
 
-namespace electron {
-
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-const base::FilePath::CharType kPdfPluginPath[] =
-    FILE_PATH_LITERAL("internal-pdf-viewer");
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
-
-}  // namespace electron
+namespace electron {}  // namespace electron
