@@ -146,7 +146,7 @@ class ScriptExecutionCallback {
       const v8::Local<v8::Object>& result) {
     v8::MaybeLocal<v8::Value> maybe_result;
     bool success = true;
-    std::string error_message =
+    std::string errmsg =
         "An unknown exception occurred while getting the result of the script";
     {
       v8::TryCatch try_catch(isolate);
@@ -164,7 +164,7 @@ class ScriptExecutionCallback {
         auto message = try_catch.Message();
 
         if (!message.IsEmpty()) {
-          gin::ConvertFromV8(isolate, message->Get(), &error_message);
+          gin::ConvertFromV8(isolate, message->Get(), &errmsg);
         }
       }
     }
@@ -173,10 +173,11 @@ class ScriptExecutionCallback {
       if (callback_)
         std::move(callback_).Run(
             v8::Undefined(isolate),
-            v8::Exception::Error(
-                v8::String::NewFromUtf8(isolate, error_message.c_str())
-                    .ToLocalChecked()));
-      promise_.RejectWithErrorMessage(error_message);
+            v8::Exception::Error(v8::String::NewFromUtf8(
+                                     isolate, errmsg.c_str(),
+                                     v8::NewStringType::kNormal, errmsg.size())
+                                     .ToLocalChecked()));
+      promise_.RejectWithErrorMessage(errmsg);
     } else {
       v8::Local<v8::Context> context = promise_.GetContext();
       v8::Context::Scope context_scope(context);
@@ -210,7 +211,7 @@ class ScriptExecutionCallback {
           promise_.Resolve(value);
         }
       } else {
-        const char error_message[] =
+        constexpr std::string_view errmsg =
             "Script failed to execute, this normally means an error "
             "was thrown. Check the renderer console for the error.";
         if (!callback_.is_null()) {
@@ -219,13 +220,15 @@ class ScriptExecutionCallback {
           std::move(callback_).Run(
               v8::Undefined(isolate),
               v8::Exception::Error(
-                  v8::String::NewFromUtf8(isolate, error_message)
+                  v8::String::NewFromUtf8(isolate, errmsg.data(),
+                                          v8::NewStringType::kNormal,
+                                          errmsg.size())
                       .ToLocalChecked()));
         }
-        promise_.RejectWithErrorMessage(error_message);
+        promise_.RejectWithErrorMessage(errmsg);
       }
     } else {
-      const char error_message[] =
+      constexpr std::string_view errmsg =
           "WebFrame was removed before script could run. This normally means "
           "the underlying frame was destroyed";
       if (!callback_.is_null()) {
@@ -233,10 +236,12 @@ class ScriptExecutionCallback {
         v8::Context::Scope context_scope(context);
         std::move(callback_).Run(
             v8::Undefined(isolate),
-            v8::Exception::Error(v8::String::NewFromUtf8(isolate, error_message)
+            v8::Exception::Error(v8::String::NewFromUtf8(
+                                     isolate, errmsg.data(),
+                                     v8::NewStringType::kNormal, errmsg.size())
                                      .ToLocalChecked()));
       }
-      promise_.RejectWithErrorMessage(error_message);
+      promise_.RejectWithErrorMessage(errmsg);
     }
     delete this;
   }
@@ -716,15 +721,17 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
       script.Get("url", &url);
 
       if (!script.Get("code", &code)) {
-        const char error_message[] = "Invalid 'code'";
+        constexpr std::string_view errmsg = "Invalid 'code'";
         if (!completion_callback.is_null()) {
           std::move(completion_callback)
               .Run(v8::Undefined(isolate),
                    v8::Exception::Error(
-                       v8::String::NewFromUtf8(isolate, error_message)
+                       v8::String::NewFromUtf8(isolate, errmsg.data(),
+                                               v8::NewStringType::kNormal,
+                                               errmsg.size())
                            .ToLocalChecked()));
         }
-        promise.RejectWithErrorMessage(error_message);
+        promise.RejectWithErrorMessage(errmsg);
         return handle;
       }
 
