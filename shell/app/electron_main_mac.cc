@@ -10,6 +10,7 @@
 #include "electron/mas.h"
 #include "shell/app/electron_library_main.h"
 #include "shell/app/uv_stdio_fix.h"
+#include "shell/common/electron_constants.h"
 
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
 #include <mach-o/dyld.h>
@@ -52,8 +53,7 @@ namespace {
 int main(int argc, char* argv[]) {
   FixStdioStreams();
 
-  if (electron::fuses::IsRunAsNodeEnabled() &&
-      IsEnvSet("ELECTRON_RUN_AS_NODE")) {
+  if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
     return ElectronInitializeICUandStartNode(argc, argv);
   }
 

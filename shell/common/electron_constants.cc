@@ -6,8 +6,6 @@
 
 namespace electron {
 
-const char kRunAsNode[] = "ELECTRON_RUN_AS_NODE";
-
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 const char kPDFExtensionPluginName[] = "Chromium PDF Viewer";
 const char kPDFInternalPluginName[] = "Chromium PDF Plugin";

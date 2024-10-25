@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include "base/files/file_path.h"
+#include "base/strings/cstring_view.h"
 #include "electron/buildflags/buildflags.h"
 
 namespace electron {
@@ -21,7 +22,7 @@ inline constexpr std::string_view kDeviceVendorIdKey = "vendorId";
 inline constexpr std::string_view kDeviceProductIdKey = "productId";
 inline constexpr std::string_view kDeviceSerialNumberKey = "serialNumber";
 
-extern const char kRunAsNode[];
+inline constexpr base::cstring_view kRunAsNode = "ELECTRON_RUN_AS_NODE";
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 extern const char kPDFExtensionPluginName[];
