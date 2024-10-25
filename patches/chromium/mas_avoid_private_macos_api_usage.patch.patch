@@ -1615,8 +1615,8 @@ diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
 index d7541d80aab34a06348359fbcdb41c7d45579b6a..b72f3f34cbe5059940025c2dd89dfa89960436d1 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -380,6 +380,13 @@ component("base") {
-     sources += [ "resource/resource_bundle_lacros.cc" ]
+@@ -365,6 +365,13 @@ component("base") {
+     ]
    }
  
 +  if (is_mas_build) {
