@@ -706,7 +706,7 @@ index b67f4f87d588386409a90cd49e8338272c6e0d51..c34a80ec8db1b868a7f387ea4a11d71d
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index b550651a8a98132104d38df083717e1cb58567e4..52b9eddefcc6a2240babcac824058cd853d3058f 100644
+index 5f5857379ad34ccd1fb46564859bcef2d2a25d5e..6a39285e344d90b73199e73e48afaddbec3de628 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -619,11 +619,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
@@ -782,7 +782,7 @@ index b550651a8a98132104d38df083717e1cb58567e4..52b9eddefcc6a2240babcac824058cd8
      DWORD last_error = GetLastError();
      std::move(result_callback).Run(base::Process(), last_error, result);
 diff --git a/sandbox/policy/win/sandbox_win.h b/sandbox/policy/win/sandbox_win.h
-index ede8bb552b2602fb06a6317399eb910e24a54216..c86744af9de2c366951d659851aaa9cac74b96de 100644
+index 8fb74a2eefba49f95e4947ef9fd081ab8decebd4..3eed3d348132d5992c27bd8082a267fb42d4e431 100644
 --- a/sandbox/policy/win/sandbox_win.h
 +++ b/sandbox/policy/win/sandbox_win.h
 @@ -92,7 +92,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {

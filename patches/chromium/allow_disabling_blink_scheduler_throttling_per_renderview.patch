@@ -51,7 +51,7 @@ index 5fb8a3dc69dc5fc5bfa08e01d8f03707a23c9274..41774b60b8cb7e0a22cedc597dc07ad1
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 1c7079203af5dae9b00bd4423b52220b1d74d6f9..f9e1e1c91105fcc4ae491c7c65418da3b9b54ca5 100644
+index 3c5f368121a853de8009cf4d1ead972b79509dfc..e569edb8ae7caa0c38fdc435ad9b70bce18e7a13 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -586,8 +586,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
