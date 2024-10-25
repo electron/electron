@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <memory>
 
+#include "base/strings/cstring_view.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
 #include "shell/app/electron_library_main.h"
@@ -27,9 +28,9 @@ void abort_report_np(const char* fmt, ...);
 
 namespace {
 
-bool IsEnvSet(const char* name) {
-  char* indicator = getenv(name);
-  return indicator && indicator[0] != '\0';
+[[nodiscard]] IsEnvSet(const base::cstring_view name) {
+  const char* const indicator = getenv(name.c_str());
+  return indicator && *indicator;
 }
 
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()

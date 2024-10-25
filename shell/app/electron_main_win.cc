@@ -21,6 +21,7 @@
 #include "base/i18n/icu_util.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/process/launch.h"
+#include "base/strings/cstring_view.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/dark_mode_support.h"
 #include "chrome/app/exit_code_watcher_win.h"
@@ -45,9 +46,9 @@ namespace {
 const char kUserDataDir[] = "user-data-dir";
 const char kProcessType[] = "type";
 
-bool IsEnvSet(const char* name) {
-  size_t required_size;
-  getenv_s(&required_size, nullptr, 0, name);
+[[nodiscard]] bool IsEnvSet(const base::cstring_view name) {
+  size_t required_size = 0;
+  getenv_s(&required_size, nullptr, 0, name.c_str());
   return required_size != 0;
 }
 
@@ -139,7 +140,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
 #ifdef _DEBUG
   // Don't display assert dialog boxes in CI test runs
-  static const char kCI[] = "CI";
+  static constexpr base::cstring_view kCI = "CI";
   if (IsEnvSet(kCI)) {
     _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_FILE);
     _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
