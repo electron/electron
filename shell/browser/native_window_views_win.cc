@@ -28,7 +28,7 @@ namespace electron {
 namespace {
 
 // Convert Win32 WM_APPCOMMANDS to strings.
-const char* AppCommandToString(int command_id) {
+constexpr std::string_view AppCommandToString(int command_id) {
   switch (command_id) {
     case APPCOMMAND_BROWSER_BACKWARD:
       return kBrowserBackward;
@@ -227,8 +227,8 @@ void NativeWindowViews::Maximize() {
 }
 
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
-  std::string command = AppCommandToString(command_id);
-  NotifyWindowExecuteAppCommand(command);
+  const auto command_name = AppCommandToString(command_id);
+  NotifyWindowExecuteAppCommand(command_name);
 
   return false;
 }
