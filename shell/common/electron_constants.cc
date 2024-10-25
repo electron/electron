@@ -7,8 +7,6 @@
 namespace electron {
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-const char kPDFExtensionPluginName[] = "Chromium PDF Viewer";
-const char kPDFInternalPluginName[] = "Chromium PDF Plugin";
 const base::FilePath::CharType kPdfPluginPath[] =
     FILE_PATH_LITERAL("internal-pdf-viewer");
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)

@@ -25,8 +25,10 @@ inline constexpr std::string_view kDeviceSerialNumberKey = "serialNumber";
 inline constexpr base::cstring_view kRunAsNode = "ELECTRON_RUN_AS_NODE";
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-extern const char kPDFExtensionPluginName[];
-extern const char kPDFInternalPluginName[];
+inline constexpr std::string_view kPDFExtensionPluginName =
+    "Chromium PDF Viewer";
+inline constexpr std::string_view kPDFInternalPluginName =
+    "Chromium PDF Plugin";
 extern const base::FilePath::CharType kPdfPluginPath[];
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
