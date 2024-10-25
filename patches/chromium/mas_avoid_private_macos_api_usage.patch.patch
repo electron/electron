@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index de197a0826f550f39c2438b5bcd53e7f1d463f1b..71d826841792ba99f1d2afca152332e7ff65ee1a 100644
+index 8b4b62de63c9f32edeba53116cd04b4be056c362..c669632e01366e04254249c21ab2befabe4dfe6b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1040,6 +1040,7 @@ component("base") {
@@ -250,7 +250,7 @@ index e9f4e5131238b9fb5f1b4b3e90a0cb84a7fc15b4..8b5f4cae3123ac5480ad73f0c873fca0
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index f9dae777fd2d6ba4f9fe647e6507dea4005d7e25..acef8dfa59981ef58bdfa14108eedfebfdc60334 100644
+index 1db1e7fc1d86bbca432a4226a24a312cf0b989f8..c4192c16299d291df259902ef8497a65776e3189 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -8,7 +8,9 @@
@@ -263,7 +263,7 @@ index f9dae777fd2d6ba4f9fe647e6507dea4005d7e25..acef8dfa59981ef58bdfa14108eedfeb
  @interface NSWindow (PrivateBrowserNativeWidgetAPI)
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
  @end
-@@ -100,10 +102,13 @@ - (void)maybeShowTrafficLights {
+@@ -95,10 +97,13 @@ - (void)maybeShowTrafficLights {
  
  @end
  
@@ -277,7 +277,7 @@ index f9dae777fd2d6ba4f9fe647e6507dea4005d7e25..acef8dfa59981ef58bdfa14108eedfeb
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -150,6 +155,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -145,6 +150,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -286,7 +286,7 @@ index f9dae777fd2d6ba4f9fe647e6507dea4005d7e25..acef8dfa59981ef58bdfa14108eedfeb
  // Handle "Move focus to the window toolbar" configured in System Preferences ->
  // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
  // tends to just be nil.
-@@ -160,8 +167,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
+@@ -155,8 +162,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
  }
  
  - (void)setAlwaysShowTrafficLights:(BOOL)alwaysShow {
@@ -453,10 +453,10 @@ index f71ea08f64ab5cd36f6bd1e2d3d2908d4de80ba6..4b3450b3bd44a35964bd935453861101
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index d1a60edcb29d5d2484badf6cb2853871c1e7bcec..964dc5c3aa8440fd3076f2198b2c89e9b8b82816 100644
+index 79623037ba1a846502946cbe5450af1ca7263d90..d91d03f5fe64aca93745ee35214450b15ed16aa7 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -376,6 +376,7 @@ viz_component("service") {
+@@ -378,6 +378,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -464,7 +464,7 @@ index d1a60edcb29d5d2484badf6cb2853871c1e7bcec..964dc5c3aa8440fd3076f2198b2c89e9
    }
  
    if (is_android || use_ozone) {
-@@ -656,6 +657,7 @@ viz_source_set("unit_tests") {
+@@ -658,6 +659,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -558,7 +558,7 @@ index 13c3fe06c417a2565e6af4552930a56c44a01fb3..ef67191f5d010451cde2b084d6165c7d
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index cb085a13580106f0218285dc5ad51912d60735d2..f51437492310908f582d3d68cf460c1f8892436c 100644
+index 6fe5e0a182fc5d7a8b192b86fef23ab8166f6d93..c4a7a379e31afaf6899099a485797e98da30f94a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -323,6 +323,7 @@ source_set("browser") {
@@ -771,7 +771,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f5130062e82601932c346b348cfbbddc218fcca0..8c0998257db56d02ceeab8543cc74fa1018f053b 100644
+index b4280c8d7623ec1804cc1581a98bc8bacc56a342..4ea6f2c44dc16b5aea6aa4a44dbaf539212732b7 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -640,6 +640,7 @@ static_library("test_support") {
@@ -790,7 +790,7 @@ index f5130062e82601932c346b348cfbbddc218fcca0..8c0998257db56d02ceeab8543cc74fa1
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1931,6 +1933,7 @@ test("content_browsertests") {
+@@ -1932,6 +1934,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -798,7 +798,7 @@ index f5130062e82601932c346b348cfbbddc218fcca0..8c0998257db56d02ceeab8543cc74fa1
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3206,6 +3209,7 @@ test("content_unittests") {
+@@ -3210,6 +3213,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1371,10 +1371,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index c73b33c834353abcf2f209d5a2ee79f76e701e7d..f6a507adee7ff387f131eb14b27ee01e51a20714 100644
+index f8209797139a6a6e1b601e0b690775604405be3f..50a8318d5d2a25f12b61a1c4ff37cbb45d6c4a79 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -404,6 +404,7 @@ component("core") {
+@@ -406,6 +406,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1612,7 +1612,7 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..c2ac4da580e3e7f749a0a4de1e859af6
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index d7541d80aab34a06348359fbcdb41c7d45579b6a..b72f3f34cbe5059940025c2dd89dfa89960436d1 100644
+index a60c32a9637946a38146830e157595eb23783b3d..3e460a5b0383b71bcb27556c5a948f634903d180 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -365,6 +365,13 @@ component("base") {
@@ -1629,7 +1629,7 @@ index d7541d80aab34a06348359fbcdb41c7d45579b6a..b72f3f34cbe5059940025c2dd89dfa89
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -530,6 +537,12 @@ component("base") {
+@@ -515,6 +522,12 @@ component("base") {
      "//url",
    ]
  

@@ -90,7 +90,7 @@ index 7c006ab576a03d14549f3a0c7b3fb35cf21fee0a..5cd81ab4de26bf9f174a5571d3c41fd4
    // a cookie. If this is set to non-null, the observer passed to
    // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 3450c15835d8b792f37764f6edc4a4560be435ef..b1034aa141d6121f8e1524fb34a28a040a280420 100644
+index a123ea0b396815063c4261110ee39e611b6e9eed..968256ba1df386589fda1b97b0e043585c4aa951 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -13,6 +13,7 @@ import "services/network/public/mojom/attribution.mojom";
@@ -112,7 +112,7 @@ index 3450c15835d8b792f37764f6edc4a4560be435ef..b1034aa141d6121f8e1524fb34a28a04
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 9e9b917e3f2aa9a56d4db931211828a913ed7f40..05d82fa5dd20acf84d33ca92bddedb9c6132ac36 100644
+index b30a674fe0f4bf22fa2548e49188f926c43f3ca0..f40f627e72519e6cc4c4b8212729bbd7c722ae13 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -598,6 +598,9 @@ URLLoader::URLLoader(
@@ -134,7 +134,7 @@ index 9e9b917e3f2aa9a56d4db931211828a913ed7f40..05d82fa5dd20acf84d33ca92bddedb9c
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1838,6 +1841,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1840,6 +1843,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

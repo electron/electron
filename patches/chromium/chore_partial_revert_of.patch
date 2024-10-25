@@ -14,10 +14,10 @@ track down the source of this problem & figure out if we can fix it
 by changing something in Electron.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c1e2bf39aa70776b7e3b26ac78c82995cd376c58..c26d53d7555cbdaae5c167aabf49135afb667259 100644
+index 286ed34dffc5d505a74c14071c4501498c9acc42..8b12691c6728312a43a971127e51da5a431010c8 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4707,9 +4707,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4709,9 +4709,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    bool renderer_started_hidden =
        params.disposition == WindowOpenDisposition::NEW_BACKGROUND_TAB;
  
