@@ -665,9 +665,10 @@ void NativeWindow::NotifyWindowAlwaysOnTopChanged() {
     observer.OnWindowAlwaysOnTopChanged();
 }
 
-void NativeWindow::NotifyWindowExecuteAppCommand(const std::string& command) {
+void NativeWindow::NotifyWindowExecuteAppCommand(
+    const std::string_view command_name) {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnExecuteAppCommand(command);
+    observer.OnExecuteAppCommand(command_name);
 }
 
 void NativeWindow::NotifyTouchBarItemInteraction(const std::string& item_id,
