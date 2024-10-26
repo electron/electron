@@ -21,6 +21,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "net/base/apple/url_conversions.h"
 #include "ui/views/widget/widget.h"
 #include "url/gurl.h"
@@ -146,11 +147,26 @@ void OpenExternal(const GURL& url,
     return;
   }
 
-  bool success = [[NSWorkspace sharedWorkspace] openURL:ns_url];
-  if (success && options.activate)
-    [NSApp activateIgnoringOtherApps:YES];
+  NSWorkspaceOpenConfiguration* configuration =
+      [NSWorkspaceOpenConfiguration configuration];
+  configuration.activates = options.activate;
 
-  std::move(callback).Run(success ? "" : "Failed to open URL");
+  __block OpenCallback copied_callback = std::move(callback);
+
+  [[NSWorkspace sharedWorkspace]
+                openURL:ns_url
+          configuration:configuration
+      completionHandler:^(NSRunningApplication* _Nullable app,
+                          NSError* _Nullable error) {
+        if (error) {
+          content::GetUIThreadTaskRunner({})->PostTask(
+              FROM_HERE,
+              base::BindOnce(std::move(copied_callback), "Failed to open URL"));
+        } else {
+          content::GetUIThreadTaskRunner({})->PostTask(
+              FROM_HERE, base::BindOnce(std::move(copied_callback), ""));
+        }
+      }];
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& full_path,
