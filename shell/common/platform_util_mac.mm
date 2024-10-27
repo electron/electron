@@ -158,14 +158,13 @@ void OpenExternal(const GURL& url,
           configuration:configuration
       completionHandler:^(NSRunningApplication* _Nullable app,
                           NSError* _Nullable error) {
-        if (error) {
-          content::GetUIThreadTaskRunner({})->PostTask(
-              FROM_HERE,
-              base::BindOnce(std::move(copied_callback), "Failed to open URL"));
-        } else {
-          content::GetUIThreadTaskRunner({})->PostTask(
-              FROM_HERE, base::BindOnce(std::move(copied_callback), ""));
-        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+          if (error) {
+            std::move(copied_callback).Run("Failed to open URL");
+          } else {
+            std::move(copied_callback).Run("");
+          }
+        });
       }];
 }
 
