@@ -230,8 +230,9 @@ jobs:
         DD_TAGS: "os.architecture:${{ inputs.target-arch }},os.family:${{ inputs.target-platform }},os.platform:${{ inputs.target-platform }},asan:${{ inputs.is-asan }}"
       run: |
         if ! [ -z $DD_API_KEY ] && [ -f src/electron/junit/test-results-main.xml ]; then
-          export PATH="$(node src/electron/script/yarn global bin):$PATH"
-          datadog-ci junit upload src/electron/junit/test-results-main.xml
+          export DATADOG_PATH=`node src/electron/script/yarn global bin`
+          echo $DATADOG_PATH
+          $DATADOG_PATH/datadog-ci junit upload src/electron/junit/test-results-main.xml
         fi          
       if: always() && !cancelled()
     - name: Upload Test Artifacts
