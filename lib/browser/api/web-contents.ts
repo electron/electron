@@ -1,16 +1,17 @@
-import { app, ipcMain, session, webFrameMain, dialog } from 'electron/main';
-import type { BrowserWindowConstructorOptions, LoadURLOptions, MessageBoxOptions, WebFrameMain } from 'electron/main';
-
-import * as url from 'url';
-import * as path from 'path';
 import { openGuestWindow, makeWebPreferences, parseContentTypeFormat } from '@electron/internal/browser/guest-window-manager';
-import { parseFeatures } from '@electron/internal/browser/parse-features-string';
+import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
+import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import * as deprecate from '@electron/internal/common/deprecate';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+
+import { app, ipcMain, session, webFrameMain, dialog } from 'electron/main';
+import type { BrowserWindowConstructorOptions, MessageBoxOptions } from 'electron/main';
+
+import * as path from 'path';
+import * as url from 'url';
 
 // session is not used here, the purpose is to make sure session is initialized
 // before the webContents module.
@@ -23,8 +24,6 @@ let nextId = 0;
 const getNextId = function () {
   return ++nextId;
 };
-
-type PostData = LoadURLOptions['postData']
 
 // Stock page sizes
 const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
@@ -403,7 +402,7 @@ WebContents.prototype.loadURL = function (url, options) {
       // the only one is with a bad scheme, perhaps ERR_INVALID_ARGUMENT
       // would be more appropriate.
       if (!error) {
-        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url: url };
+        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url };
       }
       finishListener();
     };
@@ -486,10 +485,6 @@ const addReplyToEvent = (event: Electron.IpcMainEvent) => {
 
 const addSenderToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent, sender: Electron.WebContents) => {
   event.sender = sender;
-  const { processId, frameId } = event;
-  Object.defineProperty(event, 'senderFrame', {
-    get: () => webFrameMain.fromId(processId, frameId)
-  });
 };
 
 const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
@@ -497,11 +492,6 @@ const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
     set: (value) => event._replyChannel.sendReply(value),
     get: () => {}
   });
-};
-
-const getWebFrameForEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
-  if (!event.processId || !event.frameId) return null;
-  return webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
 };
 
 const commandLine = process._linkedBinding('electron_common_command_line');
@@ -559,6 +549,8 @@ WebContents.prototype.goToOffset = function (index: number) {
   return this._goToOffset(index);
 };
 
+const consoleMessageDeprecated = deprecate.warnOnceMessage('\'console-message\' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead.');
+
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   const prefs = this.getLastWebPreferences() || {};
@@ -580,6 +572,28 @@ WebContents.prototype._init = function () {
     get () { return ipc; },
     enumerable: true
   });
+
+  /**
+   * Cached IPC emitters sorted by dispatch priority.
+   * Caching is used to avoid frequent array allocations.
+   *
+   * 0: WebFrameMain ipc
+   * 1: WebContents ipc
+   * 2: ipcMain
+   */
+  const cachedIpcEmitters: (ElectronInternal.IpcMainInternal | undefined)[] = [undefined, ipc, ipcMain];
+
+  // Get list of relevant IPC emitters for dispatch.
+  const getIpcEmittersForEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent): (ElectronInternal.IpcMainInternal | undefined)[] => {
+    // Lookup by FrameTreeNode ID to ensure IPCs received after a frame swap are
+    // always received. This occurs when a RenderFrame sends an IPC while it's
+    // unloading and its internal state is pending deletion.
+    const { frameTreeNodeId } = event;
+    const webFrameByFtn = frameTreeNodeId ? webFrameMainBinding._fromFtnIdIfExists(frameTreeNodeId) : undefined;
+    cachedIpcEmitters[0] = webFrameByFtn?.ipc;
+
+    return cachedIpcEmitters;
+  };
 
   // Add navigationHistory property which handles session history,
   // maintaining a list of navigation entries for backward and forward navigation.
@@ -604,30 +618,28 @@ WebContents.prototype._init = function () {
   });
 
   // Dispatch IPC messages to the ipc module.
-  this.on('-ipc-message' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message', function (this: Electron.WebContents, event, internal, channel, args) {
     addSenderToEvent(event, this);
     if (internal) {
       ipcMainInternal.emit(channel, event, ...args);
     } else {
       addReplyToEvent(event);
       this.emit('ipc-message', event, channel, ...args);
-      const maybeWebFrame = getWebFrameForEvent(event);
-      maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, ...args);
-      ipc.emit(channel, event, ...args);
-      ipcMain.emit(channel, event, ...args);
+      for (const ipcEmitter of getIpcEmittersForEvent(event)) {
+        ipcEmitter?.emit(channel, event, ...args);
+      }
     }
   });
 
-  this.on('-ipc-invoke' as any, async function (this: Electron.WebContents, event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-invoke', async function (this: Electron.WebContents, event, internal, channel, args) {
     addSenderToEvent(event, this);
     const replyWithResult = (result: any) => event._replyChannel.sendReply({ result });
     const replyWithError = (error: Error) => {
       console.error(`Error occurred in handler for '${channel}':`, error);
       event._replyChannel.sendReply({ error: error.toString() });
     };
-    const maybeWebFrame = getWebFrameForEvent(event);
-    const targets: (ElectronInternal.IpcMainInternal| undefined)[] = internal ? [ipcMainInternal] : [maybeWebFrame?.ipc, ipc, ipcMain];
-    const target = targets.find(target => target && (target as any)._invokeHandlers.has(channel));
+    const targets: (ElectronInternal.IpcMainInternal | undefined)[] = internal ? [ipcMainInternal] : getIpcEmittersForEvent(event);
+    const target = targets.find(target => (target as any)?._invokeHandlers.has(channel));
     if (target) {
       const handler = (target as any)._invokeHandlers.get(channel);
       try {
@@ -640,31 +652,34 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-message-sync' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-message-sync', function (this: Electron.WebContents, event, internal, channel, args) {
     addSenderToEvent(event, this);
     addReturnValueToEvent(event);
     if (internal) {
       ipcMainInternal.emit(channel, event, ...args);
     } else {
       addReplyToEvent(event);
-      const maybeWebFrame = getWebFrameForEvent(event);
-      if (this.listenerCount('ipc-message-sync') === 0 && ipc.listenerCount(channel) === 0 && ipcMain.listenerCount(channel) === 0 && (!maybeWebFrame || maybeWebFrame.ipc.listenerCount(channel) === 0)) {
+      const ipcEmitters = getIpcEmittersForEvent(event);
+      if (
+        this.listenerCount('ipc-message-sync') === 0 &&
+        ipcEmitters.every(emitter => !emitter || emitter.listenerCount(channel) === 0)
+      ) {
         console.warn(`WebContents #${this.id} called ipcRenderer.sendSync() with '${channel}' channel without listeners.`);
       }
       this.emit('ipc-message-sync', event, channel, ...args);
-      maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, ...args);
-      ipc.emit(channel, event, ...args);
-      ipcMain.emit(channel, event, ...args);
+      for (const ipcEmitter of ipcEmitters) {
+        ipcEmitter?.emit(channel, event, ...args);
+      }
     }
   });
 
-  this.on('-ipc-ports' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
+  this.on('-ipc-ports', function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
     addSenderToEvent(event, this);
     event.ports = ports.map(p => new MessagePortMain(p));
-    const maybeWebFrame = getWebFrameForEvent(event);
-    maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, message);
-    ipc.emit(channel, event, message);
-    ipcMain.emit(channel, event, message);
+    const ipcEmitters = getIpcEmittersForEvent(event);
+    for (const ipcEmitter of ipcEmitters) {
+      ipcEmitter?.emit(channel, event, message);
+    }
   });
 
   this.on('render-process-gone', (event, details) => {
@@ -676,7 +691,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-before-unload-fired' as any, function (this: Electron.WebContents, event: Electron.Event, proceed: boolean) {
+  this.on('-before-unload-fired', function (this: Electron.WebContents, event, proceed) {
     const type = this.getType();
     // These are the "interactive" types, i.e. ones a user might be looking at.
     // All other types should ignore the "proceed" signal and unload
@@ -693,12 +708,13 @@ WebContents.prototype._init = function () {
 
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
-    this.on('-new-window' as any, (event: Electron.Event, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
-      rawFeatures: string, referrer: Electron.Referrer, postData: PostData) => {
-      const postBody = postData ? {
-        data: postData,
-        ...parseContentTypeFormat(postData)
-      } : undefined;
+    this.on('-new-window', (event, url, frameName, disposition, rawFeatures, referrer, postData) => {
+      const postBody = postData
+        ? {
+            data: postData,
+            ...parseContentTypeFormat(postData)
+          }
+        : undefined;
       const details: Electron.HandlerDetails = {
         url,
         frameName,
@@ -735,11 +751,13 @@ WebContents.prototype._init = function () {
     let windowOpenOutlivesOpenerOption: boolean = false;
     let createWindow: Electron.CreateWindowFunction | undefined;
 
-    this.on('-will-add-new-contents' as any, (event: Electron.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
-      const postBody = postData ? {
-        data: postData,
-        ...parseContentTypeFormat(postData)
-      } : undefined;
+    this.on('-will-add-new-contents', (event, url, frameName, rawFeatures, disposition, referrer, postData) => {
+      const postBody = postData
+        ? {
+            data: postData,
+            ...parseContentTypeFormat(postData)
+          }
+        : undefined;
       const details: Electron.HandlerDetails = {
         url,
         frameName,
@@ -761,14 +779,16 @@ WebContents.prototype._init = function () {
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
       createWindow = result.createWindow;
       if (!event.defaultPrevented) {
-        const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
-          // Allow setting of backgroundColor as a webPreference even though
-          // it's technically a BrowserWindowConstructorOptions option because
-          // we need to access it in the renderer at init time.
-          backgroundColor: windowOpenOverriddenOptions.backgroundColor,
-          transparent: windowOpenOverriddenOptions.transparent,
-          ...windowOpenOverriddenOptions.webPreferences
-        } : undefined;
+        const secureOverrideWebPreferences = windowOpenOverriddenOptions
+          ? {
+              // Allow setting of backgroundColor as a webPreference even though
+            // it's technically a BrowserWindowConstructorOptions option because
+            // we need to access it in the renderer at init time.
+              backgroundColor: windowOpenOverriddenOptions.backgroundColor,
+              transparent: windowOpenOverriddenOptions.transparent,
+              ...windowOpenOverriddenOptions.webPreferences
+            }
+          : undefined;
         const { webPreferences: parsedWebPreferences } = parseFeatures(rawFeatures);
         const webPreferences = makeWebPreferences({
           embedder: this,
@@ -784,9 +804,7 @@ WebContents.prototype._init = function () {
     });
 
     // Create a new browser window for "window.open"
-    this.on('-add-new-contents' as any, (event: Electron.Event, webContents: Electron.WebContents, disposition: string,
-      _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
-      referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
+    this.on('-add-new-contents', (event, webContents, disposition, _userGesture, _left, _top, _width, _height, url, frameName, referrer, rawFeatures, postData) => {
       const overriddenOptions = windowOpenOverriddenOptions || undefined;
       const outlivesOpener = windowOpenOutlivesOpenerOption;
       const windowOpenFunction = createWindow;
@@ -824,7 +842,7 @@ WebContents.prototype._init = function () {
     app.emit('login', event, this, ...args);
   });
 
-  this.on('ready-to-show' as any, () => {
+  this.on('ready-to-show', () => {
     const owner = this.getOwnerBrowserWindow();
     if (owner && !owner.isDestroyed()) {
       process.nextTick(() => {
@@ -843,7 +861,7 @@ WebContents.prototype._init = function () {
 
   const originCounts = new Map<string, number>();
   const openDialogs = new Set<AbortController>();
-  this.on('-run-dialog' as any, async (info: {frame: WebFrameMain, dialogType: 'prompt' | 'confirm' | 'alert', messageText: string, defaultPromptText: string}, callback: (success: boolean, user_input: string) => void) => {
+  this.on('-run-dialog', async (info, callback) => {
     const originUrl = new URL(info.frame.url);
     const origin = originUrl.protocol === 'file:' ? originUrl.href : originUrl.origin;
     if ((originCounts.get(origin) ?? 0) < 0) return callback(false, '');
@@ -864,15 +882,17 @@ WebContents.prototype._init = function () {
       message: info.messageText,
       checkboxLabel: checkbox,
       signal: abortController.signal,
-      ...(info.dialogType === 'confirm') ? {
-        buttons: ['OK', 'Cancel'],
-        defaultId: 0,
-        cancelId: 1
-      } : {
-        buttons: ['OK'],
-        defaultId: -1, // No default button
-        cancelId: 0
-      }
+      ...(info.dialogType === 'confirm')
+        ? {
+            buttons: ['OK', 'Cancel'],
+            defaultId: 0,
+            cancelId: 1
+          }
+        : {
+            buttons: ['OK'],
+            defaultId: -1, // No default button
+            cancelId: 0
+          }
     };
     openDialogs.add(abortController);
     const promise = parent && !prefs.offscreen ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options);
@@ -886,9 +906,18 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-cancel-dialogs' as any, () => {
+  this.on('-cancel-dialogs', () => {
     for (const controller of openDialogs) { controller.abort(); }
     openDialogs.clear();
+  });
+
+  // TODO(samuelmaddock): remove deprecated 'console-message' arguments
+  this.on('-console-message' as any, (event: Electron.Event<Electron.WebContentsConsoleMessageEventParams>) => {
+    const hasDeprecatedListener = this.listeners('console-message').some(listener => listener.length > 1);
+    if (hasDeprecatedListener) {
+      consoleMessageDeprecated();
+    }
+    this.emit('console-message', event, (event as any)._level, event.message, event.lineNumber, event.sourceId);
   });
 
   app.emit('web-contents-created', { sender: this, preventDefault () {}, get defaultPrevented () { return false; } }, this);

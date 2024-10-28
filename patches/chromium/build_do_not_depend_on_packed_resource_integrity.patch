@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 78923a81c64fb7738f4e457e3166a88f3c150564..ee348433544550f99622b52252fd1064c46da35a 100644
+index f40c70d840845fdb6171ab6ba4cdcf92dbfd9965..7d762b40f44d8dc3cd1cb63c56a188f9bdced1fe 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -200,11 +200,16 @@ if (!is_android && !is_mac) {
@@ -33,10 +33,10 @@ index 78923a81c64fb7738f4e457e3166a88f3c150564..ee348433544550f99622b52252fd1064
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 7a23e63b800f87b6189ca04ce33c2c9b971e1152..50c51fad27925adf4a1e5fc9e03f7bca2153daa5 100644
+index 246010af5d09afcdd46188c70f74e24fc093a4b6..7b154ad07b3740e6e5f48bc8b5eafec0ab8be5c2 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4482,7 +4482,7 @@ static_library("browser") {
+@@ -4518,7 +4518,7 @@ static_library("browser") {
        ]
      }
  
@@ -46,10 +46,10 @@ index 7a23e63b800f87b6189ca04ce33c2c9b971e1152..50c51fad27925adf4a1e5fc9e03f7bca
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 633854df22c94cb2b7e02c1eda2663ca8091e11e..79ed45cf2b14ac3f504317305f4ae10e5413ff63 100644
+index 29029bfcb44f6f6b34ea37b80a611000c3bf3d28..c3c472d62a9d9c3b4b3edd43f6f270fe8b0720b8 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7050,9 +7050,12 @@ test("unit_tests") {
+@@ -6753,9 +6753,12 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
@@ -63,7 +63,7 @@ index 633854df22c94cb2b7e02c1eda2663ca8091e11e..79ed45cf2b14ac3f504317305f4ae10e
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -8079,6 +8082,10 @@ test("unit_tests") {
+@@ -7696,6 +7699,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index 633854df22c94cb2b7e02c1eda2663ca8091e11e..79ed45cf2b14ac3f504317305f4ae10e
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8146,7 +8153,6 @@ test("unit_tests") {
+@@ -7748,7 +7755,6 @@ test("unit_tests") {
      # Non-android deps for "unit_tests" target.
      deps += [
        "../browser/screen_ai:screen_ai_install_state",

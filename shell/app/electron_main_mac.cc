@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "electron/fuses.h"
+#include "electron/mas.h"
 #include "shell/app/electron_library_main.h"
 #include "shell/app/uv_stdio_fix.h"
 

@@ -1,29 +1,36 @@
-import { dialog, Menu } from 'electron/main';
-import * as fs from 'fs';
-
+import { IPC_MESSAGES } from '@electron/internal//common/ipc-messages';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
-import { IPC_MESSAGES } from '@electron/internal//common/ipc-messages';
+
+import { dialog, Menu } from 'electron/main';
+
+import * as fs from 'fs';
 
 const convertToMenuTemplate = function (items: ContextMenuItem[], handler: (id: number) => void) {
   return items.map(function (item) {
-    const transformed: Electron.MenuItemConstructorOptions = item.type === 'subMenu' ? {
-      type: 'submenu',
-      label: item.label,
-      enabled: item.enabled,
-      submenu: convertToMenuTemplate(item.subItems, handler)
-    } : item.type === 'separator' ? {
-      type: 'separator'
-    } : item.type === 'checkbox' ? {
-      type: 'checkbox',
-      label: item.label,
-      enabled: item.enabled,
-      checked: item.checked
-    } : {
-      type: 'normal',
-      label: item.label,
-      enabled: item.enabled
-    };
+    const transformed: Electron.MenuItemConstructorOptions = item.type === 'subMenu'
+      ? {
+          type: 'submenu',
+          label: item.label,
+          enabled: item.enabled,
+          submenu: convertToMenuTemplate(item.subItems, handler)
+        }
+      : item.type === 'separator'
+        ? {
+            type: 'separator'
+          }
+        : item.type === 'checkbox'
+          ? {
+              type: 'checkbox',
+              label: item.label,
+              enabled: item.enabled,
+              checked: item.checked
+            }
+          : {
+              type: 'normal',
+              label: item.label,
+              enabled: item.enabled
+            };
 
     if (item.id != null) {
       transformed.click = () => handler(item.id);

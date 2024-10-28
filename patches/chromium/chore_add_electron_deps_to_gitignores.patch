@@ -18,20 +18,20 @@ index 9056030523807b8023493c0be9c9675da792852e..a1b949528e0a164c1bad98dbfbef282f
  /googleurl
  /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 41f346652c8510f1df3211e4430d492ca565f51e..b784b4d7b28c3c1445274dd624f6d5729cf9eae1 100644
+index 826765cd63fb17ff65f5603d013afddfbfea876b..dd68f82ef3513e6e76d627c627886bcd865938fa 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
-@@ -43,7 +43,9 @@
- /data_sharing_sdk
+@@ -45,7 +45,9 @@
  /devserver
  /directxsdk
+ /edk2
 +/electron_node
  /elfutils/src
 +/engflow-reclient-configs/
  /espresso/lib/
  /eyesfree/src
  /fast_float/src
-@@ -97,6 +99,7 @@
+@@ -95,6 +97,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -39,10 +39,11 @@ index 41f346652c8510f1df3211e4430d492ca565f51e..b784b4d7b28c3c1445274dd624f6d572
  /ninja
  /node/*.tar.gz
  /node/linux/
-@@ -146,6 +149,7 @@
+@@ -139,7 +142,7 @@
+ /spirv-cross/src
  /spirv-headers/src
  /spirv-tools/src
- /sqlite4java/lib/
+-/src
 +/squirrel.mac
  /subresource-filter-ruleset/data/*
  /swift-format

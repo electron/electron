@@ -19,6 +19,7 @@
 #include <mach/mach.h>
 #include "base/process/port_provider_mac.h"
 #include "content/public/browser/browser_child_process_host.h"
+#include "electron/mas.h"
 
 extern "C" int sandbox_check(pid_t pid, const char* operation, int type, ...);
 

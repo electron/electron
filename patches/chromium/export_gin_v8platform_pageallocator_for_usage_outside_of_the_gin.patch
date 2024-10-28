@@ -21,7 +21,7 @@ index c34f34146d0aab681318b64ac33081bdc21ce7d6..11cdf6c34d8f79fcf293f59785e586dc
    ThreadIsolatedAllocator* GetThreadIsolatedAllocator() override;
  #endif
 diff --git a/gin/v8_platform.cc b/gin/v8_platform.cc
-index 05dcdd46bfc63f0aba85425df4f7d9fbe4d4a94f..0519c41803dbe03fdee4eee3765bc5abb60debd2 100644
+index fa799a4cc32950ce03c154bc7791341d96a17f67..b8ec81b79b6129a7e26a2ffecf535fdedea8ed6c 100644
 --- a/gin/v8_platform.cc
 +++ b/gin/v8_platform.cc
 @@ -204,6 +204,10 @@ ThreadIsolatedAllocator* V8Platform::GetThreadIsolatedAllocator() {

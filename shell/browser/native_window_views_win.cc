@@ -213,8 +213,8 @@ void NativeWindowViews::Maximize() {
     if (IsVisible()) {
       widget()->Maximize();
     } else {
-      widget()->native_widget_private()->Show(ui::SHOW_STATE_MAXIMIZED,
-                                              gfx::Rect());
+      widget()->native_widget_private()->Show(
+          ui::mojom::WindowShowState::kMaximized, gfx::Rect());
       NotifyWindowShow();
     }
   } else {
@@ -458,31 +458,31 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       // Note that SIZE_MAXIMIZED and SIZE_MINIMIZED might be emitted for
       // multiple times for one resize because of the SetWindowPlacement call.
       if (w_param == SIZE_MAXIMIZED &&
-          last_window_state_ != ui::SHOW_STATE_MAXIMIZED) {
-        if (last_window_state_ == ui::SHOW_STATE_MINIMIZED)
+          last_window_state_ != ui::mojom::WindowShowState::kMaximized) {
+        if (last_window_state_ == ui::mojom::WindowShowState::kMinimized)
           NotifyWindowRestore();
-        last_window_state_ = ui::SHOW_STATE_MAXIMIZED;
+        last_window_state_ = ui::mojom::WindowShowState::kMaximized;
         NotifyWindowMaximize();
         ResetWindowControls();
       } else if (w_param == SIZE_MINIMIZED &&
-                 last_window_state_ != ui::SHOW_STATE_MINIMIZED) {
-        last_window_state_ = ui::SHOW_STATE_MINIMIZED;
+                 last_window_state_ != ui::mojom::WindowShowState::kMinimized) {
+        last_window_state_ = ui::mojom::WindowShowState::kMinimized;
         NotifyWindowMinimize();
       }
       break;
     }
     case SIZE_RESTORED: {
       switch (last_window_state_) {
-        case ui::SHOW_STATE_MAXIMIZED:
-          last_window_state_ = ui::SHOW_STATE_NORMAL;
+        case ui::mojom::WindowShowState::kMaximized:
+          last_window_state_ = ui::mojom::WindowShowState::kNormal;
           NotifyWindowUnmaximize();
           break;
-        case ui::SHOW_STATE_MINIMIZED:
+        case ui::mojom::WindowShowState::kMinimized:
           if (IsFullscreen()) {
-            last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+            last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
             NotifyWindowEnterFullScreen();
           } else {
-            last_window_state_ = ui::SHOW_STATE_NORMAL;
+            last_window_state_ = ui::mojom::WindowShowState::kNormal;
             NotifyWindowRestore();
           }
           break;

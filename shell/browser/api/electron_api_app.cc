@@ -39,6 +39,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
 #include "crypto/crypto_buildflags.h"
+#include "electron/mas.h"
 #include "gin/handle.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
@@ -79,7 +80,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(IS_WIN)

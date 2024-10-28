@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 
-const crypto = require('node:crypto');
-const { GitProcess } = require('dugite');
-const childProcess = require('node:child_process');
-const { ESLint } = require('eslint');
-const fs = require('node:fs');
-const minimist = require('minimist');
-const path = require('node:path');
 const { getCodeBlocks } = require('@electron/lint-roller/dist/lib/markdown');
+
+const { GitProcess } = require('dugite');
+const { ESLint } = require('eslint');
+const minimist = require('minimist');
+
+const childProcess = require('node:child_process');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
 
@@ -144,7 +146,6 @@ const LINTERS = [{
       cacheLocation: `node_modules/.eslintcache.${crypto.createHash('md5').update(fs.readFileSync(__filename)).digest('hex')}`,
       extensions: ['.js', '.ts'],
       fix: opts.fix,
-      overrideConfigFile: path.join(ELECTRON_ROOT, '.eslintrc.json'),
       resolvePluginsRelativeTo: ELECTRON_ROOT
     });
     const formatter = await eslint.loadFormatter();

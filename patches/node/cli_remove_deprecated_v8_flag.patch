@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Omer Katz <omerkatz@chromium.org>
+Date: Thu, 19 Sep 2024 10:50:09 +0200
+Subject: cli: remove deprecated V8 flag
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Remove the `--huge-max-old-generation-size` V8 flag from the
+`NODE_OPTIONS` allowlist. That flag was recently deprecated (it
+currently remains as nop, see crrev.com/c/5831467) and will soon be
+completely removed.
+
+PR-URL: https://github.com/nodejs/node/pull/54761
+Reviewed-By: Richard Lau <rlau@redhat.com>
+Reviewed-By: Luigi Pinca <luigipinca@gmail.com>
+Reviewed-By: Michaël Zasso <targos@protonmail.com>
+Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
+
+diff --git a/doc/api/cli.md b/doc/api/cli.md
+index ed0a43306e87962cf0e756d9e059ec5c08ad674b..7ada2802b2590e78fa5b9847935866b743cf94ed 100644
+--- a/doc/api/cli.md
++++ b/doc/api/cli.md
+@@ -2868,7 +2868,6 @@ V8 options that are allowed are:
+ * `--disallow-code-generation-from-strings`
+ * `--enable-etw-stack-walking`
+ * `--expose-gc`
+-* `--huge-max-old-generation-size`
+ * `--interpreted-frames-native-stack`
+ * `--jitless`
+ * `--max-old-space-size`
+diff --git a/src/node_options.cc b/src/node_options.cc
+index 4e3c82e9528b04fd1a0cc99d30fb885e4b224bc9..38e173f72b446aa2db07f676b6ece26247bbf56b 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -866,11 +866,6 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(
+             "disallow eval and friends",
+             V8Option{},
+             kAllowedInEnvvar);
+-  AddOption("--huge-max-old-generation-size",
+-            "increase default maximum heap size on machines with 16GB memory "
+-            "or more",
+-            V8Option{},
+-            kAllowedInEnvvar);
+   AddOption("--jitless",
+             "disable runtime allocation of executable memory",
+             V8Option{},
+diff --git a/test/parallel/test-cli-node-options.js b/test/parallel/test-cli-node-options.js
+index 8d614e607177cdd922fef65a85a2ccdcf54116c0..146df3a21a0551e910c46248d2fd97dde8896164 100644
+--- a/test/parallel/test-cli-node-options.js
++++ b/test/parallel/test-cli-node-options.js
+@@ -70,7 +70,6 @@ if (common.hasCrypto) {
+ expect('--abort_on-uncaught_exception', 'B\n');
+ expect('--disallow-code-generation-from-strings', 'B\n');
+ expect('--expose-gc', 'B\n');
+-expect('--huge-max-old-generation-size', 'B\n');
+ expect('--jitless', 'B\n');
+ expect('--max-old-space-size=0', 'B\n');
+ expect('--max-semi-space-size=0', 'B\n');

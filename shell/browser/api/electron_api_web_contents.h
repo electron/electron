@@ -22,8 +22,10 @@
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
-#include "content/common/frame.mojom.h"
+#include "content/common/frame.mojom-forward.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
+#include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -45,12 +47,8 @@
 #include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/models/image_model.h"
 
-#if BUILDFLAG(ENABLE_PRINTING)
-#include "shell/browser/printing/print_view_manager_electron.h"
-#endif
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "extensions/common/mojom/view_type.mojom.h"
+#include "extensions/common/mojom/view_type.mojom-forward.h"
 
 namespace extensions {
 class ScriptExecutor;
@@ -246,16 +244,9 @@ class WebContents final : public ExclusiveAccessContext,
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  void OnGetDeviceNameToUse(base::Value::Dict print_settings,
-                            printing::CompletionCallback print_callback,
-                            // <error, device_name>
-                            std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
-  void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
-                    print_to_pdf::PdfPrintResult print_result,
-                    scoped_refptr<base::RefCountedMemory> data);
 #endif
 
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
@@ -539,11 +530,6 @@ class WebContents final : public ExclusiveAccessContext,
 #endif
 
   // content::WebContentsDelegate:
-  bool DidAddMessageToConsole(content::WebContents* source,
-                              blink::mojom::ConsoleMessageLevel level,
-                              const std::u16string& message,
-                              int32_t line_no,
-                              const std::u16string& source_id) override;
   bool IsWebContentsCreationOverridden(
       content::SiteInstance* source_site_instance,
       content::mojom::WindowContainerType window_container_type,
@@ -564,13 +550,14 @@ class WebContents final : public ExclusiveAccessContext,
       int opener_render_frame_id,
       const content::mojom::CreateNewWindowParams& params,
       content::WebContents* new_contents) override;
-  void AddNewContents(content::WebContents* source,
-                      std::unique_ptr<content::WebContents> new_contents,
-                      const GURL& target_url,
-                      WindowOpenDisposition disposition,
-                      const blink::mojom::WindowFeatures& window_features,
-                      bool user_gesture,
-                      bool* was_blocked) override;
+  content::WebContents* AddNewContents(
+      content::WebContents* source,
+      std::unique_ptr<content::WebContents> new_contents,
+      const GURL& target_url,
+      WindowOpenDisposition disposition,
+      const blink::mojom::WindowFeatures& window_features,
+      bool user_gesture,
+      bool* was_blocked) override;
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
       const content::OpenURLParams& params,
@@ -646,7 +633,7 @@ class WebContents final : public ExclusiveAccessContext,
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
                               content::RenderFrameHost* new_host) override;
-  void FrameDeleted(int frame_tree_node_id) override;
+  void FrameDeleted(content::FrameTreeNodeId frame_tree_node_id) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void PrimaryMainFrameRenderProcessGone(
       base::TerminationStatus status) override;
@@ -688,6 +675,13 @@ class WebContents final : public ExclusiveAccessContext,
       content::RenderWidgetHost* render_widget_host) override;
   void OnWebContentsLostFocus(
       content::RenderWidgetHost* render_widget_host) override;
+  void OnDidAddMessageToConsole(
+      content::RenderFrameHost* source_frame,
+      blink::mojom::ConsoleMessageLevel level,
+      const std::u16string& message,
+      int32_t line_no,
+      const std::u16string& source_id,
+      const std::optional<std::u16string>& untrusted_stack_trace) override;
 
   // InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;

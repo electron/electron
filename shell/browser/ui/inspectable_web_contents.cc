@@ -6,6 +6,7 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 
 #include <algorithm>
+#include <array>
 #include <memory>
 #include <string_view>
 #include <utility>
@@ -41,6 +42,7 @@
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
@@ -67,10 +69,6 @@
 namespace electron {
 
 namespace {
-
-const double kPresetZoomFactors[] = {0.25, 0.333, 0.5,  0.666, 0.75, 0.9,
-                                     1.0,  1.1,   1.25, 1.5,   1.75, 2.0,
-                                     2.5,  3.0,   4.0,  5.0};
 
 const char kChromeUIDevToolsURL[] =
     "devtools://devtools/bundled/devtools_app.html?"
@@ -121,15 +119,19 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
 }
 
 double GetNextZoomLevel(double level, bool out) {
-  double factor = blink::ZoomLevelToZoomFactor(level);
-  size_t size = std::size(kPresetZoomFactors);
-  for (size_t i = 0; i < size; ++i) {
-    if (!blink::ZoomValuesEqual(kPresetZoomFactors[i], factor))
+  static constexpr std::array<double, 16U> kPresetFactors{
+      0.25, 0.333, 0.5,  0.666, 0.75, 0.9, 1.0, 1.1,
+      1.25, 1.5,   1.75, 2.0,   2.5,  3.0, 4.0, 5.0};
+  static constexpr size_t size = std::size(kPresetFactors);
+
+  const double factor = blink::ZoomLevelToZoomFactor(level);
+  for (size_t i = 0U; i < size; ++i) {
+    if (!blink::ZoomValuesEqual(kPresetFactors[i], factor))
       continue;
-    if (out && i > 0)
-      return blink::ZoomFactorToZoomLevel(kPresetZoomFactors[i - 1]);
-    if (!out && i != size - 1)
-      return blink::ZoomFactorToZoomLevel(kPresetZoomFactors[i + 1]);
+    if (out && i > 0U)
+      return blink::ZoomFactorToZoomLevel(kPresetFactors[i - 1U]);
+    if (!out && i + 1U < size)
+      return blink::ZoomFactorToZoomLevel(kPresetFactors[i + 1U]);
   }
   return level;
 }
@@ -1036,7 +1038,8 @@ void InspectableWebContents::DidFinishNavigation(
   // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);
   // should be enough, but it seems to be a noop currently.
   frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script),
-                                   base::NullCallback());
+                                   base::NullCallback(),
+                                   content::ISOLATED_WORLD_ID_GLOBAL);
 }
 
 void InspectableWebContents::SendMessageAck(int request_id,

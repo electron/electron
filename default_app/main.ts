@@ -4,6 +4,7 @@ import * as fs from 'node:fs';
 import { Module } from 'node:module';
 import * as path from 'node:path';
 import * as url from 'node:url';
+
 const { app, dialog } = electron;
 
 type DefaultAppOptions = {
@@ -92,9 +93,7 @@ async function loadApplicationPackage (packagePath: string) {
       try {
         process.emitWarning = () => {};
         packageJson = (await import(url.pathToFileURL(packageJsonPath).toString(), {
-          assert: {
-            type: 'json'
-          }
+          with: { type: 'json' }
         })).default;
       } catch (e) {
         showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${(e as Error).message}`);
@@ -255,6 +254,7 @@ async function startRepl () {
 // start the default app.
 if (option.file && !option.webdriver) {
   const file = option.file;
+  // eslint-disable-next-line n/no-deprecated-api
   const protocol = url.parse(file).protocol;
   const extension = path.extname(file);
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {

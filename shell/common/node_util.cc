@@ -4,8 +4,12 @@
 
 #include "shell/common/node_util.h"
 
+#include "base/compiler_specific.h"
 #include "base/logging.h"
 #include "gin/converter.h"
+#include "gin/dictionary.h"
+#include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
 
 namespace electron::util {
@@ -42,6 +46,34 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
                << "): " << msg;
   }
   return ret;
+}
+
+void EmitWarning(const std::string_view warning_msg,
+                 const std::string_view warning_type) {
+  EmitWarning(JavascriptEnvironment::GetIsolate(), warning_msg, warning_type);
+}
+
+void EmitWarning(v8::Isolate* isolate,
+                 const std::string_view warning_msg,
+                 const std::string_view warning_type) {
+  v8::HandleScope scope{isolate};
+  gin::Dictionary process{
+      isolate, node::Environment::GetCurrent(isolate)->process_object()};
+  base::RepeatingCallback<void(std::string_view, std::string_view,
+                               std::string_view)>
+      emit_warning;
+  process.Get("emitWarning", &emit_warning);
+  emit_warning.Run(warning_msg, warning_type, "");
+}
+
+// SAFETY: There is no node::Buffer API that passes the UNSAFE_BUFFER_USAGE
+// test, so let's isolate the unsafe API use into this function. Instead of
+// calling `Buffer::Data()` and `Buffer::Length()` directly, the rest of our
+// code should prefer to use spans returned by this function.
+base::span<uint8_t> as_byte_span(v8::Local<v8::Value> node_buffer) {
+  auto* data = reinterpret_cast<uint8_t*>(node::Buffer::Data(node_buffer));
+  const auto size = node::Buffer::Length(node_buffer);
+  return UNSAFE_BUFFERS(base::span{data, size});
 }
 
 }  // namespace electron::util

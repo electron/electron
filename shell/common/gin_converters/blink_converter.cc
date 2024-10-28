@@ -21,13 +21,14 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/keyboard_util.h"
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/context_menu_data/edit_flags.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/input/web_keyboard_event.h"
 #include "third_party/blink/public/common/input/web_mouse_event.h"
 #include "third_party/blink/public/common/input/web_mouse_wheel_event.h"
 #include "third_party/blink/public/common/widget/device_emulation_params.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/loader/referrer.mojom.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/events/blink/blink_event_util.h"
@@ -477,9 +478,6 @@ Converter<std::optional<blink::mojom::FormControlType>>::ToV8(
       case blink::mojom::FormControlType::kButtonReset:
         str = "reset-button";
         break;
-      case blink::mojom::FormControlType::kButtonSelectList:
-        str = "select-list";
-        break;
       case blink::mojom::FormControlType::kButtonSubmit:
         str = "submit-button";
         break;
@@ -554,9 +552,6 @@ Converter<std::optional<blink::mojom::FormControlType>>::ToV8(
         break;
       case blink::mojom::FormControlType::kOutput:
         str = "output";
-        break;
-      case blink::mojom::FormControlType::kSelectList:
-        str = "select-list";
         break;
       case blink::mojom::FormControlType::kSelectMultiple:
         str = "select-multiple";
@@ -703,6 +698,20 @@ bool Converter<blink::CloneableMessage>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 blink::CloneableMessage* out) {
   return electron::SerializeV8Value(isolate, val, out);
+}
+
+// static
+v8::Local<v8::Value> Converter<blink::mojom::ConsoleMessageLevel>::ToV8(
+    v8::Isolate* isolate,
+    const blink::mojom::ConsoleMessageLevel& in) {
+  using Val = blink::mojom::ConsoleMessageLevel;
+  static constexpr auto Lookup = base::MakeFixedFlatMap<Val, std::string_view>({
+      {Val::kVerbose, "debug"},
+      {Val::kInfo, "info"},
+      {Val::kWarning, "warning"},
+      {Val::kError, "error"},
+  });
+  return StringToV8(isolate, Lookup.at(in));
 }
 
 }  // namespace gin

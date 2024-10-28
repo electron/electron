@@ -242,8 +242,9 @@ Returns:
   * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
     This property is always set to `false` for this event.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
-  * `frame` WebFrameMain - The frame to be navigated.
-  * `initiator` WebFrameMain (optional) - The frame which initiated the
+  * `frame` WebFrameMain | null - The frame to be navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
     frame's name), or null if the navigation was not initiated by a frame. This
     can also be null if the initiating frame was deleted before the event was
@@ -275,8 +276,9 @@ Returns:
   * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
     This property is always set to `false` for this event.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
-  * `frame` WebFrameMain - The frame to be navigated.
-  * `initiator` WebFrameMain (optional) - The frame which initiated the
+  * `frame` WebFrameMain | null - The frame to be navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
     frame's name), or null if the navigation was not initiated by a frame. This
     can also be null if the initiating frame was deleted before the event was
@@ -306,8 +308,9 @@ Returns:
     document. Examples of same document navigations are reference fragment
     navigations, pushState/replaceState, and same page history navigation.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
-  * `frame` WebFrameMain - The frame to be navigated.
-  * `initiator` WebFrameMain (optional) - The frame which initiated the
+  * `frame` WebFrameMain | null - The frame to be navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
     frame's name), or null if the navigation was not initiated by a frame. This
     can also be null if the initiating frame was deleted before the event was
@@ -330,8 +333,9 @@ Returns:
     document. Examples of same document navigations are reference fragment
     navigations, pushState/replaceState, and same page history navigation.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
-  * `frame` WebFrameMain - The frame to be navigated.
-  * `initiator` WebFrameMain (optional) - The frame which initiated the
+  * `frame` WebFrameMain | null - The frame to be navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
     frame's name), or null if the navigation was not initiated by a frame. This
     can also be null if the initiating frame was deleted before the event was
@@ -361,8 +365,9 @@ Returns:
     document. Examples of same document navigations are reference fragment
     navigations, pushState/replaceState, and same page history navigation.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
-  * `frame` WebFrameMain - The frame to be navigated.
-  * `initiator` WebFrameMain (optional) - The frame which initiated the
+  * `frame` WebFrameMain | null - The frame to be navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
     frame's name), or null if the navigation was not initiated by a frame. This
     can also be null if the initiating frame was deleted before the event was
@@ -743,7 +748,8 @@ Returns:
 * `params` Object
   * `x` Integer - x coordinate.
   * `y` Integer - y coordinate.
-  * `frame` WebFrameMain - Frame from which the context menu was invoked.
+  * `frame` WebFrameMain | null - Frame from which the context menu was invoked.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
   * `linkURL` string - URL of the link that encloses the node the context menu
     was invoked on.
   * `linkText` string - Text associated with the link. May be an empty
@@ -949,11 +955,17 @@ Emitted when a `<webview>` has been attached to this web contents.
 
 Returns:
 
-* `event` Event
-* `level` Integer - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
-* `message` string - The actual console message
-* `line` Integer - The line number of the source that triggered this console message
-* `sourceId` string
+* `details` Event\<\>
+  * `message` string - Message text
+  * `level` string - Message severity
+    Possible values include `info`, `warning`, `error`, and `debug`.
+  * `lineNumber` Integer - Line number in the log source
+  * `sourceId` string - URL of the log source
+  * `frame` WebFrameMain - Frame that logged the message
+* `level` Integer _Deprecated_ - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
+* `message` string _Deprecated_ - The actual console message
+* `line` Integer _Deprecated_ - The line number of the source that triggered this console message
+* `sourceId` string _Deprecated_
 
 Emitted when the associated window logs a console message.
 
@@ -1010,7 +1022,8 @@ Returns:
 
 * `event` Event
 * `details` Object
-  * `frame` WebFrameMain
+  * `frame` WebFrameMain | null - The created frame.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
 
 Emitted when the [mainFrame](web-contents.md#contentsmainframe-readonly), an `<iframe>`, or a nested `<iframe>` is loaded within the page.
 

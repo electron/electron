@@ -64,6 +64,31 @@ const child = new BaseWindow({ parent, modal: true })
 * On Linux the type of modal windows will be changed to `dialog`.
 * On Linux many desktop environments do not support hiding a modal window.
 
+## Resource management
+
+When you add a [`WebContentsView`](web-contents-view.md) to a `BaseWindow` and the `BaseWindow`
+is closed, the [`webContents`](web-contents.md) of the `WebContentsView` are not destroyed
+automatically.
+
+It is your responsibility to close the `webContents` when you no longer need them, e.g. when
+the `BaseWindow` is closed:
+
+```js
+const { BaseWindow, WebContentsView } = require('electron')
+
+const win = new BaseWindow({ width: 800, height: 600 })
+
+const view = new WebContentsView()
+win.contentView.addChildView(view)
+
+win.on('closed', () => {
+  view.webContents.close()
+})
+```
+
+Unlike with a [`BrowserWindow`](browser-window.md), if you don't explicitly close the
+`webContents`, you'll encounter memory leaks.
+
 ## Class: BaseWindow
 
 > Create and control windows.
@@ -126,9 +151,17 @@ or session log off.
 
 #### Event: 'blur'
 
+Returns:
+
+* `event` Event
+
 Emitted when the window loses focus.
 
 #### Event: 'focus'
+
+Returns:
+
+* `event` Event
 
 Emitted when the window gains focus.
 

@@ -1,16 +1,19 @@
+import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
+
 import { expect } from 'chai';
+import * as WebSocket from 'ws';
+
+import { once } from 'node:events';
+import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
-import * as qs from 'node:querystring';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import * as url from 'node:url';
-import * as WebSocket from 'ws';
-import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
 import { Socket } from 'node:net';
-import { listen, defer } from './lib/spec-helpers';
-import { once } from 'node:events';
+import * as path from 'node:path';
+import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
+import * as url from 'node:url';
+
+import { listen, defer } from './lib/spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -295,7 +298,7 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders;
         requestHeaders.Accept = '*/*;test/header';
-        callback({ requestHeaders: requestHeaders });
+        callback({ requestHeaders });
       });
       const { data } = await ajax(defaultURL);
       expect(data).to.equal('/header/received');
@@ -362,7 +365,7 @@ describe('webRequest module', () => {
         Test: 'header'
       };
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
-        callback({ requestHeaders: requestHeaders });
+        callback({ requestHeaders });
       });
       ses.webRequest.onSendHeaders((details) => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders);
@@ -388,7 +391,7 @@ describe('webRequest module', () => {
       };
       let onSendHeadersCalled = false;
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
-        callback({ requestHeaders: requestHeaders });
+        callback({ requestHeaders });
       });
       ses.webRequest.onSendHeaders((details) => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders);
@@ -437,7 +440,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!;
         responseHeaders.Custom = ['Changed'] as any;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL);
       expect(headers).to.to.have.property('custom', 'Changed');
@@ -447,7 +450,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!;
         responseHeaders['access-control-allow-origin'] = ['http://new-origin'] as any;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL);
       expect(headers).to.to.have.property('access-control-allow-origin', 'http://new-origin');
@@ -457,7 +460,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!;
         responseHeaders.Custom = ['Changed'] as any;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax('cors://host');
       expect(headers).to.to.have.property('custom', 'Changed');
@@ -486,7 +489,7 @@ describe('webRequest module', () => {
     it('follows server redirect', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL + 'serverRedirect');
       expect(headers).to.to.have.property('custom', 'Header');
@@ -496,7 +499,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders;
         callback({
-          responseHeaders: responseHeaders,
+          responseHeaders,
           statusLine: 'HTTP/1.1 404 Not Found'
         });
       });
@@ -533,7 +536,7 @@ describe('webRequest module', () => {
       const redirectURL = defaultURL + 'redirect';
       ses.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === defaultURL) {
-          callback({ redirectURL: redirectURL });
+          callback({ redirectURL });
         } else {
           callback({});
         }
@@ -600,7 +603,7 @@ describe('webRequest module', () => {
         });
       });
       server.on('upgrade', function upgrade (request, socket, head) {
-        const pathname = require('node:url').parse(request.url).pathname;
+        const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
         if (pathname === '/websocket') {
           reqHeaders[request.url!] = request.headers;
           wss.handleUpgrade(request, socket as Socket, head, function done (ws) {
@@ -622,7 +625,7 @@ describe('webRequest module', () => {
         callback({ requestHeaders: details.requestHeaders });
       });
       ses.webRequest.onHeadersReceived((details, callback) => {
-        const pathname = require('node:url').parse(details.url).pathname;
+        const pathname = new URL(details.url).pathname;
         receivedHeaders[pathname] = details.responseHeaders;
         callback({ cancel: false });
       });

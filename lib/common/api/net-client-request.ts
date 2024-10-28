@@ -1,9 +1,10 @@
-import * as url from 'url';
-import { Readable, Writable } from 'stream';
 import type {
   ClientRequestConstructorOptions,
   UploadProgress
 } from 'electron/common';
+
+import { Readable, Writable } from 'stream';
+import * as url from 'url';
 
 const {
   isValidHeaderName,
@@ -226,7 +227,7 @@ function validateHeader (name: any, value: any): void {
 }
 
 function parseOptions (optionsIn: ClientRequestConstructorOptions | string): NodeJS.CreateURLLoaderOptions & ExtraURLLoaderOptions {
-  // eslint-disable-next-line node/no-deprecated-api
+  // eslint-disable-next-line n/no-deprecated-api
   const options: any = typeof optionsIn === 'string' ? url.parse(optionsIn) : { ...optionsIn };
 
   let urlStr: string = options.url;
@@ -259,7 +260,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
       // an invalid request.
       throw new TypeError('Request path contains unescaped characters');
     }
-    // eslint-disable-next-line node/no-deprecated-api
+    // eslint-disable-next-line n/no-deprecated-api
     const pathObj = url.parse(options.path || '/');
     urlObj.pathname = pathObj.pathname;
     urlObj.search = pathObj.search;

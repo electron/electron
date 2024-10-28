@@ -13,54 +13,128 @@ This patch can be removed should we choose to support chrome.fileSystem
 or support it enough to fix the crash.
 
 diff --git a/chrome/browser/resources/pdf/pdf_viewer.ts b/chrome/browser/resources/pdf/pdf_viewer.ts
-index 7e9c031b514bc59c4648587677dc5af0d1156a6e..6abb8e9d9c2ed8a87202aff9794cc4045db31ea7 100644
+index 020e31e04887008cba6ed04407124c034b9565a2..8a8a7eb411dc6946254d0d92e043a22bdd2053f9 100644
 --- a/chrome/browser/resources/pdf/pdf_viewer.ts
 +++ b/chrome/browser/resources/pdf/pdf_viewer.ts
-@@ -1029,7 +1029,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1020,28 +1020,27 @@ export class PdfViewerElement extends PdfViewerBaseElement {
        dataArray = [result.dataToSave];
      }
  
-+    const a = document.createElement('a');
-+    a.download = this.attachments_[index].name;
-     const blob = new Blob(dataArray);
-+    // <if expr="not _google_chrome">
-+    a.href = URL.createObjectURL(blob);
-+    a.click();
-+    URL.revokeObjectURL(a.href);
-+    // </if>
-+    // <if expr="_google_chrome">
+-    const blob = new Blob(dataArray);
      const fileName = this.attachments_[index].name;
-     chrome.fileSystem.chooseEntry(
-         {type: 'saveFile', suggestedName: fileName},
-@@ -1051,6 +1059,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
-             // </if>
-           });
-         });
-+    // </if>
+-    chrome.fileSystem.chooseEntry(
+-        {type: 'saveFile', suggestedName: fileName},
+-        (entry?: FileSystemFileEntry) => {
+-          if (chrome.runtime.lastError) {
+-            if (chrome.runtime.lastError.message !== 'User cancelled') {
+-              console.error(
+-                  'chrome.fileSystem.chooseEntry failed: ' +
+-                  chrome.runtime.lastError.message);
+-            }
+-            return;
+-          }
+-          entry!.createWriter((writer: FileWriter) => {
+-            writer.write(blob);
+-            // <if expr="enable_ink">
+-            // Unblock closing the window now that the user has saved
+-            // successfully.
+-            this.setShowBeforeUnloadDialog_(false);
+-            // </if>
+-          });
+-        });
++    const blob = new Blob(dataArray);
++
++    try {
++      const fileHandle = await window.showSaveFilePicker({
++        suggestedName: fileName,
++      });
++
++      const writable = await fileHandle.createWritable();
++      await writable.write(blob);
++      await writable.close();
++      // <if expr="enable_ink">
++      // Unblock closing the window now that the user has saved
++      // successfully.
++      this.setShowBeforeUnloadDialog_(false);
++      // </if>
++    } catch (error: any) {
++      if (error.name !== 'AbortError') {
++        console.error('window.showSaveFilePicker failed: ' + error);
++      }
++    }
    }
  
    /**
-@@ -1174,7 +1183,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1169,36 +1168,33 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+       fileName = fileName + '.pdf';
      }
  
-     // Create blob before callback to avoid race condition.
-+    const a = document.createElement('a');
-+    a.download = fileName;
+-    // Create blob before callback to avoid race condition.
      const blob = new Blob([result.dataToSave], {type: 'application/pdf'});
-+    // <if expr="not _google_chrome">
-+    a.href = URL.createObjectURL(blob);
-+    a.click();
-+    URL.revokeObjectURL(a.href);
-+    // </if>
-+    // <if expr="_google_chrome">
-     chrome.fileSystem.chooseEntry(
-         {
-           type: 'saveFile',
-@@ -1199,6 +1216,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
-             // </if>
-           });
-         });
-+    // </if>
+-    chrome.fileSystem.chooseEntry(
+-        {
+-          type: 'saveFile',
+-          accepts: [{description: '*.pdf', extensions: ['pdf']}],
+-          suggestedName: fileName,
+-        },
+-        (entry?: FileSystemFileEntry) => {
+-          if (chrome.runtime.lastError) {
+-            if (chrome.runtime.lastError.message !== 'User cancelled') {
+-              console.error(
+-                  'chrome.fileSystem.chooseEntry failed: ' +
+-                  chrome.runtime.lastError.message);
+-            }
+-            return;
+-          }
+-          entry!.createWriter((writer: FileWriter) => {
+-            writer.write(blob);
+-            // <if expr="enable_ink or enable_pdf_ink2">
+-            // Unblock closing the window now that the user has saved
+-            // successfully.
+-            this.setShowBeforeUnloadDialog_(false);
+-            // </if>
+-            // <if expr="enable_pdf_ink2">
+-            this.hasSavedEdits_ =
+-                this.hasSavedEdits_ || requestType === SaveRequestType.EDITED;
+-            // </if>
+-          });
+-        });
++    try {
++      const fileHandle = await window.showSaveFilePicker({
++        suggestedName: fileName,
++        types: [{
++          description: 'PDF Files',
++          accept: { 'application/pdf': ['.pdf'] },
++        }],
++      });
++
++      const writable = await fileHandle.createWritable();
++      await writable.write(blob);
++      await writable.close();
++      // <if expr="enable_ink or enable_pdf_ink2">
++      // Unblock closing the window now that the user has saved
++      // successfully.
++      this.setShowBeforeUnloadDialog_(false);
++      // </if>
++      // <if expr="enable_pdf_ink2">
++      this.hasSavedEdits_ =
++        this.hasSavedEdits_ || requestType === SaveRequestType.EDITED;
++      // </if>
++    } catch (error: any) {
++      if (error.name !== 'AbortError') {
++        console.error('window.showSaveFilePicker failed: ' + error);
++      }
++    }
  
      // <if expr="enable_pdf_ink2">
      // Ink2 doesn't need to exit annotation mode after save.
+@@ -1308,6 +1304,9 @@ declare global {
+   interface HTMLElementTagNameMap {
+     'pdf-viewer': PdfViewerElement;
+   }
++  interface Window {
++    showSaveFilePicker(opts: unknown): Promise<FileSystemFileHandle>;
++  }
+ }
+ 
+ customElements.define(PdfViewerElement.is, PdfViewerElement);

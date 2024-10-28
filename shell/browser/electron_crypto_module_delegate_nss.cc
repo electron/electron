@@ -4,13 +4,14 @@
 
 #include "shell/browser/electron_crypto_module_delegate_nss.h"
 
+#include "content/public/browser/browser_thread.h"
 #include "crypto/nss_crypto_module_delegate.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/callback.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 
 ElectronNSSCryptoModuleDelegate::ElectronNSSCryptoModuleDelegate(
     const net::HostPortPair& server)

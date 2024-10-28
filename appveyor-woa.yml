@@ -29,26 +29,32 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-130.0.6672.0
+image: e-132.0.6788.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
   ELECTRON_ENABLE_STACK_DUMPING: 1
   ELECTRON_ALSO_LOG_TO_STDERR: 1
   MOCHA_REPORTER: mocha-multi-reporters
-  MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, tap"
+  MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, mocha-junit-reporter, tap"
   DEPOT_TOOLS_WIN_TOOLCHAIN: 1
-  DEPOT_TOOLS_WIN_TOOLCHAIN_BASE_URL: "https://dev-cdn.electronjs.org/windows-toolchains/_"
-  GYP_MSVS_HASH_7393122652: 3ba76c5c20
+  DEPOT_TOOLS_WIN_TOOLCHAIN_BASE_URL: "https://dev-cdn.electronjs.org/windows-toolchains/_"  
+  GYP_MSVS_HASH_698eb5635a: e2bf90edff
   PYTHONIOENCODING: UTF-8
 
   matrix:
 
     - job_name: Build Arm on X64 Windows
-    - job_name: Test On Windows On Arm Hardware
+    - job_name: Test On Windows On Arm Hardware 1
       job_depends_on: Build Arm on X64 Windows
       APPVEYOR_BUILD_WORKER_IMAGE: base-woa
       APPVEYOR_BUILD_WORKER_CLOUD: electronhq-woa
+      shard: 1
+    - job_name: Test On Windows On Arm Hardware 2
+      job_depends_on: Build Arm on X64 Windows
+      APPVEYOR_BUILD_WORKER_IMAGE: base-woa
+      APPVEYOR_BUILD_WORKER_CLOUD: electronhq-woa
+      shard: 2
 
 clone_script:
 - ps: git clone -q $("--branch=" + $Env:APPVEYOR_REPO_BRANCH) $("https://github.com/" + $Env:APPVEYOR_REPO_NAME + ".git") $Env:APPVEYOR_BUILD_FOLDER
@@ -70,8 +76,9 @@ for:
         - job_name: Build Arm on X64 Windows
 
     build_script:
+      # TODO: Remove --ignore-engines once WOA image is up to node 20
       - ps: |
-          node script/yarn.js install --frozen-lockfile
+          node script/yarn.js install --frozen-lockfile --ignore-engines
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           $env:SHOULD_SKIP_ARTIFACT_VALIDATION = "false"
           if ($LASTEXITCODE -eq 0) {
@@ -114,15 +121,13 @@ for:
       - ps: >-
           $env:RBE_service = node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"
       - ps: >-
-          $env:RBE_experimental_credentials_helper = $env:RECLIENT_HELPER
+          $env:RBE_credentials_helper = $env:RECLIENT_HELPER
       - ps: >-
-          $env:RBE_experimental_credentials_helper_args = "print"
+          $env:RBE_credentials_helper_args = "print"
       - ps: >-
           if ($env:ELECTRON_RBE_JWT -eq '') {
             $env:RBE_fail_early_min_action_count = "0"
             $env:RBE_fail_early_min_fallback_ratio = "0"
-            $env:RBE_exec_strategy = "local"
-            $env:RBE_remote_update_cache= "false"
           }
       - cd ..\..
       - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
@@ -151,7 +156,7 @@ for:
       - gn check out/Default //electron:electron_app
       - gn check out/Default //electron/shell/common:mojo
       - gn check out/Default //electron/shell/common:plugin
-      - if DEFINED ELECTRON_RBE_JWT (autoninja -j 300 -C out/Default electron:electron_app) else (autoninja -C out/Default electron:electron_app)
+      - autoninja -j 300 -C out/Default electron:electron_app
       - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
       - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true %GN_EXTRA_ARGS%"
       - autoninja -C out/ffmpeg electron:electron_ffmpeg_zip
@@ -253,18 +258,23 @@ for:
           }
   - matrix:
       only:
-        - job_name: Test On Windows On Arm Hardware
+        - job_name: Test On Windows On Arm Hardware 1
+        - job_name: Test On Windows On Arm Hardware 2
 
     environment:
         IGNORE_YARN_INSTALL_ERROR: 1
-        ELECTRON_TEST_RESULTS_DIR: junit
-        MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
+        ELECTRON_TEST_RESULTS_DIR: C:\projects\src\electron\junit
+        MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, mocha-junit-reporter, tap"
         MOCHA_REPORTER: mocha-multi-reporters
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
+        DD_ENV: ci
+        DD_SERVICE: electron
+        DD_CIVISIBILITY_LOGS_ENABLED: true
+        DD_GIT_REPOSITORY_URL: "https://github.com/electron/electron.git"
 
     build_script:
       - ps: |
-          node script/yarn.js install --frozen-lockfile
+          node script/yarn.js install --frozen-lockfile --ignore-engines
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           if ($LASTEXITCODE -eq 0) {
             Write-warning "Skipping build for doc only change"
@@ -272,6 +282,7 @@ for:
           } else {
             $global:LASTEXITCODE = 0
           }
+      - ps: Invoke-WebRequest -Uri "https://github.com/DataDog/datadog-ci/releases/latest/download/datadog-ci_win-x64" -OutFile "C:\projects\src\electron\datadog-ci.exe"
       - cd ..
       - mkdir out\Default
       - cd ..
@@ -320,11 +331,22 @@ for:
           if ($env:TARGET_ARCH -eq 'ia32') {
             $env:npm_config_arch = "ia32"
           }
-      - echo Running main test suite & node script/yarn test  --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion
+      - ps: $env:tests_files=node script\split-tests $env:shard 2
+      - echo "Running shard %shard% specs %tests_files%"
+      - echo Running main test suite & node script/yarn test  --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion --files %tests_files%
       - cd ..
       - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
 
     on_finish:
       # Uncomment these lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-      - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
+      - if exist electron\junit\test-results-main.xml ( appveyor-retry appveyor PushArtifact electron\junit\test-results-main.xml )
+      - ps: |
+          if ($env:DD_API_KEY) {
+            $env:DD_GIT_COMMIT_SHA = $env:APPVEYOR_REPO_COMMIT
+            $env:DD_GIT_BRANCH = $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH
+            $env:DD_TAGS = "os.architecture:$env:TARGET_ARCH,os.family:windows,os.platform:win32"
+            if (Test-Path -Path "C:\projects\src\electron\junit\test-results-main.xml") {
+              C:\projects\src\electron\datadog-ci.exe junit upload --verbose C:\projects\src\electron\junit\test-results-main.xml
+            }
+          }

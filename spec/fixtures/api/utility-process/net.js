@@ -1,4 +1,5 @@
 const { net } = require('electron');
+
 const serverUrl = process.argv[2].split('=')[1];
 let configurableArg = null;
 if (process.argv[3]) {
@@ -19,9 +20,9 @@ if (configurableArg === '--omit-credentials') {
 
 if (request) {
   if (configurableArg === '--use-net-login-event') {
-    request.on('login', (authInfo, cb) => {
+    request.on('login', (authInfo, provideCredentials) => {
       process.parentPort.postMessage(authInfo);
-      cb('user', 'pass');
+      provideCredentials('user', 'pass');
     });
   }
   request.on('response', (response) => {

@@ -26,12 +26,15 @@
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
+#include "services/network/public/mojom/fetch_api.mojom.h"
+#include "services/network/public/mojom/url_request.mojom.h"
 #include "shell/browser/api/electron_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/v8_util.h"
 
 namespace gin {
 
@@ -366,10 +369,7 @@ class ChunkedDataPipeReadableStream final
       num_bytes = *size_ - bytes_read_;
     MojoResult rv = data_pipe_->ReadData(
         MOJO_READ_DATA_FLAG_NONE,
-        base::span(static_cast<uint8_t*>(buf->Buffer()->Data()),
-                   buf->ByteLength())
-            .subspan(buf->ByteOffset(), num_bytes),
-        num_bytes);
+        electron::util::as_byte_span(buf).first(num_bytes), num_bytes);
     if (rv == MOJO_RESULT_OK) {
       bytes_read_ += num_bytes;
       // Not needed for correctness, but this allows the consumer to send the

@@ -87,8 +87,8 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
-#include "shell/common/process_util.h"
 #include "third_party/blink/public/common/storage_key/storage_key.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -1111,11 +1111,9 @@ v8::Local<v8::Promise> Session::LoadExtension(
              const extensions::Extension* extension,
              const std::string& error_msg) {
             if (extension) {
-              if (!error_msg.empty()) {
-                node::Environment* env =
-                    node::Environment::GetCurrent(promise.isolate());
-                EmitWarning(env, error_msg, "ExtensionLoadWarning");
-              }
+              if (!error_msg.empty())
+                util::EmitWarning(promise.isolate(), error_msg,
+                                  "ExtensionLoadWarning");
               promise.Resolve(extension);
             } else {
               promise.RejectWithErrorMessage(error_msg);

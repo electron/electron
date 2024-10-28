@@ -411,9 +411,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 #if BUILDFLAG(IS_WIN)
   // Save initial window state.
   if (fullscreen)
-    last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+    last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
   else
-    last_window_state_ = ui::SHOW_STATE_NORMAL;
+    last_window_state_ = ui::mojom::WindowShowState::kNormal;
 #endif
 
   // Listen to mouse events.
@@ -538,6 +538,11 @@ void NativeWindowViews::ShowInactive() {
 #if BUILDFLAG(IS_LINUX)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
+
+  // On X11, setting Z order before showing the window doesn't take effect,
+  // so we have to call it again.
+  if (IsX11())
+    widget()->SetZOrderLevel(widget()->GetZOrderLevel());
 #endif
 }
 
@@ -641,8 +646,8 @@ void NativeWindowViews::Maximize() {
   if (IsVisible()) {
     widget()->Maximize();
   } else {
-    widget()->native_widget_private()->Show(ui::SHOW_STATE_MAXIMIZED,
-                                            gfx::Rect());
+    widget()->native_widget_private()->Show(
+        ui::mojom::WindowShowState::kMaximized, gfx::Rect());
     NotifyWindowShow();
   }
 }
@@ -690,8 +695,8 @@ void NativeWindowViews::Minimize() {
   if (IsVisible())
     widget()->Minimize();
   else
-    widget()->native_widget_private()->Show(ui::SHOW_STATE_MINIMIZED,
-                                            gfx::Rect());
+    widget()->native_widget_private()->Show(
+        ui::mojom::WindowShowState::kMinimized, gfx::Rect());
 }
 
 void NativeWindowViews::Restore() {
@@ -715,10 +720,10 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   bool leaving_fullscreen = IsFullscreen() && !fullscreen;
 
   if (fullscreen) {
-    last_window_state_ = ui::SHOW_STATE_FULLSCREEN;
+    last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
     NotifyWindowEnterFullScreen();
   } else {
-    last_window_state_ = ui::SHOW_STATE_NORMAL;
+    last_window_state_ = ui::mojom::WindowShowState::kNormal;
     NotifyWindowLeaveFullScreen();
   }
 
@@ -768,8 +773,8 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   if (IsVisible())
     widget()->SetFullscreen(fullscreen);
   else if (fullscreen)
-    widget()->native_widget_private()->Show(ui::SHOW_STATE_FULLSCREEN,
-                                            gfx::Rect());
+    widget()->native_widget_private()->Show(
+        ui::mojom::WindowShowState::kFullscreen, gfx::Rect());
 
   // Auto-hide menubar when in fullscreen.
   if (fullscreen) {
@@ -1777,22 +1782,22 @@ void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
 #endif
 }
 
-ui::WindowShowState NativeWindowViews::GetRestoredState() {
+ui::mojom::WindowShowState NativeWindowViews::GetRestoredState() {
   if (IsMaximized()) {
 #if BUILDFLAG(IS_WIN)
     // Only restore Maximized state when window is NOT transparent style
     if (!transparent()) {
-      return ui::SHOW_STATE_MAXIMIZED;
+      return ui::mojom::WindowShowState::kMaximized;
     }
 #else
-    return ui::SHOW_STATE_MAXIMIZED;
+    return ui::mojom::WindowShowState::kMinimized;
 #endif
   }
 
   if (IsFullscreen())
-    return ui::SHOW_STATE_FULLSCREEN;
+    return ui::mojom::WindowShowState::kFullscreen;
 
-  return ui::SHOW_STATE_NORMAL;
+  return ui::mojom::WindowShowState::kNormal;
 }
 
 void NativeWindowViews::MoveBehindTaskBarIfNeeded() {

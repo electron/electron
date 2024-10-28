@@ -12,10 +12,10 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 5180a4eb0615669102fab510be534665e25cb0c8..388769ecfcf0f5cc4c0de3c21c4a1232726b405f 100644
+index 15908ea0f5a8f84d1381678291a818a26c5f5bda..3552cebebd6425e4152f4b0bf63d3fe0ea5fbda6 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
-@@ -342,7 +342,8 @@ void Compositor::SetLayerTreeFrameSink(
+@@ -344,7 +344,8 @@ void Compositor::SetLayerTreeFrameSink(
    if (display_private_) {
      disabled_swap_until_resize_ = false;
      display_private_->Resize(size());
@@ -35,8 +35,8 @@ index 5180a4eb0615669102fab510be534665e25cb0c8..388769ecfcf0f5cc4c0de3c21c4a1232
 +        background_throttling_ ? visible : true);
  
    if (changed) {
-     for (auto& observer : observer_list_) {
-@@ -1019,6 +1022,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
+     observer_list_.Notify(&CompositorObserver::OnCompositorVisibilityChanged,
+@@ -1008,6 +1011,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
        host_begin_frame_observer_->GetBoundRemote());
  }
  
@@ -53,7 +53,7 @@ index 5180a4eb0615669102fab510be534665e25cb0c8..388769ecfcf0f5cc4c0de3c21c4a1232
  void Compositor::SetSeamlessRefreshRates(
      const std::vector<float>& seamless_refresh_rates) {
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 823bce55000d0f2242eb58f22ec62fa3464fcd98..551b85f0fd90cb4d07d29780b5115c60167b415a 100644
+index 916a33ebd06e6750cef57ff433b1826424482d26..06a9e039beeb9ac6880a06bf15ec5e8bbbdb76f5 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -510,6 +510,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,

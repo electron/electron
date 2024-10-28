@@ -37,13 +37,14 @@ ViewsDelegate::~ViewsDelegate() = default;
 void ViewsDelegate::SaveWindowPlacement(const views::Widget* window,
                                         const std::string& window_name,
                                         const gfx::Rect& bounds,
-                                        ui::WindowShowState show_state) {}
+                                        ui::mojom::WindowShowState show_state) {
+}
 
 bool ViewsDelegate::GetSavedWindowPlacement(
     const views::Widget* widget,
     const std::string& window_name,
     gfx::Rect* bounds,
-    ui::WindowShowState* show_state) const {
+    ui::mojom::WindowShowState* show_state) const {
   return false;
 }
 

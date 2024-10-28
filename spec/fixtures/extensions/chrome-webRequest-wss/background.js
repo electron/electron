@@ -7,6 +7,6 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     }
     return { cancel: false, requestHeaders: details.requestHeaders };
   },
-  { urls: ['*://127.0.0.1:*'] },
+  { urls: ['*://127.0.0.1:*/'] },
   ['blocking']
 );

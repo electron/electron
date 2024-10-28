@@ -1,5 +1,5 @@
-import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 
 const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_frame');
 
