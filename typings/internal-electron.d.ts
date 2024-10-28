@@ -66,6 +66,19 @@ declare namespace Electron {
     }
   }
 
+  interface ServiceWorkers {
+    _getWorkerFromVersionIDIfExists(versionId: number): Electron.ServiceWorkerMain | undefined;
+    _stopAllWorkers(): Promise<void>;
+  }
+
+  interface ServiceWorkerMain {
+    _send(internal: boolean, channel: string, args: any): void;
+    _startExternalRequest(hasTimeout: boolean): { id: string, ok: boolean };
+    _finishExternalRequest(uuid: string): void;
+    _countExternalRequests(): number;
+  }
+
+
   interface TouchBar {
     _removeFromWindow: (win: BaseWindow) => void;
   }
