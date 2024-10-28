@@ -67,30 +67,6 @@ jobs:
       run: df -h        
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
-    - name: Init Build Tools
-      run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
-    - name: Get Depot Tools
-      timeout-minutes: 5
-      run: |
-        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-
-        SEDOPTION="-i"
-        if [ "`uname`" = "Darwin" ]; then
-          SEDOPTION="-i ''"
-        fi
-
-        # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-        sed $SEDOPTION '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-
-        # Ensure depot_tools does not update.
-        test -d depot_tools && cd depot_tools
-        if [ "`uname`" = "Linux" ]; then
-          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-        fi
-        touch .disable_auto_update
-    - name: Add Depot Tools to PATH
-      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Enable windows toolchain
       if: ${{ inputs.target-platform == 'windows' }}
       run: |
@@ -142,6 +118,7 @@ jobs:
 
         for target_cpu in ${{ inputs.target-archs }}
         do
+          e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu $target_cpu
           export GN_EXTRA_ARGS="target_cpu=\"$target_cpu\""
           if [ "${{ inputs.target-platform }}" = "linux" ]; then
             if [ "$target_cpu" = "arm" ]; then
