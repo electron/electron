@@ -76,7 +76,7 @@ declare namespace Electron {
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
     _getProcessMemoryInfo(): Electron.ProcessMemoryInfo;
-    _getPreloadPaths(): string[];
+    _getPreloadScript(): Electron.PreloadScript | null;
     equal(other: WebContents): boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
     _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
@@ -329,6 +329,11 @@ declare namespace ElectronInternal {
 
   class WebContents extends Electron.WebContents {
     static create(opts?: Electron.WebPreferences): Electron.WebContents;
+  }
+
+  interface PreloadScript extends Electron.PreloadScript {
+    contents?: string;
+    error?: Error;
   }
 }
 

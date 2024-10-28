@@ -30,22 +30,4 @@ SessionPreferences* SessionPreferences::FromBrowserContext(
   return static_cast<SessionPreferences*>(context->GetUserData(&kLocatorKey));
 }
 
-// static
-std::vector<base::FilePath> SessionPreferences::GetValidPreloads(
-    content::BrowserContext* context) {
-  std::vector<base::FilePath> result;
-
-  if (auto* self = FromBrowserContext(context)) {
-    for (const auto& preload : self->preloads()) {
-      if (preload.IsAbsolute()) {
-        result.emplace_back(preload);
-      } else {
-        LOG(ERROR) << "preload script must have absolute path: " << preload;
-      }
-    }
-  }
-
-  return result;
-}
-
 }  // namespace electron
