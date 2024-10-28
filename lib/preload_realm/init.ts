@@ -3,7 +3,6 @@ import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-re
 import { createPreloadProcessObject, executeSandboxedPreloadScripts } from '@electron/internal/sandboxed_renderer/preload';
 
 import * as events from 'events';
-import { setImmediate, clearImmediate } from 'timers';
 
 declare const binding: {
   get: (name: string) => any;
@@ -43,34 +42,24 @@ const electron = require('electron');
 const loadedModules = new Map<string, any>([
   ['electron', electron],
   ['electron/common', electron],
-  ['electron/renderer', electron],
   ['events', events],
   ['node:events', events]
 ]);
 
 const loadableModules = new Map<string, Function>([
-  ['timers', () => require('timers')],
-  ['node:timers', () => require('timers')],
   ['url', () => require('url')],
   ['node:url', () => require('url')]
 ]);
 
 const preloadProcess = createPreloadProcessObject();
 
-// InvokeEmitProcessEvent in ElectronSandboxedRendererClient will look for this
-v8Util.setHiddenValue(global, 'emit-process-event', (event: string) => {
-  (process as events.EventEmitter).emit(event);
-  (preloadProcess as events.EventEmitter).emit(event);
-});
+Object.assign(preloadProcess, binding.process);
+Object.assign(preloadProcess, processProps);
 
 Object.assign(process, binding.process);
 Object.assign(process, processProps);
 
-Object.assign(preloadProcess, binding.process);
-Object.assign(preloadProcess, processProps);
-
-// Common renderer initialization
-require('@electron/internal/renderer/common-init');
+require('@electron/internal/renderer/ipc-native-setup');
 
 executeSandboxedPreloadScripts({
   loadedModules: loadedModules,
@@ -79,8 +68,6 @@ executeSandboxedPreloadScripts({
   createPreloadScript: binding.createPreloadScript,
   exposeGlobals: {
     Buffer: Buffer,
-    global: global,
-    setImmediate: setImmediate,
-    clearImmediate: clearImmediate
+    global: global
   }
 }, preloadScripts);

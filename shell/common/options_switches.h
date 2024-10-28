@@ -288,6 +288,10 @@ inline constexpr base::cstring_view kEnableAuthNegotiatePort =
 // If set, NTLM v2 is disabled for POSIX platforms.
 inline constexpr base::cstring_view kDisableNTLMv2 = "disable-ntlm-v2";
 
+// Indicates that preloads for service workers are registered.
+inline constexpr base::cstring_view kServiceWorkerPreload =
+    "service-worker-preload";
+
 }  // namespace switches
 
 }  // namespace electron
