@@ -210,7 +210,7 @@ class ScriptExecutionCallback {
           promise_.Resolve(value);
         }
       } else {
-        const char error_message[] =
+        const char errmsg[] =
             "Script failed to execute, this normally means an error "
             "was thrown. Check the renderer console for the error.";
         if (!callback_.is_null()) {
@@ -219,13 +219,12 @@ class ScriptExecutionCallback {
           std::move(callback_).Run(
               v8::Undefined(isolate),
               v8::Exception::Error(
-                  v8::String::NewFromUtf8(isolate, error_message)
-                      .ToLocalChecked()));
+                  v8::String::NewFromUtf8Literal(isolate, errmsg)));
         }
-        promise_.RejectWithErrorMessage(error_message);
+        promise_.RejectWithErrorMessage(errmsg);
       }
     } else {
-      const char error_message[] =
+      const char errmsg[] =
           "WebFrame was removed before script could run. This normally means "
           "the underlying frame was destroyed";
       if (!callback_.is_null()) {
@@ -233,10 +232,10 @@ class ScriptExecutionCallback {
         v8::Context::Scope context_scope(context);
         std::move(callback_).Run(
             v8::Undefined(isolate),
-            v8::Exception::Error(v8::String::NewFromUtf8(isolate, error_message)
-                                     .ToLocalChecked()));
+            v8::Exception::Error(
+                v8::String::NewFromUtf8Literal(isolate, errmsg)));
       }
-      promise_.RejectWithErrorMessage(error_message);
+      promise_.RejectWithErrorMessage(errmsg);
     }
     delete this;
   }
@@ -716,15 +715,14 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
       script.Get("url", &url);
 
       if (!script.Get("code", &code)) {
-        const char error_message[] = "Invalid 'code'";
+        const char errmsg[] = "Invalid 'code'";
         if (!completion_callback.is_null()) {
           std::move(completion_callback)
               .Run(v8::Undefined(isolate),
                    v8::Exception::Error(
-                       v8::String::NewFromUtf8(isolate, error_message)
-                           .ToLocalChecked()));
+                       v8::String::NewFromUtf8Literal(isolate, errmsg)));
         }
-        promise.RejectWithErrorMessage(error_message);
+        promise.RejectWithErrorMessage(errmsg);
         return handle;
       }
 
