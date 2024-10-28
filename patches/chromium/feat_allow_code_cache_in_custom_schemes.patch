@@ -259,7 +259,7 @@ index 61c8b54bc5a9ea59c90e8627ab01745e0c328382..f9521b7aac19bf3994517906b85fc928
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 15e731756530e684b583f25a3f2bdf4af3653d54..f68a97b3ebf1d2151fc19950d41b15915a334e9f 100644
+index 588dfcafab5a073401b20a39a3d945b94d162d30..68be867a26f4f8ea84106d33bc658acf1fac11d5 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -6,6 +6,7 @@
@@ -369,7 +369,7 @@ index 15e731756530e684b583f25a3f2bdf4af3653d54..f68a97b3ebf1d2151fc19950d41b1591
    }
  
    if (operation == CodeCacheHostImpl::Operation::kWrite) {
-@@ -427,6 +452,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
+@@ -433,6 +458,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
        process_lock.matches_scheme(url::kHttpsScheme) ||
        process_lock.matches_scheme(content::kChromeUIScheme) ||
        process_lock.matches_scheme(content::kChromeUIUntrustedScheme) ||
