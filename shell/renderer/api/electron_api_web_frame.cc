@@ -146,7 +146,7 @@ class ScriptExecutionCallback {
       const v8::Local<v8::Object>& result) {
     v8::MaybeLocal<v8::Value> maybe_result;
     bool success = true;
-    std::string error_message =
+    std::string errmsg =
         "An unknown exception occurred while getting the result of the script";
     {
       v8::TryCatch try_catch(isolate);
@@ -164,7 +164,7 @@ class ScriptExecutionCallback {
         auto message = try_catch.Message();
 
         if (!message.IsEmpty()) {
-          gin::ConvertFromV8(isolate, message->Get(), &error_message);
+          gin::ConvertFromV8(isolate, message->Get(), &errmsg);
         }
       }
     }
@@ -173,10 +173,11 @@ class ScriptExecutionCallback {
       if (callback_)
         std::move(callback_).Run(
             v8::Undefined(isolate),
-            v8::Exception::Error(
-                v8::String::NewFromUtf8(isolate, error_message.c_str())
-                    .ToLocalChecked()));
-      promise_.RejectWithErrorMessage(error_message);
+            v8::Exception::Error(v8::String::NewFromUtf8(
+                                     isolate, errmsg.data(),
+                                     v8::NewStringType::kNormal, errmsg.size())
+                                     .ToLocalChecked()));
+      promise_.RejectWithErrorMessage(errmsg);
     } else {
       v8::Local<v8::Context> context = promise_.GetContext();
       v8::Context::Scope context_scope(context);
