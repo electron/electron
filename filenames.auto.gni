@@ -114,6 +114,7 @@ auto_filenames = {
     "docs/api/structures/permission-request.md",
     "docs/api/structures/point.md",
     "docs/api/structures/post-body.md",
+"docs/api/structures/preload-script.md",
     "docs/api/structures/printer-info.md",
     "docs/api/structures/process-memory-info.md",
     "docs/api/structures/process-metric.md",

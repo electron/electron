@@ -1064,16 +1064,72 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
       base::Time::FromSecondsSinceUnixEpoch(start_time)));
 }
 
-void Session::SetPreloads(const std::vector<base::FilePath>& preloads) {
+std::string Session::RegisterPreloadScript(
+    gin_helper::ErrorThrower thrower,
+    const PreloadScript& new_preload_script) {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
-  prefs->set_preloads(preloads);
+
+  auto& preload_scripts = prefs->preload_scripts();
+
+  auto it = std::find_if(preload_scripts.begin(), preload_scripts.end(),
+                         [&new_preload_script](const PreloadScript& script) {
+                           return script.id == new_preload_script.id;
+                         });
+
+  if (it != preload_scripts.end()) {
+    thrower.ThrowError(base::StringPrintf(
+        "Cannot register preload script with existing ID '%s'",
+        new_preload_script.id.c_str()));
+    return "";
+  }
+
+  if (!new_preload_script.file_path.IsAbsolute()) {
+    // Deprecated preload scripts logged error without throwing.
+    if (new_preload_script.deprecated) {
+      LOG(ERROR) << "preload script must have absolute path: "
+                 << new_preload_script.file_path;
+    } else {
+      thrower.ThrowError(
+          base::StringPrintf("Preload script must have absolute path: %s",
+                             new_preload_script.file_path.value().c_str()));
+      return "";
+    }
+  }
+
+  preload_scripts.push_back(new_preload_script);
+  return new_preload_script.id;
 }
 
-std::vector<base::FilePath> Session::GetPreloads() const {
+void Session::UnregisterPreloadScript(gin_helper::ErrorThrower thrower,
+                                      const std::string& script_id) {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
-  return prefs->preloads();
+
+  auto& preload_scripts = prefs->preload_scripts();
+
+  // Find the preload script by its ID
+  auto it = std::find_if(preload_scripts.begin(), preload_scripts.end(),
+                         [&script_id](const PreloadScript& script) {
+                           return script.id == script_id;
+                         });
+
+  // If the script is found, erase it from the vector
+  if (it != preload_scripts.end()) {
+    preload_scripts.erase(it);
+    return;
+  }
+
+  // If the script is not found, throw an error
+  thrower.ThrowError(base::StringPrintf(
+      "Cannot unregister preload script with non-existing ID '%s'",
+      script_id.c_str()));
+}
+
+std::vector<PreloadScript> Session::GetPreloadScripts() const {
+  auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
+  DCHECK(prefs);
+  return prefs->preload_scripts();
 }
 
 /**
@@ -1799,8 +1855,9 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("downloadURL", &Session::DownloadURL)
       .SetMethod("createInterruptedDownload",
                  &Session::CreateInterruptedDownload)
-      .SetMethod("setPreloads", &Session::SetPreloads)
-      .SetMethod("getPreloads", &Session::GetPreloads)
+      .SetMethod("registerPreloadScript", &Session::RegisterPreloadScript)
+      .SetMethod("unregisterPreloadScript", &Session::UnregisterPreloadScript)
+      .SetMethod("getPreloadScripts", &Session::GetPreloadScripts)
       .SetMethod("getSharedDictionaryUsageInfo",
                  &Session::GetSharedDictionaryUsageInfo)
       .SetMethod("getSharedDictionaryInfo", &Session::GetSharedDictionaryInfo)

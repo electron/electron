@@ -482,6 +482,7 @@ filenames = {
     "shell/browser/osr/osr_web_contents_view.h",
     "shell/browser/plugins/plugin_utils.cc",
     "shell/browser/plugins/plugin_utils.h",
+    "shell/browser/preload_script.h",
     "shell/browser/protocol_registry.cc",
     "shell/browser/protocol_registry.h",
     "shell/browser/relauncher.cc",

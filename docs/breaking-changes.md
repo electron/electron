@@ -12,6 +12,27 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (35.0)
+
+### Deprecated: `setPreloads`, `getPreloads` on `Session`
+
+`registerPreloadScript`, `unregisterPreloadScript`, and `getPreloadScripts` are introduced as a
+replacement for the deprecated methods. These new APIs allow third-party libraries to register
+preload scripts without replacing existing scripts. Also, the new `type` option allows for
+additional preload targets such as `service-worker`.
+
+```ts
+// Deprecated
+session.setPreloads([path.join(__dirname, 'preload.js')])
+
+// Replace with:
+session.registerPreloadScript({
+  type: 'frame',
+  id: 'app-preload',
+  filePath: path.join(__dirname, 'preload.js')
+})
+```
+
 ## Planned Breaking API Changes (34.0)
 
 ### Deprecated: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
