@@ -28,16 +28,17 @@ def get_target_arch():
     return 'x64'
   return arch
 
-
-def enable_verbose_mode():
+def set_verbose_mode(mode):
   print('Running in verbose mode')
   global verbose_mode
-  verbose_mode = True
-
+  verbose_mode = mode
 
 def is_verbose_mode():
   return verbose_mode
 
+def verbose_mode_print(output):
+  if verbose_mode:
+    print(output)
 
 def get_zip_name(name, version, suffix=''):
   arch = get_target_arch()
