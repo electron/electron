@@ -61,6 +61,20 @@ The `contextBridge` module has the following methods:
 * `apiKey` string - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
 * `api` any - Your API, more information on what this API can be and how it works is available below.
 
+### `contextBridge.executeInMainWorld(executionScript)` _Experimental_
+
+<!-- TODO(samuelmaddock): add generics to map the `args` types to the `func` params  -->
+
+* `executionScript` Object
+  * `func` (...args: any[]) => any - A JavaScript function to execute. This function will be serialized which means
+      that any bound parameters and execution context will be lost.
+  * `args` any[] (optional) - An array of arguments to pass to the provided function. These
+      arguments will be copied between worlds in accordance with
+      [the table of supported types.](#parameter--error--return-type-support)
+
+Returns `any` - A copy of the resulting value from executing the function in the main world.
+[Refer to the table](#parameter--error--return-type-support) on how values are copied between worlds.
+
 ## Usage
 
 ### API

@@ -14,8 +14,6 @@ class Arguments;
 
 namespace electron::api {
 
-void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info);
-
 // Where the context bridge should create the exception it is about to throw
 enum class BridgeErrorTarget {
   // The source / calling context.  This is default and correct 99% of the time,
@@ -44,18 +42,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
      * the bridge set this to the "context" of the value.
      */
     v8::Local<v8::Value> parent_value,
-    context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
-    int recursion_depth,
-    BridgeErrorTarget error_target);
-
-v8::MaybeLocal<v8::Object> CreateProxyForAPI(
-    const v8::Local<v8::Object>& api_object,
-    const v8::Local<v8::Context>& source_context,
-    const v8::Local<v8::Context>& destination_context,
-    context_bridge::ObjectCache* object_cache,
-    bool support_dynamic_properties,
-    int recursion_depth,
     BridgeErrorTarget error_target);
 
 }  // namespace electron::api
