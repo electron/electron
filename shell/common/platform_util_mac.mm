@@ -19,6 +19,7 @@
 #include "base/logging.h"
 #include "base/mac/scoped_aedesc.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/bind_post_task.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -151,21 +152,19 @@ void OpenExternal(const GURL& url,
       [NSWorkspaceOpenConfiguration configuration];
   configuration.activates = options.activate;
 
-  __block OpenCallback copied_callback = std::move(callback);
+  __block OpenCallback copied_callback =
+      base::BindPostTaskToCurrentDefault(std::move(callback));
 
-  [[NSWorkspace sharedWorkspace]
-                openURL:ns_url
-          configuration:configuration
-      completionHandler:^(NSRunningApplication* _Nullable app,
-                          NSError* _Nullable error) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-          if (error) {
-            std::move(copied_callback).Run("Failed to open URL");
-          } else {
-            std::move(copied_callback).Run("");
-          }
-        });
-      }];
+  [[NSWorkspace sharedWorkspace] openURL:ns_url
+                           configuration:configuration
+                       completionHandler:^(NSRunningApplication* _Nullable app,
+                                           NSError* _Nullable error) {
+                         if (error) {
+                           std::move(copied_callback).Run("Failed to open URL");
+                         } else {
+                           std::move(copied_callback).Run("");
+                         }
+                       }];
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& full_path,
