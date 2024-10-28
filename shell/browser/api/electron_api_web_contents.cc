@@ -132,6 +132,7 @@
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/reply_channel.h"
 #include "shell/common/language_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -1982,66 +1983,6 @@ void WebContents::OnFirstNonEmptyLayout(
   }
 }
 
-namespace {
-
-// This object wraps the InvokeCallback so that if it gets GC'd by V8, we can
-// still call the callback and send an error. Not doing so causes a Mojo DCHECK,
-// since Mojo requires callbacks to be called before they are destroyed.
-class ReplyChannel final : public gin::Wrappable<ReplyChannel> {
- public:
-  using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
-  static gin::Handle<ReplyChannel> Create(v8::Isolate* isolate,
-                                          InvokeCallback callback) {
-    return gin::CreateHandle(isolate, new ReplyChannel(std::move(callback)));
-  }
-
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override {
-    return gin::Wrappable<ReplyChannel>::GetObjectTemplateBuilder(isolate)
-        .SetMethod("sendReply", &ReplyChannel::SendReply);
-  }
-  const char* GetTypeName() override { return "ReplyChannel"; }
-
-  void SendError(const std::string& msg) {
-    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-    // If there's no current context, it means we're shutting down, so we
-    // don't need to send an event.
-    if (!isolate->GetCurrentContext().IsEmpty()) {
-      v8::HandleScope scope(isolate);
-      auto message = gin::DataObjectBuilder(isolate).Set("error", msg).Build();
-      SendReply(isolate, message);
-    }
-  }
-
- private:
-  explicit ReplyChannel(InvokeCallback callback)
-      : callback_(std::move(callback)) {}
-  ~ReplyChannel() override {
-    if (callback_)
-      SendError("reply was never sent");
-  }
-
-  bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
-    if (!callback_)
-      return false;
-    blink::CloneableMessage message;
-    if (!gin::ConvertFromV8(isolate, arg, &message)) {
-      return false;
-    }
-
-    std::move(callback_).Run(std::move(message));
-    return true;
-  }
-
-  InvokeCallback callback_;
-};
-
-gin::WrapperInfo ReplyChannel::kWrapperInfo = {gin::kEmbedderNativeGin};
-
-}  // namespace
-
 gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
     v8::Isolate* isolate,
     content::RenderFrameHost* frame,
@@ -2050,7 +1991,7 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
   if (!GetWrapper(isolate).ToLocal(&wrapper)) {
     if (callback) {
       // We must always invoke the callback if present.
-      ReplyChannel::Create(isolate, std::move(callback))
+      gin_helper::internal::ReplyChannel::Create(isolate, std::move(callback))
           ->SendError("WebContents was destroyed");
     }
     return {};
@@ -2058,9 +1999,10 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
   gin::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
+  dict.Set("type", "frame");
   if (callback)
-    dict.Set("_replyChannel",
-             ReplyChannel::Create(isolate, std::move(callback)));
+    dict.Set("_replyChannel", gin_helper::internal::ReplyChannel::Create(
+                                  isolate, std::move(callback)));
   if (frame) {
     dict.SetGetter("senderFrame", frame);
     dict.Set("frameId", frame->GetRoutingID());

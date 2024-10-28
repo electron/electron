@@ -7,12 +7,10 @@ import * as events from 'events';
 import { setImmediate, clearImmediate } from 'timers';
 
 declare const binding: {
-  get: (name: string) => any;
   process: NodeJS.Process;
   createPreloadScript: (src: string) => Function
 };
 
-const v8Util = process._linkedBinding('electron_common_v8_util');
 const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
 
 const {
@@ -43,6 +41,7 @@ const loadableModules = new Map<string, Function>([
 const preloadProcess = createPreloadProcessObject();
 
 // InvokeEmitProcessEvent in ElectronSandboxedRendererClient will look for this
+const v8Util = process._linkedBinding('electron_common_v8_util');
 v8Util.setHiddenValue(global, 'emit-process-event', (event: string) => {
   (process as events.EventEmitter).emit(event);
   (preloadProcess as events.EventEmitter).emit(event);

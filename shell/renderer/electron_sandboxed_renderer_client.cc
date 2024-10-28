@@ -23,6 +23,7 @@
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/preload_realm_context.h"
 #include "shell/renderer/preload_utils.h"
+#include "shell/renderer/service_worker_data.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
 #include "third_party/blink/public/web/blink.h"
@@ -32,6 +33,9 @@
 namespace electron {
 
 namespace {
+
+// Data which only lives on the service worker's thread
+constinit thread_local ServiceWorkerData* service_worker_data = nullptr;
 
 constexpr std::string_view kEmitProcessEventKey = "emit-process-event";
 
@@ -184,6 +188,11 @@ void ElectronSandboxedRendererClient::WillEvaluateServiceWorkerOnWorkerThread(
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kServiceWorkerPreload)) {
+    if (!service_worker_data) {
+      service_worker_data = new ServiceWorkerData(
+          context_proxy, service_worker_version_id, v8_context);
+    }
+
     preload_realm::OnCreatePreloadableV8Context(v8_context,
                                                 service_worker_data);
   }
@@ -195,6 +204,13 @@ void ElectronSandboxedRendererClient::
         int64_t service_worker_version_id,
         const GURL& service_worker_scope,
         const GURL& script_url) {
+  if (service_worker_data) {
+    DCHECK_EQ(service_worker_version_id,
+              service_worker_data->service_worker_version_id());
+    delete service_worker_data;
+    service_worker_data = nullptr;
+  }
+
   RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
       context, service_worker_version_id, service_worker_scope, script_url);
 }

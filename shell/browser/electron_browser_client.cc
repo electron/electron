@@ -79,6 +79,7 @@
 #include "shell/browser/bluetooth/electron_bluetooth_delegate.h"
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/electron_api_ipc_handler_impl.h"
+#include "shell/browser/electron_api_sw_ipc_handler_impl.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
@@ -1421,6 +1422,13 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
     const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
     blink::AssociatedInterfaceRegistry& associated_registry) {
+  CHECK(service_worker_version_info.process_id !=
+        content::ChildProcessHost::kInvalidUniqueID);
+  associated_registry.AddInterface<mojom::ElectronApiIPC>(
+      base::BindRepeating(&ElectronApiSWIPCHandlerImpl::BindReceiver,
+                          service_worker_version_info.process_id,
+                          service_worker_version_info.version_id));
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   associated_registry.AddInterface<extensions::mojom::RendererHost>(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
