@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index ea6b011b990760de3b45420a5516207bfd74f46c..16d1c3ca48d35004c370fbb85c02fcd35c65d2ff 100644
+index 7e0ee54f435893560515cb8380a5396dc1292d50..f997ff511bb9467a53a2c42b700eb58b5d7d3091 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -157,6 +157,11 @@
+@@ -158,6 +158,11 @@
  #include "services/network/web_transport.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index ea6b011b990760de3b45420a5516207bfd74f46c..16d1c3ca48d35004c370fbb85c02fcd3
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -598,6 +603,99 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
+@@ -599,6 +604,99 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
  
  }  // namespace
  
@@ -122,7 +122,7 @@ index ea6b011b990760de3b45420a5516207bfd74f46c..16d1c3ca48d35004c370fbb85c02fcd3
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -979,6 +1077,13 @@ void NetworkContext::SetClient(
+@@ -988,6 +1086,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index ea6b011b990760de3b45420a5516207bfd74f46c..16d1c3ca48d35004c370fbb85c02fcd3
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2529,6 +2634,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2538,6 +2643,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = std::move(cert_verifier_with_trust_anchors);
  #endif  // BUILDFLAG(IS_CHROMEOS)
