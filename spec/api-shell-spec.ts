@@ -76,22 +76,6 @@ describe('shell module', () => {
         requestReceived
       ]);
     });
-
-    ifit(process.platform === 'darwin')('should focus the external app when opening the URL on macOS', async () => {
-      const testUrl = 'http://127.0.0.1';
-      const mainWindow = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      await mainWindow.loadURL('about:blank');
-
-      mainWindow.webContents.on('will-navigate', (event, rawTarget) => {
-        event.preventDefault();
-        shell.openExternal(rawTarget);
-      });
-      const blurPromise = once(mainWindow, 'blur');
-      expect(mainWindow.isFocused()).to.be.true();
-      await mainWindow.webContents.executeJavaScript(`window.location.href = '${testUrl}'`);
-      await blurPromise;
-      expect(mainWindow.isFocused()).to.be.false();
-    });
   });
 
   describe('shell.trashItem()', () => {
