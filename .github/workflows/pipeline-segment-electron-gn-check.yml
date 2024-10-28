@@ -114,11 +114,10 @@ jobs:
         git pack-refs
     - name: Run GN Check for ${{ inputs.target-archs }}
       run: |
-        cd src
-
         for target_cpu in ${{ inputs.target-archs }}
         do
           e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu $target_cpu
+          cd src
           export GN_EXTRA_ARGS="target_cpu=\"$target_cpu\""
           if [ "${{ inputs.target-platform }}" = "linux" ]; then
             if [ "$target_cpu" = "arm" ]; then
@@ -141,6 +140,7 @@ jobs:
           # Check the hunspell filenames
           node electron/script/gen-hunspell-filenames.js --check
           node electron/script/gen-libc++-filenames.js --check
+          cd ..
         done
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
