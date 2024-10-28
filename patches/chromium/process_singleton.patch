@@ -165,7 +165,7 @@ index 80b0c47637a6726e1e43113d84187910911271b4..72cdfe2c4a0258dbd575f536ca42fa1d
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 3138eaa2c1e8ed806d81445149d4f88f54d19254..27216805188c77aa45b478e66b04a2d45f92fba6 100644
+index 68ca956bdd251f1fadccbd2f4e336918141cadf1..d91f58ebe3a024bc41ed72121c49172f68e0d862 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -29,7 +29,9 @@
@@ -218,7 +218,7 @@ index 3138eaa2c1e8ed806d81445149d4f88f54d19254..27216805188c77aa45b478e66b04a2d4
 -  static const wchar_t kMutexName[] = L"Local\\ChromeProcessSingletonStartup!";
 +  std::wstring mutexName = base::UTF8ToWide("Local\\" + program_name_ + "ProcessSingletonStartup");
  
-   remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
+   remote_window_ = FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
 @@ -390,7 +401,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
