@@ -9,6 +9,8 @@ import * as path from 'path';
 
 // Implements window.close()
 ipcMainInternal.on(IPC_MESSAGES.BROWSER_WINDOW_CLOSE, function (event) {
+  if (event.type !== 'frame') return;
+
   const window = event.sender.getOwnerBrowserWindow();
   if (window) {
     window.close();
@@ -17,10 +19,12 @@ ipcMainInternal.on(IPC_MESSAGES.BROWSER_WINDOW_CLOSE, function (event) {
 });
 
 ipcMainInternal.handle(IPC_MESSAGES.BROWSER_GET_LAST_WEB_PREFERENCES, function (event) {
+  if (event.type !== 'frame') return;
   return event.sender.getLastWebPreferences();
 });
 
 ipcMainInternal.handle(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO, function (event) {
+  if (event.type !== 'frame') return;
   return event.sender._getProcessMemoryInfo();
 });
 
@@ -101,5 +105,6 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD, function (event) {
 });
 
 ipcMainInternal.on(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, function (event, preloadPath: string, error: Error) {
-  event.sender.emit('preload-error', event, preloadPath, error);
+  if (event.type !== 'frame') return;
+  event.sender?.emit('preload-error', event, preloadPath, error);
 });

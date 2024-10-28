@@ -6,6 +6,7 @@
 
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
+#include "content/public/renderer/worker_thread.h"
 #include "gin/dictionary.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
@@ -20,9 +21,13 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
+#include "shell/renderer/preload_realm_context.h"
+#include "shell/renderer/service_worker_data.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
+#include "third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
+#include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 
 using blink::WebLocalFrame;
 using content::RenderFrame;
@@ -40,7 +45,16 @@ RenderFrame* GetCurrentRenderFrame() {
   return RenderFrame::FromWebFrame(frame);
 }
 
+// Thread identifier for the main renderer thread (as opposed to a service
+// worker thread).
+inline constexpr int kMainThreadId = 0;
+
+bool IsWorkerThread() {
+  return content::WorkerThread::GetCurrentId() != kMainThreadId;
+}
+
 class IPCRenderer final : public gin::Wrappable<IPCRenderer>,
+                          public content::WorkerThread::Observer,
                           private content::RenderFrameObserver {
  public:
   static gin::WrapperInfo kWrapperInfo;
@@ -51,14 +65,31 @@ class IPCRenderer final : public gin::Wrappable<IPCRenderer>,
 
   explicit IPCRenderer(v8::Isolate* isolate)
       : content::RenderFrameObserver(GetCurrentRenderFrame()) {
-    RenderFrame* render_frame = GetCurrentRenderFrame();
-    DCHECK(render_frame);
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    blink::ExecutionContext* execution_context =
+        blink::ExecutionContext::From(context);
+
+    if (execution_context->IsWindow()) {
+      RenderFrame* render_frame = GetCurrentRenderFrame();
+      DCHECK(render_frame);
+      render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+          &electron_ipc_remote_);
+    } else if (execution_context->IsShadowRealmGlobalScope()) {
+      DCHECK(IsWorkerThread());
+      content::WorkerThread::AddObserver(this);
+
+      electron::ServiceWorkerData* service_worker_data =
+          electron::preload_realm::GetServiceWorkerData(context);
+      DCHECK(service_worker_data);
+      service_worker_data->proxy()->GetRemoteAssociatedInterface(
+          electron_ipc_remote_.BindNewEndpointAndPassReceiver());
+    } else {
+      NOTREACHED();
+    }
+
     weak_context_ =
         v8::Global<v8::Context>(isolate, isolate->GetCurrentContext());
     weak_context_.SetWeak();
-
-    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
-        &electron_ipc_remote_);
   }
 
   void OnDestruct() override { electron_ipc_remote_.reset(); }
@@ -66,9 +97,12 @@ class IPCRenderer final : public gin::Wrappable<IPCRenderer>,
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int32_t world_id) override {
     if (weak_context_.IsEmpty() ||
-        weak_context_.Get(context->GetIsolate()) == context)
-      electron_ipc_remote_.reset();
+        weak_context_.Get(context->GetIsolate()) == context) {
+      OnDestruct();
+    }
   }
+
+  void WillStopCurrentWorkerThread() override { OnDestruct(); }
 
   // gin::Wrappable:
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
