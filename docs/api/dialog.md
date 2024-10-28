@@ -78,6 +78,11 @@ dialog.showOpenDialogSync(mainWindow, {
 })
 ```
 
+**Note:** On Linux `defaultPath` may not be supported when using portal file chooser
+dialogs depending on your platform support. You can use `--xdg-portal-required-version`
+[command-line switch](./command-line-switches.md#--xdg-portal-required-versionversion)
+to force gtk or kde dialogs.
+
 ### `dialog.showOpenDialog([window, ]options)`
 
 * `window` [BaseWindow](base-window.md) (optional)
@@ -150,6 +155,11 @@ dialog.showOpenDialog(mainWindow, {
 })
 ```
 
+**Note:** On Linux `defaultPath` may not be supported when using portal file chooser
+dialogs depending on your platform support. You can use `--xdg-portal-required-version`
+[command-line switch](./command-line-switches.md#--xdg-portal-required-versionversion)
+to force gtk or kde dialogs.
+
 ### `dialog.showSaveDialogSync([window, ]options)`
 
 * `window` [BaseWindow](base-window.md) (optional)
@@ -217,6 +227,11 @@ The `filters` specifies an array of file types that can be displayed, see
 
 **Note:** On macOS, using the asynchronous version is recommended to avoid issues when
 expanding and collapsing the dialog.
+
+**Note:** On Linux `defaultPath` may not be supported when using portal file chooser
+dialogs depending on your platform support. You can use `--xdg-portal-required-version`
+[command-line switch](./command-line-switches.md#--xdg-portal-required-versionversion)
+to force gtk or kde dialogs.
 
 ### `dialog.showMessageBoxSync([wndow, ]options)`
 

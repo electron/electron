@@ -241,6 +241,12 @@ Force using discrete GPU when there are multiple GPUs available.
 
 Force using integrated GPU when there are multiple GPUs available.
 
+### --xdg-portal-required-version=`version`
+
+Sets the minimum required version of XDG portal implementation to `version`
+inorder to use the portal backend for file dialogs on linux. Current
+default is set to `3`.
+
 ## Node.js Flags
 
 Electron supports some of the [CLI flags][node-cli] supported by Node.js.
