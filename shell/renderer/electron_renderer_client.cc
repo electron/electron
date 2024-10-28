@@ -122,11 +122,11 @@ void ElectronRendererClient::DidCreateScriptContext(
                                    "Headers"};
   for (const auto& key : keys) {
     v8::MaybeLocal<v8::Value> value =
-        global->Get(renderer_context, gin::StringToV8(isolate, key.c_str()));
+        global->Get(renderer_context, gin::StringToV8(isolate, key));
     if (!value.IsEmpty()) {
       std::string blink_key = "blink" + key;
       global
-          ->Set(renderer_context, gin::StringToV8(isolate, blink_key.c_str()),
+          ->Set(renderer_context, gin::StringToV8(isolate, blink_key),
                 value.ToLocalChecked())
           .Check();
     }
