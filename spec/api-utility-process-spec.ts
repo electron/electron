@@ -157,8 +157,9 @@ describe('utilityProcess module', () => {
 
     ifit(!isWindows32Bit)('with default serviceName', async () => {
       const serviceName = 'Node Utility Process';
+      const crashPromise = waitForCrash(serviceName);
       utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
-      const details = await waitForCrash(serviceName);
+      const details = await crashPromise;
       expect(details.type).to.equal('Utility');
       expect(details.serviceName).to.equal('node.mojom.NodeService');
       expect(details.name).to.equal(serviceName);
@@ -167,8 +168,9 @@ describe('utilityProcess module', () => {
 
     ifit(!isWindows32Bit)('with custom serviceName', async () => {
       const serviceName = crypto.randomUUID();
+      const crashPromise = waitForCrash(serviceName);
       utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName });
-      const details = await waitForCrash(serviceName);
+      const details = await crashPromise;
       expect(details.type).to.equal('Utility');
       expect(details.serviceName).to.equal('node.mojom.NodeService');
       expect(details.name).to.equal(serviceName);
