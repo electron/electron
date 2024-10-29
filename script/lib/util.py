@@ -11,9 +11,7 @@ import sys
 from urllib.request import urlopen
 import zipfile
 
-# from lib.config import is_verbose_mode
-def is_verbose_mode():
-  return False
+from lib.config import verbose_mode_print
 
 ELECTRON_DIR = os.path.abspath(
   os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -112,13 +110,11 @@ def safe_mkdir(path):
 def execute(argv, env=None, cwd=None):
   if env is None:
     env = os.environ
-  if is_verbose_mode():
-    print(' '.join(argv))
+  verbose_mode_print(' '.join(argv))
   try:
     output = subprocess.check_output(argv, stderr=subprocess.STDOUT,
                                      env=env, cwd=cwd)
-    if is_verbose_mode():
-      print(output)
+    verbose_mode_print(output.decode('utf-8').strip())
     return output
   except subprocess.CalledProcessError as e:
     print(e.output)
