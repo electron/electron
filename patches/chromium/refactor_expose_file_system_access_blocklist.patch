@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 743d466410391bcf1920dd1d889a731880cb242d..42de7fff737beada8f5b54463c2854f9caa15511 100644
+index 31104e81161f2110fe18275b065c32fc1e823764..42de7fff737beada8f5b54463c2854f9caa15511 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -47,7 +47,6 @@
@@ -19,7 +19,7 @@ index 743d466410391bcf1920dd1d889a731880cb242d..42de7fff737beada8f5b54463c2854f9
  #include "chrome/grit/generated_resources.h"
  #include "components/content_settings/core/browser/host_content_settings_map.h"
  #include "components/content_settings/core/common/content_settings.h"
-@@ -251,126 +250,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -251,128 +250,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  
@@ -97,6 +97,8 @@ index 743d466410391bcf1920dd1d889a731880cb242d..42de7fff737beada8f5b54463c2854f9
 -#if BUILDFLAG(IS_MAC)
 -    // Similar Mac specific blocks.
 -    {base::DIR_APP_DATA, nullptr, kBlockAllChildren},
+-    // Block access to the current bundle directory.
+-    {chrome::DIR_OUTER_BUNDLE, nullptr, kBlockAllChildren},
 -    // Block access to the user's Applications directory.
 -    {base::DIR_HOME, FILE_PATH_LITERAL("Applications"), kBlockAllChildren},
 -    // Block access to the root Applications directory.
@@ -151,7 +153,7 @@ index 743d466410391bcf1920dd1d889a731880cb242d..42de7fff737beada8f5b54463c2854f9
  // Describes a rule for blocking a directory, which can be constructed
  // dynamically (based on state) or statically (from kBlockedPaths).
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 68a712cb272224d7a75ff3f512e45ed82eab5a86..2e544132f588df73ac797bcd26b0bf81e114f89c 100644
+index 68a712cb272224d7a75ff3f512e45ed82eab5a86..d46119d9a7a32c9dc0c4844da73c63b42af9f7a8 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -21,7 +21,7 @@
@@ -172,7 +174,7 @@ index 68a712cb272224d7a75ff3f512e45ed82eab5a86..2e544132f588df73ac797bcd26b0bf81
  #include "components/enterprise/common/files_scan_data.h"
  #endif
  
-@@ -340,6 +340,127 @@ class ChromeFileSystemAccessPermissionContext
+@@ -340,6 +340,129 @@ class ChromeFileSystemAccessPermissionContext
    // KeyedService:
    void Shutdown() override;
  
@@ -250,6 +252,8 @@ index 68a712cb272224d7a75ff3f512e45ed82eab5a86..2e544132f588df73ac797bcd26b0bf81
 +  #if BUILDFLAG(IS_MAC)
 +      // Similar Mac specific blocks.
 +      {base::DIR_APP_DATA, nullptr, kBlockAllChildren},
++      // Block access to the current bundle directory.
++      {chrome::DIR_OUTER_BUNDLE, nullptr, kBlockAllChildren},
 +      // Block access to the user's Applications directory.
 +      {base::DIR_HOME, FILE_PATH_LITERAL("Applications"), kBlockAllChildren},
 +      // Block access to the root Applications directory.
@@ -300,7 +304,7 @@ index 68a712cb272224d7a75ff3f512e45ed82eab5a86..2e544132f588df73ac797bcd26b0bf81
   protected:
    SEQUENCE_CHECKER(sequence_checker_);
  
-@@ -359,7 +480,7 @@ class ChromeFileSystemAccessPermissionContext
+@@ -359,7 +482,7 @@ class ChromeFileSystemAccessPermissionContext
  
    void PermissionGrantDestroyed(PermissionGrantImpl* grant);
  
