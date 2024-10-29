@@ -132,6 +132,10 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+    - name: Install Dependencies
+      run: |
+        cd src/electron
+        node script/yarn install --frozen-lockfile
     - name: Default GN gen
       run: |
         cd src/electron
