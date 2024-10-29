@@ -144,21 +144,34 @@ describe('utilityProcess module', () => {
   });
 
   describe('app \'child-process-gone\' event', () => {
+    const waitForCrash = (serviceName: string) => {
+      return new Promise<Electron.Details>((resolve) => {
+        app.on('child-process-gone', function onCrash (_event, details) {
+          if (details.serviceName === serviceName) {
+            app.off('child-process-gone', onCrash);
+            resolve(details);
+          }
+        });
+      });
+    };
+
     ifit(!isWindows32Bit)('with default serviceName', async () => {
+      const serviceName = 'Node Utility Process';
       utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
-      const [, details] = await once(app, 'child-process-gone') as [any, Electron.Details];
+      const details = await waitForCrash(serviceName);
       expect(details.type).to.equal('Utility');
       expect(details.serviceName).to.equal('node.mojom.NodeService');
-      expect(details.name).to.equal('Node Utility Process');
+      expect(details.name).to.equal(serviceName);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
 
     ifit(!isWindows32Bit)('with custom serviceName', async () => {
-      utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName: 'Hello World!' });
-      const [, details] = await once(app, 'child-process-gone') as [any, Electron.Details];
+      const serviceName = crypto.randomUUID();
+      utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName });
+      const details = await waitForCrash(serviceName);
       expect(details.type).to.equal('Utility');
       expect(details.serviceName).to.equal('node.mojom.NodeService');
-      expect(details.name).to.equal('Hello World!');
+      expect(details.name).to.equal(serviceName);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
   });
