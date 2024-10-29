@@ -144,10 +144,10 @@ describe('utilityProcess module', () => {
   });
 
   describe('app \'child-process-gone\' event', () => {
-    const waitForCrash = (serviceName: string) => {
+    const waitForCrash = (name: string) => {
       return new Promise<Electron.Details>((resolve) => {
         app.on('child-process-gone', function onCrash (_event, details) {
-          if (details.serviceName === serviceName) {
+          if (details.name === name) {
             app.off('child-process-gone', onCrash);
             resolve(details);
           }
@@ -156,24 +156,24 @@ describe('utilityProcess module', () => {
     };
 
     ifit(!isWindows32Bit)('with default serviceName', async () => {
-      const serviceName = 'Node Utility Process';
-      const crashPromise = waitForCrash(serviceName);
+      const name = 'Node Utility Process';
+      const crashPromise = waitForCrash(name);
       utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
       const details = await crashPromise;
       expect(details.type).to.equal('Utility');
       expect(details.serviceName).to.equal('node.mojom.NodeService');
-      expect(details.name).to.equal(serviceName);
+      expect(details.name).to.equal(name);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
 
     ifit(!isWindows32Bit)('with custom serviceName', async () => {
-      const serviceName = crypto.randomUUID();
-      const crashPromise = waitForCrash(serviceName);
-      utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName });
+      const name = crypto.randomUUID();
+      const crashPromise = waitForCrash(name);
+      utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName: name });
       const details = await crashPromise;
       expect(details.type).to.equal('Utility');
       expect(details.serviceName).to.equal('node.mojom.NodeService');
-      expect(details.name).to.equal(serviceName);
+      expect(details.name).to.equal(name);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
   });
