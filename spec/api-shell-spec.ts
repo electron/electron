@@ -77,7 +77,7 @@ describe('shell module', () => {
       ]);
     });
 
-    it('should focus the external app when opening the URL on macOS', async () => {
+    ifit(process.platform === 'darwin')('should focus the external app when opening the URL on macOS', async () => {
       const testUrl = 'http://127.0.0.1';
       const mainWindow = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await mainWindow.loadURL('about:blank');
@@ -86,14 +86,11 @@ describe('shell module', () => {
         event.preventDefault();
         shell.openExternal(rawTarget);
       });
-
-      if (process.platform === 'darwin') {
-        const blurPromise = once(mainWindow, 'blur');
-        expect(mainWindow.isFocused()).to.be.true();
-        await mainWindow.webContents.executeJavaScript(`window.location.href = '${testUrl}'`);
-        await blurPromise;
-        expect(mainWindow.isFocused()).to.be.false();
-      }
+      const blurPromise = once(mainWindow, 'blur');
+      expect(mainWindow.isFocused()).to.be.true();
+      await mainWindow.webContents.executeJavaScript(`window.location.href = '${testUrl}'`);
+      await blurPromise;
+      expect(mainWindow.isFocused()).to.be.false();
     });
   });
 
