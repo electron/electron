@@ -19,12 +19,12 @@ jobs:
       with:
         creds: ${{ secrets.APPVEYOR_UPDATER_GH_APP_CREDS }}
     - name: Checkout
-      uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         fetch-depth: 0
         token: ${{ steps.generate-token.outputs.token }}
     - name: Setup Node.js
-      uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4.0.4
+      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
       with:
         node-version: 20.11.x
     - name: Yarn install

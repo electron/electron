@@ -5,26 +5,29 @@
 #ifndef ELECTRON_SHELL_COMMON_ELECTRON_CONSTANTS_H_
 #define ELECTRON_SHELL_COMMON_ELECTRON_CONSTANTS_H_
 
-#include "base/files/file_path.h"
+#include <string_view>
+
+#include "base/strings/cstring_view.h"
 #include "electron/buildflags/buildflags.h"
 
 namespace electron {
 
 // The app-command in NativeWindow.
-extern const char kBrowserForward[];
-extern const char kBrowserBackward[];
+inline constexpr std::string_view kBrowserForward = "browser-forward";
+inline constexpr std::string_view kBrowserBackward = "browser-backward";
 
 // Keys for Device APIs
-extern const char kDeviceVendorIdKey[];
-extern const char kDeviceProductIdKey[];
-extern const char kDeviceSerialNumberKey[];
+inline constexpr std::string_view kDeviceVendorIdKey = "vendorId";
+inline constexpr std::string_view kDeviceProductIdKey = "productId";
+inline constexpr std::string_view kDeviceSerialNumberKey = "serialNumber";
 
-extern const char kRunAsNode[];
+inline constexpr base::cstring_view kRunAsNode = "ELECTRON_RUN_AS_NODE";
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-extern const char kPDFExtensionPluginName[];
-extern const char kPDFInternalPluginName[];
-extern const base::FilePath::CharType kPdfPluginPath[];
+inline constexpr std::string_view kPDFExtensionPluginName =
+    "Chromium PDF Viewer";
+inline constexpr std::string_view kPDFInternalPluginName =
+    "Chromium PDF Plugin";
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 }  // namespace electron

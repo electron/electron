@@ -865,6 +865,7 @@ if (is_mac) {
       ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
+      "//third_party/electron_node:node_lib",
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
@@ -920,7 +921,6 @@ if (is_mac) {
         "shell/app/electron_main_mac.cc",
         "shell/app/uv_stdio_fix.cc",
         "shell/app/uv_stdio_fix.h",
-        "shell/common/electron_constants.cc",
       ]
       include_dirs = [ "." ]
       info_plist = "shell/renderer/resources/mac/Info.plist"
@@ -1189,6 +1189,7 @@ if (is_mac) {
       "//components/crash/core/app",
       "//content:sandbox_helper_win",
       "//electron/buildflags",
+      "//third_party/electron_node:node_lib",
       "//ui/strings",
     ]
 
@@ -1535,7 +1536,7 @@ copy("node_gypi_headers") {
 action("node_version_header") {
   inputs = [ "$node_dir/src/node_version.h" ]
   outputs = [ "$node_headers_dir/include/node/node_version.h" ]
-  script = "script/generate_node_version_header.py"
+  script = "script/node/generate_node_version_header.py"
   args = rebase_path(inputs) + rebase_path(outputs)
   if (node_module_version != "") {
     args += [ "$node_module_version" ]

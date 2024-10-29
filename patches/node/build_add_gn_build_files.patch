@@ -11,7 +11,7 @@ really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 1ed186b597eece7c34cb69c8e1e20870555a040d..2ce1e8a7dcca2ba153d387d11970c72b5f43c167 100644
+index 1ed186b597eece7c34cb69c8e1e20870555a040d..e36168f0a051ca2fa2fc024aadcf5375b860105e 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -1,14 +1,406 @@
@@ -113,7 +113,7 @@ index 1ed186b597eece7c34cb69c8e1e20870555a040d..2ce1e8a7dcca2ba153d387d11970c72b
 +}
 +
 +action("node_js2c_original_fs") {
-+  script = "tools/generate_original_fs.py"
++  script = "//electron/script/node/generate_original_fs.py"
 +  inputs = fs_files
 +  outputs = []
 +  foreach(file, fs_files + original_fs_files) {
@@ -2384,30 +2384,6 @@ index 0000000000000000000000000000000000000000..37c16859003e61636fe2f1a4040b1e90
 +    f.write(FILENAMES_JSON_HEADER)
 +    f.write(json.dumps(out, sort_keys=True, indent=2, separators=(',', ': ')))
 +    f.write('\n')
-diff --git a/tools/generate_original_fs.py b/tools/generate_original_fs.py
-new file mode 100644
-index 0000000000000000000000000000000000000000..5259e6a7a1fd6b21df69dc461dee67d95800c2c8
---- /dev/null
-+++ b/tools/generate_original_fs.py
-@@ -0,0 +1,18 @@
-+import os
-+import sys
-+
-+node_root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-+out_dir = sys.argv[1]
-+fs_files = sys.argv[2:]
-+
-+for fs_file in fs_files:
-+  with open(os.path.join(node_root_dir, fs_file), 'r') as f:
-+    contents = f.read()
-+    original_fs_file = fs_file.replace('internal/fs/', 'internal/original-fs/').replace('lib/fs.js', 'lib/original-fs.js').replace('lib/fs/', 'lib/original-fs/')
-+
-+    with open(os.path.join(out_dir, fs_file), 'w') as original_f:
-+      original_f.write(contents)
-+
-+    with open(os.path.join(out_dir, original_fs_file), 'w') as transformed_f:
-+      transformed_contents = contents.replace('internal/fs/', 'internal/original-fs/').replace('require(\'fs', 'require(\'original-fs')
-+      transformed_f.write(transformed_contents)
 diff --git a/tools/install.py b/tools/install.py
 index b132c7bf26c02886a7ab341a1973bf449744ba0f..757e3e60a7be01fac55c5fbb010dbbae00b1bfca 100755
 --- a/tools/install.py

@@ -285,7 +285,7 @@ void BaseWindow::OnWindowAlwaysOnTopChanged() {
   Emit("always-on-top-changed", IsAlwaysOnTop());
 }
 
-void BaseWindow::OnExecuteAppCommand(const std::string& command_name) {
+void BaseWindow::OnExecuteAppCommand(const std::string_view command_name) {
   Emit("app-command", command_name);
 }
 
