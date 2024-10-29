@@ -16,8 +16,9 @@ sys.path.append(
 
 from zipfile import ZipFile
 from lib.config import PLATFORM, get_target_arch, \
-                       get_zip_name, enable_verbose_mode, \
-                       is_verbose_mode, get_platform_key
+                       get_zip_name, set_verbose_mode, \
+                       is_verbose_mode, get_platform_key, \
+                       verbose_mode_print
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      store_artifact, get_electron_exec, get_out_dir, \
                      SRC_DIR, ELECTRON_DIR, TS_NODE
@@ -45,8 +46,7 @@ CXX_OBJECTS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
 
 def main():
   args = parse_args()
-  if args.verbose:
-    enable_verbose_mode()
+  set_verbose_mode(args.verbose)
   if args.upload_to_storage:
     utcnow = datetime.datetime.now(datetime.UTC)
     args.upload_timestamp = utcnow.strftime('%Y%m%d')
@@ -391,9 +391,8 @@ def get_release(version):
   release_env = os.environ.copy()
   release_env['NODE_NO_WARNINGS'] = '1'
   release_info = execute([TS_NODE, script_path, version], release_env)
-  if is_verbose_mode():
-    print(f'Release info for version: {version}:\n')
-    print(release_info)
+  verbose_mode_print(f'Release info for version: {version}:\n')
+  verbose_mode_print(release_info)
   release = json.loads(release_info)
   return release
 
