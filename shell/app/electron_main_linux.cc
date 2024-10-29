@@ -8,6 +8,7 @@
 #include "base/at_exit.h"
 #include "base/command_line.h"
 #include "base/i18n/icu_util.h"
+#include "base/strings/cstring_view.h"
 #include "content/public/app/content_main.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_main_delegate.h"  // NOLINT
@@ -18,9 +19,9 @@
 
 namespace {
 
-bool IsEnvSet(const char* name) {
-  char* indicator = getenv(name);
-  return indicator && indicator[0] != '\0';
+[[nodiscard]] bool IsEnvSet(const base::cstring_view name) {
+  const char* const indicator = getenv(name.c_str());
+  return indicator && *indicator;
 }
 
 }  // namespace
