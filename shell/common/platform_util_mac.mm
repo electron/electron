@@ -19,7 +19,7 @@
 #include "base/logging.h"
 #include "base/mac/scoped_aedesc.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/bind_post_task.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "electron/mas.h"
@@ -152,19 +152,23 @@ void OpenExternal(const GURL& url,
       [NSWorkspaceOpenConfiguration configuration];
   configuration.activates = options.activate;
 
-  __block OpenCallback copied_callback =
-      base::BindPostTaskToCurrentDefault(std::move(callback));
+  __block OpenCallback copied_callback = std::move(callback);
+  scoped_refptr<base::SequencedTaskRunner> runner =
+      base::SequencedTaskRunner::GetCurrentDefault();
 
-  [[NSWorkspace sharedWorkspace] openURL:ns_url
-                           configuration:configuration
-                       completionHandler:^(NSRunningApplication* _Nullable app,
-                                           NSError* _Nullable error) {
-                         if (error) {
-                           std::move(copied_callback).Run("Failed to open URL");
-                         } else {
-                           std::move(copied_callback).Run("");
-                         }
-                       }];
+  [[NSWorkspace sharedWorkspace]
+                openURL:ns_url
+          configuration:configuration
+      completionHandler:^(NSRunningApplication* _Nullable app,
+                          NSError* _Nullable error) {
+        if (error) {
+          runner->PostTask(FROM_HERE, base::BindOnce(std::move(copied_callback),
+                                                     "Failed to open URL"));
+        } else {
+          runner->PostTask(FROM_HERE,
+                           base::BindOnce(std::move(copied_callback), ""));
+        }
+      }];
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& full_path,
