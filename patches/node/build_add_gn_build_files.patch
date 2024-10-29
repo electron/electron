@@ -1288,7 +1288,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..c238b6853e6f96ac7d0133b55d6c7d3d
 +  }
 +
 +  action("node_js2c_original_fs") {
-+    script = "tools/generate_original_fs.py"
++    script = "//electron/script/node/generate_original_fs.py"
 +    inputs = fs_files
 +    deps = [ ":node_js2c_inputs" ]
 +

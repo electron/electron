@@ -865,7 +865,7 @@ if (is_mac) {
       ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
-      "//third_party/electron_node:node_lib",
+      "//third_party/electron_node:libnode",
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
@@ -1189,7 +1189,7 @@ if (is_mac) {
       "//components/crash/core/app",
       "//content:sandbox_helper_win",
       "//electron/buildflags",
-      "//third_party/electron_node:node_lib",
+      "//third_party/electron_node:libnode",
       "//ui/strings",
     ]
 
