@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 8b4b62de63c9f32edeba53116cd04b4be056c362..c669632e01366e04254249c21ab2befabe4dfe6b 100644
+index 0eb84c31ebbda5e7e842cd0f0df5ff2a15048178..c2fa88ac47c846ad94494660453891b0e38b33e3 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1040,6 +1040,7 @@ component("base") {
@@ -558,7 +558,7 @@ index 13c3fe06c417a2565e6af4552930a56c44a01fb3..ef67191f5d010451cde2b084d6165c7d
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 2745b112a023c4e45ce2aba7397c26ad84a81087..abb80017b12f93150f8ec3428070b2ae6db553d2 100644
+index a15c448de7b923f7cec95b5f4990091eea95c225..636bf49eff3d1f3beafe21e03bee41fed4ebc3b4 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -323,6 +323,7 @@ source_set("browser") {
@@ -677,10 +677,10 @@ index 34fb29866785ef07c6dca4cfc85966df1c479b5f..e305d25a8f2a34ac90f4d503a9c74dcc
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 357c5a754f6b3f2992646dda4955aa5b53e0b84f..faf49fec0f54dfb258945e59bc7ee3d15a8a21e7 100644
+index f1a3573055d86e68e7089b06ea1bb3f97e36df27..e5b0194d583e0a0eb2441514abb65816f595dedc 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -284,6 +284,7 @@ source_set("common") {
+@@ -286,6 +286,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -1371,10 +1371,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index f8209797139a6a6e1b601e0b690775604405be3f..50a8318d5d2a25f12b61a1c4ff37cbb45d6c4a79 100644
+index 7e91e49a5343f2446b46f6ba4c8dc946e54343b6..9f73d276cbf68ddb52a20e55b4ac0514d97ade4c 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -406,6 +406,7 @@ component("core") {
+@@ -408,6 +408,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1837,7 +1837,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 7cc3d3f84d761ccf6f6f017c76c4efeb3126dee0..c27d1c89f2ba87777d541368a8bada51aab9f455 100644
+index 02473f891423617ae9b386d8d8628a4c418ebb2a..8dc033eb0d8cf11cc1d63f050da599454c391b7a 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -723,6 +723,8 @@ component("views") {
@@ -1849,7 +1849,7 @@ index 7cc3d3f84d761ccf6f6f017c76c4efeb3126dee0..c27d1c89f2ba87777d541368a8bada51
    }
  
    if (is_win) {
-@@ -1158,6 +1160,8 @@ source_set("test_support") {
+@@ -1153,6 +1155,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
