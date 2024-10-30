@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Gyuyoung Kim <qkim@google.com>
 Date: Tue, 1 Oct 2024 02:11:48 +0000
-Subject: [M126-LTS] Don't perform pseudo-element ident parsing on non-ASCII
+Subject: Don't perform pseudo-element ident parsing on non-ASCII
 
 ParsePseudoType crashes on ASAN when given non-ASCII characters,
 so returning early if those are present.

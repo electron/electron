@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Thibaud Michaud <thibaudm@chromium.org>
 Date: Tue, 3 Sep 2024 11:50:45 +0200
-Subject: [M126-LTS][wasm] Don't catch uncatchable exceptions in the JSPI
- wrapper
+Subject: Don't catch uncatchable exceptions in the JSPI wrapper
 
 M126 merge issues:
   The HandleStackSwitch function doesn't exist in the LTS branch.

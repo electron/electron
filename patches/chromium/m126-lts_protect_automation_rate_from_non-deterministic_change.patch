@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
 Date: Tue, 17 Sep 2024 17:04:42 +0000
-Subject: [M126-LTS] Protect automation_rate_ from non-deterministic change
+Subject: Protect automation_rate_ from non-deterministic change
 
 This CL fixes non-deterministic (racy) data change on
 AudioParamHandler::automation_rate_. It also revises incorrect logic
