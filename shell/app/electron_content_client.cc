@@ -187,7 +187,8 @@ void ElectronContentClient::AddPlugins(
   pdf_info.name = kPDFInternalPluginName;
   pdf_info.description = kPDFPluginDescription;
   // This isn't a real file path; it's just used as a unique identifier.
-  pdf_info.path = base::FilePath(kPdfPluginPath);
+  static constexpr std::string_view kPdfPluginPath = "internal-pdf-viewer";
+  pdf_info.path = base::FilePath::FromASCII(kPdfPluginPath);
   content::WebPluginMimeType pdf_mime_type(
       pdf::kInternalPluginMimeType, kPDFPluginExtension, kPDFPluginDescription);
   pdf_info.mime_types.push_back(pdf_mime_type);

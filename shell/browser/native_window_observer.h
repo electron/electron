@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_OBSERVER_H_
 
 #include <string>
+#include <string_view>
 
 #include "base/observer_list_types.h"
 #include "base/values.h"
@@ -102,7 +103,7 @@ class NativeWindowObserver : public base::CheckedObserver {
 
   // Called on Windows when App Commands arrive (WM_APPCOMMAND)
   // Some commands are implemented on on other platforms as well
-  virtual void OnExecuteAppCommand(const std::string& command_name) {}
+  virtual void OnExecuteAppCommand(std::string_view command_name) {}
 
   virtual void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) {}
 };
