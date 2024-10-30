@@ -4,3 +4,5 @@ cherry-pick-81155a8f3b20.patch
 merged_maglev_fix_non-materialized_receiver_closure.patch
 merged_don_t_assume_all_turbofan_frames_are_javascript.patch
 merged_wasm_do_not_inline_wrappers_with_ref_extern_parameter.patch
+cherry-pick-153d4e84e5d1.patch
+cherry-pick-d9893f4856af.patch
