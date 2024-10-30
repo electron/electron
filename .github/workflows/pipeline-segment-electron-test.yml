@@ -230,7 +230,7 @@ jobs:
       run: |
         cd src\electron
         set ELECTRON_TEST_RESULTS_DIR=%cd%\junit
-        for /f %i in ('node script\split-tests ${{ matrix.shard }} 2') do set "test_files=%i"
+        for /f %%i in ('node script\split-tests ${{ matrix.shard }} 2') do set "test_files=%%i"
         if "%TARGET_ARCH%"=="ia32" (set npm_config_arch=ia32)      
         node script/yarn test --runners=main --trace-uncaught --enable-logging --files %tests_files%
     - name: Upload Test results to Datadog
