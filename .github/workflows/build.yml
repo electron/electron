@@ -149,6 +149,8 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
       TARGET_OS: 'win'
       ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
+    outputs:
+      build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
     - name: Checkout Electron
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
@@ -187,7 +189,7 @@ jobs:
       target-platform: windows
       target-archs: x64 x86 arm64
       check-runs-on: electron-arc-linux-amd64-8core
-      check-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      check-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       gn-build-type: testing
     secrets: inherit
 
