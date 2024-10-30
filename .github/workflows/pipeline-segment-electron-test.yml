@@ -177,7 +177,8 @@ jobs:
       run: |
         cd src/electron
         node script/yarn global add @datadog/datadog-ci
-    - name: Run Electron Tests
+    - name: Run Electron Tests (Linux and macOS)
+      if: ${{ inputs.target-platform == 'macos' || inputs.target-platform == 'linux' }}
       shell: bash
       env:
         MOCHA_REPORTER: mocha-multi-reporters
@@ -185,20 +186,15 @@ jobs:
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
         DISPLAY: ':99.0'
-        NPM_CONFIG_MSVS_VERSION: '2022'
-        ELECTRON_ENABLE_LOGGING: '1'
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'linux' && 3 || 2 }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 3 }})
 
         # Run tests
-        if [ "${{ inputs.target-platform }}" != "linux" ]; then
+        if [ "`uname`" = "Darwin" ]; then
           echo "About to start tests"
-          if [ "${{ inputs.target-platform }}" = "windows" ] && [ "${{ inputs.target-arch }}" = "x86" ]; then
-            export npm_config_arch="ia32"
-          fi
           node script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
@@ -221,6 +217,22 @@ jobs:
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
           fi
         fi
+    - name: Run Electron Tests (Windows)
+      if: ${{ inputs.target-platform == 'windows' }}
+      shell: cmd
+      env:
+        MOCHA_REPORTER: mocha-multi-reporters
+        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
+        ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
+        NPM_CONFIG_MSVS_VERSION: '2022'
+        ELECTRON_ENABLE_LOGGING: '1'
+      run: |
+        cd src\electron
+        set ELECTRON_TEST_RESULTS_DIR=%cd%\junit
+        for /f %i in ('node script\split-tests ${{ matrix.shard }} 2') do set "test_files=%i"
+        if "%TARGET_ARCH%"=="ia32" (set npm_config_arch=ia32)      
+        node script/yarn test --runners=main --trace-uncaught --enable-logging --files %tests_files%
     - name: Upload Test results to Datadog
       env:
         DD_ENV: ci
