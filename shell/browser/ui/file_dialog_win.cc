@@ -145,13 +145,13 @@ static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
   // sure the dialog will update file extension automatically.
   for (size_t i = 0; i < filterspec.size(); ++i) {
     std::wstring spec(filterspec[i].pszSpec);
-    // only need first extension
-    std::wstring firstSpec = spec.substr(0, spec.find(L';'));
-    if (firstSpec != L"*.*") {
+    if (spec != L"*.*") {
       // SetFileTypeIndex is regarded as one-based index.
       dialog->SetFileTypeIndex(i + 1);
+      // "*.jpg;*.png" => "*.jpg"
+      std::wstring first_spec = spec.substr(0, spec.find(L';'));
       // "*.jpg" => "jpg"
-      dialog->SetDefaultExtension(firstSpec.substr(2).c_str());
+      dialog->SetDefaultExtension(first_spec.substr(2).c_str());
       break;
     }
   }
