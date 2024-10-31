@@ -219,8 +219,10 @@ jobs:
         fi
     - name: Set test files (Windows)
       if: ${{ inputs.target-platform == 'windows' }}
-      shell: pwsh
-      run: $env:tests_files=node script\split-tests $env:shard 2
+      shell: powershell
+      run: |
+        cd src\electron
+        $env:tests_files=node script\split-tests $env:shard 2
     - name: Run Electron Tests (Windows)
       if: ${{ inputs.target-platform == 'windows' }}
       shell: cmd
