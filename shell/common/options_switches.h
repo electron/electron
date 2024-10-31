@@ -211,6 +211,10 @@ inline constexpr std::string_view kSpellcheck = "spellcheck";
 
 namespace switches {
 
+// Implementation detail: base::cstring_view used for switches because
+// base::CommandLine::CopySwitchesFrom() still needs C-style strings.
+// These constants can migrate to std::string_view if that function does.
+
 // Enable chromium sandbox.
 inline constexpr base::cstring_view kEnableSandbox = "enable-sandbox";
 
