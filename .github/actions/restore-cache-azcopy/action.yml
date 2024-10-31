@@ -44,6 +44,11 @@ runs:
     shell: bash
     run: |
       echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
+      if [ `du $DEPSHASH.tar | cut -f1` = "0" ]; then
+        echo "Cache is empty - exiting"
+        exit 1
+      fi
+      
       mkdir temp-cache
       tar -xf $DEPSHASH.tar -C temp-cache
       echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
