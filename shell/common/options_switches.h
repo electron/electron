@@ -168,24 +168,45 @@ inline constexpr std::string_view kSandbox = "sandbox";
 
 inline constexpr std::string_view kWebSecurity = "webSecurity";
 
-extern const char kAllowRunningInsecureContent[];
-extern const char kOffscreen[];
-extern const char kUseSharedTexture[];
-extern const char kNodeIntegrationInSubFrames[];
-extern const char kDisableHtmlFullscreenWindowResize[];
-extern const char kJavaScript[];
-extern const char kImages[];
-extern const char kTextAreasAreResizable[];
-extern const char kWebGL[];
-extern const char kNavigateOnDragDrop[];
-extern const char kEnablePreferredSizeMode[];
+inline constexpr std::string_view kAllowRunningInsecureContent =
+    "allowRunningInsecureContent";
 
-extern const char kHiddenPage[];
+inline constexpr std::string_view kOffscreen = "offscreen";
+
+inline constexpr std::string_view kUseSharedTexture = "useSharedTexture";
+
+inline constexpr std::string_view kNodeIntegrationInSubFrames =
+    "nodeIntegrationInSubFrames";
+
+// Disable window resizing when HTML Fullscreen API is activated.
+inline constexpr std::string_view kDisableHtmlFullscreenWindowResize =
+    "disableHtmlFullscreenWindowResize";
+
+// Enables JavaScript support.
+inline constexpr std::string_view kJavaScript = "javascript";
+
+// Enables image support.
+inline constexpr std::string_view kImages = "images";
+
+// Make TextArea elements resizable.
+inline constexpr std::string_view kTextAreasAreResizable =
+    "textAreasAreResizable";
+
+// Enables WebGL support.
+inline constexpr std::string_view kWebGL = "webgl";
+
+// Whether dragging and dropping a file or link onto the page causes a
+// navigation.
+inline constexpr std::string_view kNavigateOnDragDrop = "navigateOnDragDrop";
+
+inline constexpr std::string_view kEnablePreferredSizeMode =
+    "enablePreferredSizeMode";
+
+inline constexpr std::string_view kHiddenPage = "hiddenPage";
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-extern const char kSpellcheck[];
+inline constexpr std::string_view kSpellcheck = "spellcheck";
 #endif
-
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.

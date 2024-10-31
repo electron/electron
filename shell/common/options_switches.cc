@@ -6,46 +6,6 @@
 
 namespace electron {
 
-namespace options {
-
-const char kAllowRunningInsecureContent[] = "allowRunningInsecureContent";
-
-const char kOffscreen[] = "offscreen";
-
-const char kUseSharedTexture[] = "useSharedTexture";
-
-const char kNodeIntegrationInSubFrames[] = "nodeIntegrationInSubFrames";
-
-// Disable window resizing when HTML Fullscreen API is activated.
-const char kDisableHtmlFullscreenWindowResize[] =
-    "disableHtmlFullscreenWindowResize";
-
-// Enables JavaScript support.
-const char kJavaScript[] = "javascript";
-
-// Enables image support.
-const char kImages[] = "images";
-
-// Make TextArea elements resizable.
-const char kTextAreasAreResizable[] = "textAreasAreResizable";
-
-// Enables WebGL support.
-const char kWebGL[] = "webgl";
-
-// Whether dragging and dropping a file or link onto the page causes a
-// navigation.
-const char kNavigateOnDragDrop[] = "navigateOnDragDrop";
-
-const char kHiddenPage[] = "hiddenPage";
-
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-const char kSpellcheck[] = "spellcheck";
-#endif
-
-const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
-
-}  // namespace options
-
 namespace switches {
 
 // Enable chromium sandbox.
