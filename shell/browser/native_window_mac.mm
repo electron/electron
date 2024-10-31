@@ -203,7 +203,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.native_widget =
       new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
-  widget()->SetNativeWindowProperty(kElectronNativeWindowKey, this);
+  widget()->SetNativeWindowProperty(kElectronNativeWindowKey.c_str(), this);
   SetCanResize(resizable);
   window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
