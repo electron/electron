@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_COMMON_OPTIONS_SWITCHES_H_
 #define ELECTRON_SHELL_COMMON_OPTIONS_SWITCHES_H_
 
+#include <string_view>
+
 #include "electron/buildflags/buildflags.h"
 
 namespace electron {
