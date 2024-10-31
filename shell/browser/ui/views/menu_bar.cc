@@ -43,7 +43,7 @@ MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
       views::BoxLayout::Orientation::kHorizontal));
   window_->AddObserver(this);
 
-  menu_delegate_ = new MenuDelegate(this);
+  menu_delegate_ = std::make_unique<MenuDelegate>(this);
   menu_delegate_->AddObserver(this);
 }
 
