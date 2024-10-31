@@ -248,18 +248,42 @@ inline constexpr base::cstring_view kAppUserModelId = "app-user-model-id";
 // The application path
 inline constexpr base::cstring_view kAppPath = "app-path";
 
-extern const char kScrollBounce[];
-extern const char kNodeIntegrationInWorker[];
+// The command line switch versions of the options.
+inline constexpr base::cstring_view kScrollBounce = "scroll-bounce";
 
-extern const char kWidevineCdmPath[];
-extern const char kWidevineCdmVersion[];
+// Command switch passed to renderer process to control nodeIntegration.
+inline constexpr base::cstring_view kNodeIntegrationInWorker =
+    "node-integration-in-worker";
 
-extern const char kDiskCacheSize[];
-extern const char kIgnoreConnectionsLimit[];
-extern const char kAuthServerWhitelist[];
-extern const char kAuthNegotiateDelegateWhitelist[];
-extern const char kEnableAuthNegotiatePort[];
-extern const char kDisableNTLMv2[];
+// Widevine options
+// Path to Widevine CDM binaries.
+inline constexpr base::cstring_view kWidevineCdmPath = "widevine-cdm-path";
+// Widevine CDM version.
+inline constexpr base::cstring_view kWidevineCdmVersion =
+    "widevine-cdm-version";
+
+// Forces the maximum disk space to be used by the disk cache, in bytes.
+inline constexpr base::cstring_view kDiskCacheSize = "disk-cache-size";
+
+// Ignore the limit of 6 connections per host.
+inline constexpr base::cstring_view kIgnoreConnectionsLimit =
+    "ignore-connections-limit";
+
+// Whitelist containing servers for which Integrated Authentication is enabled.
+inline constexpr base::cstring_view kAuthServerWhitelist =
+    "auth-server-whitelist";
+
+// Whitelist containing servers for which Kerberos delegation is allowed.
+inline constexpr base::cstring_view kAuthNegotiateDelegateWhitelist =
+    "auth-negotiate-delegate-whitelist";
+
+// If set, include the port in generated Kerberos SPNs.
+inline constexpr base::cstring_view kEnableAuthNegotiatePort =
+    "enable-auth-negotiate-port";
+
+// If set, NTLM v2 is disabled for POSIX platforms.
+inline constexpr base::cstring_view kDisableNTLMv2 = "disable-ntlm-v2";
+
 }  // namespace switches
 
 }  // namespace electron

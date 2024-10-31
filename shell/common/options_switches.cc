@@ -6,39 +6,6 @@
 
 namespace electron {
 
-namespace switches {
-
-// The command line switch versions of the options.
-const char kScrollBounce[] = "scroll-bounce";
-
-// Command switch passed to renderer process to control nodeIntegration.
-const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
-
-// Widevine options
-// Path to Widevine CDM binaries.
-const char kWidevineCdmPath[] = "widevine-cdm-path";
-// Widevine CDM version.
-const char kWidevineCdmVersion[] = "widevine-cdm-version";
-
-// Forces the maximum disk space to be used by the disk cache, in bytes.
-const char kDiskCacheSize[] = "disk-cache-size";
-
-// Ignore the limit of 6 connections per host.
-const char kIgnoreConnectionsLimit[] = "ignore-connections-limit";
-
-// Whitelist containing servers for which Integrated Authentication is enabled.
-const char kAuthServerWhitelist[] = "auth-server-whitelist";
-
-// Whitelist containing servers for which Kerberos delegation is allowed.
-const char kAuthNegotiateDelegateWhitelist[] =
-    "auth-negotiate-delegate-whitelist";
-
-// If set, include the port in generated Kerberos SPNs.
-const char kEnableAuthNegotiatePort[] = "enable-auth-negotiate-port";
-
-// If set, NTLM v2 is disabled for POSIX platforms.
-const char kDisableNTLMv2[] = "disable-ntlm-v2";
-
-}  // namespace switches
+namespace switches {}  // namespace switches
 
 }  // namespace electron
