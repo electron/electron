@@ -1187,7 +1187,7 @@ index 65d0e1be42f0a85418491ebb548278cf431aa6a0..d4a31342f1c6107b029394c6e1d00a1d
    except Exception as e:
      print(str(e))
 diff --git a/unofficial.gni b/unofficial.gni
-index c3b311e4a7f5444b07d4d7028d4621806959804e..c238b6853e6f96ac7d0133b55d6c7d3d1cc2ad3d 100644
+index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1fa351a9d9 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -139,6 +139,7 @@ template("node_gn_build") {

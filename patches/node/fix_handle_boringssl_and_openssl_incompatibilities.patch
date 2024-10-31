@@ -586,7 +586,7 @@ index 9e656a2815045aa5da7eb267708c03058be9f362..600e0850f01e01024414d42b25605f25
  #endif
  
 diff --git a/unofficial.gni b/unofficial.gni
-index c238b6853e6f96ac7d0133b55d6c7d3d1cc2ad3d..f449fe43ff25f05f69e8d16c70001cac93d9716c 100644
+index de6ff5548ca5282199b7d85c11941c1fa351a9d9..3d8b7957e791ce2fa2a8d0937a87b6010087803d 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -145,7 +145,6 @@ template("node_gn_build") {
