@@ -1,0 +1,217 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James Price <jrprice@google.com>
+Date: Mon, 28 Oct 2024 16:57:46 +0000
+Subject: [tint] Validate that `@align()` is large enough
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Make sure that `n = k × RequiredAlignOf(T,C)` as per the spec, when
+`@align(n)` is applied to the member of a structure that is used in a
+host-shareable address space.
+
+Suppress some CTS tests until they are updated upstream.
+
+Fixed: 375123371
+Include-Ci-Only-Tests: true
+Change-Id: I3240b9ab0a42986e918a1c6a86268844861b9fed
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/212315
+Commit-Queue: James Price <jrprice@google.com>
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+(cherry picked from commit ed15f8542825f25131c5a186e7de3737d49d327e)
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/212714
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Auto-Submit: James Price <jrprice@google.com>
+Commit-Queue: Alan Baker <alanbaker@google.com>
+Reviewed-by: Alan Baker <alanbaker@google.com>
+
+diff --git a/src/tint/lang/wgsl/resolver/address_space_layout_validation_test.cc b/src/tint/lang/wgsl/resolver/address_space_layout_validation_test.cc
+index 96b1340db2ba115755bff5ce58c6948c7f75aadb..f1e14a36a3cdea07f5fc7735c3d9483515d754f1 100644
+--- a/src/tint/lang/wgsl/resolver/address_space_layout_validation_test.cc
++++ b/src/tint/lang/wgsl/resolver/address_space_layout_validation_test.cc
+@@ -216,7 +216,7 @@ TEST_F(ResolverAddressSpaceLayoutValidationTest, UniformBuffer_UnalignedMember_A
+ // multiple of 16 bytes
+ TEST_F(ResolverAddressSpaceLayoutValidationTest, UniformBuffer_MembersOffsetNotMultipleOf16) {
+     // struct Inner {
+-    //   @align(1) @size(5) scalar : i32;
++    //   @align(4) @size(5) scalar : i32;
+     // };
+     //
+     // struct Outer {
+@@ -229,7 +229,7 @@ TEST_F(ResolverAddressSpaceLayoutValidationTest, UniformBuffer_MembersOffsetNotM
+ 
+     Structure(Ident(Source{{12, 34}}, "Inner"),
+               Vector{
+-                  Member("scalar", ty.i32(), Vector{MemberAlign(1_i), MemberSize(5_a)}),
++                  Member("scalar", ty.i32(), Vector{MemberAlign(4_i), MemberSize(5_a)}),
+               });
+ 
+     Structure(Source{{34, 56}}, "Outer",
+@@ -247,13 +247,13 @@ TEST_F(ResolverAddressSpaceLayoutValidationTest, UniformBuffer_MembersOffsetNotM
+         R"(78:90 error: 'uniform' storage requires that the number of bytes between the start of the previous member of type struct and the current member be a multiple of 16 bytes, but there are currently 8 bytes between 'inner' and 'scalar'. Consider setting '@align(16)' on this member
+ note: see layout of struct:
+ /*            align(4) size(12) */ struct Outer {
+-/* offset( 0) align(1) size( 5) */   inner : Inner,
+-/* offset( 5) align(1) size( 3) */   // -- implicit field alignment padding --
++/* offset( 0) align(4) size( 8) */   inner : Inner,
+ /* offset( 8) align(4) size( 4) */   scalar : i32,
+ /*                              */ };
+ 12:34 note: and layout of previous member struct:
+-/*           align(1) size(5) */ struct Inner {
+-/* offset(0) align(1) size(5) */   scalar : i32,
++/*           align(4) size(8) */ struct Inner {
++/* offset(0) align(4) size(5) */   scalar : i32,
++/* offset(5) align(1) size(3) */   // -- implicit struct size padding --
+ /*                            */ };
+ 22:24 note: 'Outer' used in address space 'uniform' here)");
+ }
+@@ -265,7 +265,7 @@ TEST_F(ResolverAddressSpaceLayoutValidationTest,
+     //   a : i32;
+     //   b : i32;
+     //   c : i32;
+-    //   @align(1) @size(5) scalar : i32;
++    //   @align(4) @size(5) scalar : i32;
+     // };
+     //
+     // struct Outer {
+@@ -281,7 +281,7 @@ TEST_F(ResolverAddressSpaceLayoutValidationTest,
+                   Member("a", ty.i32()),
+                   Member("b", ty.i32()),
+                   Member("c", ty.i32()),
+-                  Member("scalar", ty.i32(), Vector{MemberAlign(1_i), MemberSize(5_a)}),
++                  Member("scalar", ty.i32(), Vector{MemberAlign(4_i), MemberSize(5_a)}),
+               });
+ 
+     Structure(Source{{34, 56}}, "Outer",
+@@ -307,7 +307,7 @@ note: see layout of struct:
+ /* offset( 0) align(4) size( 4) */   a : i32,
+ /* offset( 4) align(4) size( 4) */   b : i32,
+ /* offset( 8) align(4) size( 4) */   c : i32,
+-/* offset(12) align(1) size( 5) */   scalar : i32,
++/* offset(12) align(4) size( 5) */   scalar : i32,
+ /* offset(17) align(1) size( 3) */   // -- implicit struct size padding --
+ /*                              */ };
+ 22:24 note: 'Outer' used in address space 'uniform' here)");
+@@ -316,7 +316,7 @@ note: see layout of struct:
+ TEST_F(ResolverAddressSpaceLayoutValidationTest,
+        UniformBuffer_MembersOffsetNotMultipleOf16_SuggestedFix) {
+     // struct Inner {
+-    //   @align(1) @size(5) scalar : i32;
++    //   @align(4) @size(5) scalar : i32;
+     // };
+     //
+     // struct Outer {
+@@ -328,7 +328,7 @@ TEST_F(ResolverAddressSpaceLayoutValidationTest,
+     // var<uniform> a : Outer;
+ 
+     Structure("Inner", Vector{
+-                           Member("scalar", ty.i32(), Vector{MemberAlign(1_i), MemberSize(5_a)}),
++                           Member("scalar", ty.i32(), Vector{MemberAlign(4_i), MemberSize(5_a)}),
+                        });
+ 
+     Structure("Outer", Vector{
+@@ -659,7 +659,7 @@ TEST_F(ResolverAddressSpaceLayoutValidationTest, RelaxedUniformLayout_MemberOffs
+     // enable chromium_internal_relaxed_uniform_layout;
+     //
+     // struct Inner {
+-    //   @align(1) @size(5) scalar : i32;
++    //   @align(4) @size(5) scalar : i32;
+     // };
+     //
+     // struct Outer {
+@@ -673,7 +673,7 @@ TEST_F(ResolverAddressSpaceLayoutValidationTest, RelaxedUniformLayout_MemberOffs
+     Enable(wgsl::Extension::kChromiumInternalRelaxedUniformLayout);
+ 
+     Structure("Inner", Vector{
+-                           Member("scalar", ty.i32(), Vector{MemberAlign(1_i), MemberSize(5_a)}),
++                           Member("scalar", ty.i32(), Vector{MemberAlign(4_i), MemberSize(5_a)}),
+                        });
+ 
+     Structure("Outer", Vector{
+@@ -730,5 +730,29 @@ TEST_F(ResolverAddressSpaceLayoutValidationTest, RelaxedUniformLayout_ArrayStrid
+     EXPECT_TRUE(r()->Resolve()) << r()->error();
+ }
+ 
++TEST_F(ResolverAddressSpaceLayoutValidationTest, AlignAttributeTooSmall) {
++    // struct S {
++    //   @align(4) vector : vec4u;
++    //   scalar : u32;
++    // };
++    //
++    // @group(0) @binding(0)
++    // var<storage, read_write> a : array<S>;
++    Structure(
++        "S", Vector{
++                 Member("vector", ty.vec4<u32>(), Vector{MemberAlign(Expr(Source{{12, 34}}, 4_a))}),
++                 Member("scalar", ty.u32()),
++             });
++
++    GlobalVar(Source{{56, 78}}, "a", ty("S"), core::AddressSpace::kStorage,
++              core::Access::kReadWrite, Group(0_a), Binding(0_a));
++
++    ASSERT_FALSE(r()->Resolve());
++    EXPECT_EQ(
++        r()->error(),
++        R"(12:34 error: alignment must be a multiple of '16' bytes for the 'storage' address space
++56:78 note: 'S' used in address space 'storage' here)");
++}
++
+ }  // namespace
+ }  // namespace tint::resolver
+diff --git a/src/tint/lang/wgsl/resolver/validator.cc b/src/tint/lang/wgsl/resolver/validator.cc
+index 155aaf11379909d24e98e96c96cb49f226233b8c..0d62d474780542a79a67698375319b6ab7c4560d 100644
+--- a/src/tint/lang/wgsl/resolver/validator.cc
++++ b/src/tint/lang/wgsl/resolver/validator.cc
+@@ -583,6 +583,22 @@ bool Validator::AddressSpaceLayout(const core::type::Type* store_ty,
+                     return false;
+                 }
+             }
++
++            // If an alignment was explicitly specified, we need to validate that it satisfies the
++            // alignment requirement of the address space.
++            auto* align_attr =
++                ast::GetAttribute<ast::StructMemberAlignAttribute>(m->Declaration()->attributes);
++            if (align_attr && !enabled_extensions_.Contains(
++                                  wgsl::Extension::kChromiumInternalRelaxedUniformLayout)) {
++                auto align = sem_.GetVal(align_attr->expr)->ConstantValue()->ValueAs<uint32_t>();
++                if (align % required_align != 0) {
++                    AddError(align_attr->expr->source)
++                        << "alignment must be a multiple of " << style::Literal(required_align)
++                        << " bytes for the " << style::Enum(address_space) << " address space";
++                    note_usage();
++                    return false;
++                }
++            }
+         }
+     }
+ 
+diff --git a/webgpu-cts/compat-expectations.txt b/webgpu-cts/compat-expectations.txt
+index a04b759f3ed62a9c759a791a8e8d62f5db958e2d..834024d0b5e15fa954794495f4d571f64d679200 100644
+--- a/webgpu-cts/compat-expectations.txt
++++ b/webgpu-cts/compat-expectations.txt
+@@ -173,6 +173,10 @@ crbug.com/dawn/2086 webgpu:api,operation,adapter,requestAdapter:requestAdapter:p
+ crbug.com/dawn/2086 webgpu:web_platform,canvas,configure:usage:* [ Failure ]
+ crbug.com/dawn/2086 webgpu:web_platform,canvas,configure:viewFormats:* [ Failure ]
+ 
++# Failures due to change in `@align()` validation.
++crbug.com/375467276 webgpu:shader,execution,expression,access,structure,index:buffer_align:* [ Failure ]
++crbug.com/375467276 webgpu:shader,validation,shader_io,align:* [ Failure ]
++
+ ### This section represents things that will require Compat validation
+ ### These tests will never pass, but should be skipped in CTS once Compat
+ ### validation has been added
+diff --git a/webgpu-cts/expectations.txt b/webgpu-cts/expectations.txt
+index aa5b9a871b53ecfc9f73330dfc4b0a50c1c51518..069a5eabb86a0ccebedda313a125c560d2d2ba7b 100644
+--- a/webgpu-cts/expectations.txt
++++ b/webgpu-cts/expectations.txt
+@@ -1503,6 +1503,10 @@ crbug.com/dawn/0000 [ win10 ] webgpu:shader,execution,expression,constructor,non
+ crbug.com/dawn/0000 [ win10 ] webgpu:shader,execution,expression,constructor,non_zero:abstract_vector_elements:abstract_type="abstract-int";concrete_type="u32";width=3 [ Failure ]
+ crbug.com/dawn/0000 [ win10 ] webgpu:shader,execution,expression,constructor,non_zero:abstract_vector_elements:abstract_type="abstract-int";concrete_type="u32";width=4 [ Failure ]
+ 
++# Failures due to change in `@align()` validation.
++crbug.com/375467276 webgpu:shader,execution,expression,access,structure,index:buffer_align:* [ Failure ]
++crbug.com/375467276 webgpu:shader,validation,shader_io,align:* [ Failure ]
++
+ ################################################################################
+ # New flakes. Please triage:
+ ################################################################################
