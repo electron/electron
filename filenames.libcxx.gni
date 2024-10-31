@@ -236,6 +236,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__bit/rotate.h",
   "//third_party/libc++/src/include/__bit_reference",
   "//third_party/libc++/src/include/__charconv/chars_format.h",
+  "//third_party/libc++/src/include/__charconv/from_chars_floating_point.h",
   "//third_party/libc++/src/include/__charconv/from_chars_integral.h",
   "//third_party/libc++/src/include/__charconv/from_chars_result.h",
   "//third_party/libc++/src/include/__charconv/tables.h",
