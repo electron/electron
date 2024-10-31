@@ -162,6 +162,15 @@ describe('node feature', () => {
     });
   });
 
+  describe('EventSource', () => {
+    itremote('works correctly when nodeIntegration is enabled in the renderer', () => {
+      const es = new EventSource('https://example.com');
+      expect(es).to.have.property('url').that.is.a('string');
+      expect(es).to.have.property('readyState').that.is.a('number');
+      expect(es).to.have.property('withCredentials').that.is.a('boolean');
+    });
+  });
+
   describe('fetch', () => {
     itremote('works correctly when nodeIntegration is enabled in the renderer', async (fixtures: string) => {
       const file = require('node:path').join(fixtures, 'hello.txt');
