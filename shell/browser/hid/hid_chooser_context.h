@@ -37,7 +37,6 @@ class ElectronBrowserContext;
 
 extern const char kHidDeviceNameKey[];
 extern const char kHidGuidKey[];
-extern const char kHidProductIdKey[];
 
 // Manages the internal state and connection to the device service for the
 // Human Interface Device (HID) chooser UI.
