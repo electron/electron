@@ -134,3 +134,4 @@ feat_allow_usage_of_sccontentsharingpicker_on_supported_platforms.patch
 chore_partial_revert_of.patch
 fix_software_compositing_infinite_loop.patch
 disable_elf_crel_on_linux_arm.patch
+fix_don_t_use_forward_declaration_header.patch
