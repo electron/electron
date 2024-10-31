@@ -11,25 +11,26 @@ namespace electron {
 
 namespace options {
 
-extern const char kTitle[];
-extern const char kIcon[];
-extern const char kFrame[];
-extern const char kShow[];
-extern const char kCenter[];
-extern const char kX[];
-extern const char kY[];
-extern const char kWidth[];
-extern const char kHeight[];
-extern const char kMinWidth[];
-extern const char kMinHeight[];
-extern const char kMaxWidth[];
-extern const char kMaxHeight[];
-extern const char kResizable[];
-extern const char kMovable[];
-extern const char kMinimizable[];
-extern const char kMaximizable[];
-extern const char kFullScreenable[];
-extern const char kClosable[];
+inline constexpr std::string_view kTitle = "title";
+inline constexpr std::string_view kIcon = "icon";
+inline constexpr std::string_view kFrame = "frame";
+inline constexpr std::string_view kShow = "show";
+inline constexpr std::string_view kCenter = "center";
+inline constexpr std::string_view kX = "x";
+inline constexpr std::string_view kY = "y";
+inline constexpr std::string_view kWidth = "width";
+inline constexpr std::string_view kHeight = "height";
+inline constexpr std::string_view kMinWidth = "minWidth";
+inline constexpr std::string_view kMinHeight = "minHeight";
+inline constexpr std::string_view kMaxWidth = "maxWidth";
+inline constexpr std::string_view kMaxHeight = "maxHeight";
+inline constexpr std::string_view kResizable = "resizable";
+inline constexpr std::string_view kMovable = "movable";
+inline constexpr std::string_view kMinimizable = "minimizable";
+inline constexpr std::string_view kMaximizable = "maximizable";
+inline constexpr std::string_view kFullScreenable = "fullscreenable";
+inline constexpr std::string_view kClosable = "closable";
+
 extern const char kHiddenInMissionControl[];
 extern const char kFullscreen[];
 extern const char kSkipTaskbar[];
