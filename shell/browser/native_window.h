@@ -10,6 +10,7 @@
 #include <optional>
 #include <queue>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
@@ -44,7 +45,8 @@ class PersistentDictionary;
 
 namespace electron {
 
-extern const char kElectronNativeWindowKey[];
+inline constexpr std::string_view kElectronNativeWindowKey =
+    "__ELECTRON_NATIVE_WINDOW__";
 
 class ElectronMenuModel;
 class BackgroundThrottlingSource;
