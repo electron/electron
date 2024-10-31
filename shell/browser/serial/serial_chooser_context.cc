@@ -23,20 +23,6 @@
 
 namespace electron {
 
-constexpr char kPortNameKey[] = "name";
-constexpr char kTokenKey[] = "token";
-constexpr char kBluetoothDevicePathKey[] = "bluetooth_device_path";
-#if BUILDFLAG(IS_WIN)
-constexpr char kDeviceInstanceIdKey[] = "device_instance_id";
-#else
-constexpr char kVendorIdKey[] = "vendor_id";
-constexpr char kProductIdKey[] = "product_id";
-constexpr char kSerialNumberKey[] = "serial_number";
-#if BUILDFLAG(IS_MAC)
-constexpr char kUsbDriverKey[] = "usb_driver";
-#endif  // BUILDFLAG(IS_MAC)
-#endif  // BUILDFLAG(IS_WIN)
-
 namespace {
 
 std::string EncodeToken(const base::UnguessableToken& token) {
