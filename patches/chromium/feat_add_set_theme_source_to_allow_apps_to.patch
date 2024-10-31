@@ -62,10 +62,10 @@ index 7a9b0b3488e4105c76f944574640778e648f7bef..e5a660a6cf9b87017f93b5f92291012c
    // Obtaining the PrefersAlwaysShowScrollbar system setting can be expensive,
    // so it is cached in this boolean.
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index c1523bbdbf16e1df1bf158b7b053dce09116f2fc..06831ec767f6ba81e76f52322fc2d81a45c2c275 100644
+index 1b098cbb291fe904f34d59ce5aaab7a0e48b28ea..9d27e7b3dc503a3f25d71f0342a3fd4f17a42ea0 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -682,6 +682,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -678,6 +678,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    // ...unless --force-dark-mode was specified in which case caveat emptor.
    if (InForcedColorsMode() && !IsForcedDarkMode())
      return false;
