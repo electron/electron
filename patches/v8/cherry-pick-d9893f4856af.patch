@@ -1,0 +1,40 @@
+From d9893f4856af26e78ba5021063ee2b1c61a3023b Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Thu, 10 Oct 2024 18:54:04 +0200
+Subject: [PATCH] Merged: [wasm] Fix default externref/exnref reference
+
+- The default nullexternref should be null instead of undefined
+- The default exnref/nullexnref should be null instead of wasm_null
+
+(cherry picked from commit e7ccf0af1bdddd20dc58e1790a94739dba0209a3)
+
+Change-Id: I5b32e80f2eb59b29113232f9e2f59a8803915cb3
+Fixed: 372285204,372269618
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5937812
+Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
+Auto-Submit: Matthias Liedtke <mliedtke@chromium.org>
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.0@{#35}
+Cr-Branched-From: 4be854bd71ea878a25b236a27afcecffa2e29360-refs/heads/13.0.245@{#1}
+Cr-Branched-From: 1f5183f7ad6cca21029fd60653d075730c644432-refs/heads/main@{#96103}
+---
+
+diff --git a/src/wasm/wasm-js.cc b/src/wasm/wasm-js.cc
+index f8549cb..7c07f1e 100644
+--- a/src/wasm/wasm-js.cc
++++ b/src/wasm/wasm-js.cc
+@@ -1322,9 +1322,12 @@
+   DCHECK(type.is_object_reference());
+   // Use undefined for JS type (externref) but null for wasm types as wasm does
+   // not know undefined.
+-  if (type.heap_representation() == i::wasm::HeapType::kExtern ||
+-      type.heap_representation() == i::wasm::HeapType::kNoExtern) {
++  if (type.heap_representation() == i::wasm::HeapType::kExtern) {
+     return isolate->factory()->undefined_value();
++  } else if (type.heap_representation() == i::wasm::HeapType::kNoExtern ||
++             type.heap_representation() == i::wasm::HeapType::kExn ||
++             type.heap_representation() == i::wasm::HeapType::kNoExn) {
++    return isolate->factory()->null_value();
+   }
+   return isolate->factory()->wasm_null();
+ }

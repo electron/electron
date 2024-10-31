@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andreas Haas <ahaas@chromium.org>
+Date: Thu, 10 Oct 2024 13:56:42 +0200
+Subject: [13.0][wasm] Don't tier up wrapper if signature depends on other
+ instance
+
+The wasm-to-js wrapper tierup currently does not handle signatures with
+indexed types correctly if the WebAssembly instance from which the
+JavaScript function is called is different than the WebAssembly instance
+that imported the JavaScript function initially. With this CL the
+wrapper tierup gets disabled in that case until tierup gets fixed
+eventually.
+
+R=clemensb@chromium.org
+
+Bug: 371565065
+
+(cherry picked from commit 5fcbf3954eb9f7f8221f068b5324e5b6f04b5839)
+
+Change-Id: I43d8eff2d4ce4e3ec775b7346938ea26109f7045
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5937800
+Commit-Queue: Andreas Haas <ahaas@chromium.org>
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.0@{#33}
+Cr-Branched-From: 4be854bd71ea878a25b236a27afcecffa2e29360-refs/heads/13.0.245@{#1}
+Cr-Branched-From: 1f5183f7ad6cca21029fd60653d075730c644432-refs/heads/main@{#96103}
+
+diff --git a/src/runtime/runtime-wasm.cc b/src/runtime/runtime-wasm.cc
+index 71e7f3504afdef8fb8a909980709af37e42c7286..b127275bd7502e4fa718296b2e87f62320d58cfa 100644
+--- a/src/runtime/runtime-wasm.cc
++++ b/src/runtime/runtime-wasm.cc
+@@ -626,9 +626,23 @@ RUNTIME_FUNCTION(Runtime_TierUpWasmToJSWrapper) {
+   Handle<WasmTrustedInstanceData> trusted_data(ref->instance_data(), isolate);
+   if (IsTuple2(*origin)) {
+     auto tuple = Cast<Tuple2>(origin);
+-    trusted_data =
+-        handle(Cast<WasmInstanceObject>(tuple->value1())->trusted_data(isolate),
+-               isolate);
++    Handle<WasmTrustedInstanceData> call_origin_trusted_data(
++        Cast<WasmInstanceObject>(tuple->value1())->trusted_data(isolate),
++        isolate);
++    // TODO(371565065): We do not tier up the wrapper if the JS function wasn't
++    // imported in the current instance but the signature is specific to the
++    // importing instance. Remove this bailout again.
++    if (trusted_data->module() != call_origin_trusted_data->module()) {
++      for (wasm::ValueType type : sig.all()) {
++        if (type.has_index()) {
++          // Reset the tiering budget, so that we don't have to deal with the
++          // underflow.
++          ref->set_wrapper_budget(Smi::kMaxValue);
++          return ReadOnlyRoots(isolate).undefined_value();
++        }
++      }
++    }
++    trusted_data = call_origin_trusted_data;
+     origin = direct_handle(tuple->value2(), isolate);
+   }
+   const wasm::WasmModule* module = trusted_data->module();
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 1fb2786de576bdcb0f4b6e4145203764dd06b5f0..2fa90fc9399f18411eef2a8a5eb9b40357492c8c 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -41,8 +41,6 @@
+   'compiler/fast-api-helpers': [SKIP],
+   'typedarray-helpers': [SKIP],
+ 
+-  # TODO(ahaas): Fix generic wasm-to-js wrapper tierup test.
+-  'wasm/wasm-to-js-tierup': [SKIP],
+   # All tests in the bug directory are expected to fail.
+   'bugs/*': [FAIL],
+ 

@@ -1,0 +1,57 @@
+From 8c4edae5e34dbe82ebaaf9596710800ac524258a Mon Sep 17 00:00:00 2001
+From: Justin Lulejian <jlulejian@chromium.org>
+Date: Fri, 18 Oct 2024 21:34:12 +0000
+Subject: [PATCH] [M130][Extensions][ServiceWorker] Skip worker for isolated world module fetch
+
+Before this change, an isolated world (e.g. extension content script,
+but also others) could dynamically import a script from an accessible
+resource (for extensions this is possible with web accessible
+resources and a matching site). When this occurs a web service worker
+could intercept that request and respond with arbitrary content.
+
+After this change, isolated world module requests skip triggering the
+worker fetch handler. This includes extension content scripts, but also
+includes any other scripts that execute in the isolated world context.
+
+(cherry picked from commit 2c501634c1191be1e509720103f06d51b94e6311)
+
+Bug: 371011220
+Change-Id: I37eda47324b6933a93d2a44792a06ff91399981f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5917013
+Auto-Submit: Justin Lulejian <jlulejian@chromium.org>
+Reviewed-by: Hiroshige Hayashizaki <hiroshige@chromium.org>
+Commit-Queue: Justin Lulejian <jlulejian@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1365918}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5940150
+Owners-Override: Daniel Yip <danielyip@google.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/6723@{#1432}
+Cr-Branched-From: 985f2961df230630f9cbd75bd6fe463009855a11-refs/heads/main@{#1356013}
+---
+
+diff --git a/third_party/blink/renderer/core/loader/modulescript/module_script_loader.cc b/third_party/blink/renderer/core/loader/modulescript/module_script_loader.cc
+index 9fad30c7..b83416e 100644
+--- a/third_party/blink/renderer/core/loader/modulescript/module_script_loader.cc
++++ b/third_party/blink/renderer/core/loader/modulescript/module_script_loader.cc
+@@ -153,12 +153,20 @@
+   url_ = module_request.Url();
+ #endif
+ 
++  DOMWrapperWorld& request_world = modulator_->GetScriptState()->World();
++
++  // Prevents web service workers from intercepting isolated world dynamic
++  // script imports requests and responding with different contents.
++  // TODO(crbug.com/1296102): Link to documentation that describes the criteria
++  // where module imports are handled by service worker fetch handler.
++  resource_request.SetSkipServiceWorker(request_world.IsIsolatedWorld());
++
+   // <spec step="9">Set request 's destination to the result of running the
+   // fetch destination from module type steps given destination and
+   // moduleType.</spec>
+   SetFetchDestinationFromModuleType(resource_request, module_request);
+ 
+-  ResourceLoaderOptions options(&modulator_->GetScriptState()->World());
++  ResourceLoaderOptions options(&request_world);
+ 
+   // <spec step="11">Set request's initiator type to "script".</spec>
+   options.initiator_info.name = fetch_initiator_type_names::kScript;
