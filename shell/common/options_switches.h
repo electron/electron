@@ -73,17 +73,40 @@ inline constexpr std::string_view kAutoHideMenuBar = "autoHideMenuBar";
 inline constexpr std::string_view kEnableLargerThanScreen =
     "enableLargerThanScreen";
 
-extern const char kDarkTheme[];
-extern const char kTransparent[];
-extern const char kType[];
-extern const char kDisableAutoHideCursor[];
-extern const char kBackgroundColor[];
-extern const char kHasShadow[];
-extern const char kOpacity[];
-extern const char kFocusable[];
-extern const char kWebPreferences[];
-extern const char kVibrancyType[];
-extern const char kBackgroundMaterial[];
+// Forces to use dark theme on Linux.
+inline constexpr std::string_view kDarkTheme = "darkTheme";
+
+// Whether the window should be transparent.
+inline constexpr std::string_view kTransparent = "transparent";
+
+// Window type hint.
+inline constexpr std::string_view kType = "type";
+
+// Disable auto-hiding cursor.
+inline constexpr std::string_view kDisableAutoHideCursor =
+    "disableAutoHideCursor";
+
+// Default browser window background color.
+inline constexpr std::string_view kBackgroundColor = "backgroundColor";
+
+// Whether the window should have a shadow.
+inline constexpr std::string_view kHasShadow = "hasShadow";
+
+// Browser window opacity
+inline constexpr std::string_view kOpacity = "opacity";
+
+// Whether the window can be activated.
+inline constexpr std::string_view kFocusable = "focusable";
+
+// The WebPreferences.
+inline constexpr std::string_view kWebPreferences = "webPreferences";
+
+// Add a vibrancy effect to the browser window
+inline constexpr std::string_view kVibrancyType = "vibrancy";
+
+// Add a vibrancy effect to the browser window.
+inline constexpr std::string_view kBackgroundMaterial = "backgroundMaterial";
+
 extern const char kVisualEffectState[];
 extern const char kTrafficLightPosition[];
 extern const char kRoundedCorners[];

@@ -19,39 +19,6 @@ const char kOverlaySymbolColor[] = "symbolColor";
 // The custom height for Window Controls Overlay.
 const char kOverlayHeight[] = "height";
 
-// Forces to use dark theme on Linux.
-const char kDarkTheme[] = "darkTheme";
-
-// Whether the window should be transparent.
-const char kTransparent[] = "transparent";
-
-// Window type hint.
-const char kType[] = "type";
-
-// Disable auto-hiding cursor.
-const char kDisableAutoHideCursor[] = "disableAutoHideCursor";
-
-// Default browser window background color.
-const char kBackgroundColor[] = "backgroundColor";
-
-// Whether the window should have a shadow.
-const char kHasShadow[] = "hasShadow";
-
-// Browser window opacity
-const char kOpacity[] = "opacity";
-
-// Whether the window can be activated.
-const char kFocusable[] = "focusable";
-
-// The WebPreferences.
-const char kWebPreferences[] = "webPreferences";
-
-// Add a vibrancy effect to the browser window
-const char kVibrancyType[] = "vibrancy";
-
-// Add a vibrancy effect to the browser window.
-const char kBackgroundMaterial[] = "backgroundMaterial";
-
 // Specify how the material appearance should reflect window activity state on
 // macOS.
 const char kVisualEffectState[] = "visualEffectState";
