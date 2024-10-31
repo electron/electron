@@ -57,7 +57,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
   std::string binding_key = gin::V8ToString(isolate, key);
   gin_helper::Dictionary cache(isolate, GetBindingCache(isolate));
 
-  if (cache.Get(binding_key.c_str(), &exports)) {
+  if (cache.Get(binding_key, &exports)) {
     return exports;
   }
 
@@ -76,7 +76,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
   DCHECK_NE(mod->nm_context_register_func, nullptr);
   mod->nm_context_register_func(exports, v8::Null(isolate),
                                 isolate->GetCurrentContext(), mod->nm_priv);
-  cache.Set(binding_key.c_str(), exports);
+  cache.Set(binding_key, exports);
   return exports;
 }
 

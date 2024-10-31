@@ -63,7 +63,7 @@ runs:
       run: |
         cd src
         electron/script/copy-debug-symbols.py --target-cpu="${{ inputs.target-arch }}" --out-dir=out/Default/debug --compress
-        electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}"
+        electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}" --verbose
         electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash

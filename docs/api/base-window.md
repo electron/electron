@@ -512,7 +512,7 @@ Sets the content view of the window.
 
 #### `win.getContentView()`
 
-Returns [View](view.md) - The content view of the window.
+Returns [`View`](view.md) - The content view of the window.
 
 #### `win.destroy()`
 
