@@ -7,7 +7,7 @@
 
 #include <string_view>
 
-#include "electron/buildflags/buildflags.h"
+#include "base/strings/cstring_view.h"
 
 namespace electron {
 
@@ -204,27 +204,49 @@ inline constexpr std::string_view kEnablePreferredSizeMode =
 
 inline constexpr std::string_view kHiddenPage = "hiddenPage";
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 inline constexpr std::string_view kSpellcheck = "spellcheck";
-#endif
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.
 
 namespace switches {
 
-extern const char kEnableSandbox[];
-extern const char kDisableHttpCache[];
-extern const char kStandardSchemes[];
-extern const char kServiceWorkerSchemes[];
-extern const char kSecureSchemes[];
-extern const char kBypassCSPSchemes[];
-extern const char kFetchSchemes[];
-extern const char kCORSSchemes[];
-extern const char kStreamingSchemes[];
-extern const char kCodeCacheSchemes[];
-extern const char kAppUserModelId[];
-extern const char kAppPath[];
+// Enable chromium sandbox.
+inline constexpr base::cstring_view kEnableSandbox = "enable-sandbox";
+
+// Disable HTTP cache.
+inline constexpr base::cstring_view kDisableHttpCache = "disable-http-cache";
+
+// The list of standard schemes.
+inline constexpr base::cstring_view kStandardSchemes = "standard-schemes";
+
+// Register schemes to handle service worker.
+inline constexpr base::cstring_view kServiceWorkerSchemes =
+    "service-worker-schemes";
+
+// Register schemes as secure.
+inline constexpr base::cstring_view kSecureSchemes = "secure-schemes";
+
+// Register schemes as bypassing CSP.
+inline constexpr base::cstring_view kBypassCSPSchemes = "bypasscsp-schemes";
+
+// Register schemes as support fetch API.
+inline constexpr base::cstring_view kFetchSchemes = "fetch-schemes";
+
+// Register schemes as CORS enabled.
+inline constexpr base::cstring_view kCORSSchemes = "cors-schemes";
+
+// Register schemes as streaming responses.
+inline constexpr base::cstring_view kStreamingSchemes = "streaming-schemes";
+
+// Register schemes as supporting V8 code cache.
+inline constexpr base::cstring_view kCodeCacheSchemes = "code-cache-schemes";
+
+// The browser process app model ID
+inline constexpr base::cstring_view kAppUserModelId = "app-user-model-id";
+
+// The application path
+inline constexpr base::cstring_view kAppPath = "app-path";
 
 extern const char kScrollBounce[];
 extern const char kNodeIntegrationInWorker[];

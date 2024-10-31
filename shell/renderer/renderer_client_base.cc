@@ -112,8 +112,9 @@ void SetIsWebView(v8::Isolate* isolate, v8::Local<v8::Object> object) {
   dict.SetHidden("isWebView", true);
 }
 
-std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
-                                               const char* switch_name) {
+std::vector<std::string> ParseSchemesCLISwitch(
+    base::CommandLine* command_line,
+    const std::string_view switch_name) {
   std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
   return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);

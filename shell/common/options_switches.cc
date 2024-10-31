@@ -8,42 +8,6 @@ namespace electron {
 
 namespace switches {
 
-// Enable chromium sandbox.
-const char kEnableSandbox[] = "enable-sandbox";
-
-// Disable HTTP cache.
-const char kDisableHttpCache[] = "disable-http-cache";
-
-// The list of standard schemes.
-const char kStandardSchemes[] = "standard-schemes";
-
-// Register schemes to handle service worker.
-const char kServiceWorkerSchemes[] = "service-worker-schemes";
-
-// Register schemes as secure.
-const char kSecureSchemes[] = "secure-schemes";
-
-// Register schemes as bypassing CSP.
-const char kBypassCSPSchemes[] = "bypasscsp-schemes";
-
-// Register schemes as support fetch API.
-const char kFetchSchemes[] = "fetch-schemes";
-
-// Register schemes as CORS enabled.
-const char kCORSSchemes[] = "cors-schemes";
-
-// Register schemes as streaming responses.
-const char kStreamingSchemes[] = "streaming-schemes";
-
-// Register schemes as supporting V8 code cache.
-const char kCodeCacheSchemes[] = "code-cache-schemes";
-
-// The browser process app model ID
-const char kAppUserModelId[] = "app-user-model-id";
-
-// The application path
-const char kAppPath[] = "app-path";
-
 // The command line switch versions of the options.
 const char kScrollBounce[] = "scroll-bounce";
 
