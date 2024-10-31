@@ -107,29 +107,67 @@ inline constexpr std::string_view kVibrancyType = "vibrancy";
 // Add a vibrancy effect to the browser window.
 inline constexpr std::string_view kBackgroundMaterial = "backgroundMaterial";
 
-extern const char kVisualEffectState[];
-extern const char kTrafficLightPosition[];
-extern const char kRoundedCorners[];
-extern const char ktitleBarOverlay[];
-extern const char kOverlayButtonColor[];
-extern const char kOverlaySymbolColor[];
-extern const char kOverlayHeight[];
+// Specify how the material appearance should reflect window activity state on
+// macOS.
+inline constexpr std::string_view kVisualEffectState = "visualEffectState";
 
-// WebPreferences.
-extern const char kZoomFactor[];
-extern const char kPreloadScript[];
-extern const char kNodeIntegration[];
-extern const char kContextIsolation[];
-extern const char kExperimentalFeatures[];
-extern const char kScrollBounce[];
-extern const char kEnableBlinkFeatures[];
-extern const char kDisableBlinkFeatures[];
-extern const char kNodeIntegrationInWorker[];
-extern const char kWebviewTag[];
-extern const char kCustomArgs[];
-extern const char kPlugins[];
-extern const char kSandbox[];
-extern const char kWebSecurity[];
+inline constexpr std::string_view kTrafficLightPosition =
+    "trafficLightPosition";
+inline constexpr std::string_view kRoundedCorners = "roundedCorners";
+
+inline constexpr std::string_view ktitleBarOverlay = "titleBarOverlay";
+
+// The color to use as the theme and symbol colors respectively for Window
+// Controls Overlay if enabled on Windows.
+inline constexpr std::string_view kOverlayButtonColor = "color";
+inline constexpr std::string_view kOverlaySymbolColor = "symbolColor";
+
+// The custom height for Window Controls Overlay.
+inline constexpr std::string_view kOverlayHeight = "height";
+
+/// WebPreferences.
+
+// The factor of which page should be zoomed.
+inline constexpr std::string_view kZoomFactor = "zoomFactor";
+
+// Script that will be loaded by guest WebContents before other scripts.
+inline constexpr std::string_view kPreloadScript = "preload";
+
+// Enable the node integration.
+inline constexpr std::string_view kNodeIntegration = "nodeIntegration";
+
+// Enable context isolation of Electron APIs and preload script
+inline constexpr std::string_view kContextIsolation = "contextIsolation";
+
+// Web runtime features.
+inline constexpr std::string_view kExperimentalFeatures =
+    "experimentalFeatures";
+
+// Enable the rubber banding effect.
+inline constexpr std::string_view kScrollBounce = "scrollBounce";
+
+// Enable blink features.
+inline constexpr std::string_view kEnableBlinkFeatures = "enableBlinkFeatures";
+
+// Disable blink features.
+inline constexpr std::string_view kDisableBlinkFeatures =
+    "disableBlinkFeatures";
+
+// Enable the node integration in WebWorker.
+inline constexpr std::string_view kNodeIntegrationInWorker =
+    "nodeIntegrationInWorker";
+
+// Enable the web view tag.
+inline constexpr std::string_view kWebviewTag = "webviewTag";
+
+inline constexpr std::string_view kCustomArgs = "additionalArguments";
+
+inline constexpr std::string_view kPlugins = "plugins";
+
+inline constexpr std::string_view kSandbox = "sandbox";
+
+inline constexpr std::string_view kWebSecurity = "webSecurity";
+
 extern const char kAllowRunningInsecureContent[];
 extern const char kOffscreen[];
 extern const char kUseSharedTexture[];

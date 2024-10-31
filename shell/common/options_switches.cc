@@ -8,59 +8,6 @@ namespace electron {
 
 namespace options {
 
-const char kTrafficLightPosition[] = "trafficLightPosition";
-const char kRoundedCorners[] = "roundedCorners";
-
-// The color to use as the theme and symbol colors respectively for Window
-// Controls Overlay if enabled on Windows.
-const char kOverlayButtonColor[] = "color";
-const char kOverlaySymbolColor[] = "symbolColor";
-
-// The custom height for Window Controls Overlay.
-const char kOverlayHeight[] = "height";
-
-// Specify how the material appearance should reflect window activity state on
-// macOS.
-const char kVisualEffectState[] = "visualEffectState";
-
-// The factor of which page should be zoomed.
-const char kZoomFactor[] = "zoomFactor";
-
-// Script that will be loaded by guest WebContents before other scripts.
-const char kPreloadScript[] = "preload";
-
-// Enable the node integration.
-const char kNodeIntegration[] = "nodeIntegration";
-
-// Enable context isolation of Electron APIs and preload script
-const char kContextIsolation[] = "contextIsolation";
-
-// Web runtime features.
-const char kExperimentalFeatures[] = "experimentalFeatures";
-
-// Enable the rubber banding effect.
-const char kScrollBounce[] = "scrollBounce";
-
-// Enable blink features.
-const char kEnableBlinkFeatures[] = "enableBlinkFeatures";
-
-// Disable blink features.
-const char kDisableBlinkFeatures[] = "disableBlinkFeatures";
-
-// Enable the node integration in WebWorker.
-const char kNodeIntegrationInWorker[] = "nodeIntegrationInWorker";
-
-// Enable the web view tag.
-const char kWebviewTag[] = "webviewTag";
-
-const char kCustomArgs[] = "additionalArguments";
-
-const char kPlugins[] = "plugins";
-
-const char kSandbox[] = "sandbox";
-
-const char kWebSecurity[] = "webSecurity";
-
 const char kAllowRunningInsecureContent[] = "allowRunningInsecureContent";
 
 const char kOffscreen[] = "offscreen";
@@ -96,8 +43,6 @@ const char kSpellcheck[] = "spellcheck";
 #endif
 
 const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
-
-const char ktitleBarOverlay[] = "titleBarOverlay";
 
 }  // namespace options
 
