@@ -8,7 +8,6 @@ namespace electron {
 
 namespace options {
 
-const char kFullscreen[] = "fullscreen";
 const char kTrafficLightPosition[] = "trafficLightPosition";
 const char kRoundedCorners[] = "roundedCorners";
 
@@ -19,15 +18,6 @@ const char kOverlaySymbolColor[] = "symbolColor";
 
 // The custom height for Window Controls Overlay.
 const char kOverlayHeight[] = "height";
-
-// whether to keep the window out of mission control
-const char kHiddenInMissionControl[] = "hiddenInMissionControl";
-// Whether the window should show in taskbar.
-const char kSkipTaskbar[] = "skipTaskbar";
-
-// Start with the kiosk mode, see Opera's page for description:
-// http://www.opera.com/support/mastering/kiosk/
-const char kKiosk[] = "kiosk";
 
 const char kSimpleFullScreen[] = "simpleFullscreen";
 

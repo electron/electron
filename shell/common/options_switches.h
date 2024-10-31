@@ -33,10 +33,19 @@ inline constexpr std::string_view kMaximizable = "maximizable";
 inline constexpr std::string_view kFullScreenable = "fullscreenable";
 inline constexpr std::string_view kClosable = "closable";
 
-extern const char kHiddenInMissionControl[];
-extern const char kFullscreen[];
-extern const char kSkipTaskbar[];
-extern const char kKiosk[];
+// whether to keep the window out of mission control
+inline constexpr std::string_view kHiddenInMissionControl =
+    "hiddenInMissionControl";
+
+inline constexpr std::string_view kFullscreen = "fullscreen";
+
+// Whether the window should show in taskbar.
+inline constexpr std::string_view kSkipTaskbar = "skipTaskbar";
+
+// Start with the kiosk mode, see Opera's page for description:
+// http://www.opera.com/support/mastering/kiosk/
+inline constexpr std::string_view kKiosk = "kiosk";
+
 extern const char kSimpleFullScreen[];
 extern const char kAlwaysOnTop[];
 extern const char kAcceptFirstMouse[];
