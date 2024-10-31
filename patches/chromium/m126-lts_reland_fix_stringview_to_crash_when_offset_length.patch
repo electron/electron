@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Koji Ishii <kojii@chromium.org>
 Date: Thu, 12 Sep 2024 06:17:42 +0000
-Subject: [M126-LTS] Reland "Fix `StringView` to crash when `offset + length`
- overflows"
+Subject: Reland "Fix `StringView` to crash when `offset + length` overflows"
 
 This is a reland of commit ba40b993a6b700a2ad0fd092e141783fb1f60e70
 

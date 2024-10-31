@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Mon, 30 Sep 2024 06:33:13 +0000
-Subject: [M128] ipcz: Validate link state fragment before adoption
+Subject: ipcz: Validate link state fragment before adoption
 
 (cherry picked from commit c333ed99544992f66e6e03621fa938d75ad01f70)
 

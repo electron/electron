@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Seth Brenith <seth.brenith@microsoft.com>
 Date: Tue, 6 Aug 2024 23:08:34 -0700
-Subject: [M126-LTS][compiler] Clear stale data for ZeroExtendsWord32ToWord64
+Subject: Clear stale data for ZeroExtendsWord32ToWord64
 
 The first call to ZeroExtendsWord32ToWord64 produces a correct result,
 but leaves some incorrect values in phi_states_. To avoid incorrect

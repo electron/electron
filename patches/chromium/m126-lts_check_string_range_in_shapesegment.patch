@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Koji Ishii <kojii@chromium.org>
 Date: Thu, 12 Sep 2024 06:00:02 +0000
-Subject: [M126-LTS] Check string range in `ShapeSegment`
+Subject: Check string range in `ShapeSegment`
 
 crrev.com/c/5776342 fixed a range `CHECK` in
 `CollectFallbackHintChars`, but depends on the CSS and font
