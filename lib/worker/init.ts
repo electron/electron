@@ -19,7 +19,7 @@ global.require = makeRequireFunction(global.module);
 
 // See WebWorkerObserver::WorkerScriptReadyForEvaluation.
 if ((globalThis as any).blinkfetch) {
-  const keys = ['fetch', 'Response', 'FormData', 'Request', 'Headers'];
+  const keys = ['fetch', 'Response', 'FormData', 'Request', 'Headers', 'EventSource'];
   for (const key of keys) {
     (globalThis as any)[key] = (globalThis as any)[`blink${key}`];
   }

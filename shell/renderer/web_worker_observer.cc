@@ -72,8 +72,8 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
   // is loaded. See corresponding change in node/init.ts.
   v8::Local<v8::Object> global = worker_context->Global();
 
-  std::vector<std::string> keys = {"fetch", "Response", "FormData", "Request",
-                                   "Headers"};
+  std::vector<std::string> keys = {"fetch",   "Response", "FormData",
+                                   "Request", "Headers",  "EventSource"};
   for (const auto& key : keys) {
     v8::MaybeLocal<v8::Value> value =
         global->Get(worker_context, gin::StringToV8(isolate, key.c_str()));
