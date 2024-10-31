@@ -19,32 +19,6 @@ const char kOverlaySymbolColor[] = "symbolColor";
 // The custom height for Window Controls Overlay.
 const char kOverlayHeight[] = "height";
 
-const char kSimpleFullScreen[] = "simpleFullscreen";
-
-// Make windows stays on the top of all other windows.
-const char kAlwaysOnTop[] = "alwaysOnTop";
-
-// Enable the NSView to accept first mouse event.
-const char kAcceptFirstMouse[] = "acceptFirstMouse";
-
-// Whether window size should include window frame.
-const char kUseContentSize[] = "useContentSize";
-
-// Whether window zoom should be to page width.
-const char kZoomToPageWidth[] = "zoomToPageWidth";
-
-// The requested title bar style for the window
-const char kTitleBarStyle[] = "titleBarStyle";
-
-// Tabbing identifier for the window if native tabs are enabled on macOS.
-const char kTabbingIdentifier[] = "tabbingIdentifier";
-
-// The menu bar is hidden unless "Alt" is pressed.
-const char kAutoHideMenuBar[] = "autoHideMenuBar";
-
-// Enable window to be resized larger than screen.
-const char kEnableLargerThanScreen[] = "enableLargerThanScreen";
-
 // Forces to use dark theme on Linux.
 const char kDarkTheme[] = "darkTheme";
 

@@ -46,15 +46,33 @@ inline constexpr std::string_view kSkipTaskbar = "skipTaskbar";
 // http://www.opera.com/support/mastering/kiosk/
 inline constexpr std::string_view kKiosk = "kiosk";
 
-extern const char kSimpleFullScreen[];
-extern const char kAlwaysOnTop[];
-extern const char kAcceptFirstMouse[];
-extern const char kUseContentSize[];
-extern const char kZoomToPageWidth[];
-extern const char kTitleBarStyle[];
-extern const char kTabbingIdentifier[];
-extern const char kAutoHideMenuBar[];
-extern const char kEnableLargerThanScreen[];
+inline constexpr std::string_view kSimpleFullScreen = "simpleFullscreen";
+
+// Make windows stays on the top of all other windows.
+inline constexpr std::string_view kAlwaysOnTop = "alwaysOnTop";
+
+// Enable the NSView to accept first mouse event.
+inline constexpr std::string_view kAcceptFirstMouse = "acceptFirstMouse";
+
+// Whether window size should include window frame.
+inline constexpr std::string_view kUseContentSize = "useContentSize";
+
+// Whether window zoom should be to page width.
+inline constexpr std::string_view kZoomToPageWidth = "zoomToPageWidth";
+
+// The requested title bar style for the window
+inline constexpr std::string_view kTitleBarStyle = "titleBarStyle";
+
+// Tabbing identifier for the window if native tabs are enabled on macOS.
+inline constexpr std::string_view kTabbingIdentifier = "tabbingIdentifier";
+
+// The menu bar is hidden unless "Alt" is pressed.
+inline constexpr std::string_view kAutoHideMenuBar = "autoHideMenuBar";
+
+// Enable window to be resized larger than screen.
+inline constexpr std::string_view kEnableLargerThanScreen =
+    "enableLargerThanScreen";
+
 extern const char kDarkTheme[];
 extern const char kTransparent[];
 extern const char kType[];
