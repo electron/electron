@@ -222,7 +222,7 @@ jobs:
       shell: powershell
       run: |
         cd src\electron
-        $env:tests_files=node script\split-tests $env:shard 2
+        $env:tests_files=node script\split-tests ${{ matrix.shard }} 2
     - name: Run Electron Tests (Windows)
       if: ${{ inputs.target-platform == 'windows' }}
       shell: cmd
