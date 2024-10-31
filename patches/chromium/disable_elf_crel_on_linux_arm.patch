@@ -9,10 +9,10 @@ in page_allocator_internals_posix.cc when running on, so disable
 ELF CREL on Linux Arm
 
 diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
-index 80ff9bded88bfcfcbf2c0bb7b2bdb430cacaf003..80f2521c8dc9f6e8f99d64e86d237085ebefdede 100644
+index 5d29e8f419048989f1d902d7dbd5e38e94b93251..c3c56ffac051bea5df7702b9adc2641d0d34fcdd 100644
 --- a/build/config/compiler/BUILD.gn
 +++ b/build/config/compiler/BUILD.gn
-@@ -619,7 +619,7 @@ config("compiler") {
+@@ -618,7 +618,7 @@ config("compiler") {
  
      # Enable ELF CREL (see crbug.com/357878242) for all platforms that use ELF
      # (excluding toolchains that use an older version of LLVM).
