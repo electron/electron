@@ -78,7 +78,7 @@ runs:
         fi
       fi
   - name: Check cross instance cache disk space
-    if: steps.check-cache.outputs.cache_exists == 'false'
+    if: steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache  == 'true'
     shell: bash
     run: |    
       # if there is less than 20 GB free space then creating the cache might fail so exit early
