@@ -226,9 +226,9 @@ jobs:
         # Get which tests are on this shard
         $tests_files=node script\split-tests ${{ matrix.shard }} 2
         echo tests_files=$tests_files >> $env:GITHUB_ENV
-        if [ "${{ inputs.target-platform }}" = "windows" ] && [ "${{ inputs.target-arch }}" = "x86" ]; then
+        if ('${{ inputs.target-arch }}' -eq 'x86") {
           echo npm_config_arch=ia32 >> $env:GITHUB_ENV
-        fi        
+        }
     - name: Run Electron Tests (Windows)
       if: ${{ inputs.target-platform == 'windows' }}
       shell: cmd
