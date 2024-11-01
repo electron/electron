@@ -10,10 +10,10 @@ process CompositingModeFallbackToSoftware IPC to disable GPU compositing.
 https://issues.chromium.org/345275130
 
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc
-index 9497ab591864295231db47fdc526e59935e6aa31..635fa41649db41800f99da2683cc955b2e1e935f 100644
+index 3bbaa7dafcff1c88badaec0dbf14fd3320130398..8db903f3f343ed8723ad8adcb978b01fc27c6d9e 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc
-@@ -374,9 +374,13 @@ void LayerTreeView::DidFailToInitializeLayerTreeFrameSink() {
+@@ -375,9 +375,13 @@ void LayerTreeView::DidFailToInitializeLayerTreeFrameSink() {
    // unable to be killed after Chrome is closed.
    // https://issues.chromium.org/336164423
    if (!Platform::Current()->IsGpuRemoteDisconnected()) {

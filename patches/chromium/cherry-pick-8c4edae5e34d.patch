@@ -1,7 +1,7 @@
-From 8c4edae5e34dbe82ebaaf9596710800ac524258a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Justin Lulejian <jlulejian@chromium.org>
 Date: Fri, 18 Oct 2024 21:34:12 +0000
-Subject: [PATCH] [M130][Extensions][ServiceWorker] Skip worker for isolated world module fetch
+Subject: Skip worker for isolated world module fetch
 
 Before this change, an isolated world (e.g. extension content script,
 but also others) could dynamically import a script from an accessible
@@ -27,13 +27,12 @@ Owners-Override: Daniel Yip <danielyip@google.com>
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/6723@{#1432}
 Cr-Branched-From: 985f2961df230630f9cbd75bd6fe463009855a11-refs/heads/main@{#1356013}
----
 
 diff --git a/third_party/blink/renderer/core/loader/modulescript/module_script_loader.cc b/third_party/blink/renderer/core/loader/modulescript/module_script_loader.cc
-index 9fad30c7..b83416e 100644
+index f32bdc144f26a1ea5da2dad9ac0c8a782b0b2ff9..21e96096f1b1e3279e6a9d9687464045a9dd4288 100644
 --- a/third_party/blink/renderer/core/loader/modulescript/module_script_loader.cc
 +++ b/third_party/blink/renderer/core/loader/modulescript/module_script_loader.cc
-@@ -153,12 +153,20 @@
+@@ -153,12 +153,20 @@ void ModuleScriptLoader::FetchInternal(
    url_ = module_request.Url();
  #endif
  

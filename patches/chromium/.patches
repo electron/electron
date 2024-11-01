@@ -135,3 +135,4 @@ feat_allow_usage_of_sccontentsharingpicker_on_supported_platforms.patch
 feat_allow_-4_as_a_macos_screen_share_id.patch
 fix_software_compositing_infinite_loop.patch
 cherry-pick-8c4edae5e34d.patch
+oom_add_commit_limit_available_to_oom_exception_arguments.patch

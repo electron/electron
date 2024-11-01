@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Francois Doray <fdoray@chromium.org>
+Date: Mon, 16 Sep 2024 15:57:01 +0000
+Subject: [oom] Add commit limit/available to OOM exception arguments
+ (Windows).
+
+~25% of OOM crashes [1] occur for an allocation <10MB when the
+"system commit remaining" [2] is >1GB. This CL adds the
+"process commit limit" and "process commit available" value from
+MEMORYSTATUSEX to the OOM exception arguments, which will allow
+verifying if the "process commit limit/remaining" is lower than
+the "system commit limit/remaining" when these OOM crashes occur.
+Depending on what we find, we might add these values to the
+stability_report.ProcessState proto in the future.
+
+[1] go/win-ooms-alloc-less-10mb-commit-remaining-more-1gb-126+
+    go/all-win-ooms-m126+
+[2] Computed asynchronously by crashpad from PERFORMANCE_INFORMATION:
+    (CommitLimit - CommitTotal)
+
+Change-Id: I1d6b34ce15fad46516a4e34a9507c341bfb81047
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5856490
+Auto-Submit: Francois Pierre Doray <fdoray@chromium.org>
+Reviewed-by: Benoit Lize <lizeb@chromium.org>
+Reviewed-by: Greg Thompson <grt@chromium.org>
+Commit-Queue: Francois Pierre Doray <fdoray@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1355900}
+
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/oom.cc b/base/allocator/partition_allocator/src/partition_alloc/oom.cc
+index c0488caa98badb7f6fcef5d8051c41c4306eb316..9b78dfb817139c5f1a08d2e7c600d76c96fc4b85 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/oom.cc
++++ b/base/allocator/partition_allocator/src/partition_alloc/oom.cc
+@@ -28,21 +28,47 @@ namespace internal {
+ // partition_alloc::internal::base::internal::OnNoMemoryInternal
+ PA_NOINLINE void OnNoMemoryInternal(size_t size) {
+   g_oom_size = size;
++  size_t tmp_size = size;
++  internal::base::debug::Alias(&tmp_size);
++
+ #if PA_BUILDFLAG(IS_WIN)
++  // Create an exception vector with:
++  // [0] the size of the allocation, in bytes
++  // [1] "current committed memory limit for the system or the current process,
++  //     whichever is smaller, in bytes"
++  // [2] "maximum amount of memory the current process can commit, in bytes"
++  //
++  // Citations from
++  // https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex
++  //
++  // System commit constraints (which may be different from the process commit
++  // constraints) are in the stability_report.SystemMemoryState.WindowsMemory
++  // proto attached to crash reports.
++  //
++  // Note: Both the process commit constraints in the exception vector and the
++  // system commit constraints in the proto are collected *after* the OOM and
++  // may therefore not reflect the state at the time of the OOM (e.g. another
++  // process may have exited or the page file may have been resized).
++  constexpr size_t kInvalid = std::numeric_limits<ULONG_PTR>::max();
++  ULONG_PTR exception_args[] = {size, kInvalid, kInvalid};
++
++  MEMORYSTATUSEX memory_status = {};
++  memory_status.dwLength = sizeof(memory_status);
++  if (::GlobalMemoryStatusEx(&memory_status) != 0) {
++    exception_args[1] = memory_status.ullTotalPageFile;
++    exception_args[2] = memory_status.ullAvailPageFile;
++  }
++  internal::base::debug::Alias(&memory_status);
++
+   // Kill the process. This is important for security since most of code
+   // does not check the result of memory allocation.
+-  // https://msdn.microsoft.com/en-us/library/het71c37.aspx
+-  // Pass the size of the failed request in an exception argument.
+-  ULONG_PTR exception_args[] = {size};
++  // Documentation: https://msdn.microsoft.com/en-us/library/het71c37.aspx
+   ::RaiseException(win::kOomExceptionCode, EXCEPTION_NONCONTINUABLE,
+                    std::size(exception_args), exception_args);
+ 
+   // Safety check, make sure process exits here.
+   _exit(win::kOomExceptionCode);
+ #else
+-  size_t tmp_size = size;
+-  internal::base::debug::Alias(&tmp_size);
+-
+   // Note: Don't add anything that may allocate here. Depending on the
+   // allocator, this may be called from within the allocator (e.g. with
+   // PartitionAlloc), and would deadlock as our locks are not recursive.
