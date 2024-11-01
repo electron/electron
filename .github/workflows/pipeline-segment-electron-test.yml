@@ -225,7 +225,7 @@ jobs:
         echo ELECTRON_TEST_RESULTS_DIR=$PWD\junit >> $env:GITHUB_ENV
         # Get which tests are on this shard
         $tests_files=node script\split-tests ${{ matrix.shard }} 2
-        echo tests_files=$tests_files >> $env:$GITHUB_ENV
+        echo tests_files=$tests_files >> $env:GITHUB_ENV
         if [ "${{ inputs.target-platform }}" = "windows" ] && [ "${{ inputs.target-arch }}" = "x86" ]; then
           echo npm_config_arch=ia32 >> $env:GITHUB_ENV
         fi        
