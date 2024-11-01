@@ -177,6 +177,16 @@ jobs:
       run: |
         cd src/electron
         node script/yarn global add @datadog/datadog-ci
+    - name: Setup enviroment variables for testing
+      run: |
+        cd src/electron
+        echo "ELECTRON_TEST_RESULTS_DIR=`pwd`/junit >> "$GITHUB_ENV"
+        # Get which tests are on this shard
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 3 }})
+        echo "test_files=$test_files" >> "$GITHUB_ENV"
+        if [ "${{ inputs.target-platform }}" = "windows" ] && [ "${{ inputs.target-arch }}" = "x86" ]; then
+          echo "npm_config_arch=ia32" >> "$GITHUB_ENV"
+        fi
     - name: Run Electron Tests (Linux and macOS)
       if: ${{ inputs.target-platform == 'macos' || inputs.target-platform == 'linux' }}
       shell: bash
@@ -188,9 +198,6 @@ jobs:
         DISPLAY: ':99.0'
       run: |
         cd src/electron
-        export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
-        # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 3 }})
 
         # Run tests
         if [ "`uname`" = "Darwin" ]; then
@@ -217,12 +224,6 @@ jobs:
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
           fi
         fi
-    - name: Set test files (Windows)
-      if: ${{ inputs.target-platform == 'windows' }}
-      shell: powershell
-      run: |
-        cd src\electron
-        $env:tests_files=node script\split-tests ${{ matrix.shard }} 2
     - name: Run Electron Tests (Windows)
       if: ${{ inputs.target-platform == 'windows' }}
       shell: cmd
@@ -235,9 +236,7 @@ jobs:
         ELECTRON_ENABLE_LOGGING: '1'
       run: |
         cd src\electron
-        set ELECTRON_TEST_RESULTS_DIR=%cd%\junit
-        if "%TARGET_ARCH%"=="x86" (setx npm_config_arch "ia32")
-        echo "NPM CONFIG ARRCH %npm_config_arch% FILES: %test_files%"      
+        echo "NPM CONFIG ARRCH %npm_config_arch% FILES: %test_files%"
         node script/yarn test --runners=main --trace-uncaught --enable-logging --files %tests_files%
     - name: Upload Test results to Datadog
       env:
