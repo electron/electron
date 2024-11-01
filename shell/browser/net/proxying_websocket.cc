@@ -8,11 +8,11 @@
 
 #include "base/functional/bind.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "content/public/browser/browser_thread.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "net/base/ip_endpoint.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 
 namespace electron {
 
@@ -139,7 +139,7 @@ void ProxyingWebSocket::OnConnectionEstablished(
   }
 
   response_->headers =
-      base::MakeRefCounted<net::HttpResponseHeaders>(base::StringPrintf(
+      base::MakeRefCounted<net::HttpResponseHeaders>(absl::StrFormat(
           "HTTP/%d.%d %d %s", handshake_response_->http_version.major_value(),
           handshake_response_->http_version.minor_value(),
           handshake_response_->status_code,
