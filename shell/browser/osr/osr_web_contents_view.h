@@ -75,7 +75,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override {}
   content::BackForwardTransitionAnimationManager*
   GetBackForwardTransitionAnimationManager() override;
-  void DestroyBackForwardTransitionAnimationManager() override;
+  void DestroyBackForwardTransitionAnimationManager() override {}
 
 #if BUILDFLAG(IS_MAC)
   bool CloseTabAfterEventTrackingIfNeeded() override;
