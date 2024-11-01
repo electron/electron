@@ -19,7 +19,7 @@ index 32a3fc0843656eaa87b85dd63ac1ade6d83b6e5b..ed1ff076b1db6b77d0684bae1931714b
      NOTREACHED();
  #endif
 diff --git a/ui/base/accelerators/accelerator_unittest.cc b/ui/base/accelerators/accelerator_unittest.cc
-index 3b29229c02b0dac7197d3e4bf6014733e0f9669a..cfd9396184e16237cbf49c693af0bd80f8a2ee16 100644
+index 246cfe906786c1586e15acbae063a77cb5cc84e7..7627da94c48473870b127b57edad2a2845d76d4c 100644
 --- a/ui/base/accelerators/accelerator_unittest.cc
 +++ b/ui/base/accelerators/accelerator_unittest.cc
 @@ -58,6 +58,9 @@ TEST(AcceleratorTest, MAYBE_GetShortcutText) {
@@ -33,10 +33,10 @@ index 3b29229c02b0dac7197d3e4bf6014733e0f9669a..cfd9396184e16237cbf49c693af0bd80
    };
  
 diff --git a/ui/strings/ui_strings.grd b/ui/strings/ui_strings.grd
-index bf64f8fbc6d8f6700b40aa0d798dadc67ecc5db6..9307df9b60bcc7bd2a44bb98bc0720901cd8f4a0 100644
+index c7e58d4820443f3af9b494259e160ad27b9dbfdd..8937506c5594404c916d3a73907c883bc86198e7 100644
 --- a/ui/strings/ui_strings.grd
 +++ b/ui/strings/ui_strings.grd
-@@ -767,6 +767,11 @@ need to be translated for each locale.-->
+@@ -764,6 +764,11 @@ need to be translated for each locale.-->
            Win
          </message>
        </if>
