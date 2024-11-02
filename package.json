@@ -40,7 +40,6 @@
     "folder-hash": "^2.1.1",
     "got": "^11.8.5",
     "husky": "^8.0.1",
-    "lint": "^1.1.2",
     "lint-staged": "^10.2.11",
     "minimist": "^1.2.8",
     "null-loader": "^4.0.1",
