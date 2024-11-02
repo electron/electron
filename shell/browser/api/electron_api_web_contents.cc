@@ -1327,7 +1327,7 @@ content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
 }
 
 void WebContents::ContentsZoomChange(bool zoom_in) {
-  Emit("zoom-changed", zoom_in ? "in" : "out");
+  Emit("zoom-changed", std::string_view{zoom_in ? "in" : "out"});
 }
 
 Profile* WebContents::GetProfile() {
