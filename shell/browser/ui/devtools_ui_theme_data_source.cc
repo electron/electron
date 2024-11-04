@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/ui/devtools_ui_data_source.h"
+#include "shell/browser/ui/devtools_ui_theme_data_source.h"
 
 #include <memory>
 #include <string>
@@ -29,14 +29,10 @@
 namespace electron {
 
 namespace {
-
-std::string PathWithoutParams(const std::string& path) {
-  return GURL(base::StrCat({content::kChromeDevToolsScheme,
-                            url::kStandardSchemeSeparator,
-                            chrome::kChromeUIDevToolsHost}))
-      .Resolve(path)
-      .path()
-      .substr(1);
+GURL GetThemeUrl(const std::string& path) {
+  return GURL(std::string(content::kChromeDevToolsScheme) +
+              url::kStandardSchemeSeparator +
+              std::string(chrome::kChromeUIThemeHost) + "/" + path);
 }
 
 scoped_refptr<base::RefCountedMemory> CreateNotFoundResponse() {
@@ -78,70 +74,7 @@ std::string GetMimeTypeForUrl(const GURL& url) {
   }
   return "text/html";
 }
-
-GURL GetThemeUrl(const std::string& path) {
-  return GURL(std::string(content::kChromeDevToolsScheme) +
-              url::kStandardSchemeSeparator +
-              std::string(chrome::kChromeUIThemeHost) + "/" + path);
-}
 }  // namespace
-
-#pragma mark - BundledDataSource
-
-std::string BundledDataSource::GetSource() {
-  // content::URLDataSource implementation.
-  return chrome::kChromeUIDevToolsHost;
-}
-
-void BundledDataSource::StartDataRequest(
-    const GURL& url,
-    const content::WebContents::Getter& wc_getter,
-    GotDataCallback callback) {
-  const std::string path = content::URLDataSource::URLToRequestPath(url);
-  // Serve request from local bundle.
-  std::string bundled_path_prefix(chrome::kChromeUIDevToolsBundledPath);
-  bundled_path_prefix += "/";
-  if (base::StartsWith(path, bundled_path_prefix,
-                       base::CompareCase::INSENSITIVE_ASCII)) {
-    StartBundledDataRequest(path.substr(bundled_path_prefix.length()),
-                            std::move(callback));
-    return;
-  }
-
-  // We do not handle remote and custom requests.
-  std::move(callback).Run(CreateNotFoundResponse());
-}
-
-std::string BundledDataSource::GetMimeType(const GURL& url) {
-  return GetMimeTypeForUrl(url);
-}
-
-bool BundledDataSource::ShouldAddContentSecurityPolicy() {
-  return false;
-}
-
-bool BundledDataSource::ShouldDenyXFrameOptions() {
-  return false;
-}
-
-bool BundledDataSource::ShouldServeMimeTypeAsContentTypeHeader() {
-  return true;
-}
-
-void BundledDataSource::StartBundledDataRequest(const std::string& path,
-                                                GotDataCallback callback) {
-  std::string filename = PathWithoutParams(path);
-  scoped_refptr<base::RefCountedMemory> bytes =
-      content::DevToolsFrontendHost::GetFrontendResourceBytes(filename);
-
-  DLOG_IF(WARNING, !bytes)
-      << "Unable to find dev tool resource: " << filename
-      << ". If you compiled with debug_devtools=1, try running with "
-         "--debug-devtools.";
-  std::move(callback).Run(bytes);
-}
-
-#pragma mark - ThemeDataSource
 
 std::string ThemeDataSource::GetSource() {
   // kChromeUIThemeHost
@@ -284,5 +217,4 @@ void ThemeDataSource::SendColorsCss(
   std::move(callback).Run(
       base::MakeRefCounted<base::RefCountedString>(std::move(css_string)));
 }
-
 }  // namespace electron

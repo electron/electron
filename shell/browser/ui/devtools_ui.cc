@@ -7,7 +7,8 @@
 #include <memory>
 
 #include "content/public/browser/web_ui.h"
-#include "shell/browser/ui/devtools_ui_data_source.h"
+#include "shell/browser/ui/devtools_ui_bundle_data_source.h"
+#include "shell/browser/ui/devtools_ui_theme_data_source.h"
 
 namespace electron {
 
