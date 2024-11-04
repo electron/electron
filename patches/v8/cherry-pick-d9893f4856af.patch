@@ -1,7 +1,7 @@
-From d9893f4856af26e78ba5021063ee2b1c61a3023b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Thibaud Michaud <thibaudm@chromium.org>
 Date: Thu, 10 Oct 2024 18:54:04 +0200
-Subject: [PATCH] Merged: [wasm] Fix default externref/exnref reference
+Subject: Merged: [wasm] Fix default externref/exnref reference
 
 - The default nullexternref should be null instead of undefined
 - The default exnref/nullexnref should be null instead of wasm_null
@@ -17,13 +17,12 @@ Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
 Cr-Commit-Position: refs/branch-heads/13.0@{#35}
 Cr-Branched-From: 4be854bd71ea878a25b236a27afcecffa2e29360-refs/heads/13.0.245@{#1}
 Cr-Branched-From: 1f5183f7ad6cca21029fd60653d075730c644432-refs/heads/main@{#96103}
----
 
 diff --git a/src/wasm/wasm-js.cc b/src/wasm/wasm-js.cc
-index f8549cb..7c07f1e 100644
+index 32bbbce5838a65c62d419bb7b79a36827d7b97f2..0d24a204f68a64bb65c7b102fe52571e23fe29a0 100644
 --- a/src/wasm/wasm-js.cc
 +++ b/src/wasm/wasm-js.cc
-@@ -1322,9 +1322,12 @@
+@@ -1314,9 +1314,12 @@ i::Handle<i::HeapObject> DefaultReferenceValue(i::Isolate* isolate,
    DCHECK(type.is_object_reference());
    // Use undefined for JS type (externref) but null for wasm types as wasm does
    // not know undefined.

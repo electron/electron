@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Andreas Haas <ahaas@chromium.org>
 Date: Thu, 10 Oct 2024 13:56:42 +0200
-Subject: [13.0][wasm] Don't tier up wrapper if signature depends on other
- instance
+Subject: Don't tier up wrapper if signature depends on other instance
 
 The wasm-to-js wrapper tierup currently does not handle signatures with
 indexed types correctly if the WebAssembly instance from which the

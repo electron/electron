@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: James Price <jrprice@google.com>
 Date: Mon, 28 Oct 2024 16:57:46 +0000
-Subject: [tint] Validate that `@align()` is large enough
+Subject: Validate that `@align()` is large enough
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
