@@ -39,9 +39,6 @@
 
 namespace electron {
 
-const char kHidDeviceNameKey[] = "name";
-const char kHidGuidKey[] = "guid";
-
 HidChooserContext::HidChooserContext(ElectronBrowserContext* context)
     : browser_context_(context) {}
 
