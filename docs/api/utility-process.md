@@ -147,7 +147,7 @@ child process terminates.
 Returns:
 
 * `code` number - Contains the exit code for
-the process obtained from waitpid on POSIX, or GetExitCodeProcess on windows.
+the process obtained from waitpid on POSIX, or GetExitCodeProcess on Windows.
 
 Emitted after the child process ends.
 
