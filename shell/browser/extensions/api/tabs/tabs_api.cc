@@ -199,6 +199,10 @@ bool ExecuteCodeInTabFunction::IsWebView() const {
   return false;
 }
 
+int ExecuteCodeInTabFunction::GetRootFrameId() const {
+  return ExtensionApiFrameIdMap::kTopFrameId;
+}
+
 const GURL& ExecuteCodeInTabFunction::GetWebViewSrc() const {
   return GURL::EmptyGURL();
 }
