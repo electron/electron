@@ -568,7 +568,7 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   if (!fuses::IsNodeOptionsEnabled())
     process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
 
-  std::unique_ptr<node::InitializationResult> result =
+  std::shared_ptr<node::InitializationResult> result =
       node::InitializeOncePerProcess(
           args,
           static_cast<node::ProcessInitializationFlags::Flags>(process_flags));

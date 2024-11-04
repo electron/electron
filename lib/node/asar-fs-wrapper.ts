@@ -841,6 +841,27 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return files;
   };
 
+  const modBinding = internalBinding('modules');
+  const { readPackageJSON } = modBinding;
+  internalBinding('modules').readPackageJSON = (
+    jsonPath: string,
+    isESM: boolean,
+    base: undefined | string,
+    specifier: undefined | string
+  ) => {
+    const pathInfo = splitPath(jsonPath);
+    if (!pathInfo.isAsar) return readPackageJSON(jsonPath, isESM, base, specifier);
+    const { asarPath, filePath } = pathInfo;
+
+    const archive = getOrCreateArchive(asarPath);
+    if (!archive) return undefined;
+
+    const realPath = archive.copyFileOut(filePath);
+    if (!realPath) return undefined;
+
+    return readPackageJSON(realPath, isESM, base, specifier);
+  };
+
   const binding = internalBinding('fs');
   const { internalModuleReadJSON, kUsePromises } = binding;
   internalBinding('fs').internalModuleReadJSON = (pathArgument: string) => {

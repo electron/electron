@@ -26,7 +26,7 @@ index 0f5ddfb3ca21b7e5b38d0a4ce4b9e77387597199..ba815202fb157aa82859ec0518523cf6
  .. c:function:: int uv_loop_close(uv_loop_t* loop)
  
 diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
-index 02397dd0fdd43d51f86c0dde9a62046702f12bdb..3375600023e39ddacf62cc17deb4f206db942084 100644
+index a62b3fa69b1087847f37c7093954e19a07959b74..7f48b7daa87d1a5b14bc6f641b60f21263fa5ec3 100644
 --- a/deps/uv/include/uv.h
 +++ b/deps/uv/include/uv.h
 @@ -260,7 +260,8 @@ typedef struct uv_metrics_s uv_metrics_t;
@@ -101,10 +101,10 @@ index 0ff2669e30a628dbb2df9e28ba14b38cf14114e5..117190ef26338944b78dbed7380c631d
  static int uv__async_start(uv_loop_t* loop) {
    int pipefd[2];
 diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
-index 25c5181f370e94983e8a5f797f02f7a8dc207e00..f4d9059796d2c65339a5d48ecb273b09d9364d21 100644
+index 965e7f775250cf9899266bc3aaf62eda69367264..45b3dec662b093a61af356e431416530b35343d2 100644
 --- a/deps/uv/src/unix/core.c
 +++ b/deps/uv/src/unix/core.c
-@@ -926,6 +926,9 @@ void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -927,6 +927,9 @@ void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
      loop->watchers[w->fd] = w;
      loop->nfds++;
    }
@@ -114,7 +114,7 @@ index 25c5181f370e94983e8a5f797f02f7a8dc207e00..f4d9059796d2c65339a5d48ecb273b09
  }
  
  
-@@ -957,6 +960,9 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -958,6 +961,9 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
    }
    else if (uv__queue_empty(&w->watcher_queue))
      uv__queue_insert_tail(&loop->watcher_queue, &w->watcher_queue);
@@ -124,7 +124,7 @@ index 25c5181f370e94983e8a5f797f02f7a8dc207e00..f4d9059796d2c65339a5d48ecb273b09
  }
  
  
-@@ -973,6 +979,9 @@ void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
+@@ -974,6 +980,9 @@ void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
  void uv__io_feed(uv_loop_t* loop, uv__io_t* w) {
    if (uv__queue_empty(&w->pending_queue))
      uv__queue_insert_tail(&loop->pending_queue, &w->pending_queue);
@@ -241,7 +241,7 @@ index e9885a0f1ff3890a8d957c8793e22b01cedc0e97..ae3d09878253fe7169ad7b74b3faea02
    return -1;
  }
 diff --git a/deps/uv/test/test-embed.c b/deps/uv/test/test-embed.c
-index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf893ab93d2 100644
+index 6e9917239aa5626dd56fffd6eb2469d3e63224bf..b0da9d1cddc69428e9fb3379d1338cf893ab93d2 100644
 --- a/deps/uv/test/test-embed.c
 +++ b/deps/uv/test/test-embed.c
 @@ -25,54 +25,184 @@
@@ -278,7 +278,7 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 -static void thread_main(void* arg) {
 -  ASSERT_LE(0, uv_barrier_wait(&barrier));
 -  uv_sleep(250);
--  ASSERT_EQ(0, uv_async_send(&async));
+-  ASSERT_OK(uv_async_send(&async));
 -}
 +static uv_timer_t main_timer;
 +static int main_timer_called;
@@ -333,9 +333,9 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 -  uv_loop_t* loop;
 -
 -  loop = uv_default_loop();
--  ASSERT_EQ(0, uv_async_init(loop, &async, async_cb));
--  ASSERT_EQ(0, uv_barrier_init(&barrier, 2));
--  ASSERT_EQ(0, uv_thread_create(&thread, thread_main, NULL));
+-  ASSERT_OK(uv_async_init(loop, &async, async_cb));
+-  ASSERT_OK(uv_barrier_init(&barrier, 2));
+-  ASSERT_OK(uv_thread_create(&thread, thread_main, NULL));
 -  ASSERT_LE(0, uv_barrier_wait(&barrier));
 -
 -  while (uv_loop_alive(loop)) {
@@ -457,7 +457,7 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
 +  uv_timer_init(&external_loop, &external_timer);
 +  uv_timer_start(&external_timer, external_timer_cb, 100, 0);
  
--  ASSERT_EQ(0, uv_thread_join(&thread));
+-  ASSERT_OK(uv_thread_join(&thread));
 -  uv_barrier_destroy(&barrier);
 +  run_loop();
 +  ASSERT_EQ(main_timer_called, 1);
@@ -465,10 +465,10 @@ index bbe56e176db17a502d7f3864ba529212f553590a..b0da9d1cddc69428e9fb3379d1338cf8
    MAKE_VALGRIND_HAPPY(loop);
    return 0;
 diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
-index 78ff9c2d1621676feab5d357609970cdf1ba5864..204160f324ad1a80c9b042e62c4bedcb745666ba 100644
+index d30f02faa8515ca3a995490d53f2e85fda11c6a2..a392f5e3d701b0d973db2bbc6553977ce55a8775 100644
 --- a/deps/uv/test/test-list.h
 +++ b/deps/uv/test/test-list.h
-@@ -273,6 +273,7 @@ TEST_DECLARE   (process_priority)
+@@ -276,6 +276,7 @@ TEST_DECLARE   (process_priority)
  TEST_DECLARE   (has_ref)
  TEST_DECLARE   (active)
  TEST_DECLARE   (embed)
@@ -476,7 +476,7 @@ index 78ff9c2d1621676feab5d357609970cdf1ba5864..204160f324ad1a80c9b042e62c4bedcb
  TEST_DECLARE   (async)
  TEST_DECLARE   (async_null_cb)
  TEST_DECLARE   (eintr_handling)
-@@ -894,6 +895,7 @@ TASK_LIST_START
+@@ -906,6 +907,7 @@ TASK_LIST_START
    TEST_ENTRY  (active)
  
    TEST_ENTRY  (embed)
