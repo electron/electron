@@ -13,10 +13,10 @@ This patch can be removed should we choose to support chrome.fileSystem
 or support it enough to fix the crash.
 
 diff --git a/chrome/browser/resources/pdf/pdf_viewer.ts b/chrome/browser/resources/pdf/pdf_viewer.ts
-index 020e31e04887008cba6ed04407124c034b9565a2..8a8a7eb411dc6946254d0d92e043a22bdd2053f9 100644
+index 4f83c769386ab3f8b9e62ecf82964a3b85b06625..c86ac99a1ad70eddb34cdfa65e2e3fab546c4c83 100644
 --- a/chrome/browser/resources/pdf/pdf_viewer.ts
 +++ b/chrome/browser/resources/pdf/pdf_viewer.ts
-@@ -1020,28 +1020,27 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1051,28 +1051,27 @@ export class PdfViewerElement extends PdfViewerBaseElement {
        dataArray = [result.dataToSave];
      }
  
@@ -65,7 +65,7 @@ index 020e31e04887008cba6ed04407124c034b9565a2..8a8a7eb411dc6946254d0d92e043a22b
    }
  
    /**
-@@ -1169,36 +1168,33 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1256,36 +1255,33 @@ export class PdfViewerElement extends PdfViewerBaseElement {
        fileName = fileName + '.pdf';
      }
  
@@ -128,7 +128,7 @@ index 020e31e04887008cba6ed04407124c034b9565a2..8a8a7eb411dc6946254d0d92e043a22b
  
      // <if expr="enable_pdf_ink2">
      // Ink2 doesn't need to exit annotation mode after save.
-@@ -1308,6 +1304,9 @@ declare global {
+@@ -1421,6 +1417,9 @@ declare global {
    interface HTMLElementTagNameMap {
      'pdf-viewer': PdfViewerElement;
    }

@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Wed, 30 Oct 2024 21:40:17 -0700
+Subject: Revert "[fastapi] Promote deprecation of FastApiTypedArray"
+
+This reverts commit 22b9e934bbbc2f026ed2c3a97a72d9f3ec890a68.
+
+Revert this until Node.js decides how to proceed and then pick up their fix.
+
+Refs: https://github.com/nodejs/node/issues/55452
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5956408
+
+diff --git a/include/v8-fast-api-calls.h b/include/v8-fast-api-calls.h
+index 70ecc5847ecba39e3102105ca8cb2b356588f714..18466688cf90cbb5db2880febbfb768ae68f8377 100644
+--- a/include/v8-fast-api-calls.h
++++ b/include/v8-fast-api-calls.h
+@@ -337,7 +337,7 @@ struct FastApiTypedArrayBase {
+ };
+ 
+ template <typename T>
+-struct V8_DEPRECATED(
++struct V8_DEPRECATE_SOON(
+     "When an API function expects a TypedArray as a parameter, the type in the "
+     "signature should be `v8::Local<v8::Value>` instead of "
+     "FastApiTypedArray<>. The API function then has to type-check the "

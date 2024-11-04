@@ -187,7 +187,7 @@ index bdd5bec301f5fcff2d3e3d7994ecbc4eae46da36..f6082bada22c5f4e70af60ea6f555b0f
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 2fc9fabe67dc4d8c209247e46b57d27ec1a0fb90..ce73ed7f7070ee276511da674599364a468a2c8f 100644
+index 605117f78bb9ad2f8f2b04ca398c78a88f5b8243..d49b7f0c0026bb1159f92a93db32adee4b4883ca 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -181,11 +181,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -237,7 +237,7 @@ index 2fc9fabe67dc4d8c209247e46b57d27ec1a0fb90..ce73ed7f7070ee276511da674599364a
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -440,9 +466,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -437,9 +463,26 @@ bool UtilityProcessHost::StartProcess() {
  #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_ASH) ||
          // BUILDFLAG(IS_MAC)
  
@@ -706,7 +706,7 @@ index b67f4f87d588386409a90cd49e8338272c6e0d51..c34a80ec8db1b868a7f387ea4a11d71d
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index b550651a8a98132104d38df083717e1cb58567e4..52b9eddefcc6a2240babcac824058cd853d3058f 100644
+index 5f5857379ad34ccd1fb46564859bcef2d2a25d5e..6a39285e344d90b73199e73e48afaddbec3de628 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -619,11 +619,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
@@ -782,7 +782,7 @@ index b550651a8a98132104d38df083717e1cb58567e4..52b9eddefcc6a2240babcac824058cd8
      DWORD last_error = GetLastError();
      std::move(result_callback).Run(base::Process(), last_error, result);
 diff --git a/sandbox/policy/win/sandbox_win.h b/sandbox/policy/win/sandbox_win.h
-index ede8bb552b2602fb06a6317399eb910e24a54216..c86744af9de2c366951d659851aaa9cac74b96de 100644
+index 8fb74a2eefba49f95e4947ef9fd081ab8decebd4..3eed3d348132d5992c27bd8082a267fb42d4e431 100644
 --- a/sandbox/policy/win/sandbox_win.h
 +++ b/sandbox/policy/win/sandbox_win.h
 @@ -92,7 +92,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {

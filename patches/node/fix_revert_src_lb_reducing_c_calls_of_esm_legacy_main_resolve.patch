@@ -15,31 +15,27 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 69f73f829706deddc4f328b78af9d58434af647d..1d53a2a47423150e822bb917b2725d3a6a794814 100644
+index f3dad958b2ec275992554477b9344214c8c1e2c8..a086217046fd5ed7cfb09cfd2ed62f3987eb1f31 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -36,10 +36,9 @@ const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
- const experimentalNetworkImports =
-   getOptionValue('--experimental-network-imports');
+@@ -27,14 +27,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
+ const fs = require('fs');
+ const { getOptionValue } = require('internal/options');
+ // Do not eagerly grab .manifest, it may be in TDZ
+-const { sep, posix: { relative: relativePosixPath }, resolve } = require('path');
++const { sep, posix: { relative: relativePosixPath }, toNamespacedPath, resolve } = require('path');
+ const preserveSymlinks = getOptionValue('--preserve-symlinks');
+ const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
  const inputTypeFlag = getOptionValue('--input-type');
--const { URL, pathToFileURL, fileURLToPath, isURL } = require('internal/url');
-+const { URL, pathToFileURL, fileURLToPath, isURL, toPathIfFileURL } = require('internal/url');
+-const { URL, pathToFileURL, fileURLToPath, isURL, URLParse } = require('internal/url');
++const { URL, pathToFileURL, fileURLToPath, isURL, URLParse, toPathIfFileURL } = require('internal/url');
  const { getCWDURL, setOwnProperty } = require('internal/util');
  const { canParse: URLCanParse } = internalBinding('url');
 -const { legacyMainResolve: FSLegacyMainResolve } = internalBinding('fs');
  const {
    ERR_INPUT_TYPE_NOT_ALLOWED,
    ERR_INVALID_ARG_TYPE,
-@@ -59,7 +58,7 @@ const { Module: CJSModule } = require('internal/modules/cjs/loader');
- const { getPackageScopeConfig } = require('internal/modules/esm/package_config');
- const { getConditionsSet } = require('internal/modules/esm/utils');
- const packageJsonReader = require('internal/modules/package_json_reader');
--const { internalModuleStat } = internalBinding('fs');
-+const internalFsBinding = internalBinding('fs');
- 
- /**
-  * @typedef {import('internal/modules/esm/package_config.js').PackageConfig} PackageConfig
-@@ -162,34 +161,13 @@ function emitLegacyIndexDeprecation(url, packageJSONUrl, base, main) {
+@@ -154,34 +153,13 @@ function emitLegacyIndexDeprecation(url, packageJSONUrl, base, main) {
  
  const realpathCache = new SafeMap();
  
@@ -81,7 +77,7 @@ index 69f73f829706deddc4f328b78af9d58434af647d..1d53a2a47423150e822bb917b2725d3a
  
  /**
   * Legacy CommonJS main resolution:
-@@ -204,22 +182,44 @@ const legacyMainResolveExtensionsIndexes = {
+@@ -196,22 +174,44 @@ const legacyMainResolveExtensionsIndexes = {
   * @returns {URL}
   */
  function legacyMainResolve(packageJSONUrl, packageConfig, base) {
@@ -142,10 +138,10 @@ index 69f73f829706deddc4f328b78af9d58434af647d..1d53a2a47423150e822bb917b2725d3a
  
  const encodedSepRegEx = /%2F|%5C/i;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736c24827e3 100644
+index 0bb70eb0fcd42ddf4d5e585065cf1ad8e74faab3..b565beae625d970ba92ab667a145d8897d4e8a6e 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -19,14 +19,11 @@
+@@ -19,14 +19,12 @@
  // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
  // USE OR OTHER DEALINGS IN THE SOFTWARE.
  #include "node_file.h"  // NOLINT(build/include_inline)
@@ -153,14 +149,14 @@ index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736
  #include "aliased_buffer-inl.h"
  #include "memory_tracker-inl.h"
  #include "node_buffer.h"
--#include "node_errors.h"
+ #include "node_errors.h"
  #include "node_external_reference.h"
  #include "node_file-inl.h"
 -#include "node_metadata.h"
  #include "node_process-inl.h"
  #include "node_stat_watcher.h"
  #include "node_url.h"
-@@ -3127,135 +3124,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
+@@ -3208,146 +3206,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
  
  }  // namespace
  
@@ -202,14 +198,20 @@ index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736
 -      return;
 -    }
 -
--    node::url::FromNamespacedPath(&initial_file_path.value());
+-    FromNamespacedPath(&initial_file_path.value());
 -
 -    package_initial_file = *initial_file_path;
 -
 -    for (int i = 0; i < legacy_main_extensions_with_main_end; i++) {
 -      file_path = *initial_file_path + std::string(legacy_main_extensions[i]);
+-      // TODO(anonrig): Remove this when ToNamespacedPath supports std::string
+-      Local<Value> local_file_path =
+-          Buffer::Copy(env->isolate(), file_path.c_str(), file_path.size())
+-              .ToLocalChecked();
+-      BufferValue buff_file_path(isolate, local_file_path);
+-      ToNamespacedPath(env, &buff_file_path);
 -
--      switch (FilePathIsFile(env, file_path)) {
+-      switch (FilePathIsFile(env, buff_file_path.ToString())) {
 -        case BindingData::FilePathIsFileReturnType::kIsFile:
 -          return args.GetReturnValue().Set(i);
 -        case BindingData::FilePathIsFileReturnType::kIsNotFile:
@@ -239,14 +241,20 @@ index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736
 -    return;
 -  }
 -
--  node::url::FromNamespacedPath(&initial_file_path.value());
+-  FromNamespacedPath(&initial_file_path.value());
 -
 -  for (int i = legacy_main_extensions_with_main_end;
 -       i < legacy_main_extensions_package_fallback_end;
 -       i++) {
 -    file_path = *initial_file_path + std::string(legacy_main_extensions[i]);
+-    // TODO(anonrig): Remove this when ToNamespacedPath supports std::string
+-    Local<Value> local_file_path =
+-        Buffer::Copy(env->isolate(), file_path.c_str(), file_path.size())
+-            .ToLocalChecked();
+-    BufferValue buff_file_path(isolate, local_file_path);
+-    ToNamespacedPath(env, &buff_file_path);
 -
--    switch (FilePathIsFile(env, file_path)) {
+-    switch (FilePathIsFile(env, buff_file_path.ToString())) {
 -      case BindingData::FilePathIsFileReturnType::kIsFile:
 -        return args.GetReturnValue().Set(i);
 -      case BindingData::FilePathIsFileReturnType::kIsNotFile:
@@ -292,11 +300,10 @@ index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736
 -                             package_initial_file,
 -                             *module_base);
 -}
--
+ 
  void BindingData::MemoryInfo(MemoryTracker* tracker) const {
    tracker->TrackField("stats_field_array", stats_field_array);
-   tracker->TrackField("stats_field_bigint_array", stats_field_bigint_array);
-@@ -3355,19 +3223,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
+@@ -3448,19 +3306,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
    return info;
  }
  
@@ -316,15 +323,15 @@ index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736
  static void CreatePerIsolateProperties(IsolateData* isolate_data,
                                         Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
-@@ -3422,7 +3277,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
-   SetMethod(isolate, target, "mkdtemp", Mkdtemp);
+@@ -3520,7 +3365,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
+   SetMethod(isolate, target, "cpSyncCheckPaths", CpSyncCheckPaths);
  
    StatWatcher::CreatePerIsolateProperties(isolate_data, target);
 -  BindingData::CreatePerIsolateProperties(isolate_data, target);
  
    target->Set(
        FIXED_ONE_BYTE_STRING(isolate, "kFsStatsFieldsNumber"),
-@@ -3495,7 +3349,6 @@ BindingData* FSReqBase::binding_data() {
+@@ -3593,7 +3437,6 @@ BindingData* FSReqBase::binding_data() {
  void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
    registry->Register(Access);
    StatWatcher::RegisterExternalReferences(registry);
@@ -333,7 +340,7 @@ index 73ad5a1a2c092d7f8dac84585fb9b13e76e84e13..039f693de14bec248f93262ad70f2736
    registry->Register(GetFormatOfExtensionlessFile);
    registry->Register(Close);
 diff --git a/src/node_file.h b/src/node_file.h
-index 6f1b55284db0f4f8c70081b4834a074c717f3cc9..a969fff32bd156aa9393c1db9eec474eb7432cea 100644
+index bdad1ae25f4892cbbfd8cc30c4d8b4a6f600edbc..5a3c462853aa784d9ef61ff4f63010848c48b92c 100644
 --- a/src/node_file.h
 +++ b/src/node_file.h
 @@ -86,13 +86,6 @@ class BindingData : public SnapshotableObject {

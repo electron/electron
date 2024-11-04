@@ -42,7 +42,7 @@ safe.
 The only way to load a native module safely for now, is to make sure the app
 loads no native modules after the Web Workers get started.
 
-```js @ts-expect-error=[1]
+```js
 process.dlopen = () => {
   throw new Error('Load native module is not safe')
 }

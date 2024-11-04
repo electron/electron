@@ -367,3 +367,13 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
     secrets: inherit
+
+  gha-done:
+    name: GitHub Actions Completed
+    runs-on: ubuntu-latest
+    needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, windows-x64, windows-x86, windows-arm64]
+    if: always() && !contains(needs.*.result, 'failure')
+    steps: 
+    - name: GitHub Actions Jobs Done
+      run: |
+        echo "All GitHub Actions Jobs are done"

@@ -178,7 +178,7 @@ index 72cdfe2c4a0258dbd575f536ca42fa1d53f44988..092f60adb1080bea16ac24c53d57539d
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 27216805188c77aa45b478e66b04a2d45f92fba6..9646e314af0de3d4a7ccf1c54a339b703be125c2 100644
+index d91f58ebe3a024bc41ed72121c49172f68e0d862..b63fccf1d11ba199e3fd3f019e348ad7c8bff215 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -81,10 +81,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
@@ -268,16 +268,16 @@ index 27216805188c77aa45b478e66b04a2d45f92fba6..9646e314af0de3d4a7ccf1c54a339b70
      return PROCESS_NONE;
    }
  
--  switch (chrome::AttemptToNotifyRunningChrome(remote_window_)) {
-+  switch (chrome::AttemptToNotifyRunningChrome(remote_window_, additional_data_)) {
-     case chrome::NOTIFY_SUCCESS:
+-  switch (AttemptToNotifyRunningChrome(remote_window_)) {
++  switch (AttemptToNotifyRunningChrome(remote_window_, additional_data_)) {
+     case NotifyChromeResult::NOTIFY_SUCCESS:
        return PROCESS_NOTIFIED;
-     case chrome::NOTIFY_FAILED:
+     case NotifyChromeResult::NOTIFY_FAILED:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index f572b9db19cc1341cf0493d7486bb484121e7384..5b053e160d4653cd6de7eabc37e3b4a264a6c2c7 100644
+index 019ac7e93e009a713ce56ee8bcacf467b4fe769d..c3a7d3c5d2d413a2dfede341b1c8de661bc3d381 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
-@@ -41,7 +41,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
+@@ -39,7 +39,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
    return base::win::MessageWindow::FindWindow(user_data_dir.value());
  }
  
@@ -288,7 +288,7 @@ index f572b9db19cc1341cf0493d7486bb484121e7384..5b053e160d4653cd6de7eabc37e3b4a2
    TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
  
    DCHECK(remote_window);
-@@ -70,12 +72,29 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+@@ -68,12 +70,29 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
      new_command_line.AppendSwitchNative(switches::kSourceShortcut, si.lpTitle);
  
    // Send the command line to the remote chrome window.
@@ -320,7 +320,7 @@ index f572b9db19cc1341cf0493d7486bb484121e7384..5b053e160d4653cd6de7eabc37e3b4a2
    // window (otherwise it will just flash in the taskbar).
    ::AllowSetForegroundWindow(process_id);
 diff --git a/chrome/browser/win/chrome_process_finder.h b/chrome/browser/win/chrome_process_finder.h
-index ddea93de709db5967a353bb73d433737c6aac40c..43c6896923032ffa16a0df4efd48a42f869c15d7 100644
+index 91e5e623840b9912bd05d024c12e3eb3f1ba2f53..4c8591c3938b6540c698f40d89ee64eea1bec418 100644
 --- a/chrome/browser/win/chrome_process_finder.h
 +++ b/chrome/browser/win/chrome_process_finder.h
 @@ -7,6 +7,7 @@
@@ -331,7 +331,7 @@ index ddea93de709db5967a353bb73d433737c6aac40c..43c6896923032ffa16a0df4efd48a42f
  #include "base/time/time.h"
  
  namespace base {
-@@ -27,7 +28,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir);
+@@ -25,7 +26,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir);
  // Attempts to send the current command line to an already running instance of
  // Chrome via a WM_COPYDATA message.
  // Returns true if a running Chrome is found and successfully notified.

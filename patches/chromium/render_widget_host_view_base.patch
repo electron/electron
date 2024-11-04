@@ -6,7 +6,7 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 72c5c119911a627c69e19d72a8bdbc91c770afc1..a5338c058fc25ce763804965030e211224111fc2 100644
+index a09e0fd3993923fb21b9a13c0abfdb5789509f1e..ff12932ea58019a08a5791cdd4f6439ac6b4d0b6 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -638,6 +638,13 @@ void RenderWidgetHostViewBase::OnFrameTokenChangedForView(
