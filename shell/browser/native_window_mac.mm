@@ -132,7 +132,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   bool resizable = true;
   options.Get(options::kResizable, &resizable);
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
-  options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
+  options.Get(options::kSimpleFullscreen, &always_simple_fullscreen_);
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
   options.Get(options::kVisualEffectState, &visual_effect_state_);
 

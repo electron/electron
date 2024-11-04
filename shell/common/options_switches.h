@@ -46,7 +46,7 @@ inline constexpr std::string_view kSkipTaskbar = "skipTaskbar";
 // http://www.opera.com/support/mastering/kiosk/
 inline constexpr std::string_view kKiosk = "kiosk";
 
-inline constexpr std::string_view kSimpleFullScreen = "simpleFullscreen";
+inline constexpr std::string_view kSimpleFullscreen = "simpleFullscreen";
 
 // Make windows stays on the top of all other windows.
 inline constexpr std::string_view kAlwaysOnTop = "alwaysOnTop";
