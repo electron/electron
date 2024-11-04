@@ -4553,11 +4553,6 @@ lint-staged@^10.2.11:
     string-argv "0.3.1"
     stringify-object "^3.3.0"
 
-lint@^1.1.2:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/lint/-/lint-1.1.2.tgz#35ed064f322547c331358d899868664968ba371f"
-  integrity sha1-Ne0GTzIlR8MxNY2JmGhmSWi6Nx8=
-
 listr2@^2.1.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/listr2/-/listr2-2.2.0.tgz#cb88631258abc578c7fb64e590fe5742f28e4aac"
