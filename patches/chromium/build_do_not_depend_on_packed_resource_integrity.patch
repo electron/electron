@@ -33,10 +33,10 @@ index 9580623c57cb02f7e924742c6cb1638676881115..ad80d8e63dfebbbdb8eaa63bfe38a6f8
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 24d79d56b396463f147af3a1419f7a8e61219981..d175ec932a06303a6fc474c8e3f842a36c1358e3 100644
+index 5d263a3a6f69eea0b1972864c40f9d5cd519c8d0..84590113f0d57c72989c206b8a54e3d906d74930 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4514,7 +4514,7 @@ static_library("browser") {
+@@ -4526,7 +4526,7 @@ static_library("browser") {
        ]
      }
  
@@ -46,10 +46,10 @@ index 24d79d56b396463f147af3a1419f7a8e61219981..d175ec932a06303a6fc474c8e3f842a3
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index c553a996b3f0fe7633fc5012f3126da0ad510300..2741a72627a6c60a76f84c19317ffbe11a8e051b 100644
+index 66e4d0b9623eec2e34ff1690818cd1d4e9fa6334..dae1e47880125685ad73db25233df487a199e210 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6766,9 +6766,12 @@ test("unit_tests") {
+@@ -6781,9 +6781,12 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
@@ -63,7 +63,7 @@ index c553a996b3f0fe7633fc5012f3126da0ad510300..2741a72627a6c60a76f84c19317ffbe1
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -7709,6 +7712,10 @@ test("unit_tests") {
+@@ -7725,6 +7728,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index c553a996b3f0fe7633fc5012f3126da0ad510300..2741a72627a6c60a76f84c19317ffbe1
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -7761,7 +7768,6 @@ test("unit_tests") {
+@@ -7777,7 +7784,6 @@ test("unit_tests") {
      # Non-android deps for "unit_tests" target.
      deps += [
        "../browser/screen_ai:screen_ai_install_state",

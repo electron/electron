@@ -48,10 +48,10 @@ index da123a97ef4f13258600cd9af461dc20dea0b2aa..9a86c5b47d3254cb6b5af5d609fa9eaa
  #ifdef KYTHE_IS_RUNNING
  #pragma kythe_inline_metadata "Metadata comment"
 diff --git a/mojo/public/tools/bindings/mojom.gni b/mojo/public/tools/bindings/mojom.gni
-index aee1a53dfd6d1115192eaf1cd25160d546c44175..25361499581908170285e68241efeb668fe35350 100644
+index 4a2e48024d5c56ed6accd93bc6b4827cac2e6257..8fe64783c2a443c194ad146a5399ce41d1a7663c 100644
 --- a/mojo/public/tools/bindings/mojom.gni
 +++ b/mojo/public/tools/bindings/mojom.gni
-@@ -1366,9 +1366,6 @@ template("mojom") {
+@@ -1368,9 +1368,6 @@ template("mojom") {
            "base/component_export.h",
          ]
        }

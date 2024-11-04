@@ -51,7 +51,7 @@ index 5fb8a3dc69dc5fc5bfa08e01d8f03707a23c9274..41774b60b8cb7e0a22cedc597dc07ad1
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 86778acd91c50902d9e07da9e94eaecc6626509f..d2454381351253e76c48d651ac09cecc9b9d219b 100644
+index b8c1377d3144031f108bc79dc49d81a4ffbdb68d..1f9d5dde9099232ecb48557a28d545b2ec6f8f2e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -586,8 +586,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
@@ -104,10 +104,10 @@ index c980f3f76a37a4207bb54f18fbcdb8d0950c8856..91a9dfe56fbbcd1cc873add438947dd2
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 746af7113a66d26de389237ebd90ec9e6a569cc3..f2f14184eafc919a303da6679a516bdd3a825a51 100644
+index 083af135d890c2837e72c314e170e81931bd2a20..5245ea88441ef84c15b8052a9011ce70b8e9b848 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -368,6 +368,7 @@ class BLINK_EXPORT WebView {
+@@ -371,6 +371,7 @@ class BLINK_EXPORT WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
