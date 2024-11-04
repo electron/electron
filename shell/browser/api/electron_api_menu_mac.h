@@ -26,7 +26,7 @@ class MenuMac : public Menu {
                int x,
                int y,
                int positioning_item,
-               ui::MenuSourceType source_type,
+               ui::mojom::MenuSourceType source_type,
                base::OnceClosure callback) override;
   void PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                  int32_t window_id,

@@ -23,7 +23,7 @@ void MenuViews::PopupAt(BaseWindow* window,
                         int x,
                         int y,
                         int positioning_item,
-                        ui::MenuSourceType source_type,
+                        ui::mojom::MenuSourceType source_type,
                         base::OnceClosure callback) {
   auto* native_window = static_cast<NativeWindowViews*>(window->window());
   if (!native_window)

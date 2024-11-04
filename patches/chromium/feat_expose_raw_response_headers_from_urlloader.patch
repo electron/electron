@@ -17,7 +17,7 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 28bf295032c89dc7831d341cef95d11c53ade3b3..9f82e5202f2fe275d738dcadf41c535ad9f8df94 100644
+index 8e3e37301879f70de0430adb81258df2e4cd5e46..90fcfad3fa7b431e6be257c886963e7fabca4d7b 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
 @@ -155,6 +155,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
@@ -49,10 +49,10 @@ index 79851e979be2dbba27690e1e7807afcb252d3d23..5b766862d8c9e08ce55f328eaf9314a5
      mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
      mojo::PendingRemote<mojom::URLLoaderNetworkServiceObserver>
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 1f18c9cbe892c24cde8d1430afa882f2d5d9879d..9817380cf1169f9c778f236a316b1928b501c68a 100644
+index 8079532618a360aba8f6e1396b87a8b927c839dd..7a6c6a8be3b5b7b4f4a35e9493aeb5da07639e06 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
-@@ -96,6 +96,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
+@@ -94,6 +94,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
    out->allow_cookies_from_browser = data.allow_cookies_from_browser();
    out->include_request_cookies_with_response =
        data.include_request_cookies_with_response();
@@ -90,7 +90,7 @@ index 7c006ab576a03d14549f3a0c7b3fb35cf21fee0a..5cd81ab4de26bf9f174a5571d3c41fd4
    // a cookie. If this is set to non-null, the observer passed to
    // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 3450c15835d8b792f37764f6edc4a4560be435ef..b1034aa141d6121f8e1524fb34a28a040a280420 100644
+index a123ea0b396815063c4261110ee39e611b6e9eed..968256ba1df386589fda1b97b0e043585c4aa951 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -13,6 +13,7 @@ import "services/network/public/mojom/attribution.mojom";
@@ -112,10 +112,10 @@ index 3450c15835d8b792f37764f6edc4a4560be435ef..b1034aa141d6121f8e1524fb34a28a04
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 9e9b917e3f2aa9a56d4db931211828a913ed7f40..05d82fa5dd20acf84d33ca92bddedb9c6132ac36 100644
+index ba6ebceb0b515b4cb1aa5df503d10ede4658a2a1..038c16640ff7aaaeb463e6a9b7fae95d56866e79 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -598,6 +598,9 @@ URLLoader::URLLoader(
+@@ -597,6 +597,9 @@ URLLoader::URLLoader(
            mojo::SimpleWatcher::ArmingPolicy::MANUAL,
            base::SequencedTaskRunner::GetCurrentDefault()),
        per_factory_orb_state_(context.GetMutableOrbState()),
@@ -125,7 +125,7 @@ index 9e9b917e3f2aa9a56d4db931211828a913ed7f40..05d82fa5dd20acf84d33ca92bddedb9c
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -869,7 +872,7 @@ void URLLoader::ConfigureRequest(
+@@ -868,7 +871,7 @@ void URLLoader::ConfigureRequest(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  

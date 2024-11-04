@@ -10,6 +10,7 @@
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/win/notify_icon_host.h"
+#include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/geometry/point.h"
@@ -227,7 +228,7 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   }
   menu_runner_->RunMenuAt(nullptr, nullptr, rect,
                           views::MenuAnchorPosition::kTopLeft,
-                          ui::MENU_SOURCE_MOUSE);
+                          ui::mojom::MenuSourceType::kMouse);
 }
 
 void NotifyIcon::CloseContextMenu() {
