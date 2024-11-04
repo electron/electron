@@ -29,11 +29,6 @@ runs:
       if [[ ! -d depot_tools ]]; then
         git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
-        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-        cd depot_tools
-        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
