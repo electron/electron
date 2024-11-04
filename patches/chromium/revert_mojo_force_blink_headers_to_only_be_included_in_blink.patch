@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Wed, 30 Oct 2024 23:28:24 -0700
+Subject: Revert "[mojo] Force blink headers to only be included in blink"
+
+This reverts commit 83b7fc2ecb7341531fdd346a905618f6fab06d12.
+
+Revert this change until we determine the best way to land it in Electron.
+
+Refs: https://chromium-review.googlesource.com/c/chromium/src/+/5962696
+
+diff --git a/mojo/public/cpp/bindings/tests/BUILD.gn b/mojo/public/cpp/bindings/tests/BUILD.gn
+index 3395ffb932df565798b91229fe1fecf94f07ee86..763053a2a2b80a5d335c3459f4f2dfa55e363d82 100644
+--- a/mojo/public/cpp/bindings/tests/BUILD.gn
++++ b/mojo/public/cpp/bindings/tests/BUILD.gn
+@@ -110,7 +110,6 @@ source_set("tests") {
+       ":struct_with_traits_impl",
+       "//mojo/public/interfaces/bindings/tests:test_interfaces_blink",
+     ]
+-    defines = [ "BLINK_MOJO_IMPL=1" ]
+   }
+ }
+ 
+@@ -132,8 +131,6 @@ if (use_blink) {
+       "wtf_types_unittest.cc",
+     ]
+ 
+-    defines = [ "BLINK_MOJO_IMPL=1" ]
+-
+     deps = [
+       "//base/test:test_support",
+       "//mojo/public/cpp/bindings",
+diff --git a/mojo/public/tools/bindings/generators/cpp_templates/module.h.tmpl b/mojo/public/tools/bindings/generators/cpp_templates/module.h.tmpl
+index da123a97ef4f13258600cd9af461dc20dea0b2aa..9a86c5b47d3254cb6b5af5d609fa9eaaed0befd7 100644
+--- a/mojo/public/tools/bindings/generators/cpp_templates/module.h.tmpl
++++ b/mojo/public/tools/bindings/generators/cpp_templates/module.h.tmpl
+@@ -81,12 +81,6 @@
+ #include "{{export_header}}"
+ {%- endif %}
+ 
+-{%- if for_blink %}
+-#if !BLINK_MOJO_IMPL && !INSIDE_BLINK
+-#error "File must only be imported inside blink"
+-#endif
+-{%- endif %}
+-
+ {% if enable_kythe_annotations -%}
+ #ifdef KYTHE_IS_RUNNING
+ #pragma kythe_inline_metadata "Metadata comment"
+diff --git a/mojo/public/tools/bindings/mojom.gni b/mojo/public/tools/bindings/mojom.gni
+index aee1a53dfd6d1115192eaf1cd25160d546c44175..25361499581908170285e68241efeb668fe35350 100644
+--- a/mojo/public/tools/bindings/mojom.gni
++++ b/mojo/public/tools/bindings/mojom.gni
+@@ -1366,9 +1366,6 @@ template("mojom") {
+           "base/component_export.h",
+         ]
+       }
+-      if (defined(variant) && variant == "blink") {
+-        export_defines += [ "BLINK_MOJO_IMPL=1" ]
+-      }
+ 
+       generator_cpp_output_suffixes = []
+       variant_dash_suffix = ""
