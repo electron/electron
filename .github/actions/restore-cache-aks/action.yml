@@ -23,16 +23,7 @@ runs:
       fi
 
       mkdir temp-cache
-      date
-      if [ "${{ inputs.target-platform }}" = "linux" ]; then
-        tar -xf $cache_path -C temp-cache
-      else
-        where choco
-        where 7z        
-        dir "C:\Program Files\7-Zip"
-        7z x $cache_path -o"temp-cache"
-      fi
-      date
+      tar -xf $cache_path -C temp-cache
       echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
 
       if [ -d "temp-cache/src" ]; then
