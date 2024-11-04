@@ -22,9 +22,9 @@ struct Converter<device::mojom::SerialPortInfoPtr> {
     if (port->display_name && !port->display_name->empty())
       dict.Set("displayName", *port->display_name);
     if (port->has_vendor_id)
-      dict.Set("vendorId", base::StringPrintf("%u", port->vendor_id));
+      dict.Set("vendorId", absl::StrFormat("%u", port->vendor_id));
     if (port->has_product_id)
-      dict.Set("productId", base::StringPrintf("%u", port->product_id));
+      dict.Set("productId", absl::StrFormat("%u", port->product_id));
     if (port->serial_number && !port->serial_number->empty())
       dict.Set("serialNumber", *port->serial_number);
 #if BUILDFLAG(IS_MAC)
