@@ -11,7 +11,6 @@
 
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
-#include "base/strings/stringprintf.h"
 #include "components/network_hints/renderer/web_prescient_networking_impl.h"
 #include "content/common/buildflags.h"
 #include "content/public/common/content_constants.h"
@@ -36,6 +35,7 @@
 #include "shell/renderer/content_settings_observer.h"
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_autofill_agent.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -204,8 +204,8 @@ RendererClientBase* RendererClientBase::Get() {
 void RendererClientBase::BindProcess(v8::Isolate* isolate,
                                      gin_helper::Dictionary* process,
                                      content::RenderFrame* render_frame) {
-  auto context_id = base::StringPrintf(
-      "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
+  auto context_id = absl::StrFormat("%s-%" PRId64, renderer_client_id_.c_str(),
+                                    ++next_context_id_);
 
   process->SetReadOnly("isMainFrame", render_frame->IsMainFrame());
   process->SetReadOnly("contextIsolated",
