@@ -169,23 +169,6 @@ async function runTestUsingElectron (specDir, testName) {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
     exe = 'python3';
   }
-  const fifteenMinutes = 15 * 60 * 1000;
-  setTimeout(async () => {
-    console.log(`${fail} Electron tests timed out after 15 minutes.`);
-    if (process.platform === 'win32') {
-      const scArgs = [
-        path.resolve(__dirname, 'screenCapture.bat'),
-        'screen.png'
-      ];
-      const ARTIFACT_DIR = path.join(__dirname, '..', 'spec', 'artifacts');
-      await fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
-      childProcess.spawnSync('call', scArgs, {
-        cwd: ARTIFACT_DIR,
-        stdio: 'inherit'
-      });      
-    }
-    process.exit(1);
-  }, fifteenMinutes);
   const { status, signal } = childProcess.spawnSync(exe, runnerArgs, {
     cwd: path.resolve(__dirname, '../..'),
     stdio: 'inherit'

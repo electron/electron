@@ -1,5 +1,6 @@
 const { app, protocol } = require('electron');
 
+const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const v8 = require('node:v8');
@@ -169,9 +170,31 @@ app.whenReady().then(async () => {
     process.exit(1);
   }
 
+  const fifteenMinutes = 15 * 60 * 1000;
+  const testTimeout = setTimeout(async () => {
+    console.log('Electron tests timed out after 15 minutes.');
+    if (process.platform === 'win32') {
+      const scArgs = [
+
+        'screen.png'
+      ];
+      const ARTIFACT_DIR = path.join(__dirname, 'artifacts');
+      fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
+      const { stdout, stderr } = childProcess.spawnSync(path.resolve(__dirname, '..', 'script', 'screenCapture.bat'), scArgs, {
+        cwd: ARTIFACT_DIR,
+        stdio: 'inherit'
+      });
+      console.log(`screenCap: ${stdout} ${stderr}`);
+    }
+    process.exit(1);
+  }, fifteenMinutes);
+
   const cb = () => {
+    console.log('In SPEC CB');
     // Ensure the callback is called after runner is defined
     process.nextTick(() => {
+      clearTimeout(testTimeout);
+      console.log('In SPEC CB, process next tick');
       process.exit(runner.failures);
     });
   };
