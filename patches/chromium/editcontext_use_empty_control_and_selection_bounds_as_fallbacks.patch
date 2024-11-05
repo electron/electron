@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Clark <daniec@microsoft.com>
+Date: Fri, 2 Aug 2024 18:20:12 +0000
+Subject: Use empty control and selection bounds as fallbacks
+
+When there are no valid character bounds,
+EditContext::FirstRectForCharacterRange is supposed to fall back to
+the selection or control bounds if they have been set. Currently we
+use an IsEmpty() check to determine if they've been set, but this
+actually returns false if the given rect has zero width or height.
+
+A site may want to set selection to a rect of empty width to indicate
+a caret, so this would be skipped as a fallback.
+
+Fix this by instead checking against the default gfx::Rect to
+determine whether a selection or control bounds has been set.
+
+Bug: 351029417
+Change-Id: I6d519a0e2dab83277b8a5d6df103f0fd8f4a26bf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5744458
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Commit-Queue: Dan Clark <daniec@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1336717}
+
+diff --git a/third_party/blink/renderer/core/editing/ime/edit_context.cc b/third_party/blink/renderer/core/editing/ime/edit_context.cc
+index 71efa75c49ccee79895e5eedf60ccc5d576ac2a3..6c7462ef353f23c8fdfdd9b874f08e506a5c27cd 100644
+--- a/third_party/blink/renderer/core/editing/ime/edit_context.cc
++++ b/third_party/blink/renderer/core/editing/ime/edit_context.cc
+@@ -798,7 +798,7 @@ bool EditContext::FirstRectForCharacterRange(uint32_t location,
+   // If we couldn't get a result from the composition bounds then we'll fall
+   // back to using the selection bounds, since these will generally be close to
+   // where the composition is happening.
+-  if (!selection_bounds_.IsEmpty()) {
++  if (selection_bounds_ != gfx::Rect()) {
+     rect_in_viewport = selection_bounds_;
+     return true;
+   }
+@@ -807,7 +807,7 @@ bool EditContext::FirstRectForCharacterRange(uint32_t location,
+   // to using the control bounds. In this case the IME might not be drawn
+   // exactly in the right spot, but will at least be adjacent to the editable
+   // region rather than in the corner of the screen.
+-  if (!control_bounds_.IsEmpty()) {
++  if (control_bounds_ != gfx::Rect()) {
+     rect_in_viewport = control_bounds_;
+     return true;
+   }
+diff --git a/third_party/blink/web_tests/editing/input/edit-context.html b/third_party/blink/web_tests/editing/input/edit-context.html
+index 11ef18391ce50f4872e7ae378c3002914354959d..7cd502c38f8b404c18266732baad20ff22634871 100644
+--- a/third_party/blink/web_tests/editing/input/edit-context.html
++++ b/third_party/blink/web_tests/editing/input/edit-context.html
+@@ -681,6 +681,32 @@ test(function() {
+ 
+   test.remove();
+ }, 'Testing firstRectForCharacterRange');
++
++test(function() {
++  const editContext = new EditContext();
++  const test = document.createElement("div");
++  document.body.appendChild(test);
++  test.editContext = editContext;
++  test.focus();
++  textInputController.insertText("abc");
++  textInputController.setComposition("def");
++
++  assert_array_equals(textInputController.firstRectForCharacterRange(3, 1), [], "No rects are provided if no bounds have been set");
++
++  const rect1 = new DOMRect(0, 2, 0, 0);
++  editContext.updateControlBounds(rect1);
++  assert_array_equals(textInputController.firstRectForCharacterRange(3, 1), [0, 2, 0, 0], "If there are no composition bounds and no selection bounds, fall back to control bounds");
++
++  const rect2 = new DOMRect(4, 2, 0, 0);
++  editContext.updateSelectionBounds(rect2);
++  assert_array_equals(textInputController.firstRectForCharacterRange(3, 1), [4, 2, 0, 0], "If there are no composition bounds, fall back to selection bounds");
++
++  const rect3 = new DOMRect(8, 2, 0, 0);
++  editContext.updateCharacterBounds(3, [rect3, rect3, rect3]);
++  assert_array_equals(textInputController.firstRectForCharacterRange(3, 1), [8, 2, 0, 0], "Character bounds should be used even if control and selection bounds are set");
++
++  test.remove();
++}, 'firstRectForCharacterRange empty control bounds and empty selection bounds fallbacks');
+ </script>
+ </body>
+ </html>
