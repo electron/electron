@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Clark <daniec@microsoft.com>
+Date: Mon, 5 Aug 2024 21:08:17 +0000
+Subject: Return physical pixels from FirstRectForCharacterRange
+
+EditContext::FirstRectForCharacterRange returns its result in CSS
+pixels, but the caller expects to receive a result in physical pixels,
+resulting in incorrect IME positions on high-DPI displays.
+
+Switch the function to return its result in physical pixels.
+
+Bug: 351029417
+Change-Id: I846b2a62856804274b1d106028efbd5489181f80
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5749469
+Commit-Queue: Dan Clark <daniec@microsoft.com>
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1337483}
+
+diff --git a/third_party/blink/renderer/core/editing/ime/edit_context.cc b/third_party/blink/renderer/core/editing/ime/edit_context.cc
+index 6c7462ef353f23c8fdfdd9b874f08e506a5c27cd..b41b6c4a51dffde71df57a0dc34b325733c8f342 100644
+--- a/third_party/blink/renderer/core/editing/ime/edit_context.cc
++++ b/third_party/blink/renderer/core/editing/ime/edit_context.cc
+@@ -758,6 +758,9 @@ bool EditContext::GetCompositionCharacterBounds(WebVector<gfx::Rect>& bounds) {
+ bool EditContext::FirstRectForCharacterRange(uint32_t location,
+                                              uint32_t length,
+                                              gfx::Rect& rect_in_viewport) {
++  gfx::Rect rect_in_css_pixels;
++  bool found_rect = false;
++
+   if (HasValidCompositionBounds()) {
+     WebRange range = this->CompositionRange();
+     CHECK_GE(range.StartOffset(), 0);
+@@ -772,47 +775,52 @@ bool EditContext::FirstRectForCharacterRange(uint32_t location,
+       if (length == 0) {
+         if (start_in_composition == character_bounds_.size()) {
+           // Zero-width rect after the last character in the composition range
+-          rect_in_viewport =
++          rect_in_css_pixels =
+               gfx::Rect(character_bounds_[start_in_composition - 1].right(),
+                         character_bounds_[start_in_composition - 1].y(), 0,
+                         character_bounds_[start_in_composition - 1].height());
+         } else {
+           // Zero-width rect before the next character in the composition range
+-          rect_in_viewport =
++          rect_in_css_pixels =
+               gfx::Rect(character_bounds_[start_in_composition].x(),
+                         character_bounds_[start_in_composition].y(), 0,
+                         character_bounds_[start_in_composition].height());
+         }
+       } else {
+-        gfx::Rect rect = character_bounds_[start_in_composition];
++        rect_in_css_pixels = character_bounds_[start_in_composition];
+         for (size_t i = start_in_composition + 1; i < end_in_composition; ++i) {
+-          rect.Union(character_bounds_[i]);
++          rect_in_css_pixels.Union(character_bounds_[i]);
+         }
+-
+-        rect_in_viewport = rect;
+       }
+-      return true;
++      found_rect = true;
+     }
+   }
+ 
+   // If we couldn't get a result from the composition bounds then we'll fall
+   // back to using the selection bounds, since these will generally be close to
+   // where the composition is happening.
+-  if (selection_bounds_ != gfx::Rect()) {
+-    rect_in_viewport = selection_bounds_;
+-    return true;
++  if (!found_rect && selection_bounds_ != gfx::Rect()) {
++    rect_in_css_pixels = selection_bounds_;
++    found_rect = true;
+   }
+ 
+   // If we have neither composition bounds nor selection bounds, we'll fall back
+   // to using the control bounds. In this case the IME might not be drawn
+   // exactly in the right spot, but will at least be adjacent to the editable
+   // region rather than in the corner of the screen.
+-  if (control_bounds_ != gfx::Rect()) {
+-    rect_in_viewport = control_bounds_;
+-    return true;
++  if (!found_rect && control_bounds_ != gfx::Rect()) {
++    rect_in_css_pixels = control_bounds_;
++    found_rect = true;
++  }
++
++  if (found_rect) {
++    // EditContext's coordinates are in CSS pixels, which need to be converted
++    // to physical pixels before return.
++    rect_in_viewport = gfx::ScaleToEnclosingRect(
++        rect_in_css_pixels, DomWindow()->GetFrame()->DevicePixelRatio());
+   }
+ 
+-  return false;
++  return found_rect;
+ }
+ 
+ bool EditContext::HasValidCompositionBounds() const {
+diff --git a/third_party/blink/renderer/core/editing/ime/edit_context.h b/third_party/blink/renderer/core/editing/ime/edit_context.h
+index 9543f2ead5f09a91a00cbab65f36e8e9f8361cc6..c5fc55476e78a66295e8dc9daa60ddc8a551224c 100644
+--- a/third_party/blink/renderer/core/editing/ime/edit_context.h
++++ b/third_party/blink/renderer/core/editing/ime/edit_context.h
+@@ -139,6 +139,8 @@ class CORE_EXPORT EditContext final : public EventTarget,
+   WebTextInputInfo TextInputInfo() override;
+   int ComputeWebTextInputNextPreviousFlags() override { return 0; }
+   WebRange CompositionRange() const override;
++  // Populate `bounds` with the bounds of each item in EditContext's
++  // stored character bounds, scaled to physical pixels.
+   bool GetCompositionCharacterBounds(WebVector<gfx::Rect>& bounds) override;
+   WebRange GetSelectionOffsets() const override;
+ 
+@@ -154,7 +156,7 @@ class CORE_EXPORT EditContext final : public EventTarget,
+   void Blur();
+ 
+   // Populate |control_bounds| and |selection_bounds| with the bounds fetched
+-  // from the active EditContext.
++  // from the active EditContext, in physical pixels.
+   void GetLayoutBounds(gfx::Rect* control_bounds,
+                        gfx::Rect* selection_bounds) override;
+ 
+@@ -197,7 +199,7 @@ class CORE_EXPORT EditContext final : public EventTarget,
+                     int end,
+                     bool dispatch_text_update_event = false);
+ 
+-  // Sets rect_in_viewport to the surrounding rect, in CSS pixels,
++  // Sets rect_in_viewport to the surrounding rect, in physical pixels,
+   // for the character range specified by `location` and `length`.
+   // Returns true on success, false on failure (in which case
+   // rect_in_viewport) is not changed.
+@@ -285,6 +287,7 @@ class CORE_EXPORT EditContext final : public EventTarget,
+   uint32_t selection_start_ = 0;
+   uint32_t selection_end_ = 0;
+ 
++  // The following bounds are in CSS pixels.
+   gfx::Rect control_bounds_;
+   gfx::Rect selection_bounds_;
+   WebVector<gfx::Rect> character_bounds_;

@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Francois Doray <fdoray@chromium.org>
 Date: Mon, 16 Sep 2024 15:57:01 +0000
-Subject: [oom] Add commit limit/available to OOM exception arguments
- (Windows).
+Subject: Add commit limit/available to OOM exception arguments (Windows).
 
 ~25% of OOM crashes [1] occur for an allocation <10MB when the
 "system commit remaining" [2] is >1GB. This CL adds the
