@@ -1,3 +1,4 @@
+import { nativeImage } from 'electron';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
 
 import { expect } from 'chai';
@@ -18,7 +19,6 @@ import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { nativeImage } from 'electron';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');
