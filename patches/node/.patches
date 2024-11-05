@@ -42,3 +42,4 @@ build_restore_clang_as_default_compiler_on_macos.patch
 fix_-wextra-semi_errors_in_nghttp2_helper_h.patch
 fix_remove_harmony-import-assertions_from_node_cc.patch
 win_almost_fix_race_detecting_esrch_in_uv_kill.patch
+chore_disable_deprecation_ftbfs_in_simdjson_header.patch
