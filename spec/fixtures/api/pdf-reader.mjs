@@ -1,6 +1,6 @@
 import * as pdfjs from 'pdfjs-dist';
 
-async function getPDFDoc() {  
+async function getPDFDoc () {
   try {
     const doc = await pdfjs.getDocument(process.argv[2]).promise;
     const page = await doc.getPage(1);
@@ -11,10 +11,11 @@ async function getPDFDoc() {
       view: page.view,
       textContent: items,
       markInfo
-    }
+    };
     console.log(JSON.stringify(pdfInfo));
     process.exit();
   } catch (ex) {
+    console.error(ex);
     process.exit(1);
   }
 }

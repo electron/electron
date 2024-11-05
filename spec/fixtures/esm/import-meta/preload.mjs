@@ -1,3 +1,3 @@
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath } from 'node:url';
 
-window.importMetaPath = fileURLToPath(import.meta.url)
+window.importMetaPath = fileURLToPath(import.meta.url);
