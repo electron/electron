@@ -558,7 +558,7 @@ index 6aa74c4137ac7a649e8f79eb628e297e9459b089..c89f25bf49d773f5f77b2434bd6fabcf
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8c37f6b307967a472e0c52d15c784c4e1679d907..6833b917413b0586c5b764e0169c74ea4e470df8 100644
+index ee169c534554112e82b3db46fc682187e901b52a..a943d6add056cffe03f71babc7c3b89951e94772 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -323,6 +323,7 @@ source_set("browser") {

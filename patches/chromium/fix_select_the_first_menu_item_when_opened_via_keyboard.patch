@@ -6,7 +6,7 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 7d8efccc7370f9f0451673f0bd8f4ac8d0e2ae6c..4e4845c72c065e82261ece35a69df23b4f6f55e4 100644
+index 9cc0e960036fdbc8ffaac2900af61a0bc8c54668..26dd396c34783aa59284541f1127aeca5e7b09dc 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
 @@ -579,6 +579,7 @@ void MenuController::Run(Widget* parent,
@@ -17,7 +17,7 @@ index 7d8efccc7370f9f0451673f0bd8f4ac8d0e2ae6c..4e4845c72c065e82261ece35a69df23b
                           gfx::NativeView native_view_for_gestures) {
    exit_type_ = ExitType::kNone;
    possible_drag_ = false;
-@@ -643,6 +644,14 @@ void MenuController::Run(Widget* parent,
+@@ -642,6 +643,14 @@ void MenuController::Run(Widget* parent,
    // Set the selection, which opens the initial menu.
    SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
  
@@ -32,7 +32,7 @@ index 7d8efccc7370f9f0451673f0bd8f4ac8d0e2ae6c..4e4845c72c065e82261ece35a69df23b
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2284,19 +2293,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2304,19 +2313,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
@@ -58,7 +58,7 @@ index 7d8efccc7370f9f0451673f0bd8f4ac8d0e2ae6c..4e4845c72c065e82261ece35a69df23b
  
      item->GetSubmenu()->GetWidget()->SetNativeWindowProperty(
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
-index cf53b35efa3d63125d7cc81668dbabaa27166d34..e356db0c36920c132c34412c3a040b569f9d05cb 100644
+index 24daa0f4c9d5d6c7fd8b9a8077bb0766d1311b32..4f1a4ee9f8d881b86973be98a35c353ac399472b 100644
 --- a/ui/views/controls/menu/menu_controller.h
 +++ b/ui/views/controls/menu/menu_controller.h
 @@ -138,6 +138,7 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,
