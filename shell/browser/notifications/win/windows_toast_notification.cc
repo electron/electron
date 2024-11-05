@@ -666,8 +666,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     winui::Notifications::IToastFailedEventArgs* e) {
   HRESULT error;
   e->get_ErrorCode(&error);
-  std::string errorMessage =
-      "Notification failed. HRESULT:" + std::to_string(error);
+  std::string errorMessage = base::StrCat(
+      {"Notification failed. HRESULT:", base::NumberToString(error)});
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&Notification::NotificationFailed,
                                 notification_, errorMessage));
