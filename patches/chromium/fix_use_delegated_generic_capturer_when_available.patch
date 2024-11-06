@@ -15,7 +15,7 @@ capturer was window or screen-specific, as the IDs remain valid for
 generic capturer as well.
 
 diff --git a/content/browser/media/capture/desktop_capture_device.cc b/content/browser/media/capture/desktop_capture_device.cc
-index c2c782a9f0c772a2b55be0358088c6b7751a804b..16c6b6c1eef544da6bdb7ca7a7e8d237f1729ee8 100644
+index 1463ddcc48cbfb796867cd55beb7bb38c2fe3c93..8ad7fbebdf57cde246339956ff1ec96514153ddf 100644
 --- a/content/browser/media/capture/desktop_capture_device.cc
 +++ b/content/browser/media/capture/desktop_capture_device.cc
 @@ -811,8 +811,14 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(

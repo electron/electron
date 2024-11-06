@@ -86,10 +86,10 @@ index e4a27a24c83dd1a478b2ada8b6c8220076790791..c76dc818f38a62fff63852dbecbc85e3
  
    // Cut the reference from ScriptState to V8 context.
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
-index e9b16a9c71b9631222d0745428fea06be2e74472..aba4d930a9a45fb43e0aaac26af7df4fa07fc447 100644
+index b3cc8d819b06108386aed9465cab4f27a28b675f..a1757901e52360a9c2ec3c573adb20d03cd6ecae 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.h
 +++ b/third_party/blink/renderer/platform/bindings/script_state.h
-@@ -184,7 +184,12 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+@@ -185,7 +185,12 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
                                  v8::Local<v8::Context> context) {
      DCHECK(!context.IsEmpty());
      if (context->GetNumberOfEmbedderDataFields() <=
@@ -103,7 +103,7 @@ index e9b16a9c71b9631222d0745428fea06be2e74472..aba4d930a9a45fb43e0aaac26af7df4f
        return nullptr;
      }
      ScriptState* script_state =
-@@ -251,9 +256,15 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+@@ -263,6 +268,8 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
    static void SetCreateCallback(CreateCallback);
    friend class ScriptStateImpl;
  
@@ -112,6 +112,11 @@ index e9b16a9c71b9631222d0745428fea06be2e74472..aba4d930a9a45fb43e0aaac26af7df4f
    static constexpr int kV8ContextPerContextDataIndex =
        static_cast<int>(gin::kPerContextDataStartIndex) +
        static_cast<int>(gin::kEmbedderBlink);
+@@ -271,6 +278,11 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+   // internals.idl.
+   String last_compiled_script_file_name_;
+   bool last_compiled_script_used_code_cache_ = false;
++
 +  static constexpr int kV8ContextPerContextDataTagIndex =
 +      static_cast<int>(gin::kPerContextDataStartIndex) +
 +      static_cast<int>(gin::kEmbedderBlink) +

@@ -5,6 +5,7 @@
 #define ELECTRON_SHELL_BROWSER_ELECTRON_PDF_DOCUMENT_HELPER_CLIENT_H_
 
 #include "components/pdf/browser/pdf_document_helper_client.h"
+#include "services/screen_ai/buildflags/buildflags.h"
 
 namespace content {
 class WebContents;
@@ -23,6 +24,10 @@ class ElectronPDFDocumentHelperClient : public pdf::PDFDocumentHelperClient {
   void OnSaveURL(content::WebContents* contents) override {}
   void SetPluginCanSave(content::RenderFrameHost* render_frame_host,
                         bool can_save) override;
+#if BUILDFLAG(ENABLE_SCREEN_AI_SERVICE)
+  void OnSearchifyStateChange(bool busy,
+                              content::WebContents* contents) override;
+#endif
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_ELECTRON_PDF_DOCUMENT_HELPER_CLIENT_H_

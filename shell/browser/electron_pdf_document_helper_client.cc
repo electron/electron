@@ -73,3 +73,11 @@ void ElectronPDFDocumentHelperClient::SetPluginCanSave(
     guest_view->SetPluginCanSave(can_save);
   }
 }
+
+#if BUILDFLAG(ENABLE_SCREEN_AI_SERVICE)
+void ElectronPDFDocumentHelperClient::OnSearchifyStateChange(
+    bool busy,
+    content::WebContents* contents) {
+  // TODO(crbug.com/360803943): Show promo and manage progress bubble.
+}
+#endif
