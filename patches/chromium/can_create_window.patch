@@ -122,7 +122,7 @@ index 784103345ed40cce8823048bcd6a48c722866f15..94202a07c8774a9ad62938506b22ea3f
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 19dff7ea3f62e5095ee03335978dac5d58cc1465..cbec82fe1fbc43c188ac9c0cf318ee49aa83c503 100644
+index 686f218c268a1aee57b06fac8cf29e9341395fd6..2fb305c47d000161cea014bc627d80e5a754058a 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -17,6 +17,7 @@
