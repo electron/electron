@@ -1,4 +1,5 @@
 import { parseDocs } from '@electron/docs-parser';
+
 import { promises } from 'node:fs';
 import { resolve } from 'node:path';
 
