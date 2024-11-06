@@ -191,12 +191,9 @@ app.whenReady().then(async () => {
 
   const cb = () => {
     console.log('In SPEC CB');
-    // Ensure the callback is called after runner is defined
-    process.nextTick(() => {
-      clearTimeout(testTimeout);
-      console.log('In SPEC CB, process next tick');
-      process.exit(runner.failures);
-    });
+    clearTimeout(testTimeout);
+    console.log(`In SPEC CB, process next tick with failures: ${runner.failures}`);
+    process.exit(runner.failures);
   };
 
   // Set up chai in the correct order
