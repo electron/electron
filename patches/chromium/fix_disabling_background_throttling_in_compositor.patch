@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 99657563e117d243af1466dd1d4ad736da85f1b9..13bf3608ab9b8f6753a9474b2ce4c0a8eda60d90 100644
+index b56af94eae23fa461d046fc0542eed983b92c7c5..f199cf5231ca2d9c150d1a0ebfede6383f174733 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -344,7 +344,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -36,7 +36,7 @@ index 99657563e117d243af1466dd1d4ad736da85f1b9..13bf3608ab9b8f6753a9474b2ce4c0a8
  
    if (changed) {
      observer_list_.Notify(&CompositorObserver::OnCompositorVisibilityChanged,
-@@ -1008,6 +1011,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
+@@ -1006,6 +1009,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
        host_begin_frame_observer_->GetBoundRemote());
  }
  

@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 0eb84c31ebbda5e7e842cd0f0df5ff2a15048178..c2fa88ac47c846ad94494660453891b0e38b33e3 100644
+index 404b12727620ae4cdcfff17e8379764742a90f0e..4b874f02c7525d83bcc0cb475404cf180221f512 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1040,6 +1040,7 @@ component("base") {
@@ -911,10 +911,10 @@ index 36322ddd3047f96569f35807541a37d3c6672b09..0121a780cf3b79fc1120c1b85cd5cd30
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 6f3b368103b05f07ae67da4c0307efe039b8dfce..c8b18509dc508fbb928b97830536d210b378bf73 100644
+index 45847b155ec8fb197aadb479eca78154436cfa81..e5de2b90a4c7d8181408ddfa62057b977015cbb8 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -197,6 +197,7 @@ source_set("audio") {
+@@ -198,6 +198,7 @@ source_set("audio") {
        "CoreMedia.framework",
      ]
      weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0
