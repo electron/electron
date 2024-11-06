@@ -85,7 +85,7 @@ index 31a2a14a95540477297943df9b09b1e4659a884d..c02a81b1bd14a300dbbb47ad7aac2d2d
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index 572f23d579c0bce81b4b63f7030297d469ef3fbd..5a6ce0a7888f449ad73c6870bab569df7a23bd80 100644
+index 6baede18711c3e2fddaccb66632ea11f33699748..15339f4b1ea0e11f1823c264ff31685652c8de71 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -110,7 +110,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -187,7 +187,7 @@ index bdd5bec301f5fcff2d3e3d7994ecbc4eae46da36..f6082bada22c5f4e70af60ea6f555b0f
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 605117f78bb9ad2f8f2b04ca398c78a88f5b8243..d49b7f0c0026bb1159f92a93db32adee4b4883ca 100644
+index 5ddfc7c3b6640fa7ab0e93f8f021bec28a0b1f9d..9fa9443a321bf055c5deed199854a0438ef6d480 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -181,11 +181,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -237,7 +237,7 @@ index 605117f78bb9ad2f8f2b04ca398c78a88f5b8243..d49b7f0c0026bb1159f92a93db32adee
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -437,9 +463,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -436,9 +462,26 @@ bool UtilityProcessHost::StartProcess() {
  #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_ASH) ||
          // BUILDFLAG(IS_MAC)
  

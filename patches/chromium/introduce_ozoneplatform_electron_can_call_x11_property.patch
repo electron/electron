@@ -9,7 +9,7 @@ at rutime. It would be best if eventually all usages of this property were
 replaced with clean ozone native implementations.
 
 diff --git a/ui/ozone/platform/x11/ozone_platform_x11.cc b/ui/ozone/platform/x11/ozone_platform_x11.cc
-index 39e18820db0d0c1b57f4375e01d269e53c839e4e..ea4da67a9b7798822d1d5dd90d09597aa658e79e 100644
+index 50f3163e57544847f256869b14ed782b35dadd80..ff8364b40c733229d6a7ff1c63eb204b231faf32 100644
 --- a/ui/ozone/platform/x11/ozone_platform_x11.cc
 +++ b/ui/ozone/platform/x11/ozone_platform_x11.cc
 @@ -193,6 +193,7 @@ class OzonePlatformX11 : public OzonePlatform,
@@ -21,7 +21,7 @@ index 39e18820db0d0c1b57f4375e01d269e53c839e4e..ea4da67a9b7798822d1d5dd90d09597a
        properties->supports_global_application_menus = true;
        properties->app_modal_dialogs_use_event_blocker = true;
 diff --git a/ui/ozone/public/ozone_platform.h b/ui/ozone/public/ozone_platform.h
-index b2550902614dec6903d7f8740e8557d2da7b7be9..ba4ef7e230e1bcc752f22a3140b86b0e69e5335f 100644
+index 9960ad66f3c9d47b00171478e625c9da2e1dd43e..c7a6cfbf4d86b9ba0139d7eb61a7f513be843718 100644
 --- a/ui/ozone/public/ozone_platform.h
 +++ b/ui/ozone/public/ozone_platform.h
 @@ -128,6 +128,10 @@ class COMPONENT_EXPORT(OZONE) OzonePlatform {

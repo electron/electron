@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index fade6f4f1a526c8233c79dd89d1765ac1daef284..ff2ed02a7b4f55f7688283ad685f7e6396d04d1f 100644
+index c1685a6fdd26a56382ef64b40aa499e8d60afddc..0aad188673f9c0834c03600b62f106ada718e321 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -12,6 +12,7 @@
@@ -259,7 +259,7 @@ index 61c8b54bc5a9ea59c90e8627ab01745e0c328382..f9521b7aac19bf3994517906b85fc928
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 588dfcafab5a073401b20a39a3d945b94d162d30..68be867a26f4f8ea84106d33bc658acf1fac11d5 100644
+index e5f48a4e0a6059f9555516a3e824e2157e3b0b60..37cd9b6e15cbbc31a19ee8317786c9c5f09199e2 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -6,6 +6,7 @@
@@ -411,7 +411,7 @@ index 89b70ce1e26612ae85dfcfa088718cb0c79881a2..f78342eca69ace7c3bb5f63cc9860746
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index ce5225e121f5db611d95ba5dfa88cea42f32076b..d402cc9db212abcedd62018bb242eb524cc6acf2 100644
+index 67c4c5f3ce124e111fb7a70e16386120cf24d9b8..d9876cd58ff28ea1af87596691cd836b815825dd 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -135,6 +135,9 @@ struct SchemeRegistry {
@@ -424,7 +424,7 @@ index ce5225e121f5db611d95ba5dfa88cea42f32076b..d402cc9db212abcedd62018bb242eb52
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -716,6 +719,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -717,6 +720,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
