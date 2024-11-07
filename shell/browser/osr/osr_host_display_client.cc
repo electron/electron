@@ -69,7 +69,7 @@ void LayeredWindowUpdater::Draw(const gfx::Rect& damage_rect,
 
   if (active_ && canvas_->peekPixels(&pixmap)) {
     bitmap.installPixels(pixmap);
-    callback_.Run(damage_rect, bitmap);
+    callback_.Run(damage_rect, bitmap, {});
   }
 
   std::move(draw_callback).Run();

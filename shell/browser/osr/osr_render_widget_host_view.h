@@ -25,14 +25,17 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_view.h"  // nogncheck
+#include "shell/browser/osr/osr_host_display_client.h"
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/blink/public/mojom/widget/record_content_to_visible_time_request.mojom-forward.h"
 #include "third_party/blink/public/platform/web_vector.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer_delegate.h"
 #include "ui/compositor/layer_owner.h"
+#include "ui/gfx/geometry/point.h"
 
 #include "components/viz/host/host_display_client.h"
 
@@ -59,8 +62,6 @@ class ElectronCopyFrameGenerator;
 class ElectronDelegatedFrameHostClient;
 class OffScreenHostDisplayClient;
 
-using OnPaintCallback =
-    base::RepeatingCallback<void(const gfx::Rect&, const SkBitmap&)>;
 using OnPopupPaintCallback = base::RepeatingCallback<void(const gfx::Rect&)>;
 
 class OffScreenRenderWidgetHostView
@@ -70,6 +71,7 @@ class OffScreenRenderWidgetHostView
       private OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
+                                bool offscreen_use_shared_texture,
                                 bool painting,
                                 int frame_rate,
                                 const OnPaintCallback& callback,
@@ -204,7 +206,9 @@ class OffScreenRenderWidgetHostView
   void RemoveViewProxy(OffscreenViewProxy* proxy);
   void ProxyViewDestroyed(OffscreenViewProxy* proxy) override;
 
-  void OnPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
+  void OnPaint(const gfx::Rect& damage_rect,
+               const SkBitmap& bitmap,
+               const OffscreenSharedTexture& texture);
   void OnPopupPaint(const gfx::Rect& damage_rect);
   void OnProxyViewPaint(const gfx::Rect& damage_rect) override;
 
@@ -230,6 +234,10 @@ class OffScreenRenderWidgetHostView
 
   void SetFrameRate(int frame_rate);
   int frame_rate() const { return frame_rate_; }
+
+  bool offscreen_use_shared_texture() const {
+    return offscreen_use_shared_texture_;
+  }
 
   ui::Layer* root_layer() const { return root_layer_.get(); }
 
@@ -274,6 +282,7 @@ class OffScreenRenderWidgetHostView
   std::set<OffscreenViewProxy*> proxy_views_;
 
   const bool transparent_;
+  const bool offscreen_use_shared_texture_;
   OnPaintCallback callback_;
   OnPopupPaintCallback parent_callback_;
 
