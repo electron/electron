@@ -304,12 +304,12 @@ app.whenReady().then(async () => {
     console.log(`In SPEC CB, process next tick with failures: ${runner.failures} for ${process.platform}`);
     if (process.platform === 'win32') {
       const scBat = path.resolve(__dirname, '..', 'script', 'screenCapture.bat');
-      const scArgs = [
+      /* const scArgs = [
         'screen.png'
-      ];
+      ]; */
       const ARTIFACT_DIR = path.join(__dirname, 'spec', 'artifacts');
       fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
-      const { stdout, stderr } = childProcess.spawnSync(scBat, scArgs, {
+      const { stdout, stderr } = childProcess.spawnSync(scBat, [], {
         cwd: ARTIFACT_DIR
       });
       console.log(`screenCap results ${stdout} ${stderr}`);
