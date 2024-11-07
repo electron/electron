@@ -518,7 +518,10 @@ source_set("electron_lib") {
     "//third_party/blink/renderer",
   ]
 
-  defines = [ "V8_DEPRECATION_WARNINGS" ]
+  defines = [
+    "BLINK_MOJO_IMPL=1",
+    "V8_DEPRECATION_WARNINGS",
+  ]
   libs = []
 
   if (is_linux) {
