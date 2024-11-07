@@ -1,8 +1,9 @@
-import { app, BrowserWindow } from 'electron'
-import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path';
+import { app, BrowserWindow } from 'electron';
 
-async function createWindow() {
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+async function createWindow () {
   const mainWindow = new BrowserWindow({
     show: false,
     webPreferences: {
@@ -10,9 +11,9 @@ async function createWindow() {
       sandbox: false,
       contextIsolation: false
     }
-  })
+  });
 
-  await mainWindow.loadFile('index.html')
+  await mainWindow.loadFile('index.html');
 
   const importMetaPreload = await mainWindow.webContents.executeJavaScript('window.importMetaPath');
   const expected = join(dirname(fileURLToPath(import.meta.url)), 'preload.mjs');
@@ -21,13 +22,13 @@ async function createWindow() {
 }
 
 app.whenReady().then(() => {
-  createWindow()
+  createWindow();
 
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
 
 app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit()
-})
+  if (process.platform !== 'darwin') app.quit();
+});

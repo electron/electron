@@ -138,7 +138,7 @@ const LINTERS = [{
   key: 'javascript',
   roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec'],
   ignoreRoots: ['spec/node_modules'],
-  test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
+  test: filename => filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs'),
   run: async (opts, filenames) => {
     const eslint = new ESLint({
       // Do not use the lint cache on CI builds

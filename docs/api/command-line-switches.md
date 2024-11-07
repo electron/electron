@@ -38,7 +38,7 @@ Without `*` prefix the URL has to match exactly.
 
 ### --disable-ntlm-v2
 
-Disables NTLM v2 for posix platforms, no effect elsewhere.
+Disables NTLM v2 for POSIX platforms, no effect elsewhere.
 
 ### --disable-http-cache
 

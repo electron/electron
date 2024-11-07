@@ -9,7 +9,7 @@ implementations of DesktopCapturer::CreateRawScreenCapturer and
 DesktopCapturer::CreateRawWindowCapturer.
 
 diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
-index a52a76c2625cf0a2eae7ab5b841e0bf4ff499d88..099313bc1b4e75ebbe62c30190a068f68bfe5366 100644
+index 7fd0fc31d81bf4d5eca5f8aa7106388ea4c518e4..51dde063a78be7aade1953fbee8bb2db71b72ce5 100644
 --- a/modules/desktop_capture/desktop_capturer.cc
 +++ b/modules/desktop_capture/desktop_capturer.cc
 @@ -113,7 +113,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
