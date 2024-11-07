@@ -206,6 +206,7 @@ describe('BrowserWindow module', () => {
 
       after(() => {
         server.close();
+        server = null as unknown as http.Server;
       });
 
       const events = [
@@ -370,6 +371,7 @@ describe('BrowserWindow module', () => {
 
     after(() => {
       server.close();
+      server = null as unknown as http.Server;
     });
 
     it('should emit did-start-loading event', async () => {
@@ -533,6 +535,7 @@ describe('BrowserWindow module', () => {
 
         after(() => {
           server.close();
+          server = null as unknown as http.Server;
         });
 
         it('allows the window to be closed from the event listener', async () => {
@@ -651,6 +654,7 @@ describe('BrowserWindow module', () => {
 
         after(() => {
           server.close();
+          server = null as unknown as http.Server;
         });
 
         it('allows the window to be closed from the event listener', (done) => {
@@ -839,6 +843,7 @@ describe('BrowserWindow module', () => {
 
         after(() => {
           server.close();
+          server = null as unknown as http.Server;
         });
         it('is emitted on redirects', async () => {
           const willRedirect = once(w.webContents, 'will-redirect');
@@ -934,6 +939,10 @@ describe('BrowserWindow module', () => {
             }
           });
           url = (await listen(server)).url;
+        });
+        after(() => {
+          server.close();
+          server = null as unknown as http.Server;
         });
         it('for initial navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
@@ -3565,6 +3574,7 @@ describe('BrowserWindow module', () => {
 
       after(() => {
         server.close();
+        server = null as unknown as http.Server;
       });
 
       it('exposes ipcRenderer to preload script', async () => {
@@ -5284,6 +5294,7 @@ describe('BrowserWindow module', () => {
 
       after(() => {
         server.close();
+        server = null as unknown as http.Server;
       });
 
       it('is true when the main frame is loading', async () => {

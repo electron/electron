@@ -2540,6 +2540,7 @@ describe('chromium features', () => {
   describe('websockets', () => {
     it('has user agent', async () => {
       const server = http.createServer();
+      defer(() => server.close());
       const { port } = await listen(server);
       const wss = new ws.Server({ server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
@@ -3692,6 +3693,7 @@ describe('navigator.usb', () => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<body>');
     });
+    defer(() => server.close());
 
     serverUrl = (await listen(server)).url;
 

@@ -372,6 +372,7 @@ describe('session module', () => {
     afterEach(() => {
       if (server) {
         server.close();
+        server = null as unknown as http.Server;
       }
       customSession = null as any;
     });
@@ -659,6 +660,7 @@ describe('session module', () => {
 
     afterEach((done) => {
       server.close(done);
+      server = null as unknown as http.Server;
     });
     afterEach(closeAllWindows);
 
@@ -748,7 +750,7 @@ describe('session module', () => {
   describe('ses.clearAuthCache()', () => {
     it('can clear http auth info from cache', async () => {
       const ses = session.fromPartition('auth-cache');
-      const server = http.createServer((req, res) => {
+      let server = http.createServer((req, res) => {
         const credentials = auth(req);
         if (!credentials || credentials.name !== 'test' || credentials.pass !== 'test') {
           res.statusCode = 401;
@@ -757,6 +759,10 @@ describe('session module', () => {
         } else {
           res.end('authenticated');
         }
+      });
+      defer(() => {
+        server.close();
+        server = null as unknown as http.Server;
       });
       const { port } = await listen(server);
       const fetch = (url: string) => new Promise((resolve, reject) => {
@@ -841,6 +847,13 @@ describe('session module', () => {
     };
 
     describe('session.downloadURL', () => {
+      let server: http.Server;
+      afterEach(() => {
+        if (server) {
+          server.close();
+          server = null as unknown as http.Server;
+        }
+      });
       it('can perform a download', (done) => {
         session.defaultSession.once('will-download', function (e, item) {
           item.savePath = downloadFilePath;
@@ -857,7 +870,7 @@ describe('session module', () => {
       });
 
       it('can perform a download with a valid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -919,7 +932,7 @@ describe('session module', () => {
       });
 
       it('correctly handles a download with an invalid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -963,6 +976,13 @@ describe('session module', () => {
     });
 
     describe('webContents.downloadURL', () => {
+      let server: http.Server;
+      afterEach(() => {
+        if (server) {
+          server.close();
+          server = null as unknown as http.Server;
+        }
+      });
       it('can perform a download', (done) => {
         const w = new BrowserWindow({ show: false });
         w.webContents.session.once('will-download', function (e, item) {
@@ -980,7 +1000,7 @@ describe('session module', () => {
       });
 
       it('can perform a download with a valid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -1036,7 +1056,7 @@ describe('session module', () => {
       });
 
       it('correctly handles a download and an invalid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -1255,10 +1275,14 @@ describe('session module', () => {
 
     it('can be resumed', async () => {
       const downloadFilePath = path.join(fixtures, 'logo.png');
-      const rangeServer = http.createServer((req, res) => {
+      let rangeServer = http.createServer((req, res) => {
         const options = { root: fixtures };
         send(req, req.url!, options)
           .on('error', (error: any) => { throw error; }).pipe(res);
+      });
+      defer(() => {
+        rangeServer.close();
+        rangeServer = null as unknown as http.Server;
       });
       try {
         const { url } = await listen(rangeServer);
@@ -1327,6 +1351,7 @@ describe('session module', () => {
     });
     after(() => {
       server.close();
+      server = null as unknown as http.Server;
     });
 
     it('cancels any pending requests when cleared', async () => {

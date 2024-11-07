@@ -225,15 +225,7 @@ jobs:
         cd src\electron
         echo ELECTRON_TEST_RESULTS_DIR=$PWD\junit >> $env:GITHUB_ENV
         # Get which tests are on this shard
-        if ('${{ matrix.shard }}' -eq '1') {
-          $tests_files='spec\api-web-contents-spec.ts spec\webview-spec.ts'
-        } elseif ('${{ matrix.shard }}' -eq '2') {
-          $tests_files='spec\webview-spec.ts spec\api-ipc-spec.ts'
-        } elseif ('${{ matrix.shard }}' -eq '3') {
-          $tests_files='spec\webview-spec.ts spec\api-native-image-spec.ts'
-        } elseif ('${{ matrix.shard }}' -eq '4') {
-          $tests_files='spec\api-web-contents-spec.ts spec\api-menu-item-spec.ts'
-        }
+        $tests_files=node script\split-tests ${{ matrix.shard }} 4
         echo tests_files=$tests_files >> $env:GITHUB_ENV
         if ('${{ inputs.target-arch }}' -eq 'x86') {
           echo npm_config_arch=ia32 >> $env:GITHUB_ENV

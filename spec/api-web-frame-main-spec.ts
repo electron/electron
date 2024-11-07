@@ -464,6 +464,9 @@ describe('webFrameMain module', () => {
 
     it('is not emitted upon cross-origin navigation', async () => {
       const server = await createServer();
+      defer(() => {
+        server.server.close();
+      });
 
       const w = new BrowserWindow({ show: false });
       await w.webContents.loadURL(server.url);

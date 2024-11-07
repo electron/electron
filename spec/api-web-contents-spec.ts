@@ -349,6 +349,7 @@ describe('webContents module', () => {
 
       after(() => {
         server.close();
+        server = null as unknown as http.Server;
       });
 
       it('works after page load and during subframe load', async () => {
@@ -391,6 +392,14 @@ describe('webContents module', () => {
 
   describe('loadURL() promise API', () => {
     let w: BrowserWindow;
+    let s: http.Server;
+
+    afterEach(() => {
+      if (s) {
+        s.close();
+        s = null as unknown as http.Server;
+      }
+    });
 
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
@@ -494,19 +503,18 @@ describe('webContents module', () => {
     });
 
     it('rejects if the load is aborted', async () => {
-      const s = http.createServer(() => { /* never complete the request */ });
+      s = http.createServer(() => { /* never complete the request */ });
       const { port } = await listen(s);
       const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).to.eventually.be.rejectedWith(Error, /ERR_ABORTED/);
       // load a different file before the first load completes, causing the
       // first load to be aborted.
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
       await p;
-      s.close();
     });
 
     it("doesn't reject when a subframe fails to load", async () => {
       let resp = null as unknown as http.ServerResponse;
-      const s = http.createServer((req, res) => {
+      s = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.write('<iframe src="http://err.name.not.resolved"></iframe>');
         resp = res;
@@ -524,12 +532,11 @@ describe('webContents module', () => {
       await p;
       resp.end();
       await main;
-      s.close();
     });
 
     it("doesn't resolve when a subframe loads", async () => {
       let resp = null as unknown as http.ServerResponse;
-      const s = http.createServer((req, res) => {
+      s = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.write('<iframe src="about:blank"></iframe>');
         resp = res;
@@ -548,7 +555,6 @@ describe('webContents module', () => {
       resp.destroy(); // cause the main request to fail
       await expect(main).to.eventually.be.rejected()
         .and.have.property('errno', -355); // ERR_INCOMPLETE_CHUNKED_ENCODING
-      s.close();
     });
 
     it('subsequent load failures reject each time', async () => {
@@ -1521,10 +1527,14 @@ describe('webContents module', () => {
 
     it('can persist when it contains iframe', (done) => {
       const w = new BrowserWindow({ show: false });
-      const server = http.createServer((req, res) => {
+      let server = http.createServer((req, res) => {
         setTimeout(200).then(() => {
           res.end();
         });
+      });
+      defer(() => {
+        server.close();
+        server = null as unknown as http.Server;
       });
       listen(server).then(({ url }) => {
         const content = `<iframe src=${url}></iframe>`;
@@ -1538,8 +1548,6 @@ describe('webContents module', () => {
               done();
             } catch (e) {
               done(e);
-            } finally {
-              server.close();
             }
           }
         });
@@ -1586,6 +1594,7 @@ describe('webContents module', () => {
 
       after(() => {
         server.close();
+        server = null as unknown as http.Server;
       });
 
       it('cannot persist zoom level after navigation with webFrame', async () => {
@@ -1745,6 +1754,7 @@ describe('webContents module', () => {
 
     after(() => {
       server.close();
+      server = null as unknown as http.Server;
     });
 
     afterEach(closeAllWindows);
@@ -1907,6 +1917,7 @@ describe('webContents module', () => {
 
     after(() => {
       server.close();
+      server = null as unknown as http.Server;
     });
 
     const events = [
@@ -2016,18 +2027,20 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('propagates referrer information to new target=_blank windows', (done) => {
       const w = new BrowserWindow({ show: false });
-      const server = http.createServer((req, res) => {
+      let server = http.createServer((req, res) => {
         if (req.url === '/should_have_referrer') {
           try {
             expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
             return done();
           } catch (e) {
             return done(e);
-          } finally {
-            server.close();
           }
         }
         res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>');
+      });
+      defer(() => {
+        server.close();
+        server = null as unknown as http.Server;
       });
       listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
@@ -2044,7 +2057,7 @@ describe('webContents module', () => {
 
     it('propagates referrer information to windows opened with window.open', (done) => {
       const w = new BrowserWindow({ show: false });
-      const server = http.createServer((req, res) => {
+      let server = http.createServer((req, res) => {
         if (req.url === '/should_have_referrer') {
           try {
             expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
@@ -2054,6 +2067,10 @@ describe('webContents module', () => {
           }
         }
         res.end('');
+      });
+      defer(() => {
+        server.close();
+        server = null as unknown as http.Server;
       });
       listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
@@ -2636,7 +2653,9 @@ describe('webContents module', () => {
 
     after(() => {
       server.close();
+      server = null as unknown as http.Server;
       proxyServer.close();
+      proxyServer = null as unknown as http.Server;
     });
 
     it('is emitted when navigating', async () => {
