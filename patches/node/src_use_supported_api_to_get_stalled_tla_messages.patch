@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C3=ABl=20Zasso?= <targos@protonmail.com>
+Date: Mon, 11 Mar 2024 09:27:11 +0000
+Subject: src: use supported API to get stalled TLA messages
+
+Refs: https://github.com/v8/v8/commit/23e3b6f650162ed2b332e55aa802adb8f41b50f2
+
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index 9bbb8ab908d8d992abb43254860d51f57f56387b..92edfc6fc6401edd3685a0137eac25d9e37566f6 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -587,11 +587,10 @@ void ModuleWrap::EvaluateSync(const FunctionCallbackInfo<Value>& args) {
+ 
+   if (module->IsGraphAsync()) {
+     CHECK(env->options()->print_required_tla);
+-    auto stalled = module->GetStalledTopLevelAwaitMessage(isolate);
+-    if (stalled.size() != 0) {
+-      for (auto pair : stalled) {
+-        Local<v8::Message> message = std::get<1>(pair);
+-
++    auto stalled_messages =
++        std::get<1>(module->GetStalledTopLevelAwaitMessages(isolate));
++    if (stalled_messages.size() != 0) {
++      for (auto& message : stalled_messages) {
+         std::string reason = "Error: unexpected top-level await at ";
+         std::string info =
+             FormatErrorMessage(isolate, context, "", message, true);

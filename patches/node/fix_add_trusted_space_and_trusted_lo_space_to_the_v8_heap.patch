@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 12 Sep 2023 11:08:18 +0200
+Subject: fix: Add TRUSTED_SPACE and TRUSTED_LO_SPACE to the V8 heap
+
+Added by V8 in https://chromium-review.googlesource.com/c/v8/v8/+/4791643
+
+This patch can be removed when Node.js upgrades to a version of V8 that
+includes this change.
+
+diff --git a/test/parallel/test-v8-stats.js b/test/parallel/test-v8-stats.js
+index dd774267910aa0920ed077dd5bd5cfed93aab6cb..2366cbf716c11851bb3a759dce5db47d616516dc 100644
+--- a/test/parallel/test-v8-stats.js
++++ b/test/parallel/test-v8-stats.js
+@@ -48,6 +48,8 @@ const expectedHeapSpaces = [
+   'read_only_space',
+   'shared_large_object_space',
+   'shared_space',
++  'trusted_large_object_space',
++  'trusted_space'
+ ];
+ const heapSpaceStatistics = v8.getHeapSpaceStatistics();
+ const actualHeapSpaceNames = heapSpaceStatistics.map((s) => s.space_name);

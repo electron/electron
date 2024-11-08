@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Nicol=C3=B2=20Ribaudo?= <hello@nicr.dev>
+Date: Fri, 19 Apr 2024 02:01:24 +0200
+Subject: esm: drop support for import assertions
+
+This patch removes support for the `assert` keyword
+for import attributes. It was an old variant of the
+proposal that was only shipped in V8 and no other
+engine, and that has then been replaced by the `with`
+keyword.
+
+Chrome is planning to remove support for `assert`
+in version 126, which will be released in June.
+
+Node.js already supports the `with` keyword for
+import attributes, and this patch does not change that.
+
+PR-URL: https://github.com/nodejs/node/pull/52104
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+Reviewed-By: Joyee Cheung <joyeec9h3@gmail.com>
+Reviewed-By: Yagiz Nizipli <yagiz.nizipli@sentry.io>
+Reviewed-By: Ethan Arrowood <ethan@arrowood.dev>
+Reviewed-By: Geoffrey Booth <webadmin@geoffreybooth.com>
+(cherry picked from commit 25c79f333104d1feb0d84794d5bcdb4227177c9b)
+
+esm: remove --no-import-harmony-assertions
+
+It is off by default now.
+
+PR-URL: https://github.com/nodejs/node/pull/54890
+Reviewed-By: Luigi Pinca <luigipinca@gmail.com>
+Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
+Reviewed-By: Antoine du Hamel <duhamelantoine1995@gmail.com>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+(cherry picked from commit 8fd90938f923ef2a04bb3ebb08b89568fe6fd4ee)
+
+diff --git a/src/node.cc b/src/node.cc
+index 9f6f8e53abd7e447d88c187c447431a0d96cd150..4415f18ecbd84c1f41e0febbf2446fb636242d58 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -778,12 +778,6 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
+     return ExitCode::kInvalidCommandLineArgument2;
+   }
+ 
+-  // TODO(aduh95): remove this when the harmony-import-assertions flag
+-  // is removed in V8.
+-  if (std::find(v8_args.begin(), v8_args.end(),
+-                "--no-harmony-import-assertions") == v8_args.end()) {
+-    v8_args.emplace_back("--harmony-import-assertions");
+-  }
+   // TODO(aduh95): remove this when the harmony-import-attributes flag
+   // is removed in V8.
+   if (std::find(v8_args.begin(),
