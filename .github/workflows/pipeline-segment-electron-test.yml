@@ -231,6 +231,7 @@ jobs:
           echo npm_config_arch=ia32 >> $env:GITHUB_ENV
         }
     - name: Run Electron Tests (Windows)
+      timeout-minutes: 30
       if: ${{ inputs.target-platform == 'windows' }}
       shell: cmd
       env:
