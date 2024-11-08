@@ -1,4 +1,5 @@
 #include <node_api.h>
+#undef NAPI_VERSION
 #include <node_buffer.h>
 #include <v8.h>
 

@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 29 Mar 2023 09:55:47 +0200
+Subject: fix: adapt debugger tests for upstream v8 changes
+
+Updates debugger tests to conform to changes in https://chromium-review.googlesource.com/c/v8/v8/+/4290476
+
+This can be removed when Node.js updates to at least V8 11.4.
+
+diff --git a/test/common/debugger.js b/test/common/debugger.js
+index 4aff5b9a0f74d99f8f605b68631f820e282091ab..d5d77fc7c648ddb45225f04c6cf23f9816b2186d 100644
+--- a/test/common/debugger.js
++++ b/test/common/debugger.js
+@@ -4,7 +4,7 @@ const spawn = require('child_process').spawn;
+ 
+ const BREAK_MESSAGE = new RegExp('(?:' + [
+   'assert', 'break', 'break on start', 'debugCommand',
+-  'exception', 'other', 'promiseRejection',
++  'exception', 'other', 'promiseRejection', 'step',
+ ].join('|') + ') in', 'i');
+ 
+ let TIMEOUT = common.platformTimeout(5000);
+@@ -121,13 +121,13 @@ function startCLI(args, flags = [], spawnOpts = {}) {
+     get breakInfo() {
+       const output = this.output;
+       const breakMatch =
+-        output.match(/break (?:on start )?in ([^\n]+):(\d+)\n/i);
++        output.match(/(step |break (?:on start )?)in ([^\n]+):(\d+)\n/i);
+ 
+       if (breakMatch === null) {
+         throw new Error(
+           `Could not find breakpoint info in ${JSON.stringify(output)}`);
+       }
+-      return { filename: breakMatch[1], line: +breakMatch[2] };
++      return { filename: breakMatch[2], line: +breakMatch[3] };
+     },
+ 
+     ctrlC() {
+diff --git a/test/parallel/test-debugger-break.js b/test/parallel/test-debugger-break.js
+index 65b4355cfe7bc25464626cca6f1c3b0de1dd9a45..8e3a290321a2e70304859eb57a2056c3a70af0f6 100644
+--- a/test/parallel/test-debugger-break.js
++++ b/test/parallel/test-debugger-break.js
+@@ -27,7 +27,7 @@ const cli = startCLI(['--port=0', script]);
+ 
+   await cli.stepCommand('n');
+   assert.ok(
+-    cli.output.includes(`break in ${script}:2`),
++    cli.output.includes(`step in ${script}:2`),
+     'pauses in next line of the script');
+   assert.match(
+     cli.output,
+@@ -36,7 +36,7 @@ const cli = startCLI(['--port=0', script]);
+ 
+   await cli.stepCommand('next');
+   assert.ok(
+-    cli.output.includes(`break in ${script}:3`),
++    cli.output.includes(`step in ${script}:3`),
+     'pauses in next line of the script');
+   assert.match(
+     cli.output,
+@@ -89,7 +89,7 @@ const cli = startCLI(['--port=0', script]);
+   await cli.stepCommand('');
+   assert.match(
+     cli.output,
+-    /break in node:timers/,
++    /step in node:timers/,
+     'entered timers.js');
+ 
+   await cli.stepCommand('cont');
+diff --git a/test/parallel/test-debugger-run-after-quit-restart.js b/test/parallel/test-debugger-run-after-quit-restart.js
+index 2c56f7227aed69d781392ce2f3f40e489e3501f2..0e1048699206dcc77696974e097e97de6b217811 100644
+--- a/test/parallel/test-debugger-run-after-quit-restart.js
++++ b/test/parallel/test-debugger-run-after-quit-restart.js
+@@ -25,7 +25,7 @@ const path = require('path');
+     .then(() => cli.stepCommand('n'))
+     .then(() => {
+       assert.ok(
+-        cli.output.includes(`break in ${script}:2`),
++        cli.output.includes(`step in ${script}:2`),
+         'steps to the 2nd line'
+       );
+     })

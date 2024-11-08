@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 23 May 2023 18:21:17 +0200
+Subject: fix: account for createExternalizableString V8 global
+
+Introduced in https://chromium-review.googlesource.com/c/v8/v8/+/4531903.
+
+This patch can be removed when Node.js upgrades to a version of V8 with the above
+CL - they'll need to make the same change.
+
+diff --git a/test/parallel/test-fs-write.js b/test/parallel/test-fs-write.js
+index 59b83f531cf0a60f960d0096aea70854f45bd629..9dcc35987a4757ea090e81c7de38a6af5bc3182f 100644
+--- a/test/parallel/test-fs-write.js
++++ b/test/parallel/test-fs-write.js
+@@ -38,7 +38,7 @@ const constants = fs.constants;
+ const { externalizeString, isOneByteString } = global;
+ 
+ // Account for extra globals exposed by --expose_externalize_string.
+-common.allowGlobals(externalizeString, isOneByteString, global.x);
++common.allowGlobals(createExternalizableString, externalizeString, isOneByteString, global.x);
+ 
+ {
+   const expected = 'ümlaut sechzig';  // Must be a unique string.

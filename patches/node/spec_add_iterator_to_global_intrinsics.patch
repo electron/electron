@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Thu, 11 Jan 2024 15:14:43 +1300
+Subject: spec: add Iterator to global intrinsics
+
+Ref: https://chromium-review.googlesource.com/c/v8/v8/+/4266490
+
+diff --git a/test/common/globals.js b/test/common/globals.js
+index cb7c1629007ecfc6c6a1aae0e6d1e9a50f07d147..5d1c4415eeb09e92d062330afc0aecb1d297b6d3 100644
+--- a/test/common/globals.js
++++ b/test/common/globals.js
+@@ -63,6 +63,7 @@ const intrinsics = new Set([
+   'SharedArrayBuffer',
+   'Atomics',
+   'WebAssembly',
++  'Iterator',
+ ]);
+ 
+ if (global.gc) {
