@@ -30,8 +30,10 @@ namespace {
 // Convert Win32 WM_QUERYENDSESSIONS to strings.
 const std::vector<std::string> EndSessionToStringVec(LPARAM end_session_id) {
   std::vector<std::string> params;
-  if (end_session_id == 0)
+  if (end_session_id == 0) {
+    params.push_back("shutdown");
     return params;
+  }
 
   if (end_session_id & ENDSESSION_CLOSEAPP)
     params.push_back("close-app");
