@@ -41,6 +41,7 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/base/hit_test.h"
+#include "ui/compositor/compositor.h"
 #include "ui/display/screen.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
@@ -204,6 +205,14 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.native_widget =
       new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
+  auto* compositor = widget()->GetCompositor();
+  if (compositor) {
+    // Override compositor default white background to transparent one,
+    // in order to clear canvas in SkiaRenderer::ClearFramebuffer and
+    // prevent drawing animations over old frame content, for contents
+    // with transparent body background.
+    compositor->SetBackgroundColor(SK_ColorTRANSPARENT);
+  }
   widget()->SetNativeWindowProperty(kElectronNativeWindowKey.c_str(), this);
   SetCanResize(resizable);
   window_ = static_cast<ElectronNSWindow*>(
