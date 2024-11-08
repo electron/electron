@@ -304,7 +304,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowQueryEndSession(const std::vector<std::string> reason,
                                    bool* prevent_default);
   void NotifyWindowClosed();
-  void NotifyWindowEndSession();
+  void NotifyWindowEndSession(const std::vector<std::string> reason);
   void NotifyWindowBlur();
   void NotifyWindowFocus();
   void NotifyWindowShow();

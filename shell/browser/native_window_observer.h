@@ -55,7 +55,7 @@ class NativeWindowObserver : public base::CheckedObserver {
                                        bool* prevent_default) {}
 
   // Called when Windows sends WM_ENDSESSION message
-  virtual void OnWindowEndSession() {}
+  virtual void OnWindowEndSession(const std::vector<std::string> reason) {}
 
   // Called when window loses focus.
   virtual void OnWindowBlur() {}

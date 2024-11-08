@@ -409,11 +409,13 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       bool prevent_default = false;
       std::vector<std::string> reason = EndSessionToStringVec(l_param);
       NotifyWindowQueryEndSession(reason, &prevent_default);
+      *result = !prevent_default;
       return prevent_default;
     }
     case WM_ENDSESSION: {
+      std::vector<std::string> reason = EndSessionToStringVec(l_param);
       if (w_param) {
-        NotifyWindowEndSession();
+        NotifyWindowEndSession(reason);
       }
       return false;
     }

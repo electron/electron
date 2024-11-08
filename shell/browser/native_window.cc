@@ -539,9 +539,10 @@ void NativeWindow::NotifyWindowQueryEndSession(
     observer.OnWindowQueryEndSession(reason, prevent_default);
 }
 
-void NativeWindow::NotifyWindowEndSession() {
+void NativeWindow::NotifyWindowEndSession(
+    const std::vector<std::string> reason) {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowEndSession();
+    observer.OnWindowEndSession(reason);
 }
 
 void NativeWindow::NotifyWindowBlur() {

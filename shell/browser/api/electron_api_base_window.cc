@@ -184,8 +184,8 @@ void BaseWindow::OnWindowQueryEndSession(const std::vector<std::string> reason,
   }
 }
 
-void BaseWindow::OnWindowEndSession() {
-  Emit("session-end");
+void BaseWindow::OnWindowEndSession(const std::vector<std::string> reason) {
+  Emit("session-end", reason);
 }
 
 void BaseWindow::OnWindowBlur() {
