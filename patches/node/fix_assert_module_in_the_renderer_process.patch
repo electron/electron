@@ -44,7 +44,7 @@ index 59b5a16f1309a5e4055bccfdb7a529045ad30402..bfdaf6211466a01b64b7942f7b16c480
    let filename = call.getFileName();
    const line = call.getLineNumber() - 1;
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index b9098d102b40adad7fafcc331ac62870617019b9..cb9269a31e073caf86164aa39c0640370ade60fd 100644
+index f59abcb21d64b910d8d42eb23c03109f62558813..1b6613d1de8c89c8271066a652afd1024988362d 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -244,6 +244,9 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
@@ -58,10 +58,10 @@ index b9098d102b40adad7fafcc331ac62870617019b9..cb9269a31e073caf86164aa39c064037
  }
  
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 818baf611fcab7838a339f3ea137467653e270d0..4e3c82e9528b04fd1a0cc99d30fb885e4b224bc9 100644
+index 29630fcccc3bd9d24ad6aec64bef2fedfc3c4031..4b3f7751db2871c8ce76b197a84a2417097030ea 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1405,14 +1405,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
+@@ -1464,14 +1464,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
    }
    Isolate* isolate = args.GetIsolate();
  
