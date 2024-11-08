@@ -214,7 +214,7 @@ Returns:
 * `event` Event
 * `reasons` string[]
 
-Emitted when window session is going to end due to force shutdown or machine
+Emitted when window session is going to end due to shutdown, machine
 restart or session log off. Calling `event.preventDefault()` will delay
 system shutdown, however it's not recommended, because it's a good practice to
 respect user's choice. You can use it if user is risking to lose data.
