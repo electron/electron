@@ -670,9 +670,12 @@ describe('chromium features', () => {
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await expect(waitUntil(async () => {
-        return await w.webContents.executeJavaScript(
+        const openAfter1 = await w.webContents.executeJavaScript(
           'document.getElementById(\'favDialog\').open'
         );
+        const isSatisfied = (openAfter1 === true);
+        console.log(`Checking openAfter1 ${openAfter1} satisfied: ${isSatisfied}`);
+        return isSatisfied;
       })).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.false();
 
@@ -700,7 +703,9 @@ describe('chromium features', () => {
         const openAfter2 = await w.webContents.executeJavaScript(
           'document.getElementById(\'favDialog\').open'
         );
-        return openAfter2 === false;
+        const isSatisfied = (openAfter2 === false);
+        console.log(`Checking openAfter1 ${openAfter2} satisfied: ${isSatisfied}`);
+        return isSatisfied;
       })).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.true();
     });
