@@ -669,7 +669,7 @@ describe('chromium features', () => {
       expect(open1).to.be.true();
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
-      await setTimeout(); // Force next tick
+      await setTimeout(1000);
       await expect(waitUntil(async () => {
         const openAfter1 = await w.webContents.executeJavaScript(
           'document.getElementById(\'favDialog\').open'
@@ -702,7 +702,7 @@ describe('chromium features', () => {
       expect(open2).to.be.true();
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
-      await setTimeout(); // Force next tick
+      await setTimeout(1000);
       await expect(waitUntil(async () => {
         const openAfter2 = await w.webContents.executeJavaScript(
           'document.getElementById(\'favDialog\').open'
