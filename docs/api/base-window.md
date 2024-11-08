@@ -158,6 +158,11 @@ respect user's choice. You can use it if user is risking to lose data.
 
 #### Event: 'session-end' _Windows_
 
+Returns:
+
+* `event` Event
+* `reasons` string[]
+
 Emitted when system is in the process of shutting after successfully
 handling 'query-session-end' event.
 
