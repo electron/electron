@@ -47,6 +47,8 @@ class View : public gin_helper::EventEmitter<View>,
   // views::ViewObserver
   void OnViewBoundsChanged(views::View* observed_view) override;
   void OnViewIsDeleting(views::View* observed_view) override;
+  void OnChildViewRemoved(views::View* observed_view,
+                          views::View* child) override;
 
   views::View* view() const { return view_; }
   std::optional<int> border_radius() const { return border_radius_; }
