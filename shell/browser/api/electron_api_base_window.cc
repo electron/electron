@@ -177,6 +177,13 @@ void BaseWindow::OnWindowClosed() {
       FROM_HERE, GetDestroyClosure());
 }
 
+void BaseWindow::OnWindowQueryEndSession(const std::vector<std::string> reason,
+                                         bool* prevent_default) {
+  if (Emit("query-session-end", reason)) {
+    *prevent_default = true;
+  }
+}
+
 void BaseWindow::OnWindowEndSession() {
   Emit("session-end");
 }

@@ -532,6 +532,13 @@ void NativeWindow::NotifyWindowClosed() {
   WindowList::RemoveWindow(this);
 }
 
+void NativeWindow::NotifyWindowQueryEndSession(
+    const std::vector<std::string> reason,
+    bool* prevent_default) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowQueryEndSession(reason, prevent_default);
+}
+
 void NativeWindow::NotifyWindowEndSession() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowEndSession();

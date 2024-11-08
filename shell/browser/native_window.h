@@ -301,6 +301,8 @@ class NativeWindow : public base::SupportsUserData,
   // related notifications.
   void NotifyWindowRequestPreferredWidth(int* width);
   void NotifyWindowCloseButtonClicked();
+  void NotifyWindowQueryEndSession(const std::vector<std::string> reason,
+                                   bool* prevent_default);
   void NotifyWindowClosed();
   void NotifyWindowEndSession();
   void NotifyWindowBlur();

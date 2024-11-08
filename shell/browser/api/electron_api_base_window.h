@@ -57,6 +57,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
   void OnWindowClosed() override;
+  void OnWindowQueryEndSession(const std::vector<std::string> reason,
+                               bool* prevent_default) override;
   void OnWindowEndSession() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;

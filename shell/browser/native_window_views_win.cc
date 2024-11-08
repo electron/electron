@@ -27,6 +27,22 @@ namespace electron {
 
 namespace {
 
+// Convert Win32 WM_QUERYENDSESSIONS to strings.
+const std::vector<std::string> EndSessionToStringVec(LPARAM end_session_id) {
+  std::vector<std::string> params;
+  if (end_session_id == 0)
+    return params;
+
+  if (end_session_id & ENDSESSION_CLOSEAPP)
+    params.push_back("close-app");
+  if (end_session_id & ENDSESSION_CRITICAL)
+    params.push_back("critical");
+  if (end_session_id & ENDSESSION_LOGOFF)
+    params.push_back("logoff");
+
+  return params;
+}
+
 // Convert Win32 WM_APPCOMMANDS to strings.
 constexpr std::string_view AppCommandToString(int command_id) {
   switch (command_id) {
@@ -388,6 +404,13 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
                       // -webkit-app-region: drag elements.
       }
       return false;
+    }
+    case WM_QUERYENDSESSION: {
+      bool prevent_default = false;
+      std::vector<std::string> reason = EndSessionToStringVec(l_param);
+      NotifyWindowQueryEndSession(reason, &prevent_default);
+      *result = !prevent_default;
+      return prevent_default;
     }
     case WM_ENDSESSION: {
       if (w_param) {
