@@ -653,63 +653,55 @@ describe('chromium features', () => {
       expect(size).to.be.a('number');
     });
 
-    // TODO: Re-enable for windows on GitHub Actions,
-    // fullscreen tests seem to hang on GHA specifically
     it('should lock the keyboard', async () => {
-      console.log('In should lock the keyboard');
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
-      console.log('In should lock the keyboard; loadedfile');
+
       // Test that without lock, with ESC:
       // - the window leaves fullscreen
       // - the dialog is not closed
       const enterFS1 = once(w, 'enter-full-screen');
-      console.log('In should lock the keyboard; about to request full screen');
       await w.webContents.executeJavaScript('document.body.requestFullscreen()', true);
-      console.log('In should lock the keyboard; about to wait for full fscreen');
       await enterFS1;
-      console.log('In should lock the keyboard; about to wait for showModal');
+
       await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').showModal()', true);
-      console.log('In should lock the keyboard; about to wait for open favDialog');
       const open1 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
       expect(open1).to.be.true();
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
-      console.log('In should lock the keyboard; about to setTimeout - CODE SMELL HERE');
-      await setTimeout(1000);
-      console.log('In should lock the keyboard; about to check  openAfter1');
-      const openAfter1 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
-      expect(openAfter1).to.be.true();
+      await expect(waitUntil(async () => {
+        return await w.webContents.executeJavaScript(
+          'document.getElementById(\'favDialog\').open'
+        );
+      })).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.false();
 
       // Test that with lock, with ESC:
       // - the window does not leave fullscreen
       // - the dialog is closed
       const enterFS2 = once(w, 'enter-full-screen');
-      console.log('In should lock the keyboard; about to equestFullscreen2');
       await w.webContents.executeJavaScript(`
         document.body.requestFullscreen();
       `, true);
-      console.log('In should lock the keyboard; waiting for enterFS2');
       await enterFS2;
-      console.log('In should lock the keyboard about to navigator.keyboard.lock');
+
       // Request keyboard lock after window has gone fullscreen
       // otherwise it will result in blink::kKeyboardLockRequestFailedErrorMsg.
       await w.webContents.executeJavaScript(`
         navigator.keyboard.lock(['Escape']);
       `, true);
-      console.log('In should lock the keyboard about to showModal2');
+
       await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').showModal()', true);
-      console.log('In should lock the keyboard about to check open2');
       const open2 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
       expect(open2).to.be.true();
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
-      console.log('In should lock the keyboard ANOTHER SETITIMEOUT CODE SMELL');
-      await setTimeout(1000);
-      console.log('In should lock the keyboard about to check openAfter2');
-      const openAfter2 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
-      expect(openAfter2).to.be.false();
+      await expect(waitUntil(async () => {
+        const openAfter2 = await w.webContents.executeJavaScript(
+          'document.getElementById(\'favDialog\').open'
+        );
+        return openAfter2 === false;
+      })).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.true();
     });
   });
@@ -2952,32 +2944,28 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     server.close();
   });
 
-  // TODO: Re-enable for windows on GitHub Actions,
-  // fullscreen tests seem to hang on GHA specifically
   ifit(process.platform !== 'darwin')('can fullscreen from out-of-process iframes (non-macOS)', async () => {
-    console.log('In can fullscreen from out-of-process iframes (non-macOS)');
     const fullscreenChange = once(ipcMain, 'fullscreenChange');
     const html =
       `<iframe style="width: 0" frameborder=0 src="${crossSiteUrl}" allowfullscreen></iframe>`;
     w.loadURL(`data:text/html,${html}`);
-    console.log('In can fullscreen from out-of-process iframes (non-macOS) about to wait fullscreen changeg');
     await fullscreenChange;
-    console.log('In can fullscreen from out-of-process iframes (non-macOS) about to get offsetwidth');
+
     const fullscreenWidth = await w.webContents.executeJavaScript(
       "document.querySelector('iframe').offsetWidth"
     );
     expect(fullscreenWidth > 0).to.be.true();
-    console.log('In can fullscreen from out-of-process iframes (non-macOS) about to exitFullscreen');
+
     await w.webContents.executeJavaScript(
       "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
     );
-    console.log('In can fullscreen from out-of-process iframes (non-macOS) about to SET TIMEOUT CODE SMELL');
-    await setTimeout(500);
-    console.log('In can fullscreen from out-of-process iframes (non-macOS) about to check offsetWidth2');
-    const width = await w.webContents.executeJavaScript(
-      "document.querySelector('iframe').offsetWidth"
-    );
-    expect(width).to.equal(0);
+
+    await expect(waitUntil(async () => {
+      const width = await w.webContents.executeJavaScript(
+        "document.querySelector('iframe').offsetWidth"
+      );
+      return width === 0;
+    })).to.eventually.be.fulfilled();
   });
 
   ifit(process.platform === 'darwin')('can fullscreen from out-of-process iframes (macOS)', async () => {
@@ -3009,24 +2997,19 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await once(w, 'leave-full-screen');
   });
 
-  // TODO(jkleinsc) fix this flaky test on WOA
-  // TODO: Re-enable for windows on GitHub Actions,
-  // fullscreen tests seem to hang on GHA specifically
   it('can fullscreen from in-process iframes', async () => {
     if (process.platform === 'darwin') await once(w, 'enter-full-screen');
-    console.log('in can fullscreen from in-process iframes');
+
     const fullscreenChange = once(ipcMain, 'fullscreenChange');
     w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
-    console.log('in can fullscreen from in-process iframes awaiting fullscreenChange');
     await fullscreenChange;
-    console.log('in can fullscreen from in-process iframes about to get offsetWidth');
+
     const fullscreenWidth = await w.webContents.executeJavaScript(
       "document.querySelector('iframe').offsetWidth"
     );
     expect(fullscreenWidth > 0).to.true();
-    console.log('in can fullscreen from in-process iframes about to awit exitFullscreen()');
+
     await w.webContents.executeJavaScript('document.exitFullscreen()');
-    console.log('in can fullscreen from in-process iframes about to get offsetWidth2');
     const width = await w.webContents.executeJavaScript(
       "document.querySelector('iframe').offsetWidth"
     );
