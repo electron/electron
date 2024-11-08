@@ -321,14 +321,14 @@ index 019ac7e93e009a713ce56ee8bcacf467b4fe769d..9417403bb9cacd0572b37493ab2d9813
    // window (otherwise it will just flash in the taskbar).
    ::AllowSetForegroundWindow(process_id);
 diff --git a/chrome/browser/win/chrome_process_finder.h b/chrome/browser/win/chrome_process_finder.h
-index 91e5e623840b9912bd05d024c12e3eb3f1ba2f53..fa8f87a79ca44e20840e390cbf6e76db04ae801a 100644
+index 91e5e623840b9912bd05d024c12e3eb3f1ba2f53..63b5b10013c96dea4e77e5e56a060973a1752faa 100644
 --- a/chrome/browser/win/chrome_process_finder.h
 +++ b/chrome/browser/win/chrome_process_finder.h
 @@ -7,6 +7,7 @@
  
  #include <windows.h>
  
-+#include "base/containers/span.h"
++#include "base/memory/raw_span.h"
  #include "base/time/time.h"
  
  namespace base {
