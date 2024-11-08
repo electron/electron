@@ -245,6 +245,7 @@ void View::AddChildViewAt(gin::Handle<View> child,
   // upstream.
   ScopedCAActionDisabler disable_animations;
 #endif
+  LOG(INFO) << "ADDING CHILD VIEW AT IDX: " << index;
   view_->AddChildViewAt(child->view(), index);
 }
 

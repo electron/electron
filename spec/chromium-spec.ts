@@ -3689,14 +3689,6 @@ describe('navigator.usb', () => {
     });
 
     await sesWin.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-    server = http.createServer((req, res) => {
-      res.setHeader('Content-Type', 'text/html');
-      res.end('<body>');
-    });
-    defer(() => server.close());
-
-    serverUrl = (await listen(server)).url;
-
     const devices = await getDevices();
     expect(devices).to.be.an('array').that.is.empty();
   });
