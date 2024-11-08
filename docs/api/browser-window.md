@@ -207,10 +207,27 @@ _**Note**: There is a subtle difference between the behaviors of `window.onbefor
 Emitted when the window is closed. After you have received this event you should
 remove the reference to the window and avoid using it any more.
 
+#### Event: 'query-session-end' _Windows_
+
+Returns:
+
+* `event` Event
+* `reasons` string[]
+
+Emitted when window session is going to end due to force shutdown or machine
+restart or session log off. Calling `event.preventDefault()` will delay
+system shutdown, however it's not recommended, because it's a good practice to
+respect user's choice. You can use it if user is risking to lose data.
+
 #### Event: 'session-end' _Windows_
 
-Emitted when window session is going to end due to force shutdown or machine restart
-or session log off.
+Returns:
+
+* `event` Event
+* `reasons` string[]
+
+Emitted when system is in the process of shutting after successfully
+handling 'query-session-end' event.
 
 #### Event: 'unresponsive'
 
