@@ -6,7 +6,7 @@ Subject: Allow setting secondary label via SimpleMenuModel
 Builds on https://chromium-review.googlesource.com/c/chromium/src/+/2208976
 
 diff --git a/ui/menus/simple_menu_model.cc b/ui/menus/simple_menu_model.cc
-index d30328dcd753afc86e642f8a9de409097795da92..9378991a4c21c4ed42df6d3a7396a9b8c55faf17 100644
+index c5f740f4f0e1ea61eb9ff386dc29284b5d2a96b2..2be73ad115133ac0c5d0bc631cad4d1d0996231f 100644
 --- a/ui/menus/simple_menu_model.cc
 +++ b/ui/menus/simple_menu_model.cc
 @@ -54,6 +54,11 @@ std::u16string SimpleMenuModel::Delegate::GetLabelForCommandId(
@@ -21,7 +21,7 @@ index d30328dcd753afc86e642f8a9de409097795da92..9378991a4c21c4ed42df6d3a7396a9b8
  ImageModel SimpleMenuModel::Delegate::GetIconForCommandId(
      int command_id) const {
    return ImageModel();
-@@ -341,6 +346,11 @@ void SimpleMenuModel::SetLabel(size_t index, const std::u16string& label) {
+@@ -347,6 +352,11 @@ void SimpleMenuModel::SetAcceleratorAt(size_t index,
    MenuItemsChanged();
  }
  
@@ -33,7 +33,7 @@ index d30328dcd753afc86e642f8a9de409097795da92..9378991a4c21c4ed42df6d3a7396a9b8
  void SimpleMenuModel::SetMinorText(size_t index,
                                     const std::u16string& minor_text) {
    items_[ValidateItemIndex(index)].minor_text = minor_text;
-@@ -440,6 +450,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
+@@ -446,6 +456,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
    return items_[ValidateItemIndex(index)].label;
  }
  
@@ -47,7 +47,7 @@ index d30328dcd753afc86e642f8a9de409097795da92..9378991a4c21c4ed42df6d3a7396a9b8
    return items_[ValidateItemIndex(index)].minor_text;
  }
 diff --git a/ui/menus/simple_menu_model.h b/ui/menus/simple_menu_model.h
-index 7f327f34e7f5d1c8760c3a14b550b835457d8362..0b7fe12964aa0dadfc79427df1f4738c5a06ae65 100644
+index 63cde87b3657a81abcb828ab3eaddce42edfba85..2c07ed37d8f7c54ac3af8fd54272dd4fc0eb4684 100644
 --- a/ui/menus/simple_menu_model.h
 +++ b/ui/menus/simple_menu_model.h
 @@ -99,6 +99,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
@@ -58,9 +58,9 @@ index 7f327f34e7f5d1c8760c3a14b550b835457d8362..0b7fe12964aa0dadfc79427df1f4738c
      // Gets the icon for the item with the specified id.
      virtual ImageModel GetIconForCommandId(int command_id) const;
  
-@@ -218,6 +219,9 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
-   // Sets the label for the item at |index|.
-   void SetLabel(size_t index, const std::u16string& label);
+@@ -224,6 +225,9 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
+   // former is set).
+   void SetAcceleratorAt(size_t index, const ui::Accelerator& accelerator);
  
 +  // Sets the secondary_label for the item at |index|.
 +  void SetSecondaryLabel(size_t index, const std::u16string& secondary_label);
@@ -68,7 +68,7 @@ index 7f327f34e7f5d1c8760c3a14b550b835457d8362..0b7fe12964aa0dadfc79427df1f4738c
    // Sets the minor text for the item at |index|.
    void SetMinorText(size_t index, const std::u16string& minor_text);
  
-@@ -261,6 +265,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
+@@ -267,6 +271,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
    ui::MenuSeparatorType GetSeparatorTypeAt(size_t index) const override;
    int GetCommandIdAt(size_t index) const override;
    std::u16string GetLabelAt(size_t index) const override;
@@ -76,10 +76,10 @@ index 7f327f34e7f5d1c8760c3a14b550b835457d8362..0b7fe12964aa0dadfc79427df1f4738c
    std::u16string GetMinorTextAt(size_t index) const override;
    ImageModel GetMinorIconAt(size_t index) const override;
    bool IsItemDynamicAt(size_t index) const override;
-@@ -300,6 +305,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
-     int command_id = 0;
+@@ -313,6 +318,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
      ItemType type = TYPE_COMMAND;
      std::u16string label;
+     ui::Accelerator accelerator;
 +    std::u16string secondary_label;
      std::u16string minor_text;
      ImageModel minor_icon;
