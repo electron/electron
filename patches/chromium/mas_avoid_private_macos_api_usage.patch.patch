@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 0eb84c31ebbda5e7e842cd0f0df5ff2a15048178..c2fa88ac47c846ad94494660453891b0e38b33e3 100644
+index 404b12727620ae4cdcfff17e8379764742a90f0e..4b874f02c7525d83bcc0cb475404cf180221f512 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1040,6 +1040,7 @@ component("base") {
@@ -558,10 +558,10 @@ index 6aa74c4137ac7a649e8f79eb628e297e9459b089..c89f25bf49d773f5f77b2434bd6fabcf
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ee169c534554112e82b3db46fc682187e901b52a..a943d6add056cffe03f71babc7c3b89951e94772 100644
+index 29a65224b2e218479957762a64eb6f76a46c37e0..b203913917fdc100335dc95bd72914ac49f5a133 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -323,6 +323,7 @@ source_set("browser") {
+@@ -324,6 +324,7 @@ source_set("browser") {
      "//ui/strings:ax_strings",
      "//ui/touch_selection",
      "//v8:v8_version",
@@ -771,7 +771,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 75c180ad8f2ff989516d306c3f6424c48f9ed70d..f76e64455c1d7f37ac9b0ad67e05e3fc6fb0f5ff 100644
+index 3df96222754e62ac01366bbf64c9ade4a416673c..f022684e45d6f334366ca335142c94c557ee8778 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -643,6 +643,7 @@ static_library("test_support") {
@@ -790,7 +790,7 @@ index 75c180ad8f2ff989516d306c3f6424c48f9ed70d..f76e64455c1d7f37ac9b0ad67e05e3fc
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1936,6 +1938,7 @@ test("content_browsertests") {
+@@ -1953,6 +1955,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -798,7 +798,7 @@ index 75c180ad8f2ff989516d306c3f6424c48f9ed70d..f76e64455c1d7f37ac9b0ad67e05e3fc
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3215,6 +3218,7 @@ test("content_unittests") {
+@@ -3234,6 +3237,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -911,10 +911,10 @@ index 36322ddd3047f96569f35807541a37d3c6672b09..0121a780cf3b79fc1120c1b85cd5cd30
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 6f3b368103b05f07ae67da4c0307efe039b8dfce..c8b18509dc508fbb928b97830536d210b378bf73 100644
+index 45847b155ec8fb197aadb479eca78154436cfa81..e5de2b90a4c7d8181408ddfa62057b977015cbb8 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -197,6 +197,7 @@ source_set("audio") {
+@@ -198,6 +198,7 @@ source_set("audio") {
        "CoreMedia.framework",
      ]
      weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0
@@ -1519,7 +1519,7 @@ index dcf493d62990018040a3f84b6f875af737bd2214..3d1c4dcc9ee0bbfdac15f40d9c74e9f3
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 2b3aad7a639c68c6a131e86352b40128ab6af411..840968e8117dd6657c240fa81f3a42b65a39b733 100644
+index 2f7f2a8f81ec0e033cb83f82daac4835a2863cbc..21388d7de99fbb97c79eecbab658934d5cac5650 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
 @@ -283,6 +283,7 @@ component("platform") {
@@ -1612,10 +1612,10 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..c2ac4da580e3e7f749a0a4de1e859af6
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 763cd0b815b5763cbc6c724aa387ea4742edc468..a683c973376f24ef25ea289ac6655a6c104a1fd7 100644
+index 2fe7bbecaf31c94969e01a317de673ece67c2a27..c93c4831fb000d03014d8569945b5e971abbc77d 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -354,6 +354,13 @@ component("base") {
+@@ -355,6 +355,13 @@ component("base") {
      ]
    }
  
@@ -1628,8 +1628,8 @@ index 763cd0b815b5763cbc6c724aa387ea4742edc468..a683c973376f24ef25ea289ac6655a6c
 +
    if (is_ios) {
      sources += [
-       "device_form_factor_ios.mm",
-@@ -503,6 +510,12 @@ component("base") {
+       "accelerators/accelerator.cc",
+@@ -502,6 +509,12 @@ component("base") {
      "//url",
    ]
  
@@ -1837,10 +1837,10 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 53b410c804a25d94596bcc8d57761a5b388cf807..8fac479aca5c7203fbb58711882cf3a4551d2a39 100644
+index 9cd0b0c5141b49130900172370e191b57bf7ea07..f8e8638374ea3e88fea694fd306bf719dea2a7a6 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -723,6 +723,8 @@ component("views") {
+@@ -713,6 +713,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1849,7 +1849,7 @@ index 53b410c804a25d94596bcc8d57761a5b388cf807..8fac479aca5c7203fbb58711882cf3a4
    }
  
    if (is_win) {
-@@ -1141,6 +1143,8 @@ source_set("test_support") {
+@@ -1130,6 +1132,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
