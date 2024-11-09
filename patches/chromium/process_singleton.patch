@@ -51,7 +51,7 @@ index 23a8257aa2a0a671cf7af35aff9906891091606d..31f5b160e4cd755cfb56a62b04261ee1
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 80b0c47637a6726e1e43113d84187910911271b4..72cdfe2c4a0258dbd575f536ca42fa1d53f44988 100644
+index b7c45982e2c05874d60b21da96da6551f51155b1..0e036b178d8ea9bbe5564e8bbdb394b8a0d4cb3d 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -59,6 +59,7 @@
@@ -88,15 +88,16 @@ index 80b0c47637a6726e1e43113d84187910911271b4..72cdfe2c4a0258dbd575f536ca42fa1d
    // Ensure there is an instance of ResourceBundle that is initialized for
    // localized string resource accesses.
    ui::ScopedStartupResourceBundle ensure_startup_resource_bundle;
-@@ -371,6 +375,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+@@ -370,6 +374,8 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+ #endif
  
-   NOTREACHED_IN_MIGRATION();
-   return false;
+   NOTREACHED();
++  return false;
 +#endif
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -383,6 +388,21 @@ bool IsChromeProcess(pid_t pid) {
+@@ -382,6 +388,21 @@ bool IsChromeProcess(pid_t pid) {
                base::FilePath(chrome::kBrowserProcessExecutableName));
  }
  
@@ -118,7 +119,7 @@ index 80b0c47637a6726e1e43113d84187910911271b4..72cdfe2c4a0258dbd575f536ca42fa1d
  // A helper class to hold onto a socket.
  class ScopedSocket {
   public:
-@@ -786,6 +806,10 @@ ProcessSingleton::~ProcessSingleton() {
+@@ -785,6 +806,10 @@ ProcessSingleton::~ProcessSingleton() {
    if (watcher_) {
      watcher_->OnEminentProcessSingletonDestruction();
    }
@@ -129,7 +130,7 @@ index 80b0c47637a6726e1e43113d84187910911271b4..72cdfe2c4a0258dbd575f536ca42fa1d
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -1058,11 +1082,32 @@ bool ProcessSingleton::Create() {
+@@ -1055,11 +1080,32 @@ bool ProcessSingleton::Create() {
    // Create the socket file somewhere in /tmp which is usually mounted as a
    // normal filesystem. Some network filesystems (notably AFS) are screwy and
    // do not support Unix domain sockets.
