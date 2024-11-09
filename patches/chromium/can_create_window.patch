@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 45064d102b264526942abcd5f27d402626cfb69a..69af0f9bd39b93d4b46a17845dcfe06316b8b28a 100644
+index 3f99cfba15d4c7af93f1cbc39dce56b49521ba51..0f396dd254747aced05ecc2ec45c46bdb3098b6d 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9144,6 +9144,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9167,6 +9167,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -66,10 +66,10 @@ index 8e571dc1371cf2aa7c8354f0b4e492e0d030b485..c878169e7838849cbc23df2ed94ca65d
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 83d1ac0dcbd7e67111cb429ecbcdf63cae49ae52..25c226a0a2acce1cc7e8844159cd854131701efa 100644
+index 4cd40972f0af0c0d27245351ad607da39d2c6dd8..98f0fa89ab0daf6b862d65dbf69268368860c336 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -774,6 +774,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -778,6 +778,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -79,7 +79,7 @@ index 83d1ac0dcbd7e67111cb429ecbcdf63cae49ae52..25c226a0a2acce1cc7e8844159cd8541
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index c7091089d0ec87c13f6d24fbd9040e17094e2d22..927057884f708de195245e6335886e5f0a87134c 100644
+index 04a07b3df1beb51bd4bf9690d6316199bc93ffab..94f362f4213ead770e817168b1b9db819360ecba 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -195,6 +195,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index c7091089d0ec87c13f6d24fbd9040e17094e2d22..927057884f708de195245e6335886e5f
  }  // namespace network
  
  namespace sandbox {
-@@ -1337,6 +1338,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1343,6 +1344,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -163,10 +163,10 @@ index ddf83217710beba5e097120b6d2d830131fdce37..a9f09979c45feb55fa095c9c8c67de3d
    // moved on send.
    bool is_background_tab =
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
-index 3991d60e9e40c7b01637c1a2a2817e61157bfb3f..1ed70a0d597cc49edb96dbe95ea9f43b60a73aa2 100644
+index 4623ebf4ff47e9ec7549659e52c0c5ad7b3ef0ff..83db551286749d8dbf794aa750611e250774e4ff 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
 +++ b/content/web_test/browser/web_test_content_browser_client.cc
-@@ -520,6 +520,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -521,6 +521,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
