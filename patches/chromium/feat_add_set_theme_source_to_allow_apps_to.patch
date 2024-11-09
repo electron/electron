@@ -26,10 +26,10 @@ index e3e38747994bc18f7df64b5b74cea099a9f42a60..a367530ba886eb50557ce67626db1260
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 7a9b0b3488e4105c76f944574640778e648f7bef..e5a660a6cf9b87017f93b5f92291012ca4065e61 100644
+index c8ec53d15f2bcd7169e320236a7c5050ddaccaa0..e6b1a313a6515e5bd5bce02d0f7290a632cf9b0a 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -446,6 +446,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -443,6 +443,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
@@ -53,7 +53,7 @@ index 7a9b0b3488e4105c76f944574640778e648f7bef..e5a660a6cf9b87017f93b5f92291012c
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -690,6 +707,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -687,6 +704,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
    std::optional<base::TimeDelta> caret_blink_interval_;

@@ -23,7 +23,7 @@ index 30a7e6a641e7b17a47fb5c66fb44d3d5899b9e78..85764a533585df0abe398758e4fd510c
 +#endif
  }
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index 091deed41ed6ada13e7dfc859c027c1a4e86a007..17a24969e3d29080342eff6c288d8e840935b6c0 100644
+index 25b15408665dc95702e7f1382fb8e7c0bb493599..bc0bad82ebcdceadc505e912ff27202b452fefab 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
 @@ -132,6 +132,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
@@ -34,11 +34,12 @@ index 091deed41ed6ada13e7dfc859c027c1a4e86a007..17a24969e3d29080342eff6c288d8e84
    // Treat other off the record profiles as Incognito (primary otr) Profiles.
    if (profile->IsRegularProfile() || profile->IsIncognitoProfile() ||
        profile_metrics::GetBrowserProfileType(profile) ==
-@@ -148,6 +149,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+@@ -148,6 +149,8 @@ ProfileSelection ProfileSelections::GetProfileSelection(
    }
  
-   NOTREACHED_IN_MIGRATION();
+   NOTREACHED();
 +#endif
-   return ProfileSelection::kNone;
++  return ProfileSelection::kNone;
  }
  
+ void ProfileSelections::SetProfileSelectionForRegular(

@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 31104e81161f2110fe18275b065c32fc1e823764..42de7fff737beada8f5b54463c2854f9caa15511 100644
+index bc42d15e72e575c4ea34086b7e9406eb58042cdd..07fe508e4553080bbac44fdfca5d166b17dcf66d 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -47,7 +47,6 @@
@@ -19,7 +19,7 @@ index 31104e81161f2110fe18275b065c32fc1e823764..42de7fff737beada8f5b54463c2854f9
  #include "chrome/grit/generated_resources.h"
  #include "components/content_settings/core/browser/host_content_settings_map.h"
  #include "components/content_settings/core/common/content_settings.h"
-@@ -251,128 +250,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -252,128 +251,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  
