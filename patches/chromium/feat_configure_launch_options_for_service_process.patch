@@ -85,7 +85,7 @@ index 31a2a14a95540477297943df9b09b1e4659a884d..c02a81b1bd14a300dbbb47ad7aac2d2d
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index 572f23d579c0bce81b4b63f7030297d469ef3fbd..5a6ce0a7888f449ad73c6870bab569df7a23bd80 100644
+index 6baede18711c3e2fddaccb66632ea11f33699748..15339f4b1ea0e11f1823c264ff31685652c8de71 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -110,7 +110,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -187,10 +187,10 @@ index bdd5bec301f5fcff2d3e3d7994ecbc4eae46da36..f6082bada22c5f4e70af60ea6f555b0f
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 2fc9fabe67dc4d8c209247e46b57d27ec1a0fb90..ce73ed7f7070ee276511da674599364a468a2c8f 100644
+index 62ed305cd55a0243899450592dd6097e6dbbe879..cdc2046f465110b60285da81fb0db7cdce064a59 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
-@@ -181,11 +181,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
+@@ -179,11 +179,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
    return process_->GetData();
  }
  
@@ -206,7 +206,7 @@ index 2fc9fabe67dc4d8c209247e46b57d27ec1a0fb90..ce73ed7f7070ee276511da674599364a
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -233,6 +235,30 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+@@ -230,6 +232,30 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -237,9 +237,9 @@ index 2fc9fabe67dc4d8c209247e46b57d27ec1a0fb90..ce73ed7f7070ee276511da674599364a
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -440,9 +466,26 @@ bool UtilityProcessHost::StartProcess() {
- #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_ASH) ||
-         // BUILDFLAG(IS_MAC)
+@@ -432,9 +458,26 @@ bool UtilityProcessHost::StartProcess() {
+     }
+ #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
 +#if BUILDFLAG(IS_WIN)
 +    file_data_->stdout_handle = std::move(stdout_handle_);
@@ -266,10 +266,10 @@ index 2fc9fabe67dc4d8c209247e46b57d27ec1a0fb90..ce73ed7f7070ee276511da674599364a
  #if BUILDFLAG(IS_WIN)
      if (!preload_libraries_.empty()) {
 diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
-index faa41e5f2571f7a8aa4eef927eca003801d787f6..16d5efc5f9191020aa2180d665cf520748a62a8f 100644
+index 26de6bd23cb05ed3789727add5e246806aa56a08..66cbabae31236758eef35bab211d4874f8a5c699 100644
 --- a/content/browser/utility_process_host.h
 +++ b/content/browser/utility_process_host.h
-@@ -29,6 +29,10 @@
+@@ -30,6 +30,10 @@
  #include "content/public/common/zygote/zygote_handle.h"
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -488,10 +488,10 @@ index 38733269e53b9874305942809373004f305ffdec..9f4f5f7dd7f2704e363f43c31ac930ae
  }
  
 diff --git a/content/public/browser/service_process_host.cc b/content/public/browser/service_process_host.cc
-index 518d1413705f94bc03eadc4331a6b0f13825265f..3fa4c69377e253e0ed8262b7e77f8fb5c154d274 100644
+index d1bc550a891979e2d41d8d5b18a2f9287468e460..5fcac7a8493e5065f80303067a04f59e7c4509ef 100644
 --- a/content/public/browser/service_process_host.cc
 +++ b/content/public/browser/service_process_host.cc
-@@ -52,12 +52,53 @@ ServiceProcessHost::Options::WithExtraCommandLineSwitches(
+@@ -53,12 +53,53 @@ ServiceProcessHost::Options::WithExtraCommandLineSwitches(
    return *this;
  }
  
@@ -706,7 +706,7 @@ index b67f4f87d588386409a90cd49e8338272c6e0d51..c34a80ec8db1b868a7f387ea4a11d71d
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index b550651a8a98132104d38df083717e1cb58567e4..52b9eddefcc6a2240babcac824058cd853d3058f 100644
+index 5f5857379ad34ccd1fb46564859bcef2d2a25d5e..6a39285e344d90b73199e73e48afaddbec3de628 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -619,11 +619,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
@@ -782,7 +782,7 @@ index b550651a8a98132104d38df083717e1cb58567e4..52b9eddefcc6a2240babcac824058cd8
      DWORD last_error = GetLastError();
      std::move(result_callback).Run(base::Process(), last_error, result);
 diff --git a/sandbox/policy/win/sandbox_win.h b/sandbox/policy/win/sandbox_win.h
-index ede8bb552b2602fb06a6317399eb910e24a54216..c86744af9de2c366951d659851aaa9cac74b96de 100644
+index 8fb74a2eefba49f95e4947ef9fd081ab8decebd4..3eed3d348132d5992c27bd8082a267fb42d4e431 100644
 --- a/sandbox/policy/win/sandbox_win.h
 +++ b/sandbox/policy/win/sandbox_win.h
 @@ -92,7 +92,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {

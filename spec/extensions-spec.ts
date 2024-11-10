@@ -97,7 +97,7 @@ describe('chrome extensions', () => {
 
       const warning = await new Promise(resolve => { process.on('warning', resolve); });
 
-      const malformedHost = /Permission 'malformed_host' is unknown or URL pattern is malformed/;
+      const malformedHost = /URL pattern 'malformed_host' is malformed/;
 
       expect(warning).to.match(malformedHost);
     });

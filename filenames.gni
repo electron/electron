@@ -675,7 +675,6 @@ filenames = {
     "shell/common/node_includes.h",
     "shell/common/node_util.cc",
     "shell/common/node_util.h",
-    "shell/common/options_switches.cc",
     "shell/common/options_switches.h",
     "shell/common/platform_util.cc",
     "shell/common/platform_util.h",

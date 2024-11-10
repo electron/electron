@@ -115,8 +115,9 @@ void WebContentsView::WebContentsDestroyed() {
 void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
   DCHECK_EQ(observed_view, view());
   views::Widget* widget = view()->GetWidget();
-  auto* native_window = static_cast<NativeWindow*>(
-      widget->GetNativeWindowProperty(electron::kElectronNativeWindowKey));
+  auto* native_window =
+      static_cast<NativeWindow*>(widget->GetNativeWindowProperty(
+          electron::kElectronNativeWindowKey.c_str()));
   if (!native_window)
     return;
   // We don't need to call SetOwnerWindow(nullptr) in OnViewRemovedFromWidget
@@ -130,7 +131,7 @@ void WebContentsView::OnViewRemovedFromWidget(views::View* observed_view) {
   DCHECK_EQ(observed_view, view());
   views::Widget* widget = view()->GetWidget();
   auto* native_window = static_cast<NativeWindow*>(
-      widget->GetNativeWindowProperty(kElectronNativeWindowKey));
+      widget->GetNativeWindowProperty(kElectronNativeWindowKey.c_str()));
   if (!native_window)
     return;
   native_window->RemoveDraggableRegionProvider(this);

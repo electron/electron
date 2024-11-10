@@ -1,4 +1,4 @@
-import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
+import { BrowserView, BrowserWindow, screen, session, webContents } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -11,24 +11,29 @@ import { closeWindow } from './lib/window-helpers';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
+  const ses = session.fromPartition(crypto.randomUUID());
 
   let w: BrowserWindow;
   let view: BrowserView;
 
+  const getSessionWebContents = () =>
+    webContents.getAllWebContents().filter(wc => wc.session === ses);
+
   beforeEach(() => {
-    expect(webContents.getAllWebContents().length).to.equal(0, 'expected no webContents to exist');
+    expect(getSessionWebContents().length).to.equal(0, 'expected no webContents to exist');
     w = new BrowserWindow({
       show: false,
       width: 400,
       height: 400,
       webPreferences: {
-        backgroundThrottling: false
+        backgroundThrottling: false,
+        session: ses
       }
     });
   });
 
   afterEach(async () => {
-    if (!w.isDestroyed()) {
+    if (w && !w.isDestroyed()) {
       const p = once(w.webContents, 'destroyed');
       await closeWindow(w);
       w = null as any;
@@ -42,7 +47,7 @@ describe('BrowserView module', () => {
       await p;
     }
 
-    expect(webContents.getAllWebContents().length).to.equal(0, 'expected no webContents to exist');
+    expect(getSessionWebContents().length).to.equal(0, 'expected no webContents to exist');
   });
 
   it('sets the correct class name on the prototype', () => {
@@ -50,7 +55,7 @@ describe('BrowserView module', () => {
   });
 
   it('can be created with an existing webContents', async () => {
-    const wc = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
+    const wc = (webContents as typeof ElectronInternal.WebContents).create({ session: ses, sandbox: true });
     await wc.loadURL('about:blank');
 
     view = new BrowserView({ webContents: wc } as any);

@@ -91,8 +91,6 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 }  // namespace
 
-const char kElectronNativeWindowKey[] = "__ELECTRON_NATIVE_WINDOW__";
-
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
     : widget_(std::make_unique<views::Widget>()), parent_(parent) {

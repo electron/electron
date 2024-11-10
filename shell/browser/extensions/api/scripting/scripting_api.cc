@@ -10,7 +10,6 @@
 #include "base/containers/contains.h"
 #include "base/json/json_writer.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/types/optional_util.h"
 #include "chrome/common/extensions/api/scripting.h"
@@ -44,6 +43,7 @@
 #include "extensions/common/utils/content_script_utils.h"
 #include "extensions/common/utils/extension_types_utils.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 
 namespace extensions {
 
@@ -335,7 +335,7 @@ bool CollectFramesForInjection(const api::scripting::InjectionTarget& target,
           ExtensionApiFrameIdMap::DocumentIdFromString(id);
 
       if (!document_id) {
-        *error_out = base::StringPrintf("Invalid document id %s", id.c_str());
+        *error_out = absl::StrFormat("Invalid document id %s", id.c_str());
         return false;
       }
 
@@ -346,9 +346,8 @@ bool CollectFramesForInjection(const api::scripting::InjectionTarget& target,
       // If the frame was not found or it matched another tab reject this
       // request.
       if (!frame || content::WebContents::FromRenderFrameHost(frame) != tab) {
-        *error_out =
-            base::StringPrintf("No document with id %s in tab with id %d",
-                               id.c_str(), target.tab_id);
+        *error_out = absl::StrFormat("No document with id %s in tab with id %d",
+                                     id.c_str(), target.tab_id);
         return false;
       }
 
@@ -368,8 +367,8 @@ bool CollectFramesForInjection(const api::scripting::InjectionTarget& target,
       content::RenderFrameHost* frame =
           ExtensionApiFrameIdMap::GetRenderFrameHostById(tab, frame_id);
       if (!frame) {
-        *error_out = base::StringPrintf("No frame with id %d in tab with id %d",
-                                        frame_id, target.tab_id);
+        *error_out = absl::StrFormat("No frame with id %d in tab with id %d",
+                                     frame_id, target.tab_id);
         return false;
       }
       frames.insert(frame);
@@ -392,7 +391,7 @@ bool CanAccessTarget(const PermissionsData& permissions,
                      std::string* error_out) {
   auto* contents = electron::api::WebContents::FromID(target.tab_id);
   if (!contents) {
-    *error_out = base::StringPrintf("No tab with id: %d", target.tab_id);
+    *error_out = absl::StrFormat("No tab with id: %d", target.tab_id);
     return false;
   }
 
@@ -631,7 +630,7 @@ ExtensionFunction::ResponseAction ScriptingExecuteScriptFunction::Run() {
     args_expression = base::JoinString(string_args, ",");
   }
 
-  std::string code_to_execute = base::StringPrintf(
+  std::string code_to_execute = absl::StrFormat(
       "(%s)(%s)", injection_.func->c_str(), args_expression.c_str());
 
   std::vector<mojom::JSSourcePtr> sources;

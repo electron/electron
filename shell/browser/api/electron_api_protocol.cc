@@ -162,7 +162,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
     }
   }
 
-  const auto AppendSchemesToCmdLine = [](const char* switch_name,
+  const auto AppendSchemesToCmdLine = [](const std::string_view switch_name,
                                          std::vector<std::string> schemes) {
     if (schemes.empty())
       return;

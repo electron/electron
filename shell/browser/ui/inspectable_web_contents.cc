@@ -16,7 +16,6 @@
 #include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/timer/timer.h"
 #include "base/uuid.h"
@@ -52,6 +51,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/application_info.h"
 #include "shell/common/platform_util.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/logging/logging_utils.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
@@ -137,16 +137,15 @@ double GetNextZoomLevel(double level, bool out) {
 }
 
 GURL GetRemoteBaseURL() {
-  return GURL(base::StringPrintf("%s%s/%s/",
-                                 kChromeUIDevToolsRemoteFrontendBase,
-                                 kChromeUIDevToolsRemoteFrontendPath,
-                                 content::GetChromiumGitRevision().c_str()));
+  return GURL(absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
+                              kChromeUIDevToolsRemoteFrontendPath,
+                              content::GetChromiumGitRevision().c_str()));
 }
 
 GURL GetDevToolsURL(bool can_dock) {
-  auto url_string = base::StringPrintf(kChromeUIDevToolsURL,
-                                       GetRemoteBaseURL().spec().c_str(),
-                                       can_dock ? "true" : "");
+  auto url_string =
+      absl::StrFormat(kChromeUIDevToolsURL, GetRemoteBaseURL().spec().c_str(),
+                      can_dock ? "true" : "");
   return GURL(url_string);
 }
 
@@ -632,7 +631,7 @@ void InspectableWebContents::InspectedURLChanged(const std::string& url) {
   if (managed_devtools_web_contents_) {
     if (devtools_title_.empty()) {
       view_->SetTitle(
-          base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
+          base::UTF8ToUTF16(absl::StrFormat(kTitleFormat, url.c_str())));
     }
   }
 }
@@ -1032,7 +1031,7 @@ void InspectableWebContents::DidFinishNavigation(
   // most likely bug in chromium.
   base::ReplaceFirstSubstringAfterOffset(&it->second, 0, "var chrome",
                                          "var chrome = window.chrome ");
-  auto script = base::StringPrintf(
+  auto script = absl::StrFormat(
       "%s(\"%s\")", it->second.c_str(),
       base::Uuid::GenerateRandomV4().AsLowercaseString().c_str());
   // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);

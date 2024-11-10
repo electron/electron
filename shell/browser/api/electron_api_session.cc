@@ -18,7 +18,6 @@
 #include "base/files/file_util.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
@@ -89,6 +88,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/storage_key/storage_key.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -1234,8 +1234,8 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
     if (num_sockets_to_preconnect < kMinSocketsToPreconnect ||
         num_sockets_to_preconnect > kMaxSocketsToPreconnect) {
       args->ThrowTypeError(
-          base::StringPrintf("numSocketsToPreconnect is outside range [%d,%d]",
-                             kMinSocketsToPreconnect, kMaxSocketsToPreconnect));
+          absl::StrFormat("numSocketsToPreconnect is outside range [%d,%d]",
+                          kMinSocketsToPreconnect, kMaxSocketsToPreconnect));
       return;
     }
   }
@@ -1357,8 +1357,8 @@ v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
         // Opaque origins cannot be used with this API
         if (origin.opaque()) {
           thrower.ThrowError(
-              base::StringPrintf("Invalid origin: '%s'",
-                                 origin_url.possibly_invalid_spec().c_str()));
+              absl::StrFormat("Invalid origin: '%s'",
+                              origin_url.possibly_invalid_spec().c_str()));
           return v8::Undefined(isolate);
         }
 

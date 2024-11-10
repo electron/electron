@@ -185,10 +185,10 @@ static_library("chrome") {
     "//chrome/browser/ui/color:mixers",
     "//chrome/common",
     "//chrome/common:version_header",
+    "//components/global_media_controls",
     "//components/keyed_service/content",
     "//components/paint_preview/buildflags",
     "//components/proxy_config",
-    "//components/services/language_detection/public/mojom",
     "//content/public/browser",
     "//services/strings",
   ]

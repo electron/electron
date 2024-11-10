@@ -11,7 +11,7 @@ counter to the design of globalShortcuts, and so we need to instead
 use `ui::MediaKeysListener`.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener.cc b/chrome/browser/extensions/global_shortcut_listener.cc
-index 91226bd6e383636ecebdac93b151e107b3f943d9..7fe79f49484b50d2ae9a8d5d0ba9749c62464378 100644
+index 245f714c853e691ec359a30168559d5c1f98e6cf..d1088a00e5f94aa73f7b24a6eda494ff20085d08 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener.cc
 @@ -8,6 +8,7 @@
@@ -59,7 +59,7 @@ index 06e65da05a218a8ecc641bbd749ace2b0832ce72..370dfdc9579a9e6b3a6bdc6f4526650a
    // true if register successfully, or false if 1) the specificied |accelerator|
    // has been registered by another caller or other native applications, or
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index b447847dc16ed4ddc8db14474fa24d880429b3c7..e72cab48bc1a60dc1c1a1a4c97e1be7d15bfb261 100644
+index 2a84784fd3d759603a0dde5f6a7c94f4d0679147..b5616f8d09dd6471f8324f67b8261b0a4393d155 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
 @@ -88,7 +88,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(

@@ -6,10 +6,10 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 901a933aa92a0857b5cbdce63f9788662e8a7d87..ec4d8122d519c763da40f5abeaa27f891a02953d 100644
+index eea71e213db16438876765a274ce2c05fbfa7db2..fab337cdefe9bb5288c63db71a5fe1ff3ef08a1d 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -579,6 +579,7 @@ void MenuController::Run(Widget* parent,
+@@ -578,6 +578,7 @@ void MenuController::Run(Widget* parent,
                           MenuAnchorPosition position,
                           bool context_menu,
                           bool is_nested_drag,
@@ -17,11 +17,11 @@ index 901a933aa92a0857b5cbdce63f9788662e8a7d87..ec4d8122d519c763da40f5abeaa27f89
                           gfx::NativeView native_view_for_gestures) {
    exit_type_ = ExitType::kNone;
    possible_drag_ = false;
-@@ -643,6 +644,14 @@ void MenuController::Run(Widget* parent,
+@@ -641,6 +642,14 @@ void MenuController::Run(Widget* parent,
    // Set the selection, which opens the initial menu.
    SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
  
-+  if (source_type == ui::MENU_SOURCE_KEYBOARD && context_menu && root->HasSubmenu()) {
++  if (source_type == ui::mojom::MenuSourceType::kKeyboard && context_menu && root->HasSubmenu()) {
 +    // For context menus opened via the keyboard we select the first item by default
 +    // to match accessibility expectations
 +    MenuItemView* first_item = FindInitialSelectableMenuItem(root, INCREMENT_SELECTION_DOWN);
@@ -32,7 +32,7 @@ index 901a933aa92a0857b5cbdce63f9788662e8a7d87..ec4d8122d519c763da40f5abeaa27f89
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2284,19 +2293,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2292,19 +2301,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
@@ -58,7 +58,7 @@ index 901a933aa92a0857b5cbdce63f9788662e8a7d87..ec4d8122d519c763da40f5abeaa27f89
  
      item->GetSubmenu()->GetWidget()->SetNativeWindowProperty(
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
-index e516d8035db49893de0c7b62b7bc755f1c96cece..102b45f09ad7ffcd082e8e2369e19cf611bd6568 100644
+index 24daa0f4c9d5d6c7fd8b9a8077bb0766d1311b32..4f1a4ee9f8d881b86973be98a35c353ac399472b 100644
 --- a/ui/views/controls/menu/menu_controller.h
 +++ b/ui/views/controls/menu/menu_controller.h
 @@ -138,6 +138,7 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,

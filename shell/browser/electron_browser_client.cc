@@ -532,12 +532,16 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
     // Copy following switches to child process.
-    static const char* const kCommonSwitchNames[] = {
-        switches::kStandardSchemes,      switches::kEnableSandbox,
-        switches::kSecureSchemes,        switches::kBypassCSPSchemes,
-        switches::kCORSSchemes,          switches::kFetchSchemes,
-        switches::kServiceWorkerSchemes, switches::kStreamingSchemes,
-        switches::kCodeCacheSchemes};
+    static constexpr std::array<const char*, 9U> kCommonSwitchNames = {
+        switches::kStandardSchemes.c_str(),
+        switches::kEnableSandbox.c_str(),
+        switches::kSecureSchemes.c_str(),
+        switches::kBypassCSPSchemes.c_str(),
+        switches::kCORSSchemes.c_str(),
+        switches::kFetchSchemes.c_str(),
+        switches::kServiceWorkerSchemes.c_str(),
+        switches::kStreamingSchemes.c_str(),
+        switches::kCodeCacheSchemes.c_str()};
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                    kCommonSwitchNames);
     if (process_type == ::switches::kUtilityProcess ||
@@ -1668,7 +1672,7 @@ ElectronBrowserClient::CreateURLLoaderThrottles(
     const base::RepeatingCallback<content::WebContents*()>& wc_getter,
     content::NavigationUIData* navigation_ui_data,
     content::FrameTreeNodeId frame_tree_node_id,
-    absl::optional<int64_t> navigation_id) {
+    std::optional<int64_t> navigation_id) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   std::vector<std::unique_ptr<blink::URLLoaderThrottle>> result;

@@ -310,7 +310,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 #endif
 
   widget()->Init(std::move(params));
-  widget()->SetNativeWindowProperty(kElectronNativeWindowKey, this);
+  widget()->SetNativeWindowProperty(kElectronNativeWindowKey.c_str(), this);
   SetCanResize(resizable_);
 
   bool fullscreen = false;

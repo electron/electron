@@ -11,7 +11,6 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/stringprintf.h"
 #include "base/uuid.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
@@ -34,6 +33,7 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
 
 #include "shell/common/node_includes.h"
@@ -117,9 +117,9 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   int status_code = net::HTTP_OK;
   dict.Get("statusCode", &status_code);
   head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
-      base::StringPrintf("HTTP/1.1 %d %s", status_code,
-                         net::GetHttpReasonPhrase(
-                             static_cast<net::HttpStatusCode>(status_code))));
+      absl::StrFormat("HTTP/1.1 %d %s", status_code,
+                      net::GetHttpReasonPhrase(
+                          static_cast<net::HttpStatusCode>(status_code))));
 
   dict.Get("charset", &head->charset);
   bool has_mime_type = dict.Get("mimeType", &head->mime_type);

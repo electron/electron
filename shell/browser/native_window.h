@@ -10,11 +10,13 @@
 #include <optional>
 #include <queue>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
+#include "base/strings/cstring_view.h"
 #include "base/supports_user_data.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -44,7 +46,8 @@ class PersistentDictionary;
 
 namespace electron {
 
-extern const char kElectronNativeWindowKey[];
+inline constexpr base::cstring_view kElectronNativeWindowKey =
+    "__ELECTRON_NATIVE_WINDOW__";
 
 class ElectronMenuModel;
 class BackgroundThrottlingSource;

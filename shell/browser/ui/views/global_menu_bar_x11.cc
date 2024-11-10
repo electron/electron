@@ -8,11 +8,11 @@
 #include <glib-object.h>
 
 #include "base/functional/bind.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/global_menu_bar_registrar_x11.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/accelerators/menu_label_accelerator_util_linux.h"
@@ -166,7 +166,7 @@ std::string GetMenuModelStatus(ElectronMenuModel* model) {
     int status = model->GetTypeAt(i) | (model->IsVisibleAt(i) << 3) |
                  (model->IsEnabledAt(i) << 4) |
                  (model->IsItemCheckedAt(i) << 5);
-    ret += base::StringPrintf(
+    ret += absl::StrFormat(
         "%s-%X\n", base::UTF16ToUTF8(model->GetLabelAt(i)).c_str(), status);
   }
   return ret;
@@ -194,8 +194,7 @@ GlobalMenuBarX11::~GlobalMenuBarX11() {
 
 // static
 std::string GlobalMenuBarX11::GetPathForWindow(x11::Window window) {
-  return base::StringPrintf("/com/canonical/menu/%X",
-                            static_cast<uint>(window));
+  return absl::StrFormat("/com/canonical/menu/%X", static_cast<uint>(window));
 }
 
 void GlobalMenuBarX11::SetMenu(ElectronMenuModel* menu_model) {

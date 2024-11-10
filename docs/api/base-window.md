@@ -506,7 +506,7 @@ labeled as such.
 
 #### `win.setContentView(view)`
 
-* `view` [`View`](view.md)
+* `view` [View](view.md)
 
 Sets the content view of the window.
 
