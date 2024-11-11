@@ -172,6 +172,7 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
 
 class JSChunkedDataPipeGetter final
     : public gin::Wrappable<JSChunkedDataPipeGetter>,
+      public gin_helper::CleanedUpAtExit,
       public network::mojom::ChunkedDataPipeGetter {
  public:
   static gin::Handle<JSChunkedDataPipeGetter> Create(
