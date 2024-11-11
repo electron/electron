@@ -362,7 +362,6 @@ void View::OnViewIsDeleting(views::View* observed_view) {
 }
 
 void View::OnChildViewRemoved(views::View* observed_view, views::View* child) {
-  /* Test without this fix to see if crash case works
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   auto it = std::ranges::find_if(
       child_views_, [&](const v8::Global<v8::Object>& child_view) {
@@ -373,7 +372,6 @@ void View::OnChildViewRemoved(views::View* observed_view, views::View* child) {
   if (it != child_views_.end()) {
     child_views_.erase(it);
   }
-  */
 }
 
 // static
