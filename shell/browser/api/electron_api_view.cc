@@ -125,6 +125,15 @@ struct Converter<views::FlexAllocationOrder> {
 };
 
 template <>
+struct Converter<electron::api::View> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::api::View* out) {
+    return gin::ConvertFromV8(isolate, val, &out);
+  }
+};
+
+template <>
 struct Converter<views::SizeBound> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const views::SizeBound& in) {
@@ -257,11 +266,13 @@ void View::RemoveChildView(gin::Handle<View> child) {
 #if BUILDFLAG(IS_MAC)
     ScopedCAActionDisabler disable_animations;
 #endif
+    // Remove from child_views first so that OnChildViewRemoved doesn't try to
+    // remove it again
+    child_views_.erase(it);
     // It's possible for the child's view to be invalid here
     // if the child's webContents was closed or destroyed.
     if (child->view())
       view_->RemoveChildView(child->view());
-    child_views_.erase(it);
   }
 }
 
@@ -386,6 +397,19 @@ void View::OnViewBoundsChanged(views::View* observed_view) {
 void View::OnViewIsDeleting(views::View* observed_view) {
   DCHECK_EQ(observed_view, view_);
   view_ = nullptr;
+}
+
+void View::OnChildViewRemoved(views::View* observed_view, views::View* child) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  auto it = std::ranges::find_if(
+      child_views_, [&](const v8::Global<v8::Object>& child_view) {
+        View current_view;
+        gin::ConvertFromV8(isolate, child_view.Get(isolate), &current_view);
+        return current_view.view()->GetID() == child->GetID();
+      });
+  if (it != child_views_.end()) {
+    child_views_.erase(it);
+  }
 }
 
 // static
