@@ -263,11 +263,13 @@ void View::RemoveChildView(gin::Handle<View> child) {
 #if BUILDFLAG(IS_MAC)
     ScopedCAActionDisabler disable_animations;
 #endif
+    // Remove from child_views first so that OnChildViewRemoved doesn't try to
+    // remove it again
+    child_views_.erase(it);
     // It's possible for the child's view to be invalid here
     // if the child's webContents was closed or destroyed.
     if (child->view())
       view_->RemoveChildView(child->view());
-    child_views_.erase(it);
   }
 }
 
