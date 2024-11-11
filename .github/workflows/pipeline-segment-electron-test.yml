@@ -50,7 +50,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'windows' && fromJSON('["windows"]') || fromJSON('["linux"]')) }}
-        shard: ${{ inputs.target-platform != 'macos' && fromJSON('[1, 2, 3, 4]') || fromJSON('[1, 2]') }}
+        shard: ${{ inputs.target-platform == 'linux' && fromJSON('[1, 2, 3]') || fromJSON('[1, 2]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -64,6 +64,24 @@ jobs:
       if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'windows' }}
       shell: powershell
       run: |
+        $settings =
+        [PSCustomObject]@{
+            Path  = "SOFTWARE\Policies\Microsoft\Windows\OOBE"
+            Name  = "DisablePrivacyExperience"
+            Value = 1
+        } | group Path
+
+        foreach ($setting in $settings) {
+            $registry = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($setting.Name, $true)
+            if ($null -eq $registry) {
+                $registry = [Microsoft.Win32.Registry]::LocalMachine.CreateSubKey($setting.Name, $true)
+            }
+            $setting.Group | % {
+                $registry.SetValue($_.name, $_.value)
+            }
+            $registry.Dispose()
+        }
+
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
@@ -225,15 +243,7 @@ jobs:
         cd src\electron
         echo ELECTRON_TEST_RESULTS_DIR=$PWD\junit >> $env:GITHUB_ENV
         # Get which tests are on this shard
-        if ('${{ matrix.shard }}' -eq '1') {
-          $tests_files='spec\woa-screencap-spec.ts spec\api-web-contents-spec.ts spec\webview-spec.ts spec\woa-screencap-spec.ts'
-        } elseif ('${{ matrix.shard }}' -eq '2') {
-          $tests_files='spec\woa-screencap-spec.ts spec\webview-spec.ts spec\api-ipc-spec.ts spec\woa-screencap-spec.ts '
-        } elseif ('${{ matrix.shard }}' -eq '3') {
-          $tests_files='spec\woa-screencap-spec.ts spec\webview-spec.ts spec\api-native-image-spec.ts spec\woa-screencap-spec.ts'
-        } elseif ('${{ matrix.shard }}' -eq '4') {
-          $tests_files='spec\woa-screencap-spec.ts spec\api-web-contents-spec.ts spec\api-menu-item-spec.ts spec\woa-screencap-spec.ts'
-        }        
+        $tests_files=node script\split-tests ${{ matrix.shard }} 2
         echo tests_files=$tests_files >> $env:GITHUB_ENV
         if ('${{ inputs.target-arch }}' -eq 'x86') {
           echo npm_config_arch=ia32 >> $env:GITHUB_ENV
