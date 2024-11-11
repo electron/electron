@@ -50,7 +50,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'windows' && fromJSON('["windows"]') || fromJSON('["linux"]')) }}
-        shard: ${{ inputs.target-platform == 'linux' && fromJSON('[1, 2, 3]') || fromJSON('[1, 2]') }}
+        shard: ${{ inputs.target-platform != 'macos' && fromJSON('[1, 2, 3, 4]') || fromJSON('[1, 2]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -218,14 +218,6 @@ jobs:
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
           fi
         fi
-    - name: Test screen capture on Windows
-      if: ${{ inputs.target-platform == 'windows' }}
-      shell: cmd
-      run: |
-        cd src\electron
-        script\screenCapture.bat
-        mkdir spec\artifacts
-        script\screenCapture.bat %cd%\spec\artifacts\before.png
     - name: Setup enviroment variables for testing on Windows
       if: ${{ inputs.target-platform == 'windows' }}
       shell: powershell
@@ -233,7 +225,15 @@ jobs:
         cd src\electron
         echo ELECTRON_TEST_RESULTS_DIR=$PWD\junit >> $env:GITHUB_ENV
         # Get which tests are on this shard
-        $tests_files=node script\split-tests ${{ matrix.shard }} 2
+        if ('${{ matrix.shard }}' -eq '1') {
+          $tests_files='spec\woa-screencap-spec.ts spec\api-web-contents-spec.ts spec\webview-spec.ts spec\woa-screencap-spec.ts'
+        } elseif ('${{ matrix.shard }}' -eq '2') {
+          $tests_files='spec\woa-screencap-spec.ts spec\webview-spec.ts spec\api-ipc-spec.ts spec\woa-screencap-spec.ts '
+        } elseif ('${{ matrix.shard }}' -eq '3') {
+          $tests_files='spec\woa-screencap-spec.ts spec\webview-spec.ts spec\api-native-image-spec.ts spec\woa-screencap-spec.ts'
+        } elseif ('${{ matrix.shard }}' -eq '4') {
+          $tests_files='spec\woa-screencap-spec.ts spec\api-web-contents-spec.ts spec\api-menu-item-spec.ts spec\woa-screencap-spec.ts'
+        }        
         echo tests_files=$tests_files >> $env:GITHUB_ENV
         if ('${{ inputs.target-arch }}' -eq 'x86') {
           echo npm_config_arch=ia32 >> $env:GITHUB_ENV
@@ -253,14 +253,6 @@ jobs:
         cd src\electron
         echo "NPM CONFIG ARRCH %npm_config_arch% FILES: %tests_files%"
         node script/yarn test --runners=main --trace-uncaught --enable-logging --files %tests_files%
-    - name: Screen capture on Windows after testing
-      if: ${{ inputs.target-platform == 'windows' }}
-      shell: cmd
-      run: |
-        cd src\electron
-        script\screenCapture.bat
-        mkdir spec\artifacts
-        script\screenCapture.bat %cd%\spec\artifacts\after.png        
     - name: Upload Test results to Datadog
       env:
         DD_ENV: ci

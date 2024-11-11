@@ -122,7 +122,7 @@ export class ScreenCapture {
     return this._expectImpl(findPoint(this.display.size), hexColor, true);
   }
 
-  private async captureFrame (): Promise<NativeImage> {
+  public async captureFrame (): Promise<NativeImage> {
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
       thumbnailSize: this.display.size
