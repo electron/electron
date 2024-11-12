@@ -23,6 +23,7 @@ describe('chrome extensions', () => {
   let server: http.Server;
   let url: string;
   let port: number;
+  let wss: WebSocket.Server;
   before(async () => {
     server = http.createServer((req, res) => {
       if (req.url === '/cors') {
@@ -31,7 +32,7 @@ describe('chrome extensions', () => {
       res.end(emptyPage);
     });
 
-    const wss = new WebSocket.Server({ noServer: true });
+    wss = new WebSocket.Server({ noServer: true });
     wss.on('connection', function connection (ws) {
       ws.on('message', function incoming (message) {
         if (message === 'foo') {
@@ -44,6 +45,9 @@ describe('chrome extensions', () => {
   });
   after(() => {
     server.close();
+    server = null as unknown as http.Server;
+    wss.close();
+    wss = null as unknown as WebSocket.Server;
   });
   afterEach(closeAllWindows);
   afterEach(() => {
@@ -702,6 +706,8 @@ describe('chrome extensions', () => {
 
           after(() => {
             session.defaultSession.removeExtension('content-script-test');
+            server.close();
+            server = null as unknown as http.Server;
           });
 
           beforeEach(() => {

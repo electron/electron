@@ -342,7 +342,7 @@ describe('protocol module', () => {
       });
 
       it('works when target URL redirects', async () => {
-        const server = http.createServer((req, res) => {
+        let server = http.createServer((req, res) => {
           if (req.url === '/serverRedirect') {
             res.statusCode = 301;
             res.setHeader('Location', `http://${req.rawHeaders[1]}`);
@@ -351,7 +351,10 @@ describe('protocol module', () => {
             res.end(text);
           }
         });
-        after(() => server.close());
+        defer(() => {
+          server = null as unknown as http.Server;
+          server.close();
+        });
         const { port } = await listen(server);
         const url = `${protocolName}://fake-host`;
         const redirectURL = `http://127.0.0.1:${port}/serverRedirect`;
