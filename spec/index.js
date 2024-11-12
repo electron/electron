@@ -1,4 +1,6 @@
-const { app, protocol } = require('electron');
+const wtf = require('wtfnode'); // eslint-disable-line
+
+const { app, protocol } = require('electron'); // eslint-disable-line
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -171,6 +173,7 @@ app.whenReady().then(async () => {
 
   const cb = () => {
     console.log(`In SPEC CB, process next tick with failures: ${runner.failures} for ${process.platform}`);
+    wtf.dump();
     process.exit(runner.failures);
   };
 
