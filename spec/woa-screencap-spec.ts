@@ -10,9 +10,8 @@ describe('trying to get screen capture on WOA', () => {
     const screenCapture = new ScreenCapture(display);
     const frame = await screenCapture.captureFrame();
     // Save the image as an artifact for better debugging
-    const currentDate = new Date();
     const artifactName = await createArtifactWithRandomId(
-      (id) => `screen-cap-${id}-${currentDate.toISOString()}.png`,
+      (id) => `screen-cap-${id}.png`,
       frame.toPNG()
     );
     console.log(`Created artifact at: ${artifactName}`);
