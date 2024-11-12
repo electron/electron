@@ -126,7 +126,7 @@ class NativeWindowMac : public NativeWindow,
                                  bool skipTransformProcessType) override;
   bool IsVisibleOnAllWorkspaces() const override;
   void SetAutoHideCursor(bool auto_hide) override;
-  void SetVibrancy(const std::string& type) override;
+  void SetVibrancy(const std::string& type, int duration) override;
   void SetWindowButtonVisibility(bool visible) override;
   bool GetWindowButtonVisibility() const override;
   void SetWindowButtonPosition(std::optional<gfx::Point> position) override;
