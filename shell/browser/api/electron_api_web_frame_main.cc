@@ -9,11 +9,9 @@
 #include <utility>
 #include <vector>
 
-#include "base/feature_list.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
-#include "content/browser/renderer_host/render_process_host_impl.h"  // nogncheck
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/isolated_world_ids.h"
@@ -431,31 +429,6 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   return frame_hosts;
 }
 
-std::string WebFrameMain::UnresponsiveDocumentJSCallStack() const {
-  if (!CheckRenderFrame())
-    return "";
-
-  if (!base::FeatureList::IsEnabled(
-          blink::features::kDocumentPolicyIncludeJSCallStacksInCrashReports)) {
-    return "";
-  }
-
-  content::RenderProcessHostImpl* rph =
-      static_cast<content::RenderProcessHostImpl*>(render_frame_->GetProcess());
-  const std::string& unresponsive_document_javascript_call_stack =
-      rph->GetUnresponsiveDocumentJavascriptCallStack();
-  const blink::LocalFrameToken& unresponsive_document_token =
-      rph->GetUnresponsiveDocumentToken();
-
-  if (!unresponsive_document_javascript_call_stack.empty()) {
-    if (unresponsive_document_token == render_frame_->GetFrameToken()) {
-      return unresponsive_document_javascript_call_stack;
-    }
-  }
-
-  return "";
-}
-
 void WebFrameMain::DOMContentLoaded() {
   Emit("dom-ready");
 }
@@ -505,8 +478,6 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("parent", &WebFrameMain::Parent)
       .SetProperty("frames", &WebFrameMain::Frames)
       .SetProperty("framesInSubtree", &WebFrameMain::FramesInSubtree)
-      .SetProperty("unresponsiveDocumentJSCallStack",
-                   &WebFrameMain::UnresponsiveDocumentJSCallStack)
       .Build();
 }
 
