@@ -9,9 +9,11 @@
 #include <utility>
 #include <vector>
 
+#include "base/feature_list.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
+#include "content/browser/renderer_host/render_process_host_impl.h"  // nogncheck
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/isolated_world_ids.h"
@@ -429,6 +431,46 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   return frame_hosts;
 }
 
+v8::Local<v8::Promise> WebFrameMain::CollectDocumentJSCallStack(
+    gin::Arguments* args) {
+  gin_helper::Promise<std::string> promise(args->isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (render_frame_disposed_) {
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before WebFrameMain could be accessed");
+    return handle;
+  }
+
+  if (!base::FeatureList::IsEnabled(
+          blink::features::kDocumentPolicyIncludeJSCallStacksInCrashReports)) {
+    promise.RejectWithErrorMessage(
+        "DocumentPolicyIncludeJSCallStacksInCrashReports is not enabled");
+    return handle;
+  }
+
+  const blink::LocalFrameToken& frame_token = render_frame_->GetFrameToken();
+  content::RenderProcessHostImpl* rph_impl =
+      static_cast<content::RenderProcessHostImpl*>(render_frame_->GetProcess());
+
+  rph_impl->GetJavaScriptCallStackGeneratorInterface()
+      ->CollectJavaScriptCallStack(base::BindOnce(
+          [](gin_helper::Promise<std::string> promise,
+             const blink::LocalFrameToken& frame_token,
+             const std::string& untrusted_javascript_call_stack,
+             const std::optional<blink::LocalFrameToken>& remote_frame_token) {
+            if (remote_frame_token == frame_token) {
+              promise.Resolve(untrusted_javascript_call_stack);
+            } else {
+              promise.RejectWithErrorMessage(
+                  "Received call stack for unexpected frame");
+            }
+          },
+          std::move(promise), frame_token));
+
+  return handle;
+}
+
 void WebFrameMain::DOMContentLoaded() {
   Emit("dom-ready");
 }
@@ -461,6 +503,8 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
   gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
+      .SetMethod("collectJavaScriptCallStack",
+                 &WebFrameMain::CollectDocumentJSCallStack)
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("isDestroyed", &WebFrameMain::IsDestroyed)
       .SetMethod("_send", &WebFrameMain::Send)
