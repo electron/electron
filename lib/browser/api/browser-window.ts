@@ -52,8 +52,12 @@ BrowserWindow.prototype._init = function (this: BWT) {
     }
     this.emit('responsive');
   });
-  this.on('close', () => {
-    if (!unresponsiveEvent) { unresponsiveEvent = setTimeout(emitUnresponsiveEvent, 5000); }
+  this.on('close', (event) => {
+    queueMicrotask(() => {
+      if (!unresponsiveEvent && !event.defaultPrevented) {
+        unresponsiveEvent = setTimeout(emitUnresponsiveEvent, 5000);
+      }
+    });
   });
   this.webContents.on('destroyed', () => {
     if (unresponsiveEvent) clearTimeout(unresponsiveEvent);
