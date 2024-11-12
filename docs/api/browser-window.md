@@ -1549,13 +1549,17 @@ there is only one tab in the current window.
 
 Adds a window as a tab on this window, after the tab for the window instance.
 
-#### `win.setVibrancy(type)` _macOS_
+#### `win.setVibrancy(type[, options])` _macOS_
 
 * `type` string | null - Can be `titlebar`, `selection`, `menu`, `popover`, `sidebar`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
   the [macOS documentation][vibrancy-docs] for more details.
+* `options` Object (optional)
+  * `animationDuration` number (optional) - if greater than zero, the change to vibrancy will be animated over the given duration (in milliseconds).
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
-will remove the vibrancy effect on the window.
+will remove the vibrancy effect on the window. The `animationDuration` parameter only
+ animates fading in or fading out the vibrancy effect. Animating between
+ different types of vibrancy is not supported.
 
 #### `win.setBackgroundMaterial(material)` _Windows_
 
