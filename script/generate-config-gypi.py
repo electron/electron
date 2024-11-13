@@ -40,7 +40,7 @@ def read_electron_args():
       if line.startswith('#'):
         continue
       m = re.match(r'(\w+) = (.+)', line)
-      if m == None:
+      if m is None:
         continue
       args[m.group(1)] = m.group(2)
   return args
