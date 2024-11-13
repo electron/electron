@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 #pragma once
 
-#ifndef ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_DATA_SOURCE_H_
-#define ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_DATA_SOURCE_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_THEME_DATA_SOURCE_H_
+#define ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_THEME_DATA_SOURCE_H_
 
 #include "content/public/browser/url_data_source.h"
 
@@ -34,4 +34,4 @@ class ThemeDataSource : public content::URLDataSource {
 };
 
 }  // namespace electron
-#endif
+#endif  // ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_THEME_DATA_SOURCE_H_
