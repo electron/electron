@@ -699,7 +699,7 @@ describe('chrome extensions', () => {
               }
             });
 
-            ({ port, url } = await listen(server));
+            ({ port } = await listen(server));
 
             session.defaultSession.loadExtension(contentScript);
           });
