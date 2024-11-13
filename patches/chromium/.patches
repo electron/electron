@@ -142,3 +142,4 @@ m126-lts_protect_automation_rate_from_non-deterministic_change.patch
 m126-lts_don_t_perform_pseudo-element_ident_parsing_on_non-ascii.patch
 m130_extensions_serviceworker_skip_worker_for_isolated_world.patch
 cherry-pick-923797bac925.patch
+cherry-pick-e699ac35ac6c.patch
