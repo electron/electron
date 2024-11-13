@@ -10,7 +10,7 @@ This change removes the usage of these constants to fix a compilation failure du
 See: https://github.com/llvm/llvm-project/pull/80542
 
 diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
-index 3375600023e39ddacf62cc17deb4f206db942084..cc106422dd36aa0564e74dd8a16eec496433d3bd 100644
+index 7f48b7daa87d1a5b14bc6f641b60f21263fa5ec3..0be470c9139a6da19414295a59f1a237cc3a50d7 100644
 --- a/deps/uv/include/uv.h
 +++ b/deps/uv/include/uv.h
 @@ -155,7 +155,6 @@ struct uv__queue {
@@ -86,10 +86,10 @@ index 149c7c107322919dfeea1dfe89dc223f78b0e979..e4e8dac6b8b5924a7eae83935031e091
    NODE_DEFINE_CONSTANT(target, ETIMEDOUT);
  #endif
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 69e474257b0427f894375fbc8a2c031f1b8e0c55..f0e968c0dfa8963404c3b87827b8d11a139051cc 100644
+index 65f95c3157add2afca26a133183b65ccba6e9924..81091d364d32094dc91c7abb0c5fe9963d100a8b 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
-@@ -855,10 +855,6 @@ const char* errno_string(int errorno) {
+@@ -857,10 +857,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ENOBUFS);
  #endif
  
@@ -100,7 +100,7 @@ index 69e474257b0427f894375fbc8a2c031f1b8e0c55..f0e968c0dfa8963404c3b87827b8d11a
  #ifdef ENODEV
      ERRNO_CASE(ENODEV);
  #endif
-@@ -897,14 +893,6 @@ const char* errno_string(int errorno) {
+@@ -899,14 +895,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ENOSPC);
  #endif
  
@@ -115,7 +115,7 @@ index 69e474257b0427f894375fbc8a2c031f1b8e0c55..f0e968c0dfa8963404c3b87827b8d11a
  #ifdef ENOSYS
      ERRNO_CASE(ENOSYS);
  #endif
-@@ -987,10 +975,6 @@ const char* errno_string(int errorno) {
+@@ -989,10 +977,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ESTALE);
  #endif
  

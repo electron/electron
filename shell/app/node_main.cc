@@ -183,7 +183,7 @@ int NodeMain() {
     const std::vector<std::string> args = ElectronCommandLine::AsUtf8();
     ExitIfContainsDisallowedFlags(args);
 
-    std::unique_ptr<node::InitializationResult> result =
+    std::shared_ptr<node::InitializationResult> result =
         node::InitializeOncePerProcess(
             args,
             {node::ProcessInitializationFlags::kNoInitializeV8,
