@@ -9,10 +9,10 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index 4abce141b758eabd8a16f1cccb0016d5f10c0cae..048a97c807b4249479653cfb70942ec16264d0ee 100644
+index c4535e6ad8dd8951277201e107aaf47071317b02..e37a31fb7febca3ec9ed6bd53f33c0c7c43844de 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
-@@ -145,6 +145,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
+@@ -122,6 +122,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
    return false;
  }
  
@@ -31,7 +31,7 @@ index 4abce141b758eabd8a16f1cccb0016d5f10c0cae..048a97c807b4249479653cfb70942ec1
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index a604df7a5ea6a1f5613acc032a65668364aadf89..93a8bf787bdaa0e4251a41453eb22062646f4bcb 100644
+index 4029756b90d1adb2fa6a2ce3a59439d1eccffcf2..6f951fc335db3b9c59172d77e1e65122053b459e 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -7,6 +7,7 @@
@@ -42,7 +42,7 @@ index a604df7a5ea6a1f5613acc032a65668364aadf89..93a8bf787bdaa0e4251a41453eb22062
  #include <string>
  
  #include "build/build_config.h"
-@@ -153,6 +154,19 @@ class CrashReporterClient {
+@@ -129,6 +130,19 @@ class CrashReporterClient {
    // that case, |breakpad_enabled| is set to the value enforced by policies.
    virtual bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled);
  
