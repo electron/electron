@@ -1,7 +1,6 @@
 // Copyright (c) 2024 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
-#pragma once
 
 #ifndef ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_BUNDLE_DATA_SOURCE_H_
 #define ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_BUNDLE_DATA_SOURCE_H_
