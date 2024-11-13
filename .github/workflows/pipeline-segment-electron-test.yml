@@ -64,24 +64,6 @@ jobs:
       if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'windows' }}
       shell: powershell
       run: |
-        $settings =
-        [PSCustomObject]@{
-            Path  = "SOFTWARE\Policies\Microsoft\Windows\OOBE"
-            Name  = "DisablePrivacyExperience"
-            Value = 1
-        } | group Path
-
-        foreach ($setting in $settings) {
-            $registry = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($setting.Name, $true)
-            if ($null -eq $registry) {
-                $registry = [Microsoft.Win32.Registry]::LocalMachine.CreateSubKey($setting.Name, $true)
-            }
-            $setting.Group | % {
-                $registry.SetValue($_.name, $_.value)
-            }
-            $registry.Dispose()
-        }
-
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
@@ -273,7 +255,6 @@ jobs:
       run: |
         if ! [ -z $DD_API_KEY ] && [ -f src/electron/junit/test-results-main.xml ]; then
           export DATADOG_PATH=`node src/electron/script/yarn global bin`
-          echo $DATADOG_PATH
           $DATADOG_PATH/datadog-ci junit upload src/electron/junit/test-results-main.xml
         fi          
       if: always() && !cancelled()
