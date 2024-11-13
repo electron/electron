@@ -177,8 +177,9 @@ void BaseWindow::OnWindowClosed() {
       FROM_HERE, GetDestroyClosure());
 }
 
-void BaseWindow::OnWindowQueryEndSession(const std::vector<std::string>& reasons,
-                                         bool* prevent_default) {
+void BaseWindow::OnWindowQueryEndSession(
+    const std::vector<std::string>& reasons,
+    bool* prevent_default) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
@@ -199,7 +200,8 @@ void BaseWindow::OnWindowEndSession(const std::vector<std::string>& reasons) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin::Handle<gin_helper::internal::Event> event = gin_helper::internal::Event::New(isolate);
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
 
   gin::Dictionary dict(isolate, event_object);
