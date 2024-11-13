@@ -191,11 +191,6 @@ The `window` argument allows the dialog to attach itself to a parent window, mak
 The `filters` specifies an array of file types that can be displayed, see
 `dialog.showOpenDialog` for an example.
 
-**Note:** On Linux `defaultPath` is not supported when using portal file chooser
-dialogs unless the portal backend is version 4 or higher. You can use `--xdg-portal-required-version`
-[command-line switch](./command-line-switches.md#--xdg-portal-required-versionversion)
-to force gtk or kde dialogs.
-
 ### `dialog.showSaveDialog([window, ]options)`
 
 * `window` [BaseWindow](base-window.md) (optional)
@@ -232,11 +227,6 @@ The `filters` specifies an array of file types that can be displayed, see
 
 **Note:** On macOS, using the asynchronous version is recommended to avoid issues when
 expanding and collapsing the dialog.
-
-**Note:** On Linux `defaultPath` is not supported when using portal file chooser
-dialogs unless the portal backend is version 4 or higher. You can use `--xdg-portal-required-version`
-[command-line switch](./command-line-switches.md#--xdg-portal-required-versionversion)
-to force gtk or kde dialogs.
 
 ### `dialog.showMessageBoxSync([wndow, ]options)`
 

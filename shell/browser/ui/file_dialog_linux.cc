@@ -237,7 +237,6 @@ void ShowOpenDialog(const DialogSettings& settings,
 }
 
 bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
-  LogIfNeededAboutUnsupportedPortalFeature(settings);
   base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
   auto cb = base::BindOnce(
       [](base::RepeatingClosure cb, base::FilePath* file_path,
@@ -255,7 +254,6 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
 
 void ShowSaveDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
-  LogIfNeededAboutUnsupportedPortalFeature(settings);
   FileChooserDialog* dialog = new FileChooserDialog();
   dialog->RunSaveDialog(std::move(promise), settings);
 }
