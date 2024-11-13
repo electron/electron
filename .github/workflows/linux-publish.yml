@@ -7,15 +7,12 @@ on:
         type: string
         description: 'SHA for electron/build image'
         default: 'bc2f48b2415a670de18d13605b1cf0eb5fdbaae1'
+        required: true
       upload-to-storage:
         description: 'Uploads to Azure storage'
         required: false
         default: '1'
         type: string
-      run-linux-publish:
-        description: 'Run the publish jobs vs just the build jobs'
-        type: boolean
-        default: false
 
 jobs:
   checkout-linux:

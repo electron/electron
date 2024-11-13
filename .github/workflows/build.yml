@@ -23,6 +23,12 @@ on:
         description: 'Skip lint check'
         default: false
         required: false
+      gn-build-type:
+        type: string
+        description: 'The gn build type - testing or release'
+        default: 'testing'
+        required: false
+      
   push:
     branches:
       - main
@@ -39,6 +45,7 @@ jobs:
         src: ${{ steps.filter.outputs.src }}
         build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
         docs-only: ${{ steps.set-output.outputs.docs-only }}
+        gn-build-type: ${{ steps.set-output.outputs.gn-build-type }}
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.0.2
     - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
@@ -49,14 +56,24 @@ jobs:
             - 'docs/**'
           src:
             - '!docs/**'
-    - name: Set Outputs for Build Image SHA & Docs Only
+    - name: Set Outputs for Build Variables
       id: set-output
       run: |
+        # Set gn-build-type to testing if not provided
+        if [ -z "${{ inputs.gn-build-type }}" ]; then
+          echo "gn-build-type=testing" >> "$GITHUB_OUTPUT"
+        else
+          echo "gn-build-type=${{ inputs.gn-build-type }}" >> "$GITHUB_OUTPUT"
+        fi
+
+        # Set build-image-sha to default if not provided
         if [ -z "${{ inputs.build-image-sha }}" ]; then
           echo "build-image-sha=bc2f48b2415a670de18d13605b1cf0eb5fdbaae1" >> "$GITHUB_OUTPUT"
         else
           echo "build-image-sha=${{ inputs.build-image-sha }}" >> "$GITHUB_OUTPUT"
         fi
+
+        # Set docs-only to true if only docs are changed
         echo "docs-only=${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" >> "$GITHUB_OUTPUT"
 
   # Lint Jobs
@@ -142,7 +159,7 @@ jobs:
       target-platform: macos
       target-arch: x64
       is-release: false
-      gn-build-type: testing
+      gn-build-type: ${{ needs.setup.outputs.gn-build-type }}
       generate-symbols: false
       upload-to-storage: '0'
     secrets: inherit
@@ -161,7 +178,7 @@ jobs:
       target-platform: macos
       target-arch: arm64
       is-release: false
-      gn-build-type: testing
+      gn-build-type: ${{ needs.setup.outputs.gn-build-type }}
       generate-symbols: false
       upload-to-storage: '0'
     secrets: inherit
@@ -182,7 +199,7 @@ jobs:
       target-platform: linux
       target-arch: x64
       is-release: false
-      gn-build-type: testing
+      gn-build-type: ${{ needs.setup.outputs.gn-build-type }}
       generate-symbols: false
       upload-to-storage: '0'
     secrets: inherit
@@ -203,7 +220,7 @@ jobs:
       target-platform: linux
       target-arch: x64
       is-release: false
-      gn-build-type: testing
+      gn-build-type: ${{ needs.setup.outputs.gn-build-type }}
       generate-symbols: false
       upload-to-storage: '0'
       is-asan: true
@@ -225,7 +242,7 @@ jobs:
       target-platform: linux
       target-arch: arm
       is-release: false
-      gn-build-type: testing
+      gn-build-type: ${{ needs.setup.outputs.gn-build-type }}
       generate-symbols: false
       upload-to-storage: '0'
     secrets: inherit
@@ -246,7 +263,7 @@ jobs:
       target-platform: linux
       target-arch: arm64
       is-release: false
-      gn-build-type: testing
+      gn-build-type: ${{ needs.setup.outputs.gn-build-type }}
       generate-symbols: false
       upload-to-storage: '0'
     secrets: inherit
