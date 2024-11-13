@@ -1504,7 +1504,8 @@ group("electron") {
 ##### node_headers
 
 node_dir = "../third_party/electron_node"
-node_files = read_file("$node_dir/filenames.json", "json")
+node_files =
+    exec_script("//electron/script/node/generate_node_headers.py", [], "json")
 node_headers_dir = "$root_gen_dir/node_headers"
 
 header_group_index = 0
