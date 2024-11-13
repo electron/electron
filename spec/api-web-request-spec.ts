@@ -594,7 +594,7 @@ describe('webRequest module', () => {
         res.setHeader('foo1', 'bar1');
         res.end('ok');
       });
-      const wss = new WebSocket.Server({ noServer: true });
+      let wss = new WebSocket.Server({ noServer: true });
       wss.on('connection', function connection (ws) {
         ws.on('message', function incoming (message) {
           if (message === 'foo') {
@@ -665,6 +665,7 @@ describe('webRequest module', () => {
         server.close();
         server = null as unknown as http.Server;
         wss.close();
+        wss = null as unknown as WebSocket.Server;
         ses.webRequest.onBeforeRequest(null);
         ses.webRequest.onBeforeSendHeaders(null);
         ses.webRequest.onHeadersReceived(null);

@@ -352,8 +352,8 @@ describe('protocol module', () => {
           }
         });
         defer(() => {
-          server = null as unknown as http.Server;
           server.close();
+          server = null as unknown as http.Server;
         });
         const { port } = await listen(server);
         const url = `${protocolName}://fake-host`;

@@ -671,14 +671,10 @@ describe('chromium features', () => {
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await setTimeout(1000);
       await expect(waitUntil(async () => {
-        const openAfter1 = await w.webContents.executeJavaScript(
+        return await w.webContents.executeJavaScript(
           'document.getElementById(\'favDialog\').open'
         );
-        const isSatisfied = (openAfter1 === true);
-        console.log(`Checking openAfter1 ${openAfter1} satisfied: ${isSatisfied}`);
-        return isSatisfied;
       })).to.eventually.be.fulfilled();
-      console.log('Done checking after1');
       expect(w.isFullScreen()).to.be.false();
 
       // Test that with lock, with ESC:
@@ -689,7 +685,6 @@ describe('chromium features', () => {
         document.body.requestFullscreen();
       `, true);
       await enterFS2;
-      console.log('Done enter full screen');
 
       // Request keyboard lock after window has gone fullscreen
       // otherwise it will result in blink::kKeyboardLockRequestFailedErrorMsg.
@@ -707,9 +702,7 @@ describe('chromium features', () => {
         const openAfter2 = await w.webContents.executeJavaScript(
           'document.getElementById(\'favDialog\').open'
         );
-        const isSatisfied = (openAfter2 === false);
-        console.log(`Checking openAfter2 ${openAfter2} satisfied: ${isSatisfied}`);
-        return isSatisfied;
+        return (openAfter2 === false);
       })).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.true();
     });
