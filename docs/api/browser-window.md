@@ -211,7 +211,7 @@ remove the reference to the window and avoid using it any more.
 
 Returns:
 
-* `event` Event<>
+* `event` Event\<\>
   * `reasons` string[] - List of reasons for shutdown. Can be 'shutdown', 'close-app', 'critical', or 'logoff'.
 
 Emitted when a session is about to end due to a shutdown, machine restart, or user log-off.
@@ -227,7 +227,7 @@ refer to the [MSDN documentation](https://learn.microsoft.com/en-us/windows/win3
 
 Returns:
 
-* `event` Event<>
+* `event` Event\<\>
   * `reasons` string[] - List of reasons for shutdown. Can be 'shutdown', 'close-app', 'critical', or 'logoff'.
 
 Emitted when system is in the process of shutting down after successfully handling 'query-session-end' event.
