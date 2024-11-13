@@ -156,7 +156,9 @@ Calling `event.preventDefault(`) can delay the system shutdown, though it’s ge
 to respect the user’s choice to end the session. However, you may choose to use it if
 ending the session puts the user at risk of losing data.
 
-More about `WM_QUERYENDSESSION` message and reasons on [MSDN](https://learn.microsoft.com/en-us/windows/win32/shutdown/wm-queryendsession).
+Unfortunately, Windows does not offer a way to differentiate between a shutdown and a reboot, meaning the 'shutdown'
+reason is triggered in both scenarios. For more details on the `WM_QUERYENDSESSION` message and its associated reasons,
+refer to the [MSDN documentation](https://learn.microsoft.com/en-us/windows/win32/shutdown/wm-queryendsession).
 
 #### Event: 'session-end' _Windows_
 
@@ -167,7 +169,9 @@ Returns:
 
 Emitted when system is in the process of shutting down after successfully handling 'query-session-end' event.
 
-More about `WM_ENDSESSION` message and reasons on [MSDN](https://learn.microsoft.com/en-us/windows/win32/shutdown/wm-endsession).
+Unfortunately, Windows does not offer a way to differentiate between a shutdown and a reboot, meaning the 'shutdown'
+reason is triggered in both scenarios. For more details on the `WM_ENDSESSION` message and its associated reasons,
+refer to the [MSDN documentation](https://learn.microsoft.com/en-us/windows/win32/shutdown/wm-endsession).
 
 #### Event: 'blur'
 
