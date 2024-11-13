@@ -1,4 +1,6 @@
-const { app, protocol } = require('electron');
+const wtf = require('wtfnode'); // eslint-disable-line
+
+const { app, protocol } = require('electron'); // eslint-disable-line
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -170,6 +172,7 @@ app.whenReady().then(async () => {
   }
 
   const cb = () => {
+    wtf.dump();
     // Ensure the callback is called after runner is defined
     process.nextTick(() => {
       process.exit(runner.failures);
