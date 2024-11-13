@@ -149,7 +149,7 @@ remove the reference to the window and avoid using it any more.
 Returns:
 
 * `event` Event
-* `reasons` string[] - Can contain a combination of those reasons 'shutdown', 'close-app', 'critical' and 'logoff'.
+* `reasons` string[] - List of reasons for shutdown. Can be 'shutdown', 'close-app', 'critical', or 'logoff'.
 
 Emitted when a session is about to end due to a shutdown, machine restart, or user log-off.
 Calling `event.preventDefault(`) can delay the system shutdown, though it’s generally best
@@ -165,7 +165,7 @@ refer to the [MSDN documentation](https://learn.microsoft.com/en-us/windows/win3
 Returns:
 
 * `event` Event
-* `reasons` string[] - Can contain a combination of those reasons 'shutdown', 'close-app', 'critical' and 'logoff'.
+* `reasons` string[] - List of reasons for shutdown. Can be 'shutdown', 'close-app', 'critical', or 'logoff'.
 
 Emitted when system is in the process of shutting down after successfully handling 'query-session-end' event.
 
