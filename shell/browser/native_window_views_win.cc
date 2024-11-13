@@ -409,8 +409,8 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
     }
     case WM_QUERYENDSESSION: {
       bool prevent_default = false;
-      std::vector<std::string> reason = EndSessionToStringVec(l_param);
-      NotifyWindowQueryEndSession(reason, &prevent_default);
+      std::vector<std::string> reasons = EndSessionToStringVec(l_param);
+      NotifyWindowQueryEndSession(reasons, &prevent_default);
       // Result should be TRUE by default, otherwise WM_ENDSESSION will not be
       // fired in some cases: More:
       // https://learn.microsoft.com/en-us/windows/win32/rstmgr/guidelines-for-applications
@@ -418,9 +418,9 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       return prevent_default;
     }
     case WM_ENDSESSION: {
-      std::vector<std::string> reason = EndSessionToStringVec(l_param);
+      std::vector<std::string> reasons = EndSessionToStringVec(l_param);
       if (w_param) {
-        NotifyWindowEndSession(reason);
+        NotifyWindowEndSession(reasons);
       }
       return false;
     }

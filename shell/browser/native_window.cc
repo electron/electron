@@ -533,16 +533,16 @@ void NativeWindow::NotifyWindowClosed() {
 }
 
 void NativeWindow::NotifyWindowQueryEndSession(
-    const std::vector<std::string> reason,
+    const std::vector<std::string> reasons,
     bool* prevent_default) {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowQueryEndSession(reason, prevent_default);
+    observer.OnWindowQueryEndSession(reasons, prevent_default);
 }
 
 void NativeWindow::NotifyWindowEndSession(
-    const std::vector<std::string> reason) {
+    const std::vector<std::string> reasons) {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowEndSession(reason);
+    observer.OnWindowEndSession(reasons);
 }
 
 void NativeWindow::NotifyWindowBlur() {

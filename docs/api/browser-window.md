@@ -212,22 +212,25 @@ remove the reference to the window and avoid using it any more.
 Returns:
 
 * `event` Event
-* `reasons` string[]
+* `reasons` string[] - Can contain a combination of those reasons 'shutdown', 'close-app', 'critical' and 'logoff'.
 
-Emitted when window session is going to end due to shutdown, machine
-restart or session log off. Calling `event.preventDefault()` will delay
-system shutdown, however it's not recommended, because it's a good practice to
-respect user's choice. You can use it if user is risking to lose data.
+Emitted when a session is about to end due to a shutdown, machine restart, or user log-off.
+Calling `event.preventDefault(`) can delay the system shutdown, though it’s generally best
+to respect the user’s choice to end the session. However, you may choose to use it if
+ending the session puts the user at risk of losing data.
+
+More about `WM_QUERYENDSESSION` message and reasons on [MSDN](https://learn.microsoft.com/en-us/windows/win32/shutdown/wm-queryendsession).
 
 #### Event: 'session-end' _Windows_
 
 Returns:
 
 * `event` Event
-* `reasons` string[]
+* `reasons` string[] - Can contain a combination of those reasons 'shutdown', 'close-app', 'critical' and 'logoff'.
 
-Emitted when system is in the process of shutting after successfully
-handling 'query-session-end' event.
+Emitted when system is in the process of shutting down after successfully handling 'query-session-end' event.
+
+More about `WM_ENDSESSION` message and reasons on [MSDN](https://learn.microsoft.com/en-us/windows/win32/shutdown/wm-endsession).
 
 #### Event: 'unresponsive'
 
