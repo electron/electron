@@ -170,8 +170,10 @@ app.whenReady().then(async () => {
   }
 
   const cb = () => {
-    console.log(`In SPEC CB, process next tick with failures: ${runner.failures} for ${process.platform}`);
-    process.exit(runner.failures);
+    // Ensure the callback is called after runner is defined
+    process.nextTick(() => {
+      process.exit(runner.failures);
+    });
   };
 
   // Set up chai in the correct order

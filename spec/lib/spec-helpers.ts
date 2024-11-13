@@ -3,127 +3,15 @@ import { BrowserWindow } from 'electron/main';
 import { AssertionError } from 'chai';
 import { SuiteFunction, TestFunction } from 'mocha';
 
-import { createHook } from 'node:async_hooks';
 import * as childProcess from 'node:child_process';
-import { readFileSync } from 'node:fs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
 import * as https from 'node:https';
 import * as net from 'node:net';
 import * as path from 'node:path';
-import { relative } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
-import { fileURLToPath } from 'node:url';
 import * as v8 from 'node:v8';
-
-const IGNORED_TYPES = [
-  'TIMERWRAP',
-  'PROMISE',
-  'PerformanceObserver',
-  'RANDOMBYTESREQUEST'
-];
-
-let asyncResources:Map<number, any>;
-let hook:any;
-
-export function initWhyIsNodeRunning () {
-  asyncResources = new Map();
-  hook = createHook({
-    init (asyncId, type, triggerAsyncId, resource) {
-      if (IGNORED_TYPES.includes(type)) {
-        return;
-      }
-
-      const stacks = captureStackTraces().slice(1);
-
-      asyncResources.set(asyncId, {
-        type,
-        resource,
-        stacks
-      });
-    },
-    destroy (asyncId) {
-      asyncResources.delete(asyncId);
-    }
-  });
-
-  hook.enable();
-}
-
-export function whyIsNodeRunning () {
-  hook.disable();
-
-  const activeAsyncResources = Array.from(asyncResources.values())
-    .filter(({ resource }) => resource.hasRef?.() ?? true);
-
-  console.error(`There are ${activeAsyncResources.length} handle(s) keeping the process running.`);
-
-  for (const asyncResource of activeAsyncResources) {
-    printStacks(asyncResource, console);
-  }
-}
-
-function printStacks (asyncResource:any, logger:any) {
-  const stacks = asyncResource.stacks.filter((stack:any) => {
-    const fileName = stack.getFileName();
-    return fileName !== null && !fileName.startsWith('node:internal/async_hooks');
-  });
-
-  logger.error('');
-  logger.error(`# ${asyncResource.type}`);
-
-  if (!stacks[0]) {
-    logger.error('(unknown stack trace)');
-    return;
-  }
-
-  const maxLength = stacks.reduce((length:any, stack:any) => Math.max(length, formatLocation(stack).length), 0);
-
-  for (const stack of stacks) {
-    const location = formatLocation(stack);
-    const padding = ' '.repeat(maxLength - location.length);
-
-    try {
-      const lines = readFileSync(normalizeFilePath(stack.getFileName()), 'utf-8').split(/\n|\r\n/);
-      const line = lines[stack.getLineNumber() - 1].trim();
-
-      logger.error(`${location}${padding} - ${line}`);
-    } catch {
-      logger.error(`${location}${padding}`);
-    }
-  }
-}
-
-function formatLocation (stack:any) {
-  const filePath = formatFilePath(stack.getFileName());
-  return `${filePath}:${stack.getLineNumber()}`;
-}
-
-function formatFilePath (filePath:any) {
-  const absolutePath = normalizeFilePath(filePath);
-  const relativePath = relative(process.cwd(), absolutePath);
-
-  return relativePath.startsWith('..') ? absolutePath : relativePath;
-}
-
-function normalizeFilePath (filePath:any) {
-  return filePath.startsWith('file://') ? fileURLToPath(filePath) : filePath;
-}
-
-// See: https://v8.dev/docs/stack-trace-api
-function captureStackTraces () {
-  const target:any = {};
-  const original = Error.prepareStackTrace;
-
-  Error.prepareStackTrace = (error, stackTraces) => stackTraces;  // eslint-disable-line
-  Error.captureStackTrace(target, captureStackTraces);
-
-  const capturedTraces = target.stack;
-  Error.prepareStackTrace = original;
-
-  return capturedTraces;
-}
 
 const addOnly = <T>(fn: Function): T => {
   const wrapped = (...args: any[]) => {
