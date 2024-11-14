@@ -63,7 +63,11 @@ jobs:
     - name: Check Windows ARM64 version
       if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'windows' }}
       shell: powershell    
-      run: systeminfo | findstr /B /C:"OS Name" /B /C:"OS Version"
+      run: |
+        systeminfo | findstr /B /C:"OS Name" /B /C:"OS Version"
+        wmic cpu get caption, deviceid, name, numberofcores, maxclockspeed, status
+        systeminfo | findstr /C:"Total Physical Memory"
+        systeminfo
     - name: Install Git on Windows arm64 runners
       if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'windows' }}
       shell: powershell
