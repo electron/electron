@@ -50,7 +50,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'windows' && fromJSON('["windows"]') || fromJSON('["linux"]')) }}
-        shard: ${{ inputs.target-platform == 'linux' && fromJSON('[1, 2, 3]') || fromJSON('[1, 2]') }}
+        shard: ${{ inputs.target-platform != 'macos' && fromJSON('[1, 2, 3, 4]') || fromJSON('[1, 2]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -60,6 +60,10 @@ jobs:
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
+    - name: Check Windows ARM64 version
+      if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'windows' }}
+      shell: powershell    
+      run: systeminfo | findstr /B /C:"OS Name" /B /C:"OS Version"
     - name: Install Git on Windows arm64 runners
       if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'windows' }}
       shell: powershell
@@ -191,7 +195,7 @@ jobs:
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 3 }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 4 }})
 
         # Run tests
         if [ "`uname`" = "Darwin" ]; then
@@ -225,7 +229,7 @@ jobs:
         cd src\electron
         echo ELECTRON_TEST_RESULTS_DIR=$PWD\junit >> $env:GITHUB_ENV
         # Get which tests are on this shard
-        $tests_files=node script\split-tests ${{ matrix.shard }} 2
+        $tests_files=node script\split-tests ${{ matrix.shard }} 4
         echo tests_files="$tests_files" >> $env:GITHUB_ENV
         if ('${{ inputs.target-arch }}' -eq 'x86') {
           echo npm_config_arch=ia32 >> $env:GITHUB_ENV
