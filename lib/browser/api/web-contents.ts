@@ -909,6 +909,13 @@ WebContents.prototype._init = function () {
     openDialogs.clear();
   });
 
+  this.on('-unresponsive' as any, (event: Electron.Event<any>) => {
+    const shouldEmit = !event.shouldIgnore && event.visible && event.rendererInitialized;
+    if (shouldEmit) {
+      this.emit('unresponsive', event);
+    }
+  });
+
   app.emit('web-contents-created', { sender: this, preventDefault () {}, get defaultPrevented () { return false; } }, this);
 
   // Properties
