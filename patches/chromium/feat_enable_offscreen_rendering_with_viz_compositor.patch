@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index dddf398085d2902b4b1e6e00cb90ccecc238a672..559b9964718a29558b19b0183fc2b7265522ba7e 100644
+index 72c960319365abf42ac7279b4d06f3d2b81c6e71..b53a8c8752bca7bad0fb7cd35f5320bbcb61f806 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -172,6 +172,8 @@ viz_component("service") {
@@ -596,7 +596,7 @@ index 7d19b6be8bb0e0269c381cf6efdf79eaeff1e935..b8ec06ade095df99c024396a601dbf1a
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 1197e68e18701bdf01aa61655f953b8e950b5b04..23b38f7e6251cf0edcf1d5e7ebb99984c8ee5409 100644
+index be84767530d3deba6555b0b9589037365114c449..89283b0999e34c662bf968eaf5e51c8463cd8a23 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -39,6 +39,7 @@ struct RootCompositorFrameSinkParams {
@@ -619,10 +619,10 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 58da7f0697dd2251f45c1e4001584683b7acf8ed..916a33ebd06e6750cef57ff433b1826424482d26 100644
+index c0809410472ccb96704271ce1d10a06ff27a951d..497f3299ba459da88ff9c2abdefdd27480324b0e 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -90,6 +90,7 @@ namespace mojom {
+@@ -89,6 +89,7 @@ namespace mojom {
  class DisplayPrivate;
  class ExternalBeginFrameController;
  }  // namespace mojom
@@ -630,7 +630,7 @@ index 58da7f0697dd2251f45c1e4001584683b7acf8ed..916a33ebd06e6750cef57ff433b18264
  class HostFrameSinkManager;
  class LocalSurfaceId;
  class RasterContextProvider;
-@@ -141,6 +142,16 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -140,6 +141,16 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
@@ -647,7 +647,7 @@ index 58da7f0697dd2251f45c1e4001584683b7acf8ed..916a33ebd06e6750cef57ff433b18264
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -184,6 +195,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -183,6 +194,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -657,7 +657,7 @@ index 58da7f0697dd2251f45c1e4001584683b7acf8ed..916a33ebd06e6750cef57ff433b18264
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -563,6 +577,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -562,6 +576,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
        simple_begin_frame_observers_;
    std::unique_ptr<ui::HostBeginFrameObserver> host_begin_frame_observer_;
  
@@ -667,18 +667,18 @@ index 58da7f0697dd2251f45c1e4001584683b7acf8ed..916a33ebd06e6750cef57ff433b18264
    raw_ptr<Layer> root_layer_ = nullptr;
  
 diff --git a/ui/gfx/ca_layer_params.h b/ui/gfx/ca_layer_params.h
-index 86d5be8b3778ced67e65d3f1e22b6aef467c7042..a2044ee0440339247cc91e06a7a0c323cbf332fc 100644
+index 5b5bb16199d46f16be587856650b07121a786776..241efc4bddaf2ddfb4d4092766a9d3c9732ef36e 100644
 --- a/ui/gfx/ca_layer_params.h
 +++ b/ui/gfx/ca_layer_params.h
-@@ -6,6 +6,7 @@
- #define UI_GFX_CA_LAYER_PARAMS_H_
+@@ -7,6 +7,7 @@
  
+ #include "base/component_export.h"
  #include "build/build_config.h"
 +#include "ui/gfx/geometry/rect.h"
  #include "ui/gfx/geometry/size.h"
- #include "ui/gfx/gfx_export.h"
  
-@@ -51,6 +52,8 @@ struct GFX_EXPORT CALayerParams {
+ #if BUILDFLAG(IS_APPLE)
+@@ -51,6 +52,8 @@ struct COMPONENT_EXPORT(GFX) CALayerParams {
    gfx::ScopedRefCountedIOSurfaceMachPort io_surface_mach_port;
  #endif
  
