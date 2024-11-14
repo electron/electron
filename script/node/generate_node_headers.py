@@ -2,6 +2,7 @@
 import json
 import os
 import sys
+import shutil
 
 from pathlib import Path
 
@@ -48,11 +49,6 @@ if __name__ == '__main__':
                 f for f in files
                 if f.endswith('.h') and f != 'src/node_version.h'
             ]
-        elif any(f.startswith('../v8/') for f in files):
-            files = [
-                f.replace('../v8/', '//v8/', 1)
-                for f in files
-            ]
         if files:
             dir_index = next(
                 (i for i, d in enumerate(out['headers'])
@@ -65,12 +61,13 @@ if __name__ == '__main__':
                 hs = {'files': sorted(files), 'dest_dir': dest_dir}
                 out['headers'].append(hs)
 
-    config_gypi_path = os.path.join(get_out_dir(), 'gen', 'config.gypi')
-    root_gen_dir = os.path.join(node_root_dir, 'out', 'Release', 'gen')
+    root_gen_dir = os.path.join(get_out_dir(), 'gen')
+    config_gypi_path = os.path.join(root_gen_dir, 'config.gypi')
+    node_headers_dir = os.path.join(root_gen_dir, 'node_headers')
 
     options = install.parse_options([
         'install',
-        '--v8-dir', '../v8',
+        '--v8-dir', os.path.join(SRC_DIR, 'v8'),
         '--config-gypi-path', config_gypi_path,
         '--headers-only'
     ])
@@ -78,6 +75,32 @@ if __name__ == '__main__':
     options.variables['node_shared_libuv'] = 'false'
     # We generate zlib headers in Electron's BUILD.gn.
     options.variables['node_shared_zlib'] = ''
-
     install.headers(options, add_headers)
-    print(json.dumps(out, sort_keys=True, indent=2, separators=(',', ': ')))
+
+    header_groups = []
+    for header_group in out['headers']:
+        sources = [
+            os.path.join(node_root_dir, file)
+            for file in header_group['files']
+        ]
+        outputs = [
+            os.path.join(
+                node_headers_dir, header_group['dest_dir'],
+                os.path.basename(file)
+            )
+            for file in sources
+        ]
+        for src, dest in zip(sources, outputs):
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            if os.path.exists(dest):
+                if os.path.samefile(src, dest):
+                    continue
+                os.remove(dest)
+            shutil.copyfile(src, dest)
+
+    node_header_file = os.path.join(root_gen_dir, 'node_headers.json')
+    with open(node_header_file, 'w', encoding='utf-8') as nhf:
+        json_data = json.dumps(
+            out, sort_keys=True, indent=2, separators=(',', ': ')
+        )
+        nhf.write(json_data)
