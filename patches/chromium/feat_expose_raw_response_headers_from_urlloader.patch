@@ -17,7 +17,7 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 8f7d40cadf091cf66d1b2a380c7a753869b3be59..bf317d569054487aec474b0c907204063685f690 100644
+index 57713d234ec93e81ad5ee177f0e2978d7fe82e1d..535cb485455d6a2e23fea4042be4ad9174268bd1 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
 @@ -155,6 +155,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
@@ -90,7 +90,7 @@ index e88bda2cb7d2f22e80b5ac7053a77896b7d47fc8..8e4821a6f2a4ad03b1b8b4dbae7c5d9b
    // a cookie. If this is set to non-null, the observer passed to
    // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index a123ea0b396815063c4261110ee39e611b6e9eed..968256ba1df386589fda1b97b0e043585c4aa951 100644
+index 5c4b8a05034f8defacbc13671fe9bc92f76ade5a..e7390e01f113755613f42d592b36108b703960dc 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -13,6 +13,7 @@ import "services/network/public/mojom/attribution.mojom";
@@ -101,7 +101,7 @@ index a123ea0b396815063c4261110ee39e611b6e9eed..968256ba1df386589fda1b97b0e04358
  import "services/network/public/mojom/ip_endpoint.mojom";
  import "services/network/public/mojom/load_timing_info.mojom";
  import "services/network/public/mojom/network_param.mojom";
-@@ -44,6 +45,9 @@ struct URLResponseHead {
+@@ -49,6 +50,9 @@ struct URLResponseHead {
    // The response headers or NULL if the URL type does not support headers.
    HttpResponseHeaders headers;
  
@@ -112,7 +112,7 @@ index a123ea0b396815063c4261110ee39e611b6e9eed..968256ba1df386589fda1b97b0e04358
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index fcbfac7119266deed9719b08501af0032ea79d30..5bb2de0eea5b472d8d0b287a28fbec895841d41a 100644
+index c0fbb04f0717fafedb561acb6ec76a451d541dfe..beb3fe75a654510b60b62ab29380c7ff243bb095 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -601,6 +601,9 @@ URLLoader::URLLoader(
@@ -134,7 +134,7 @@ index fcbfac7119266deed9719b08501af0032ea79d30..5bb2de0eea5b472d8d0b287a28fbec89
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1851,6 +1854,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1852,6 +1855,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
