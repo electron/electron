@@ -175,6 +175,7 @@ static_library("chrome") {
   public_deps = [
     "//chrome/browser:dev_ui_browser_resources",
     "//chrome/browser/resources/accessibility:resources",
+    "//chrome/browser/ui/color:color_headers",
     "//chrome/browser/ui/color:mixers",
     "//chrome/common",
     "//chrome/common:version_header",
