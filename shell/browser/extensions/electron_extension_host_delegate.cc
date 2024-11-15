@@ -27,13 +27,6 @@ void ElectronExtensionHostDelegate::OnExtensionHostCreated(
   electron::api::WebContents::FromOrCreate(isolate, web_contents);
 }
 
-content::JavaScriptDialogManager*
-ElectronExtensionHostDelegate::GetJavaScriptDialogManager() {
-  // TODO(jamescook): Create a JavaScriptDialogManager or reuse the one from
-  // content_shell.
-  NOTREACHED();
-}
-
 void ElectronExtensionHostDelegate::CreateTab(
     std::unique_ptr<content::WebContents> web_contents,
     const std::string& extension_id,
