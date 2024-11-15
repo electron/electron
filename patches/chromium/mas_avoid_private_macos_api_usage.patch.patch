@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5dee8a9226d2422e98878067e35552ca366dc18e..c81c0140dc45e6f436f478cf3b20c73782226f45 100644
+index 4f34b199d7839c2c560d669a221ec0c9c2005a15..3833e4c580fceb2510ea6fb42eb3850d21052c5a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1017,6 +1017,7 @@ component("base") {
+@@ -1020,6 +1020,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -558,7 +558,7 @@ index 6aa74c4137ac7a649e8f79eb628e297e9459b089..c89f25bf49d773f5f77b2434bd6fabcf
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6f0eb1326294a246ce737ff8ee3c1be0944a86b3..83d2719e1db8034dc7487cde81c074daa3180a61 100644
+index bdde3bd488b2018241835436fdaf3548dc453ec2..e47794527c5912a43047cdca48df0f7deb9edf9b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -325,6 +325,7 @@ source_set("browser") {
@@ -771,7 +771,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 9fb80e05154c7882f46e00460ee62742a329eb1d..c7ef928f2ea937d41c07aa9382fa64f6bf9625b6 100644
+index b5f23a75715df8ecc19f3663811f0e71a77a364d..f536e34f4857027ab5e5deca2bfee890af622123 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -643,6 +643,7 @@ static_library("test_support") {
@@ -798,7 +798,7 @@ index 9fb80e05154c7882f46e00460ee62742a329eb1d..c7ef928f2ea937d41c07aa9382fa64f6
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3236,6 +3239,7 @@ test("content_unittests") {
+@@ -3239,6 +3242,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1371,10 +1371,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 2041934dd6c8f5bb77c286871ff79c1fb56922a5..c6b5bb81023dd7b61b8d429e7cb46f4d37c4d9e1 100644
+index 679005c0d241207646a7aabad5ce896bc5c56558..39547524d6e77954c949d4ac05bec1f9596162fd 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -408,6 +408,7 @@ component("core") {
+@@ -409,6 +409,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1612,10 +1612,10 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..c2ac4da580e3e7f749a0a4de1e859af6
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 12896a91a06e53d623daab137c6a11326659dc2f..180bed4b6900bd6b2ddbe5a3745a28241da8aad6 100644
+index eea697e433fad6ded98ee0db8b6f49760340c364..13351f20f8a965e097281fee9db4f33e29fe704e 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -357,6 +357,13 @@ component("base") {
+@@ -358,6 +358,13 @@ component("base") {
      ]
    }
  
@@ -1629,7 +1629,7 @@ index 12896a91a06e53d623daab137c6a11326659dc2f..180bed4b6900bd6b2ddbe5a3745a2824
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -500,6 +507,12 @@ component("base") {
+@@ -501,6 +508,12 @@ component("base") {
      "//url",
    ]
  

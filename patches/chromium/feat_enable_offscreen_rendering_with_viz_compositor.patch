@@ -8,7 +8,7 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index d20063ec5ccbe6a555fe5da92f4c99a405ecb988..96ee427015987b38c9cb341afc8400ce26795fa6 100644
+index abb381d76137d10888380cffc6708df494d3718f..f3da70523976e080c732f9c9dd7048d72b20cd65 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
 @@ -48,9 +48,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
@@ -37,7 +37,7 @@ index d20063ec5ccbe6a555fe5da92f4c99a405ecb988..96ee427015987b38c9cb341afc8400ce
 +#if BUILDFLAG(IS_WIN)
  void HostDisplayClient::AddChildWindowToBrowser(
      gpu::SurfaceHandle child_window) {
-   NOTREACHED_IN_MIGRATION();
+   NOTREACHED();
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
 index 294f99f234006709363d5ae1c7d52aeb19691a7c..e5b9d104e157b588dcd0a2e856a1db2df1cfe658 100644
 --- a/components/viz/host/host_display_client.h
@@ -117,7 +117,7 @@ index 7fbb05e606fc26364c674c6330b8a5eb9c016fb3..a190a42c2127011ab54aae937a3cab36
    virtual gpu::SharedImageManager* GetSharedImageManager() = 0;
    virtual gpu::SyncPointManager* GetSyncPointManager() = 0;
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 4be4660c007ee5cd9da9947dc61d2497931d0ddb..f382cef64946576c85588ef4d3b334a2ec9e61bd 100644
+index d01e905f155e5e7a43e43a8383fcf9dba360600c..a7432b3192c93b5fdf6b754906f66e9916306b61 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -25,6 +25,7 @@
@@ -521,7 +521,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index ad65e087075b576222fe9541948afdd777e76cbf..20f0f50e226ce6e488a7636d4d3c08e3d2e2f5e5 100644
+index 2538e963ef714148f2a944da8a73c832ecac69f4..ac73b420cf167a5e1b4ef917a156a6069e20f36b 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -102,7 +102,8 @@ RootCompositorFrameSinkImpl::Create(

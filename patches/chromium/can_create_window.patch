@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index d29dac893805535bbbd9aefe096a0ca2825a01aa..4f31803e492d0d05b29659f8bf75b6fee7aff25e 100644
+index b22f297cfec19d2afc029c2c63c8451335c6156f..bf6e476bb9fbf7e5fc68bafc7703d00ecaeb4fa3 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9170,6 +9170,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9176,6 +9176,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index d29dac893805535bbbd9aefe096a0ca2825a01aa..4f31803e492d0d05b29659f8bf75b6fe
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c93722f2fc5340edeeace5a1690d0fa7d84dffb2..e7e47a9aa5a22aea2aa0eeab7bd661b47c9cbdae 100644
+index feab190780c1a7433bdef4c37b16473fac1efdd7..a701029891d099dc91d6a663f4c24d271bfebd4e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4887,6 +4887,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4891,6 +4891,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    SetPartitionedPopinOpenerOnNewWindowIfNeeded(new_contents_impl, params,
                                                 opener);
  
@@ -37,7 +37,7 @@ index c93722f2fc5340edeeace5a1690d0fa7d84dffb2..e7e47a9aa5a22aea2aa0eeab7bd661b4
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4928,12 +4934,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4932,12 +4938,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -122,7 +122,7 @@ index d4546ddda4a14cd5a826a13d4c8132a7fb8b5a7c..d5a7a639089ad37cb611c2ae253675b1
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 77ee6ba6c65c95622e41f86906ea813be62f72e9..7f38098505afabe1887a6d98a705f1adce201314 100644
+index c0be779a4c1d89426c30261aff72ea55be900087..7413c1bef86f5e4633db7220c5de4de7fbdcc654 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -18,6 +18,7 @@
@@ -133,7 +133,7 @@ index 77ee6ba6c65c95622e41f86906ea813be62f72e9..7f38098505afabe1887a6d98a705f1ad
  #include "content/public/browser/back_forward_transition_animation_manager.h"
  #include "content/public/browser/eye_dropper.h"
  #include "content/public/browser/fullscreen_types.h"
-@@ -368,6 +369,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -365,6 +366,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionConfig& partition_config,
        SessionStorageNamespace* session_storage_namespace);
  
@@ -148,10 +148,10 @@ index 77ee6ba6c65c95622e41f86906ea813be62f72e9..7f38098505afabe1887a6d98a705f1ad
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 6fed6b4c7ad72bd90aeb9f6eea7a3081972c88f8..3d0544422f05e2edc02921fc39335bf10184028e 100644
+index 60076b652253b30919467eb0f45e7775902d8dbb..7d40a2d2db8082278832ff1b799a8653c105866e 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6849,6 +6849,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6850,6 +6850,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  

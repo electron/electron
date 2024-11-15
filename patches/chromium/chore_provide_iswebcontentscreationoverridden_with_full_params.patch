@@ -80,10 +80,10 @@ index b078a4a06c7b3f767e2e01f0bef2ba440f729620..0459568581a3073333ae6afabd3680f2
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index f313979ca1b0a305291c1fb5df57210324000f52..2edfc053ca0bcc9f7e4db36de249aa8a20fbd7c6 100644
+index a62c82aab7a350c01c7b4288977895c4f9bb9c56..bc0f6ac675b93992bd017acbd4c9919552cdd401 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2145,12 +2145,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2176,12 +2176,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index f313979ca1b0a305291c1fb5df57210324000f52..2edfc053ca0bcc9f7e4db36de249aa8a
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 8057f6fcc87c482f2ad477240528191e0043c08c..db6abb4787a57e8b1866fe5d8ae801941a95ef3c 100644
+index 1455dcab97edbd2b2b63401643aa288ed08dd52e..20e411aad535f892d903beb022b248b3a0b184e3 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -975,8 +975,7 @@ class Browser : public TabStripModelObserver,
+@@ -978,8 +978,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -155,7 +155,7 @@ index bd31ef4d919c9ddce958024a93edf1aab44436b6..6b7c5c7b2dd0fa83797ef57a34f7eb99
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index a6c3e1047551537b5bf4807019f28bb285252528..92fb3e3c03f9f925c54350dd122fa0e39e9ff9dc 100644
+index 6402c3406ec8808b41c7a6af1075a7ae03d6c545..f7c5950ab8782ed1d738363feeed1a9877a7cf6b 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -185,14 +185,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -176,7 +176,7 @@ index a6c3e1047551537b5bf4807019f28bb285252528..92fb3e3c03f9f925c54350dd122fa0e3
                                                                    java_gurl);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index 6c89a03712b9449e1a7b0e38ed9d019b30029c15..50b324ef3f1163e462ad145e58b42bf3fd053a0a 100644
+index 9484a324478d3fe746a51e645368eb3b602ce91d..0676e60fe7773cfcb22e62abff67a66ef6153128 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
 @@ -82,8 +82,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index de6b544df67c9702b6771b08b003805b4f5fb5a4..4de45e398ec013714302c8cbaafa3bb6aa01ef8e 100644
+index 68b9a0176bc4b4ccdd177ef141f4d3cbd6b96cae..c941bc4ec17e5dd2c3be8ac153032a7b241b5188 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4782,8 +4782,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4786,8 +4786,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -246,10 +246,10 @@ index d5a7a639089ad37cb611c2ae253675b119ac357b..fca239fa24512aed69c420dcdc99be9b
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 7f38098505afabe1887a6d98a705f1adce201314..735ec45c68dc4951a2b630f93c1994f985ec4d4f 100644
+index 7413c1bef86f5e4633db7220c5de4de7fbdcc654..0d649bcd408eb02968acd9e479b4d3e78ad639b4 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -347,8 +347,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -344,8 +344,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -394,10 +394,10 @@ index b9ee0246ae33b8b66bbd0feb53f56f5f2cc75e2c..16930e15a37a9ccb3cf21c38ac86272c
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index fde8b6ded980b38cfbeb44acfd5f8c6b05b5fef8..7f6e2e4b4b413014e42aa428477d151b41fc4503 100644
+index 1a3b4a9408d8dd72ae704b3f48924d56132fe173..2a96dec82efbdbe4fb5fcd714b63b4d9baec2c42 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
-@@ -449,8 +449,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
+@@ -456,8 +456,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -408,7 +408,7 @@ index fde8b6ded980b38cfbeb44acfd5f8c6b05b5fef8..7f6e2e4b4b413014e42aa428477d151b
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index 5ffd43b4907b7083c5fe0eb30279c75aac1a1800..2caa4140f2dca8c81e24d3738800fc0bce40287a 100644
+index c96aeb2571961fa2ad033ca38600006e0e657699..2c733734103bf2cc0af9bcfb32d753053a287775 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
 @@ -167,8 +167,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,

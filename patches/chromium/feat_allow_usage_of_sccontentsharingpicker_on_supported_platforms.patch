@@ -7,10 +7,10 @@ This is implemented as a magic "window id" that instead of pulling an SCStream m
 instead farms out to the screen picker.
 
 diff --git a/content/browser/media/capture/desktop_capture_device_mac.cc b/content/browser/media/capture/desktop_capture_device_mac.cc
-index 88c56f4dfcc1f8517ef1e8b6f1d37f5ba4d0b2c7..a75493a6d4d8ce8340a2d820eff5eed4e6a95109 100644
+index afb657b7c9e1ede1273532b16428d37cc5d75c59..16707cf516cd34682c84ea2ccebddaa0f84e01f8 100644
 --- a/content/browser/media/capture/desktop_capture_device_mac.cc
 +++ b/content/browser/media/capture/desktop_capture_device_mac.cc
-@@ -28,7 +28,7 @@ class DesktopCaptureDeviceMac : public IOSurfaceCaptureDeviceBase {
+@@ -29,7 +29,7 @@ class DesktopCaptureDeviceMac : public IOSurfaceCaptureDeviceBase {
    ~DesktopCaptureDeviceMac() override = default;
  
    // IOSurfaceCaptureDeviceBase:
@@ -20,7 +20,7 @@ index 88c56f4dfcc1f8517ef1e8b6f1d37f5ba4d0b2c7..a75493a6d4d8ce8340a2d820eff5eed4
      requested_format_.pixel_format = media::PIXEL_FORMAT_NV12;
      DCHECK_GT(requested_format_.frame_size.GetArea(), 0);
 diff --git a/content/browser/media/capture/io_surface_capture_device_base_mac.cc b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
-index 8a774911ce0f610b2c993976d108f840696c1d02..5ead7287e2d765d043f8b9c0229a2ee825d9f544 100644
+index e59ed011a70358a4ff61342e4db3e0ce4cad8ab0..e3fa18fbade4c11f5317705bc89a1e2456c924bc 100644
 --- a/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 +++ b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 @@ -20,7 +20,7 @@ void IOSurfaceCaptureDeviceBase::AllocateAndStart(
