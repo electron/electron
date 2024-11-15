@@ -1544,11 +1544,32 @@ describe('BrowserWindow module', () => {
           await expect(once(w, 'resized')).to.eventually.be.fulfilled();
         });
       });
+
+      it('does not emits the resize event for move-only changes', async () => {
+        const [x, y] = w.getPosition();
+
+        w.once('resize', () => {
+          expect.fail('resize event should not be emitted');
+        });
+
+        w.setBounds({ x: x + 10, y: y + 10 });
+      });
     });
 
     describe('BrowserWindow.setSize(width, height)', () => {
       it('sets the window size', async () => {
         const size = [300, 400];
+
+        const resized = once(w, 'resize');
+        w.setSize(size[0], size[1]);
+        await resized;
+
+        expectBoundsEqual(w.getSize(), size);
+      });
+
+      it('emits the resize event for single-pixel size changes', async () => {
+        const [width, height] = w.getSize();
+        const size = [width + 1, height + 1];
 
         const resized = once(w, 'resize');
         w.setSize(size[0], size[1]);
