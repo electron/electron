@@ -1,0 +1,853 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Fri, 15 Nov 2024 10:46:43 -0500
+Subject: Revert "[fastapi] Remove dynamic overload resolution"
+
+Revert this until Node.js decides how to proceed and then pick up their fix.
+
+Refs: https://github.com/nodejs/node/issues/55452
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5956408
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5982984
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5979766
+
+This reverts commit c41f7a0ef99bd1c9752ee79923f634145ebc4153.
+
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 86f2d298e4ba37a46a74f4f6eba5adc2106889bb..ae1de25004bd1d1ba11225bc13472f4cbab3ca33 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -1348,16 +1348,6 @@ Local<FunctionTemplate> FunctionTemplate::NewWithCFunctionOverloads(
+   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
+   API_RCS_SCOPE(i_isolate, FunctionTemplate, New);
+ 
+-  // Check that all overloads of the fast API callback have different numbers of
+-  // parameters. Since the number of overloads is supposed to be small, just
+-  // comparing them with each other should be fine.
+-  for (size_t i = 0; i < c_function_overloads.size(); ++i) {
+-    for (size_t j = i + 1; j < c_function_overloads.size(); ++j) {
+-      CHECK_NE(c_function_overloads.data()[i].ArgumentCount(),
+-               c_function_overloads.data()[j].ArgumentCount());
+-    }
+-  }
+-
+   if (!Utils::ApiCheck(
+           c_function_overloads.empty() ||
+               behavior == ConstructorBehavior::kThrow,
+diff --git a/src/compiler/fast-api-calls.cc b/src/compiler/fast-api-calls.cc
+index 2dc99dc83e0f78d2bbb0875cc04064b565deaf06..d560afa2ee9f4384738cddf659a51d4c42b4fe67 100644
+--- a/src/compiler/fast-api-calls.cc
++++ b/src/compiler/fast-api-calls.cc
+@@ -62,6 +62,52 @@ ElementsKind GetTypedArrayElementsKind(CTypeInfo::Type type) {
+   }
+ }
+ 
++OverloadsResolutionResult ResolveOverloads(
++    const FastApiCallFunctionVector& candidates, unsigned int arg_count) {
++  DCHECK_GT(arg_count, 0);
++
++  static constexpr int kReceiver = 1;
++
++  // Only the case of the overload resolution of two functions, one with a
++  // JSArray param and the other with a typed array param is currently
++  // supported.
++  DCHECK_EQ(candidates.size(), 2);
++
++  for (unsigned int arg_index = kReceiver; arg_index < arg_count; arg_index++) {
++    int index_of_func_with_js_array_arg = -1;
++    int index_of_func_with_typed_array_arg = -1;
++    CTypeInfo::Type element_type = CTypeInfo::Type::kVoid;
++
++    for (size_t i = 0; i < candidates.size(); i++) {
++      const CTypeInfo& type_info =
++          candidates[i].signature->ArgumentInfo(arg_index);
++      CTypeInfo::SequenceType sequence_type = type_info.GetSequenceType();
++
++      START_ALLOW_USE_DEPRECATED()
++      if (sequence_type == CTypeInfo::SequenceType::kIsSequence) {
++        DCHECK_LT(index_of_func_with_js_array_arg, 0);
++        index_of_func_with_js_array_arg = static_cast<int>(i);
++      } else if (sequence_type == CTypeInfo::SequenceType::kIsTypedArray) {
++        DCHECK_LT(index_of_func_with_typed_array_arg, 0);
++        index_of_func_with_typed_array_arg = static_cast<int>(i);
++        element_type = type_info.GetType();
++      } else {
++        DCHECK_LT(index_of_func_with_js_array_arg, 0);
++        DCHECK_LT(index_of_func_with_typed_array_arg, 0);
++      }
++      END_ALLOW_USE_DEPRECATED()
++    }
++
++    if (index_of_func_with_js_array_arg >= 0 &&
++        index_of_func_with_typed_array_arg >= 0) {
++      return {static_cast<int>(arg_index), element_type};
++    }
++  }
++
++  // No overload found with a JSArray and a typed array as i-th argument.
++  return OverloadsResolutionResult::Invalid();
++}
++
+ bool CanOptimizeFastSignature(const CFunctionInfo* c_signature) {
+   USE(c_signature);
+ 
+@@ -149,7 +195,8 @@ class FastApiCallBuilder {
+         initialize_options_(initialize_options),
+         generate_slow_api_call_(generate_slow_api_call) {}
+ 
+-  Node* Build(FastApiCallFunction c_function, Node* data_argument);
++  Node* Build(const FastApiCallFunctionVector& c_functions,
++              const CFunctionInfo* c_signature, Node* data_argument);
+ 
+  private:
+   Node* WrapFastCall(const CallDescriptor* call_descriptor, int inputs_size,
+@@ -230,15 +277,35 @@ void FastApiCallBuilder::PropagateException() {
+   __ Call(call_descriptor, count, inputs);
+ }
+ 
+-Node* FastApiCallBuilder::Build(FastApiCallFunction c_function,
++Node* FastApiCallBuilder::Build(const FastApiCallFunctionVector& c_functions,
++                                const CFunctionInfo* c_signature,
+                                 Node* data_argument) {
+-  const CFunctionInfo* c_signature = c_function.signature;
+   const int c_arg_count = c_signature->ArgumentCount();
+ 
+   // Hint to fast path.
+   auto if_success = __ MakeLabel();
+   auto if_error = __ MakeDeferredLabel();
+ 
++  // Overload resolution
++  bool generate_fast_call = false;
++  OverloadsResolutionResult overloads_resolution_result =
++      OverloadsResolutionResult::Invalid();
++
++  if (c_functions.size() == 1) {
++    generate_fast_call = true;
++  } else {
++    DCHECK_EQ(c_functions.size(), 2);
++    overloads_resolution_result = ResolveOverloads(c_functions, c_arg_count);
++    if (overloads_resolution_result.is_valid()) {
++      generate_fast_call = true;
++    }
++  }
++
++  if (!generate_fast_call) {
++    // Only generate the slow call.
++    return generate_slow_api_call_();
++  }
++
+   // Generate fast call.
+ 
+   const int kFastTargetAddressInputIndex = 0;
+@@ -263,11 +330,18 @@ Node* FastApiCallBuilder::Build(FastApiCallFunction c_function,
+   // address associated to the first and only element in the c_functions vector.
+   // If there are multiple overloads the value of this input will be set later
+   // with a Phi node created by AdaptOverloadedFastCallArgument.
+-  inputs[kFastTargetAddressInputIndex] = __ ExternalConstant(
+-      ExternalReference::Create(c_function.address, ref_type));
++  inputs[kFastTargetAddressInputIndex] =
++      (c_functions.size() == 1) ? __ ExternalConstant(ExternalReference::Create(
++                                      c_functions[0].address, ref_type))
++                                : nullptr;
+ 
+   for (int i = 0; i < c_arg_count; ++i) {
+-    inputs[i + kFastTargetAddressInputCount] = get_parameter_(i, &if_error);
++    inputs[i + kFastTargetAddressInputCount] =
++        get_parameter_(i, overloads_resolution_result, &if_error);
++    if (overloads_resolution_result.target_address) {
++      inputs[kFastTargetAddressInputIndex] =
++          overloads_resolution_result.target_address;
++    }
+   }
+   DCHECK_NOT_NULL(inputs[kFastTargetAddressInputIndex]);
+ 
+@@ -368,7 +442,8 @@ Node* FastApiCallBuilder::Build(FastApiCallFunction c_function,
+ 
+ Node* BuildFastApiCall(Isolate* isolate, Graph* graph,
+                        GraphAssembler* graph_assembler,
+-                       FastApiCallFunction c_function, Node* data_argument,
++                       const FastApiCallFunctionVector& c_functions,
++                       const CFunctionInfo* c_signature, Node* data_argument,
+                        const GetParameter& get_parameter,
+                        const ConvertReturnValue& convert_return_value,
+                        const InitializeOptions& initialize_options,
+@@ -376,7 +451,7 @@ Node* BuildFastApiCall(Isolate* isolate, Graph* graph,
+   FastApiCallBuilder builder(isolate, graph, graph_assembler, get_parameter,
+                              convert_return_value, initialize_options,
+                              generate_slow_api_call);
+-  return builder.Build(c_function, data_argument);
++  return builder.Build(c_functions, c_signature, data_argument);
+ }
+ 
+ }  // namespace fast_api_call
+diff --git a/src/compiler/fast-api-calls.h b/src/compiler/fast-api-calls.h
+index 171e66c427991bfe7db5c2875d12559767a24b55..b97b37e5746433d3801de19d4666a19afc223cdc 100644
+--- a/src/compiler/fast-api-calls.h
++++ b/src/compiler/fast-api-calls.h
+@@ -40,16 +40,21 @@ struct OverloadsResolutionResult {
+ 
+ ElementsKind GetTypedArrayElementsKind(CTypeInfo::Type type);
+ 
++OverloadsResolutionResult ResolveOverloads(
++    const FastApiCallFunctionVector& candidates, unsigned int arg_count);
++
+ bool CanOptimizeFastSignature(const CFunctionInfo* c_signature);
+ 
+-using GetParameter = std::function<Node*(int, GraphAssemblerLabel<0>*)>;
++using GetParameter = std::function<Node*(int, OverloadsResolutionResult&,
++                                         GraphAssemblerLabel<0>*)>;
+ using ConvertReturnValue = std::function<Node*(const CFunctionInfo*, Node*)>;
+ using InitializeOptions = std::function<void(Node*)>;
+ using GenerateSlowApiCall = std::function<Node*()>;
+ 
+ Node* BuildFastApiCall(Isolate* isolate, Graph* graph,
+                        GraphAssembler* graph_assembler,
+-                       FastApiCallFunction c_function, Node* data_argument,
++                       const FastApiCallFunctionVector& c_functions,
++                       const CFunctionInfo* c_signature, Node* data_argument,
+                        const GetParameter& get_parameter,
+                        const ConvertReturnValue& convert_return_value,
+                        const InitializeOptions& initialize_options,
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index d75a38769d582cd6e5a807f9670732dc92d77b7e..a29bd4a5be0c9a268386898f8a52e98933211b6c 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -631,11 +631,11 @@ class FastApiCallReducerAssembler : public JSCallReducerAssembler {
+   FastApiCallReducerAssembler(
+       JSCallReducer* reducer, Node* node,
+       const FunctionTemplateInfoRef function_template_info,
+-      FastApiCallFunction c_function, Node* receiver, Node* holder,
+-      const SharedFunctionInfoRef shared, Node* target, const int arity,
+-      Node* effect)
++      const FastApiCallFunctionVector& c_candidate_functions, Node* receiver,
++      Node* holder, const SharedFunctionInfoRef shared, Node* target,
++      const int arity, Node* effect)
+       : JSCallReducerAssembler(reducer, node),
+-        c_function_(c_function),
++        c_candidate_functions_(c_candidate_functions),
+         function_template_info_(function_template_info),
+         receiver_(receiver),
+         holder_(holder),
+@@ -643,6 +643,7 @@ class FastApiCallReducerAssembler : public JSCallReducerAssembler {
+         target_(target),
+         arity_(arity) {
+     DCHECK_EQ(IrOpcode::kJSCall, node->opcode());
++    CHECK_GT(c_candidate_functions.size(), 0);
+     InitializeEffectControl(effect, NodeProperties::GetControlInput(node));
+   }
+ 
+@@ -654,7 +655,7 @@ class FastApiCallReducerAssembler : public JSCallReducerAssembler {
+     // All functions in c_candidate_functions_ have the same number of
+     // arguments, so extract c_argument_count from the first function.
+     const int c_argument_count =
+-        static_cast<int>(c_function_.signature->ArgumentCount());
++        static_cast<int>(c_candidate_functions_[0].signature->ArgumentCount());
+     CHECK_GE(c_argument_count, kReceiver);
+ 
+     const int slow_arg_count =
+@@ -755,12 +756,13 @@ class FastApiCallReducerAssembler : public JSCallReducerAssembler {
+ 
+   TNode<Object> FastApiCall(CallDescriptor* descriptor, Node** inputs,
+                             size_t inputs_size) {
+-    return AddNode<Object>(graph()->NewNode(
+-        simplified()->FastApiCall(c_function_, feedback(), descriptor),
+-        static_cast<int>(inputs_size), inputs));
++    return AddNode<Object>(
++        graph()->NewNode(simplified()->FastApiCall(c_candidate_functions_,
++                                                   feedback(), descriptor),
++                         static_cast<int>(inputs_size), inputs));
+   }
+ 
+-  FastApiCallFunction c_function_;
++  const FastApiCallFunctionVector c_candidate_functions_;
+   const FunctionTemplateInfoRef function_template_info_;
+   Node* const receiver_;
+   Node* const holder_;
+@@ -3886,10 +3888,11 @@ Reduction JSCallReducer::ReduceCallWasmFunction(Node* node,
+ // Returns an array with the indexes of the remaining entries in S, which
+ // represents the set of "optimizable" function overloads.
+ 
+-FastApiCallFunction GetFastApiCallTarget(
+-    JSHeapBroker* broker, FunctionTemplateInfoRef function_template_info,
+-    size_t arg_count) {
+-  if (!v8_flags.turbo_fast_api_calls) return {0, nullptr};
++FastApiCallFunctionVector CanOptimizeFastCall(
++    JSHeapBroker* broker, Zone* zone,
++    FunctionTemplateInfoRef function_template_info, size_t arg_count) {
++  FastApiCallFunctionVector result(zone);
++  if (!v8_flags.turbo_fast_api_calls) return result;
+ 
+   static constexpr int kReceiver = 1;
+ 
+@@ -3918,15 +3921,15 @@ FastApiCallFunction GetFastApiCallTarget(
+             static_cast<uint8_t>(c_signature->ArgumentInfo(i).GetFlags());
+         if (flags & static_cast<uint8_t>(CTypeInfo::Flags::kEnforceRangeBit)) {
+           // Bailout
+-          return {0, nullptr};
++          return FastApiCallFunctionVector(zone);
+         }
+       }
+ #endif
+-      return {functions[i], c_signature};
++      result.push_back({functions[i], c_signature});
+     }
+   }
+ 
+-  return {0, nullptr};
++  return result;
+ }
+ 
+ Reduction JSCallReducer::ReduceCallApiFunction(Node* node,
+@@ -4109,13 +4112,15 @@ Reduction JSCallReducer::ReduceCallApiFunction(Node* node,
+   }
+ 
+   // Handles overloaded functions.
+-  FastApiCallFunction c_function =
+-      GetFastApiCallTarget(broker(), function_template_info, argc);
+ 
+-  if (c_function.address) {
++  FastApiCallFunctionVector c_candidate_functions = CanOptimizeFastCall(
++      broker(), graph()->zone(), function_template_info, argc);
++  DCHECK_LE(c_candidate_functions.size(), 2);
++
++  if (!c_candidate_functions.empty()) {
+     FastApiCallReducerAssembler a(this, node, function_template_info,
+-                                  c_function, receiver, holder, shared, target,
+-                                  argc, effect);
++                                  c_candidate_functions, receiver, holder,
++                                  shared, target, argc, effect);
+     Node* fast_call_subgraph = a.ReduceFastApiCall();
+ 
+     return Replace(fast_call_subgraph);
+diff --git a/src/compiler/simplified-lowering.cc b/src/compiler/simplified-lowering.cc
+index a76784f65355cd7f380cadf0db602668f59cf07b..37e216509163514bc9ee43d7bb25695387e82351 100644
+--- a/src/compiler/simplified-lowering.cc
++++ b/src/compiler/simplified-lowering.cc
+@@ -2015,7 +2015,7 @@ class RepresentationSelector {
+     // argument, which must be a JSArray in one function and a TypedArray in the
+     // other function, and both JSArrays and TypedArrays have the same UseInfo
+     // UseInfo::AnyTagged(). All the other argument types must match.
+-    const CFunctionInfo* c_signature = op_params.c_function().signature;
++    const CFunctionInfo* c_signature = op_params.c_functions()[0].signature;
+     const int c_arg_count = c_signature->ArgumentCount();
+     CallDescriptor* call_descriptor = op_params.descriptor();
+     // Arguments for CallApiCallbackOptimizedXXX builtin (including context)
+@@ -2057,8 +2057,12 @@ class RepresentationSelector {
+ 
+     // Effect and Control.
+     ProcessRemainingInputs<T>(node, value_input_count);
++    if (op_params.c_functions().empty()) {
++      SetOutput<T>(node, MachineRepresentation::kTagged);
++      return;
++    }
+ 
+-    CTypeInfo return_type = op_params.c_function().signature->ReturnInfo();
++    CTypeInfo return_type = op_params.c_functions()[0].signature->ReturnInfo();
+     switch (return_type.GetType()) {
+       case CTypeInfo::Type::kBool:
+         SetOutput<T>(node, MachineRepresentation::kBit);
+diff --git a/src/compiler/simplified-operator.cc b/src/compiler/simplified-operator.cc
+index a27ea417112518987f95eac5d7d091693149280a..a8fd6fba72b3140016258b8c156aa65701367c59 100644
+--- a/src/compiler/simplified-operator.cc
++++ b/src/compiler/simplified-operator.cc
+@@ -2055,21 +2055,26 @@ FastApiCallParameters const& FastApiCallParametersOf(const Operator* op) {
+ }
+ 
+ std::ostream& operator<<(std::ostream& os, FastApiCallParameters const& p) {
+-  FastApiCallFunction c_function = p.c_function();
+-  os << c_function.address << ":" << c_function.signature << ", ";
++  const auto& c_functions = p.c_functions();
++  for (size_t i = 0; i < c_functions.size(); i++) {
++    os << c_functions[i].address << ":" << c_functions[i].signature << ", ";
++  }
+   return os << p.feedback() << ", " << p.descriptor();
+ }
+ 
+ size_t hash_value(FastApiCallParameters const& p) {
+-  FastApiCallFunction c_function = p.c_function();
+-  size_t hash = base::hash_combine(c_function.address, c_function.signature);
++  const auto& c_functions = p.c_functions();
++  size_t hash = 0;
++  for (size_t i = 0; i < c_functions.size(); i++) {
++    hash = base::hash_combine(c_functions[i].address, c_functions[i].signature);
++  }
+   return base::hash_combine(hash, FeedbackSource::Hash()(p.feedback()),
+                             p.descriptor());
+ }
+ 
+ bool operator==(FastApiCallParameters const& lhs,
+                 FastApiCallParameters const& rhs) {
+-  return lhs.c_function() == rhs.c_function() &&
++  return lhs.c_functions() == rhs.c_functions() &&
+          lhs.feedback() == rhs.feedback() &&
+          lhs.descriptor() == rhs.descriptor();
+ }
+@@ -2279,11 +2284,19 @@ const Operator* SimplifiedOperatorBuilder::TransitionAndStoreNonNumberElement(
+ }
+ 
+ const Operator* SimplifiedOperatorBuilder::FastApiCall(
+-    FastApiCallFunction c_function, FeedbackSource const& feedback,
+-    CallDescriptor* descriptor) {
+-  CHECK_NOT_NULL(c_function.signature);
+-  const CFunctionInfo* signature = c_function.signature;
++    const FastApiCallFunctionVector& c_functions,
++    FeedbackSource const& feedback, CallDescriptor* descriptor) {
++  DCHECK(!c_functions.empty());
++
++  // All function overloads have the same number of arguments and options.
++  const CFunctionInfo* signature = c_functions[0].signature;
+   const int c_arg_count = signature->ArgumentCount();
++  for (size_t i = 1; i < c_functions.size(); i++) {
++    CHECK_NOT_NULL(c_functions[i].signature);
++    DCHECK_EQ(c_functions[i].signature->ArgumentCount(), c_arg_count);
++    DCHECK_EQ(c_functions[i].signature->HasOptions(),
++              c_functions[0].signature->HasOptions());
++  }
+   // Arguments for CallApiCallbackOptimizedXXX builtin (including context)
+   // plus JS arguments (including receiver).
+   int slow_arg_count = static_cast<int>(descriptor->ParameterCount());
+@@ -2293,13 +2306,13 @@ const Operator* SimplifiedOperatorBuilder::FastApiCall(
+   return zone()->New<Operator1<FastApiCallParameters>>(
+       IrOpcode::kFastApiCall, Operator::kNoProperties, "FastApiCall",
+       value_input_count, 1, 1, 1, 1, 2,
+-      FastApiCallParameters(c_function, feedback, descriptor));
++      FastApiCallParameters(c_functions, feedback, descriptor));
+ }
+ 
+ // static
+ int FastApiCallNode::FastCallArgumentCount(Node* node) {
+   FastApiCallParameters p = FastApiCallParametersOf(node->op());
+-  const CFunctionInfo* signature = p.c_function().signature;
++  const CFunctionInfo* signature = p.c_functions()[0].signature;
+   CHECK_NOT_NULL(signature);
+   return signature->ArgumentCount();
+ }
+diff --git a/src/compiler/simplified-operator.h b/src/compiler/simplified-operator.h
+index a4aecbbfe2f82a16dfc136c2bc22614ade9e6bf7..ee61ba530af51cd3b32a62cc5d4b83016f501078 100644
+--- a/src/compiler/simplified-operator.h
++++ b/src/compiler/simplified-operator.h
+@@ -716,25 +716,35 @@ struct FastApiCallFunction {
+     return address == rhs.address && signature == rhs.signature;
+   }
+ };
++typedef ZoneVector<FastApiCallFunction> FastApiCallFunctionVector;
+ 
+ class FastApiCallParameters {
+  public:
+-  explicit FastApiCallParameters(FastApiCallFunction c_function,
++  explicit FastApiCallParameters(const FastApiCallFunctionVector& c_functions,
+                                  FeedbackSource const& feedback,
+                                  CallDescriptor* descriptor)
+-      : c_function_(c_function), feedback_(feedback), descriptor_(descriptor) {}
++      : c_functions_(c_functions),
++        feedback_(feedback),
++        descriptor_(descriptor) {}
+ 
+-  FastApiCallFunction c_function() const { return c_function_; }
++  const FastApiCallFunctionVector& c_functions() const { return c_functions_; }
+   FeedbackSource const& feedback() const { return feedback_; }
+   CallDescriptor* descriptor() const { return descriptor_; }
+-  const CFunctionInfo* signature() const { return c_function_.signature; }
++  const CFunctionInfo* signature() const {
++    DCHECK(!c_functions_.empty());
++    return c_functions_[0].signature;
++  }
+   unsigned int argument_count() const {
+     const unsigned int count = signature()->ArgumentCount();
++    DCHECK(base::all_of(c_functions_, [count](const auto& f) {
++      return f.signature->ArgumentCount() == count;
++    }));
+     return count;
+   }
+ 
+  private:
+-  FastApiCallFunction c_function_;
++  // A single FastApiCall node can represent multiple overloaded functions.
++  const FastApiCallFunctionVector c_functions_;
+ 
+   const FeedbackSource feedback_;
+   CallDescriptor* descriptor_;
+@@ -1205,9 +1215,9 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
+   const Operator* Unsigned32Divide();
+ 
+   // Represents the inputs necessary to construct a fast and a slow API call.
+-  const Operator* FastApiCall(FastApiCallFunction c_function,
+-                              FeedbackSource const& feedback,
+-                              CallDescriptor* descriptor);
++  const Operator* FastApiCall(
++      const FastApiCallFunctionVector& c_candidate_functions,
++      FeedbackSource const& feedback, CallDescriptor* descriptor);
+ 
+ #ifdef V8_ENABLE_CONTINUATION_PRESERVED_EMBEDDER_DATA
+   const Operator* GetContinuationPreservedEmbedderData();
+diff --git a/src/compiler/turbofan-typer.cc b/src/compiler/turbofan-typer.cc
+index 51f797d342c4fb20e6833fdebbc8a6417b9a3537..a1ab6f4a314a56db8d1351e81e9640e470c324ae 100644
+--- a/src/compiler/turbofan-typer.cc
++++ b/src/compiler/turbofan-typer.cc
+@@ -1186,8 +1186,11 @@ Type Typer::Visitor::TypeCall(Node* node) { return Type::Any(); }
+ 
+ Type Typer::Visitor::TypeFastApiCall(Node* node) {
+   FastApiCallParameters const& op_params = FastApiCallParametersOf(node->op());
++  if (op_params.c_functions().empty()) {
++    return Type::Undefined();
++  }
+ 
+-  const CFunctionInfo* c_signature = op_params.c_function().signature;
++  const CFunctionInfo* c_signature = op_params.c_functions()[0].signature;
+   CTypeInfo return_type = c_signature->ReturnInfo();
+ 
+   switch (return_type.GetType()) {
+diff --git a/src/compiler/turboshaft/fast-api-call-lowering-reducer.h b/src/compiler/turboshaft/fast-api-call-lowering-reducer.h
+index 2dec266f9e648391fe61a62931cca1ad20de719c..dc27e91ad0da93a5b68053f132f219f95f641ca1 100644
+--- a/src/compiler/turboshaft/fast-api-call-lowering-reducer.h
++++ b/src/compiler/turboshaft/fast-api-call-lowering-reducer.h
+@@ -29,23 +29,41 @@ class FastApiCallLoweringReducer : public Next {
+       base::Vector<const OpIndex> arguments,
+       const FastApiCallParameters* parameters,
+       base::Vector<const RegisterRepresentation> out_reps) {
+-    FastApiCallFunction c_function = parameters->c_function;
++    const auto& c_functions = parameters->c_functions;
+     const auto& c_signature = parameters->c_signature();
+     const int c_arg_count = c_signature->ArgumentCount();
+     DCHECK_EQ(c_arg_count, arguments.size());
++    const auto& resolution_result = parameters->resolution_result;
+ 
+     Label<> handle_error(this);
+     Label<Word32> done(this);
+     Variable result = __ NewVariable(RegisterRepresentation::FromCTypeInfo(
+         c_signature->ReturnInfo(), c_signature->GetInt64Representation()));
+ 
+-    OpIndex callee = __ ExternalConstant(ExternalReference::Create(
+-        c_function.address, ExternalReference::FAST_C_CALL));
+-
++    OpIndex callee;
+     base::SmallVector<OpIndex, 16> args;
+     for (int i = 0; i < c_arg_count; ++i) {
++      // Check if this is the argument on which we need to perform overload
++      // resolution.
++      if (i == resolution_result.distinguishable_arg_index) {
++        DCHECK_GT(c_functions.size(), 1);
++        // This only happens when the FastApiCall node represents multiple
++        // overloaded functions and {i} is the index of the distinguishable
++        // argument.
++        OpIndex arg_i;
++        std::tie(callee, arg_i) = AdaptOverloadedFastCallArgument(
++            arguments[i], c_functions, resolution_result, handle_error);
++        args.push_back(arg_i);
++      } else {
+         CTypeInfo type = c_signature->ArgumentInfo(i);
+         args.push_back(AdaptFastCallArgument(arguments[i], type, handle_error));
++      }
++    }
++
++    if (c_functions.size() == 1) {
++      DCHECK(!callee.valid());
++      callee = __ ExternalConstant(ExternalReference::Create(
++          c_functions[0].address, ExternalReference::FAST_C_CALL));
+     }
+ 
+     // While adapting the arguments, we might have noticed an inconsistency that
+@@ -137,6 +155,56 @@ class FastApiCallLoweringReducer : public Next {
+   }
+ 
+  private:
++  std::pair<OpIndex, OpIndex> AdaptOverloadedFastCallArgument(
++      OpIndex argument, const FastApiCallFunctionVector& c_functions,
++      const fast_api_call::OverloadsResolutionResult& resolution_result,
++      Label<>& handle_error) {
++    Label<WordPtr, WordPtr> done(this);
++
++    for (size_t func_index = 0; func_index < c_functions.size(); ++func_index) {
++      const CFunctionInfo* c_signature = c_functions[func_index].signature;
++      CTypeInfo arg_type = c_signature->ArgumentInfo(
++          resolution_result.distinguishable_arg_index);
++
++      Label<> next(this);
++
++      // Check that the value is a HeapObject.
++      GOTO_IF(__ ObjectIsSmi(argument), handle_error);
++
++      switch (arg_type.GetSequenceType()) {
++        case CTypeInfo::SequenceType::kIsSequence: {
++          CHECK_EQ(arg_type.GetType(), CTypeInfo::Type::kVoid);
++
++          // Check that the value is a JSArray.
++          V<Map> map = __ LoadMapField(argument);
++          V<Word32> instance_type = __ LoadInstanceTypeField(map);
++          GOTO_IF_NOT(__ Word32Equal(instance_type, JS_ARRAY_TYPE), next);
++
++          OpIndex argument_to_pass = __ AdaptLocalArgument(argument);
++          OpIndex target_address = __ ExternalConstant(
++              ExternalReference::Create(c_functions[func_index].address,
++                                        ExternalReference::FAST_C_CALL));
++          GOTO(done, target_address, argument_to_pass);
++          break;
++        }
++          START_ALLOW_USE_DEPRECATED()
++        case CTypeInfo::SequenceType::kIsTypedArray:
++          UNREACHABLE();
++          END_ALLOW_USE_DEPRECATED()
++
++        default: {
++          UNREACHABLE();
++        }
++      }
++
++      BIND(next);
++    }
++    GOTO(handle_error);
++
++    BIND(done, callee, arg);
++    return {callee, arg};
++  }
++
+   template <typename T>
+   V<T> Checked(V<Tuple<T, Word32>> result, Label<>& otherwise) {
+     V<Word32> result_state = __ template Projection<1>(result);
+diff --git a/src/compiler/turboshaft/graph-builder.cc b/src/compiler/turboshaft/graph-builder.cc
+index 806cb4533cc035ee4c95597ba2ab6bbfb6ac81f1..2b597b8798ed235afcd833efbc7a308b2f1db288 100644
+--- a/src/compiler/turboshaft/graph-builder.cc
++++ b/src/compiler/turboshaft/graph-builder.cc
+@@ -1974,7 +1974,7 @@ OpIndex GraphBuilder::Process(
+       DCHECK(dominating_frame_state.valid());
+       FastApiCallNode n(node);
+       const auto& params = n.Parameters();
+-      FastApiCallFunction c_function = params.c_function();
++      const FastApiCallFunctionVector& c_functions = params.c_functions();
+       const int c_arg_count = params.argument_count();
+ 
+       base::SmallVector<OpIndex, 16> slow_call_arguments;
+@@ -2141,6 +2141,40 @@ OpIndex GraphBuilder::Process(
+         Block* catch_block = Map(block->SuccessorAt(1));
+         catch_scope.emplace(assembler, catch_block);
+       }
++      // Overload resolution.
++      auto resolution_result =
++          fast_api_call::OverloadsResolutionResult::Invalid();
++      if (c_functions.size() != 1) {
++        DCHECK_EQ(c_functions.size(), 2);
++        resolution_result =
++            fast_api_call::ResolveOverloads(c_functions, c_arg_count);
++        if (!resolution_result.is_valid()) {
++          V<Object> fallback_result = V<Object>::Cast(__ Call(
++              slow_call_callee, dominating_frame_state,
++              base::VectorOf(slow_call_arguments),
++              TSCallDescriptor::Create(params.descriptor(), CanThrow::kYes,
++                                       LazyDeoptOnThrow::kNo,
++                                       __ graph_zone())));
++          Variable result =
++              __ NewVariable(RegisterRepresentation::FromCTypeInfo(
++                  c_functions[0].signature->ReturnInfo(),
++                  c_functions[0].signature->GetInt64Representation()));
++          convert_fallback_return(
++              result, c_functions[0].signature->GetInt64Representation(),
++              c_functions[0].signature->ReturnInfo().GetType(),
++              fallback_result);
++          V<Any> value = __ GetVariable(result);
++          if (is_final_control) {
++            // The `__ Call()` before has already created exceptional
++            // control flow and bound a new block for the success case. So we
++            // can just `Goto` the block that Turbofan designated as the
++            // `IfSuccess` successor.
++            __ Goto(Map(block->SuccessorAt(0)));
++          }
++          return value;
++        }
++      }
++
+       // Prepare FastCallApiOp parameters.
+       base::SmallVector<OpIndex, 16> arguments;
+       for (int i = 0; i < c_arg_count; ++i) {
+@@ -2150,8 +2184,8 @@ OpIndex GraphBuilder::Process(
+ 
+       V<Context> context = Map(n.Context());
+ 
+-      const FastApiCallParameters* parameters =
+-          FastApiCallParameters::Create(c_function, __ graph_zone());
++      const FastApiCallParameters* parameters = FastApiCallParameters::Create(
++          c_functions, resolution_result, __ graph_zone());
+ 
+       // There is one return in addition to the return value of the C function,
+       // which indicates if a fast API call actually happened.
+diff --git a/src/compiler/turboshaft/operations.h b/src/compiler/turboshaft/operations.h
+index 1b36c56008d4b3c5af0d15f2c6336d260fab56c8..f50f1fd3ba0d0ac1deae2510a483714172560b56 100644
+--- a/src/compiler/turboshaft/operations.h
++++ b/src/compiler/turboshaft/operations.h
+@@ -6318,16 +6318,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
+ };
+ 
+ struct FastApiCallParameters : public NON_EXPORTED_BASE(ZoneObject) {
+-  FastApiCallFunction c_function;
++  const FastApiCallFunctionVector c_functions;
++  fast_api_call::OverloadsResolutionResult resolution_result;
+ 
+-  const CFunctionInfo* c_signature() const { return c_function.signature; }
++  const CFunctionInfo* c_signature() const { return c_functions[0].signature; }
+ 
+-  explicit FastApiCallParameters(FastApiCallFunction c_function)
+-      : c_function(c_function) {}
++  FastApiCallParameters(
++      const FastApiCallFunctionVector& c_functions,
++      const fast_api_call::OverloadsResolutionResult& resolution_result)
++      : c_functions(c_functions), resolution_result(resolution_result) {
++    DCHECK_LT(0, c_functions.size());
++  }
+ 
+-  static const FastApiCallParameters* Create(FastApiCallFunction c_function,
+-                                             Zone* graph_zone) {
+-    return graph_zone->New<FastApiCallParameters>(c_function);
++  static const FastApiCallParameters* Create(
++      const FastApiCallFunctionVector& c_functions,
++      const fast_api_call::OverloadsResolutionResult& resolution_result,
++      Zone* graph_zone) {
++    return graph_zone->New<FastApiCallParameters>(std::move(c_functions),
++                                                  resolution_result);
+   }
+ };
+ 
+diff --git a/src/compiler/wasm-compiler.cc b/src/compiler/wasm-compiler.cc
+index b6ded4cd3e2a29af8589862ac31c97fdd0da0c71..14c3378470a34ef8bdda4a4df8211e5a6b8726f7 100644
+--- a/src/compiler/wasm-compiler.cc
++++ b/src/compiler/wasm-compiler.cc
+@@ -8351,13 +8351,19 @@ class WasmWrapperGraphBuilder : public WasmGraphBuilder {
+                     wasm::ObjectAccess::ToTagged(
+                         FunctionTemplateInfo::kCallbackDataOffset));
+ 
+-    FastApiCallFunction c_function{c_address, c_signature};
++    FastApiCallFunctionVector fast_api_call_function_vector(mcgraph()->zone());
++    fast_api_call_function_vector.push_back({c_address, c_signature});
+     Node* call = fast_api_call::BuildFastApiCall(
+-        target->GetIsolate(), graph(), gasm_.get(), c_function,
+-        api_data_argument,
++        target->GetIsolate(), graph(), gasm_.get(),
++        fast_api_call_function_vector, c_signature, api_data_argument,
+         // Load and convert parameters passed to C function
+-        [this, c_signature, receiver_node](int param_index,
+-                                           GraphAssemblerLabel<0>*) {
++        [this, c_signature, receiver_node](
++            int param_index,
++            fast_api_call::OverloadsResolutionResult& overloads,
++            GraphAssemblerLabel<0>*) {
++          // Wasm does not currently support overloads
++          CHECK(!overloads.is_valid());
++
+           if (param_index == 0) {
+             return gasm_->AdaptLocalArgument(receiver_node);
+           }
+diff --git a/src/d8/d8-test.cc b/src/d8/d8-test.cc
+index 327fc4df5c731727a50c52f8a6bbf80b4021555e..88daa4f39a65db8b257d0a412359ecd79330d118 100644
+--- a/src/d8/d8-test.cc
++++ b/src/d8/d8-test.cc
+@@ -443,6 +443,20 @@ class FastCApiObject {
+     }
+   }
+ 
++  static int32_t AddAllIntInvalidCallback(Local<Object> receiver,
++                                          int32_t arg_i32,
++                                          FastApiCallbackOptions& options) {
++    // This should never be called
++    UNREACHABLE();
++  }
++
++  static int32_t AddAllIntInvalidOverloadCallback(
++      Local<Object> receiver, Local<Object> seq_arg,
++      FastApiCallbackOptions& options) {
++    // This should never be called
++    UNREACHABLE();
++  }
++
+ #ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
+   static AnyCType Add32BitIntFastCallbackPatch(AnyCType receiver,
+                                                AnyCType arg_i32,
+@@ -1551,6 +1565,22 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
+             signature, 1, ConstructorBehavior::kThrow,
+             SideEffectType::kHasSideEffect, {add_all_overloads, 2}));
+ 
++    CFunction add_all_int_invalid_func =
++        CFunction::Make(FastCApiObject::AddAllIntInvalidCallback);
++    CFunction add_all_int_invalid_overload =
++        CFunction::Make(FastCApiObject::AddAllIntInvalidOverloadCallback);
++
++    const CFunction add_all_invalid_overloads[] = {
++        add_all_int_invalid_func,
++        add_all_int_invalid_overload,
++    };
++    api_obj_ctor->PrototypeTemplate()->Set(
++        isolate, "add_all_invalid_overload",
++        FunctionTemplate::NewWithCFunctionOverloads(
++            isolate, FastCApiObject::AddAllSequenceSlowCallback, Local<Value>(),
++            signature, 1, ConstructorBehavior::kThrow,
++            SideEffectType::kHasSideEffect, {add_all_invalid_overloads, 2}));
++
+     CFunction add_all_32bit_int_8args_c_func = CFunction::Make(
+         FastCApiObject::AddAll32BitIntFastCallback_8Args V8_IF_USE_SIMULATOR(
+             FastCApiObject::AddAll32BitIntFastCallback_8ArgsPatch));
+diff --git a/test/mjsunit/compiler/fast-api-sequences.js b/test/mjsunit/compiler/fast-api-sequences.js
+index 6a982bbbfe13ae792a3d3a1d3376f71b6b00d38a..4318f60fc70f0a2684c6f233861e513063f8e542 100644
+--- a/test/mjsunit/compiler/fast-api-sequences.js
++++ b/test/mjsunit/compiler/fast-api-sequences.js
+@@ -81,6 +81,30 @@ for (let i = 0; i < 100; i++) {
+   ExpectFastCall(overloaded_test, 62);
+ })();
+ 
++// Test function with invalid overloads.
++(function () {
++  function overloaded_test() {
++    return fast_c_api.add_all_invalid_overload(
++      [26, -6, 42]);
++  }
++
++  %PrepareFunctionForOptimization(overloaded_test);
++  result = overloaded_test();
++  assertEquals(62, result);
++
++  fast_c_api.reset_counts();
++  %OptimizeFunctionOnNextCall(overloaded_test);
++  result = overloaded_test();
++  assertEquals(62, result);
++  // Here we deopt because with this invalid overload:
++  // - add_all_int_invalid_func(Receiver, Bool, Int32, Options)
++  // - add_all_seq_c_func(Receiver, Bool, JSArray, Options)
++  // we expect that a number will be passed as 3rd argument
++  // (SimplifiedLowering takes the type from the first overloaded function).
++  assertUnoptimized(overloaded_test);
++  assertEquals(0, fast_c_api.fast_call_count());
++})();
++
+ // ----------- Test different TypedArray functions. -----------
+ // ----------- add_all_<TYPE>_typed_array -----------
+ // `add_all_<TYPE>_typed_array` have the following signature:
+diff --git a/test/mjsunit/regress/regress-335548148.js b/test/mjsunit/regress/regress-335548148.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..4725c48990767fc2a469a5ab3c04ba96e11bf54c
+--- /dev/null
++++ b/test/mjsunit/regress/regress-335548148.js
+@@ -0,0 +1,29 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --turbo-fast-api-calls --expose-fast-api --allow-natives-syntax --turbofan
++// --always-turbofan is disabled because we rely on particular feedback for
++// optimizing to the fastest path.
++// Flags: --no-always-turbofan
++// The test relies on optimizing/deoptimizing at predictable moments, so
++// it's not suitable for deoptimization fuzzing.
++// Flags: --deopt-every-n-times=0
++// Flags: --fast-api-allow-float-in-sim
++
++const __v_0 = new d8.test.FastCAPI();
++
++function __f_0(__v_4, __v_5) {
++  try {
++    // Call the API function with an invalid parameter. Because of the invalid
++    // parameter the overload resolution of the fast API cannot figure out
++    // which function should be called, and therefore emits code for a normal
++    // API call.
++    __v_0.add_all_invalid_overload(__v_5, Object.prototype);
++  } catch (e) {}
++}
++
++%PrepareFunctionForOptimization(__f_0);
++__f_0(Number.MIN_VALUE, Number.MIN_VALUE);
++%OptimizeFunctionOnNextCall(__f_0);
++__f_0(Number.MIN_VALUE, Number.MIN_VALUE);

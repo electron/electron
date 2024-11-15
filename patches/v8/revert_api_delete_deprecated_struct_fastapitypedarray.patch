@@ -1,0 +1,401 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Fri, 15 Nov 2024 10:49:33 -0500
+Subject: Revert "[api] Delete deprecated struct FastApiTypedArray"
+
+Revert this until Node.js decides how to proceed and then pick up their fix.
+
+Refs: https://github.com/nodejs/node/issues/55452
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5956408
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5982984
+
+This reverts commit 35a6781f783f037404869f6c9ec22f147dba1c5e.
+
+diff --git a/include/v8-fast-api-calls.h b/include/v8-fast-api-calls.h
+index 12ef5e4f7e66f1bfe2ff3f46ebfa8f47c86e313c..a6fed94dc5382acdaf626a56a6a7890c97873b7b 100644
+--- a/include/v8-fast-api-calls.h
++++ b/include/v8-fast-api-calls.h
+@@ -339,6 +339,42 @@ struct V8_DEPRECATED(
+   size_t length_ = 0;
+ };
+ 
++template <typename T>
++struct V8_DEPRECATE_SOON(
++    "When an API function expects a TypedArray as a parameter, the type in the "
++    "signature should be `v8::Local<v8::Value>` instead of "
++    "FastApiTypedArray<>. The API function then has to type-check the "
++    "parameter and convert it to a `v8::Local<v8::TypedArray` to access the "
++    "data. In essence, the parameter should be handled the same as for a "
++    "regular API call.") FastApiTypedArray : public FastApiTypedArrayBase {
++ public:
++  V8_INLINE T get(size_t index) const {
++#ifdef DEBUG
++    ValidateIndex(index);
++#endif  // DEBUG
++    T tmp;
++    memcpy(&tmp, static_cast<void*>(reinterpret_cast<T*>(data_) + index),
++           sizeof(T));
++    return tmp;
++  }
++
++  bool getStorageIfAligned(T** elements) const {
++    if (reinterpret_cast<uintptr_t>(data_) % alignof(T) != 0) {
++      return false;
++    }
++    *elements = reinterpret_cast<T*>(data_);
++    return true;
++  }
++
++ private:
++  // This pointer should include the typed array offset applied.
++  // It's not guaranteed that it's aligned to sizeof(T), it's only
++  // guaranteed that it's 4-byte aligned, so for 8-byte types we need to
++  // provide a special implementation for reading from it, which hides
++  // the possibly unaligned read in the `get` method.
++  void* data_;
++};
++
+ struct V8_DEPRECATED("This API is dead within V8") FastApiArrayBufferView {
+   void* data;
+   size_t byte_length;
+@@ -664,6 +700,32 @@ PRIMITIVE_C_TYPES(DEFINE_TYPE_INFO_TRAITS)
+ #undef PRIMITIVE_C_TYPES
+ #undef ALL_C_TYPES
+ 
++#define SPECIALIZE_GET_TYPE_INFO_HELPER_FOR_TA(T, Enum)                        \
++  template <>                                                                  \
++  struct V8_DEPRECATE_SOON(                                                    \
++      "This struct is unnecessary now, because FastApiTypedArray has already " \
++      "been deprecated as well") TypeInfoHelper<const FastApiTypedArray<T>&> { \
++    static constexpr CTypeInfo::Flags Flags() {                                \
++      return CTypeInfo::Flags::kNone;                                          \
++    }                                                                          \
++                                                                               \
++    static constexpr CTypeInfo::Type Type() { return CTypeInfo::Type::Enum; }  \
++    static constexpr CTypeInfo::SequenceType SequenceType() {                  \
++      return CTypeInfo::SequenceType::kIsTypedArray;                           \
++    }                                                                          \
++  };
++
++#define TYPED_ARRAY_C_TYPES(V) \
++  V(uint8_t, kUint8)           \
++  V(int32_t, kInt32)           \
++  V(uint32_t, kUint32)         \
++  V(int64_t, kInt64)           \
++  V(uint64_t, kUint64)         \
++  V(float, kFloat32)           \
++  V(double, kFloat64)
++
++TYPED_ARRAY_C_TYPES(SPECIALIZE_GET_TYPE_INFO_HELPER_FOR_TA)
++
+ #undef TYPED_ARRAY_C_TYPES
+ 
+ template <>
+diff --git a/src/compiler/turboshaft/fast-api-call-lowering-reducer.h b/src/compiler/turboshaft/fast-api-call-lowering-reducer.h
+index dc27e91ad0da93a5b68053f132f219f95f641ca1..38ba1110da3f77df4681ccb0ebcee78d1500fbd7 100644
+--- a/src/compiler/turboshaft/fast-api-call-lowering-reducer.h
++++ b/src/compiler/turboshaft/fast-api-call-lowering-reducer.h
+@@ -188,8 +188,20 @@ class FastApiCallLoweringReducer : public Next {
+           break;
+         }
+           START_ALLOW_USE_DEPRECATED()
+-        case CTypeInfo::SequenceType::kIsTypedArray:
+-          UNREACHABLE();
++        case CTypeInfo::SequenceType::kIsTypedArray: {
++          // Check that the value is a TypedArray with a type that matches the
++          // type declared in the c-function.
++          OpIndex stack_slot = AdaptFastCallTypedArrayArgument(
++              argument,
++              fast_api_call::GetTypedArrayElementsKind(
++                  resolution_result.element_type),
++              next);
++          OpIndex target_address = __ ExternalConstant(
++              ExternalReference::Create(c_functions[func_index].address,
++                                        ExternalReference::FAST_C_CALL));
++          GOTO(done, target_address, stack_slot);
++          break;
++        }
+           END_ALLOW_USE_DEPRECATED()
+ 
+         default: {
+@@ -328,8 +340,15 @@ class FastApiCallLoweringReducer : public Next {
+         return __ AdaptLocalArgument(argument);
+       }
+         START_ALLOW_USE_DEPRECATED()
+-      case CTypeInfo::SequenceType::kIsTypedArray:
+-        UNREACHABLE();
++      case CTypeInfo::SequenceType::kIsTypedArray: {
++        // Check that the value is a HeapObject.
++        GOTO_IF(__ ObjectIsSmi(argument), handle_error);
++
++        return AdaptFastCallTypedArrayArgument(
++            argument,
++            fast_api_call::GetTypedArrayElementsKind(arg_type.GetType()),
++            handle_error);
++      }
+         END_ALLOW_USE_DEPRECATED()
+       default: {
+         UNREACHABLE();
+@@ -387,6 +406,94 @@ class FastApiCallLoweringReducer : public Next {
+     }
+   }
+ 
++  OpIndex AdaptFastCallTypedArrayArgument(V<HeapObject> argument,
++                                          ElementsKind expected_elements_kind,
++                                          Label<>& bailout) {
++    V<Map> map = __ LoadMapField(argument);
++    V<Word32> instance_type = __ LoadInstanceTypeField(map);
++    GOTO_IF_NOT(LIKELY(__ Word32Equal(instance_type, JS_TYPED_ARRAY_TYPE)),
++                bailout);
++
++    V<Word32> bitfield2 =
++        __ template LoadField<Word32>(map, AccessBuilder::ForMapBitField2());
++    V<Word32> kind = __ Word32ShiftRightLogical(
++        __ Word32BitwiseAnd(bitfield2, Map::Bits2::ElementsKindBits::kMask),
++        Map::Bits2::ElementsKindBits::kShift);
++    GOTO_IF_NOT(LIKELY(__ Word32Equal(kind, expected_elements_kind)), bailout);
++
++    V<HeapObject> buffer = __ template LoadField<HeapObject>(
++        argument, AccessBuilder::ForJSArrayBufferViewBuffer());
++    V<Word32> buffer_bitfield = __ template LoadField<Word32>(
++        buffer, AccessBuilder::ForJSArrayBufferBitField());
++
++    // Go to the slow path if the {buffer} was detached.
++    GOTO_IF(UNLIKELY(__ Word32BitwiseAnd(buffer_bitfield,
++                                         JSArrayBuffer::WasDetachedBit::kMask)),
++            bailout);
++
++    // Go to the slow path if the {buffer} is shared.
++    GOTO_IF(UNLIKELY(__ Word32BitwiseAnd(buffer_bitfield,
++                                         JSArrayBuffer::IsSharedBit::kMask)),
++            bailout);
++
++    // Unpack the store and length, and store them to a struct
++    // FastApiTypedArray.
++    OpIndex external_pointer =
++        __ LoadField(argument, AccessBuilder::ForJSTypedArrayExternalPointer());
++
++    // Load the base pointer for the buffer. This will always be Smi
++    // zero unless we allow on-heap TypedArrays, which is only the case
++    // for Chrome. Node and Electron both set this limit to 0. Setting
++    // the base to Smi zero here allows the BuildTypedArrayDataPointer
++    // to optimize away the tricky part of the access later.
++    V<WordPtr> data_ptr;
++    if constexpr (JSTypedArray::kMaxSizeInHeap == 0) {
++      data_ptr = external_pointer;
++    } else {
++      V<Object> base_pointer = __ template LoadField<Object>(
++          argument, AccessBuilder::ForJSTypedArrayBasePointer());
++      V<WordPtr> base = __ BitcastTaggedToWordPtr(base_pointer);
++      if (COMPRESS_POINTERS_BOOL) {
++        // Zero-extend Tagged_t to UintPtr according to current compression
++        // scheme so that the addition with |external_pointer| (which already
++        // contains compensated offset value) will decompress the tagged value.
++        // See JSTypedArray::ExternalPointerCompensationForOnHeapArray() for
++        // details.
++        base = __ ChangeUint32ToUintPtr(__ TruncateWordPtrToWord32(base));
++      }
++      data_ptr = __ WordPtrAdd(base, external_pointer);
++    }
++
++    V<WordPtr> length_in_bytes = __ template LoadField<WordPtr>(
++        argument, AccessBuilder::ForJSTypedArrayLength());
++
++    // We hard-code int32_t here, because all specializations of
++    // FastApiTypedArray have the same size.
++    START_ALLOW_USE_DEPRECATED()
++    constexpr int kAlign = alignof(FastApiTypedArray<int32_t>);
++    constexpr int kSize = sizeof(FastApiTypedArray<int32_t>);
++    static_assert(kAlign == alignof(FastApiTypedArray<double>),
++                  "Alignment mismatch between different specializations of "
++                  "FastApiTypedArray");
++    static_assert(kSize == sizeof(FastApiTypedArray<double>),
++                  "Size mismatch between different specializations of "
++                  "FastApiTypedArray");
++    END_ALLOW_USE_DEPRECATED()
++    static_assert(
++        kSize == sizeof(uintptr_t) + sizeof(size_t),
++        "The size of "
++        "FastApiTypedArray isn't equal to the sum of its expected members.");
++    OpIndex stack_slot = __ StackSlot(kSize, kAlign);
++    __ StoreOffHeap(stack_slot, length_in_bytes,
++                    MemoryRepresentation::UintPtr());
++    __ StoreOffHeap(stack_slot, data_ptr, MemoryRepresentation::UintPtr(),
++                    sizeof(size_t));
++    static_assert(sizeof(uintptr_t) == sizeof(size_t),
++                  "The buffer length can't "
++                  "fit the PointerRepresentation used to store it.");
++    return stack_slot;
++  }
++
+   V<Any> DefaultReturnValue(const CFunctionInfo* c_signature) {
+     switch (c_signature->ReturnInfo().GetType()) {
+       case CTypeInfo::Type::kVoid:
+diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
+index f126b758d050236d88ec49a23b298c54eff50821..1282e2cf8a686475492b253138e367cc44d4f77f 100644
+--- a/test/cctest/test-api.cc
++++ b/test/cctest/test-api.cc
+@@ -29762,6 +29762,16 @@ static Trivial* UnwrapTrivialObject(Local<Object> object) {
+   return wrapped;
+ }
+ 
++START_ALLOW_USE_DEPRECATED()
++void FastCallback1TypedArray(v8::Local<v8::Object> receiver, int arg0,
++                             const v8::FastApiTypedArray<int32_t>& arg1) {
++  Trivial* self = UnwrapTrivialObject(receiver);
++  CHECK_NOT_NULL(self);
++  CHECK_EQ(arg0, arg1.length());
++  self->set_x(arg0);
++}
++END_ALLOW_USE_DEPRECATED()
++
+ void FastCallback2JSArray(v8::Local<v8::Object> receiver, int arg0,
+                           v8::Local<v8::Array> arg1) {
+   Trivial* self = UnwrapTrivialObject(receiver);
+@@ -29779,10 +29789,103 @@ void FastCallback4Scalar(v8::Local<v8::Object> receiver, int arg0, float arg1) {
+ void FastCallback5DifferentArity(v8::Local<v8::Object> receiver, int arg0,
+                                  v8::Local<v8::Array> arg1, float arg2) {}
+ 
++void SequenceSlowCallback(const v8::FunctionCallbackInfo<v8::Value>& info) {
++  CHECK(i::ValidateCallbackInfo(info));
++  v8::Isolate* isolate = info.GetIsolate();
++  Trivial* self = UnwrapTrivialObject(info.This());
++  if (!self) {
++    isolate->ThrowError("This method is not defined on the given receiver.");
++    return;
++  }
++  self->set_x(1337);
++
++  HandleScope handle_scope(isolate);
++
++  if (info.Length() < 2 || !info[0]->IsNumber()) {
++    isolate->ThrowError(
++        "This method expects at least 2 arguments,"
++        " first one a number.");
++    return;
++  }
++  int64_t len = info[0]->IntegerValue(isolate->GetCurrentContext()).FromJust();
++  if (info[1]->IsTypedArray()) {
++    v8::Local<v8::TypedArray> typed_array_arg = info[1].As<v8::TypedArray>();
++    size_t length = typed_array_arg->Length();
++    CHECK_EQ(len, length);
++    return;
++  }
++  if (!info[1]->IsArray()) {
++    isolate->ThrowError("This method expects an array as a second argument.");
++    return;
++  }
++  v8::Local<v8::Array> seq_arg = info[1].As<v8::Array>();
++  uint32_t length = seq_arg->Length();
++  CHECK_EQ(len, length);
++  return;
++}
+ }  // namespace
+ #endif  // !defined(V8_LITE_MODE) && defined(V8_ENABLE_TURBOFAN)
+ 
+ START_ALLOW_USE_DEPRECATED()
++TEST(FastApiSequenceOverloads) {
++#if !defined(V8_LITE_MODE) && defined(V8_ENABLE_TURBOFAN)
++  if (i::v8_flags.jitless) return;
++  if (i::v8_flags.disable_optimizing_compilers) return;
++
++  i::v8_flags.turbofan = true;
++  i::v8_flags.turbo_fast_api_calls = true;
++  i::v8_flags.allow_natives_syntax = true;
++  // Disable --always_turbofan, otherwise we haven't generated the necessary
++  // feedback to go down the "best optimization" path for the fast call.
++  i::v8_flags.always_turbofan = false;
++  i::FlagList::EnforceFlagImplications();
++
++  v8::Isolate* isolate = CcTest::isolate();
++  HandleScope handle_scope(isolate);
++  LocalContext env;
++
++  v8::CFunction typed_array_callback =
++      v8::CFunctionBuilder().Fn(FastCallback1TypedArray).Build();
++  v8::CFunction js_array_callback =
++      v8::CFunctionBuilder().Fn(FastCallback2JSArray).Build();
++  const v8::CFunction sequece_overloads[] = {
++      typed_array_callback,
++      js_array_callback,
++  };
++
++  Local<v8::FunctionTemplate> sequence_callback_templ =
++      v8::FunctionTemplate::NewWithCFunctionOverloads(
++          isolate, SequenceSlowCallback, v8::Number::New(isolate, 42),
++          v8::Local<v8::Signature>(), 1, v8::ConstructorBehavior::kThrow,
++          v8::SideEffectType::kHasSideEffect, {sequece_overloads, 2});
++
++  v8::Local<v8::ObjectTemplate> object_template =
++      v8::ObjectTemplate::New(isolate);
++  object_template->SetInternalFieldCount(kV8WrapperObjectIndex + 1);
++  object_template->Set(isolate, "api_func", sequence_callback_templ);
++
++  std::unique_ptr<Trivial> rcv(new Trivial(42));
++  v8::Local<v8::Object> object =
++      object_template->NewInstance(env.local()).ToLocalChecked();
++  object->SetAlignedPointerInInternalField(kV8WrapperObjectIndex, rcv.get());
++
++  CHECK(
++      (env)->Global()->Set(env.local(), v8_str("receiver"), object).FromJust());
++  USE(CompileRun(
++      "function func(num, arr) { return receiver.api_func(num, arr); }"
++      "%PrepareFunctionForOptimization(func);"
++      "func(3, [1,2,3]);"
++      "%OptimizeFunctionOnNextCall(func);"
++      "func(3, [1,2,3]);"));
++  CHECK_EQ(3, rcv->x());
++
++  USE(
++      CompileRun("const ta = new Int32Array([1, 2, 3, 4]);"
++                 "func(4, ta);"));
++  CHECK_EQ(4, rcv->x());
++#endif  // !defined(V8_LITE_MODE) && defined(V8_ENABLE_TURBOFAN)
++}
++
+ TEST(FastApiOverloadResolution) {
+ #if !defined(V8_LITE_MODE) && defined(V8_ENABLE_TURBOFAN)
+   if (i::v8_flags.jitless) return;
+@@ -29796,15 +29899,22 @@ TEST(FastApiOverloadResolution) {
+   i::v8_flags.always_turbofan = false;
+   i::FlagList::EnforceFlagImplications();
+ 
++  v8::CFunction typed_array_callback =
++      v8::CFunctionBuilder().Fn(FastCallback1TypedArray).Build();
+   v8::CFunction js_array_callback =
+       v8::CFunctionBuilder().Fn(FastCallback2JSArray).Build();
+ 
++  // Check that a general runtime overload resolution is possible.
++  CHECK_EQ(v8::CFunction::OverloadResolution::kAtRuntime,
++           typed_array_callback.GetOverloadResolution(&js_array_callback));
++
+   v8::CFunction swapped_params_callback =
+       v8::CFunctionBuilder().Fn(FastCallback3SwappedParams).Build();
+ 
+   // Check that difference in > 1 position is not possible.
+-  CHECK_EQ(v8::CFunction::OverloadResolution::kImpossible,
+-           js_array_callback.GetOverloadResolution(&swapped_params_callback));
++  CHECK_EQ(
++      v8::CFunction::OverloadResolution::kImpossible,
++      typed_array_callback.GetOverloadResolution(&swapped_params_callback));
+ 
+   v8::CFunction scalar_callback =
+       v8::CFunctionBuilder().Fn(FastCallback4Scalar).Build();
+@@ -29812,7 +29922,7 @@ TEST(FastApiOverloadResolution) {
+   // Check that resolving when there is a scalar at the difference position
+   // is not possible.
+   CHECK_EQ(v8::CFunction::OverloadResolution::kImpossible,
+-           js_array_callback.GetOverloadResolution(&scalar_callback));
++           typed_array_callback.GetOverloadResolution(&scalar_callback));
+ 
+   v8::CFunction diff_arity_callback =
+       v8::CFunctionBuilder().Fn(FastCallback5DifferentArity).Build();
+@@ -29820,7 +29930,7 @@ TEST(FastApiOverloadResolution) {
+   // Check that overload resolution between different number of arguments
+   // is possible.
+   CHECK_EQ(v8::CFunction::OverloadResolution::kAtCompileTime,
+-           js_array_callback.GetOverloadResolution(&diff_arity_callback));
++           typed_array_callback.GetOverloadResolution(&diff_arity_callback));
+ 
+ #endif  // !defined(V8_LITE_MODE) && defined(V8_ENABLE_TURBOFAN)
+ }
