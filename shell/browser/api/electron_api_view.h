@@ -17,6 +17,8 @@
 
 namespace electron::api {
 
+using ChildPair = std::pair<raw_ptr<views::View>, v8::Global<v8::Object>>;
+
 class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
  public:
   static gin_helper::WrappableBase* New(gin::Arguments* args);
@@ -61,7 +63,7 @@ class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
  private:
   void ReorderChildView(gin::Handle<View> child, size_t index);
 
-  std::vector<v8::Global<v8::Object>> child_views_;
+  std::vector<ChildPair> child_views_;
 
   bool delete_view_ = true;
   raw_ptr<views::View> view_ = nullptr;
