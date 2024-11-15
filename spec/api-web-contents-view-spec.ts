@@ -101,6 +101,30 @@ describe('WebContentsView', () => {
     expect(w.contentView.children).to.deep.equal([wcv3, wcv1, wcv2]);
   });
 
+  it('handle removal and re-addition of children', () => {
+    const w = new BaseWindow({ show: false });
+    const cv = new View();
+    w.setContentView(cv);
+
+    const wcv1 = new WebContentsView();
+    const wcv2 = new WebContentsView();
+
+    expect(w.contentView.children).to.deep.equal([]);
+
+    w.contentView.addChildView(wcv1);
+    w.contentView.addChildView(wcv2);
+
+    expect(w.contentView.children).to.deep.equal([wcv1, wcv2]);
+
+    w.contentView.removeChildView(wcv1);
+
+    expect(w.contentView.children).to.deep.equal([wcv2]);
+
+    w.contentView.addChildView(wcv1);
+
+    expect(w.contentView.children).to.deep.equal([wcv2, wcv1]);
+  });
+
   function triggerGCByAllocation () {
     const arr = [];
     for (let i = 0; i < 1000000; i++) {

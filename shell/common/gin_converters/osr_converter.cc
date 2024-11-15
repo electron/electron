@@ -27,7 +27,7 @@ std::string OsrVideoPixelFormatToString(media::VideoPixelFormat format) {
     case media::PIXEL_FORMAT_ABGR:
       return "rgba";
     default:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
   }
 }
 
@@ -38,7 +38,7 @@ std::string OsrWidgetTypeToString(content::WidgetType type) {
     case content::WidgetType::kFrame:
       return "frame";
     default:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
   }
 }
 
