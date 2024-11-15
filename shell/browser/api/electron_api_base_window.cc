@@ -190,7 +190,7 @@ void BaseWindow::OnWindowQueryEndSession(
   gin::Dictionary dict(isolate, event_object);
   dict.Set("reasons", reasons);
 
-  EmitWithEvent("query-session-end", event);
+  EmitWithoutEvent("query-session-end", event);
   if (event->GetDefaultPrevented()) {
     *prevent_default = true;
   }
@@ -207,7 +207,7 @@ void BaseWindow::OnWindowEndSession(const std::vector<std::string>& reasons) {
   gin::Dictionary dict(isolate, event_object);
   dict.Set("reasons", reasons);
 
-  EmitWithEvent("session-end", event);
+  EmitWithoutEvent("session-end", event);
 }
 
 void BaseWindow::OnWindowBlur() {
