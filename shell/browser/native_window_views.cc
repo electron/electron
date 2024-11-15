@@ -1665,14 +1665,19 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
   // existing bounds directly against the new bounds without accounting for that
   // we'll have constant false positives when the window is moving but the user
   // hasn't changed its size at all.
-  auto areWithinOnePixel = [](gfx::Size old_size, gfx::Size new_size) -> bool {
-    return base::IsApproximatelyEqual(old_size.width(), new_size.width(), 1) &&
-           base::IsApproximatelyEqual(old_size.height(), new_size.height(), 1);
-  };
+  // auto areWithinOnePixel = [](gfx::Size old_size, gfx::Size new_size) -> bool
+  // {
+  //   return base::IsApproximatelyEqual(old_size.width(), new_size.width(), 1)
+  //   &&
+  //          base::IsApproximatelyEqual(old_size.height(), new_size.height(),
+  //          1);
+  // };
 
   // We use |GetBounds| to account for minimized windows on Windows.
   const auto new_bounds = GetBounds();
-  if (!areWithinOnePixel(widget_size_, new_bounds.size())) {
+  LOG(INFO) << "OnWidgetBoundsChanged with new_bounds=" << new_bounds.ToString()
+            << "and existing_bounds=" << widget_size_.ToString();
+  if (widget_size_ != new_bounds.size()) {
     NotifyWindowResize();
     widget_size_ = new_bounds.size();
   }

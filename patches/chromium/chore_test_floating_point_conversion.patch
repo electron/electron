@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 15 Nov 2024 11:33:09 +0100
+Subject: chore: test floating point conversion
+
+test it
+
+diff --git a/ui/aura/client/screen_position_client.cc b/ui/aura/client/screen_position_client.cc
+index b6b54a23ccf137a502533224bd15d1ff8993393f..5e3d253ffebcf4ac6d3cfc663db0f4caf467a6cc 100644
+--- a/ui/aura/client/screen_position_client.cc
++++ b/ui/aura/client/screen_position_client.cc
+@@ -19,7 +19,9 @@ DEFINE_UI_CLASS_PROPERTY_KEY(ScreenPositionClient*,
+ void ScreenPositionClient::ConvertPointToScreen(const Window* window,
+                                                 gfx::Point* point) {
+   gfx::PointF point_float(*point);
++  LOG(INFO) << "ScreenPositionClient::ConvertPointToScreen point=" << point->ToString() << "and point_float=" << point_float->ToString();
+   ConvertPointToScreen(window, &point_float);
++  LOG(INFO) << "Floored point=" << gfx::ToFlooredPoint(point_float).ToString() << "and rounded point=" << gfx::ToRoundedPoint(point_float).ToString();
+   *point = gfx::ToFlooredPoint(point_float);
+ }
+ 
+diff --git a/ui/aura/window.cc b/ui/aura/window.cc
+index a768cc8e58e39464118e83da78418cb6104c4df8..0775da01767c140b9c75502a77ffdf4f12ac3871 100644
+--- a/ui/aura/window.cc
++++ b/ui/aura/window.cc
+@@ -415,6 +415,7 @@ const gfx::Transform& Window::transform() const {
+ 
+ gfx::Rect Window::GetBoundsInScreen() const {
+   gfx::Rect bounds(GetBoundsInRootWindow());
++  LOG(INFO) << "Window::GetBoundsInScreen() initial bounds=" << bounds.ToString();
+   const Window* root = GetRootWindow();
+   if (root) {
+     aura::client::ScreenPositionClient* screen_position_client =
