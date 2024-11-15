@@ -65,7 +65,7 @@ jobs:
       shell: powershell    
       run: |
         systeminfo | findstr /B /C:"OS Name" /B /C:"OS Version"
-        wmic cpu get caption, deviceid, name, numberofcores, maxclockspeed, status
+        Get-WmiObject -Class Win32_Processor -ComputerName. | Select-Object -Property [a-z]*
         systeminfo | findstr /C:"Total Physical Memory"
         systeminfo
     - name: Install Git on Windows arm64 runners
