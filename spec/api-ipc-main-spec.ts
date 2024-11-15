@@ -94,6 +94,9 @@ describe('ipc main module', () => {
   });
 
   describe('ipcMain.removeAllListeners', () => {
+    beforeEach(() => { ipcMain.removeAllListeners(); });
+    beforeEach(() => { ipcMain.removeAllListeners(); });
+
     it('removes only the given channel', () => {
       ipcMain.on('channel1', () => {});
       ipcMain.on('channel2', () => {});
