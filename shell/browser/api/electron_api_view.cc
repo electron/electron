@@ -189,7 +189,7 @@ void View::ReorderChildView(gin::Handle<View> child, size_t index) {
 
   const auto i =
       std::ranges::find_if(child_views_, [&](const ChildPair& child_view) {
-        return child_view.second == child.ToV8();
+        return child_view.first == child->view();
       });
   DCHECK(i != child_views_.end());
 
@@ -258,7 +258,7 @@ void View::RemoveChildView(gin::Handle<View> child) {
 
   const auto it =
       std::ranges::find_if(child_views_, [&](const ChildPair& child_view) {
-        return child_view.second == child.ToV8();
+        return child_view.first == child->view();
       });
   if (it != child_views_.end()) {
 #if BUILDFLAG(IS_MAC)
@@ -337,8 +337,8 @@ std::vector<v8::Local<v8::Value>> View::GetChildren() {
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
-  for (auto& child_view : child_views_)
-    ret.push_back(child_view.second.Get(isolate));
+  for (auto& [view, global] : child_views_)
+    ret.push_back(global.Get(isolate));
 
   return ret;
 }
