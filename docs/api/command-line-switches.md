@@ -244,8 +244,9 @@ Force using integrated GPU when there are multiple GPUs available.
 ### --xdg-portal-required-version=`version`
 
 Sets the minimum required version of XDG portal implementation to `version`
-inorder to use the portal backend for file dialogs on linux. Current
-default is set to `3`.
+inorder to use the portal backend for file dialogs on linux. File dialogs
+will fallback to using gtk or kde depening on the desktop environment when
+the required version is unavailable. Current default is set to `3`.
 
 ## Node.js Flags
 
