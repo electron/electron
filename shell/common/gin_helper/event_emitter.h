@@ -45,14 +45,6 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     return EmitWithEvent(name, event, std::forward<Args>(args)...);
   }
 
-  // disable copy
-  EventEmitter(const EventEmitter&) = delete;
-  EventEmitter& operator=(const EventEmitter&) = delete;
-
- protected:
-  EventEmitter() {}
-
- private:
   // this.emit(name, event, args...);
   template <typename... Args>
   bool EmitWithEvent(const std::string_view name,
@@ -65,6 +57,13 @@ class EventEmitter : public gin_helper::Wrappable<T> {
                           std::forward<Args>(args)...);
     return event->GetDefaultPrevented();
   }
+
+  // disable copy
+  EventEmitter(const EventEmitter&) = delete;
+  EventEmitter& operator=(const EventEmitter&) = delete;
+
+ protected:
+  EventEmitter() {}
 };
 
 }  // namespace gin_helper

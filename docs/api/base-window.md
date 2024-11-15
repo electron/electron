@@ -144,35 +144,6 @@ _**Note**: There is a subtle difference between the behaviors of `window.onbefor
 Emitted when the window is closed. After you have received this event you should
 remove the reference to the window and avoid using it any more.
 
-#### Event: 'query-session-end' _Windows_
-
-Returns:
-
-* `event` Event\<\>
-  * `reasons` string[] - List of reasons for shutdown. Can be 'shutdown', 'close-app', 'critical', or 'logoff'.
-
-Emitted when a session is about to end due to a shutdown, machine restart, or user log-off.
-Calling `event.preventDefault(`) can delay the system shutdown, though it’s generally best
-to respect the user’s choice to end the session. However, you may choose to use it if
-ending the session puts the user at risk of losing data.
-
-Unfortunately, Windows does not offer a way to differentiate between a shutdown and a reboot, meaning the 'shutdown'
-reason is triggered in both scenarios. For more details on the `WM_QUERYENDSESSION` message and its associated reasons,
-refer to the [MSDN documentation](https://learn.microsoft.com/en-us/windows/win32/shutdown/wm-queryendsession).
-
-#### Event: 'session-end' _Windows_
-
-Returns:
-
-* `event` Event\<\>
-  * `reasons` string[] - List of reasons for shutdown. Can be 'shutdown', 'close-app', 'critical', or 'logoff'.
-
-Emitted when system is in the process of shutting down after successfully handling 'query-session-end' event.
-
-Unfortunately, Windows does not offer a way to differentiate between a shutdown and a reboot, meaning the 'shutdown'
-reason is triggered in both scenarios. For more details on the `WM_ENDSESSION` message and its associated reasons,
-refer to the [MSDN documentation](https://learn.microsoft.com/en-us/windows/win32/shutdown/wm-endsession).
-
 #### Event: 'blur'
 
 Returns:

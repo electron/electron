@@ -301,10 +301,10 @@ class NativeWindow : public base::SupportsUserData,
   // related notifications.
   void NotifyWindowRequestPreferredWidth(int* width);
   void NotifyWindowCloseButtonClicked();
-  void NotifyWindowQueryEndSession(const std::vector<std::string> reasons,
-                                   bool* prevent_default);
   void NotifyWindowClosed();
-  void NotifyWindowEndSession(const std::vector<std::string> reasons);
+  void NotifyWindowQueryEndSession(const std::vector<std::string>& reasons,
+                                   bool* prevent_default);
+  void NotifyWindowEndSession(const std::vector<std::string>& reasons);
   void NotifyWindowBlur();
   void NotifyWindowFocus();
   void NotifyWindowShow();
