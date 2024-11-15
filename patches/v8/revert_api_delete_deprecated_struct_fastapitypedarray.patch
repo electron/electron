@@ -12,9 +12,27 @@ Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5982984
 This reverts commit 35a6781f783f037404869f6c9ec22f147dba1c5e.
 
 diff --git a/include/v8-fast-api-calls.h b/include/v8-fast-api-calls.h
-index 12ef5e4f7e66f1bfe2ff3f46ebfa8f47c86e313c..a6fed94dc5382acdaf626a56a6a7890c97873b7b 100644
+index 12ef5e4f7e66f1bfe2ff3f46ebfa8f47c86e313c..9796601c287c0bb83a2fd85f7735678219c2cd5d 100644
 --- a/include/v8-fast-api-calls.h
 +++ b/include/v8-fast-api-calls.h
+@@ -271,7 +271,7 @@ class CTypeInfo {
+   enum class SequenceType : uint8_t {
+     kScalar,
+     kIsSequence,  // sequence<T>
+-    kIsTypedArray V8_DEPRECATED(
++    kIsTypedArray V8_DEPRECATE_SOON(
+         "TypedArrays are not supported directly anymore."),
+     // is void
+     kIsArrayBuffer  // ArrayBuffer
+@@ -326,7 +326,7 @@ class CTypeInfo {
+   Flags flags_;
+ };
+ 
+-struct V8_DEPRECATED(
++struct V8_DEPRECATE_SOON(
+     "With the removal of FastApiTypedArray this type is not needed "
+     "anymore.") FastApiTypedArrayBase {
+  public:
 @@ -339,6 +339,42 @@ struct V8_DEPRECATED(
    size_t length_ = 0;
  };
