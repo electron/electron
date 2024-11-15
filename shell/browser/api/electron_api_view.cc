@@ -125,15 +125,6 @@ struct Converter<views::FlexAllocationOrder> {
 };
 
 template <>
-struct Converter<electron::api::View> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::api::View* out) {
-    return gin::ConvertFromV8(isolate, val, &out);
-  }
-};
-
-template <>
 struct Converter<views::SizeBound> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const views::SizeBound& in) {
@@ -196,7 +187,10 @@ View::~View() {
 void View::ReorderChildView(gin::Handle<View> child, size_t index) {
   view_->ReorderChildView(child->view(), index);
 
-  const auto i = base::ranges::find(child_views_, child.ToV8());
+  const auto i =
+      std::ranges::find_if(child_views_, [&](const ChildPair& child_view) {
+        return child_view.first == child->view();
+      });
   DCHECK(i != child_views_.end());
 
   // If |view| is already at the desired position, there's nothing to do.
@@ -240,8 +234,9 @@ void View::AddChildViewAt(gin::Handle<View> child,
     return;
   }
 
-  child_views_.emplace(child_views_.begin() + index,     // index
-                       isolate(), child->GetWrapper());  // v8::Global(args...)
+  child_views_.emplace(child_views_.begin() + index,  // index
+                       child->view(),
+                       v8::Global<v8::Object>(isolate(), child->GetWrapper()));
 #if BUILDFLAG(IS_MAC)
   // Disable the implicit CALayer animations that happen by default when adding
   // or removing sublayers.
@@ -261,7 +256,10 @@ void View::RemoveChildView(gin::Handle<View> child) {
   if (!view_)
     return;
 
-  const auto it = base::ranges::find(child_views_, child.ToV8());
+  const auto it =
+      std::ranges::find_if(child_views_, [&](const ChildPair& child_view) {
+        return child_view.first == child->view();
+      });
   if (it != child_views_.end()) {
 #if BUILDFLAG(IS_MAC)
     ScopedCAActionDisabler disable_animations;
@@ -339,8 +337,8 @@ std::vector<v8::Local<v8::Value>> View::GetChildren() {
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
-  for (auto& child_view : child_views_)
-    ret.push_back(child_view.Get(isolate));
+  for (auto& [view, global] : child_views_)
+    ret.push_back(global.Get(isolate));
 
   return ret;
 }
@@ -400,16 +398,9 @@ void View::OnViewIsDeleting(views::View* observed_view) {
 }
 
 void View::OnChildViewRemoved(views::View* observed_view, views::View* child) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  auto it = std::ranges::find_if(
-      child_views_, [&](const v8::Global<v8::Object>& child_view) {
-        View current_view;
-        gin::ConvertFromV8(isolate, child_view.Get(isolate), &current_view);
-        return current_view.view()->GetID() == child->GetID();
-      });
-  if (it != child_views_.end()) {
-    child_views_.erase(it);
-  }
+  std::erase_if(child_views_, [child](const ChildPair& child_view) {
+    return child_view.first == child;
+  });
 }
 
 // static
