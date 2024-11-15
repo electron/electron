@@ -405,7 +405,7 @@ void View::OnChildViewRemoved(views::View* observed_view, views::View* child) {
       child_views_, [&](const v8::Global<v8::Object>& child_view) {
         View current_view;
         gin::ConvertFromV8(isolate, child_view.Get(isolate), &current_view);
-        return current_view.view()->GetID() == child->GetID();
+        return current_view.view() == child;
       });
   if (it != child_views_.end()) {
     child_views_.erase(it);
