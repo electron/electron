@@ -161,8 +161,7 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
       }
       result.bytes_read = copyable_size;
     } else {
-      NOTREACHED_IN_MIGRATION();
-      result.result = MOJO_RESULT_OUT_OF_RANGE;
+      NOTREACHED();
     }
     return result;
   }
