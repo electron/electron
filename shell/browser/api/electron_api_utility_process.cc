@@ -255,6 +255,8 @@ void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
 
   if (pid_ != base::kNullProcessId)
     GetAllUtilityProcessWrappers().Remove(pid_);
+
+  pid_ = base::kNullProcessId;
   CloseConnectorPort();
   EmitWithoutEvent("exit", exit_code);
   Unpin();
