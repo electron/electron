@@ -41,7 +41,8 @@ The `ipcMain` module has the following methods to listen for events:
   * `event` [IpcMainEvent][ipc-main-event]
   * `...args` any[]
 
-Alias for [`ipcMain.addListener`](#ipcmainaddlistenerchannel-listener).
+Listens to `channel`, when a new message arrives `listener` would be called with
+`listener(event, args...)`.
 
 ### `ipcMain.off(channel, listener)`
 
@@ -50,7 +51,8 @@ Alias for [`ipcMain.addListener`](#ipcmainaddlistenerchannel-listener).
   * `event` [IpcMainEvent][ipc-main-event]
   * `...args` any[]
 
-Alias for [`ipcMain.removeListener`](#ipcmainremovelistenerchannel-listener).
+Removes the specified `listener` from the listener array for the specified
+`channel`.
 
 ### `ipcMain.once(channel, listener)`
 
@@ -69,8 +71,7 @@ only the next time a message is sent to `channel`, after which it is removed.
   * `event` [IpcMainEvent][ipc-main-event]
   * `...args` any[]
 
-Listens to `channel`, when a new message arrives `listener` would be called with
-`listener(event, args...)`.
+Alias for [`ipcMain.on`](#ipcmainonchannel-listener).
 
 ### `ipcMain.removeListener(channel, listener)`
 
@@ -78,8 +79,7 @@ Listens to `channel`, when a new message arrives `listener` would be called with
 * `listener` Function
   * `...args` any[]
 
-Removes the specified `listener` from the listener array for the specified
-`channel`.
+Alias for [`ipcMain.off`](#ipcmainoffchannel-listener).
 
 ### `ipcMain.removeAllListeners([channel])`
 
