@@ -145,8 +145,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     }
   }
 
-  if (!content::ServiceProcessHost::HasObserver(this))
-    content::ServiceProcessHost::AddObserver(this);
+  // Watch for service process termination events.
+  content::ServiceProcessHost::AddObserver(this);
 
   mojo::PendingReceiver<node::mojom::NodeService> receiver =
       node_service_remote_.BindNewPipeAndPassReceiver();
@@ -255,6 +255,8 @@ void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
 
   if (pid_ != base::kNullProcessId)
     GetAllUtilityProcessWrappers().Remove(pid_);
+
+  pid_ = base::kNullProcessId;
   CloseConnectorPort();
   EmitWithoutEvent("exit", exit_code);
   Unpin();

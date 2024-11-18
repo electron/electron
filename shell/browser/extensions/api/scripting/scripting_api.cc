@@ -528,13 +528,12 @@ api::scripting::RegisteredContentScript CreateRegisteredContentScriptInfo(
       [](api::extension_types::ExecutionWorld world) {
         switch (world) {
           case api::extension_types::ExecutionWorld::kNone:
-            NOTREACHED_NORETURN()
+            NOTREACHED()
                 << "Execution world should always be present in serialization.";
           case api::extension_types::ExecutionWorld::kIsolated:
             return api::scripting::ExecutionWorld::kIsolated;
           case api::extension_types::ExecutionWorld::kUserScript:
-            NOTREACHED_NORETURN()
-                << "ISOLATED worlds are not supported in this API.";
+            NOTREACHED() << "ISOLATED worlds are not supported in this API.";
           case api::extension_types::ExecutionWorld::kMain:
             return api::scripting::ExecutionWorld::kMain;
         }

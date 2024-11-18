@@ -10,7 +10,7 @@ process CompositingModeFallbackToSoftware IPC to disable GPU compositing.
 https://issues.chromium.org/345275130
 
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc
-index 4961c9679f8daa581e1702ee4b3d109604ec6a06..9f955da7bafdfe863e4d18892915ccd03e5e92b9 100644
+index 001e931ba705a1a52dfbcb717fe8e30b7014fde8..c545a7257e561f86aecc336769c0dd22c9772465 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc
 @@ -381,9 +381,13 @@ void LayerTreeView::DidFailToInitializeLayerTreeFrameSink() {

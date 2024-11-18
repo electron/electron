@@ -920,6 +920,13 @@ WebContents.prototype._init = function () {
     this.emit('console-message', event, (event as any)._level, event.message, event.lineNumber, event.sourceId);
   });
 
+  this.on('-unresponsive' as any, (event: Electron.Event<any>) => {
+    const shouldEmit = !event.shouldIgnore && event.visible && event.rendererInitialized;
+    if (shouldEmit) {
+      this.emit('unresponsive', event);
+    }
+  });
+
   app.emit('web-contents-created', { sender: this, preventDefault () {}, get defaultPrevented () { return false; } }, this);
 
   // Properties
