@@ -211,30 +211,20 @@ remove the reference to the window and avoid using it any more.
 
 Returns:
 
-* `event` Event\<\>
-  * `reasons` string[] - List of reasons for shutdown. Can be 'shutdown', 'close-app', 'critical', or 'logoff'.
+* `event` [WindowSessionEndEvent][window-session-end-event]
 
 Emitted when a session is about to end due to a shutdown, machine restart, or user log-off.
 Calling `event.preventDefault()` can delay the system shutdown, though it’s generally best
 to respect the user’s choice to end the session. However, you may choose to use it if
 ending the session puts the user at risk of losing data.
 
-Unfortunately, Windows does not offer a way to differentiate between a shutdown and a reboot, meaning the 'shutdown'
-reason is triggered in both scenarios. For more details on the `WM_QUERYENDSESSION` message and its associated reasons,
-refer to the [MSDN documentation](https://learn.microsoft.com/en-us/windows/win32/shutdown/wm-queryendsession).
-
 #### Event: 'session-end' _Windows_
 
 Returns:
 
-* `event` Event\<\>
-  * `reasons` string[] - List of reasons for shutdown. Can be 'shutdown', 'close-app', 'critical', or 'logoff'.
+* `event` [WindowSessionEndEvent][window-session-end-event]
 
 Emitted when system is in the process of shutting down after successfully handling 'query-session-end' event.
-
-Unfortunately, Windows does not offer a way to differentiate between a shutdown and a reboot, meaning the 'shutdown'
-reason is triggered in both scenarios. For more details on the `WM_ENDSESSION` message and its associated reasons,
-refer to the [MSDN documentation](https://learn.microsoft.com/en-us/windows/win32/shutdown/wm-endsession).
 
 #### Event: 'unresponsive'
 
@@ -1692,3 +1682,4 @@ On Linux, the `symbolColor` is automatically calculated to have minimum accessib
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
+[window-session-end-event]:../api/structures/window-session-end-event.md
