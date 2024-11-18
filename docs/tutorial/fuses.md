@@ -68,6 +68,10 @@ The onlyLoadAppFromAsar fuse changes the search system that Electron uses to loc
 
 The loadBrowserProcessSpecificV8Snapshot fuse changes which V8 snapshot file is used for the browser process.  By default Electron's processes will all use the same V8 snapshot file.  When this fuse is enabled the browser process uses the file called `browser_v8_context_snapshot.bin` for its V8 snapshot. The other processes will use the V8 snapshot file that they normally do.
 
+V8 snapshots can be useful to improve app startup performance. V8 lets you take snapshots of initialized heaps and then load them back in to avoid the cost of initializing the heap.
+
+Using separate snapshots for renderer processes and the main process can improve security, especially to make sure that the renderer doesn't use a snapshot with `nodeIntegration` enabled. See [#35170](https://github.com/electron/electron/issues/35170) for details.
+
 ### `grantFileProtocolExtraPrivileges`
 
 **Default:** Enabled
