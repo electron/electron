@@ -12,6 +12,7 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/memory/ref_counted_memory.h"
+#include "base/numerics/safe_conversions.h"
 #include "base/strings/pattern.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/arguments.h"
@@ -147,13 +148,13 @@ NativeImage::~NativeImage() {
 }
 
 void NativeImage::UpdateExternalAllocatedMemoryUsage() {
-  int32_t new_memory_usage = 0;
+  int64_t new_memory_usage = 0;
 
   if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
     auto* const image_skia = image_.ToImageSkia();
-    if (!image_skia->isNull()) {
-      new_memory_usage = image_skia->bitmap()->computeByteSize();
-    }
+    if (!image_skia->isNull())
+      new_memory_usage =
+          base::as_signed(image_skia->bitmap()->computeByteSize());
   }
 
   isolate_->AdjustAmountOfExternalAllocatedMemory(new_memory_usage -
