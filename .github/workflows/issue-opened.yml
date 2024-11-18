@@ -81,14 +81,15 @@ jobs:
                     const versions = await ElectronVersions.create(undefined, { ignoreCache: true });
 
                     const validVersions = [...versions.supportedMajors, ...versions.prereleaseMajors];
-                    if (!validVersions.includes(major)) {
-                      core.setOutput('unsupportedMajor', true);
-                      labels.push('blocked/need-info ❌');
+                    if (validVersions.includes(major)) {
+                      labels.push(versionLabel);
                     }
-
-                    labels.push(versionLabel);
                   }
                 }
+              }
+              if (labels.length === 0) {
+                core.setOutput('No supported versions found', true);
+                labels.push('blocked/need-info ❌');
               }
             }
 
