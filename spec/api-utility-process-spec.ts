@@ -240,11 +240,29 @@ describe('utilityProcess module', () => {
     it('is valid when child process launches successfully', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
       await once(child, 'spawn');
-      expect(child.pid).to.not.be.null();
+      expect(child).to.have.property('pid').that.is.a('number');
     });
 
     it('is undefined when child process fails to launch', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'does-not-exist.js'));
+      expect(child.pid).to.be.undefined();
+    });
+
+    it('is undefined before the child process is spawned succesfully', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+      expect(child.pid).to.be.undefined();
+      await once(child, 'spawn');
+      child.kill();
+    });
+
+    it('is undefined when child process is killed', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+      await once(child, 'spawn');
+
+      expect(child).to.have.property('pid').that.is.a('number');
+      expect(child.kill()).to.be.true();
+
+      await once(child, 'exit');
       expect(child.pid).to.be.undefined();
     });
   });
