@@ -67,6 +67,7 @@ if __name__ == '__main__':
 
     options = install.parse_options([
         'install',
+        '--root-dir', node_root_dir,
         '--v8-dir', os.path.join(SRC_DIR, 'v8'),
         '--config-gypi-path', config_gypi_path,
         '--headers-only'
