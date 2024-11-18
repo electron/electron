@@ -38,8 +38,7 @@ The `ipcRenderer` module has the following method to listen for events and send 
   * `event` [IpcRendererEvent][ipc-renderer-event]
   * `...args` any[]
 
-Listens to `channel`, when a new message arrives `listener` would be called with
-`listener(event, args...)`.
+Alias for [`ipcRenderer.addListener`](#ipcrendereraddlistenerchannel-listener).
 
 ### `ipcRenderer.off(channel, listener)`
 
@@ -67,7 +66,8 @@ only the next time a message is sent to `channel`, after which it is removed.
   * `event` [IpcRendererEvent][ipc-renderer-event]
   * `...args` any[]
 
-Alias for [`ipcRenderer.on`](#ipcrendereronchannel-listener).
+Listens to `channel`, when a new message arrives `listener` would be called with
+`listener(event, args...)`.
 
 ### `ipcRenderer.removeListener(channel, listener)`
 
@@ -79,11 +79,11 @@ Alias for [`ipcRenderer.on`](#ipcrendereronchannel-listener).
 Removes the specified `listener` from the listener array for the specified
 `channel`.
 
-### `ipcRenderer.removeAllListeners(channel)`
+### `ipcRenderer.removeAllListeners([channel])`
 
-* `channel` string
+* `channel` string (optional)
 
-Removes all listeners, or those of the specified `channel`.
+Removes all listeners from the specified `channel`. Removes all listeners from all channels if no channel is specified.
 
 ### `ipcRenderer.send(channel, ...args)`
 
