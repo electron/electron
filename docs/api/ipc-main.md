@@ -32,7 +32,7 @@ process, see [webContents.send][web-contents-send] for more information.
 
 ## Methods
 
-The `ipcMain` module has the following method to listen for events:
+The `ipcMain` module has the following methods to listen for events:
 
 ### `ipcMain.on(channel, listener)`
 
@@ -41,8 +41,16 @@ The `ipcMain` module has the following method to listen for events:
   * `event` [IpcMainEvent][ipc-main-event]
   * `...args` any[]
 
-Listens to `channel`, when a new message arrives `listener` would be called with
-`listener(event, args...)`.
+Alias for [`ipcMain.addListener`](#ipcmainaddlistenerchannel-listener).
+
+### `ipcMain.off(channel, listener)`
+
+* `channel` string
+* `listener` Function
+  * `event` [IpcMainEvent][ipc-main-event]
+  * `...args` any[]
+
+Alias for [`ipcMain.removeListener`](#ipcmainremovelistenerchannel-listener).
 
 ### `ipcMain.once(channel, listener)`
 
@@ -53,6 +61,16 @@ Listens to `channel`, when a new message arrives `listener` would be called with
 
 Adds a one time `listener` function for the event. This `listener` is invoked
 only the next time a message is sent to `channel`, after which it is removed.
+
+### `ipcMain.addListener(channel, listener)`
+
+* `channel` string
+* `listener` Function
+  * `event` [IpcMainEvent][ipc-main-event]
+  * `...args` any[]
+
+Listens to `channel`, when a new message arrives `listener` would be called with
+`listener(event, args...)`.
 
 ### `ipcMain.removeListener(channel, listener)`
 
@@ -67,7 +85,7 @@ Removes the specified `listener` from the listener array for the specified
 
 * `channel` string (optional)
 
-Removes listeners of the specified `channel`.
+Removes all listeners from the specified `channel`. Removes all listeners from all channels if no channel is specified.
 
 ### `ipcMain.handle(channel, listener)`
 
