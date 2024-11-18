@@ -215,7 +215,7 @@ Returns:
   * `reasons` string[] - List of reasons for shutdown. Can be 'shutdown', 'close-app', 'critical', or 'logoff'.
 
 Emitted when a session is about to end due to a shutdown, machine restart, or user log-off.
-Calling `event.preventDefault(`) can delay the system shutdown, though it’s generally best
+Calling `event.preventDefault()` can delay the system shutdown, though it’s generally best
 to respect the user’s choice to end the session. However, you may choose to use it if
 ending the session puts the user at risk of losing data.
 
