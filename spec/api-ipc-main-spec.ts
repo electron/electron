@@ -92,4 +92,24 @@ describe('ipc main module', () => {
       expect(v).to.equal('hello');
     });
   });
+
+  describe('ipcMain.removeAllListeners', () => {
+    it('removes only the given channel', () => {
+      ipcMain.on('channel1', () => {});
+      ipcMain.on('channel2', () => {});
+
+      ipcMain.removeAllListeners('channel1');
+
+      expect(ipcMain.eventNames()).to.deep.equal(['channel2']);
+    });
+
+    it('removes all channels if no channel is specified', () => {
+      ipcMain.on('channel1', () => {});
+      ipcMain.on('channel2', () => {});
+
+      ipcMain.removeAllListeners();
+
+      expect(ipcMain.eventNames()).to.deep.equal([]);
+    });
+  });
 });
