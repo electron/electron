@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+#include <gtk/gtk.h>
+
 #include "base/cancelable_callback.h"
 #include "base/containers/contains.h"
 #include "base/environment.h"
@@ -408,15 +410,7 @@ bool PlatformTrashItem(const base::FilePath& full_path, std::string* error) {
 }  // namespace internal
 
 void Beep() {
-  // echo '\a' > /dev/console
-  FILE* fp = fopen("/dev/console", "a");
-  if (fp == nullptr) {
-    fp = fopen("/dev/tty", "a");
-  }
-  if (fp != nullptr) {
-    fprintf(fp, "\a");
-    fclose(fp);
-  }
+  gdk_display_beep(gdk_display_get_default());
 }
 
 bool GetDesktopName(std::string* setme) {
