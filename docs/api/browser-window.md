@@ -224,7 +224,7 @@ Returns:
 
 * `event` [WindowSessionEndEvent][window-session-end-event]
 
-Emitted when system is in the process of shutting down after successfully handling 'query-session-end' event.
+Emitted when a session is about to end due to a shutdown, machine restart, or user log-off. Once this event fires, there is no way to prevent the session from ending.
 
 #### Event: 'unresponsive'
 
