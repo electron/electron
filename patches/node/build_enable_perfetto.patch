@@ -12,19 +12,6 @@ adding associated guards there should be relatively small.
 
 We should upstream this as it will eventually impact Node.js as well.
 
-diff --git a/filenames.json b/filenames.json
-index 5af3886d8d3d74d31249a4d79030a8373b8dad52..8ab04d0b1b58454c6ea21f33870f9557f3a57b56 100644
---- a/filenames.json
-+++ b/filenames.json
-@@ -739,8 +739,6 @@
-     "src/tcp_wrap.h",
-     "src/timers.h",
-     "src/tracing/agent.h",
--    "src/tracing/node_trace_buffer.h",
--    "src/tracing/node_trace_writer.h",
-     "src/tracing/trace_event.h",
-     "src/tracing/trace_event_common.h",
-     "src/tracing/traced_value.h",
 diff --git a/lib/internal/constants.js b/lib/internal/constants.js
 index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b564ef600 100644
 --- a/lib/internal/constants.js

@@ -1504,20 +1504,7 @@ group("electron") {
 ##### node_headers
 
 node_dir = "../third_party/electron_node"
-node_files = read_file("$node_dir/filenames.json", "json")
 node_headers_dir = "$root_gen_dir/node_headers"
-
-header_group_index = 0
-header_groups = []
-foreach(header_group, node_files.headers) {
-  copy("node_headers_${header_group_index}") {
-    sources = rebase_path(header_group.files, ".", node_dir)
-    outputs =
-        [ "$node_headers_dir/${header_group.dest_dir}/{{source_file_part}}" ]
-  }
-  header_groups += [ ":node_headers_${header_group_index}" ]
-  header_group_index += 1
-}
 
 copy("zlib_headers") {
   sources = [
@@ -1546,6 +1533,12 @@ action("node_version_header") {
   }
 }
 
+action("generate_node_headers") {
+  deps = [ ":generate_config_gypi" ]
+  script = "script/node/generate_node_headers.py"
+  outputs = [ "$root_gen_dir/node_headers.json" ]
+}
+
 action("tar_node_headers") {
   deps = [ ":copy_node_headers" ]
   outputs = [ "$root_gen_dir/node_headers.tar.gz" ]
@@ -1557,11 +1550,12 @@ action("tar_node_headers") {
 }
 
 group("copy_node_headers") {
-  public_deps = header_groups + [
-                  ":node_gypi_headers",
-                  ":node_version_header",
-                  ":zlib_headers",
-                ]
+  public_deps = [
+    ":generate_node_headers",
+    ":node_gypi_headers",
+    ":node_version_header",
+    ":zlib_headers",
+  ]
 }
 
 group("node_headers") {
