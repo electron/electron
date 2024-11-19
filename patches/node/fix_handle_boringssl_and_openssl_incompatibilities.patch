@@ -375,7 +375,7 @@ index e5664dfa2bc7e11922fa965f28acdf21470d1147..33ffbbb85d05f5356183e3aa1ca23707
        break;
    }
 @@ -398,9 +398,11 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
-     key_params = EVPKeyPointer(EVP_PKEY_new());
+     key_params = EVPKeyPointer::New();
      CHECK(key_params);
      CHECK_EQ(EVP_PKEY_assign_DH(key_params.get(), dh.release()), 1);
 -  } else if (int* prime_size = std::get_if<int>(&params->params.prime)) {
