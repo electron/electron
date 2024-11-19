@@ -258,6 +258,23 @@ void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
 
   pid_ = base::kNullProcessId;
   CloseConnectorPort();
+  if (killed_) {
+#if BUILDFLAG(IS_POSIX)
+    // UtilityProcessWrapper::Kill relies on base::Process::Terminate
+    // to gracefully shutdown the process which is performed by sending
+    // SIGTERM signal. When listening for exit events via ServiceProcessHost
+    // observers, the exit code on posix is obtained via
+    // BrowserChildProcessHostImpl::GetTerminationInfo which inturn relies
+    // on waitpid to extract the exit signal. If the process is unavailable,
+    // then the exit_code will be set to 0, otherwise we get the signal that
+    // was sent during the base::Process::Terminate call. For a user, this is
+    // still a graceful shutdown case so lets' convert the exit code to the
+    // expected value.
+    if (exit_code == SIGTERM || exit_code == SIGKILL) {
+      exit_code = 0;
+    }
+#endif
+  }
   EmitWithoutEvent("exit", exit_code);
   Unpin();
 }
@@ -337,7 +354,7 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
   connector_->Accept(&mojo_message);
 }
 
-bool UtilityProcessWrapper::Kill() const {
+bool UtilityProcessWrapper::Kill() {
   if (pid_ == base::kNullProcessId)
     return false;
   base::Process process = base::Process::Open(pid_);
@@ -350,6 +367,9 @@ bool UtilityProcessWrapper::Kill() const {
   // process reap should be signaled through the zygote via
   // content::ZygoteCommunication::EnsureProcessTerminated.
   base::EnsureProcessTerminated(std::move(process));
+  if (result) {
+    killed_ = true;
+  }
   return result;
 }
 
