@@ -18,6 +18,7 @@ describe('ipcRenderer module', () => {
       }
     });
     await w.loadURL('about:blank');
+    w.webContents.on('console-message', (event, ...args) => console.error(...args));
   });
   after(async () => {
     await closeWindow(w);
@@ -139,6 +140,40 @@ describe('ipcRenderer module', () => {
     it('is not used for internals', async () => {
       const result = await w.webContents.executeJavaScript(`
         require('electron').ipcRenderer.eventNames()
+      `);
+      expect(result).to.deep.equal([]);
+    });
+  });
+
+  describe('ipcRenderer.removeAllListeners', () => {
+    it('removes only the given channel', async () => {
+      const result = await w.webContents.executeJavaScript(`
+        (() => {
+          const { ipcRenderer } = require('electron');
+
+          ipcRenderer.on('channel1', () => {});
+          ipcRenderer.on('channel2', () => {});
+
+          ipcRenderer.removeAllListeners('channel1');
+
+          return ipcRenderer.eventNames();
+        })()
+      `);
+      expect(result).to.deep.equal(['channel2']);
+    });
+
+    it('removes all channels if no channel is specified', async () => {
+      const result = await w.webContents.executeJavaScript(`
+        (() => {
+          const { ipcRenderer } = require('electron');
+
+          ipcRenderer.on('channel1', () => {});
+          ipcRenderer.on('channel2', () => {});
+
+          ipcRenderer.removeAllListeners();
+
+          return ipcRenderer.eventNames();
+        })()
       `);
       expect(result).to.deep.equal([]);
     });
