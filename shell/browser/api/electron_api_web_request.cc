@@ -32,7 +32,10 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/node_includes.h"
 
 static constexpr auto ResourceTypes =
     base::MakeFixedFlatMap<std::string_view,
@@ -211,10 +214,10 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
 gin::WrapperInfo WebRequest::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 WebRequest::RequestFilter::RequestFilter(
-    std::set<URLPattern> url_patterns,
+    std::set<URLPattern> include_url_patterns,
     std::set<URLPattern> exclude_url_patterns,
     std::set<extensions::WebRequestResourceType> types)
-    : url_patterns_(std::move(url_patterns)),
+    : include_url_patterns_(std::move(include_url_patterns)),
       exclude_url_patterns_(std::move(exclude_url_patterns)),
       types_(std::move(types)) {}
 WebRequest::RequestFilter::RequestFilter(const RequestFilter&) = default;
@@ -224,7 +227,7 @@ WebRequest::RequestFilter::~RequestFilter() = default;
 void WebRequest::RequestFilter::AddUrlPattern(URLPattern pattern,
                                               bool is_match_pattern) {
   if (is_match_pattern) {
-    url_patterns_.emplace(std::move(pattern));
+    include_url_patterns_.emplace(std::move(pattern));
   } else {
     exclude_url_patterns_.emplace(std::move(pattern));
   }
@@ -256,7 +259,7 @@ bool WebRequest::RequestFilter::MatchesType(
 bool WebRequest::RequestFilter::MatchesRequest(
     extensions::WebRequestInfo* info) const {
   // Matches URL and type, and does not match exclude URL.
-  return MatchesURL(info->url, url_patterns_) &&
+  return MatchesURL(info->url, include_url_patterns_) &&
          !MatchesURL(info->url, exclude_url_patterns_) &&
          MatchesType(info->web_request_type);
 }
@@ -321,9 +324,11 @@ WebRequest::~WebRequest() {
   browser_context_->RemoveUserData(kUserDataKey);
 }
 
-gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin::Wrappable<WebRequest>::GetObjectTemplateBuilder(isolate)
+// static
+v8::Local<v8::ObjectTemplate> WebRequest::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> tmpl) {
+  return gin::ObjectTemplateBuilder(isolate, GetClassName(), tmpl)
       .SetMethod(
           "onBeforeRequest",
           &WebRequest::SetResponseListener<ResponseEvent::kOnBeforeRequest>)
@@ -343,11 +348,12 @@ gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
       .SetMethod("onErrorOccurred",
                  &WebRequest::SetSimpleListener<SimpleEvent::kOnErrorOccurred>)
       .SetMethod("onCompleted",
-                 &WebRequest::SetSimpleListener<SimpleEvent::kOnCompleted>);
+                 &WebRequest::SetSimpleListener<SimpleEvent::kOnCompleted>)
+      .Build();
 }
 
 const char* WebRequest::GetTypeName() {
-  return "WebRequest";
+  return GetClassName();
 }
 
 bool WebRequest::HasListener() const {
@@ -649,18 +655,16 @@ void WebRequest::SetListener(Event event,
                              gin::Arguments* args) {
   v8::Local<v8::Value> arg;
 
-  // { urls, excludeUrls, types }.
-  std::set<std::string> filter_patterns, filter_exclude_patterns, filter_types;
+  // { includeUrls, excludeUrls, types }.
+  std::set<std::string> filter_include_patterns, filter_exclude_patterns,
+      filter_types;
   gin::Dictionary dict(args->isolate());
   if (args->GetNext(&arg) && !arg->IsFunction()) {
     // Note that gin treats Function as Dictionary when doing conversions, so we
     // have to explicitly check if the argument is Function before trying to
     // convert it to Dictionary.
     if (gin::ConvertFromV8(args->isolate(), arg, &dict)) {
-      if (!dict.Get("urls", &filter_patterns)) {
-        args->ThrowTypeError("Parameter 'filter' must have property 'urls'.");
-        return;
-      }
+      dict.Get("includeUrls", &filter_include_patterns);
       dict.Get("excludeUrls", &filter_exclude_patterns);
       dict.Get("types", &filter_types);
       args->GetNext(&arg);
@@ -668,7 +672,7 @@ void WebRequest::SetListener(Event event,
   }
 
   RequestFilter filter;
-  filter.AddUrlPatterns(filter_patterns, &filter, args);
+  filter.AddUrlPatterns(filter_include_patterns, &filter, args);
   filter.AddUrlPatterns(filter_exclude_patterns, &filter, args, false);
 
   for (const std::string& filter_type : filter_types) {
@@ -753,4 +757,24 @@ gin::Handle<WebRequest> WebRequest::From(
   return gin::CreateHandle(isolate, user_data->data.get());
 }
 
+// static
+gin::Handle<WebRequest> WebRequest::New(gin_helper::ErrorThrower thrower) {
+  thrower.ThrowError("WebRequest cannot be created from JS");
+  return gin::Handle<WebRequest>();
+}
+
 }  // namespace electron::api
+
+namespace {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
+  v8::Isolate* isolate = context->GetIsolate();
+  gin_helper::Dictionary dict(isolate, exports);
+  dict.Set("WebRequest", electron::api::WebRequest::GetConstructor(context));
+}
+
+}  // namespace
+
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_web_request, Initialize)

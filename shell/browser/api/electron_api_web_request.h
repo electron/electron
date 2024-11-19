@@ -11,6 +11,7 @@
 #include "base/memory/raw_ptr.h"
 #include "gin/wrappable.h"
 #include "shell/browser/net/web_request_api_interface.h"
+#include "shell/common/gin_helper/constructible.h"
 
 class URLPattern;
 
@@ -32,6 +33,7 @@ class Handle;
 namespace electron::api {
 
 class WebRequest final : public gin::Wrappable<WebRequest>,
+                         public gin_helper::Constructible<WebRequest>,
                          public WebRequestAPI {
  public:
   // Return the WebRequest object attached to |browser_context|, create if there
@@ -51,10 +53,20 @@ class WebRequest final : public gin::Wrappable<WebRequest>,
   static gin::Handle<WebRequest> From(v8::Isolate* isolate,
                                       content::BrowserContext* browser_context);
 
+  // static void BuildPrototype(v8::Isolate* isolate,
+  //                            v8::Local<v8::FunctionTemplate> prototype);
+
+  static gin::Handle<WebRequest> New(gin_helper::ErrorThrower thrower);
+  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
+      v8::Isolate* isolate,
+      v8::Local<v8::ObjectTemplate> tmpl);
+
+  static const char* GetClassName() { return "WebRequest"; }
+
   // gin::Wrappable:
   static gin::WrapperInfo kWrapperInfo;
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
+  // gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+  //     v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
   // WebRequestAPI:
@@ -176,7 +188,7 @@ class WebRequest final : public gin::Wrappable<WebRequest>,
                     const std::set<URLPattern>& patterns) const;
     bool MatchesType(extensions::WebRequestResourceType type) const;
 
-    std::set<URLPattern> url_patterns_;
+    std::set<URLPattern> include_url_patterns_;
     std::set<URLPattern> exclude_url_patterns_;
     std::set<extensions::WebRequestResourceType> types_;
   };
