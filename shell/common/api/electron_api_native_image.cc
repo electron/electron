@@ -493,9 +493,8 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
     return gin::Handle<NativeImage>();
   }
 
-  unsigned int width = 0;
-  unsigned int height = 0;
-  double scale_factor = 1.;
+  int width = 0;
+  int height = 0;
 
   if (!options.Get("width", &width)) {
     thrower.ThrowError("width is required");
@@ -507,6 +506,9 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
     return gin::Handle<NativeImage>();
   }
 
+  if (width <= 0 || height <= 0)
+    return CreateEmpty(thrower.isolate());
+
   auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
   auto size_bytes = info.computeMinByteSize();
 
@@ -515,16 +517,12 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
     return gin::Handle<NativeImage>();
   }
 
-  options.Get("scaleFactor", &scale_factor);
-
-  if (width == 0 || height == 0) {
-    return CreateEmpty(thrower.isolate());
-  }
-
   SkBitmap bitmap;
   bitmap.allocN32Pixels(width, height, false);
   bitmap.writePixels({info, node::Buffer::Data(buffer), bitmap.rowBytes()});
 
+  float scale_factor = 1.0F;
+  options.Get("scaleFactor", &scale_factor);
   gfx::ImageSkia image_skia =
       gfx::ImageSkia::CreateFromBitmap(bitmap, scale_factor);
 
