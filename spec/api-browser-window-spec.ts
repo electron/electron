@@ -1563,7 +1563,7 @@ describe('BrowserWindow module', () => {
 
       it('emits the resize event for single-pixel size changes', async () => {
         const [width, height] = w.getSize();
-        const size = [width + 1, height + 1];
+        const size = [width + 1, height - 1];
 
         const resized = once(w, 'resize');
         w.setSize(size[0], size[1]);
