@@ -145,8 +145,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     }
   }
 
-  // Watch for service process termination events.
-  content::ServiceProcessHost::AddObserver(this);
+  if (!content::ServiceProcessHost::HasObserver(this))
+    content::ServiceProcessHost::AddObserver(this);
 
   mojo::PendingReceiver<node::mojom::NodeService> receiver =
       node_service_remote_.BindNewPipeAndPassReceiver();
