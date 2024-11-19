@@ -383,13 +383,13 @@ void SimpleURLLoaderWrapper::Start() {
   loader_->SetAllowHttpErrorResults(true);
   loader_->SetURLLoaderFactoryOptions(request_options_);
   loader_->SetOnResponseStartedCallback(base::BindOnce(
-      &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
+      &SimpleURLLoaderWrapper::OnResponseStarted, weak_factory_.GetWeakPtr()));
   loader_->SetOnRedirectCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnRedirect, base::Unretained(this)));
+      &SimpleURLLoaderWrapper::OnRedirect, weak_factory_.GetWeakPtr()));
   loader_->SetOnUploadProgressCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnUploadProgress, base::Unretained(this)));
+      &SimpleURLLoaderWrapper::OnUploadProgress, weak_factory_.GetWeakPtr()));
   loader_->SetOnDownloadProgressCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnDownloadProgress, base::Unretained(this)));
+      &SimpleURLLoaderWrapper::OnDownloadProgress, weak_factory_.GetWeakPtr()));
 
   url_loader_factory_ = GetURLLoaderFactoryForURL(request_ref->url);
   loader_->DownloadAsStream(url_loader_factory_.get(), this);
@@ -719,14 +719,19 @@ void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
 }
 
 void SimpleURLLoaderWrapper::OnComplete(bool success) {
+  auto self = weak_factory_.GetWeakPtr();
   if (success) {
     Emit("complete");
   } else {
     Emit("error", net::ErrorToString(loader_->NetError()));
   }
-  loader_.reset();
-  pinned_wrapper_.Reset();
-  pinned_chunk_pipe_getter_.Reset();
+  // If users initiate process shutdown when the event is emitted, then
+  // we would perform cleanup of the wrapper and we should bail out below.
+  if (self) {
+    loader_.reset();
+    pinned_wrapper_.Reset();
+    pinned_chunk_pipe_getter_.Reset();
+  }
 }
 
 void SimpleURLLoaderWrapper::OnResponseStarted(
