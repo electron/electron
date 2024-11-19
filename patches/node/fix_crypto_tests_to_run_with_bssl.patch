@@ -471,10 +471,10 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f639056b21ee3b 100644
+index 15e1f53bb05faf60fa808eb5901591d1512edf3c..37257309d3a12af866faa519ea93662e1dd2454b 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
-@@ -111,7 +111,7 @@ const der = Buffer.from(
+@@ -113,7 +113,7 @@ const der = Buffer.from(
      '5A:42:63:E0:21:2F:D6:70:63:07:96:6F:27:A7:78:12:08:02:7A:8B'
    );
    assert.strictEqual(x509.keyUsage, undefined);
@@ -483,7 +483,7 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
  
    assert.deepStrictEqual(x509.raw, der);
  
-@@ -253,6 +253,16 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -255,6 +255,16 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    });
    mc.port2.postMessage(x509);
  
@@ -500,7 +500,7 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
    // Verify that legacy encoding works
    const legacyObjectCheck = {
      subject: Object.assign({ __proto__: null }, {
-@@ -277,15 +287,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -279,15 +289,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
        'OCSP - URI': ['http://ocsp.nodejs.org/'],
        'CA Issuers - URI': ['http://ca.nodejs.org/ca.cert']
      }),
@@ -517,7 +517,7 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
      bits: 2048,
      exponent: '0x10001',
      valid_from: 'Sep  3 21:40:37 2022 GMT',
-@@ -298,7 +300,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -300,7 +302,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
        '51:62:18:39:E2:E2:77:F5:86:11:E8:C0:CA:54:43:7C:76:83:19:05:D0:03:' +
        '24:21:B8:EB:14:61:FB:24:16:EB:BD:51:1A:17:91:04:30:03:EB:68:5F:DC:' +
        '86:E1:D1:7C:FB:AF:78:ED:63:5F:29:9C:32:AF:A1:8E:22:96:D1:02',
@@ -526,7 +526,7 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
    };
  
    const legacyObject = x509.toLegacyObject();
-@@ -307,7 +309,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -309,7 +311,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    assert.deepStrictEqual(legacyObject.subject, legacyObjectCheck.subject);
    assert.deepStrictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
    assert.deepStrictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
@@ -535,7 +535,7 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
    assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
    assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
    assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -316,11 +318,12 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -318,11 +320,12 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    assert.strictEqual(
      legacyObject.fingerprint256,
      legacyObjectCheck.fingerprint256);
@@ -550,11 +550,14 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
  {
    // This X.509 Certificate can be parsed by OpenSSL because it contains a
    // structurally sound TBSCertificate structure. However, the SPKI field of the
-@@ -359,3 +362,4 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
+@@ -361,6 +364,7 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
  
    assert.strictEqual(cert.checkIssued(cert), false);
  }
 +*/
+ 
+ {
+   // Test date parsing of `validFromDate` and `validToDate` fields, according to RFC 5280.
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 4271121881379b6c6892e89e520345f77e4181df..6c87a1ac687aa37d4ba245d1b6fc746a5f1eeffc 100644
 --- a/test/parallel/test-crypto.js
@@ -739,11 +742,6 @@ index eb09bc24f0cb8244b05987e3a7c1d203360d3a38..011990db171faa708c5211f6ab9ae1ac
    async function test(name) {
      const [alice, bob] = await Promise.all([
        subtle.generateKey({ name }, true, ['deriveBits']),
-@@ -126,3 +127,4 @@ const { subtle } = globalThis.crypto;
-   test('X25519').then(common.mustCall());
-   test('X448').then(common.mustCall());
- }
-+
 diff --git a/test/parallel/test-webcrypto-derivekey.js b/test/parallel/test-webcrypto-derivekey.js
 index 558d37d90d5796b30101d1b512c9df3e7661d0db..f42bf8f4be0b439dd7e7c8d0f6f8a41e01588870 100644
 --- a/test/parallel/test-webcrypto-derivekey.js
