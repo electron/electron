@@ -367,9 +367,7 @@ bool UtilityProcessWrapper::Kill() {
   // process reap should be signaled through the zygote via
   // content::ZygoteCommunication::EnsureProcessTerminated.
   base::EnsureProcessTerminated(std::move(process));
-  if (result) {
-    killed_ = true;
-  }
+  killed_ = result;
   return result;
 }
 
