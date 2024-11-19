@@ -1074,6 +1074,37 @@ std::vector<base::FilePath> Session::GetPreloads() const {
   return prefs->preloads();
 }
 
+v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo(
+    v8::Isolate* isolate) {
+  gin_helper::Promise<std::vector<gin_helper::Dictionary>> promise(isolate_);
+  auto handle = promise.GetHandle();
+
+  browser_context_->GetDefaultStoragePartition()
+      ->GetNetworkContext()
+      ->GetSharedDictionaryUsageInfo(base::BindOnce(
+          [](gin_helper::Promise<std::vector<gin_helper::Dictionary>> promise,
+             const std::vector<net::SharedDictionaryUsageInfo>& info) {
+            std::vector<gin_helper::Dictionary> result;
+            result.reserve(info.size());
+
+            for (const auto& item : info) {
+              gin_helper::Dictionary dict =
+                  gin_helper::Dictionary::CreateEmpty(promise.isolate());
+              dict.Set("frameOrigin",
+                       item.isolation_key.frame_origin().Serialize());
+              dict.Set("topFrameSite",
+                       item.isolation_key.top_frame_site().Serialize());
+              dict.Set("totalSizeBytes", item.total_size_bytes);
+              result.push_back(dict);
+            }
+
+            promise.Resolve(result);
+          },
+          std::move(promise)));
+
+  return handle;
+}
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 v8::Local<v8::Promise> Session::LoadExtension(
     const base::FilePath& extension_path,
@@ -1627,6 +1658,8 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
                  &Session::CreateInterruptedDownload)
       .SetMethod("setPreloads", &Session::SetPreloads)
       .SetMethod("getPreloads", &Session::GetPreloads)
+      .SetMethod("getSharedDictionaryUsageInfo",
+                 &Session::GetSharedDictionaryUsageInfo)
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
       .SetMethod("loadExtension", &Session::LoadExtension)
       .SetMethod("removeExtension", &Session::RemoveExtension)
