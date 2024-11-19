@@ -215,7 +215,8 @@ describe('utilityProcess module', () => {
       });
       await once(child, 'spawn');
       expect(child.kill()).to.be.true();
-      await once(child, 'exit');
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
     });
   });
 
