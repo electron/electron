@@ -21,10 +21,10 @@ index b22f297cfec19d2afc029c2c63c8451335c6156f..bf6e476bb9fbf7e5fc68bafc7703d00e
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index feab190780c1a7433bdef4c37b16473fac1efdd7..a701029891d099dc91d6a663f4c24d271bfebd4e 100644
+index 45cc80c684f5e6a721a6e015857f8e01e0497079..bdc268c2d378d65c4ddf2b9c4b0dae8b94f9521c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4891,6 +4891,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4890,6 +4890,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    SetPartitionedPopinOpenerOnNewWindowIfNeeded(new_contents_impl, params,
                                                 opener);
  
@@ -37,7 +37,7 @@ index feab190780c1a7433bdef4c37b16473fac1efdd7..a701029891d099dc91d6a663f4c24d27
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4932,12 +4938,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4931,12 +4937,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -66,7 +66,7 @@ index 8e571dc1371cf2aa7c8354f0b4e492e0d030b485..c878169e7838849cbc23df2ed94ca65d
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index a1b6aad3587e7e2d4c24e76aa832e95b31b7ed86..826a2038ebe187a473ac8eabdedf977604ec8337 100644
+index ca50de03ee9718f870155adfbac4df31e1c4cb3c..b95fa410f7a38004e54c6aa6d345be851d5b2d76 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -785,6 +785,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,10 +79,10 @@ index a1b6aad3587e7e2d4c24e76aa832e95b31b7ed86..826a2038ebe187a473ac8eabdedf9776
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 4d96255c40a8eac7804016383da32fd954f91430..187e5f078084436b2ff296f1cbacd009d738c635 100644
+index 472077f2efac793bc3e44b00d06086b1bb1a456e..4b14ef7d2f61f2239876da6f814f0633a2e17f56 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -195,6 +195,7 @@ class NetworkService;
+@@ -196,6 +196,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -90,7 +90,7 @@ index 4d96255c40a8eac7804016383da32fd954f91430..187e5f078084436b2ff296f1cbacd009
  }  // namespace network
  
  namespace sandbox {
-@@ -1348,6 +1349,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1349,6 +1350,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -163,10 +163,10 @@ index 60076b652253b30919467eb0f45e7775902d8dbb..7d40a2d2db8082278832ff1b799a8653
    // moved on send.
    bool is_background_tab =
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
-index 4623ebf4ff47e9ec7549659e52c0c5ad7b3ef0ff..83db551286749d8dbf794aa750611e250774e4ff 100644
+index 7ee41873389eaa03331460bdc3195f53fe943816..b4eb16ccd451d181a34de9b65e8fa9ed035c1f21 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
 +++ b/content/web_test/browser/web_test_content_browser_client.cc
-@@ -521,6 +521,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -524,6 +524,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,

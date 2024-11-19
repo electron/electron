@@ -734,7 +734,7 @@ index b6ded4cd3e2a29af8589862ac31c97fdd0da0c71..14c3378470a34ef8bdda4a4df8211e5a
              return gasm_->AdaptLocalArgument(receiver_node);
            }
 diff --git a/src/d8/d8-test.cc b/src/d8/d8-test.cc
-index 327fc4df5c731727a50c52f8a6bbf80b4021555e..88daa4f39a65db8b257d0a412359ecd79330d118 100644
+index fd21264ec893850086041c3d7392151a6add2b27..1bc455ed18920588d641cdf9f3a54a5f8f528484 100644
 --- a/src/d8/d8-test.cc
 +++ b/src/d8/d8-test.cc
 @@ -443,6 +443,20 @@ class FastCApiObject {
