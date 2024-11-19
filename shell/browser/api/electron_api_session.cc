@@ -54,6 +54,7 @@
 #include "net/http/http_util.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/cpp/request_destination.h"
 #include "services/network/public/mojom/clear_data_filter.mojom.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_cookies.h"
@@ -79,6 +80,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -1074,6 +1076,82 @@ std::vector<base::FilePath> Session::GetPreloads() const {
   return prefs->preloads();
 }
 
+/**
+ * Exposes the network service's GetSharedDictionaryInfo method, allowing
+ * inspection of Shared Dictionary information. Details about the feature
+ * available at https://developer.chrome.com/blog/shared-dictionary-compression
+ */
+v8::Local<v8::Promise> Session::GetSharedDictionaryInfo(gin::Arguments* args) {
+  gin_helper::Promise<std::vector<gin_helper::Dictionary>> promise(isolate_);
+  auto handle = promise.GetHandle();
+
+  std::string key_str;
+  if (!args->GetNext(&key_str)) {
+    promise.RejectWithErrorMessage("Must provide isolation key string");
+    return handle;
+  }
+
+  GURL url(key_str);
+  if (!url.is_valid()) {
+    promise.RejectWithErrorMessage("Invalid URL provided for isolation key");
+    return handle;
+  }
+
+  url::Origin frame_origin = url::Origin::Create(url);
+  net::SchemefulSite top_frame_site(url);
+  net::SharedDictionaryIsolationKey isolation_key(frame_origin, top_frame_site);
+
+  browser_context_->GetDefaultStoragePartition()
+      ->GetNetworkContext()
+      ->GetSharedDictionaryInfo(
+          isolation_key,
+          base::BindOnce(
+              [](gin_helper::Promise<std::vector<gin_helper::Dictionary>>
+                     promise,
+                 std::vector<network::mojom::SharedDictionaryInfoPtr> info) {
+                v8::Isolate* isolate = promise.isolate();
+                v8::HandleScope handle_scope(isolate);
+
+                std::vector<gin_helper::Dictionary> result;
+                result.reserve(info.size());
+
+                for (const auto& item : info) {
+                  gin_helper::Dictionary dict =
+                      gin_helper::Dictionary::CreateEmpty(isolate);
+                  dict.Set("match", item->match);
+
+                  // Convert RequestDestination enum values to strings
+                  std::vector<std::string> destinations;
+                  for (const auto& dest : item->match_dest) {
+                    destinations.push_back(
+                        network::RequestDestinationToString(dest));
+                  }
+                  dict.Set("matchDestinations", destinations);
+                  dict.Set("id", item->id);
+                  dict.Set("dictionaryUrl", item->dictionary_url.spec());
+                  dict.Set("lastFetchTime", item->last_fetch_time);
+                  dict.Set("responseTime", item->response_time);
+                  dict.Set("expirationDuration",
+                           item->expiration.InMillisecondsF());
+                  dict.Set("lastUsedTime", item->last_used_time);
+                  dict.Set("size", item->size);
+                  dict.Set("hash", net::HashValue(item->hash).ToString());
+
+                  result.push_back(dict);
+                }
+
+                promise.Resolve(result);
+              },
+              std::move(promise)));
+
+  return handle;
+}
+
+/**
+ * Exposes the network service's GetSharedDictionaryUsageInfo method, allowing
+ * inspection of Shared Dictionary information. Details about the feature
+ * available at https://developer.chrome.com/blog/shared-dictionary-compression
+ */
 v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo(
     v8::Isolate* isolate) {
   gin_helper::Promise<std::vector<gin_helper::Dictionary>> promise(isolate_);
@@ -1084,12 +1162,15 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo(
       ->GetSharedDictionaryUsageInfo(base::BindOnce(
           [](gin_helper::Promise<std::vector<gin_helper::Dictionary>> promise,
              const std::vector<net::SharedDictionaryUsageInfo>& info) {
+            v8::Isolate* isolate = promise.isolate();
+            v8::HandleScope handle_scope(isolate);
+
             std::vector<gin_helper::Dictionary> result;
             result.reserve(info.size());
 
             for (const auto& item : info) {
               gin_helper::Dictionary dict =
-                  gin_helper::Dictionary::CreateEmpty(promise.isolate());
+                  gin_helper::Dictionary::CreateEmpty(isolate);
               dict.Set("frameOrigin",
                        item.isolation_key.frame_origin().Serialize());
               dict.Set("topFrameSite",
@@ -1660,6 +1741,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getPreloads", &Session::GetPreloads)
       .SetMethod("getSharedDictionaryUsageInfo",
                  &Session::GetSharedDictionaryUsageInfo)
+      .SetMethod("getSharedDictionaryInfo", &Session::GetSharedDictionaryInfo)
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
       .SetMethod("loadExtension", &Session::LoadExtension)
       .SetMethod("removeExtension", &Session::RemoveExtension)

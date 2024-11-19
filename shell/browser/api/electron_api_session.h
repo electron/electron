@@ -140,6 +140,7 @@ class Session final : public gin::Wrappable<Session>,
   void CreateInterruptedDownload(const gin_helper::Dictionary& options);
   void SetPreloads(const std::vector<base::FilePath>& preloads);
   std::vector<base::FilePath> GetPreloads() const;
+  v8::Local<v8::Promise> GetSharedDictionaryInfo(gin::Arguments* args);
   v8::Local<v8::Promise> GetSharedDictionaryUsageInfo(v8::Isolate* isolate);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
