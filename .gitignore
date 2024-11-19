@@ -27,16 +27,12 @@ compile_commands.json
 /npm/dist
 /npm/path.txt
 /npm/checksums.json
-
 .npmrc
-
 # Generated API definitions
 electron-api.json
 electron.d.ts
-
 # Spec hash calculation
 spec/.hash
-
 # Eslint Cache
 .eslintcache*
 
