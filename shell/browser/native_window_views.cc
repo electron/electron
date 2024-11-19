@@ -1661,18 +1661,28 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
   if (changed_widget != widget())
     return;
 
-  // |GetWindowBoundsInScreen| has a ~1 pixel margin of error, so if we check
-  // existing bounds directly against the new bounds without accounting for that
-  // we'll have constant false positives when the window is moving but the user
-  // hasn't changed its size at all.
-  auto areWithinOnePixel = [](gfx::Size old_size, gfx::Size new_size) -> bool {
+#if BUILDFLAG(IS_WIN)
+  // OnWidgetBoundsChanged is emitted both when a window is moved and when a
+  // window is resized. If the window is moving, then
+  // WidgetObserver::OnWidgetBoundsChanged is being called from
+  // Widget::OnNativeWidgetMove() and not Widget::OnNativeWidgetSizeChanged.
+  // |GetWindowBoundsInScreen| has a ~1 pixel margin
+  // of error because it converts from floats to integers between calculations,
+  // so if we check existing bounds directly against the new bounds without
+  // accounting for that we'll have constant false positives when the window is
+  // moving but the user hasn't changed its size at all.
+  auto isWithinOnePixel = [](gfx::Size old_size, gfx::Size new_size) -> bool {
     return base::IsApproximatelyEqual(old_size.width(), new_size.width(), 1) &&
            base::IsApproximatelyEqual(old_size.height(), new_size.height(), 1);
   };
 
+  if (is_moving_ && isWithinOnePixel(widget_size_, bounds.size()))
+    return;
+#endif
+
   // We use |GetBounds| to account for minimized windows on Windows.
   const auto new_bounds = GetBounds();
-  if (!areWithinOnePixel(widget_size_, new_bounds.size())) {
+  if (widget_size_ != new_bounds.size()) {
     NotifyWindowResize();
     widget_size_ = new_bounds.size();
   }
