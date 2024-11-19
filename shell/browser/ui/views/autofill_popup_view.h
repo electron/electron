@@ -8,8 +8,6 @@
 #include <memory>
 #include <optional>
 
-#include "shell/browser/ui/autofill_popup.h"
-
 #include "base/memory/raw_ptr.h"
 #include "components/input/native_web_keyboard_event.h"
 #include "content/public/browser/render_widget_host.h"
@@ -25,11 +23,8 @@
 
 namespace electron {
 
-const int kPopupBorderThickness = 1;
-const int kSmallerFontSizeDelta = -1;
-const int kEndPadding = 8;
-const int kNamePadding = 15;
-const int kRowHeight = 24;
+constexpr int kPopupBorderThickness = 1;
+constexpr int kEndPadding = 8;
 
 class AutofillPopup;
 
