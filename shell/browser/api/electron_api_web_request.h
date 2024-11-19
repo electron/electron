@@ -53,9 +53,6 @@ class WebRequest final : public gin::Wrappable<WebRequest>,
   static gin::Handle<WebRequest> From(v8::Isolate* isolate,
                                       content::BrowserContext* browser_context);
 
-  // static void BuildPrototype(v8::Isolate* isolate,
-  //                            v8::Local<v8::FunctionTemplate> prototype);
-
   static gin::Handle<WebRequest> New(gin_helper::ErrorThrower thrower);
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
       v8::Isolate* isolate,
@@ -65,8 +62,7 @@ class WebRequest final : public gin::Wrappable<WebRequest>,
 
   // gin::Wrappable:
   static gin::WrapperInfo kWrapperInfo;
-  // gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-  //     v8::Isolate* isolate) override;
+
   const char* GetTypeName() override;
 
   // WebRequestAPI:
