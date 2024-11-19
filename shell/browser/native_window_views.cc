@@ -1648,7 +1648,7 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
   // window is resized. If the window is moving, then
   // WidgetObserver::OnWidgetBoundsChanged is being called from
   // Widget::OnNativeWidgetMove() and not Widget::OnNativeWidgetSizeChanged.
-  // |GetWindowBoundsInScreen| |GetWindowBoundsInScreen| has a ~1 pixel margin
+  // |GetWindowBoundsInScreen| has a ~1 pixel margin
   // of error because it converts from floats to integers between calculations,
   // so if we check existing bounds directly against the new bounds without
   // accounting for that we'll have constant false positives when the window is
