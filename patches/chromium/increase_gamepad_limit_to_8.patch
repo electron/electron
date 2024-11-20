@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Filip Strelec <filip.strelec@gmail.com>
+Date: Thu, 20 Sep 2018 17:48:38 -0700
+Subject: gtk_visibility.patch
+
+Allow up to 8 gamepads
+
+diff --git a/device/gamepad/public/cpp/gamepads.h b/device/gamepad/public/cpp/gamepads.h
+--- a/device/gamepad/public/cpp/gamepads.h
++++ b/device/gamepad/public/cpp/gamepads.h
+@@ -17,7 +17,7 @@ namespace device {
+ // browser.
+ class COMPONENT_EXPORT(GAMEPAD_PUBLIC) Gamepads {
+  public:
+-  static constexpr size_t kItemsLengthCap = 4;
++  static constexpr size_t kItemsLengthCap = 8;
+ 
+   // Gamepad data for N separate gamepad devices.
+   std::array<Gamepad, kItemsLengthCap> items;
