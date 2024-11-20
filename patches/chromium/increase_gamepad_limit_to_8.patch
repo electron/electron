@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Filip Strelec <filip.strelec@gmail.com>
 Date: Thu, 20 Sep 2018 17:48:38 -0700
-Subject: gtk_visibility.patch
+Subject: increase_gamepad_limit_to_8.patch
 
 Allow up to 8 gamepads
 
