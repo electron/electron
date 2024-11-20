@@ -34,8 +34,6 @@
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
-#include "electron/electron_gtk_stubs.h"
-#include "ui/gtk/gtk_stubs.h"
 
 #include "shell/common/platform_util_internal.h"
 #include "url/gurl.h"
