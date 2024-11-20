@@ -11,21 +11,19 @@ and electron/electron@d2368d2d3b3de9eec4cc32b6aaf035cc89921bf1 as
 patches.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.cc b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
-index b1c2751f6a6074f8876303a24fb716280cd794bb..4f410580ba87582be1ee4fde3418dda548d507a6 100644
+index b1c2751f6a6074f8876303a24fb716280cd794bb..37c86f81985a5522399e27d93f9b970b248cb082 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_ozone.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
-@@ -97,8 +97,9 @@ bool GlobalShortcutListenerOzone::RegisterAcceleratorImpl(
+@@ -97,7 +97,8 @@ bool GlobalShortcutListenerOzone::RegisterAcceleratorImpl(
    const bool registered =
        platform_global_shortcut_listener_->RegisterAccelerator(
            accelerator.key_code(), accelerator.IsAltDown(),
 -          accelerator.IsCtrlDown(), accelerator.IsShiftDown());
--  if (registered) {
 +          accelerator.IsCtrlDown(), accelerator.IsShiftDown(),
 +          accelerator.IsCmdDown());
-+  if (registered)
+   if (registered) {
      registered_hot_keys_.insert(accelerator);
    }
-   return registered;
 @@ -112,14 +113,15 @@ void GlobalShortcutListenerOzone::UnregisterAcceleratorImpl(
  
    platform_global_shortcut_listener_->UnregisterAccelerator(
