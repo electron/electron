@@ -167,11 +167,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   if (!rounded_corner && !has_frame())
     styleMask = NSWindowStyleMaskBorderless;
 
-// TODO: remove NSWindowStyleMaskTexturedBackground.
-// https://github.com/electron/electron/issues/43125
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
   if (minimizable)
     styleMask |= NSWindowStyleMaskMiniaturizable;
   if (closable)
@@ -179,17 +174,16 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   if (resizable)
     styleMask |= NSWindowStyleMaskResizable;
 
+// TODO: remove NSWindowStyleMaskTexturedBackground.
+// https://github.com/electron/electron/issues/43125
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  if (windowType == "textured" || transparent() || !has_frame()) {
+  if (windowType == "textured" && (transparent() || !has_frame())) {
     util::EmitWarning(
         "The 'textured' window type is deprecated and will be removed",
         "DeprecationWarning");
     styleMask |= NSWindowStyleMaskTexturedBackground;
   }
-#pragma clang diagnostic pop
-
-// -Wdeprecated-declarations
 #pragma clang diagnostic pop
 
   // Create views::Widget and assign window_ with it.
