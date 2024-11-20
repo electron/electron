@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5dee8a9226d2422e98878067e35552ca366dc18e..c81c0140dc45e6f436f478cf3b20c73782226f45 100644
+index c884f31fed70631df74f64bbda076868167ac394..a30a23706aac3a43e80e738bdefc80a09b28901d 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1017,6 +1017,7 @@ component("base") {
+@@ -1021,6 +1021,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -250,20 +250,20 @@ index e9f4e5131238b9fb5f1b4b3e90a0cb84a7fc15b4..8b5f4cae3123ac5480ad73f0c873fca0
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 1db1e7fc1d86bbca432a4226a24a312cf0b989f8..c4192c16299d291df259902ef8497a65776e3189 100644
+index 19fff43c3daaef5451b6b60b84a610a21311448e..240b954661d34fcc4329d39490be33c485fa8b6e 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-@@ -8,7 +8,9 @@
- 
+@@ -9,7 +9,9 @@
+ #include "components/remote_cocoa/app_shim/features.h"
  #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
  #include "components/remote_cocoa/common/native_widget_ns_window_host.mojom.h"
 +#include "electron/mas.h"
  
 +#if !IS_MAS_BUILD()
- @interface NSWindow (PrivateBrowserNativeWidgetAPI)
- + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
- @end
-@@ -95,10 +97,13 @@ - (void)maybeShowTrafficLights {
+ namespace {
+ // Workaround for https://crbug.com/1369643
+ const double kThinControllerHeight = 0.5;
+@@ -100,12 +102,15 @@ - (void)maybeShowTrafficLights {
  
  @end
  
@@ -271,13 +271,15 @@ index 1db1e7fc1d86bbca432a4226a24a312cf0b989f8..c4192c16299d291df259902ef8497a65
 +
  @implementation BrowserNativeWidgetWindow
  
+ @synthesize thinTitlebarViewController = _thinTitlebarViewController;
+ 
  // NSWindow (PrivateAPI) overrides.
  
 +#if !IS_MAS_BUILD()
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -145,6 +150,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -165,6 +170,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -286,7 +288,7 @@ index 1db1e7fc1d86bbca432a4226a24a312cf0b989f8..c4192c16299d291df259902ef8497a65
  // Handle "Move focus to the window toolbar" configured in System Preferences ->
  // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
  // tends to just be nil.
-@@ -155,8 +162,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
+@@ -175,8 +182,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
  }
  
  - (void)setAlwaysShowTrafficLights:(BOOL)alwaysShow {
@@ -558,7 +560,7 @@ index 6aa74c4137ac7a649e8f79eb628e297e9459b089..c89f25bf49d773f5f77b2434bd6fabcf
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6f0eb1326294a246ce737ff8ee3c1be0944a86b3..83d2719e1db8034dc7487cde81c074daa3180a61 100644
+index bdde3bd488b2018241835436fdaf3548dc453ec2..e47794527c5912a43047cdca48df0f7deb9edf9b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -325,6 +325,7 @@ source_set("browser") {
@@ -677,10 +679,10 @@ index 34fb29866785ef07c6dca4cfc85966df1c479b5f..e305d25a8f2a34ac90f4d503a9c74dcc
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index f1a3573055d86e68e7089b06ea1bb3f97e36df27..e5b0194d583e0a0eb2441514abb65816f595dedc 100644
+index 0b346b5636b5cb62e8d4c9df17067c0d7cf20395..cebc10db18c9896a9ac47a134f9578babddfba14 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -286,6 +286,7 @@ source_set("common") {
+@@ -284,6 +284,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -771,7 +773,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 9fb80e05154c7882f46e00460ee62742a329eb1d..c7ef928f2ea937d41c07aa9382fa64f6bf9625b6 100644
+index 70deb00ddaf443ecb8bbc1b54b09f9b52ecd3f5a..ccae03f971b51f7388b1ebc23ff121a7a0ab118a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -643,6 +643,7 @@ static_library("test_support") {
@@ -798,7 +800,7 @@ index 9fb80e05154c7882f46e00460ee62742a329eb1d..c7ef928f2ea937d41c07aa9382fa64f6
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3236,6 +3239,7 @@ test("content_unittests") {
+@@ -3241,6 +3244,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -819,7 +821,7 @@ index 99e612f705c5dff041454802033564085718260a..aa37555d9a9c0fda19d0096d035c245e
  
    # TODO(crbug.com/40139469): Blink test plugin must be migrated from PPAPI.
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 094318e67239ea34ccfe42949f417dece377673a..ba645e2aad56ac007eb6f41cf84cb1e05e4a6a1a 100644
+index 1fb121f31d7a4817a7934d75972a527adecdc91e..35703443b285256286276744e1f6c9f40ed8d595 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -258,6 +258,7 @@ component("bluetooth") {
@@ -1371,10 +1373,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 2041934dd6c8f5bb77c286871ff79c1fb56922a5..c6b5bb81023dd7b61b8d429e7cb46f4d37c4d9e1 100644
+index 679005c0d241207646a7aabad5ce896bc5c56558..39547524d6e77954c949d4ac05bec1f9596162fd 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -408,6 +408,7 @@ component("core") {
+@@ -409,6 +409,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1612,10 +1614,10 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..c2ac4da580e3e7f749a0a4de1e859af6
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 12896a91a06e53d623daab137c6a11326659dc2f..180bed4b6900bd6b2ddbe5a3745a28241da8aad6 100644
+index eea697e433fad6ded98ee0db8b6f49760340c364..13351f20f8a965e097281fee9db4f33e29fe704e 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -357,6 +357,13 @@ component("base") {
+@@ -358,6 +358,13 @@ component("base") {
      ]
    }
  
@@ -1629,7 +1631,7 @@ index 12896a91a06e53d623daab137c6a11326659dc2f..180bed4b6900bd6b2ddbe5a3745a2824
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -500,6 +507,12 @@ component("base") {
+@@ -501,6 +508,12 @@ component("base") {
      "//url",
    ]
  
@@ -1837,7 +1839,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 9cd0b0c5141b49130900172370e191b57bf7ea07..f8e8638374ea3e88fea694fd306bf719dea2a7a6 100644
+index 0d4a2d809d3fa731af0bad5a9d5f50f5b0a838f4..059a995648ec07960ab3a3cd15cbcc7952ec472d 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -713,6 +713,8 @@ component("views") {

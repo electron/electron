@@ -389,11 +389,6 @@ extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {
   return kiosk_delegate_.get();
 }
 
-bool ElectronExtensionsBrowserClient::IsLockScreenContext(
-    content::BrowserContext* context) {
-  return false;
-}
-
 std::string ElectronExtensionsBrowserClient::GetApplicationLocale() {
   return ElectronBrowserClient::Get()->GetApplicationLocale();
 }

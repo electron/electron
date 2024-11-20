@@ -7,10 +7,10 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index bde1ca7a9d076d240056a38437615523f9fa2420..a3259377e3ceecfe181dc2b22a4a86e3aae46c36 100644
+index 2ea73bf0f0e16ad01e547bb0ec8082ddd02286c2..1ce0ff532976d5d2ac61d6ae14699d5c12c8d490 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -279,8 +279,13 @@ void AsanProcessInfoCB(const char*, bool*) {
+@@ -280,8 +280,13 @@ void AsanProcessInfoCB(const char*, bool*) {
  }
  #endif  // defined(ADDRESS_SANITIZER)
  
@@ -25,7 +25,7 @@ index bde1ca7a9d076d240056a38437615523f9fa2420..a3259377e3ceecfe181dc2b22a4a86e3
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-@@ -309,11 +314,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
+@@ -310,11 +315,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
  
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  
@@ -40,7 +40,7 @@ index bde1ca7a9d076d240056a38437615523f9fa2420..a3259377e3ceecfe181dc2b22a4a86e3
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -989,7 +995,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -990,7 +996,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  

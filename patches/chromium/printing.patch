@@ -653,7 +653,7 @@ index 3c2fdc9f9a6c60efc4b0afacbfb83eef55917791..8fd9aff538fa03da6c171927c316d4f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 423cea4420bc868baad6260fb7c6b33430eaaf95..2b105dc1fb2a7b06fe717df9edf897446aca606c 100644
+index e1e7623427eccb5f7e4d0caf4394b6ee01357049..a8ace3f66e5961a14726faf537ba428f45939f9b 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -52,6 +52,7 @@
@@ -722,7 +722,7 @@ index 423cea4420bc868baad6260fb7c6b33430eaaf95..2b105dc1fb2a7b06fe717df9edf89744
  
    if (render_frame_gone_) {
      return;
-@@ -1456,6 +1460,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1455,6 +1459,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -731,7 +731,7 @@ index 423cea4420bc868baad6260fb7c6b33430eaaf95..2b105dc1fb2a7b06fe717df9edf89744
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
-@@ -2063,17 +2069,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2062,17 +2068,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -754,7 +754,7 @@ index 423cea4420bc868baad6260fb7c6b33430eaaf95..2b105dc1fb2a7b06fe717df9edf89744
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2094,8 +2102,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2093,8 +2101,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -771,7 +771,7 @@ index 423cea4420bc868baad6260fb7c6b33430eaaf95..2b105dc1fb2a7b06fe717df9edf89744
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2360,29 +2375,37 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2359,29 +2374,37 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -860,10 +860,10 @@ index b8c803184f267d87696c4e72c3d993ff3b69d95b..7278dfae56305cc8669fc2240563450f
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 83d2719e1db8034dc7487cde81c074daa3180a61..53baef7c2f76d8efd187ef5062bf4e0dc1a4f128 100644
+index e47794527c5912a43047cdca48df0f7deb9edf9b..858a54fbbdf83a42a631fe4355fe66e26a85f6db 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3023,8 +3023,9 @@ source_set("browser") {
+@@ -3025,8 +3025,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

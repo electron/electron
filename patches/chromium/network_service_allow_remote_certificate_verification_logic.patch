@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index cae84c27a26d6198d9da5913b008e748d6680037..4be02fdb03038ee4c30ea699cbbf56d1f5aaa7aa 100644
+index c0f354a0ed2ff8c931f7cf07a3bb68c318f892b7..c72e66a92d20a1366b750c976191c7d7628b1ebc 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -158,6 +158,11 @@
+@@ -160,6 +160,11 @@
  #include "services/network/web_transport.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index cae84c27a26d6198d9da5913b008e748d6680037..4be02fdb03038ee4c30ea699cbbf56d1
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -606,6 +611,99 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
+@@ -604,6 +609,99 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
  
  }  // namespace
  
@@ -122,7 +122,7 @@ index cae84c27a26d6198d9da5913b008e748d6680037..4be02fdb03038ee4c30ea699cbbf56d1
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1000,6 +1098,13 @@ void NetworkContext::SetClient(
+@@ -1001,6 +1099,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index cae84c27a26d6198d9da5913b008e748d6680037..4be02fdb03038ee4c30ea699cbbf56d1
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2569,6 +2674,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2570,6 +2675,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = std::move(cert_verifier_with_trust_anchors);
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -147,7 +147,7 @@ index cae84c27a26d6198d9da5913b008e748d6680037..4be02fdb03038ee4c30ea699cbbf56d1
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 964b2634c0232260a8193e15d543fef9011a5d9d..e77c58cb996fd90f7c268e1beba8f3f93c458c2a 100644
+index a89e2187c8fb0d90318de19ebbb9dc6b5d407f6d..01b673a5d0796e15f63953455215dd0a1c306ff1 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -114,6 +114,7 @@ class URLMatcher;
@@ -158,7 +158,7 @@ index 964b2634c0232260a8193e15d543fef9011a5d9d..e77c58cb996fd90f7c268e1beba8f3f9
  class CookieManager;
  class HostResolver;
  class MdnsResponderManager;
-@@ -245,6 +246,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -246,6 +247,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -167,7 +167,7 @@ index 964b2634c0232260a8193e15d543fef9011a5d9d..e77c58cb996fd90f7c268e1beba8f3f9
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -932,6 +935,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -937,6 +940,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -177,10 +177,10 @@ index 964b2634c0232260a8193e15d543fef9011a5d9d..e77c58cb996fd90f7c268e1beba8f3f9
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index f2c8a56442e0a51efa53d5478d4917afbf47073c..da6abf26316a5a0c8b65203a151eb07ec179233a 100644
+index 32c82e61a37b49f1177979f6f7d0fca158f836ad..6d7df96ea41ce10019285c927246208cb3001f8b 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -304,6 +304,16 @@ struct SocketBrokerRemotes {
+@@ -306,6 +306,17 @@ struct SocketBrokerRemotes {
    pending_remote<SocketBroker> server;
  };
  
@@ -194,10 +194,11 @@ index f2c8a56442e0a51efa53d5478d4917afbf47073c..da6abf26316a5a0c8b65203a151eb07e
 +    string? ocsp_response
 +  ) => (int32 error_code, CertVerifyResult result);
 +};
- 
++
  // Parameters for constructing a network context.
  struct NetworkContextParams {
-@@ -917,6 +927,9 @@ interface NetworkContext {
+   // The user agent string.
+@@ -924,6 +935,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  
@@ -205,13 +206,13 @@ index f2c8a56442e0a51efa53d5478d4917afbf47073c..da6abf26316a5a0c8b65203a151eb07e
 +  SetCertVerifierClient(pending_remote<CertVerifierClient>? client);
 +
    // Creates a new URLLoaderFactory with the given |params|.
-   CreateURLLoaderFactory(pending_receiver<URLLoaderFactory> url_loader_factory,
-                          URLLoaderFactoryParams params);
+   CreateURLLoaderFactory(
+       pending_receiver<URLLoaderFactory> url_loader_factory,
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index 053c3e927fab11eac532749f4311227d3143a7c5..0aa64468f433bf6f9f85cdf95ff098b1aa925649 100644
+index 2bcbb4fda66214ec24a9dacc69cebcdf58bb9f13..86430711eac5304c96486b0786b6ec3a26ce752b 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
-@@ -63,6 +63,8 @@ class TestNetworkContext : public mojom::NetworkContext {
+@@ -64,6 +64,8 @@ class TestNetworkContext : public mojom::NetworkContext {
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override {}

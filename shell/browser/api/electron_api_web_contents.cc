@@ -1368,6 +1368,10 @@ content::WebContents* WebContents::GetWebContentsForExclusiveAccess() {
   return web_contents();
 }
 
+bool WebContents::CanUserEnterFullscreen() const {
+  return true;
+}
+
 bool WebContents::CanUserExitFullscreen() const {
   return true;
 }
