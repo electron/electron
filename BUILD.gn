@@ -84,7 +84,10 @@ if (is_linux) {
   # from the gtk library. Function signatures for which stubs are
   # required should be declared in the sig files.
   generate_stubs("electron_gtk_stubs") {
-    sigs = [ "shell/browser/ui/electron_gdk_pixbuf.sigs" ]
+    sigs = [
+      "shell/browser/ui/electron_gdk.sigs",
+      "shell/browser/ui/electron_gdk_pixbuf.sigs",
+    ]
     extra_header = "shell/browser/ui/electron_gtk.fragment"
     output_name = "electron_gtk_stubs"
     public_deps = [ "//ui/gtk:gtk_config" ]
