@@ -604,7 +604,7 @@ index 2dec266f9e648391fe61a62931cca1ad20de719c..dc27e91ad0da93a5b68053f132f219f9
    V<T> Checked(V<Tuple<T, Word32>> result, Label<>& otherwise) {
      V<Word32> result_state = __ template Projection<1>(result);
 diff --git a/src/compiler/turboshaft/graph-builder.cc b/src/compiler/turboshaft/graph-builder.cc
-index 806cb4533cc035ee4c95597ba2ab6bbfb6ac81f1..2b597b8798ed235afcd833efbc7a308b2f1db288 100644
+index 5ffc0cc067d25fe2d0e8433beb82bba982252529..7ff80807621a88f583b0ca6ff815ed48ce53bca7 100644
 --- a/src/compiler/turboshaft/graph-builder.cc
 +++ b/src/compiler/turboshaft/graph-builder.cc
 @@ -1974,7 +1974,7 @@ OpIndex GraphBuilder::Process(
@@ -669,10 +669,10 @@ index 806cb4533cc035ee4c95597ba2ab6bbfb6ac81f1..2b597b8798ed235afcd833efbc7a308b
        // There is one return in addition to the return value of the C function,
        // which indicates if a fast API call actually happened.
 diff --git a/src/compiler/turboshaft/operations.h b/src/compiler/turboshaft/operations.h
-index 1b36c56008d4b3c5af0d15f2c6336d260fab56c8..f50f1fd3ba0d0ac1deae2510a483714172560b56 100644
+index dd97a13ed26b9a1b6d79f6e3e65c5f6969f75cac..52f696cc5b93417ea6edc781ef689c443a67c8a9 100644
 --- a/src/compiler/turboshaft/operations.h
 +++ b/src/compiler/turboshaft/operations.h
-@@ -6318,16 +6318,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
+@@ -6361,16 +6361,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
  };
  
  struct FastApiCallParameters : public NON_EXPORTED_BASE(ZoneObject) {

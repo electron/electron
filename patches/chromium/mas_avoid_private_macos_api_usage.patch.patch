@@ -455,10 +455,10 @@ index 97f489043beb4260b1a3ca1781ce7ef67ec8c88a..569859297618cac39aa36655b9e30122
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 1db2476ae1c2ad9c6d1306531fb9b3a697f3adca..72c960319365abf42ac7279b4d06f3d2b81c6e71 100644
+index f51c287959ec74878100b80fb75b86b0045b744a..f0fc2f51860e38f546159f94d5d180aa04a85e79 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -381,6 +381,7 @@ viz_component("service") {
+@@ -379,6 +379,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -466,7 +466,7 @@ index 1db2476ae1c2ad9c6d1306531fb9b3a697f3adca..72c960319365abf42ac7279b4d06f3d2
    }
  
    if (is_android || use_ozone) {
-@@ -663,6 +664,7 @@ viz_source_set("unit_tests") {
+@@ -660,6 +661,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -560,10 +560,10 @@ index 6aa74c4137ac7a649e8f79eb628e297e9459b089..c89f25bf49d773f5f77b2434bd6fabcf
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index bdde3bd488b2018241835436fdaf3548dc453ec2..e47794527c5912a43047cdca48df0f7deb9edf9b 100644
+index f911846044859b73fbb1d77c91040f7143daccc9..ac0e482a988546e515f05a560b2e3bc15888c2b2 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -325,6 +325,7 @@ source_set("browser") {
+@@ -326,6 +326,7 @@ source_set("browser") {
      "//ui/strings:ax_strings",
      "//ui/touch_selection",
      "//v8:v8_version",
@@ -1614,7 +1614,7 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..c2ac4da580e3e7f749a0a4de1e859af6
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index eea697e433fad6ded98ee0db8b6f49760340c364..13351f20f8a965e097281fee9db4f33e29fe704e 100644
+index 28dbb08b2a0eb932cce53614f71832c4acd4aa02..798002e25f24c8836a360187dcc17bc1322de65b 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -358,6 +358,13 @@ component("base") {
@@ -1631,7 +1631,7 @@ index eea697e433fad6ded98ee0db8b6f49760340c364..13351f20f8a965e097281fee9db4f33e
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -501,6 +508,12 @@ component("base") {
+@@ -508,6 +515,12 @@ component("base") {
      "//url",
    ]
  
