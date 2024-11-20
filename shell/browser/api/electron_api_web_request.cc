@@ -219,7 +219,8 @@ WebRequest::RequestFilter::RequestFilter(
     std::set<extensions::WebRequestResourceType> types)
     : include_url_patterns_(std::move(include_url_patterns)),
       exclude_url_patterns_(std::move(exclude_url_patterns)),
-      types_(std::move(types)) {}
+      types_(std::move(types)),
+      is_filter_defined_(false) {}
 WebRequest::RequestFilter::RequestFilter(const RequestFilter&) = default;
 WebRequest::RequestFilter::RequestFilter() = default;
 WebRequest::RequestFilter::~RequestFilter() = default;
@@ -251,6 +252,10 @@ bool WebRequest::RequestFilter::MatchesURL(
   return false;
 }
 
+void WebRequest::RequestFilter::SetFilterDefined(bool is_defined) {
+  is_filter_defined_ = is_defined;
+}
+
 bool WebRequest::RequestFilter::MatchesType(
     extensions::WebRequestResourceType type) const {
   return types_.empty() || base::Contains(types_, type);
@@ -258,6 +263,10 @@ bool WebRequest::RequestFilter::MatchesType(
 
 bool WebRequest::RequestFilter::MatchesRequest(
     extensions::WebRequestInfo* info) const {
+  // If the filter is not defined, it matches all requests.
+  if (!is_filter_defined_)
+    return true;
+
   // Matches URL and type, and does not match exclude URL.
   return MatchesURL(info->url, include_url_patterns_) &&
          !MatchesURL(info->url, exclude_url_patterns_) &&
@@ -658,6 +667,8 @@ void WebRequest::SetListener(Event event,
   // { includeUrls, excludeUrls, types }.
   std::set<std::string> filter_include_patterns, filter_exclude_patterns,
       filter_types;
+  RequestFilter filter;
+
   gin::Dictionary dict(args->isolate());
   if (args->GetNext(&arg) && !arg->IsFunction()) {
     // Note that gin treats Function as Dictionary when doing conversions, so we
@@ -668,10 +679,10 @@ void WebRequest::SetListener(Event event,
       dict.Get("excludeUrls", &filter_exclude_patterns);
       dict.Get("types", &filter_types);
       args->GetNext(&arg);
+      filter.SetFilterDefined(true);
     }
   }
 
-  RequestFilter filter;
   filter.AddUrlPatterns(filter_include_patterns, &filter, args);
   filter.AddUrlPatterns(filter_exclude_patterns, &filter, args, false);
 

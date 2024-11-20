@@ -8,7 +8,7 @@ function modifyArgs (args: any[]) {
   if (args.length < 2) return;
   const filter = args[0];
 
-  if (!filter.urls) {
+  if (!filter?.urls) {
     return;
   }
 

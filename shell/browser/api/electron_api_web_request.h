@@ -178,6 +178,7 @@ class WebRequest final : public gin::Wrappable<WebRequest>,
     void AddType(extensions::WebRequestResourceType type);
 
     bool MatchesRequest(extensions::WebRequestInfo* info) const;
+    void SetFilterDefined(bool is_defined);
 
    private:
     bool MatchesURL(const GURL& url,
@@ -187,6 +188,7 @@ class WebRequest final : public gin::Wrappable<WebRequest>,
     std::set<URLPattern> include_url_patterns_;
     std::set<URLPattern> exclude_url_patterns_;
     std::set<extensions::WebRequestResourceType> types_;
+    bool is_filter_defined_ = false;
   };
 
   struct SimpleListenerInfo {
