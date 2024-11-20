@@ -26,10 +26,10 @@ index 3d8ccc77b5952a999c5fe48792259d32b402c460..867a1c4aca54b9d41490d23a5eb55088
    }
  
 diff --git a/src/histogram.cc b/src/histogram.cc
-index 4dbdea9be5721486d71a9dda77311b4919d450a3..4aacaa2a5d12533a039b4b96cb7f1fd79063d50f 100644
+index c62a5b8952400ff0dd8818c31a3e07622b63725c..36f61f57e951e1abfeb2fedb831b55c61363bcbc 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
-@@ -193,7 +193,8 @@ void HistogramBase::FastRecord(Local<Value> receiver,
+@@ -195,7 +195,8 @@ void HistogramBase::FastRecord(Local<Value> unused,
                                 const int64_t value,
                                 FastApiCallbackOptions& options) {
    if (value < 1) {

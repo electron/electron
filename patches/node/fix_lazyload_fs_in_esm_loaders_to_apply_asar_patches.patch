@@ -90,4 +90,3 @@ index 25ee090bbb4884d3e5f2530cc7153f9215754fae..45a0abc6423a4e53e070f3c117fac2a3
          const { exportNames: reexportNames } = cjsPreparseModuleExports(resolved, source);
          for (const name of reexportNames) {
            exportNames.add(name);
-

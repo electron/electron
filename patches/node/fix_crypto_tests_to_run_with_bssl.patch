@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/common/index.js b/test/common/index.js
-index 172cdb6b049824539a9850789e0e7c5baf613367..c29abc18191aec78ad8eb810093a9a4ef9e854e4 100644
+index b95e812c5a9fab59f742e1557e9f218155638af4..6d2566c43f16493cbb2a0f9469ed386c41686782 100644
 --- a/test/common/index.js
 +++ b/test/common/index.js
 @@ -65,6 +65,8 @@ const opensslVersionNumber = (major = 0, minor = 0, patch = 0) => {
@@ -23,7 +23,7 @@ index 172cdb6b049824539a9850789e0e7c5baf613367..c29abc18191aec78ad8eb810093a9a4e
  let OPENSSL_VERSION_NUMBER;
  const hasOpenSSL = (major = 0, minor = 0, patch = 0) => {
    if (!hasCrypto) return false;
-@@ -996,6 +998,7 @@ const common = {
+@@ -1008,6 +1010,7 @@ const common = {
    mustNotMutateObjectDeep,
    mustSucceed,
    nodeProcessAborted,
@@ -395,7 +395,7 @@ index 338a19b0e88ad6f08d2f6b6a5d38b9980996ce11..a4ee215575d072450ba66c558ddca88b
    };
    assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index 9dd586a1a1f9a00d9bb0af5b0532e81e7b96a5ce..a37e6d50914345829c8260a97949cee7d17ab676 100644
+index 8a263ec3350f5540591ac02e70fa2f552b9ac477..dcc4c2ec816d28f1b27df1c358cfce66f1a3a03b 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -29,7 +29,7 @@ const keySize = 2048;
@@ -728,7 +728,7 @@ index b06f2fa2c53ea72f9a66f0d002dd9281d0259a0f..864fffeebfad75d95416fd47efdea7f2
  
  const server = https.createServer(opts, (req, res) => {
 diff --git a/test/parallel/test-webcrypto-derivebits.js b/test/parallel/test-webcrypto-derivebits.js
-index eb09bc24f0cb8244b05987e3a7c1d203360d3a38..011990db171faa708c5211f6ab9ae1ac0e0ab90e 100644
+index eb09bc24f0cb8244b05987e3a7c1d203360d3a38..8c251ff2371fb59bf679160574e1c5dc1b4b2665 100644
 --- a/test/parallel/test-webcrypto-derivebits.js
 +++ b/test/parallel/test-webcrypto-derivebits.js
 @@ -101,8 +101,9 @@ const { subtle } = globalThis.crypto;
