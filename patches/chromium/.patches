@@ -135,3 +135,4 @@ chore_partial_revert_of.patch
 fix_software_compositing_infinite_loop.patch
 refactor_unfilter_unresponsive_events.patch
 build_disable_thin_lto_mac.patch
+feat_expose_url_chain_from_urlloader.patch
