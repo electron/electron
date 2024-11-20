@@ -1360,6 +1360,36 @@ specified when registering the protocol.
 
 Returns `Promise<void>` - resolves when the code cache clear operation is complete.
 
+#### `ses.getSharedDictionaryUsageInfo()`
+
+Returns `Promise<SharedDictionaryUsageInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+Shared dictionaries are used to power advanced compression of data sent over the wire, specifically with Brotli and ZStandard. You don't need to call any of the shared dictionary APIs in Electron to make use of this advanced web feature, but if you do, they allow deeper control and inspection of the shared dictionaries used during decompression.
+
+To get detailed information about a specific shared dictionary entry, call `getSharedDictionaryInfo(url)`.
+
+#### `ses.getSharedDictionaryInfo(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<SharedDictionaryInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+To get information about all present shared dictionaries, call `getSharedDictionaryUsageInfo()`.
+
+#### `ses.clearSharedDictionaryCache()`
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared, both in memory and on disk.
+
+#### `ses.clearSharedDictionaryCacheForIsolationKey(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared for the specified isolation key, both in memory and on disk.
+
 #### `ses.setSpellCheckerEnabled(enable)`
 
 * `enable` boolean

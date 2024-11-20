@@ -133,6 +133,8 @@ auto_filenames = {
     "docs/api/structures/segmented-control-segment.md",
     "docs/api/structures/serial-port.md",
     "docs/api/structures/service-worker-info.md",
+    "docs/api/structures/shared-dictionary-info.md",
+    "docs/api/structures/shared-dictionary-usage-info.md",
     "docs/api/structures/shared-worker-info.md",
     "docs/api/structures/sharing-item.md",
     "docs/api/structures/shortcut-details.md",
