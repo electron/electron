@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index 457bd2f6c5b18956d06c716fbfae429496fb352d..a298055ef3643fa26d75eca3faa1e423db21120e 100644
+index 457bd2f6c5b18956d06c716fbfae429496fb352d..9168442d816ba325390a423c40a389a9fa0bfb04 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -6,13 +6,11 @@
@@ -53,6 +53,22 @@ index 457bd2f6c5b18956d06c716fbfae429496fb352d..a298055ef3643fa26d75eca3faa1e423
      ACCESS_DESCRIPTION* desc = sk_ACCESS_DESCRIPTION_value(descs, i);
  
      if (i != 0)
+@@ -857,13 +855,13 @@ BIOPointer X509View::getValidTo() const {
+ 
+ int64_t X509View::getValidToTime() const {
+   struct tm tp;
+-  ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
++  // ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
+   return PortableTimeGM(&tp);
+ }
+ 
+ int64_t X509View::getValidFromTime() const {
+   struct tm tp;
+-  ASN1_TIME_to_tm(X509_get0_notBefore(cert_), &tp);
++  // ASN1_TIME_to_tm(X509_get0_notBefore(cert_), &tp);
+   return PortableTimeGM(&tp);
+ }
+ 
 @@ -1043,7 +1041,11 @@ BIOPointer BIOPointer::NewMem() {
  }
  
