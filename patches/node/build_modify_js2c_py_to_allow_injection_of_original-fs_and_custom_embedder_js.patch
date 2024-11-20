@@ -34,7 +34,7 @@ index f5ecc15159f457cd0b8069c0427b7c758c916c4e..c9ce67391f321989b0af48159b4da3ab
  let kResistStopPropagation;
  
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 48d29a0d05538cd1d992f3f086d826e78d0d8882..8987234c2d08449242b5fd037ed314b725bc42a5 100644
+index 599b59873dbb17ae5e7463403859e088ffb86cda..d23cb087de5cb3cd02ef0542fd2f34207f967ad2 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -34,6 +34,7 @@ using v8::Value;
