@@ -1077,28 +1077,94 @@ std::vector<base::FilePath> Session::GetPreloads() const {
 }
 
 /**
+ * Exposes the network service's ClearSharedDictionaryCacheForIsolationKey
+ * method, allowing clearing the Shared Dictionary cache for a given isolation
+ * key. Details about the feature available at
+ * https://developer.chrome.com/blog/shared-dictionary-compression
+ */
+v8::Local<v8::Promise> Session::ClearSharedDictionaryCacheForIsolationKey(
+    const gin_helper::Dictionary& options) {
+  gin_helper::Promise<void> promise(isolate_);
+  auto handle = promise.GetHandle();
+
+  std::string frame_origin_str, top_frame_site_str;
+  if (!options.Get("frameOrigin", &frame_origin_str) ||
+      !options.Get("topFrameSite", &top_frame_site_str)) {
+    promise.RejectWithErrorMessage(
+        "Must provide frameOrigin and topFrameSite strings");
+    return handle;
+  }
+
+  GURL frame_origin_url(frame_origin_str);
+  GURL top_frame_site_url(top_frame_site_str);
+  if (!frame_origin_url.is_valid() || !top_frame_site_url.is_valid()) {
+    promise.RejectWithErrorMessage(
+        "Invalid URLs provided for frameOrigin or topFrameSite");
+    return handle;
+  }
+
+  url::Origin frame_origin = url::Origin::Create(frame_origin_url);
+  net::SchemefulSite top_frame_site(top_frame_site_url);
+  net::SharedDictionaryIsolationKey isolation_key(frame_origin, top_frame_site);
+
+  browser_context_->GetDefaultStoragePartition()
+      ->GetNetworkContext()
+      ->ClearSharedDictionaryCacheForIsolationKey(
+          isolation_key,
+          base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
+                         std::move(promise)));
+
+  return handle;
+}
+
+/**
+ * Exposes the network service's ClearSharedDictionaryCache
+ * method, allowing clearing the Shared Dictionary cache.
+ * https://developer.chrome.com/blog/shared-dictionary-compression
+ */
+v8::Local<v8::Promise> Session::ClearSharedDictionaryCache() {
+  gin_helper::Promise<void> promise(isolate_);
+  auto handle = promise.GetHandle();
+
+  browser_context_->GetDefaultStoragePartition()
+      ->GetNetworkContext()
+      ->ClearSharedDictionaryCache(
+          base::Time(), base::Time::Max(),
+          nullptr /*mojom::ClearDataFilterPtr*/,
+          base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
+                         std::move(promise)));
+
+  return handle;
+}
+
+/**
  * Exposes the network service's GetSharedDictionaryInfo method, allowing
  * inspection of Shared Dictionary information. Details about the feature
  * available at https://developer.chrome.com/blog/shared-dictionary-compression
  */
-v8::Local<v8::Promise> Session::GetSharedDictionaryInfo(gin::Arguments* args) {
+v8::Local<v8::Promise> Session::GetSharedDictionaryInfo(
+    const gin_helper::Dictionary& options) {
   gin_helper::Promise<std::vector<gin_helper::Dictionary>> promise(isolate_);
   auto handle = promise.GetHandle();
 
-  std::string key_str;
-  if (!args->GetNext(&key_str)) {
-    promise.RejectWithErrorMessage("Must provide isolation key string");
+  std::string frame_origin_str, top_frame_site_str;
+  if (!options.Get("frameOrigin", &frame_origin_str) ||
+      !options.Get("topFrameSite", &top_frame_site_str)) {
+    promise.RejectWithErrorMessage(
+        "Must provide frameOrigin and topFrameSite strings");
     return handle;
   }
 
-  GURL url(key_str);
-  if (!url.is_valid()) {
-    promise.RejectWithErrorMessage("Invalid URL provided for isolation key");
+  GURL frame_origin_url(frame_origin_str);
+  GURL top_frame_site_url(top_frame_site_str);
+  if (!frame_origin_url.is_valid() || !top_frame_site_url.is_valid()) {
+    promise.RejectWithErrorMessage(
+        "Invalid URLs provided for frameOrigin or topFrameSite");
     return handle;
   }
 
-  url::Origin frame_origin = url::Origin::Create(url);
-  net::SchemefulSite top_frame_site(url);
+  url::Origin frame_origin = url::Origin::Create(frame_origin_url);
+  net::SchemefulSite top_frame_site(top_frame_site_url);
   net::SharedDictionaryIsolationKey isolation_key(frame_origin, top_frame_site);
 
   browser_context_->GetDefaultStoragePartition()
@@ -1152,8 +1218,7 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryInfo(gin::Arguments* args) {
  * inspection of Shared Dictionary information. Details about the feature
  * available at https://developer.chrome.com/blog/shared-dictionary-compression
  */
-v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo(
-    v8::Isolate* isolate) {
+v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo() {
   gin_helper::Promise<std::vector<gin_helper::Dictionary>> promise(isolate_);
   auto handle = promise.GetHandle();
 
@@ -1742,6 +1807,8 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getSharedDictionaryUsageInfo",
                  &Session::GetSharedDictionaryUsageInfo)
       .SetMethod("getSharedDictionaryInfo", &Session::GetSharedDictionaryInfo)
+      .SetMethod("clearSharedDictionaryCacheForIsolationKey",
+                 &Session::ClearSharedDictionaryCacheForIsolationKey)
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
       .SetMethod("loadExtension", &Session::LoadExtension)
       .SetMethod("removeExtension", &Session::RemoveExtension)
