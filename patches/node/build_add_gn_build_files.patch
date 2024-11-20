@@ -10,6 +10,17 @@ however those files were cherry-picked from main branch and do not
 really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
+diff --git a/deps/simdjson/unofficial.gni b/deps/simdjson/unofficial.gni
+index d6909b95886f4de3f0b953c2a2992f69066b7434..972955f9144aafcd3a3fe278b7aaad401cadddda 100644
+--- a/deps/simdjson/unofficial.gni
++++ b/deps/simdjson/unofficial.gni
+@@ -18,5 +18,6 @@ template("simdjson_gn_build") {
+     forward_variables_from(invoker, "*")
+     public_configs = [ ":simdjson_config" ]
+     sources = gypi_values.simdjson_sources
++    cflags_c = [ "-Wdeprecated-literal-operator" ]
+   }
+ }
 diff --git a/deps/sqlite/unofficial.gni b/deps/sqlite/unofficial.gni
 index ebb3ffcd6d42b4c16b6865a91ccf4428cffe864b..00225afa1fb4205f1e02d9f185aeb97d642b3fd9 100644
 --- a/deps/sqlite/unofficial.gni
