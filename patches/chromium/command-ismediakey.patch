@@ -11,7 +11,7 @@ and electron/electron@d2368d2d3b3de9eec4cc32b6aaf035cc89921bf1 as
 patches.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.cc b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
-index b1c2751f6a6074f8876303a24fb716280cd794bb..8c41d56b7ff3224b306d43c9037c3e1b83ebfad1 100644
+index b1c2751f6a6074f8876303a24fb716280cd794bb..4f410580ba87582be1ee4fde3418dda548d507a6 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_ozone.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
 @@ -97,8 +97,9 @@ bool GlobalShortcutListenerOzone::RegisterAcceleratorImpl(
@@ -48,7 +48,7 @@ index b1c2751f6a6074f8876303a24fb716280cd794bb..8c41d56b7ff3224b306d43c9037c3e1b
    if (is_shift_down) {
      modifiers |= ui::EF_SHIFT_DOWN;
    }
-+  if (is_cmd_down)
++  if (is_cmd_down) {
 +    modifiers |= ui::EF_COMMAND_DOWN;
 +  }
  
