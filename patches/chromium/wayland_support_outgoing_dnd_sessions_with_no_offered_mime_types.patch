@@ -1,0 +1,97 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nick Diego Yamane <nickdiego@igalia.com>
+Date: Thu, 7 Nov 2024 23:11:14 +0000
+Subject: wayland: support outgoing dnd sessions with no offered mime types
+
+Even though the Wayland spec says that dnd sessions with no accepted
+mime type should always end as cancelled [1], W3C's counterpart does not
+enforce such behavior [2]. In order to ensure compatibility for web
+apps already relying on such behavior, this CL uses a placeholder mime
+type to make it possible for outgoing drag-and-drop sessions with empty
+mime types list (not set by the application) to end successfully.
+
+The minimal sample at [3] was used to validate it, in addition to
+vscode.dev web app, by rearranging its left-side bar action items. Refer
+to linked crbug and comments at [4] for further repro steps and
+expectations.
+
+[1] https://wayland.app/protocols/wayland#wl_data_offer:request:accept.
+[2] https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API/Drag_operations#drag_data
+[3] https://people.igalia.com/nickdiego/samples/dnd-empty-drag-data/
+[4] https://github.com/microsoft/vscode/issues/156723#issuecomment-2460617294
+
+R=orko@igalia.com, thomasanderson
+
+Bug: 377760837
+Test: Manually, by rearranging left side bar items of https://vscode.dev and the minimal sample at [3].
+Change-Id: I3fd5dd2ab9a9f3482334371af35bde554fd3d1a3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6000277
+Commit-Queue: Nick Yamane <nickdiego@igalia.com>
+Reviewed-by: Orko Garai <orko@igalia.com>
+Cr-Commit-Position: refs/heads/main@{#1380008}
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
+index 3d63985300269fb33707ead548665d5e99ebdbf3..22cb6406bc4f667b949c23690bedf1f59d988faa 100644
+--- a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
++++ b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
+@@ -54,6 +54,16 @@ namespace {
+ using mojom::DragEventSource;
+ using mojom::DragOperation;
+ 
++// Used for compatibility between W3C and Wayland drag-and-drop specifications.
++// Since wl_data_offer version >= 3, Wayland dnd sessions with no accepted mime
++// type always end as cancelled. W3C drag-and-drop spec on the other hand does
++// not require drag data to be set in order to proceed with drop and drag-end
++// events. Thus, the special mime type below is used to ensure such behavior is
++// supported by the Wayland backend. Further context can be found at
++// https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API and
++// https://wayland.app/protocols/wayland#wl_data_offer:request:accept.
++constexpr char kMimeTypeEmptyDragData[] = "chromium/x-empty-drag-data";
++
+ DragOperation DndActionToDragOperation(uint32_t action) {
+   // Prevent the usage of this function for an operation mask.
+   DCHECK_LE(std::bitset<32>(action).count(), 1u);
+@@ -158,9 +168,17 @@ bool WaylandDataDragController::StartSession(const OSExchangeData& data,
+           << ", serial tracker=" << connection_->serial_tracker().ToString();
+ 
+   // Create new data source and offers |data|.
+-  SetOfferedExchangeDataProvider(data);
++  offered_exchange_data_provider_ = data.provider().Clone();
++  auto mime_types = GetOfferedExchangeDataProvider()->BuildMimeTypesList();
++  if (mime_types.empty()) {
++    // Add placeholder mime type to ensure the drag-and-drop session can end
++    // successfully, even if no drag data was set by the application. See
++    // `kMimeTypeEmptyDragData` declaration for more details.
++    mime_types.push_back(kMimeTypeEmptyDragData);
++  }
++
+   data_source_ = data_device_manager_->CreateSource(this);
+-  data_source_->Offer(GetOfferedExchangeDataProvider()->BuildMimeTypesList());
++  data_source_->Offer(mime_types);
+   data_source_->SetDndActions(DragOperationsToDndActions(operations));
+ 
+   // Create drag icon surface (if any) and store the data to be exchanged.
+@@ -788,11 +806,6 @@ WaylandDataDragController::GetAndValidateSerialForDrag(DragEventSource source) {
+                      : std::nullopt;
+ }
+ 
+-void WaylandDataDragController::SetOfferedExchangeDataProvider(
+-    const OSExchangeData& data) {
+-  offered_exchange_data_provider_ = data.provider().Clone();
+-}
+-
+ const WaylandExchangeDataProvider*
+ WaylandDataDragController::GetOfferedExchangeDataProvider() const {
+   DCHECK(offered_exchange_data_provider_);
+diff --git a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h
+index fd64adeeec3a715c278957e1ef934a8e53d07953..a7453424c0e3de7c62b912c4bce86156914d93f3 100644
+--- a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h
++++ b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h
+@@ -216,7 +216,6 @@ class WaylandDataDragController : public WaylandDataDevice::DragDelegate,
+   std::optional<wl::Serial> GetAndValidateSerialForDrag(
+       mojom::DragEventSource source);
+ 
+-  void SetOfferedExchangeDataProvider(const OSExchangeData& data);
+   const WaylandExchangeDataProvider* GetOfferedExchangeDataProvider() const;
+ 
+   // Checks whether |data| holds information about a window dragging session.
