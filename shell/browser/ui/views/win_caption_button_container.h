@@ -42,8 +42,10 @@ class WinCaptionButtonContainer : public views::View,
   // See also ClientView::NonClientHitTest.
   int NonClientHitTest(const gfx::Point& point) const;
 
-  gfx::Size GetButtonSize() const;
   void SetButtonSize(gfx::Size size);
+
+  // Add tooltip text to caption buttons.
+  void UpdateButtonToolTipsForWindowControlsOverlay();
 
   // Sets caption button container background color.
   void UpdateBackground();
