@@ -1,4 +1,4 @@
-import { BaseWindow, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, WebContents, WebContentsView } from 'electron/main';
+import { BaseWindow, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, webContents, WebContents, WebContentsView } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -15,8 +15,11 @@ import { closeWindow } from './lib/window-helpers';
 ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
   let w: BaseWindow & {webContents: WebContents};
 
-  afterEach(() => {
-    return closeWindow(w);
+  afterEach(async () => {
+    await closeWindow(w);
+    w = null as unknown as BrowserWindow;
+    const existingWCS = webContents.getAllWebContents();
+    existingWCS.forEach((contents) => contents.close());
   });
 
   const load = () => w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'chromium', 'visibilitystate.html'));
