@@ -1,17 +1,390 @@
-import { BrowserWindow } from 'electron/main';
+import { BrowserWindow, ipcMain, webContents, BrowserView, WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 
+import { once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { listen, ifit } from './lib/spec-helpers';
+import { ifdescribe, waitUntil, listen, ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
+const features = process._linkedBinding('electron_common_features');
 
-describe('webContents1d module', () => {
+describe('webContents1 module', () => {
+  describe('getAllWebContents() API', () => {
+    afterEach(closeAllWindows);
+    it('returns an array of web contents', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { webviewTag: true }
+      });
+      w.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html'));
+
+      await once(w.webContents, 'did-attach-webview') as [any, WebContents];
+
+      w.webContents.openDevTools();
+
+      await once(w.webContents, 'devtools-opened');
+
+      const all = webContents.getAllWebContents().sort((a, b) => {
+        return a.id - b.id;
+      });
+
+      expect(all).to.have.length(3);
+      expect(all[0].getType()).to.equal('window');
+      expect(all[all.length - 2].getType()).to.equal('webview');
+      expect(all[all.length - 1].getType()).to.equal('remote');
+    });
+  });
+
+  describe('webContents properties', () => {
+    afterEach(closeAllWindows);
+
+    it('has expected additional enumerable properties', () => {
+      const w = new BrowserWindow({ show: false });
+      const properties = Object.getOwnPropertyNames(w.webContents);
+      expect(properties).to.include('ipc');
+      expect(properties).to.include('navigationHistory');
+    });
+  });
+
+  describe('fromId()', () => {
+    it('returns undefined for an unknown id', () => {
+      expect(webContents.fromId(12345)).to.be.undefined();
+    });
+  });
+
+  describe('fromFrame()', () => {
+    it('returns WebContents for mainFrame', () => {
+      const contents = (webContents as typeof ElectronInternal.WebContents).create();
+      expect(webContents.fromFrame(contents.mainFrame)).to.equal(contents);
+    });
+    it('returns undefined for disposed frame', async () => {
+      const contents = (webContents as typeof ElectronInternal.WebContents).create();
+      const { mainFrame } = contents;
+      contents.destroy();
+      await waitUntil(() => typeof webContents.fromFrame(mainFrame) === 'undefined');
+    });
+    it('throws when passing invalid argument', async () => {
+      let errored = false;
+      try {
+        webContents.fromFrame({} as any);
+      } catch {
+        errored = true;
+      }
+      expect(errored).to.be.true();
+    });
+  });
+
+  describe('fromDevToolsTargetId()', () => {
+    it('returns WebContents for attached DevTools target', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      try {
+        await w.webContents.debugger.attach('1.3');
+        const { targetInfo } = await w.webContents.debugger.sendCommand('Target.getTargetInfo');
+        expect(webContents.fromDevToolsTargetId(targetInfo.targetId)).to.equal(w.webContents);
+      } finally {
+        await w.webContents.debugger.detach();
+      }
+    });
+
+    it('returns undefined for an unknown id', () => {
+      expect(webContents.fromDevToolsTargetId('nope')).to.be.undefined();
+    });
+  });
+
+  describe('will-prevent-unload event', function () {
+    afterEach(closeAllWindows);
+    it('does not emit if beforeunload returns undefined in a BrowserWindow', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.once('will-prevent-unload', () => {
+        expect.fail('should not have fired');
+      });
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      const wait = once(w, 'closed');
+      w.close();
+      await wait;
+    });
+
+    it('does not emit if beforeunload returns undefined in a BrowserView', async () => {
+      const w = new BrowserWindow({ show: false });
+      const view = new BrowserView();
+      w.setBrowserView(view);
+      view.setBounds(w.getBounds());
+
+      view.webContents.once('will-prevent-unload', () => {
+        expect.fail('should not have fired');
+      });
+
+      await view.webContents.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      const wait = once(w, 'closed');
+      w.close();
+      await wait;
+    });
+
+    it('emits if beforeunload returns false in a BrowserWindow', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      w.close();
+      await once(w.webContents, 'will-prevent-unload');
+    });
+
+    it('emits if beforeunload returns false in a BrowserView', async () => {
+      const w = new BrowserWindow({ show: false });
+      const view = new BrowserView();
+      w.setBrowserView(view);
+      view.setBounds(w.getBounds());
+
+      await view.webContents.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      w.close();
+      await once(view.webContents, 'will-prevent-unload');
+    });
+
+    it('supports calling preventDefault on will-prevent-unload events in a BrowserWindow', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.once('will-prevent-unload', event => event.preventDefault());
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      const wait = once(w, 'closed');
+      w.close();
+      await wait;
+    });
+  });
+
+  describe('webContents.send(channel, args...)', () => {
+    afterEach(closeAllWindows);
+    it('throws an error when the channel is missing', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        (w.webContents.send as any)();
+      }).to.throw('Missing required channel argument');
+
+      expect(() => {
+        w.webContents.send(null as any);
+      }).to.throw('Missing required channel argument');
+    });
+
+    it('does not block node async APIs when sent before document is ready', (done) => {
+      // Please reference https://github.com/electron/electron/issues/19368 if
+      // this test fails.
+      ipcMain.once('async-node-api-done', () => {
+        done();
+      });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          sandbox: false,
+          contextIsolation: false
+        }
+      });
+      w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html'));
+      setTimeout(50).then(() => {
+        w.webContents.send('test');
+      });
+    });
+  });
+
+  ifdescribe(features.isPrintingEnabled())('webContents.print()', () => {
+    let w: BrowserWindow;
+
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false });
+    });
+
+    afterEach(closeAllWindows);
+
+    it('does not throw when options are not passed', () => {
+      expect(() => {
+        w.webContents.print();
+      }).not.to.throw();
+
+      expect(() => {
+        w.webContents.print(undefined);
+      }).not.to.throw();
+    });
+
+    it('does not throw when options object is empty', () => {
+      expect(() => {
+        w.webContents.print({});
+      }).not.to.throw();
+    });
+
+    it('throws when invalid settings are passed', () => {
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print(true);
+      }).to.throw('webContents.print(): Invalid print settings specified.');
+
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print(null);
+      }).to.throw('webContents.print(): Invalid print settings specified.');
+    });
+
+    it('throws when an invalid pageSize is passed', () => {
+      const badSize = 5;
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print({ pageSize: badSize });
+      }).to.throw(`Unsupported pageSize: ${badSize}`);
+    });
+
+    it('throws when an invalid callback is passed', () => {
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print({}, true);
+      }).to.throw('webContents.print(): Invalid optional callback provided.');
+    });
+
+    it('fails when an invalid deviceName is passed', (done) => {
+      w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, (success, reason) => {
+        expect(success).to.equal(false);
+        expect(reason).to.match(/Invalid deviceName provided/);
+        done();
+      });
+    });
+
+    it('throws when an invalid pageSize is passed', () => {
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print({ pageSize: 'i-am-a-bad-pagesize' }, () => {});
+      }).to.throw('Unsupported pageSize: i-am-a-bad-pagesize');
+    });
+
+    it('throws when an invalid custom pageSize is passed', () => {
+      expect(() => {
+        w.webContents.print({
+          pageSize: {
+            width: 100,
+            height: 200
+          }
+        });
+      }).to.throw('height and width properties must be minimum 352 microns.');
+    });
+
+    it('does not crash with custom margins', () => {
+      expect(() => {
+        w.webContents.print({
+          silent: true,
+          margins: {
+            marginType: 'custom',
+            top: 1,
+            bottom: 1,
+            left: 1,
+            right: 1
+          }
+        });
+      }).to.not.throw();
+    });
+  });
+
+  describe('webContents.executeJavaScript', () => {
+    describe('in about:blank', () => {
+      const expected = 'hello, world!';
+      const expectedErrorMsg = 'woops!';
+      const code = `(() => "${expected}")()`;
+      const asyncCode = `(() => new Promise(r => setTimeout(() => r("${expected}"), 500)))()`;
+      const badAsyncCode = `(() => new Promise((r, e) => setTimeout(() => e("${expectedErrorMsg}"), 500)))()`;
+      const errorTypes = new Set([
+        Error,
+        ReferenceError,
+        EvalError,
+        RangeError,
+        SyntaxError,
+        TypeError,
+        URIError
+      ]);
+      let w: BrowserWindow;
+
+      before(async () => {
+        w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false } });
+        await w.loadURL('about:blank');
+      });
+      after(closeAllWindows);
+
+      it('resolves the returned promise with the result', async () => {
+        const result = await w.webContents.executeJavaScript(code);
+        expect(result).to.equal(expected);
+      });
+      it('resolves the returned promise with the result if the code returns an asynchronous promise', async () => {
+        const result = await w.webContents.executeJavaScript(asyncCode);
+        expect(result).to.equal(expected);
+      });
+      it('rejects the returned promise if an async error is thrown', async () => {
+        await expect(w.webContents.executeJavaScript(badAsyncCode)).to.eventually.be.rejectedWith(expectedErrorMsg);
+      });
+      it('rejects the returned promise with an error if an Error.prototype is thrown', async () => {
+        for (const error of errorTypes) {
+          await expect(w.webContents.executeJavaScript(`Promise.reject(new ${error.name}("Wamp-wamp"))`))
+            .to.eventually.be.rejectedWith(error);
+        }
+      });
+    });
+
+    describe('on a real page', () => {
+      let w: BrowserWindow;
+      beforeEach(() => {
+        w = new BrowserWindow({ show: false });
+      });
+      afterEach(closeAllWindows);
+
+      let server: http.Server;
+      let serverUrl: string;
+
+      before(async () => {
+        server = http.createServer((request, response) => {
+          response.end();
+        });
+        serverUrl = (await listen(server)).url;
+      });
+
+      after(() => {
+        server.close();
+        server = null as unknown as http.Server;
+      });
+
+      it('works after page load and during subframe load', async () => {
+        await w.loadURL(serverUrl);
+        // initiate a sub-frame load, then try and execute script during it
+        await w.webContents.executeJavaScript(`
+          var iframe = document.createElement('iframe')
+          iframe.src = '${serverUrl}/slow'
+          document.body.appendChild(iframe)
+          null // don't return the iframe
+        `);
+        await w.webContents.executeJavaScript('console.log(\'hello\')');
+      });
+
+      it('executes after page load', async () => {
+        const executeJavaScript = w.webContents.executeJavaScript('(() => "test")()');
+        w.loadURL(serverUrl);
+        const result = await executeJavaScript;
+        expect(result).to.equal('test');
+      });
+    });
+  });
+
+  describe('webContents.executeJavaScriptInIsolatedWorld', () => {
+    let w: BrowserWindow;
+
+    before(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      await w.loadURL('about:blank');
+    });
+
+    it('resolves the returned promise with the result', async () => {
+      await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X = 123' }]);
+      const isolatedResult = await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X' }]);
+      const mainWorldResult = await w.webContents.executeJavaScript('window.X');
+      expect(isolatedResult).to.equal(123);
+      expect(mainWorldResult).to.equal(undefined);
+    });
+  });
+
   describe('loadURL() promise API', () => {
     let w: BrowserWindow;
     let s: http.Server;
