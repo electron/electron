@@ -8,7 +8,7 @@ to child processes spawned with `ELECTRON_RUN_AS_NODE` which is used
 by the crashpad client to connect with the handler process.
 
 diff --git a/lib/child_process.js b/lib/child_process.js
-index 48870b35ad0f3411f2d509b12d92a9e0d20046f9..e7ef454d2d71207ae7b2788a437b82bf7732716e 100644
+index cc81cb373d59dbc1ab18182aa2a0c8ebe63f6245..d3871405e2ecb3917b8ec816490c575891c91d18 100644
 --- a/lib/child_process.js
 +++ b/lib/child_process.js
 @@ -61,6 +61,7 @@ let debug = require('internal/util/debuglog').debuglog(

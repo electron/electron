@@ -28,7 +28,7 @@ index 79a953df7da64b7d7580e099a5cc5160e7842999..94616df356cab50c8ef4099e7863f598
  test-net-write-fully-async-hex-string: PASS, FLAKY
  # https://github.com/nodejs/node/issues/52273
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index a539649d5537376a6a2ac9a7a46051b8648f0cb1..a03c86b752772be7ae36fab31faeccf3b0ccff64 100644
+index 073b29cce8dbca4c8d92ad666f9244ad511296db..338d20263f29a630febb96567f3cb708623bd09a 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
 @@ -7,6 +7,18 @@ prefix sequential
