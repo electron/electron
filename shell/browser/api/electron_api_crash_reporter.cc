@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/to_vector.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
@@ -220,18 +221,17 @@ v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
     list->LoadSync();
   }
 
+  auto to_obj = [isolate](const UploadList::UploadInfo* upload) {
+    return gin::DataObjectBuilder{isolate}
+        .Set("date", upload->upload_time)
+        .Set("id", upload->upload_id)
+        .Build();
+  };
+
   constexpr size_t kMaxUploadReportsToList = std::numeric_limits<size_t>::max();
-  const std::vector<const UploadList::UploadInfo*> uploads =
-      list->GetUploads(kMaxUploadReportsToList);
-  std::vector<v8::Local<v8::Object>> result;
-  for (auto* const upload : uploads) {
-    result.push_back(gin::DataObjectBuilder(isolate)
-                         .Set("date", upload->upload_time)
-                         .Set("id", upload->upload_id)
-                         .Build());
-  }
-  v8::Local<v8::Value> v8_result = gin::ConvertToV8(isolate, result);
-  return v8_result;
+  return gin::ConvertToV8(
+      isolate,
+      base::ToVector(list->GetUploads(kMaxUploadReportsToList), to_obj));
 }
 #endif
 
