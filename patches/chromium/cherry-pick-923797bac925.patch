@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
 Date: Thu, 7 Nov 2024 10:14:59 +0000
-Subject: [M131] Make GetCacheIdentifier() respect GetSkipServiceWorker().
+Subject: Make GetCacheIdentifier() respect GetSkipServiceWorker().
 
 Since the current GetCacheIdentifier() ignores GetSkipServiceWorker(),
 GetCacheIdentifier() returns ServiceWorkerId even if GetSkipServiceWorker()

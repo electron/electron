@@ -33,7 +33,7 @@ index f3dfc69cd2cdec50bc3b3f7cb2d63349812d87dd..b6f2d7194cb75ecc8c47869761c63184
    if (!loaded) {
      module = new CJSModule(filename);
 diff --git a/lib/internal/modules/run_main.js b/lib/internal/modules/run_main.js
-index ca401044c0178c46db9b439b27c440a5d7924c84..dc1a682f0a3cf1ba1095c60bf6a6ca992d6043b3 100644
+index 4ad694debfc72f56dd98a4e56dd0bbc63711242e..73f0e00ad34132e7d2fd37ec321110881e89617f 100644
 --- a/lib/internal/modules/run_main.js
 +++ b/lib/internal/modules/run_main.js
 @@ -2,6 +2,7 @@
@@ -58,7 +58,7 @@ index ca401044c0178c46db9b439b27c440a5d7924c84..dc1a682f0a3cf1ba1095c60bf6a6ca99
    const defaultType = getOptionValue('--experimental-default-type');
    /** @type {string} */
    let mainPath;
-@@ -59,6 +67,13 @@ function resolveMainPath(main) {
+@@ -58,6 +66,13 @@ function resolveMainPath(main) {
   * @param {string} mainPath - Absolute path to the main entry point
   */
  function shouldUseESMLoader(mainPath) {
