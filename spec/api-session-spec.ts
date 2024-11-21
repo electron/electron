@@ -307,7 +307,7 @@ describe('session module', () => {
   });
 
   describe.skip('shared dictionary APIs (using a real website with real dictionaries)', () => {
-    const appPath = path.join(fixtures, 'shared-dictionary');
+    const appPath = path.join(fixtures, 'api', 'shared-dictionary');
     const runApp = (command: 'getSharedDictionaryInfo' | 'getSharedDictionaryUsageInfo' | 'clearSharedDictionaryCache' | 'clearSharedDictionaryCacheForIsolationKey') => {
       return new Promise((resolve) => {
         let output = '';
@@ -330,6 +330,10 @@ describe('session module', () => {
         });
       });
     };
+
+    afterEach(() => {
+      fs.rmSync(path.join(fixtures, 'api', 'shared-dictionary', 'user-data-dir'), { recursive: true });
+    });
 
     it('can get shared dictionary usage info', async () => {
       // In our fixture, this calls session.defaultSession.getSharedDictionaryUsageInfo()
