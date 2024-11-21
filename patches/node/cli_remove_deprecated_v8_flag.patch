@@ -18,10 +18,10 @@ Reviewed-By: Michaël Zasso <targos@protonmail.com>
 Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index ed0a43306e87962cf0e756d9e059ec5c08ad674b..7ada2802b2590e78fa5b9847935866b743cf94ed 100644
+index d97682ac2ebcdf145e202325a4642a1bfd3970b2..7c5c08c450b9b4774265ead6a91d3ed76693c290 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -2868,7 +2868,6 @@ V8 options that are allowed are:
+@@ -2869,7 +2869,6 @@ V8 options that are allowed are:
  * `--disallow-code-generation-from-strings`
  * `--enable-etw-stack-walking`
  * `--expose-gc`
@@ -30,7 +30,7 @@ index ed0a43306e87962cf0e756d9e059ec5c08ad674b..7ada2802b2590e78fa5b9847935866b7
  * `--jitless`
  * `--max-old-space-size`
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 4e3c82e9528b04fd1a0cc99d30fb885e4b224bc9..38e173f72b446aa2db07f676b6ece26247bbf56b 100644
+index 9b5f49ebb478a21acf8f0d6ed012ed6829a8a320..433c8a3c1df125e3d7df414980440c64ffca61d6 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -866,11 +866,6 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(
@@ -46,10 +46,10 @@ index 4e3c82e9528b04fd1a0cc99d30fb885e4b224bc9..38e173f72b446aa2db07f676b6ece262
              "disable runtime allocation of executable memory",
              V8Option{},
 diff --git a/test/parallel/test-cli-node-options.js b/test/parallel/test-cli-node-options.js
-index 8d614e607177cdd922fef65a85a2ccdcf54116c0..146df3a21a0551e910c46248d2fd97dde8896164 100644
+index 9fb6d8af0691108868a3245518edc0f0057557ab..3b9409c3af778fcfe2be0fae2cbb04753dd5c8f1 100644
 --- a/test/parallel/test-cli-node-options.js
 +++ b/test/parallel/test-cli-node-options.js
-@@ -70,7 +70,6 @@ if (common.hasCrypto) {
+@@ -72,7 +72,6 @@ if (common.hasCrypto) {
  expect('--abort_on-uncaught_exception', 'B\n');
  expect('--disallow-code-generation-from-strings', 'B\n');
  expect('--expose-gc', 'B\n');
