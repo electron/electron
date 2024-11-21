@@ -1087,16 +1087,14 @@ v8::Local<v8::Promise> Session::ClearSharedDictionaryCacheForIsolationKey(
   gin_helper::Promise<void> promise(isolate_);
   auto handle = promise.GetHandle();
 
-  std::string frame_origin_str, top_frame_site_str;
-  if (!options.Get("frameOrigin", &frame_origin_str) ||
-      !options.Get("topFrameSite", &top_frame_site_str)) {
+  GURL frame_origin_url, top_frame_site_url;
+  if (!options.Get("frameOrigin", &frame_origin_url) ||
+      !options.Get("topFrameSite", &top_frame_site_url)) {
     promise.RejectWithErrorMessage(
         "Must provide frameOrigin and topFrameSite strings to `clearSharedDictionaryCacheForIsolationKey`");
     return handle;
   }
 
-  GURL frame_origin_url(frame_origin_str);
-  GURL top_frame_site_url(top_frame_site_str);
   if (!frame_origin_url.is_valid() || !top_frame_site_url.is_valid()) {
     promise.RejectWithErrorMessage(
         "Invalid URLs provided for frameOrigin or topFrameSite");
@@ -1147,16 +1145,14 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryInfo(
   gin_helper::Promise<std::vector<gin_helper::Dictionary>> promise(isolate_);
   auto handle = promise.GetHandle();
 
-  std::string frame_origin_str, top_frame_site_str;
-  if (!options.Get("frameOrigin", &frame_origin_str) ||
-      !options.Get("topFrameSite", &top_frame_site_str)) {
+  GURL frame_origin_url, top_frame_site_url;
+  if (!options.Get("frameOrigin", &frame_origin_url) ||
+      !options.Get("topFrameSite", &top_frame_site_url)) {
     promise.RejectWithErrorMessage(
         "Must provide frameOrigin and topFrameSite strings");
     return handle;
   }
 
-  GURL frame_origin_url(frame_origin_str);
-  GURL top_frame_site_url(top_frame_site_str);
   if (!frame_origin_url.is_valid() || !top_frame_site_url.is_valid()) {
     promise.RejectWithErrorMessage(
         "Invalid URLs provided for frameOrigin or topFrameSite");
@@ -1807,6 +1803,8 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getSharedDictionaryUsageInfo",
                  &Session::GetSharedDictionaryUsageInfo)
       .SetMethod("getSharedDictionaryInfo", &Session::GetSharedDictionaryInfo)
+      .SetMethod("clearSharedDictionaryCache",
+                 &Session::ClearSharedDictionaryCache)
       .SetMethod("clearSharedDictionaryCacheForIsolationKey",
                  &Session::ClearSharedDictionaryCacheForIsolationKey)
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
