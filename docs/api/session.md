@@ -1366,7 +1366,7 @@ Returns `Promise<SharedDictionaryUsageInfo[]>` - an array of shared dictionary i
 
 Shared dictionaries are used to power advanced compression of data sent over the wire, specifically with Brotli and ZStandard. You don't need to call any of the shared dictionary APIs in Electron to make use of this advanced web feature, but if you do, they allow deeper control and inspection of the shared dictionaries used during decompression.
 
-To get detailed information about a specific shared dictionary entry, call `getSharedDictionaryInfo(url)`.
+To get detailed information about a specific shared dictionary entry, call `getSharedDictionaryInfo(options)`.
 
 #### `ses.getSharedDictionaryInfo(options)`
 
