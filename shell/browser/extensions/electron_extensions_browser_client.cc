@@ -177,7 +177,7 @@ base::FilePath ElectronExtensionsBrowserClient::GetBundleResourcePath(
   if (!chrome_resources_path.IsParent(extension_resources_path))
     return base::FilePath();
 
-  const base::FilePath request_relative_path =
+  base::FilePath request_relative_path =
       extensions::file_util::ExtensionURLToRelativeFilePath(request.url);
   if (!ExtensionsBrowserClient::Get()
            ->GetComponentExtensionResourceManager()
