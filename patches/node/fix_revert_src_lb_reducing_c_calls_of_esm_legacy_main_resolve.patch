@@ -15,7 +15,7 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index c13475102a75d65329908f44def06a60f4a2c4f1..4ed214fbc50f749d1d80a64773cce3c90ab73729 100644
+index c13475102a75d65329908f44def06a60f4a2c4f1..fbf1066f722f13bed1ef38fc3d06d5e0613f29c5 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -28,14 +28,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
@@ -35,49 +35,23 @@ index c13475102a75d65329908f44def06a60f4a2c4f1..4ed214fbc50f749d1d80a64773cce3c9
  const {
    ERR_INPUT_TYPE_NOT_ALLOWED,
    ERR_INVALID_ARG_TYPE,
-@@ -154,34 +153,13 @@ function emitLegacyIndexDeprecation(url, path, pkgPath, base, main) {
+@@ -183,6 +182,15 @@ const legacyMainResolveExtensionsIndexes = {
+   kResolvedByPackageAndNode: 9,
+ };
  
- const realpathCache = new SafeMap();
- 
--const legacyMainResolveExtensions = [
--  '',
--  '.js',
--  '.json',
--  '.node',
--  '/index.js',
--  '/index.json',
--  '/index.node',
--  './index.js',
--  './index.json',
--  './index.node',
--];
--
--const legacyMainResolveExtensionsIndexes = {
--  // 0-6: when packageConfig.main is defined
--  kResolvedByMain: 0,
--  kResolvedByMainJs: 1,
--  kResolvedByMainJson: 2,
--  kResolvedByMainNode: 3,
--  kResolvedByMainIndexJs: 4,
--  kResolvedByMainIndexJson: 5,
--  kResolvedByMainIndexNode: 6,
--  // 7-9: when packageConfig.main is NOT defined,
--  //      or when the previous case didn't found the file
--  kResolvedByPackageAndJs: 7,
--  kResolvedByPackageAndJson: 8,
--  kResolvedByPackageAndNode: 9,
--};
 +/**
 + * @param {string | URL} url
 + * @returns {boolean}
 + */
 +function fileExists(url) {
-+  return internalFsBinding.internalModuleStat(toNamespacedPath(toPathIfFileURL(url))) === 0;
++  const namespaced = toNamespacedPath(toPathIfFileURL(url));
++  return internalFsBinding.internalModuleStat(internalFsBinding, namespaced) === 0;
 +}
- 
++
  /**
   * Legacy CommonJS main resolution:
-@@ -196,21 +174,43 @@ const legacyMainResolveExtensionsIndexes = {
+  * 1. let M = pkg_url + (json main field)
+@@ -196,21 +204,44 @@ const legacyMainResolveExtensionsIndexes = {
   * @returns {URL}
   */
  function legacyMainResolve(packageJSONUrl, packageConfig, base) {
@@ -133,6 +107,7 @@ index c13475102a75d65329908f44def06a60f4a2c4f1..4ed214fbc50f749d1d80a64773cce3c9
 +    // Not found.
 +    throw new ERR_MODULE_NOT_FOUND(
 +      fileURLToPath(new URL('.', packageJSONUrl)), fileURLToPath(base));
++  }
  }
  
  const encodedSepRegEx = /%2F|%5C/i;
