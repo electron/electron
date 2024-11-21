@@ -560,10 +560,10 @@ index 6aa74c4137ac7a649e8f79eb628e297e9459b089..c89f25bf49d773f5f77b2434bd6fabcf
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index f911846044859b73fbb1d77c91040f7143daccc9..ac0e482a988546e515f05a560b2e3bc15888c2b2 100644
+index 217a86df8151cfa274c56f4082e7ed3ced0ac872..71158b55dacc7a4ba1f08c8212b7f9322326ceb8 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -326,6 +326,7 @@ source_set("browser") {
+@@ -327,6 +327,7 @@ source_set("browser") {
      "//ui/strings:ax_strings",
      "//ui/touch_selection",
      "//v8:v8_version",
@@ -679,10 +679,10 @@ index 34fb29866785ef07c6dca4cfc85966df1c479b5f..e305d25a8f2a34ac90f4d503a9c74dcc
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 0b346b5636b5cb62e8d4c9df17067c0d7cf20395..cebc10db18c9896a9ac47a134f9578babddfba14 100644
+index d8243ca31b40940f79892cf74a0d9dbbec7d8272..df320813ebc67ea16d6c93c7f2905196be5ef44f 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -284,6 +284,7 @@ source_set("common") {
+@@ -286,6 +286,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -773,7 +773,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 70deb00ddaf443ecb8bbc1b54b09f9b52ecd3f5a..ccae03f971b51f7388b1ebc23ff121a7a0ab118a 100644
+index f04eac209dc7103d8b3a985783166772b7bef8de..415457f192688821a4957fa83214dbcf32f5cd08 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -643,6 +643,7 @@ static_library("test_support") {
@@ -800,7 +800,7 @@ index 70deb00ddaf443ecb8bbc1b54b09f9b52ecd3f5a..ccae03f971b51f7388b1ebc23ff121a7
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3241,6 +3244,7 @@ test("content_unittests") {
+@@ -3246,6 +3249,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",

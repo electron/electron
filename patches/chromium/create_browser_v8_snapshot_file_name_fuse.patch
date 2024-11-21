@@ -50,7 +50,7 @@ index 2ea73bf0f0e16ad01e547bb0ec8082ddd02286c2..1ce0ff532976d5d2ac61d6ae14699d5c
    blink::TrialTokenValidator::SetOriginTrialPolicyGetter(
        base::BindRepeating([]() -> blink::OriginTrialPolicy* {
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index a5762a7ed48bb841a9a8a219f08e2f6703bd777a..991ce9ffa6fc89121d2fda3ece57ffa1f5af4a7c 100644
+index b97149f792666bc5b4f180a1d544f4455e44456f..4dfdff22ec6f74b9ac034beac2fada861de9c8b3 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -4,6 +4,8 @@
@@ -60,8 +60,8 @@ index a5762a7ed48bb841a9a8a219f08e2f6703bd777a..991ce9ffa6fc89121d2fda3ece57ffa1
 +#include <string_view>
 +
  #include "base/check.h"
+ #include "base/notreached.h"
  #include "build/build_config.h"
- #include "content/public/browser/content_browser_client.h"
 @@ -91,6 +93,10 @@ std::optional<int> ContentMainDelegate::PostEarlyInitialization(
    return std::nullopt;
  }
@@ -74,7 +74,7 @@ index a5762a7ed48bb841a9a8a219f08e2f6703bd777a..991ce9ffa6fc89121d2fda3ece57ffa1
    return new ContentClient();
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index 592199d119cbfc382f94a380f78d82b36d97dd41..de428aeb9ca856d4031c4f4718c08e625c8f70e9 100644
+index 801bfd401ea4a8e72417d88efaa718cc6fb60883..663fec68d0c2855cdf83bb259b85c22910a67464 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -8,6 +8,7 @@
@@ -84,8 +84,8 @@ index 592199d119cbfc382f94a380f78d82b36d97dd41..de428aeb9ca856d4031c4f4718c08e62
 +#include <string_view>
  #include <vector>
  
- #include "build/build_config.h"
-@@ -173,6 +174,8 @@ class CONTENT_EXPORT ContentMainDelegate {
+ #include "base/notreached.h"
+@@ -174,6 +175,8 @@ class CONTENT_EXPORT ContentMainDelegate {
    virtual bool ShouldHandleConsoleControlEvents();
  #endif
  

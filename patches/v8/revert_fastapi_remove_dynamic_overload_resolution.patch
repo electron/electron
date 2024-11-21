@@ -669,10 +669,10 @@ index 5ffc0cc067d25fe2d0e8433beb82bba982252529..7ff80807621a88f583b0ca6ff815ed48
        // There is one return in addition to the return value of the C function,
        // which indicates if a fast API call actually happened.
 diff --git a/src/compiler/turboshaft/operations.h b/src/compiler/turboshaft/operations.h
-index dd97a13ed26b9a1b6d79f6e3e65c5f6969f75cac..52f696cc5b93417ea6edc781ef689c443a67c8a9 100644
+index ea2b0891c16e223e4e598090ae6a4ed9f69d85f4..56206cdc6a7aa72f6e5f020821f2c8fd40834101 100644
 --- a/src/compiler/turboshaft/operations.h
 +++ b/src/compiler/turboshaft/operations.h
-@@ -6361,16 +6361,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
+@@ -6369,16 +6369,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
  };
  
  struct FastApiCallParameters : public NON_EXPORTED_BASE(ZoneObject) {
@@ -734,7 +734,7 @@ index b6ded4cd3e2a29af8589862ac31c97fdd0da0c71..14c3378470a34ef8bdda4a4df8211e5a
              return gasm_->AdaptLocalArgument(receiver_node);
            }
 diff --git a/src/d8/d8-test.cc b/src/d8/d8-test.cc
-index fd21264ec893850086041c3d7392151a6add2b27..1bc455ed18920588d641cdf9f3a54a5f8f528484 100644
+index e231c93579e0ca8068a0c192e6351bc20648d7ae..cb4d43c95665f7ba7f94a9ff63557ab97a1eef5a 100644
 --- a/src/d8/d8-test.cc
 +++ b/src/d8/d8-test.cc
 @@ -443,6 +443,20 @@ class FastCApiObject {
@@ -758,7 +758,7 @@ index fd21264ec893850086041c3d7392151a6add2b27..1bc455ed18920588d641cdf9f3a54a5f
  #ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
    static AnyCType Add32BitIntFastCallbackPatch(AnyCType receiver,
                                                 AnyCType arg_i32,
-@@ -1551,6 +1565,22 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
+@@ -1549,6 +1563,22 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
              signature, 1, ConstructorBehavior::kThrow,
              SideEffectType::kHasSideEffect, {add_all_overloads, 2}));
  
