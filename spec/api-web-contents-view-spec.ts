@@ -8,7 +8,11 @@ import { defer } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
-  afterEach(closeAllWindows);
+  afterEach(async () => {
+    await closeAllWindows();
+    const existingWCS = webContents.getAllWebContents();
+    existingWCS.forEach((contents) => contents.close());
+  });
 
   it('can be instantiated with no arguments', () => {
     // eslint-disable-next-line no-new
