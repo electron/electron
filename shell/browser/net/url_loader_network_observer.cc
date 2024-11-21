@@ -6,6 +6,7 @@
 
 #include "base/functional/bind.h"
 #include "content/public/browser/browser_thread.h"
+#include "services/network/public/mojom/shared_storage.mojom.h"
 #include "shell/browser/login_handler.h"
 
 namespace electron {
