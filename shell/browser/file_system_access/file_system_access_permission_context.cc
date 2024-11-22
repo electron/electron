@@ -90,10 +90,10 @@ using blink::mojom::PermissionStatus;
 // }
 const char kDefaultLastPickedDirectoryKey[] = "default-id";
 const char kCustomLastPickedDirectoryKey[] = "custom-id";
-const char kPathKey[] = "path";
-const char kPathTypeKey[] = "path-type";
-const char kDisplayNameKey[] = "display-name";
-const char kTimestampKey[] = "timestamp";
+constexpr std::string_view kPathKey = "path";
+constexpr std::string_view kPathTypeKey = "path-type";
+constexpr std::string_view kDisplayNameKey = "display-name";
+constexpr std::string_view kTimestampKey = "timestamp";
 
 constexpr base::TimeDelta kPermissionRevocationTimeout = base::Seconds(5);
 
