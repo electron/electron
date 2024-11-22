@@ -1,7 +1,7 @@
-From e699ac35ac6c565f6cc24cb98719b922a319e600 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Reilly Grant <reillyg@chromium.org>
 Date: Tue, 29 Oct 2024 22:45:33 +0000
-Subject: [PATCH] [M-130] serial: Cancel mojo::SimpleWatcher when source/sink become garbage
+Subject: serial: Cancel mojo::SimpleWatcher when source/sink become garbage
 
 SerialPortUnderlyingSink and SerialPortUnderlyingSource need
 prefinalizers so that when they become garbage the mojo::SimpleWatcher
@@ -20,13 +20,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5976472
 Commit-Queue: Reilly Grant <reillyg@chromium.org>
 Cr-Commit-Position: refs/branch-heads/6723@{#1569}
 Cr-Branched-From: 985f2961df230630f9cbd75bd6fe463009855a11-refs/heads/main@{#1356013}
----
 
 diff --git a/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.cc b/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.cc
-index 6aefbb5..a469a00c 100644
+index 6aefbb59425ff7fc9096deba9841d1e022cf8a05..a469a00c372499295bc947bfcc0230c9a1e911e7 100644
 --- a/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.cc
 +++ b/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.cc
-@@ -268,4 +268,10 @@
+@@ -268,4 +268,10 @@ void SerialPortUnderlyingSink::PipeClosed() {
    abort_handle_.Clear();
  }
  
@@ -38,10 +37,10 @@ index 6aefbb5..a469a00c 100644
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.h b/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.h
-index a32b0421..b4e664a 100644
+index a32b04212f968479465a495e0cf402402d1b7e4d..b4e664a6debfd3b7c319ef3972774f693da48857 100644
 --- a/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.h
 +++ b/third_party/blink/renderer/modules/serial/serial_port_underlying_sink.h
-@@ -20,6 +20,8 @@
+@@ -20,6 +20,8 @@ class SerialPort;
  class WritableStreamDefaultController;
  
  class SerialPortUnderlyingSink final : public UnderlyingSinkBase {
@@ -50,7 +49,7 @@ index a32b0421..b4e664a 100644
   public:
    SerialPortUnderlyingSink(SerialPort*, mojo::ScopedDataPipeProducerHandle);
  
-@@ -46,6 +48,7 @@
+@@ -46,6 +48,7 @@ class SerialPortUnderlyingSink final : public UnderlyingSinkBase {
    void OnFlushOrDrain();
    void WriteData();
    void PipeClosed();
@@ -59,10 +58,10 @@ index a32b0421..b4e664a 100644
    mojo::ScopedDataPipeProducerHandle data_pipe_;
    mojo::SimpleWatcher watcher_;
 diff --git a/third_party/blink/renderer/modules/serial/serial_port_underlying_source.cc b/third_party/blink/renderer/modules/serial/serial_port_underlying_source.cc
-index 6d2911c..6753be0 100644
+index 13ffa6e40e4f4c3a4888100a70b78e39cd2a9768..fdc88308a8d668268822e05285da5f0a2701b50c 100644
 --- a/third_party/blink/renderer/modules/serial/serial_port_underlying_source.cc
 +++ b/third_party/blink/renderer/modules/serial/serial_port_underlying_source.cc
-@@ -224,4 +224,10 @@
+@@ -224,4 +224,10 @@ void SerialPortUnderlyingSource::Close() {
    data_pipe_.reset();
  }
  
@@ -74,7 +73,7 @@ index 6d2911c..6753be0 100644
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/modules/serial/serial_port_underlying_source.h b/third_party/blink/renderer/modules/serial/serial_port_underlying_source.h
-index 4066e98..0de89d2d 100644
+index 4066e9822197f1a94c58b4784d5dcbe73885ea04..0de89d2d991b364e700d756f48eea81f51e0f468 100644
 --- a/third_party/blink/renderer/modules/serial/serial_port_underlying_source.h
 +++ b/third_party/blink/renderer/modules/serial/serial_port_underlying_source.h
 @@ -12,6 +12,7 @@
@@ -85,7 +84,7 @@ index 4066e98..0de89d2d 100644
  
  namespace blink {
  
-@@ -20,6 +21,8 @@
+@@ -20,6 +21,8 @@ class SerialPort;
  
  class SerialPortUnderlyingSource : public UnderlyingByteSourceBase,
                                     ExecutionContextLifecycleObserver {
@@ -94,7 +93,7 @@ index 4066e98..0de89d2d 100644
   public:
    SerialPortUnderlyingSource(ScriptState*,
                               SerialPort*,
-@@ -47,6 +50,7 @@
+@@ -47,6 +50,7 @@ class SerialPortUnderlyingSource : public UnderlyingByteSourceBase,
    void OnFlush(ScriptPromiseResolver<IDLUndefined>*);
    void PipeClosed();
    void Close();

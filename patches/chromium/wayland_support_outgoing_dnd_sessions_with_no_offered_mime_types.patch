@@ -31,7 +31,7 @@ Reviewed-by: Orko Garai <orko@igalia.com>
 Cr-Commit-Position: refs/heads/main@{#1380008}
 
 diff --git a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
-index 3d63985300269fb33707ead548665d5e99ebdbf3..22cb6406bc4f667b949c23690bedf1f59d988faa 100644
+index 278022f08b334e5255e2f129fd609d1e3db9b9c1..d82f8e551addb2687a644ab359bb02bbd86784d7 100644
 --- a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
 +++ b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
 @@ -54,6 +54,16 @@ namespace {
@@ -71,7 +71,7 @@ index 3d63985300269fb33707ead548665d5e99ebdbf3..22cb6406bc4f667b949c23690bedf1f5
    data_source_->SetDndActions(DragOperationsToDndActions(operations));
  
    // Create drag icon surface (if any) and store the data to be exchanged.
-@@ -788,11 +806,6 @@ WaylandDataDragController::GetAndValidateSerialForDrag(DragEventSource source) {
+@@ -774,11 +792,6 @@ WaylandDataDragController::GetAndValidateSerialForDrag(DragEventSource source) {
                       : std::nullopt;
  }
  
@@ -84,7 +84,7 @@ index 3d63985300269fb33707ead548665d5e99ebdbf3..22cb6406bc4f667b949c23690bedf1f5
  WaylandDataDragController::GetOfferedExchangeDataProvider() const {
    DCHECK(offered_exchange_data_provider_);
 diff --git a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h
-index fd64adeeec3a715c278957e1ef934a8e53d07953..a7453424c0e3de7c62b912c4bce86156914d93f3 100644
+index 93ef8583156ca925544eaa35bc50892c18a9cb56..de2cdd9ed8dd51492a1e7312437235350df9073b 100644
 --- a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h
 +++ b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h
 @@ -216,7 +216,6 @@ class WaylandDataDragController : public WaylandDataDevice::DragDelegate,

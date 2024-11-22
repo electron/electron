@@ -7,10 +7,10 @@ Subject: test: match wpt/streams/transferable/transform-stream-members.any.js
 All four of this calls should fail - see third_party/blink/web_tests/external/wpt/streams/transferable/transform-stream-members.any-expected.txt
 
 diff --git a/test/wpt/status/streams.json b/test/wpt/status/streams.json
-index 5425c86bba85079a44745779d998337aaa063df1..775661cd59b14132c9a811e448792ea02198f949 100644
+index af3646c65ea6609e17638da925f86de8c9d6221c..f1d9e76718c264aafb9c27c516589d9874d8b73f 100644
 --- a/test/wpt/status/streams.json
 +++ b/test/wpt/status/streams.json
-@@ -60,7 +60,9 @@
+@@ -53,7 +53,9 @@
      "fail": {
        "expected": [
          "Transferring [object TransformStream],[object ReadableStream] should fail",

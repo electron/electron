@@ -58,7 +58,7 @@ index b9098d102b40adad7fafcc331ac62870617019b9..cb9269a31e073caf86164aa39c064037
  }
  
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 818baf611fcab7838a339f3ea137467653e270d0..4e3c82e9528b04fd1a0cc99d30fb885e4b224bc9 100644
+index efbe48e10b8408642a6b5010b1a7a3749068188a..9b5f49ebb478a21acf8f0d6ed012ed6829a8a320 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -1405,14 +1405,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {

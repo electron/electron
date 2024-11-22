@@ -8,7 +8,7 @@ which causes the `ELECTRON_RUN_AS_NODE` variable to be lost. This patch
 re-injects it.
 
 diff --git a/test/common/assertSnapshot.js b/test/common/assertSnapshot.js
-index a22455160bd9f71b42c7c9e09939781b2528dceb..233a0c8fb89df91890237e4e7f53b51f245ff64a 100644
+index cebaa680e4f2a8249a307815e4254e56ace662ae..b19e7c04fa46b5503c5619b8b1555e51fc9155ce 100644
 --- a/test/common/assertSnapshot.js
 +++ b/test/common/assertSnapshot.js
 @@ -83,6 +83,7 @@ async function spawnAndAssert(filename, transform = (x) => x, { tty = false, ...
