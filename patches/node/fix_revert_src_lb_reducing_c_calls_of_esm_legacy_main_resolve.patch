@@ -15,7 +15,7 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index c13475102a75d65329908f44def06a60f4a2c4f1..9f2639d56f77a599c9da172097476b1bca96224b 100644
+index c13475102a75d65329908f44def06a60f4a2c4f1..ad71195104b96754b08d309e970ab63dffadb0c6 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -28,14 +28,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
@@ -51,7 +51,7 @@ index c13475102a75d65329908f44def06a60f4a2c4f1..9f2639d56f77a599c9da172097476b1b
  /**
   * Legacy CommonJS main resolution:
   * 1. let M = pkg_url + (json main field)
-@@ -199,18 +207,45 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
+@@ -199,18 +207,46 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
    assert(isURL(packageJSONUrl));
    const pkgPath = fileURLToPath(new URL('.', packageJSONUrl));
  
@@ -65,8 +65,6 @@ index c13475102a75d65329908f44def06a60f4a2c4f1..9f2639d56f77a599c9da172097476b1b
 -  const resolvedUrl = pathToFileURL(resolvedPath);
 -
 -  emitLegacyIndexDeprecation(resolvedUrl, resolvedPath, pkgPath, base, packageConfig.main);
--
--  return resolvedUrl;
 +  let guess;
 +  if (packageConfig.main !== undefined) {
 +    // Note: fs check redundances will be handled by Descriptor cache here.
@@ -91,21 +89,23 @@ index c13475102a75d65329908f44def06a60f4a2c4f1..9f2639d56f77a599c9da172097476b1b
 +                                 base, packageConfig.main);
 +      return guess;
 +    }
-+    // Fallthrough.
-+    if (fileExists(guess = new URL('./index.js', packageJSONUrl)));
-+    // So fs.
-+    else if (fileExists(guess = new URL('./index.json', packageJSONUrl)));
-+    else if (fileExists(guess = new URL('./index.node', packageJSONUrl)));
-+    else guess = undefined;
-+    if (guess) {
-+      emitLegacyIndexDeprecation(guess, fileURLToPath(guess), pkgPath,
-+                                 base, packageConfig.main);
-+      return guess;
-+    }
-+    // Not found.
-+    throw new ERR_MODULE_NOT_FOUND(
-+      fileURLToPath(new URL('.', packageJSONUrl)), fileURLToPath(base));
 +  }
+ 
+-  return resolvedUrl;
++  // Fallthrough.
++  if (fileExists(guess = new URL('./index.js', packageJSONUrl)));
++  // So fs.
++  else if (fileExists(guess = new URL('./index.json', packageJSONUrl)));
++  else if (fileExists(guess = new URL('./index.node', packageJSONUrl)));
++  else guess = undefined;
++  if (guess) {
++    emitLegacyIndexDeprecation(guess, fileURLToPath(guess), pkgPath,
++                                base, packageConfig.main);
++    return guess;
++  }
++  // Not found.
++  throw new ERR_MODULE_NOT_FOUND(
++    fileURLToPath(new URL('.', packageJSONUrl)), fileURLToPath(base));
  }
  
  const encodedSepRegEx = /%2F|%5C/i;
@@ -113,15 +113,6 @@ diff --git a/test/es-module/test-cjs-legacyMainResolve.js b/test/es-module/test-
 index edb567bce403f2d4df482c2549c6f7cec78c3588..08d8a4e880f38e638c33ce2502d39ba7b963722a 100644
 --- a/test/es-module/test-cjs-legacyMainResolve.js
 +++ b/test/es-module/test-cjs-legacyMainResolve.js
-@@ -82,7 +82,7 @@ describe('legacyMainResolve', () => {
-           {},
-           ''
-         ),
--      { code: 'ERR_INTERNAL_ASSERTION' },
-+      { code: 'ERR_INVALID_URL' },
-     );
-   });
- 
 @@ -129,7 +129,7 @@ describe('legacyMainResolve', () => {
      );
      assert.throws(
