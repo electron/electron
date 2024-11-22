@@ -1614,7 +1614,7 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..c2ac4da580e3e7f749a0a4de1e859af6
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 28dbb08b2a0eb932cce53614f71832c4acd4aa02..798002e25f24c8836a360187dcc17bc1322de65b 100644
+index 7ef725523fa1b660d589f20cc338052f82a9baf7..61a712df5c7829c320f0f80d859fcf9c840e8022 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -358,6 +358,13 @@ component("base") {
