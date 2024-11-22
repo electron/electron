@@ -9,7 +9,7 @@ This patch can be removed when Node.js upgrades to a version of V8 containing
 the above CL.
 
 diff --git a/lib/.eslintrc.yaml b/lib/.eslintrc.yaml
-index 74e867ace6207751a96b4da03802b50b620dbd7b..53ceabeb58f56ebd27e60fd49c362d26e361e6d8 100644
+index c028204481d44cb5f35ad98413022e7b07ce04b2..230c2378996c5d1ec18a9183ef138bbf70bba22d 100644
 --- a/lib/.eslintrc.yaml
 +++ b/lib/.eslintrc.yaml
 @@ -30,10 +30,6 @@ rules:
@@ -24,10 +24,10 @@ index 74e867ace6207751a96b4da03802b50b620dbd7b..53ceabeb58f56ebd27e60fd49c362d26
        message: Use `const { Blob } = require('buffer');` instead of the global.
      - name: BroadcastChannel
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index 30f7a5f79e50fdeb4e1775a0e56dafa4c6908898..f7250985277c4127425ef36dff566c1fe06603e2 100644
+index cfd1d1b6f18e2943e155cf021b566a4673f71ab0..8d1a184ad1936c0d8493d6c54c32bebcf0021d8b 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
-@@ -112,7 +112,7 @@ port.on('message', (message) => {
+@@ -113,7 +113,7 @@ port.on('message', (message) => {
  
      require('internal/worker').assignEnvironmentData(environmentData);
  

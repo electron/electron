@@ -40,7 +40,7 @@ index 697b8bba6a55358924d6986f2eb347a99ff73889..bdf1a1f33f3ea09d933757c7fee87c56
        # list in v8/BUILD.gn.
        ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py
-index a6f66c41f75bffcfaf75d4415c694300b7624136..7ca0762fe3590fef7b88ba684de44d99aaecace4 100755
+index 0d089c35d1720e05c4c61d0226a2ebc276b65d6e..cf19b9d092698e1697508e8891926947bc2f7b12 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -1585,6 +1585,7 @@ def configure_library(lib, output, pkgname=None):
