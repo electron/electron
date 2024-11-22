@@ -225,7 +225,7 @@ jobs:
         cd src\electron
         echo ELECTRON_TEST_RESULTS_DIR=$PWD\junit >> $env:GITHUB_ENV
         # Get which tests are on this shard
-        echo TEST_SHARD={{ matrix.shard }} >> $:env:GITHUB_ENV
+        echo TEST_SHARD=${{ matrix.shard }} >> $:env:GITHUB_ENV
         $tests_files='spec\api-web-contents1-spec.ts spec\api-app-spec.ts spec\webview-spec.ts spec\extensions-spec.ts spec\api-ipc-spec.ts spec\api-utility-process-spec.ts spec\api-native-image-spec.ts spec\api-web-frame-main-spec.ts spec\api-menu-item-spec.ts spec\api-tray-spec.ts spec\api-system-preferences-spec.ts spec\api-net-session-spec.ts spec\api-web-contents-view-spec.ts spec\logging-spec.ts spec\api-process-spec.ts spec\guest-window-manager-spec.ts spec\api-debugger-spec.ts spec\api-clipboard-spec.ts spec\deprecate-spec.ts spec\api-ipc-renderer-spec.ts spec\api-screen-spec.ts spec\esm-spec.ts spec\security-warnings-spec.ts spec\api-safe-storage-spec.ts spec\api-content-tracing-spec.ts spec\api-notification-spec.ts spec\api-net-log-spec.ts spec\api-ipc-main-spec.ts spec\asar-integrity-spec.ts spec\api-service-workers-spec.ts spec\crash-spec.ts spec\types-spec.ts spec\api-web-utils-spec.ts spec\visibility-state-spec.ts spec\api-power-save-blocker-spec.ts'
         echo tests_files="$tests_files" >> $env:GITHUB_ENV
         if ('${{ inputs.target-arch }}' -eq 'x86') {
