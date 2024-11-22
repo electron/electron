@@ -64,7 +64,6 @@ describe('webRequest module', () => {
     protocol.registerStringProtocol('cors', (req, cb) => cb(''));
     defaultURL = (await listen(server)).url + '/';
     http2URL = (await listen(h2server)).url + '/';
-    console.log(http2URL);
   });
 
   after(() => {
@@ -660,7 +659,7 @@ describe('webRequest module', () => {
       });
 
       // Cleanup.
-      after(() => {
+      defer(() => {
         contents.destroy();
         server.close();
         ses.webRequest.onBeforeRequest(null);
