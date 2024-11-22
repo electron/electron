@@ -64,6 +64,8 @@
   "parallel/test-snapshot-namespaced-builtin",
   "parallel/test-snapshot-net",
   "parallel/test-snapshot-reproducible",
+  "parallel/test-snapshot-stack-trace-limit",
+  "parallel/test-snapshot-stack-trace-limit-mutation",
   "parallel/test-snapshot-typescript",
   "parallel/test-snapshot-umd",
   "parallel/test-snapshot-warning",
