@@ -13,28 +13,11 @@ We don't need to do this for zlib, as the existing gn workflow uses the same
 
 Upstreamed at https://github.com/nodejs/node/pull/55903
 
-diff --git a/node.gni b/node.gni
-index 18d58591e3d0f1f3512db00033c3410a65702864..99ec540ec41ddf5682eed7618ba87d6935b3b982 100644
---- a/node.gni
-+++ b/node.gni
-@@ -61,6 +61,12 @@ declare_args() {
-   #   1. cross-os compilation is not supported.
-   #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
-   node_use_node_snapshot = false
-+
-+  # Allows downstream packagers (eg. Linux distributions) to build against system shared libraries.
-+  use_system_cares = false
-+  use_system_nghttp2 = false
-+  use_system_llhttp = false
-+  use_system_histogram = false
- }
- 
- assert(!node_enable_inspector || node_use_openssl,
 diff --git a/unofficial.gni b/unofficial.gni
-index 3d8b7957e791ce2fa2a8d0937a87b6010087803d..c23922a301a721662ff34bf6e54fd26b41f25ccc 100644
+index ddfbb97276b29df114ab455a2eed3b186b3af5d2..87bfc313dd1408e597e929ba93c8c0f52ae39ced 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -147,7 +147,6 @@ template("node_gn_build") {
+@@ -152,7 +152,6 @@ template("node_gn_build") {
        ":run_node_js2c",
        "deps/cares",
        "deps/histogram",
@@ -42,7 +25,7 @@ index 3d8b7957e791ce2fa2a8d0937a87b6010087803d..c23922a301a721662ff34bf6e54fd26b
        "deps/nbytes",
        "deps/nghttp2",
        "deps/postject",
-@@ -178,7 +177,17 @@ template("node_gn_build") {
+@@ -183,7 +182,17 @@ template("node_gn_build") {
        configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
        configs += [ "//build/config/gcc:symbol_visibility_default" ]
      }
@@ -61,7 +44,7 @@ index 3d8b7957e791ce2fa2a8d0937a87b6010087803d..c23922a301a721662ff34bf6e54fd26b
      if (v8_enable_i18n_support) {
        deps += [ "//third_party/icu" ]
      }
-@@ -205,6 +214,19 @@ template("node_gn_build") {
+@@ -210,6 +219,19 @@ template("node_gn_build") {
        sources += node_inspector.node_inspector_sources +
                   node_inspector.node_inspector_generated_sources
      }
