@@ -14,7 +14,7 @@ const fixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 
 describe('webContents1 module', () => {
-  describe('getAllWebContents() API', () => {
+  ifdescribe(process.env.TEST_SHARD !== '1')('getAllWebContents() API', () => {
     afterEach(closeAllWindows);
     it('returns an array of web contents', async () => {
       const w = new BrowserWindow({
@@ -40,7 +40,7 @@ describe('webContents1 module', () => {
     });
   });
 
-  describe('webContents properties', () => {
+  ifdescribe(process.env.TEST_SHARD !== '2')('webContents properties', () => {
     afterEach(closeAllWindows);
 
     it('has expected additional enumerable properties', () => {
@@ -51,13 +51,13 @@ describe('webContents1 module', () => {
     });
   });
 
-  describe('fromId()', () => {
+  ifdescribe(process.env.TEST_SHARD !== '3')('fromId()', () => {
     it('returns undefined for an unknown id', () => {
       expect(webContents.fromId(12345)).to.be.undefined();
     });
   });
 
-  describe('fromFrame()', () => {
+  ifdescribe(process.env.TEST_SHARD !== '4')('fromFrame()', () => {
     it('returns WebContents for mainFrame', () => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create();
       expect(webContents.fromFrame(contents.mainFrame)).to.equal(contents);
