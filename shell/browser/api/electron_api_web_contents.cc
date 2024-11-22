@@ -540,16 +540,6 @@ const void* kElectronApiWebContentsKey = &kElectronApiWebContentsKey;
 const char kRootName[] = "<root>";
 
 struct FileSystem {
-  FileSystem() = default;
-  FileSystem(const std::string& type,
-             const std::string& file_system_name,
-             const std::string& root_url,
-             const std::string& file_system_path)
-      : type(type),
-        file_system_name(file_system_name),
-        root_url(root_url),
-        file_system_path(file_system_path) {}
-
   std::string type;
   std::string file_system_name;
   std::string root_url;
