@@ -15,7 +15,7 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index c13475102a75d65329908f44def06a60f4a2c4f1..fbf1066f722f13bed1ef38fc3d06d5e0613f29c5 100644
+index c13475102a75d65329908f44def06a60f4a2c4f1..9f2639d56f77a599c9da172097476b1bca96224b 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -28,14 +28,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
@@ -51,13 +51,10 @@ index c13475102a75d65329908f44def06a60f4a2c4f1..fbf1066f722f13bed1ef38fc3d06d5e0
  /**
   * Legacy CommonJS main resolution:
   * 1. let M = pkg_url + (json main field)
-@@ -196,21 +204,44 @@ const legacyMainResolveExtensionsIndexes = {
-  * @returns {URL}
-  */
- function legacyMainResolve(packageJSONUrl, packageConfig, base) {
--  assert(isURL(packageJSONUrl));
--  const pkgPath = fileURLToPath(new URL('.', packageJSONUrl));
--
+@@ -199,18 +207,45 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
+   assert(isURL(packageJSONUrl));
+   const pkgPath = fileURLToPath(new URL('.', packageJSONUrl));
+ 
 -  const baseStringified = isURL(base) ? base.href : base;
 -
 -  const resolvedOption = FSLegacyMainResolve(pkgPath, packageConfig.main, baseStringified);
@@ -90,8 +87,8 @@ index c13475102a75d65329908f44def06a60f4a2c4f1..fbf1066f722f13bed1ef38fc3d06d5e0
 +                                        packageJSONUrl)));
 +    else guess = undefined;
 +    if (guess) {
-+      emitLegacyIndexDeprecation(guess, packageJSONUrl, base,
-+                                 packageConfig.main);
++      emitLegacyIndexDeprecation(guess, fileURLToPath(guess), pkgPath,
++                                 base, packageConfig.main);
 +      return guess;
 +    }
 +    // Fallthrough.
@@ -101,7 +98,8 @@ index c13475102a75d65329908f44def06a60f4a2c4f1..fbf1066f722f13bed1ef38fc3d06d5e0
 +    else if (fileExists(guess = new URL('./index.node', packageJSONUrl)));
 +    else guess = undefined;
 +    if (guess) {
-+      emitLegacyIndexDeprecation(guess, packageJSONUrl, base, packageConfig.main);
++      emitLegacyIndexDeprecation(guess, fileURLToPath(guess), pkgPath,
++                                 base, packageConfig.main);
 +      return guess;
 +    }
 +    // Not found.
