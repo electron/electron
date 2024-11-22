@@ -91,15 +91,14 @@ namespace electron::api {
 // FrameTreeNodeId -> WebFrameMain*
 // Using FrameTreeNode allows us to track frame across navigations. This
 // is most similar to how <iframe> works.
-typedef std::unordered_map<content::FrameTreeNodeId,
-                           WebFrameMain*,
-                           content::FrameTreeNodeId::Hasher>
-    FrameTreeNodeIdMap;
+using FrameTreeNodeIdMap = std::unordered_map<content::FrameTreeNodeId,
+                                              WebFrameMain*,
+                                              content::FrameTreeNodeId::Hasher>;
 
 // Token -> WebFrameMain*
 // Maps exact RFH to a WebFrameMain instance.
-typedef std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>
-    FrameTokenMap;
+using FrameTokenMap =
+    std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>;
 
 FrameTreeNodeIdMap& GetFrameTreeNodeIdMap() {
   static base::NoDestructor<FrameTreeNodeIdMap> instance;
