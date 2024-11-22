@@ -204,7 +204,11 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     // The WebContentsView is added a sibling of BaseWindow's contentView at
     // index 0 before it in the paint order - see
     // https://github.com/electron/electron/pull/41256.
-    auto* wcv = shell_->GetContentsView()->children().front().get();
+    const auto& children = shell_->GetContentsView()->children();
+    if (children.empty())
+      return;
+
+    auto* wcv = children.front().get();
     if (!wcv)
       return;
 
@@ -214,8 +218,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     if (!ns_view)
       return;
 
-    auto* iwcv = (ElectronInspectableWebContentsView*)ns_view;
-    [iwcv redispatchContextMenuEvent:base::apple::OwnedNSEvent(event)];
+    [static_cast<ElectronInspectableWebContentsView*>(ns_view)
+        redispatchContextMenuEvent:base::apple::OwnedNSEvent(event)];
     return;
   }
 
