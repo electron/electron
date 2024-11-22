@@ -42,7 +42,7 @@ index ebb3ffcd6d42b4c16b6865a91ccf4428cffe864b..00225afa1fb4205f1e02d9f185aeb97d
          "-Wno-unused-but-set-variable",
          "-Wno-unused-function",
 diff --git a/node.gni b/node.gni
-index 9dca810decebd75aab427e306b3cc37c80fb55c9..32709b860ccb12d8d1e75342a65dda0b86129b21 100644
+index 9dca810decebd75aab427e306b3cc37c80fb55c9..852f64fa9cfb50fe6e9ce7aa46be336d3196d5b8 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -5,10 +5,10 @@
@@ -67,12 +67,21 @@ index 9dca810decebd75aab427e306b3cc37c80fb55c9..32709b860ccb12d8d1e75342a65dda0b
  
    # Custom build tag.
    node_tag = ""
-@@ -58,7 +58,7 @@ declare_args() {
+@@ -58,7 +58,16 @@ declare_args() {
    # TODO(zcbenz): There are few broken things for now:
    #   1. cross-os compilation is not supported.
    #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
 -  node_use_node_snapshot = (host_os == target_os) && !(host_cpu == "arm64" && target_cpu == "x64")
 +  node_use_node_snapshot = false
++
++  # Build with Amaro (TypeScript utils).
++  node_use_amaro = true
++
++  # Allows downstream packagers (eg. Linux distributions) to build against system shared libraries.
++  use_system_cares = false
++  use_system_nghttp2 = false
++  use_system_llhttp = false
++  use_system_histogram = false
  }
  
  assert(!node_enable_inspector || node_use_openssl,
@@ -102,7 +111,7 @@ index 1cb85b9058d06555382e565dc32192a9fa48ed9f..cec9be01abd107e8612f70daf19b4834
  // Handles compilation and caching of built-in JavaScript modules and
  // bootstrap scripts, whose source are bundled into the binary as static data.
 diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
-index 45b3ac5006140fb55aad0e6b78084b753a947a76..8667857107e4f2481fd98032d4333b086fb7b479 100755
+index 45b3ac5006140fb55aad0e6b78084b753a947a76..35cce2ea8fd85f21582962115ac455918d4c4553 100755
 --- a/tools/generate_config_gypi.py
 +++ b/tools/generate_config_gypi.py
 @@ -21,7 +21,7 @@ import getnapibuildversion
@@ -114,6 +123,14 @@ index 45b3ac5006140fb55aad0e6b78084b753a947a76..8667857107e4f2481fd98032d4333b08
  else:
    GN = 'gn'
  
+@@ -65,6 +65,7 @@ def translate_config(out_dir, config, v8_config):
+           eval(config['node_builtin_shareable_builtins']),
+       'node_module_version': int(config['node_module_version']),
+       'node_use_openssl': config['node_use_openssl'],
++      'node_use_amaro': config['node_use_amaro'],
+       'node_use_node_code_cache': config['node_use_node_code_cache'],
+       'node_use_node_snapshot': config['node_use_node_snapshot'],
+       'v8_enable_inspector':  # this is actually a node misnomer
 diff --git a/tools/install.py b/tools/install.py
 index bf54249b66c0d4e179deaae5a9fd55568e694fe0..31b94d2e4b532d3b8202b512e2d2f41d29a2a546 100755
 --- a/tools/install.py
@@ -285,10 +302,22 @@ index 65d0e1be42f0a85418491ebb548278cf431aa6a0..d4a31342f1c6107b029394c6e1d00a1d
    except Exception as e:
      print(str(e))
 diff --git a/unofficial.gni b/unofficial.gni
-index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1fa351a9d9 100644
+index c3b311e4a7f5444b07d4d7028d4621806959804e..f6793b8bf22d6ac911a1977edaa881b6dbbe7ac7 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -139,6 +139,7 @@ template("node_gn_build") {
+@@ -22,6 +22,11 @@ template("node_gn_build") {
+     } else {
+       defines += [ "HAVE_OPENSSL=0" ]
+     }
++    if (node_use_amaro) {
++      defines += [ "HAVE_AMARO=1" ]
++    } else {
++      defines += [ "HAVE_AMARO=0" ]
++    }
+     if (node_use_v8_platform) {
+       defines += [ "NODE_USE_V8_PLATFORM=1" ]
+     } else {
+@@ -139,6 +144,7 @@ template("node_gn_build") {
      public_deps = [
        "deps/ada",
        "deps/uv",
@@ -296,7 +325,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
        "deps/simdjson",
        "$node_v8_path",
      ]
-@@ -150,7 +151,6 @@ template("node_gn_build") {
+@@ -150,7 +156,6 @@ template("node_gn_build") {
        "deps/llhttp",
        "deps/nbytes",
        "deps/nghttp2",
@@ -304,7 +333,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
        "deps/postject",
        "deps/simdutf",
        "deps/sqlite",
-@@ -159,7 +159,11 @@ template("node_gn_build") {
+@@ -159,7 +164,11 @@ template("node_gn_build") {
        "$node_v8_path:v8_libplatform",
      ]
  
@@ -316,7 +345,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -178,8 +182,10 @@ template("node_gn_build") {
+@@ -178,8 +187,10 @@ template("node_gn_build") {
        deps += [ "//third_party/icu" ]
      }
      if (node_use_openssl) {
@@ -329,7 +358,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
        sources += gypi_values.node_crypto_sources
      }
      if (node_enable_inspector) {
-@@ -276,6 +282,7 @@ template("node_gn_build") {
+@@ -276,6 +287,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -337,7 +366,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
      deps = [
        "deps/simdutf",
        "deps/uv",
-@@ -286,26 +293,75 @@ template("node_gn_build") {
+@@ -286,26 +298,75 @@ template("node_gn_build") {
        "src/embedded_data.cc",
        "src/embedded_data.h",
      ]
@@ -423,7 +452,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -319,11 +375,11 @@ template("node_gn_build") {
+@@ -319,11 +380,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  

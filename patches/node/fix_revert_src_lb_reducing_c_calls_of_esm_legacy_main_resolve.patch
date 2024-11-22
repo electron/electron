@@ -110,7 +110,7 @@ index c13475102a75d65329908f44def06a60f4a2c4f1..ad71195104b96754b08d309e970ab63d
  
  const encodedSepRegEx = /%2F|%5C/i;
 diff --git a/test/es-module/test-cjs-legacyMainResolve.js b/test/es-module/test-cjs-legacyMainResolve.js
-index edb567bce403f2d4df482c2549c6f7cec78c3588..08d8a4e880f38e638c33ce2502d39ba7b963722a 100644
+index edb567bce403f2d4df482c2549c6f7cec78c3588..a27913d050b0ba4db002b4b24606b81708c098a2 100644
 --- a/test/es-module/test-cjs-legacyMainResolve.js
 +++ b/test/es-module/test-cjs-legacyMainResolve.js
 @@ -129,7 +129,7 @@ describe('legacyMainResolve', () => {
