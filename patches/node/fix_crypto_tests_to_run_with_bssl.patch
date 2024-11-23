@@ -471,21 +471,21 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index 15e1f53bb05faf60fa808eb5901591d1512edf3c..b04b574b5e683cdddb3836972e246df99e73ac34 100644
+index 15e1f53bb05faf60fa808eb5901591d1512edf3c..329f0d00c869cd19580acea18c904cf9900fb816 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
-@@ -96,8 +96,8 @@ const der = Buffer.from(
+@@ -96,8 +96,10 @@ const der = Buffer.from(
    assert.strictEqual(x509.infoAccess, infoAccessCheck);
    assert.strictEqual(x509.validFrom, 'Sep  3 21:40:37 2022 GMT');
    assert.strictEqual(x509.validTo, 'Jun 17 21:40:37 2296 GMT');
--  assert.deepStrictEqual(x509.validFromDate, new Date('2022-09-03T21:40:37Z'));
--  assert.deepStrictEqual(x509.validToDate, new Date('2296-06-17T21:40:37Z'));
-+  // assert.deepStrictEqual(x509.validFromDate, new Date('2022-09-03T21:40:37Z'));
-+  // assert.deepStrictEqual(x509.validToDate, new Date('2296-06-17T21:40:37Z'));
++  if (!common.openSSLIsBoringSSL) {
+   assert.deepStrictEqual(x509.validFromDate, new Date('2022-09-03T21:40:37Z'));
+   assert.deepStrictEqual(x509.validToDate, new Date('2296-06-17T21:40:37Z'));
++  }
    assert.strictEqual(
      x509.fingerprint,
      '8B:89:16:C4:99:87:D2:13:1A:64:94:36:38:A5:32:01:F0:95:3B:53');
-@@ -113,7 +113,7 @@ const der = Buffer.from(
+@@ -113,7 +115,7 @@ const der = Buffer.from(
      '5A:42:63:E0:21:2F:D6:70:63:07:96:6F:27:A7:78:12:08:02:7A:8B'
    );
    assert.strictEqual(x509.keyUsage, undefined);
@@ -494,7 +494,7 @@ index 15e1f53bb05faf60fa808eb5901591d1512edf3c..b04b574b5e683cdddb3836972e246df9
  
    assert.deepStrictEqual(x509.raw, der);
  
-@@ -255,6 +255,16 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -255,6 +257,16 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    });
    mc.port2.postMessage(x509);
  
@@ -511,7 +511,7 @@ index 15e1f53bb05faf60fa808eb5901591d1512edf3c..b04b574b5e683cdddb3836972e246df9
    // Verify that legacy encoding works
    const legacyObjectCheck = {
      subject: Object.assign({ __proto__: null }, {
-@@ -279,15 +289,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -279,15 +291,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
        'OCSP - URI': ['http://ocsp.nodejs.org/'],
        'CA Issuers - URI': ['http://ca.nodejs.org/ca.cert']
      }),
@@ -528,7 +528,7 @@ index 15e1f53bb05faf60fa808eb5901591d1512edf3c..b04b574b5e683cdddb3836972e246df9
      bits: 2048,
      exponent: '0x10001',
      valid_from: 'Sep  3 21:40:37 2022 GMT',
-@@ -300,7 +302,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -300,7 +304,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
        '51:62:18:39:E2:E2:77:F5:86:11:E8:C0:CA:54:43:7C:76:83:19:05:D0:03:' +
        '24:21:B8:EB:14:61:FB:24:16:EB:BD:51:1A:17:91:04:30:03:EB:68:5F:DC:' +
        '86:E1:D1:7C:FB:AF:78:ED:63:5F:29:9C:32:AF:A1:8E:22:96:D1:02',
@@ -537,7 +537,7 @@ index 15e1f53bb05faf60fa808eb5901591d1512edf3c..b04b574b5e683cdddb3836972e246df9
    };
  
    const legacyObject = x509.toLegacyObject();
-@@ -309,7 +311,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -309,7 +313,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    assert.deepStrictEqual(legacyObject.subject, legacyObjectCheck.subject);
    assert.deepStrictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
    assert.deepStrictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
@@ -546,7 +546,7 @@ index 15e1f53bb05faf60fa808eb5901591d1512edf3c..b04b574b5e683cdddb3836972e246df9
    assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
    assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
    assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -318,11 +320,12 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -318,11 +322,12 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    assert.strictEqual(
      legacyObject.fingerprint256,
      legacyObjectCheck.fingerprint256);
@@ -557,40 +557,40 @@ index 15e1f53bb05faf60fa808eb5901591d1512edf3c..b04b574b5e683cdddb3836972e246df9
 +    legacyObjectCheck.serialNumberPattern);
  }
  
-+/*
++if (!common.openSSLIsBoringSSL) {
  {
    // This X.509 Certificate can be parsed by OpenSSL because it contains a
    // structurally sound TBSCertificate structure. However, the SPKI field of the
-@@ -361,6 +364,7 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
+@@ -361,6 +366,7 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
  
    assert.strictEqual(cert.checkIssued(cert), false);
  }
-+*/
++}
  
  {
    // Test date parsing of `validFromDate` and `validToDate` fields, according to RFC 5280.
-@@ -398,8 +402,8 @@ UidvpWWipVLZgK+oDks+bKTobcoXGW9oXobiIYqslXPy
+@@ -398,8 +404,10 @@ UidvpWWipVLZgK+oDks+bKTobcoXGW9oXobiIYqslXPy
  -----END CERTIFICATE-----`.trim();
    const c1 = new X509Certificate(certPemUTCTime);
  
--  assert.deepStrictEqual(c1.validFromDate, new Date('1949-12-25T23:59:58Z'));
--  assert.deepStrictEqual(c1.validToDate, new Date('1950-01-01T23:59:58Z'));
-+  // assert.deepStrictEqual(c1.validFromDate, new Date('1949-12-25T23:59:58Z'));
-+  // assert.deepStrictEqual(c1.validToDate, new Date('1950-01-01T23:59:58Z'));
++  if (!common.openSSLIsBoringSSL) {
+   assert.deepStrictEqual(c1.validFromDate, new Date('1949-12-25T23:59:58Z'));
+   assert.deepStrictEqual(c1.validToDate, new Date('1950-01-01T23:59:58Z'));
++  }
  
    // The GeneralizedTime format is used for dates in 2050 or later.
    const certPemGeneralizedTime = `-----BEGIN CERTIFICATE-----
-@@ -433,6 +437,6 @@ CWwQO8JZjJqFtqtuzy2n+gLCvqePgG/gmSqHOPm2ZbLW
+@@ -433,6 +441,8 @@ CWwQO8JZjJqFtqtuzy2n+gLCvqePgG/gmSqHOPm2ZbLW
  -----END CERTIFICATE-----`.trim();
    const c2 = new X509Certificate(certPemGeneralizedTime);
  
--  assert.deepStrictEqual(c2.validFromDate, new Date('2049-12-26T00:00:01Z'));
--  assert.deepStrictEqual(c2.validToDate, new Date('2050-01-02T00:00:01Z'));
-+  // assert.deepStrictEqual(c2.validFromDate, new Date('2049-12-26T00:00:01Z'));
-+  // assert.deepStrictEqual(c2.validToDate, new Date('2050-01-02T00:00:01Z'));
++  if (!common.openSSLIsBoringSSL) {
+   assert.deepStrictEqual(c2.validFromDate, new Date('2049-12-26T00:00:01Z'));
+   assert.deepStrictEqual(c2.validToDate, new Date('2050-01-02T00:00:01Z'));
++  }
  }
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
-index 4271121881379b6c6892e89e520345f77e4181df..6c87a1ac687aa37d4ba245d1b6fc746a5f1eeffc 100644
+index 4271121881379b6c6892e89e520345f77e4181df..7a17285deee18ffbccf1d01d9d1b7b87e561bffa 100644
 --- a/test/parallel/test-crypto.js
 +++ b/test/parallel/test-crypto.js
 @@ -61,7 +61,7 @@ assert.throws(() => {
@@ -629,23 +629,14 @@ index 4271121881379b6c6892e89e520345f77e4181df..6c87a1ac687aa37d4ba245d1b6fc746a
  validateList(crypto.getHashes());
  // Make sure all of the hashes are supported by OpenSSL
  for (const algo of crypto.getHashes())
-@@ -195,7 +193,7 @@ assert.throws(
-     return true;
+@@ -196,6 +194,7 @@ assert.throws(
    }
  );
--
-+/*
+ 
++if (!common.openSSLIsBoringSSL) {
  assert.throws(() => {
    const priv = [
      '-----BEGIN RSA PRIVATE KEY-----',
-@@ -208,6 +206,7 @@ assert.throws(() => {
-   ].join('\n');
-   crypto.createSign('SHA256').update('test').sign(priv);
- }, (err) => {
-+  console.log(err)
-   if (!common.hasOpenSSL3)
-     assert.ok(!('opensslErrorStack' in err));
-   assert.throws(() => { throw err; }, common.hasOpenSSL3 ? {
 @@ -216,10 +215,10 @@ assert.throws(() => {
      library: 'rsa routines',
    } : {
@@ -666,7 +657,7 @@ index 4271121881379b6c6892e89e520345f77e4181df..6c87a1ac687aa37d4ba245d1b6fc746a
    });
  }
 -
-+*/
++}
  // Make sure memory isn't released before being returned
  console.log(crypto.randomBytes(16));
  

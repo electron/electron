@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index 457bd2f6c5b18956d06c716fbfae429496fb352d..9168442d816ba325390a423c40a389a9fa0bfb04 100644
+index 457bd2f6c5b18956d06c716fbfae429496fb352d..e954cb2e53f3d8c297d21ef9f698d824ca574106 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -6,13 +6,11 @@
@@ -53,23 +53,25 @@ index 457bd2f6c5b18956d06c716fbfae429496fb352d..9168442d816ba325390a423c40a389a9
      ACCESS_DESCRIPTION* desc = sk_ACCESS_DESCRIPTION_value(descs, i);
  
      if (i != 0)
-@@ -857,13 +855,13 @@ BIOPointer X509View::getValidTo() const {
+@@ -857,13 +855,17 @@ BIOPointer X509View::getValidTo() const {
  
  int64_t X509View::getValidToTime() const {
    struct tm tp;
--  ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
-+  // ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
++#ifndef OPENSSL_IS_BORINGSSL
+   ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
++#endif
    return PortableTimeGM(&tp);
  }
  
  int64_t X509View::getValidFromTime() const {
    struct tm tp;
--  ASN1_TIME_to_tm(X509_get0_notBefore(cert_), &tp);
-+  // ASN1_TIME_to_tm(X509_get0_notBefore(cert_), &tp);
++#ifndef OPENSSL_IS_BORINGSSL
+   ASN1_TIME_to_tm(X509_get0_notBefore(cert_), &tp);
++#endif
    return PortableTimeGM(&tp);
  }
  
-@@ -1043,7 +1041,11 @@ BIOPointer BIOPointer::NewMem() {
+@@ -1043,7 +1045,11 @@ BIOPointer BIOPointer::NewMem() {
  }
  
  BIOPointer BIOPointer::NewSecMem() {
@@ -81,7 +83,7 @@ index 457bd2f6c5b18956d06c716fbfae429496fb352d..9168442d816ba325390a423c40a389a9
  }
  
  BIOPointer BIOPointer::New(const BIO_METHOD* method) {
-@@ -1098,8 +1100,10 @@ BignumPointer DHPointer::FindGroup(const std::string_view name,
+@@ -1098,8 +1104,10 @@ BignumPointer DHPointer::FindGroup(const std::string_view name,
                                     FindGroupOption option) {
  #define V(n, p) if (EqualNoCase(name, n)) return BignumPointer(p(nullptr));
    if (option != FindGroupOption::NO_SMALL_PRIMES) {
@@ -92,7 +94,7 @@ index 457bd2f6c5b18956d06c716fbfae429496fb352d..9168442d816ba325390a423c40a389a9
      V("modp5", BN_get_rfc3526_prime_1536);
    }
    V("modp14", BN_get_rfc3526_prime_2048);
-@@ -1171,11 +1175,13 @@ DHPointer::CheckPublicKeyResult DHPointer::checkPublicKey(const BignumPointer& p
+@@ -1171,11 +1179,13 @@ DHPointer::CheckPublicKeyResult DHPointer::checkPublicKey(const BignumPointer& p
    int codes = 0;
    if (DH_check_pub_key(dh_.get(), pub_key.get(), &codes) != 1)
      return DHPointer::CheckPublicKeyResult::CHECK_FAILED;
@@ -473,22 +475,20 @@ index b59e394d9a7e2c19fdf1f2b0177753ff488da0fa..91218f49da5392c6f769495ee7f9275a
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<void>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index 6d360554b31d53a597d61fcbd660f703a903ca21..6c0cf830499b0d47762cb346e15f1a99ddf02196 100644
+index 6d360554b31d53a597d61fcbd660f703a903ca21..86fafe98222d4c18f062032d80104f3ef00dbc01 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
-@@ -608,10 +608,11 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
+@@ -608,10 +608,13 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
        }
  
        if (params->saltLength != nullptr) {
--        if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
--          ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
--          return Nothing<void>();
--        }
++#ifndef OPENSSL_IS_BORINGSSL
 +        // TODO(codebytere): Upstream a shim to BoringSSL?
-+        // if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
-+        //   ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
-+        //   return Nothing<void>();
-+        // }
+         if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
+           ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
+           return Nothing<void>();
+         }
++#endif
        }
  
        if (target
