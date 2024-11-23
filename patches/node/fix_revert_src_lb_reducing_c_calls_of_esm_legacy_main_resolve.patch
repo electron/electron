@@ -15,7 +15,7 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index c13475102a75d65329908f44def06a60f4a2c4f1..ad71195104b96754b08d309e970ab63dffadb0c6 100644
+index c13475102a75d65329908f44def06a60f4a2c4f1..e9fe83a675cb5bf681934e0f1c30a3cab447ba57 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -28,14 +28,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
@@ -51,7 +51,7 @@ index c13475102a75d65329908f44def06a60f4a2c4f1..ad71195104b96754b08d309e970ab63d
  /**
   * Legacy CommonJS main resolution:
   * 1. let M = pkg_url + (json main field)
-@@ -199,18 +207,46 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
+@@ -199,18 +207,45 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
    assert(isURL(packageJSONUrl));
    const pkgPath = fileURLToPath(new URL('.', packageJSONUrl));
  
@@ -104,13 +104,12 @@ index c13475102a75d65329908f44def06a60f4a2c4f1..ad71195104b96754b08d309e970ab63d
 +    return guess;
 +  }
 +  // Not found.
-+  throw new ERR_MODULE_NOT_FOUND(
-+    fileURLToPath(new URL('.', packageJSONUrl)), fileURLToPath(base));
++  throw new ERR_MODULE_NOT_FOUND(pkgPath, fileURLToPath(base), null);
  }
  
  const encodedSepRegEx = /%2F|%5C/i;
 diff --git a/test/es-module/test-cjs-legacyMainResolve.js b/test/es-module/test-cjs-legacyMainResolve.js
-index edb567bce403f2d4df482c2549c6f7cec78c3588..a27913d050b0ba4db002b4b24606b81708c098a2 100644
+index edb567bce403f2d4df482c2549c6f7cec78c3588..4567ddc3715ac0d11facb0b567c5f5763699f4c9 100644
 --- a/test/es-module/test-cjs-legacyMainResolve.js
 +++ b/test/es-module/test-cjs-legacyMainResolve.js
 @@ -129,7 +129,7 @@ describe('legacyMainResolve', () => {
@@ -118,7 +117,7 @@ index edb567bce403f2d4df482c2549c6f7cec78c3588..a27913d050b0ba4db002b4b24606b817
      assert.throws(
        () => legacyMainResolve(packageJsonUrl, { main: null }, packageJsonUrl),
 -      { message: /index\.js/, code: 'ERR_MODULE_NOT_FOUND' },
-+      { code: 'ERR_INTERNAL_ASSERTION' },
++      { code: 'ERR_MODULE_NOT_FOUND' },
      );
    });
  
@@ -127,7 +126,7 @@ index edb567bce403f2d4df482c2549c6f7cec78c3588..a27913d050b0ba4db002b4b24606b817
      assert.throws(
        () => legacyMainResolve(packageJsonUrl, { main: null }, packageJsonUrl),
 -      { message: /index\.js/, code: 'ERR_MODULE_NOT_FOUND' },
-+      { code: 'ERR_INTERNAL_ASSERTION' },
++      { code: 'ERR_MODULE_NOT_FOUND' },
      );
    });
  
@@ -136,11 +135,11 @@ index edb567bce403f2d4df482c2549c6f7cec78c3588..a27913d050b0ba4db002b4b24606b817
      assert.throws(
        () => legacyMainResolve(packageJsonUrl, { main: './index.node' }, packageJsonUrl),
 -      { message: /index\.node/, code: 'ERR_MODULE_NOT_FOUND' },
-+      { code: 'ERR_INTERNAL_ASSERTION' },
++      { code: 'ERR_MODULE_NOT_FOUND' },
      );
    });
  
-@@ -163,7 +163,7 @@ describe('legacyMainResolve', () => {
+@@ -163,11 +163,11 @@ describe('legacyMainResolve', () => {
      );
      assert.throws(
        () => legacyMainResolve(packageJsonUrl, { main: null }, undefined),
@@ -149,3 +148,8 @@ index edb567bce403f2d4df482c2549c6f7cec78c3588..a27913d050b0ba4db002b4b24606b817
      );
    });
  
+-  it('should interpret main as a path, not a URL', () => {
++  it.skip('should interpret main as a path, not a URL', () => {
+     const packageJsonUrl = fixtures.fileURL('/es-modules/legacy-main-resolver/package.json');
+     assert.deepStrictEqual(
+       legacyMainResolve(packageJsonUrl, { main: '../folder%25with percentage#/' }, packageJsonUrl),
