@@ -1091,7 +1091,8 @@ v8::Local<v8::Promise> Session::ClearSharedDictionaryCacheForIsolationKey(
   if (!options.Get("frameOrigin", &frame_origin_url) ||
       !options.Get("topFrameSite", &top_frame_site_url)) {
     promise.RejectWithErrorMessage(
-        "Must provide frameOrigin and topFrameSite strings to `clearSharedDictionaryCacheForIsolationKey`");
+        "Must provide frameOrigin and topFrameSite strings to "
+        "`clearSharedDictionaryCacheForIsolationKey`");
     return handle;
   }
 
