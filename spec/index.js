@@ -108,20 +108,8 @@ app.whenReady().then(async () => {
   // 3. regular `afterEach` hooks run.
   // 4. `afterAll` hook runs here to verify that there are no windows left open
   const { runCleanupFunctions } = require('./lib/spec-helpers');
-  const { closeAllWindows, cleanupWebContents } = require('./lib/window-helpers');
   mocha.suite.on('suite', function attach (suite) {
     suite.afterEach('cleanup', runCleanupFunctions);
-    suite.afterAll('end of test cleanup', async () => {
-      const windowsLeftOpen = await closeAllWindows(true);
-      if (windowsLeftOpen > 0) {
-        console.log(`WARNING!!!!!!!!!! ${suite.fullTitle()} ${path.basename(suite.file)} left ${windowsLeftOpen} windows open!`);
-      }
-      const webContentsDangling = await cleanupWebContents();
-      if (webContentsDangling > 0) {
-        console.log(`WARNING!!!!!!!!!! ${suite.fullTitle()} ${path.basename(suite.file)} left ${webContentsDangling} WebContents dangling!`);
-      }
-    });
-
     suite.on('suite', attach);
   });
 
@@ -182,7 +170,16 @@ app.whenReady().then(async () => {
     process.exit(1);
   }
 
-  const cb = () => {
+  const { closeAllWindows, cleanupWebContents } = require('./lib/window-helpers');
+  const cb = async () => {
+    const windowsLeftOpen = await closeAllWindows(true);
+    if (windowsLeftOpen > 0) {
+      console.log(`WARNING!!!!!!!!!! cleaned up ${windowsLeftOpen} windows open!`);
+    }
+    const webContentsDangling = await cleanupWebContents();
+    if (webContentsDangling > 0) {
+      console.log(`WARNING!!!!!!!!!! cleaned up ${webContentsDangling} WebContents dangling!`);
+    }
     // Ensure the callback is called after runner is defined
     process.nextTick(() => {
       process.exit(runner.failures);
