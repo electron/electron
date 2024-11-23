@@ -15,9 +15,21 @@ const features = process._linkedBinding('electron_common_features');
 
 describe('webContents1 module', () => {
   ifdescribe(process.env.TEST_SHARD !== '1')('getAllWebContents() API', () => {
-    afterEach(closeAllWindows);
+    let w: BrowserWindow;
+    afterEach(async () => {
+      w.webContents.closeDevTools();
+      w.close();
+      const existingWCS = webContents.getAllWebContents();
+      if (existingWCS.length > 0) {
+        console.log(`There are ${existingWCS.length} webcontents`);
+      }
+      existingWCS.forEach((contents) => {
+        console.log('Destroying webcontents');
+        contents.destroy();
+      });
+    });
     it('returns an array of web contents', async () => {
-      const w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false,
         webPreferences: { webviewTag: true }
       });
