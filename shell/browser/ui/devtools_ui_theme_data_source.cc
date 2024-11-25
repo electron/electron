@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "base/memory/ref_counted_memory.h"
@@ -97,7 +98,7 @@ void ThemeDataSource::StartDataRequest(
 
   // kColorsCssPath should stay consistent with COLORS_CSS_SELECTOR in
   // colors_css_updater.js.
-  constexpr char kColorsCssPath[] = "colors.css";
+  constexpr std::string_view kColorsCssPath = "colors.css";
   if (parsed_path == kColorsCssPath) {
     SendColorsCss(url, wc_getter, std::move(callback));
     return;
