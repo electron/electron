@@ -5,6 +5,7 @@
 #include "electron/shell/renderer/electron_api_service_impl.h"
 
 #include <memory>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -32,7 +33,7 @@ namespace electron {
 
 namespace {
 
-const char kIpcKey[] = "ipcNative";
+constexpr std::string_view kIpcKey = "ipcNative";
 
 // Gets the private object under kIpcKey
 v8::Local<v8::Object> GetIpcObject(v8::Local<v8::Context> context) {

@@ -70,25 +70,26 @@ namespace electron {
 
 namespace {
 
-const char kChromeUIDevToolsURL[] =
+constexpr std::string_view kChromeUIDevToolsURL =
     "devtools://devtools/bundled/devtools_app.html?"
     "remoteBase=%s&"
     "can_dock=%s&"
     "toolbarColor=rgba(223,223,223,1)&"
     "textColor=rgba(0,0,0,1)&"
     "experiments=true";
-const char kChromeUIDevToolsRemoteFrontendBase[] =
+constexpr std::string_view kChromeUIDevToolsRemoteFrontendBase =
     "https://chrome-devtools-frontend.appspot.com/";
-const char kChromeUIDevToolsRemoteFrontendPath[] = "serve_file";
+constexpr std::string_view kChromeUIDevToolsRemoteFrontendPath = "serve_file";
 
-const char kDevToolsBoundsPref[] = "electron.devtools.bounds";
-const char kDevToolsZoomPref[] = "electron.devtools.zoom";
-const char kDevToolsPreferences[] = "electron.devtools.preferences";
+constexpr std::string_view kDevToolsBoundsPref = "electron.devtools.bounds";
+constexpr std::string_view kDevToolsZoomPref = "electron.devtools.zoom";
+constexpr std::string_view kDevToolsPreferences =
+    "electron.devtools.preferences";
 
-const char kFrontendHostId[] = "id";
-const char kFrontendHostMethod[] = "method";
-const char kFrontendHostParams[] = "params";
-const char kTitleFormat[] = "Developer Tools - %s";
+constexpr std::string_view kFrontendHostId = "id";
+constexpr std::string_view kFrontendHostMethod = "method";
+constexpr std::string_view kFrontendHostParams = "params";
+constexpr std::string_view kTitleFormat = "Developer Tools - %s";
 
 const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
 
