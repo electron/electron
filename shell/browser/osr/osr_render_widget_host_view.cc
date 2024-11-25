@@ -135,15 +135,15 @@ class ElectronDelegatedFrameHostClient
       const ElectronDelegatedFrameHostClient&) = delete;
 
   // content::DelegatedFrameHostClient
-  ui::Layer* DelegatedFrameHostGetLayer() const override {
+  [[nodiscard]] ui::Layer* DelegatedFrameHostGetLayer() const override {
     return view_->root_layer();
   }
 
-  bool DelegatedFrameHostIsVisible() const override {
+  [[nodiscard]] bool DelegatedFrameHostIsVisible() const override {
     return view_->IsShowing();
   }
 
-  SkColor DelegatedFrameHostGetGutterColor() const override {
+  [[nodiscard]] SkColor DelegatedFrameHostGetGutterColor() const override {
     if (view_->render_widget_host()->delegate() &&
         view_->render_widget_host()->delegate()->IsFullscreen()) {
       return SK_ColorWHITE;
@@ -156,7 +156,7 @@ class ElectronDelegatedFrameHostClient
     view_->render_widget_host()->DidProcessFrame(frame_token, activation_time);
   }
 
-  float GetDeviceScaleFactor() const override {
+  [[nodiscard]] float GetDeviceScaleFactor() const override {
     return view_->GetDeviceScaleFactor();
   }
 
