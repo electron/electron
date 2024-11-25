@@ -13,7 +13,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
@@ -63,6 +63,7 @@ describe('webContents module', () => {
   });
 
   describe('fromFrame()', () => {
+    afterEach(cleanupWebContents);
     it('returns WebContents for mainFrame', () => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create();
       expect(webContents.fromFrame(contents.mainFrame)).to.equal(contents);
@@ -85,6 +86,7 @@ describe('webContents module', () => {
   });
 
   describe('fromDevToolsTargetId()', () => {
+    afterEach(closeAllWindows);
     it('returns WebContents for attached DevTools target', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
@@ -103,7 +105,10 @@ describe('webContents module', () => {
   });
 
   describe('will-prevent-unload event', function () {
-    afterEach(closeAllWindows);
+    afterEach(async () => {
+      await closeAllWindows();
+      await cleanupWebContents();
+    });
     it('does not emit if beforeunload returns undefined in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', () => {
@@ -305,11 +310,13 @@ describe('webContents module', () => {
       ]);
       let w: BrowserWindow;
 
-      before(async () => {
+      beforeEach(async () => {
         w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false } });
         await w.loadURL('about:blank');
       });
-      after(closeAllWindows);
+      afterEach(async () => {
+        await closeAllWindows();
+      });
 
       it('resolves the returned promise with the result', async () => {
         const result = await w.webContents.executeJavaScript(code);
@@ -376,10 +383,12 @@ describe('webContents module', () => {
   describe('webContents.executeJavaScriptInIsolatedWorld', () => {
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeEach(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadURL('about:blank');
     });
+
+    afterEach(closeAllWindows);
 
     it('resolves the returned promise with the result', async () => {
       await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X = 123' }]);
@@ -826,6 +835,7 @@ describe('webContents module', () => {
   });
 
   describe('isFocused() API', () => {
+    afterEach(closeAllWindows);
     it('returns false when the window is hidden', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
@@ -1183,6 +1193,7 @@ describe('webContents module', () => {
   });
 
   describe('startDrag({file, icon})', () => {
+    afterEach(closeAllWindows);
     it('throws errors for a missing file or a missing/empty icon', () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
@@ -1287,6 +1298,7 @@ describe('webContents module', () => {
   });
 
   describe('userAgent APIs', () => {
+    afterEach(closeAllWindows);
     it('is not empty by default', () => {
       const w = new BrowserWindow({ show: false });
       const userAgent = w.webContents.getUserAgent();
@@ -1317,6 +1329,7 @@ describe('webContents module', () => {
   });
 
   describe('audioMuted APIs', () => {
+    afterEach(closeAllWindows);
     it('can set the audio mute level (functions)', () => {
       const w = new BrowserWindow({ show: false });
 
@@ -2752,7 +2765,10 @@ describe('webContents module', () => {
   });
 
   describe('close() method', () => {
-    afterEach(closeAllWindows);
+    afterEach(async () => {
+      await closeAllWindows();
+      await cleanupWebContents();
+    });
 
     it('closes when close() is called', async () => {
       const w = (webContents as typeof ElectronInternal.WebContents).create();
