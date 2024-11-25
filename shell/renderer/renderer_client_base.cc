@@ -132,7 +132,7 @@ class ChromePdfInternalPluginDelegate final
   ~ChromePdfInternalPluginDelegate() override = default;
 
   // `pdf::PdfInternalPluginDelegate`:
-  bool IsAllowedOrigin(const url::Origin& origin) const override {
+  [[nodiscard]] bool IsAllowedOrigin(const url::Origin& origin) const override {
     return origin.scheme() == extensions::kExtensionScheme &&
            origin.host() == extension_misc::kPdfExtensionId;
   }
