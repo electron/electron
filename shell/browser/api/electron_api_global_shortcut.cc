@@ -61,6 +61,11 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
   accelerator_callback_map_[accelerator].Run();
 }
 
+void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
+                                    const std::string& command_id) {
+  // Ignore extension commands
+}
+
 bool GlobalShortcut::RegisterAll(
     const std::vector<ui::Accelerator>& accelerators,
     const base::RepeatingClosure& callback) {

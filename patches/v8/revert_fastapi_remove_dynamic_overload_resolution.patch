@@ -604,7 +604,7 @@ index 2dec266f9e648391fe61a62931cca1ad20de719c..dc27e91ad0da93a5b68053f132f219f9
    V<T> Checked(V<Tuple<T, Word32>> result, Label<>& otherwise) {
      V<Word32> result_state = __ template Projection<1>(result);
 diff --git a/src/compiler/turboshaft/graph-builder.cc b/src/compiler/turboshaft/graph-builder.cc
-index 806cb4533cc035ee4c95597ba2ab6bbfb6ac81f1..2b597b8798ed235afcd833efbc7a308b2f1db288 100644
+index 683604a0f5e2c0694f29e447e095417311ea37ec..cb3c976f0f0b9fc3fd799bc301d57f588b9c7ae6 100644
 --- a/src/compiler/turboshaft/graph-builder.cc
 +++ b/src/compiler/turboshaft/graph-builder.cc
 @@ -1974,7 +1974,7 @@ OpIndex GraphBuilder::Process(
@@ -669,10 +669,10 @@ index 806cb4533cc035ee4c95597ba2ab6bbfb6ac81f1..2b597b8798ed235afcd833efbc7a308b
        // There is one return in addition to the return value of the C function,
        // which indicates if a fast API call actually happened.
 diff --git a/src/compiler/turboshaft/operations.h b/src/compiler/turboshaft/operations.h
-index 1b36c56008d4b3c5af0d15f2c6336d260fab56c8..f50f1fd3ba0d0ac1deae2510a483714172560b56 100644
+index 1b3a33fde8d73fea2d1d022711b6472a77ad7a75..917b39db6eaba0d9795ab8986687d591821d6317 100644
 --- a/src/compiler/turboshaft/operations.h
 +++ b/src/compiler/turboshaft/operations.h
-@@ -6318,16 +6318,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
+@@ -6385,16 +6385,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
  };
  
  struct FastApiCallParameters : public NON_EXPORTED_BASE(ZoneObject) {
@@ -705,10 +705,10 @@ index 1b36c56008d4b3c5af0d15f2c6336d260fab56c8..f50f1fd3ba0d0ac1deae2510a4837141
  };
  
 diff --git a/src/compiler/wasm-compiler.cc b/src/compiler/wasm-compiler.cc
-index b6ded4cd3e2a29af8589862ac31c97fdd0da0c71..14c3378470a34ef8bdda4a4df8211e5a6b8726f7 100644
+index 351705cbc6c054d38f8d9d93744701b9004fcd1c..4c13f51d4b61f17558c6b10a09f8de5aedc093a8 100644
 --- a/src/compiler/wasm-compiler.cc
 +++ b/src/compiler/wasm-compiler.cc
-@@ -8351,13 +8351,19 @@ class WasmWrapperGraphBuilder : public WasmGraphBuilder {
+@@ -8356,13 +8356,19 @@ class WasmWrapperGraphBuilder : public WasmGraphBuilder {
                      wasm::ObjectAccess::ToTagged(
                          FunctionTemplateInfo::kCallbackDataOffset));
  
@@ -734,7 +734,7 @@ index b6ded4cd3e2a29af8589862ac31c97fdd0da0c71..14c3378470a34ef8bdda4a4df8211e5a
              return gasm_->AdaptLocalArgument(receiver_node);
            }
 diff --git a/src/d8/d8-test.cc b/src/d8/d8-test.cc
-index fd21264ec893850086041c3d7392151a6add2b27..1bc455ed18920588d641cdf9f3a54a5f8f528484 100644
+index e231c93579e0ca8068a0c192e6351bc20648d7ae..cb4d43c95665f7ba7f94a9ff63557ab97a1eef5a 100644
 --- a/src/d8/d8-test.cc
 +++ b/src/d8/d8-test.cc
 @@ -443,6 +443,20 @@ class FastCApiObject {
@@ -758,7 +758,7 @@ index fd21264ec893850086041c3d7392151a6add2b27..1bc455ed18920588d641cdf9f3a54a5f
  #ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
    static AnyCType Add32BitIntFastCallbackPatch(AnyCType receiver,
                                                 AnyCType arg_i32,
-@@ -1551,6 +1565,22 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
+@@ -1549,6 +1563,22 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
              signature, 1, ConstructorBehavior::kThrow,
              SideEffectType::kHasSideEffect, {add_all_overloads, 2}));
  

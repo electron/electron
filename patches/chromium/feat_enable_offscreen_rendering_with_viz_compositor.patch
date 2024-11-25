@@ -8,7 +8,7 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index abb381d76137d10888380cffc6708df494d3718f..f3da70523976e080c732f9c9dd7048d72b20cd65 100644
+index b84296cc7e3bb9b7d3e10e476b14a59cf57bbc41..a5c79026c44b4f2c49e322fb53d1a263e76c632b 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
 @@ -48,9 +48,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
@@ -39,7 +39,7 @@ index abb381d76137d10888380cffc6708df494d3718f..f3da70523976e080c732f9c9dd7048d7
      gpu::SurfaceHandle child_window) {
    NOTREACHED();
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
-index 294f99f234006709363d5ae1c7d52aeb19691a7c..e5b9d104e157b588dcd0a2e856a1db2df1cfe658 100644
+index 9e94f648060e9873a120f2c45591ad599a2e62df..93dabe09e44bda68644dcab568a827a92c550e4a 100644
 --- a/components/viz/host/host_display_client.h
 +++ b/components/viz/host/host_display_client.h
 @@ -39,6 +39,9 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
@@ -90,10 +90,10 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 72c960319365abf42ac7279b4d06f3d2b81c6e71..b53a8c8752bca7bad0fb7cd35f5320bbcb61f806 100644
+index f0fc2f51860e38f546159f94d5d180aa04a85e79..f25fe82a15c5ef51e0c74d5ad68daa359ca75394 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -172,6 +172,8 @@ viz_component("service") {
+@@ -171,6 +171,8 @@ viz_component("service") {
      "display_embedder/skia_output_surface_impl_on_gpu_debug_capture.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
@@ -117,10 +117,10 @@ index 7fbb05e606fc26364c674c6330b8a5eb9c016fb3..a190a42c2127011ab54aae937a3cab36
    virtual gpu::SharedImageManager* GetSharedImageManager() = 0;
    virtual gpu::SyncPointManager* GetSyncPointManager() = 0;
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index d01e905f155e5e7a43e43a8383fcf9dba360600c..a7432b3192c93b5fdf6b754906f66e9916306b61 100644
+index 98e50a61cb7d936350eff235d00f79b4734016ca..29d4dacbc168ce3e1a7c90e079040de7bd26771b 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -25,6 +25,7 @@
+@@ -24,6 +24,7 @@
  #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
@@ -128,7 +128,7 @@ index d01e905f155e5e7a43e43a8383fcf9dba360600c..a7432b3192c93b5fdf6b754906f66e99
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
  #include "gpu/command_buffer/client/shared_memory_limits.h"
-@@ -32,6 +33,7 @@
+@@ -31,6 +32,7 @@
  #include "gpu/command_buffer/service/scheduler_sequence.h"
  #include "gpu/config/gpu_finch_features.h"
  #include "gpu/ipc/common/surface_handle.h"
@@ -136,17 +136,17 @@ index d01e905f155e5e7a43e43a8383fcf9dba360600c..a7432b3192c93b5fdf6b754906f66e99
  #include "ui/base/ui_base_switches.h"
  
  #if BUILDFLAG(IS_WIN)
-@@ -95,7 +97,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -94,7 +96,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
      const RendererSettings& renderer_settings,
 -    const DebugRendererSettings* debug_settings) {
 +    const DebugRendererSettings* debug_settings,
 +    bool offscreen) {
- #if BUILDFLAG(IS_CHROMEOS_ASH)
+ #if BUILDFLAG(IS_CHROMEOS)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -103,7 +106,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -102,7 +105,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      return std::make_unique<SoftwareOutputSurface>(
@@ -155,7 +155,7 @@ index d01e905f155e5e7a43e43a8383fcf9dba360600c..a7432b3192c93b5fdf6b754906f66e99
    } else {
      DCHECK(gpu_dependency);
  
-@@ -142,10 +145,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -141,10 +144,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -521,10 +521,10 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 2538e963ef714148f2a944da8a73c832ecac69f4..ac73b420cf167a5e1b4ef917a156a6069e20f36b 100644
+index 276664b44f2fd1995efbfedf76243b9904e12663..aac4bb2e229d9b96081f917c314091b77b68c21b 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -102,7 +102,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -101,7 +101,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),

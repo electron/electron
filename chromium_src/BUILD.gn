@@ -219,7 +219,11 @@ static_library("chrome") {
   }
 
   if (is_linux) {
-    sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
+    sources += [
+      "//chrome/browser/extensions/global_shortcut_listener_linux.cc",
+      "//chrome/browser/extensions/global_shortcut_listener_linux.h",
+      "//chrome/browser/icon_loader_auralinux.cc",
+    ]
     if (use_ozone) {
       deps += [ "//ui/ozone" ]
       sources += [

@@ -9,23 +9,23 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index 91ef40b1c054ffceec006400c18d68b5ab393161..7a33b6e01b57b58a77ec54be59f6f3235dab936c 100644
+index 8168b4cfbafd42fa93a5aa9a3691c2552fabfb86..ba49212bd76d209f99c1cee649fc1466215a13c1 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
-@@ -4,9 +4,12 @@
- 
+@@ -5,9 +5,12 @@
  #include "chrome/browser/ui/views/overlay/close_image_button.h"
  
+ #include "base/feature_list.h"
 +#include "build/branding_buildflags.h"
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/grit/generated_resources.h"
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "components/vector_icons/vector_icons.h"
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "media/base/media_switches.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
- #include "ui/base/models/image_model.h"
-@@ -26,7 +29,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
+@@ -29,7 +32,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
      : OverlayWindowImageButton(std::move(callback)) {
    SetSize(gfx::Size(kCloseButtonSize, kCloseButtonSize));
  
@@ -38,7 +38,7 @@ index 91ef40b1c054ffceec006400c18d68b5ab393161..7a33b6e01b57b58a77ec54be59f6f323
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 32de1f4d7329ee8c0fb828a42849542265d7a4eb..55e298e5ba9209e192384c5a0d7dff314d0cd17c 100644
+index 013cd70a33a10b34df691a0ba7740d3404ebcc58..e06c74b1eb242dd9ab7344901fbf694606866ea6 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -18,9 +18,11 @@

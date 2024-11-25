@@ -7,10 +7,10 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index dac3a2fdfcdbcbd18b3ed029f1ad480973fd389a..279c9b489a8eafe293d0645e7a103656e2f061ef 100644
+index 8cf25ad02f187b60c72d3fc82f17ff7076f63fb7..2143ca591f3d1c389a95ae9ed388ff6070b3d557 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
-@@ -220,6 +220,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
+@@ -221,6 +221,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
  
  // TODO(awdf): Rename to DisplayNonPersistentNotification (Similar for Close)
  void PlatformNotificationServiceImpl::DisplayNotification(
@@ -133,10 +133,10 @@ index 05d3a12dd84c7005d46cc73b312f97ef418d96f5..4765de982802541b3efc7211d106acc7
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 2f12a1dc6a97762089d2bcf0d900657bd80efefd..17ddd5003307663a37d741937ea2fb1859be11fe 100644
+index f399a33a55a2432f70ab1ca0e3b02e09bda8b130..ffcaf056c52aa7138475bfa72f6bf2180d22f767 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2106,7 +2106,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2107,7 +2107,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      case RenderProcessHost::NotificationServiceCreatorType::kSharedWorker:
      case RenderProcessHost::NotificationServiceCreatorType::kDedicatedWorker: {
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -145,7 +145,7 @@ index 2f12a1dc6a97762089d2bcf0d900657bd80efefd..17ddd5003307663a37d741937ea2fb18
            creator_type, std::move(receiver));
        break;
      }
-@@ -2114,7 +2114,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2115,7 +2115,7 @@ void RenderProcessHostImpl::CreateNotificationService(
        CHECK(rfh);
  
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

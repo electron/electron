@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index aeb43c34486e5c6e5a6e79487f1964ed3c3aee6f..6da96d1306afb5e6812ca1c9e3b4cafc9c9425bd 100644
+index 73d0281f14c87ad7893e027b708193c4221350b6..ce3e5c5d8e9f672a76751274ddc6d15b1d6de373 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4785,8 +4785,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4806,8 +4806,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -324,10 +324,10 @@ index 8df60108aeaabcb5fa6634e6a5e87d67d6b30e90..88a52eae92eb9b105c41b8d467cc7cd0
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index bd3bb10e2d6b1c78d3e5f8850aa0b51e66bfa489..8884095689c01fdc8cc13c39fa565ee3c5d01c1d 100644
+index 18dfa0ac3f2a11f50818c75e432e4be799c46ea3..8bce8320bf6939bdbc5ea20aeec31b4e34be1538 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-@@ -425,8 +425,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
+@@ -435,8 +435,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -338,10 +338,10 @@ index bd3bb10e2d6b1c78d3e5f8850aa0b51e66bfa489..8884095689c01fdc8cc13c39fa565ee3
  
    return true;
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-index 6bc6375433f3ad3f79f5762c15a2a2eb5d26590b..ead1a393dd897ef773d8bcfa089a52ac9d03f855 100644
+index 81fc85e5b096fde6d5e5f7eae1299ce7a22a972f..de5a846b39ba754a814fdd8284b7378faed0f83a 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-@@ -181,8 +181,7 @@ class MimeHandlerViewGuest
+@@ -182,8 +182,7 @@ class MimeHandlerViewGuest
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -352,10 +352,10 @@ index 6bc6375433f3ad3f79f5762c15a2a2eb5d26590b..ead1a393dd897ef773d8bcfa089a52ac
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 4b6c999c4a2b907f4c3ec97e50218b67dad36e85..d270631108fa348feaf2fe65d8c1a9895c9355f8 100644
+index 6668c3ec029dcb0d253492780c1cef70ae7f1ab7..80f9b3a55d7456d2f169c416cea4ac28db841ee3 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
-@@ -572,8 +572,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -575,8 +575,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,

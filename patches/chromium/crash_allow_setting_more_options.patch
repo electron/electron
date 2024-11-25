@@ -9,7 +9,7 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index 2284f329488bb85b155516d31f8618f6dbb495f1..43616a86908f0925c0345fadaa71cb4e0f9e776a 100644
+index b6a2910848c66489e70acdce6e09237bf6188f94..744cca2d1b8856719b9ae5aed6c443e8752da75e 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
 @@ -119,6 +119,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
@@ -31,7 +31,7 @@ index 2284f329488bb85b155516d31f8618f6dbb495f1..43616a86908f0925c0345fadaa71cb4e
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index 5f3b6d61110c1b02bb23a3a647dd51efa3444ed0..f2221953791ad3a6543c68ab32fe1334075b4a59 100644
+index 7c890b331be4aaaf20c7efe8a4bcc2f6e9012b7a..c573524d05c07ec67d35046bc8548cc1dfdd0df3 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -7,6 +7,7 @@
@@ -42,7 +42,7 @@ index 5f3b6d61110c1b02bb23a3a647dd51efa3444ed0..f2221953791ad3a6543c68ab32fe1334
  #include <string>
  
  #include "build/build_config.h"
-@@ -132,6 +133,19 @@ class CrashReporterClient {
+@@ -141,6 +142,19 @@ class CrashReporterClient {
    // that case, |breakpad_enabled| is set to the value enforced by policies.
    virtual bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled);
  
@@ -63,7 +63,7 @@ index 5f3b6d61110c1b02bb23a3a647dd51efa3444ed0..f2221953791ad3a6543c68ab32fe1334
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
-index be28b8449b75b58bbcadc70a31a429f2aaf858c4..f2f09367d83788016d7e4bc3c9df5dfb44c0189c 100644
+index aff834c0a93716f769c24bcea7d9f6ed15761040..c29311266678522cfb992cc2b3fa0a0158731a36 100644
 --- a/components/crash/core/app/crashpad_linux.cc
 +++ b/components/crash/core/app/crashpad_linux.cc
 @@ -230,6 +230,7 @@ bool PlatformCrashpadInitialization(
