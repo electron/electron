@@ -140,7 +140,7 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
 
  private:
   // mojo::DataPipeProducer::DataSource:
-  uint64_t GetLength() const override { return buffer_.size(); }
+  [[nodiscard]] uint64_t GetLength() const override { return buffer_.size(); }
   ReadResult Read(uint64_t offset, base::span<char> buffer) override {
     ReadResult result;
     if (offset <= buffer_.size()) {

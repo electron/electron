@@ -88,7 +88,7 @@ class RefCountedGlobal
   RefCountedGlobal(v8::Isolate* isolate, v8::Local<v8::Value> value)
       : handle_(isolate, value.As<T>()) {}
 
-  bool IsAlive() const { return !handle_.IsEmpty(); }
+  [[nodiscard]] bool IsAlive() const { return !handle_.IsEmpty(); }
 
   v8::Local<T> NewHandle(v8::Isolate* isolate) const {
     return v8::Local<T>::New(isolate, handle_);
