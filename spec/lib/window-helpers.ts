@@ -60,14 +60,11 @@ export async function closeAllWindows (assertNotWindows = false) {
 export async function cleanupWebContents () {
   let webContentsDestroyed = 0;
   const existingWCS = webContents.getAllWebContents();
-  webContentsDestroyed = existingWCS.length;
-  /*
   for (const contents of existingWCS) {
     const isDestroyed = once(contents, 'destroyed');
     contents.destroy();
     await isDestroyed;
     webContentsDestroyed++;
   }
-  */
   return webContentsDestroyed;
 }
