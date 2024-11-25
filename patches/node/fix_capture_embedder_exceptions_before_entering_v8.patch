@@ -10,7 +10,7 @@ in the nodejs test suite. Need to be followed-up with upstream
 on the broader change as there maybe other callsites.
 
 diff --git a/src/handle_wrap.cc b/src/handle_wrap.cc
-index be02d4aaa04685cbd6a9ecfe082e38f179129ab5..277748a30bd97ae816d9ba1f2d73851a29b81010 100644
+index 70db7ddbeab5963f1bdf6cb05ee2763d76011cec..6ffe2a2ad01f33ff68c6646df330ec3ac7781a19 100644
 --- a/src/handle_wrap.cc
 +++ b/src/handle_wrap.cc
 @@ -148,6 +148,9 @@ void HandleWrap::OnClose(uv_handle_t* handle) {
@@ -21,62 +21,5 @@ index be02d4aaa04685cbd6a9ecfe082e38f179129ab5..277748a30bd97ae816d9ba1f2d73851a
 +    return;
 +
    if (!wrap->persistent().IsEmpty() &&
-       wrap->object()->Has(env->context(), env->handle_onclose_symbol())
-       .FromMaybe(false)) {
-diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 8951cd378a9025f58fada47cf96f686d14639f95..6456d87d4202c013aafe071adbac06852b3ae2c1 100644
---- a/src/node_contextify.cc
-+++ b/src/node_contextify.cc
-@@ -487,6 +487,7 @@ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {
- void ContextifyContext::PropertyGetterCallback(
-     Local<Name> property,
-     const PropertyCallbackInfo<Value>& args) {
-+  Environment* env = Environment::GetCurrent(args);
-   ContextifyContext* ctx = ContextifyContext::Get(args);
- 
-   // Still initializing
-@@ -494,6 +495,8 @@ void ContextifyContext::PropertyGetterCallback(
- 
-   Local<Context> context = ctx->context();
-   Local<Object> sandbox = ctx->sandbox();
-+
-+  TryCatchScope try_catch(env);
-   MaybeLocal<Value> maybe_rv =
-       sandbox->GetRealNamedProperty(context, property);
-   if (maybe_rv.IsEmpty()) {
-@@ -503,6 +506,11 @@ void ContextifyContext::PropertyGetterCallback(
- 
-   Local<Value> rv;
-   if (maybe_rv.ToLocal(&rv)) {
-+    if (try_catch.HasCaught() &&
-+        !try_catch.HasTerminated()) {
-+      try_catch.ReThrow();
-+    }
-+
-     if (rv == sandbox)
-       rv = ctx->global_proxy();
- 
-diff --git a/src/node_messaging.cc b/src/node_messaging.cc
-index e7d2bfbafef13f04a73dcbefe7d6e90b37b904d1..31b870c5f003b62b848c00d6032ed98eb829778d 100644
---- a/src/node_messaging.cc
-+++ b/src/node_messaging.cc
-@@ -907,7 +907,7 @@ Maybe<bool> MessagePort::PostMessage(Environment* env,
-                                      const TransferList& transfer_v) {
-   Isolate* isolate = env->isolate();
-   Local<Object> obj = object(isolate);
--
-+  TryCatchScope try_catch(env);
-   std::shared_ptr<Message> msg = std::make_shared<Message>();
- 
-   // Per spec, we need to both check if transfer list has the source port, and
-@@ -915,6 +915,10 @@ Maybe<bool> MessagePort::PostMessage(Environment* env,
- 
-   Maybe<bool> serialization_maybe =
-       msg->Serialize(env, context, message_v, transfer_v, obj);
-+  if (try_catch.HasCaught() &&
-+      !try_catch.HasTerminated()) {
-+    try_catch.ReThrow();
-+  }
-   if (data_ == nullptr) {
-     return serialization_maybe;
-   }
+       wrap->object()
+           ->Has(env->context(), env->handle_onclose_symbol())

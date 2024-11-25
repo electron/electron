@@ -254,7 +254,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
 #if BUILDFLAG(IS_MAC)
   std::string type;
   if (options.Get(options::kVibrancyType, &type)) {
-    SetVibrancy(type);
+    SetVibrancy(type, 0);
   }
 #elif BUILDFLAG(IS_WIN)
   std::string material;
@@ -461,7 +461,7 @@ std::optional<std::string> NativeWindow::GetTabbingIdentifier() const {
   return "";  // for non-Mac platforms
 }
 
-void NativeWindow::SetVibrancy(const std::string& type) {
+void NativeWindow::SetVibrancy(const std::string& type, int duration) {
   vibrancy_ = type;
 }
 
@@ -532,9 +532,17 @@ void NativeWindow::NotifyWindowClosed() {
   WindowList::RemoveWindow(this);
 }
 
-void NativeWindow::NotifyWindowEndSession() {
+void NativeWindow::NotifyWindowQueryEndSession(
+    const std::vector<std::string>& reasons,
+    bool* prevent_default) {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowEndSession();
+    observer.OnWindowQueryEndSession(reasons, prevent_default);
+}
+
+void NativeWindow::NotifyWindowEndSession(
+    const std::vector<std::string>& reasons) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowEndSession(reasons);
 }
 
 void NativeWindow::NotifyWindowBlur() {

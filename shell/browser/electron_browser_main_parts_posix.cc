@@ -114,20 +114,6 @@ ShutdownDetector::ShutdownDetector(
   CHECK(task_runner_);
 }
 
-// These functions are used to help us diagnose crash dumps that happen
-// during the shutdown process.
-NOINLINE void ShutdownFDReadError() {
-  // Ensure function isn't optimized away.
-  asm("");
-  sleep(UINT_MAX);
-}
-
-NOINLINE void ShutdownFDClosedError() {
-  // Ensure function isn't optimized away.
-  asm("");
-  sleep(UINT_MAX);
-}
-
 NOINLINE void ExitPosted() {
   // Ensure function isn't optimized away.
   asm("");
@@ -142,14 +128,10 @@ template <typename T>
   while (!bytes.empty()) {
     const ssize_t rv = HANDLE_EINTR(read(fd, bytes.data(), bytes.size()));
     if (rv < 0) {
-      NOTREACHED_IN_MIGRATION() << "Unexpected error: " << strerror(errno);
-      ShutdownFDReadError();
-      return {};
+      NOTREACHED() << "Unexpected error: " << strerror(errno);
     }
     if (rv == 0) {
-      NOTREACHED_IN_MIGRATION() << "Unexpected closure of shutdown pipe.";
-      ShutdownFDClosedError();
-      return {};
+      NOTREACHED() << "Unexpected closure of shutdown pipe.";
     }
     const size_t n_bytes_read = static_cast<size_t>(rv);
     bytes = bytes.subspan(n_bytes_read);

@@ -157,7 +157,6 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
   // Figure out what to execute, what arguments to pass it, and whether to
   // start it in the background.
   bool in_relauncher_args = false;
-  StringType relaunch_executable;
   StringVector relauncher_args;
   StringVector launch_argv;
   for (size_t argv_index = 2; argv_index < argv.size(); ++argv_index) {

@@ -221,7 +221,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // Vibrancy API
   const std::string& vibrancy() const { return vibrancy_; }
-  virtual void SetVibrancy(const std::string& type);
+  virtual void SetVibrancy(const std::string& type, int duration);
 
   const std::string& background_material() const {
     return background_material_;
@@ -302,7 +302,9 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowRequestPreferredWidth(int* width);
   void NotifyWindowCloseButtonClicked();
   void NotifyWindowClosed();
-  void NotifyWindowEndSession();
+  void NotifyWindowQueryEndSession(const std::vector<std::string>& reasons,
+                                   bool* prevent_default);
+  void NotifyWindowEndSession(const std::vector<std::string>& reasons);
   void NotifyWindowBlur();
   void NotifyWindowFocus();
   void NotifyWindowShow();

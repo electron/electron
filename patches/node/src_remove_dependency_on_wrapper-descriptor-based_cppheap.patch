@@ -16,7 +16,7 @@ patch:
 (cherry picked from commit 30329d06235a9f9733b1d4da479b403462d1b326)
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index d98a32d6ec311459877bc3b0de33cca4766aeda7..9fc934975b015b97ddd84bf3eea5d53144130035 100644
+index 28a15aa741ddd40c664aae641797e7cc2813442f..08fe98e10b7716c694bbc882299fe0ed9e282d73 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
 @@ -62,31 +62,6 @@ inline uv_loop_t* IsolateData::event_loop() const {
@@ -52,10 +52,10 @@ index d98a32d6ec311459877bc3b0de33cca4766aeda7..9fc934975b015b97ddd84bf3eea5d531
    return &(wrapper_data_->cppgc_id);
  }
 diff --git a/src/env.cc b/src/env.cc
-index 38802b1e9acf9b3e99fdc4f39770e896393befe3..e0433e29ca98c42a38d1da6d66085fdea1edde29 100644
+index 665b064091d4cc42a4dc9ee5b0ea9e2f190338ca..4c8cb75945d82544ce2237d94cd1406d15efe424 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -22,6 +22,7 @@
+@@ -23,6 +23,7 @@
  #include "util-inl.h"
  #include "v8-cppgc.h"
  #include "v8-profiler.h"
@@ -63,7 +63,7 @@ index 38802b1e9acf9b3e99fdc4f39770e896393befe3..e0433e29ca98c42a38d1da6d66085fde
  
  #include <algorithm>
  #include <atomic>
-@@ -68,7 +69,6 @@ using v8::TryCatch;
+@@ -71,7 +72,6 @@ using v8::TryCatch;
  using v8::Uint32;
  using v8::Undefined;
  using v8::Value;
@@ -71,7 +71,7 @@ index 38802b1e9acf9b3e99fdc4f39770e896393befe3..e0433e29ca98c42a38d1da6d66085fde
  using worker::Worker;
  
  int const ContextEmbedderTag::kNodeContextTag = 0x6e6f64;
-@@ -530,6 +530,14 @@ void IsolateData::CreateProperties() {
+@@ -532,6 +532,14 @@ void IsolateData::CreateProperties() {
    CreateEnvProxyTemplate(this);
  }
  
@@ -86,7 +86,7 @@ index 38802b1e9acf9b3e99fdc4f39770e896393befe3..e0433e29ca98c42a38d1da6d66085fde
  constexpr uint16_t kDefaultCppGCEmbedderID = 0x90de;
  Mutex IsolateData::isolate_data_mutex_;
  std::unordered_map<uint16_t, std::unique_ptr<PerIsolateWrapperData>>
-@@ -567,36 +575,16 @@ IsolateData::IsolateData(Isolate* isolate,
+@@ -569,36 +577,16 @@ IsolateData::IsolateData(Isolate* isolate,
    v8::CppHeap* cpp_heap = isolate->GetCppHeap();
  
    uint16_t cppgc_id = kDefaultCppGCEmbedderID;
@@ -130,7 +130,7 @@ index 38802b1e9acf9b3e99fdc4f39770e896393befe3..e0433e29ca98c42a38d1da6d66085fde
  
    {
      // GC could still be run after the IsolateData is destroyed, so we store
-@@ -628,11 +616,12 @@ IsolateData::~IsolateData() {
+@@ -630,11 +618,12 @@ IsolateData::~IsolateData() {
    }
  }
  
@@ -146,10 +146,10 @@ index 38802b1e9acf9b3e99fdc4f39770e896393befe3..e0433e29ca98c42a38d1da6d66085fde
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/env.h b/src/env.h
-index 7cb77fb4f35a60fbda5b868798321ac8b6340bfa..06746554e1d60a9377ff6d7d970220f3fa88e4ac 100644
+index 49ca9c0042ccf22ad1fffa54f05fd443cbc681ba..945535d0dc40f1a32f7e3ecf7d50361e591ba6c8 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -174,10 +174,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
+@@ -175,10 +175,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
    uint16_t* embedder_id_for_cppgc() const;
    uint16_t* embedder_id_for_non_cppgc() const;
  
@@ -161,7 +161,7 @@ index 7cb77fb4f35a60fbda5b868798321ac8b6340bfa..06746554e1d60a9377ff6d7d970220f3
    inline MultiIsolatePlatform* platform() const;
    inline const SnapshotData* snapshot_data() const;
 diff --git a/src/node.h b/src/node.h
-index df3fb3372d6357b5d77b4f683e309b8483998128..01e8a4f2ed905bf5bbb803419012a014c204b460 100644
+index c16204ad2a4787eeffe61eedda254d3a5509df8c..c39f586e9c5e7e9db75d922d244ea8e4d6d56841 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -1561,24 +1561,14 @@ void RegisterSignalHandler(int signal,

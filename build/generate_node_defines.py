@@ -2,7 +2,7 @@ import os
 import re
 import sys
 
-DEFINE_EXTRACT_REGEX = re.compile('^ *# *define (\w*)', re.MULTILINE)
+DEFINE_EXTRACT_REGEX = re.compile(r'^ *# *define (\w*)', re.MULTILINE)
 
 def main(out_dir, headers):
   defines = []

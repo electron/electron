@@ -92,6 +92,8 @@ the child process exits, then the value is `undefined` after the `exit` event is
 ```js
 const child = utilityProcess.fork(path.join(__dirname, 'test.js'))
 
+console.log(child.pid) // undefined
+
 child.on('spawn', () => {
   console.log(child.pid) // Integer
 })
@@ -100,6 +102,8 @@ child.on('exit', () => {
   console.log(child.pid) // undefined
 })
 ```
+
+**Note:** You can use the `pid` to determine if the process is currently running.
 
 #### `child.stdout`
 

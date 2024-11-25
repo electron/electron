@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+#include <gdk/gdk.h>
+
 #include "base/cancelable_callback.h"
 #include "base/containers/contains.h"
 #include "base/environment.h"
@@ -32,6 +34,7 @@
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
+
 #include "shell/common/platform_util_internal.h"
 #include "url/gurl.h"
 
@@ -408,15 +411,8 @@ bool PlatformTrashItem(const base::FilePath& full_path, std::string* error) {
 }  // namespace internal
 
 void Beep() {
-  // echo '\a' > /dev/console
-  FILE* fp = fopen("/dev/console", "a");
-  if (fp == nullptr) {
-    fp = fopen("/dev/tty", "a");
-  }
-  if (fp != nullptr) {
-    fprintf(fp, "\a");
-    fclose(fp);
-  }
+  auto* display = gdk_display_get_default();
+  gdk_display_beep(display);
 }
 
 bool GetDesktopName(std::string* setme) {

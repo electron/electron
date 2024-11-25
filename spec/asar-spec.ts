@@ -1447,30 +1447,6 @@ describe('asar package', function () {
     generateSpecs('child_process');
     generateSpecs('node:child_process');
 
-    describe('internalModuleReadJSON', function () {
-      itremote('reads a normal file', function () {
-        const { internalModuleReadJSON } = (process as any).binding('fs');
-        const file1 = path.join(asarDir, 'a.asar', 'file1');
-        const [s1, c1] = internalModuleReadJSON(file1);
-        expect([s1.toString().trim(), c1]).to.eql(['file1', true]);
-
-        const file2 = path.join(asarDir, 'a.asar', 'file2');
-        const [s2, c2] = internalModuleReadJSON(file2);
-        expect([s2.toString().trim(), c2]).to.eql(['file2', true]);
-
-        const file3 = path.join(asarDir, 'a.asar', 'file3');
-        const [s3, c3] = internalModuleReadJSON(file3);
-        expect([s3.toString().trim(), c3]).to.eql(['file3', true]);
-      });
-
-      itremote('reads a normal file with unpacked files', function () {
-        const { internalModuleReadJSON } = (process as any).binding('fs');
-        const p = path.join(asarDir, 'unpack.asar', 'a.txt');
-        const [s, c] = internalModuleReadJSON(p);
-        expect([s.toString().trim(), c]).to.eql(['a', true]);
-      });
-    });
-
     describe('util.promisify', function () {
       itremote('can promisify all fs functions', function () {
         const originalFs = require('original-fs');

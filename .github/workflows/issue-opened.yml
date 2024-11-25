@@ -19,7 +19,7 @@ jobs:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
       - name: Add to Issue Triage
-        uses: dsanders11/project-actions/add-item@eb760c48894b5702398529cbb8f6e98378e315d0 # v1.3.0
+        uses: dsanders11/project-actions/add-item@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
         with:
           field: Reporter
           field-value: ${{ github.event.issue.user.login }}
@@ -57,33 +57,39 @@ jobs:
 
             const electronVersion = select('heading:has(> text[value="Electron Version"]) + paragraph > text', tree)?.value.trim();
             if (electronVersion !== undefined) {
-              const major = semver.parse(electronVersion)?.major;
-              if (major) {
-                const versionLabel = `${major}-x-y`;
-                let labelExists = false;
+              // It's possible for multiple versions to be listed -
+              // for now check for comma or space separated version.
+              const versions = electronVersion.split(/, | /);
+              for (const version of versions) {
+                const major = semver.parse(version)?.major;
+                if (major) {
+                  const versionLabel = `${major}-x-y`;
+                  let labelExists = false;
 
-                try {
-                  await github.rest.issues.getLabel({
-                    owner,
-                    repo,
-                    name: versionLabel,
-                  });
-                  labelExists = true;
-                } catch {}
+                  try {
+                    await github.rest.issues.getLabel({
+                      owner,
+                      repo,
+                      name: versionLabel,
+                    });
+                    labelExists = true;
+                  } catch {}
 
-                if (labelExists) {
-                  // Check if it's an unsupported major
-                  const { ElectronVersions } = await import('${{ github.workspace }}/node_modules/@electron/fiddle-core/dist/index.js');
-                  const versions = await ElectronVersions.create(undefined, { ignoreCache: true });
+                  if (labelExists) {
+                    // Check if it's an unsupported major
+                    const { ElectronVersions } = await import('${{ github.workspace }}/node_modules/@electron/fiddle-core/dist/index.js');
+                    const versions = await ElectronVersions.create(undefined, { ignoreCache: true });
 
-                  const validVersions = [...versions.supportedMajors, ...versions.prereleaseMajors];
-                  if (!validVersions.includes(major)) {
-                    core.setOutput('unsupportedMajor', true);
-                    labels.push('blocked/need-info ❌');
+                    const validVersions = [...versions.supportedMajors, ...versions.prereleaseMajors];
+                    if (validVersions.includes(major)) {
+                      labels.push(versionLabel);
+                    }
                   }
-
-                  labels.push(versionLabel);
                 }
+              }
+              if (labels.length === 0) {
+                core.setOutput('unsupportedMajor', true);
+                labels.push('blocked/need-info ❌');
               }
             }
 

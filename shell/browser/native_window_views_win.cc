@@ -27,6 +27,24 @@ namespace electron {
 
 namespace {
 
+// Convert Win32 WM_QUERYENDSESSIONS to strings.
+const std::vector<std::string> EndSessionToStringVec(LPARAM end_session_id) {
+  std::vector<std::string> params;
+  if (end_session_id == 0) {
+    params.push_back("shutdown");
+    return params;
+  }
+
+  if (end_session_id & ENDSESSION_CLOSEAPP)
+    params.push_back("close-app");
+  if (end_session_id & ENDSESSION_CRITICAL)
+    params.push_back("critical");
+  if (end_session_id & ENDSESSION_LOGOFF)
+    params.push_back("logoff");
+
+  return params;
+}
+
 // Convert Win32 WM_APPCOMMANDS to strings.
 constexpr std::string_view AppCommandToString(int command_id) {
   switch (command_id) {
@@ -389,9 +407,20 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       }
       return false;
     }
+    case WM_QUERYENDSESSION: {
+      bool prevent_default = false;
+      std::vector<std::string> reasons = EndSessionToStringVec(l_param);
+      NotifyWindowQueryEndSession(reasons, &prevent_default);
+      // Result should be TRUE by default, otherwise WM_ENDSESSION will not be
+      // fired in some cases: More:
+      // https://learn.microsoft.com/en-us/windows/win32/rstmgr/guidelines-for-applications
+      *result = !prevent_default;
+      return prevent_default;
+    }
     case WM_ENDSESSION: {
+      std::vector<std::string> reasons = EndSessionToStringVec(l_param);
       if (w_param) {
-        NotifyWindowEndSession();
+        NotifyWindowEndSession(reasons);
       }
       return false;
     }

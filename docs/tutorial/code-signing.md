@@ -13,8 +13,7 @@ security warnings.
 
 Both Windows and macOS prevent users from running unsigned applications. It is
 possible to distribute applications without codesigning them - but in order to
-run them, users need to go through multiple advanced and manual steps to run
-them.
+run them, users need to go through multiple advanced and manual steps.
 
 If you are building an Electron app that you intend to package and distribute,
 it should be code signed. The Electron ecosystem tooling makes codesigning your

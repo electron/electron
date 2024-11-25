@@ -15,6 +15,7 @@
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "shell/browser/ui/autofill_popup.h"
+#include "shell/browser/ui/views/autofill_popup_view.h"
 #include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "ui/color/color_id.h"
@@ -160,11 +161,7 @@ gfx::Rect CalculatePopupBounds(const gfx::Size& desired_size,
 
 }  // namespace
 
-AutofillPopup::AutofillPopup() {
-  bold_font_list_ = gfx::FontList().DeriveWithWeight(gfx::Font::Weight::BOLD);
-  smaller_font_list_ =
-      gfx::FontList().DeriveWithSizeDelta(kSmallerFontSizeDelta);
-}
+AutofillPopup::AutofillPopup() = default;
 
 AutofillPopup::~AutofillPopup() {
   Hide();

@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index e0bf37f09dceb93af58990438ab577a9d4b843e8..b9098d102b40adad7fafcc331ac62870617019b9 100644
+index 5fc1b6f2446d7c786024eb60800e2edab613dcd1..f59abcb21d64b910d8d42eb23c03109f62558813 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -101,6 +101,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -25,11 +25,49 @@ index e0bf37f09dceb93af58990438ab577a9d4b843e8..b9098d102b40adad7fafcc331ac62870
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
+diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
+index 33ffbbb85d05f5356183e3aa1ca23707c5629b5d..008d212ebe25b0022020379aa08963c12828940c 100644
+--- a/src/crypto/crypto_dh.cc
++++ b/src/crypto/crypto_dh.cc
+@@ -51,6 +51,25 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+ namespace {
+ MaybeLocal<Value> DataPointerToBuffer(Environment* env,
+                                       ncrypto::DataPointer&& data) {
++#if defined(V8_ENABLE_SANDBOX)
++  std::unique_ptr<v8::BackingStore> backing;
++  if (data.size() > 0) {
++    std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++    void* v8_data = allocator->Allocate(data.size());
++    CHECK(v8_data);
++    memcpy(v8_data, data.get(), data.size());
++    backing = ArrayBuffer::NewBackingStore(
++        v8_data,
++        data.size(),
++        [](void* data, size_t length, void*) {
++          std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++          allocator->Free(data, length);
++        }, nullptr);
++  } else {
++    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
++    backing = v8::ArrayBuffer::NewBackingStore(env->isolate(), data.size());
++  }
++#else
+   auto backing = ArrayBuffer::NewBackingStore(
+       data.get(),
+       data.size(),
+@@ -59,6 +78,7 @@ MaybeLocal<Value> DataPointerToBuffer(Environment* env,
+       },
+       nullptr);
+   data.release();
++#endif
+ 
+   auto ab = ArrayBuffer::New(env->isolate(), std::move(backing));
+   return Buffer::New(env, ab, 0, ab->ByteLength()).FromMaybe(Local<Value>());
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 63d971e1fe6b861e29c12f04563701b01fdfb976..f39652a6f5196531cd78ce74e91076b1b9e970ca 100644
+index ee81048caab4ccfe26ea9e677782c9c955d162a9..643c9d31dc2737faa2ec51684ffceb35a1014a58 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -348,10 +348,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
+@@ -326,10 +326,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
    return *this;
  }
  
@@ -66,7 +104,7 @@ index 63d971e1fe6b861e29c12f04563701b01fdfb976..f39652a6f5196531cd78ce74e91076b1
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
        size(),
-@@ -363,10 +388,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
+@@ -341,10 +366,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
    data_ = nullptr;
    size_ = 0;
    return ptr;
@@ -79,7 +117,7 @@ index 63d971e1fe6b861e29c12f04563701b01fdfb976..f39652a6f5196531cd78ce74e91076b1
    return ArrayBuffer::New(env->isolate(), std::move(store));
  }
  
-@@ -703,6 +729,16 @@ namespace {
+@@ -641,6 +667,16 @@ namespace {
  // in which case this has the same semantics as
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
@@ -96,7 +134,7 @@ index 63d971e1fe6b861e29c12f04563701b01fdfb976..f39652a6f5196531cd78ce74e91076b1
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
-@@ -724,6 +760,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -662,6 +698,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
@@ -105,10 +143,10 @@ index 63d971e1fe6b861e29c12f04563701b01fdfb976..f39652a6f5196531cd78ce74e91076b1
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 4ba261014695cf1aa8eb53b21a2873f4c4ea8e43..b695d131bcdc331974f544924138bb5eedc50c9f 100644
+index 922e77091d72172ed6cfc5e8477901e3608396c5..16a236c69caed6d60248c7973531a95adc8f2edb 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -285,7 +285,7 @@ class ByteSource {
+@@ -268,7 +268,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.
@@ -117,11 +155,44 @@ index 4ba261014695cf1aa8eb53b21a2873f4c4ea8e43..b695d131bcdc331974f544924138bb5e
  
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
+diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
+index af2f953f0388dbce326b0c519de3883552f8f009..7fb34057a486914dd886ec4d3d23be90cccb4fea 100644
+--- a/src/crypto/crypto_x509.cc
++++ b/src/crypto/crypto_x509.cc
+@@ -174,6 +174,19 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
+ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+   if (bio == nullptr || !*bio) return {};
+   BUF_MEM* mem = *bio;
++#if defined(V8_ENABLE_SANDBOX)
++  std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++  void* v8_data = allocator->Allocate(mem->length);
++  CHECK(v8_data);
++  memcpy(v8_data, mem->data, mem->length);
++  std::unique_ptr<v8::BackingStore> backing = ArrayBuffer::NewBackingStore(
++      v8_data,
++      mem->length,
++      [](void* data, size_t length, void*) {
++        std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++        allocator->Free(data, length);
++      }, nullptr);
++#else
+   auto backing = ArrayBuffer::NewBackingStore(
+       mem->data,
+       mem->length,
+@@ -181,6 +194,8 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+         BIOPointer free_me(static_cast<BIO*>(data));
+       },
+       bio->release());
++#endif
++
+   auto ab = ArrayBuffer::New(env->isolate(), std::move(backing));
+   Local<Value> ret;
+   if (!Buffer::New(env, ab, 0, ab->ByteLength()).ToLocal(&ret)) return {};
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index 2aa7cd98ecc179519a6bb1932dafa86a38bda4f5..79376bef2e674f05fd95380dd419e8778cb98623 100644
+index 43bb68351bf0a68285e464601013bbdbd5d5df5f..4126bbff080548c91154a6dcc437359c82a6c771 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
-@@ -106,7 +106,7 @@ namespace {
+@@ -107,7 +107,7 @@ namespace {
  
  template <typename T>
  MaybeLocal<Object> ToBufferEndian(Environment* env, MaybeStackBuffer<T>* buf) {
@@ -130,7 +201,7 @@ index 2aa7cd98ecc179519a6bb1932dafa86a38bda4f5..79376bef2e674f05fd95380dd419e877
    if (ret.IsEmpty())
      return ret;
  
-@@ -183,7 +183,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
+@@ -184,7 +184,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
      return {};
    }
  
@@ -139,7 +210,7 @@ index 2aa7cd98ecc179519a6bb1932dafa86a38bda4f5..79376bef2e674f05fd95380dd419e877
  }
  
  MaybeLocal<Object> TranscodeFromUcs2(Environment* env,
-@@ -228,7 +228,7 @@ MaybeLocal<Object> TranscodeUcs2FromUtf8(Environment* env,
+@@ -229,7 +229,7 @@ MaybeLocal<Object> TranscodeUcs2FromUtf8(Environment* env,
      return {};
    }
  
@@ -148,7 +219,7 @@ index 2aa7cd98ecc179519a6bb1932dafa86a38bda4f5..79376bef2e674f05fd95380dd419e877
  }
  
  MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
-@@ -252,7 +252,7 @@ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
+@@ -253,7 +253,7 @@ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
      return {};
    }
  
@@ -158,7 +229,7 @@ index 2aa7cd98ecc179519a6bb1932dafa86a38bda4f5..79376bef2e674f05fd95380dd419e877
  
  constexpr const char* EncodingName(const enum encoding encoding) {
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 6264f23d54d6028bb0158f12a9296ba67a846358..613300215766aeb108219b0d1c3b95ee02db964f 100644
+index fe2d25decd883085e4c3f368ab4acc01a7f66f6e..bcd5c87afcff9c56429443363c63fc8079521451 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -117,7 +117,9 @@ v8::Maybe<bool> InitializePrimordials(v8::Local<v8::Context> context);

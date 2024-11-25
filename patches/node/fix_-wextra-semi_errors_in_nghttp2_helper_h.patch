@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 16 Oct 2024 16:09:37 +0200
+Subject: fix: -Wextra-semi errors in nghttp2_helper.h
+
+Introduced in https://github.com/nodejs/node/pull/52966
+
+Upstreamed in https://github.com/nghttp2/nghttp2/pull/2258
+
+diff --git a/deps/nghttp2/lib/nghttp2_helper.h b/deps/nghttp2/lib/nghttp2_helper.h
+index 89b0d4f535db795cd1df582475c02b2f4d1ac98f..f5de6290dab0e17ae3aff10230dd8ad7414f9631 100644
+--- a/deps/nghttp2/lib/nghttp2_helper.h
++++ b/deps/nghttp2/lib/nghttp2_helper.h
+@@ -38,28 +38,28 @@
+ #define nghttp2_max_def(SUFFIX, T)                                             \
+   static inline T nghttp2_max_##SUFFIX(T a, T b) { return a < b ? b : a; }
+ 
+-nghttp2_max_def(int8, int8_t);
+-nghttp2_max_def(int16, int16_t);
+-nghttp2_max_def(int32, int32_t);
+-nghttp2_max_def(int64, int64_t);
+-nghttp2_max_def(uint8, uint8_t);
+-nghttp2_max_def(uint16, uint16_t);
+-nghttp2_max_def(uint32, uint32_t);
+-nghttp2_max_def(uint64, uint64_t);
+-nghttp2_max_def(size, size_t);
++nghttp2_max_def(int8, int8_t)
++nghttp2_max_def(int16, int16_t)
++nghttp2_max_def(int32, int32_t)
++nghttp2_max_def(int64, int64_t)
++nghttp2_max_def(uint8, uint8_t)
++nghttp2_max_def(uint16, uint16_t)
++nghttp2_max_def(uint32, uint32_t)
++nghttp2_max_def(uint64, uint64_t)
++nghttp2_max_def(size, size_t)
+ 
+ #define nghttp2_min_def(SUFFIX, T)                                             \
+   static inline T nghttp2_min_##SUFFIX(T a, T b) { return a < b ? a : b; }
+ 
+-nghttp2_min_def(int8, int8_t);
+-nghttp2_min_def(int16, int16_t);
+-nghttp2_min_def(int32, int32_t);
+-nghttp2_min_def(int64, int64_t);
+-nghttp2_min_def(uint8, uint8_t);
+-nghttp2_min_def(uint16, uint16_t);
+-nghttp2_min_def(uint32, uint32_t);
+-nghttp2_min_def(uint64, uint64_t);
+-nghttp2_min_def(size, size_t);
++nghttp2_min_def(int8, int8_t)
++nghttp2_min_def(int16, int16_t)
++nghttp2_min_def(int32, int32_t)
++nghttp2_min_def(int64, int64_t)
++nghttp2_min_def(uint8, uint8_t)
++nghttp2_min_def(uint16, uint16_t)
++nghttp2_min_def(uint32, uint32_t)
++nghttp2_min_def(uint64, uint64_t)
++nghttp2_min_def(size, size_t)
+ 
+ #define lstreq(A, B, N) ((sizeof((A)) - 1) == (N) && memcmp((A), (B), (N)) == 0)
+ 

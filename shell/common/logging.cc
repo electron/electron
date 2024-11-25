@@ -29,16 +29,13 @@ base::FilePath GetLogFileName(const base::CommandLine& command_line) {
   if (!filename.empty())
     return base::FilePath::FromUTF8Unsafe(filename);
 
-  const base::FilePath log_filename(FILE_PATH_LITERAL("electron_debug.log"));
-  base::FilePath log_path;
+  auto log_filename = base::FilePath{FILE_PATH_LITERAL("electron_debug.log")};
 
-  if (base::PathService::Get(chrome::DIR_LOGS, &log_path)) {
-    log_path = log_path.Append(log_filename);
-    return log_path;
-  } else {
-    // error with path service, just use some default file somewhere
-    return log_filename;
-  }
+  if (base::FilePath path; base::PathService::Get(chrome::DIR_LOGS, &path))
+    return path.Append(log_filename);
+
+  // error with path service, just use some default file somewhere
+  return log_filename;
 }
 
 namespace {

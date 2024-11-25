@@ -6,7 +6,7 @@ Subject: add gin::Converter support for ArrayBufferView
 This should be upstreamed.
 
 diff --git a/gin/converter.cc b/gin/converter.cc
-index 62209cadaec7314d2d4ec3e63e1bc88394afa4a9..b035bfe1fd16fb6ca8be33bf446ff8578d7cc2a0 100644
+index 04bfeb77157ea168de6a382852e7163e0f8d9949..c4d0c2d332f2e09bfa411998abe4c172b135ca23 100644
 --- a/gin/converter.cc
 +++ b/gin/converter.cc
 @@ -20,6 +20,7 @@
@@ -17,7 +17,7 @@ index 62209cadaec7314d2d4ec3e63e1bc88394afa4a9..b035bfe1fd16fb6ca8be33bf446ff857
  using v8::External;
  using v8::Function;
  using v8::Int32;
-@@ -246,6 +247,20 @@ bool Converter<Local<ArrayBuffer>>::FromV8(Isolate* isolate,
+@@ -244,6 +245,20 @@ bool Converter<Local<ArrayBuffer>>::FromV8(Isolate* isolate,
    return true;
  }
  

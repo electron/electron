@@ -174,7 +174,7 @@ base::FilePath ElectronExtensionsBrowserClient::GetBundleResourcePath(
   if (!chrome_resources_path.IsParent(extension_resources_path))
     return base::FilePath();
 
-  const base::FilePath request_relative_path =
+  base::FilePath request_relative_path =
       extensions::file_util::ExtensionURLToRelativeFilePath(request.url);
   if (!ExtensionsBrowserClient::Get()
            ->GetComponentExtensionResourceManager()
@@ -387,11 +387,6 @@ extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {
   if (!kiosk_delegate_)
     kiosk_delegate_ = std::make_unique<ElectronKioskDelegate>();
   return kiosk_delegate_.get();
-}
-
-bool ElectronExtensionsBrowserClient::IsLockScreenContext(
-    content::BrowserContext* context) {
-  return false;
 }
 
 std::string ElectronExtensionsBrowserClient::GetApplicationLocale() {

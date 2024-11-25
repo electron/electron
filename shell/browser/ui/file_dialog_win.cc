@@ -144,10 +144,14 @@ static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
   // We set file extension to the first none-wildcard extension to make
   // sure the dialog will update file extension automatically.
   for (size_t i = 0; i < filterspec.size(); ++i) {
-    if (std::wstring(filterspec[i].pszSpec) != L"*.*") {
+    std::wstring spec(filterspec[i].pszSpec);
+    if (spec != L"*.*") {
       // SetFileTypeIndex is regarded as one-based index.
       dialog->SetFileTypeIndex(i + 1);
-      dialog->SetDefaultExtension(filterspec[i].pszSpec);
+      // "*.jpg;*.png" => "*.jpg"
+      std::wstring first_spec = spec.substr(0, spec.find(L';'));
+      // "*.jpg" => "jpg"
+      dialog->SetDefaultExtension(first_spec.substr(2).c_str());
       break;
     }
   }

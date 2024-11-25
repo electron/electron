@@ -11,6 +11,20 @@ two fields in node.js.
 branch of Node.js. This patch can be removed when Electron upgrades to
 a stable Node release that contains the change. -- Charles)
 
+diff --git a/src/crypto/crypto_timing.cc b/src/crypto/crypto_timing.cc
+index 3d8ccc77b5952a999c5fe48792259d32b402c460..867a1c4aca54b9d41490d23a5eb55088b7e941cc 100644
+--- a/src/crypto/crypto_timing.cc
++++ b/src/crypto/crypto_timing.cc
+@@ -59,7 +59,8 @@ bool FastTimingSafeEqual(Local<Value> receiver,
+   if (a.length() != b.length() || !a.getStorageIfAligned(&data_a) ||
+       !b.getStorageIfAligned(&data_b)) {
+     TRACK_V8_FAST_API_CALL("crypto.timingSafeEqual.error");
+-    options.fallback = true;
++    v8::HandleScope scope(options.isolate);
++    THROW_ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH(options.isolate);
+     return false;
+   }
+ 
 diff --git a/src/histogram.cc b/src/histogram.cc
 index 4dbdea9be5721486d71a9dda77311b4919d450a3..4aacaa2a5d12533a039b4b96cb7f1fd79063d50f 100644
 --- a/src/histogram.cc
@@ -25,6 +39,36 @@ index 4dbdea9be5721486d71a9dda77311b4919d450a3..4aacaa2a5d12533a039b4b96cb7f1fd7
      return;
    }
    HistogramBase* histogram;
+diff --git a/src/node_file.cc b/src/node_file.cc
+index b565beae625d970ba92ab667a145d8897d4e8a6e..31c2fe82299d6905855c4efffeea4a4d161a88d5 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -1049,23 +1049,10 @@ static int32_t FastInternalModuleStat(
+     const FastOneByteString& input,
+     // NOLINTNEXTLINE(runtime/references) This is V8 api.
+     FastApiCallbackOptions& options) {
+-  // This needs a HandleScope which needs an isolate.
+-  Isolate* isolate = Isolate::TryGetCurrent();
+-  if (!isolate) {
+-    options.fallback = true;
+-    return -1;
+-  }
+-
+-  HandleScope scope(isolate);
+-  Environment* env = Environment::GetCurrent(recv->GetCreationContextChecked());
++  Environment* env = Environment::GetCurrent(options.isolate);
++  HandleScope scope(env->isolate());
+ 
+   auto path = std::filesystem::path(input.data, input.data + input.length);
+-  if (UNLIKELY(!env->permission()->is_granted(
+-          env, permission::PermissionScope::kFileSystemRead, path.string()))) {
+-    options.fallback = true;
+-    return -1;
+-  }
+-
+   switch (std::filesystem::status(path).type()) {
+     case std::filesystem::file_type::directory:
+       return 1;
 diff --git a/src/node_wasi.cc b/src/node_wasi.cc
 index ad1da44a01f437c97e06a3857eebd2edcebc83da..7123278e1a0942b61a76e9b1e7464eb8b5064079 100644
 --- a/src/node_wasi.cc

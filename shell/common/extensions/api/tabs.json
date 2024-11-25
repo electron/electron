@@ -69,6 +69,7 @@
           "active": {"type": "boolean", "description": "Whether the tab is active in its window. Does not necessarily mean the window is focused."},
           "pinned": {"type": "boolean", "description": "Whether the tab is pinned."},
           "audible": {"type": "boolean", "optional": true, "description": "Whether the tab has produced sound over the past couple of seconds (but it might not be heard if also muted). Equivalent to whether the 'speaker audio' indicator is showing."},
+          "frozen": {"type": "boolean", "description": "Whether the tab is frozen. A frozen tab cannot execute tasks, including event handlers or timers. It is visible in the tab strip and its content is loaded in memory.  It is unfrozen on activation."},          
           "discarded": {"type": "boolean", "description": "Whether the tab is discarded. A discarded tab is one whose content has been unloaded from memory, but is still visible in the tab strip. Its content is reloaded the next time it is activated."},
           "autoDiscardable":  {"type": "boolean", "description": "Whether the tab can be discarded automatically by the browser when resources are low."},
           "mutedInfo": {"$ref": "MutedInfo", "optional": true, "description": "The tab's muted state and the reason for the last state change."},
@@ -467,6 +468,11 @@
                 "optional": true,
                 "description": "Whether the tabs are highlighted."
               },
+              "frozen": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tabs are frozen. A frozen tab cannot execute tasks, including event handlers or timers. It is visible in the tab strip and its content is loaded in memory.  It is unfrozen on activation."
+              },              
               "discarded": {
                 "type": "boolean",
                 "optional": true,
@@ -684,6 +690,11 @@
                 "optional": true,
                 "description": "The tab's new audible state."
               },
+              "frozen": {
+                "type": "boolean",
+                "optional": true,
+                "description": "The tab's new frozen state."
+              },              
               "discarded": {
                 "type": "boolean",
                 "optional": true,

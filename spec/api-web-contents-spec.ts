@@ -2730,6 +2730,25 @@ describe('webContents module', () => {
       expect(params.x).to.be.a('number');
       expect(params.y).to.be.a('number');
     });
+
+    it('emits when right-clicked in page in a draggable region', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'draggable-page.html'));
+
+      const promise = once(w.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
+
+      // Simulate right-click to create context-menu event.
+      const opts = { x: 0, y: 0, button: 'right' as const };
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
+
+      const [, params] = await promise;
+
+      expect(params.pageURL).to.equal(w.webContents.getURL());
+      expect(params.frame).to.be.an('object');
+      expect(params.x).to.be.a('number');
+      expect(params.y).to.be.a('number');
+    });
   });
 
   describe('close() method', () => {

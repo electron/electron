@@ -7,6 +7,7 @@
 #include <map>
 
 #include "base/containers/contains.h"
+#include "base/containers/to_vector.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/browser.h"
@@ -280,11 +281,8 @@ void Clipboard::Clear(gin_helper::Arguments* args) {
 
 // This exists for testing purposes ONLY.
 void Clipboard::WriteFilesForTesting(const std::vector<base::FilePath>& files) {
-  std::vector<ui::FileInfo> file_infos;
-  for (const auto& file : files) {
-    file_infos.emplace_back(ui::FileInfo(ui::FileInfo(file, file.BaseName())));
-  }
-
+  auto to_info = [](const auto& p) { return ui::FileInfo{p, p.BaseName()}; };
+  auto file_infos = base::ToVector(files, to_info);
   ui::ScopedClipboardWriter writer(ui::ClipboardBuffer::kCopyPaste);
   writer.WriteFilenames(ui::FileInfosToURIList(file_infos));
 }

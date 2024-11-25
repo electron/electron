@@ -126,7 +126,7 @@ class NativeWindowMac : public NativeWindow,
                                  bool skipTransformProcessType) override;
   bool IsVisibleOnAllWorkspaces() const override;
   void SetAutoHideCursor(bool auto_hide) override;
-  void SetVibrancy(const std::string& type) override;
+  void SetVibrancy(const std::string& type, int duration) override;
   void SetWindowButtonVisibility(bool visible) override;
   bool GetWindowButtonVisibility() const override;
   void SetWindowButtonPosition(std::optional<gfx::Point> position) override;
@@ -168,6 +168,9 @@ class NativeWindowMac : public NativeWindow,
   void NotifyWindowWillEnterFullScreen();
   void NotifyWindowDidFailToEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
+
+  // views::WidgetDelegate:
+  views::View* GetContentsView() override;
 
   // Cleanup observers when window is getting closed. Note that the destructor
   // can be called much later after window gets closed, so we should not do
@@ -220,7 +223,6 @@ class NativeWindowMac : public NativeWindow,
 
  protected:
   // views::WidgetDelegate:
-  views::View* GetContentsView() override;
   bool CanMaximize() const override;
   std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
       views::Widget* widget) override;

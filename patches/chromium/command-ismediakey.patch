@@ -87,7 +87,7 @@ index ac1142e268b88b7332f556344491288d8539a5c9..c23852622e292b056d8dbbeb2a83dd29
    // Create an observer that registers a hot key for |accelerator|.
    std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index bd0026250558b29d46169eb9212a93b80be37c5a..2a84784fd3d759603a0dde5f6a7c94f4d0679147 100644
+index 7f4a84483dba39f090e48af34d15d930fbc21b56..90528a9bcde4c39c122de51d049ef62e812245db 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
 @@ -413,6 +413,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
@@ -238,10 +238,10 @@ index fd4f6d05235aff8383fe1c2a089883022871f27c..163b1975faed07351855098ac69ef5c2
  
  }  // namespace ui
 diff --git a/ui/base/x/x11_global_shortcut_listener.h b/ui/base/x/x11_global_shortcut_listener.h
-index 7165e88ef78e0e1b4683a2ead588dc6529d085b8..a605cd8c1468be78172fed09eb227722b4832227 100644
+index 53b1f0697ad337c4e1cbeaddc5bb893419326fb3..723e32160ad711c99061c265378a6f8a34d51b3b 100644
 --- a/ui/base/x/x11_global_shortcut_listener.h
 +++ b/ui/base/x/x11_global_shortcut_listener.h
-@@ -41,18 +41,21 @@ class COMPONENT_EXPORT(UI_BASE_X) XGlobalShortcutListener
+@@ -42,18 +42,21 @@ class COMPONENT_EXPORT(UI_BASE_X) XGlobalShortcutListener
    virtual void OnKeyPressed(KeyboardCode key_code,
                              bool is_alt_down,
                              bool is_ctrl_down,
@@ -266,7 +266,7 @@ index 7165e88ef78e0e1b4683a2ead588dc6529d085b8..a605cd8c1468be78172fed09eb227722
  
   private:
    // Due to how system key grabbing works on X11, we have to be a bit greedy and
-@@ -61,7 +64,7 @@ class COMPONENT_EXPORT(UI_BASE_X) XGlobalShortcutListener
+@@ -62,7 +65,7 @@ class COMPONENT_EXPORT(UI_BASE_X) XGlobalShortcutListener
    // and filter the incoming events against that registry before notifying the
    // observer.  This tuple describes the meaningful parts of the event; booleans
    // 1, 2, and 3 hold states of Alt, Control, and Shift keys, respectively.
