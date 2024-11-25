@@ -55,7 +55,7 @@ struct Converter<blink::mojom::PageVisibilityState> {
 
 namespace electron::api {
 
-typedef std::unordered_map<int, WebFrameMain*> WebFrameMainIdMap;
+using WebFrameMainIdMap = std::unordered_map<int, WebFrameMain*>;
 
 WebFrameMainIdMap& GetWebFrameMainMap() {
   static base::NoDestructor<WebFrameMainIdMap> instance;
