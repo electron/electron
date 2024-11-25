@@ -8,7 +8,7 @@ Otherwise when using `vibrancy` in `BrowserWindow` NSVisualEffectView
 will hide content displayed by the compositor.
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 79d7a56fdc87385bd47101cff6334ac85361d3be..b9456b7fb2120e747cdd5ef31b0bb47023959f2c 100644
+index 569859297618cac39aa36655b9e301224ed11f71..dc62786d2d2bb2e11f7aef5fd0178639ddcbdde6 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -222,8 +222,19 @@ NSComparisonResult SubviewSorter(__kindof NSView* lhs,
