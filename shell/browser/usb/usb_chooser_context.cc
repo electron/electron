@@ -27,8 +27,8 @@
 
 namespace {
 
-constexpr char kDeviceNameKey[] = "productName";
-constexpr char kDeviceIdKey[] = "deviceId";
+constexpr std::string_view kDeviceNameKey = "productName";
+constexpr std::string_view kDeviceIdKey = "deviceId";
 constexpr int kUsbClassMassStorage = 0x08;
 
 bool CanStorePersistentEntry(const device::mojom::UsbDeviceInfo& device_info) {

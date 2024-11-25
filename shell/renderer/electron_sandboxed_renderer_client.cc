@@ -33,8 +33,8 @@ namespace electron {
 
 namespace {
 
-const char kEmitProcessEventKey[] = "emit-process-event";
-const char kBindingCacheKey[] = "native-binding-cache";
+constexpr std::string_view kEmitProcessEventKey = "emit-process-event";
+constexpr std::string_view kBindingCacheKey = "native-binding-cache";
 
 v8::Local<v8::Object> GetBindingCache(v8::Isolate* isolate) {
   auto context = isolate->GetCurrentContext();
