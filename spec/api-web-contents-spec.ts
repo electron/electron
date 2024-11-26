@@ -19,7 +19,7 @@ const fixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 
 describe('webContents module', () => {
-  xdescribe('getAllWebContents() API', () => {
+  describe('getAllWebContents() API', () => {
     afterEach(closeAllWindows);
     it('returns an array of web contents', async () => {
       const w = new BrowserWindow({
@@ -45,7 +45,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('webContents properties', () => {
+  ifdescribe(process.env.TEST_SHARD !== '1')('webContents properties', () => {
     afterEach(closeAllWindows);
 
     it('has expected additional enumerable properties', () => {
@@ -56,13 +56,13 @@ describe('webContents module', () => {
     });
   });
 
-  describe('fromId()', () => {
+  ifdescribe(process.env.TEST_SHARD !== '2')('fromId()', () => {
     it('returns undefined for an unknown id', () => {
       expect(webContents.fromId(12345)).to.be.undefined();
     });
   });
 
-  describe('fromFrame()', () => {
+  ifdescribe(process.env.TEST_SHARD !== '3')('fromFrame()', () => {
     afterEach(cleanupWebContents);
     it('returns WebContents for mainFrame', () => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create();
@@ -85,7 +85,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('fromDevToolsTargetId()', () => {
+  ifdescribe(process.env.TEST_SHARD !== '4')('fromDevToolsTargetId()', () => {
     afterEach(closeAllWindows);
     it('returns WebContents for attached DevTools target', async () => {
       const w = new BrowserWindow({ show: false });
@@ -104,7 +104,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('will-prevent-unload event', function () {
+  ifdescribe(process.env.TEST_SHARD !== '5')('will-prevent-unload event', function () {
     afterEach(async () => {
       await closeAllWindows();
       await cleanupWebContents();
@@ -164,7 +164,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('webContents.send(channel, args...)', () => {
+  ifdescribe(process.env.TEST_SHARD !== '6')('webContents.send(channel, args...)', () => {
     afterEach(closeAllWindows);
     it('throws an error when the channel is missing', () => {
       const w = new BrowserWindow({ show: false });
