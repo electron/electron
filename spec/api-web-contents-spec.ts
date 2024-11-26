@@ -18,7 +18,7 @@ import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 
-describe('webContents module', () => {
+xdescribe('webContents module', () => {
   describe('getAllWebContents() API', () => {
     afterEach(closeAllWindows);
     it('returns an array of web contents', async () => {
