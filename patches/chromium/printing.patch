@@ -911,18 +911,3 @@ index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890f
    // Does bookkeeping when an error occurs.
    virtual mojom::ResultCode OnError();
  
-diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index e62eb7afa267b056973bf0b750f1650e2ac7d35d..9459cd5894bdc6ed4cf1880bf8b19e7004f267dd 100644
---- a/sandbox/policy/mac/sandbox_mac.mm
-+++ b/sandbox/policy/mac/sandbox_mac.mm
-@@ -31,6 +31,10 @@
- #include "sandbox/policy/mac/utility.sb.h"
- #include "sandbox/policy/mojom/sandbox.mojom.h"
- 
-+#if BUILDFLAG(ENABLE_PRINTING)
-+#include "sandbox/policy/mac/print_backend.sb.h"
-+#endif
-+
- namespace sandbox::policy {
- 
- base::FilePath GetCanonicalPath(const base::FilePath& path) {
