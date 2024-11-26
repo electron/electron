@@ -231,7 +231,7 @@ gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
     args->ThrowError(
         "clipboard.readImage is available only after app ready in the main "
         "process");
-    return gfx::Image();
+    return {};
   }
 
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
@@ -271,7 +271,7 @@ void Clipboard::WriteImage(const gfx::Image& image,
 #if !BUILDFLAG(IS_MAC)
 void Clipboard::WriteFindText(const std::u16string& text) {}
 std::u16string Clipboard::ReadFindText() {
-  return std::u16string();
+  return {};
 }
 #endif
 

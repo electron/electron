@@ -332,7 +332,7 @@ extensions::SizeConstraints NativeWindow::GetSizeConstraints() const {
   if (size_constraints_)
     return *size_constraints_;
   if (!content_size_constraints_)
-    return extensions::SizeConstraints();
+    return {};
   // Convert content size constraints to window size constraints.
   extensions::SizeConstraints constraints;
   if (content_size_constraints_->HasMaximumSize()) {
@@ -366,7 +366,7 @@ extensions::SizeConstraints NativeWindow::GetContentSizeConstraints() const {
   if (content_size_constraints_)
     return *content_size_constraints_;
   if (!size_constraints_)
-    return extensions::SizeConstraints();
+    return {};
   // Convert window size constraints to content size constraints.
   // Note that we are not caching the results, because Chromium reccalculates
   // window frame size everytime when min/max sizes are passed, and we must

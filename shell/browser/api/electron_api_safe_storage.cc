@@ -53,13 +53,13 @@ v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
     if (!electron::Browser::Get()->is_ready()) {
       gin_helper::ErrorThrower(isolate).ThrowError(
           "safeStorage cannot be used before app is ready");
-      return v8::Local<v8::Value>();
+      return {};
     }
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while encrypting the text provided to "
         "safeStorage.encryptString. "
         "Encryption is not available.");
-    return v8::Local<v8::Value>();
+    return {};
   }
 
   std::string ciphertext;
@@ -69,7 +69,7 @@ v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while encrypting the text provided to "
         "safeStorage.encryptString.");
-    return v8::Local<v8::Value>();
+    return {};
   }
 
   return node::Buffer::Copy(isolate, ciphertext.c_str(), ciphertext.size())
