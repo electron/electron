@@ -45,7 +45,7 @@ describe('webContents module', () => {
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '1')('webContents properties', () => {
+  ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('webContents properties', () => {
     afterEach(closeAllWindows);
 
     it('has expected additional enumerable properties', () => {
@@ -56,13 +56,13 @@ describe('webContents module', () => {
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '2')('fromId()', () => {
+  describe('fromId()', () => {
     it('returns undefined for an unknown id', () => {
       expect(webContents.fromId(12345)).to.be.undefined();
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '3')('fromFrame()', () => {
+  describe('fromFrame()', () => {
     afterEach(cleanupWebContents);
     it('returns WebContents for mainFrame', () => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create();
@@ -85,7 +85,7 @@ describe('webContents module', () => {
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '4')('fromDevToolsTargetId()', () => {
+  describe('fromDevToolsTargetId()', () => {
     afterEach(closeAllWindows);
     it('returns WebContents for attached DevTools target', async () => {
       const w = new BrowserWindow({ show: false });
@@ -104,7 +104,7 @@ describe('webContents module', () => {
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '5')('will-prevent-unload event', function () {
+  describe('will-prevent-unload event', function () {
     afterEach(async () => {
       await closeAllWindows();
       await cleanupWebContents();
@@ -164,7 +164,7 @@ describe('webContents module', () => {
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '6')('webContents.send(channel, args...)', () => {
+  describe('webContents.send(channel, args...)', () => {
     afterEach(closeAllWindows);
     it('throws an error when the channel is missing', () => {
       const w = new BrowserWindow({ show: false });
