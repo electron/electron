@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index f2cfa75ab9911ef640c3cf0a45b95ccc20ddb1d4..e494df87e6038a697b835e054b3320805730ff8a 100644
+index fe114b189968a4779b9a669f654b522887611cd0..753090d8c5734e1af2ee549b5c33be10d1a8bd76 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9169,6 +9169,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9170,6 +9170,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index f2cfa75ab9911ef640c3cf0a45b95ccc20ddb1d4..e494df87e6038a697b835e054b332080
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 5e79c55732343ce97b0bc682389706f1e1f1c2e4..9c8aad2abea4b41dcb1c341f053e962e235d8d62 100644
+index 17a21f227c2b92f5b6842fb7c1e9c4afa6139ace..367e9ae0f12c54c2bb03464893e1970b63a70526 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4911,6 +4911,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4920,6 +4920,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    SetPartitionedPopinOpenerOnNewWindowIfNeeded(new_contents_impl, params,
                                                 opener);
  
@@ -37,7 +37,7 @@ index 5e79c55732343ce97b0bc682389706f1e1f1c2e4..9c8aad2abea4b41dcb1c341f053e962e
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4952,12 +4958,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4961,12 +4967,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -66,10 +66,10 @@ index 8e571dc1371cf2aa7c8354f0b4e492e0d030b485..c878169e7838849cbc23df2ed94ca65d
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index ca50de03ee9718f870155adfbac4df31e1c4cb3c..b95fa410f7a38004e54c6aa6d345be851d5b2d76 100644
+index 1d82337c15252ece8b2bbed6c787b8cd84ca0ab5..40ef6e0f18176cebc2b9e10282e8e142e311060b 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -785,6 +785,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -789,6 +789,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -79,10 +79,10 @@ index ca50de03ee9718f870155adfbac4df31e1c4cb3c..b95fa410f7a38004e54c6aa6d345be85
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 472077f2efac793bc3e44b00d06086b1bb1a456e..4b14ef7d2f61f2239876da6f814f0633a2e17f56 100644
+index f6e99bff67387558071a268a2d196081a0c5e8b8..b3faf193cddb466afaa7e3fd3705621d6cd5bab6 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -196,6 +196,7 @@ class NetworkService;
+@@ -200,6 +200,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -90,7 +90,7 @@ index 472077f2efac793bc3e44b00d06086b1bb1a456e..4b14ef7d2f61f2239876da6f814f0633
  }  // namespace network
  
  namespace sandbox {
-@@ -1349,6 +1350,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1353,6 +1354,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,

@@ -155,7 +155,7 @@ index bd31ef4d919c9ddce958024a93edf1aab44436b6..6b7c5c7b2dd0fa83797ef57a34f7eb99
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 6402c3406ec8808b41c7a6af1075a7ae03d6c545..f7c5950ab8782ed1d738363feeed1a9877a7cf6b 100644
+index ff8fe40db4e4d2b76c57e4b3a987c6ba13e30b7f..6049f8c69567e60364f212e69cc33cb6a858f6b8 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -185,14 +185,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -190,10 +190,10 @@ index 9484a324478d3fe746a51e645368eb3b602ce91d..0676e60fe7773cfcb22e62abff67a66e
    void SetContentsBounds(content::WebContents* source,
                           const gfx::Rect& bounds) override;
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.cc b/components/offline_pages/content/background_loader/background_loader_contents.cc
-index 072e7d0dde701a8f2d1de2704c8a056363324390..9e5ace2b1f32d5e5c542439f5365f9d9458cbf37 100644
+index e0e9a5a8c1d8c242d39935e2456052619af33cc6..80518793447c70e8fc1dae9b42a59d40427ae52b 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.cc
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.cc
-@@ -85,8 +85,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
+@@ -89,8 +89,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 73d0281f14c87ad7893e027b708193c4221350b6..ce3e5c5d8e9f672a76751274ddc6d15b1d6de373 100644
+index 9f1f83289a2ee4ec6b93125d8a30b90cd5d922ec..b7ae43e24ad95ad8dab8e5037cd052c60b87fb2d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4806,8 +4806,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4815,8 +4815,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -324,10 +324,10 @@ index 8df60108aeaabcb5fa6634e6a5e87d67d6b30e90..88a52eae92eb9b105c41b8d467cc7cd0
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 18dfa0ac3f2a11f50818c75e432e4be799c46ea3..8bce8320bf6939bdbc5ea20aeec31b4e34be1538 100644
+index 57804220f992b192e6412b659cfeb9046fc4b527..fd50facf328a1bba13e5eda18a55826ab235a956 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-@@ -435,8 +435,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
+@@ -440,8 +440,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -338,10 +338,10 @@ index 18dfa0ac3f2a11f50818c75e432e4be799c46ea3..8bce8320bf6939bdbc5ea20aeec31b4e
  
    return true;
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-index 81fc85e5b096fde6d5e5f7eae1299ce7a22a972f..de5a846b39ba754a814fdd8284b7378faed0f83a 100644
+index f08e2017a9737167e149962e13c0e049777b295a..36c962ef5b81e1331c753d7e5a16096695105fc9 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-@@ -182,8 +182,7 @@ class MimeHandlerViewGuest
+@@ -185,8 +185,7 @@ class MimeHandlerViewGuest
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

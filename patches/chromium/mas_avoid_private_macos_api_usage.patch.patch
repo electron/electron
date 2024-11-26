@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c884f31fed70631df74f64bbda076868167ac394..a30a23706aac3a43e80e738bdefc80a09b28901d 100644
+index dede979d6f25774f3b5d6c0fe4425001d8d231fb..3930228dcd164626b1a374fbb0f73a189dd0612a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1021,6 +1021,7 @@ component("base") {
+@@ -1023,6 +1023,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -455,7 +455,7 @@ index 97f489043beb4260b1a3ca1781ce7ef67ec8c88a..569859297618cac39aa36655b9e30122
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f51c287959ec74878100b80fb75b86b0045b744a..f0fc2f51860e38f546159f94d5d180aa04a85e79 100644
+index 80a2d8233f6f35ca36f963bd9adf07818baf0ad7..3d8d0a310edd860d65c6363e2543e0df749d3d06 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -379,6 +379,7 @@ viz_component("service") {
@@ -466,7 +466,7 @@ index f51c287959ec74878100b80fb75b86b0045b744a..f0fc2f51860e38f546159f94d5d180aa
    }
  
    if (is_android || use_ozone) {
-@@ -660,6 +661,7 @@ viz_source_set("unit_tests") {
+@@ -658,6 +659,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -526,7 +526,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 6aa74c4137ac7a649e8f79eb628e297e9459b089..c89f25bf49d773f5f77b2434bd6fabcfd8cb4e33 100644
+index 2887c86e7018cb6df74ec835ac4cc85dac24739f..9661114ea934afed8190692860057aa84ec3c0c9 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -35,6 +35,7 @@
@@ -560,7 +560,7 @@ index 6aa74c4137ac7a649e8f79eb628e297e9459b089..c89f25bf49d773f5f77b2434bd6fabcf
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 217a86df8151cfa274c56f4082e7ed3ced0ac872..71158b55dacc7a4ba1f08c8212b7f9322326ceb8 100644
+index 9832e175ae12952cffb0f5ffecee4f793ef84708..0714912ed8f424c744725aad4101ff38500e10e6 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -327,6 +327,7 @@ source_set("browser") {
@@ -773,7 +773,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f04eac209dc7103d8b3a985783166772b7bef8de..415457f192688821a4957fa83214dbcf32f5cd08 100644
+index c334a2294cc1d2afa2ad96225d051b2b1e72a423..329315856a03c8cd90aa7002c649a2522e834150 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -643,6 +643,7 @@ static_library("test_support") {
@@ -784,7 +784,7 @@ index f04eac209dc7103d8b3a985783166772b7bef8de..415457f192688821a4957fa83214dbcf
    ]
  
    data_deps = [
-@@ -1112,6 +1113,7 @@ static_library("browsertest_support") {
+@@ -1121,6 +1122,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -792,7 +792,7 @@ index f04eac209dc7103d8b3a985783166772b7bef8de..415457f192688821a4957fa83214dbcf
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1953,6 +1955,7 @@ test("content_browsertests") {
+@@ -1962,6 +1964,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -800,7 +800,7 @@ index f04eac209dc7103d8b3a985783166772b7bef8de..415457f192688821a4957fa83214dbcf
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3246,6 +3249,7 @@ test("content_unittests") {
+@@ -3255,6 +3258,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -925,10 +925,10 @@ index 45847b155ec8fb197aadb479eca78154436cfa81..e5de2b90a4c7d8181408ddfa62057b97
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 9b78f60304a0e487904fdb22c9e6d85a237ca96e..e639558d34edab3ba3b1bb4f502bd91405e58637 100644
+index da17e30384033a795e35d9cd27f16aa1a2b1ad24..f98dc86b19569290d81e7d2a172c1f217a72d00e 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
-@@ -28,6 +28,7 @@
+@@ -29,6 +29,7 @@
  #include "base/strings/sys_string_conversions.h"
  #include "base/time/time.h"
  #include "base/trace_event/trace_event.h"
@@ -936,7 +936,7 @@ index 9b78f60304a0e487904fdb22c9e6d85a237ca96e..e639558d34edab3ba3b1bb4f502bd914
  #include "media/audio/apple/audio_manager_apple.h"
  #include "media/audio/apple/scoped_audio_unit.h"
  #include "media/base/audio_bus.h"
-@@ -39,19 +40,23 @@
+@@ -41,19 +42,23 @@
  
  namespace {
  extern "C" {
@@ -961,10 +961,10 @@ index 9b78f60304a0e487904fdb22c9e6d85a237ca96e..e639558d34edab3ba3b1bb4f502bd914
  }  // namespace
  #endif
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 5f4ff9ff8172d4ad282cc9c781f85118b8ba7d1a..cc85f488884f48df94198b7e4d4823946e750716 100644
+index 543b8ae16c1ddc33b3602adc7216a1756681f5fe..21b2898f8b1f40a85d60145bfdff3aa1d7e9b154 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
-@@ -187,6 +187,8 @@ source_set("dns") {
+@@ -189,6 +189,8 @@ source_set("dns") {
      ":host_resolver_manager",
      ":mdns_client",
    ]
