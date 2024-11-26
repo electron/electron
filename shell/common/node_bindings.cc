@@ -14,6 +14,7 @@
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/environment.h"
+#include "base/immediate_crash.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_split.h"
@@ -164,8 +165,7 @@ void V8FatalErrorCallback(const char* location, const char* message) {
   electron::crash_keys::SetCrashKey("electron.v8-fatal.location", location);
 #endif
 
-  volatile int* zero = nullptr;
-  *zero = 0;
+  base::ImmediateCrash();
 }
 
 bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,

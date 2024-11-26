@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "base/command_line.h"
+#include "base/immediate_crash.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "electron/mas.h"
@@ -44,8 +45,7 @@ void V8FatalErrorCallback(const char* location, const char* message) {
   electron::crash_keys::SetCrashKey("electron.v8-fatal.location", location);
 #endif
 
-  volatile int* zero = nullptr;
-  *zero = 0;
+  base::ImmediateCrash();
 }
 
 URLLoaderBundle::URLLoaderBundle() = default;

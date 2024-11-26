@@ -11,6 +11,7 @@
 
 #include "base/containers/contains.h"
 #include "base/files/file.h"
+#include "base/immediate_crash.h"
 #include "base/process/process.h"
 #include "base/process/process_handle.h"
 #include "base/system/sys_info.h"
@@ -113,8 +114,7 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
 
 // static
 void ElectronBindings::Crash() {
-  volatile int* zero = nullptr;
-  *zero = 0;
+  base::ImmediateCrash();
 }
 
 // static
