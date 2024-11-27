@@ -660,6 +660,8 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
   }
 }
 
+namespace {
+
 void ExposeAPIInWorld(v8::Isolate* isolate,
                       const int world_id,
                       const std::string& key,
@@ -819,6 +821,8 @@ bool IsCalledFromMainWorld(v8::Isolate* isolate) {
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
   return isolate->GetCurrentContext() == main_context;
 }
+
+}  // namespace
 
 }  // namespace api
 

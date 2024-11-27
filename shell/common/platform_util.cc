@@ -14,6 +14,8 @@
 
 namespace platform_util {
 
+namespace {
+
 struct TrashItemResult {
   bool success;
   std::string error;
@@ -24,6 +26,8 @@ TrashItemResult TrashItemOnBlockingThread(const base::FilePath& full_path) {
   bool success = internal::PlatformTrashItem(full_path, &error);
   return {success, error};
 }
+
+}  // namespace
 
 void TrashItem(const base::FilePath& full_path,
                base::OnceCallback<void(bool, const std::string&)> callback) {

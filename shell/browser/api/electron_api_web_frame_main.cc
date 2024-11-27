@@ -55,12 +55,16 @@ struct Converter<blink::mojom::PageVisibilityState> {
 
 namespace electron::api {
 
+namespace {
+
 using WebFrameMainIdMap = std::unordered_map<int, WebFrameMain*>;
 
 WebFrameMainIdMap& GetWebFrameMainMap() {
   static base::NoDestructor<WebFrameMainIdMap> instance;
   return *instance;
 }
+
+}  // namespace
 
 // static
 WebFrameMain* WebFrameMain::FromFrameTreeNodeId(int frame_tree_node_id) {
