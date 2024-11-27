@@ -13,7 +13,7 @@ Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5979766
 This reverts commit c41f7a0ef99bd1c9752ee79923f634145ebc4153.
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 7e6e8c171c2a257ab3474a59d5ef5aee7f5b4816..691ca09f940299a0ecc4b6e398fe2265e13f8838 100644
+index 04a0fc4e8c54d5c47d8d3068e89e4868ab9bdf20..9c1573ea7b94c0b3d029f58159cf3d2f7d52c0cb 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -1348,16 +1348,6 @@ Local<FunctionTemplate> FunctionTemplate::NewWithCFunctionOverloads(
@@ -734,7 +734,7 @@ index 351705cbc6c054d38f8d9d93744701b9004fcd1c..4c13f51d4b61f17558c6b10a09f8de5a
              return gasm_->AdaptLocalArgument(receiver_node);
            }
 diff --git a/src/d8/d8-test.cc b/src/d8/d8-test.cc
-index 33631d4e03df9341d55b639f0746d7ae89b7458a..42f0b4f208d018d7958bb2bb958374d5b7cccebe 100644
+index 6467930fbb39a67a10d6822545e985965ced83ad..1c99e4d89cbc605c6c1b75ce31b09b67334a10ee 100644
 --- a/src/d8/d8-test.cc
 +++ b/src/d8/d8-test.cc
 @@ -443,6 +443,20 @@ class FastCApiObject {
@@ -758,7 +758,7 @@ index 33631d4e03df9341d55b639f0746d7ae89b7458a..42f0b4f208d018d7958bb2bb958374d5
  #ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
    static AnyCType Add32BitIntFastCallbackPatch(AnyCType receiver,
                                                 AnyCType arg_i32,
-@@ -1552,6 +1566,22 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
+@@ -1553,6 +1567,22 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
              signature, 1, ConstructorBehavior::kThrow,
              SideEffectType::kHasSideEffect, {add_all_overloads, 2}));
  

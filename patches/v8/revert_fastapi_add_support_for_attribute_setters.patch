@@ -355,20 +355,18 @@ index 8761637df00ed1a717ca581ef5faf8c78ec3336b..c74b59b6cc4c742fa5c50df2cc89794c
    // Construct the appropriate subgraph for element access.
    ValueEffectControl BuildElementAccess(Node* receiver, Node* index,
 diff --git a/src/d8/d8-test.cc b/src/d8/d8-test.cc
-index 523b1e32a71103b68612bd5abb976882f77d8265..33631d4e03df9341d55b639f0746d7ae89b7458a 100644
+index 77e3b3d71d552fdb50e47b75ca8d1bc7296bb9d4..6467930fbb39a67a10d6822545e985965ced83ad 100644
 --- a/src/d8/d8-test.cc
 +++ b/src/d8/d8-test.cc
-@@ -1305,69 +1305,6 @@ class FastCApiObject {
+@@ -1305,67 +1305,6 @@ class FastCApiObject {
      info.GetReturnValue().Set(BigInt::NewFromUnsigned(isolate, a + b));
    }
  
--  static int attribute_value;
--
 -  static void AttributeGetterSlowCallback(
 -      const FunctionCallbackInfo<Value>& info) {
 -    FastCApiObject* self = UnwrapObject(info.This());
 -    self->slow_call_count_++;
--    info.GetReturnValue().Set(attribute_value);
+-    info.GetReturnValue().Set(self->attribute_value_);
 -  }
 -
 -  static int AttributeGetterFastCallback(Local<Object> receiver,
@@ -376,7 +374,7 @@ index 523b1e32a71103b68612bd5abb976882f77d8265..33631d4e03df9341d55b639f0746d7ae
 -    FastCApiObject* self = UnwrapObject(receiver);
 -    CHECK_SELF_OR_THROW_FAST_OPTIONS(0);
 -    self->fast_call_count_++;
--    return attribute_value;
+-    return self->attribute_value_;
 -  }
 -
 -#ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
@@ -405,7 +403,7 @@ index 523b1e32a71103b68612bd5abb976882f77d8265..33631d4e03df9341d55b639f0746d7ae
 -          "New value of attribute is not within int32 range");
 -      return;
 -    }
--    attribute_value = static_cast<int>(double_val);
+-    self->attribute_value_ = static_cast<int>(double_val);
 -  }
 -
 -  static void AttributeSetterFastCallback(Local<Object> receiver, int32_t value,
@@ -413,7 +411,7 @@ index 523b1e32a71103b68612bd5abb976882f77d8265..33631d4e03df9341d55b639f0746d7ae
 -    FastCApiObject* self = UnwrapObject(receiver);
 -    CHECK_SELF_OR_THROW_FAST_OPTIONS();
 -    self->fast_call_count_++;
--    attribute_value = value;
+-    self->attribute_value_ = value;
 -  }
 -
 -#ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
@@ -428,16 +426,7 @@ index 523b1e32a71103b68612bd5abb976882f77d8265..33631d4e03df9341d55b639f0746d7ae
    static void FastCallCount(const FunctionCallbackInfo<Value>& info) {
      FastCApiObject* self = UnwrapObject(info.This());
      CHECK_SELF_OR_THROW_SLOW();
-@@ -1434,8 +1371,6 @@ class FastCApiObject {
- #endif  // V8_ENABLE_FP_PARAMS_IN_C_LINKAGE
- };
- 
--int FastCApiObject::attribute_value = 0;
--
- #undef CHECK_SELF_OR_THROW_SLOW
- #undef CHECK_SELF_OR_THROW_FAST
- #undef CHECK_SELF_OR_THROW_FAST_OPTIONS
-@@ -1503,25 +1438,6 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
+@@ -1500,25 +1439,6 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
                                ConstructorBehavior::kThrow,
                                SideEffectType::kHasSideEffect, &add_all_c_func));
  
