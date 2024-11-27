@@ -83,9 +83,6 @@ namespace internal {
 extern const int kRelauncherSyncFD;
 #endif
 
-// The "type" argument identifying a relauncher process ("--type=relauncher").
-extern const CharType* kRelauncherTypeArg;
-
 #if BUILDFLAG(IS_WIN)
 StringType GetWaitEventName(base::ProcessId pid);
 
