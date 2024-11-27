@@ -531,7 +531,7 @@ bool FileSelectHelper::IsAcceptTypeValid(const std::string& accept_type) {
 base::FilePath FileSelectHelper::GetSanitizedFileName(
     const base::FilePath& suggested_filename) {
   if (suggested_filename.empty())
-    return base::FilePath();
+    return {};
   return net::GenerateFileName(
       GURL(), std::string(), std::string(), suggested_filename.AsUTF8Unsafe(),
       std::string(), l10n_util::GetStringUTF8(IDS_DEFAULT_DOWNLOAD_FILENAME));
