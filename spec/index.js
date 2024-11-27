@@ -150,17 +150,7 @@ app.whenReady().then(async () => {
 
   const { getFiles } = require('./get-files');
   const testFiles = await getFiles(__dirname, filter);
-  const VISIBILITY_SPEC = ('visibility-state-spec.ts');
-  const sortedFiles = testFiles.sort((a, b) => {
-    // If visibility-state-spec is in the list, move it to the first position
-    // so that it gets executed first to avoid other specs interferring with it.
-    if (a.indexOf(VISIBILITY_SPEC) > -1) {
-      return -1;
-    } else {
-      return a.localeCompare(b);
-    }
-  });
-  for (const file of sortedFiles) {
+  for (const file of testFiles.sort()) {
     mocha.addFile(file);
   }
 
