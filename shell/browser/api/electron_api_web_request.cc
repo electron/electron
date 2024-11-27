@@ -723,11 +723,11 @@ gin::Handle<WebRequest> WebRequest::From(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
   if (!browser_context)
-    return gin::Handle<WebRequest>();
+    return {};
   auto* user_data =
       static_cast<UserData*>(browser_context->GetUserData(kUserDataKey));
   if (!user_data)
-    return gin::Handle<WebRequest>();
+    return {};
   return gin::CreateHandle(isolate, user_data->data.get());
 }
 

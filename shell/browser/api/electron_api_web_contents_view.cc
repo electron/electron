@@ -66,7 +66,7 @@ gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {
   if (api_web_contents_)
     return gin::CreateHandle(isolate, api_web_contents_.get());
   else
-    return gin::Handle<WebContents>();
+    return {};
 }
 
 void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
@@ -153,7 +153,7 @@ gin::Handle<WebContentsView> WebContentsView::Create(
     if (gin::ConvertFromV8(isolate, web_contents_view_obj, &web_contents_view))
       return web_contents_view;
   }
-  return gin::Handle<WebContentsView>();
+  return {};
 }
 
 // static

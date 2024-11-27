@@ -2005,7 +2005,7 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
       ReplyChannel::Create(isolate, std::move(callback))
           ->SendError("WebContents was destroyed");
     }
-    return gin::Handle<gin_helper::internal::Event>();
+    return {};
   }
   gin::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
