@@ -26,7 +26,7 @@ void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
 void TrayIcon::CloseContextMenu() {}
 
 gfx::Rect TrayIcon::GetBounds() {
-  return gfx::Rect();
+  return {};
 }
 
 void TrayIcon::NotifyClicked(const gfx::Rect& bounds,
