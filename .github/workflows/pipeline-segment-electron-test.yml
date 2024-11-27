@@ -50,7 +50,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'windows' && fromJSON('["windows"]') || fromJSON('["linux"]')) }}
-        shard: ${{ inputs.target-platform == 'linux' && fromJSON('[1, 2, 3]') || fromJSON('[1, 2]') }}
+        shard: ${{ inputs.target-platform != 'macos' && fromJSON('[1, 2, 3, 4, 5, 6]') || fromJSON('[1, 2]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -190,7 +190,7 @@ jobs:
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 3 }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 6 }})
 
         # Run tests
         if [ "`uname`" = "Darwin" ]; then
@@ -224,7 +224,8 @@ jobs:
         cd src\electron
         echo ELECTRON_TEST_RESULTS_DIR=$PWD\junit >> $env:GITHUB_ENV
         # Get which tests are on this shard
-        $tests_files=node script\split-tests ${{ matrix.shard }} 2
+        echo TEST_SHARD=${{ matrix.shard }} >> $env:GITHUB_ENV
+        $tests_files='spec\api-web-contents-spec.ts spec\webview-spec.ts spec\api-ipc-spec.ts spec\api-native-image-spec.ts spec\api-menu-item-spec.ts spec\api-system-preferences-spec.ts spec\api-web-contents-view-spec.ts spec\api-process-spec.ts spec\api-debugger-spec.ts spec\deprecate-spec.ts spec\api-screen-spec.ts spec\security-warnings-spec.ts spec\api-content-tracing-spec.ts spec\api-net-log-spec.ts spec\asar-integrity-spec.ts spec\crash-spec.ts spec\api-web-utils-spec.ts spec\api-power-save-blocker-spec.ts'
         echo tests_files="$tests_files" >> $env:GITHUB_ENV
         if ('${{ inputs.target-arch }}' -eq 'x86') {
           echo npm_config_arch=ia32 >> $env:GITHUB_ENV
