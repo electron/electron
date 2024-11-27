@@ -2629,7 +2629,7 @@ std::string WebContents::GetMediaSourceID(
     content::WebContents* request_web_contents) {
   auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (!frame_host)
-    return std::string();
+    return {};
 
   content::DesktopMediaID media_id(
       content::DesktopMediaID::TYPE_WEB_CONTENTS,
@@ -2639,7 +2639,7 @@ std::string WebContents::GetMediaSourceID(
 
   auto* request_frame_host = request_web_contents->GetPrimaryMainFrame();
   if (!request_frame_host)
-    return std::string();
+    return {};
 
   std::string id =
       content::DesktopStreamsRegistry::GetInstance()->RegisterStream(
@@ -2761,7 +2761,7 @@ bool WebContents::IsDevToolsOpened() {
 
 std::u16string WebContents::GetDevToolsTitle() {
   if (type_ == Type::kRemote)
-    return std::u16string();
+    return {};
 
   DCHECK(inspectable_web_contents_);
   return inspectable_web_contents_->GetDevToolsTitle();
@@ -3641,7 +3641,7 @@ gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) {
     }
   }
 
-  return gfx::Size();
+  return {};
 }
 
 void WebContents::SetZoomLevel(double level) {
