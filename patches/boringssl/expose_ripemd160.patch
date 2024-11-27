@@ -22,7 +22,7 @@ index 0b30897db59bdfc9ada43cf44af21bc54b6d8442..d6ecbc05d7beb6efea79166004137f7c
      // hash function when given a signature OID. To avoid unintended lax parsing
      // of hash OIDs, this is no longer supported for lookup by OID or NID.
 diff --git a/crypto/fipsmodule/digest/digests.cc.inc b/crypto/fipsmodule/digest/digests.cc.inc
-index e1b08fa2f2e2e3afca95b1f8b719220c5436903b..9e8f6c3e02d0078e940c6fd83ddffc1cc5a6c884 100644
+index e1b08fa2f2e2e3afca95b1f8b719220c5436903b..90a5d1895b9d5dff2748ef638c06c127ef84797b 100644
 --- a/crypto/fipsmodule/digest/digests.cc.inc
 +++ b/crypto/fipsmodule/digest/digests.cc.inc
 @@ -60,6 +60,7 @@
@@ -38,15 +38,15 @@ index e1b08fa2f2e2e3afca95b1f8b719220c5436903b..9e8f6c3e02d0078e940c6fd83ddffc1c
  }
  
 +static void ripemd160_init(EVP_MD_CTX *ctx) {
-+  CHECK(RIPEMD160_Init(ctx->md_data));
++  CHECK(RIPEMD160_Init(reinterpret_cast<RIPEMD160_CTX *>(ctx->md_data)));
 +}
 +
 +static void ripemd160_update(EVP_MD_CTX *ctx, const void *data, size_t count) {
-+  CHECK(RIPEMD160_Update(ctx->md_data, data, count));
++  CHECK(RIPEMD160_Update(reinterpret_cast<RIPEMD160_CTX *>(ctx->md_data), data, count));
 +}
 +
 +static void ripemd160_final(EVP_MD_CTX *ctx, uint8_t *md) {
-+  CHECK(RIPEMD160_Final(md, ctx->md_data));
++  CHECK(RIPEMD160_Final(md, reinterpret_cast<RIPEMD160_CTX *>(ctx->md_data)));
 +}
 +
 +DEFINE_METHOD_FUNCTION(EVP_MD, EVP_ripemd160) {
