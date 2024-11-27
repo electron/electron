@@ -100,6 +100,8 @@ using FrameTreeNodeIdMap = std::unordered_map<content::FrameTreeNodeId,
 using FrameTokenMap =
     std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>;
 
+namespace {
+
 FrameTreeNodeIdMap& GetFrameTreeNodeIdMap() {
   static base::NoDestructor<FrameTreeNodeIdMap> instance;
   return *instance;
@@ -108,6 +110,8 @@ FrameTokenMap& GetFrameTokenMap() {
   static base::NoDestructor<FrameTokenMap> instance;
   return *instance;
 }
+
+}  // namespace
 
 // static
 WebFrameMain* WebFrameMain::FromFrameTreeNodeId(
