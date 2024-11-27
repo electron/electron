@@ -56,7 +56,7 @@ class ElectronPermissionMessageProvider
   [[nodiscard]] extensions::PermissionIDSet GetAllPermissionIDs(
       const extensions::PermissionSet& permissions,
       extensions::Manifest::Type extension_type) const override {
-    return extensions::PermissionIDSet();
+    return {};
   }
 };
 
@@ -114,7 +114,7 @@ extensions::URLPatternSet
 ElectronExtensionsClient::GetPermittedChromeSchemeHosts(
     const extensions::Extension* extension,
     const extensions::APIPermissionSet& api_permissions) const {
-  return extensions::URLPatternSet();
+  return {};
 }
 
 bool ElectronExtensionsClient::IsScriptableURL(const GURL& url,

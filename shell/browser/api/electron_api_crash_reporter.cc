@@ -99,7 +99,7 @@ std::string ReadClientId() {
   if (GetClientIdPath(&client_id_path) &&
       (!base::ReadFileToStringWithMaxSize(client_id_path, &client_id, 36) ||
        client_id.size() != 36))
-    return std::string();
+    return {};
   return client_id;
 }
 

@@ -168,7 +168,7 @@ void FilterCookieWithStatuses(
 // Parse dictionary property to CanonicalCookie time correctly.
 base::Time ParseTimeProperty(const std::optional<double>& value) {
   if (!value)  // empty time means ignoring the parameter
-    return base::Time();
+    return {};
   if (*value == 0)  // FromSecondsSinceUnixEpoch would convert 0 to empty Time
     return base::Time::UnixEpoch();
   return base::Time::FromSecondsSinceUnixEpoch(*value);

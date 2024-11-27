@@ -775,7 +775,7 @@ base::OnceClosure App::SelectClientCertificate(
         std::move((*shared_identities)[0]),
         base::BindRepeating(&GotPrivateKey, shared_delegate, std::move(cert)));
   }
-  return base::OnceClosure();
+  return {};
 }
 
 void App::OnGpuInfoUpdate() {
@@ -943,7 +943,7 @@ std::string App::GetSystemLocale(gin_helper::ErrorThrower thrower) const {
     thrower.ThrowError(
         "app.getSystemLocale() can only be called "
         "after app is ready");
-    return std::string();
+    return {};
   }
   return static_cast<BrowserProcessImpl*>(g_browser_process)->GetSystemLocale();
 }

@@ -344,7 +344,7 @@ content::FrameTreeNodeId WebFrameMain::FrameTreeNodeID() const {
 
 std::string WebFrameMain::Name() const {
   if (!CheckRenderFrame())
-    return std::string();
+    return {};
   return render_frame_->GetFrameName();
 }
 
@@ -376,7 +376,7 @@ GURL WebFrameMain::URL() const {
 
 std::string WebFrameMain::Origin() const {
   if (!CheckRenderFrame())
-    return std::string();
+    return {};
   return render_frame_->GetLastCommittedOrigin().Serialize();
 }
 
