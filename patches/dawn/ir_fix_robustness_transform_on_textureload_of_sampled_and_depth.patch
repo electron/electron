@@ -1,0 +1,680 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Fri, 15 Nov 2024 20:09:59 +0000
+Subject: IR: Fix robustness transform on textureLoad of sampled and depth
+ textures
+
+For sampled and depth textures, which contain a 'level' argument, the
+robustness transform is supposed to clamp 'coords' using the dimensions
+at the clamped level, but it was looking up dimensions at level 0
+instead.
+
+Bug: 42250751
+Bug: 42251045
+Bug: 378541479
+Change-Id: I0e7fd6148417b248a9b584ae19818e9027306b63
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/214514
+Reviewed-by: James Price <jrprice@google.com>
+Commit-Queue: dan sinclair <dsinclair@chromium.org>
+Commit-Queue: James Price <jrprice@google.com>
+Auto-Submit: Antonio Maiorano <amaiorano@google.com>
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/215154
+Commit-Queue: David Neto <dneto@google.com>
+Reviewed-by: David Neto <dneto@google.com>
+
+diff --git a/src/tint/lang/core/ir/transform/robustness.cc b/src/tint/lang/core/ir/transform/robustness.cc
+index 9284b9a48e896865ca3d6c0d19d39777139809a2..5b1acf92c24e26dc4bafdb95b24b12a594626a9d 100644
+--- a/src/tint/lang/core/ir/transform/robustness.cc
++++ b/src/tint/lang/core/ir/transform/robustness.cc
+@@ -321,7 +321,6 @@ struct State {
+                 break;
+             }
+             case core::BuiltinFn::kTextureLoad: {
+-                clamp_coords(1u);
+                 uint32_t next_arg = 2u;
+                 if (type::IsTextureArray(texture->dim())) {
+                     clamp_array_index(next_arg++);
+@@ -329,6 +328,7 @@ struct State {
+                 if (texture->IsAnyOf<type::SampledTexture, type::DepthTexture>()) {
+                     clamp_level(next_arg++);
+                 }
++                clamp_coords(1u);  // Must run after clamp_level
+                 break;
+             }
+             case core::BuiltinFn::kTextureStore: {
+diff --git a/src/tint/lang/core/ir/transform/robustness_test.cc b/src/tint/lang/core/ir/transform/robustness_test.cc
+index 1829c79b817f93d038cb4d8ab2cca86ae185e639..56540bf530ace7e335be1580ed7a0a049cae8b57 100644
+--- a/src/tint/lang/core/ir/transform/robustness_test.cc
++++ b/src/tint/lang/core/ir/transform/robustness_test.cc
+@@ -2103,28 +2103,28 @@ $B1: {  # root
+ %load_signed = func(%coords:i32, %level:i32):vec4<f32> {
+   $B2: {
+     %5:texture_1d<f32> = load %texture
+-    %6:u32 = textureDimensions %5
++    %6:u32 = textureNumLevels %5
+     %7:u32 = sub %6, 1u
+-    %8:u32 = convert %coords
++    %8:u32 = convert %level
+     %9:u32 = min %8, %7
+-    %10:u32 = textureNumLevels %5
++    %10:u32 = textureDimensions %5, %9
+     %11:u32 = sub %10, 1u
+-    %12:u32 = convert %level
++    %12:u32 = convert %coords
+     %13:u32 = min %12, %11
+-    %14:vec4<f32> = textureLoad %5, %9, %13
++    %14:vec4<f32> = textureLoad %5, %13, %9
+     ret %14
+   }
+ }
+ %load_unsigned = func(%coords_1:u32, %level_1:u32):vec4<f32> {  # %coords_1: 'coords', %level_1: 'level'
+   $B3: {
+     %18:texture_1d<f32> = load %texture
+-    %19:u32 = textureDimensions %18
++    %19:u32 = textureNumLevels %18
+     %20:u32 = sub %19, 1u
+-    %21:u32 = min %coords_1, %20
+-    %22:u32 = textureNumLevels %18
++    %21:u32 = min %level_1, %20
++    %22:u32 = textureDimensions %18, %21
+     %23:u32 = sub %22, 1u
+-    %24:u32 = min %level_1, %23
+-    %25:vec4<f32> = textureLoad %18, %21, %24
++    %24:u32 = min %coords_1, %23
++    %25:vec4<f32> = textureLoad %18, %24, %21
+     ret %25
+   }
+ }
+@@ -2200,28 +2200,28 @@ $B1: {  # root
+ %load_signed = func(%coords:vec2<i32>, %level:i32):vec4<f32> {
+   $B2: {
+     %5:texture_2d<f32> = load %texture
+-    %6:vec2<u32> = textureDimensions %5
+-    %7:vec2<u32> = sub %6, vec2<u32>(1u)
+-    %8:vec2<u32> = convert %coords
+-    %9:vec2<u32> = min %8, %7
+-    %10:u32 = textureNumLevels %5
+-    %11:u32 = sub %10, 1u
+-    %12:u32 = convert %level
+-    %13:u32 = min %12, %11
+-    %14:vec4<f32> = textureLoad %5, %9, %13
++    %6:u32 = textureNumLevels %5
++    %7:u32 = sub %6, 1u
++    %8:u32 = convert %level
++    %9:u32 = min %8, %7
++    %10:vec2<u32> = textureDimensions %5, %9
++    %11:vec2<u32> = sub %10, vec2<u32>(1u)
++    %12:vec2<u32> = convert %coords
++    %13:vec2<u32> = min %12, %11
++    %14:vec4<f32> = textureLoad %5, %13, %9
+     ret %14
+   }
+ }
+ %load_unsigned = func(%coords_1:vec2<u32>, %level_1:u32):vec4<f32> {  # %coords_1: 'coords', %level_1: 'level'
+   $B3: {
+     %18:texture_2d<f32> = load %texture
+-    %19:vec2<u32> = textureDimensions %18
+-    %20:vec2<u32> = sub %19, vec2<u32>(1u)
+-    %21:vec2<u32> = min %coords_1, %20
+-    %22:u32 = textureNumLevels %18
+-    %23:u32 = sub %22, 1u
+-    %24:u32 = min %level_1, %23
+-    %25:vec4<f32> = textureLoad %18, %21, %24
++    %19:u32 = textureNumLevels %18
++    %20:u32 = sub %19, 1u
++    %21:u32 = min %level_1, %20
++    %22:vec2<u32> = textureDimensions %18, %21
++    %23:vec2<u32> = sub %22, vec2<u32>(1u)
++    %24:vec2<u32> = min %coords_1, %23
++    %25:vec4<f32> = textureLoad %18, %24, %21
+     ret %25
+   }
+ }
+@@ -2300,35 +2300,35 @@ $B1: {  # root
+ %load_signed = func(%coords:vec2<i32>, %layer:i32, %level:i32):vec4<f32> {
+   $B2: {
+     %6:texture_2d_array<f32> = load %texture
+-    %7:vec2<u32> = textureDimensions %6
+-    %8:vec2<u32> = sub %7, vec2<u32>(1u)
+-    %9:vec2<u32> = convert %coords
+-    %10:vec2<u32> = min %9, %8
+-    %11:u32 = textureNumLayers %6
++    %7:u32 = textureNumLayers %6
++    %8:u32 = sub %7, 1u
++    %9:u32 = convert %layer
++    %10:u32 = min %9, %8
++    %11:u32 = textureNumLevels %6
+     %12:u32 = sub %11, 1u
+-    %13:u32 = convert %layer
++    %13:u32 = convert %level
+     %14:u32 = min %13, %12
+-    %15:u32 = textureNumLevels %6
+-    %16:u32 = sub %15, 1u
+-    %17:u32 = convert %level
+-    %18:u32 = min %17, %16
+-    %19:vec4<f32> = textureLoad %6, %10, %14, %18
++    %15:vec2<u32> = textureDimensions %6, %14
++    %16:vec2<u32> = sub %15, vec2<u32>(1u)
++    %17:vec2<u32> = convert %coords
++    %18:vec2<u32> = min %17, %16
++    %19:vec4<f32> = textureLoad %6, %18, %10, %14
+     ret %19
+   }
+ }
+ %load_unsigned = func(%coords_1:vec2<u32>, %layer_1:u32, %level_1:u32):vec4<f32> {  # %coords_1: 'coords', %layer_1: 'layer', %level_1: 'level'
+   $B3: {
+     %24:texture_2d_array<f32> = load %texture
+-    %25:vec2<u32> = textureDimensions %24
+-    %26:vec2<u32> = sub %25, vec2<u32>(1u)
+-    %27:vec2<u32> = min %coords_1, %26
+-    %28:u32 = textureNumLayers %24
++    %25:u32 = textureNumLayers %24
++    %26:u32 = sub %25, 1u
++    %27:u32 = min %layer_1, %26
++    %28:u32 = textureNumLevels %24
+     %29:u32 = sub %28, 1u
+-    %30:u32 = min %layer_1, %29
+-    %31:u32 = textureNumLevels %24
+-    %32:u32 = sub %31, 1u
+-    %33:u32 = min %level_1, %32
+-    %34:vec4<f32> = textureLoad %24, %27, %30, %33
++    %30:u32 = min %level_1, %29
++    %31:vec2<u32> = textureDimensions %24, %30
++    %32:vec2<u32> = sub %31, vec2<u32>(1u)
++    %33:vec2<u32> = min %coords_1, %32
++    %34:vec4<f32> = textureLoad %24, %33, %27, %30
+     ret %34
+   }
+ }
+@@ -2404,28 +2404,28 @@ $B1: {  # root
+ %load_signed = func(%coords:vec3<i32>, %level:i32):vec4<f32> {
+   $B2: {
+     %5:texture_3d<f32> = load %texture
+-    %6:vec3<u32> = textureDimensions %5
+-    %7:vec3<u32> = sub %6, vec3<u32>(1u)
+-    %8:vec3<u32> = convert %coords
+-    %9:vec3<u32> = min %8, %7
+-    %10:u32 = textureNumLevels %5
+-    %11:u32 = sub %10, 1u
+-    %12:u32 = convert %level
+-    %13:u32 = min %12, %11
+-    %14:vec4<f32> = textureLoad %5, %9, %13
++    %6:u32 = textureNumLevels %5
++    %7:u32 = sub %6, 1u
++    %8:u32 = convert %level
++    %9:u32 = min %8, %7
++    %10:vec3<u32> = textureDimensions %5, %9
++    %11:vec3<u32> = sub %10, vec3<u32>(1u)
++    %12:vec3<u32> = convert %coords
++    %13:vec3<u32> = min %12, %11
++    %14:vec4<f32> = textureLoad %5, %13, %9
+     ret %14
+   }
+ }
+ %load_unsigned = func(%coords_1:vec3<u32>, %level_1:u32):vec4<f32> {  # %coords_1: 'coords', %level_1: 'level'
+   $B3: {
+     %18:texture_3d<f32> = load %texture
+-    %19:vec3<u32> = textureDimensions %18
+-    %20:vec3<u32> = sub %19, vec3<u32>(1u)
+-    %21:vec3<u32> = min %coords_1, %20
+-    %22:u32 = textureNumLevels %18
+-    %23:u32 = sub %22, 1u
+-    %24:u32 = min %level_1, %23
+-    %25:vec4<f32> = textureLoad %18, %21, %24
++    %19:u32 = textureNumLevels %18
++    %20:u32 = sub %19, 1u
++    %21:u32 = min %level_1, %20
++    %22:vec3<u32> = textureDimensions %18, %21
++    %23:vec3<u32> = sub %22, vec3<u32>(1u)
++    %24:vec3<u32> = min %coords_1, %23
++    %25:vec4<f32> = textureLoad %18, %24, %21
+     ret %25
+   }
+ }
+@@ -2589,28 +2589,28 @@ $B1: {  # root
+ %load_signed = func(%coords:vec2<i32>, %level:i32):f32 {
+   $B2: {
+     %5:texture_depth_2d = load %texture
+-    %6:vec2<u32> = textureDimensions %5
+-    %7:vec2<u32> = sub %6, vec2<u32>(1u)
+-    %8:vec2<u32> = convert %coords
+-    %9:vec2<u32> = min %8, %7
+-    %10:u32 = textureNumLevels %5
+-    %11:u32 = sub %10, 1u
+-    %12:u32 = convert %level
+-    %13:u32 = min %12, %11
+-    %14:f32 = textureLoad %5, %9, %13
++    %6:u32 = textureNumLevels %5
++    %7:u32 = sub %6, 1u
++    %8:u32 = convert %level
++    %9:u32 = min %8, %7
++    %10:vec2<u32> = textureDimensions %5, %9
++    %11:vec2<u32> = sub %10, vec2<u32>(1u)
++    %12:vec2<u32> = convert %coords
++    %13:vec2<u32> = min %12, %11
++    %14:f32 = textureLoad %5, %13, %9
+     ret %14
+   }
+ }
+ %load_unsigned = func(%coords_1:vec2<u32>, %level_1:u32):f32 {  # %coords_1: 'coords', %level_1: 'level'
+   $B3: {
+     %18:texture_depth_2d = load %texture
+-    %19:vec2<u32> = textureDimensions %18
+-    %20:vec2<u32> = sub %19, vec2<u32>(1u)
+-    %21:vec2<u32> = min %coords_1, %20
+-    %22:u32 = textureNumLevels %18
+-    %23:u32 = sub %22, 1u
+-    %24:u32 = min %level_1, %23
+-    %25:f32 = textureLoad %18, %21, %24
++    %19:u32 = textureNumLevels %18
++    %20:u32 = sub %19, 1u
++    %21:u32 = min %level_1, %20
++    %22:vec2<u32> = textureDimensions %18, %21
++    %23:vec2<u32> = sub %22, vec2<u32>(1u)
++    %24:vec2<u32> = min %coords_1, %23
++    %25:f32 = textureLoad %18, %24, %21
+     ret %25
+   }
+ }
+@@ -2688,35 +2688,35 @@ $B1: {  # root
+ %load_signed = func(%coords:vec2<i32>, %layer:i32, %level:i32):f32 {
+   $B2: {
+     %6:texture_depth_2d_array = load %texture
+-    %7:vec2<u32> = textureDimensions %6
+-    %8:vec2<u32> = sub %7, vec2<u32>(1u)
+-    %9:vec2<u32> = convert %coords
+-    %10:vec2<u32> = min %9, %8
+-    %11:u32 = textureNumLayers %6
++    %7:u32 = textureNumLayers %6
++    %8:u32 = sub %7, 1u
++    %9:u32 = convert %layer
++    %10:u32 = min %9, %8
++    %11:u32 = textureNumLevels %6
+     %12:u32 = sub %11, 1u
+-    %13:u32 = convert %layer
++    %13:u32 = convert %level
+     %14:u32 = min %13, %12
+-    %15:u32 = textureNumLevels %6
+-    %16:u32 = sub %15, 1u
+-    %17:u32 = convert %level
+-    %18:u32 = min %17, %16
+-    %19:f32 = textureLoad %6, %10, %14, %18
++    %15:vec2<u32> = textureDimensions %6, %14
++    %16:vec2<u32> = sub %15, vec2<u32>(1u)
++    %17:vec2<u32> = convert %coords
++    %18:vec2<u32> = min %17, %16
++    %19:f32 = textureLoad %6, %18, %10, %14
+     ret %19
+   }
+ }
+ %load_unsigned = func(%coords_1:vec2<u32>, %layer_1:u32, %level_1:u32):f32 {  # %coords_1: 'coords', %layer_1: 'layer', %level_1: 'level'
+   $B3: {
+     %24:texture_depth_2d_array = load %texture
+-    %25:vec2<u32> = textureDimensions %24
+-    %26:vec2<u32> = sub %25, vec2<u32>(1u)
+-    %27:vec2<u32> = min %coords_1, %26
+-    %28:u32 = textureNumLayers %24
++    %25:u32 = textureNumLayers %24
++    %26:u32 = sub %25, 1u
++    %27:u32 = min %layer_1, %26
++    %28:u32 = textureNumLevels %24
+     %29:u32 = sub %28, 1u
+-    %30:u32 = min %layer_1, %29
+-    %31:u32 = textureNumLevels %24
+-    %32:u32 = sub %31, 1u
+-    %33:u32 = min %level_1, %32
+-    %34:f32 = textureLoad %24, %27, %30, %33
++    %30:u32 = min %level_1, %29
++    %31:vec2<u32> = textureDimensions %24, %30
++    %32:vec2<u32> = sub %31, vec2<u32>(1u)
++    %33:vec2<u32> = min %coords_1, %32
++    %34:f32 = textureLoad %24, %33, %27, %30
+     ret %34
+   }
+ }
+@@ -3148,28 +3148,28 @@ $B1: {  # root
+ %load_signed = func(%coords:vec2<i32>, %layer:i32):vec4<f32> {
+   $B2: {
+     %5:texture_storage_2d_array<rgba8unorm, read_write> = load %texture
+-    %6:vec2<u32> = textureDimensions %5
+-    %7:vec2<u32> = sub %6, vec2<u32>(1u)
+-    %8:vec2<u32> = convert %coords
+-    %9:vec2<u32> = min %8, %7
+-    %10:u32 = textureNumLayers %5
+-    %11:u32 = sub %10, 1u
+-    %12:u32 = convert %layer
+-    %13:u32 = min %12, %11
+-    %14:vec4<f32> = textureLoad %5, %9, %13
++    %6:u32 = textureNumLayers %5
++    %7:u32 = sub %6, 1u
++    %8:u32 = convert %layer
++    %9:u32 = min %8, %7
++    %10:vec2<u32> = textureDimensions %5
++    %11:vec2<u32> = sub %10, vec2<u32>(1u)
++    %12:vec2<u32> = convert %coords
++    %13:vec2<u32> = min %12, %11
++    %14:vec4<f32> = textureLoad %5, %13, %9
+     ret %14
+   }
+ }
+ %load_unsigned = func(%coords_1:vec2<u32>, %layer_1:u32):vec4<f32> {  # %coords_1: 'coords', %layer_1: 'layer'
+   $B3: {
+     %18:texture_storage_2d_array<rgba8unorm, read_write> = load %texture
+-    %19:vec2<u32> = textureDimensions %18
+-    %20:vec2<u32> = sub %19, vec2<u32>(1u)
+-    %21:vec2<u32> = min %coords_1, %20
+-    %22:u32 = textureNumLayers %18
+-    %23:u32 = sub %22, 1u
+-    %24:u32 = min %layer_1, %23
+-    %25:vec4<f32> = textureLoad %18, %21, %24
++    %19:u32 = textureNumLayers %18
++    %20:u32 = sub %19, 1u
++    %21:u32 = min %layer_1, %20
++    %22:vec2<u32> = textureDimensions %18
++    %23:vec2<u32> = sub %22, vec2<u32>(1u)
++    %24:vec2<u32> = min %coords_1, %23
++    %25:vec4<f32> = textureLoad %18, %24, %21
+     ret %25
+   }
+ }
+diff --git a/src/tint/lang/spirv/writer/texture_builtin_test.cc b/src/tint/lang/spirv/writer/texture_builtin_test.cc
+index 773dd2f34fb20fb4e32bced1d454410f587909bf..293f44f17705118886b9e1eada589d46cf1afd6d 100644
+--- a/src/tint/lang/spirv/writer/texture_builtin_test.cc
++++ b/src/tint/lang/spirv/writer/texture_builtin_test.cc
+@@ -1998,14 +1998,14 @@ TEST_F(SpirvWriterTest, TextureLoad_WithRobustness) {
+ 
+     ASSERT_TRUE(Generate()) << Error() << output_;
+     EXPECT_INST(R"(
+-         %13 = OpImageQuerySizeLod %v2uint %texture %uint_0
+-         %15 = OpISub %v2uint %13 %16
+-         %18 = OpExtInst %v2uint %19 UMin %coords %15
+-         %20 = OpImageQueryLevels %uint %texture
+-         %21 = OpISub %uint %20 %uint_1
+-         %22 = OpBitcast %uint %level
+-         %23 = OpExtInst %uint %19 UMin %22 %21
+-     %result = OpImageFetch %v4float %texture %18 Lod %23
++         %13 = OpImageQueryLevels %uint %texture
++         %14 = OpISub %uint %13 %uint_1
++         %16 = OpBitcast %uint %level
++         %17 = OpExtInst %uint %18 UMin %16 %14
++         %19 = OpImageQuerySizeLod %v2uint %texture %17
++         %20 = OpISub %v2uint %19 %21
++         %22 = OpExtInst %v2uint %18 UMin %coords %20
++     %result = OpImageFetch %v4float %texture %22 Lod %17
+ )");
+ }
+ 
+diff --git a/test/tint/bug/chromium/378541479.wgsl b/test/tint/bug/chromium/378541479.wgsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..8badf526405196915d0575f3ea08d4848f65a27a
+--- /dev/null
++++ b/test/tint/bug/chromium/378541479.wgsl
+@@ -0,0 +1,10 @@
++// flags: --transform robustness
++
++@group(0) @binding(0) var<uniform> level : u32;
++@group(0) @binding(1) var<uniform> coords : vec2<u32>;
++@group(0) @binding(2) var tex: texture_depth_2d;
++
++@compute @workgroup_size(1)
++fn compute_main() {
++  var res: f32 = textureLoad(tex, coords, level);
++}
+diff --git a/test/tint/bug/chromium/378541479.wgsl.expected.dxc.hlsl b/test/tint/bug/chromium/378541479.wgsl.expected.dxc.hlsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..6ceba9a82be1ab9cf41228c22cf93df0a4350ba0
+--- /dev/null
++++ b/test/tint/bug/chromium/378541479.wgsl.expected.dxc.hlsl
+@@ -0,0 +1,13 @@
++cbuffer cbuffer_level : register(b0) {
++  uint4 level[1];
++};
++cbuffer cbuffer_coords : register(b1) {
++  uint4 coords[1];
++};
++Texture2D tex : register(t2);
++
++[numthreads(1, 1, 1)]
++void compute_main() {
++  float res = tex.Load(uint3(coords[0].xy, level[0].x)).x;
++  return;
++}
+diff --git a/test/tint/bug/chromium/378541479.wgsl.expected.fxc.hlsl b/test/tint/bug/chromium/378541479.wgsl.expected.fxc.hlsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..6ceba9a82be1ab9cf41228c22cf93df0a4350ba0
+--- /dev/null
++++ b/test/tint/bug/chromium/378541479.wgsl.expected.fxc.hlsl
+@@ -0,0 +1,13 @@
++cbuffer cbuffer_level : register(b0) {
++  uint4 level[1];
++};
++cbuffer cbuffer_coords : register(b1) {
++  uint4 coords[1];
++};
++Texture2D tex : register(t2);
++
++[numthreads(1, 1, 1)]
++void compute_main() {
++  float res = tex.Load(uint3(coords[0].xy, level[0].x)).x;
++  return;
++}
+diff --git a/test/tint/bug/chromium/378541479.wgsl.expected.glsl b/test/tint/bug/chromium/378541479.wgsl.expected.glsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..bb0ee27a7ae0168c30efb22dc787a20658a1a315
+--- /dev/null
++++ b/test/tint/bug/chromium/378541479.wgsl.expected.glsl
+@@ -0,0 +1,27 @@
++#version 310 es
++
++
++struct TintTextureUniformData {
++  uint tint_builtin_value_0;
++};
++
++layout(binding = 0, std140)
++uniform level_block_1_ubo {
++  uint inner;
++} v;
++layout(binding = 1, std140)
++uniform coords_block_1_ubo {
++  uvec2 inner;
++} v_1;
++layout(binding = 0, std140)
++uniform tint_symbol_1_ubo {
++  TintTextureUniformData inner;
++} v_2;
++uniform highp sampler2D tex;
++layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
++void main() {
++  uvec2 v_3 = v_1.inner;
++  uint v_4 = min(v.inner, (v_2.inner.tint_builtin_value_0 - 1u));
++  ivec2 v_5 = ivec2(min(v_3, (uvec2(textureSize(tex, int(v_4))) - uvec2(1u))));
++  float res = texelFetch(tex, v_5, int(v_4)).x;
++}
+diff --git a/test/tint/bug/chromium/378541479.wgsl.expected.ir.dxc.hlsl b/test/tint/bug/chromium/378541479.wgsl.expected.ir.dxc.hlsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..b53ce0e96375575c83a5b6e9c0d3fd85639ed49e
+--- /dev/null
++++ b/test/tint/bug/chromium/378541479.wgsl.expected.ir.dxc.hlsl
+@@ -0,0 +1,22 @@
++
++cbuffer cbuffer_level : register(b0) {
++  uint4 level[1];
++};
++cbuffer cbuffer_coords : register(b1) {
++  uint4 coords[1];
++};
++Texture2D tex : register(t2);
++[numthreads(1, 1, 1)]
++void compute_main() {
++  Texture2D v = tex;
++  uint2 v_1 = coords[0u].xy;
++  uint v_2 = level[0u].x;
++  uint3 v_3 = (0u).xxx;
++  v.GetDimensions(0u, v_3[0u], v_3[1u], v_3[2u]);
++  uint v_4 = min(v_2, (v_3.z - 1u));
++  uint3 v_5 = (0u).xxx;
++  v.GetDimensions(uint(v_4), v_5[0u], v_5[1u], v_5[2u]);
++  int2 v_6 = int2(min(v_1, (v_5.xy - (1u).xx)));
++  float res = v.Load(int3(v_6, int(v_4))).x;
++}
++
+diff --git a/test/tint/bug/chromium/378541479.wgsl.expected.ir.fxc.hlsl b/test/tint/bug/chromium/378541479.wgsl.expected.ir.fxc.hlsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..b53ce0e96375575c83a5b6e9c0d3fd85639ed49e
+--- /dev/null
++++ b/test/tint/bug/chromium/378541479.wgsl.expected.ir.fxc.hlsl
+@@ -0,0 +1,22 @@
++
++cbuffer cbuffer_level : register(b0) {
++  uint4 level[1];
++};
++cbuffer cbuffer_coords : register(b1) {
++  uint4 coords[1];
++};
++Texture2D tex : register(t2);
++[numthreads(1, 1, 1)]
++void compute_main() {
++  Texture2D v = tex;
++  uint2 v_1 = coords[0u].xy;
++  uint v_2 = level[0u].x;
++  uint3 v_3 = (0u).xxx;
++  v.GetDimensions(0u, v_3[0u], v_3[1u], v_3[2u]);
++  uint v_4 = min(v_2, (v_3.z - 1u));
++  uint3 v_5 = (0u).xxx;
++  v.GetDimensions(uint(v_4), v_5[0u], v_5[1u], v_5[2u]);
++  int2 v_6 = int2(min(v_1, (v_5.xy - (1u).xx)));
++  float res = v.Load(int3(v_6, int(v_4))).x;
++}
++
+diff --git a/test/tint/bug/chromium/378541479.wgsl.expected.ir.msl b/test/tint/bug/chromium/378541479.wgsl.expected.ir.msl
+new file mode 100644
+index 0000000000000000000000000000000000000000..b1edc576c7891f4a58b7bd1af1bb8597d59a558a
+--- /dev/null
++++ b/test/tint/bug/chromium/378541479.wgsl.expected.ir.msl
+@@ -0,0 +1,17 @@
++#include <metal_stdlib>
++using namespace metal;
++
++struct tint_module_vars_struct {
++  const constant uint* level;
++  const constant uint2* coords;
++  depth2d<float, access::sample> tex;
++};
++
++kernel void compute_main(const constant uint* level [[buffer(1)]], const constant uint2* coords [[buffer(0)]], depth2d<float, access::sample> tex [[texture(0)]]) {
++  tint_module_vars_struct const tint_module_vars = tint_module_vars_struct{.level=level, .coords=coords, .tex=tex};
++  uint2 const v = (*tint_module_vars.coords);
++  uint const v_1 = (*tint_module_vars.level);
++  uint const v_2 = min(v_1, (tint_module_vars.tex.get_num_mip_levels() - 1u));
++  uint const v_3 = tint_module_vars.tex.get_width(v_2);
++  float res = tint_module_vars.tex.read(min(v, (uint2(v_3, tint_module_vars.tex.get_height(v_2)) - uint2(1u))), v_2);
++}
+diff --git a/test/tint/bug/chromium/378541479.wgsl.expected.msl b/test/tint/bug/chromium/378541479.wgsl.expected.msl
+new file mode 100644
+index 0000000000000000000000000000000000000000..0ac2d2a5f299070a369eee1fd6e0ff4a02cf1bde
+--- /dev/null
++++ b/test/tint/bug/chromium/378541479.wgsl.expected.msl
+@@ -0,0 +1,9 @@
++#include <metal_stdlib>
++
++using namespace metal;
++kernel void compute_main(const constant uint* tint_symbol [[buffer(1)]], depth2d<float, access::sample> tint_symbol_1 [[texture(0)]], const constant uint2* tint_symbol_2 [[buffer(0)]]) {
++  uint const level_idx = min(uint(*(tint_symbol)), (tint_symbol_1.get_num_mip_levels() - 1u));
++  float res = tint_symbol_1.read(uint2(min(*(tint_symbol_2), (uint2(tint_symbol_1.get_width(level_idx), tint_symbol_1.get_height(level_idx)) - uint2(1u)))), level_idx);
++  return;
++}
++
+diff --git a/test/tint/bug/chromium/378541479.wgsl.expected.spvasm b/test/tint/bug/chromium/378541479.wgsl.expected.spvasm
+new file mode 100644
+index 0000000000000000000000000000000000000000..b8a3b11612016e7575c948bb6d83902ad6357cc9
+--- /dev/null
++++ b/test/tint/bug/chromium/378541479.wgsl.expected.spvasm
+@@ -0,0 +1,70 @@
++; SPIR-V
++; Version: 1.3
++; Generator: Google Tint Compiler; 1
++; Bound: 39
++; Schema: 0
++               OpCapability Shader
++               OpCapability ImageQuery
++         %29 = OpExtInstImport "GLSL.std.450"
++               OpMemoryModel Logical GLSL450
++               OpEntryPoint GLCompute %compute_main "compute_main"
++               OpExecutionMode %compute_main LocalSize 1 1 1
++               OpMemberName %level_block 0 "inner"
++               OpName %level_block "level_block"
++               OpMemberName %coords_block 0 "inner"
++               OpName %coords_block "coords_block"
++               OpName %tex "tex"
++               OpName %compute_main "compute_main"
++               OpName %res "res"
++               OpMemberDecorate %level_block 0 Offset 0
++               OpDecorate %level_block Block
++               OpDecorate %1 DescriptorSet 0
++               OpDecorate %1 Binding 0
++               OpDecorate %1 NonWritable
++               OpMemberDecorate %coords_block 0 Offset 0
++               OpDecorate %coords_block Block
++               OpDecorate %5 DescriptorSet 0
++               OpDecorate %5 Binding 1
++               OpDecorate %5 NonWritable
++               OpDecorate %tex DescriptorSet 0
++               OpDecorate %tex Binding 2
++       %uint = OpTypeInt 32 0
++%level_block = OpTypeStruct %uint
++%_ptr_Uniform_level_block = OpTypePointer Uniform %level_block
++          %1 = OpVariable %_ptr_Uniform_level_block Uniform
++     %v2uint = OpTypeVector %uint 2
++%coords_block = OpTypeStruct %v2uint
++%_ptr_Uniform_coords_block = OpTypePointer Uniform %coords_block
++          %5 = OpVariable %_ptr_Uniform_coords_block Uniform
++      %float = OpTypeFloat 32
++         %11 = OpTypeImage %float 2D 0 0 0 1 Unknown
++%_ptr_UniformConstant_11 = OpTypePointer UniformConstant %11
++        %tex = OpVariable %_ptr_UniformConstant_11 UniformConstant
++       %void = OpTypeVoid
++         %15 = OpTypeFunction %void
++%_ptr_Uniform_v2uint = OpTypePointer Uniform %v2uint
++     %uint_0 = OpConstant %uint 0
++%_ptr_Uniform_uint = OpTypePointer Uniform %uint
++     %uint_1 = OpConstant %uint 1
++         %32 = OpConstantComposite %v2uint %uint_1 %uint_1
++    %v4float = OpTypeVector %float 4
++%_ptr_Function_float = OpTypePointer Function %float
++%compute_main = OpFunction %void None %15
++         %16 = OpLabel
++        %res = OpVariable %_ptr_Function_float Function
++         %17 = OpLoad %11 %tex None
++         %18 = OpAccessChain %_ptr_Uniform_v2uint %5 %uint_0
++         %21 = OpLoad %v2uint %18 None
++         %22 = OpAccessChain %_ptr_Uniform_uint %1 %uint_0
++         %24 = OpLoad %uint %22 None
++         %25 = OpImageQueryLevels %uint %17
++         %26 = OpISub %uint %25 %uint_1
++         %28 = OpExtInst %uint %29 UMin %24 %26
++         %30 = OpImageQuerySizeLod %v2uint %17 %28
++         %31 = OpISub %v2uint %30 %32
++         %33 = OpExtInst %v2uint %29 UMin %21 %31
++         %34 = OpImageFetch %v4float %17 %33 Lod %28
++         %36 = OpCompositeExtract %float %34 0
++               OpStore %res %36
++               OpReturn
++               OpFunctionEnd
+diff --git a/test/tint/bug/chromium/378541479.wgsl.expected.wgsl b/test/tint/bug/chromium/378541479.wgsl.expected.wgsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..705ce781e50f7668bd3c559562f12f5d0aaa66d4
+--- /dev/null
++++ b/test/tint/bug/chromium/378541479.wgsl.expected.wgsl
+@@ -0,0 +1,10 @@
++@group(0) @binding(0) var<uniform> level : u32;
++
++@group(0) @binding(1) var<uniform> coords : vec2<u32>;
++
++@group(0) @binding(2) var tex : texture_depth_2d;
++
++@compute @workgroup_size(1)
++fn compute_main() {
++  var res : f32 = textureLoad(tex, coords, level);
++}
