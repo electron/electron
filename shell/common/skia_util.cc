@@ -29,6 +29,8 @@
 
 namespace electron::util {
 
+namespace {
+
 struct ScaleFactorPair {
   const char* name;
   float scale;
@@ -54,6 +56,22 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
 
   return 1.0f;
 }
+
+bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
+                             const base::FilePath& path,
+                             double scale_factor) {
+  std::string file_contents;
+  {
+    electron::ScopedAllowBlockingForElectron allow_blocking;
+    if (!asar::ReadFileToString(path, &file_contents))
+      return false;
+  }
+
+  return AddImageSkiaRepFromBuffer(image, base::as_byte_span(file_contents), 0,
+                                   0, scale_factor);
+}
+
+}  // namespace
 
 bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
                             const base::span<const uint8_t> data,
@@ -112,20 +130,6 @@ bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
 
   image->AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
   return true;
-}
-
-bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
-                             const base::FilePath& path,
-                             double scale_factor) {
-  std::string file_contents;
-  {
-    electron::ScopedAllowBlockingForElectron allow_blocking;
-    if (!asar::ReadFileToString(path, &file_contents))
-      return false;
-  }
-
-  return AddImageSkiaRepFromBuffer(image, base::as_byte_span(file_contents), 0,
-                                   0, scale_factor);
 }
 
 bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
