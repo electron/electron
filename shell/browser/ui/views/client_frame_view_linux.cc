@@ -154,8 +154,8 @@ gfx::Insets ClientFrameViewLinux::GetBorderDecorationInsets() const {
 }
 
 gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
-  return gfx::Insets(
-      host_supports_client_frame_shadow_ ? -kResizeOutsideBorderSize : 0);
+  return gfx::Insets{
+      host_supports_client_frame_shadow_ ? -kResizeOutsideBorderSize : 0};
 }
 
 gfx::Rect ClientFrameViewLinux::GetWindowContentBounds() const {
@@ -457,7 +457,7 @@ void ClientFrameViewLinux::LayoutButtonsOnSide(
 
 gfx::Rect ClientFrameViewLinux::GetTitlebarBounds() const {
   if (frame_->IsFullscreen()) {
-    return gfx::Rect();
+    return {};
   }
 
   int font_height = gfx::FontList().GetHeight();

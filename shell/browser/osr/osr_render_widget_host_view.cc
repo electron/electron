@@ -14,6 +14,7 @@
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
 #include "base/memory/raw_ptr.h"
+#include "base/numerics/safe_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/time/time.h"
 #include "components/input/cursor_manager.h"
@@ -115,9 +116,9 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
 
 ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
     blink::WebMouseWheelEvent event) {
-  return ui::MouseWheelEvent(UiMouseEventFromWebMouseEvent(event),
-                             std::floor(event.delta_x),
-                             std::floor(event.delta_y));
+  return {UiMouseEventFromWebMouseEvent(event),
+          base::ClampFloor<int>(event.delta_x),
+          base::ClampFloor<int>(event.delta_y)};
 }
 
 }  // namespace
