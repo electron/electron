@@ -224,7 +224,11 @@ jobs:
         cd src\electron
         echo ELECTRON_TEST_RESULTS_DIR=$PWD\junit >> $env:GITHUB_ENV
         # Get which tests are on this shard
-        $tests_files=node script\split-tests ${{ matrix.shard }} 2
+        if ('${{ matrix.shard }}' -eq '1') {
+          $tests_files='spec\api-browser-window-spec.ts spec\chromium-spec.ts spec\api-protocol-spec.ts spec\api-session-spec.ts spec\api-context-bridge-spec.ts spec\api-browser-view-spec.ts spec\api-menu-spec.ts spec\api-crash-reporter-spec.ts spec\api-web-request-spec.ts spec\node-spec.ts spec\release-notes-spec.ts spec\modules-spec.ts spec\api-web-frame-spec.ts spec\api-autoupdater-darwin-spec.ts spec\version-bump-spec.ts spec\api-media-handler-spec.ts spec\spellchecker-spec.ts spec\api-dialog-spec.ts spec\api-desktop-capturer-spec.ts spec\api-auto-updater-spec.ts spec\api-screen-spec.ts spec\esm-spec.ts spec\security-warnings-spec.ts spec\api-native-theme-spec.ts spec\api-touch-bar-spec.ts spec\api-in-app-purchase-spec.ts spec\asar-spec.ts spec\api-net-custom-protocols-spec.ts spec\asar-integrity-spec.ts spec\api-service-workers-spec.ts spec\api-global-shortcut-spec.ts spec\fuses-spec.ts spec\api-net-spec.ts spec\autofill-spec.ts spec\api-notification-dbus-spec.ts spec\parse-features-string-spec.ts'
+        } elseif ('${{ matrix.shard }}' -eq '2') {
+          $tests_files='spec\api-web-contents-spec.ts spec\api-app-spec.ts spec\webview-spec.ts spec\extensions-spec.ts spec\api-ipc-spec.ts spec\api-utility-process-spec.ts spec\api-native-image-spec.ts spec\api-web-frame-main-spec.ts spec\api-menu-item-spec.ts spec\api-tray-spec.ts spec\api-system-preferences-spec.ts spec\api-net-session-spec.ts spec\api-web-contents-view-spec.ts spec\logging-spec.ts spec\api-process-spec.ts spec\guest-window-manager-spec.ts spec\api-debugger-spec.ts spec\api-clipboard-spec.ts spec\deprecate-spec.ts spec\api-power-monitor-spec.ts spec\api-shell-spec.ts spec\api-subframe-spec.ts spec\api-ipc-renderer-spec.ts spec\api-safe-storage-spec.ts spec\api-content-tracing-spec.ts spec\api-notification-spec.ts spec\api-net-log-spec.ts spec\api-view-spec.ts spec\process-binding-spec.ts spec\api-ipc-main-spec.ts spec\crash-spec.ts spec\types-spec.ts spec\api-web-utils-spec.ts spec\visibility-state-spec.ts spec\api-power-save-blocker-spec.ts'
+        }        
         echo tests_files="$tests_files" >> $env:GITHUB_ENV
         if ('${{ inputs.target-arch }}' -eq 'x86') {
           echo npm_config_arch=ia32 >> $env:GITHUB_ENV
