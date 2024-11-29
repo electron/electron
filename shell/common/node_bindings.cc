@@ -190,7 +190,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
     v8::Local<v8::FixedArray> v8_import_assertions) {
   if (node::Environment::GetCurrent(context) == nullptr) {
     if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
-      return v8::MaybeLocal<v8::Promise>();
+      return {};
     return blink::V8Initializer::HostImportModuleDynamically(
         context, v8_host_defined_options, v8_referrer_resource_url,
         v8_specifier, v8_import_assertions);
