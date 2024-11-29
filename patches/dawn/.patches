@@ -1,1 +1,2 @@
 tint_validate_that_align_is_large_enough.patch
+ir_fix_robustness_transform_on_textureload_of_sampled_and_depth.patch
