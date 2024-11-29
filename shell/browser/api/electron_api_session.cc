@@ -1583,7 +1583,7 @@ std::optional<gin::Handle<Session>> Session::FromPath(
 gin::Handle<Session> Session::New() {
   gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
       .ThrowError("Session objects cannot be created with 'new'");
-  return gin::Handle<Session>();
+  return {};
 }
 
 void Session::FillObjectTemplate(v8::Isolate* isolate,

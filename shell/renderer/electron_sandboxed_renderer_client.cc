@@ -86,7 +86,7 @@ v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
   auto maybe_script = v8::Script::Compile(context, source);
   v8::Local<v8::Script> script;
   if (!maybe_script.ToLocal(&script))
-    return v8::Local<v8::Value>();
+    return {};
   return script->Run(context).ToLocalChecked();
 }
 

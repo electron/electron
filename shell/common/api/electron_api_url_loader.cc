@@ -529,14 +529,14 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   gin_helper::Dictionary opts;
   if (!args->GetNext(&opts)) {
     args->ThrowTypeError("Expected a dictionary");
-    return gin::Handle<SimpleURLLoaderWrapper>();
+    return {};
   }
   auto request = std::make_unique<network::ResourceRequest>();
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
   if (!request->url.is_valid()) {
     args->ThrowTypeError("Invalid URL");
-    return gin::Handle<SimpleURLLoaderWrapper>();
+    return {};
   }
   request->site_for_cookies = net::SiteForCookies::FromUrl(request->url);
   opts.Get("referrer", &request->referrer);
@@ -604,7 +604,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       if (!net::HttpUtil::IsValidHeaderName(it.first) ||
           !net::HttpUtil::IsValidHeaderValue(it.second)) {
         args->ThrowTypeError("Invalid header name or value");
-        return gin::Handle<SimpleURLLoaderWrapper>();
+        return {};
       }
       request->headers.SetHeader(it.first, it.second);
     }
