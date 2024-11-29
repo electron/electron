@@ -74,19 +74,19 @@ gfx::Size OffScreenWebContentsView::GetSize() {
 #if !BUILDFLAG(IS_MAC)
 gfx::NativeView OffScreenWebContentsView::GetNativeView() const {
   if (!native_window_)
-    return gfx::NativeView();
+    return {};
   return native_window_->GetNativeView();
 }
 
 gfx::NativeView OffScreenWebContentsView::GetContentNativeView() const {
   if (!native_window_)
-    return gfx::NativeView();
+    return {};
   return native_window_->GetNativeView();
 }
 
 gfx::NativeWindow OffScreenWebContentsView::GetTopLevelNativeWindow() const {
   if (!native_window_)
-    return gfx::NativeWindow();
+    return {};
   return native_window_->GetNativeWindow();
 }
 #endif

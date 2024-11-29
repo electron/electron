@@ -793,7 +793,7 @@ ElectronBrowserClient::CreateClientCertStore(
 #elif BUILDFLAG(IS_MAC)
   return std::make_unique<net::ClientCertStoreMac>();
 #elif defined(USE_OPENSSL)
-  return std::unique_ptr<net::ClientCertStore>();
+  return ();
 #endif
 }
 
@@ -802,7 +802,7 @@ ElectronBrowserClient::OverrideSystemLocationProvider() {
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
   return std::make_unique<FakeLocationProvider>();
 #else
-  return nullptr;
+  return {};
 #endif
 }
 

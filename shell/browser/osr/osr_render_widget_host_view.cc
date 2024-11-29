@@ -297,12 +297,12 @@ void OffScreenRenderWidgetHostView::SetBounds(const gfx::Rect& new_bounds) {
 }
 
 gfx::NativeView OffScreenRenderWidgetHostView::GetNativeView() {
-  return gfx::NativeView();
+  return {};
 }
 
 gfx::NativeViewAccessible
 OffScreenRenderWidgetHostView::GetNativeViewAccessible() {
-  return gfx::NativeViewAccessible();
+  return {};
 }
 
 ui::TextInputClient* OffScreenRenderWidgetHostView::GetTextInputClient() {

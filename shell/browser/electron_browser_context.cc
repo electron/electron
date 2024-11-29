@@ -484,7 +484,7 @@ ElectronBrowserContext::CreateZoomLevelDelegate(
   if (!IsOffTheRecord()) {
     return std::make_unique<ZoomLevelDelegate>(prefs(), partition_path);
   }
-  return std::unique_ptr<content::ZoomLevelDelegate>();
+  return {};
 }
 
 content::DownloadManagerDelegate*

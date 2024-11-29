@@ -2541,7 +2541,7 @@ std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
   // If the history is empty, it contains only one entry and that is
   // "InitialEntry"
   if (history_length == 1 && controller.GetEntryAtIndex(0)->IsInitialEntry())
-    return std::vector<content::NavigationEntry*>();
+    return {};
 
   std::vector<content::NavigationEntry*> history;
   history.reserve(history_length);

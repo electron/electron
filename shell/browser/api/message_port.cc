@@ -226,7 +226,7 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
     const std::vector<gin::Handle<MessagePort>>& ports,
     bool* threw_exception) {
   if (ports.empty())
-    return std::vector<blink::MessagePortChannel>();
+    return {};
 
   std::unordered_set<MessagePort*> visited;
 
@@ -245,7 +245,7 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
       gin_helper::ErrorThrower(isolate).ThrowError(
           "Port at index " + base::NumberToString(i) + " is " + type + ".");
       *threw_exception = true;
-      return std::vector<blink::MessagePortChannel>();
+      return {};
     }
     visited.insert(port);
   }
