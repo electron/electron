@@ -456,7 +456,7 @@ v8::Local<v8::Object> RendererClientBase::GetScriptableObject(
   if (container_manager)
     return container_manager->GetScriptableObject(plugin_element, isolate);
 #endif
-  return v8::Local<v8::Object>();
+  return {};
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>

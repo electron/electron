@@ -2005,7 +2005,7 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
       ReplyChannel::Create(isolate, std::move(callback))
           ->SendError("WebContents was destroyed");
     }
-    return gin::Handle<gin_helper::internal::Event>();
+    return {};
   }
   gin::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
@@ -2563,7 +2563,7 @@ std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
   // If the history is empty, it contains only one entry and that is
   // "InitialEntry"
   if (history_length == 1 && controller.GetEntryAtIndex(0)->IsInitialEntry())
-    return std::vector<content::NavigationEntry*>();
+    return {};
 
   std::vector<content::NavigationEntry*> history;
   history.reserve(history_length);

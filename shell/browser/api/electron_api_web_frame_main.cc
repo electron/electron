@@ -435,14 +435,14 @@ void WebFrameMain::DOMContentLoaded() {
 
 // static
 gin::Handle<WebFrameMain> WebFrameMain::New(v8::Isolate* isolate) {
-  return gin::Handle<WebFrameMain>();
+  return {};
 }
 
 // static
 gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
                                              content::RenderFrameHost* rfh) {
   if (!rfh)
-    return gin::Handle<WebFrameMain>();
+    return {};
 
   auto* web_frame = FromRenderFrameHost(rfh);
   if (web_frame)

@@ -429,7 +429,7 @@ gin::Handle<View> View::Create(v8::Isolate* isolate) {
     if (gin::ConvertFromV8(isolate, obj, &view))
       return view;
   }
-  return gin::Handle<View>();
+  return {};
 }
 
 // static
