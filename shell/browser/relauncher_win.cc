@@ -19,8 +19,6 @@ namespace relauncher::internal {
 
 namespace {
 
-const CharType* kWaitEventName = L"ElectronRelauncherWaitEvent";
-
 struct PROCESS_BASIC_INFORMATION {
   union {
     NTSTATUS ExitStatus;
@@ -98,8 +96,8 @@ StringType AddQuoteForArg(const StringType& arg) {
 }  // namespace
 
 StringType GetWaitEventName(base::ProcessId pid) {
-  return base::StrCat(
-      {kWaitEventName, L"-", base::NumberToWString(static_cast<int>(pid))});
+  return base::StrCat({L"ElectronRelauncherWaitEvent-",
+                       base::NumberToWString(static_cast<int>(pid))});
 }
 
 StringType ArgvToCommandLineString(const StringVector& argv) {
