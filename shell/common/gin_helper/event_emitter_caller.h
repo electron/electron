@@ -64,7 +64,7 @@ v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
     return scope.Escape(CustomEmit(isolate, v8_object, method_name,
                                    std::forward<Args>(args)...));
   else
-    return v8::Local<v8::Value>();
+    return {};
 }
 
 template <typename T, typename... Args>

@@ -97,7 +97,7 @@ std::unique_ptr<base::Value::Dict> ParseManifest(
 
   if (!manifest.get() || !manifest->is_dict()) {
     LOG(ERROR) << "Failed to parse extension manifest.";
-    return std::unique_ptr<base::Value::Dict>();
+    return {};
   }
   return std::make_unique<base::Value::Dict>(std::move(*manifest).TakeDict());
 }

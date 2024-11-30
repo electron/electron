@@ -101,7 +101,7 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
     if (weak_map_)
       return weak_map_->Values(isolate);
     else
-      return std::vector<v8::Local<v8::Object>>();
+      return {};
   }
 
   // Removes this instance from the weak map.
