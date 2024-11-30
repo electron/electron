@@ -34,10 +34,11 @@ namespace {
 // arguments intended for the relaunched process, to get the correct settings
 // for such things as logging and the user-data-dir in case it affects crash
 // reporting.
-constexpr CharType kRelauncherArgSeparator[] = FILE_PATH_LITERAL("---");
+constexpr base::CommandLine::CharType kRelauncherArgSeparator[] =
+    FILE_PATH_LITERAL("---");
 
 // The "type" argument identifying a relauncher process ("--type=relauncher").
-constexpr CharType kRelauncherTypeArg[] =
+constexpr base::CommandLine::CharType kRelauncherTypeArg[] =
     FILE_PATH_LITERAL("--type=relauncher");
 
 }  // namespace
