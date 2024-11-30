@@ -41,7 +41,6 @@ struct MainFunctionParams;
 
 namespace relauncher {
 
-using CharType = base::CommandLine::CharType;
 using StringType = base::CommandLine::StringType;
 using StringVector = base::CommandLine::StringVector;
 
