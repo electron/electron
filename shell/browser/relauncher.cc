@@ -36,6 +36,10 @@ namespace {
 // reporting.
 constexpr CharType kRelauncherArgSeparator[] = FILE_PATH_LITERAL("---");
 
+// The "type" argument identifying a relauncher process ("--type=relauncher").
+constexpr CharType kRelauncherTypeArg[] =
+    FILE_PATH_LITERAL("--type=relauncher");
+
 }  // namespace
 
 namespace internal {
@@ -43,8 +47,6 @@ namespace internal {
 #if BUILDFLAG(IS_POSIX)
 const int kRelauncherSyncFD = STDERR_FILENO + 1;
 #endif
-
-const CharType* kRelauncherTypeArg = FILE_PATH_LITERAL("--type=relauncher");
 
 }  // namespace internal
 
@@ -70,7 +72,7 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
                            const StringVector& argv) {
   StringVector relaunch_argv;
   relaunch_argv.push_back(helper.value());
-  relaunch_argv.push_back(internal::kRelauncherTypeArg);
+  relaunch_argv.push_back(kRelauncherTypeArg);
   // Relauncher process has its own --type=relauncher which
   // is not recognized by the service_manager, explicitly set
   // the sandbox type to avoid CHECK failure in
@@ -159,7 +161,7 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
 int RelauncherMain(const content::MainFunctionParams& main_parameters) {
   const StringVector& argv = electron::ElectronCommandLine::argv();
 
-  if (argv.size() < 4 || argv[1] != internal::kRelauncherTypeArg) {
+  if (argv.size() < 4 || argv[1] != kRelauncherTypeArg) {
     LOG(ERROR) << "relauncher process invoked with unexpected arguments";
     return 1;
   }
