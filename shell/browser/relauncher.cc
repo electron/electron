@@ -25,6 +25,19 @@
 
 namespace relauncher {
 
+namespace {
+
+// The argument separating arguments intended for the relauncher process from
+// those intended for the relaunched process. "---" is chosen instead of "--"
+// because CommandLine interprets "--" as meaning "end of switches", but
+// for many purposes, the relauncher process' CommandLine ought to interpret
+// arguments intended for the relaunched process, to get the correct settings
+// for such things as logging and the user-data-dir in case it affects crash
+// reporting.
+constexpr CharType kRelauncherArgSeparator[] = FILE_PATH_LITERAL("---");
+
+}  // namespace
+
 namespace internal {
 
 #if BUILDFLAG(IS_POSIX)
@@ -32,7 +45,6 @@ const int kRelauncherSyncFD = STDERR_FILENO + 1;
 #endif
 
 const CharType* kRelauncherTypeArg = FILE_PATH_LITERAL("--type=relauncher");
-const CharType* kRelauncherArgSeparator = FILE_PATH_LITERAL("---");
 
 }  // namespace internal
 
@@ -68,7 +80,7 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
   relaunch_argv.insert(relaunch_argv.end(), relauncher_args.begin(),
                        relauncher_args.end());
 
-  relaunch_argv.push_back(internal::kRelauncherArgSeparator);
+  relaunch_argv.push_back(kRelauncherArgSeparator);
 
   relaunch_argv.insert(relaunch_argv.end(), argv.begin(), argv.end());
 
@@ -162,7 +174,7 @@ int RelauncherMain(const content::MainFunctionParams& main_parameters) {
   for (size_t argv_index = 2; argv_index < argv.size(); ++argv_index) {
     const StringType& arg(argv[argv_index]);
     if (!in_relauncher_args) {
-      if (arg == internal::kRelauncherArgSeparator) {
+      if (arg == kRelauncherArgSeparator) {
         in_relauncher_args = true;
       } else {
         relauncher_args.push_back(arg);
