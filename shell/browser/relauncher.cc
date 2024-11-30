@@ -23,8 +23,6 @@
 #include "base/posix/eintr_wrapper.h"
 #endif
 
-namespace relauncher {
-
 namespace {
 
 // The argument separating arguments intended for the relauncher process from
@@ -42,6 +40,8 @@ constexpr base::CommandLine::CharType kRelauncherTypeArg[] =
     FILE_PATH_LITERAL("--type=relauncher");
 
 }  // namespace
+
+namespace relauncher {
 
 namespace internal {
 
