@@ -128,14 +128,14 @@ The nonstandard `path` property of the Web `File` object was added in an early v
 ```js
 // Before (renderer)
 
-const file = document.querySelector('input[type=file]')
+const file = document.querySelector('input[type=file]').files[0]
 alert(`Uploaded file path was: ${file.path}`)
 ```
 
 ```js
 // After (renderer)
 
-const file = document.querySelector('input[type=file]')
+const file = document.querySelector('input[type=file]').files[0]
 electron.showFilePath(file)
 
 // (preload)
