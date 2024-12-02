@@ -1511,7 +1511,7 @@ session is persisted on disk.  For in memory sessions this returns `null`.
 * `options` Object (optional)
   * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data.
     * `backgroundFetch` - Background Fetch
-    * `cache` - Cache (incl. cache storage)
+    * `cache` - Cache (includes `cachestorage` and `shadercache`)
     * `cookies` - Cookies
     * `downloads` - Downloads
     * `fileSystems` - File Systems
