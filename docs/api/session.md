@@ -1513,7 +1513,7 @@ session is persisted on disk.  For in memory sessions this returns `null`.
     can potentially include data types not explicitly listed here. (See Chromium's
     [`BrowsingDataRemover`][browsing-data-remover] for the full list.)
     * `backgroundFetch` - Background Fetch
-    * `cache` - Cache
+    * `cache` - Cache (includes `cachestorage` and `shadercache`)
     * `cookies` - Cookies
     * `downloads` - Downloads
     * `fileSystems` - File Systems
