@@ -14,7 +14,7 @@ happened. The `details` object describes the request.
 
 ⚠️ Only the last attached `listener` will be used. Passing `null` as `listener` will unsubscribe from the event.
 
-The `filter` object has a `includeUrls` property which is an Array of URL
+The `filter` object has a `urls` property which is an Array of URL
 patterns that will be used to filter out the requests that do not match the URL
 patterns. If the `filter` is omitted then all requests will be matched.
 
@@ -28,7 +28,7 @@ const { session } = require('electron')
 
 // Modify the user agent for all requests to the following urls.
 const filter = {
-  includeUrls: ['https://*.github.com/*', '*://electron.github.io/*']
+  urls: ['https://*.github.com/*', '*://electron.github.io/*']
 }
 
 session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
@@ -70,10 +70,10 @@ The `uploadData` is an array of `UploadData` objects.
 
 The `callback` has to be called with an `response` object.
 
-Some examples of valid `includeUrls`:
+Some examples of valid `urls`:
 
 ```js
-'<all-urls>'
+'<all_urls>'
 'http://foo:1234/'
 'http://foo.com/'
 'http://foo:1234/bar'

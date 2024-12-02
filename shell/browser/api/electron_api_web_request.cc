@@ -664,7 +664,7 @@ void WebRequest::SetListener(Event event,
                              gin::Arguments* args) {
   v8::Local<v8::Value> arg;
 
-  // { includeUrls, excludeUrls, types }.
+  // { urls, excludeUrls, types }.
   std::set<std::string> filter_include_patterns, filter_exclude_patterns,
       filter_types;
   RequestFilter filter;
@@ -675,7 +675,10 @@ void WebRequest::SetListener(Event event,
     // have to explicitly check if the argument is Function before trying to
     // convert it to Dictionary.
     if (gin::ConvertFromV8(args->isolate(), arg, &dict)) {
-      dict.Get("includeUrls", &filter_include_patterns);
+      if (!dict.Get("urls", &filter_include_patterns)) {
+        args->ThrowTypeError("Parameter 'filter' must have property 'urls'.");
+        return;
+      }
       dict.Get("excludeUrls", &filter_exclude_patterns);
       dict.Get("types", &filter_types);
       args->GetNext(&arg);

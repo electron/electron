@@ -2,24 +2,15 @@ import * as deprecate from '@electron/internal/common/deprecate';
 
 const { WebRequest } = process._linkedBinding('electron_browser_web_request');
 
-const urlsDeprecated = deprecate.warnOnce('WebRequestFilter.urls', 'WebRequestFilter.includeUrls');
-
+const urlsDeprecated = deprecate.warnOnce('Empty url array in WebRequestFilter', '<all_urls> to match all URLs');
 function modifyArgs (args: any[]) {
   if (args.length < 2) return;
   const filter = args[0];
 
-  if (!filter?.urls) {
-    return;
-  }
-
-  urlsDeprecated();
   if (filter.urls.length === 0) {
-    filter.includeUrls = ['<all_urls>'];
-  } else {
-    filter.includeUrls = filter.urls;
+    urlsDeprecated();
+    filter.urls = ['<all_urls>'];
   }
-
-  delete filter.urls;
 }
 
 const onBeforeRequest = WebRequest.prototype.onBeforeRequest;

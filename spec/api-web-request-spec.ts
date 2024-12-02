@@ -102,44 +102,30 @@ describe('webRequest module', () => {
     });
 
     it('can filter URLs', async () => {
-      const filter = { includeUrls: [defaultURL + 'filter/*'] };
+      const filter = { urls: [defaultURL + 'filter/*'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
       const { data } = await ajax(`${defaultURL}nofilter/test`);
       expect(data).to.equal('/nofilter/test');
       await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
     });
 
-    it('deprecated url property with empty array still matches all urls', async () => {
-      const filter = { urls: [] };
-      ses.webRequest.onBeforeRequest(filter, cancel);
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
-      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
-    });
-
-    it('can should not filter any url if includeUrls is empty', async () => {
-      const filter = { includeUrls: [] };
-      ses.webRequest.onBeforeRequest(filter, cancel);
-      expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
-      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
-    });
-
     it('can filter all URLs with syntax <all_urls>', async () => {
-      const filter = { includeUrls: ['<all_urls>'] };
+      const filter = { urls: ['<all_urls>'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
       await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
       await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
     });
 
-    it('can filter URLs with overlapping patterns of includeUrls and excludeUrls', async () => {
+    it('can filter URLs with overlapping patterns of urls and excludeUrls', async () => {
       // If filter matches both urls and excludeUrls, it should be excluded.
-      const filter = { includeUrls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/test'] };
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/test'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
       const { data } = await ajax(`${defaultURL}filter/test`);
       expect(data).to.equal('/filter/test');
     });
 
     it('can filter URLs with multiple excludeUrls patterns', async () => {
-      const filter = { includeUrls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/exclude1/*', defaultURL + 'filter/exclude2/*'] };
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/exclude1/*', defaultURL + 'filter/exclude2/*'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
       expect((await ajax(`${defaultURL}filter/exclude1/test`)).data).to.equal('/filter/exclude1/test');
       expect((await ajax(`${defaultURL}filter/exclude2/test`)).data).to.equal('/filter/exclude2/test');
@@ -148,33 +134,33 @@ describe('webRequest module', () => {
     });
 
     it('can filter URLs with empty excludeUrls', async () => {
-      const filter = { includeUrls: [defaultURL + 'filter/*'], excludeUrls: [] };
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [] };
       ses.webRequest.onBeforeRequest(filter, cancel);
       await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
     });
 
     it('can filter URLs and types', async () => {
-      const filter1: Electron.WebRequestFilter = { includeUrls: [defaultURL + 'filter/*'], types: ['xhr'] };
+      const filter1: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], types: ['xhr'] };
       ses.webRequest.onBeforeRequest(filter1, cancel);
       const { data } = await ajax(`${defaultURL}nofilter/test`);
       expect(data).to.equal('/nofilter/test');
       await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
 
-      const filter2: Electron.WebRequestFilter = { includeUrls: [defaultURL + 'filter/*'], types: ['stylesheet'] };
+      const filter2: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], types: ['stylesheet'] };
       ses.webRequest.onBeforeRequest(filter2, cancel);
       expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
       expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
     });
 
     it('can filter URLs, excludeUrls and types', async () => {
-      const filter1: Electron.WebRequestFilter = { includeUrls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['xhr'] };
+      const filter1: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['xhr'] };
       ses.webRequest.onBeforeRequest(filter1, cancel);
 
       expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
       expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
       await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
 
-      const filter2: Electron.WebRequestFilter = { includeUrls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['stylesheet'] };
+      const filter2: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['stylesheet'] };
       ses.webRequest.onBeforeRequest(filter2, cancel);
       expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
       expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
