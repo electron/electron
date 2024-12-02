@@ -103,12 +103,12 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
       break;
   }
 
-  ui::MouseEvent ui_event(type,
-                          gfx::Point(std::floor(event.PositionInWidget().x()),
-                                     std::floor(event.PositionInWidget().y())),
-                          gfx::Point(std::floor(event.PositionInWidget().x()),
-                                     std::floor(event.PositionInWidget().y())),
-                          ui::EventTimeForNow(), button_flags, button_flags);
+  ui::MouseEvent ui_event{type,
+                          event.PositionInWidget(),
+                          event.PositionInWidget(),
+                          ui::EventTimeForNow(),
+                          button_flags,
+                          button_flags};
   ui_event.SetClickCount(event.click_count);
 
   return ui_event;
