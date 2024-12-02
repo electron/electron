@@ -27,6 +27,7 @@
 #include "node_options-inl.h"
 #include "node_options.h"
 #include "node_platform.h"
+#include "node_report.h"
 #include "tracing/agent.h"
 
 #include "electron/pop_node_defines.h"

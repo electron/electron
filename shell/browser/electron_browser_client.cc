@@ -22,7 +22,6 @@
 #include "base/path_service.h"
 #include "base/process/process_metrics.h"
 #include "base/strings/escape.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_paths.h"
@@ -32,7 +31,6 @@
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
 #include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
-#include "content/browser/site_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -534,12 +532,16 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
     // Copy following switches to child process.
-    static const char* const kCommonSwitchNames[] = {
-        switches::kStandardSchemes,      switches::kEnableSandbox,
-        switches::kSecureSchemes,        switches::kBypassCSPSchemes,
-        switches::kCORSSchemes,          switches::kFetchSchemes,
-        switches::kServiceWorkerSchemes, switches::kStreamingSchemes,
-        switches::kCodeCacheSchemes};
+    static constexpr std::array<const char*, 9U> kCommonSwitchNames = {
+        switches::kStandardSchemes.c_str(),
+        switches::kEnableSandbox.c_str(),
+        switches::kSecureSchemes.c_str(),
+        switches::kBypassCSPSchemes.c_str(),
+        switches::kCORSSchemes.c_str(),
+        switches::kFetchSchemes.c_str(),
+        switches::kServiceWorkerSchemes.c_str(),
+        switches::kStreamingSchemes.c_str(),
+        switches::kCodeCacheSchemes.c_str()};
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                    kCommonSwitchNames);
     if (process_type == ::switches::kUtilityProcess ||
@@ -596,7 +598,7 @@ ElectronBrowserClient::GetGeneratedCodeCacheSettings(
   // If we pass 0 for size, disk_cache will pick a default size using the
   // heuristics based on available disk size. These are implemented in
   // disk_cache::PreferredCacheSize in net/disk_cache/cache_util.cc.
-  return content::GeneratedCodeCacheSettings(true, 0, cache_path);
+  return {true, 0, cache_path};
 }
 
 void ElectronBrowserClient::AllowCertificateError(
@@ -629,7 +631,7 @@ base::OnceClosure ElectronBrowserClient::SelectClientCertificate(
         std::move(client_certs), std::move(delegate));
   }
 
-  return base::OnceClosure();
+  return {};
 }
 
 bool ElectronBrowserClient::CanCreateWindow(
@@ -794,7 +796,7 @@ ElectronBrowserClient::CreateClientCertStore(
 #elif BUILDFLAG(IS_MAC)
   return std::make_unique<net::ClientCertStoreMac>();
 #elif defined(USE_OPENSSL)
-  return std::unique_ptr<net::ClientCertStore>();
+  return ();
 #endif
 }
 
@@ -803,7 +805,7 @@ ElectronBrowserClient::OverrideSystemLocationProvider() {
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
   return std::make_unique<FakeLocationProvider>();
 #else
-  return nullptr;
+  return {};
 #endif
 }
 
@@ -917,7 +919,7 @@ void HandleExternalProtocolInUI(
 bool ElectronBrowserClient::HandleExternalProtocol(
     const GURL& url,
     content::WebContents::Getter web_contents_getter,
-    int frame_tree_node_id,
+    content::FrameTreeNodeId frame_tree_node_id,
     content::NavigationUIData* navigation_data,
     bool is_primary_main_frame,
     bool is_in_fenced_frame_tree,
@@ -926,6 +928,7 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     bool has_user_gesture,
     const std::optional<url::Origin>& initiating_origin,
     content::RenderFrameHost* initiator_document,
+    const net::IsolationInfo& isolation_info,
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
@@ -967,9 +970,8 @@ ElectronBrowserClient::CreateDevToolsManagerDelegate() {
 }
 
 NotificationPresenter* ElectronBrowserClient::GetNotificationPresenter() {
-  if (!notification_presenter_) {
-    notification_presenter_.reset(NotificationPresenter::Create());
-  }
+  if (!notification_presenter_)
+    notification_presenter_ = NotificationPresenter::Create();
   return notification_presenter_.get();
 }
 
@@ -985,7 +987,7 @@ base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
   base::FilePath download_path;
   if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_path))
     return download_path;
-  return base::FilePath();
+  return {};
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
@@ -1034,7 +1036,7 @@ blink::UserAgentMetadata ElectronBrowserClient::GetUserAgentMetadata() {
 mojo::PendingRemote<network::mojom::URLLoaderFactory>
 ElectronBrowserClient::CreateNonNetworkNavigationURLLoaderFactory(
     const std::string& scheme,
-    int frame_tree_node_id) {
+    content::FrameTreeNodeId frame_tree_node_id) {
   content::WebContents* web_contents =
       content::WebContents::FromFrameTreeNodeId(frame_tree_node_id);
   content::BrowserContext* context = web_contents->GetBrowserContext();
@@ -1362,7 +1364,7 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
 std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
 ElectronBrowserClient::WillCreateURLLoaderRequestInterceptors(
     content::NavigationUIData* navigation_ui_data,
-    int frame_tree_node_id,
+    content::FrameTreeNodeId frame_tree_node_id,
     int64_t navigation_id,
     bool force_no_https_upgrade,
     scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner) {
@@ -1461,6 +1463,7 @@ void ElectronBrowserClient::
                                                       render_frame_host);
           },
           &render_frame_host));
+#if BUILDFLAG(ENABLE_PLUGINS)
   associated_registry.AddInterface<mojom::ElectronPluginInfoHost>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
@@ -1471,6 +1474,7 @@ void ElectronBrowserClient::
                 std::move(receiver));
           },
           &render_frame_host));
+#endif
 #if BUILDFLAG(ENABLE_PRINTING)
   associated_registry.AddInterface<printing::mojom::PrintManagerHost>(
       base::BindRepeating(
@@ -1649,14 +1653,16 @@ ElectronBrowserClient::CreateLoginDelegate(
     content::WebContents* web_contents,
     content::BrowserContext* browser_context,
     const content::GlobalRequestID& request_id,
-    bool is_main_frame,
+    bool is_request_for_primary_main_frame,
+    bool is_request_for_navigation,
     const GURL& url,
     scoped_refptr<net::HttpResponseHeaders> response_headers,
     bool first_auth_attempt,
     LoginAuthRequiredCallback auth_required_callback) {
   return std::make_unique<LoginHandler>(
-      auth_info, web_contents, is_main_frame, base::kNullProcessId, url,
-      response_headers, first_auth_attempt, std::move(auth_required_callback));
+      auth_info, web_contents, is_request_for_primary_main_frame,
+      is_request_for_navigation, base::kNullProcessId, url, response_headers,
+      first_auth_attempt, std::move(auth_required_callback));
 }
 
 std::vector<std::unique_ptr<blink::URLLoaderThrottle>>
@@ -1665,8 +1671,8 @@ ElectronBrowserClient::CreateURLLoaderThrottles(
     content::BrowserContext* browser_context,
     const base::RepeatingCallback<content::WebContents*()>& wc_getter,
     content::NavigationUIData* navigation_ui_data,
-    int frame_tree_node_id,
-    absl::optional<int64_t> navigation_id) {
+    content::FrameTreeNodeId frame_tree_node_id,
+    std::optional<int64_t> navigation_id) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   std::vector<std::unique_ptr<blink::URLLoaderThrottle>> result;

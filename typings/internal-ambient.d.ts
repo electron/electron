@@ -125,7 +125,8 @@ declare namespace NodeJS {
   interface WebFrameMainBinding {
     WebFrameMain: typeof Electron.WebFrameMain;
     fromId(processId: number, routingId: number): Electron.WebFrameMain;
-    fromIdOrNull(processId: number, routingId: number): Electron.WebFrameMain | null;
+    _fromIdIfExists(processId: number, routingId: number): Electron.WebFrameMain | null;
+    _fromFtnIdIfExists(frameTreeNodeId: number): Electron.WebFrameMain | null;
   }
 
   interface InternalWebPreferences {
@@ -213,7 +214,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_app'): { app: Electron.App, App: Function };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
     _linkedBinding(name: 'electron_browser_crash_reporter'): CrashReporterBinding;
-    _linkedBinding(name: 'electron_browser_desktop_capturer'): { createDesktopCapturer(): ElectronInternal.DesktopCapturer; };
+    _linkedBinding(name: 'electron_browser_desktop_capturer'): { createDesktopCapturer(): ElectronInternal.DesktopCapturer; isDisplayMediaSystemPickerAvailable(): boolean; };
     _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void; };
     _linkedBinding(name: 'electron_browser_global_shortcut'): { globalShortcut: Electron.GlobalShortcut };
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };

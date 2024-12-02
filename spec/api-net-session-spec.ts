@@ -1,6 +1,9 @@
-import { expect } from 'chai';
-import * as dns from 'node:dns';
 import { net, session, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
+
+import { expect } from 'chai';
+
+import * as dns from 'node:dns';
+
 import { collectStreamBody, getResponse, respondNTimes, respondOnce } from './lib/net-helpers';
 
 // See https://github.com/nodejs/node/issues/40702.

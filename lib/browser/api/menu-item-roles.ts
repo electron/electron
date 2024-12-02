@@ -251,33 +251,35 @@ export const roleList: Record<RoleId, Role> = {
       { role: 'cut' },
       { role: 'copy' },
       { role: 'paste' },
-      ...(isMac ? [
-        { role: 'pasteAndMatchStyle' },
-        { role: 'delete' },
-        { role: 'selectAll' },
-        { type: 'separator' },
-        {
-          label: 'Substitutions',
-          submenu: [
-            { role: 'showSubstitutions' },
-            { type: 'separator' },
-            { role: 'toggleSmartQuotes' },
-            { role: 'toggleSmartDashes' },
-            { role: 'toggleTextReplacement' }
-          ]
-        },
-        {
-          label: 'Speech',
-          submenu: [
-            { role: 'startSpeaking' },
-            { role: 'stopSpeaking' }
-          ]
-        }
-      ] as MenuItemConstructorOptions[] : [
-        { role: 'delete' },
-        { type: 'separator' },
-        { role: 'selectAll' }
-      ] as MenuItemConstructorOptions[])
+      ...(isMac
+        ? [
+          { role: 'pasteAndMatchStyle' },
+          { role: 'delete' },
+          { role: 'selectAll' },
+          { type: 'separator' },
+          {
+            label: 'Substitutions',
+            submenu: [
+              { role: 'showSubstitutions' },
+              { type: 'separator' },
+              { role: 'toggleSmartQuotes' },
+              { role: 'toggleSmartDashes' },
+              { role: 'toggleTextReplacement' }
+            ]
+          },
+          {
+            label: 'Speech',
+            submenu: [
+              { role: 'startSpeaking' },
+              { role: 'stopSpeaking' }
+            ]
+          }
+        ] as MenuItemConstructorOptions[]
+        : [
+          { role: 'delete' },
+          { type: 'separator' },
+          { role: 'selectAll' }
+        ] as MenuItemConstructorOptions[])
     ]
   },
   // View submenu
@@ -301,12 +303,14 @@ export const roleList: Record<RoleId, Role> = {
     submenu: [
       { role: 'minimize' },
       { role: 'zoom' },
-      ...(isMac ? [
-        { type: 'separator' },
-        { role: 'front' }
-      ] as MenuItemConstructorOptions[] : [
-        { role: 'close' }
-      ] as MenuItemConstructorOptions[])
+      ...(isMac
+        ? [
+          { type: 'separator' },
+          { role: 'front' }
+        ] as MenuItemConstructorOptions[]
+        : [
+          { role: 'close' }
+        ] as MenuItemConstructorOptions[])
     ]
   },
   // Share submenu

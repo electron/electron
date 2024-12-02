@@ -6,7 +6,6 @@
 
 #include <algorithm>
 
-#include "base/logging.h"
 #include "base/no_destructor.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list_observer.h"

@@ -57,7 +57,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
   void OnWindowClosed() override;
-  void OnWindowEndSession() override;
+  void OnWindowQueryEndSession(const std::vector<std::string>& reasons,
+                               bool* prevent_default) override;
+  void OnWindowEndSession(const std::vector<std::string>& reasons) override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
   void OnWindowShow() override;
@@ -84,7 +86,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowEnterHtmlFullScreen() override;
   void OnWindowLeaveHtmlFullScreen() override;
   void OnWindowAlwaysOnTopChanged() override;
-  void OnExecuteAppCommand(const std::string& command_name) override;
+  void OnExecuteAppCommand(std::string_view command_name) override;
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::Value::Dict& details) override;
   void OnNewWindowForTab() override;
@@ -188,7 +190,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetVisibleOnAllWorkspaces(bool visible, gin_helper::Arguments* args);
   bool IsVisibleOnAllWorkspaces() const;
   void SetAutoHideCursor(bool auto_hide);
-  virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
+  virtual void SetVibrancy(v8::Isolate* isolate,
+                           v8::Local<v8::Value> value,
+                           gin_helper::Arguments* args);
   void SetBackgroundMaterial(const std::string& vibrancy);
 
 #if BUILDFLAG(IS_MAC)

@@ -29,6 +29,7 @@ class ExecuteCodeInTabFunction : public ExecuteCodeFunction {
   bool CanExecuteScriptOnPage(std::string* error) override;
   ScriptExecutor* GetScriptExecutor(std::string* error) override;
   bool IsWebView() const override;
+  int GetRootFrameId() const override;
   const GURL& GetWebViewSrc() const override;
 
  private:

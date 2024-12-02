@@ -96,26 +96,6 @@ void ElectronCrashReporterClient::SetCrashReporterClientIdFromGUID(
     const std::string& client_guid) {
   crash_keys::SetMetricsClientIdFromGUID(client_guid);
 }
-void ElectronCrashReporterClient::GetProductNameAndVersion(
-    const char** product_name,
-    const char** version) {
-  DCHECK(product_name);
-  DCHECK(version);
-  *product_name = ELECTRON_PRODUCT_NAME;
-  *version = ELECTRON_VERSION_STRING;
-}
-
-void ElectronCrashReporterClient::GetProductNameAndVersion(
-    std::string* product_name,
-    std::string* version,
-    std::string* channel) {
-  const char* c_product_name;
-  const char* c_version;
-  GetProductNameAndVersion(&c_product_name, &c_version);
-  *product_name = c_product_name;
-  *version = c_version;
-  *channel = "";
-}
 
 base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
   return base::FilePath(CrashUploadList::kReporterLogFilename);
@@ -200,6 +180,11 @@ bool ElectronCrashReporterClient::ShouldMonitorCrashHandlerExpensively() {
 
 std::string ElectronCrashReporterClient::GetUploadUrl() {
   return upload_url_;
+}
+
+void ElectronCrashReporterClient::GetProductInfo(ProductInfo* product_info) {
+  product_info->product_name = ELECTRON_PRODUCT_NAME;
+  product_info->version = ELECTRON_VERSION_STRING;
 }
 
 bool ElectronCrashReporterClient::EnableBreakpadForProcess(

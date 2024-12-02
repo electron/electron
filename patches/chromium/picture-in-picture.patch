@@ -9,24 +9,23 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index d236578cefc347e772305ac7ec54b9734e4aa20b..6bb89cea3b6b91ec8ea351ed60c4e4056a6340bb 100644
+index 8168b4cfbafd42fa93a5aa9a3691c2552fabfb86..ba49212bd76d209f99c1cee649fc1466215a13c1 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
-@@ -4,10 +4,13 @@
- 
+@@ -5,9 +5,12 @@
  #include "chrome/browser/ui/views/overlay/close_image_button.h"
  
+ #include "base/feature_list.h"
 +#include "build/branding_buildflags.h"
- #include "build/chromeos_buildflags.h"
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/grit/generated_resources.h"
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "components/vector_icons/vector_icons.h"
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "media/base/media_switches.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
- #include "ui/base/models/image_model.h"
-@@ -27,7 +30,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
+@@ -29,7 +32,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
      : OverlayWindowImageButton(std::move(callback)) {
    SetSize(gfx::Size(kCloseButtonSize, kCloseButtonSize));
  
@@ -39,10 +38,10 @@ index d236578cefc347e772305ac7ec54b9734e4aa20b..6bb89cea3b6b91ec8ea351ed60c4e405
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 0f0f44450b36c1ae38b60c34bff139c0104fe042..98363d75fe7103df8794d85c672fae1cb71c8179 100644
+index 013cd70a33a10b34df691a0ba7740d3404ebcc58..e06c74b1eb242dd9ab7344901fbf694606866ea6 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -17,9 +17,11 @@
+@@ -18,9 +18,11 @@
  #include "build/build_config.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
@@ -54,7 +53,7 @@ index 0f0f44450b36c1ae38b60c34bff139c0104fe042..98363d75fe7103df8794d85c672fae1c
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
-@@ -62,7 +64,7 @@
+@@ -69,7 +71,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -63,7 +62,7 @@ index 0f0f44450b36c1ae38b60c34bff139c0104fe042..98363d75fe7103df8794d85c672fae1c
  #include "chrome/browser/shell_integration_win.h"
  #include "content/public/browser/render_widget_host_view.h"
  #include "ui/aura/window.h"
-@@ -315,7 +317,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -364,7 +366,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  

@@ -24,8 +24,10 @@
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/hid_device_info_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
-#include "shell/common/node_includes.h"
-#include "shell/common/process_util.h"
+#include "shell/common/node_util.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
+#include "third_party/blink/public/mojom/hid/hid.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace {
@@ -204,10 +206,9 @@ void HidChooserController::OnDeviceChosen(gin::Arguments* args) {
       }
       RunCallback(std::move(devices));
     } else {
-      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-      node::Environment* env = node::Environment::GetCurrent(isolate);
-      EmitWarning(env, "The device id " + device_id + " was not found.",
-                  "UnknownHIDDeviceId");
+      util::EmitWarning(
+          base::StrCat({"The device id ", device_id, " was not found."}),
+          "UnknownHIDDeviceId");
       RunCallback({});
     }
   }
@@ -277,7 +278,7 @@ bool HidChooserController::DisplayDevice(
 
     AddMessageToConsole(
         blink::mojom::ConsoleMessageLevel::kInfo,
-        base::StringPrintf(
+        absl::StrFormat(
             "Chooser dialog is not displaying a FIDO HID device: vendorId=%d, "
             "productId=%d, name='%s', serial='%s'",
             device.vendor_id, device.product_id, device.product_name.c_str(),
@@ -288,12 +289,12 @@ bool HidChooserController::DisplayDevice(
   if (device.is_excluded_by_blocklist) {
     AddMessageToConsole(
         blink::mojom::ConsoleMessageLevel::kInfo,
-        base::StringPrintf(
-            "Chooser dialog is not displaying a device excluded by "
-            "the HID blocklist: vendorId=%d, "
-            "productId=%d, name='%s', serial='%s'",
-            device.vendor_id, device.product_id, device.product_name.c_str(),
-            device.serial_number.c_str()));
+        absl::StrFormat("Chooser dialog is not displaying a device excluded by "
+                        "the HID blocklist: vendorId=%d, "
+                        "productId=%d, name='%s', serial='%s'",
+                        device.vendor_id, device.product_id,
+                        device.product_name.c_str(),
+                        device.serial_number.c_str()));
     return false;
   }
 

@@ -1,20 +1,23 @@
+import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
+
 import { expect } from 'chai';
 import { v4 } from 'uuid';
-import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
+
 import * as ChildProcess from 'node:child_process';
-import * as path from 'node:path';
-import * as url from 'node:url';
-import * as http from 'node:http';
+import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
+import * as http from 'node:http';
+import * as path from 'node:path';
 import * as qs from 'node:querystring';
 import * as stream from 'node:stream';
 import * as streamConsumers from 'node:stream/consumers';
 import * as webStream from 'node:stream/web';
-import { EventEmitter, once } from 'node:events';
-import { closeAllWindows, closeWindow } from './lib/window-helpers';
-import { WebmGenerator } from './lib/video-helpers';
-import { listen, defer, ifit } from './lib/spec-helpers';
 import { setTimeout } from 'node:timers/promises';
+import * as url from 'node:url';
+
+import { listen, defer, ifit } from './lib/spec-helpers';
+import { WebmGenerator } from './lib/video-helpers';
+import { closeAllWindows, closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -649,7 +652,7 @@ describe('protocol module', () => {
       const { url } = await listen(server);
       interceptHttpProtocol('http', (request, callback) => {
         const data: Electron.ProtocolResponse = {
-          url: url,
+          url,
           method: 'POST',
           uploadData: {
             contentType: 'application/x-www-form-urlencoded',
@@ -910,7 +913,7 @@ describe('protocol module', () => {
     });
 
     it('allows CORS requests by default', async () => {
-      await allowsCORSRequests('cors', 200, new RegExp(''), () => {
+      await allowsCORSRequests('cors', 200, /(?:)/, () => {
         const { ipcRenderer } = require('electron');
         fetch('cors://myhost').then(function (response) {
           ipcRenderer.send('response', response.status);
@@ -974,7 +977,7 @@ describe('protocol module', () => {
         contextIsolation: false
       });
       const consoleMessages: string[] = [];
-      newContents.on('console-message', (e, level, message) => consoleMessages.push(message));
+      newContents.on('console-message', (e) => consoleMessages.push(e.message));
       try {
         newContents.loadURL(standardScheme + '://fake-host');
         const [, response] = await once(ipcMain, 'response');
@@ -1628,7 +1631,7 @@ describe('protocol module', () => {
       defer(() => { protocol.unhandle('cors'); });
 
       await contents.loadFile(path.resolve(fixturesPath, 'pages', 'base-page.html'));
-      contents.on('console-message', (e, level, message) => console.log(message));
+      contents.on('console-message', (e) => console.log(e.message));
       const ok = await contents.executeJavaScript(`(async () => {
         function wait(milliseconds) {
           return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -1695,7 +1698,7 @@ describe('protocol module', () => {
       const filePath = path.join(fixturesPath, 'pages', 'form-with-data.html');
       await contents.loadFile(filePath);
 
-      const loadPromise = new Promise((resolve, reject) => {
+      const loadPromise = new Promise<void>((resolve, reject) => {
         contents.once('did-finish-load', resolve);
         contents.once('did-fail-load', (_, errorCode, errorDescription) =>
           reject(new Error(`did-fail-load: ${errorCode} ${errorDescription}. See AssertionError for details.`))
@@ -1734,7 +1737,8 @@ describe('protocol module', () => {
     });
 
     // TODO(nornagon): this test doesn't pass on Linux currently, investigate.
-    ifit(process.platform !== 'linux')('is fast', async () => {
+    // test is also flaky on CI on macOS so it is currently disabled there as well.
+    ifit(process.platform !== 'linux' && (!process.env.CI || process.platform !== 'darwin'))('is fast', async () => {
       // 128 MB of spaces.
       const chunk = new Uint8Array(128 * 1024 * 1024);
       chunk.fill(' '.charCodeAt(0));

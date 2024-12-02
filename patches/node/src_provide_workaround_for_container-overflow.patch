@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Lemire <daniel@lemire.me>
+Date: Tue, 29 Oct 2024 12:28:47 -0400
+Subject: src: provide workaround for container-overflow
+
+Address a sanitizer error 'container-overflow', which happens only on systems where the
+standard library has been annotated to warn about reads between the std::string's end
+and the end of the its allocated memory (std::string:capacity). This reads are memory safe
+but they can also be a sign that there is a real bug. In the instance of issue 55584,
+it is not a bug, it is a false positive.
+
+In some instances, it is possible to indicate to the compiler that we want to disallow
+these checks to avoid the false positive, but I could not find documentation on this topic
+In a future release of simdjson, we will provide a more convenient function that
+avoids such ugly workaround.
+
+diff --git a/src/node_modules.cc b/src/node_modules.cc
+index 3bedd2dfecb49c3f69ea59b70d72b8b6fc605132..2b0e4905dd557e73542cf052ba81327b1e1e471f 100644
+--- a/src/node_modules.cc
++++ b/src/node_modules.cc
+@@ -100,11 +100,23 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+   if (ReadFileSync(&package_config.raw_json, path.data()) < 0) {
+     return nullptr;
+   }
++  // In some systems, std::string is annotated to generate an
++  // AddressSanitizer: container-overflow error when reading beyond the end of
++  // the string even when we are still within the capacity of the string.
++  // https://github.com/google/sanitizers/wiki/AddressSanitizerContainerOverflow
++  // https://github.com/nodejs/node/issues/55584
++  // The next lines are a workaround to avoid this false positive.
++  size_t json_length = package_config.raw_json.size();
++  package_config.raw_json.append(simdjson::SIMDJSON_PADDING, ' ');
++  simdjson::padded_string_view json_view(package_config.raw_json.data(),
++                                         json_length,
++                                         package_config.raw_json.size());
++  // End of workaround
+ 
+   simdjson::ondemand::document document;
+   simdjson::ondemand::object main_object;
+   simdjson::error_code error =
+-      binding_data->json_parser.iterate(package_config.raw_json).get(document);
++      binding_data->json_parser.iterate(json_view).get(document);
+ 
+   const auto throw_invalid_package_config = [error_context, path, realm]() {
+     if (error_context == nullptr) {

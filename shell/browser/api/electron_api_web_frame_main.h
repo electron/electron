@@ -12,10 +12,13 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
+#include "content/public/browser/frame_tree_node_id.h"
+#include "content/public/browser/global_routing_id.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
@@ -49,10 +52,10 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   static gin::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
-  static gin::Handle<WebFrameMain> FromOrNull(
-      v8::Isolate* isolate,
-      content::RenderFrameHost* render_frame_host);
-  static WebFrameMain* FromFrameTreeNodeId(int frame_tree_node_id);
+  static WebFrameMain* FromFrameTreeNodeId(
+      content::FrameTreeNodeId frame_tree_node_id);
+  static WebFrameMain* FromFrameToken(
+      content::GlobalRenderFrameHostToken frame_token);
   static WebFrameMain* FromRenderFrameHost(
       content::RenderFrameHost* render_frame_host);
 
@@ -100,6 +103,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
   bool Reload();
+  bool IsDestroyed() const;
   void Send(v8::Isolate* isolate,
             bool internal,
             const std::string& channel,
@@ -109,7 +113,8 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
                    v8::Local<v8::Value> message_value,
                    std::optional<v8::Local<v8::Value>> transfer);
 
-  int FrameTreeNodeID() const;
+  bool Detached() const;
+  content::FrameTreeNodeId FrameTreeNodeID() const;
   std::string Name() const;
   base::ProcessId OSProcessID() const;
   int ProcessID() const;
@@ -128,13 +133,18 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
 
-  int frame_tree_node_id_;
+  content::FrameTreeNodeId frame_tree_node_id_;
+  content::GlobalRenderFrameHostToken frame_token_;
 
   raw_ptr<content::RenderFrameHost> render_frame_ = nullptr;
 
   // Whether the RenderFrameHost has been removed and that it should no longer
   // be accessed.
   bool render_frame_disposed_ = false;
+
+  // Whether the content::RenderFrameHost is detached from the frame
+  // tree. This can occur while it's running unload handlers.
+  bool render_frame_detached_;
 
   base::WeakPtrFactory<WebFrameMain> weak_factory_{this};
 };

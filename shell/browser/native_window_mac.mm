@@ -36,9 +36,8 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
-#include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/base/hit_test.h"
@@ -133,7 +132,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   bool resizable = true;
   options.Get(options::kResizable, &resizable);
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
-  options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
+  options.Get(options::kSimpleFullscreen, &always_simple_fullscreen_);
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
   options.Get(options::kVisualEffectState, &visual_effect_state_);
 
@@ -168,11 +167,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   if (!rounded_corner && !has_frame())
     styleMask = NSWindowStyleMaskBorderless;
 
-// TODO: remove NSWindowStyleMaskTexturedBackground.
-// https://github.com/electron/electron/issues/43125
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
   if (minimizable)
     styleMask |= NSWindowStyleMaskMiniaturizable;
   if (closable)
@@ -180,19 +174,16 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   if (resizable)
     styleMask |= NSWindowStyleMaskResizable;
 
+// TODO: remove NSWindowStyleMaskTexturedBackground.
+// https://github.com/electron/electron/issues/43125
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  if (windowType == "textured" || transparent() || !has_frame()) {
-    node::Environment* env =
-        node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
-    EmitWarning(env,
-                "The 'textured' window type is deprecated and will be removed",
-                "DeprecationWarning");
+  if (windowType == "textured" && (transparent() || !has_frame())) {
+    util::EmitWarning(
+        "The 'textured' window type is deprecated and will be removed",
+        "DeprecationWarning");
     styleMask |= NSWindowStyleMaskTexturedBackground;
   }
-#pragma clang diagnostic pop
-
-// -Wdeprecated-declarations
 #pragma clang diagnostic pop
 
   // Create views::Widget and assign window_ with it.
@@ -206,7 +197,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.native_widget =
       new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
-  widget()->SetNativeWindowProperty(kElectronNativeWindowKey, this);
+  widget()->SetNativeWindowProperty(kElectronNativeWindowKey.c_str(), this);
   SetCanResize(resizable);
   window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
@@ -355,8 +346,11 @@ void NativeWindowMac::Close() {
   // [window_ performClose:nil], the window won't close properly
   // even after the user has ended the sheet.
   // Ensure it's closed before calling [window_ performClose:nil].
-  if ([window_ attachedSheet])
+  // If multiple sheets are open, they must all be closed.
+  while ([window_ attachedSheet]) {
     [window_ endSheet:[window_ attachedSheet]];
+  }
+  DCHECK_EQ([[window_ sheets] count], 0UL);
 
   // window_ could be nil after performClose.
   bool should_notify = is_modal() && parent() && IsVisible();
@@ -1344,22 +1338,44 @@ void NativeWindowMac::UpdateWindowOriginalFrame() {
   original_frame_ = [window_ frame];
 }
 
-void NativeWindowMac::SetVibrancy(const std::string& type) {
-  NativeWindow::SetVibrancy(type);
+void NativeWindowMac::SetVibrancy(const std::string& type, int duration) {
+  NativeWindow::SetVibrancy(type, duration);
 
   NSVisualEffectView* vibrantView = [window_ vibrantView];
   views::View* rootView = GetContentsView();
+  bool animate = duration > 0;
 
   if (type.empty()) {
-    if (vibrant_native_view_host_ != nullptr) {
-      // Transfers ownership back to caller in the form of a unique_ptr which is
-      // subsequently deleted.
-      rootView->RemoveChildViewT(vibrant_native_view_host_);
-      vibrant_native_view_host_ = nullptr;
-    }
+    vibrancy_type_ = type;
 
-    if (vibrantView != nil) {
-      [window_ setVibrantView:nil];
+    auto cleanupHandler = ^{
+      if (vibrant_native_view_host_ != nullptr) {
+        // Transfers ownership back to caller in the form of a unique_ptr which
+        // is subsequently deleted.
+        rootView->RemoveChildViewT(vibrant_native_view_host_);
+        vibrant_native_view_host_ = nullptr;
+      }
+
+      if (vibrantView != nil) {
+        [window_ setVibrantView:nil];
+      }
+    };
+
+    if (animate) {
+      __weak ElectronNSWindowDelegate* weak_delegate = window_delegate_;
+      [NSAnimationContext
+          runAnimationGroup:^(NSAnimationContext* context) {
+            context.duration = duration / 1000.0f;
+            vibrantView.animator.alphaValue = 0.0;
+          }
+          completionHandler:^{
+            if (!weak_delegate)
+              return;
+
+            cleanupHandler();
+          }];
+    } else {
+      cleanupHandler();
     }
 
     return;
@@ -1425,6 +1441,16 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       rootView->DeprecatedLayoutImmediately();
 
       UpdateVibrancyRadii(IsFullscreen());
+    }
+
+    if (animate) {
+      [vibrantView setAlphaValue:0.0];
+      [NSAnimationContext
+          runAnimationGroup:^(NSAnimationContext* context) {
+            context.duration = duration / 1000.0f;
+            vibrantView.animator.alphaValue = 1.0;
+          }
+          completionHandler:nil];
     }
 
     [vibrantView setMaterial:vibrancyType];
@@ -1814,9 +1840,10 @@ std::optional<gfx::Rect> NativeWindowMac::GetWindowControlsOverlayRect() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(const gin_helper::Dictionary& options,
-                                   NativeWindow* parent) {
-  return new NativeWindowMac(options, parent);
+std::unique_ptr<NativeWindow> NativeWindow::Create(
+    const gin_helper::Dictionary& options,
+    NativeWindow* parent) {
+  return std::make_unique<NativeWindowMac>(options, parent);
 }
 
 }  // namespace electron

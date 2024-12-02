@@ -39,6 +39,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
 #include "crypto/crypto_buildflags.h"
+#include "electron/mas.h"
 #include "gin/handle.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
@@ -79,7 +80,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -775,7 +776,7 @@ base::OnceClosure App::SelectClientCertificate(
         std::move((*shared_identities)[0]),
         base::BindRepeating(&GotPrivateKey, shared_delegate, std::move(cert)));
   }
-  return base::OnceClosure();
+  return {};
 }
 
 void App::OnGpuInfoUpdate() {
@@ -943,7 +944,7 @@ std::string App::GetSystemLocale(gin_helper::ErrorThrower thrower) const {
     thrower.ThrowError(
         "app.getSystemLocale() can only be called "
         "after app is ready");
-    return std::string();
+    return {};
   }
   return static_cast<BrowserProcessImpl*>(g_browser_process)->GetSystemLocale();
 }
@@ -1010,8 +1011,6 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
   if (HasSingleInstanceLock())
     return true;
 
-  std::string program_name = electron::Browser::Get()->GetName();
-
   base::FilePath user_dir;
   base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
   // The user_dir may not have been created yet.
@@ -1022,6 +1021,7 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
   blink::CloneableMessage additional_data_message;
   args->GetNext(&additional_data_message);
 #if BUILDFLAG(IS_WIN)
+  const std::string program_name = electron::Browser::Get()->GetName();
   bool app_is_sandboxed =
       IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
   process_singleton_ = std::make_unique<ProcessSingleton>(

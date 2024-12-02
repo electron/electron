@@ -11,10 +11,10 @@ For resolving complex conflict please pin @reitowo
 For more reason please see: https://crrev.com/c/5465148
 
 diff --git a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-index 2096591596a26464ab8f71a399ccb16a04edfd59..9eb966b3ddc3551d6beeff123071b2c99a576620 100644
+index a7742298af440bf9f6bcfceb7a07a90f19ae8283..9d59397f2bed400e5131691778965ec1ecae1511 100644
 --- a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
 +++ b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-@@ -179,7 +179,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
+@@ -178,7 +178,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
    // so make sure that the usage is one that we support.
    DCHECK(usage == gfx::BufferUsage::GPU_READ ||
           usage == gfx::BufferUsage::SCANOUT ||
@@ -24,7 +24,7 @@ index 2096591596a26464ab8f71a399ccb16a04edfd59..9eb966b3ddc3551d6beeff123071b2c9
        << "Incorrect usage, usage=" << gfx::BufferUsageToString(usage);
  
    D3D11_TEXTURE2D_DESC desc = {
-@@ -193,7 +194,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
+@@ -192,7 +193,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
        D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
        0,
        D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
@@ -36,10 +36,10 @@ index 2096591596a26464ab8f71a399ccb16a04edfd59..9eb966b3ddc3551d6beeff123071b2c9
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index 208d048ee68fd92d1fa7b5e8ad79e02e29b8be40..c8c8c32cd44a96dc6a476b8bc02bb13b02f86300 100644
+index b27bcf13d3a5f7c8e85a677766718f4362467022..df1b2d697f7cce028d0d6d86190b3218b8f662a5 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-@@ -205,7 +205,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
+@@ -193,7 +193,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
  bool FrameResources::Initialize() {
    auto* context = pool_->GetContext();
  
@@ -48,7 +48,7 @@ index 208d048ee68fd92d1fa7b5e8ad79e02e29b8be40..c8c8c32cd44a96dc6a476b8bc02bb13b
  #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
        gfx::BufferUsage::SCANOUT_VEA_CPU_READ
  #else
-@@ -219,6 +219,23 @@ bool FrameResources::Initialize() {
+@@ -207,6 +207,23 @@ bool FrameResources::Initialize() {
    const gfx::Size buffer_size_in_pixels =
        GetBufferSizeInPixelsForVideoPixelFormat(format_, coded_size_);
  
@@ -69,29 +69,15 @@ index 208d048ee68fd92d1fa7b5e8ad79e02e29b8be40..c8c8c32cd44a96dc6a476b8bc02bb13b
 +  }
 +#endif
 +
-   // Create the GpuMemoryBuffer if MappableSharedImages is not enabled. When its
-   // enabled, clients only create a mappable shared image directly without
-   // needing to create a GMB.
-@@ -226,11 +243,11 @@ bool FrameResources::Initialize() {
-       kUseMappableSIForRenderableGpuMemoryBufferVideoFramePool);
-   if (!is_mappable_si_enabled) {
-     gpu_memory_buffer_ = context->CreateGpuMemoryBuffer(
--        buffer_size_in_pixels, buffer_format, kBufferUsage);
-+        buffer_size_in_pixels, buffer_format, buffer_usage);
-     if (!gpu_memory_buffer_) {
-       LOG(ERROR) << "Failed to allocate GpuMemoryBuffer for frame: coded_size="
-                  << coded_size_.ToString()
--                 << ", usage=" << static_cast<int>(kBufferUsage);
-+                 << ", usage=" << static_cast<int>(buffer_usage);
-       return false;
-     }
+   constexpr gpu::SharedImageUsageSet kSharedImageUsage =
+ #if BUILDFLAG(IS_MAC)
+       gpu::SHARED_IMAGE_USAGE_MACOS_VIDEO_TOOLBOX |
+@@ -231,7 +248,7 @@ bool FrameResources::Initialize() {
+       viz::GetSharedImageFormat(buffer_format);
  
-@@ -264,7 +281,7 @@ bool FrameResources::Initialize() {
- 
-   if (is_mappable_si_enabled) {
-     shared_image_ = context->CreateSharedImage(
--        buffer_size_in_pixels, kBufferUsage, si_format, color_space_,
-+        buffer_size_in_pixels, buffer_usage, si_format, color_space_,
-         kTopLeft_GrSurfaceOrigin, kPremul_SkAlphaType, kSharedImageUsage,
-         sync_token_);
-   } else {
+   shared_image_ = context->CreateSharedImage(
+-      buffer_size_in_pixels, kBufferUsage, si_format, color_space_,
++      buffer_size_in_pixels, buffer_usage, si_format, color_space_,
+       kTopLeft_GrSurfaceOrigin, kPremul_SkAlphaType, kSharedImageUsage,
+       sync_token_);
+   if (!shared_image_) {

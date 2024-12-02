@@ -20,6 +20,7 @@
 #include "shell/browser/hid/hid_chooser_controller.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
+#include "third_party/blink/public/mojom/hid/hid.mojom.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/constants.h"

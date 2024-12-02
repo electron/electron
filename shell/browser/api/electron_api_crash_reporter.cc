@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "base/functional/bind.h"
+#include "base/containers/to_vector.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
@@ -18,6 +18,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "components/upload_list/crash_upload_list.h"
 #include "components/upload_list/text_log_upload_list.h"
+#include "electron/mas.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "shell/common/electron_paths.h"
@@ -39,7 +40,6 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-#include "base/containers/span.h"
 #include "base/files/file_util.h"
 #include "base/uuid.h"
 #include "components/crash/core/common/crash_keys.h"
@@ -99,7 +99,7 @@ std::string ReadClientId() {
   if (GetClientIdPath(&client_id_path) &&
       (!base::ReadFileToStringWithMaxSize(client_id_path, &client_id, 36) ||
        client_id.size() != 36))
-    return std::string();
+    return {};
   return client_id;
 }
 
@@ -221,18 +221,17 @@ v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
     list->LoadSync();
   }
 
+  auto to_obj = [isolate](const UploadList::UploadInfo* upload) {
+    return gin::DataObjectBuilder{isolate}
+        .Set("date", upload->upload_time)
+        .Set("id", upload->upload_id)
+        .Build();
+  };
+
   constexpr size_t kMaxUploadReportsToList = std::numeric_limits<size_t>::max();
-  const std::vector<const UploadList::UploadInfo*> uploads =
-      list->GetUploads(kMaxUploadReportsToList);
-  std::vector<v8::Local<v8::Object>> result;
-  for (auto* const upload : uploads) {
-    result.push_back(gin::DataObjectBuilder(isolate)
-                         .Set("date", upload->upload_time)
-                         .Set("id", upload->upload_id)
-                         .Build());
-  }
-  v8::Local<v8::Value> v8_result = gin::ConvertToV8(isolate, result);
-  return v8_result;
+  return gin::ConvertToV8(
+      isolate,
+      base::ToVector(list->GetUploads(kMaxUploadReportsToList), to_obj));
 }
 #endif
 

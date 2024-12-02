@@ -17,8 +17,8 @@
 namespace electron {
 
 // static
-NotificationPresenter* NotificationPresenter::Create() {
-  return new NotificationPresenterMac;
+std::unique_ptr<NotificationPresenter> NotificationPresenter::Create() {
+  return std::make_unique<NotificationPresenterMac>();
 }
 
 CocoaNotification* NotificationPresenterMac::GetNotification(

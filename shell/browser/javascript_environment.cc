@@ -14,7 +14,6 @@
 #include "base/bits.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/no_destructor.h"
 #include "base/task/current_thread.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
@@ -41,11 +40,14 @@ gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
   // This is necessary for important aspects of Node.js
   // including heap and cpu profilers to function properly.
 
-  return gin::IsolateHolder(
-      base::SingleThreadTaskRunner::GetCurrentDefault(),
-      gin::IsolateHolder::kSingleThread,
-      gin::IsolateHolder::IsolateType::kUtility, std::move(create_params),
-      gin::IsolateHolder::IsolateCreationMode::kNormal, nullptr, isolate);
+  return {base::SingleThreadTaskRunner::GetCurrentDefault(),
+          gin::IsolateHolder::kSingleThread,
+          gin::IsolateHolder::IsolateType::kUtility,
+          std::move(create_params),
+          gin::IsolateHolder::IsolateCreationMode::kNormal,
+          nullptr,
+          nullptr,
+          isolate};
 }
 
 }  // namespace

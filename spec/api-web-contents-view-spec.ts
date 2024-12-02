@@ -1,10 +1,12 @@
-import { expect } from 'chai';
 import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
 
-import { closeAllWindows } from './lib/window-helpers';
-import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
+import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
   afterEach(closeAllWindows);
@@ -99,6 +101,30 @@ describe('WebContentsView', () => {
     expect(w.contentView.children).to.deep.equal([wcv3, wcv1, wcv2]);
   });
 
+  it('handle removal and re-addition of children', () => {
+    const w = new BaseWindow({ show: false });
+    const cv = new View();
+    w.setContentView(cv);
+
+    const wcv1 = new WebContentsView();
+    const wcv2 = new WebContentsView();
+
+    expect(w.contentView.children).to.deep.equal([]);
+
+    w.contentView.addChildView(wcv1);
+    w.contentView.addChildView(wcv2);
+
+    expect(w.contentView.children).to.deep.equal([wcv1, wcv2]);
+
+    w.contentView.removeChildView(wcv1);
+
+    expect(w.contentView.children).to.deep.equal([wcv2]);
+
+    w.contentView.addChildView(wcv1);
+
+    expect(w.contentView.children).to.deep.equal([wcv2, wcv1]);
+  });
+
   function triggerGCByAllocation () {
     const arr = [];
     for (let i = 0; i < 1000000; i++) {
@@ -133,6 +159,20 @@ describe('WebContentsView', () => {
     await v.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
     await enterFullScreen;
     expect(w.isFullScreen()).to.be.true('isFullScreen');
+  });
+
+  it('can be added as a child of another View', async () => {
+    const w = new BaseWindow();
+    const v = new View();
+    const wcv = new WebContentsView();
+
+    await wcv.webContents.loadURL('data:text/html,<div id="div">This is a simple div.</div>');
+
+    v.addChildView(wcv);
+    w.contentView.addChildView(v);
+
+    expect(w.contentView.children).to.deep.equal([v]);
+    expect(v.children).to.deep.equal([wcv]);
   });
 
   describe('visibilityState', () => {

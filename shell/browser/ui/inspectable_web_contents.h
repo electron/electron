@@ -208,6 +208,9 @@ class InspectableWebContents
   bool HandleKeyboardEvent(content::WebContents*,
                            const input::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
+  std::unique_ptr<content::EyeDropper> OpenEyeDropper(
+      content::RenderFrameHost* frame,
+      content::EyeDropperListener* listener) override;
   void RunFileChooser(content::RenderFrameHost* render_frame_host,
                       scoped_refptr<content::FileSelectListener> listener,
                       const blink::mojom::FileChooserParams& params) override;

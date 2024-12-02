@@ -9,7 +9,7 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
-#include "electron/shell/common/api/api.mojom.h"
+#include "build/build_config.h"
 
 #if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
 #include "ui/views/view.h"

@@ -8,15 +8,12 @@
 #include <gtk/gtk.h>
 #include <stdint.h>
 
-#include <string>
-
-#include "base/no_destructor.h"
-#include "base/strings/string_number_conversions.h"
+#include "base/macros/remove_parens.h"
+#include "base/strings/stringize_macros.h"
 #include "electron/electron_gtk_stubs.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "third_party/skia/include/core/SkUnPreMultiply.h"
-#include "ui/gtk/gtk_compat.h"  // nogncheck
 
 // The following utilities are pulled from
 // https://source.chromium.org/chromium/chromium/src/+/main:ui/gtk/select_file_dialog_linux_gtk.cc;l=44-75;drc=a03ba4ca94f75531207c3ea832d6a605cde77394
@@ -24,14 +21,12 @@ namespace gtk_util {
 
 namespace {
 
-const char* GettextPackage() {
-  static base::NoDestructor<std::string> gettext_package(
-      "gtk" + base::NumberToString(gtk::GtkVersion().components()[0]) + "0");
-  return gettext_package->c_str();
-}
-
 const char* GtkGettext(const char* str) {
-  return g_dgettext(GettextPackage(), str);
+  // ex: "gtk30". GTK_MAJOR_VERSION is #defined as an int in parenthesis,
+  // like (3), so use base macros to remove parenthesis and stringize it
+  static const char kGettextDomain[] =
+      "gtk" STRINGIZE(BASE_REMOVE_PARENS(GTK_MAJOR_VERSION)) "0";
+  return g_dgettext(kGettextDomain, str);
 }
 
 }  // namespace
@@ -68,42 +63,30 @@ const char* GetYesLabel() {
 
 GdkPixbuf* GdkPixbufFromSkBitmap(const SkBitmap& bitmap) {
   if (bitmap.isNull())
-    return nullptr;
+    return {};
 
-  int width = bitmap.width();
-  int height = bitmap.height();
-
-  GdkPixbuf* pixbuf =
-      gdk_pixbuf_new(GDK_COLORSPACE_RGB,  // The only colorspace gtk supports.
-                     TRUE,                // There is an alpha channel.
-                     8, width, height);
-
-  // SkBitmaps are premultiplied, we need to unpremultiply them.
-  const int kBytesPerPixel = 4;
-  uint8_t* divided = gdk_pixbuf_get_pixels(pixbuf);
-
-  for (int y = 0, i = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
-      uint32_t pixel = bitmap.getAddr32(0, y)[x];
-
-      int alpha = SkColorGetA(pixel);
-      if (alpha != 0 && alpha != 255) {
-        SkColor unmultiplied = SkUnPreMultiply::PMColorToColor(pixel);
-        divided[i + 0] = SkColorGetR(unmultiplied);
-        divided[i + 1] = SkColorGetG(unmultiplied);
-        divided[i + 2] = SkColorGetB(unmultiplied);
-        divided[i + 3] = alpha;
-      } else {
-        divided[i + 0] = SkColorGetR(pixel);
-        divided[i + 1] = SkColorGetG(pixel);
-        divided[i + 2] = SkColorGetB(pixel);
-        divided[i + 3] = alpha;
-      }
-      i += kBytesPerPixel;
+  constexpr int kBytesPerPixel = 4;
+  const auto [width, height] = bitmap.dimensions();
+  std::vector<uint8_t> bytes;
+  bytes.reserve(width * height * kBytesPerPixel);
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      const SkColor pixel = bitmap.getColor(x, y);
+      bytes.emplace_back(SkColorGetR(pixel));
+      bytes.emplace_back(SkColorGetG(pixel));
+      bytes.emplace_back(SkColorGetB(pixel));
+      bytes.emplace_back(SkColorGetA(pixel));
     }
   }
 
-  return pixbuf;
+  constexpr GdkColorspace kColorspace = GDK_COLORSPACE_RGB;
+  constexpr gboolean kHasAlpha = true;
+  constexpr int kBitsPerSample = 8;
+  return gdk_pixbuf_new_from_bytes(
+      g_bytes_new(std::data(bytes), std::size(bytes)), kColorspace, kHasAlpha,
+      kBitsPerSample, width, height,
+      gdk_pixbuf_calculate_rowstride(kColorspace, kHasAlpha, kBitsPerSample,
+                                     width, height));
 }
 
 }  // namespace gtk_util

@@ -15,7 +15,7 @@
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/process_util.h"
+#include "shell/common/node_util.h"
 
 namespace gin {
 
@@ -27,7 +27,7 @@ std::string OsrVideoPixelFormatToString(media::VideoPixelFormat format) {
     case media::PIXEL_FORMAT_ABGR:
       return "rgba";
     default:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
   }
 }
 
@@ -38,7 +38,7 @@ std::string OsrWidgetTypeToString(content::WidgetType type) {
     case content::WidgetType::kFrame:
       return "frame";
     default:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
   }
 }
 
@@ -54,7 +54,7 @@ struct OffscreenReleaseHolderMonitor {
     holder_ = nullptr;
   }
 
-  bool IsTextureReleased() const { return holder_ == nullptr; }
+  [[nodiscard]] bool IsTextureReleased() const { return holder_ == nullptr; }
 
   v8::Persistent<v8::Value>* CreatePersistent(v8::Isolate* isolate,
                                               v8::Local<v8::Value> value) {
@@ -146,13 +146,11 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
           data.SetSecondPassCallback([](const v8::WeakCallbackInfo<
                                          OffscreenReleaseHolderMonitor>& data) {
             auto* iso = data.GetIsolate();
-            node::Environment* env = node::Environment::GetCurrent(iso);
-
             // Emit warning only once
             static std::once_flag flag;
             std::call_once(flag, [=] {
-              electron::EmitWarning(
-                  env,
+              electron::util::EmitWarning(
+                  iso,
                   "[OSR TEXTURE LEAKED] When using OSR with "
                   "`useSharedTexture`, `texture.release()` "
                   "must be called explicitly as soon as the texture is "

@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "base/files/file_path.h"
-#include "base/functional/bind.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/path_service.h"
 #include "base/values.h"
@@ -88,6 +87,8 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   management_policy_ = std::make_unique<ManagementPolicy>();
 }
 
+namespace {
+
 std::unique_ptr<base::Value::Dict> ParseManifest(
     const std::string_view manifest_contents) {
   JSONStringValueDeserializer deserializer(manifest_contents);
@@ -96,10 +97,12 @@ std::unique_ptr<base::Value::Dict> ParseManifest(
 
   if (!manifest.get() || !manifest->is_dict()) {
     LOG(ERROR) << "Failed to parse extension manifest.";
-    return std::unique_ptr<base::Value::Dict>();
+    return {};
   }
   return std::make_unique<base::Value::Dict>(std::move(*manifest).TakeDict());
 }
+
+}  // namespace
 
 void ElectronExtensionSystem::LoadComponentExtensions() {
   std::string utf8_error;

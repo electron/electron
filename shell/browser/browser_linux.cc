@@ -7,6 +7,10 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
+#if BUILDFLAG(IS_LINUX)
+#include <gtk/gtk.h>
+#endif
+
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/process/launch.h"
@@ -21,7 +25,6 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "shell/browser/linux/unity_service.h"
-#include "ui/gtk/gtk_util.h"  // nogncheck
 #endif
 
 namespace electron {
@@ -63,9 +66,9 @@ std::optional<std::string> GetXdgAppOutput(
                                                &success_code);
 
   if (!ran_ok || success_code != EXIT_SUCCESS)
-    return std::optional<std::string>();
+    return {};
 
-  return std::make_optional(reply);
+  return reply;
 }
 
 bool SetDefaultWebClient(const std::string& protocol) {

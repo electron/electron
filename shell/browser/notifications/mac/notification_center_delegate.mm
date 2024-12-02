@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/logging.h"
+#include "electron/mas.h"
 #include "shell/browser/notifications/mac/cocoa_notification.h"
 #include "shell/browser/notifications/mac/notification_presenter_mac.h"
 

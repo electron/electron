@@ -8,8 +8,8 @@
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "components/keyed_service/core/keyed_service.h"
-#include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
-#include "services/network/public/mojom/network_context.mojom.h"
+#include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom-forward.h"
+#include "services/network/public/mojom/network_context.mojom-forward.h"
 
 namespace base {
 class FilePath;

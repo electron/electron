@@ -10,7 +10,6 @@
 
 #include "base/files/file_path.h"
 #include "base/functional/bind.h"
-#include "base/strings/string_number_conversions.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_filter.h"
 #include "components/prefs/pref_registry_simple.h"
@@ -23,11 +22,13 @@ namespace electron {
 namespace {
 
 // Double that indicates the default zoom level.
-const char kPartitionDefaultZoomLevel[] = "partition.default_zoom_level";
+constexpr std::string_view kPartitionDefaultZoomLevel =
+    "partition.default_zoom_level";
 
 // Dictionary that maps hostnames to zoom levels.  Hosts not in this pref will
 // be displayed at the default zoom level.
-const char kPartitionPerHostZoomLevels[] = "partition.per_host_zoom_levels";
+constexpr std::string_view kPartitionPerHostZoomLevels =
+    "partition.per_host_zoom_levels";
 
 std::string GetHash(const base::FilePath& partition_path) {
   size_t int_key = std::hash<base::FilePath>()(partition_path);

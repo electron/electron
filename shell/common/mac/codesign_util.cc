@@ -25,7 +25,7 @@ std::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
   }
   if (status != errSecSuccess) {
     OSSTATUS_LOG(ERROR, status) << "SecCodeCopyStaticCode";
-    return std::optional<bool>();
+    return {};
   }
   // Copy the signing info from the SecStaticCodeRef.
   base::apple::ScopedCFTypeRef<CFDictionaryRef> signing_info;
@@ -34,7 +34,7 @@ std::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
                                     signing_info.InitializeInto());
   if (status != errSecSuccess) {
     OSSTATUS_LOG(ERROR, status) << "SecCodeCopySigningInformation";
-    return std::optional<bool>();
+    return {};
   }
   // Look up the code signing flags. If the flags are absent treat this as
   // unsigned. This decision is consistent with the StaticCode source:
@@ -51,7 +51,7 @@ std::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
   long long flags;
   if (!CFNumberGetValue(signing_info_flags, kCFNumberLongLongType, &flags)) {
     LOG(ERROR) << "CFNumberGetValue";
-    return std::optional<bool>();
+    return {};
   }
   if (static_cast<uint32_t>(flags) & kSecCodeSignatureAdhoc) {
     return true;

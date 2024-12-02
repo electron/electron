@@ -14,6 +14,7 @@
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
 #include "base/memory/raw_ptr.h"
+#include "base/numerics/safe_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/time/time.h"
 #include "components/input/cursor_manager.h"
@@ -115,9 +116,9 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
 
 ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
     blink::WebMouseWheelEvent event) {
-  return ui::MouseWheelEvent(UiMouseEventFromWebMouseEvent(event),
-                             std::floor(event.delta_x),
-                             std::floor(event.delta_y));
+  return {UiMouseEventFromWebMouseEvent(event),
+          base::ClampFloor<int>(event.delta_x),
+          base::ClampFloor<int>(event.delta_y)};
 }
 
 }  // namespace
@@ -135,15 +136,15 @@ class ElectronDelegatedFrameHostClient
       const ElectronDelegatedFrameHostClient&) = delete;
 
   // content::DelegatedFrameHostClient
-  ui::Layer* DelegatedFrameHostGetLayer() const override {
+  [[nodiscard]] ui::Layer* DelegatedFrameHostGetLayer() const override {
     return view_->root_layer();
   }
 
-  bool DelegatedFrameHostIsVisible() const override {
+  [[nodiscard]] bool DelegatedFrameHostIsVisible() const override {
     return view_->IsShowing();
   }
 
-  SkColor DelegatedFrameHostGetGutterColor() const override {
+  [[nodiscard]] SkColor DelegatedFrameHostGetGutterColor() const override {
     if (view_->render_widget_host()->delegate() &&
         view_->render_widget_host()->delegate()->IsFullscreen()) {
       return SK_ColorWHITE;
@@ -156,7 +157,7 @@ class ElectronDelegatedFrameHostClient
     view_->render_widget_host()->DidProcessFrame(frame_token, activation_time);
   }
 
-  float GetDeviceScaleFactor() const override {
+  [[nodiscard]] float GetDeviceScaleFactor() const override {
     return view_->GetDeviceScaleFactor();
   }
 
@@ -296,12 +297,12 @@ void OffScreenRenderWidgetHostView::SetBounds(const gfx::Rect& new_bounds) {
 }
 
 gfx::NativeView OffScreenRenderWidgetHostView::GetNativeView() {
-  return gfx::NativeView();
+  return {};
 }
 
 gfx::NativeViewAccessible
 OffScreenRenderWidgetHostView::GetNativeViewAccessible() {
-  return gfx::NativeViewAccessible();
+  return {};
 }
 
 ui::TextInputClient* OffScreenRenderWidgetHostView::GetTextInputClient() {

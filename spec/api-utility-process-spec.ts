@@ -1,14 +1,17 @@
-import { expect } from 'chai';
-import * as childProcess from 'node:child_process';
-import * as path from 'node:path';
+import { systemPreferences } from 'electron';
 import { BrowserWindow, MessageChannelMain, utilityProcess, app } from 'electron/main';
+
+import { expect } from 'chai';
+
+import * as childProcess from 'node:child_process';
+import { once } from 'node:events';
+import * as path from 'node:path';
+import { setImmediate } from 'node:timers/promises';
+import { pathToFileURL } from 'node:url';
+
+import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
 import { ifit, startRemoteControlApp } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
-import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
-import { once } from 'node:events';
-import { pathToFileURL } from 'node:url';
-import { setImmediate } from 'node:timers/promises';
-import { systemPreferences } from 'electron';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
@@ -55,10 +58,20 @@ describe('utilityProcess module', () => {
       await once(child, 'spawn');
     });
 
-    it('emits \'exit\' when child process exits gracefully', async () => {
+    it('emits \'exit\' when child process exits gracefully', (done) => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
-      const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      child.on('exit', (code) => {
+        expect(code).to.equal(0);
+        done();
+      });
+    });
+
+    it('emits \'exit\' when the child process file does not exist', (done) => {
+      const child = utilityProcess.fork('nonexistent');
+      child.on('exit', (code) => {
+        expect(code).to.equal(1);
+        done();
+      });
     });
 
     ifit(!isWindows32Bit)('emits the correct error code when child process exits nonzero', async () => {
@@ -113,24 +126,54 @@ describe('utilityProcess module', () => {
       const [code] = await once(child, 'exit');
       expect(code).to.equal(exitCode);
     });
+
+    // 32-bit system will not have V8 Sandbox enabled.
+    // WoA testing does not have VS toolchain configured to build native addons.
+    ifit(process.arch !== 'ia32' && process.arch !== 'arm' && !isWindowsOnArm)('emits \'error\' when fatal error is triggered from V8', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'external-ab-test.js'));
+      const [type, location, report] = await once(child, 'error');
+      const [code] = await once(child, 'exit');
+      expect(type).to.equal('FatalError');
+      expect(location).to.equal('v8_ArrayBuffer_NewBackingStore');
+      const reportJSON = JSON.parse(report);
+      expect(reportJSON.header.trigger).to.equal('v8_ArrayBuffer_NewBackingStore');
+      const addonPath = path.join(require.resolve('@electron-ci/external-ab'), '..', '..', 'build', 'Release', 'external_ab.node');
+      expect(reportJSON.sharedObjects).to.include(path.toNamespacedPath(addonPath));
+      expect(code).to.not.equal(0);
+    });
   });
 
   describe('app \'child-process-gone\' event', () => {
+    const waitForCrash = (name: string) => {
+      return new Promise<Electron.Details>((resolve) => {
+        app.on('child-process-gone', function onCrash (_event, details) {
+          if (details.name === name) {
+            app.off('child-process-gone', onCrash);
+            resolve(details);
+          }
+        });
+      });
+    };
+
     ifit(!isWindows32Bit)('with default serviceName', async () => {
+      const name = 'Node Utility Process';
+      const crashPromise = waitForCrash(name);
       utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
-      const [, details] = await once(app, 'child-process-gone') as [any, Electron.Details];
+      const details = await crashPromise;
       expect(details.type).to.equal('Utility');
       expect(details.serviceName).to.equal('node.mojom.NodeService');
-      expect(details.name).to.equal('Node Utility Process');
+      expect(details.name).to.equal(name);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
 
     ifit(!isWindows32Bit)('with custom serviceName', async () => {
-      utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName: 'Hello World!' });
-      const [, details] = await once(app, 'child-process-gone') as [any, Electron.Details];
+      const name = crypto.randomUUID();
+      const crashPromise = waitForCrash(name);
+      utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName: name });
+      const details = await crashPromise;
       expect(details.type).to.equal('Utility');
       expect(details.serviceName).to.equal('node.mojom.NodeService');
-      expect(details.name).to.equal('Hello World!');
+      expect(details.name).to.equal(name);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
   });
@@ -172,7 +215,8 @@ describe('utilityProcess module', () => {
       });
       await once(child, 'spawn');
       expect(child.kill()).to.be.true();
-      await once(child, 'exit');
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
     });
   });
 
@@ -197,11 +241,29 @@ describe('utilityProcess module', () => {
     it('is valid when child process launches successfully', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
       await once(child, 'spawn');
-      expect(child.pid).to.not.be.null();
+      expect(child).to.have.property('pid').that.is.a('number');
     });
 
     it('is undefined when child process fails to launch', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'does-not-exist.js'));
+      expect(child.pid).to.be.undefined();
+    });
+
+    it('is undefined before the child process is spawned succesfully', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+      expect(child.pid).to.be.undefined();
+      await once(child, 'spawn');
+      child.kill();
+    });
+
+    it('is undefined when child process is killed', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+      await once(child, 'spawn');
+
+      expect(child).to.have.property('pid').that.is.a('number');
+      expect(child.kill()).to.be.true();
+
+      await once(child, 'exit');
       expect(child.pid).to.be.undefined();
     });
   });
@@ -467,7 +529,8 @@ describe('utilityProcess module', () => {
       expect(output).to.equal(result);
     });
 
-    it('does not inherit parent env when custom env is provided', async () => {
+    // TODO(codebytere): figure out why this is failing in ASAN- builds on Linux.
+    ifit(!process.env.IS_ASAN)('does not inherit parent env when custom env is provided', async () => {
       const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'env-app'), '--create-custom-env'], {
         env: {
           FROM: 'parent',

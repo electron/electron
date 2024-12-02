@@ -57,12 +57,25 @@ runs:
       cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
       echo "Using cache key: $DEPSHASH"
       echo "Checking for cache in: $cache_path"
-      if [ ! -f "$cache_path" ]; then
+      if [ ! -f "$cache_path" ] || [ `du $cache_path | cut -f1` = "0" ]; then
         echo "cache_exists=false" >> $GITHUB_OUTPUT
         echo "Cache Does Not Exist for $DEPSHASH"
       else
         echo "cache_exists=true" >> $GITHUB_OUTPUT
         echo "Cache Already Exists for $DEPSHASH, Skipping.."
+      fi
+  - name: Check cross instance cache disk space
+    if: steps.check-cache.outputs.cache_exists == 'false'
+    shell: bash
+    run: |    
+      # if there is less than 20 GB free space then creating the cache might fail so exit early
+      freespace=`df -m /mnt/cross-instance-cache | grep -w /mnt/cross-instance-cache | awk '{print $4}'`
+      freespace_human=`df -h /mnt/cross-instance-cache | grep -w /mnt/cross-instance-cache | awk '{print $4}'`
+      if [ $freespace -le 20000 ]; then
+        echo "The cross mount cache has $freespace_human free space which is not enough - exiting"
+        exit 1
+      else
+        echo "The cross mount cache has $freespace_human free space - continuing"
       fi
   - name: Gclient Sync
     if: steps.check-cache.outputs.cache_exists == 'false'

@@ -50,12 +50,12 @@ gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
     ui::PlatformWindowState window_state) const {
   // If we are not showing frame, the insets should be zero.
   if (native_window_view_->IsFullscreen()) {
-    return gfx::Insets();
+    return {};
   }
 
   if (!native_window_view_->has_frame() ||
       !native_window_view_->has_client_frame()) {
-    return gfx::Insets();
+    return {};
   }
 
   auto* view = static_cast<ClientFrameViewLinux*>(
@@ -122,12 +122,6 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
       break;
     case ui::PlatformWindowState::kUnknown:
     case ui::PlatformWindowState::kNormal:
-    case ui::PlatformWindowState::kSnappedPrimary:
-    case ui::PlatformWindowState::kSnappedSecondary:
-    case ui::PlatformWindowState::kFloated:
-    case ui::PlatformWindowState::kPip:
-    case ui::PlatformWindowState::kPinnedFullscreen:
-    case ui::PlatformWindowState::kTrustedPinnedFullscreen:
       break;
   }
   switch (new_state) {
@@ -142,12 +136,6 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
       break;
     case ui::PlatformWindowState::kUnknown:
     case ui::PlatformWindowState::kNormal:
-    case ui::PlatformWindowState::kSnappedPrimary:
-    case ui::PlatformWindowState::kSnappedSecondary:
-    case ui::PlatformWindowState::kFloated:
-    case ui::PlatformWindowState::kPip:
-    case ui::PlatformWindowState::kPinnedFullscreen:
-    case ui::PlatformWindowState::kTrustedPinnedFullscreen:
       break;
   }
   window_state_ = new_state;

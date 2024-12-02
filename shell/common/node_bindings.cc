@@ -25,6 +25,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "electron/electron_version.h"
 #include "electron/fuses.h"
+#include "electron/mas.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
@@ -37,6 +38,7 @@
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+#include "shell/common/process_util.h"
 #include "shell/common/world_ids.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
@@ -188,7 +190,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
     v8::Local<v8::FixedArray> v8_import_assertions) {
   if (node::Environment::GetCurrent(context) == nullptr) {
     if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
-      return v8::MaybeLocal<v8::Promise>();
+      return {};
     return blink::V8Initializer::HostImportModuleDynamically(
         context, v8_host_defined_options, v8_referrer_resource_url,
         v8_specifier, v8_import_assertions);
@@ -566,7 +568,7 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   if (!fuses::IsNodeOptionsEnabled())
     process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
 
-  std::unique_ptr<node::InitializationResult> result =
+  std::shared_ptr<node::InitializationResult> result =
       node::InitializeOncePerProcess(
           args,
           static_cast<node::ProcessInitializationFlags::Flags>(process_flags));
@@ -797,15 +799,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     v8::Local<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     std::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
-#if BUILDFLAG(IS_WIN)
-  auto& electron_args = ElectronCommandLine::argv();
-  std::vector<std::string> args(electron_args.size());
-  std::ranges::transform(electron_args, args.begin(),
-                         [](auto& a) { return base::WideToUTF8(a); });
-#else
-  auto args = ElectronCommandLine::argv();
-#endif
-  return CreateEnvironment(context, platform, args, {}, on_app_code_ready);
+  return CreateEnvironment(context, platform, ElectronCommandLine::AsUtf8(), {},
+                           on_app_code_ready);
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {

@@ -1,9 +1,9 @@
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
+import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
+
 import * as events from 'events';
 import { setImmediate, clearImmediate } from 'timers';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-
-import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
-import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
 
 declare const binding: {
   get: (name: string) => any;

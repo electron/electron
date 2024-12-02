@@ -8,7 +8,6 @@
 #include <string_view>
 #include <utility>
 
-#include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -44,6 +43,17 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     gin::Handle<gin_helper::internal::Event> event =
         internal::Event::New(isolate());
     return EmitWithEvent(name, event, std::forward<Args>(args)...);
+  }
+
+  // this.emit(name, args...);
+  template <typename... Args>
+  void EmitWithoutEvent(const std::string_view name, Args&&... args) {
+    v8::HandleScope handle_scope(isolate());
+    v8::Local<v8::Object> wrapper = GetWrapper();
+    if (wrapper.IsEmpty())
+      return;
+    gin_helper::EmitEvent(isolate(), GetWrapper(), name,
+                          std::forward<Args>(args)...);
   }
 
   // disable copy

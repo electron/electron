@@ -12,10 +12,10 @@ We attempt to migrate the safe storage key from the old account, if that migrati
 Existing apps that aren't built for the app store should be unimpacted, there is one edge case where a user uses BOTH an AppStore and a darwin build of the same app only one will keep it's access to the safestorage key as during the migration we delete the old account.  This is an acceptable edge case as no one should be actively using two versions of the same app.
 
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index e7a65e97b51d93bff864889813317fb7c6ffc846..2b93da301b664f90720d2d2b5407be0985d7f334 100644
+index bb1fc0c99164ae4bdaaaa78e87c30e88932a928c..82d235709b79b1b3689b28ec8bfa02663ba219d6 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
-@@ -22,6 +22,12 @@
+@@ -23,6 +23,12 @@
  using KeychainNameContainerType = const base::NoDestructor<std::string>;
  #endif
  
@@ -28,7 +28,7 @@ index e7a65e97b51d93bff864889813317fb7c6ffc846..2b93da301b664f90720d2d2b5407be09
  namespace {
  
  // These two strings ARE indeed user facing.  But they are used to access
-@@ -81,11 +87,18 @@
+@@ -82,11 +88,18 @@
  std::string KeychainPassword::GetPassword() const {
    UInt32 password_length = 0;
    void* password_data = nullptr;
@@ -49,7 +49,7 @@ index e7a65e97b51d93bff864889813317fb7c6ffc846..2b93da301b664f90720d2d2b5407be09
    if (error == noErr) {
      std::string password =
          std::string(static_cast<char*>(password_data), password_length);
-@@ -93,6 +106,49 @@
+@@ -94,6 +107,49 @@
      return password;
    }
  

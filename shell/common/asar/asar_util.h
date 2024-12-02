@@ -8,6 +8,8 @@
 #include <memory>
 #include <string>
 
+#include "base/containers/span.h"
+
 namespace base {
 class FilePath;
 }
@@ -29,8 +31,7 @@ bool GetAsarArchivePath(const base::FilePath& full_path,
 // Same with base::ReadFileToString but supports asar Archive.
 bool ReadFileToString(const base::FilePath& path, std::string* contents);
 
-void ValidateIntegrityOrDie(const char* data,
-                            size_t size,
+void ValidateIntegrityOrDie(base::span<const uint8_t> input,
                             const IntegrityPayload& integrity);
 
 }  // namespace asar

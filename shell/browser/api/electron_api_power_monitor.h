@@ -52,7 +52,8 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
 #endif
 
   // base::PowerStateObserver implementations:
-  void OnPowerStateChange(bool on_battery_power) override;
+  void OnBatteryPowerStatusChange(
+      BatteryPowerStatus battery_power_status) override;
 
   // base::PowerSuspendObserver implementations:
   void OnSuspend() override;

@@ -23,13 +23,12 @@
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/usb_device_info_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace {
 
-constexpr char kDeviceNameKey[] = "productName";
-constexpr char kDeviceIdKey[] = "deviceId";
+constexpr std::string_view kDeviceNameKey = "productName";
+constexpr std::string_view kDeviceIdKey = "deviceId";
 constexpr int kUsbClassMassStorage = 0x08;
 
 bool CanStorePersistentEntry(const device::mojom::UsbDeviceInfo& device_info) {

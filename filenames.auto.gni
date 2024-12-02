@@ -151,6 +151,7 @@ auto_filenames = {
     "docs/api/structures/web-request-filter.md",
     "docs/api/structures/web-source.md",
     "docs/api/structures/window-open-handler-response.md",
+    "docs/api/structures/window-session-end-event.md",
   ]
 
   sandbox_bundle_deps = [

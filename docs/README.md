@@ -37,6 +37,7 @@ an issue:
   * [Offline/Online Detection](tutorial/online-offline-events.md)
   * [Represented File for macOS BrowserWindows](tutorial/represented-file.md)
   * [Native File Drag & Drop](tutorial/native-file-drag-drop.md)
+  * [Navigation History](tutorial/navigation-history.md)
   * [Offscreen Rendering](tutorial/offscreen-rendering.md)
   * [Dark Mode](tutorial/dark-mode.md)
   * [Web embeds in Electron](tutorial/web-embeds.md)

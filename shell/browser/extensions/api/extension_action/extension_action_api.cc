@@ -9,7 +9,6 @@
 #include <memory>
 #include <utility>
 
-#include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_prefs.h"

@@ -1,13 +1,16 @@
-import { BrowserWindow, app } from 'electron/main';
 import { shell } from 'electron/common';
-import { closeAllWindows } from './lib/window-helpers';
-import { ifdescribe, ifit, listen } from './lib/spec-helpers';
-import * as http from 'node:http';
+import { BrowserWindow, app } from 'electron/main';
+
+import { expect } from 'chai';
+
+import { once } from 'node:events';
 import * as fs from 'node:fs';
+import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { expect } from 'chai';
-import { once } from 'node:events';
+
+import { ifdescribe, ifit, listen } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('shell module', () => {
   describe('shell.openExternal()', () => {
@@ -72,6 +75,21 @@ describe('shell module', () => {
         w.webContents.executeJavaScript(`require("electron").shell.openExternal(${JSON.stringify(url)})`),
         requestReceived
       ]);
+    });
+
+    ifit(process.platform === 'darwin')('removes focus from the electron window after opening an external link', async () => {
+      const url = 'http://127.0.0.1';
+      const w = new BrowserWindow({ show: true });
+
+      await once(w, 'focus');
+      expect(w.isFocused()).to.be.true();
+
+      await Promise.all<void>([
+        shell.openExternal(url),
+        once(w, 'blur') as Promise<any>
+      ]);
+
+      expect(w.isFocused()).to.be.false();
     });
   });
 

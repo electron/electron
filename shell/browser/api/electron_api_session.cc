@@ -18,7 +18,6 @@
 #include "base/files/file_util.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
@@ -87,8 +86,9 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
-#include "shell/common/process_util.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/storage_key/storage_key.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -1111,11 +1111,9 @@ v8::Local<v8::Promise> Session::LoadExtension(
              const extensions::Extension* extension,
              const std::string& error_msg) {
             if (extension) {
-              if (!error_msg.empty()) {
-                node::Environment* env =
-                    node::Environment::GetCurrent(promise.isolate());
-                EmitWarning(env, error_msg, "ExtensionLoadWarning");
-              }
+              if (!error_msg.empty())
+                util::EmitWarning(promise.isolate(), error_msg,
+                                  "ExtensionLoadWarning");
               promise.Resolve(extension);
             } else {
               promise.RejectWithErrorMessage(error_msg);
@@ -1236,8 +1234,8 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
     if (num_sockets_to_preconnect < kMinSocketsToPreconnect ||
         num_sockets_to_preconnect > kMaxSocketsToPreconnect) {
       args->ThrowTypeError(
-          base::StringPrintf("numSocketsToPreconnect is outside range [%d,%d]",
-                             kMinSocketsToPreconnect, kMaxSocketsToPreconnect));
+          absl::StrFormat("numSocketsToPreconnect is outside range [%d,%d]",
+                          kMinSocketsToPreconnect, kMaxSocketsToPreconnect));
       return;
     }
   }
@@ -1359,8 +1357,8 @@ v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
         // Opaque origins cannot be used with this API
         if (origin.opaque()) {
           thrower.ThrowError(
-              base::StringPrintf("Invalid origin: '%s'",
-                                 origin_url.possibly_invalid_spec().c_str()));
+              absl::StrFormat("Invalid origin: '%s'",
+                              origin_url.possibly_invalid_spec().c_str()));
           return v8::Undefined(isolate);
         }
 
@@ -1585,7 +1583,7 @@ std::optional<gin::Handle<Session>> Session::FromPath(
 gin::Handle<Session> Session::New() {
   gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
       .ThrowError("Session objects cannot be created with 'new'");
-  return gin::Handle<Session>();
+  return {};
 }
 
 void Session::FillObjectTemplate(v8::Isolate* isolate,
@@ -1607,7 +1605,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
                  &Session::SetPermissionRequestHandler)
       .SetMethod("setPermissionCheckHandler",
                  &Session::SetPermissionCheckHandler)
-      .SetMethod("setDisplayMediaRequestHandler",
+      .SetMethod("_setDisplayMediaRequestHandler",
                  &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)

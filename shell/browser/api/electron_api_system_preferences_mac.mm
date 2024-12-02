@@ -93,8 +93,8 @@ AVMediaType ParseMediaType(const std::string& media_type) {
 }
 
 std::string ConvertSystemPermission(
-    system_media_permissions::SystemPermission value) {
-  using SystemPermission = system_media_permissions::SystemPermission;
+    system_permission_settings::SystemPermission value) {
+  using SystemPermission = system_permission_settings::SystemPermission;
   switch (value) {
     case SystemPermission::kNotDetermined:
       return "not-determined";
@@ -548,13 +548,13 @@ std::string SystemPreferences::GetMediaAccessStatus(
     const std::string& media_type) {
   if (media_type == "camera") {
     return ConvertSystemPermission(
-        system_media_permissions::CheckSystemVideoCapturePermission());
+        system_permission_settings::CheckSystemVideoCapturePermission());
   } else if (media_type == "microphone") {
     return ConvertSystemPermission(
-        system_media_permissions::CheckSystemAudioCapturePermission());
+        system_permission_settings::CheckSystemAudioCapturePermission());
   } else if (media_type == "screen") {
     return ConvertSystemPermission(
-        system_media_permissions::CheckSystemScreenCapturePermission());
+        system_permission_settings::CheckSystemScreenCapturePermission());
   } else {
     thrower.ThrowError("Invalid media type");
     return std::string();

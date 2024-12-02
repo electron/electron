@@ -6,6 +6,7 @@
 
 #include "base/functional/bind.h"
 #include "content/public/browser/browser_thread.h"
+#include "services/network/public/mojom/shared_storage.mojom.h"
 #include "shell/browser/login_handler.h"
 
 namespace electron {
@@ -28,8 +29,10 @@ class LoginHandlerDelegate {
         &LoginHandlerDelegate::OnRequestCancelled, base::Unretained(this)));
 
     login_handler_ = std::make_unique<LoginHandler>(
-        auth_info, nullptr, false, process_id, url, response_headers,
-        first_auth_attempt,
+        auth_info, nullptr /*web_contents*/,
+        false /*is_request_for_primary_main_frame*/,
+        false /*bool is_request_for_navigation*/, process_id, url,
+        response_headers, first_auth_attempt,
         base::BindOnce(&LoginHandlerDelegate::OnAuthCredentials,
                        weak_factory_.GetWeakPtr()));
   }
@@ -106,7 +109,7 @@ void URLLoaderNetworkObserver::OnLoadingStateUpdate(
 
 void URLLoaderNetworkObserver::OnSharedStorageHeaderReceived(
     const url::Origin& request_origin,
-    std::vector<network::mojom::SharedStorageOperationPtr> operations,
+    std::vector<network::mojom::SharedStorageModifierMethodPtr> methods,
     OnSharedStorageHeaderReceivedCallback callback) {
   std::move(callback).Run();
 }

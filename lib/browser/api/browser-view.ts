@@ -68,10 +68,7 @@ export default class BrowserView {
   // a webContents can be closed by the user while the BrowserView
   // remains alive and attached to a BrowserWindow.
   set ownerWindow (w: BrowserWindow | null) {
-    if (this.#ownerWindow && this.#resizeListener) {
-      this.#ownerWindow.off('resize', this.#resizeListener);
-      this.#resizeListener = null;
-    }
+    this.#removeResizeListener();
 
     if (this.webContents && !this.webContents.isDestroyed()) {
       this.webContents._setOwnerWindow(w);
@@ -82,6 +79,7 @@ export default class BrowserView {
       this.#lastWindowSize = w.getBounds();
       w.on('resize', this.#resizeListener = this.#autoResize.bind(this));
       w.on('closed', () => {
+        this.#removeResizeListener();
         this.#ownerWindow = null;
         this.#destroyListener = null;
       });
@@ -92,6 +90,13 @@ export default class BrowserView {
     // Ensure that if #webContentsView's webContents is destroyed,
     // the WebContentsView is removed from the view hierarchy.
     this.#ownerWindow?.contentView.removeChildView(this.webContentsView);
+  }
+
+  #removeResizeListener () {
+    if (this.#ownerWindow && this.#resizeListener) {
+      this.#ownerWindow.off('resize', this.#resizeListener);
+      this.#resizeListener = null;
+    }
   }
 
   #autoHorizontalProportion: {width: number, left: number} | null = null;
@@ -145,6 +150,12 @@ export default class BrowserView {
     if (this.#autoHorizontalProportion || this.#autoVerticalProportion) {
       this.#webContentsView.setBounds(newViewBounds);
     }
+
+    // Update #lastWindowSize value after browser windows resize
+    this.#lastWindowSize = {
+      width: newBounds.width,
+      height: newBounds.height
+    };
   }
 
   get webContentsView () {

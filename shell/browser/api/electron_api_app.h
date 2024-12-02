@@ -17,6 +17,7 @@
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "content/public/browser/render_process_host.h"
 #include "crypto/crypto_buildflags.h"
+#include "electron/mas.h"
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/ssl/client_cert_identity.h"

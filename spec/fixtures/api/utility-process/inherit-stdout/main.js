@@ -1,4 +1,5 @@
 const { app, utilityProcess } = require('electron');
+
 const path = require('node:path');
 
 app.whenReady().then(() => {

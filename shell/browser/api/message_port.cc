@@ -10,7 +10,6 @@
 
 #include "base/containers/contains.h"
 #include "base/containers/to_vector.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
@@ -21,7 +20,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/messaging/transferable_message.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
@@ -226,7 +225,7 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
     const std::vector<gin::Handle<MessagePort>>& ports,
     bool* threw_exception) {
   if (ports.empty())
-    return std::vector<blink::MessagePortChannel>();
+    return {};
 
   std::unordered_set<MessagePort*> visited;
 
@@ -245,7 +244,7 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
       gin_helper::ErrorThrower(isolate).ThrowError(
           "Port at index " + base::NumberToString(i) + " is " + type + ".");
       *threw_exception = true;
-      return std::vector<blink::MessagePortChannel>();
+      return {};
     }
     visited.insert(port);
   }

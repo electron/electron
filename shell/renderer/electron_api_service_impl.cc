@@ -5,6 +5,7 @@
 #include "electron/shell/renderer/electron_api_service_impl.h"
 
 #include <memory>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -19,7 +20,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/mojom/frame/user_activation_notification_type.mojom-shared.h"
@@ -32,7 +33,7 @@ namespace electron {
 
 namespace {
 
-const char kIpcKey[] = "ipcNative";
+constexpr std::string_view kIpcKey = "ipcNative";
 
 // Gets the private object under kIpcKey
 v8::Local<v8::Object> GetIpcObject(v8::Local<v8::Context> context) {
@@ -44,7 +45,7 @@ v8::Local<v8::Object> GetIpcObject(v8::Local<v8::Context> context) {
       global_object->GetPrivate(context, private_binding_key).ToLocalChecked();
   if (value.IsEmpty() || !value->IsObject()) {
     LOG(ERROR) << "Attempted to get the 'ipcNative' object but it was missing";
-    return v8::Local<v8::Object>();
+    return {};
   }
   return value->ToObject(context).ToLocalChecked();
 }

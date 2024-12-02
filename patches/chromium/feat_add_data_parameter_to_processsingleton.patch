@@ -13,18 +13,19 @@ app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 31f5b160e4cd755cfb56a62b04261ee1bee80277..8dbc5ac458481d2f805f90101069f02adcfe4090 100644
+index 31f5b160e4cd755cfb56a62b04261ee1bee80277..4305ba61d2489c5817785077d1ace8767b41bdde 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
-@@ -18,6 +18,7 @@
+@@ -18,6 +18,8 @@
  #include "base/functional/callback.h"
  #include "base/memory/ref_counted.h"
  #include "base/process/process.h"
 +#include "base/containers/span.h"
++#include "base/memory/raw_span.h"
  #include "ui/gfx/native_widget_types.h"
  
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
-@@ -100,21 +101,24 @@ class ProcessSingleton {
+@@ -100,21 +102,24 @@ class ProcessSingleton {
    // should handle it (i.e., because the current process is shutting down).
    using NotificationCallback =
        base::RepeatingCallback<bool(base::CommandLine command_line,
@@ -35,12 +36,12 @@ index 31f5b160e4cd755cfb56a62b04261ee1bee80277..8dbc5ac458481d2f805f90101069f02a
  #if BUILDFLAG(IS_WIN)
    ProcessSingleton(const std::string& program_name,
                     const base::FilePath& user_data_dir,
-+                   const base::span<const uint8_t> additional_data,
++                   const base::raw_span<const uint8_t> additional_data,
                     bool is_sandboxed,
                     const NotificationCallback& notification_callback);
  #else
    ProcessSingleton(const base::FilePath& user_data_dir,
-+                   const base::span<const uint8_t> additional_data,
++                   const base::raw_span<const uint8_t> additional_data,
                     const NotificationCallback& notification_callback);
 +#endif
  
@@ -51,19 +52,19 @@ index 31f5b160e4cd755cfb56a62b04261ee1bee80277..8dbc5ac458481d2f805f90101069f02a
    ~ProcessSingleton();
  
    // Notify another process, if available. Otherwise sets ourselves as the
-@@ -178,7 +182,10 @@ class ProcessSingleton {
+@@ -178,7 +183,10 @@ class ProcessSingleton {
  #endif
  
   private:
 +  // A callback to run when the first instance receives data from the second.
    NotificationCallback notification_callback_;  // Handler for notifications.
 +  // Custom data to pass to the other instance during notify.
-+  base::span<const uint8_t> additional_data_;
++  base::raw_span<const uint8_t> additional_data_;
  
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index f8cf2fb4ab66dae92b80c17cdda8b984fe4807c7..1a5d5323c0b37171b61f1fb2445dc18e1738f4ba 100644
+index 0e036b178d8ea9bbe5564e8bbdb394b8a0d4cb3d..23a95bde41775561d4568850760989065750cd9a 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -615,6 +615,7 @@ class ProcessSingleton::LinuxWatcher
@@ -138,7 +139,7 @@ index f8cf2fb4ab66dae92b80c17cdda8b984fe4807c7..1a5d5323c0b37171b61f1fb2445dc18e
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
-+    const base::span<const uint8_t> additional_data,
++    const base::raw_span<const uint8_t> additional_data,
      const NotificationCallback& notification_callback)
      : notification_callback_(notification_callback),
 +      additional_data_(additional_data),
@@ -178,7 +179,7 @@ index f8cf2fb4ab66dae92b80c17cdda8b984fe4807c7..1a5d5323c0b37171b61f1fb2445dc18e
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index a0ef81d42bd9a58786b00a1601625e6822bc26f6..27da17eed8fcd69b32dd1f409f6a2efd46a40d88 100644
+index d91f58ebe3a024bc41ed72121c49172f68e0d862..255160d6bd6b2ea1cd640fde8f4b4ce598148418 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -81,10 +81,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
@@ -256,7 +257,7 @@ index a0ef81d42bd9a58786b00a1601625e6822bc26f6..27da17eed8fcd69b32dd1f409f6a2efd
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
-+    const base::span<const uint8_t> additional_data,
++    const base::raw_span<const uint8_t> additional_data,
      bool is_app_sandboxed,
      const NotificationCallback& notification_callback)
      : notification_callback_(notification_callback),
@@ -268,27 +269,27 @@ index a0ef81d42bd9a58786b00a1601625e6822bc26f6..27da17eed8fcd69b32dd1f409f6a2efd
      return PROCESS_NONE;
    }
  
--  switch (chrome::AttemptToNotifyRunningChrome(remote_window_)) {
-+  switch (chrome::AttemptToNotifyRunningChrome(remote_window_, additional_data_)) {
-     case chrome::NOTIFY_SUCCESS:
+-  switch (AttemptToNotifyRunningChrome(remote_window_)) {
++  switch (AttemptToNotifyRunningChrome(remote_window_, additional_data_)) {
+     case NotifyChromeResult::NOTIFY_SUCCESS:
        return PROCESS_NOTIFIED;
-     case chrome::NOTIFY_FAILED:
+     case NotifyChromeResult::NOTIFY_FAILED:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index f572b9db19cc1341cf0493d7486bb484121e7384..5b053e160d4653cd6de7eabc37e3b4a264a6c2c7 100644
+index 019ac7e93e009a713ce56ee8bcacf467b4fe769d..9417403bb9cacd0572b37493ab2d98130313db4d 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
-@@ -41,7 +41,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
+@@ -39,7 +39,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
    return base::win::MessageWindow::FindWindow(user_data_dir.value());
  }
  
 -NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
 +NotifyChromeResult AttemptToNotifyRunningChrome(
 +    HWND remote_window,
-+    const base::span<const uint8_t> additional_data) {
++    const base::raw_span<const uint8_t> additional_data) {
    TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
  
    DCHECK(remote_window);
-@@ -70,12 +72,29 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+@@ -68,12 +70,29 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
      new_command_line.AppendSwitchNative(switches::kSourceShortcut, si.lpTitle);
  
    // Send the command line to the remote chrome window.
@@ -320,25 +321,25 @@ index f572b9db19cc1341cf0493d7486bb484121e7384..5b053e160d4653cd6de7eabc37e3b4a2
    // window (otherwise it will just flash in the taskbar).
    ::AllowSetForegroundWindow(process_id);
 diff --git a/chrome/browser/win/chrome_process_finder.h b/chrome/browser/win/chrome_process_finder.h
-index ddea93de709db5967a353bb73d433737c6aac40c..43c6896923032ffa16a0df4efd48a42f869c15d7 100644
+index 91e5e623840b9912bd05d024c12e3eb3f1ba2f53..63b5b10013c96dea4e77e5e56a060973a1752faa 100644
 --- a/chrome/browser/win/chrome_process_finder.h
 +++ b/chrome/browser/win/chrome_process_finder.h
 @@ -7,6 +7,7 @@
  
  #include <windows.h>
  
-+#include "base/containers/span.h"
++#include "base/memory/raw_span.h"
  #include "base/time/time.h"
  
  namespace base {
-@@ -27,7 +28,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir);
+@@ -25,7 +26,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir);
  // Attempts to send the current command line to an already running instance of
  // Chrome via a WM_COPYDATA message.
  // Returns true if a running Chrome is found and successfully notified.
 -NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window);
 +NotifyChromeResult AttemptToNotifyRunningChrome(
 +    HWND remote_window,
-+    const base::span<const uint8_t> additional_data);
++    const base::raw_span<const uint8_t> additional_data);
  
  // Changes the notification timeout to |new_timeout|, returns the old timeout.
  base::TimeDelta SetNotificationTimeoutForTesting(base::TimeDelta new_timeout);

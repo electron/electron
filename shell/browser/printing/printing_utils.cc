@@ -15,10 +15,13 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
-#include "pdf/pdf_features.h"
 #include "printing/backend/print_backend.h"  // nogncheck
 #include "printing/units.h"
 #include "shell/common/thread_restrictions.h"
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "pdf/pdf_features.h"
+#endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
@@ -56,7 +59,7 @@ gfx::Size GetDefaultPrinterDPI(const std::u16string& device_name) {
   GtkPrintSettings* print_settings = gtk_print_settings_new();
   int dpi = gtk_print_settings_get_resolution(print_settings);
   g_object_unref(print_settings);
-  return gfx::Size(dpi, dpi);
+  return {dpi, dpi};
 #endif
 }
 
@@ -76,6 +79,8 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
 #endif
 }
 
+namespace {
+
 // Duplicated from chrome/browser/printing/print_view_manager_common.cc
 content::RenderFrameHost* GetFullPagePlugin(content::WebContents* contents) {
   content::RenderFrameHost* full_page_plugin = nullptr;
@@ -94,6 +99,8 @@ content::RenderFrameHost* GetFullPagePlugin(content::WebContents* contents) {
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   return full_page_plugin;
 }
+
+}  // namespace
 
 // Pick the right RenderFrameHost based on the WebContents.
 // Modified from chrome/browser/printing/print_view_manager_common.cc

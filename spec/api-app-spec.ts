@@ -1,18 +1,21 @@
+import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, utilityProcess } from 'electron/main';
+
 import { assert, expect } from 'chai';
+import * as semver from 'semver';
+import split = require('split')
+
 import * as cp from 'node:child_process';
-import * as https from 'node:https';
-import * as http from 'node:http';
-import * as net from 'node:net';
+import { once } from 'node:events';
 import * as fs from 'node:fs';
+import * as http from 'node:http';
+import * as https from 'node:https';
+import * as net from 'node:net';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
-import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, utilityProcess } from 'electron/main';
-import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
+
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { once } from 'node:events';
-import split = require('split')
-import * as semver from 'semver';
+import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 

@@ -28,7 +28,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 
@@ -44,6 +44,8 @@
 
 namespace electron {
 
+namespace {
+
 base::IDMap<api::UtilityProcessWrapper*, base::ProcessId>&
 GetAllUtilityProcessWrappers() {
   static base::NoDestructor<
@@ -51,6 +53,8 @@ GetAllUtilityProcessWrappers() {
       s_all_utility_process_wrappers;
   return *s_all_utility_process_wrappers;
 }
+
+}  // namespace
 
 namespace api {
 
@@ -145,8 +149,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     }
   }
 
-  if (!content::ServiceProcessHost::HasObserver(this))
-    content::ServiceProcessHost::AddObserver(this);
+  // Watch for service process termination events.
+  content::ServiceProcessHost::AddObserver(this);
 
   mojo::PendingReceiver<node::mojom::NodeService> receiver =
       node_service_remote_.BindNewPipeAndPassReceiver();
@@ -166,6 +170,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 #if BUILDFLAG(IS_WIN)
           .WithStdoutHandle(std::move(stdout_write))
           .WithStderrHandle(std::move(stderr_write))
+          .WithFeedbackCursorOff(true)
 #elif BUILDFLAG(IS_POSIX)
           .WithAdditionalFds(std::move(fds_to_remap))
 #endif
@@ -222,7 +227,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   params->use_network_observer_from_url_loader_factory =
       create_network_observer;
 
-  node_service_remote_->Initialize(std::move(params));
+  node_service_remote_->Initialize(std::move(params),
+                                   receiver_.BindNewPipeAndPassRemote());
 }
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
@@ -245,20 +251,44 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
 }
 
 void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
+  // HandleTermination is called from multiple callsites,
+  // we need to ensure we only process it for the first callsite.
+  if (terminated_)
+    return;
+  terminated_ = true;
+
   if (pid_ != base::kNullProcessId)
     GetAllUtilityProcessWrappers().Remove(pid_);
+
+  pid_ = base::kNullProcessId;
   CloseConnectorPort();
-
+  if (killed_) {
+#if BUILDFLAG(IS_POSIX)
+    // UtilityProcessWrapper::Kill relies on base::Process::Terminate
+    // to gracefully shutdown the process which is performed by sending
+    // SIGTERM signal. When listening for exit events via ServiceProcessHost
+    // observers, the exit code on posix is obtained via
+    // BrowserChildProcessHostImpl::GetTerminationInfo which inturn relies
+    // on waitpid to extract the exit signal. If the process is unavailable,
+    // then the exit_code will be set to 0, otherwise we get the signal that
+    // was sent during the base::Process::Terminate call. For a user, this is
+    // still a graceful shutdown case so lets' convert the exit code to the
+    // expected value.
+    if (exit_code == SIGTERM || exit_code == SIGKILL) {
+      exit_code = 0;
+    }
+#endif
+  }
   EmitWithoutEvent("exit", exit_code);
-
   Unpin();
 }
 
 void UtilityProcessWrapper::OnServiceProcessDisconnected(
     uint32_t exit_code,
     const std::string& description) {
-  if (description == "process_exit_termination")
+  if (description == "process_exit_termination") {
     HandleTermination(exit_code);
+  }
 }
 
 void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
@@ -289,13 +319,8 @@ void UtilityProcessWrapper::CloseConnectorPort() {
 }
 
 void UtilityProcessWrapper::Shutdown(uint64_t exit_code) {
-  if (pid_ != base::kNullProcessId)
-    GetAllUtilityProcessWrappers().Remove(pid_);
   node_service_remote_.reset();
-  CloseConnectorPort();
-  // Emit 'exit' event
-  EmitWithoutEvent("exit", exit_code);
-  Unpin();
+  HandleTermination(exit_code);
 }
 
 void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
@@ -333,7 +358,7 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
   connector_->Accept(&mojo_message);
 }
 
-bool UtilityProcessWrapper::Kill() const {
+bool UtilityProcessWrapper::Kill() {
   if (pid_ == base::kNullProcessId)
     return false;
   base::Process process = base::Process::Open(pid_);
@@ -346,6 +371,7 @@ bool UtilityProcessWrapper::Kill() const {
   // process reap should be signaled through the zygote via
   // content::ZygoteCommunication::EnsureProcessTerminated.
   base::EnsureProcessTerminated(std::move(process));
+  killed_ = result;
   return result;
 }
 
@@ -371,6 +397,11 @@ bool UtilityProcessWrapper::Accept(mojo::Message* mojo_message) {
   return true;
 }
 
+void UtilityProcessWrapper::OnV8FatalError(const std::string& location,
+                                           const std::string& report) {
+  EmitWithoutEvent("error", "FatalError", location, report);
+}
+
 // static
 raw_ptr<UtilityProcessWrapper> UtilityProcessWrapper::FromProcessId(
     base::ProcessId pid) {
@@ -384,7 +415,7 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
   gin_helper::Dictionary dict;
   if (!args->GetNext(&dict)) {
     args->ThrowTypeError("Options must be an object.");
-    return gin::Handle<UtilityProcessWrapper>();
+    return {};
   }
 
   std::u16string display_name;
@@ -398,19 +429,19 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
   dict.Get("modulePath", &params->script);
   if (dict.Has("args") && !dict.Get("args", &params->args)) {
     args->ThrowTypeError("Invalid value for args");
-    return gin::Handle<UtilityProcessWrapper>();
+    return {};
   }
 
   gin_helper::Dictionary opts;
   if (dict.Get("options", &opts)) {
     if (opts.Has("env") && !opts.Get("env", &env_map)) {
       args->ThrowTypeError("Invalid value for env");
-      return gin::Handle<UtilityProcessWrapper>();
+      return {};
     }
 
     if (opts.Has("execArgv") && !opts.Get("execArgv", &params->exec_args)) {
       args->ThrowTypeError("Invalid value for execArgv");
-      return gin::Handle<UtilityProcessWrapper>();
+      return {};
     }
 
     opts.Get("serviceName", &display_name);

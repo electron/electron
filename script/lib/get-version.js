@@ -15,7 +15,7 @@ module.exports.getElectronVersion = () => {
     if (match) {
       return match[1];
     }
-  } catch (error) {
+  } catch {
     // Error may happen when trying to get version before running gn, which is a
     // valid case and error will be ignored.
   }

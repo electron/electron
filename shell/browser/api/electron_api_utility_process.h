@@ -44,6 +44,7 @@ class UtilityProcessWrapper final
       public gin_helper::Pinnable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,
       public mojo::MessageReceiver,
+      public node::mojom::NodeServiceClient,
       public content::ServiceProcessHost::Observer {
  public:
   enum class IOHandle : size_t { STDIN = 0, STDOUT = 1, STDERR = 2 };
@@ -75,11 +76,15 @@ class UtilityProcessWrapper final
   void HandleTermination(uint64_t exit_code);
 
   void PostMessage(gin::Arguments* args);
-  bool Kill() const;
+  bool Kill();
   v8::Local<v8::Value> GetOSProcessId(v8::Isolate* isolate) const;
 
   // mojo::MessageReceiver
   bool Accept(mojo::Message* mojo_message) override;
+
+  // node::mojom::NodeServiceClient
+  void OnV8FatalError(const std::string& location,
+                      const std::string& report) override;
 
   // content::ServiceProcessHost::Observer
   void OnServiceProcessTerminatedNormally(
@@ -100,8 +105,11 @@ class UtilityProcessWrapper final
   int stdout_read_fd_ = -1;
   int stderr_read_fd_ = -1;
   bool connector_closed_ = false;
+  bool terminated_ = false;
+  bool killed_ = false;
   std::unique_ptr<mojo::Connector> connector_;
   blink::MessagePortDescriptor host_port_;
+  mojo::Receiver<node::mojom::NodeServiceClient> receiver_{this};
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
   std::optional<electron::URLLoaderNetworkObserver>
       url_loader_network_observer_;

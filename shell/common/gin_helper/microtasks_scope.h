@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_MICROTASKS_SCOPE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_MICROTASKS_SCOPE_H_
 
-#include <memory>
+#include <optional>
 
 #include "v8/include/v8-forward.h"
 #include "v8/include/v8-microtask-queue.h"
@@ -27,7 +27,7 @@ class MicrotasksScope {
   MicrotasksScope& operator=(const MicrotasksScope&) = delete;
 
  private:
-  std::unique_ptr<v8::MicrotasksScope> v8_microtasks_scope_;
+  std::optional<v8::MicrotasksScope> v8_microtasks_scope_;
 };
 
 }  // namespace gin_helper
