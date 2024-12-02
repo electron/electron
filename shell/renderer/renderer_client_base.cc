@@ -132,7 +132,7 @@ class ChromePdfInternalPluginDelegate final
   ~ChromePdfInternalPluginDelegate() override = default;
 
   // `pdf::PdfInternalPluginDelegate`:
-  bool IsAllowedOrigin(const url::Origin& origin) const override {
+  [[nodiscard]] bool IsAllowedOrigin(const url::Origin& origin) const override {
     return origin.scheme() == extensions::kExtensionScheme &&
            origin.host() == extension_misc::kPdfExtensionId;
   }
@@ -456,7 +456,7 @@ v8::Local<v8::Object> RendererClientBase::GetScriptableObject(
   if (container_manager)
     return container_manager->GetScriptableObject(plugin_element, isolate);
 #endif
-  return v8::Local<v8::Object>();
+  return {};
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>

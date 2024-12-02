@@ -28,7 +28,7 @@ std::string PluginUtils::GetExtensionIdForMimeType(
   auto it = map.find(mime_type);
   if (it != map.end())
     return it->second;
-  return std::string();
+  return {};
 }
 
 base::flat_map<std::string, std::string>

@@ -332,7 +332,7 @@ extensions::SizeConstraints NativeWindow::GetSizeConstraints() const {
   if (size_constraints_)
     return *size_constraints_;
   if (!content_size_constraints_)
-    return extensions::SizeConstraints();
+    return {};
   // Convert content size constraints to window size constraints.
   extensions::SizeConstraints constraints;
   if (content_size_constraints_->HasMaximumSize()) {
@@ -366,7 +366,7 @@ extensions::SizeConstraints NativeWindow::GetContentSizeConstraints() const {
   if (content_size_constraints_)
     return *content_size_constraints_;
   if (!size_constraints_)
-    return extensions::SizeConstraints();
+    return {};
   // Convert window size constraints to content size constraints.
   // Note that we are not caching the results, because Chromium reccalculates
   // window frame size everytime when min/max sizes are passed, and we must
@@ -532,9 +532,17 @@ void NativeWindow::NotifyWindowClosed() {
   WindowList::RemoveWindow(this);
 }
 
-void NativeWindow::NotifyWindowEndSession() {
+void NativeWindow::NotifyWindowQueryEndSession(
+    const std::vector<std::string>& reasons,
+    bool* prevent_default) {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowEndSession();
+    observer.OnWindowQueryEndSession(reasons, prevent_default);
+}
+
+void NativeWindow::NotifyWindowEndSession(
+    const std::vector<std::string>& reasons) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowEndSession(reasons);
 }
 
 void NativeWindow::NotifyWindowBlur() {

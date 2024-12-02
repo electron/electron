@@ -68,7 +68,7 @@ Emitted when there is an error while updating.
 
 ### Event: 'checking-for-update'
 
-Emitted when checking if an update has started.
+Emitted when checking for an available update has started.
 
 ### Event: 'update-available'
 

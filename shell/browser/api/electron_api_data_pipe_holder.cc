@@ -188,7 +188,7 @@ gin::Handle<DataPipeHolder> DataPipeHolder::From(v8::Isolate* isolate,
     if (gin::ConvertFromV8(isolate, object.ToLocalChecked(), &handle))
       return handle;
   }
-  return gin::Handle<DataPipeHolder>();
+  return {};
 }
 
 }  // namespace electron::api

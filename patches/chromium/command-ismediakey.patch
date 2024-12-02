@@ -11,20 +11,20 @@ and electron/electron@d2368d2d3b3de9eec4cc32b6aaf035cc89921bf1 as
 patches.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.cc b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
-index 2ac08809148beeb6bacccfc5e9f032c3a88eabe7..025082e5fa644f89cec42fd8a2b97d6f764f375f 100644
+index b1c2751f6a6074f8876303a24fb716280cd794bb..37c86f81985a5522399e27d93f9b970b248cb082 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_ozone.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
-@@ -58,7 +58,8 @@ bool GlobalShortcutListenerOzone::RegisterAcceleratorImpl(
+@@ -97,7 +97,8 @@ bool GlobalShortcutListenerOzone::RegisterAcceleratorImpl(
    const bool registered =
        platform_global_shortcut_listener_->RegisterAccelerator(
            accelerator.key_code(), accelerator.IsAltDown(),
 -          accelerator.IsCtrlDown(), accelerator.IsShiftDown());
 +          accelerator.IsCtrlDown(), accelerator.IsShiftDown(),
 +          accelerator.IsCmdDown());
-   if (registered)
+   if (registered) {
      registered_hot_keys_.insert(accelerator);
-   return registered;
-@@ -72,14 +73,15 @@ void GlobalShortcutListenerOzone::UnregisterAcceleratorImpl(
+   }
+@@ -112,14 +113,15 @@ void GlobalShortcutListenerOzone::UnregisterAcceleratorImpl(
  
    platform_global_shortcut_listener_->UnregisterAccelerator(
        accelerator.key_code(), accelerator.IsAltDown(), accelerator.IsCtrlDown(),
@@ -40,22 +40,23 @@ index 2ac08809148beeb6bacccfc5e9f032c3a88eabe7..025082e5fa644f89cec42fd8a2b97d6f
 +                                               bool is_shift_down,
 +                                               bool is_cmd_down) {
    int modifiers = 0;
-   if (is_alt_down)
+   if (is_alt_down) {
      modifiers |= ui::EF_ALT_DOWN;
-@@ -87,6 +89,8 @@ void GlobalShortcutListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
-     modifiers |= ui::EF_CONTROL_DOWN;
-   if (is_shift_down)
+@@ -130,6 +132,9 @@ void GlobalShortcutListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
+   if (is_shift_down) {
      modifiers |= ui::EF_SHIFT_DOWN;
-+  if (is_cmd_down)
+   }
++  if (is_cmd_down) {
 +    modifiers |= ui::EF_COMMAND_DOWN;
++  }
  
    NotifyKeyPressed(ui::Accelerator(key_code, modifiers));
  }
 diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.h b/chrome/browser/extensions/global_shortcut_listener_ozone.h
-index 3c2fc1707e38345c114e140104ffc5a93d704918..40dac9fd7beb7a1a589a479a8035391d4a32cbb8 100644
+index 90abe5d0bfa1ca0f541e42cb281b7b6385fc098e..4f3fa5107534cdeff2b416f9c2f833db97912b72 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_ozone.h
 +++ b/chrome/browser/extensions/global_shortcut_listener_ozone.h
-@@ -46,7 +46,8 @@ class GlobalShortcutListenerOzone
+@@ -52,7 +52,8 @@ class GlobalShortcutListenerOzone
    void OnKeyPressed(ui::KeyboardCode key_code,
                      bool is_alt_down,
                      bool is_ctrl_down,

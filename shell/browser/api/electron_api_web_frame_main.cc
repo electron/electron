@@ -91,15 +91,16 @@ namespace electron::api {
 // FrameTreeNodeId -> WebFrameMain*
 // Using FrameTreeNode allows us to track frame across navigations. This
 // is most similar to how <iframe> works.
-typedef std::unordered_map<content::FrameTreeNodeId,
-                           WebFrameMain*,
-                           content::FrameTreeNodeId::Hasher>
-    FrameTreeNodeIdMap;
+using FrameTreeNodeIdMap = std::unordered_map<content::FrameTreeNodeId,
+                                              WebFrameMain*,
+                                              content::FrameTreeNodeId::Hasher>;
 
 // Token -> WebFrameMain*
 // Maps exact RFH to a WebFrameMain instance.
-typedef std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>
-    FrameTokenMap;
+using FrameTokenMap =
+    std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>;
+
+namespace {
 
 FrameTreeNodeIdMap& GetFrameTreeNodeIdMap() {
   static base::NoDestructor<FrameTreeNodeIdMap> instance;
@@ -109,6 +110,8 @@ FrameTokenMap& GetFrameTokenMap() {
   static base::NoDestructor<FrameTokenMap> instance;
   return *instance;
 }
+
+}  // namespace
 
 // static
 WebFrameMain* WebFrameMain::FromFrameTreeNodeId(
@@ -345,7 +348,7 @@ content::FrameTreeNodeId WebFrameMain::FrameTreeNodeID() const {
 
 std::string WebFrameMain::Name() const {
   if (!CheckRenderFrame())
-    return std::string();
+    return {};
   return render_frame_->GetFrameName();
 }
 
@@ -377,7 +380,7 @@ GURL WebFrameMain::URL() const {
 
 std::string WebFrameMain::Origin() const {
   if (!CheckRenderFrame())
-    return std::string();
+    return {};
   return render_frame_->GetLastCommittedOrigin().Serialize();
 }
 
@@ -432,14 +435,14 @@ void WebFrameMain::DOMContentLoaded() {
 
 // static
 gin::Handle<WebFrameMain> WebFrameMain::New(v8::Isolate* isolate) {
-  return gin::Handle<WebFrameMain>();
+  return {};
 }
 
 // static
 gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
                                              content::RenderFrameHost* rfh) {
   if (!rfh)
-    return gin::Handle<WebFrameMain>();
+    return {};
 
   auto* web_frame = FromRenderFrameHost(rfh);
   if (web_frame)

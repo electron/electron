@@ -6,6 +6,7 @@
 
 #include "base/functional/bind.h"
 #include "content/public/browser/browser_thread.h"
+#include "services/network/public/mojom/shared_storage.mojom.h"
 #include "shell/browser/login_handler.h"
 
 namespace electron {
@@ -108,7 +109,7 @@ void URLLoaderNetworkObserver::OnLoadingStateUpdate(
 
 void URLLoaderNetworkObserver::OnSharedStorageHeaderReceived(
     const url::Origin& request_origin,
-    std::vector<network::mojom::SharedStorageOperationPtr> operations,
+    std::vector<network::mojom::SharedStorageModifierMethodPtr> methods,
     OnSharedStorageHeaderReceivedCallback callback) {
   std::move(callback).Run();
 }

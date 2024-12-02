@@ -81,7 +81,7 @@ gin::Handle<Notification> Notification::New(gin_helper::ErrorThrower thrower,
                                             gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Notification before app is ready");
-    return gin::Handle<Notification>();
+    return {};
   }
   return gin::CreateHandle(thrower.isolate(), new Notification(args));
 }

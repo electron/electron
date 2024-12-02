@@ -34,7 +34,7 @@ blink::WebElement PrintRenderFrameHelperDelegate::GetPdfElement(
     return plugin_element;
   }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  return blink::WebElement();
+  return {};
 }
 
 bool PrintRenderFrameHelperDelegate::IsPrintPreviewEnabled() {

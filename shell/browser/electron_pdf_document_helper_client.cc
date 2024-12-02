@@ -75,9 +75,10 @@ void ElectronPDFDocumentHelperClient::SetPluginCanSave(
 }
 
 #if BUILDFLAG(ENABLE_SCREEN_AI_SERVICE)
-void ElectronPDFDocumentHelperClient::OnSearchifyStateChange(
-    bool busy,
+void ElectronPDFDocumentHelperClient::OnSearchifyStarted(
     content::WebContents* contents) {
-  // TODO(crbug.com/360803943): Show promo and manage progress bubble.
+  // TODO(crbug.com/360803943): Add test.
+  // Show the promo only when ScreenAI component is available and OCR can be
+  // done.
 }
 #endif

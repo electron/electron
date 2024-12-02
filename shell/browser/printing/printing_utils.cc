@@ -59,7 +59,7 @@ gfx::Size GetDefaultPrinterDPI(const std::u16string& device_name) {
   GtkPrintSettings* print_settings = gtk_print_settings_new();
   int dpi = gtk_print_settings_get_resolution(print_settings);
   g_object_unref(print_settings);
-  return gfx::Size(dpi, dpi);
+  return {dpi, dpi};
 #endif
 }
 
@@ -79,6 +79,8 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
 #endif
 }
 
+namespace {
+
 // Duplicated from chrome/browser/printing/print_view_manager_common.cc
 content::RenderFrameHost* GetFullPagePlugin(content::WebContents* contents) {
   content::RenderFrameHost* full_page_plugin = nullptr;
@@ -97,6 +99,8 @@ content::RenderFrameHost* GetFullPagePlugin(content::WebContents* contents) {
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   return full_page_plugin;
 }
+
+}  // namespace
 
 // Pick the right RenderFrameHost based on the WebContents.
 // Modified from chrome/browser/printing/print_view_manager_common.cc

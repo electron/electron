@@ -12,6 +12,7 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/memory/ref_counted_memory.h"
+#include "base/numerics/safe_conversions.h"
 #include "base/strings/pattern.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/arguments.h"
@@ -147,13 +148,13 @@ NativeImage::~NativeImage() {
 }
 
 void NativeImage::UpdateExternalAllocatedMemoryUsage() {
-  int32_t new_memory_usage = 0;
+  int64_t new_memory_usage = 0;
 
   if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
     auto* const image_skia = image_.ToImageSkia();
-    if (!image_skia->isNull()) {
-      new_memory_usage = image_skia->bitmap()->computeByteSize();
-    }
+    if (!image_skia->isNull())
+      new_memory_usage =
+          base::as_signed(image_skia->bitmap()->computeByteSize());
   }
 
   isolate_->AdjustAmountOfExternalAllocatedMemory(new_memory_usage -
@@ -322,7 +323,7 @@ gfx::Size NativeImage::GetSize(const std::optional<float> scale_factor) {
   float sf = scale_factor.value_or(1.0f);
   gfx::ImageSkiaRep image_rep = image_.AsImageSkia().GetRepresentation(sf);
 
-  return gfx::Size(image_rep.GetWidth(), image_rep.GetHeight());
+  return {image_rep.GetWidth(), image_rep.GetHeight()};
 }
 
 std::vector<float> NativeImage::GetScaleFactors() {
@@ -488,22 +489,24 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
     const gin_helper::Dictionary& options) {
   if (!node::Buffer::HasInstance(buffer)) {
     thrower.ThrowError("buffer must be a node Buffer");
-    return gin::Handle<NativeImage>();
+    return {};
   }
 
-  unsigned int width = 0;
-  unsigned int height = 0;
-  double scale_factor = 1.;
+  int width = 0;
+  int height = 0;
 
   if (!options.Get("width", &width)) {
     thrower.ThrowError("width is required");
-    return gin::Handle<NativeImage>();
+    return {};
   }
 
   if (!options.Get("height", &height)) {
     thrower.ThrowError("height is required");
-    return gin::Handle<NativeImage>();
+    return {};
   }
+
+  if (width <= 0 || height <= 0)
+    return CreateEmpty(thrower.isolate());
 
   auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
   auto size_bytes = info.computeMinByteSize();
@@ -511,19 +514,15 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
   const auto buffer_data = electron::util::as_byte_span(buffer);
   if (size_bytes != buffer_data.size()) {
     thrower.ThrowError("invalid buffer size");
-    return gin::Handle<NativeImage>();
-  }
-
-  options.Get("scaleFactor", &scale_factor);
-
-  if (width == 0 || height == 0) {
-    return CreateEmpty(thrower.isolate());
+    return {};
   }
 
   SkBitmap bitmap;
   bitmap.allocN32Pixels(width, height, false);
   bitmap.writePixels({info, buffer_data.data(), bitmap.rowBytes()});
 
+  float scale_factor = 1.0F;
+  options.Get("scaleFactor", &scale_factor);
   gfx::ImageSkia image_skia =
       gfx::ImageSkia::CreateFromBitmap(bitmap, scale_factor);
 
@@ -537,7 +536,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBuffer(
     gin::Arguments* args) {
   if (!node::Buffer::HasInstance(buffer)) {
     thrower.ThrowError("buffer must be a node Buffer");
-    return gin::Handle<NativeImage>();
+    return {};
   }
 
   int width = 0;

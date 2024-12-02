@@ -31,6 +31,7 @@
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "services/network/public/mojom/http_raw_headers.mojom.h"
+#include "services/network/public/mojom/shared_storage.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
@@ -149,7 +150,7 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
 
  private:
   // mojo::DataPipeProducer::DataSource:
-  uint64_t GetLength() const override { return buffer_.size(); }
+  [[nodiscard]] uint64_t GetLength() const override { return buffer_.size(); }
   ReadResult Read(uint64_t offset, base::span<char> buffer) override {
     ReadResult result;
     if (offset <= buffer_.size()) {
@@ -161,8 +162,7 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
       }
       result.bytes_read = copyable_size;
     } else {
-      NOTREACHED_IN_MIGRATION();
-      result.result = MOJO_RESULT_OUT_OF_RANGE;
+      NOTREACHED();
     }
     return result;
   }
@@ -383,13 +383,13 @@ void SimpleURLLoaderWrapper::Start() {
   loader_->SetAllowHttpErrorResults(true);
   loader_->SetURLLoaderFactoryOptions(request_options_);
   loader_->SetOnResponseStartedCallback(base::BindOnce(
-      &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
+      &SimpleURLLoaderWrapper::OnResponseStarted, weak_factory_.GetWeakPtr()));
   loader_->SetOnRedirectCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnRedirect, base::Unretained(this)));
+      &SimpleURLLoaderWrapper::OnRedirect, weak_factory_.GetWeakPtr()));
   loader_->SetOnUploadProgressCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnUploadProgress, base::Unretained(this)));
+      &SimpleURLLoaderWrapper::OnUploadProgress, weak_factory_.GetWeakPtr()));
   loader_->SetOnDownloadProgressCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnDownloadProgress, base::Unretained(this)));
+      &SimpleURLLoaderWrapper::OnDownloadProgress, weak_factory_.GetWeakPtr()));
 
   url_loader_factory_ = GetURLLoaderFactoryForURL(request_ref->url);
   loader_->DownloadAsStream(url_loader_factory_.get(), this);
@@ -467,7 +467,7 @@ void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
 
 void SimpleURLLoaderWrapper::OnSharedStorageHeaderReceived(
     const url::Origin& request_origin,
-    std::vector<network::mojom::SharedStorageOperationPtr> operations,
+    std::vector<network::mojom::SharedStorageModifierMethodPtr> methods,
     OnSharedStorageHeaderReceivedCallback callback) {
   std::move(callback).Run();
 }
@@ -532,14 +532,14 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   gin_helper::Dictionary opts;
   if (!args->GetNext(&opts)) {
     args->ThrowTypeError("Expected a dictionary");
-    return gin::Handle<SimpleURLLoaderWrapper>();
+    return {};
   }
   auto request = std::make_unique<network::ResourceRequest>();
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
   if (!request->url.is_valid()) {
     args->ThrowTypeError("Invalid URL");
-    return gin::Handle<SimpleURLLoaderWrapper>();
+    return {};
   }
   request->site_for_cookies = net::SiteForCookies::FromUrl(request->url);
   opts.Get("referrer", &request->referrer);
@@ -607,7 +607,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       if (!net::HttpUtil::IsValidHeaderName(it.first) ||
           !net::HttpUtil::IsValidHeaderValue(it.second)) {
         args->ThrowTypeError("Invalid header name or value");
-        return gin::Handle<SimpleURLLoaderWrapper>();
+        return {};
       }
       request->headers.SetHeader(it.first, it.second);
     }
@@ -719,14 +719,19 @@ void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
 }
 
 void SimpleURLLoaderWrapper::OnComplete(bool success) {
+  auto self = weak_factory_.GetWeakPtr();
   if (success) {
     Emit("complete");
   } else {
     Emit("error", net::ErrorToString(loader_->NetError()));
   }
-  loader_.reset();
-  pinned_wrapper_.Reset();
-  pinned_chunk_pipe_getter_.Reset();
+  // If users initiate process shutdown when the event is emitted, then
+  // we would perform cleanup of the wrapper and we should bail out below.
+  if (self) {
+    loader_.reset();
+    pinned_wrapper_.Reset();
+    pinned_chunk_pipe_getter_.Reset();
+  }
 }
 
 void SimpleURLLoaderWrapper::OnResponseStarted(

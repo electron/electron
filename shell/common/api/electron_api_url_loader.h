@@ -21,6 +21,7 @@
 #include "services/network/public/mojom/url_loader_network_service_observer.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "url/gurl.h"
 #include "v8/include/v8-forward.h"
 
@@ -50,6 +51,7 @@ namespace electron::api {
 class SimpleURLLoaderWrapper final
     : public gin::Wrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
+      public gin_helper::CleanedUpAtExit,
       private network::SimpleURLLoaderStreamConsumer,
       private network::mojom::URLLoaderNetworkServiceObserver {
  public:
@@ -112,7 +114,7 @@ class SimpleURLLoaderWrapper final
                             OnLoadingStateUpdateCallback callback) override;
   void OnSharedStorageHeaderReceived(
       const url::Origin& request_origin,
-      std::vector<network::mojom::SharedStorageOperationPtr> operations,
+      std::vector<network::mojom::SharedStorageModifierMethodPtr> methods,
       OnSharedStorageHeaderReceivedCallback callback) override;
   void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
                        int64_t recv_bytes,
