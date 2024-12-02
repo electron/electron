@@ -292,8 +292,8 @@ std::string StringToCookieSameSite(const std::string* str_ptr,
 
 gin::WrapperInfo Cookies::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Cookies::Cookies(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
-    : browser_context_(browser_context) {
+Cookies::Cookies(ElectronBrowserContext* browser_context)
+    : browser_context_{browser_context} {
   cookie_change_subscription_ =
       browser_context_->cookie_change_notifier()->RegisterCookieChangeCallback(
           base::BindRepeating(&Cookies::OnCookieChanged,
@@ -458,7 +458,7 @@ void Cookies::OnCookieChanged(const net::CookieChangeInfo& change) {
 // static
 gin::Handle<Cookies> Cookies::Create(v8::Isolate* isolate,
                                      ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate, new Cookies(isolate, browser_context));
+  return gin::CreateHandle(isolate, new Cookies{browser_context});
 }
 
 gin::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(
