@@ -32,10 +32,8 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
-#include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 
 static constexpr auto ResourceTypes =
     base::MakeFixedFlatMap<std::string_view,
@@ -333,11 +331,9 @@ WebRequest::~WebRequest() {
   browser_context_->RemoveUserData(kUserDataKey);
 }
 
-// static
-v8::Local<v8::ObjectTemplate> WebRequest::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> tmpl) {
-  return gin::ObjectTemplateBuilder(isolate, GetClassName(), tmpl)
+gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin::Wrappable<WebRequest>::GetObjectTemplateBuilder(isolate)
       .SetMethod(
           "onBeforeRequest",
           &WebRequest::SetResponseListener<ResponseEvent::kOnBeforeRequest>)
@@ -357,8 +353,7 @@ v8::Local<v8::ObjectTemplate> WebRequest::FillObjectTemplate(
       .SetMethod("onErrorOccurred",
                  &WebRequest::SetSimpleListener<SimpleEvent::kOnErrorOccurred>)
       .SetMethod("onCompleted",
-                 &WebRequest::SetSimpleListener<SimpleEvent::kOnCompleted>)
-      .Build();
+                 &WebRequest::SetSimpleListener<SimpleEvent::kOnCompleted>);
 }
 
 const char* WebRequest::GetTypeName() {
@@ -679,6 +674,15 @@ void WebRequest::SetListener(Event event,
         args->ThrowTypeError("Parameter 'filter' must have property 'urls'.");
         return;
       }
+
+      if (filter_include_patterns.empty()) {
+        util::EmitWarning(
+            "The urls array in WebRequestFilter is empty, which is deprecated. "
+            "Please use '<all_urls>' to match all URLs.",
+            "DeprecationWarning");
+        filter_include_patterns.insert("<all_urls>");
+      }
+
       dict.Get("excludeUrls", &filter_exclude_patterns);
       dict.Get("types", &filter_types);
       args->GetNext(&arg);
@@ -771,24 +775,4 @@ gin::Handle<WebRequest> WebRequest::From(
   return gin::CreateHandle(isolate, user_data->data.get());
 }
 
-// static
-gin::Handle<WebRequest> WebRequest::New(gin_helper::ErrorThrower thrower) {
-  thrower.ThrowError("WebRequest cannot be created from JS");
-  return gin::Handle<WebRequest>();
-}
-
 }  // namespace electron::api
-
-namespace {
-void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context,
-                void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("WebRequest", electron::api::WebRequest::GetConstructor(context));
-}
-
-}  // namespace
-
-NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_web_request, Initialize)

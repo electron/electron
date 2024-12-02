@@ -11,7 +11,6 @@
 #include "base/memory/raw_ptr.h"
 #include "gin/wrappable.h"
 #include "shell/browser/net/web_request_api_interface.h"
-#include "shell/common/gin_helper/constructible.h"
 
 class URLPattern;
 
@@ -33,7 +32,6 @@ class Handle;
 namespace electron::api {
 
 class WebRequest final : public gin::Wrappable<WebRequest>,
-                         public gin_helper::Constructible<WebRequest>,
                          public WebRequestAPI {
  public:
   // Return the WebRequest object attached to |browser_context|, create if there
@@ -53,15 +51,12 @@ class WebRequest final : public gin::Wrappable<WebRequest>,
   static gin::Handle<WebRequest> From(v8::Isolate* isolate,
                                       content::BrowserContext* browser_context);
 
-  static gin::Handle<WebRequest> New(gin_helper::ErrorThrower thrower);
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate* isolate,
-      v8::Local<v8::ObjectTemplate> tmpl);
-
   static const char* GetClassName() { return "WebRequest"; }
 
   // gin::Wrappable:
   static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
 
   const char* GetTypeName() override;
 

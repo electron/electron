@@ -247,7 +247,6 @@ auto_filenames = {
     "lib/browser/api/web-contents-view.ts",
     "lib/browser/api/web-contents.ts",
     "lib/browser/api/web-frame-main.ts",
-    "lib/browser/api/web-request.ts",
     "lib/browser/default-menu.ts",
     "lib/browser/devtools.ts",
     "lib/browser/guest-view-manager.ts",
