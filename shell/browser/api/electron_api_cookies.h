@@ -44,7 +44,7 @@ class Cookies final : public gin::Wrappable<Cookies>,
   Cookies& operator=(const Cookies&) = delete;
 
  protected:
-  Cookies(ElectronBrowserContext* browser_context);
+  explicit Cookies(ElectronBrowserContext* browser_context);
   ~Cookies() override;
 
   v8::Local<v8::Promise> Get(v8::Isolate*,
