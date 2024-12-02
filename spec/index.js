@@ -1,4 +1,4 @@
-const { app, protocol } = require('electron');
+const { app, protocol, BaseWindow, webContents } = require('electron');
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -108,9 +108,22 @@ app.whenReady().then(async () => {
   // 3. regular `afterEach` hooks run.
   // 4. `afterAll` hook runs here to verify that there are no windows left open
   const { runCleanupFunctions } = require('./lib/spec-helpers');
-  mocha.suite.on('suite', function attach (suite) {
+  function attach (suite) {
     suite.afterEach('cleanup', runCleanupFunctions);
     suite.on('suite', attach);
+  }
+  mocha.suite.on('suite', (suite) => {
+    attach(suite);
+    suite.afterAll('end of test cleanup', async () => {
+      const windowsLeftOpen = BaseWindow.getAllWindows().length;
+      const webContentsDangling = webContents.getAllWebContents().length;
+      if (windowsLeftOpen > 0) {
+        console.log(`WARNING!!!!!!!!!! ${suite.fullTitle()} ${path.basename(suite.file)} left ${windowsLeftOpen} windows open!`);
+      }
+      if (webContentsDangling > 0) {
+        console.log(`WARNING!!!!!!!!!! ${suite.fullTitle()} ${path.basename(suite.file)} left ${webContentsDangling} WebContents dangling!`);
+      }
+    });
   });
 
   if (!process.env.MOCHA_REPORTER) {
