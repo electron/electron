@@ -117,6 +117,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
       run: |
         cd src/electron

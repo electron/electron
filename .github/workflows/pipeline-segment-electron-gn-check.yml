@@ -48,6 +48,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Cleanup disk space on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       shell: bash
@@ -108,6 +109,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
       run: |
         cd src/electron

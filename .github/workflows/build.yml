@@ -50,6 +50,8 @@ jobs:
         docs-only: ${{ steps.set-output.outputs.docs-only }}
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.0.2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
     - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
       id: filter
       with:
@@ -107,6 +109,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
@@ -133,6 +136,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
 
@@ -157,6 +161,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
 
