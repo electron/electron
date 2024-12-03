@@ -9,9 +9,11 @@
 #include <utility>
 #include <vector>
 
+#include "base/feature_list.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
+#include "content/browser/renderer_host/render_process_host_impl.h"  // nogncheck
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/isolated_world_ids.h"
@@ -429,6 +431,61 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   return frame_hosts;
 }
 
+v8::Local<v8::Promise> WebFrameMain::CollectDocumentJSCallStack(
+    gin::Arguments* args) {
+  gin_helper::Promise<base::Value> promise(args->isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (render_frame_disposed_) {
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before WebFrameMain could be accessed");
+    return handle;
+  }
+
+  if (!base::FeatureList::IsEnabled(
+          blink::features::kDocumentPolicyIncludeJSCallStacksInCrashReports)) {
+    promise.RejectWithErrorMessage(
+        "DocumentPolicyIncludeJSCallStacksInCrashReports is not enabled");
+    return handle;
+  }
+
+  content::RenderProcessHostImpl* rph_impl =
+      static_cast<content::RenderProcessHostImpl*>(render_frame_->GetProcess());
+
+  rph_impl->GetJavaScriptCallStackGeneratorInterface()
+      ->CollectJavaScriptCallStack(
+          base::BindOnce(&WebFrameMain::CollectedJavaScriptCallStack,
+                         weak_factory_.GetWeakPtr(), std::move(promise)));
+
+  return handle;
+}
+
+void WebFrameMain::CollectedJavaScriptCallStack(
+    gin_helper::Promise<base::Value> promise,
+    const std::string& untrusted_javascript_call_stack,
+    const std::optional<blink::LocalFrameToken>& remote_frame_token) {
+  if (render_frame_disposed_) {
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before call stack was received");
+    return;
+  }
+
+  const blink::LocalFrameToken& frame_token = render_frame_->GetFrameToken();
+  if (remote_frame_token == frame_token) {
+    base::Value base_value(untrusted_javascript_call_stack);
+    promise.Resolve(base_value);
+  } else if (!remote_frame_token) {
+    // Failed to collect call stack. See logic in:
+    // third_party/blink/renderer/controller/javascript_call_stack_collector.cc
+    promise.Resolve(base::Value());
+  } else {
+    // Requests for call stacks can be initiated on an old RenderProcessHost
+    // then be received after a frame swap.
+    LOG(ERROR) << "Received call stack from old RPH";
+    promise.Resolve(base::Value());
+  }
+}
+
 void WebFrameMain::DOMContentLoaded() {
   Emit("dom-ready");
 }
@@ -461,6 +518,8 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
   gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
+      .SetMethod("collectJavaScriptCallStack",
+                 &WebFrameMain::CollectDocumentJSCallStack)
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("isDestroyed", &WebFrameMain::IsDestroyed)
       .SetMethod("_send", &WebFrameMain::Send)
