@@ -21,8 +21,16 @@ describe('webFrameMain module', () => {
   type Server = { server: http.Server, url: string, crossOriginUrl: string }
 
   /** Creates an HTTP server whose handler embeds the given iframe src. */
-  const createServer = async (): Promise<Server> => {
+  const createServer = async (options: {
+    headers?: Record<string, string>
+  } = {}): Promise<Server> => {
     const server = http.createServer((req, res) => {
+      if (options.headers) {
+        for (const [k, v] of Object.entries(options.headers)) {
+          res.setHeader(k, v);
+        }
+      }
+
       const params = new URLSearchParams(new URL(req.url || '', `http://${req.headers.host}`).search || '');
       if (params.has('frameSrc')) {
         res.end(`<iframe src="${params.get('frameSrc')}"></iframe>`);
@@ -441,6 +449,29 @@ describe('webFrameMain module', () => {
         expect(frame?.routingId).to.be.equal(frameRoutingId);
         expect(frame?.top === frame).to.be.equal(isMainFrame);
       }
+    });
+  });
+
+  describe('webFrameMain.collectJavaScriptCallStack', () => {
+    let server: Server;
+    before(async () => {
+      server = await createServer({
+        headers: {
+          'Document-Policy': 'include-js-call-stacks-in-crash-reports'
+        }
+      });
+    });
+    after(() => {
+      server.server.close();
+    });
+
+    it('collects call stack during JS execution', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(server.url);
+      const callStackPromise = w.webContents.mainFrame.collectJavaScriptCallStack();
+      w.webContents.mainFrame.executeJavaScript('"run a lil js"');
+      const callStack = await callStackPromise;
+      expect(callStack).to.be.a('string');
     });
   });
 
