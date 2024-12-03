@@ -20,7 +20,7 @@ class WindowListObserver : public base::CheckedObserver {
   virtual void OnWindowAllClosed() {}
 
  protected:
-  ~WindowListObserver() override {}
+  ~WindowListObserver() override = default;
 };
 
 }  // namespace electron
