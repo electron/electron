@@ -79,7 +79,7 @@ namespace electron {
 
 namespace {
 
-const char kRelauncherProcess[] = "relauncher";
+constexpr std::string_view kRelauncherProcess = "relauncher";
 
 constexpr std::string_view kElectronDisableSandbox{"ELECTRON_DISABLE_SANDBOX"};
 constexpr std::string_view kElectronEnableStackDumping{

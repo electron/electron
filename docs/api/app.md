@@ -514,20 +514,20 @@ and `will-quit` events will not be emitted.
   * `args` string[] (optional)
   * `execPath` string (optional)
 
-Relaunches the app when current instance exits.
+Relaunches the app when the current instance exits.
 
 By default, the new instance will use the same working directory and command line
-arguments with current instance. When `args` is specified, the `args` will be
-passed as command line arguments instead. When `execPath` is specified, the
-`execPath` will be executed for relaunch instead of current app.
+arguments as the current instance. When `args` is specified, the `args` will be
+passed as the command line arguments instead. When `execPath` is specified, the
+`execPath` will be executed for the relaunch instead of the current app.
 
-Note that this method does not quit the app when executed, you have to call
+Note that this method does not quit the app when executed. You have to call
 `app.quit` or `app.exit` after calling `app.relaunch` to make the app restart.
 
-When `app.relaunch` is called for multiple times, multiple instances will be
-started after current instance exited.
+When `app.relaunch` is called multiple times, multiple instances will be
+started after the current instance exits.
 
-An example of restarting current instance immediately and adding a new command
+An example of restarting the current instance immediately and adding a new command
 line argument to the new instance:
 
 ```js

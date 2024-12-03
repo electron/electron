@@ -1539,9 +1539,11 @@ session is persisted on disk.  For in memory sessions this returns `null`.
 #### `ses.clearData([options])`
 
 * `options` Object (optional)
-  * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data.
+  * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data. This
+    can potentially include data types not explicitly listed here. (See Chromium's
+    [`BrowsingDataRemover`][browsing-data-remover] for the full list.)
     * `backgroundFetch` - Background Fetch
-    * `cache` - Cache
+    * `cache` - Cache (includes `cachestorage` and `shadercache`)
     * `cookies` - Cookies
     * `downloads` - Downloads
     * `fileSystems` - File Systems
@@ -1567,7 +1569,7 @@ This method clears more types of data and is more thorough than the
 
 **Note:** Clearing cache data will also clear the shared dictionary cache. This means that any dictionaries used for compression may be reloaded after clearing the cache. If you wish to clear the shared dictionary cache but leave other cached data intact, you may want to use the `clearSharedDictionaryCache` method.
 
-For more information, refer to Chromium's [`BrowsingDataRemover` interface](https://source.chromium.org/chromium/chromium/src/+/main:content/public/browser/browsing_data_remover.h).
+For more information, refer to Chromium's [`BrowsingDataRemover` interface][browsing-data-remover].
 
 ### Instance Properties
 
@@ -1633,3 +1635,5 @@ app.whenReady().then(async () => {
   console.log('Net-logs written to', path)
 })
 ```
+
+[browsing-data-remover]: https://source.chromium.org/chromium/chromium/src/+/main:content/public/browser/browsing_data_remover.h

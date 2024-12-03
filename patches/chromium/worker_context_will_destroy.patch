@@ -26,7 +26,7 @@ index 42c94f71f09cf9067bac9fd9004dda36708ec441..07c014a28ed1ef5878a50fbb194e38fe
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 4547a080e06759467e6736c6a76fe55a93a6b3b8..15d304d96426bd7e9c6269feb3cbe66294f3934d 100644
+index e4b0cdb22340cf3ad368de9bde61c85f6b97fa74..0883af83028e8fc10b38ec59257f75e64e66c6e1 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
 @@ -875,6 +875,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
@@ -55,10 +55,10 @@ index 17c01a1f03ad4d4fa8a9783a00e159fff7c67940..1bfec2280e6d1f5cb5c157d237069bde
        const blink::WebSecurityOrigin& script_origin) override;
    blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel(
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index f2be7de2e13b7cd8e4b3cae47656109d31049502..8c2fb19e53b55d578134fac78d8149bcde0baeed 100644
+index 6bae009bb76ea992d6c34383d75378f4467db5f7..8199839240ecc0abf5b0ce5e042f83bd31cafe9a 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -664,6 +664,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -660,6 +660,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}

@@ -338,7 +338,7 @@ bool OpaqueFrameView::IsFrameCondensed() const {
 }
 
 gfx::Insets OpaqueFrameView::RestoredFrameBorderInsets() const {
-  return gfx::Insets();
+  return {};
 }
 
 gfx::Insets OpaqueFrameView::RestoredFrameEdgeInsets() const {

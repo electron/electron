@@ -540,16 +540,6 @@ const void* kElectronApiWebContentsKey = &kElectronApiWebContentsKey;
 const char kRootName[] = "<root>";
 
 struct FileSystem {
-  FileSystem() = default;
-  FileSystem(const std::string& type,
-             const std::string& file_system_name,
-             const std::string& root_url,
-             const std::string& file_system_path)
-      : type(type),
-        file_system_name(file_system_name),
-        root_url(root_url),
-        file_system_path(file_system_path) {}
-
   std::string type;
   std::string file_system_name;
   std::string root_url;
@@ -1368,6 +1358,10 @@ content::WebContents* WebContents::GetWebContentsForExclusiveAccess() {
   return web_contents();
 }
 
+bool WebContents::CanUserEnterFullscreen() const {
+  return true;
+}
+
 bool WebContents::CanUserExitFullscreen() const {
   return true;
 }
@@ -2011,7 +2005,7 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
       ReplyChannel::Create(isolate, std::move(callback))
           ->SendError("WebContents was destroyed");
     }
-    return gin::Handle<gin_helper::internal::Event>();
+    return {};
   }
   gin::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
@@ -2569,7 +2563,7 @@ std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
   // If the history is empty, it contains only one entry and that is
   // "InitialEntry"
   if (history_length == 1 && controller.GetEntryAtIndex(0)->IsInitialEntry())
-    return std::vector<content::NavigationEntry*>();
+    return {};
 
   std::vector<content::NavigationEntry*> history;
   history.reserve(history_length);
@@ -2656,7 +2650,7 @@ std::string WebContents::GetMediaSourceID(
     content::WebContents* request_web_contents) {
   auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (!frame_host)
-    return std::string();
+    return {};
 
   content::DesktopMediaID media_id(
       content::DesktopMediaID::TYPE_WEB_CONTENTS,
@@ -2666,7 +2660,7 @@ std::string WebContents::GetMediaSourceID(
 
   auto* request_frame_host = request_web_contents->GetPrimaryMainFrame();
   if (!request_frame_host)
-    return std::string();
+    return {};
 
   std::string id =
       content::DesktopStreamsRegistry::GetInstance()->RegisterStream(
@@ -2788,7 +2782,7 @@ bool WebContents::IsDevToolsOpened() {
 
 std::u16string WebContents::GetDevToolsTitle() {
   if (type_ == Type::kRemote)
-    return std::u16string();
+    return {};
 
   DCHECK(inspectable_web_contents_);
   return inspectable_web_contents_->GetDevToolsTitle();
@@ -3668,7 +3662,7 @@ gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) {
     }
   }
 
-  return gfx::Size();
+  return {};
 }
 
 void WebContents::SetZoomLevel(double level) {

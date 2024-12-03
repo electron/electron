@@ -44,6 +44,8 @@
 
 namespace electron {
 
+namespace {
+
 base::IDMap<api::UtilityProcessWrapper*, base::ProcessId>&
 GetAllUtilityProcessWrappers() {
   static base::NoDestructor<
@@ -51,6 +53,8 @@ GetAllUtilityProcessWrappers() {
       s_all_utility_process_wrappers;
   return *s_all_utility_process_wrappers;
 }
+
+}  // namespace
 
 namespace api {
 
@@ -411,7 +415,7 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
   gin_helper::Dictionary dict;
   if (!args->GetNext(&dict)) {
     args->ThrowTypeError("Options must be an object.");
-    return gin::Handle<UtilityProcessWrapper>();
+    return {};
   }
 
   std::u16string display_name;
@@ -425,19 +429,19 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
   dict.Get("modulePath", &params->script);
   if (dict.Has("args") && !dict.Get("args", &params->args)) {
     args->ThrowTypeError("Invalid value for args");
-    return gin::Handle<UtilityProcessWrapper>();
+    return {};
   }
 
   gin_helper::Dictionary opts;
   if (dict.Get("options", &opts)) {
     if (opts.Has("env") && !opts.Get("env", &env_map)) {
       args->ThrowTypeError("Invalid value for env");
-      return gin::Handle<UtilityProcessWrapper>();
+      return {};
     }
 
     if (opts.Has("execArgv") && !opts.Get("execArgv", &params->exec_args)) {
       args->ThrowTypeError("Invalid value for execArgv");
-      return gin::Handle<UtilityProcessWrapper>();
+      return {};
     }
 
     opts.Get("serviceName", &display_name);

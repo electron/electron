@@ -45,6 +45,17 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     return EmitWithEvent(name, event, std::forward<Args>(args)...);
   }
 
+  // this.emit(name, args...);
+  template <typename... Args>
+  void EmitWithoutEvent(const std::string_view name, Args&&... args) {
+    v8::HandleScope handle_scope(isolate());
+    v8::Local<v8::Object> wrapper = GetWrapper();
+    if (wrapper.IsEmpty())
+      return;
+    gin_helper::EmitEvent(isolate(), GetWrapper(), name,
+                          std::forward<Args>(args)...);
+  }
+
   // disable copy
   EventEmitter(const EventEmitter&) = delete;
   EventEmitter& operator=(const EventEmitter&) = delete;

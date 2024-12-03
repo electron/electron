@@ -177,8 +177,37 @@ void BaseWindow::OnWindowClosed() {
       FROM_HERE, GetDestroyClosure());
 }
 
-void BaseWindow::OnWindowEndSession() {
-  Emit("session-end");
+void BaseWindow::OnWindowQueryEndSession(
+    const std::vector<std::string>& reasons,
+    bool* prevent_default) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+
+  gin::Dictionary dict(isolate, event_object);
+  dict.Set("reasons", reasons);
+
+  EmitWithoutEvent("query-session-end", event);
+  if (event->GetDefaultPrevented()) {
+    *prevent_default = true;
+  }
+}
+
+void BaseWindow::OnWindowEndSession(const std::vector<std::string>& reasons) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+
+  gin::Dictionary dict(isolate, event_object);
+  dict.Set("reasons", reasons);
+
+  EmitWithoutEvent("session-end", event);
 }
 
 void BaseWindow::OnWindowBlur() {
@@ -640,7 +669,7 @@ void BaseWindow::SetBackgroundColor(const std::string& color_name) {
   window_->SetBackgroundColor(color);
 }
 
-std::string BaseWindow::GetBackgroundColor(gin_helper::Arguments* args) const {
+std::string BaseWindow::GetBackgroundColor() const {
   return ToRGBHex(window_->GetBackgroundColor());
 }
 
