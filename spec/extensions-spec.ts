@@ -10,7 +10,7 @@ import * as path from 'node:path';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers';
 import { ifit, listen, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows, closeWindow } from './lib/window-helpers';
+import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers';
 
 const uuid = require('uuid');
 
@@ -43,11 +43,12 @@ describe('chrome extensions', () => {
 
     ({ port, url } = await listen(server));
   });
-  after(() => {
+  after(async () => {
     server.close();
     server = null as unknown as http.Server;
     wss.close();
     wss = null as unknown as WebSocket.Server;
+    await cleanupWebContents();
   });
   afterEach(closeAllWindows);
   afterEach(() => {
@@ -287,6 +288,10 @@ describe('chrome extensions', () => {
       w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(url);
     });
+    afterEach(() => {
+      w.close();
+      w = null as unknown as BrowserWindow;
+    });
     it('getAcceptLanguages()', async () => {
       const result = await exec('getAcceptLanguages');
       expect(result).to.be.an('array').and.deep.equal(['en-US', 'en']);
@@ -311,6 +316,10 @@ describe('chrome extensions', () => {
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'));
       w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(url);
+    });
+    afterEach(async () => {
+      w.close();
+      w = null as unknown as BrowserWindow;
     });
     it('getManifest()', async () => {
       const result = await exec('getManifest');
@@ -360,6 +369,11 @@ describe('chrome extensions', () => {
     beforeEach(() => {
       customSession = session.fromPartition(`persist:${uuid.v4()}`);
       w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true, contextIsolation: true } });
+    });
+
+    afterEach(() => {
+      w.close();
+      w = null as unknown as BrowserWindow;
     });
 
     describe('onBeforeRequest', () => {
@@ -430,6 +444,7 @@ describe('chrome extensions', () => {
       customSession = session.fromPartition(`persist:${uuid.v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
     });
+    afterEach(closeAllWindows);
 
     it('executeScript', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
@@ -496,6 +511,7 @@ describe('chrome extensions', () => {
   });
 
   describe('background pages', () => {
+    afterEach(closeAllWindows);
     it('loads a lazy background page when sending a message', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'));
@@ -563,8 +579,9 @@ describe('chrome extensions', () => {
 
   describe('devtools extensions', () => {
     let showPanelTimeoutId: any = null;
-    afterEach(() => {
+    afterEach(async () => {
       if (showPanelTimeoutId) clearTimeout(showPanelTimeoutId);
+      await closeAllWindows();
     });
     const showLastDevToolsPanel = (w: BrowserWindow) => {
       w.webContents.once('devtools-opened', () => {
@@ -764,10 +781,11 @@ describe('chrome extensions', () => {
   });
 
   describe('extension ui pages', () => {
-    afterEach(() => {
+    afterEach(async () => {
       for (const e of session.defaultSession.getAllExtensions()) {
         session.defaultSession.removeExtension(e.id);
       }
+      await closeAllWindows();
     });
 
     it('loads a ui page of an extension', async () => {
@@ -788,6 +806,7 @@ describe('chrome extensions', () => {
   });
 
   describe('manifest v3', () => {
+    afterEach(closeAllWindows);
     it('registers background service worker', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       const registrationPromise = new Promise<string>(resolve => {
@@ -1039,6 +1058,7 @@ describe('chrome extensions', () => {
       });
 
       describe('get', () => {
+        afterEach(closeAllWindows);
         it('returns tab properties', async () => {
           await w.loadURL(url);
 
@@ -1179,6 +1199,7 @@ describe('chrome extensions', () => {
       });
 
       describe('query', () => {
+        afterEach(closeAllWindows);
         it('can query for a tab with specific properties', async () => {
           await w.loadURL(url);
 
