@@ -207,7 +207,7 @@ runs:
         if [ "${{ inputs.is-asan }}" = "true" ]; then 
           ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}_asan
         else
-          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+          ARTIFACT_KEY=${{ inputs.target-platform == 'windows' && 'win32' || inputs.target-platform }}_${{ inputs.target-arch }}
         fi
         echo "ARTIFACT_KEY=$ARTIFACT_KEY" >> $GITHUB_ENV
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
