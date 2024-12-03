@@ -433,7 +433,7 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
 
 v8::Local<v8::Promise> WebFrameMain::CollectDocumentJSCallStack(
     gin::Arguments* args) {
-  gin_helper::Promise<std::string> promise(args->isolate());
+  gin_helper::Promise<base::Value> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (render_frame_disposed_) {
@@ -449,26 +449,41 @@ v8::Local<v8::Promise> WebFrameMain::CollectDocumentJSCallStack(
     return handle;
   }
 
-  const blink::LocalFrameToken& frame_token = render_frame_->GetFrameToken();
   content::RenderProcessHostImpl* rph_impl =
       static_cast<content::RenderProcessHostImpl*>(render_frame_->GetProcess());
 
   rph_impl->GetJavaScriptCallStackGeneratorInterface()
-      ->CollectJavaScriptCallStack(base::BindOnce(
-          [](gin_helper::Promise<std::string> promise,
-             const blink::LocalFrameToken& frame_token,
-             const std::string& untrusted_javascript_call_stack,
-             const std::optional<blink::LocalFrameToken>& remote_frame_token) {
-            if (remote_frame_token == frame_token) {
-              promise.Resolve(untrusted_javascript_call_stack);
-            } else {
-              promise.RejectWithErrorMessage(
-                  "Received call stack for unexpected frame");
-            }
-          },
-          std::move(promise), frame_token));
+      ->CollectJavaScriptCallStack(
+          base::BindOnce(&WebFrameMain::CollectedJavaScriptCallStack,
+                         weak_factory_.GetWeakPtr(), std::move(promise)));
 
   return handle;
+}
+
+void WebFrameMain::CollectedJavaScriptCallStack(
+    gin_helper::Promise<base::Value> promise,
+    const std::string& untrusted_javascript_call_stack,
+    const std::optional<blink::LocalFrameToken>& remote_frame_token) {
+  if (render_frame_disposed_) {
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before call stack was received");
+    return;
+  }
+
+  const blink::LocalFrameToken& frame_token = render_frame_->GetFrameToken();
+  if (remote_frame_token == frame_token) {
+    base::Value base_value(untrusted_javascript_call_stack);
+    promise.Resolve(base_value);
+  } else if (!remote_frame_token) {
+    // Failed to collect call stack. See logic in:
+    // third_party/blink/renderer/controller/javascript_call_stack_collector.cc
+    promise.Resolve(base::Value());
+  } else {
+    // Requests for call stacks can be initiated on an old RenderProcessHost
+    // then be received after a frame swap.
+    LOG(ERROR) << "Received call stack from old RPH";
+    promise.Resolve(base::Value());
+  }
 }
 
 void WebFrameMain::DOMContentLoaded() {

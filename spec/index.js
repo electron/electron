@@ -33,6 +33,12 @@ app.commandLine.appendSwitch('host-resolver-rules', [
   'MAP notfound.localhost2 ~NOTFOUND'
 ].join(', '));
 
+// Enable features required by tests.
+app.commandLine.appendSwitch('enable-features', [
+  // spec/api-web-frame-main-spec.ts
+  'DocumentPolicyIncludeJSCallStacksInCrashReports'
+].join(','));
+
 global.standardScheme = 'app';
 global.zoomScheme = 'zoom';
 global.serviceWorkerScheme = 'sw';
