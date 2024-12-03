@@ -14,7 +14,7 @@ namespace electron {
 
 class InspectableWebContentsDelegate {
  public:
-  virtual ~InspectableWebContentsDelegate() {}
+  virtual ~InspectableWebContentsDelegate() = default;
 
   // Requested by WebContents of devtools.
   virtual void DevToolsReloadPage() {}

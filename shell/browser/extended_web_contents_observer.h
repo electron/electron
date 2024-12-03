@@ -25,7 +25,7 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
   virtual void OnDevToolsResized() {}
 
  protected:
-  ~ExtendedWebContentsObserver() override {}
+  ~ExtendedWebContentsObserver() override = default;
 };
 
 }  // namespace electron

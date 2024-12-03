@@ -44,7 +44,7 @@ class AutofillPopupChildView : public views::View {
   AutofillPopupChildView& operator=(const AutofillPopupChildView&) = delete;
 
  private:
-  ~AutofillPopupChildView() override {}
+  ~AutofillPopupChildView() override = default;
 
   // views::Views implementation
   void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
