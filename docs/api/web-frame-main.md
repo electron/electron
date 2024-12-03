@@ -144,8 +144,9 @@ ipcRenderer.on('port', (e, msg) => {
 
 #### `frame.collectJavaScriptCallStack()` _Experimental_
 
-Returns `Promise<string>` - A promise that resolves with the JavaScript call
-stack.
+Returns `Promise<string> | Promise<void>` - A promise that resolves with the currently running JavaScript call
+stack. If no JavaScript runs, the promise will never resolve. If the call stack is unable to be collected, it
+will return `undefined`.
 
 This can be useful to determine why the frame is unresponsive in cases where there's long-running JavaScript.
 For more information, see the [proposed Crash Reporting API.](https://wicg.github.io/crash-reporting/)
