@@ -61,7 +61,7 @@ jobs:
               // for now check for comma or space separated version.
               const versions = electronVersion.split(/, | /);
               for (const version of versions) {
-                const major = semver.parse(version)?.major;
+                const major = semver.coerce(version, { loose: true })?.major;
                 if (major) {
                   const versionLabel = `${major}-x-y`;
                   let labelExists = false;
