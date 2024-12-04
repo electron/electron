@@ -19,7 +19,7 @@ runs:
   - name: Get yarn cache directory path
     shell: bash
     id: yarn-cache-dir-path
-    run: echo "::set-output name=dir::$(yarn cache dir)"
+    run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
   - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
     id: yarn-cache
     with:
