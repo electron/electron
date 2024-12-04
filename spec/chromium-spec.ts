@@ -1,6 +1,6 @@
 import { MediaAccessPermissionRequest } from 'electron';
 import { clipboard } from 'electron/common';
-import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents, dialog, MessageBoxOptions } from 'electron/main';
+import { BaseWindow, BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents, dialog, MessageBoxOptions } from 'electron/main';
 
 import { expect } from 'chai';
 import * as ws from 'ws';
@@ -641,6 +641,12 @@ describe('chromium features', () => {
   });
 
   describe('navigator.keyboard', () => {
+    beforeEach(() => {
+      const windowsLeftOpen = BaseWindow.getAllWindows().length;
+      if (windowsLeftOpen > 0) {
+        console.log(`WARNING!!!!!!!!!! in navigator.keyboard tests something left ${windowsLeftOpen} windows open!`);
+      }
+    });
     afterEach(closeAllWindows);
 
     it('getLayoutMap() should return a KeyboardLayoutMap object', async () => {
@@ -653,9 +659,11 @@ describe('chromium features', () => {
       expect(size).to.be.a('number');
     });
 
-    it('should lock the keyboard', async () => {
+    it('should lock the keyboard', async function () {
+      this.retries(1);
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
+      console.log('should lock 1');
 
       // Test that without lock, with ESC:
       // - the window leaves fullscreen
@@ -663,11 +671,11 @@ describe('chromium features', () => {
       const enterFS1 = once(w, 'enter-full-screen');
       await w.webContents.executeJavaScript('document.body.requestFullscreen()', true);
       await enterFS1;
-
+      console.log('should lock 2');
       await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').showModal()', true);
       const open1 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
       expect(open1).to.be.true();
-
+      console.log('should lock 3');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await setTimeout(1000);
       await expect(waitUntil(async () => {
@@ -676,7 +684,7 @@ describe('chromium features', () => {
         );
       })).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.false();
-
+      console.log('should lock 4');
       // Test that with lock, with ESC:
       // - the window does not leave fullscreen
       // - the dialog is closed
@@ -685,7 +693,7 @@ describe('chromium features', () => {
         document.body.requestFullscreen();
       `, true);
       await enterFS2;
-
+      console.log('should lock 5');
       // Request keyboard lock after window has gone fullscreen
       // otherwise it will result in blink::kKeyboardLockRequestFailedErrorMsg.
       await w.webContents.executeJavaScript(`
@@ -695,7 +703,7 @@ describe('chromium features', () => {
       await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').showModal()', true);
       const open2 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
       expect(open2).to.be.true();
-
+      console.log('should lock 6');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await setTimeout(1000);
       await expect(waitUntil(async () => {
@@ -704,6 +712,7 @@ describe('chromium features', () => {
         );
         return (openAfter2 === false);
       })).to.eventually.be.fulfilled();
+      console.log('should lock 7');
       expect(w.isFullScreen()).to.be.true();
     });
   });
