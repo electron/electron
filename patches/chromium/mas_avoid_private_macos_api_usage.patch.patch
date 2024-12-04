@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index ebe41d01901f63b2cdcea89fd4bdc7f01642ff51..841edefe3b4650e2d13ec6613f5172bfb6043615 100644
+index c89811d94a6ba3f73432684ef8cb88c711612c9d..a6c2bbb284e2d2e8fb5f346513ae052175697954 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1023,6 +1023,7 @@ component("base") {
+@@ -1026,6 +1026,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -560,7 +560,7 @@ index 2887c86e7018cb6df74ec835ac4cc85dac24739f..9661114ea934afed8190692860057aa8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 9832e175ae12952cffb0f5ffecee4f793ef84708..0714912ed8f424c744725aad4101ff38500e10e6 100644
+index 00ac46d858b7f83e53b1817028baba13719f04fe..31c9a53d5c7f09a7326ef57753b4a49f0239a7f8 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -327,6 +327,7 @@ source_set("browser") {
@@ -773,7 +773,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c334a2294cc1d2afa2ad96225d051b2b1e72a423..329315856a03c8cd90aa7002c649a2522e834150 100644
+index b050cc23cfdf0b327968e86cda2b92b01467b02d..6bba07bbfec8db631c6341c069623242b4817619 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -643,6 +643,7 @@ static_library("test_support") {

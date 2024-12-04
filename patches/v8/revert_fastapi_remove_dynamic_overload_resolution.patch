@@ -13,10 +13,10 @@ Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5979766
 This reverts commit c41f7a0ef99bd1c9752ee79923f634145ebc4153.
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 04a0fc4e8c54d5c47d8d3068e89e4868ab9bdf20..9c1573ea7b94c0b3d029f58159cf3d2f7d52c0cb 100644
+index 397ca702404b263721de8cf1513d3d2b943110ef..606492ad86c5fb343e860bc2108ad8f57c025971 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -1348,16 +1348,6 @@ Local<FunctionTemplate> FunctionTemplate::NewWithCFunctionOverloads(
+@@ -1349,16 +1349,6 @@ Local<FunctionTemplate> FunctionTemplate::NewWithCFunctionOverloads(
    i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
    API_RCS_SCOPE(i_isolate, FunctionTemplate, New);
  
@@ -705,7 +705,7 @@ index a26611708f2dd162e127d7a7c9af9135892d0b40..b04639190b239af92a2845886e585208
  };
  
 diff --git a/src/compiler/wasm-compiler.cc b/src/compiler/wasm-compiler.cc
-index 351705cbc6c054d38f8d9d93744701b9004fcd1c..4c13f51d4b61f17558c6b10a09f8de5aedc093a8 100644
+index 5ad805a11f7de73f06518ee3cf878ca492c0c652..2571f2800450cb8582198dc7cb7ef58311c52dae 100644
 --- a/src/compiler/wasm-compiler.cc
 +++ b/src/compiler/wasm-compiler.cc
 @@ -8356,13 +8356,19 @@ class WasmWrapperGraphBuilder : public WasmGraphBuilder {

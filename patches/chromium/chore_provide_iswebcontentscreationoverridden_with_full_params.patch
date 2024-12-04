@@ -21,7 +21,7 @@ index bfcdf050e603b953d15a0898200c8f031a1f84c6..b1f163b6da4d2197d404a5a0fbd31a5b
    // uses this to spawn new windows/tabs, which is also not allowed for
    // offscreen tabs.
 diff --git a/chrome/browser/media/offscreen_tab.h b/chrome/browser/media/offscreen_tab.h
-index 0163968067f2607507493a5e0816aa814de3ba0b..34b94af6a4e3f031a35520fde4173e186ebec0b7 100644
+index 2fa0d6e1be27cc429e4a0237b5bfafa7aaa06c56..3decb327b10e3cd3edc1765491a7eb6056be7a51 100644
 --- a/chrome/browser/media/offscreen_tab.h
 +++ b/chrome/browser/media/offscreen_tab.h
 @@ -107,8 +107,7 @@ class OffscreenTab final : public ProfileObserver,
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e2683912a0440b43bc04614d79fd74712a8f81d7..6eb9020fda371e1f4529dfa1d0215419e8520182 100644
+index 70cb6b43f214c7f5210e99edc930428520f02b7c..9b9edea9eb076f29dd8349ee784e9b2c1ab5a71c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4815,8 +4815,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4818,8 +4818,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -380,10 +380,10 @@ index 1012a909ef1fcae51c218ae519fe7e0db65ab087..127b1ae940bc9313aecb635e2b01bb6f
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index b9ee0246ae33b8b66bbd0feb53f56f5f2cc75e2c..16930e15a37a9ccb3cf21c38ac86272cb396b4e9 100644
+index d3623f93527244f6672242eb9b239b827a651035..05ea2df28e5e65937458e4c6cf0a04e16fa2dc80 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
-@@ -205,8 +205,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
+@@ -206,8 +206,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
