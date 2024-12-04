@@ -26,10 +26,10 @@ index fb551f7bebc3b8d1d0c3679e060d0f103e3f7a73..3d9792a30bee04ad1a1492d6aa319b52
      RenderWidgetHostViewAura* popup_child_host_view) {
    popup_child_host_view_ = popup_child_host_view;
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.h b/content/browser/renderer_host/render_widget_host_view_aura.h
-index 74e38cd40248181b2ffd71a51cf3714e6b2b0692..90d9922dacc8b74d36ffbc19e1fd483dde768af7 100644
+index 2042f979ed1cb34252bfca1b9f871f7cb4730ce6..cd94b45a84e77cd236301cc08659e63fac3a16d9 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.h
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.h
-@@ -650,6 +650,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
+@@ -652,6 +652,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
        RenderWidgetHostViewBase* updated_view) override;
    void OnTextSelectionChanged(TextInputManager* text_input_mangager,
                                RenderWidgetHostViewBase* updated_view) override;

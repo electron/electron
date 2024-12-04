@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c89811d94a6ba3f73432684ef8cb88c711612c9d..a6c2bbb284e2d2e8fb5f346513ae052175697954 100644
+index 4d2d2e88d37e95a2b8ac0c1e0d7d1b0c1e8ad417..58a4b86746a345eeeca66969aec39791fb2d1a8c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1026,6 +1026,7 @@ component("base") {
+@@ -1027,6 +1027,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -455,10 +455,10 @@ index 97f489043beb4260b1a3ca1781ce7ef67ec8c88a..569859297618cac39aa36655b9e30122
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 80a2d8233f6f35ca36f963bd9adf07818baf0ad7..3d8d0a310edd860d65c6363e2543e0df749d3d06 100644
+index 2fa9063bb7c2ffff4fec6cf91aa7b6bf1d9ea875..6c661c1766f987297ef1fd5c45069a63209826a3 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -379,6 +379,7 @@ viz_component("service") {
+@@ -381,6 +381,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -466,7 +466,7 @@ index 80a2d8233f6f35ca36f963bd9adf07818baf0ad7..3d8d0a310edd860d65c6363e2543e0df
    }
  
    if (is_android || use_ozone) {
-@@ -658,6 +659,7 @@ viz_source_set("unit_tests") {
+@@ -660,6 +661,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -526,7 +526,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 2887c86e7018cb6df74ec835ac4cc85dac24739f..9661114ea934afed8190692860057aa84ec3c0c9 100644
+index faddee802d6538c092ba96914184663ee57751c8..49238975848d58cd30727ec818bbac52a838f10c 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -35,6 +35,7 @@
@@ -537,7 +537,7 @@ index 2887c86e7018cb6df74ec835ac4cc85dac24739f..9661114ea934afed8190692860057aa8
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2059,15 +2060,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2078,15 +2079,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
