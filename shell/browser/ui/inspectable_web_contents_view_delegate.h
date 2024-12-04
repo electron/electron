@@ -14,7 +14,7 @@ namespace electron {
 
 class InspectableWebContentsViewDelegate {
  public:
-  virtual ~InspectableWebContentsViewDelegate() {}
+  virtual ~InspectableWebContentsViewDelegate() = default;
 
   virtual void DevToolsFocused() {}
   virtual void DevToolsOpened() {}
