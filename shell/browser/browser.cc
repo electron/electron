@@ -100,11 +100,14 @@ void Browser::Quit() {
 void Browser::Exit(gin::Arguments* args) {
   int code = 0;
   args->GetNext(&code);
-
+  LOG(INFO) << "IN Browser::Exit";
   if (!ElectronBrowserMainParts::Get()->SetExitCode(code)) {
+    LOG(INFO)
+        << "IN Browser::Exit, could not set exit code; calling exit(code)";
     // Message loop is not ready, quit directly.
     exit(code);
   } else {
+    LOG(INFO) << "IN Browser::Exit, successfully set exit code";
     // Prepare to quit when all windows have been closed.
     is_quitting_ = true;
 
@@ -113,19 +116,23 @@ void Browser::Exit(gin::Arguments* args) {
 
     // Must destroy windows before quitting, otherwise bad things can happen.
     if (electron::WindowList::IsEmpty()) {
+      LOG(INFO) << "IN Browser::Exit, window list is empty; calling shutdown";
       Shutdown();
     } else {
       // Unlike Quit(), we do not ask to close window, but destroy the window
       // without asking.
+      LOG(INFO) << "IN Browser::Exit, window list is NOT empty; calling "
+                   "destroy all windows";
       electron::WindowList::DestroyAllWindows();
     }
   }
 }
 
 void Browser::Shutdown() {
+  LOG(INFO) << "IN Browser::Shutdown";
   if (is_shutdown_)
     return;
-
+  LOG(INFO) << "IN Browser::Shutdown not is shutdown";
   is_shutdown_ = true;
   is_quitting_ = true;
 
@@ -133,8 +140,10 @@ void Browser::Shutdown() {
     observer.OnQuit();
 
   if (quit_main_message_loop_) {
+    LOG(INFO) << "IN Browser::Shutdown quit_main_message_loop_";
     RunQuitClosure(std::move(quit_main_message_loop_));
   } else {
+    LOG(INFO) << "IN Browser::Shutdown NOT quit_main_message_loop_";
     // There is no message loop available so we are in early stage, wait until
     // the quit_main_message_loop_ is available.
     // Exiting now would leave defunct processes behind.
