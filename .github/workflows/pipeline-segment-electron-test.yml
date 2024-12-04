@@ -54,7 +54,7 @@ jobs:
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
-      ARTIFACT_KEY: ${{ matrix.build-type == 'windows' && 'win32' || matrix.build-type }}
+      ARTIFACT_KEY: ${{ matrix.build-type == 'windows' && 'win32' || matrix.build-type }}_${{ inputs.target-arch }}
     steps:
     - name: Fix node20 on arm32 runners
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
