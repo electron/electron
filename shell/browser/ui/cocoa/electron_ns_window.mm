@@ -202,26 +202,29 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   if (event.type == NSEventTypeRightMouseDown ||
       (event.type == NSEventTypeLeftMouseDown &&
        ([event modifierFlags] & NSEventModifierFlagControl))) {
-    // The WebContentsView is added a sibling of BaseWindow's contentView at
-    // index 0 before it in the paint order - see
-    // https://github.com/electron/electron/pull/41256.
+    // We're looking for the NativeViewHost that contains the WebContentsView.
+    // There can be two possible NativeViewHosts - one containing the
+    // WebContentsView (present for BrowserWindows) and the one containing the
+    // VibrantView (present when vibrancy is set). We want the one containing
+    // the WebContentsView if it exists.
     const auto& children = shell_->GetContentsView()->children();
-    if (children.empty())
-      return;
+    const auto it = std::ranges::find_if(children, [&](views::View* child) {
+      if (std::strcmp(child->GetClassName(), "NativeViewHost") == 0) {
+        auto* nvh = static_cast<views::NativeViewHost*>(child);
+        return nvh->native_view().GetNativeNSView() != [self vibrantView];
+      }
+      return false;
+    });
 
-    auto* wcv = children.front().get();
-    if (!wcv)
-      return;
-
-    auto ns_view = static_cast<electron::DelayedNativeViewHost*>(wcv)
-                       ->GetNativeView()
-                       .GetNativeNSView();
-    if (!ns_view)
-      return;
-
-    [static_cast<ElectronInspectableWebContentsView*>(ns_view)
-        redispatchContextMenuEvent:base::apple::OwnedNSEvent(event)];
-    return;
+    if (it != children.end()) {
+      auto ns_view = static_cast<electron::DelayedNativeViewHost*>(*it)
+                         ->native_view()
+                         .GetNativeNSView();
+      if (ns_view) {
+        [static_cast<ElectronInspectableWebContentsView*>(ns_view)
+            redispatchContextMenuEvent:base::apple::OwnedNSEvent(event)];
+      }
+    }
   }
 
   [super sendEvent:event];

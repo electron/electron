@@ -72,7 +72,7 @@ The `menu` object has the following instance methods:
 #### `menu.popup([options])`
 
 * `options` Object (optional)
-  * `window` [BrowserWindow](browser-window.md) (optional) - Default is the focused window.
+  * `window` [BaseWindow](base-window.md) (optional) - Default is the focused window.
   * `x` number (optional) - Default is the current mouse cursor position.
     Must be declared if `y` is declared.
   * `y` number (optional) - Default is the current mouse cursor position.
@@ -86,13 +86,13 @@ The `menu` object has the following instance methods:
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
   * `callback` Function (optional) - Called when menu is closed.
 
-Pops up this menu as a context menu in the [`BrowserWindow`](browser-window.md).
+Pops up this menu as a context menu in the [`BaseWindow`](base-window.md).
 
-#### `menu.closePopup([browserWindow])`
+#### `menu.closePopup([window])`
 
-* `browserWindow` [BrowserWindow](browser-window.md) (optional) - Default is the focused window.
+* `window` [BaseWindow](base-window.md) (optional) - Default is the focused window.
 
-Closes the context menu in the `browserWindow`.
+Closes the context menu in the `window`.
 
 #### `menu.append(menuItem)`
 
