@@ -241,10 +241,7 @@ static_library("chrome") {
       "//chrome/browser/ui/views/dark_mode_manager_linux.cc",
       "//chrome/browser/ui/views/dark_mode_manager_linux.h",
     ]
-    public_deps += [
-      "//components/dbus/menu",
-      "//components/dbus/thread_linux",
-    ]
+    public_deps += [ "//components/dbus" ]
   }
 
   if (is_win) {
