@@ -185,8 +185,9 @@ app.whenReady().then(async () => {
     }
     // Ensure the callback is called after runner is defined
     process.nextTick(() => {
-      console.log('ABOUT TO APP EXIT');
-      app.exit(runner.failures);
+      console.log(`failures: ${runner.failures}`);
+      console.log('ABOUT TO PROCESS KILL');
+      process.kill(process.pid);
     });
   };
 

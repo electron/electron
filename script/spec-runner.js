@@ -156,6 +156,27 @@ async function runElectronTests () {
   }
 }
 
+async function asyncSpawn (exe, runnerArgs) {
+  return new Promise((resolve, reject) => {
+    let result = 0;
+    const child = childProcess.spawn(exe, runnerArgs, {
+      cwd: path.resolve(__dirname, '../..')
+    });
+    child.stdout.pipe(process.stdout);
+    child.stderr.pipe(process.stderr);
+    child.stdout.on('data', data => {
+      const failures = data.toString().match(/failures: (\d.*)/);
+      if (failures) {
+        result = parseInt(failures[1], 10);
+      }
+    });
+    child.on('error', error => reject(error));
+    child.on('close', (status, signal) => {
+      resolve({ status: result, signal });
+    });
+  });
+}
+
 async function runTestUsingElectron (specDir, testName) {
   let exe;
   if (args.electronVersion) {
@@ -169,10 +190,7 @@ async function runTestUsingElectron (specDir, testName) {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
     exe = 'python3';
   }
-  const { status, signal } = childProcess.spawnSync(exe, runnerArgs, {
-    cwd: path.resolve(__dirname, '../..'),
-    stdio: 'inherit'
-  });
+  const { status, signal } = await asyncSpawn(exe, runnerArgs);
   if (status !== 0) {
     if (status) {
       const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString();
