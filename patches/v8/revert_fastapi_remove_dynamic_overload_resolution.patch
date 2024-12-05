@@ -422,10 +422,10 @@ index d0405cf5bc25d47b7cf8bfd03b0bb639df4eddd4..f5810d72d99f4ecfe668d9e1fd9b3ad2
    return signature->ArgumentCount();
  }
 diff --git a/src/compiler/simplified-operator.h b/src/compiler/simplified-operator.h
-index 0027fcb8a0b97e8b0535d7bec93516d0166b9d93..b313e8a6b4e8a767ba70b878adba8e951eb7f8e3 100644
+index 5cb305f8db8419bcaedc89dbd9d68226bcf90551..19cc23394d5dd729974ff4faf0e4f7cf54c4710e 100644
 --- a/src/compiler/simplified-operator.h
 +++ b/src/compiler/simplified-operator.h
-@@ -741,25 +741,35 @@ struct FastApiCallFunction {
+@@ -742,25 +742,35 @@ struct FastApiCallFunction {
      return address == rhs.address && signature == rhs.signature;
    }
  };
@@ -466,7 +466,7 @@ index 0027fcb8a0b97e8b0535d7bec93516d0166b9d93..b313e8a6b4e8a767ba70b878adba8e95
  
    const FeedbackSource feedback_;
    CallDescriptor* descriptor_;
-@@ -1232,9 +1242,9 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
+@@ -1233,9 +1243,9 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
    const Operator* Unsigned32Divide();
  
    // Represents the inputs necessary to construct a fast and a slow API call.
