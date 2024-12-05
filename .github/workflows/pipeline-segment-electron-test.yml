@@ -241,6 +241,9 @@ jobs:
         if ('${{ inputs.target-arch }}' -eq 'x86') {
           echo npm_config_arch=ia32 >> $env:GITHUB_ENV
         }
+        if ('${{ inputs.target-arch }}' -eq 'arm64') {
+          echo ELECTRON_FORCE_TEST_SUITE_EXIT=true >> $env:GITHUB_ENV
+        }
     - name: Run Electron Tests (Windows)
       timeout-minutes: 30
       if: ${{ inputs.target-platform == 'windows' }}

@@ -17,6 +17,8 @@ const unknownFlags = [];
 const pass = chalk.green('✓');
 const fail = chalk.red('✗');
 
+const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
+
 const args = minimist(process.argv, {
   string: ['runners', 'target', 'electronVersion'],
   unknown: arg => unknownFlags.push(arg)
@@ -158,21 +160,30 @@ async function runElectronTests () {
 
 async function asyncSpawn (exe, runnerArgs) {
   return new Promise((resolve, reject) => {
-    let result = 0;
+    let forceExitResult = 0;
     const child = childProcess.spawn(exe, runnerArgs, {
       cwd: path.resolve(__dirname, '../..')
     });
     child.stdout.pipe(process.stdout);
     child.stderr.pipe(process.stderr);
-    child.stdout.on('data', data => {
-      const failures = data.toString().match(/failures: (\d.*)/);
-      if (failures) {
-        result = parseInt(failures[1], 10);
-      }
-    });
+    if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
+      child.stdout.on('data', data => {
+        const failureRE = RegExp(`${FAILURE_STATUS_KEY}: (\\d.*)`);
+        const failures = data.toString().match(failureRE);
+        if (failures) {
+          forceExitResult = parseInt(failures[1], 10);
+        }
+      });
+    }
     child.on('error', error => reject(error));
     child.on('close', (status, signal) => {
-      resolve({ status: result, signal });
+      let returnStatus = 0;
+      if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
+        returnStatus = forceExitResult;
+      } else {
+        returnStatus = status;
+      }
+      resolve({ status: returnStatus, signal });
     });
   });
 }
@@ -276,3 +287,5 @@ main().catch((error) => {
   console.error('An error occurred inside the spec runner:', error);
   process.exit(1);
 });
+
+module.exports = { FAILURE_STATUS_KEY };
