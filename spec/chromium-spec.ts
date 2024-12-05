@@ -670,6 +670,8 @@ describe('chromium features', () => {
       // - the dialog is not closed
       const enterFS1 = once(w, 'enter-full-screen');
       await w.webContents.executeJavaScript('document.body.requestFullscreen()', true);
+      const isDocFullScreen = await w.webContents.executeJavaScript('document.fullscreenElement');
+      console.log(`is doc fullscreen ${isDocFullScreen} `);
       await enterFS1;
       console.log('should lock 2');
       await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').showModal()', true);
