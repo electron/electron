@@ -106,8 +106,8 @@ std::unique_ptr<base::Value::Dict> ParseManifest(
 }  // namespace
 
 void ElectronExtensionSystem::LoadComponentExtensions() {
-  std::string utf8_error;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
+  std::string utf8_error;
   std::string pdf_manifest_string = pdf_extension_util::GetManifest();
   std::unique_ptr<base::Value::Dict> pdf_manifest =
       ParseManifest(pdf_manifest_string);
