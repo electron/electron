@@ -1658,6 +1658,7 @@ ElectronBrowserClient::CreateLoginDelegate(
     const GURL& url,
     scoped_refptr<net::HttpResponseHeaders> response_headers,
     bool first_auth_attempt,
+    content::GuestPageHolder* guest_page_holder,
     LoginAuthRequiredCallback auth_required_callback) {
   return std::make_unique<LoginHandler>(
       auth_info, web_contents, is_request_for_primary_main_frame,
