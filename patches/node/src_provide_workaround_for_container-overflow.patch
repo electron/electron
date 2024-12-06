@@ -15,7 +15,7 @@ In a future release of simdjson, we will provide a more convenient function that
 avoids such ugly workaround.
 
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 3bedd2dfecb49c3f69ea59b70d72b8b6fc605132..2b0e4905dd557e73542cf052ba81327b1e1e471f 100644
+index dfd115a9eccc6b58d63a72ac450a1497354482dd..16a9f923148835daa95d3578e5941b284ff71434 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -100,11 +100,23 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
