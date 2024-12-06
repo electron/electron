@@ -81,7 +81,7 @@ deprecated:
 ```
 -->
 
-A [`WebContents`](web-contents.md) object owned by this view.
+A `WebContents | null` property that returns the `WebContents` owned by this view or `null` if the contents are [destroyed](web-contents.md#event-destroyed).
 
 ### Instance Methods
 
