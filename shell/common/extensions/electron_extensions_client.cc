@@ -48,8 +48,7 @@ class ElectronPermissionMessageProvider
       const extensions::PermissionSet& requested_permissions,
       extensions::Manifest::Type extension_type) const override {
     // Ensure we implement this before shipping.
-    CHECK(false);
-    return false;
+    NOTREACHED();
   }
 
   [[nodiscard]] extensions::PermissionIDSet GetAllPermissionIDs(

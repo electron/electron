@@ -162,8 +162,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
   }
 
   const auto json_args = base::WriteJson(request).value_or("");
-  agent_host_->DispatchProtocolMessage(
-      this, base::as_bytes(base::make_span(json_args)));
+  agent_host_->DispatchProtocolMessage(this, base::as_byte_span(json_args));
 
   return handle;
 }

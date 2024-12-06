@@ -14,7 +14,7 @@ This really isn't ideal at all, we need to refactor desktopCapturer (read comple
 to use StartUpdating and handle the events instead of using the "get the list once" method.
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index 05e2c0a8c61d55899fbd92c40e495b1581102d2e..f262e311e7bc1ceb6f51242d6b9f40d5b8ffeabd 100644
+index 57cad85973c5cfe3a19f80fd318ec46f085ad4d0..69a4dad5a38170ba81ddff9a31e17808e7212963 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
 @@ -148,6 +148,8 @@ class DesktopMediaList {
@@ -27,7 +27,7 @@ index 05e2c0a8c61d55899fbd92c40e495b1581102d2e..f262e311e7bc1ceb6f51242d6b9f40d5
  
  #endif  // CHROME_BROWSER_MEDIA_WEBRTC_DESKTOP_MEDIA_LIST_H_
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index c76fd79c7998b963f8edfed525acac65fcef35f7..09ca689cde5c1cc3257df277f516d924fd171953 100644
+index e07f4ded61a7a64983da1b6d07315aee9684a148..08400be4d1bae18502d19beed6b2d9057e55dd4f 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
 @@ -236,7 +236,11 @@ uint32_t DesktopMediaListBase::GetImageHash(const gfx::Image& image) {

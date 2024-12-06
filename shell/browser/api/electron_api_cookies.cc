@@ -385,9 +385,11 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
 
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
+    net::CookieInclusionStatus cookie_inclusion_status;
+    cookie_inclusion_status.AddExclusionReason(
+        net::CookieInclusionStatus::ExclusionReason::EXCLUDE_INVALID_DOMAIN);
     promise.RejectWithErrorMessage(
-        InclusionStatusToString(net::CookieInclusionStatus(
-            net::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN)));
+        InclusionStatusToString(cookie_inclusion_status));
     return handle;
   }
 
@@ -401,11 +403,11 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       &status);
 
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
+    net::CookieInclusionStatus cookie_inclusion_status;
+    cookie_inclusion_status.AddExclusionReason(
+        net::CookieInclusionStatus::ExclusionReason::EXCLUDE_FAILURE_TO_STORE);
     promise.RejectWithErrorMessage(InclusionStatusToString(
-        !status.IsInclude()
-            ? status
-            : net::CookieInclusionStatus(
-                  net::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE)));
+        !status.IsInclude() ? status : cookie_inclusion_status));
     return handle;
   }
 

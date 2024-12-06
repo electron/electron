@@ -12,6 +12,7 @@
 
 #include "base/containers/span.h"
 #include "base/logging.h"
+#include "base/notreached.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "crypto/sha2.h"
@@ -37,8 +38,7 @@ void AsarFileValidator::EnsureBlockHashExists() {
       current_hash_ = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
       break;
     case HashAlgorithm::kNone:
-      CHECK(false);
-      break;
+      NOTREACHED();
   }
 }
 

@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index c1685a6fdd26a56382ef64b40aa499e8d60afddc..0aad188673f9c0834c03600b62f106ada718e321 100644
+index fa46d81e3a46a6d3f289fc8d184b434da1888d7a..169dd7dc24b09d319a7510184aab3b1bb96a1a85 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -12,6 +12,7 @@

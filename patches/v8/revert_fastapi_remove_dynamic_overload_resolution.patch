@@ -13,10 +13,10 @@ Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5979766
 This reverts commit c41f7a0ef99bd1c9752ee79923f634145ebc4153.
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 86f2d298e4ba37a46a74f4f6eba5adc2106889bb..ae1de25004bd1d1ba11225bc13472f4cbab3ca33 100644
+index d76e52da63748acfb37b31179b3428de77362413..0b30c6568d1a38237f3629fb88a5c9cbf1650f98 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -1348,16 +1348,6 @@ Local<FunctionTemplate> FunctionTemplate::NewWithCFunctionOverloads(
+@@ -1349,16 +1349,6 @@ Local<FunctionTemplate> FunctionTemplate::NewWithCFunctionOverloads(
    i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
    API_RCS_SCOPE(i_isolate, FunctionTemplate, New);
  
@@ -319,7 +319,7 @@ index d75a38769d582cd6e5a807f9670732dc92d77b7e..a29bd4a5be0c9a268386898f8a52e989
  
      return Replace(fast_call_subgraph);
 diff --git a/src/compiler/simplified-lowering.cc b/src/compiler/simplified-lowering.cc
-index a76784f65355cd7f380cadf0db602668f59cf07b..37e216509163514bc9ee43d7bb25695387e82351 100644
+index 377d36b1d880892d0d446ee386d21028d3ffec16..ebb8bcd585f6b185e355922fd97c94bd0136d968 100644
 --- a/src/compiler/simplified-lowering.cc
 +++ b/src/compiler/simplified-lowering.cc
 @@ -2015,7 +2015,7 @@ class RepresentationSelector {
@@ -346,10 +346,10 @@ index a76784f65355cd7f380cadf0db602668f59cf07b..37e216509163514bc9ee43d7bb256953
        case CTypeInfo::Type::kBool:
          SetOutput<T>(node, MachineRepresentation::kBit);
 diff --git a/src/compiler/simplified-operator.cc b/src/compiler/simplified-operator.cc
-index a27ea417112518987f95eac5d7d091693149280a..a8fd6fba72b3140016258b8c156aa65701367c59 100644
+index d0405cf5bc25d47b7cf8bfd03b0bb639df4eddd4..f5810d72d99f4ecfe668d9e1fd9b3ad2ea123875 100644
 --- a/src/compiler/simplified-operator.cc
 +++ b/src/compiler/simplified-operator.cc
-@@ -2055,21 +2055,26 @@ FastApiCallParameters const& FastApiCallParametersOf(const Operator* op) {
+@@ -2096,21 +2096,26 @@ FastApiCallParameters const& FastApiCallParametersOf(const Operator* op) {
  }
  
  std::ostream& operator<<(std::ostream& os, FastApiCallParameters const& p) {
@@ -381,7 +381,7 @@ index a27ea417112518987f95eac5d7d091693149280a..a8fd6fba72b3140016258b8c156aa657
           lhs.feedback() == rhs.feedback() &&
           lhs.descriptor() == rhs.descriptor();
  }
-@@ -2279,11 +2284,19 @@ const Operator* SimplifiedOperatorBuilder::TransitionAndStoreNonNumberElement(
+@@ -2320,11 +2325,19 @@ const Operator* SimplifiedOperatorBuilder::TransitionAndStoreNonNumberElement(
  }
  
  const Operator* SimplifiedOperatorBuilder::FastApiCall(
@@ -405,7 +405,7 @@ index a27ea417112518987f95eac5d7d091693149280a..a8fd6fba72b3140016258b8c156aa657
    // Arguments for CallApiCallbackOptimizedXXX builtin (including context)
    // plus JS arguments (including receiver).
    int slow_arg_count = static_cast<int>(descriptor->ParameterCount());
-@@ -2293,13 +2306,13 @@ const Operator* SimplifiedOperatorBuilder::FastApiCall(
+@@ -2334,13 +2347,13 @@ const Operator* SimplifiedOperatorBuilder::FastApiCall(
    return zone()->New<Operator1<FastApiCallParameters>>(
        IrOpcode::kFastApiCall, Operator::kNoProperties, "FastApiCall",
        value_input_count, 1, 1, 1, 1, 2,
@@ -422,10 +422,10 @@ index a27ea417112518987f95eac5d7d091693149280a..a8fd6fba72b3140016258b8c156aa657
    return signature->ArgumentCount();
  }
 diff --git a/src/compiler/simplified-operator.h b/src/compiler/simplified-operator.h
-index a4aecbbfe2f82a16dfc136c2bc22614ade9e6bf7..ee61ba530af51cd3b32a62cc5d4b83016f501078 100644
+index 5cb305f8db8419bcaedc89dbd9d68226bcf90551..19cc23394d5dd729974ff4faf0e4f7cf54c4710e 100644
 --- a/src/compiler/simplified-operator.h
 +++ b/src/compiler/simplified-operator.h
-@@ -716,25 +716,35 @@ struct FastApiCallFunction {
+@@ -742,25 +742,35 @@ struct FastApiCallFunction {
      return address == rhs.address && signature == rhs.signature;
    }
  };
@@ -466,7 +466,7 @@ index a4aecbbfe2f82a16dfc136c2bc22614ade9e6bf7..ee61ba530af51cd3b32a62cc5d4b8301
  
    const FeedbackSource feedback_;
    CallDescriptor* descriptor_;
-@@ -1205,9 +1215,9 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
+@@ -1233,9 +1243,9 @@ class V8_EXPORT_PRIVATE SimplifiedOperatorBuilder final
    const Operator* Unsigned32Divide();
  
    // Represents the inputs necessary to construct a fast and a slow API call.
@@ -480,10 +480,10 @@ index a4aecbbfe2f82a16dfc136c2bc22614ade9e6bf7..ee61ba530af51cd3b32a62cc5d4b8301
  #ifdef V8_ENABLE_CONTINUATION_PRESERVED_EMBEDDER_DATA
    const Operator* GetContinuationPreservedEmbedderData();
 diff --git a/src/compiler/turbofan-typer.cc b/src/compiler/turbofan-typer.cc
-index 51f797d342c4fb20e6833fdebbc8a6417b9a3537..a1ab6f4a314a56db8d1351e81e9640e470c324ae 100644
+index 811c9c5ab82ebbdf6ca14a2fd99c3b154609d506..f36916c1a0d39293f01eca84cac6ef83096cd25e 100644
 --- a/src/compiler/turbofan-typer.cc
 +++ b/src/compiler/turbofan-typer.cc
-@@ -1186,8 +1186,11 @@ Type Typer::Visitor::TypeCall(Node* node) { return Type::Any(); }
+@@ -1190,8 +1190,11 @@ Type Typer::Visitor::TypeCall(Node* node) { return Type::Any(); }
  
  Type Typer::Visitor::TypeFastApiCall(Node* node) {
    FastApiCallParameters const& op_params = FastApiCallParametersOf(node->op());
@@ -604,7 +604,7 @@ index 2dec266f9e648391fe61a62931cca1ad20de719c..dc27e91ad0da93a5b68053f132f219f9
    V<T> Checked(V<Tuple<T, Word32>> result, Label<>& otherwise) {
      V<Word32> result_state = __ template Projection<1>(result);
 diff --git a/src/compiler/turboshaft/graph-builder.cc b/src/compiler/turboshaft/graph-builder.cc
-index 683604a0f5e2c0694f29e447e095417311ea37ec..cb3c976f0f0b9fc3fd799bc301d57f588b9c7ae6 100644
+index f24cd884bf7810aaed5e58b2044c2770653266f1..d79f6c801d2562a3cd65597d79050791fee3ad08 100644
 --- a/src/compiler/turboshaft/graph-builder.cc
 +++ b/src/compiler/turboshaft/graph-builder.cc
 @@ -1974,7 +1974,7 @@ OpIndex GraphBuilder::Process(
@@ -669,10 +669,10 @@ index 683604a0f5e2c0694f29e447e095417311ea37ec..cb3c976f0f0b9fc3fd799bc301d57f58
        // There is one return in addition to the return value of the C function,
        // which indicates if a fast API call actually happened.
 diff --git a/src/compiler/turboshaft/operations.h b/src/compiler/turboshaft/operations.h
-index 1b3a33fde8d73fea2d1d022711b6472a77ad7a75..917b39db6eaba0d9795ab8986687d591821d6317 100644
+index a26611708f2dd162e127d7a7c9af9135892d0b40..b04639190b239af92a2845886e5852080e6e454a 100644
 --- a/src/compiler/turboshaft/operations.h
 +++ b/src/compiler/turboshaft/operations.h
-@@ -6385,16 +6385,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
+@@ -6386,16 +6386,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
  };
  
  struct FastApiCallParameters : public NON_EXPORTED_BASE(ZoneObject) {
@@ -705,7 +705,7 @@ index 1b3a33fde8d73fea2d1d022711b6472a77ad7a75..917b39db6eaba0d9795ab8986687d591
  };
  
 diff --git a/src/compiler/wasm-compiler.cc b/src/compiler/wasm-compiler.cc
-index 351705cbc6c054d38f8d9d93744701b9004fcd1c..4c13f51d4b61f17558c6b10a09f8de5aedc093a8 100644
+index 5ad805a11f7de73f06518ee3cf878ca492c0c652..2571f2800450cb8582198dc7cb7ef58311c52dae 100644
 --- a/src/compiler/wasm-compiler.cc
 +++ b/src/compiler/wasm-compiler.cc
 @@ -8356,13 +8356,19 @@ class WasmWrapperGraphBuilder : public WasmGraphBuilder {
@@ -734,7 +734,7 @@ index 351705cbc6c054d38f8d9d93744701b9004fcd1c..4c13f51d4b61f17558c6b10a09f8de5a
              return gasm_->AdaptLocalArgument(receiver_node);
            }
 diff --git a/src/d8/d8-test.cc b/src/d8/d8-test.cc
-index e231c93579e0ca8068a0c192e6351bc20648d7ae..cb4d43c95665f7ba7f94a9ff63557ab97a1eef5a 100644
+index 6467930fbb39a67a10d6822545e985965ced83ad..1c99e4d89cbc605c6c1b75ce31b09b67334a10ee 100644
 --- a/src/d8/d8-test.cc
 +++ b/src/d8/d8-test.cc
 @@ -443,6 +443,20 @@ class FastCApiObject {
@@ -758,7 +758,7 @@ index e231c93579e0ca8068a0c192e6351bc20648d7ae..cb4d43c95665f7ba7f94a9ff63557ab9
  #ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
    static AnyCType Add32BitIntFastCallbackPatch(AnyCType receiver,
                                                 AnyCType arg_i32,
-@@ -1549,6 +1563,22 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
+@@ -1553,6 +1567,22 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
              signature, 1, ConstructorBehavior::kThrow,
              SideEffectType::kHasSideEffect, {add_all_overloads, 2}));
  

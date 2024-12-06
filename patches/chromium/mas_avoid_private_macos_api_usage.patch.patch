@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c884f31fed70631df74f64bbda076868167ac394..a30a23706aac3a43e80e738bdefc80a09b28901d 100644
+index 4d2d2e88d37e95a2b8ac0c1e0d7d1b0c1e8ad417..58a4b86746a345eeeca66969aec39791fb2d1a8c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1021,6 +1021,7 @@ component("base") {
+@@ -1027,6 +1027,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -455,10 +455,10 @@ index 97f489043beb4260b1a3ca1781ce7ef67ec8c88a..569859297618cac39aa36655b9e30122
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f51c287959ec74878100b80fb75b86b0045b744a..f0fc2f51860e38f546159f94d5d180aa04a85e79 100644
+index 2fa9063bb7c2ffff4fec6cf91aa7b6bf1d9ea875..6c661c1766f987297ef1fd5c45069a63209826a3 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -379,6 +379,7 @@ viz_component("service") {
+@@ -381,6 +381,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -526,7 +526,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 6aa74c4137ac7a649e8f79eb628e297e9459b089..c89f25bf49d773f5f77b2434bd6fabcfd8cb4e33 100644
+index faddee802d6538c092ba96914184663ee57751c8..49238975848d58cd30727ec818bbac52a838f10c 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -35,6 +35,7 @@
@@ -537,7 +537,7 @@ index 6aa74c4137ac7a649e8f79eb628e297e9459b089..c89f25bf49d773f5f77b2434bd6fabcf
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2059,15 +2060,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2078,15 +2079,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -560,7 +560,7 @@ index 6aa74c4137ac7a649e8f79eb628e297e9459b089..c89f25bf49d773f5f77b2434bd6fabcf
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 217a86df8151cfa274c56f4082e7ed3ced0ac872..71158b55dacc7a4ba1f08c8212b7f9322326ceb8 100644
+index 00ac46d858b7f83e53b1817028baba13719f04fe..31c9a53d5c7f09a7326ef57753b4a49f0239a7f8 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -327,6 +327,7 @@ source_set("browser") {
@@ -773,7 +773,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f04eac209dc7103d8b3a985783166772b7bef8de..415457f192688821a4957fa83214dbcf32f5cd08 100644
+index 4f0153bf27764fce04a56d2bce8f8e7a012d78f5..17955a2806d741905bc9507ea6d39fd012162d12 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -643,6 +643,7 @@ static_library("test_support") {
@@ -784,7 +784,7 @@ index f04eac209dc7103d8b3a985783166772b7bef8de..415457f192688821a4957fa83214dbcf
    ]
  
    data_deps = [
-@@ -1112,6 +1113,7 @@ static_library("browsertest_support") {
+@@ -1118,6 +1119,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -792,7 +792,7 @@ index f04eac209dc7103d8b3a985783166772b7bef8de..415457f192688821a4957fa83214dbcf
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1953,6 +1955,7 @@ test("content_browsertests") {
+@@ -1952,6 +1954,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -800,7 +800,7 @@ index f04eac209dc7103d8b3a985783166772b7bef8de..415457f192688821a4957fa83214dbcf
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3246,6 +3249,7 @@ test("content_unittests") {
+@@ -3244,6 +3247,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -925,10 +925,10 @@ index 45847b155ec8fb197aadb479eca78154436cfa81..e5de2b90a4c7d8181408ddfa62057b97
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 9b78f60304a0e487904fdb22c9e6d85a237ca96e..e639558d34edab3ba3b1bb4f502bd91405e58637 100644
+index da17e30384033a795e35d9cd27f16aa1a2b1ad24..f98dc86b19569290d81e7d2a172c1f217a72d00e 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
-@@ -28,6 +28,7 @@
+@@ -29,6 +29,7 @@
  #include "base/strings/sys_string_conversions.h"
  #include "base/time/time.h"
  #include "base/trace_event/trace_event.h"
@@ -936,7 +936,7 @@ index 9b78f60304a0e487904fdb22c9e6d85a237ca96e..e639558d34edab3ba3b1bb4f502bd914
  #include "media/audio/apple/audio_manager_apple.h"
  #include "media/audio/apple/scoped_audio_unit.h"
  #include "media/base/audio_bus.h"
-@@ -39,19 +40,23 @@
+@@ -41,19 +42,23 @@
  
  namespace {
  extern "C" {
@@ -961,10 +961,10 @@ index 9b78f60304a0e487904fdb22c9e6d85a237ca96e..e639558d34edab3ba3b1bb4f502bd914
  }  // namespace
  #endif
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 5f4ff9ff8172d4ad282cc9c781f85118b8ba7d1a..cc85f488884f48df94198b7e4d4823946e750716 100644
+index 543b8ae16c1ddc33b3602adc7216a1756681f5fe..21b2898f8b1f40a85d60145bfdff3aa1d7e9b154 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
-@@ -187,6 +187,8 @@ source_set("dns") {
+@@ -189,6 +189,8 @@ source_set("dns") {
      ":host_resolver_manager",
      ":mdns_client",
    ]
