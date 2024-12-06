@@ -464,7 +464,8 @@ class WebContents final : public ExclusiveAccessContext,
   void SetImageAnimationPolicy(const std::string& new_policy);
 
   // content::RenderWidgetHost::InputEventObserver:
-  void OnInputEvent(const blink::WebInputEvent& event) override;
+  void OnInputEvent(const content::RenderWidgetHost& rfh,
+                    const blink::WebInputEvent& event) override;
 
   // content::JavaScriptDialogManager:
   void RunJavaScriptDialog(content::WebContents* web_contents,
