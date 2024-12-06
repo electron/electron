@@ -51,10 +51,13 @@ class WebRequest final : public gin::Wrappable<WebRequest>,
   static gin::Handle<WebRequest> From(v8::Isolate* isolate,
                                       content::BrowserContext* browser_context);
 
+  static const char* GetClassName() { return "WebRequest"; }
+
   // gin::Wrappable:
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
+
   const char* GetTypeName() override;
 
   // WebRequestAPI:
@@ -156,22 +159,31 @@ class WebRequest final : public gin::Wrappable<WebRequest>,
   class RequestFilter {
    public:
     RequestFilter(std::set<URLPattern>,
+                  std::set<URLPattern>,
                   std::set<extensions::WebRequestResourceType>);
     RequestFilter(const RequestFilter&);
     RequestFilter();
     ~RequestFilter();
 
-    void AddUrlPattern(URLPattern pattern);
+    void AddUrlPattern(URLPattern pattern, bool is_match_pattern);
+    void AddUrlPatterns(const std::set<std::string>& filter_patterns,
+                        RequestFilter* filter,
+                        gin::Arguments* args,
+                        bool is_match_pattern = true);
     void AddType(extensions::WebRequestResourceType type);
 
     bool MatchesRequest(extensions::WebRequestInfo* info) const;
+    void SetFilterDefined(bool is_defined);
 
    private:
-    bool MatchesURL(const GURL& url) const;
+    bool MatchesURL(const GURL& url,
+                    const std::set<URLPattern>& patterns) const;
     bool MatchesType(extensions::WebRequestResourceType type) const;
 
-    std::set<URLPattern> url_patterns_;
+    std::set<URLPattern> include_url_patterns_;
+    std::set<URLPattern> exclude_url_patterns_;
     std::set<extensions::WebRequestResourceType> types_;
+    bool is_filter_defined_ = false;
   };
 
   struct SimpleListenerInfo {
