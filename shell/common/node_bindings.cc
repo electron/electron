@@ -556,6 +556,10 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
       node::ProcessInitializationFlags::kNoInitializeV8 |
       node::ProcessInitializationFlags::kNoInitializeNodeV8Platform;
 
+#if BUILDFLAG(IS_WIN)
+  process_flags |= node::ProcessInitializationFlags::kNoStdioInitialization;
+#endif
+
   // We do not want the child processes spawned from the utility process
   // to inherit the custom stdio handles created for the parent.
   if (browser_env_ != BrowserEnvironment::kUtility)
