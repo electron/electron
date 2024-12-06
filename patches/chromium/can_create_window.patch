@@ -148,7 +148,7 @@ index c0be779a4c1d89426c30261aff72ea55be900087..7413c1bef86f5e4633db7220c5de4de7
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index c9d6e7acd432682381a1131e05a3758589967f69..2ea650aedb13aa7e5e940402083b7a69086b7b58 100644
+index c9d6e7acd432682381a1131e05a3758589967f69..1412679cc093a678f19c2f60a633d9650efc27bb 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -6846,6 +6846,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
@@ -156,7 +156,7 @@ index c9d6e7acd432682381a1131e05a3758589967f69..2ea650aedb13aa7e5e940402083b7a69
            GetWebFrame()->IsAdScriptInStack());
  
 +  params->raw_features = features.raw_features.Utf8(
-+      WTF::UTF8ConversionMode::kStrictUTF8ConversionReplacingUnpairedSurrogatesWithFFFD);
++      WTF::Utf8ConversionMode::kStrictReplacingErrors);
 +  params->body = GetRequestBodyForWebURLRequest(request);
 +
    // We preserve this information before sending the message since |params| is
