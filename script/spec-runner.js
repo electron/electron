@@ -287,5 +287,3 @@ main().catch((error) => {
   console.error('An error occurred inside the spec runner:', error);
   process.exit(1);
 });
-
-module.exports = { FAILURE_STATUS_KEY };
