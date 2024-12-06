@@ -88,6 +88,7 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   management_policy_ = std::make_unique<ManagementPolicy>();
 }
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 namespace {
 
 std::unique_ptr<base::Value::Dict> ParseManifest(
@@ -104,6 +105,7 @@ std::unique_ptr<base::Value::Dict> ParseManifest(
 }
 
 }  // namespace
+#endif  // if BUILDFLAG(ENABLE_PDF_VIEWER)
 
 void ElectronExtensionSystem::LoadComponentExtensions() {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
