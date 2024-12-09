@@ -125,7 +125,9 @@ BrowserWindow.fromWebContents = (webContents: WebContents) => {
 };
 
 BrowserWindow.fromBrowserView = (browserView: BrowserView) => {
-  return BrowserWindow.fromWebContents(browserView.webContents);
+  const { webContents } = browserView;
+  if (!webContents) return null;
+  return BrowserWindow.fromWebContents(webContents);
 };
 
 // Forwarded to webContents:
