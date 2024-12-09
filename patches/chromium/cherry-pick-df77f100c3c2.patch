@@ -1,0 +1,129 @@
+From df77f100c3c2c7489eebb10c27d029c44e6f67dd Mon Sep 17 00:00:00 2001
+From: Olle Liljenzin <ollel@opera.com>
+Date: Thu, 21 Nov 2024 14:46:17 +0000
+Subject: [PATCH] Remove GestureListenerManager as observer before destruction
+
+GestureListenerManager adds itself as InputEventObserver but doesn't
+remove itself from the observer list when getting destroyed, which
+causes dangling raw pointer failures (use-after-free) if
+GestureListenerManager gets destroyed before RenderWidgetHost and
+dangling raw pointer checks are enabled.
+
+Thus remove GestureListenerManager as observer when
+GestureListenerManager is destructed.
+
+Fixes regression from the following change:
+https://chromium-review.googlesource.com/c/chromium/src/+/5887051
+
+Change-Id: Ia24a0d4b80533e3a6406e7398351f37c682211fe
+
+Bug: 378464985
+Change-Id: Ia24a0d4b80533e3a6406e7398351f37c682211fe
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6012419
+Reviewed-by: Bo Liu <boliu@chromium.org>
+Commit-Queue: Olle Liljenzin <ollel@opera.com>
+Reviewed-by: Yaron Friedman <yfriedman@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1386220}
+---
+
+diff --git a/content/browser/android/gesture_listener_manager.cc b/content/browser/android/gesture_listener_manager.cc
+index b6330a58..107b9a2 100644
+--- a/content/browser/android/gesture_listener_manager.cc
++++ b/content/browser/android/gesture_listener_manager.cc
+@@ -113,10 +113,13 @@
+   RenderFrameHost* host = web_contents->GetPrimaryMainFrame();
+   if (host) {
+     host->GetRenderWidgetHost()->AddInputEventObserver(this);
++    observed_render_frames_.insert(host->GetGlobalId());
+   }
+ }
+ 
+ GestureListenerManager::~GestureListenerManager() {
++  UnobserveRenderFrames();
++
+   JNIEnv* env = AttachCurrentThread();
+   ScopedJavaLocalRef<jobject> j_obj = java_ref_.get(env);
+   if (j_obj.is_null())
+@@ -157,13 +160,19 @@
+     rwhva_->UpdateRootScrollOffsetUpdateFrequency();
+ }
+ 
++void GestureListenerManager::RenderFrameDeleted(
++    RenderFrameHost* render_frame_host) {
++  if (static_cast<RenderFrameHostImpl*>(render_frame_host)->is_local_root() &&
++      observed_render_frames_.erase(render_frame_host->GetGlobalId())) {
++    render_frame_host->GetRenderWidgetHost()->RemoveInputEventObserver(this);
++  }
++}
++
+ void GestureListenerManager::RenderFrameHostChanged(RenderFrameHost* old_host,
+                                                     RenderFrameHost* new_host) {
+-  if (old_host && old_host->GetVisibilityState() ==
+-                      blink::mojom::PageVisibilityState::kHidden) {
+-    old_host->GetRenderWidgetHost()->RemoveInputEventObserver(this);
+-  }
+-  if (new_host) {
++  if (new_host &&
++      static_cast<RenderFrameHostImpl*>(new_host)->is_local_root() &&
++      observed_render_frames_.insert(new_host->GetGlobalId()).second) {
+     new_host->GetRenderWidgetHost()->AddInputEventObserver(this);
+   }
+ }
+@@ -349,6 +358,20 @@
+                                                       render_process_gone);
+ }
+ 
++void GestureListenerManager::UnobserveRenderFrames() {
++  for (GlobalRenderFrameHostId& id : observed_render_frames_) {
++    RenderFrameHost* rfh = RenderFrameHost::FromID(id);
++    if (!rfh) {
++      continue;
++    }
++    RenderWidgetHost* rwh = rfh->GetRenderWidgetHost();
++    if (rwh) {
++      rwh->RemoveInputEventObserver(this);
++    }
++  }
++  observed_render_frames_.clear();
++}
++
+ jlong JNI_GestureListenerManagerImpl_Init(
+     JNIEnv* env,
+     const JavaParamRef<jobject>& obj,
+diff --git a/content/browser/android/gesture_listener_manager.h b/content/browser/android/gesture_listener_manager.h
+index 4a1d16d..0ea50c5 100644
+--- a/content/browser/android/gesture_listener_manager.h
++++ b/content/browser/android/gesture_listener_manager.h
+@@ -7,6 +7,7 @@
+ 
+ #include "base/android/jni_weak_ref.h"
+ #include "base/android/scoped_java_ref.h"
++#include "base/containers/flat_set.h"
+ #include "base/memory/raw_ptr.h"
+ #include "cc/mojom/render_frame_metadata.mojom-shared.h"
+ #include "content/browser/android/render_widget_host_connector.h"
+@@ -84,6 +85,7 @@
+       RenderWidgetHostViewAndroid* new_rhwva) override;
+ 
+   // Start WebContentsObserver overrides
++  void RenderFrameDeleted(RenderFrameHost* render_frame_host) override;
+   void RenderFrameHostChanged(RenderFrameHost* old_host,
+                               RenderFrameHost* new_host) override;
+   // End WebContentsObserver overrides
+@@ -104,6 +106,7 @@
+   class ResetScrollObserver;
+ 
+   void ResetPopupsAndInput(bool render_process_gone);
++  void UnobserveRenderFrames();
+ 
+   std::unique_ptr<ResetScrollObserver> reset_scroll_observer_;
+   raw_ptr<WebContentsImpl> web_contents_;
+@@ -117,6 +120,8 @@
+   // Highest update frequency requested by any of the listeners.
+   std::optional<cc::mojom::RootScrollOffsetUpdateFrequency>
+       root_scroll_offset_update_frequency_;
++
++  base::flat_set<GlobalRenderFrameHostId> observed_render_frames_;
+ };
+ 
+ }  // namespace content
