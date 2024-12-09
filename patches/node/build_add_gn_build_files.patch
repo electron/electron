@@ -10,6 +10,17 @@ however those files were cherry-picked from main branch and do not
 really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
+diff --git a/deps/simdjson/unofficial.gni b/deps/simdjson/unofficial.gni
+index d6909b95886f4de3f0b953c2a2992f69066b7434..972955f9144aafcd3a3fe278b7aaad401cadddda 100644
+--- a/deps/simdjson/unofficial.gni
++++ b/deps/simdjson/unofficial.gni
+@@ -18,5 +18,6 @@ template("simdjson_gn_build") {
+     forward_variables_from(invoker, "*")
+     public_configs = [ ":simdjson_config" ]
+     sources = gypi_values.simdjson_sources
++    cflags_c = [ "-Wdeprecated-literal-operator" ]
+   }
+ }
 diff --git a/deps/sqlite/unofficial.gni b/deps/sqlite/unofficial.gni
 index ebb3ffcd6d42b4c16b6865a91ccf4428cffe864b..00225afa1fb4205f1e02d9f185aeb97d642b3fd9 100644
 --- a/deps/sqlite/unofficial.gni
@@ -31,7 +42,7 @@ index ebb3ffcd6d42b4c16b6865a91ccf4428cffe864b..00225afa1fb4205f1e02d9f185aeb97d
          "-Wno-unused-but-set-variable",
          "-Wno-unused-function",
 diff --git a/node.gni b/node.gni
-index 9dca810decebd75aab427e306b3cc37c80fb55c9..32709b860ccb12d8d1e75342a65dda0b86129b21 100644
+index 9dca810decebd75aab427e306b3cc37c80fb55c9..852f64fa9cfb50fe6e9ce7aa46be336d3196d5b8 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -5,10 +5,10 @@
@@ -56,20 +67,29 @@ index 9dca810decebd75aab427e306b3cc37c80fb55c9..32709b860ccb12d8d1e75342a65dda0b
  
    # Custom build tag.
    node_tag = ""
-@@ -58,7 +58,7 @@ declare_args() {
+@@ -58,7 +58,16 @@ declare_args() {
    # TODO(zcbenz): There are few broken things for now:
    #   1. cross-os compilation is not supported.
    #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
 -  node_use_node_snapshot = (host_os == target_os) && !(host_cpu == "arm64" && target_cpu == "x64")
 +  node_use_node_snapshot = false
++
++  # Build with Amaro (TypeScript utils).
++  node_use_amaro = true
++
++  # Allows downstream packagers (eg. Linux distributions) to build against system shared libraries.
++  use_system_cares = false
++  use_system_nghttp2 = false
++  use_system_llhttp = false
++  use_system_histogram = false
  }
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 2bc7155f7c075e5a22ece7159a64a1c9ba3d8ac9..48d29a0d05538cd1d992f3f086d826e78d0d8882 100644
+index 1bec44f6f29b0b652e92d2bb336fdb74b85eee30..599b59873dbb17ae5e7463403859e088ffb86cda 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -775,6 +775,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -778,6 +778,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -91,7 +111,7 @@ index 1cb85b9058d06555382e565dc32192a9fa48ed9f..cec9be01abd107e8612f70daf19b4834
  // Handles compilation and caching of built-in JavaScript modules and
  // bootstrap scripts, whose source are bundled into the binary as static data.
 diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
-index 45b3ac5006140fb55aad0e6b78084b753a947a76..8667857107e4f2481fd98032d4333b086fb7b479 100755
+index 45b3ac5006140fb55aad0e6b78084b753a947a76..35cce2ea8fd85f21582962115ac455918d4c4553 100755
 --- a/tools/generate_config_gypi.py
 +++ b/tools/generate_config_gypi.py
 @@ -21,7 +21,7 @@ import getnapibuildversion
@@ -103,6 +123,14 @@ index 45b3ac5006140fb55aad0e6b78084b753a947a76..8667857107e4f2481fd98032d4333b08
  else:
    GN = 'gn'
  
+@@ -65,6 +65,7 @@ def translate_config(out_dir, config, v8_config):
+           eval(config['node_builtin_shareable_builtins']),
+       'node_module_version': int(config['node_module_version']),
+       'node_use_openssl': config['node_use_openssl'],
++      'node_use_amaro': config['node_use_amaro'],
+       'node_use_node_code_cache': config['node_use_node_code_cache'],
+       'node_use_node_snapshot': config['node_use_node_snapshot'],
+       'v8_enable_inspector':  # this is actually a node misnomer
 diff --git a/tools/install.py b/tools/install.py
 index bf54249b66c0d4e179deaae5a9fd55568e694fe0..31b94d2e4b532d3b8202b512e2d2f41d29a2a546 100755
 --- a/tools/install.py
@@ -118,10 +146,10 @@ index bf54249b66c0d4e179deaae5a9fd55568e694fe0..31b94d2e4b532d3b8202b512e2d2f41d
 diff --git a/tools/js2c.cc b/tools/js2c.cc
 old mode 100644
 new mode 100755
-index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd786f64bb
+index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2e9dfb0f0
 --- a/tools/js2c.cc
 +++ b/tools/js2c.cc
-@@ -30,6 +30,7 @@ namespace js2c {
+@@ -28,6 +28,7 @@ namespace js2c {
  int Main(int argc, char* argv[]);
  
  static bool is_verbose = false;
@@ -129,7 +157,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
  
  void Debug(const char* format, ...) {
    va_list arguments;
-@@ -196,6 +197,7 @@ const char* kTemplate = R"(
+@@ -175,6 +176,7 @@ const char* kTemplate = R"(
  #include "node_builtins.h"
  #include "node_external_reference.h"
  #include "node_internals.h"
@@ -137,7 +165,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
  
  namespace node {
  
-@@ -211,7 +213,11 @@ const ThreadsafeCopyOnWrite<BuiltinSourceMap> global_source_map {
+@@ -190,7 +192,11 @@ const ThreadsafeCopyOnWrite<BuiltinSourceMap> global_source_map {
  }  // anonymous namespace
  
  void BuiltinLoader::LoadJavaScriptSource() {
@@ -150,7 +178,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
  }
  
  void RegisterExternalReferencesForInternalizedBuiltinCode(
-@@ -228,6 +234,45 @@ UnionBytes BuiltinLoader::GetConfig() {
+@@ -207,6 +213,45 @@ UnionBytes BuiltinLoader::GetConfig() {
  }  // namespace node
  )";
  
@@ -196,7 +224,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
  Fragment Format(const Fragments& definitions,
                  const Fragments& initializers,
                  const Fragments& registrations) {
-@@ -237,13 +282,12 @@ Fragment Format(const Fragments& definitions,
+@@ -216,13 +261,12 @@ Fragment Format(const Fragments& definitions,
    size_t init_size = init_buf.size();
    std::vector<char> reg_buf = Join(registrations, "\n");
    size_t reg_size = reg_buf.size();
@@ -213,7 +241,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
                     static_cast<int>(def_buf.size()),
                     def_buf.data(),
                     static_cast<int>(init_buf.size()),
-@@ -834,12 +878,15 @@ int JS2C(const FileList& js_files,
+@@ -846,12 +890,15 @@ int JS2C(const FileList& js_files,
      }
    }
  
@@ -229,7 +257,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
    Fragment out = Format(definitions, initializers, registrations);
    return WriteIfChanged(out, dest);
  }
-@@ -865,6 +912,8 @@ int Main(int argc, char* argv[]) {
+@@ -877,6 +924,8 @@ int Main(int argc, char* argv[]) {
      std::string arg(argv[i]);
      if (arg == "--verbose") {
        is_verbose = true;
@@ -238,7 +266,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
      } else if (arg == "--root") {
        if (i == argc - 1) {
          fprintf(stderr, "--root must be followed by a path\n");
-@@ -913,6 +962,14 @@ int Main(int argc, char* argv[]) {
+@@ -925,6 +974,14 @@ int Main(int argc, char* argv[]) {
      }
    }
  
@@ -253,7 +281,7 @@ index a536b5dcd857275d3b02e361bd7d37a939f6b573..b2d5678d58a79774d5aeedc15ac5d5fd
    // Should have exactly 3 types: `.js`, `.mjs` and `.gypi`.
    assert(file_map.size() == 3);
    auto gypi_it = file_map.find(".gypi");
-@@ -939,6 +996,7 @@ int Main(int argc, char* argv[]) {
+@@ -951,6 +1008,7 @@ int Main(int argc, char* argv[]) {
    std::sort(mjs_it->second.begin(), mjs_it->second.end());
  
    return JS2C(js_it->second, mjs_it->second, gypi_it->second[0], output);
@@ -274,10 +302,22 @@ index 65d0e1be42f0a85418491ebb548278cf431aa6a0..d4a31342f1c6107b029394c6e1d00a1d
    except Exception as e:
      print(str(e))
 diff --git a/unofficial.gni b/unofficial.gni
-index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1fa351a9d9 100644
+index c3b311e4a7f5444b07d4d7028d4621806959804e..f6793b8bf22d6ac911a1977edaa881b6dbbe7ac7 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -139,6 +139,7 @@ template("node_gn_build") {
+@@ -22,6 +22,11 @@ template("node_gn_build") {
+     } else {
+       defines += [ "HAVE_OPENSSL=0" ]
+     }
++    if (node_use_amaro) {
++      defines += [ "HAVE_AMARO=1" ]
++    } else {
++      defines += [ "HAVE_AMARO=0" ]
++    }
+     if (node_use_v8_platform) {
+       defines += [ "NODE_USE_V8_PLATFORM=1" ]
+     } else {
+@@ -139,6 +144,7 @@ template("node_gn_build") {
      public_deps = [
        "deps/ada",
        "deps/uv",
@@ -285,7 +325,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
        "deps/simdjson",
        "$node_v8_path",
      ]
-@@ -150,7 +151,6 @@ template("node_gn_build") {
+@@ -150,7 +156,6 @@ template("node_gn_build") {
        "deps/llhttp",
        "deps/nbytes",
        "deps/nghttp2",
@@ -293,7 +333,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
        "deps/postject",
        "deps/simdutf",
        "deps/sqlite",
-@@ -159,7 +159,11 @@ template("node_gn_build") {
+@@ -159,7 +164,11 @@ template("node_gn_build") {
        "$node_v8_path:v8_libplatform",
      ]
  
@@ -305,7 +345,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -178,8 +182,10 @@ template("node_gn_build") {
+@@ -178,8 +187,10 @@ template("node_gn_build") {
        deps += [ "//third_party/icu" ]
      }
      if (node_use_openssl) {
@@ -318,7 +358,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
        sources += gypi_values.node_crypto_sources
      }
      if (node_enable_inspector) {
-@@ -276,6 +282,7 @@ template("node_gn_build") {
+@@ -276,6 +287,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -326,7 +366,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
      deps = [
        "deps/simdutf",
        "deps/uv",
-@@ -286,26 +293,75 @@ template("node_gn_build") {
+@@ -286,26 +298,75 @@ template("node_gn_build") {
        "src/embedded_data.cc",
        "src/embedded_data.h",
      ]
@@ -412,7 +452,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..de6ff5548ca5282199b7d85c11941c1f
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -319,11 +375,11 @@ template("node_gn_build") {
+@@ -319,11 +380,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  

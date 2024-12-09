@@ -16,7 +16,7 @@ patch:
 (cherry picked from commit 30329d06235a9f9733b1d4da479b403462d1b326)
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 28a15aa741ddd40c664aae641797e7cc2813442f..08fe98e10b7716c694bbc882299fe0ed9e282d73 100644
+index 3b041dd28ba32f028ecbb7d87b82f9ddee406b4f..5436c1a0f21e261f2eb2fdbb7f679d4f92a14ffd 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
 @@ -62,31 +62,6 @@ inline uv_loop_t* IsolateData::event_loop() const {
@@ -52,7 +52,7 @@ index 28a15aa741ddd40c664aae641797e7cc2813442f..08fe98e10b7716c694bbc882299fe0ed
    return &(wrapper_data_->cppgc_id);
  }
 diff --git a/src/env.cc b/src/env.cc
-index 665b064091d4cc42a4dc9ee5b0ea9e2f190338ca..4c8cb75945d82544ce2237d94cd1406d15efe424 100644
+index 130524cad713e8aa685feaa8c384fe4db9452500..21bc5b8a3326e759ce12b865e49029cf8ffe9995 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -23,6 +23,7 @@
@@ -63,7 +63,7 @@ index 665b064091d4cc42a4dc9ee5b0ea9e2f190338ca..4c8cb75945d82544ce2237d94cd1406d
  
  #include <algorithm>
  #include <atomic>
-@@ -71,7 +72,6 @@ using v8::TryCatch;
+@@ -70,7 +71,6 @@ using v8::TryCatch;
  using v8::Uint32;
  using v8::Undefined;
  using v8::Value;
@@ -146,7 +146,7 @@ index 665b064091d4cc42a4dc9ee5b0ea9e2f190338ca..4c8cb75945d82544ce2237d94cd1406d
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/env.h b/src/env.h
-index 49ca9c0042ccf22ad1fffa54f05fd443cbc681ba..945535d0dc40f1a32f7e3ecf7d50361e591ba6c8 100644
+index 3ef093e612b23d5e1e7cacf56055e5f9818bcb02..9dfc1364c7206377b6d0d088b456c357c23a9151 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -175,10 +175,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
