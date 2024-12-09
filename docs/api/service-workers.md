@@ -56,6 +56,17 @@ Returns:
 
 Emitted when a service worker has been registered. Can occur after a call to [`navigator.serviceWorker.register('/sw.js')`](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerContainer/register) successfully resolves or when a Chrome extension is loaded.
 
+#### Event: 'running-status-changed' _Experimental_
+
+Returns:
+
+* `details` Event\<\>
+  * `versionId` number - ID of the updated service worker version
+  * `runningStatus` string - Running status.
+    Possible values include `starting`, `running`, `stopping`, or `stopped`.
+
+Emitted when a service worker's running status has changed.
+
 ### Instance Methods
 
 The following methods are available on instances of `ServiceWorkers`:
@@ -64,10 +75,26 @@ The following methods are available on instances of `ServiceWorkers`:
 
 Returns `Record<number, ServiceWorkerInfo>` - A [ServiceWorkerInfo](structures/service-worker-info.md) object where the keys are the service worker version ID and the values are the information about that service worker.
 
-#### `serviceWorkers.getFromVersionID(versionId)`
+#### `serviceWorkers.getInfoFromVersionID(versionId)`
 
-* `versionId` number
+* `versionId` number - ID of the service worker version
 
 Returns [`ServiceWorkerInfo`](structures/service-worker-info.md) - Information about this service worker
 
 If the service worker does not exist or is not running this method will throw an exception.
+
+#### `serviceWorkers.getFromVersionID(versionId)` _Deprecated_
+
+* `versionId` number - ID of the service worker version
+
+Returns [`ServiceWorkerInfo`](structures/service-worker-info.md) - Information about this service worker
+
+If the service worker does not exist or is not running this method will throw an exception.
+
+**Deprecated:** Use the new `serviceWorkers.getInfoFromVersionID` API.
+
+#### `serviceWorkers.getWorkerFromVersionID(versionId)` _Experimental_
+
+* `versionId` number - ID of the service worker version
+
+Returns [`ServiceWorkerMain | undefined`](service-worker-main.md) - Instance of the service worker associated with the given version ID.
