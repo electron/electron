@@ -49,7 +49,7 @@ using electron::InspectableWebContentsViewMac;
 - (void)setTitle:(NSString*)title;
 - (NSString*)getTitle;
 
-- (void)redispatchContextMenuEvent:(base::apple::OwnedNSEvent)theEvent;
+- (void)setForceNonDraggable:(BOOL)forceNonDraggable;
 
 @end
 
