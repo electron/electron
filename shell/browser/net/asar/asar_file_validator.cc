@@ -50,7 +50,8 @@ void AsarFileValidator::OnRead(base::span<char> buffer,
 
   // |buffer| contains the read buffer. |result->bytes_read| is the actual
   // bytes number that |source| read that should be less than buffer.size().
-  auto hashme = base::as_bytes(buffer.subspan(0U, result->bytes_read));
+  auto hashme = base::as_bytes(
+      buffer.subspan(0U, static_cast<size_t>(result->bytes_read)));
 
   while (!std::empty(hashme)) {
     if (current_block_ > max_block_)
