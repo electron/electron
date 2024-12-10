@@ -44,8 +44,8 @@ std::vector<std::u16string> Clipboard::AvailableFormats(
 bool Clipboard::Has(const std::string& format_string,
                     gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  ui::ClipboardFormatType format(
-      ui::ClipboardFormatType::GetType(format_string));
+  ui::ClipboardFormatType format =
+      ui::ClipboardFormatType::CustomPlatformType(format_string);
   if (format.GetName().empty())
     format = ui::ClipboardFormatType::CustomPlatformType(format_string);
   return clipboard->IsFormatAvailable(format, GetClipboardBuffer(args),

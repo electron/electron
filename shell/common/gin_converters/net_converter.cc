@@ -595,9 +595,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
     if (!type)
       return false;
     if (*type == "rawData") {
-      const base::Value::BlobStorage* bytes = dict.FindBlob("bytes");
-      (*out)->AppendBytes(reinterpret_cast<const char*>(bytes->data()),
-                          base::checked_cast<int>(bytes->size()));
+      (*out)->AppendBytes(std::move(*dict.Find("bytes")).TakeBlob());
     } else if (*type == "file") {
       const std::string* file = dict.FindString("filePath");
       if (!file)

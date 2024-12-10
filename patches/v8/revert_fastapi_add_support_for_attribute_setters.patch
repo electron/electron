@@ -504,7 +504,7 @@ index 137e5c917cf7a56c89e70ed49d07e3134d1c8eac..00000000000000000000000000000000
 -assertEquals(1, fast_c_api.fast_call_count());
 -assertEquals(0, fast_c_api.slow_call_count());
 diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
-index 207322443192073f516787cbaf81e69c87d34a3c..2256e42324bdc91a4c92bfcfe9909c71f8e8533b 100644
+index 93fe36a988be33f1eab1e814c8f0ad62bfbcbb53..632a8f4f0475076f82f66c73a29d92d3e9fc8c50 100644
 --- a/test/mjsunit/mjsunit.status
 +++ b/test/mjsunit/mjsunit.status
 @@ -757,7 +757,6 @@
@@ -515,7 +515,7 @@ index 207322443192073f516787cbaf81e69c87d34a3c..2256e42324bdc91a4c92bfcfe9909c71
    'compiler/fast-api-interface-types': [SKIP],
    'compiler/regress-crbug-1201011': [SKIP],
    'compiler/regress-crbug-1201057': [SKIP],
-@@ -2359,7 +2358,6 @@
+@@ -2358,7 +2357,6 @@
    'regress/regress-1049982-2': [FAIL],
    # Maglev doesn't support fast API calls.
    'compiler/fast-api-annotations': [FAIL],

@@ -13,7 +13,7 @@ Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5979766
 This reverts commit c41f7a0ef99bd1c9752ee79923f634145ebc4153.
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index d76e52da63748acfb37b31179b3428de77362413..0b30c6568d1a38237f3629fb88a5c9cbf1650f98 100644
+index af1f0f3ad6ad0f2f0e7cb0123f9cd1ad0d1c80cb..b6a8bd3dfe53494502f13dbbfdfad1d79f621d40 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -1349,16 +1349,6 @@ Local<FunctionTemplate> FunctionTemplate::NewWithCFunctionOverloads(
@@ -669,10 +669,10 @@ index f24cd884bf7810aaed5e58b2044c2770653266f1..d79f6c801d2562a3cd65597d79050791
        // There is one return in addition to the return value of the C function,
        // which indicates if a fast API call actually happened.
 diff --git a/src/compiler/turboshaft/operations.h b/src/compiler/turboshaft/operations.h
-index a26611708f2dd162e127d7a7c9af9135892d0b40..b04639190b239af92a2845886e5852080e6e454a 100644
+index 1977d4d57a34781ae925d4f0ad0d09192b937dbe..d258f4b10f09b79c4aaf54ebff5e55cf8227aecc 100644
 --- a/src/compiler/turboshaft/operations.h
 +++ b/src/compiler/turboshaft/operations.h
-@@ -6386,16 +6386,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
+@@ -6403,16 +6403,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
  };
  
  struct FastApiCallParameters : public NON_EXPORTED_BASE(ZoneObject) {
@@ -705,7 +705,7 @@ index a26611708f2dd162e127d7a7c9af9135892d0b40..b04639190b239af92a2845886e585208
  };
  
 diff --git a/src/compiler/wasm-compiler.cc b/src/compiler/wasm-compiler.cc
-index 5ad805a11f7de73f06518ee3cf878ca492c0c652..2571f2800450cb8582198dc7cb7ef58311c52dae 100644
+index 2a1edc79d000801b21e89304eefc27d6ea6f4675..79b2e0b010609acbf0e0b8ac6835364a6448ff03 100644
 --- a/src/compiler/wasm-compiler.cc
 +++ b/src/compiler/wasm-compiler.cc
 @@ -8356,13 +8356,19 @@ class WasmWrapperGraphBuilder : public WasmGraphBuilder {
