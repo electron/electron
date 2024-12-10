@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 4d2d2e88d37e95a2b8ac0c1e0d7d1b0c1e8ad417..58a4b86746a345eeeca66969aec39791fb2d1a8c 100644
+index 123b5d982c3bca4ebd22b5e0e17b9d903969d7e1..0cacd08e17f8ab8c0e4951bcc4645cd7a3d2fea8 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1027,6 +1027,7 @@ component("base") {
@@ -560,10 +560,10 @@ index faddee802d6538c092ba96914184663ee57751c8..49238975848d58cd30727ec818bbac52
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 00ac46d858b7f83e53b1817028baba13719f04fe..31c9a53d5c7f09a7326ef57753b4a49f0239a7f8 100644
+index f22893989f09e40a8eb6a3df1d48d5438426c727..1212cd37acff7847ec4a7d3fb841426d5a77576d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -327,6 +327,7 @@ source_set("browser") {
+@@ -328,6 +328,7 @@ source_set("browser") {
      "//ui/strings:ax_strings",
      "//ui/touch_selection",
      "//v8:v8_version",
@@ -773,7 +773,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 4f0153bf27764fce04a56d2bce8f8e7a012d78f5..17955a2806d741905bc9507ea6d39fd012162d12 100644
+index 817e8ecdc6b15177d4cfa5cf44ad5fb1a5346393..106977501728d3216ec6f0a47005bc86c156f605 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -643,6 +643,7 @@ static_library("test_support") {
@@ -800,7 +800,7 @@ index 4f0153bf27764fce04a56d2bce8f8e7a012d78f5..17955a2806d741905bc9507ea6d39fd0
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3244,6 +3247,7 @@ test("content_unittests") {
+@@ -3245,6 +3248,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1373,7 +1373,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 679005c0d241207646a7aabad5ce896bc5c56558..39547524d6e77954c949d4ac05bec1f9596162fd 100644
+index 407169fd5aab525cb249890d49a23ac301ab61d8..19ca594bf376344bcf27a17dab276271379a30e5 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -409,6 +409,7 @@ component("core") {
