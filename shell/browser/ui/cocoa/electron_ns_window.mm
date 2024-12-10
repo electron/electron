@@ -6,6 +6,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "electron/mas.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/delayed_native_view_host.h"
 #include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
@@ -195,65 +196,21 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   // Draggable regions only respond to left-click dragging, but the system will
   // still suppress right-clicks in a draggable region. Temporarily disabling
   // draggable regions allows the underlying views to respond to right-click
-  // to potentially bring up a frame context menu. WebContentsView is now a
-  // sibling view of the NSWindow contentView, so we need to intercept the event
-  // here as NativeWidgetMacNSWindow won't forward it to the WebContentsView
-  // anymore.
+  // to potentially bring up a frame context menu.
   BOOL shouldDisableDraggable =
       (event.type == NSEventTypeRightMouseDown ||
        (event.type == NSEventTypeLeftMouseDown &&
         ([event modifierFlags] & NSEventModifierFlagControl)));
 
-  // Maybe disable draggable regions.
   if (shouldDisableDraggable) {
-    // We're looking for the NativeViewHost that contains the WebContentsView.
-    // There can be two possible NativeViewHosts - one containing the
-    // WebContentsView (present for BrowserWindows) and the one containing the
-    // VibrantView (present when vibrancy is set). We want the one containing
-    // the WebContentsView if it exists.
-    const auto& children = shell_->GetContentsView()->children();
-    const auto it = std::ranges::find_if(children, [&](views::View* child) {
-      if (std::strcmp(child->GetClassName(), "NativeViewHost") == 0) {
-        auto* nvh = static_cast<views::NativeViewHost*>(child);
-        return nvh->native_view().GetNativeNSView() != [self vibrantView];
-      }
-      return false;
-    });
-
-    if (it != children.end()) {
-      auto ns_view = static_cast<electron::DelayedNativeViewHost*>(*it)
-                         ->native_view()
-                         .GetNativeNSView();
-      if (ns_view) {
-        [static_cast<ElectronInspectableWebContentsView*>(ns_view)
-            setForceNonDraggable:true];
-      }
-    }
+    electron::api::WebContents::SetDisableDraggableRegions(true);
   }
 
   [super sendEvent:event];
 
-  // Maybe re-enable draggable regions.
   // Perform the same logic in case children have changed due to side effects.
   if (shouldDisableDraggable) {
-    const auto& children = shell_->GetContentsView()->children();
-    const auto it = std::ranges::find_if(children, [&](views::View* child) {
-      if (std::strcmp(child->GetClassName(), "NativeViewHost") == 0) {
-        auto* nvh = static_cast<views::NativeViewHost*>(child);
-        return nvh->native_view().GetNativeNSView() != [self vibrantView];
-      }
-      return false;
-    });
-
-    if (it != children.end()) {
-      auto ns_view = static_cast<electron::DelayedNativeViewHost*>(*it)
-                         ->native_view()
-                         .GetNativeNSView();
-      if (ns_view) {
-        [static_cast<ElectronInspectableWebContentsView*>(ns_view)
-            setForceNonDraggable:false];
-      }
-    }
+    electron::api::WebContents::SetDisableDraggableRegions(false);
   }
 }
 

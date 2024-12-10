@@ -298,16 +298,6 @@
     [self notifyDevToolsFocused];
 }
 
-- (void)setForceNonDraggable:(BOOL)forceNonDraggable {
-  content::WebContents* contents =
-      inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
-  electron::api::WebContents* api_contents =
-      electron::api::WebContents::From(contents);
-  if (api_contents) {
-    api_contents->SetForceNonDraggable(forceNonDraggable);
-  }
-}
-
 #pragma mark - NSWindowDelegate
 
 - (void)windowWillClose:(NSNotification*)notification {
