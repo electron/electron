@@ -6,10 +6,10 @@ Subject: Pass all globals through "require"
 (cherry picked from commit 7d015419cb7a0ecfe6728431a4ed2056cd411d62)
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 451b7c2195e7ad3ab0bde95259e054dc431d7de9..d49941881e6cfd8647a6d44a57e0daaf1c874702 100644
+index b0210e4d96348c77da9eabbe8f3d292337cd6ae4..ad8d41a06bde1ca22d0245fa49143e080365b5e1 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -182,6 +182,13 @@ const {
+@@ -183,6 +183,13 @@ const {
    CHAR_FORWARD_SLASH,
  } = require('internal/constants');
  

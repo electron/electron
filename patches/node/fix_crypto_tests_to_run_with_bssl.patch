@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/common/index.js b/test/common/index.js
-index 172cdb6b049824539a9850789e0e7c5baf613367..c29abc18191aec78ad8eb810093a9a4ef9e854e4 100644
+index b95e812c5a9fab59f742e1557e9f218155638af4..6d2566c43f16493cbb2a0f9469ed386c41686782 100644
 --- a/test/common/index.js
 +++ b/test/common/index.js
 @@ -65,6 +65,8 @@ const opensslVersionNumber = (major = 0, minor = 0, patch = 0) => {
@@ -23,7 +23,7 @@ index 172cdb6b049824539a9850789e0e7c5baf613367..c29abc18191aec78ad8eb810093a9a4e
  let OPENSSL_VERSION_NUMBER;
  const hasOpenSSL = (major = 0, minor = 0, patch = 0) => {
    if (!hasCrypto) return false;
-@@ -996,6 +998,7 @@ const common = {
+@@ -1008,6 +1010,7 @@ const common = {
    mustNotMutateObjectDeep,
    mustSucceed,
    nodeProcessAborted,
@@ -395,7 +395,7 @@ index 338a19b0e88ad6f08d2f6b6a5d38b9980996ce11..a4ee215575d072450ba66c558ddca88b
    };
    assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index 9dd586a1a1f9a00d9bb0af5b0532e81e7b96a5ce..a37e6d50914345829c8260a97949cee7d17ab676 100644
+index 8a263ec3350f5540591ac02e70fa2f552b9ac477..dcc4c2ec816d28f1b27df1c358cfce66f1a3a03b 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -29,7 +29,7 @@ const keySize = 2048;
@@ -471,10 +471,21 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f639056b21ee3b 100644
+index 15e1f53bb05faf60fa808eb5901591d1512edf3c..329f0d00c869cd19580acea18c904cf9900fb816 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
-@@ -111,7 +111,7 @@ const der = Buffer.from(
+@@ -96,8 +96,10 @@ const der = Buffer.from(
+   assert.strictEqual(x509.infoAccess, infoAccessCheck);
+   assert.strictEqual(x509.validFrom, 'Sep  3 21:40:37 2022 GMT');
+   assert.strictEqual(x509.validTo, 'Jun 17 21:40:37 2296 GMT');
++  if (!common.openSSLIsBoringSSL) {
+   assert.deepStrictEqual(x509.validFromDate, new Date('2022-09-03T21:40:37Z'));
+   assert.deepStrictEqual(x509.validToDate, new Date('2296-06-17T21:40:37Z'));
++  }
+   assert.strictEqual(
+     x509.fingerprint,
+     '8B:89:16:C4:99:87:D2:13:1A:64:94:36:38:A5:32:01:F0:95:3B:53');
+@@ -113,7 +115,7 @@ const der = Buffer.from(
      '5A:42:63:E0:21:2F:D6:70:63:07:96:6F:27:A7:78:12:08:02:7A:8B'
    );
    assert.strictEqual(x509.keyUsage, undefined);
@@ -483,7 +494,7 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
  
    assert.deepStrictEqual(x509.raw, der);
  
-@@ -253,6 +253,16 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -255,6 +257,16 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    });
    mc.port2.postMessage(x509);
  
@@ -500,7 +511,7 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
    // Verify that legacy encoding works
    const legacyObjectCheck = {
      subject: Object.assign({ __proto__: null }, {
-@@ -277,15 +287,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -279,15 +291,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
        'OCSP - URI': ['http://ocsp.nodejs.org/'],
        'CA Issuers - URI': ['http://ca.nodejs.org/ca.cert']
      }),
@@ -517,7 +528,7 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
      bits: 2048,
      exponent: '0x10001',
      valid_from: 'Sep  3 21:40:37 2022 GMT',
-@@ -298,7 +300,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -300,7 +304,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
        '51:62:18:39:E2:E2:77:F5:86:11:E8:C0:CA:54:43:7C:76:83:19:05:D0:03:' +
        '24:21:B8:EB:14:61:FB:24:16:EB:BD:51:1A:17:91:04:30:03:EB:68:5F:DC:' +
        '86:E1:D1:7C:FB:AF:78:ED:63:5F:29:9C:32:AF:A1:8E:22:96:D1:02',
@@ -526,7 +537,7 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
    };
  
    const legacyObject = x509.toLegacyObject();
-@@ -307,7 +309,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -309,7 +313,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    assert.deepStrictEqual(legacyObject.subject, legacyObjectCheck.subject);
    assert.deepStrictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
    assert.deepStrictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
@@ -535,7 +546,7 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
    assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
    assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
    assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -316,11 +318,12 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -318,11 +322,12 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    assert.strictEqual(
      legacyObject.fingerprint256,
      legacyObjectCheck.fingerprint256);
@@ -546,17 +557,40 @@ index 89a7521544f7051edc1779138551bbad1972b3fb..91df6acc65d4003999f29f0fa5f63905
 +    legacyObjectCheck.serialNumberPattern);
  }
  
-+/*
++if (!common.openSSLIsBoringSSL) {
  {
    // This X.509 Certificate can be parsed by OpenSSL because it contains a
    // structurally sound TBSCertificate structure. However, the SPKI field of the
-@@ -359,3 +362,4 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
+@@ -361,6 +366,7 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
  
    assert.strictEqual(cert.checkIssued(cert), false);
  }
-+*/
++}
+ 
+ {
+   // Test date parsing of `validFromDate` and `validToDate` fields, according to RFC 5280.
+@@ -398,8 +404,10 @@ UidvpWWipVLZgK+oDks+bKTobcoXGW9oXobiIYqslXPy
+ -----END CERTIFICATE-----`.trim();
+   const c1 = new X509Certificate(certPemUTCTime);
+ 
++  if (!common.openSSLIsBoringSSL) {
+   assert.deepStrictEqual(c1.validFromDate, new Date('1949-12-25T23:59:58Z'));
+   assert.deepStrictEqual(c1.validToDate, new Date('1950-01-01T23:59:58Z'));
++  }
+ 
+   // The GeneralizedTime format is used for dates in 2050 or later.
+   const certPemGeneralizedTime = `-----BEGIN CERTIFICATE-----
+@@ -433,6 +441,8 @@ CWwQO8JZjJqFtqtuzy2n+gLCvqePgG/gmSqHOPm2ZbLW
+ -----END CERTIFICATE-----`.trim();
+   const c2 = new X509Certificate(certPemGeneralizedTime);
+ 
++  if (!common.openSSLIsBoringSSL) {
+   assert.deepStrictEqual(c2.validFromDate, new Date('2049-12-26T00:00:01Z'));
+   assert.deepStrictEqual(c2.validToDate, new Date('2050-01-02T00:00:01Z'));
++  }
+ }
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
-index 4271121881379b6c6892e89e520345f77e4181df..6c87a1ac687aa37d4ba245d1b6fc746a5f1eeffc 100644
+index 4271121881379b6c6892e89e520345f77e4181df..7a17285deee18ffbccf1d01d9d1b7b87e561bffa 100644
 --- a/test/parallel/test-crypto.js
 +++ b/test/parallel/test-crypto.js
 @@ -61,7 +61,7 @@ assert.throws(() => {
@@ -595,23 +629,14 @@ index 4271121881379b6c6892e89e520345f77e4181df..6c87a1ac687aa37d4ba245d1b6fc746a
  validateList(crypto.getHashes());
  // Make sure all of the hashes are supported by OpenSSL
  for (const algo of crypto.getHashes())
-@@ -195,7 +193,7 @@ assert.throws(
-     return true;
+@@ -196,6 +194,7 @@ assert.throws(
    }
  );
--
-+/*
+ 
++if (!common.openSSLIsBoringSSL) {
  assert.throws(() => {
    const priv = [
      '-----BEGIN RSA PRIVATE KEY-----',
-@@ -208,6 +206,7 @@ assert.throws(() => {
-   ].join('\n');
-   crypto.createSign('SHA256').update('test').sign(priv);
- }, (err) => {
-+  console.log(err)
-   if (!common.hasOpenSSL3)
-     assert.ok(!('opensslErrorStack' in err));
-   assert.throws(() => { throw err; }, common.hasOpenSSL3 ? {
 @@ -216,10 +215,10 @@ assert.throws(() => {
      library: 'rsa routines',
    } : {
@@ -632,7 +657,7 @@ index 4271121881379b6c6892e89e520345f77e4181df..6c87a1ac687aa37d4ba245d1b6fc746a
    });
  }
 -
-+*/
++}
  // Make sure memory isn't released before being returned
  console.log(crypto.randomBytes(16));
  
@@ -725,7 +750,7 @@ index b06f2fa2c53ea72f9a66f0d002dd9281d0259a0f..864fffeebfad75d95416fd47efdea7f2
  
  const server = https.createServer(opts, (req, res) => {
 diff --git a/test/parallel/test-webcrypto-derivebits.js b/test/parallel/test-webcrypto-derivebits.js
-index eb09bc24f0cb8244b05987e3a7c1d203360d3a38..011990db171faa708c5211f6ab9ae1ac0e0ab90e 100644
+index eb09bc24f0cb8244b05987e3a7c1d203360d3a38..8c251ff2371fb59bf679160574e1c5dc1b4b2665 100644
 --- a/test/parallel/test-webcrypto-derivebits.js
 +++ b/test/parallel/test-webcrypto-derivebits.js
 @@ -101,8 +101,9 @@ const { subtle } = globalThis.crypto;
@@ -739,11 +764,6 @@ index eb09bc24f0cb8244b05987e3a7c1d203360d3a38..011990db171faa708c5211f6ab9ae1ac
    async function test(name) {
      const [alice, bob] = await Promise.all([
        subtle.generateKey({ name }, true, ['deriveBits']),
-@@ -126,3 +127,4 @@ const { subtle } = globalThis.crypto;
-   test('X25519').then(common.mustCall());
-   test('X448').then(common.mustCall());
- }
-+
 diff --git a/test/parallel/test-webcrypto-derivekey.js b/test/parallel/test-webcrypto-derivekey.js
 index 558d37d90d5796b30101d1b512c9df3e7661d0db..f42bf8f4be0b439dd7e7c8d0f6f8a41e01588870 100644
 --- a/test/parallel/test-webcrypto-derivekey.js
