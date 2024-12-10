@@ -49,8 +49,6 @@ using electron::InspectableWebContentsViewMac;
 - (void)setTitle:(NSString*)title;
 - (NSString*)getTitle;
 
-- (void)redispatchContextMenuEvent:(base::apple::OwnedNSEvent)theEvent;
-
 @end
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_INSPECTABLE_WEB_CONTENTS_VIEW_H_
