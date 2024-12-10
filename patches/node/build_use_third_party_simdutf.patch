@@ -6,14 +6,14 @@ Subject: build: use third_party/simdutf
 use the Chromium version of simdutf to avoid duplicate symbols
 
 diff --git a/node.gni b/node.gni
-index 99ec540ec41ddf5682eed7618ba87d6935b3b982..d42bef032d2c410f790aae8949d2c2267c58751b 100644
+index 99ec540ec41ddf5682eed7618ba87d6935b3b982..274e627fe27b318218f10e982ca5a0773a9075a5 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -12,6 +12,8 @@ declare_args() {
  
    node_crypto_path = "//third_party/boringssl"
  
-+  node_simdutf_path = "//third_party/simdutf:simdutf"
++  node_simdutf_path = "//third_party/simdutf"
 +
    # The NODE_MODULE_VERSION defined in node_version.h.
    node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")
