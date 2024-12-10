@@ -17,10 +17,10 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index e0719720071002bc205516253fde64abf97a16a8..09d014c7d3050c940840af6dd363edab0f22438e 100644
+index 38882b4053305f305aaad933af9c43f2964b3df3..13bce78bf95effa461e709080703d231f91bc096 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -169,6 +169,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
+@@ -170,6 +170,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
    allow_cookies_from_browser = other.allow_cookies_from_browser;
    include_request_cookies_with_response =
        other.include_request_cookies_with_response;
@@ -28,7 +28,7 @@ index e0719720071002bc205516253fde64abf97a16a8..09d014c7d3050c940840af6dd363edab
    cookie_observer =
        Clone(&const_cast<mojo::PendingRemote<mojom::CookieAccessObserver>&>(
            other.cookie_observer));
-@@ -203,6 +204,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
+@@ -204,6 +205,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
      const TrustedParams& other) const {
    return isolation_info.IsEqualForTesting(other.isolation_info) &&
           disable_secure_dns == other.disable_secure_dns &&
@@ -112,10 +112,10 @@ index 5c4b8a05034f8defacbc13671fe9bc92f76ade5a..e7390e01f113755613f42d592b36108b
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 812ad7df20f420033f7d1517a560ececa84c94bd..d425623e120c0fce4a2f32357090910fb8df3790 100644
+index c0be8ab2e57fbaf87e2761a290ec4179606d4aa9..e8ac75b21deb02c9b96aec8dda77d715394fcca8 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -612,6 +612,9 @@ URLLoader::URLLoader(
+@@ -613,6 +613,9 @@ URLLoader::URLLoader(
            mojo::SimpleWatcher::ArmingPolicy::MANUAL,
            base::SequencedTaskRunner::GetCurrentDefault()),
        per_factory_orb_state_(context.GetMutableOrbState()),
@@ -125,7 +125,7 @@ index 812ad7df20f420033f7d1517a560ececa84c94bd..d425623e120c0fce4a2f32357090910f
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -891,7 +894,7 @@ void URLLoader::ConfigureRequest(
+@@ -892,7 +895,7 @@ void URLLoader::ConfigureRequest(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -134,7 +134,7 @@ index 812ad7df20f420033f7d1517a560ececa84c94bd..d425623e120c0fce4a2f32357090910f
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1884,6 +1887,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1887,6 +1890,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -155,10 +155,10 @@ index 812ad7df20f420033f7d1517a560ececa84c94bd..d425623e120c0fce4a2f32357090910f
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 3647c75f50a85522749fdc5c98c4d25e5f319c34..93d4bc0284e2361f6890078764d68c3ba75d7941 100644
+index b350754a1425f2b5b7bf2f204848f17bd3ff4ff4..754fcd499179eacdf913fcffc5564565c4ff7ff3 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -712,6 +712,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -715,6 +715,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

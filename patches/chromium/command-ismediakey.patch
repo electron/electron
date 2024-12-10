@@ -67,10 +67,10 @@ index 90abe5d0bfa1ca0f541e42cb281b7b6385fc098e..4f3fa5107534cdeff2b416f9c2f833db
  
    bool is_listening_ = false;
 diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/browser/extensions/global_shortcut_listener_win.cc
-index ac1142e268b88b7332f556344491288d8539a5c9..c23852622e292b056d8dbbeb2a83dd29de1743fd 100644
+index 687727ed2ddaf09a0d401706d214ebcf096998ea..8e52938dcc6d5f5c4d521e3e6b7d3addc40ac993 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_win.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
-@@ -64,6 +64,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
+@@ -63,6 +63,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
    modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
@@ -79,7 +79,7 @@ index ac1142e268b88b7332f556344491288d8539a5c9..c23852622e292b056d8dbbeb2a83dd29
    ui::Accelerator accelerator(
        ui::KeyboardCodeForWindowsKeyCode(key_code), modifiers);
  
-@@ -94,6 +96,7 @@ bool GlobalShortcutListenerWin::RegisterAcceleratorImpl(
+@@ -93,6 +95,7 @@ bool GlobalShortcutListenerWin::RegisterAcceleratorImpl(
    modifiers |= accelerator.IsShiftDown() ? MOD_SHIFT : 0;
    modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
    modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;
@@ -88,7 +88,7 @@ index ac1142e268b88b7332f556344491288d8539a5c9..c23852622e292b056d8dbbeb2a83dd29
    // Create an observer that registers a hot key for |accelerator|.
    std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 7f4a84483dba39f090e48af34d15d930fbc21b56..90528a9bcde4c39c122de51d049ef62e812245db 100644
+index 0f09c6de2a74d4b603862f0962c03dbe6903ea20..b329df28207430ccdaf889b672bcd3d875faad18 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
 @@ -413,6 +413,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {

@@ -289,6 +289,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const GURL& url,
       scoped_refptr<net::HttpResponseHeaders> response_headers,
       bool first_auth_attempt,
+      content::GuestPageHolder* guest_page_holder,
       LoginAuthRequiredCallback auth_required_callback) override;
   void SiteInstanceGotProcessAndSite(
       content::SiteInstance* site_instance) override;

@@ -64,7 +64,7 @@ index 31f5b160e4cd755cfb56a62b04261ee1bee80277..4305ba61d2489c5817785077d1ace876
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 0e036b178d8ea9bbe5564e8bbdb394b8a0d4cb3d..23a95bde41775561d4568850760989065750cd9a 100644
+index 0e036b178d8ea9bbe5564e8bbdb394b8a0d4cb3d..9b0cb6c19b2785a3950ed70a0cd13a9c6e50fb50 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -615,6 +615,7 @@ class ProcessSingleton::LinuxWatcher
@@ -118,7 +118,7 @@ index 0e036b178d8ea9bbe5564e8bbdb394b8a0d4cb3d..23a95bde41775561d456885076098906
 +    size_t additional_data_size;
 +    base::StringToSizeT(tokens[1 + num_args], &additional_data_size);
 +    std::string remaining_args = base::JoinString(
-+        base::make_span(tokens.begin() + 2 + num_args, tokens.end()),
++        base::span(tokens.begin() + 2 + num_args, tokens.end()),
 +        std::string(1, kTokenDelimiter));
 +    const uint8_t* additional_data_bits =
 +        reinterpret_cast<const uint8_t*>(remaining_args.c_str());

@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f0fc2f51860e38f546159f94d5d180aa04a85e79..f25fe82a15c5ef51e0c74d5ad68daa359ca75394 100644
+index 6c661c1766f987297ef1fd5c45069a63209826a3..8f121847abac0005eb3d2137fa48591bec57f637 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -171,6 +171,8 @@ viz_component("service") {
@@ -521,7 +521,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 276664b44f2fd1995efbfedf76243b9904e12663..aac4bb2e229d9b96081f917c314091b77b68c21b 100644
+index 5e127e0652230081b60205691117c71ab56440d5..0b0449e21987e3d90b15b232eb1d26b45c4debfa 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -101,7 +101,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -619,13 +619,13 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index c0809410472ccb96704271ce1d10a06ff27a951d..497f3299ba459da88ff9c2abdefdd27480324b0e 100644
+index ad696fdb49e0045302c9c9a7f2f1cf66c550c13a..970768eaa311139d0b27f5be893d601e20052825 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -89,6 +89,7 @@ namespace mojom {
- class DisplayPrivate;
+@@ -89,6 +89,7 @@ class DisplayPrivate;
  class ExternalBeginFrameController;
  }  // namespace mojom
+ 
 +class HostDisplayClient;
  class HostFrameSinkManager;
  class LocalSurfaceId;

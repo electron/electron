@@ -78,10 +78,10 @@ index 8199839240ecc0abf5b0ce5e042f83bd31cafe9a..40269dcdfb2355067f20f25f4f4f9f31
    virtual bool AllowScriptExtensionForServiceWorker(
        const WebSecurityOrigin& script_origin) {
 diff --git a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-index 0ed1c87e5573a041eed9fa30a7b49001cf565a86..8986877f95680b7d6864ba5d9f2d73f7667b8918 100644
+index cb62ef39250ef824e5a3793cdbacc1edfab1648e..3b66d1f28e79a5ddbcd18dbab57eb347480bd7c6 100644
 --- a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-@@ -302,6 +302,7 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
+@@ -303,6 +303,7 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
    V8PerContextData* per_context_data = script_state_->PerContextData();
    std::ignore =
        per_context_data->ConstructorForType(global_scope_->GetWrapperTypeInfo());
