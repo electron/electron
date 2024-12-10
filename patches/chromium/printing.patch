@@ -860,10 +860,10 @@ index b8c803184f267d87696c4e72c3d993ff3b69d95b..7278dfae56305cc8669fc2240563450f
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 71158b55dacc7a4ba1f08c8212b7f9322326ceb8..e51f38935bbab9e140b6083452f43dc0be7b31d5 100644
+index 31c9a53d5c7f09a7326ef57753b4a49f0239a7f8..7e913765d72087d57165efe59bca70584f43c836 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3035,8 +3035,9 @@ source_set("browser") {
+@@ -3041,8 +3041,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -911,18 +911,3 @@ index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890f
    // Does bookkeeping when an error occurs.
    virtual mojom::ResultCode OnError();
  
-diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index 1e15568ad872c01c7c588ced81897f8dc229247a..ca528863a2dab2f437bbe95b343ccd334750d410 100644
---- a/sandbox/policy/mac/sandbox_mac.mm
-+++ b/sandbox/policy/mac/sandbox_mac.mm
-@@ -36,6 +36,10 @@
- #include "sandbox/policy/mac/utility.sb.h"
- #include "sandbox/policy/mojom/sandbox.mojom.h"
- 
-+#if BUILDFLAG(ENABLE_PRINTING)
-+#include "sandbox/policy/mac/print_backend.sb.h"
-+#endif
-+
- namespace sandbox::policy {
- 
- base::FilePath GetCanonicalPath(const base::FilePath& path) {

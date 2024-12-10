@@ -3833,7 +3833,8 @@ void WebContents::PDFReadyToPrint() {
   Emit("-pdf-ready-to-print");
 }
 
-void WebContents::OnInputEvent(const blink::WebInputEvent& event) {
+void WebContents::OnInputEvent(const content::RenderWidgetHost& rfh,
+                               const blink::WebInputEvent& event) {
   Emit("input-event", event);
 }
 

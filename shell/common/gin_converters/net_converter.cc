@@ -43,7 +43,7 @@ namespace {
 bool CertFromData(const std::string& data,
                   scoped_refptr<net::X509Certificate>* out) {
   auto cert_list = net::X509Certificate::CreateCertificateListFromBytes(
-      base::as_bytes(base::make_span(data)),
+      base::as_byte_span(data),
       net::X509Certificate::FORMAT_SINGLE_CERTIFICATE);
   if (cert_list.empty())
     return false;

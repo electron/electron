@@ -1,0 +1,525 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <cwatford@slack-corp.com>
+Date: Tue, 26 Nov 2024 16:06:53 -0700
+Subject: Revert "[fastapi] Add support for attribute setters"
+
+Revert this until Node.js decides how to proceed and then pick up their fix.
+
+Refs: https://github.com/nodejs/node/issues/55452
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5956408
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5982984
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5979766
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/6023139
+
+This reverts commit 6520094871895fbafe91403ceb700ff97fdfd413.
+
+diff --git a/src/compiler/fast-api-calls.cc b/src/compiler/fast-api-calls.cc
+index 5da23c3d55bc105ed380762dd515f8856cbe5933..2dc99dc83e0f78d2bbb0875cc04064b565deaf06 100644
+--- a/src/compiler/fast-api-calls.cc
++++ b/src/compiler/fast-api-calls.cc
+@@ -379,46 +379,6 @@ Node* BuildFastApiCall(Isolate* isolate, Graph* graph,
+   return builder.Build(c_function, data_argument);
+ }
+ 
+-FastApiCallFunction GetFastApiCallTarget(
+-    JSHeapBroker* broker, FunctionTemplateInfoRef function_template_info,
+-    size_t arg_count) {
+-  if (!v8_flags.turbo_fast_api_calls) return {0, nullptr};
+-
+-  static constexpr int kReceiver = 1;
+-
+-  const ZoneVector<const CFunctionInfo*>& signatures =
+-      function_template_info.c_signatures(broker);
+-  const size_t overloads_count = signatures.size();
+-
+-  // Only considers entries whose type list length matches arg_count.
+-  for (size_t i = 0; i < overloads_count; i++) {
+-    const CFunctionInfo* c_signature = signatures[i];
+-    const size_t len = c_signature->ArgumentCount() - kReceiver;
+-    bool optimize_to_fast_call =
+-        (len == arg_count) &&
+-        fast_api_call::CanOptimizeFastSignature(c_signature);
+-
+-    if (optimize_to_fast_call) {
+-      // TODO(nicohartmann@): {Flags::kEnforceRangeBit} is currently only
+-      // supported on 64 bit architectures. We should support this on 32 bit
+-      // architectures.
+-#if defined(V8_TARGET_ARCH_32_BIT)
+-      for (unsigned int i = 0; i < c_signature->ArgumentCount(); ++i) {
+-        const uint8_t flags =
+-            static_cast<uint8_t>(c_signature->ArgumentInfo(i).GetFlags());
+-        if (flags & static_cast<uint8_t>(CTypeInfo::Flags::kEnforceRangeBit)) {
+-          // Bailout
+-          return {0, nullptr};
+-        }
+-      }
+-#endif
+-      return {function_template_info.c_functions(broker)[i], c_signature};
+-    }
+-  }
+-
+-  return {0, nullptr};
+-}
+-
+ }  // namespace fast_api_call
+ }  // namespace compiler
+ }  // namespace internal
+diff --git a/src/compiler/fast-api-calls.h b/src/compiler/fast-api-calls.h
+index b49322d91d06b7fed34fe41b6ac7d31dcc7783c4..171e66c427991bfe7db5c2875d12559767a24b55 100644
+--- a/src/compiler/fast-api-calls.h
++++ b/src/compiler/fast-api-calls.h
+@@ -55,10 +55,6 @@ Node* BuildFastApiCall(Isolate* isolate, Graph* graph,
+                        const InitializeOptions& initialize_options,
+                        const GenerateSlowApiCall& generate_slow_api_call);
+ 
+-FastApiCallFunction GetFastApiCallTarget(
+-    JSHeapBroker* broker, FunctionTemplateInfoRef function_template_info,
+-    size_t arg_count);
+-
+ }  // namespace fast_api_call
+ }  // namespace compiler
+ }  // namespace internal
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index 48663a4fcc284b7d832849e0c467019b384a31ff..d75a38769d582cd6e5a807f9670732dc92d77b7e 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -3877,6 +3877,58 @@ Reduction JSCallReducer::ReduceCallWasmFunction(Node* node,
+ }
+ #endif  // V8_ENABLE_WEBASSEMBLY
+ 
++// Given a FunctionTemplateInfo, checks whether the fast API call can be
++// optimized, applying the initial step of the overload resolution algorithm:
++// Given an overload set function_template_info.c_signatures, and a list of
++// arguments of size arg_count:
++// 1. Remove from the set all entries whose type list is not of length
++//    arg_count.
++// Returns an array with the indexes of the remaining entries in S, which
++// represents the set of "optimizable" function overloads.
++
++FastApiCallFunction GetFastApiCallTarget(
++    JSHeapBroker* broker, FunctionTemplateInfoRef function_template_info,
++    size_t arg_count) {
++  if (!v8_flags.turbo_fast_api_calls) return {0, nullptr};
++
++  static constexpr int kReceiver = 1;
++
++  ZoneVector<Address> functions = function_template_info.c_functions(broker);
++  ZoneVector<const CFunctionInfo*> signatures =
++      function_template_info.c_signatures(broker);
++  const size_t overloads_count = signatures.size();
++
++  // Only considers entries whose type list length matches arg_count.
++  for (size_t i = 0; i < overloads_count; i++) {
++    const CFunctionInfo* c_signature = signatures[i];
++    const size_t len = c_signature->ArgumentCount() - kReceiver;
++    bool optimize_to_fast_call = (len == arg_count);
++
++    optimize_to_fast_call =
++        optimize_to_fast_call &&
++        fast_api_call::CanOptimizeFastSignature(c_signature);
++
++    if (optimize_to_fast_call) {
++      // TODO(nicohartmann@): {Flags::kEnforceRangeBit} is currently only
++      // supported on 64 bit architectures. We should support this on 32 bit
++      // architectures.
++#if defined(V8_TARGET_ARCH_32_BIT)
++      for (unsigned int i = 0; i < c_signature->ArgumentCount(); ++i) {
++        const uint8_t flags =
++            static_cast<uint8_t>(c_signature->ArgumentInfo(i).GetFlags());
++        if (flags & static_cast<uint8_t>(CTypeInfo::Flags::kEnforceRangeBit)) {
++          // Bailout
++          return {0, nullptr};
++        }
++      }
++#endif
++      return {functions[i], c_signature};
++    }
++  }
++
++  return {0, nullptr};
++}
++
+ Reduction JSCallReducer::ReduceCallApiFunction(Node* node,
+                                                SharedFunctionInfoRef shared) {
+   JSCallNode n(node);
+@@ -4057,8 +4109,8 @@ Reduction JSCallReducer::ReduceCallApiFunction(Node* node,
+   }
+ 
+   // Handles overloaded functions.
+-  FastApiCallFunction c_function = fast_api_call::GetFastApiCallTarget(
+-      broker(), function_template_info, argc);
++  FastApiCallFunction c_function =
++      GetFastApiCallTarget(broker(), function_template_info, argc);
+ 
+   if (c_function.address) {
+     FastApiCallReducerAssembler a(this, node, function_template_info,
+diff --git a/src/compiler/js-native-context-specialization.cc b/src/compiler/js-native-context-specialization.cc
+index 5b9a78e7a9a728842148eebe733501174c0c94a1..95c44eb81f9eba481b7c795d0a8becb1aa757a90 100644
+--- a/src/compiler/js-native-context-specialization.cc
++++ b/src/compiler/js-native-context-specialization.cc
+@@ -16,7 +16,6 @@
+ #include "src/compiler/allocation-builder.h"
+ #include "src/compiler/common-operator.h"
+ #include "src/compiler/compilation-dependencies.h"
+-#include "src/compiler/fast-api-calls.h"
+ #include "src/compiler/frame-states.h"
+ #include "src/compiler/graph-assembler.h"
+ #include "src/compiler/js-graph.h"
+@@ -1463,7 +1462,7 @@ Reduction JSNativeContextSpecialization::ReduceMegaDOMPropertyAccess(
+ 
+   value = InlineApiCall(lookup_start_object, lookup_start_object, frame_state,
+                         nullptr /*value*/, &effect, &control,
+-                        function_template_info, source);
++                        function_template_info);
+   ReplaceWithValue(node, value, effect, control);
+   return Replace(value);
+ }
+@@ -2835,8 +2834,7 @@ Node* JSNativeContextSpecialization::InlinePropertyGetterCall(
+                                  access_info.api_holder().value(), broker())
+                            : receiver;
+     value = InlineApiCall(receiver, api_holder, frame_state, nullptr, effect,
+-                          control, constant.AsFunctionTemplateInfo(),
+-                          FeedbackSource());
++                          control, constant.AsFunctionTemplateInfo());
+   }
+   // Remember to rewire the IfException edge if this is inside a try-block.
+   if (if_exceptions != nullptr) {
+@@ -2871,7 +2869,7 @@ void JSNativeContextSpecialization::InlinePropertySetterCall(
+                                  access_info.api_holder().value(), broker())
+                            : receiver;
+     InlineApiCall(receiver, api_holder, frame_state, value, effect, control,
+-                  constant.AsFunctionTemplateInfo(), FeedbackSource());
++                  constant.AsFunctionTemplateInfo());
+   }
+   // Remember to rewire the IfException edge if this is inside a try-block.
+   if (if_exceptions != nullptr) {
+@@ -2884,66 +2882,10 @@ void JSNativeContextSpecialization::InlinePropertySetterCall(
+   }
+ }
+ 
+-namespace {
+-CallDescriptor* PushRegularApiCallInputs(
+-    JSGraph* jsgraph, JSHeapBroker* broker, Node* receiver, Node* api_holder,
+-    Node* frame_state, Node* value, Node** effect, Node** control,
+-    FunctionTemplateInfoRef function_template_info, Node** inputs,
+-    int& cursor) {
+-  // Only setters have a value.
+-  int const argc = value == nullptr ? 0 : 1;
+-
+-  // The builtin always expects the receiver as the first param on the stack.
+-  bool no_profiling = broker->dependencies()->DependOnNoProfilingProtector();
+-  Callable call_api_callback = Builtins::CallableFor(
+-      jsgraph->isolate(), no_profiling
+-                              ? Builtin::kCallApiCallbackOptimizedNoProfiling
+-                              : Builtin::kCallApiCallbackOptimized);
+-
+-  Node* func_templ =
+-      jsgraph->HeapConstantNoHole(function_template_info.object());
+-  ApiFunction function(function_template_info.callback(broker));
+-  Node* function_reference = jsgraph->graph()->NewNode(
+-      jsgraph->common()->ExternalConstant(ExternalReference::Create(
+-          jsgraph->isolate(), &function, ExternalReference::DIRECT_API_CALL,
+-          function_template_info.c_functions(broker).data(),
+-          function_template_info.c_signatures(broker).data(),
+-          static_cast<uint32_t>(
+-              function_template_info.c_functions(broker).size()))));
+-  Node* code = jsgraph->HeapConstantNoHole(call_api_callback.code());
+-
+-  // Add CallApiCallbackStub's register argument as well.
+-  Node* context =
+-      jsgraph->ConstantNoHole(broker->target_native_context(), broker);
+-  inputs[cursor++] = code;
+-  inputs[cursor++] = function_reference;
+-  inputs[cursor++] = jsgraph->ConstantNoHole(argc);
+-  inputs[cursor++] = func_templ;
+-  inputs[cursor++] = api_holder;
+-  inputs[cursor++] = receiver;
+-  if (value) {
+-    inputs[cursor++] = value;
+-  }
+-  inputs[cursor++] = context;
+-  inputs[cursor++] = frame_state;
+-  inputs[cursor++] = *effect;
+-  inputs[cursor++] = *control;
+-
+-  CallInterfaceDescriptor call_interface_descriptor =
+-      call_api_callback.descriptor();
+-  return Linkage::GetStubCallDescriptor(
+-      jsgraph->zone(), call_interface_descriptor,
+-      call_interface_descriptor.GetStackParameterCount() + argc +
+-          1 /* implicit receiver */,
+-      CallDescriptor::kNeedsFrameState);
+-}
+-}  // namespace
+-
+ Node* JSNativeContextSpecialization::InlineApiCall(
+     Node* receiver, Node* api_holder, Node* frame_state, Node* value,
+     Node** effect, Node** control,
+-    FunctionTemplateInfoRef function_template_info,
+-    const FeedbackSource& feedback) {
++    FunctionTemplateInfoRef function_template_info) {
+   compiler::OptionalObjectRef maybe_callback_data =
+       function_template_info.callback_data(broker());
+   // Check if the function has an associated C++ code to execute.
+@@ -2957,44 +2899,45 @@ Node* JSNativeContextSpecialization::InlineApiCall(
+ 
+   // Only setters have a value.
+   int const argc = value == nullptr ? 0 : 1;
++  // The builtin always expects the receiver as the first param on the stack.
++  bool no_profiling = broker()->dependencies()->DependOnNoProfilingProtector();
++  Callable call_api_callback = Builtins::CallableFor(
++      isolate(), no_profiling ? Builtin::kCallApiCallbackOptimizedNoProfiling
++                              : Builtin::kCallApiCallbackOptimized);
++  CallInterfaceDescriptor call_interface_descriptor =
++      call_api_callback.descriptor();
++  auto call_descriptor = Linkage::GetStubCallDescriptor(
++      graph()->zone(), call_interface_descriptor,
++      call_interface_descriptor.GetStackParameterCount() + argc +
++          1 /* implicit receiver */,
++      CallDescriptor::kNeedsFrameState);
+ 
+-  // Handles overloaded functions.
+-  FastApiCallFunction c_function = fast_api_call::GetFastApiCallTarget(
+-      broker(), function_template_info, argc);
+-
+-  if (c_function.address) {
+-    const int input_count = 14;
+-    Node* inputs[input_count];
+-
+-    int cursor = 0;
+-    inputs[cursor++] = receiver;
+-    if (value) {
+-      inputs[cursor++] = value;
+-    }
+-    inputs[cursor++] =
+-        jsgraph()->ConstantNoHole(maybe_callback_data.value(), broker());
+-
+-    auto call_descriptor = PushRegularApiCallInputs(
+-        jsgraph(), broker(), receiver, api_holder, frame_state, value, effect,
+-        control, function_template_info, inputs, cursor);
+-
+-    // The input_count is constant, but getters have less parameters than
+-    // setters.
+-    DCHECK_LE(cursor, input_count);
++  Node* func_templ =
++      jsgraph()->HeapConstantNoHole(function_template_info.object());
++  ApiFunction function(function_template_info.callback(broker()));
++  Node* function_reference =
++      graph()->NewNode(common()->ExternalConstant(ExternalReference::Create(
++          &function, ExternalReference::DIRECT_API_CALL)));
++  Node* code = jsgraph()->HeapConstantNoHole(call_api_callback.code());
+ 
+-    return *effect = *control = graph()->NewNode(
+-               simplified()->FastApiCall(c_function, feedback, call_descriptor),
+-               cursor, inputs);
++  // Add CallApiCallbackStub's register argument as well.
++  Node* context = jsgraph()->ConstantNoHole(native_context(), broker());
++  Node* inputs[11] = {
++      code,       function_reference, jsgraph()->ConstantNoHole(argc),
++      func_templ, api_holder,         receiver};
++  int index = 6 + argc;
++  inputs[index++] = context;
++  inputs[index++] = frame_state;
++  inputs[index++] = *effect;
++  inputs[index++] = *control;
++  // This needs to stay here because of the edge case described in
++  // http://crbug.com/675648.
++  if (value != nullptr) {
++    inputs[6] = value;
+   }
+ 
+-  Node* inputs[11];
+-  int cursor = 0;
+-  CallDescriptor* call_descriptor = PushRegularApiCallInputs(
+-      jsgraph(), broker(), receiver, api_holder, frame_state, value, effect,
+-      control, function_template_info, inputs, cursor);
+-
+   return *effect = *control =
+-             graph()->NewNode(common()->Call(call_descriptor), cursor, inputs);
++             graph()->NewNode(common()->Call(call_descriptor), index, inputs);
+ }
+ 
+ std::optional<JSNativeContextSpecialization::ValueEffectControl>
+diff --git a/src/compiler/js-native-context-specialization.h b/src/compiler/js-native-context-specialization.h
+index 8761637df00ed1a717ca581ef5faf8c78ec3336b..c74b59b6cc4c742fa5c50df2cc89794c8bd0f23d 100644
+--- a/src/compiler/js-native-context-specialization.h
++++ b/src/compiler/js-native-context-specialization.h
+@@ -185,8 +185,7 @@ class V8_EXPORT_PRIVATE JSNativeContextSpecialization final
+                                 PropertyAccessInfo const& access_info);
+   Node* InlineApiCall(Node* receiver, Node* api_holder, Node* frame_state,
+                       Node* value, Node** effect, Node** control,
+-                      FunctionTemplateInfoRef function_template_info,
+-                      const FeedbackSource& feedback);
++                      FunctionTemplateInfoRef function_template_info);
+ 
+   // Construct the appropriate subgraph for element access.
+   ValueEffectControl BuildElementAccess(Node* receiver, Node* index,
+diff --git a/src/d8/d8-test.cc b/src/d8/d8-test.cc
+index 77e3b3d71d552fdb50e47b75ca8d1bc7296bb9d4..6467930fbb39a67a10d6822545e985965ced83ad 100644
+--- a/src/d8/d8-test.cc
++++ b/src/d8/d8-test.cc
+@@ -1305,67 +1305,6 @@ class FastCApiObject {
+     info.GetReturnValue().Set(BigInt::NewFromUnsigned(isolate, a + b));
+   }
+ 
+-  static void AttributeGetterSlowCallback(
+-      const FunctionCallbackInfo<Value>& info) {
+-    FastCApiObject* self = UnwrapObject(info.This());
+-    self->slow_call_count_++;
+-    info.GetReturnValue().Set(self->attribute_value_);
+-  }
+-
+-  static int AttributeGetterFastCallback(Local<Object> receiver,
+-                                         FastApiCallbackOptions& options) {
+-    FastCApiObject* self = UnwrapObject(receiver);
+-    CHECK_SELF_OR_THROW_FAST_OPTIONS(0);
+-    self->fast_call_count_++;
+-    return self->attribute_value_;
+-  }
+-
+-#ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
+-  static AnyCType AttributeGetterFastCallbackPatch(AnyCType receiver,
+-                                                   AnyCType options) {
+-    AnyCType ret;
+-    ret.int32_value = AttributeGetterFastCallback(receiver.object_value,
+-                                                  *options.options_value);
+-    return ret;
+-  }
+-#endif  //  V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
+-
+-  static void AttributeSetterSlowCallback(
+-      const FunctionCallbackInfo<Value>& info) {
+-    FastCApiObject* self = UnwrapObject(info.This());
+-    self->slow_call_count_++;
+-    if (info.Length() < 1 || !info[0]->IsNumber()) {
+-      info.GetIsolate()->ThrowError(
+-          "The attribute requires a number as a new value");
+-      return;
+-    }
+-    double double_val =
+-        info[0]->NumberValue(info.GetIsolate()->GetCurrentContext()).FromJust();
+-    if (!base::IsValueInRangeForNumericType<int>(double_val)) {
+-      info.GetIsolate()->ThrowError(
+-          "New value of attribute is not within int32 range");
+-      return;
+-    }
+-    self->attribute_value_ = static_cast<int>(double_val);
+-  }
+-
+-  static void AttributeSetterFastCallback(Local<Object> receiver, int32_t value,
+-                                          FastApiCallbackOptions& options) {
+-    FastCApiObject* self = UnwrapObject(receiver);
+-    CHECK_SELF_OR_THROW_FAST_OPTIONS();
+-    self->fast_call_count_++;
+-    self->attribute_value_ = value;
+-  }
+-
+-#ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
+-  static void AttributeSetterFastCallbackPatch(AnyCType receiver,
+-                                               AnyCType value,
+-                                               AnyCType options) {
+-    AttributeSetterFastCallback(receiver.object_value, value.int32_value,
+-                                *options.options_value);
+-  }
+-#endif  //  V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
+-
+   static void FastCallCount(const FunctionCallbackInfo<Value>& info) {
+     FastCApiObject* self = UnwrapObject(info.This());
+     CHECK_SELF_OR_THROW_SLOW();
+@@ -1500,25 +1439,6 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
+                               ConstructorBehavior::kThrow,
+                               SideEffectType::kHasSideEffect, &add_all_c_func));
+ 
+-    CFunction fast_setter = CFunction::Make(
+-        FastCApiObject::AttributeSetterFastCallback V8_IF_USE_SIMULATOR(
+-            FastCApiObject::AttributeSetterFastCallback));
+-    CFunction fast_getter = CFunction::Make(
+-        FastCApiObject::AttributeGetterFastCallback V8_IF_USE_SIMULATOR(
+-            FastCApiObject::AttributeGetterFastCallback));
+-
+-    api_obj_ctor->PrototypeTemplate()->SetAccessorProperty(
+-        String::NewFromUtf8(isolate, "fast_attribute").ToLocalChecked(),
+-        FunctionTemplate::New(
+-            isolate, FastCApiObject::AttributeGetterSlowCallback,
+-            Local<Value>(), signature, 1, ConstructorBehavior::kThrow,
+-            SideEffectType::kHasSideEffect, &fast_getter),
+-        FunctionTemplate::New(
+-            isolate, FastCApiObject::AttributeSetterSlowCallback,
+-            Local<Value>(), signature, 1, ConstructorBehavior::kThrow,
+-            SideEffectType::kHasSideEffect, &fast_setter),
+-        v8::PropertyAttribute::None);
+-
+     CFunction add_all_seq_c_func = CFunction::Make(
+         FastCApiObject::AddAllSequenceFastCallback V8_IF_USE_SIMULATOR(
+             FastCApiObject::AddAllSequenceFastCallbackPatch));
+diff --git a/test/mjsunit/compiler/fast-api-attributes.js b/test/mjsunit/compiler/fast-api-attributes.js
+deleted file mode 100644
+index 137e5c917cf7a56c89e70ed49d07e3134d1c8eac..0000000000000000000000000000000000000000
+--- a/test/mjsunit/compiler/fast-api-attributes.js
++++ /dev/null
+@@ -1,45 +0,0 @@
+-// Copyright 2021 the V8 project authors. All rights reserved.
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-
+-// This file excercises basic fast API calls and enables fuzzing of this
+-// functionality.
+-
+-// Flags: --turbo-fast-api-calls --expose-fast-api --allow-natives-syntax --turbofan
+-// --always-turbofan is disabled because we rely on particular feedback for
+-// optimizing to the fastest path.
+-// Flags: --no-always-turbofan
+-// The test relies on optimizing/deoptimizing at predictable moments, so
+-// it's not suitable for deoptimization fuzzing.
+-// Flags: --deopt-every-n-times=0
+-// Flags: --fast-api-allow-float-in-sim
+-
+-const fast_c_api = new d8.test.FastCAPI();
+-
+-function get() {
+-    return fast_c_api.fast_attribute;
+-}
+-
+-function set(value) {
+-    fast_c_api.fast_attribute = value;
+-}
+-
+-%PrepareFunctionForOptimization(set);
+-set(12);
+-%OptimizeFunctionOnNextCall(set);
+-%PrepareFunctionForOptimization(get);
+-assertEquals(12, get());
+-%OptimizeFunctionOnNextCall(get);
+-
+-
+-fast_c_api.reset_counts();
+-set(21);
+-assertOptimized(set);
+-assertEquals(1, fast_c_api.fast_call_count());
+-assertEquals(0, fast_c_api.slow_call_count());
+-
+-fast_c_api.reset_counts();
+-assertEquals(21, get());
+-assertOptimized(get);
+-assertEquals(1, fast_c_api.fast_call_count());
+-assertEquals(0, fast_c_api.slow_call_count());
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 207322443192073f516787cbaf81e69c87d34a3c..2256e42324bdc91a4c92bfcfe9909c71f8e8533b 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -757,7 +757,6 @@
+   # These tests rely on TurboFan being enabled.
+   'compiler/call-with-arraylike-or-spread*': [SKIP],
+   'compiler/fast-api-calls': [SKIP],
+-  'compiler/fast-api-attributes': [SKIP],
+   'compiler/fast-api-interface-types': [SKIP],
+   'compiler/regress-crbug-1201011': [SKIP],
+   'compiler/regress-crbug-1201057': [SKIP],
+@@ -2359,7 +2358,6 @@
+   'regress/regress-1049982-2': [FAIL],
+   # Maglev doesn't support fast API calls.
+   'compiler/fast-api-annotations': [FAIL],
+-  'compiler/fast-api-attributes': [FAIL],
+   'compiler/fast-api-calls': [FAIL],
+   'compiler/fast-api-calls-8args': [FAIL],
+   'compiler/fast-api-calls-string': [FAIL],

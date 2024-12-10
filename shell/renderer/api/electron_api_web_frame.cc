@@ -736,7 +736,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
                                              std::move(completion_callback));
 
     render_frame->GetWebFrame()->RequestExecuteScript(
-        world_id, base::make_span(sources),
+        world_id, base::span(sources),
         has_user_gesture ? blink::mojom::UserActivationOption::kActivate
                          : blink::mojom::UserActivationOption::kDoNotActivate,
         script_execution_type, load_blocking_option, base::NullCallback(),

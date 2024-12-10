@@ -91,8 +91,7 @@ class Archive : public node::ObjectWrap {
           integrity.Set("algorithm", "SHA256");
           break;
         case asar::HashAlgorithm::kNone:
-          CHECK(false);
-          break;
+          NOTREACHED();
       }
       integrity.Set("hash", info.integrity.value().hash);
       dict.Set("integrity", integrity);

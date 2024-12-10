@@ -12,6 +12,7 @@
 
 #include "base/containers/span.h"
 #include "base/logging.h"
+#include "base/notreached.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "crypto/sha2.h"
@@ -37,8 +38,7 @@ void AsarFileValidator::EnsureBlockHashExists() {
       current_hash_ = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
       break;
     case HashAlgorithm::kNone:
-      CHECK(false);
-      break;
+      NOTREACHED();
   }
 }
 
@@ -50,7 +50,8 @@ void AsarFileValidator::OnRead(base::span<char> buffer,
 
   // |buffer| contains the read buffer. |result->bytes_read| is the actual
   // bytes number that |source| read that should be less than buffer.size().
-  auto hashme = base::as_bytes(buffer.subspan(0U, result->bytes_read));
+  auto hashme = base::as_bytes(
+      buffer.subspan(0U, static_cast<size_t>(result->bytes_read)));
 
   while (!std::empty(hashme)) {
     if (current_block_ > max_block_)
@@ -60,7 +61,8 @@ void AsarFileValidator::OnRead(base::span<char> buffer,
 
     // hash as many bytes as will fit in the current block.
     const auto n_left_in_block = block_size - current_hash_byte_count_;
-    const auto n_now = std::min(n_left_in_block, uint64_t{std::size(hashme)});
+    const auto n_now =
+        std::min(static_cast<size_t>(n_left_in_block), std::size(hashme));
     DCHECK_GT(n_now, 0U);
     const auto [hashme_now, hashme_next] = hashme.split_at(n_now);
 

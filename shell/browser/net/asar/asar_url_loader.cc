@@ -202,7 +202,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
       }
     }
 
-    uint64_t first_byte_to_send = 0;
+    uint64_t first_byte_to_send = 0U;
     uint64_t total_bytes_dropped_from_head = initial_read_buffer.size();
     uint64_t total_bytes_to_send = info.size;
 
@@ -224,7 +224,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
           (read_result.bytes_read - first_byte_to_send), total_bytes_to_send);
       base::span<const uint8_t> bytes =
           base::as_byte_span(initial_read_buffer)
-              .subspan(first_byte_to_send, write_size);
+              .subspan(static_cast<size_t>(first_byte_to_send), write_size);
       size_t bytes_written = 0;
       MojoResult result = producer_handle->WriteData(
           bytes, MOJO_WRITE_DATA_FLAG_NONE, bytes_written);
