@@ -189,6 +189,8 @@ for:
       - ps: |
           if ($env:TARGET_ARCH -eq 'ia32') {
             $env:MANIFEST_ARCH = "x86"
+          } else {
+            $env:MANIFEST_ARCH = $env:TARGET_ARCH
           }
           $manifest_file = "electron/script/zip_manifests/dist_zip.win.$env:MANIFEST_ARCH.manifest"
           python3 electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip $manifest_file
