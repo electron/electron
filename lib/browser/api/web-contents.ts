@@ -514,9 +514,9 @@ WebContents.prototype.canGoForward = function () {
 };
 
 const canGoToOffsetDeprecated = deprecate.warnOnce('webContents.canGoToOffset', 'webContents.navigationHistory.canGoToOffset');
-WebContents.prototype.canGoToOffset = function () {
+WebContents.prototype.canGoToOffset = function (index: number) {
   canGoToOffsetDeprecated();
-  return this._canGoToOffset();
+  return this._canGoToOffset(index);
 };
 
 const clearHistoryDeprecated = deprecate.warnOnce('webContents.clearHistory', 'webContents.navigationHistory.clear');
