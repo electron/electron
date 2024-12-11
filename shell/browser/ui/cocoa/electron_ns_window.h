@@ -29,9 +29,13 @@ class ScopedDisableResize {
 
 }  // namespace electron
 
+class ElectronNativeWindowObserver;
+
 @interface ElectronNSWindow : NativeWidgetMacNSWindow {
  @private
   raw_ptr<electron::NativeWindowMac> shell_;
+  std::unique_ptr<ElectronNativeWindowObserver>
+      electron_native_window_observer_;
 }
 @property BOOL acceptsFirstMouse;
 @property BOOL enableLargerThanScreen;
@@ -42,6 +46,7 @@ class ScopedDisableResize {
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask;
 - (electron::NativeWindowMac*)shell;
+- (void)onElectronNativeWindowClosed;
 - (id)accessibilityFocusedUIElement;
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect;
 - (BOOL)toggleFullScreenMode:(id)sender;

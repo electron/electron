@@ -7,8 +7,6 @@
 #include "base/strings/sys_string_conversions.h"
 #include "electron/mas.h"
 #include "shell/browser/native_window_mac.h"
-#include "shell/browser/ui/cocoa/delayed_native_view_host.h"
-#include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
@@ -112,7 +110,36 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
                            method_getImplementation(new_swipe_with_event));
 }
 #endif
+
 }  // namespace
+
+class ElectronNativeWindowObserver : public electron::NativeWindowObserver {
+ public:
+  ElectronNativeWindowObserver(electron::NativeWindowMac* observed_window,
+                               ElectronNSWindow* bound_ns_window)
+      : observed_window_(observed_window), bound_ns_window_(bound_ns_window) {
+    CHECK(observed_window_);
+    observed_window_->AddObserver(this);
+  }
+  ~ElectronNativeWindowObserver() override {
+    if (observed_window_) {
+      observed_window_->RemoveObserver(this);
+      observed_window_ = nullptr;
+    }
+  }
+
+  void OnWindowClosed() override {
+    CHECK(observed_window_);
+    observed_window_->RemoveObserver(this);
+    [bound_ns_window_ onElectronNativeWindowClosed];
+    observed_window_ = nullptr;
+    bound_ns_window_ = nullptr;
+  }
+
+ private:
+  raw_ptr<electron::NativeWindowMac> observed_window_ = nullptr;
+  ElectronNSWindow* bound_ns_window_ = nullptr;
+};
 
 @implementation ElectronNSWindow
 
@@ -163,12 +190,18 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     SwizzleSwipeWithEvent(view, @selector(swiz_nsview_swipeWithEvent:));
 #endif  // IS_MAS_BUILD
     shell_ = shell;
+    electron_native_window_observer_ =
+        std::make_unique<ElectronNativeWindowObserver>(shell_, self);
   }
   return self;
 }
 
 - (electron::NativeWindowMac*)shell {
   return shell_;
+}
+
+- (void)onElectronNativeWindowClosed {
+  shell_ = nullptr;
 }
 
 - (id)accessibilityFocusedUIElement {
@@ -190,45 +223,6 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 // NSWindow overrides.
-
-- (void)sendEvent:(NSEvent*)event {
-  // Draggable regions only respond to left-click dragging, but the system will
-  // still suppress right-clicks in a draggable region. Forwarding right-clicks
-  // and ctrl+left-clicks allows the underlying views to respond to right-click
-  // to potentially bring up a frame context menu. WebContentsView is now a
-  // sibling view of the NSWindow contentView, so we need to intercept the event
-  // here as NativeWidgetMacNSWindow won't forward it to the WebContentsView
-  // anymore.
-  if (event.type == NSEventTypeRightMouseDown ||
-      (event.type == NSEventTypeLeftMouseDown &&
-       ([event modifierFlags] & NSEventModifierFlagControl))) {
-    // We're looking for the NativeViewHost that contains the WebContentsView.
-    // There can be two possible NativeViewHosts - one containing the
-    // WebContentsView (present for BrowserWindows) and the one containing the
-    // VibrantView (present when vibrancy is set). We want the one containing
-    // the WebContentsView if it exists.
-    const auto& children = shell_->GetContentsView()->children();
-    const auto it = std::ranges::find_if(children, [&](views::View* child) {
-      if (std::strcmp(child->GetClassName(), "NativeViewHost") == 0) {
-        auto* nvh = static_cast<views::NativeViewHost*>(child);
-        return nvh->native_view().GetNativeNSView() != [self vibrantView];
-      }
-      return false;
-    });
-
-    if (it != children.end()) {
-      auto ns_view = static_cast<electron::DelayedNativeViewHost*>(*it)
-                         ->native_view()
-                         .GetNativeNSView();
-      if (ns_view) {
-        [static_cast<ElectronInspectableWebContentsView*>(ns_view)
-            redispatchContextMenuEvent:base::apple::OwnedNSEvent(event)];
-      }
-    }
-  }
-
-  [super sendEvent:event];
-}
 
 - (void)rotateWithEvent:(NSEvent*)event {
   shell_->NotifyWindowRotateGesture(event.rotation);
@@ -270,6 +264,17 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   // the frame directly when resize is disabled
   if (!electron::ScopedDisableResize::IsResizeDisabled())
     [super setFrame:windowFrame display:displayViews];
+}
+
+- (void)orderWindow:(NSWindowOrderingMode)place relativeTo:(NSInteger)otherWin {
+  if (shell_) {
+    // We initialize the window in headless mode to allow painting before it is
+    // shown, but we don't want the headless behavior of allowing the window to
+    // be placed unconstrained.
+    self.isHeadless = false;
+    shell_->widget()->DisableHeadlessMode();
+  }
+  [super orderWindow:place relativeTo:otherWin];
 }
 
 - (id)accessibilityAttributeValue:(NSString*)attribute {
