@@ -301,7 +301,7 @@ gin::Handle<Protocol> Protocol::Create(
 // static
 gin::Handle<Protocol> Protocol::New(gin_helper::ErrorThrower thrower) {
   thrower.ThrowError("Protocol cannot be created from JS");
-  return gin::Handle<Protocol>();
+  return {};
 }
 
 // static

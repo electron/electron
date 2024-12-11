@@ -209,7 +209,7 @@ const GURL& DownloadItem::GetURL() const {
 
 v8::Local<v8::Value> DownloadItem::GetURLChain() const {
   if (!CheckAlive())
-    return v8::Local<v8::Value>();
+    return {};
   return gin::ConvertToV8(isolate_, download_item_->GetUrlChain());
 }
 

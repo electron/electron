@@ -43,7 +43,7 @@ class Delegate {
                                   const std::string& update_url) {}
 
  protected:
-  virtual ~Delegate() {}
+  virtual ~Delegate() = default;
 };
 
 class AutoUpdater {

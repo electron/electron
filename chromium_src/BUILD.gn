@@ -219,7 +219,11 @@ static_library("chrome") {
   }
 
   if (is_linux) {
-    sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
+    sources += [
+      "//chrome/browser/extensions/global_shortcut_listener_linux.cc",
+      "//chrome/browser/extensions/global_shortcut_listener_linux.h",
+      "//chrome/browser/icon_loader_auralinux.cc",
+    ]
     if (use_ozone) {
       deps += [ "//ui/ozone" ]
       sources += [
@@ -237,10 +241,7 @@ static_library("chrome") {
       "//chrome/browser/ui/views/dark_mode_manager_linux.cc",
       "//chrome/browser/ui/views/dark_mode_manager_linux.h",
     ]
-    public_deps += [
-      "//components/dbus/menu",
-      "//components/dbus/thread_linux",
-    ]
+    public_deps += [ "//components/dbus" ]
   }
 
   if (is_win) {

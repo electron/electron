@@ -53,8 +53,7 @@ namespace {
 
   // If the device id wasn't specified then this is a screen capture request
   // (i.e. chooseDesktopMedia() API wasn't used to generate device id).
-  return content::DesktopMediaID(content::DesktopMediaID::TYPE_SCREEN,
-                                 -1 /* kFullDesktopScreenId */);
+  return {content::DesktopMediaID::TYPE_SCREEN, -1 /* kFullDesktopScreenId */};
 }
 
 #if BUILDFLAG(IS_MAC)

@@ -97,7 +97,7 @@ bool IsValidCustomProtocol(const std::wstring& scheme) {
 std::wstring GetAppInfoHelperForProtocol(ASSOCSTR assoc_str, const GURL& url) {
   const std::wstring url_scheme = base::ASCIIToWide(url.scheme_piece());
   if (!IsValidCustomProtocol(url_scheme))
-    return std::wstring();
+    return {};
 
   wchar_t out_buffer[1024];
   DWORD buffer_size = std::size(out_buffer);
@@ -106,7 +106,7 @@ std::wstring GetAppInfoHelperForProtocol(ASSOCSTR assoc_str, const GURL& url) {
                        nullptr, out_buffer, &buffer_size);
   if (FAILED(hr)) {
     DLOG(WARNING) << "AssocQueryString failed!";
-    return std::wstring();
+    return {};
   }
   return std::wstring(out_buffer);
 }
@@ -251,7 +251,7 @@ std::unique_ptr<FileVersionInfo> FetchFileVersionInfo() {
     electron::ScopedAllowBlockingForElectron allow_blocking;
     return FileVersionInfo::CreateFileVersionInfo(path);
   }
-  return std::unique_ptr<FileVersionInfo>();
+  return {};
 }
 
 }  // namespace

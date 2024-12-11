@@ -669,7 +669,7 @@ void BaseWindow::SetBackgroundColor(const std::string& color_name) {
   window_->SetBackgroundColor(color);
 }
 
-std::string BaseWindow::GetBackgroundColor(gin_helper::Arguments* args) const {
+std::string BaseWindow::GetBackgroundColor() const {
   return ToRGBHex(window_->GetBackgroundColor());
 }
 

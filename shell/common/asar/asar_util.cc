@@ -25,7 +25,7 @@ namespace asar {
 
 namespace {
 
-typedef std::map<base::FilePath, std::shared_ptr<Archive>> ArchiveMap;
+using ArchiveMap = std::map<base::FilePath, std::shared_ptr<Archive>>;
 
 const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");
 

@@ -27,7 +27,7 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
       context, id, parameters, node::Realm::GetCurrent(context));
 
   if (compiled.IsEmpty())
-    return v8::MaybeLocal<v8::Value>();
+    return {};
 
   v8::Local<v8::Function> fn = compiled.ToLocalChecked().As<v8::Function>();
   v8::MaybeLocal<v8::Value> ret = fn->Call(

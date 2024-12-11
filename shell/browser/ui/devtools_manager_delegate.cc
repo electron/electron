@@ -50,13 +50,13 @@ class TCPServerSocketFactory : public content::DevToolsSocketFactory {
     auto socket =
         std::make_unique<net::TCPServerSocket>(nullptr, net::NetLogSource());
     if (socket->ListenWithAddressAndPort(address_, port_, 10) != net::OK)
-      return std::unique_ptr<net::ServerSocket>();
+      return {};
 
     return socket;
   }
   std::unique_ptr<net::ServerSocket> CreateForTethering(
       std::string* name) override {
-    return std::unique_ptr<net::ServerSocket>();
+    return {};
   }
 
   std::string address_;

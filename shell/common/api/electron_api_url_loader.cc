@@ -31,6 +31,7 @@
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "services/network/public/mojom/http_raw_headers.mojom.h"
+#include "services/network/public/mojom/shared_storage.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
@@ -149,7 +150,7 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
 
  private:
   // mojo::DataPipeProducer::DataSource:
-  uint64_t GetLength() const override { return buffer_.size(); }
+  [[nodiscard]] uint64_t GetLength() const override { return buffer_.size(); }
   ReadResult Read(uint64_t offset, base::span<char> buffer) override {
     ReadResult result;
     if (offset <= buffer_.size()) {
@@ -466,7 +467,8 @@ void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
 
 void SimpleURLLoaderWrapper::OnSharedStorageHeaderReceived(
     const url::Origin& request_origin,
-    std::vector<network::mojom::SharedStorageOperationPtr> operations,
+    std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
+        methods,
     OnSharedStorageHeaderReceivedCallback callback) {
   std::move(callback).Run();
 }
@@ -531,14 +533,14 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   gin_helper::Dictionary opts;
   if (!args->GetNext(&opts)) {
     args->ThrowTypeError("Expected a dictionary");
-    return gin::Handle<SimpleURLLoaderWrapper>();
+    return {};
   }
   auto request = std::make_unique<network::ResourceRequest>();
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
   if (!request->url.is_valid()) {
     args->ThrowTypeError("Invalid URL");
-    return gin::Handle<SimpleURLLoaderWrapper>();
+    return {};
   }
   request->site_for_cookies = net::SiteForCookies::FromUrl(request->url);
   opts.Get("referrer", &request->referrer);
@@ -606,7 +608,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       if (!net::HttpUtil::IsValidHeaderName(it.first) ||
           !net::HttpUtil::IsValidHeaderValue(it.second)) {
         args->ThrowTypeError("Invalid header name or value");
-        return gin::Handle<SimpleURLLoaderWrapper>();
+        return {};
       }
       request->headers.SetHeader(it.first, it.second);
     }

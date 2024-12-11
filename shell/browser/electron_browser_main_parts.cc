@@ -163,7 +163,7 @@ std::u16string MediaStringProvider(media::MessageId id) {
       return u"Communications";
 #endif
     default:
-      return std::u16string();
+      return {};
   }
 }
 

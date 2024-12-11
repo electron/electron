@@ -107,11 +107,11 @@ class IPCRenderer final : public gin::Wrappable<IPCRenderer>,
                                 v8::Local<v8::Value> arguments) {
     if (!electron_ipc_remote_) {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
-      return v8::Local<v8::Promise>();
+      return {};
     }
     blink::CloneableMessage message;
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
-      return v8::Local<v8::Promise>();
+      return {};
     }
     gin_helper::Promise<blink::CloneableMessage> p(isolate);
     auto handle = p.GetHandle();
@@ -189,11 +189,11 @@ class IPCRenderer final : public gin::Wrappable<IPCRenderer>,
                                 v8::Local<v8::Value> arguments) {
     if (!electron_ipc_remote_) {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
-      return v8::Local<v8::Value>();
+      return {};
     }
     blink::CloneableMessage message;
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
-      return v8::Local<v8::Value>();
+      return {};
     }
 
     blink::CloneableMessage result;

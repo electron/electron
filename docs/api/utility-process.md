@@ -37,7 +37,10 @@ Process: [Main](../glossary.md#main-process)<br />
     to load unsigned libraries. Unless you specifically need this capability, it is best to leave this disabled.
     Default is `false`.
   * `respondToAuthRequestsFromMainProcess` boolean (optional) - With this flag, all HTTP 401 and 407 network
-    requests created via the [net module](net.md) will allow responding to them via the [`app#login`](app.md#event-login) event in the main process instead of the default [`login`](client-request.md#event-login) event on the [`ClientRequest`](client-request.md) object.
+    requests created via the [net module](net.md) will allow responding to them via the
+    [`app#login`](app.md#event-login) event in the main process instead of the default
+    [`login`](client-request.md#event-login) event on the [`ClientRequest`](client-request.md) object. Default is
+    `false`.
 
 Returns [`UtilityProcess`](utility-process.md#class-utilityprocess)
 

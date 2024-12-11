@@ -82,7 +82,7 @@ gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
     thrower.ThrowError(
         "screen.getCursorScreenPoint() cannot be called before a window has "
         "been created.");
-    return gfx::Point();
+    return {};
   }
 #endif
   return screen_->GetCursorScreenPoint();

@@ -37,7 +37,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
   class Delegate : public ui::SimpleMenuModel::Delegate {
    public:
-    ~Delegate() override {}
+    ~Delegate() override = default;
 
     virtual bool GetAcceleratorForCommandIdWithParams(
         int command_id,
@@ -63,7 +63,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
   class Observer : public base::CheckedObserver {
    public:
-    ~Observer() override {}
+    ~Observer() override = default;
 
     // Notifies the menu will open.
     virtual void OnMenuWillShow() {}

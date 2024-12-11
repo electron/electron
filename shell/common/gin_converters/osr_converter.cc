@@ -54,7 +54,7 @@ struct OffscreenReleaseHolderMonitor {
     holder_ = nullptr;
   }
 
-  bool IsTextureReleased() const { return holder_ == nullptr; }
+  [[nodiscard]] bool IsTextureReleased() const { return holder_ == nullptr; }
 
   v8::Persistent<v8::Value>* CreatePersistent(v8::Isolate* isolate,
                                               v8::Local<v8::Value> value) {

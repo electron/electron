@@ -10,6 +10,7 @@
 
 #include "base/functional/callback_forward.h"
 #include "chrome/browser/extensions/global_shortcut_listener.h"
+#include "extensions/common/extension_id.h"
 #include "gin/wrappable.h"
 #include "ui/base/accelerators/accelerator.h"
 
@@ -55,6 +56,8 @@ class GlobalShortcut final
 
   // GlobalShortcutListener::Observer implementation.
   void OnKeyPressed(const ui::Accelerator& accelerator) override;
+  void ExecuteCommand(const extensions::ExtensionId& extension_id,
+                      const std::string& command_id) override;
 
   AcceleratorCallbackMap accelerator_callback_map_;
 };

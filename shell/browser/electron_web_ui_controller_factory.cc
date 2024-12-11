@@ -54,7 +54,7 @@ ElectronWebUIControllerFactory::CreateWebUIControllerForURL(
   if (host == chrome::kChromeUIAccessibilityHost)
     return std::make_unique<ElectronAccessibilityUI>(web_ui);
 
-  return std::unique_ptr<content::WebUIController>();
+  return {};
 }
 
 }  // namespace electron

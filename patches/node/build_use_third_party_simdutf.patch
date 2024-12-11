@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Mon, 9 Dec 2024 11:18:51 -0600
+Subject: build: use third_party/simdutf
+
+use the Chromium version of simdutf to avoid duplicate symbols
+
+diff --git a/node.gni b/node.gni
+index 99ec540ec41ddf5682eed7618ba87d6935b3b982..274e627fe27b318218f10e982ca5a0773a9075a5 100644
+--- a/node.gni
++++ b/node.gni
+@@ -12,6 +12,8 @@ declare_args() {
+ 
+   node_crypto_path = "//third_party/boringssl"
+ 
++  node_simdutf_path = "//third_party/simdutf"
++
+   # The NODE_MODULE_VERSION defined in node_version.h.
+   node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")
+ 
+diff --git a/unofficial.gni b/unofficial.gni
+index c23922a301a721662ff34bf6e54fd26b41f25ccc..988dd1d73e72ccd3a6eb10b326b8dc7fcd8e257b 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -150,7 +150,7 @@ template("node_gn_build") {
+       "deps/nbytes",
+       "deps/nghttp2",
+       "deps/postject",
+-      "deps/simdutf",
++      "$node_simdutf_path",
+       "deps/sqlite",
+       "deps/uvwasi",
+       "//third_party/zlib",
+@@ -305,7 +305,7 @@ template("node_gn_build") {
+   executable("node_js2c") {
+     defines = []
+     deps = [
+-      "deps/simdutf",
++      "$node_simdutf_path",
+       "deps/uv",
+     ]
+     sources = [
+@@ -412,7 +412,7 @@ template("node_gn_build") {
+       "deps/googletest",
+       "deps/googletest:gtest_main",
+       "deps/nbytes",
+-      "deps/simdutf",
++      "$node_simdutf_path",
+     ]
+ 
+     sources = gypi_values.node_cctest_sources

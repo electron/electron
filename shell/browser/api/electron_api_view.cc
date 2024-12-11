@@ -282,7 +282,7 @@ void View::SetBounds(const gfx::Rect& bounds) {
 
 gfx::Rect View::GetBounds() {
   if (!view_)
-    return gfx::Rect();
+    return {};
   return view_->bounds();
 }
 
@@ -429,7 +429,7 @@ gin::Handle<View> View::Create(v8::Isolate* isolate) {
     if (gin::ConvertFromV8(isolate, obj, &view))
       return view;
   }
-  return gin::Handle<View>();
+  return {};
 }
 
 // static

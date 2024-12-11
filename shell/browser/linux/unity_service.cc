@@ -10,24 +10,22 @@
 #include <string>
 
 // Unity data typedefs.
-typedef struct _UnityInspector UnityInspector;
-typedef UnityInspector* (*unity_inspector_get_default_func)();
-typedef gboolean (*unity_inspector_get_unity_running_func)(
-    UnityInspector* self);
+using UnityInspector = struct _UnityInspector;
+using unity_inspector_get_default_func = UnityInspector* (*)();
+using unity_inspector_get_unity_running_func =
+    gboolean (*)(UnityInspector* self);
 
-typedef struct _UnityLauncherEntry UnityLauncherEntry;
-typedef UnityLauncherEntry* (*unity_launcher_entry_get_for_desktop_id_func)(
-    const gchar* desktop_id);
-typedef void (*unity_launcher_entry_set_count_func)(UnityLauncherEntry* self,
-                                                    gint64 value);
-typedef void (*unity_launcher_entry_set_count_visible_func)(
-    UnityLauncherEntry* self,
-    gboolean value);
-typedef void (*unity_launcher_entry_set_progress_func)(UnityLauncherEntry* self,
-                                                       gdouble value);
-typedef void (*unity_launcher_entry_set_progress_visible_func)(
-    UnityLauncherEntry* self,
-    gboolean value);
+using UnityLauncherEntry = struct _UnityLauncherEntry;
+using unity_launcher_entry_get_for_desktop_id_func =
+    UnityLauncherEntry* (*)(const gchar* desktop_id);
+using unity_launcher_entry_set_count_func = void (*)(UnityLauncherEntry* self,
+                                                     gint64 value);
+using unity_launcher_entry_set_count_visible_func =
+    void (*)(UnityLauncherEntry* self, gboolean value);
+using unity_launcher_entry_set_progress_func =
+    void (*)(UnityLauncherEntry* self, gdouble value);
+using unity_launcher_entry_set_progress_visible_func =
+    void (*)(UnityLauncherEntry* self, gboolean value);
 
 namespace {
 

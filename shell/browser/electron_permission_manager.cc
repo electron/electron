@@ -86,7 +86,7 @@ class ElectronPermissionManager::PendingRequest {
     return content::RenderFrameHost::FromID(render_frame_host_id_);
   }
 
-  bool IsComplete() const { return remaining_results_ == 0; }
+  [[nodiscard]] bool IsComplete() const { return remaining_results_ == 0; }
 
   void RunCallback() {
     if (!callback_.is_null()) {
@@ -278,8 +278,7 @@ ElectronPermissionManager::GetPermissionResultForOriginWithoutContext(
     const url::Origin& embedding_origin) {
   blink::mojom::PermissionStatus status = GetPermissionStatus(
       permission, requesting_origin.GetURL(), embedding_origin.GetURL());
-  return content::PermissionResult(
-      status, content::PermissionStatusSource::UNSPECIFIED);
+  return {status, content::PermissionStatusSource::UNSPECIFIED};
 }
 
 void ElectronPermissionManager::CheckBluetoothDevicePair(

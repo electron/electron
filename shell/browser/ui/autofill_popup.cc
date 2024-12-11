@@ -245,7 +245,7 @@ gfx::Rect AutofillPopup::popup_bounds_in_view() {
   gfx::Point origin(popup_bounds_.origin());
   views::View::ConvertPointFromScreen(parent_, &origin);
 
-  return gfx::Rect(origin, popup_bounds_.size());
+  return {origin, popup_bounds_.size()};
 }
 
 void AutofillPopup::OnViewBoundsChanged(views::View* view) {
@@ -280,9 +280,8 @@ int AutofillPopup::GetDesiredPopupWidth() {
 gfx::Rect AutofillPopup::GetRowBounds(int index) {
   int top = kPopupBorderThickness + index * kRowHeight;
 
-  return gfx::Rect(kPopupBorderThickness, top,
-                   popup_bounds_.width() - 2 * kPopupBorderThickness,
-                   kRowHeight);
+  return {kPopupBorderThickness, top,
+          popup_bounds_.width() - 2 * kPopupBorderThickness, kRowHeight};
 }
 
 const gfx::FontList& AutofillPopup::GetValueFontListForRow(int index) const {

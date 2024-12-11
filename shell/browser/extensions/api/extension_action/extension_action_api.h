@@ -106,14 +106,14 @@ class ExtensionActionFunction : public ExtensionFunction {
 // show
 class ExtensionActionShowFunction : public ExtensionActionFunction {
  protected:
-  ~ExtensionActionShowFunction() override {}
+  ~ExtensionActionShowFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
 // hide
 class ExtensionActionHideFunction : public ExtensionActionFunction {
  protected:
-  ~ExtensionActionHideFunction() override {}
+  ~ExtensionActionHideFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
@@ -123,28 +123,28 @@ class ExtensionActionSetIconFunction : public ExtensionActionFunction {
   static void SetReportErrorForInvisibleIconForTesting(bool value);
 
  protected:
-  ~ExtensionActionSetIconFunction() override {}
+  ~ExtensionActionSetIconFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
 // setTitle
 class ExtensionActionSetTitleFunction : public ExtensionActionFunction {
  protected:
-  ~ExtensionActionSetTitleFunction() override {}
+  ~ExtensionActionSetTitleFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
 // setPopup
 class ExtensionActionSetPopupFunction : public ExtensionActionFunction {
  protected:
-  ~ExtensionActionSetPopupFunction() override {}
+  ~ExtensionActionSetPopupFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
 // setBadgeText
 class ExtensionActionSetBadgeTextFunction : public ExtensionActionFunction {
  protected:
-  ~ExtensionActionSetBadgeTextFunction() override {}
+  ~ExtensionActionSetBadgeTextFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
@@ -152,35 +152,35 @@ class ExtensionActionSetBadgeTextFunction : public ExtensionActionFunction {
 class ExtensionActionSetBadgeBackgroundColorFunction
     : public ExtensionActionFunction {
  protected:
-  ~ExtensionActionSetBadgeBackgroundColorFunction() override {}
+  ~ExtensionActionSetBadgeBackgroundColorFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
 // getTitle
 class ExtensionActionGetTitleFunction : public ExtensionActionFunction {
  protected:
-  ~ExtensionActionGetTitleFunction() override {}
+  ~ExtensionActionGetTitleFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
 // getPopup
 class ExtensionActionGetPopupFunction : public ExtensionActionFunction {
  protected:
-  ~ExtensionActionGetPopupFunction() override {}
+  ~ExtensionActionGetPopupFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
 // openPopup
 class ExtensionActionOpenPopupFunction : public ExtensionActionFunction {
  protected:
-  ~ExtensionActionOpenPopupFunction() override {}
+  ~ExtensionActionOpenPopupFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
 // getBadgeText
 class ExtensionActionGetBadgeTextFunction : public ExtensionActionFunction {
  protected:
-  ~ExtensionActionGetBadgeTextFunction() override {}
+  ~ExtensionActionGetBadgeTextFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
@@ -188,7 +188,7 @@ class ExtensionActionGetBadgeTextFunction : public ExtensionActionFunction {
 class ExtensionActionGetBadgeBackgroundColorFunction
     : public ExtensionActionFunction {
  protected:
-  ~ExtensionActionGetBadgeBackgroundColorFunction() override {}
+  ~ExtensionActionGetBadgeBackgroundColorFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
@@ -201,7 +201,7 @@ class ActionSetIconFunction : public ExtensionActionSetIconFunction {
   DECLARE_EXTENSION_FUNCTION("action.setIcon", ACTION_SETICON)
 
  protected:
-  ~ActionSetIconFunction() override {}
+  ~ActionSetIconFunction() override = default;
 };
 
 class ActionGetPopupFunction : public ExtensionActionGetPopupFunction {
@@ -209,7 +209,7 @@ class ActionGetPopupFunction : public ExtensionActionGetPopupFunction {
   DECLARE_EXTENSION_FUNCTION("action.getPopup", ACTION_GETPOPUP)
 
  protected:
-  ~ActionGetPopupFunction() override {}
+  ~ActionGetPopupFunction() override = default;
 };
 
 class ActionSetPopupFunction : public ExtensionActionSetPopupFunction {
@@ -217,7 +217,7 @@ class ActionSetPopupFunction : public ExtensionActionSetPopupFunction {
   DECLARE_EXTENSION_FUNCTION("action.setPopup", ACTION_SETPOPUP)
 
  protected:
-  ~ActionSetPopupFunction() override {}
+  ~ActionSetPopupFunction() override = default;
 };
 
 class ActionGetTitleFunction : public ExtensionActionGetTitleFunction {
@@ -225,7 +225,7 @@ class ActionGetTitleFunction : public ExtensionActionGetTitleFunction {
   DECLARE_EXTENSION_FUNCTION("action.getTitle", ACTION_GETTITLE)
 
  protected:
-  ~ActionGetTitleFunction() override {}
+  ~ActionGetTitleFunction() override = default;
 };
 
 class ActionSetTitleFunction : public ExtensionActionSetTitleFunction {
@@ -233,7 +233,7 @@ class ActionSetTitleFunction : public ExtensionActionSetTitleFunction {
   DECLARE_EXTENSION_FUNCTION("action.setTitle", ACTION_SETTITLE)
 
  protected:
-  ~ActionSetTitleFunction() override {}
+  ~ActionSetTitleFunction() override = default;
 };
 
 class ActionGetBadgeTextFunction : public ExtensionActionGetBadgeTextFunction {
@@ -241,7 +241,7 @@ class ActionGetBadgeTextFunction : public ExtensionActionGetBadgeTextFunction {
   DECLARE_EXTENSION_FUNCTION("action.getBadgeText", ACTION_GETBADGETEXT)
 
  protected:
-  ~ActionGetBadgeTextFunction() override {}
+  ~ActionGetBadgeTextFunction() override = default;
 };
 
 class ActionSetBadgeTextFunction : public ExtensionActionSetBadgeTextFunction {
@@ -249,7 +249,7 @@ class ActionSetBadgeTextFunction : public ExtensionActionSetBadgeTextFunction {
   DECLARE_EXTENSION_FUNCTION("action.setBadgeText", ACTION_SETBADGETEXT)
 
  protected:
-  ~ActionSetBadgeTextFunction() override {}
+  ~ActionSetBadgeTextFunction() override = default;
 };
 
 class ActionGetBadgeBackgroundColorFunction
@@ -259,7 +259,7 @@ class ActionGetBadgeBackgroundColorFunction
                              ACTION_GETBADGEBACKGROUNDCOLOR)
 
  protected:
-  ~ActionGetBadgeBackgroundColorFunction() override {}
+  ~ActionGetBadgeBackgroundColorFunction() override = default;
 };
 
 class ActionSetBadgeBackgroundColorFunction
@@ -269,7 +269,7 @@ class ActionSetBadgeBackgroundColorFunction
                              ACTION_SETBADGEBACKGROUNDCOLOR)
 
  protected:
-  ~ActionSetBadgeBackgroundColorFunction() override {}
+  ~ActionSetBadgeBackgroundColorFunction() override = default;
 };
 
 class ActionGetBadgeTextColorFunction : public ExtensionActionFunction {
@@ -297,7 +297,7 @@ class ActionEnableFunction : public ExtensionActionShowFunction {
   DECLARE_EXTENSION_FUNCTION("action.enable", ACTION_ENABLE)
 
  protected:
-  ~ActionEnableFunction() override {}
+  ~ActionEnableFunction() override = default;
 };
 
 class ActionDisableFunction : public ExtensionActionHideFunction {
@@ -305,7 +305,7 @@ class ActionDisableFunction : public ExtensionActionHideFunction {
   DECLARE_EXTENSION_FUNCTION("action.disable", ACTION_DISABLE)
 
  protected:
-  ~ActionDisableFunction() override {}
+  ~ActionDisableFunction() override = default;
 };
 
 class ActionIsEnabledFunction : public ExtensionActionFunction {
@@ -350,7 +350,7 @@ class BrowserActionSetIconFunction : public ExtensionActionSetIconFunction {
   DECLARE_EXTENSION_FUNCTION("browserAction.setIcon", BROWSERACTION_SETICON)
 
  protected:
-  ~BrowserActionSetIconFunction() override {}
+  ~BrowserActionSetIconFunction() override = default;
 };
 
 class BrowserActionSetTitleFunction : public ExtensionActionSetTitleFunction {
@@ -358,7 +358,7 @@ class BrowserActionSetTitleFunction : public ExtensionActionSetTitleFunction {
   DECLARE_EXTENSION_FUNCTION("browserAction.setTitle", BROWSERACTION_SETTITLE)
 
  protected:
-  ~BrowserActionSetTitleFunction() override {}
+  ~BrowserActionSetTitleFunction() override = default;
 };
 
 class BrowserActionSetPopupFunction : public ExtensionActionSetPopupFunction {
@@ -366,7 +366,7 @@ class BrowserActionSetPopupFunction : public ExtensionActionSetPopupFunction {
   DECLARE_EXTENSION_FUNCTION("browserAction.setPopup", BROWSERACTION_SETPOPUP)
 
  protected:
-  ~BrowserActionSetPopupFunction() override {}
+  ~BrowserActionSetPopupFunction() override = default;
 };
 
 class BrowserActionGetTitleFunction : public ExtensionActionGetTitleFunction {
@@ -374,7 +374,7 @@ class BrowserActionGetTitleFunction : public ExtensionActionGetTitleFunction {
   DECLARE_EXTENSION_FUNCTION("browserAction.getTitle", BROWSERACTION_GETTITLE)
 
  protected:
-  ~BrowserActionGetTitleFunction() override {}
+  ~BrowserActionGetTitleFunction() override = default;
 };
 
 class BrowserActionGetPopupFunction : public ExtensionActionGetPopupFunction {
@@ -382,7 +382,7 @@ class BrowserActionGetPopupFunction : public ExtensionActionGetPopupFunction {
   DECLARE_EXTENSION_FUNCTION("browserAction.getPopup", BROWSERACTION_GETPOPUP)
 
  protected:
-  ~BrowserActionGetPopupFunction() override {}
+  ~BrowserActionGetPopupFunction() override = default;
 };
 
 class BrowserActionSetBadgeTextFunction
@@ -392,7 +392,7 @@ class BrowserActionSetBadgeTextFunction
                              BROWSERACTION_SETBADGETEXT)
 
  protected:
-  ~BrowserActionSetBadgeTextFunction() override {}
+  ~BrowserActionSetBadgeTextFunction() override = default;
 };
 
 class BrowserActionSetBadgeBackgroundColorFunction
@@ -402,7 +402,7 @@ class BrowserActionSetBadgeBackgroundColorFunction
                              BROWSERACTION_SETBADGEBACKGROUNDCOLOR)
 
  protected:
-  ~BrowserActionSetBadgeBackgroundColorFunction() override {}
+  ~BrowserActionSetBadgeBackgroundColorFunction() override = default;
 };
 
 class BrowserActionGetBadgeTextFunction
@@ -412,7 +412,7 @@ class BrowserActionGetBadgeTextFunction
                              BROWSERACTION_GETBADGETEXT)
 
  protected:
-  ~BrowserActionGetBadgeTextFunction() override {}
+  ~BrowserActionGetBadgeTextFunction() override = default;
 };
 
 class BrowserActionGetBadgeBackgroundColorFunction
@@ -422,7 +422,7 @@ class BrowserActionGetBadgeBackgroundColorFunction
                              BROWSERACTION_GETBADGEBACKGROUNDCOLOR)
 
  protected:
-  ~BrowserActionGetBadgeBackgroundColorFunction() override {}
+  ~BrowserActionGetBadgeBackgroundColorFunction() override = default;
 };
 
 class BrowserActionEnableFunction : public ExtensionActionShowFunction {
@@ -430,7 +430,7 @@ class BrowserActionEnableFunction : public ExtensionActionShowFunction {
   DECLARE_EXTENSION_FUNCTION("browserAction.enable", BROWSERACTION_ENABLE)
 
  protected:
-  ~BrowserActionEnableFunction() override {}
+  ~BrowserActionEnableFunction() override = default;
 };
 
 class BrowserActionDisableFunction : public ExtensionActionHideFunction {
@@ -438,7 +438,7 @@ class BrowserActionDisableFunction : public ExtensionActionHideFunction {
   DECLARE_EXTENSION_FUNCTION("browserAction.disable", BROWSERACTION_DISABLE)
 
  protected:
-  ~BrowserActionDisableFunction() override {}
+  ~BrowserActionDisableFunction() override = default;
 };
 
 class BrowserActionOpenPopupFunction : public ExtensionActionOpenPopupFunction {
@@ -447,7 +447,7 @@ class BrowserActionOpenPopupFunction : public ExtensionActionOpenPopupFunction {
                              BROWSERACTION_OPEN_POPUP)
 
  protected:
-  ~BrowserActionOpenPopupFunction() override {}
+  ~BrowserActionOpenPopupFunction() override = default;
 };
 
 }  // namespace extensions
@@ -461,7 +461,7 @@ class PageActionShowFunction : public extensions::ExtensionActionShowFunction {
   DECLARE_EXTENSION_FUNCTION("pageAction.show", PAGEACTION_SHOW)
 
  protected:
-  ~PageActionShowFunction() override {}
+  ~PageActionShowFunction() override = default;
 };
 
 class PageActionHideFunction : public extensions::ExtensionActionHideFunction {
@@ -469,7 +469,7 @@ class PageActionHideFunction : public extensions::ExtensionActionHideFunction {
   DECLARE_EXTENSION_FUNCTION("pageAction.hide", PAGEACTION_HIDE)
 
  protected:
-  ~PageActionHideFunction() override {}
+  ~PageActionHideFunction() override = default;
 };
 
 class PageActionSetIconFunction
@@ -478,7 +478,7 @@ class PageActionSetIconFunction
   DECLARE_EXTENSION_FUNCTION("pageAction.setIcon", PAGEACTION_SETICON)
 
  protected:
-  ~PageActionSetIconFunction() override {}
+  ~PageActionSetIconFunction() override = default;
 };
 
 class PageActionSetTitleFunction
@@ -487,7 +487,7 @@ class PageActionSetTitleFunction
   DECLARE_EXTENSION_FUNCTION("pageAction.setTitle", PAGEACTION_SETTITLE)
 
  protected:
-  ~PageActionSetTitleFunction() override {}
+  ~PageActionSetTitleFunction() override = default;
 };
 
 class PageActionSetPopupFunction
@@ -496,7 +496,7 @@ class PageActionSetPopupFunction
   DECLARE_EXTENSION_FUNCTION("pageAction.setPopup", PAGEACTION_SETPOPUP)
 
  protected:
-  ~PageActionSetPopupFunction() override {}
+  ~PageActionSetPopupFunction() override = default;
 };
 
 class PageActionGetTitleFunction
@@ -505,7 +505,7 @@ class PageActionGetTitleFunction
   DECLARE_EXTENSION_FUNCTION("pageAction.getTitle", PAGEACTION_GETTITLE)
 
  protected:
-  ~PageActionGetTitleFunction() override {}
+  ~PageActionGetTitleFunction() override = default;
 };
 
 class PageActionGetPopupFunction
@@ -514,7 +514,7 @@ class PageActionGetPopupFunction
   DECLARE_EXTENSION_FUNCTION("pageAction.getPopup", PAGEACTION_GETPOPUP)
 
  protected:
-  ~PageActionGetPopupFunction() override {}
+  ~PageActionGetPopupFunction() override = default;
 };
 
 #endif  // SHELL_BROWSER_EXTENSIONS_API_EXTENSION_ACTION_EXTENSION_ACTION_API_H_

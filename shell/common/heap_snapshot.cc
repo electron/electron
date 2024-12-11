@@ -18,7 +18,7 @@ class HeapSnapshotOutputStream : public v8::OutputStream {
     DCHECK(file_);
   }
 
-  bool IsComplete() const { return is_complete_; }
+  [[nodiscard]] bool IsComplete() const { return is_complete_; }
 
   // v8::OutputStream
   int GetChunkSize() override { return 65536; }

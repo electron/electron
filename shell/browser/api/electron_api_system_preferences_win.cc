@@ -154,7 +154,7 @@ std::string SystemPreferences::GetMediaAccessStatus(
         DeviceAccessStatus::DeviceAccessStatus_Allowed);
   } else {
     thrower.ThrowError("Invalid media type");
-    return std::string();
+    return {};
   }
 }
 

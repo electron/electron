@@ -142,6 +142,29 @@ ipcRenderer.on('port', (e, msg) => {
 })
 ```
 
+#### `frame.collectJavaScriptCallStack()` _Experimental_
+
+Returns `Promise<string> | Promise<void>` - A promise that resolves with the currently running JavaScript call
+stack. If no JavaScript runs in the frame, the promise will never resolve. In cases where the call stack is
+otherwise unable to be collected, it will return `undefined`.
+
+This can be useful to determine why the frame is unresponsive in cases where there's long-running JavaScript.
+For more information, see the [proposed Crash Reporting API.](https://wicg.github.io/crash-reporting/)
+
+```js
+const { app } = require('electron')
+
+app.commandLine.appendSwitch('enable-features', 'DocumentPolicyIncludeJSCallStacksInCrashReports')
+
+app.on('web-contents-created', (_, webContents) => {
+  webContents.on('unresponsive', async () => {
+    // Interrupt execution and collect call stack from unresponsive renderer
+    const callStack = await webContents.mainFrame.collectJavaScriptCallStack()
+    console.log('Renderer unresponsive\n', callStack)
+  })
+})
+```
+
 ### Instance Properties
 
 #### `frame.ipc` _Readonly_

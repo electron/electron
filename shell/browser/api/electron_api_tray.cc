@@ -67,13 +67,13 @@ gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
                             gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
-    return gin::Handle<Tray>();
+    return {};
   }
 
 #if BUILDFLAG(IS_WIN)
   if (!guid.has_value() && args->Length() > 1) {
     thrower.ThrowError("Invalid GUID format");
-    return gin::Handle<Tray>();
+    return {};
   }
 #endif
 
@@ -85,7 +85,7 @@ gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
   if (try_catch.HasCaught()) {
     delete tray;
     try_catch.ReThrow();
-    return gin::Handle<Tray>();
+    return {};
   }
 
   auto handle = gin::CreateHandle(args->isolate(), tray);
@@ -264,7 +264,7 @@ void Tray::SetTitle(const std::string& title,
 
 std::string Tray::GetTitle() {
   if (!CheckAlive())
-    return std::string();
+    return {};
 #if BUILDFLAG(IS_MAC)
   return tray_icon_->GetTitle();
 #else
@@ -388,7 +388,7 @@ void Tray::SetContextMenu(gin_helper::ErrorThrower thrower,
 
 gfx::Rect Tray::GetBounds() {
   if (!CheckAlive())
-    return gfx::Rect();
+    return {};
   return tray_icon_->GetBounds();
 }
 

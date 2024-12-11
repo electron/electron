@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/containers/extend.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_split.h"
 #include "content/public/common/content_constants.h"
@@ -98,21 +99,6 @@ bool IsWidevineAvailable(
 }
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
 
-void AppendDelimitedSwitchToVector(const std::string_view cmd_switch,
-                                   std::vector<std::string>* append_me) {
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  auto switch_value = command_line->GetSwitchValueASCII(cmd_switch);
-  if (!switch_value.empty()) {
-    constexpr std::string_view delimiter{",", 1};
-    auto tokens =
-        base::SplitString(switch_value, delimiter, base::TRIM_WHITESPACE,
-                          base::SPLIT_WANT_NONEMPTY);
-    append_me->reserve(append_me->size() + tokens.size());
-    std::move(std::begin(tokens), std::end(tokens),
-              std::back_inserter(*append_me));
-  }
-}
-
 }  // namespace
 
 ElectronContentClient::ElectronContentClient() = default;
@@ -149,16 +135,19 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
   //
   // We use this for registration to network utility process
   if (IsUtilityProcess()) {
-    AppendDelimitedSwitchToVector(switches::kServiceWorkerSchemes,
-                                  &schemes->service_worker_schemes);
-    AppendDelimitedSwitchToVector(switches::kStandardSchemes,
-                                  &schemes->standard_schemes);
-    AppendDelimitedSwitchToVector(switches::kSecureSchemes,
-                                  &schemes->secure_schemes);
-    AppendDelimitedSwitchToVector(switches::kBypassCSPSchemes,
-                                  &schemes->csp_bypassing_schemes);
-    AppendDelimitedSwitchToVector(switches::kCORSSchemes,
-                                  &schemes->cors_enabled_schemes);
+    const auto& cmd = *base::CommandLine::ForCurrentProcess();
+    auto append_cli_schemes = [&cmd](auto& appendme, const auto key) {
+      base::Extend(appendme, base::SplitString(cmd.GetSwitchValueASCII(key),
+                                               ",", base::TRIM_WHITESPACE,
+                                               base::SPLIT_WANT_NONEMPTY));
+    };
+
+    using namespace switches;
+    append_cli_schemes(schemes->cors_enabled_schemes, kCORSSchemes);
+    append_cli_schemes(schemes->csp_bypassing_schemes, kBypassCSPSchemes);
+    append_cli_schemes(schemes->secure_schemes, kSecureSchemes);
+    append_cli_schemes(schemes->service_worker_schemes, kServiceWorkerSchemes);
+    append_cli_schemes(schemes->standard_schemes, kStandardSchemes);
   }
 
   if (electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled()) {

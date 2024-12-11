@@ -199,7 +199,7 @@ index 64a79ebe2e2d21d5a6b4a98042d1cdb7b6edad52..16f2ae01a8d33e6341ed52638e963c34
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
            parent));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 143f5fe1028e154192767599a1e68b45301a894d..132e670dc3ccd9a0f904a8869e516f4556fbf0af 100644
+index 9780c80ffff7bdb715a9adcb656e5d33be974db6..cf6edf5c68a8e2f8ffda119b58c6283bc43199c0 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -11,6 +11,7 @@

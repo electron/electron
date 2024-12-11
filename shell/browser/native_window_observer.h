@@ -27,7 +27,7 @@ namespace electron {
 
 class NativeWindowObserver : public base::CheckedObserver {
  public:
-  ~NativeWindowObserver() override {}
+  ~NativeWindowObserver() override = default;
 
   // Called when the web page in window wants to create a popup window.
   virtual void WillCreatePopupWindow(const std::u16string& frame_name,

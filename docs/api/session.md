@@ -1360,6 +1360,36 @@ specified when registering the protocol.
 
 Returns `Promise<void>` - resolves when the code cache clear operation is complete.
 
+#### `ses.getSharedDictionaryUsageInfo()`
+
+Returns `Promise<SharedDictionaryUsageInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+Shared dictionaries are used to power advanced compression of data sent over the wire, specifically with Brotli and ZStandard. You don't need to call any of the shared dictionary APIs in Electron to make use of this advanced web feature, but if you do, they allow deeper control and inspection of the shared dictionaries used during decompression.
+
+To get detailed information about a specific shared dictionary entry, call `getSharedDictionaryInfo(options)`.
+
+#### `ses.getSharedDictionaryInfo(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<SharedDictionaryInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+To get information about all present shared dictionaries, call `getSharedDictionaryUsageInfo()`.
+
+#### `ses.clearSharedDictionaryCache()`
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared, both in memory and on disk.
+
+#### `ses.clearSharedDictionaryCacheForIsolationKey(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared for the specified isolation key, both in memory and on disk.
+
 #### `ses.setSpellCheckerEnabled(enable)`
 
 * `enable` boolean
@@ -1509,9 +1539,11 @@ session is persisted on disk.  For in memory sessions this returns `null`.
 #### `ses.clearData([options])`
 
 * `options` Object (optional)
-  * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data.
+  * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data. This
+    can potentially include data types not explicitly listed here. (See Chromium's
+    [`BrowsingDataRemover`][browsing-data-remover] for the full list.)
     * `backgroundFetch` - Background Fetch
-    * `cache` - Cache
+    * `cache` - Cache (includes `cachestorage` and `shadercache`)
     * `cookies` - Cookies
     * `downloads` - Downloads
     * `fileSystems` - File Systems
@@ -1535,7 +1567,9 @@ This method clears more types of data and is more thorough than the
 
 **Note:** Cookies are stored at a broader scope than origins. When removing cookies and filtering by `origins` (or `excludeOrigins`), the cookies will be removed at the [registrable domain](https://url.spec.whatwg.org/#host-registrable-domain) level. For example, clearing cookies for the origin `https://really.specific.origin.example.com/` will end up clearing all cookies for `example.com`. Clearing cookies for the origin `https://my.website.example.co.uk/` will end up clearing all cookies for `example.co.uk`.
 
-For more information, refer to Chromium's [`BrowsingDataRemover` interface](https://source.chromium.org/chromium/chromium/src/+/main:content/public/browser/browsing_data_remover.h).
+**Note:** Clearing cache data will also clear the shared dictionary cache. This means that any dictionaries used for compression may be reloaded after clearing the cache. If you wish to clear the shared dictionary cache but leave other cached data intact, you may want to use the `clearSharedDictionaryCache` method.
+
+For more information, refer to Chromium's [`BrowsingDataRemover` interface][browsing-data-remover].
 
 ### Instance Properties
 
@@ -1601,3 +1635,5 @@ app.whenReady().then(async () => {
   console.log('Net-logs written to', path)
 })
 ```
+
+[browsing-data-remover]: https://source.chromium.org/chromium/chromium/src/+/main:content/public/browser/browsing_data_remover.h

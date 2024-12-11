@@ -61,7 +61,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   EventEmitter& operator=(const EventEmitter&) = delete;
 
  protected:
-  EventEmitter() {}
+  EventEmitter() = default;
 
  private:
   // this.emit(name, event, args...);

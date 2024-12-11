@@ -474,7 +474,7 @@ void OnClientCertificateSelected(
     return;
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
-      base::as_bytes(base::make_span(data)), net::X509Certificate::FORMAT_AUTO);
+      base::as_byte_span(data), net::X509Certificate::FORMAT_AUTO);
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
     for (auto& identity : *identities) {
@@ -776,7 +776,7 @@ base::OnceClosure App::SelectClientCertificate(
         std::move((*shared_identities)[0]),
         base::BindRepeating(&GotPrivateKey, shared_delegate, std::move(cert)));
   }
-  return base::OnceClosure();
+  return {};
 }
 
 void App::OnGpuInfoUpdate() {
@@ -944,7 +944,7 @@ std::string App::GetSystemLocale(gin_helper::ErrorThrower thrower) const {
     thrower.ThrowError(
         "app.getSystemLocale() can only be called "
         "after app is ready");
-    return std::string();
+    return {};
   }
   return static_cast<BrowserProcessImpl*>(g_browser_process)->GetSystemLocale();
 }

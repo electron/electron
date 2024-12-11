@@ -58,7 +58,7 @@ class SpellCheckClient::SpellcheckRequest {
   SpellcheckRequest& operator=(const SpellcheckRequest&) = delete;
   ~SpellcheckRequest() = default;
 
-  const std::u16string& text() const { return text_; }
+  [[nodiscard]] const std::u16string& text() const { return text_; }
   blink::WebTextCheckingCompletion* completion() { return completion_.get(); }
   std::vector<Word>& wordlist() { return word_list_; }
 

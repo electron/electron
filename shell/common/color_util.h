@@ -12,7 +12,7 @@
 // SkColor is a typedef for uint32_t, this wrapper is to tag an SkColor for
 // ease of use in gin converters.
 struct WrappedSkColor {
-  WrappedSkColor() {}
+  WrappedSkColor() = default;
   WrappedSkColor(SkColor c) : value(c) {}  // NOLINT(runtime/explicit)
   SkColor value;
   operator SkColor() const { return value; }

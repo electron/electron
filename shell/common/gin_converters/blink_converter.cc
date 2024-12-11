@@ -201,6 +201,8 @@ struct Converter<blink::WebInputEvent::Modifiers> {
   }
 };
 
+namespace {
+
 std::vector<std::string_view> ModifiersToArray(int modifiers) {
   std::vector<std::string_view> modifier_strings;
 
@@ -210,6 +212,8 @@ std::vector<std::string_view> ModifiersToArray(int modifiers) {
 
   return modifier_strings;
 }
+
+}  // namespace
 
 blink::WebInputEvent::Type GetWebInputEventType(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val) {
@@ -301,6 +305,8 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
+namespace {
+
 int GetKeyLocationCode(const blink::WebInputEvent& key) {
   // https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/core/events/keyboard_event.h;l=46;drc=1ff6437e65b183e673b7b4f25060b74dc2ba5c37
   enum KeyLocationCode {
@@ -318,6 +324,8 @@ int GetKeyLocationCode(const blink::WebInputEvent& key) {
     return kDomKeyLocationRight;
   return kDomKeyLocationStandard;
 }
+
+}  // namespace
 
 v8::Local<v8::Value> Converter<blink::WebKeyboardEvent>::ToV8(
     v8::Isolate* isolate,

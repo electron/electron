@@ -152,7 +152,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
                         "Electron contextBridge recursion depth exceeded.  "
                         "Nested objects "
                         "deeper than 1000 are not supported.")));
-    return v8::MaybeLocal<v8::Value>();
+    return {};
   }
 
   // Certain primitives always use the current contexts prototype and we can
@@ -209,7 +209,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
 
       if (!v8::Function::New(destination_context, ProxyFunctionWrapper, state)
                .ToLocal(&proxy_func))
-        return v8::MaybeLocal<v8::Value>();
+        return {};
       SetPrivate(destination_context, proxy_func.As<v8::Object>(),
                  context_bridge::kOriginalFunctionPrivateKey, func);
       object_cache->CacheProxiedObject(value, proxy_func);
@@ -372,11 +372,11 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
           arr->Get(source_context, i).ToLocalChecked(), value, object_cache,
           support_dynamic_properties, recursion_depth + 1, error_target);
       if (value_for_array.IsEmpty())
-        return v8::MaybeLocal<v8::Value>();
+        return {};
 
       if (!IsTrue(cloned_arr->Set(destination_context, static_cast<int>(i),
                                   value_for_array.ToLocalChecked()))) {
-        return v8::MaybeLocal<v8::Value>();
+        return {};
       }
     }
     object_cache->CacheProxiedObject(value, cloned_arr);
@@ -408,7 +408,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
         object_value, source_context, destination_context, object_cache,
         support_dynamic_properties, recursion_depth + 1, error_target);
     if (passed_value.IsEmpty())
-      return v8::MaybeLocal<v8::Value>();
+      return {};
     return v8::MaybeLocal<v8::Value>(passed_value.ToLocalChecked());
   }
 
@@ -421,7 +421,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Context::Scope error_scope(error_context);
     // V8 serializer will throw an error if required
     if (!gin::ConvertFromV8(error_context->GetIsolate(), value, &ret)) {
-      return v8::MaybeLocal<v8::Value>();
+      return {};
     }
   }
 
@@ -651,13 +651,15 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
           object_cache, support_dynamic_properties, recursion_depth + 1,
           error_target);
       if (passed_value.IsEmpty())
-        return v8::MaybeLocal<v8::Object>();
+        return {};
       proxy.Set(key, passed_value.ToLocalChecked());
     }
 
     return proxy.GetHandle();
   }
 }
+
+namespace {
 
 void ExposeAPIInWorld(v8::Isolate* isolate,
                       const int world_id,
@@ -818,6 +820,8 @@ bool IsCalledFromMainWorld(v8::Isolate* isolate) {
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
   return isolate->GetCurrentContext() == main_context;
 }
+
+}  // namespace
 
 }  // namespace api
 

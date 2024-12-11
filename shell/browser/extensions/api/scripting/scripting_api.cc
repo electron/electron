@@ -49,10 +49,10 @@ namespace extensions {
 
 namespace {
 
-constexpr char kCouldNotLoadFileError[] = "Could not load file: '*'.";
-constexpr char kDuplicateFileSpecifiedError[] =
+constexpr std::string_view kCouldNotLoadFileError = "Could not load file: '*'.";
+constexpr std::string_view kDuplicateFileSpecifiedError =
     "Duplicate file specified: '*'.";
-constexpr char kEmptyMatchesError[] =
+constexpr std::string_view kEmptyMatchesError =
     "Script with ID '*' must specify 'matches'.";
 constexpr char kExactlyOneOfCssAndFilesError[] =
     "Exactly one of 'css' and 'files' must be specified.";

@@ -50,7 +50,7 @@ index 2ea73bf0f0e16ad01e547bb0ec8082ddd02286c2..1ce0ff532976d5d2ac61d6ae14699d5c
    blink::TrialTokenValidator::SetOriginTrialPolicyGetter(
        base::BindRepeating([]() -> blink::OriginTrialPolicy* {
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index a5762a7ed48bb841a9a8a219f08e2f6703bd777a..991ce9ffa6fc89121d2fda3ece57ffa1f5af4a7c 100644
+index b97149f792666bc5b4f180a1d544f4455e44456f..4dfdff22ec6f74b9ac034beac2fada861de9c8b3 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -4,6 +4,8 @@
@@ -60,8 +60,8 @@ index a5762a7ed48bb841a9a8a219f08e2f6703bd777a..991ce9ffa6fc89121d2fda3ece57ffa1
 +#include <string_view>
 +
  #include "base/check.h"
+ #include "base/notreached.h"
  #include "build/build_config.h"
- #include "content/public/browser/content_browser_client.h"
 @@ -91,6 +93,10 @@ std::optional<int> ContentMainDelegate::PostEarlyInitialization(
    return std::nullopt;
  }
@@ -74,7 +74,7 @@ index a5762a7ed48bb841a9a8a219f08e2f6703bd777a..991ce9ffa6fc89121d2fda3ece57ffa1
    return new ContentClient();
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index 592199d119cbfc382f94a380f78d82b36d97dd41..de428aeb9ca856d4031c4f4718c08e625c8f70e9 100644
+index 801bfd401ea4a8e72417d88efaa718cc6fb60883..663fec68d0c2855cdf83bb259b85c22910a67464 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -8,6 +8,7 @@
@@ -84,8 +84,8 @@ index 592199d119cbfc382f94a380f78d82b36d97dd41..de428aeb9ca856d4031c4f4718c08e62
 +#include <string_view>
  #include <vector>
  
- #include "build/build_config.h"
-@@ -173,6 +174,8 @@ class CONTENT_EXPORT ContentMainDelegate {
+ #include "base/notreached.h"
+@@ -174,6 +175,8 @@ class CONTENT_EXPORT ContentMainDelegate {
    virtual bool ShouldHandleConsoleControlEvents();
  #endif
  
@@ -95,10 +95,10 @@ index 592199d119cbfc382f94a380f78d82b36d97dd41..de428aeb9ca856d4031c4f4718c08e62
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 741eb0bfe9f624c3bb8edfe7dc8e36b19a281365..e7bae92bd94cf7bbadccf36e6cd7f87a2ae1f9ca 100644
+index ea22d21b80de2ffb99809df3abd7c0fa1a098481..4b3699bce4afc49acbdc2749aa70e69bf54d97b6 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -655,8 +655,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -653,8 +653,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -108,7 +108,7 @@ index 741eb0bfe9f624c3bb8edfe7dc8e36b19a281365..e7bae92bd94cf7bbadccf36e6cd7f87a
    if (g_mapped_snapshot) {
      // TODO(crbug.com/40558459): Confirm not loading different type of snapshot
      // files in a process.
-@@ -665,10 +664,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -663,10 +662,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =

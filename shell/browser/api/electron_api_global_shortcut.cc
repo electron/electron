@@ -28,15 +28,14 @@ namespace {
 
 #if BUILDFLAG(IS_MAC)
 bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
-  return Command::IsMediaKey(accelerator) &&
+  return accelerator.IsMediaKey() &&
          !electron::api::SystemPreferences::IsTrustedAccessibilityClient(false);
 }
 
 bool MapHasMediaKeys(
     const std::map<ui::Accelerator, base::RepeatingClosure>& accelerator_map) {
-  return std::ranges::any_of(accelerator_map, [](const auto& ac) {
-    return Command::IsMediaKey(ac.first);
-  });
+  return std::ranges::any_of(
+      accelerator_map, [](const auto& ac) { return ac.first.IsMediaKey(); });
 }
 #endif
 
@@ -59,6 +58,11 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
     NOTREACHED();
   }
   accelerator_callback_map_[accelerator].Run();
+}
+
+void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
+                                    const std::string& command_id) {
+  // Ignore extension commands
 }
 
 bool GlobalShortcut::RegisterAll(
@@ -91,7 +95,7 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     return false;
   }
 #if BUILDFLAG(IS_MAC)
-  if (Command::IsMediaKey(accelerator)) {
+  if (accelerator.IsMediaKey()) {
     if (RegisteringMediaKeyForUntrustedClient(accelerator))
       return false;
 
@@ -118,8 +122,7 @@ void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
     return;
 
 #if BUILDFLAG(IS_MAC)
-  if (Command::IsMediaKey(accelerator) &&
-      !MapHasMediaKeys(accelerator_callback_map_)) {
+  if (accelerator.IsMediaKey() && !MapHasMediaKeys(accelerator_callback_map_)) {
     GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(true);
   }
 #endif
