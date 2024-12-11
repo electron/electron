@@ -104,7 +104,7 @@ describe('webContents module', () => {
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '5')('will-prevent-unload event', function () {
+  describe('will-prevent-unload event', function () {
     afterEach(async () => {
       await closeAllWindows();
       await cleanupWebContents();
