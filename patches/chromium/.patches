@@ -136,3 +136,4 @@ fix_software_compositing_infinite_loop.patch
 refactor_unfilter_unresponsive_events.patch
 build_disable_thin_lto_mac.patch
 build_add_public_config_simdutf_config.patch
+fix_desktop_capturer_show_own_window.patch
