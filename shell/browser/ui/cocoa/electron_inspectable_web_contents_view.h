@@ -49,8 +49,6 @@ using electron::InspectableWebContentsViewMac;
 - (void)setTitle:(NSString*)title;
 - (NSString*)getTitle;
 
-- (void)setForceNonDraggable:(BOOL)forceNonDraggable;
-
 @end
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_INSPECTABLE_WEB_CONTENTS_VIEW_H_
