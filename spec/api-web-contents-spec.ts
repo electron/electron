@@ -1,5 +1,6 @@
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents, BaseWindow, WebContentsView } from 'electron/main';
 
+import { nativeInput } from '@smaddock/electron-native-utils';
 import { expect } from 'chai';
 
 import * as cp from 'node:child_process';
@@ -2731,8 +2732,8 @@ describe('webContents module', () => {
       expect(params.y).to.be.a('number');
     });
 
-    // Skipping due to lack of native click support.
-    it.skip('emits the correct number of times when right-clicked in page', async () => {
+    // Native click only supported on macOS
+    ifit(process.platform === 'darwin')('emits the correct number of times when right-clicked in page', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
 
@@ -2742,8 +2743,14 @@ describe('webContents module', () => {
         contextMenuEmitCount++;
       });
 
-      // TODO(samuelmaddock): Perform native right-click. We've tried then
-      // dropped robotjs and nutjs so for now this is a manual test.
+      const position = w.getPosition();
+      const size = w.getSize();
+      nativeInput.setMousePosition({
+        x: position[0] + size[0] / 2,
+        y: position[1] + size[1] / 2
+      });
+      await setTimeout(1000 / 60);
+      nativeInput.click({ button: 'right' });
 
       await once(w.webContents, 'context-menu');
       await setTimeout(100);
