@@ -44,7 +44,6 @@ describe('session.serviceWorkers', () => {
   afterEach(async () => {
     w.destroy();
     server.close();
-    server = null as unknown as http.Server;
     await ses.clearStorageData();
   });
 

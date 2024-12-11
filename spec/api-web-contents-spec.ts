@@ -45,7 +45,7 @@ describe('webContents module', () => {
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '1')('webContents properties', () => {
+  describe('webContents properties', () => {
     afterEach(closeAllWindows);
 
     it('has expected additional enumerable properties', () => {
@@ -56,13 +56,13 @@ describe('webContents module', () => {
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '2')('fromId()', () => {
+  describe('fromId()', () => {
     it('returns undefined for an unknown id', () => {
       expect(webContents.fromId(12345)).to.be.undefined();
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '3')('fromFrame()', () => {
+  describe('fromFrame()', () => {
     afterEach(cleanupWebContents);
     it('returns WebContents for mainFrame', () => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create();
@@ -85,7 +85,7 @@ describe('webContents module', () => {
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '4')('fromDevToolsTargetId()', () => {
+  describe('fromDevToolsTargetId()', () => {
     afterEach(closeAllWindows);
     it('returns WebContents for attached DevTools target', async () => {
       const w = new BrowserWindow({ show: false });
@@ -164,7 +164,7 @@ describe('webContents module', () => {
     });
   });
 
-  ifdescribe(process.env.TEST_SHARD !== '6')('webContents.send(channel, args...)', () => {
+  describe('webContents.send(channel, args...)', () => {
     afterEach(closeAllWindows);
     it('throws an error when the channel is missing', () => {
       const w = new BrowserWindow({ show: false });
@@ -356,7 +356,6 @@ describe('webContents module', () => {
 
       after(() => {
         server.close();
-        server = null as unknown as http.Server;
       });
 
       it('works after page load and during subframe load', async () => {
@@ -383,12 +382,12 @@ describe('webContents module', () => {
   describe('webContents.executeJavaScriptInIsolatedWorld', () => {
     let w: BrowserWindow;
 
-    beforeEach(async () => {
+    before(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadURL('about:blank');
     });
 
-    afterEach(closeAllWindows);
+    after(() => w.close());
 
     it('resolves the returned promise with the result', async () => {
       await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X = 123' }]);
@@ -1540,14 +1539,13 @@ describe('webContents module', () => {
 
     it('can persist when it contains iframe', (done) => {
       const w = new BrowserWindow({ show: false });
-      let server = http.createServer((req, res) => {
+      const server = http.createServer((req, res) => {
         setTimeout(200).then(() => {
           res.end();
         });
       });
       defer(() => {
         server.close();
-        server = null as unknown as http.Server;
       });
       listen(server).then(({ url }) => {
         const content = `<iframe src=${url}></iframe>`;
@@ -1607,7 +1605,6 @@ describe('webContents module', () => {
 
       after(() => {
         server.close();
-        server = null as unknown as http.Server;
       });
 
       it('cannot persist zoom level after navigation with webFrame', async () => {
@@ -1767,7 +1764,6 @@ describe('webContents module', () => {
 
     after(() => {
       server.close();
-      server = null as unknown as http.Server;
     });
 
     afterEach(closeAllWindows);
@@ -1930,7 +1926,6 @@ describe('webContents module', () => {
 
     after(() => {
       server.close();
-      server = null as unknown as http.Server;
     });
 
     const events = [
@@ -2040,7 +2035,7 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('propagates referrer information to new target=_blank windows', (done) => {
       const w = new BrowserWindow({ show: false });
-      let server = http.createServer((req, res) => {
+      const server = http.createServer((req, res) => {
         if (req.url === '/should_have_referrer') {
           try {
             expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
@@ -2053,7 +2048,6 @@ describe('webContents module', () => {
       });
       defer(() => {
         server.close();
-        server = null as unknown as http.Server;
       });
       listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
@@ -2070,7 +2064,7 @@ describe('webContents module', () => {
 
     it('propagates referrer information to windows opened with window.open', (done) => {
       const w = new BrowserWindow({ show: false });
-      let server = http.createServer((req, res) => {
+      const server = http.createServer((req, res) => {
         if (req.url === '/should_have_referrer') {
           try {
             expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
@@ -2083,7 +2077,6 @@ describe('webContents module', () => {
       });
       defer(() => {
         server.close();
-        server = null as unknown as http.Server;
       });
       listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
@@ -2666,9 +2659,7 @@ describe('webContents module', () => {
 
     after(() => {
       server.close();
-      server = null as unknown as http.Server;
       proxyServer.close();
-      proxyServer = null as unknown as http.Server;
     });
 
     it('is emitted when navigating', async () => {

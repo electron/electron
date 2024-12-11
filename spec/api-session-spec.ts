@@ -372,7 +372,6 @@ describe('session module', () => {
     afterEach(() => {
       if (server) {
         server.close();
-        server = null as unknown as http.Server;
       }
       customSession = null as any;
     });
@@ -660,7 +659,6 @@ describe('session module', () => {
 
     afterEach((done) => {
       server.close(done);
-      server = null as unknown as http.Server;
     });
     afterEach(closeAllWindows);
 
@@ -750,7 +748,7 @@ describe('session module', () => {
   describe('ses.clearAuthCache()', () => {
     it('can clear http auth info from cache', async () => {
       const ses = session.fromPartition('auth-cache');
-      let server = http.createServer((req, res) => {
+      const server = http.createServer((req, res) => {
         const credentials = auth(req);
         if (!credentials || credentials.name !== 'test' || credentials.pass !== 'test') {
           res.statusCode = 401;
@@ -762,7 +760,6 @@ describe('session module', () => {
       });
       defer(() => {
         server.close();
-        server = null as unknown as http.Server;
       });
       const { port } = await listen(server);
       const fetch = (url: string) => new Promise((resolve, reject) => {
@@ -1230,14 +1227,13 @@ describe('session module', () => {
 
     it('can be resumed', async () => {
       const downloadFilePath = path.join(fixtures, 'logo.png');
-      let rangeServer = http.createServer((req, res) => {
+      const rangeServer = http.createServer((req, res) => {
         const options = { root: fixtures };
         send(req, req.url!, options)
           .on('error', (error: any) => { throw error; }).pipe(res);
       });
       defer(() => {
         rangeServer.close();
-        rangeServer = null as unknown as http.Server;
       });
       try {
         const { url } = await listen(rangeServer);
@@ -1306,7 +1302,6 @@ describe('session module', () => {
     });
     after(() => {
       server.close();
-      server = null as unknown as http.Server;
     });
 
     it('cancels any pending requests when cleared', async () => {

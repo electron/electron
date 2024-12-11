@@ -2161,7 +2161,6 @@ describe('default behavior', () => {
 
     after(() => {
       server.close();
-      server = null as unknown as http.Server;
     });
 
     it('should emit a login event on app when a WebContents hits a 401', async () => {

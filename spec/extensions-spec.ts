@@ -45,9 +45,7 @@ describe('chrome extensions', () => {
   });
   after(async () => {
     server.close();
-    server = null as unknown as http.Server;
     wss.close();
-    wss = null as unknown as WebSocket.Server;
     await cleanupWebContents();
   });
   afterEach(closeAllWindows);
@@ -724,7 +722,6 @@ describe('chrome extensions', () => {
           after(() => {
             session.defaultSession.removeExtension('content-script-test');
             server.close();
-            server = null as unknown as http.Server;
           });
 
           beforeEach(() => {

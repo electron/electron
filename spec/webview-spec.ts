@@ -1284,18 +1284,15 @@ describe('<webview> tag', function () {
       it('sets the referrer url', async () => {
         const referrer = 'http://github.com/';
         const received = await new Promise<string | undefined>((resolve, reject) => {
-          let server = http.createServer((req, res) => {
+          const server = http.createServer((req, res) => {
             try {
               resolve(req.headers.referer);
             } catch (e) {
               reject(e);
             } finally {
               res.end();
+              server.close();
             }
-          });
-          defer(() => {
-            server.close();
-            server = null as unknown as http.Server;
           });
           listen(server).then(({ url }) => {
             loadWebView(w, {
@@ -1543,7 +1540,7 @@ describe('<webview> tag', function () {
 
     describe('did-redirect-navigation event', () => {
       it('is emitted on redirects', async () => {
-        let server = http.createServer((req, res) => {
+        const server = http.createServer((req, res) => {
           if (req.url === '/302') {
             res.setHeader('Location', '/200');
             res.statusCode = 302;
@@ -1553,10 +1550,7 @@ describe('<webview> tag', function () {
           }
         });
         const { url } = await listen(server);
-        defer(() => {
-          server.close();
-          server = null as unknown as http.Server;
-        });
+        defer(() => { server.close(); });
         const event = await loadWebViewAndWaitForEvent(w, {
           src: `${url}/302`
         }, 'did-redirect-navigation');
@@ -1701,15 +1695,12 @@ describe('<webview> tag', function () {
 
     describe('dom-ready event', () => {
       it('emits when document is loaded', async () => {
-        let server = http.createServer(() => {});
+        const server = http.createServer(() => {});
         const { port } = await listen(server);
         await loadWebViewAndWaitForEvent(w, {
           src: `file://${fixtures}/pages/dom-ready.html?port=${port}`
         }, 'dom-ready');
-        defer(() => {
-          server.close();
-          server = null as unknown as http.Server;
-        });
+        defer(() => { server.close(); });
       });
 
       itremote('throws a custom error when an API method is called before the event is emitted', () => {
@@ -2196,7 +2187,7 @@ describe('<webview> tag', function () {
 
     it('should authenticate with correct credentials', async () => {
       const message = 'Authenticated';
-      let server = http.createServer((req, res) => {
+      const server = http.createServer((req, res) => {
         const credentials = auth(req)!;
         if (credentials.name === 'test' && credentials.pass === 'test') {
           res.end(message);
@@ -2206,7 +2197,6 @@ describe('<webview> tag', function () {
       });
       defer(() => {
         server.close();
-        server = null as unknown as http.Server;
       });
       const { port } = await listen(server);
       const e = await loadWebViewAndWaitForEvent(w, {
