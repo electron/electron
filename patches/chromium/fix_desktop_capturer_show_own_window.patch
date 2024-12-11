@@ -8,6 +8,8 @@ This patch is to fix issue https://github.com/electron/electron/issues/36037, wh
 
 This patch can be removed once we deprecate the current implementation of desktopCapturer.
 
+partially reverts https://chromium-review.googlesource.com/c/chromium/src/+/2907415
+
 diff --git a/content/public/browser/desktop_capture.cc b/content/public/browser/desktop_capture.cc
 index 4a806d794aaffe138906f581f72819f19a222e39..a09d1b2115628e29b9c08757ed3cfdf09a6959d2 100644
 --- a/content/public/browser/desktop_capture.cc
