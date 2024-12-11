@@ -196,7 +196,10 @@ jobs:
           echo "About to start tests"
           if [ "${{ inputs.target-platform }}" = "win" ] && [ "${{ inputs.target-arch }}" = "x86" ]; then
             export npm_config_arch="ia32"
-          fi          
+          fi
+          if [ "${{ inputs.target-platform }}" = "win" ] && [ "${{ inputs.target-arch }}" = "x86" ]; then
+            export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
+          fi
           node script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
