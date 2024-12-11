@@ -371,6 +371,9 @@ namespace electron::api {
 
 namespace {
 
+// Global toggle for disabling draggable regions checks.
+bool g_disable_draggable_regions = false;
+
 constexpr std::string_view CursorTypeToString(
     ui::mojom::CursorType cursor_type) {
   switch (cursor_type) {
@@ -2068,6 +2071,10 @@ void WebContents::DraggableRegionsChanged(
   }
 
   draggable_region_ = DraggableRegionsToSkRegion(regions);
+}
+
+SkRegion* WebContents::draggable_region() {
+  return g_disable_draggable_regions ? nullptr : draggable_region_.get();
 }
 
 void WebContents::DidStartNavigation(
@@ -4612,6 +4619,11 @@ std::list<WebContents*> WebContents::GetWebContentsList() {
     list.push_back(iter.GetCurrentValue());
   }
   return list;
+}
+
+// static
+void WebContents::SetDisableDraggableRegions(bool disable) {
+  g_disable_draggable_regions = disable;
 }
 
 // static
