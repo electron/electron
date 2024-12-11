@@ -69,7 +69,7 @@ jobs:
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Enable windows toolchain
-      if: ${{ inputs.target-platform == 'windows' }}
+      if: ${{ inputs.target-platform == 'win' }}
       run: |
         echo "ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=1" >> $GITHUB_ENV
     - name: Generate DEPS Hash
@@ -82,19 +82,19 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
     - name: Restore src cache via AKS
-      if: ${{ inputs.target-platform == 'linux' || inputs.target-platform == 'windows' }}
+      if: ${{ inputs.target-platform == 'linux' || inputs.target-platform == 'win' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Run Electron Only Hooks
       run: |
         echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
-        if [ "${{ inputs.target-platform }}" = "windows" ]; then
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
           echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False,'install_sysroot':False,'checkout_win':True},'managed':False}]" > tmpgclient
           echo "target_os=['win']" >> tmpgclient
         fi
         e d gclient runhooks --gclientfile=tmpgclient
 
         # Fix VS Toolchain
-        if [ "${{ inputs.target-platform }}" = "windows" ]; then
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
           rm -rf src/third_party/depot_tools/win_toolchain/vs_files
           e d python3 src/build/vs_toolchain.py update --force
         fi
@@ -130,7 +130,7 @@ jobs:
               export GN_EXTRA_ARGS="$GN_EXTRA_ARGS fatal_linker_warnings=false enable_linux_installer=false"
             fi
           fi
-          if [ "${{ inputs.target-platform }}" = "windows" ]; then
+          if [ "${{ inputs.target-platform }}" = "win" ]; then
             export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
           fi
 

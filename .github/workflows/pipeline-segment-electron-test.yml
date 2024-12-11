@@ -49,19 +49,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'windows' && fromJSON('["windows"]') || fromJSON('["linux"]')) }}
+        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
         shard: ${{ inputs.target-platform == 'linux' && fromJSON('[1, 2, 3]') || fromJSON('[1, 2]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
-      ARTIFACT_KEY: ${{ matrix.build-type == 'windows' && 'win32' || matrix.build-type }}_${{ inputs.target-arch }}
+      ARTIFACT_KEY: ${{ matrix.build-type }}_${{ inputs.target-arch }}
     steps:
     - name: Fix node20 on arm32 runners
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
     - name: Install Git on Windows arm64 runners
-      if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'windows' }}
+      if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'win' }}
       shell: powershell
       run: |
         Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -75,7 +75,7 @@ jobs:
         echo "C:\Program Files\Git\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "C:\Python311" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Setup Node.js/npm
-      if: ${{ inputs.target-platform == 'windows' }}
+      if: ${{ inputs.target-platform == 'win' }}
       uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6
       with:
         node-version: 20.11.x
@@ -151,7 +151,7 @@ jobs:
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist, Mksnapshot & Chromedriver (win)
-      if: ${{ inputs.target-platform == 'windows' }}
+      if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
         Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -160,7 +160,7 @@ jobs:
         Expand-Archive -Force chromedriver.zip -DestinationPath ./
         Expand-Archive -Force mksnapshot.zip -DestinationPath ./
     - name: Unzip Dist, Mksnapshot & Chromedriver (unix)
-      if: ${{ inputs.target-platform != 'windows' }}
+      if: ${{ inputs.target-platform != 'win' }}
       run: |
         cd src/out/Default
         unzip -:o dist.zip
@@ -194,7 +194,7 @@ jobs:
         # Run tests
         if [ "${{ inputs.target-platform }}" != "linux" ]; then
           echo "About to start tests"
-          if [ "${{ inputs.target-platform }}" = "windows" ] && [ "${{ inputs.target-arch }}" = "x86" ]; then
+          if [ "${{ inputs.target-platform }}" = "win" ] && [ "${{ inputs.target-arch }}" = "x86" ]; then
             export npm_config_arch="ia32"
           fi          
           node script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files

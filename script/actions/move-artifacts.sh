@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
-  BUILD_TYPE="windows"
+  BUILD_TYPE="win"
 elif [ "`uname`" == "Darwin" ]; then
   if [ -z "$MAS_BUILD" ]; then
     BUILD_TYPE="darwin"
@@ -72,13 +72,13 @@ move_src_dirs_if_exist() {
 
   # llvm-build is the host toolchain, for windows we need
   # a different toolchain so no point copying this one
-  if [ "$BUILD_TYPE" != "windows" ]; then
+  if [ "$BUILD_TYPE" != "win" ]; then
     dirs+=('src/third_party/llvm-build')
   fi
 
     # On windows we should clean up two symlinks that aren't
   # compatible with the windows test runner
-  if [ "$BUILD_TYPE" == "windows" ]; then
+  if [ "$BUILD_TYPE" == "win" ]; then
     rm -f src/third_party/electron_node/tools/node_modules/eslint/node_modules/eslint
     rm -f src/third_party/electron_node/tools/node_modules/eslint/node_modules/.bin/eslint
     rm -f src/third_party/electron_node/out/tools/bin/python

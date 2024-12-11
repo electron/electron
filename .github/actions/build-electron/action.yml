@@ -5,10 +5,10 @@ inputs:
     description: 'Target arch'
     required: true
   target-platform:
-    description: 'Target platform'
+    description: 'Target platform, should be linux, win, macos'
     required: true
   artifact-platform:
-    description: 'Artifact platform, should be linux, windows, darwin or mas'
+    description: 'Artifact platform, should be linux, win, darwin or mas'
     required: true
   step-suffix:
     description: 'Suffix for build steps'
@@ -71,7 +71,7 @@ runs:
         cd src
         e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
         if [ "${{ inputs.is-asan }}" != "true" ]; then
-          target_os=${{ inputs.target-platform == 'linux' && 'linux' || (inputs.target-platform == 'windows' && 'win' || 'mac') }}
+          target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
             target_os="${target_os}_mas"
           fi
@@ -109,7 +109,7 @@ runs:
         fi
 
         e build --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
-        if [ "${{ inputs.target-platform }}" = "windows" ]; then
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
           cd out/Default
           powershell Compress-Archive -update mksnapshot_args mksnapshot.zip
           powershell Compress-Archive -update gen/v8/embedded.S mksnapshot.zip
@@ -207,7 +207,7 @@ runs:
         if [ "${{ inputs.is-asan }}" = "true" ]; then 
           ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}_asan
         else
-          ARTIFACT_KEY=${{ inputs.artifact-platform == 'windows' && 'win32' || inputs.artifact-platform }}_${{ inputs.target-arch }}
+          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
         fi
         echo "ARTIFACT_KEY=$ARTIFACT_KEY" >> $GITHUB_ENV
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI

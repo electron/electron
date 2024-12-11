@@ -191,7 +191,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
     needs: checkout-windows
     with:
-      target-platform: windows
+      target-platform: win
       target-archs: x64 x86 arm64
       check-runs-on: electron-arc-linux-amd64-8core
       check-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
@@ -327,7 +327,7 @@ jobs:
     with:
       build-runs-on: electron-arc-windows-amd64-16core
       test-runs-on: windows-latest
-      target-platform: windows
+      target-platform: win
       target-arch: x64
       is-release: false
       gn-build-type: testing
@@ -346,7 +346,7 @@ jobs:
     with:
       build-runs-on: electron-arc-windows-amd64-16core
       test-runs-on: windows-latest
-      target-platform: windows
+      target-platform: win
       target-arch: x86
       is-release: false
       gn-build-type: testing
@@ -365,7 +365,7 @@ jobs:
     with:
       build-runs-on: electron-arc-windows-amd64-16core
       test-runs-on: electron-hosted-windows-arm64-4core
-      target-platform: windows
+      target-platform: win
       target-arch: arm64
       is-release: false
       gn-build-type: testing
