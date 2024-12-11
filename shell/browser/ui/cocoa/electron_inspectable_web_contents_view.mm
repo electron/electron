@@ -298,29 +298,6 @@
     [self notifyDevToolsFocused];
 }
 
-- (void)redispatchContextMenuEvent:(base::apple::OwnedNSEvent)event {
-  DCHECK(event.Get().type == NSEventTypeRightMouseDown ||
-         (event.Get().type == NSEventTypeLeftMouseDown &&
-          (event.Get().modifierFlags & NSEventModifierFlagControl)));
-  content::WebContents* contents =
-      inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
-  electron::api::WebContents* api_contents =
-      electron::api::WebContents::From(contents);
-  if (api_contents) {
-    // Temporarily pretend that the WebContents is fully non-draggable while we
-    // re-send the mouse event. This allows the re-dispatched event to "land"
-    // on the WebContents, instead of "falling through" back to the window.
-    auto* rwhv = contents->GetRenderWidgetHostView();
-    if (rwhv) {
-      api_contents->SetForceNonDraggable(true);
-      BaseView* contentsView =
-          (BaseView*)rwhv->GetNativeView().GetNativeNSView();
-      [contentsView mouseEvent:event.Get()];
-      api_contents->SetForceNonDraggable(false);
-    }
-  }
-}
-
 #pragma mark - NSWindowDelegate
 
 - (void)windowWillClose:(NSNotification*)notification {

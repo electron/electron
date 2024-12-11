@@ -152,6 +152,10 @@ class WebContents final : public ExclusiveAccessContext,
   static WebContents* FromID(int32_t id);
   static std::list<WebContents*> GetWebContentsList();
 
+  // Whether to disable draggable regions globally. This can be used to allow
+  // events to skip client region hit tests.
+  static void SetDisableDraggableRegions(bool disable);
+
   // Get the V8 wrapper of the |web_contents|, or create one if not existed.
   //
   // The lifetime of |web_contents| is NOT managed by this class, and the type
@@ -489,13 +493,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   void PDFReadyToPrint();
 
-  SkRegion* draggable_region() {
-    return force_non_draggable_ ? nullptr : draggable_region_.get();
-  }
-
-  void SetForceNonDraggable(bool force_non_draggable) {
-    force_non_draggable_ = force_non_draggable;
-  }
+  SkRegion* draggable_region();
 
   // disable copy
   WebContents(const WebContents&) = delete;
@@ -891,8 +889,6 @@ class WebContents final : public ExclusiveAccessContext,
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
   std::unique_ptr<SkRegion> draggable_region_;
-
-  bool force_non_draggable_ = false;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };
