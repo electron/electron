@@ -5,7 +5,7 @@ on:
     inputs:
       target-platform:
         type: string
-        description: 'Platform to run on, can be macos, windows or linux'
+        description: 'Platform to run on, can be macos, win or linux'
         required: true
       target-archs:
         type: string
