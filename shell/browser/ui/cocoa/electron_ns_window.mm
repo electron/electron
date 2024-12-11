@@ -208,7 +208,6 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 
   [super sendEvent:event];
 
-  // Perform the same logic in case children have changed due to side effects.
   if (shouldDisableDraggable) {
     electron::api::WebContents::SetDisableDraggableRegions(false);
   }

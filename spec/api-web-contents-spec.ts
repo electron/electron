@@ -2739,7 +2739,6 @@ describe('webContents module', () => {
       let contextMenuEmitCount = 0;
 
       w.webContents.on('context-menu', () => {
-        console.error('context-menu event' + Date.now());
         contextMenuEmitCount++;
       });
 
