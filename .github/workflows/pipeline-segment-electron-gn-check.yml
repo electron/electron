@@ -138,7 +138,7 @@ jobs:
 
           e d gn check out/Default //electron:electron_lib
           e d gn check out/Default //electron:electron_app
-          e d gn check out/Default //electron/shell/common:mojo
+          e d gn check out/Default //electron/shell/common/api:mojo
 
           # Check the hunspell filenames
           node electron/script/gen-hunspell-filenames.js --check
