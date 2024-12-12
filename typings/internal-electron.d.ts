@@ -93,7 +93,7 @@ declare namespace Electron {
     _historyLength(): number;
     _canGoBack(): boolean;
     _canGoForward(): boolean;
-    _canGoToOffset(): boolean;
+    _canGoToOffset(index: number): boolean;
     _goBack(): void;
     _goForward(): void;
     _goToOffset(index: number): void;
