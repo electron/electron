@@ -15,6 +15,7 @@ import { closeAllWindows } from './lib/window-helpers';
 describe('shell module', () => {
   describe('shell.openExternal()', () => {
     let envVars: Record<string, string | undefined> = {};
+    let server: http.Server;
 
     beforeEach(function () {
       envVars = {
@@ -31,8 +32,12 @@ describe('shell module', () => {
         process.env.BROWSER = envVars.browser;
         process.env.DISPLAY = envVars.display;
       }
+      await closeAllWindows();
+      if (server) {
+        server.close();
+        server = null as unknown as http.Server;
+      }
     });
-    afterEach(closeAllWindows);
 
     async function urlOpened () {
       let url = 'http://127.0.0.1';
@@ -50,7 +55,7 @@ describe('shell module', () => {
         const w = new BrowserWindow({ show: true });
         requestReceived = once(w, 'blur');
       } else {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           res.end();
         });
         url = (await listen(server)).url;
