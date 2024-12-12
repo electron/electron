@@ -2158,6 +2158,10 @@ describe('default behavior', () => {
       serverUrl = (await listen(server)).url;
     });
 
+    after(() => {
+      server.close();
+    });
+
     it('should emit a login event on app when a WebContents hits a 401', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(serverUrl);
