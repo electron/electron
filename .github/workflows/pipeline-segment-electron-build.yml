@@ -9,7 +9,7 @@ on:
         type: string
       target-platform:
         type: string
-        description: 'Platform to run on, can be macos or linux'
+        description: 'Platform to run on, can be macos, win or linux'
         required: true
       target-arch:
         type: string
@@ -69,11 +69,14 @@ env:
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   SUDOWOODO_EXCHANGE_TOKEN: ${{ secrets.SUDOWOODO_EXCHANGE_TOKEN }}
-  GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
+  GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || inputs.target-platform == 'win' && '--custom-var=checkout_win=True' || '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
   ELECTRON_OUT_DIR: Default
 
 jobs:
   build:
+    defaults:
+      run:
+        shell: bash
     runs-on: ${{ inputs.build-runs-on }}
     container: ${{ fromJSON(inputs.build-container) }}
     environment: ${{ inputs.environment }}
@@ -81,12 +84,14 @@ jobs:
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
     - name: Create src dir
-      run: mkdir src
+      run: |
+        mkdir src
     - name: Checkout Electron
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
@@ -101,9 +106,7 @@ jobs:
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Install Dependencies
-      run: |
-        cd src/electron
-        node script/yarn install --frozen-lockfile
+      uses: ./src/electron/.github/actions/install-dependencies
     - name: Install AZCopy
       if: ${{ inputs.target-platform == 'macos' }}
       run: brew install azcopy
@@ -137,16 +140,13 @@ jobs:
 
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
-        if [ "`uname`" = "Linux" ]; then
-          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-        fi
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Generate DEPS Hash
       run: |
-        node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
-        DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
+        node src/electron/script/generate-deps-hash.js
+        DEPSHASH=v1-src-cache-$(cat src/electron/.depshash)
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Restore src cache via AZCopy
@@ -155,11 +155,17 @@ jobs:
     - name: Restore src cache via AKS
       if: ${{ inputs.target-platform == 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
+    - name: Checkout src via gclient sync
+      if: ${{ inputs.target-platform == 'win' }}
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        use-cache: 'false'
     - name: Checkout Electron
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
@@ -167,11 +173,11 @@ jobs:
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
     - name: Run Electron Only Hooks
       run: |
-        gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+        e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
     - name: Regenerate DEPS Hash
       run: |
-        (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
-        echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+        (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
+        echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
     - name: Fix Sync (macOS)
@@ -179,7 +185,7 @@ jobs:
       uses: ./src/electron/.github/actions/fix-sync-macos
     - name: Setup Number of Ninja Processes
       run: |
-        echo "NUMBER_OF_NINJA_PROCESSES=${{ inputs.target-platform == 'linux' && '300' || '200' }}" >> $GITHUB_ENV
+        echo "NUMBER_OF_NINJA_PROCESSES=${{ inputs.target-platform != 'macos' && '300' || '200' }}" >> $GITHUB_ENV
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
@@ -189,7 +195,7 @@ jobs:
       with:
         target-arch: ${{ inputs.target-arch }}
         target-platform: ${{ inputs.target-platform }}
-        artifact-platform: ${{ inputs.target-platform == 'linux' && 'linux' || 'darwin' }}
+        artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
         is-release: '${{ inputs.is-release }}'
         generate-symbols: '${{ inputs.generate-symbols }}'
         strip-binaries: '${{ inputs.strip-binaries }}'

@@ -5,7 +5,7 @@ on:
     inputs:
       target-platform:
         type: string
-        description: 'Platform to run on, can be macos or linux'
+        description: 'Platform to run on, can be macos, win or linux'
         required: true
       target-arch:
         type: string
@@ -41,22 +41,44 @@ env:
 
 jobs:
   test:
+    defaults:
+      run:
+        shell: bash
     runs-on: ${{ inputs.test-runs-on }}
     container: ${{ fromJSON(inputs.test-container) }}
     strategy:
       fail-fast: false
       matrix:
-        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || fromJSON('["linux"]') }}
-        shard: ${{ inputs.target-platform == 'macos' && fromJSON('[1, 2]') || fromJSON('[1, 2, 3]') }}
+        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
+        shard: ${{ inputs.target-platform == 'linux' && fromJSON('[1, 2, 3]') || fromJSON('[1, 2]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
       ARTIFACT_KEY: ${{ matrix.build-type }}_${{ inputs.target-arch }}
     steps:
     - name: Fix node20 on arm32 runners
-      if: ${{ inputs.target-arch == 'arm' }}
+      if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
+    - name: Install Git on Windows arm64 runners
+      if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        choco install -y --no-progress git.install --params "'/GitAndUnixToolsOnPath'"
+        choco install -y --no-progress git
+        choco install -y --no-progress python --version 3.11.9
+        choco install -y --no-progress visualstudio2022-workload-vctools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.ARM64"
+        echo "C:\Program Files\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        echo "C:\Program Files\Git\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        echo "C:\Python311" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Setup Node.js/npm
+      if: ${{ inputs.target-platform == 'win' }}
+      uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6
+      with:
+        node-version: 20.11.x
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
@@ -95,24 +117,18 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
-      run: |
-        cd src/electron
-        node script/yarn install --frozen-lockfile
+      uses: ./src/electron/.github/actions/install-dependencies
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
+        git config --global core.filemode false
+        git config --global core.autocrlf false
+        git config --global branch.autosetuprebase always
         git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
-        if [ "`uname`" = "Darwin" ]; then
-          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./autoninja
-        else
-          sed -i '/ninjalog_uploader_wrapper.py/d' ./autoninja
-          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-        fi
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
@@ -134,7 +150,17 @@ jobs:
         path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
-    - name: Unzip Dist, Mksnapshot & Chromedriver
+    - name: Unzip Dist, Mksnapshot & Chromedriver (win)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        cd src/out/Default
+        Expand-Archive -Force dist.zip -DestinationPath ./
+        Expand-Archive -Force chromedriver.zip -DestinationPath ./
+        Expand-Archive -Force mksnapshot.zip -DestinationPath ./
+    - name: Unzip Dist, Mksnapshot & Chromedriver (unix)
+      if: ${{ inputs.target-platform != 'win' }}
       run: |
         cd src/out/Default
         unzip -:o dist.zip
@@ -158,15 +184,24 @@ jobs:
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
         DISPLAY: ':99.0'
+        NPM_CONFIG_MSVS_VERSION: '2022'
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 3 }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'linux' && 3 || 2 }})
 
         # Run tests
-        if [ "`uname`" = "Darwin" ]; then
+        if [ "${{ inputs.target-platform }}" != "linux" ]; then
           echo "About to start tests"
+          if [ "${{ inputs.target-platform }}" = "win" ]; then
+            if [ "${{ inputs.target-arch }}" = "x86" ]; then
+              export npm_config_arch="ia32"
+            fi
+            if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+              export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
+            fi
+          fi
           node script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
@@ -197,19 +232,21 @@ jobs:
         DD_CIVISIBILITY_LOGS_ENABLED: true
         DD_TAGS: "os.architecture:${{ inputs.target-arch }},os.family:${{ inputs.target-platform }},os.platform:${{ inputs.target-platform }},asan:${{ inputs.is-asan }}"
       run: |
-        if ! [ -z $DD_API_KEY ]; then
-          datadog-ci junit upload src/electron/junit/test-results-main.xml
+        if ! [ -z $DD_API_KEY ] && [ -f src/electron/junit/test-results-main.xml ]; then
+          export DATADOG_PATH=`node src/electron/script/yarn global bin`
+          $DATADOG_PATH/datadog-ci junit upload src/electron/junit/test-results-main.xml
         fi          
       if: always() && !cancelled()
     - name: Upload Test Artifacts
       if: always() && !cancelled()
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
       with:
-        name: test_artifacts_${{ env.ARTIFACT_KEY }}
+        name: test_artifacts_${{ env.ARTIFACT_KEY }}_${{ matrix.shard }}
         path: src/electron/spec/artifacts
         if-no-files-found: ignore
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
+      shell: bash
       run: |
         while [ -f /var/.ssh-lock ]
         do
