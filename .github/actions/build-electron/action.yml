@@ -57,6 +57,7 @@ runs:
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
+        rm -rf out/Default/.reproxy_tmp
     - name: Strip Electron Binaries ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.strip-binaries == 'true' }}
