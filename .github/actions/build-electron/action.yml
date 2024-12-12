@@ -57,7 +57,6 @@ runs:
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
-        rm -rf out/Default/.reproxy_tmp
     - name: Strip Electron Binaries ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.strip-binaries == 'true' }}
@@ -78,6 +77,10 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
+    - name: Clear out reproxy_tmp
+      shell: bash
+      run: |
+         rm -rf out/Default/.reproxy_tmp
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
       run: |
