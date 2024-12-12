@@ -137,8 +137,7 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
-        e build --target electron:electron_chromedriver_zip
+        e build --target electron:electron_chromedriver_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Build Node.js headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
