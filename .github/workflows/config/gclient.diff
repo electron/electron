@@ -1,14 +1,13 @@
 diff --git a/gclient.py b/gclient.py
-index 4042ac8311f12db41e74a85ba5fb0c43c61a108a..553852daa36ba0160adcabf8496bf2d366d68cd1 100755
+index 119527a7fbdc178c2e911e69d5fa8bf38c7aa140..fb6be48817d0b0af0b6105737fe89f2f25f9a0af 100755
 --- a/gclient.py
 +++ b/gclient.py
-@@ -783,7 +783,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
-                         not condition or "non_git_source" not in condition):
-                     continue
+@@ -760,6 +760,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
+             if dep_type == 'cipd':
                  cipd_root = self.GetCipdRoot()
--                for package in dep_value.get('packages', []):
-+                packages = dep_value.get('packages', [])
-+                for package in (x for x in packages if "infra/3pp/tools/swift-format" not in x.get('package')):
+                 for package in dep_value.get('packages', []):
++                    if "infra/3pp/tools/swift-format" in package.get('package'):
++                        continue
                      deps_to_add.append(
                          CipdDependency(parent=self,
                                         name=name,
