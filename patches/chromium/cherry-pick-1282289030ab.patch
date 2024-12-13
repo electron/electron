@@ -1,0 +1,265 @@
+From 1282289030ab2026a8db4fb82dc6e20d3bf028be Mon Sep 17 00:00:00 2001
+From: Kevin Ellis <kevers@google.com>
+Date: Thu, 12 Dec 2024 06:47:30 -0800
+Subject: [PATCH] Prune superfluous calls to SetCompositorPending
+
+We only need to call SetCompositorPending with the pending cancel
+reason if the animation is running on the compositor.
+
+The stack trace on the bug report showed a significant time being
+spent in HasProperty. The timing was also optimized in this CL to
+prevent unnecessary duplicate calculations.
+
+Bug: 382394791
+Change-Id: I03ffa1b486b267e05f63328212d192dfca26eb53
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6076354
+Reviewed-by: Robert Flack <flackr@chromium.org>
+Commit-Queue: Kevin Ellis <kevers@chromium.org>
+Reviewed-by: Claire Chambers <clchambers@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1395390}
+---
+
+diff --git a/third_party/blink/renderer/core/animation/animation.cc b/third_party/blink/renderer/core/animation/animation.cc
+index 9e162a6f..b58b017 100644
+--- a/third_party/blink/renderer/core/animation/animation.cc
++++ b/third_party/blink/renderer/core/animation/animation.cc
+@@ -1271,14 +1271,7 @@
+   ResolveTimelineOffsets(timeline_ ? timeline_->GetTimelineRange()
+                                    : TimelineRange());
+ 
+-  SetOutdated();
+-
+-  // 7. Run the procedure to update an animation’s finished state for animation
+-  //    with the did seek flag set to false (continuous), and the synchronously
+-  //    notify flag set to false (async).
+-  UpdateFinishedState(UpdateType::kContinuous, NotificationType::kAsync);
+-
+-  SetCompositorPending(CompositorPendingReason::kPendingEffectChange);
++  EffectInvalidated();
+ 
+   // Notify of a potential state change.
+   NotifyProbe();
+@@ -2375,6 +2368,26 @@
+           timeline()->IsMonotonicallyIncreasing(), boundary_aligned);
+ }
+ 
++Animation::NativePaintWorkletReasons Animation::GetNativePaintWorkletReasons() {
++  if (native_paint_worklet_reasons_) {
++    return native_paint_worklet_reasons_.value();
++  }
++  NativePaintWorkletReasons reasons = kNoPaintWorklet;
++  if (KeyframeEffect* keyframe_effect = DynamicTo<KeyframeEffect>(effect())) {
++    if (RuntimeEnabledFeatures::CompositeBGColorAnimationEnabled() &&
++        keyframe_effect->Affects(
++            PropertyHandle(GetCSSPropertyBackgroundColor()))) {
++      reasons |= kBackgroundColorPaintWorklet;
++    }
++    if (RuntimeEnabledFeatures::CompositeClipPathAnimationEnabled() &&
++        keyframe_effect->Affects(PropertyHandle(GetCSSPropertyClipPath()))) {
++      reasons |= kClipPathPaintWorklet;
++    }
++  }
++  native_paint_worklet_reasons_ = reasons;
++  return reasons;
++}
++
+ // TODO(crbug.com/960944): Rename to SetPendingCommit. This method handles both
+ // composited and non-composited animations. The use of 'compositor' in the name
+ // is confusing.
+@@ -2833,7 +2846,7 @@
+     // After updating the animation time if the animation is no longer current
+     // blink will no longer composite the element (see
+     // CompositingReasonFinder::RequiresCompositingFor*Animation).
+-    if (!content_->IsCurrent()) {
++    if (!content_->IsCurrent() && HasActiveAnimationsOnCompositor()) {
+       SetCompositorPending(CompositorPendingReason::kPendingCancel);
+     }
+   }
+@@ -2874,6 +2887,9 @@
+ }
+ 
+ void Animation::EffectInvalidated() {
++  prior_native_paint_worklet_reasons_ = native_paint_worklet_reasons_;
++  native_paint_worklet_reasons_ = std::nullopt;
++
+   SetOutdated();
+   UpdateFinishedState(UpdateType::kContinuous, NotificationType::kAsync);
+   // FIXME: Needs to consider groups when added.
+@@ -3381,15 +3397,22 @@
+ }
+ 
+ void Animation::UpdateCompositedPaintStatus() {
+-  if (!NativePaintImageGenerator::NativePaintWorkletAnimationsEnabled()) {
+-    return;
++  if (GetNativePaintWorkletReasons() == Animation::kNoPaintWorklet) {
++    if (!prior_native_paint_worklet_reasons_ ||
++        prior_native_paint_worklet_reasons_ == Animation::kNoPaintWorklet) {
++      return;
++    }
+   }
+ 
++  prior_native_paint_worklet_reasons_ = GetNativePaintWorkletReasons();
++
+   KeyframeEffect* keyframe_effect = DynamicTo<KeyframeEffect>(content_.Get());
+   if (!keyframe_effect) {
+     return;
+   }
+ 
++  // TODO(crbug.com/383562308): If the target changed since the last update, we
++  // need to trigger an update for the previous and current target.
+   Element* target = keyframe_effect->EffectTarget();
+   if (!target) {
+     return;
+@@ -3398,14 +3421,7 @@
+   ElementAnimations* element_animations = target->GetElementAnimations();
+   DCHECK(element_animations);
+ 
+-  if (RuntimeEnabledFeatures::CompositeBGColorAnimationEnabled()) {
+-    element_animations->RecalcCompositedStatus(target,
+-                                               GetCSSPropertyBackgroundColor());
+-  }
+-  if (RuntimeEnabledFeatures::CompositeClipPathAnimationEnabled()) {
+-    element_animations->RecalcCompositedStatus(target,
+-                                               GetCSSPropertyClipPath());
+-  }
++  element_animations->RecalcCompositedStatus(target);
+ }
+ 
+ void Animation::Trace(Visitor* visitor) const {
+diff --git a/third_party/blink/renderer/core/animation/animation.h b/third_party/blink/renderer/core/animation/animation.h
+index 61007d7..bc0a891 100644
+--- a/third_party/blink/renderer/core/animation/animation.h
++++ b/third_party/blink/renderer/core/animation/animation.h
+@@ -393,6 +393,15 @@
+     start_time_ = start_time;
+   }
+ 
++  enum NativePaintWorkletProperties {
++    kNoPaintWorklet = 0,
++    kBackgroundColorPaintWorklet = 1,
++    kClipPathPaintWorklet = 2
++  };
++
++  using NativePaintWorkletReasons = uint32_t;
++  NativePaintWorkletReasons GetNativePaintWorkletReasons();
++
+  protected:
+   DispatchEventResult DispatchEventInternal(Event&) override;
+   void AddedEventListener(const AtomicString& event_type,
+@@ -583,6 +592,13 @@
+ 
+   Member<Event> pending_remove_event_;
+ 
++  // Cache whether animation can potentially have native paint worklets.
++  // In the event of the keyframes changing, we need a new evaluation, of
++  // the composited status for native paint worklet eligible properties.
++  // A change in the playState can also necessitate a composited style update.
++  std::optional<NativePaintWorkletReasons> native_paint_worklet_reasons_;
++  std::optional<NativePaintWorkletReasons> prior_native_paint_worklet_reasons_;
++
+   // TODO(crbug.com/960944): Consider reintroducing kPause and cleanup use of
+   // mutually exclusive pending_play_ and pending_pause_ flags.
+   enum class CompositorAction { kNone, kStart, kCancel };
+diff --git a/third_party/blink/renderer/core/animation/element_animations.cc b/third_party/blink/renderer/core/animation/element_animations.cc
+index ca2864f..b1f3b32 100644
+--- a/third_party/blink/renderer/core/animation/element_animations.cc
++++ b/third_party/blink/renderer/core/animation/element_animations.cc
+@@ -97,43 +97,59 @@
+     Element& element,
+     AnimationEffect* effect) {
+   if (KeyframeEffect* keyframe_effect = DynamicTo<KeyframeEffect>(effect)) {
+-    if (CompositedBackgroundColorStatus() ==
+-            ElementAnimations::CompositedPaintStatus::kComposited &&
+-        keyframe_effect->Affects(
+-            PropertyHandle(GetCSSPropertyBackgroundColor())) &&
+-        element.GetLayoutObject()) {
+-      SetCompositedBackgroundColorStatus(
+-          ElementAnimations::CompositedPaintStatus::kNeedsRepaint);
+-      element.GetLayoutObject()->SetShouldDoFullPaintInvalidation();
++    if (RuntimeEnabledFeatures::CompositeBGColorAnimationEnabled()) {
++      if (CompositedBackgroundColorStatus() ==
++              ElementAnimations::CompositedPaintStatus::kComposited &&
++          keyframe_effect->Affects(
++              PropertyHandle(GetCSSPropertyBackgroundColor())) &&
++          element.GetLayoutObject()) {
++        SetCompositedBackgroundColorStatus(
++            ElementAnimations::CompositedPaintStatus::kNeedsRepaint);
++        element.GetLayoutObject()->SetShouldDoFullPaintInvalidation();
++      }
+     }
+ 
+-    if (CompositedClipPathStatus() ==
+-            ElementAnimations::CompositedPaintStatus::kComposited &&
+-        keyframe_effect->Affects(PropertyHandle(GetCSSPropertyClipPath())) &&
+-        element.GetLayoutObject()) {
+-      SetCompositedClipPathStatus(
+-          ElementAnimations::CompositedPaintStatus::kNeedsRepaint);
+-      element.GetLayoutObject()->SetShouldDoFullPaintInvalidation();
+-      // For clip paths, we also need to update the paint properties to switch
+-      // from path based to mask based clip.
+-      element.GetLayoutObject()->SetNeedsPaintPropertyUpdate();
++    if (RuntimeEnabledFeatures::CompositeClipPathAnimationEnabled()) {
++      if (CompositedClipPathStatus() ==
++              ElementAnimations::CompositedPaintStatus::kComposited &&
++          keyframe_effect->Affects(PropertyHandle(GetCSSPropertyClipPath())) &&
++          element.GetLayoutObject()) {
++        SetCompositedClipPathStatus(
++            ElementAnimations::CompositedPaintStatus::kNeedsRepaint);
++        element.GetLayoutObject()->SetShouldDoFullPaintInvalidation();
++        // For clip paths, we also need to update the paint properties to switch
++        // from path based to mask based clip.
++        element.GetLayoutObject()->SetNeedsPaintPropertyUpdate();
++      }
+     }
+   }
+ }
+ 
+-void ElementAnimations::RecalcCompositedStatus(Element* element,
+-                                               const CSSProperty& property) {
+-  ElementAnimations::CompositedPaintStatus status =
+-      HasAnimationForProperty(property)
+-          ? ElementAnimations::CompositedPaintStatus::kNeedsRepaint
+-          : ElementAnimations::CompositedPaintStatus::kNoAnimation;
++void ElementAnimations::RecalcCompositedStatus(Element* element) {
++  Animation::NativePaintWorkletReasons reasons = Animation::kNoPaintWorklet;
++  for (auto& entry : Animations()) {
++    if (entry.key->CalculateAnimationPlayState() ==
++        V8AnimationPlayState::Enum::kIdle) {
++      continue;
++    }
++    reasons |= entry.key->GetNativePaintWorkletReasons();
++  }
+ 
+-  if (property.PropertyID() == CSSPropertyID::kBackgroundColor) {
++  if (RuntimeEnabledFeatures::CompositeBGColorAnimationEnabled()) {
++    ElementAnimations::CompositedPaintStatus status =
++        reasons & Animation::kBackgroundColorPaintWorklet
++            ? ElementAnimations::CompositedPaintStatus::kNeedsRepaint
++            : ElementAnimations::CompositedPaintStatus::kNoAnimation;
+     if (SetCompositedBackgroundColorStatus(status) &&
+         element->GetLayoutObject()) {
+       element->GetLayoutObject()->SetShouldDoFullPaintInvalidation();
+     }
+-  } else if (property.PropertyID() == CSSPropertyID::kClipPath) {
++  }
++  if (RuntimeEnabledFeatures::CompositeClipPathAnimationEnabled()) {
++    ElementAnimations::CompositedPaintStatus status =
++        reasons & Animation::kClipPathPaintWorklet
++            ? ElementAnimations::CompositedPaintStatus::kNeedsRepaint
++            : ElementAnimations::CompositedPaintStatus::kNoAnimation;
+     if (SetCompositedClipPathStatus(status) && element->GetLayoutObject()) {
+       element->GetLayoutObject()->SetShouldDoFullPaintInvalidation();
+       // For clip paths, we also need to update the paint properties to switch
+diff --git a/third_party/blink/renderer/core/animation/element_animations.h b/third_party/blink/renderer/core/animation/element_animations.h
+index 624f542..3171061 100644
+--- a/third_party/blink/renderer/core/animation/element_animations.h
++++ b/third_party/blink/renderer/core/animation/element_animations.h
+@@ -120,7 +120,7 @@
+ 
+   void RecalcCompositedStatusForKeyframeChange(Element& element,
+                                                AnimationEffect* effect);
+-  void RecalcCompositedStatus(Element* element, const CSSProperty& property);
++  void RecalcCompositedStatus(Element* element);
+ 
+   // TODO(crbug.com/1301961): Consider converting to an array or flat map of
+   // fields for paint properties that can be composited.
