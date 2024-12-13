@@ -1,9 +1,9 @@
 diff --git a/gclient.py b/gclient.py
-index 119527a7fbdc178c2e911e69d5fa8bf38c7aa140..fb6be48817d0b0af0b6105737fe89f2f25f9a0af 100755
+index 4042ac8311f12db41e74a85ba5fb0c43c61a108a..04159b681f9f0a3d580c8737d4abbcd7a4b02b42 100755
 --- a/gclient.py
 +++ b/gclient.py
-@@ -760,6 +760,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
-             if dep_type == 'cipd':
+@@ -784,6 +784,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
+                     continue
                  cipd_root = self.GetCipdRoot()
                  for package in dep_value.get('packages', []):
 +                    if "infra/3pp/tools/swift-format" in package.get('package'):
