@@ -139,9 +139,18 @@ runs:
         cd src
         e build --target electron:electron_chromedriver_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Clear out reproxy_tmp
-      shell: bash
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
       run: |
-         rm -rf out/Default/.reproxy_tmp
+        $folder = out\Default\.reproxy_tmp
+        Remove-Item -Recurse -Force $folder
+        if (Test-Path $folder) {
+          echo "$folder is not empty; waiting until it is empty"
+          do {
+            $directoryInfo = Get-ChildItem $folder | Measure-Object
+            start-sleep 1
+          } until ($directoryInfo.count -eq 0)
+        }
     - name: Build Node.js headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
