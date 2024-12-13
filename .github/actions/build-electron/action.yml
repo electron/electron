@@ -77,10 +77,6 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
-    - name: Clear out reproxy_tmp
-      shell: bash
-      run: |
-         rm -rf out/Default/.reproxy_tmp
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -142,6 +138,10 @@ runs:
       run: |
         cd src
         e build --target electron:electron_chromedriver_zip -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Clear out reproxy_tmp
+      shell: bash
+      run: |
+         rm -rf out/Default/.reproxy_tmp
     - name: Build Node.js headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
