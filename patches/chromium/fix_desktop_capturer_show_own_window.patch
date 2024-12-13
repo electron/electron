@@ -6,7 +6,7 @@ Subject: fix: desktopCapturer.getSources does not return electron window on
 
 This patch is to fix issue https://github.com/electron/electron/issues/36037, where `desktopCapturer.getSources` does not return the electron window on Windows.
 
-This patch can be removed once we deprecate the current implementation of desktopCapturer.
+This patch likely cannot be upstreamed. It can be removed if we can expose the ShouldEnumerateCurrentProcessWindows method in Electron's desktopCapturer API, or if desktopCapturer can use an alternative source API for getSources on Windows.
 
 partially reverts https://chromium-review.googlesource.com/c/chromium/src/+/2907415
 
