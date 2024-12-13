@@ -32,6 +32,7 @@ runs:
         git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         # Ensure depot_tools does not update.
         touch .disable_auto_update
+        echo "DEPOT_TOOLS_DIR=$(pwd)" >> $GITHUB_ENV
       fi
   - name: Add Depot Tools to PATH
     shell: bash
