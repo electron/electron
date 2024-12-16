@@ -23,6 +23,13 @@ inline constexpr std::string_view kDeviceSerialNumberKey = "serialNumber";
 
 inline constexpr base::cstring_view kRunAsNode = "ELECTRON_RUN_AS_NODE";
 
+// Per-profile UUID to distinguish global shortcut sessions for
+// org.freedesktop.portal.GlobalShortcuts. This is a counterpart to
+// extensions::pref_names::kGlobalShortcutsUuid, which may be not defined
+// if extensions are disabled.
+inline constexpr char kElectronGlobalShortcutsUuid[] =
+    "electron.global_shortcuts.uuid";
+
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 inline constexpr std::string_view kPDFExtensionPluginName =
     "Chromium PDF Viewer";
