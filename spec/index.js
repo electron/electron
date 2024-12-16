@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const v8 = require('node:v8');
 
+const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
+
 // We want to terminate on errors, not throw up a dialog
 process.on('uncaughtException', (err) => {
   console.error('Unhandled exception in main spec runner:', err);
@@ -131,7 +133,7 @@ app.whenReady().then(async () => {
   const validTestPaths = argv.files && argv.files.map(file =>
     path.isAbsolute(file)
       ? path.relative(baseElectronDir, file)
-      : file);
+      : path.normalize(file));
   const filter = (file) => {
     if (!/-spec\.[tj]s$/.test(file)) {
       return false;
@@ -155,17 +157,7 @@ app.whenReady().then(async () => {
 
   const { getFiles } = require('./get-files');
   const testFiles = await getFiles(__dirname, filter);
-  const VISIBILITY_SPEC = ('visibility-state-spec.ts');
-  const sortedFiles = testFiles.sort((a, b) => {
-    // If visibility-state-spec is in the list, move it to the first position
-    // so that it gets executed first to avoid other specs interferring with it.
-    if (a.indexOf(VISIBILITY_SPEC) > -1) {
-      return -1;
-    } else {
-      return a.localeCompare(b);
-    }
-  });
-  for (const file of sortedFiles) {
+  for (const file of testFiles.sort()) {
     mocha.addFile(file);
   }
 
@@ -178,7 +170,12 @@ app.whenReady().then(async () => {
   const cb = () => {
     // Ensure the callback is called after runner is defined
     process.nextTick(() => {
-      process.exit(runner.failures);
+      if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT === 'true') {
+        console.log(`${FAILURE_STATUS_KEY}: ${runner.failures}`);
+        process.kill(process.pid);
+      } else {
+        process.exit(runner.failures);
+      }
     });
   };
 
