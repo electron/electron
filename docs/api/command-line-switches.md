@@ -331,6 +331,8 @@ The easiest method is Chromium's flags, via `about://flags`, while those flags d
 
 You can enable a flag, then navigate to `about://version` in your Chromium browser, where you can find the list of Command Line arguments. There you can find `--flag-switches-begin --your --list --of --switches --flag-switches-end`.
 
-While most flags are an argument to `--enable-features=`, some are standalone, such as `--enable-experimental-web-platform-features`. Do note that many switches can be split up into individual features, so this list is non-exhaustive.
+While most flags are an argument to `--enable-features=`, some are standalone, such as `--enable-experimental-web-platform-features` some of which can be found at https://peter.sh/experiments/chromium-command-line-switches/. That list however is not version locked and non-exhaustive.
+
+Do note that many standalone switches can be split up into individual features, so this list is non-exhaustive as well.
 
 While adding Chromium switches, make sure the Chromium version of Electron and the browser you're discovering said flags on are the same.
