@@ -142,6 +142,7 @@ runs:
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
+        Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 1
         $folder = 'src\out\Default\.reproxy_tmp'
         Remove-Item -Recurse -Force $folder
         if (Test-Path $folder) {
