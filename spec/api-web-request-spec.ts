@@ -661,7 +661,6 @@ describe('webRequest module', () => {
 
       // Cleanup.
       after(() => {
-        contents.destroy();
         server.close();
         server = null as unknown as http.Server;
         wss.close();
