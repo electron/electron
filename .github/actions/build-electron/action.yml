@@ -142,7 +142,7 @@ runs:
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
-        $folder = 'out\Default\.reproxy_tmp'
+        $folder = 'src\out\Default\.reproxy_tmp'
         Remove-Item -Recurse -Force $folder
         if (Test-Path $folder) {
           echo "$folder is not empty; waiting until it is empty"
