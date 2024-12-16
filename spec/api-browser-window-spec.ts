@@ -935,6 +935,9 @@ describe('BrowserWindow module', () => {
           });
           url = (await listen(server)).url;
         });
+        after(() => {
+          server.close();
+        });
         it('for initial navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = [

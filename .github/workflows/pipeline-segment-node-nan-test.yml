@@ -5,7 +5,7 @@ on:
     inputs:
       target-platform:
         type: string
-        description: 'Platform to run on, can be macos or linux'
+        description: 'Platform to run on, can be macos, win or linux'
         required: true
       target-arch:
         type: string
@@ -49,23 +49,20 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
       run: |
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
     - name: Install Dependencies
-      run: |
-        cd src/electron
-        node script/yarn install --frozen-lockfile
+      uses: ./src/electron/.github/actions/install-dependencies
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
         git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
-        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
@@ -93,6 +90,7 @@ jobs:
         node electron/script/node-spec-runner.js --default --jUnitDir=junit
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
+      shell: bash
       run: |
         while [ -f /var/.ssh-lock ]
         do
@@ -112,23 +110,20 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
       run: |
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
     - name: Install Dependencies
-      run: |
-        cd src/electron
-        node script/yarn install --frozen-lockfile
+      uses: ./src/electron/.github/actions/install-dependencies
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
         git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
-        git apply --3way ../src/electron/.github/workflows/config/gclient.diff
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
@@ -155,6 +150,7 @@ jobs:
         cd src
         node electron/script/nan-spec-runner.js
     - name: Wait for active SSH sessions
+      shell: bash
       if: always() && !cancelled()
       run: |
         while [ -f /var/.ssh-lock ]
