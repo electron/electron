@@ -313,16 +313,6 @@ Set the default value of the `verbatim` parameter in the Node.js [`dns.lookup()`
 
 The default is `verbatim` and `dns.setDefaultResultOrder()` have higher priority than `--dns-result-order`.
 
-[app]: app.md
-[append-switch]: command-line.md#commandlineappendswitchswitch-value
-[debugging-main-process]: ../tutorial/debugging-main-process.md
-[logging]: https://source.chromium.org/chromium/chromium/src/+/main:base/logging.h
-[node-cli]: https://nodejs.org/api/cli.html
-[play-silent-audio]: https://github.com/atom/atom/pull/9485/files
-[ready]: app.md#event-ready
-[severities]: https://source.chromium.org/chromium/chromium/src/+/main:base/logging.h?q=logging::LogSeverity&ss=chromium
-
-
 ## Chromium Flags
 
 While a list of all available Chromium switches doesn't exist, there are a few ways of discovering them.
@@ -336,3 +326,13 @@ While most flags are an argument to `--enable-features=`, some are standalone, s
 Do note that many standalone switches can be split up into individual features, so this list is non-exhaustive as well.
 
 While adding Chromium switches, make sure the Chromium version of Electron and the browser you're discovering said flags on are the same.
+
+[app]: app.md
+[append-switch]: command-line.md#commandlineappendswitchswitch-value
+[debugging-main-process]: ../tutorial/debugging-main-process.md
+[logging]: https://source.chromium.org/chromium/chromium/src/+/main:base/logging.h
+[node-cli]: https://nodejs.org/api/cli.html
+[play-silent-audio]: https://github.com/atom/atom/pull/9485/files
+[ready]: app.md#event-ready
+[severities]: https://source.chromium.org/chromium/chromium/src/+/main:base/logging.h?q=logging::LogSeverity&ss=chromium
+
