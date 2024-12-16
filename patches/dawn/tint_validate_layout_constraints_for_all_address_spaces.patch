@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James Price <jrprice@google.com>
+Date: Wed, 20 Nov 2024 19:06:01 +0000
+Subject: [tint] Validate layout constraints for all address spaces
+
+The WGSL spec has a non-normative note that the layout constraints
+should be validated for all non-host-shareable address spaces, using
+the same constraints as for storage.
+
+See linked bug for details of why this is important.
+
+Bug: 378725734
+Change-Id: I3fb02506d8ded000dc3510bdc1b4a24a95089281
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/214754
+Reviewed-by: David Neto <dneto@google.com>
+Commit-Queue: James Price <jrprice@google.com>
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+(cherry picked from commit dfa46d12ce63f131c437041d6d97a6d97c54c1b7)
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/215936
+Auto-Submit: James Price <jrprice@google.com>
+Commit-Queue: dan sinclair <dsinclair@chromium.org>
+Commit-Queue: Antonio Maiorano <amaiorano@google.com>
+Reviewed-by: Antonio Maiorano <amaiorano@google.com>
+
+diff --git a/src/tint/lang/wgsl/resolver/address_space_layout_validation_test.cc b/src/tint/lang/wgsl/resolver/address_space_layout_validation_test.cc
+index f1e14a36a3cdea07f5fc7735c3d9483515d754f1..6ef150c4476e9176e934a94c32d903c2e23083b8 100644
+--- a/src/tint/lang/wgsl/resolver/address_space_layout_validation_test.cc
++++ b/src/tint/lang/wgsl/resolver/address_space_layout_validation_test.cc
+@@ -730,7 +730,7 @@ TEST_F(ResolverAddressSpaceLayoutValidationTest, RelaxedUniformLayout_ArrayStrid
+     EXPECT_TRUE(r()->Resolve()) << r()->error();
+ }
+ 
+-TEST_F(ResolverAddressSpaceLayoutValidationTest, AlignAttributeTooSmall) {
++TEST_F(ResolverAddressSpaceLayoutValidationTest, AlignAttributeTooSmall_Storage) {
+     // struct S {
+     //   @align(4) vector : vec4u;
+     //   scalar : u32;
+@@ -754,5 +754,73 @@ TEST_F(ResolverAddressSpaceLayoutValidationTest, AlignAttributeTooSmall) {
+ 56:78 note: 'S' used in address space 'storage' here)");
+ }
+ 
++TEST_F(ResolverAddressSpaceLayoutValidationTest, AlignAttributeTooSmall_Workgroup) {
++    // struct S {
++    //   @align(4) vector : vec4u;
++    //   scalar : u32;
++    // };
++    //
++    // var<workgroup> a : array<S, 4>;
++    Structure(
++        "S", Vector{
++                 Member("vector", ty.vec4<u32>(), Vector{MemberAlign(Expr(Source{{12, 34}}, 4_a))}),
++                 Member("scalar", ty.u32()),
++             });
++
++    GlobalVar(Source{{56, 78}}, "a", ty("S"), core::AddressSpace::kWorkgroup, Group(0_a));
++
++    ASSERT_FALSE(r()->Resolve());
++    EXPECT_EQ(
++        r()->error(),
++        R"(12:34 error: alignment must be a multiple of '16' bytes for the 'workgroup' address space
++56:78 note: 'S' used in address space 'workgroup' here)");
++}
++
++TEST_F(ResolverAddressSpaceLayoutValidationTest, AlignAttributeTooSmall_Private) {
++    // struct S {
++    //   @align(4) vector : vec4u;
++    //   scalar : u32;
++    // };
++    //
++    // var<private> a : array<S, 4>;
++    Structure(
++        "S", Vector{
++                 Member("vector", ty.vec4<u32>(), Vector{MemberAlign(Expr(Source{{12, 34}}, 4_a))}),
++                 Member("scalar", ty.u32()),
++             });
++
++    GlobalVar(Source{{56, 78}}, "a", ty("S"), core::AddressSpace::kPrivate, Group(0_a));
++
++    ASSERT_FALSE(r()->Resolve());
++    EXPECT_EQ(
++        r()->error(),
++        R"(12:34 error: alignment must be a multiple of '16' bytes for the 'private' address space
++56:78 note: 'S' used in address space 'private' here)");
++}
++
++TEST_F(ResolverAddressSpaceLayoutValidationTest, AlignAttributeTooSmall_Function) {
++    // struct S {
++    //   @align(4) vector : vec4u;
++    //   scalar : u32;
++    // };
++    //
++    // fn foo() {
++    //   var a : array<S, 4>;
++    // }
++    Structure(
++        "S", Vector{
++                 Member("vector", ty.vec4<u32>(), Vector{MemberAlign(Expr(Source{{12, 34}}, 4_a))}),
++                 Member("scalar", ty.u32()),
++             });
++
++    GlobalVar(Source{{56, 78}}, "a", ty("S"), core::AddressSpace::kFunction, Group(0_a));
++
++    ASSERT_FALSE(r()->Resolve());
++    EXPECT_EQ(
++        r()->error(),
++        R"(12:34 error: alignment must be a multiple of '16' bytes for the 'function' address space
++56:78 note: 'S' used in address space 'function' here)");
++}
++
+ }  // namespace
+ }  // namespace tint::resolver
+diff --git a/src/tint/lang/wgsl/resolver/validator.cc b/src/tint/lang/wgsl/resolver/validator.cc
+index 0d62d474780542a79a67698375319b6ab7c4560d..105e937be9e69df6a5a44d75d21cabc4eab2a2f7 100644
+--- a/src/tint/lang/wgsl/resolver/validator.cc
++++ b/src/tint/lang/wgsl/resolver/validator.cc
+@@ -499,10 +499,6 @@ bool Validator::AddressSpaceLayout(const core::type::Type* store_ty,
+         return true;
+     }
+ 
+-    if (!core::IsHostShareable(address_space)) {
+-        return true;
+-    }
+-
+     auto note_usage = [&] {
+         AddNote(source) << style::Type(store_ty->FriendlyName()) << " used in address space "
+                         << style::Enum(address_space) << " here";
