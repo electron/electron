@@ -138,11 +138,15 @@ runs:
       run: |
         cd src
         e build --target electron:electron_chromedriver_zip -j $NUMBER_OF_NINJA_PROCESSES
-    - name: Clear out reproxy_tmp
+    - name: Setup to clear out reproxy_tmp
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
         Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 1
+    - name: Clear out reproxy_tmp
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
         $folder = 'src\out\Default\.reproxy_tmp'
         Remove-Item -Recurse -Force $folder
         if (Test-Path $folder) {
