@@ -15,7 +15,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { ifit, ifdescribe, defer, itremote, listen, waitUntil } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, itremote, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { PipeTransport } from './pipe-transport';
 
@@ -642,11 +642,8 @@ describe('chromium features', () => {
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await setTimeout(1000);
-      await expect(waitUntil(async () => {
-        return await w.webContents.executeJavaScript(
-          'document.getElementById(\'favDialog\').open'
-        );
-      })).to.eventually.be.fulfilled();
+      const openAfter1 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
+      expect(openAfter1).to.be.true();
       expect(w.isFullScreen()).to.be.false();
 
       // Test that with lock, with ESC:
@@ -665,12 +662,8 @@ describe('chromium features', () => {
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await setTimeout(1000);
-      await expect(waitUntil(async () => {
-        const openAfter2 = await w.webContents.executeJavaScript(
-          'document.getElementById(\'favDialog\').open'
-        );
-        return (openAfter2 === false);
-      })).to.eventually.be.fulfilled();
+      const openAfter2 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
+      expect(openAfter2).to.be.false();
       expect(w.isFullScreen()).to.be.true();
     });
   });
@@ -2894,12 +2887,12 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
       "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
     );
 
-    await expect(waitUntil(async () => {
-      const width = await w.webContents.executeJavaScript(
-        "document.querySelector('iframe').offsetWidth"
-      );
-      return width === 0;
-    })).to.eventually.be.fulfilled();
+    await setTimeout(500);
+
+    const width = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(width).to.equal(0);
   });
 
   ifit(process.platform === 'darwin')('can fullscreen from out-of-process iframes (macOS)', async () => {
