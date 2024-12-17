@@ -143,19 +143,6 @@ runs:
       shell: powershell
       run: |
         Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 1
-    - name: Clear out reproxy_tmp
-      if: ${{ inputs.target-platform == 'win' }}
-      shell: powershell
-      run: |
-        $folder = 'src\out\Default\.reproxy_tmp'
-        Remove-Item -Recurse -Force $folder
-        if (Test-Path $folder) {
-          echo "$folder is not empty; waiting until it is empty"
-          do {
-            $directoryInfo = Get-ChildItem $folder | Measure-Object
-            start-sleep 1
-          } until ($directoryInfo.count -eq 0)
-        }
     - name: Build Node.js headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
