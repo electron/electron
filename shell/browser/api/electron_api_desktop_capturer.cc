@@ -286,7 +286,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
       capture_screen_ = false;
       capture_window_ = capture_window;
       window_capturer_ = std::make_unique<NativeDesktopMediaList>(
-          DesktopMediaList::Type::kWindow, std::move(capturer));
+          DesktopMediaList::Type::kWindow, std::move(capturer), true, false);
       window_capturer_->SetThumbnailSize(thumbnail_size);
 
       OnceCallback update_callback = base::BindOnce(
@@ -322,7 +322,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
       auto capturer = MakeWindowCapturer();
       if (capturer) {
         window_capturer_ = std::make_unique<NativeDesktopMediaList>(
-            DesktopMediaList::Type::kWindow, std::move(capturer));
+            DesktopMediaList::Type::kWindow, std::move(capturer), true, false);
         window_capturer_->SetThumbnailSize(thumbnail_size);
 #if BUILDFLAG(IS_MAC)
         window_capturer_->skip_next_refresh_ =
@@ -352,7 +352,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
       auto capturer = MakeScreenCapturer();
       if (capturer) {
         screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
-            DesktopMediaList::Type::kScreen, std::move(capturer));
+            DesktopMediaList::Type::kScreen, std::move(capturer), true, false);
         screen_capturer_->SetThumbnailSize(thumbnail_size);
 #if BUILDFLAG(IS_MAC)
         screen_capturer_->skip_next_refresh_ =
