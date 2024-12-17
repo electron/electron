@@ -4,7 +4,7 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-import { defer } from './lib/spec-helpers';
+import { defer, ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
@@ -152,7 +152,9 @@ describe('WebContentsView', () => {
     });
   });
 
-  it('can be fullscreened', async () => {
+  // TODO: Re-enable for windows on GitHub Actions,
+  // fullscreen tests seem to hang on GHA specifically
+  ifit(process.platform !== 'win32' || process.arch === 'arm64')('can be fullscreened', async () => {
     const w = new BaseWindow();
     const v = new WebContentsView();
     w.setContentView(v);
