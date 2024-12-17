@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 
 import { defer, ifit, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
   afterEach(async () => {
@@ -181,6 +181,8 @@ describe('WebContentsView', () => {
   });
 
   describe('visibilityState', () => {
+    afterEach(cleanupWebContents);
+
     async function haveVisibilityState (view: WebContentsView, state: string) {
       const docVisState = await view.webContents.executeJavaScript('document.visibilityState');
       return docVisState === state;
