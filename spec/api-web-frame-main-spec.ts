@@ -387,6 +387,9 @@ describe('webFrameMain module', () => {
 
     it('is not emitted upon cross-origin navigation', async () => {
       const server = await createServer();
+      defer(() => {
+        server.server.close();
+      });
 
       // HACK: Use 'localhost' instead of '127.0.0.1' so Chromium treats it as
       // a separate origin because differing ports aren't enough 🤔
