@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const v8 = require('node:v8');
 
+const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
+
 // We want to terminate on errors, not throw up a dialog
 process.on('uncaughtException', (err) => {
   console.error('Unhandled exception in main spec runner:', err);
@@ -126,7 +128,7 @@ app.whenReady().then(async () => {
   const validTestPaths = argv.files && argv.files.map(file =>
     path.isAbsolute(file)
       ? path.relative(baseElectronDir, file)
-      : file);
+      : path.normalize(file));
   const filter = (file) => {
     if (!/-spec\.[tj]s$/.test(file)) {
       return false;
@@ -163,7 +165,12 @@ app.whenReady().then(async () => {
   const cb = () => {
     // Ensure the callback is called after runner is defined
     process.nextTick(() => {
-      process.exit(runner.failures);
+      if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT === 'true') {
+        console.log(`${FAILURE_STATUS_KEY}: ${runner.failures}`);
+        process.kill(process.pid);
+      } else {
+        process.exit(runner.failures);
+      }
     });
   };
 

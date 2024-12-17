@@ -758,6 +758,9 @@ describe('session module', () => {
           res.end('authenticated');
         }
       });
+      defer(() => {
+        server.close();
+      });
       const { port } = await listen(server);
       const fetch = (url: string) => new Promise((resolve, reject) => {
         const request = net.request({ url, session: ses });
@@ -841,6 +844,13 @@ describe('session module', () => {
     };
 
     describe('session.downloadURL', () => {
+      let server: http.Server;
+      afterEach(() => {
+        if (server) {
+          server.close();
+          server = null as unknown as http.Server;
+        }
+      });
       it('can perform a download', (done) => {
         session.defaultSession.once('will-download', function (e, item) {
           item.savePath = downloadFilePath;
@@ -857,7 +867,7 @@ describe('session module', () => {
       });
 
       it('can perform a download with a valid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -919,7 +929,7 @@ describe('session module', () => {
       });
 
       it('correctly handles a download with an invalid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -963,6 +973,13 @@ describe('session module', () => {
     });
 
     describe('webContents.downloadURL', () => {
+      let server: http.Server;
+      afterEach(() => {
+        if (server) {
+          server.close();
+          server = null as unknown as http.Server;
+        }
+      });
       it('can perform a download', (done) => {
         const w = new BrowserWindow({ show: false });
         w.webContents.session.once('will-download', function (e, item) {
@@ -980,7 +997,7 @@ describe('session module', () => {
       });
 
       it('can perform a download with a valid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -1036,7 +1053,7 @@ describe('session module', () => {
       });
 
       it('correctly handles a download and an invalid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -1259,6 +1276,9 @@ describe('session module', () => {
         const options = { root: fixtures };
         send(req, req.url!, options)
           .on('error', (error: any) => { throw error; }).pipe(res);
+      });
+      defer(() => {
+        rangeServer.close();
       });
       try {
         const { url } = await listen(rangeServer);
