@@ -9,7 +9,7 @@ ChildProcessSecurityPolicyImpl::CanAccessDataForOrigin contains explicit
 exceptions to allow built-in non-standard schemes, but does not check
 for non-standard schemes registered by the embedder.
 
-This patch adjusts the origin calculation for non-standard schemes in
+This patch adjusts the origin calculation for subframe non-standard schemes in
  - browser process at `NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo`
  - render process at `DocumentLoader::CalculateOrigin`
 
@@ -18,19 +18,24 @@ as `null` without any derivation. It is only in cases where there is a `initiato
 then the origin is derived from it, which is usually the case for renderer initiated
 navigations and iframes are no exceptions from this rule.
 
+The patch should be removed in favor of either:
+  - Remove support for non-standard custom schemes
+  - Register non-standard custom schemes as websafe schemes and update
+  CPSPI::CanAccessDataForOrigin to allow them for any navigation.
+  - Update the callsite to use RFHI::CanCommitOriginAndUrl in upstream, previous
+  effort to do this can be found at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
+
 Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
-Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
-
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index e919dcd7acf870e39709d7ac5afd356a8a2b94fa..f2603b014e5130aab85d92b404968afbd93668fc 100644
+index e919dcd7acf870e39709d7ac5afd356a8a2b94fa..ceed8afc60dd3d38ca722b79b93c6b1c1ee7fb76 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -10867,6 +10867,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
          "blob");
    }
  
-+  if (!common_params().url.IsStandard()) {
++  if (!IsInMainFrame() && !common_params().url.IsStandard()) {
 +    return std::make_pair(url::Origin::Resolve(common_params().url,
 +                                               url::Origin()),
 +                          "url_non_standard");
