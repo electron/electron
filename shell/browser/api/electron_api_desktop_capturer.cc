@@ -352,7 +352,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
       auto capturer = MakeScreenCapturer();
       if (capturer) {
         screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
-            DesktopMediaList::Type::kScreen, std::move(capturer), true, true);
+            DesktopMediaList::Type::kScreen, std::move(capturer));
         screen_capturer_->SetThumbnailSize(thumbnail_size);
 #if BUILDFLAG(IS_MAC)
         screen_capturer_->skip_next_refresh_ =
