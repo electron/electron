@@ -6,7 +6,7 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 7684afb6afe8efb19cec45ee37a134fedeaa2ea1..7a7ac5c40da4c3e2d426fa517903e9a976146897 100644
+index 2fb637bba3e00058f3433ae2f6da799d59a75543..9365d9ebfd47e3054fa4ff9679c0ee06cfac3855 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -634,6 +634,13 @@ void RenderWidgetHostViewBase::OnFrameTokenChangedForView(
@@ -24,7 +24,7 @@ index 7684afb6afe8efb19cec45ee37a134fedeaa2ea1..7a7ac5c40da4c3e2d426fa517903e9a9
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index bdd8712db25a50607999893fe78cd195023704cb..b9c57ea019cbf04c77116f12b9ae1e3abcb474d0 100644
+index 8377a897ff00c69e5b11e4775720d25465e6ec81..0b27be5b7d5824dbc5bbbfde813da263c453f20a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -29,8 +29,11 @@
@@ -39,7 +39,7 @@ index bdd8712db25a50607999893fe78cd195023704cb..b9c57ea019cbf04c77116f12b9ae1e3a
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/page_visibility_state.h"
  #include "content/public/common/widget_type.h"
-@@ -70,9 +73,11 @@ namespace content {
+@@ -70,11 +73,13 @@ namespace content {
  class DevicePosturePlatformProvider;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
@@ -47,11 +47,13 @@ index bdd8712db25a50607999893fe78cd195023704cb..b9c57ea019cbf04c77116f12b9ae1e3a
  class ScopedViewTransitionResources;
  class TextInputManager;
  class TouchSelectionControllerClientManager;
-+class WebContentsView;
+ class TouchSelectionControllerInputObserver;
  class WebContentsAccessibility;
++class WebContentsView;
  class DelegatedFrameHost;
  class SyntheticGestureTarget;
-@@ -144,6 +149,10 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+ 
+@@ -145,6 +150,10 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    void ProcessGestureEvent(const blink::WebGestureEvent& event,
                             const ui::LatencyInfo& latency) override;
    RenderWidgetHostViewBase* GetRootView() override;
@@ -62,7 +64,7 @@ index bdd8712db25a50607999893fe78cd195023704cb..b9c57ea019cbf04c77116f12b9ae1e3a
    void OnAutoscrollStart() override;
    const viz::DisplayHitTestQueryMap& GetDisplayHitTestQuery() const override;
  
-@@ -181,6 +190,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -182,6 +191,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
        const gfx::Rect& keyboard_rect) override {}
    bool IsHTMLFormPopup() const override;
  

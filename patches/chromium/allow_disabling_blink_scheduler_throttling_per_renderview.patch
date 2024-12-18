@@ -116,7 +116,7 @@ index 083af135d890c2837e72c314e170e81931bd2a20..5245ea88441ef84c15b8052a9011ce70
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 27fd589b2ea53ba9c65ca87c9ca0eb4362d0c735..ff69256c5ac5323ce1b94533af4dec785bca78bd 100644
+index c1aebbc3db3e22e7e9391cb0eb2654a28a2052f4..77f2b8a03f92062fc9c07b04adb22d421127b73a 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2468,6 +2468,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
@@ -155,7 +155,7 @@ index 27fd589b2ea53ba9c65ca87c9ca0eb4362d0c735..ff69256c5ac5323ce1b94533af4dec78
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index c6059d2d02e295e8b4547a6fdaccf9381c7a77c2..738d51aa13e3a2cf2656a1bc613eda75c7ff1fca 100644
+index 4f77ef1379390973fa912640a33a5033dc8db68f..12d4932d82df824e459a8a90b6f24222172618df 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -448,6 +448,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
