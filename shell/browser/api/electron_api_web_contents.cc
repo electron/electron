@@ -143,6 +143,7 @@
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
+#include "third_party/blink/public/common/peerconnection/webrtc_ip_handling_policy.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
@@ -2595,7 +2596,8 @@ int WebContents::GetHistoryLength() const {
 }
 
 const std::string WebContents::GetWebRTCIPHandlingPolicy() const {
-  return web_contents()->GetMutableRendererPrefs()->webrtc_ip_handling_policy;
+  return blink::ToString(
+      web_contents()->GetMutableRendererPrefs()->webrtc_ip_handling_policy);
 }
 
 void WebContents::SetWebRTCIPHandlingPolicy(
@@ -2603,7 +2605,7 @@ void WebContents::SetWebRTCIPHandlingPolicy(
   if (GetWebRTCIPHandlingPolicy() == webrtc_ip_handling_policy)
     return;
   web_contents()->GetMutableRendererPrefs()->webrtc_ip_handling_policy =
-      webrtc_ip_handling_policy;
+      blink::ToWebRTCIPHandlingPolicy(webrtc_ip_handling_policy);
 
   web_contents()->SyncRendererPrefs();
 }
