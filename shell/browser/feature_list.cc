@@ -19,8 +19,7 @@
 #include "third_party/blink/public/common/features.h"
 
 #if BUILDFLAG(IS_MAC)
-#include "content/common/features.h"  // nogncheck
-#include "device/base/features.h"     // nogncheck
+#include "device/base/features.h"  // nogncheck
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -50,12 +49,6 @@ void InitializeFeatureList() {
       // Delayed spellcheck initialization is causing the
       // 'custom dictionary word list API' spec to crash.
       std::string(",") + spellcheck::kWinDelaySpellcheckServiceInit.name;
-#endif
-
-#if BUILDFLAG(IS_MAC)
-  // Disable window occlusion checker.
-  disable_features +=
-      std::string(",") + features::kMacWebContentsOcclusion.name;
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
