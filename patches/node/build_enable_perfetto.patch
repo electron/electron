@@ -264,27 +264,25 @@ index 18e4f43efaae3a60b924e697918867e604513194..7cbaf01235750138c680c8ec2ed5d206
    uint32_t current_chunk_seq_ = 1;
    uint32_t id_;
 diff --git a/src/tracing/node_trace_writer.cc b/src/tracing/node_trace_writer.cc
-index 8f053efe93324b9acbb4e85f7b974b4f7712e200..e331ed5567caa39ade90ce28cea69f1d10533812 100644
+index 8f053efe93324b9acbb4e85f7b974b4f7712e200..1801594e727ec7a2ef3b89603975f507078b88a1 100644
 --- a/src/tracing/node_trace_writer.cc
 +++ b/src/tracing/node_trace_writer.cc
-@@ -95,7 +95,7 @@ void NodeTraceWriter::OpenNewFileForStreaming() {
-     fd_ = -1;
+@@ -96,6 +96,7 @@ void NodeTraceWriter::OpenNewFileForStreaming() {
    }
  }
--
+ 
 +#ifndef V8_USE_PERFETTO
  void NodeTraceWriter::AppendTraceEvent(TraceObject* trace_event) {
    Mutex::ScopedLock scoped_lock(stream_mutex_);
    // If this is the first trace event, open a new file for streaming.
-@@ -112,7 +112,7 @@ void NodeTraceWriter::AppendTraceEvent(TraceObject* trace_event) {
+@@ -112,6 +113,7 @@ void NodeTraceWriter::AppendTraceEvent(TraceObject* trace_event) {
    ++total_traces_;
    json_trace_writer_->AppendTraceEvent(trace_event);
  }
--
 +#endif
+ 
  void NodeTraceWriter::FlushPrivate() {
    std::string str;
-   int highest_request_id;
 diff --git a/src/tracing/node_trace_writer.h b/src/tracing/node_trace_writer.h
 index cd965d77b7859ff2edcf781a934594b5a9b6d251..fe1714ba77fddef693d37eeb8c7a196ddfd15c26 100644
 --- a/src/tracing/node_trace_writer.h
@@ -300,7 +298,7 @@ index cd965d77b7859ff2edcf781a934594b5a9b6d251..fe1714ba77fddef693d37eeb8c7a196d
  
    static const int kTracesPerFile = 1 << 19;
 diff --git a/src/tracing/trace_event.h b/src/tracing/trace_event.h
-index be0f55a409a71bf9c1763c36fdc252857228742e..827b5330b2f8c545338a46c548f8abf4aab7f50c 100644
+index a662a081dc3bf356bf93e4063fcb043e4d8df07b..c89cdfe2b2681fbf9946200a03d7d1f7bad21226 100644
 --- a/src/tracing/trace_event.h
 +++ b/src/tracing/trace_event.h
 @@ -69,8 +69,16 @@ enum CategoryGroupEnabledFlags {
@@ -336,21 +334,23 @@ index be0f55a409a71bf9c1763c36fdc252857228742e..827b5330b2f8c545338a46c548f8abf4
  
  // Adds a metadata event to the trace log. The |AppendValueAsTraceFormat| method
  // on the convertable value will be called at flush time.
-@@ -319,10 +332,13 @@ class TraceEventHelper {
+@@ -319,12 +332,15 @@ class TraceEventHelper {
    static void SetAgent(Agent* agent);
  
    static inline const uint8_t* GetCategoryGroupEnabled(const char* group) {
 +#ifndef V8_USE_PERFETTO
      v8::TracingController* controller = GetTracingController();
      static const uint8_t disabled = 0;
-     if (UNLIKELY(controller == nullptr)) return &disabled;
+     if (controller == nullptr) [[unlikely]] {
+       return &disabled;
+     }
      return controller->GetCategoryGroupEnabled(group);
 +#endif
 +    return 0;
    }
  };
  
-@@ -460,6 +476,7 @@ static inline uint64_t AddTraceEventImpl(
+@@ -462,6 +478,7 @@ static inline uint64_t AddTraceEventImpl(
      const char* scope, uint64_t id, uint64_t bind_id, int32_t num_args,
      const char** arg_names, const uint8_t* arg_types,
      const uint64_t* arg_values, unsigned int flags) {
@@ -358,14 +358,7 @@ index be0f55a409a71bf9c1763c36fdc252857228742e..827b5330b2f8c545338a46c548f8abf4
    std::unique_ptr<v8::ConvertableToTraceFormat> arg_convertibles[2];
    if (num_args > 0 && arg_types[0] == TRACE_VALUE_TYPE_CONVERTABLE) {
      arg_convertibles[0].reset(reinterpret_cast<v8::ConvertableToTraceFormat*>(
-@@ -469,13 +486,14 @@ static inline uint64_t AddTraceEventImpl(
-     arg_convertibles[1].reset(reinterpret_cast<v8::ConvertableToTraceFormat*>(
-         static_cast<intptr_t>(arg_values[1])));
-   }
--  // DCHECK(num_args, 2);
-   v8::TracingController* controller =
-       node::tracing::TraceEventHelper::GetTracingController();
-   if (controller == nullptr) return 0;
+@@ -478,6 +495,8 @@ static inline uint64_t AddTraceEventImpl(
    return controller->AddTraceEvent(phase, category_group_enabled, name, scope, id,
                                     bind_id, num_args, arg_names, arg_types,
                                     arg_values, arg_convertibles, flags);
@@ -374,25 +367,18 @@ index be0f55a409a71bf9c1763c36fdc252857228742e..827b5330b2f8c545338a46c548f8abf4
  }
  
  static V8_INLINE uint64_t AddTraceEventWithTimestampImpl(
-@@ -483,6 +501,7 @@ static V8_INLINE uint64_t AddTraceEventWithTimestampImpl(
+@@ -485,6 +504,7 @@ static V8_INLINE uint64_t AddTraceEventWithTimestampImpl(
      const char* scope, uint64_t id, uint64_t bind_id, int32_t num_args,
      const char** arg_names, const uint8_t* arg_types,
      const uint64_t* arg_values, unsigned int flags, int64_t timestamp) {
 +#ifndef V8_USE_PERFETTO
-   std::unique_ptr<v8::ConvertableToTraceFormat> arg_convertables[2];
+   std::unique_ptr<v8::ConvertableToTraceFormat> arg_convertibles[2];
    if (num_args > 0 && arg_types[0] == TRACE_VALUE_TYPE_CONVERTABLE) {
-     arg_convertables[0].reset(reinterpret_cast<v8::ConvertableToTraceFormat*>(
-@@ -492,19 +511,21 @@ static V8_INLINE uint64_t AddTraceEventWithTimestampImpl(
-     arg_convertables[1].reset(reinterpret_cast<v8::ConvertableToTraceFormat*>(
-         static_cast<intptr_t>(arg_values[1])));
-   }
--  // DCHECK_LE(num_args, 2);
-   v8::TracingController* controller =
-       node::tracing::TraceEventHelper::GetTracingController();
-   if (controller == nullptr) return 0;
+     arg_convertibles[0].reset(reinterpret_cast<v8::ConvertableToTraceFormat*>(
+@@ -501,12 +521,15 @@ static V8_INLINE uint64_t AddTraceEventWithTimestampImpl(
    return controller->AddTraceEventWithTimestamp(
        phase, category_group_enabled, name, scope, id, bind_id, num_args,
-       arg_names, arg_types, arg_values, arg_convertables, flags, timestamp);
+       arg_names, arg_types, arg_values, arg_convertibles, flags, timestamp);
 +#endif
 +  return 0;
  }
@@ -405,7 +391,7 @@ index be0f55a409a71bf9c1763c36fdc252857228742e..827b5330b2f8c545338a46c548f8abf4
    std::unique_ptr<v8::ConvertableToTraceFormat> arg_convertibles[2];
    if (num_args > 0 && arg_types[0] == TRACE_VALUE_TYPE_CONVERTABLE) {
      arg_convertibles[0].reset(reinterpret_cast<v8::ConvertableToTraceFormat*>(
-@@ -520,6 +541,7 @@ static V8_INLINE void AddMetadataEventImpl(
+@@ -522,6 +545,7 @@ static V8_INLINE void AddMetadataEventImpl(
    return agent->GetTracingController()->AddMetadataEvent(
        category_group_enabled, name, num_args, arg_names, arg_types, arg_values,
        arg_convertibles, flags);
