@@ -250,10 +250,10 @@ index dc27e91ad0da93a5b68053f132f219f95f641ca1..38ba1110da3f77df4681ccb0ebcee78d
      switch (c_signature->ReturnInfo().GetType()) {
        case CTypeInfo::Type::kVoid:
 diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
-index 3898b51a1eab680c34102fea473f111cf8024b8b..0d6a0ef6516e25b2bb65b262b4d6495a268cd4d8 100644
+index be5b5f47e58a0091e5f406b5a643160f46855501..fef5434ef37bc878432e5af39e25409b84f2e378 100644
 --- a/test/cctest/test-api.cc
 +++ b/test/cctest/test-api.cc
-@@ -29772,6 +29772,16 @@ static Trivial* UnwrapTrivialObject(Local<Object> object) {
+@@ -29827,6 +29827,16 @@ static Trivial* UnwrapTrivialObject(Local<Object> object) {
    return wrapped;
  }
  
@@ -270,7 +270,7 @@ index 3898b51a1eab680c34102fea473f111cf8024b8b..0d6a0ef6516e25b2bb65b262b4d6495a
  void FastCallback2JSArray(v8::Local<v8::Object> receiver, int arg0,
                            v8::Local<v8::Array> arg1) {
    Trivial* self = UnwrapTrivialObject(receiver);
-@@ -29789,10 +29799,103 @@ void FastCallback4Scalar(v8::Local<v8::Object> receiver, int arg0, float arg1) {
+@@ -29844,10 +29854,103 @@ void FastCallback4Scalar(v8::Local<v8::Object> receiver, int arg0, float arg1) {
  void FastCallback5DifferentArity(v8::Local<v8::Object> receiver, int arg0,
                                   v8::Local<v8::Array> arg1, float arg2) {}
  
@@ -374,7 +374,7 @@ index 3898b51a1eab680c34102fea473f111cf8024b8b..0d6a0ef6516e25b2bb65b262b4d6495a
  TEST(FastApiOverloadResolution) {
  #if !defined(V8_LITE_MODE) && defined(V8_ENABLE_TURBOFAN)
    if (i::v8_flags.jitless) return;
-@@ -29806,15 +29909,22 @@ TEST(FastApiOverloadResolution) {
+@@ -29861,15 +29964,22 @@ TEST(FastApiOverloadResolution) {
    i::v8_flags.always_turbofan = false;
    i::FlagList::EnforceFlagImplications();
  
@@ -399,7 +399,7 @@ index 3898b51a1eab680c34102fea473f111cf8024b8b..0d6a0ef6516e25b2bb65b262b4d6495a
  
    v8::CFunction scalar_callback =
        v8::CFunctionBuilder().Fn(FastCallback4Scalar).Build();
-@@ -29822,7 +29932,7 @@ TEST(FastApiOverloadResolution) {
+@@ -29877,7 +29987,7 @@ TEST(FastApiOverloadResolution) {
    // Check that resolving when there is a scalar at the difference position
    // is not possible.
    CHECK_EQ(v8::CFunction::OverloadResolution::kImpossible,
@@ -408,7 +408,7 @@ index 3898b51a1eab680c34102fea473f111cf8024b8b..0d6a0ef6516e25b2bb65b262b4d6495a
  
    v8::CFunction diff_arity_callback =
        v8::CFunctionBuilder().Fn(FastCallback5DifferentArity).Build();
-@@ -29830,7 +29940,7 @@ TEST(FastApiOverloadResolution) {
+@@ -29885,7 +29995,7 @@ TEST(FastApiOverloadResolution) {
    // Check that overload resolution between different number of arguments
    // is possible.
    CHECK_EQ(v8::CFunction::OverloadResolution::kAtCompileTime,

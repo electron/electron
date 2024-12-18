@@ -11,7 +11,7 @@ counter to the design of globalShortcuts, and so we need to instead
 use `ui::MediaKeysListener`.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener.cc b/chrome/browser/extensions/global_shortcut_listener.cc
-index f5495cf896329e00ddd74f364f9f19b5c0321af2..9695f2f2f92e65d9500c53ca74f58d19003422e4 100644
+index b413086c74da9fffe7821b02ba8ccd6ac7b0bbe6..76d9fd6f48fde36ea61ed8e71142449840b3a08a 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener.cc
 @@ -8,6 +8,7 @@
@@ -20,9 +20,9 @@ index f5495cf896329e00ddd74f364f9f19b5c0321af2..9695f2f2f92e65d9500c53ca74f58d19
  #include "content/public/browser/browser_thread.h"
 +#include "content/public/browser/media_keys_listener_manager.h"
  #include "ui/base/accelerators/accelerator.h"
+ #include "ui/base/accelerators/command.h"
  
- using content::BrowserThread;
-@@ -67,6 +68,22 @@ void GlobalShortcutListener::UnregisterAccelerator(
+@@ -68,6 +69,22 @@ void GlobalShortcutListener::UnregisterAccelerator(
      StopListening();
  }
  
@@ -46,7 +46,7 @@ index f5495cf896329e00ddd74f364f9f19b5c0321af2..9695f2f2f92e65d9500c53ca74f58d19
    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
    if (IsShortcutHandlingSuspended())
 diff --git a/chrome/browser/extensions/global_shortcut_listener.h b/chrome/browser/extensions/global_shortcut_listener.h
-index d2a3a6ddf10e646ea66dfc67c09ee949c1d2f171..de2df2f688ee8e06c2cf0ae46bcd718b5f9c5da4 100644
+index 667530c91beeace110bdc299d4fc00db84acd31d..a8d82694e92e95987675024a025b6d3749c4c851 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.h
 +++ b/chrome/browser/extensions/global_shortcut_listener.h
 @@ -40,6 +40,8 @@ class GlobalShortcutListener {
@@ -59,10 +59,10 @@ index d2a3a6ddf10e646ea66dfc67c09ee949c1d2f171..de2df2f688ee8e06c2cf0ae46bcd718b
    // true if register successfully, or false if 1) the specificied |accelerator|
    // has been registered by another caller or other native applications, or
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index b329df28207430ccdaf889b672bcd3d875faad18..51effd950173e2893ff8dfbd7db10abff6b75923 100644
+index 42e37564e585987d367921568f0f1d2b7507f953..9baf89efbade01e8b60c579255f10799914e144f 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
-@@ -88,7 +88,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
+@@ -87,7 +87,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
        CanActiveMediaSessionControllerReceiveEvents();
  
    // Tell the underlying MediaKeysListener to listen for the key.
@@ -75,7 +75,7 @@ index b329df28207430ccdaf889b672bcd3d875faad18..51effd950173e2893ff8dfbd7db10abf
        !media_keys_listener_->StartWatchingMediaKey(key_code)) {
      return false;
    }
-@@ -362,6 +366,20 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
+@@ -361,6 +365,20 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
          this, ui::MediaKeysListener::Scope::kGlobal);
      DCHECK(media_keys_listener_);
    }

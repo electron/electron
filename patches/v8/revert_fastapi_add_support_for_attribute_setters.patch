@@ -504,10 +504,10 @@ index 137e5c917cf7a56c89e70ed49d07e3134d1c8eac..00000000000000000000000000000000
 -assertEquals(1, fast_c_api.fast_call_count());
 -assertEquals(0, fast_c_api.slow_call_count());
 diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
-index 93fe36a988be33f1eab1e814c8f0ad62bfbcbb53..632a8f4f0475076f82f66c73a29d92d3e9fc8c50 100644
+index 95ec59771c6f5b837e14f8f53bb6493b65ea1324..dc3217045c3683e287f6fa606a36ab6b007a45ea 100644
 --- a/test/mjsunit/mjsunit.status
 +++ b/test/mjsunit/mjsunit.status
-@@ -757,7 +757,6 @@
+@@ -780,7 +780,6 @@
    # These tests rely on TurboFan being enabled.
    'compiler/call-with-arraylike-or-spread*': [SKIP],
    'compiler/fast-api-calls': [SKIP],
@@ -515,7 +515,7 @@ index 93fe36a988be33f1eab1e814c8f0ad62bfbcbb53..632a8f4f0475076f82f66c73a29d92d3
    'compiler/fast-api-interface-types': [SKIP],
    'compiler/regress-crbug-1201011': [SKIP],
    'compiler/regress-crbug-1201057': [SKIP],
-@@ -2358,7 +2357,6 @@
+@@ -2394,7 +2393,6 @@
    'regress/regress-1049982-2': [FAIL],
    # Maglev doesn't support fast API calls.
    'compiler/fast-api-annotations': [FAIL],

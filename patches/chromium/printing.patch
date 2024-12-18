@@ -68,7 +68,7 @@ index 6f35d5ab358627ff8b1cbf09f5643f0f484e027a..5e736b846880a7d4a1e1611a0f70feca
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 05d05dd3d2902947e2ddf9a3f9379abe0008d74e..8a65ef057271bbef16f1d596229a5976997aaa4b 100644
+index ff2fbe115134adedf7179502053a699a7594ea05..f934f190ac4fe56a20e2147e53a8edcc44191198 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -83,6 +83,20 @@ namespace printing {
@@ -477,7 +477,7 @@ index 05d05dd3d2902947e2ddf9a3f9379abe0008d74e..8a65ef057271bbef16f1d596229a5976
 @@ -1310,6 +1371,8 @@ void PrintViewManagerBase::CompleteScriptedPrint(
    auto callback_wrapper = base::BindOnce(
        &PrintViewManagerBase::ScriptedPrintReply, weak_ptr_factory_.GetWeakPtr(),
-       std::move(callback), render_process_host->GetID());
+       std::move(callback), render_process_host->GetDeprecatedID());
 +  auto cancel_job_wrapper = base::BindOnce(
 +      &PrintViewManagerBase::UserInitCanceled, weak_ptr_factory_.GetWeakPtr());
  #if BUILDFLAG(IS_WIN) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
@@ -860,10 +860,10 @@ index b8c803184f267d87696c4e72c3d993ff3b69d95b..7278dfae56305cc8669fc2240563450f
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 1212cd37acff7847ec4a7d3fb841426d5a77576d..a6fbe92d06d373ff9794035de88553b36f837e30 100644
+index 35275467db3b10a2f4220c2fee6325062753d9cc..605f3c77e212720c25285b4dd8e6ba64b3b37320 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3044,8 +3044,9 @@ source_set("browser") {
+@@ -3029,8 +3029,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

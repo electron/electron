@@ -8,10 +8,10 @@ This reverts commit ebd8b8965c74ab06bb91f7a00b23822e1f1f26ca.
 It is causing significant TLS failures in Node.js.
 
 diff --git a/ssl/ssl_buffer.cc b/ssl/ssl_buffer.cc
-index 7de8923518dbfb69fef62d7781f906b30cf62155..7a4310d6d8e85f07f0ae6c97726d909c4503bce9 100644
+index 76c74e2941d9912ca93a69254f540a6a6ddd9e74..3baf5043800c8cbca73efa4d8a65a68e9ec0ecc4 100644
 --- a/ssl/ssl_buffer.cc
 +++ b/ssl/ssl_buffer.cc
-@@ -235,7 +235,6 @@ int ssl_handle_open_record(SSL *ssl, bool *out_retry, ssl_open_record_t ret,
+@@ -230,7 +230,6 @@ int ssl_handle_open_record(SSL *ssl, bool *out_retry, ssl_open_record_t ret,
        return 1;
  
      case ssl_open_record_close_notify:

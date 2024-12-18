@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 123b5d982c3bca4ebd22b5e0e17b9d903969d7e1..0cacd08e17f8ab8c0e4951bcc4645cd7a3d2fea8 100644
+index 5f8dc5da4e0733bd5d432fab72bc57878e24127e..f05703cc0e76971575617794f55700619cf17dbb 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1027,6 +1027,7 @@ component("base") {
+@@ -1029,6 +1029,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -186,10 +186,10 @@ index c4df04713a7f76c2ff50c1d2bc750e18bb1865e0..0392602987d99b4e5d776408e75ea605
  
    if (is_win) {
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index e7a65e97b51d93bff864889813317fb7c6ffc846..bb1fc0c99164ae4bdaaaa78e87c30e88932a928c 100644
+index d87682447b850e4cf9065f0d26d14077acbe467d..a179c9bc02158130f4b15bf8022721f4b53a8303 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
-@@ -13,6 +13,7 @@
+@@ -14,6 +14,7 @@
  #include "base/rand_util.h"
  #include "build/branding_buildflags.h"
  #include "crypto/apple_keychain.h"
@@ -455,7 +455,7 @@ index 97f489043beb4260b1a3ca1781ce7ef67ec8c88a..569859297618cac39aa36655b9e30122
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 2fa9063bb7c2ffff4fec6cf91aa7b6bf1d9ea875..6c661c1766f987297ef1fd5c45069a63209826a3 100644
+index 51ef96b33691fc642037ca951eb345200fff36e2..664df443242ae9af565cc83786398d68e6d655c4 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -381,6 +381,7 @@ viz_component("service") {
@@ -466,7 +466,7 @@ index 2fa9063bb7c2ffff4fec6cf91aa7b6bf1d9ea875..6c661c1766f987297ef1fd5c45069a63
    }
  
    if (is_android || use_ozone) {
-@@ -660,6 +661,7 @@ viz_source_set("unit_tests") {
+@@ -662,6 +663,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -560,10 +560,10 @@ index faddee802d6538c092ba96914184663ee57751c8..49238975848d58cd30727ec818bbac52
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index f22893989f09e40a8eb6a3df1d48d5438426c727..1212cd37acff7847ec4a7d3fb841426d5a77576d 100644
+index 184507aa73e66ef09680cb8914c29a4c570d5b01..35275467db3b10a2f4220c2fee6325062753d9cc 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -328,6 +328,7 @@ source_set("browser") {
+@@ -325,6 +325,7 @@ source_set("browser") {
      "//ui/strings:ax_strings",
      "//ui/touch_selection",
      "//v8:v8_version",
@@ -606,7 +606,7 @@ index 2285564db47ef15eb9a83affd1e481b5671c3940..cf5e79a5540d8208c34579d7e8b5a571
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 34fb29866785ef07c6dca4cfc85966df1c479b5f..e305d25a8f2a34ac90f4d503a9c74dcc6c553cdf 100644
+index 8f1cdd296e5477ddd8a176d5aad7d05888729a45..2d06056f1e51ce76398168254152ccc04e596192 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -48,6 +48,7 @@
@@ -651,7 +651,7 @@ index 34fb29866785ef07c6dca4cfc85966df1c479b5f..e305d25a8f2a34ac90f4d503a9c74dcc
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2212,20 +2219,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2215,20 +2222,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -773,7 +773,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 817e8ecdc6b15177d4cfa5cf44ad5fb1a5346393..106977501728d3216ec6f0a47005bc86c156f605 100644
+index 99b41123b79d225719403737050748931547e8fa..af55b56f6b49bc7b770be2c2285353f82d0b40dc 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -643,6 +643,7 @@ static_library("test_support") {
@@ -792,7 +792,7 @@ index 817e8ecdc6b15177d4cfa5cf44ad5fb1a5346393..106977501728d3216ec6f0a47005bc86
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1952,6 +1954,7 @@ test("content_browsertests") {
+@@ -1953,6 +1955,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -800,7 +800,7 @@ index 817e8ecdc6b15177d4cfa5cf44ad5fb1a5346393..106977501728d3216ec6f0a47005bc86
    ]
  
    if (!(is_chromeos_ash && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3245,6 +3248,7 @@ test("content_unittests") {
+@@ -3249,6 +3252,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1373,7 +1373,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 407169fd5aab525cb249890d49a23ac301ab61d8..19ca594bf376344bcf27a17dab276271379a30e5 100644
+index 2bb0f07955ab848241d03551d218b7d667cd960f..d5e2856bda37bb6cb1f958fadee41047888c20d8 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -409,6 +409,7 @@ component("core") {
@@ -1614,10 +1614,10 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..c2ac4da580e3e7f749a0a4de1e859af6
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 7ef725523fa1b660d589f20cc338052f82a9baf7..61a712df5c7829c320f0f80d859fcf9c840e8022 100644
+index 59fc5ec481cc4595c61860a84feba0d138e937b0..1dc16df6a3da11cd0eee36a00cab15d33d308020 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -358,6 +358,13 @@ component("base") {
+@@ -360,6 +360,13 @@ component("base") {
      ]
    }
  
@@ -1631,7 +1631,7 @@ index 7ef725523fa1b660d589f20cc338052f82a9baf7..61a712df5c7829c320f0f80d859fcf9c
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -508,6 +515,12 @@ component("base") {
+@@ -510,6 +517,12 @@ component("base") {
      "//url",
    ]
  
@@ -1737,7 +1737,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..de771ef414b9a69e331261524f08e9a1
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index fe7a2787f8b5d25a0c11f7ccc3cf00fa9038231a..d62e60c93b9725b625e7f5d0c011c7363d739917 100644
+index eea9eb92fadfcb72adfffffb0e43082a79bcf3a7..dd2110c1e9393f7ad33a0e64c09ef732b3292a54 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -125,6 +125,12 @@ component("display") {
@@ -1784,7 +1784,7 @@ index 29ae2da6a8a2c2a612dfb92f7f9c03ca5fa306b1..440c139a32a0c205e77b657d4aab6468
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 7cd8da2e1a8caf38348d2f56799979a4f1809e7b..d6cbea3a4768ad0e884257fce8db004b1d3b0d72 100644
+index e912566bc5216474b9bdec4b5bcc8c15fb868346..f333ab59936359e84b361d3ee928a25ae37d59d1 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -329,6 +329,12 @@ component("gfx") {
@@ -1839,10 +1839,10 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 0d4a2d809d3fa731af0bad5a9d5f50f5b0a838f4..059a995648ec07960ab3a3cd15cbcc7952ec472d 100644
+index 55fe914e7fc29ed654e88a731157b527b7688214..799238bd6d24633e2a9bbbd747cae0b63b49888e 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -713,6 +713,8 @@ component("views") {
+@@ -715,6 +715,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1851,7 +1851,7 @@ index 0d4a2d809d3fa731af0bad5a9d5f50f5b0a838f4..059a995648ec07960ab3a3cd15cbcc79
    }
  
    if (is_win) {
-@@ -1130,6 +1132,8 @@ source_set("test_support") {
+@@ -1132,6 +1134,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  

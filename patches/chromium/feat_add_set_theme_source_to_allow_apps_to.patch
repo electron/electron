@@ -26,10 +26,10 @@ index 728069cfdba9abd10bee1af9a195d1883ff91b6b..fc4f6e75b08bae70209ec28a033f8ed7
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index b2a7455c7e005e628bee656991e8017814e0a583..4a825f250bf444f20a392cc6599fc52eb95e5d31 100644
+index 12aba4abcbd6dca71dbdf7f8428dfc3286a7f13d..cfa067e492d84f24ae2a8d3e190e7bf0e1ef047e 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -443,6 +443,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -447,6 +447,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
@@ -53,7 +53,7 @@ index b2a7455c7e005e628bee656991e8017814e0a583..4a825f250bf444f20a392cc6599fc52e
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -680,6 +697,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -684,6 +701,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
    std::optional<base::TimeDelta> caret_blink_interval_;
    bool use_overlay_scrollbars_ = false;
