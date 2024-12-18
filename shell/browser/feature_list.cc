@@ -23,6 +23,10 @@
 #include "device/base/features.h"     // nogncheck
 #endif
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "pdf/pdf_features.h"
+#endif
+
 namespace electron {
 
 void InitializeFeatureList() {
@@ -53,6 +57,14 @@ void InitializeFeatureList() {
   disable_features +=
       std::string(",") + features::kMacWebContentsOcclusion.name;
 #endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  // Enable window.showSaveFilePicker api for saving pdf files.
+  // Refs https://issues.chromium.org/issues/373852607
+  enable_features +=
+      std::string(",") + chrome_pdf::features::kPdfUseShowSaveFilePicker.name;
+#endif
+
   std::string platform_specific_enable_features =
       EnablePlatformSpecificFeatures();
   if (platform_specific_enable_features.size() > 0) {

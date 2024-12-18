@@ -13,15 +13,16 @@ This patch can be removed should we choose to support chrome.fileSystem
 or support it enough to fix the crash.
 
 diff --git a/chrome/browser/resources/pdf/pdf_viewer.ts b/chrome/browser/resources/pdf/pdf_viewer.ts
-index 25f2145d4202af9c386780366f726fbf6dcf558f..860d19e5ba1aa4dd027f3f5e5f2ccd37f54a99ad 100644
+index 62354223a767c9d83e81ec6cc0245545a3106c00..0254aa9033cf3986120f8fc4e965b339f00b3ee7 100644
 --- a/chrome/browser/resources/pdf/pdf_viewer.ts
 +++ b/chrome/browser/resources/pdf/pdf_viewer.ts
-@@ -1089,28 +1089,27 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1093,29 +1093,27 @@ export class PdfViewerElement extends PdfViewerBaseElement {
        dataArray = [result.dataToSave];
      }
  
 -    const blob = new Blob(dataArray);
      const fileName = this.attachments_[index].name;
+-    // TODO(crbug.com/373852607): Update to `showSaveFilePicker`.
 -    chrome.fileSystem.chooseEntry(
 -        {type: 'saveFile', suggestedName: fileName},
 -        (entry?: FileSystemFileEntry) => {
@@ -65,76 +66,11 @@ index 25f2145d4202af9c386780366f726fbf6dcf558f..860d19e5ba1aa4dd027f3f5e5f2ccd37
    }
  
    /**
-@@ -1301,36 +1300,33 @@ export class PdfViewerElement extends PdfViewerBaseElement {
+@@ -1306,7 +1304,6 @@ export class PdfViewerElement extends PdfViewerBaseElement {
        fileName = fileName + '.pdf';
      }
  
 -    // Create blob before callback to avoid race condition.
      const blob = new Blob([result.dataToSave], {type: 'application/pdf'});
--    chrome.fileSystem.chooseEntry(
--        {
--          type: 'saveFile',
--          accepts: [{description: '*.pdf', extensions: ['pdf']}],
--          suggestedName: fileName,
--        },
--        (entry?: FileSystemFileEntry) => {
--          if (chrome.runtime.lastError) {
--            if (chrome.runtime.lastError.message !== 'User cancelled') {
--              console.error(
--                  'chrome.fileSystem.chooseEntry failed: ' +
--                  chrome.runtime.lastError.message);
--            }
--            return;
--          }
--          entry!.createWriter((writer: FileWriter) => {
--            writer.write(blob);
--            // <if expr="enable_ink or enable_pdf_ink2">
--            // Unblock closing the window now that the user has saved
--            // successfully.
--            this.setShowBeforeUnloadDialog_(false);
--            // </if>
--            // <if expr="enable_pdf_ink2">
--            this.hasSavedEdits_ =
--                this.hasSavedEdits_ || requestType === SaveRequestType.EDITED;
--            // </if>
--          });
--        });
-+    try {
-+      const fileHandle = await window.showSaveFilePicker({
-+        suggestedName: fileName,
-+        types: [{
-+          description: 'PDF Files',
-+          accept: { 'application/pdf': ['.pdf'] },
-+        }],
-+      });
-+
-+      const writable = await fileHandle.createWritable();
-+      await writable.write(blob);
-+      await writable.close();
-+      // <if expr="enable_ink or enable_pdf_ink2">
-+      // Unblock closing the window now that the user has saved
-+      // successfully.
-+      this.setShowBeforeUnloadDialog_(false);
-+      // </if>
-+      // <if expr="enable_pdf_ink2">
-+      this.hasSavedEdits_ =
-+        this.hasSavedEdits_ || requestType === SaveRequestType.EDITED;
-+      // </if>
-+    } catch (error: any) {
-+      if (error.name !== 'AbortError') {
-+        console.error('window.showSaveFilePicker failed: ' + error);
-+      }
-+    }
- 
-     // <if expr="enable_pdf_ink2">
-     // Ink2 doesn't need to exit annotation mode after save.
-@@ -1476,6 +1472,9 @@ declare global {
-   interface HTMLElementTagNameMap {
-     'pdf-viewer': PdfViewerElement;
-   }
-+  interface Window {
-+    showSaveFilePicker(opts: unknown): Promise<FileSystemFileHandle>;
-+  }
- }
- 
- customElements.define(PdfViewerElement.is, PdfViewerElement);
+     // TODO(crbug.com/373852607): When  OOPIF PDF is enabled, cross origin
+     // checks block the request for `showSaveFilePicker`. Fix the issue by
