@@ -365,7 +365,7 @@ base::ProcessId WebFrameMain::OSProcessID() const {
 int WebFrameMain::ProcessID() const {
   if (!CheckRenderFrame())
     return -1;
-  return render_frame_->GetProcess()->GetID();
+  return render_frame_->GetProcess()->GetDeprecatedID();
 }
 
 int WebFrameMain::RoutingID() const {

@@ -825,12 +825,12 @@ void App::BrowserChildProcessCrashedOrKilled(
 }
 
 void App::RenderProcessReady(content::RenderProcessHost* host) {
-  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER, host->GetID(),
+  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER, host->GetDeprecatedID(),
                        host->GetProcess().Handle());
 }
 
 void App::RenderProcessExited(content::RenderProcessHost* host) {
-  ChildProcessDisconnected(host->GetID());
+  ChildProcessDisconnected(host->GetDeprecatedID());
 }
 
 void App::ChildProcessLaunched(int process_type,
