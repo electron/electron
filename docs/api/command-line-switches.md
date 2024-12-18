@@ -313,6 +313,20 @@ Set the default value of the `verbatim` parameter in the Node.js [`dns.lookup()`
 
 The default is `verbatim` and `dns.setDefaultResultOrder()` have higher priority than `--dns-result-order`.
 
+## Chromium Flags
+
+While a list of all available Chromium switches doesn't exist, there are a few ways of discovering them.
+
+The easiest method is Chromium's flags, via `about://flags`, while those flags don't translate 1:1 to their switch names, they are listed in the process's Command Line argument.
+
+You can enable a flag, then navigate to `about://version` in your Chromium browser, where you can find the list of Command Line arguments. There you can find `--flag-switches-begin --your --list --of --switches --flag-switches-end`.
+
+While most flags are an argument to `--enable-features=`, some are standalone, such as `--enable-experimental-web-platform-features` some of which can be found at https://peter.sh/experiments/chromium-command-line-switches/. That list however is not version locked and non-exhaustive.
+
+Do note that many standalone switches can be split up into individual features, so this list is non-exhaustive as well.
+
+While adding Chromium switches, make sure the Chromium version of Electron and the browser you're discovering said flags on are the same.
+
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value
 [debugging-main-process]: ../tutorial/debugging-main-process.md
@@ -321,3 +335,4 @@ The default is `verbatim` and `dns.setDefaultResultOrder()` have higher priority
 [play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [ready]: app.md#event-ready
 [severities]: https://source.chromium.org/chromium/chromium/src/+/main:base/logging.h?q=logging::LogSeverity&ss=chromium
+
