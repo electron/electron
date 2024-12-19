@@ -182,7 +182,12 @@ for:
             7z a pdb.zip out\Default\*.pdb
           }
       - ps: |
-          $manifest_file = "electron/script/zip_manifests/dist_zip.win.$env:TARGET_ARCH.manifest"
+          if ($env:TARGET_ARCH -eq 'ia32') {
+            $env:MANIFEST_ARCH = "x86"
+          } else {
+            $env:MANIFEST_ARCH = $env:TARGET_ARCH
+          }
+          $manifest_file = "electron/script/zip_manifests/dist_zip.win.$env:MANIFEST_ARCH.manifest"
           python3 electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip $manifest_file
           if ($LASTEXITCODE -ne 0) {
             throw "Zip contains files not listed in the manifest $manifest_file"
