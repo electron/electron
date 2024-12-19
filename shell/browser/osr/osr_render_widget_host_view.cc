@@ -980,7 +980,8 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
 
 viz::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId() {
   return viz::FrameSinkId(
-      base::checked_cast<uint32_t>(render_widget_host_->GetProcess()->GetID()),
+      base::checked_cast<uint32_t>(
+          render_widget_host_->GetProcess()->GetDeprecatedID()),
       base::checked_cast<uint32_t>(render_widget_host_->GetRoutingID()));
 }
 

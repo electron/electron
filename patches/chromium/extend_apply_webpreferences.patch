@@ -12,7 +12,7 @@ Ideally we could add an embedder observer pattern here but that can be
 done in future work.
 
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 77f2b8a03f92062fc9c07b04adb22d421127b73a..ed07b4cee033ced8eee6aca4472cd1e2599e1956 100644
+index d6c8b170dd996b806bc4a1e04bd3d4d8b3f5900b..0a9ca8b09e52eb0f34f24a579b61b01070f38f85 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -169,6 +169,7 @@
@@ -23,7 +23,7 @@ index 77f2b8a03f92062fc9c07b04adb22d421127b73a..ed07b4cee033ced8eee6aca4472cd1e2
  #include "third_party/blink/renderer/platform/graphics/image.h"
  #include "third_party/blink/renderer/platform/graphics/paint/cull_rect.h"
  #include "third_party/blink/renderer/platform/graphics/paint/paint_record_builder.h"
-@@ -1866,6 +1867,7 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
+@@ -1871,6 +1872,7 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
  #if BUILDFLAG(IS_MAC)
    web_view_impl->SetMaximumLegibleScale(
        prefs.default_maximum_page_scale_factor);

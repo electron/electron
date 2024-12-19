@@ -62,7 +62,7 @@ index e1b08fa2f2e2e3afca95b1f8b719220c5436903b..90a5d1895b9d5dff2748ef638c06c127
 +
  #undef CHECK
 diff --git a/decrepit/evp/evp_do_all.cc b/decrepit/evp/evp_do_all.cc
-index a3fb077b9b9e66d1bc524fd7987622e73aa4776a..852b76bea69988e0b3ac76a17b603128f239dde0 100644
+index e199e10ca6602f231df4d83e1efe5254ee20e98f..9fd0e0225fa48b0afb90b525236e54cff17c1c84 100644
 --- a/decrepit/evp/evp_do_all.cc
 +++ b/decrepit/evp/evp_do_all.cc
 @@ -79,6 +79,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
