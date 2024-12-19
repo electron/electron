@@ -1174,7 +1174,9 @@ bool NativeWindowViews::IsKiosk() const {
 
 bool NativeWindowViews::IsTabletMode() const {
 #if BUILDFLAG(IS_WIN)
-  return base::win::IsWindows10OrGreaterTabletMode(GetAcceleratedWidget());
+  // TODO: Prefer the async version base::win::IsDeviceInTabletMode
+  // which requires making the public api async.
+  return base::win::IsWindows10TabletMode(GetAcceleratedWidget());
 #else
   return false;
 #endif
