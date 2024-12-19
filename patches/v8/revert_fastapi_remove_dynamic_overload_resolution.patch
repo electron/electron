@@ -208,7 +208,7 @@ index 171e66c427991bfe7db5c2875d12559767a24b55..b97b37e5746433d3801de19d4666a19a
                         const ConvertReturnValue& convert_return_value,
                         const InitializeOptions& initialize_options,
 diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
-index d75a38769d582cd6e5a807f9670732dc92d77b7e..a29bd4a5be0c9a268386898f8a52e98933211b6c 100644
+index 52b1d0837dcbbe2ab4bc84f5f1777ab5c543e18c..263dbab5a52c49cf5d2f6ab51aa25a64665566bf 100644
 --- a/src/compiler/js-call-reducer.cc
 +++ b/src/compiler/js-call-reducer.cc
 @@ -631,11 +631,11 @@ class FastApiCallReducerAssembler : public JSCallReducerAssembler {
@@ -319,10 +319,10 @@ index d75a38769d582cd6e5a807f9670732dc92d77b7e..a29bd4a5be0c9a268386898f8a52e989
  
      return Replace(fast_call_subgraph);
 diff --git a/src/compiler/simplified-lowering.cc b/src/compiler/simplified-lowering.cc
-index eaedf7ea70442a9939ffb02dcadbee079eda6f6e..85df5537a22758cf3bfe2bc56e48808dba29c09e 100644
+index 8d4cea6b9ad304c80296e7d399f9d8e7a3ef0bb1..f4672a92b5021f305558e2ddf7ff342c4bb47d5d 100644
 --- a/src/compiler/simplified-lowering.cc
 +++ b/src/compiler/simplified-lowering.cc
-@@ -2020,7 +2020,7 @@ class RepresentationSelector {
+@@ -2028,7 +2028,7 @@ class RepresentationSelector {
      // argument, which must be a JSArray in one function and a TypedArray in the
      // other function, and both JSArrays and TypedArrays have the same UseInfo
      // UseInfo::AnyTagged(). All the other argument types must match.
@@ -331,7 +331,7 @@ index eaedf7ea70442a9939ffb02dcadbee079eda6f6e..85df5537a22758cf3bfe2bc56e48808d
      const int c_arg_count = c_signature->ArgumentCount();
      CallDescriptor* call_descriptor = op_params.descriptor();
      // Arguments for CallApiCallbackOptimizedXXX builtin (including context)
-@@ -2062,8 +2062,12 @@ class RepresentationSelector {
+@@ -2070,8 +2070,12 @@ class RepresentationSelector {
  
      // Effect and Control.
      ProcessRemainingInputs<T>(node, value_input_count);
@@ -346,10 +346,10 @@ index eaedf7ea70442a9939ffb02dcadbee079eda6f6e..85df5537a22758cf3bfe2bc56e48808d
        case CTypeInfo::Type::kBool:
          SetOutput<T>(node, MachineRepresentation::kBit);
 diff --git a/src/compiler/simplified-operator.cc b/src/compiler/simplified-operator.cc
-index 76d09fa22343114eb936a018bca2983807f0aa1d..b6a10208be6b2b2aa823527413a237842d7af437 100644
+index 612eb18253c54c99393737898dfd6b6ee828768b..103d4d1cf2e95c55e8d17363e18a8de1d6619c56 100644
 --- a/src/compiler/simplified-operator.cc
 +++ b/src/compiler/simplified-operator.cc
-@@ -2097,21 +2097,26 @@ FastApiCallParameters const& FastApiCallParametersOf(const Operator* op) {
+@@ -2100,21 +2100,26 @@ FastApiCallParameters const& FastApiCallParametersOf(const Operator* op) {
  }
  
  std::ostream& operator<<(std::ostream& os, FastApiCallParameters const& p) {
@@ -381,7 +381,7 @@ index 76d09fa22343114eb936a018bca2983807f0aa1d..b6a10208be6b2b2aa823527413a23784
           lhs.feedback() == rhs.feedback() &&
           lhs.descriptor() == rhs.descriptor();
  }
-@@ -2321,11 +2326,19 @@ const Operator* SimplifiedOperatorBuilder::TransitionAndStoreNonNumberElement(
+@@ -2324,11 +2329,19 @@ const Operator* SimplifiedOperatorBuilder::TransitionAndStoreNonNumberElement(
  }
  
  const Operator* SimplifiedOperatorBuilder::FastApiCall(
@@ -405,7 +405,7 @@ index 76d09fa22343114eb936a018bca2983807f0aa1d..b6a10208be6b2b2aa823527413a23784
    // Arguments for CallApiCallbackOptimizedXXX builtin (including context)
    // plus JS arguments (including receiver).
    int slow_arg_count = static_cast<int>(descriptor->ParameterCount());
-@@ -2335,13 +2348,13 @@ const Operator* SimplifiedOperatorBuilder::FastApiCall(
+@@ -2338,13 +2351,13 @@ const Operator* SimplifiedOperatorBuilder::FastApiCall(
    return zone()->New<Operator1<FastApiCallParameters>>(
        IrOpcode::kFastApiCall, Operator::kNoProperties, "FastApiCall",
        value_input_count, 1, 1, 1, 1, 2,

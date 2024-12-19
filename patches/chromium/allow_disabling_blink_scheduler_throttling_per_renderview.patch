@@ -51,7 +51,7 @@ index 5fb8a3dc69dc5fc5bfa08e01d8f03707a23c9274..41774b60b8cb7e0a22cedc597dc07ad1
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 0b1e783420a1b9db85ffba3b511972ccad26e40c..2b4f2efe1c9c0cb1bdd5c150de4f7ec897885db7 100644
+index e65c2b9ed1d6d3cc53ee5ba145aa22cb149d9dde..50cac7b36d6e83dea6686636b5e7a2943c44ceac 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -579,8 +579,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
@@ -116,10 +116,10 @@ index 083af135d890c2837e72c314e170e81931bd2a20..5245ea88441ef84c15b8052a9011ce70
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index c1aebbc3db3e22e7e9391cb0eb2654a28a2052f4..77f2b8a03f92062fc9c07b04adb22d421127b73a 100644
+index 659c880e075e89d8b38d356803a26c4e8c07e9d6..d6c8b170dd996b806bc4a1e04bd3d4d8b3f5900b 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2468,6 +2468,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2473,6 +2473,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index c1aebbc3db3e22e7e9391cb0eb2654a28a2052f4..77f2b8a03f92062fc9c07b04adb22d42
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -3996,10 +4000,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4001,10 +4005,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  

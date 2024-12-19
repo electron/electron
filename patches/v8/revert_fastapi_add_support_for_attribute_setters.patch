@@ -80,7 +80,7 @@ index b49322d91d06b7fed34fe41b6ac7d31dcc7783c4..171e66c427991bfe7db5c2875d125597
  }  // namespace compiler
  }  // namespace internal
 diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
-index 48663a4fcc284b7d832849e0c467019b384a31ff..d75a38769d582cd6e5a807f9670732dc92d77b7e 100644
+index c785c5989b22cf00cd7528017428a4af6d2bd48d..52b1d0837dcbbe2ab4bc84f5f1777ab5c543e18c 100644
 --- a/src/compiler/js-call-reducer.cc
 +++ b/src/compiler/js-call-reducer.cc
 @@ -3877,6 +3877,58 @@ Reduction JSCallReducer::ReduceCallWasmFunction(Node* node,
@@ -154,7 +154,7 @@ index 48663a4fcc284b7d832849e0c467019b384a31ff..d75a38769d582cd6e5a807f9670732dc
    if (c_function.address) {
      FastApiCallReducerAssembler a(this, node, function_template_info,
 diff --git a/src/compiler/js-native-context-specialization.cc b/src/compiler/js-native-context-specialization.cc
-index 5b9a78e7a9a728842148eebe733501174c0c94a1..95c44eb81f9eba481b7c795d0a8becb1aa757a90 100644
+index d855ffbf499d337aa77d9380837afe6918bd35d1..7fa2aa44a271c6acc19b932f5c691ab797b5e6c2 100644
 --- a/src/compiler/js-native-context-specialization.cc
 +++ b/src/compiler/js-native-context-specialization.cc
 @@ -16,7 +16,6 @@
@@ -174,7 +174,7 @@ index 5b9a78e7a9a728842148eebe733501174c0c94a1..95c44eb81f9eba481b7c795d0a8becb1
    ReplaceWithValue(node, value, effect, control);
    return Replace(value);
  }
-@@ -2835,8 +2834,7 @@ Node* JSNativeContextSpecialization::InlinePropertyGetterCall(
+@@ -2841,8 +2840,7 @@ Node* JSNativeContextSpecialization::InlinePropertyGetterCall(
                                   access_info.api_holder().value(), broker())
                             : receiver;
      value = InlineApiCall(receiver, api_holder, frame_state, nullptr, effect,
@@ -184,7 +184,7 @@ index 5b9a78e7a9a728842148eebe733501174c0c94a1..95c44eb81f9eba481b7c795d0a8becb1
    }
    // Remember to rewire the IfException edge if this is inside a try-block.
    if (if_exceptions != nullptr) {
-@@ -2871,7 +2869,7 @@ void JSNativeContextSpecialization::InlinePropertySetterCall(
+@@ -2877,7 +2875,7 @@ void JSNativeContextSpecialization::InlinePropertySetterCall(
                                   access_info.api_holder().value(), broker())
                             : receiver;
      InlineApiCall(receiver, api_holder, frame_state, value, effect, control,
@@ -193,7 +193,7 @@ index 5b9a78e7a9a728842148eebe733501174c0c94a1..95c44eb81f9eba481b7c795d0a8becb1
    }
    // Remember to rewire the IfException edge if this is inside a try-block.
    if (if_exceptions != nullptr) {
-@@ -2884,66 +2882,10 @@ void JSNativeContextSpecialization::InlinePropertySetterCall(
+@@ -2890,66 +2888,10 @@ void JSNativeContextSpecialization::InlinePropertySetterCall(
    }
  }
  
@@ -261,7 +261,7 @@ index 5b9a78e7a9a728842148eebe733501174c0c94a1..95c44eb81f9eba481b7c795d0a8becb1
    compiler::OptionalObjectRef maybe_callback_data =
        function_template_info.callback_data(broker());
    // Check if the function has an associated C++ code to execute.
-@@ -2957,44 +2899,45 @@ Node* JSNativeContextSpecialization::InlineApiCall(
+@@ -2963,44 +2905,45 @@ Node* JSNativeContextSpecialization::InlineApiCall(
  
    // Only setters have a value.
    int const argc = value == nullptr ? 0 : 1;
@@ -504,7 +504,7 @@ index 137e5c917cf7a56c89e70ed49d07e3134d1c8eac..00000000000000000000000000000000
 -assertEquals(1, fast_c_api.fast_call_count());
 -assertEquals(0, fast_c_api.slow_call_count());
 diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
-index 95ec59771c6f5b837e14f8f53bb6493b65ea1324..dc3217045c3683e287f6fa606a36ab6b007a45ea 100644
+index 89302cf1702841415660a0dd74d849bbe0b43c4a..95341413fa4e9c3e1f12dfa9564b4c42b2012f28 100644
 --- a/test/mjsunit/mjsunit.status
 +++ b/test/mjsunit/mjsunit.status
 @@ -780,7 +780,6 @@
@@ -515,7 +515,7 @@ index 95ec59771c6f5b837e14f8f53bb6493b65ea1324..dc3217045c3683e287f6fa606a36ab6b
    'compiler/fast-api-interface-types': [SKIP],
    'compiler/regress-crbug-1201011': [SKIP],
    'compiler/regress-crbug-1201057': [SKIP],
-@@ -2394,7 +2393,6 @@
+@@ -2395,7 +2394,6 @@
    'regress/regress-1049982-2': [FAIL],
    # Maglev doesn't support fast API calls.
    'compiler/fast-api-annotations': [FAIL],

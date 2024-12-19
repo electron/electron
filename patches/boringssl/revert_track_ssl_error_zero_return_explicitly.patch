@@ -20,7 +20,7 @@ index 76c74e2941d9912ca93a69254f540a6a6ddd9e74..3baf5043800c8cbca73efa4d8a65a68e
  
      case ssl_open_record_error:
 diff --git a/ssl/ssl_lib.cc b/ssl/ssl_lib.cc
-index d601695f51322f3ccecfd31b623eabf8440fceaa..0eb0e88c495d6934345e067298305041ee3d9a8b 100644
+index 4ede3ad282b30b84df70a24ed9b89c516cddae4e..4d8fe9eb9a2138da994e54da6fa00ffa6a62a71d 100644
 --- a/ssl/ssl_lib.cc
 +++ b/ssl/ssl_lib.cc
 @@ -1323,7 +1323,7 @@ int SSL_get_error(const SSL *ssl, int ret_code) {

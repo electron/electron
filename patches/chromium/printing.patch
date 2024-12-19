@@ -653,7 +653,7 @@ index 3c2fdc9f9a6c60efc4b0afacbfb83eef55917791..8fd9aff538fa03da6c171927c316d4f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index e1e7623427eccb5f7e4d0caf4394b6ee01357049..a8ace3f66e5961a14726faf537ba428f45939f9b 100644
+index 18a8d64167b66d0de67c0c89779af90814b827c6..33079deee8720a447e2b4e1f3601542b59e1cf16 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -52,6 +52,7 @@
@@ -730,7 +730,7 @@ index e1e7623427eccb5f7e4d0caf4394b6ee01357049..a8ace3f66e5961a14726faf537ba428f
 +  print_preview_context_.InitWithFrame(frame);
    print_preview_context_.OnPrintPreview();
  
- #if BUILDFLAG(IS_CHROMEOS_ASH)
+ #if BUILDFLAG(IS_CHROMEOS)
 @@ -2062,17 +2068,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
@@ -817,10 +817,10 @@ index e1e7623427eccb5f7e4d0caf4394b6ee01357049..a8ace3f66e5961a14726faf537ba428f
  }
  
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index b8c803184f267d87696c4e72c3d993ff3b69d95b..7278dfae56305cc8669fc2240563450f96bb6f52 100644
+index ce8ac0a7098c8cd6bc03738d03dffef6b5a34141..93fe9da2e5943876c22801e3934d695ee88c3ba3 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
-@@ -259,7 +259,7 @@ class PrintRenderFrameHelper
+@@ -258,7 +258,7 @@ class PrintRenderFrameHelper
        mojo::PendingAssociatedReceiver<mojom::PrintRenderFrame> receiver);
  
    // printing::mojom::PrintRenderFrame:
@@ -829,7 +829,7 @@ index b8c803184f267d87696c4e72c3d993ff3b69d95b..7278dfae56305cc8669fc2240563450f
    void PrintWithParams(mojom::PrintPagesParamsPtr params,
                         PrintWithParamsCallback callback) override;
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-@@ -326,7 +326,8 @@ class PrintRenderFrameHelper
+@@ -325,7 +325,8 @@ class PrintRenderFrameHelper
    // WARNING: |this| may be gone after this method returns.
    void Print(blink::WebLocalFrame* frame,
               const blink::WebNode& node,
@@ -839,7 +839,7 @@ index b8c803184f267d87696c4e72c3d993ff3b69d95b..7278dfae56305cc8669fc2240563450f
  
    // Notification when printing is done - signal tear-down/free resources.
    void DidFinishPrinting(PrintingResult result);
-@@ -336,7 +337,8 @@ class PrintRenderFrameHelper
+@@ -335,7 +336,8 @@ class PrintRenderFrameHelper
    // Initialize print page settings with default settings.
    // Used only for native printing workflow.
    bool InitPrintSettings(blink::WebLocalFrame* frame,
@@ -849,7 +849,7 @@ index b8c803184f267d87696c4e72c3d993ff3b69d95b..7278dfae56305cc8669fc2240563450f
  
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
-@@ -634,7 +636,8 @@ class PrintRenderFrameHelper
+@@ -633,7 +635,8 @@ class PrintRenderFrameHelper
    };
  
    void SetupOnStopLoadingTimeout();
@@ -860,10 +860,10 @@ index b8c803184f267d87696c4e72c3d993ff3b69d95b..7278dfae56305cc8669fc2240563450f
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 35275467db3b10a2f4220c2fee6325062753d9cc..605f3c77e212720c25285b4dd8e6ba64b3b37320 100644
+index 8fd7e7c343f190d1f65abc6b8c26cf0cbdc77a60..6fe9cd1a29e9e1481224bf4a4582b830bebce497 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3029,8 +3029,9 @@ source_set("browser") {
+@@ -3037,8 +3037,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

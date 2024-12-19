@@ -11,19 +11,19 @@ counter to the design of globalShortcuts, and so we need to instead
 use `ui::MediaKeysListener`.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener.cc b/chrome/browser/extensions/global_shortcut_listener.cc
-index b413086c74da9fffe7821b02ba8ccd6ac7b0bbe6..76d9fd6f48fde36ea61ed8e71142449840b3a08a 100644
+index 7a5635aa2beec3f46fde571f68adf5ae6c20ea11..897d1dc7c5896edde32f0dc5a46143ed2e8ea03c 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener.cc
-@@ -8,6 +8,7 @@
- #include "base/not_fatal_until.h"
+@@ -14,6 +14,7 @@
  #include "base/notreached.h"
+ #include "build/config/linux/dbus/buildflags.h"
  #include "content/public/browser/browser_thread.h"
 +#include "content/public/browser/media_keys_listener_manager.h"
  #include "ui/base/accelerators/accelerator.h"
  #include "ui/base/accelerators/command.h"
- 
-@@ -68,6 +69,22 @@ void GlobalShortcutListener::UnregisterAccelerator(
-     StopListening();
+ #include "ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h"
+@@ -91,6 +92,22 @@ void GlobalShortcutListener::UnregisterAccelerator(
+   RemoveAccelerator(accelerator);
  }
  
 +// static
@@ -43,13 +43,13 @@ index b413086c74da9fffe7821b02ba8ccd6ac7b0bbe6..76d9fd6f48fde36ea61ed8e711424498
 +}
 +
  void GlobalShortcutListener::UnregisterAccelerators(Observer* observer) {
-   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-   if (IsShortcutHandlingSuspended())
+   CHECK(global_accelerator_listener_);
+ 
 diff --git a/chrome/browser/extensions/global_shortcut_listener.h b/chrome/browser/extensions/global_shortcut_listener.h
-index 667530c91beeace110bdc299d4fc00db84acd31d..a8d82694e92e95987675024a025b6d3749c4c851 100644
+index ec203528129a3d13753d6ce477dd5796e80ddf71..2dd2403e0ae57dd8162fbcc8c8d3ebdd6e57c95c 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.h
 +++ b/chrome/browser/extensions/global_shortcut_listener.h
-@@ -40,6 +40,8 @@ class GlobalShortcutListener {
+@@ -41,6 +41,8 @@ class GlobalShortcutListener {
    // The instance may be nullptr.
    static GlobalShortcutListener* GetInstance();
  

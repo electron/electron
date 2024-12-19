@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5f8dc5da4e0733bd5d432fab72bc57878e24127e..f05703cc0e76971575617794f55700619cf17dbb 100644
+index 8ea4d54304dae89db570e960160991da0949eeb0..d83f50985090379237d7aa1a13cf7a90c2391689 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1029,6 +1029,7 @@ component("base") {
+@@ -1028,6 +1028,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -560,7 +560,7 @@ index faddee802d6538c092ba96914184663ee57751c8..49238975848d58cd30727ec818bbac52
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 184507aa73e66ef09680cb8914c29a4c570d5b01..35275467db3b10a2f4220c2fee6325062753d9cc 100644
+index 63177e15437bdb10ce0d7b11bee036f203262f9a..8fd7e7c343f190d1f65abc6b8c26cf0cbdc77a60 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -325,6 +325,7 @@ source_set("browser") {
@@ -679,10 +679,10 @@ index 8f1cdd296e5477ddd8a176d5aad7d05888729a45..2d06056f1e51ce76398168254152ccc0
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index d8243ca31b40940f79892cf74a0d9dbbec7d8272..df320813ebc67ea16d6c93c7f2905196be5ef44f 100644
+index 059a2c0b563ed90f11b5ff8ab02324bdb836007e..da0ef200767b4839c583c684d02e1d25905597cd 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -286,6 +286,7 @@ source_set("common") {
+@@ -285,6 +285,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -773,7 +773,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 99b41123b79d225719403737050748931547e8fa..af55b56f6b49bc7b770be2c2285353f82d0b40dc 100644
+index a54bb552bbd257be8aa6627c903c0a03804f9697..6d31650a930762079c49b4c0148680bbede051fd 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -643,6 +643,7 @@ static_library("test_support") {
@@ -1839,7 +1839,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 55fe914e7fc29ed654e88a731157b527b7688214..799238bd6d24633e2a9bbbd747cae0b63b49888e 100644
+index 7725997454966b0bdeb06d16b5e565e048a7af34..a844fe066ce720c0601d68e9f67d806573a03468 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -715,6 +715,8 @@ component("views") {
