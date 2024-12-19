@@ -3,6 +3,7 @@ import { BrowserWindow, app } from 'electron/main';
 
 import { expect } from 'chai';
 
+import { execSync } from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -13,9 +14,17 @@ import { ifdescribe, ifit, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('shell module', () => {
-  xdescribe('shell.openExternal()', () => {
+  describe('shell.openExternal()', () => {
     let envVars: Record<string, string | undefined> = {};
     let server: http.Server;
+
+    after(() => {
+      if (process.env.CI && process.platform === 'win32') {
+        // Edge may cause issues with visibility tests, so make sure it is closed after testing.
+        const killEdge = 'Get-Process | Where Name -Like "msedge" | Stop-Process';
+        execSync(killEdge, { shell: 'powershell.exe' });
+      }
+    });
 
     beforeEach(function () {
       envVars = {
