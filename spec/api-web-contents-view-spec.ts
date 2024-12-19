@@ -4,9 +4,8 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-import { ScreenCapture } from './lib/screen-helpers';
 import { defer, ifit, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
   afterEach(async () => {
@@ -182,14 +181,7 @@ describe('WebContentsView', () => {
   });
 
   describe('visibilityState', () => {
-    before(async () => {
-      const screenCapture = await ScreenCapture.create();
-      await screenCapture.takeScreenShot();
-    });
-    afterEach(async () => {
-      const screenCapture = await ScreenCapture.create();
-      await screenCapture.takeScreenShot();
-    });
+    afterEach(cleanupWebContents);
 
     async function haveVisibilityState (view: WebContentsView, state: string) {
       const docVisState = await view.webContents.executeJavaScript('document.visibilityState');
