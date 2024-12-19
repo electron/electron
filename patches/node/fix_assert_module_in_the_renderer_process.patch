@@ -44,10 +44,10 @@ index 59b5a16f1309a5e4055bccfdb7a529045ad30402..bfdaf6211466a01b64b7942f7b16c480
    let filename = call.getFileName();
    const line = call.getLineNumber() - 1;
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index f59abcb21d64b910d8d42eb23c03109f62558813..1b6613d1de8c89c8271066a652afd1024988362d 100644
+index 89ce587cac4506c4218a9316fe0b68070a7a8504..b74fb837fc1cfee839c8b5b8c0b9a6f805881206 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -244,6 +244,9 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -247,6 +247,9 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
      auto* prepare_stack_trace_cb = s.prepare_stack_trace_callback ?
          s.prepare_stack_trace_callback : PrepareStackTraceCallback;
      isolate->SetPrepareStackTraceCallback(prepare_stack_trace_cb);
@@ -58,10 +58,10 @@ index f59abcb21d64b910d8d42eb23c03109f62558813..1b6613d1de8c89c8271066a652afd102
  }
  
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 29630fcccc3bd9d24ad6aec64bef2fedfc3c4031..4b3f7751db2871c8ce76b197a84a2417097030ea 100644
+index 3c42f9b87c11a0f88800d6709515c1c9e2972fc0..6f9a8d3e0884bc6e356413f2f39522a7109c86b5 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1464,14 +1464,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
+@@ -1476,14 +1476,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
    }
    Isolate* isolate = args.GetIsolate();
  

@@ -15,10 +15,10 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index f3dad958b2ec275992554477b9344214c8c1e2c8..a086217046fd5ed7cfb09cfd2ed62f3987eb1f31 100644
+index c13475102a75d65329908f44def06a60f4a2c4f1..e9fe83a675cb5bf681934e0f1c30a3cab447ba57 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -27,14 +27,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
+@@ -28,14 +28,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
  const fs = require('fs');
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
@@ -35,56 +35,36 @@ index f3dad958b2ec275992554477b9344214c8c1e2c8..a086217046fd5ed7cfb09cfd2ed62f39
  const {
    ERR_INPUT_TYPE_NOT_ALLOWED,
    ERR_INVALID_ARG_TYPE,
-@@ -154,34 +153,13 @@ function emitLegacyIndexDeprecation(url, packageJSONUrl, base, main) {
+@@ -183,6 +182,15 @@ const legacyMainResolveExtensionsIndexes = {
+   kResolvedByPackageAndNode: 9,
+ };
  
- const realpathCache = new SafeMap();
- 
--const legacyMainResolveExtensions = [
--  '',
--  '.js',
--  '.json',
--  '.node',
--  '/index.js',
--  '/index.json',
--  '/index.node',
--  './index.js',
--  './index.json',
--  './index.node',
--];
--
--const legacyMainResolveExtensionsIndexes = {
--  // 0-6: when packageConfig.main is defined
--  kResolvedByMain: 0,
--  kResolvedByMainJs: 1,
--  kResolvedByMainJson: 2,
--  kResolvedByMainNode: 3,
--  kResolvedByMainIndexJs: 4,
--  kResolvedByMainIndexJson: 5,
--  kResolvedByMainIndexNode: 6,
--  // 7-9: when packageConfig.main is NOT defined,
--  //      or when the previous case didn't found the file
--  kResolvedByPackageAndJs: 7,
--  kResolvedByPackageAndJson: 8,
--  kResolvedByPackageAndNode: 9,
--};
 +/**
 + * @param {string | URL} url
 + * @returns {boolean}
 + */
 +function fileExists(url) {
-+  return internalFsBinding.internalModuleStat(toNamespacedPath(toPathIfFileURL(url))) === 0;
++  const namespaced = toNamespacedPath(toPathIfFileURL(url));
++  return internalFsBinding.internalModuleStat(internalFsBinding, namespaced) === 0;
 +}
- 
++
  /**
   * Legacy CommonJS main resolution:
-@@ -196,22 +174,44 @@ const legacyMainResolveExtensionsIndexes = {
-  * @returns {URL}
-  */
- function legacyMainResolve(packageJSONUrl, packageConfig, base) {
--  const packageJsonUrlString = packageJSONUrl.href;
+  * 1. let M = pkg_url + (json main field)
+@@ -199,18 +207,45 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
+   assert(isURL(packageJSONUrl));
+   const pkgPath = fileURLToPath(new URL('.', packageJSONUrl));
+ 
+-  const baseStringified = isURL(base) ? base.href : base;
 -
--  if (typeof packageJsonUrlString !== 'string') {
--    throw new ERR_INVALID_ARG_TYPE('packageJSONUrl', ['URL'], packageJSONUrl);
+-  const resolvedOption = FSLegacyMainResolve(pkgPath, packageConfig.main, baseStringified);
+-
+-  const maybeMain = resolvedOption <= legacyMainResolveExtensionsIndexes.kResolvedByMainIndexNode ?
+-    packageConfig.main || './' : '';
+-  const resolvedPath = resolve(pkgPath, maybeMain + legacyMainResolveExtensions[resolvedOption]);
+-  const resolvedUrl = pathToFileURL(resolvedPath);
+-
+-  emitLegacyIndexDeprecation(resolvedUrl, resolvedPath, pkgPath, base, packageConfig.main);
 +  let guess;
 +  if (packageConfig.main !== undefined) {
 +    // Note: fs check redundances will be handled by Descriptor cache here.
@@ -105,277 +85,39 @@ index f3dad958b2ec275992554477b9344214c8c1e2c8..a086217046fd5ed7cfb09cfd2ed62f39
 +                                        packageJSONUrl)));
 +    else guess = undefined;
 +    if (guess) {
-+      emitLegacyIndexDeprecation(guess, packageJSONUrl, base,
-+                                 packageConfig.main);
++      emitLegacyIndexDeprecation(guess, fileURLToPath(guess), pkgPath,
++                                 base, packageConfig.main);
 +      return guess;
 +    }
-+    // Fallthrough.
-   }
--
--  const baseStringified = isURL(base) ? base.href : base;
--
--  const resolvedOption = FSLegacyMainResolve(packageJsonUrlString, packageConfig.main, baseStringified);
--
--  const baseUrl = resolvedOption <= legacyMainResolveExtensionsIndexes.kResolvedByMainIndexNode ? `./${packageConfig.main}` : '';
--  const resolvedUrl = new URL(baseUrl + legacyMainResolveExtensions[resolvedOption], packageJSONUrl);
--
--  emitLegacyIndexDeprecation(resolvedUrl, packageJSONUrl, base, packageConfig.main);
--
++  }
+ 
 -  return resolvedUrl;
++  // Fallthrough.
 +  if (fileExists(guess = new URL('./index.js', packageJSONUrl)));
 +  // So fs.
 +  else if (fileExists(guess = new URL('./index.json', packageJSONUrl)));
 +  else if (fileExists(guess = new URL('./index.node', packageJSONUrl)));
 +  else guess = undefined;
 +  if (guess) {
-+    emitLegacyIndexDeprecation(guess, packageJSONUrl, base, packageConfig.main);
++    emitLegacyIndexDeprecation(guess, fileURLToPath(guess), pkgPath,
++                                base, packageConfig.main);
 +    return guess;
 +  }
 +  // Not found.
-+  throw new ERR_MODULE_NOT_FOUND(
-+    fileURLToPath(new URL('.', packageJSONUrl)), fileURLToPath(base));
++  throw new ERR_MODULE_NOT_FOUND(pkgPath, fileURLToPath(base), null);
  }
  
  const encodedSepRegEx = /%2F|%5C/i;
-diff --git a/src/node_file.cc b/src/node_file.cc
-index 0bb70eb0fcd42ddf4d5e585065cf1ad8e74faab3..b565beae625d970ba92ab667a145d8897d4e8a6e 100644
---- a/src/node_file.cc
-+++ b/src/node_file.cc
-@@ -19,14 +19,12 @@
- // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- // USE OR OTHER DEALINGS IN THE SOFTWARE.
- #include "node_file.h"  // NOLINT(build/include_inline)
--#include "ada.h"
- #include "aliased_buffer-inl.h"
- #include "memory_tracker-inl.h"
- #include "node_buffer.h"
- #include "node_errors.h"
- #include "node_external_reference.h"
- #include "node_file-inl.h"
--#include "node_metadata.h"
- #include "node_process-inl.h"
- #include "node_stat_watcher.h"
- #include "node_url.h"
-@@ -3208,146 +3206,6 @@ constexpr std::array<std::string_view, 10> legacy_main_extensions = {
- 
- }  // namespace
- 
--void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
--  CHECK_GE(args.Length(), 1);
--  CHECK(args[0]->IsString());
--
--  Environment* env = Environment::GetCurrent(args);
--  auto isolate = env->isolate();
--
--  Utf8Value utf8_package_json_url(isolate, args[0]);
--  auto package_json_url =
--      ada::parse<ada::url_aggregator>(utf8_package_json_url.ToStringView());
--
--  if (!package_json_url) {
--    THROW_ERR_INVALID_URL(isolate, "Invalid URL");
--    return;
--  }
--
--  std::string package_initial_file = "";
--
--  ada::result<ada::url_aggregator> file_path_url;
--  std::optional<std::string> initial_file_path;
--  std::string file_path;
--
--  if (args.Length() >= 2 && args[1]->IsString()) {
--    auto package_config_main = Utf8Value(isolate, args[1]).ToString();
--
--    file_path_url = ada::parse<ada::url_aggregator>(
--        std::string("./") + package_config_main, &package_json_url.value());
--
--    if (!file_path_url) {
--      THROW_ERR_INVALID_URL(isolate, "Invalid URL");
--      return;
--    }
--
--    initial_file_path = node::url::FileURLToPath(env, *file_path_url);
--    if (!initial_file_path.has_value()) {
--      return;
--    }
--
--    FromNamespacedPath(&initial_file_path.value());
--
--    package_initial_file = *initial_file_path;
--
--    for (int i = 0; i < legacy_main_extensions_with_main_end; i++) {
--      file_path = *initial_file_path + std::string(legacy_main_extensions[i]);
--      // TODO(anonrig): Remove this when ToNamespacedPath supports std::string
--      Local<Value> local_file_path =
--          Buffer::Copy(env->isolate(), file_path.c_str(), file_path.size())
--              .ToLocalChecked();
--      BufferValue buff_file_path(isolate, local_file_path);
--      ToNamespacedPath(env, &buff_file_path);
--
--      switch (FilePathIsFile(env, buff_file_path.ToString())) {
--        case BindingData::FilePathIsFileReturnType::kIsFile:
--          return args.GetReturnValue().Set(i);
--        case BindingData::FilePathIsFileReturnType::kIsNotFile:
--          continue;
--        case BindingData::FilePathIsFileReturnType::
--            kThrowInsufficientPermissions:
--          // the default behavior when do not have permission is to return
--          // and exit the execution of the method as soon as possible
--          // the internal function will throw the exception
--          return;
--        default:
--          UNREACHABLE();
--      }
--    }
--  }
--
--  file_path_url =
--      ada::parse<ada::url_aggregator>("./index", &package_json_url.value());
--
--  if (!file_path_url) {
--    THROW_ERR_INVALID_URL(isolate, "Invalid URL");
--    return;
--  }
--
--  initial_file_path = node::url::FileURLToPath(env, *file_path_url);
--  if (!initial_file_path.has_value()) {
--    return;
--  }
--
--  FromNamespacedPath(&initial_file_path.value());
--
--  for (int i = legacy_main_extensions_with_main_end;
--       i < legacy_main_extensions_package_fallback_end;
--       i++) {
--    file_path = *initial_file_path + std::string(legacy_main_extensions[i]);
--    // TODO(anonrig): Remove this when ToNamespacedPath supports std::string
--    Local<Value> local_file_path =
--        Buffer::Copy(env->isolate(), file_path.c_str(), file_path.size())
--            .ToLocalChecked();
--    BufferValue buff_file_path(isolate, local_file_path);
--    ToNamespacedPath(env, &buff_file_path);
--
--    switch (FilePathIsFile(env, buff_file_path.ToString())) {
--      case BindingData::FilePathIsFileReturnType::kIsFile:
--        return args.GetReturnValue().Set(i);
--      case BindingData::FilePathIsFileReturnType::kIsNotFile:
--        continue;
--      case BindingData::FilePathIsFileReturnType::kThrowInsufficientPermissions:
--        // the default behavior when do not have permission is to return
--        // and exit the execution of the method as soon as possible
--        // the internal function will throw the exception
--        return;
--      default:
--        UNREACHABLE();
--    }
--  }
--
--  if (package_initial_file == "")
--    package_initial_file = *initial_file_path + ".js";
--
--  std::optional<std::string> module_base;
--
--  if (args.Length() >= 3 && args[2]->IsString()) {
--    Utf8Value utf8_base_path(isolate, args[2]);
--    auto base_url =
--        ada::parse<ada::url_aggregator>(utf8_base_path.ToStringView());
--
--    if (!base_url) {
--      THROW_ERR_INVALID_URL(isolate, "Invalid URL");
--      return;
--    }
--
--    module_base = node::url::FileURLToPath(env, *base_url);
--    if (!module_base.has_value()) {
--      return;
--    }
--  } else {
--    THROW_ERR_INVALID_ARG_TYPE(
--        isolate,
--        "The \"base\" argument must be of type string or an instance of URL.");
--    return;
--  }
--
--  THROW_ERR_MODULE_NOT_FOUND(isolate,
--                             "Cannot find package '%s' imported from %s",
--                             package_initial_file,
--                             *module_base);
--}
- 
- void BindingData::MemoryInfo(MemoryTracker* tracker) const {
-   tracker->TrackField("stats_field_array", stats_field_array);
-@@ -3448,19 +3306,6 @@ InternalFieldInfoBase* BindingData::Serialize(int index) {
-   return info;
- }
- 
--void BindingData::CreatePerIsolateProperties(IsolateData* isolate_data,
--                                             Local<ObjectTemplate> target) {
--  Isolate* isolate = isolate_data->isolate();
--
--  SetMethod(
--      isolate, target, "legacyMainResolve", BindingData::LegacyMainResolve);
--}
--
--void BindingData::RegisterExternalReferences(
--    ExternalReferenceRegistry* registry) {
--  registry->Register(BindingData::LegacyMainResolve);
--}
--
- static void CreatePerIsolateProperties(IsolateData* isolate_data,
-                                        Local<ObjectTemplate> target) {
-   Isolate* isolate = isolate_data->isolate();
-@@ -3520,7 +3365,6 @@ static void CreatePerIsolateProperties(IsolateData* isolate_data,
-   SetMethod(isolate, target, "cpSyncCheckPaths", CpSyncCheckPaths);
- 
-   StatWatcher::CreatePerIsolateProperties(isolate_data, target);
--  BindingData::CreatePerIsolateProperties(isolate_data, target);
- 
-   target->Set(
-       FIXED_ONE_BYTE_STRING(isolate, "kFsStatsFieldsNumber"),
-@@ -3593,7 +3437,6 @@ BindingData* FSReqBase::binding_data() {
- void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
-   registry->Register(Access);
-   StatWatcher::RegisterExternalReferences(registry);
--  BindingData::RegisterExternalReferences(registry);
- 
-   registry->Register(GetFormatOfExtensionlessFile);
-   registry->Register(Close);
-diff --git a/src/node_file.h b/src/node_file.h
-index bdad1ae25f4892cbbfd8cc30c4d8b4a6f600edbc..5a3c462853aa784d9ef61ff4f63010848c48b92c 100644
---- a/src/node_file.h
-+++ b/src/node_file.h
-@@ -86,13 +86,6 @@ class BindingData : public SnapshotableObject {
-   SERIALIZABLE_OBJECT_METHODS()
-   SET_BINDING_ID(fs_binding_data)
- 
--  static void LegacyMainResolve(
--      const v8::FunctionCallbackInfo<v8::Value>& args);
--
--  static void CreatePerIsolateProperties(IsolateData* isolate_data,
--                                         v8::Local<v8::ObjectTemplate> ctor);
--  static void RegisterExternalReferences(ExternalReferenceRegistry* registry);
--
-   void MemoryInfo(MemoryTracker* tracker) const override;
-   SET_SELF_SIZE(BindingData)
-   SET_MEMORY_INFO_NAME(BindingData)
 diff --git a/test/es-module/test-cjs-legacyMainResolve.js b/test/es-module/test-cjs-legacyMainResolve.js
-index 0bfeb567a22b1f9d9116b749d6cb3a8fda6bcc6a..17f137c595a9fef5f051fafc4682f206034c214c 100644
+index edb567bce403f2d4df482c2549c6f7cec78c3588..4567ddc3715ac0d11facb0b567c5f5763699f4c9 100644
 --- a/test/es-module/test-cjs-legacyMainResolve.js
 +++ b/test/es-module/test-cjs-legacyMainResolve.js
-@@ -82,7 +82,7 @@ describe('legacyMainResolve', () => {
-           {},
-           ''
-         ),
--      { message: /instance of URL/, code: 'ERR_INVALID_ARG_TYPE' },
-+      { message: 'Invalid URL', code: 'ERR_INVALID_URL' },
-     );
-   });
- 
 @@ -129,7 +129,7 @@ describe('legacyMainResolve', () => {
      );
      assert.throws(
        () => legacyMainResolve(packageJsonUrl, { main: null }, packageJsonUrl),
 -      { message: /index\.js/, code: 'ERR_MODULE_NOT_FOUND' },
-+      { code: 'ERR_INTERNAL_ASSERTION' },
++      { code: 'ERR_MODULE_NOT_FOUND' },
      );
    });
  
@@ -384,7 +126,7 @@ index 0bfeb567a22b1f9d9116b749d6cb3a8fda6bcc6a..17f137c595a9fef5f051fafc4682f206
      assert.throws(
        () => legacyMainResolve(packageJsonUrl, { main: null }, packageJsonUrl),
 -      { message: /index\.js/, code: 'ERR_MODULE_NOT_FOUND' },
-+      { code: 'ERR_INTERNAL_ASSERTION' },
++      { code: 'ERR_MODULE_NOT_FOUND' },
      );
    });
  
@@ -393,11 +135,11 @@ index 0bfeb567a22b1f9d9116b749d6cb3a8fda6bcc6a..17f137c595a9fef5f051fafc4682f206
      assert.throws(
        () => legacyMainResolve(packageJsonUrl, { main: './index.node' }, packageJsonUrl),
 -      { message: /index\.node/, code: 'ERR_MODULE_NOT_FOUND' },
-+      { code: 'ERR_INTERNAL_ASSERTION' },
++      { code: 'ERR_MODULE_NOT_FOUND' },
      );
    });
  
-@@ -163,7 +163,7 @@ describe('legacyMainResolve', () => {
+@@ -163,11 +163,11 @@ describe('legacyMainResolve', () => {
      );
      assert.throws(
        () => legacyMainResolve(packageJsonUrl, { main: null }, undefined),
@@ -405,4 +147,9 @@ index 0bfeb567a22b1f9d9116b749d6cb3a8fda6bcc6a..17f137c595a9fef5f051fafc4682f206
 +      { message: 'The "path" argument must be of type string or an instance of URL. Received undefined', code: 'ERR_INVALID_ARG_TYPE' },
      );
    });
- });
+ 
+-  it('should interpret main as a path, not a URL', () => {
++  it.skip('should interpret main as a path, not a URL', () => {
+     const packageJsonUrl = fixtures.fileURL('/es-modules/legacy-main-resolver/package.json');
+     assert.deepStrictEqual(
+       legacyMainResolve(packageJsonUrl, { main: '../folder%25with percentage#/' }, packageJsonUrl),
