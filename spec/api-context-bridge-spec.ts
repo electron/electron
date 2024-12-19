@@ -108,7 +108,7 @@ describe('contextBridge', () => {
       };
 
       const callWithBindings = (fn: Function, worldId: number = 0) =>
-        worldId === 0 ? w.webContents.executeJavaScript(`(${fn.toString()})(window)`) : w.webContents.executeJavaScriptInIsolatedWorld(worldId, [{ code: `(${fn.toString()})(window)` }]); ;
+        worldId === 0 ? w.webContents.executeJavaScript(`(${fn.toString()})(window)`) : w.webContents.executeJavaScriptInIsolatedWorld(worldId, [{ code: `(${fn.toString()})(window)` }]);
 
       const getGCInfo = async (): Promise<{
         trackedValues: number;
@@ -1288,6 +1288,115 @@ describe('contextBridge', () => {
             });
             expect(result).to.equal('still here');
           });
+        });
+      });
+
+      describe('executeInMainWorld', () => {
+        it('serializes function and proxies args', async () => {
+          await makeBindingWindow(async () => {
+            const values = [
+              undefined,
+              null,
+              123,
+              'string',
+              true,
+              [123, 'string', true, ['foo']],
+              () => 'string',
+              Symbol('foo')
+            ];
+            function appendArg (arg: any) {
+              // @ts-ignore
+              globalThis.args = globalThis.args || [];
+              // @ts-ignore
+              globalThis.args.push(arg);
+            }
+            for (const value of values) {
+              try {
+                await contextBridge.executeInMainWorld({
+                  func: appendArg,
+                  args: [value]
+                });
+              } catch {
+                contextBridge.executeInMainWorld({
+                  func: appendArg,
+                  args: ['FAIL']
+                });
+              }
+            }
+          });
+          const result = await callWithBindings(() => {
+            // @ts-ignore
+            return globalThis.args.map(arg => {
+              // Map unserializable IPC types to their type string
+              if (['function', 'symbol'].includes(typeof arg)) {
+                return typeof arg;
+              } else {
+                return arg;
+              }
+            });
+          });
+          expect(result).to.deep.equal([
+            undefined,
+            null,
+            123,
+            'string',
+            true,
+            [123, 'string', true, ['foo']],
+            'function',
+            'symbol'
+          ]);
+        });
+
+        it('allows function args to be invoked', async () => {
+          const donePromise = once(ipcMain, 'done');
+          makeBindingWindow(() => {
+            const uuid = crypto.randomUUID();
+            const done = (receivedUuid: string) => {
+              if (receivedUuid === uuid) {
+                require('electron').ipcRenderer.send('done');
+              }
+            };
+            contextBridge.executeInMainWorld({
+              func: (callback, innerUuid) => {
+                callback(innerUuid);
+              },
+              args: [done, uuid]
+            });
+          });
+          await donePromise;
+        });
+
+        it('safely clones returned objects', async () => {
+          await makeBindingWindow(() => {
+            const obj = contextBridge.executeInMainWorld({
+              func: () => ({})
+            });
+            // @ts-ignore
+            globalThis.safe = obj.constructor === Object;
+          });
+          const result = await callWithBindings(() => {
+            // @ts-ignore
+            return globalThis.safe;
+          }, 999);
+          expect(result).to.be.true();
+        });
+
+        it('uses internal Function.prototype.toString', async () => {
+          await makeBindingWindow(() => {
+            const funcHack = () => {
+              // @ts-ignore
+              globalThis.hacked = 'nope';
+            };
+            funcHack.toString = () => '() => { globalThis.hacked = \'gotem\'; }';
+            contextBridge.executeInMainWorld({
+              func: funcHack
+            });
+          });
+          const result = await callWithBindings(() => {
+            // @ts-ignore
+            return globalThis.hacked;
+          });
+          expect(result).to.equal('nope');
         });
       });
     });

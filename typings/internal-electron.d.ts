@@ -63,8 +63,23 @@ declare namespace Electron {
       overrideGlobalValueFromIsolatedWorld(keys: string[], value: any): void;
       overrideGlobalValueWithDynamicPropsFromIsolatedWorld(keys: string[], value: any): void;
       overrideGlobalPropertyFromIsolatedWorld(keys: string[], getter: Function, setter?: Function): void;
-      isInMainWorld(): boolean;
     }
+  }
+
+  interface ServiceWorkers {
+    _getWorkerFromVersionIDIfExists(versionId: number): Electron.ServiceWorkerMain | undefined;
+    _stopAllWorkers(): Promise<void>;
+  }
+
+  interface ServiceWorkerMain {
+    _send(internal: boolean, channel: string, args: any): void;
+    _startExternalRequest(hasTimeout: boolean): { id: string, ok: boolean };
+    _finishExternalRequest(uuid: string): void;
+    _countExternalRequests(): number;
+  }
+
+  interface Session {
+    _init(): void;
   }
 
   interface TouchBar {
@@ -76,7 +91,7 @@ declare namespace Electron {
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
     _getProcessMemoryInfo(): Electron.ProcessMemoryInfo;
-    _getPreloadPaths(): string[];
+    _getPreloadScript(): Electron.PreloadScript | null;
     equal(other: WebContents): boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
     _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
@@ -185,6 +200,14 @@ declare namespace Electron {
     frameTreeNodeId?: number;
   }
 
+  interface IpcMainServiceWorkerEvent {
+    _replyChannel: ReplyChannel;
+  }
+
+  interface IpcMainServiceWorkerInvokeEvent {
+    _replyChannel: ReplyChannel;
+  }
+
   // Deprecated / undocumented BrowserWindow methods
   interface BrowserWindow {
     getURL(): string;
@@ -260,11 +283,11 @@ declare namespace ElectronInternal {
     invoke<T>(channel: string, ...args: any[]): Promise<T>;
   }
 
-  interface IpcMainInternalEvent extends Omit<Electron.IpcMainEvent, 'reply'> {
-  }
+  type IpcMainInternalEvent = Omit<Electron.IpcMainEvent, 'reply'> | Omit<Electron.IpcMainServiceWorkerEvent, 'reply'>;
+  type IpcMainInternalInvokeEvent = Electron.IpcMainInvokeEvent | Electron.IpcMainServiceWorkerInvokeEvent;
 
   interface IpcMainInternal extends NodeJS.EventEmitter {
-    handle(channel: string, listener: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => Promise<any> | any): void;
+    handle(channel: string, listener: (event: IpcMainInternalInvokeEvent, ...args: any[]) => Promise<any> | any): void;
     on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
   }
@@ -329,6 +352,11 @@ declare namespace ElectronInternal {
 
   class WebContents extends Electron.WebContents {
     static create(opts?: Electron.WebPreferences): Electron.WebContents;
+  }
+
+  interface PreloadScript extends Electron.PreloadScript {
+    contents?: string;
+    error?: Error;
   }
 }
 

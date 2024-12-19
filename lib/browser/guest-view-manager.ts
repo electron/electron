@@ -267,9 +267,10 @@ const isWebViewTagEnabled = function (contents: Electron.WebContents) {
 };
 
 const makeSafeHandler = function<Event extends { sender: Electron.WebContents }> (channel: string, handler: (event: Event, ...args: any[]) => any) {
-  return (event: Event, ...args: any[]) => {
+  return (event: Electron.IpcMainInvokeEvent | Electron.IpcMainServiceWorkerInvokeEvent, ...args: any[]) => {
+    if (event.type !== 'frame') return;
     if (isWebViewTagEnabled(event.sender)) {
-      return handler(event, ...args);
+      return handler(event as unknown as Event, ...args);
     } else {
       console.error(`<webview> IPC message ${channel} sent by WebContents with <webview> disabled (${event.sender.id})`);
       throw new Error('<webview> disabled');
@@ -281,7 +282,7 @@ const handleMessage = function (channel: string, handler: (event: Electron.IpcMa
   ipcMainInternal.handle(channel, makeSafeHandler(channel, handler));
 };
 
-const handleMessageSync = function (channel: string, handler: (event: ElectronInternal.IpcMainInternalEvent, ...args: any[]) => any) {
+const handleMessageSync = function (channel: string, handler: (event: { sender: Electron.WebContents }, ...args: any[]) => any) {
   ipcMainUtils.handleSync(channel, makeSafeHandler(channel, handler));
 };
 
@@ -294,8 +295,10 @@ handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, function (event,
 });
 
 // this message is sent by the actual <webview>
-ipcMainInternal.on(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, function (event: ElectronInternal.IpcMainInternalEvent, focus: boolean) {
-  event.sender.emit('-focus-change', {}, focus);
+ipcMainInternal.on(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, function (event, focus: boolean) {
+  if (event.type === 'frame') {
+    event.sender.emit('-focus-change', {}, focus);
+  }
 });
 
 handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, function (event, guestInstanceId: number, method: string, args: any[]) {

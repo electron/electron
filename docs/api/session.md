@@ -1330,17 +1330,43 @@ the initial state will be `interrupted`. The download will start only when the
 
 Returns `Promise<void>` - resolves when the session’s HTTP authentication cache has been cleared.
 
-#### `ses.setPreloads(preloads)`
+#### `ses.setPreloads(preloads)` _Deprecated_
 
 * `preloads` string[] - An array of absolute path to preload scripts
 
 Adds scripts that will be executed on ALL web contents that are associated with
 this session just before normal `preload` scripts run.
 
-#### `ses.getPreloads()`
+**Deprecated:** Use the new `ses.registerPreloadScript` API. This will overwrite any preload scripts
+registered for `service-worker` context types.
+
+#### `ses.getPreloads()` _Deprecated_
 
 Returns `string[]` an array of paths to preload scripts that have been
 registered.
+
+**Deprecated:** Use the new `ses.getPreloadScripts` API. This will only return preload script paths
+for `frame` context types.
+
+#### `ses.registerPreloadScript(script)`
+
+* `script` [PreloadScriptRegistration](structures/preload-script-registration.md) - Preload script
+
+Registers preload script that will be executed in its associated context type in this session. For
+`frame` contexts, this will run prior to any preload defined in the web preferences of a
+WebContents.
+
+Returns `string` - The ID of the registered preload script.
+
+#### `ses.unregisterPreloadScript(id)`
+
+* `id` string - Preload script ID
+
+Unregisters script.
+
+#### `ses.getPreloadScripts()`
+
+Returns [`PreloadScript[]`](structures/preload-script.md): An array of paths to preload scripts that have been registered.
 
 #### `ses.setCodeCachePath(path)`
 
