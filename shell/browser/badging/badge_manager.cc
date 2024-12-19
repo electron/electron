@@ -39,7 +39,7 @@ void BadgeManager::BindFrameReceiver(
     return;
 
   auto context = std::make_unique<FrameBindingContext>(
-      frame->GetProcess()->GetDeprecatedID(), frame->GetRoutingID());
+      frame->GetProcess()->GetID(), frame->GetRoutingID());
 
   badge_manager->receivers_.Add(badge_manager, std::move(receiver),
                                 std::move(context));
@@ -60,7 +60,7 @@ void BadgeManager::BindServiceWorkerReceiver(
     return;
 
   auto context = std::make_unique<BadgeManager::ServiceWorkerBindingContext>(
-      service_worker_process_host->GetDeprecatedID(), service_worker_scope);
+      service_worker_process_host->GetID(), service_worker_scope);
 
   badge_manager->receivers_.Add(badge_manager, std::move(receiver),
                                 std::move(context));

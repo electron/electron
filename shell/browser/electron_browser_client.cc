@@ -357,7 +357,7 @@ ElectronBrowserClient::~ElectronBrowserClient() {
 }
 
 content::WebContents* ElectronBrowserClient::GetWebContentsFromProcessID(
-    int process_id) {
+    content::ChildProcessId process_id) {
   // If the process is a pending process, we should use the web contents
   // for the frame host passed into RegisterPendingProcess.
   const auto iter = pending_processes_.find(process_id);
@@ -376,7 +376,8 @@ content::SiteInstance* ElectronBrowserClient::GetSiteInstanceFromAffinity(
   return nullptr;
 }
 
-bool ElectronBrowserClient::IsRendererSubFrame(int process_id) const {
+bool ElectronBrowserClient::IsRendererSubFrame(
+    content::ChildProcessId process_id) const {
   return base::Contains(renderer_is_subframe_, process_id);
 }
 
@@ -445,12 +446,12 @@ void ElectronBrowserClient::RegisterPendingSiteInstance(
   // Remember the original web contents for the pending renderer process.
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   auto* pending_process = pending_site_instance->GetProcess();
-  pending_processes_[pending_process->GetDeprecatedID()] = web_contents;
+  pending_processes_[pending_process->GetID()] = web_contents;
 
   if (rfh->GetParent())
-    renderer_is_subframe_.insert(pending_process->GetDeprecatedID());
+    renderer_is_subframe_.insert(pending_process->GetID());
   else
-    renderer_is_subframe_.erase(pending_process->GetDeprecatedID());
+    renderer_is_subframe_.erase(pending_process->GetID());
 }
 
 void ElectronBrowserClient::AppendExtraCommandLineSwitches(
@@ -570,13 +571,15 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       command_line->AppendSwitch("profile-electron-init");
     }
 
+    content::ChildProcessId unsafe_process_id =
+        content::ChildProcessId::FromUnsafeValue(process_id);
     content::WebContents* web_contents =
-        GetWebContentsFromProcessID(process_id);
+        GetWebContentsFromProcessID(unsafe_process_id);
     if (web_contents) {
       auto* web_preferences = WebContentsPreferences::From(web_contents);
       if (web_preferences)
         web_preferences->AppendCommandLineSwitches(
-            command_line, IsRendererSubFrame(process_id));
+            command_line, IsRendererSubFrame(unsafe_process_id));
     }
   }
 }
@@ -852,7 +855,7 @@ void ElectronBrowserClient::WebNotificationAllowed(
 
 void ElectronBrowserClient::RenderProcessHostDestroyed(
     content::RenderProcessHost* host) {
-  int process_id = host->GetDeprecatedID();
+  content::ChildProcessId process_id = host->GetID();
   pending_processes_.erase(process_id);
   renderer_is_subframe_.erase(process_id);
   host->RemoveObserver(this);

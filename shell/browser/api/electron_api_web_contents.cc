@@ -1742,7 +1742,7 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
   // intermediate render view hosts aka speculative render view hosts. Currently
   // used by object-registry.js to ref count remote objects.
   Emit("render-view-deleted",
-       render_view_host->GetProcess()->GetDeprecatedID());
+       render_view_host->GetProcess()->GetID().GetUnsafeValue());
 
   if (web_contents()->GetRenderViewHost() == render_view_host) {
     // When the RVH that has been deleted is the current RVH it means that the
@@ -1750,7 +1750,7 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
     // Currently tracked by guest-window-manager.ts to destroy the
     // BrowserWindow.
     Emit("current-render-view-deleted",
-         render_view_host->GetProcess()->GetDeprecatedID());
+         render_view_host->GetProcess()->GetID().GetUnsafeValue());
   }
 }
 
@@ -1822,7 +1822,8 @@ void WebContents::DOMContentLoaded(
 void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
                                 const GURL& validated_url) {
   bool is_main_frame = !render_frame_host->GetParent();
-  int frame_process_id = render_frame_host->GetProcess()->GetDeprecatedID();
+  int32_t frame_process_id =
+      render_frame_host->GetProcess()->GetID().GetUnsafeValue();
   int frame_routing_id = render_frame_host->GetRoutingID();
   auto weak_this = GetWeakPtr();
   Emit("did-frame-finish-load", is_main_frame, frame_process_id,
@@ -1849,7 +1850,8 @@ void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
     return;
 
   bool is_main_frame = !render_frame_host->GetParent();
-  int frame_process_id = render_frame_host->GetProcess()->GetDeprecatedID();
+  int32_t frame_process_id =
+      render_frame_host->GetProcess()->GetID().GetUnsafeValue();
   int frame_routing_id = render_frame_host->GetRoutingID();
   Emit("did-fail-load", error_code, "", url, is_main_frame, frame_process_id,
        frame_routing_id);
@@ -1874,7 +1876,7 @@ bool WebContents::EmitNavigationEvent(
   int frame_process_id = -1, frame_routing_id = -1;
   content::RenderFrameHost* frame_host = GetRenderFrameHost(navigation_handle);
   if (frame_host) {
-    frame_process_id = frame_host->GetProcess()->GetDeprecatedID();
+    frame_process_id = frame_host->GetProcess()->GetID().GetUnsafeValue();
     frame_routing_id = frame_host->GetRoutingID();
   }
   bool is_same_document = navigation_handle->IsSameDocument();
@@ -2021,7 +2023,7 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
   if (frame) {
     dict.SetGetter("senderFrame", frame);
     dict.Set("frameId", frame->GetRoutingID());
-    dict.Set("processId", frame->GetProcess()->GetDeprecatedID());
+    dict.Set("processId", frame->GetProcess()->GetID().GetUnsafeValue());
     dict.Set("frameTreeNodeId", frame->GetFrameTreeNodeId());
   }
   return event;
@@ -2123,7 +2125,7 @@ void WebContents::DidFinishNavigation(
       navigation_handle->GetRenderFrameHost();
   int frame_process_id = -1, frame_routing_id = -1;
   if (frame_host) {
-    frame_process_id = frame_host->GetProcess()->GetDeprecatedID();
+    frame_process_id = frame_host->GetProcess()->GetID().GetUnsafeValue();
     frame_routing_id = frame_host->GetRoutingID();
   }
   if (!navigation_handle->IsErrorPage()) {
@@ -2355,8 +2357,12 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   }
 }
 
-int WebContents::GetProcessID() const {
-  return web_contents()->GetPrimaryMainFrame()->GetProcess()->GetDeprecatedID();
+int32_t WebContents::GetProcessID() const {
+  return web_contents()
+      ->GetPrimaryMainFrame()
+      ->GetProcess()
+      ->GetID()
+      .GetUnsafeValue();
 }
 
 base::ProcessId WebContents::GetOSProcessID() const {
