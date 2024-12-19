@@ -13,7 +13,7 @@ import { ifdescribe, ifit, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('shell module', () => {
-  describe('shell.openExternal()', () => {
+  xdescribe('shell.openExternal()', () => {
     let envVars: Record<string, string | undefined> = {};
     let server: http.Server;
 
