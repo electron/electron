@@ -4,8 +4,8 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-import { defer } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { defer, ifit, waitUntil } from './lib/spec-helpers';
+import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
   afterEach(async () => {
@@ -152,7 +152,9 @@ describe('WebContentsView', () => {
     });
   });
 
-  it('can be fullscreened', async () => {
+  // TODO: Re-enable for windows on GitHub Actions,
+  // fullscreen tests seem to hang on GHA specifically
+  ifit(process.platform !== 'win32' || process.arch === 'arm64')('can be fullscreened', async () => {
     const w = new BaseWindow();
     const v = new WebContentsView();
     w.setContentView(v);
@@ -179,6 +181,13 @@ describe('WebContentsView', () => {
   });
 
   describe('visibilityState', () => {
+    afterEach(cleanupWebContents);
+
+    async function haveVisibilityState (view: WebContentsView, state: string) {
+      const docVisState = await view.webContents.executeJavaScript('document.visibilityState');
+      return docVisState === state;
+    }
+
     it('is initially hidden', async () => {
       const v = new WebContentsView();
       await v.webContents.loadURL('data:text/html,<script>initialVisibility = document.visibilityState</script>');
@@ -215,7 +224,7 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
       const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
       // We have to wait until the listener above is fully registered before hiding the window.
       // On Windows, the executeJavaScript and the visibilitychange can happen out of order
@@ -247,7 +256,7 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
 
       const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))');
       // Ensure the listener has been registered.
