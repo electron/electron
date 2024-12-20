@@ -3,7 +3,7 @@ import { BrowserWindow, app } from 'electron/main';
 
 import { expect } from 'chai';
 
-import { exec } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -18,12 +18,12 @@ describe('shell module', () => {
     let envVars: Record<string, string | undefined> = {};
     let server: http.Server;
 
-    after(() => {
+    after(function () {
+      this.timeout(60000);
       if (process.env.CI && process.platform === 'win32') {
         // Edge may cause issues with visibility tests, so make sure it is closed after testing.
         const killEdge = 'Get-Process | Where Name -Like "msedge" | Stop-Process';
-        // Asynchronously call powershell to cleanup Edge so that it doesn't cause a test timeout.
-        exec(killEdge, { shell: 'powershell.exe' });
+        execSync(killEdge, { shell: 'powershell.exe' });
       }
     });
 
