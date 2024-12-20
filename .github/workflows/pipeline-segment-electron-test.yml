@@ -237,6 +237,13 @@ jobs:
           $DATADOG_PATH/datadog-ci junit upload src/electron/junit/test-results-main.xml
         fi          
       if: always() && !cancelled()
+    - name: Upload Test Artifacts
+      if: always() && !cancelled()
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+      with:
+        name: test_artifacts_${{ env.ARTIFACT_KEY }}_${{ matrix.shard }}
+        path: src/electron/spec/artifacts
+        if-no-files-found: ignore      
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
       shell: bash

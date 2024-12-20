@@ -121,6 +121,14 @@ export class ScreenCapture {
     return this._expectImpl(findPoint(this.image.getSize()), hexColor, true);
   }
 
+  public async takeScreenShot () {
+    const artifactName = await createArtifactWithRandomId(
+      (id) => `screen-cap-${id}.png`,
+      this.image.toPNG()
+    );
+    console.log(`Created artifact at: ${artifactName}`);
+  }
+
   private static async _createImpl (display: Electron.Display) {
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
