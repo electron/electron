@@ -6,7 +6,7 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index a89446df710a941390c15171fea63c551776fc93..912f03bfa96c3aa12bfa6e709746642452568bb7 100644
+index 26d0bace6cdd3905f1248c5ad3fa794eb272252d..4ec1f4f6951be40f5fcb4c1cb3d1205e69434f23 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
 @@ -26,6 +26,7 @@ const protocolHandlers = {
@@ -46,7 +46,7 @@ index 8b157f0f461c7b92c567fffe4d99357dbc09aee7..605e812d515fc467001e4ab88fc15b4a
    }
  }
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 1fbbb6773c9479128408fa1f27cf19f1a7786ba6..f05c6f99c0037193c5802024be46a967d6cf47a0 100644
+index 35925ef0817273948b7a2128c6ddc12c91bc3cfd..ee2cc03892c01141b71571989b18eec387d3c766 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -772,6 +772,8 @@ function parsePackageName(specifier, base) {
@@ -71,10 +71,10 @@ index 1fbbb6773c9479128408fa1f27cf19f1a7786ba6..f05c6f99c0037193c5802024be46a967
      parsePackageName(specifier, base);
  
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 8f88214f558c52ef26000fb0e1ef4d391327e84e..d182eedf5e96039e0029d36e51f40b75c6fb2a39 100644
+index 9b89c3e1d52a0f724dab451844d32df67f1eab9f..25ee090bbb4884d3e5f2530cc7153f9215754fae 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -246,7 +246,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -182,7 +182,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
  
    const { exportNames, module } = cjsPreparseModuleExports(filename, source);
    cjsCache.set(url, module);
@@ -83,7 +83,7 @@ index 8f88214f558c52ef26000fb0e1ef4d391327e84e..d182eedf5e96039e0029d36e51f40b75
      [...exportNames] : ['default', ...exportNames];
  
    if (isMain) {
-@@ -268,8 +268,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -204,8 +204,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
        ({ exports } = module);
      }
      for (const exportName of exportNames) {
@@ -94,7 +94,7 @@ index 8f88214f558c52ef26000fb0e1ef4d391327e84e..d182eedf5e96039e0029d36e51f40b75
          continue;
        }
        // We might trigger a getter -> dont fail.
-@@ -304,6 +304,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
+@@ -239,6 +239,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
    return createCJSModuleWrap(url, source);
  });
  

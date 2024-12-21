@@ -26,10 +26,10 @@ index 3d8ccc77b5952a999c5fe48792259d32b402c460..867a1c4aca54b9d41490d23a5eb55088
    }
  
 diff --git a/src/histogram.cc b/src/histogram.cc
-index 4dbdea9be5721486d71a9dda77311b4919d450a3..4aacaa2a5d12533a039b4b96cb7f1fd79063d50f 100644
+index c62a5b8952400ff0dd8818c31a3e07622b63725c..36f61f57e951e1abfeb2fedb831b55c61363bcbc 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
-@@ -193,7 +193,8 @@ void HistogramBase::FastRecord(Local<Value> receiver,
+@@ -195,7 +195,8 @@ void HistogramBase::FastRecord(Local<Value> unused,
                                 const int64_t value,
                                 FastApiCallbackOptions& options) {
    if (value < 1) {
@@ -40,14 +40,13 @@ index 4dbdea9be5721486d71a9dda77311b4919d450a3..4aacaa2a5d12533a039b4b96cb7f1fd7
    }
    HistogramBase* histogram;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index b565beae625d970ba92ab667a145d8897d4e8a6e..31c2fe82299d6905855c4efffeea4a4d161a88d5 100644
+index 6b98a13099990918dc619c47124c8538bbee5e2d..307492bf3dfce7b4a476c448bec666b8116dc431 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -1049,23 +1049,10 @@ static int32_t FastInternalModuleStat(
-     const FastOneByteString& input,
+@@ -1060,22 +1060,10 @@ static int32_t FastInternalModuleStat(
      // NOLINTNEXTLINE(runtime/references) This is V8 api.
      FastApiCallbackOptions& options) {
--  // This needs a HandleScope which needs an isolate.
+   // This needs a HandleScope which needs an isolate.
 -  Isolate* isolate = Isolate::TryGetCurrent();
 -  if (!isolate) {
 -    options.fallback = true;
@@ -60,24 +59,24 @@ index b565beae625d970ba92ab667a145d8897d4e8a6e..31c2fe82299d6905855c4efffeea4a4d
 +  HandleScope scope(env->isolate());
  
    auto path = std::filesystem::path(input.data, input.data + input.length);
--  if (UNLIKELY(!env->permission()->is_granted(
--          env, permission::PermissionScope::kFileSystemRead, path.string()))) {
+-  if (!env->permission()->is_granted(
+-          env, permission::PermissionScope::kFileSystemRead, path.string()))
+-      [[unlikely]] {
 -    options.fallback = true;
 -    return -1;
 -  }
--
+ 
    switch (std::filesystem::status(path).type()) {
      case std::filesystem::file_type::directory:
-       return 1;
 diff --git a/src/node_wasi.cc b/src/node_wasi.cc
-index ad1da44a01f437c97e06a3857eebd2edcebc83da..7123278e1a0942b61a76e9b1e7464eb8b5064079 100644
+index 468c2e59903fefe58d9c178d3afac3ef5b09f611..23a376e52e08a8af49dd47c47488552e01287426 100644
 --- a/src/node_wasi.cc
 +++ b/src/node_wasi.cc
-@@ -248,17 +248,18 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
-   WASI* wasi = reinterpret_cast<WASI*>(BaseObject::FromJSObject(receiver));
-   if (UNLIKELY(wasi == nullptr)) return EinvalError<R>();
+@@ -251,17 +251,19 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
+     return EinvalError<R>();
+   }
  
--  if (UNLIKELY(options.wasm_memory == nullptr || wasi->memory_.IsEmpty())) {
+-  if (options.wasm_memory == nullptr || wasi->memory_.IsEmpty()) [[unlikely]] {
 -    // fallback to slow path which to throw an error about missing memory.
 -    options.fallback = true;
 +  v8::Isolate* isolate = receiver->GetIsolate();
@@ -87,15 +86,16 @@ index ad1da44a01f437c97e06a3857eebd2edcebc83da..7123278e1a0942b61a76e9b1e7464eb8
      return EinvalError<R>();
    }
 -  uint8_t* memory = nullptr;
--  CHECK(LIKELY(options.wasm_memory->getStorageIfAligned(&memory)));
-+  Local<ArrayBuffer> ab = wasi->memory_.Get(isolate)->Buffer();
-+  size_t mem_size = ab->ByteLength();
-+  char* mem_data = static_cast<char*>(ab->Data());
-+  CHECK_NOT_NULL(mem_data);
+-  CHECK(options.wasm_memory->getStorageIfAligned(&memory));
  
 -  return F(*wasi,
 -           {reinterpret_cast<char*>(memory), options.wasm_memory->length()},
 -           args...);
++  Local<ArrayBuffer> ab = wasi->memory_.Get(isolate)->Buffer();
++  size_t mem_size = ab->ByteLength();
++  char* mem_data = static_cast<char*>(ab->Data());
++  CHECK_NOT_NULL(mem_data);
++
 +  return F(*wasi, {mem_data, mem_size}, args...);
  }
  
