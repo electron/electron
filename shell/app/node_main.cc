@@ -183,11 +183,18 @@ int NodeMain() {
     const std::vector<std::string> args = ElectronCommandLine::AsUtf8();
     ExitIfContainsDisallowedFlags(args);
 
+    uint64_t process_flags =
+        node::ProcessInitializationFlags::kNoInitializeV8 |
+        node::ProcessInitializationFlags::kNoInitializeNodeV8Platform;
+
+#if BUILDFLAG(IS_WIN)
+    process_flags |= node::ProcessInitializationFlags::kNoStdioInitialization;
+#endif
+
     std::shared_ptr<node::InitializationResult> result =
         node::InitializeOncePerProcess(
-            args,
-            {node::ProcessInitializationFlags::kNoInitializeV8,
-             node::ProcessInitializationFlags::kNoInitializeNodeV8Platform});
+            args, static_cast<node::ProcessInitializationFlags::Flags>(
+                      process_flags));
 
     for (const std::string& error : result->errors())
       fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
