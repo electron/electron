@@ -5,6 +5,7 @@
 // that does include proprietary codecs.
 
 const { app, BrowserWindow, ipcMain } = require('electron');
+
 const path = require('node:path');
 
 const MEDIA_ERR_SRC_NOT_SUPPORTED = 4;

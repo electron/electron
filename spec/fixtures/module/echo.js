@@ -3,4 +3,5 @@ process.on('uncaughtException', function (err) {
 });
 
 const echo = require('@electron-ci/echo');
+
 process.send(echo('ok'));

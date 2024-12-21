@@ -6,7 +6,7 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index bb520c729dae1d37d78c5ed48191dcd5e5047831..c21d82dba1df1a869323f0d2eb68788e4596d1d5 100644
+index ecc6f393533139045b9153c428bfb34a45e9c272..bb7725b920a95052e777e35b855b4b43991e1604 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -11,7 +11,9 @@
@@ -42,7 +42,7 @@ index bb520c729dae1d37d78c5ed48191dcd5e5047831..c21d82dba1df1a869323f0d2eb68788e
  
  ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
    DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
-@@ -136,8 +140,10 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
+@@ -135,8 +139,10 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
  void ProxyConfigMonitor::OnPACScriptError(int32_t line_number,
                                            const std::string& details) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -53,7 +53,7 @@ index bb520c729dae1d37d78c5ed48191dcd5e5047831..c21d82dba1df1a869323f0d2eb68788e
  }
  
  void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
-@@ -152,7 +158,9 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
+@@ -151,7 +157,9 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
      return;
    }
  

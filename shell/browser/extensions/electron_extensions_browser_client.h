@@ -63,14 +63,11 @@ class ElectronExtensionsBrowserClient
   content::BrowserContext* GetOriginalContext(
       content::BrowserContext* context) override;
   content::BrowserContext* GetContextRedirectedToOriginal(
-      content::BrowserContext* context,
-      bool force_guest_profile) override;
+      content::BrowserContext* context) override;
   content::BrowserContext* GetContextOwnInstance(
-      content::BrowserContext* context,
-      bool force_guest_profile) override;
+      content::BrowserContext* context) override;
   content::BrowserContext* GetContextForOriginalOnly(
-      content::BrowserContext* context,
-      bool force_guest_profile) override;
+      content::BrowserContext* context) override;
   bool AreExtensionsDisabledForContext(
       content::BrowserContext* context) override;
   bool IsGuestSession(content::BrowserContext* context) const override;
@@ -142,7 +139,6 @@ class ElectronExtensionsBrowserClient
   extensions::ExtensionWebContentsObserver* GetExtensionWebContentsObserver(
       content::WebContents* web_contents) override;
   extensions::KioskDelegate* GetKioskDelegate() override;
-  bool IsLockScreenContext(content::BrowserContext* context) override;
   std::string GetApplicationLocale() override;
   std::string GetUserAgent() const override;
   void RegisterBrowserInterfaceBindersForFrame(

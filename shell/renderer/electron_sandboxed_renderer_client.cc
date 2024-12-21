@@ -33,8 +33,8 @@ namespace electron {
 
 namespace {
 
-const char kEmitProcessEventKey[] = "emit-process-event";
-const char kBindingCacheKey[] = "native-binding-cache";
+constexpr std::string_view kEmitProcessEventKey = "emit-process-event";
+constexpr std::string_view kBindingCacheKey = "native-binding-cache";
 
 v8::Local<v8::Object> GetBindingCache(v8::Isolate* isolate) {
   auto context = isolate->GetCurrentContext();
@@ -57,7 +57,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
   std::string binding_key = gin::V8ToString(isolate, key);
   gin_helper::Dictionary cache(isolate, GetBindingCache(isolate));
 
-  if (cache.Get(binding_key.c_str(), &exports)) {
+  if (cache.Get(binding_key, &exports)) {
     return exports;
   }
 
@@ -76,7 +76,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
   DCHECK_NE(mod->nm_context_register_func, nullptr);
   mod->nm_context_register_func(exports, v8::Null(isolate),
                                 isolate->GetCurrentContext(), mod->nm_priv);
-  cache.Set(binding_key.c_str(), exports);
+  cache.Set(binding_key, exports);
   return exports;
 }
 
@@ -86,7 +86,7 @@ v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
   auto maybe_script = v8::Script::Compile(context, source);
   v8::Local<v8::Script> script;
   if (!maybe_script.ToLocal(&script))
-    return v8::Local<v8::Value>();
+    return {};
   return script->Run(context).ToLocalChecked();
 }
 

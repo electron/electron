@@ -34,6 +34,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/v8_util.h"
 
 namespace gin {
 
@@ -42,7 +43,7 @@ namespace {
 bool CertFromData(const std::string& data,
                   scoped_refptr<net::X509Certificate>* out) {
   auto cert_list = net::X509Certificate::CreateCertificateListFromBytes(
-      base::as_bytes(base::make_span(data)),
+      base::as_byte_span(data),
       net::X509Certificate::FORMAT_SINGLE_CERTIFICATE);
   if (cert_list.empty())
     return false;
@@ -368,10 +369,7 @@ class ChunkedDataPipeReadableStream final
       num_bytes = *size_ - bytes_read_;
     MojoResult rv = data_pipe_->ReadData(
         MOJO_READ_DATA_FLAG_NONE,
-        base::span(static_cast<uint8_t*>(buf->Buffer()->Data()),
-                   buf->ByteLength())
-            .subspan(buf->ByteOffset(), num_bytes),
-        num_bytes);
+        electron::util::as_byte_span(buf).first(num_bytes), num_bytes);
     if (rv == MOJO_RESULT_OK) {
       bytes_read_ += num_bytes;
       // Not needed for correctness, but this allows the consumer to send the
@@ -597,9 +595,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
     if (!type)
       return false;
     if (*type == "rawData") {
-      const base::Value::BlobStorage* bytes = dict.FindBlob("bytes");
-      (*out)->AppendBytes(reinterpret_cast<const char*>(bytes->data()),
-                          base::checked_cast<int>(bytes->size()));
+      (*out)->AppendBytes(std::move(*dict.Find("bytes")).TakeBlob());
     } else if (*type == "file") {
       const std::string* file = dict.FindString("filePath");
       if (!file)

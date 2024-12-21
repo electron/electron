@@ -1,20 +1,23 @@
-import { expect } from 'chai';
-import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents, dialog, MessageBoxOptions } from 'electron/main';
+import { MediaAccessPermissionRequest } from 'electron';
 import { clipboard } from 'electron/common';
-import { closeAllWindows } from './lib/window-helpers';
-import * as https from 'node:https';
-import * as http from 'node:http';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import * as url from 'node:url';
+import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents, dialog, MessageBoxOptions } from 'electron/main';
+
+import { expect } from 'chai';
+import * as ws from 'ws';
+
 import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
-import { ifit, ifdescribe, defer, itremote, listen } from './lib/spec-helpers';
-import { PipeTransport } from './pipe-transport';
-import * as ws from 'ws';
-import { setTimeout } from 'node:timers/promises';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import * as https from 'node:https';
 import { AddressInfo } from 'node:net';
-import { MediaAccessPermissionRequest } from 'electron';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
+import * as url from 'node:url';
+
+import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { PipeTransport } from './pipe-transport';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -376,7 +379,7 @@ describe('web security', () => {
                 console.log(e.message)
               }
             </script>`);
-              const [,, message] = await once(w.webContents, 'console-message');
+              const [{ message }] = await once(w.webContents, 'console-message');
               expect(message).to.match(/Refused to evaluate a string/);
             });
 
@@ -396,7 +399,7 @@ describe('web security', () => {
                 console.log(e.message)
               }
             </script>`);
-              const [,, message] = await once(w.webContents, 'console-message');
+              const [{ message }] = await once(w.webContents, 'console-message');
               expect(message).to.equal('true');
             });
 
@@ -553,6 +556,36 @@ describe('command line switches', () => {
       });
     });
   });
+
+  describe('--trace-startup switch', () => {
+    const outputFilePath = path.join(app.getPath('temp'), 'trace.json');
+    afterEach(() => {
+      if (fs.existsSync(outputFilePath)) {
+        fs.unlinkSync(outputFilePath);
+      }
+    });
+
+    it('creates startup trace', async () => {
+      const rc = await startRemoteControlApp(['--trace-startup=*', `--trace-startup-file=${outputFilePath}`, '--trace-startup-duration=1', '--enable-logging']);
+      const stderrComplete = new Promise<string>(resolve => {
+        let stderr = '';
+        rc.process.stderr!.on('data', (chunk) => {
+          stderr += chunk.toString('utf8');
+        });
+        rc.process.on('close', () => { resolve(stderr); });
+      });
+      rc.remotely(() => {
+        global.setTimeout(() => {
+          require('electron').app.quit();
+        }, 5000);
+      });
+      const stderr = await stderrComplete;
+      expect(stderr).to.match(/Completed startup tracing to/);
+      expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
+      expect(fs.statSync(outputFilePath).size).to.be.above(0,
+        `the trace output file is empty, check "${outputFilePath}"`);
+    });
+  });
 });
 
 describe('chromium features', () => {
@@ -637,8 +670,11 @@ describe('chromium features', () => {
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await setTimeout(1000);
-      const openAfter1 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
-      expect(openAfter1).to.be.true();
+      await expect(waitUntil(async () => {
+        return await w.webContents.executeJavaScript(
+          'document.getElementById(\'favDialog\').open'
+        );
+      })).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.false();
 
       // Test that with lock, with ESC:
@@ -648,7 +684,6 @@ describe('chromium features', () => {
       await w.webContents.executeJavaScript(`
         document.body.requestFullscreen();
       `, true);
-
       await enterFS2;
 
       // Request keyboard lock after window has gone fullscreen
@@ -663,8 +698,12 @@ describe('chromium features', () => {
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await setTimeout(1000);
-      const openAfter2 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
-      expect(openAfter2).to.be.false();
+      await expect(waitUntil(async () => {
+        const openAfter2 = await w.webContents.executeJavaScript(
+          'document.getElementById(\'favDialog\').open'
+        );
+        return (openAfter2 === false);
+      })).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.true();
     });
   });
@@ -994,6 +1033,43 @@ describe('chromium features', () => {
       const [code] = await once(appProcess, 'exit');
       expect(code).to.equal(0);
     });
+
+    itremote('Worker with nodeIntegrationInWorker has access to EventSource', () => {
+      const es = new EventSource('https://example.com');
+      expect(es).to.have.property('url').that.is.a('string');
+      expect(es).to.have.property('readyState').that.is.a('number');
+      expect(es).to.have.property('withCredentials').that.is.a('boolean');
+    });
+
+    itremote('Worker with nodeIntegrationInWorker has access to fetch-dependent interfaces', async (fixtures: string) => {
+      const file = require('node:path').join(fixtures, 'hello.txt');
+      expect(() => {
+        fetch('file://' + file);
+      }).to.not.throw();
+
+      expect(() => {
+        const formData = new FormData();
+        formData.append('username', 'Groucho');
+      }).not.to.throw();
+
+      expect(() => {
+        const request = new Request('https://example.com', {
+          method: 'POST',
+          body: JSON.stringify({ foo: 'bar' })
+        });
+        expect(request.method).to.equal('POST');
+      }).not.to.throw();
+
+      expect(() => {
+        const response = new Response('Hello, world!');
+        expect(response.status).to.equal(200);
+      }).not.to.throw();
+
+      expect(() => {
+        const headers = new Headers();
+        headers.append('Content-Type', 'text/xml');
+      }).not.to.throw();
+    }, [path.join(__dirname, 'fixtures')]);
 
     it('Worker can work', async () => {
       const w = new BrowserWindow({ show: false });
@@ -1395,7 +1471,7 @@ describe('chromium features', () => {
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('window.child = window.open(); child.opener = null');
       const [, { webContents }] = await once(app, 'browser-window-created');
-      const [,, message] = await once(webContents, 'console-message');
+      const [{ message }] = await once(webContents, 'console-message');
       expect(message).to.equal('{"require":"function","module":"object","exports":"object","process":"object","Buffer":"function"}');
     });
 
@@ -2458,6 +2534,7 @@ describe('chromium features', () => {
   describe('websockets', () => {
     it('has user agent', async () => {
       const server = http.createServer();
+      defer(() => server.close());
       const { port } = await listen(server);
       const wss = new ws.Server({ server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
@@ -2786,6 +2863,38 @@ describe('chromium features', () => {
       await new Promise((resolve) => { utter.onend = resolve; });
     });
   });
+
+  describe('devtools', () => {
+    it('fetch colors.css', async () => {
+      // <link href="devtools://theme/colors.css?sets=ui,chrome" rel="stylesheet">
+      const w = new BrowserWindow({ show: false });
+      const devtools = new BrowserWindow({ show: false });
+      const devToolsOpened = once(w.webContents, 'devtools-opened');
+
+      w.webContents.setDevToolsWebContents(devtools.webContents);
+      w.webContents.openDevTools();
+      await devToolsOpened;
+      expect(devtools.webContents.getURL().startsWith('devtools://devtools')).to.be.true();
+
+      const result = await devtools.webContents.executeJavaScript(`
+        document.body.querySelector('link[href*=\\'//theme/colors.css\\']')?.getAttribute('href');
+      `);
+      expect(result.startsWith('devtools://theme/colors.css?sets=ui,chrome')).to.be.true();
+      const colorAccentResult = await devtools.webContents.executeJavaScript(`
+        const style = getComputedStyle(document.body);
+        style.getPropertyValue('--color-accent');
+      `);
+      expect(colorAccentResult).to.not.equal('');
+      const colorAppMenuHighlightSeverityLow = await devtools.webContents.executeJavaScript(`
+        style.getPropertyValue('--color-app-menu-highlight-severity-low');
+      `);
+      expect(colorAppMenuHighlightSeverityLow).to.not.equal('');
+      const rgb = await devtools.webContents.executeJavaScript(`
+        style.getPropertyValue('--color-accent-rgb');
+      `);
+      expect(rgb).to.equal('');
+    });
+  });
 });
 
 describe('font fallback', () => {
@@ -2885,12 +2994,12 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
       "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
     );
 
-    await setTimeout(500);
-
-    const width = await w.webContents.executeJavaScript(
-      "document.querySelector('iframe').offsetWidth"
-    );
-    expect(width).to.equal(0);
+    await expect(waitUntil(async () => {
+      const width = await w.webContents.executeJavaScript(
+        "document.querySelector('iframe').offsetWidth"
+      );
+      return width === 0;
+    })).to.eventually.be.fulfilled();
   });
 
   ifit(process.platform === 'darwin')('can fullscreen from out-of-process iframes (macOS)', async () => {
@@ -2911,17 +3020,20 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     );
     await once(w.webContents, 'leave-html-full-screen');
 
-    const width = await w.webContents.executeJavaScript(
-      "document.querySelector('iframe').offsetWidth"
-    );
-    expect(width).to.equal(0);
+    await expect(waitUntil(async () => {
+      const width = await w.webContents.executeJavaScript(
+        "document.querySelector('iframe').offsetWidth"
+      );
+      return width === 0;
+    })).to.eventually.be.fulfilled();
 
     w.setFullScreen(false);
     await once(w, 'leave-full-screen');
   });
 
-  // TODO(jkleinsc) fix this flaky test on WOA
-  ifit(process.platform !== 'win32' || process.arch !== 'arm64')('can fullscreen from in-process iframes', async () => {
+  // TODO: Re-enable for windows on GitHub Actions,
+  // fullscreen tests seem to hang on GHA specifically
+  it('can fullscreen from in-process iframes', async () => {
     if (process.platform === 'darwin') await once(w, 'enter-full-screen');
 
     const fullscreenChange = once(ipcMain, 'fullscreenChange');
@@ -3596,13 +3708,6 @@ describe('navigator.usb', () => {
     });
 
     await sesWin.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-    server = http.createServer((req, res) => {
-      res.setHeader('Content-Type', 'text/html');
-      res.end('<body>');
-    });
-
-    serverUrl = (await listen(server)).url;
-
     const devices = await getDevices();
     expect(devices).to.be.an('array').that.is.empty();
   });

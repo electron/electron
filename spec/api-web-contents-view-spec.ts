@@ -1,13 +1,19 @@
-import { expect } from 'chai';
 import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
 
-import { closeAllWindows } from './lib/window-helpers';
-import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
+import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
-  afterEach(closeAllWindows);
+  afterEach(async () => {
+    await closeAllWindows();
+    const existingWCS = webContents.getAllWebContents();
+    existingWCS.forEach((contents) => contents.close());
+  });
 
   it('can be instantiated with no arguments', () => {
     // eslint-disable-next-line no-new
@@ -97,6 +103,30 @@ describe('WebContentsView', () => {
     w.contentView.addChildView(wcv1);
     w.contentView.addChildView(wcv2);
     expect(w.contentView.children).to.deep.equal([wcv3, wcv1, wcv2]);
+  });
+
+  it('handle removal and re-addition of children', () => {
+    const w = new BaseWindow({ show: false });
+    const cv = new View();
+    w.setContentView(cv);
+
+    const wcv1 = new WebContentsView();
+    const wcv2 = new WebContentsView();
+
+    expect(w.contentView.children).to.deep.equal([]);
+
+    w.contentView.addChildView(wcv1);
+    w.contentView.addChildView(wcv2);
+
+    expect(w.contentView.children).to.deep.equal([wcv1, wcv2]);
+
+    w.contentView.removeChildView(wcv1);
+
+    expect(w.contentView.children).to.deep.equal([wcv2]);
+
+    w.contentView.addChildView(wcv1);
+
+    expect(w.contentView.children).to.deep.equal([wcv2, wcv1]);
   });
 
   function triggerGCByAllocation () {

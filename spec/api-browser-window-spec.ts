@@ -1,22 +1,24 @@
-import { expect } from 'chai';
-import * as childProcess from 'node:child_process';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import * as qs from 'node:querystring';
-import * as http from 'node:http';
-import * as nodeUrl from 'node:url';
-import * as os from 'node:os';
-import { AddressInfo } from 'node:net';
+import { nativeImage } from 'electron';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
 
-import { emittedUntil, emittedNTimes } from './lib/events-helpers';
-import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
-import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
+import { expect } from 'chai';
+
+import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
-import { setTimeout } from 'node:timers/promises';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import { AddressInfo } from 'node:net';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import * as qs from 'node:querystring';
 import { setTimeout as syncSetTimeout } from 'node:timers';
-import { nativeImage } from 'electron';
+import { setTimeout } from 'node:timers/promises';
+import * as nodeUrl from 'node:url';
+
+import { emittedUntil, emittedNTimes } from './lib/events-helpers';
+import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
+import { ifit, ifdescribe, defer, listen, waitUntil } from './lib/spec-helpers';
+import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');
@@ -589,7 +591,7 @@ describe('BrowserWindow module', () => {
         it('is triggered when a cross-origin iframe navigates _top', async () => {
           w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
           await emittedUntil(w.webContents, 'did-frame-finish-load', (e: any, isMainFrame: boolean) => !isMainFrame);
-          let initiator: WebFrameMain | undefined;
+          let initiator: WebFrameMain | null | undefined;
           w.webContents.on('will-navigate', (e) => {
             initiator = e.initiator;
           });
@@ -933,6 +935,9 @@ describe('BrowserWindow module', () => {
           });
           url = (await listen(server)).url;
         });
+        after(() => {
+          server.close();
+        });
         it('for initial navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = [
@@ -940,12 +945,11 @@ describe('BrowserWindow module', () => {
             'did-frame-navigate',
             'did-navigate'
           ];
-          const allEvents = Promise.all(navigationEvents.map(event =>
+          const allEvents = Promise.all(expectedEventOrder.map(event =>
             once(w.webContents, event).then(() => firedEvents.push(event))
           ));
-          const timeout = setTimeout(1000);
           w.loadURL(url);
-          await Promise.race([allEvents, timeout]);
+          await allEvents;
           expect(firedEvents).to.deep.equal(expectedEventOrder);
         });
 
@@ -1543,11 +1547,32 @@ describe('BrowserWindow module', () => {
           await expect(once(w, 'resized')).to.eventually.be.fulfilled();
         });
       });
+
+      it('does not emits the resize event for move-only changes', async () => {
+        const [x, y] = w.getPosition();
+
+        w.once('resize', () => {
+          expect.fail('resize event should not be emitted');
+        });
+
+        w.setBounds({ x: x + 10, y: y + 10 });
+      });
     });
 
     describe('BrowserWindow.setSize(width, height)', () => {
       it('sets the window size', async () => {
         const size = [300, 400];
+
+        const resized = once(w, 'resize');
+        w.setSize(size[0], size[1]);
+        await resized;
+
+        expectBoundsEqual(w.getSize(), size);
+      });
+
+      it('emits the resize event for single-pixel size changes', async () => {
+        const [width, height] = w.getSize();
+        const size = [width + 1, height - 1];
 
         const resized = once(w, 'resize');
         w.setSize(size[0], size[1]);
@@ -2511,6 +2536,22 @@ describe('BrowserWindow module', () => {
       expect(w.isAlwaysOnTop()).to.be.false();
       expect(c.isAlwaysOnTop()).to.be.true('child is not always on top');
       expect(c._getAlwaysOnTopLevel()).to.equal('screen-saver');
+    });
+
+    it('works when called prior to show', async () => {
+      w = new BrowserWindow({ show: false });
+      w.setAlwaysOnTop(true, 'screen-saver');
+      w.show();
+      await setTimeout(1000);
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
+    });
+
+    it('works when called prior to showInactive', async () => {
+      w = new BrowserWindow({ show: false });
+      w.setAlwaysOnTop(true, 'screen-saver');
+      w.showInactive();
+      await setTimeout(1000);
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
     });
   });
 
@@ -5997,8 +6038,10 @@ describe('BrowserWindow module', () => {
           w.webContents.on('enter-html-full-screen', async () => {
             enterCount++;
             if (w.isFullScreen()) reject(new Error('w.isFullScreen should be false'));
-            const isFS = await w.webContents.executeJavaScript('!!document.fullscreenElement');
-            if (!isFS) reject(new Error('Document should have fullscreen element'));
+            await waitUntil(async () => {
+              const isFS = await w.webContents.executeJavaScript('!!document.fullscreenElement');
+              return isFS === true;
+            });
             checkDone();
           });
 

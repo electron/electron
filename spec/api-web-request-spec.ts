@@ -1,16 +1,19 @@
+import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
+
 import { expect } from 'chai';
+import * as WebSocket from 'ws';
+
+import { once } from 'node:events';
+import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
-import * as qs from 'node:querystring';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import * as url from 'node:url';
-import * as WebSocket from 'ws';
-import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
 import { Socket } from 'node:net';
-import { listen, defer } from './lib/spec-helpers';
-import { once } from 'node:events';
+import * as path from 'node:path';
+import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
+import * as url from 'node:url';
+
+import { listen, defer } from './lib/spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -586,12 +589,12 @@ describe('webRequest module', () => {
     it('can be proxyed', async () => {
       // Setup server.
       const reqHeaders : { [key: string] : any } = {};
-      const server = http.createServer((req, res) => {
+      let server = http.createServer((req, res) => {
         reqHeaders[req.url!] = req.headers;
         res.setHeader('foo1', 'bar1');
         res.end('ok');
       });
-      const wss = new WebSocket.Server({ noServer: true });
+      let wss = new WebSocket.Server({ noServer: true });
       wss.on('connection', function connection (ws) {
         ws.on('message', function incoming (message) {
           if (message === 'foo') {
@@ -657,9 +660,12 @@ describe('webRequest module', () => {
       });
 
       // Cleanup.
-      after(() => {
+      defer(() => {
         contents.destroy();
         server.close();
+        server = null as unknown as http.Server;
+        wss.close();
+        wss = null as unknown as WebSocket.Server;
         ses.webRequest.onBeforeRequest(null);
         ses.webRequest.onBeforeSendHeaders(null);
         ses.webRequest.onHeadersReceived(null);

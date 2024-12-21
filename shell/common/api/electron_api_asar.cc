@@ -18,8 +18,7 @@ class Archive : public node::ObjectWrap {
   static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
       v8::Isolate* isolate) {
     auto tpl = v8::FunctionTemplate::New(isolate, Archive::New);
-    tpl->SetClassName(
-        v8::String::NewFromUtf8(isolate, "Archive").ToLocalChecked());
+    tpl->SetClassName(v8::String::NewFromUtf8Literal(isolate, "Archive"));
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
     NODE_SET_PROTOTYPE_METHOD(tpl, "getFileInfo", &Archive::GetFileInfo);
@@ -92,8 +91,7 @@ class Archive : public node::ObjectWrap {
           integrity.Set("algorithm", "SHA256");
           break;
         case asar::HashAlgorithm::kNone:
-          CHECK(false);
-          break;
+          NOTREACHED();
       }
       integrity.Set("hash", info.integrity.value().hash);
       dict.Set("integrity", integrity);

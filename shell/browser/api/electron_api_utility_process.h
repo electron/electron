@@ -76,7 +76,7 @@ class UtilityProcessWrapper final
   void HandleTermination(uint64_t exit_code);
 
   void PostMessage(gin::Arguments* args);
-  bool Kill() const;
+  bool Kill();
   v8::Local<v8::Value> GetOSProcessId(v8::Isolate* isolate) const;
 
   // mojo::MessageReceiver
@@ -105,6 +105,8 @@ class UtilityProcessWrapper final
   int stdout_read_fd_ = -1;
   int stderr_read_fd_ = -1;
   bool connector_closed_ = false;
+  bool terminated_ = false;
+  bool killed_ = false;
   std::unique_ptr<mojo::Connector> connector_;
   blink::MessagePortDescriptor host_port_;
   mojo::Receiver<node::mojom::NodeServiceClient> receiver_{this};

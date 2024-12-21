@@ -1,9 +1,12 @@
-import { expect } from 'chai';
 import { net, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
+
+import { expect } from 'chai';
+
+import { once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
-import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
+
 import { collectStreamBody, collectStreamBodyBuffer, getResponse, kOneKiloByte, kOneMegaByte, randomBuffer, randomString, respondNTimes, respondOnce } from './lib/net-helpers';
 
 const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');

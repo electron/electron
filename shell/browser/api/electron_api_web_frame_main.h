@@ -13,6 +13,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
 #include "content/public/browser/frame_tree_node_id.h"
+#include "content/public/browser/global_routing_id.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -35,6 +36,11 @@ template <typename T>
 class Handle;
 }  // namespace gin
 
+namespace gin_helper {
+template <typename T>
+class Promise;
+}  // namespace gin_helper
+
 namespace electron::api {
 
 class WebContents;
@@ -51,11 +57,10 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   static gin::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
-  static gin::Handle<WebFrameMain> FromOrNull(
-      v8::Isolate* isolate,
-      content::RenderFrameHost* render_frame_host);
   static WebFrameMain* FromFrameTreeNodeId(
       content::FrameTreeNodeId frame_tree_node_id);
+  static WebFrameMain* FromFrameToken(
+      content::GlobalRenderFrameHostToken frame_token);
   static WebFrameMain* FromRenderFrameHost(
       content::RenderFrameHost* render_frame_host);
 
@@ -103,6 +108,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
   bool Reload();
+  bool IsDestroyed() const;
   void Send(v8::Isolate* isolate,
             bool internal,
             const std::string& channel,
@@ -112,7 +118,8 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
                    v8::Local<v8::Value> message_value,
                    std::optional<v8::Local<v8::Value>> transfer);
 
-  int FrameTreeNodeIDAsInt() const;
+  bool Detached() const;
+  content::FrameTreeNodeId FrameTreeNodeID() const;
   std::string Name() const;
   base::ProcessId OSProcessID() const;
   int ProcessID() const;
@@ -126,18 +133,29 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
+  v8::Local<v8::Promise> CollectDocumentJSCallStack(gin::Arguments* args);
+  void CollectedJavaScriptCallStack(
+      gin_helper::Promise<base::Value> promise,
+      const std::string& untrusted_javascript_call_stack,
+      const std::optional<blink::LocalFrameToken>& remote_frame_token);
+
   void DOMContentLoaded();
 
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
 
   content::FrameTreeNodeId frame_tree_node_id_;
+  content::GlobalRenderFrameHostToken frame_token_;
 
   raw_ptr<content::RenderFrameHost> render_frame_ = nullptr;
 
   // Whether the RenderFrameHost has been removed and that it should no longer
   // be accessed.
   bool render_frame_disposed_ = false;
+
+  // Whether the content::RenderFrameHost is detached from the frame
+  // tree. This can occur while it's running unload handlers.
+  bool render_frame_detached_;
 
   base::WeakPtrFactory<WebFrameMain> weak_factory_{this};
 };

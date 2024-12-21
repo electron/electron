@@ -27,7 +27,8 @@ The `session` module has the following methods:
 
 * `partition` string
 * `options` Object (optional)
-  * `cache` boolean - Whether to enable cache.
+  * `cache` boolean - Whether to enable cache. Default is `true` unless the
+    [`--disable-http-cache` switch](command-line-switches.md#--disable-http-cache) is used.
 
 Returns `Session` - A session instance from `partition` string. When there is an existing
 `Session` with the same `partition`, it will be returned; otherwise a new
@@ -46,7 +47,8 @@ of an existing `Session` object.
 
 * `path` string
 * `options` Object (optional)
-  * `cache` boolean - Whether to enable cache.
+  * `cache` boolean - Whether to enable cache. Default is `true` unless the
+    [`--disable-http-cache` switch](command-line-switches.md#--disable-http-cache) is used.
 
 Returns `Session` - A session instance from the absolute path as specified by the `path`
 string. When there is an existing `Session` with the same absolute path, it
@@ -268,7 +270,8 @@ Returns:
 * `event` Event
 * `details` Object
   * `deviceList` [HIDDevice[]](structures/hid-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
 * `callback` Function
   * `deviceId` string | null (optional)
 
@@ -332,7 +335,8 @@ Returns:
 * `event` Event
 * `details` Object
   * `device` [HIDDevice](structures/hid-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
 
 Emitted after `navigator.hid.requestDevice` has been called and
 `select-hid-device` has fired if a new device becomes available before
@@ -347,7 +351,8 @@ Returns:
 * `event` Event
 * `details` Object
   * `device` [HIDDevice](structures/hid-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
 
 Emitted after `navigator.hid.requestDevice` has been called and
 `select-hid-device` has fired if a device has been removed before the callback
@@ -473,7 +478,8 @@ Returns:
 * `event` Event
 * `details` Object
   * `port` [SerialPort](structures/serial-port.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
   * `origin` string - The origin that the device has been revoked from.
 
 Emitted after `SerialPort.forget()` has been called.  This event can be used
@@ -517,7 +523,8 @@ Returns:
 * `event` Event
 * `details` Object
   * `deviceList` [USBDevice[]](structures/usb-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
 * `callback` Function
   * `deviceId` string (optional)
 
@@ -957,7 +964,8 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 
 * `handler` Function | null
   * `request` Object
-    * `frame` [WebFrameMain](web-frame-main.md) - Frame that is requesting access to media.
+    * `frame` [WebFrameMain](web-frame-main.md) | null - Frame that is requesting access to media.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `securityOrigin` String - Origin of the page making the request.
     * `videoRequested` Boolean - true if the web content requested a video stream.
     * `audioRequested` Boolean - true if the web content requested an audio stream.
@@ -1158,7 +1166,8 @@ app.whenReady().then(() => {
         pin displayed on the device.
       * `providePin`
         This prompt is requesting that a pin be provided for the device.
-    * `frame` [WebFrameMain](web-frame-main.md)
+    * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this handler.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `pin` string (optional) - The pin value to verify if `pairingKind` is `confirmPin`.
   * `callback` Function
     * `response` Object
@@ -1351,6 +1360,36 @@ specified when registering the protocol.
 
 Returns `Promise<void>` - resolves when the code cache clear operation is complete.
 
+#### `ses.getSharedDictionaryUsageInfo()`
+
+Returns `Promise<SharedDictionaryUsageInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+Shared dictionaries are used to power advanced compression of data sent over the wire, specifically with Brotli and ZStandard. You don't need to call any of the shared dictionary APIs in Electron to make use of this advanced web feature, but if you do, they allow deeper control and inspection of the shared dictionaries used during decompression.
+
+To get detailed information about a specific shared dictionary entry, call `getSharedDictionaryInfo(options)`.
+
+#### `ses.getSharedDictionaryInfo(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<SharedDictionaryInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+To get information about all present shared dictionaries, call `getSharedDictionaryUsageInfo()`.
+
+#### `ses.clearSharedDictionaryCache()`
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared, both in memory and on disk.
+
+#### `ses.clearSharedDictionaryCacheForIsolationKey(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared for the specified isolation key, both in memory and on disk.
+
 #### `ses.setSpellCheckerEnabled(enable)`
 
 * `enable` boolean
@@ -1500,9 +1539,11 @@ session is persisted on disk.  For in memory sessions this returns `null`.
 #### `ses.clearData([options])`
 
 * `options` Object (optional)
-  * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data.
+  * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data. This
+    can potentially include data types not explicitly listed here. (See Chromium's
+    [`BrowsingDataRemover`][browsing-data-remover] for the full list.)
     * `backgroundFetch` - Background Fetch
-    * `cache` - Cache
+    * `cache` - Cache (includes `cachestorage` and `shadercache`)
     * `cookies` - Cookies
     * `downloads` - Downloads
     * `fileSystems` - File Systems
@@ -1526,7 +1567,9 @@ This method clears more types of data and is more thorough than the
 
 **Note:** Cookies are stored at a broader scope than origins. When removing cookies and filtering by `origins` (or `excludeOrigins`), the cookies will be removed at the [registrable domain](https://url.spec.whatwg.org/#host-registrable-domain) level. For example, clearing cookies for the origin `https://really.specific.origin.example.com/` will end up clearing all cookies for `example.com`. Clearing cookies for the origin `https://my.website.example.co.uk/` will end up clearing all cookies for `example.co.uk`.
 
-For more information, refer to Chromium's [`BrowsingDataRemover` interface](https://source.chromium.org/chromium/chromium/src/+/main:content/public/browser/browsing_data_remover.h).
+**Note:** Clearing cache data will also clear the shared dictionary cache. This means that any dictionaries used for compression may be reloaded after clearing the cache. If you wish to clear the shared dictionary cache but leave other cached data intact, you may want to use the `clearSharedDictionaryCache` method.
+
+For more information, refer to Chromium's [`BrowsingDataRemover` interface][browsing-data-remover].
 
 ### Instance Properties
 
@@ -1592,3 +1635,5 @@ app.whenReady().then(async () => {
   console.log('Net-logs written to', path)
 })
 ```
+
+[browsing-data-remover]: https://source.chromium.org/chromium/chromium/src/+/main:content/public/browser/browsing_data_remover.h

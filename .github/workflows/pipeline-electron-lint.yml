@@ -20,14 +20,13 @@ jobs:
     container: ${{ fromJSON(inputs.container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
-      run: |
-        cd src/electron
-        node script/yarn install --frozen-lockfile
+      uses: ./src/electron/.github/actions/install-dependencies
     - name: Setup third_party Depot Tools
       shell: bash
       run: |

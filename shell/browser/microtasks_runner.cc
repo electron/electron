@@ -17,7 +17,6 @@ void MicrotasksRunner::WillProcessTask(const base::PendingTask& pending_task,
                                        bool was_blocked_or_low_priority) {}
 
 void MicrotasksRunner::DidProcessTask(const base::PendingTask& pending_task) {
-  v8::Isolate::Scope scope(isolate_);
   // In the browser process we follow Node.js microtask policy of kExplicit
   // and let the MicrotaskRunner which is a task observer for chromium UI thread
   // scheduler run the microtask checkpoint. This worked fine because Node.js

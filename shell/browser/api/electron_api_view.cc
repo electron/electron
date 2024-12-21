@@ -187,7 +187,10 @@ View::~View() {
 void View::ReorderChildView(gin::Handle<View> child, size_t index) {
   view_->ReorderChildView(child->view(), index);
 
-  const auto i = base::ranges::find(child_views_, child.ToV8());
+  const auto i =
+      std::ranges::find_if(child_views_, [&](const ChildPair& child_view) {
+        return child_view.first == child->view();
+      });
   DCHECK(i != child_views_.end());
 
   // If |view| is already at the desired position, there's nothing to do.
@@ -231,8 +234,9 @@ void View::AddChildViewAt(gin::Handle<View> child,
     return;
   }
 
-  child_views_.emplace(child_views_.begin() + index,     // index
-                       isolate(), child->GetWrapper());  // v8::Global(args...)
+  child_views_.emplace(child_views_.begin() + index,  // index
+                       child->view(),
+                       v8::Global<v8::Object>(isolate(), child->GetWrapper()));
 #if BUILDFLAG(IS_MAC)
   // Disable the implicit CALayer animations that happen by default when adding
   // or removing sublayers.
@@ -252,16 +256,21 @@ void View::RemoveChildView(gin::Handle<View> child) {
   if (!view_)
     return;
 
-  const auto it = base::ranges::find(child_views_, child.ToV8());
+  const auto it =
+      std::ranges::find_if(child_views_, [&](const ChildPair& child_view) {
+        return child_view.first == child->view();
+      });
   if (it != child_views_.end()) {
 #if BUILDFLAG(IS_MAC)
     ScopedCAActionDisabler disable_animations;
 #endif
+    // Remove from child_views first so that OnChildViewRemoved doesn't try to
+    // remove it again
+    child_views_.erase(it);
     // It's possible for the child's view to be invalid here
     // if the child's webContents was closed or destroyed.
     if (child->view())
       view_->RemoveChildView(child->view());
-    child_views_.erase(it);
   }
 }
 
@@ -273,7 +282,7 @@ void View::SetBounds(const gfx::Rect& bounds) {
 
 gfx::Rect View::GetBounds() {
   if (!view_)
-    return gfx::Rect();
+    return {};
   return view_->bounds();
 }
 
@@ -328,8 +337,8 @@ std::vector<v8::Local<v8::Value>> View::GetChildren() {
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
-  for (auto& child_view : child_views_)
-    ret.push_back(child_view.Get(isolate));
+  for (auto& [view, global] : child_views_)
+    ret.push_back(global.Get(isolate));
 
   return ret;
 }
@@ -388,6 +397,12 @@ void View::OnViewIsDeleting(views::View* observed_view) {
   view_ = nullptr;
 }
 
+void View::OnChildViewRemoved(views::View* observed_view, views::View* child) {
+  std::erase_if(child_views_, [child](const ChildPair& child_view) {
+    return child_view.first == child;
+  });
+}
+
 // static
 gin_helper::WrappableBase* View::New(gin::Arguments* args) {
   View* view = new View();
@@ -414,7 +429,7 @@ gin::Handle<View> View::Create(v8::Isolate* isolate) {
     if (gin::ConvertFromV8(isolate, obj, &view))
       return view;
   }
-  return gin::Handle<View>();
+  return {};
 }
 
 // static

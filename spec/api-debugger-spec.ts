@@ -1,11 +1,14 @@
+import { BrowserWindow } from 'electron/main';
+
 import { expect } from 'chai';
+
+import { once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
-import { BrowserWindow } from 'electron/main';
-import { closeAllWindows } from './lib/window-helpers';
+
 import { emittedUntil } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';
-import { once } from 'node:events';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('debugger module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -224,20 +227,25 @@ describe('debugger module', () => {
     it('creates unique session id for each target', (done) => {
       w.webContents.loadFile(path.join(__dirname, 'fixtures', 'sub-frames', 'debug-frames.html'));
       w.webContents.debugger.attach();
-      let session: String;
+      let debuggerSessionId: string;
 
       w.webContents.debugger.on('message', (event, ...args) => {
         const [method, params, sessionId] = args;
         if (method === 'Target.targetCreated') {
           w.webContents.debugger.sendCommand('Target.attachToTarget', { targetId: params.targetInfo.targetId, flatten: true }).then(result => {
-            session = result.sessionId;
+            debuggerSessionId = result.sessionId;
             w.webContents.debugger.sendCommand('Debugger.enable', {}, result.sessionId);
+
+            // Ensure debugger finds a script to pause to possibly reduce flaky
+            // tests.
+            w.webContents.mainFrame.executeJavaScript('void 0;');
           });
         }
         if (method === 'Debugger.scriptParsed') {
-          expect(sessionId).to.equal(session);
-          w.webContents.debugger.detach();
-          done();
+          if (sessionId === debuggerSessionId) {
+            w.webContents.debugger.detach();
+            done();
+          }
         }
       });
       w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });

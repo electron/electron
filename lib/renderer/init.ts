@@ -1,9 +1,9 @@
-import * as path from 'path';
-import { pathToFileURL } from 'url';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
 import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
+
+import * as path from 'path';
+import { pathToFileURL } from 'url';
 
 const Module = require('module') as NodeJS.ModuleInternal;
 
@@ -12,7 +12,7 @@ const Module = require('module') as NodeJS.ModuleInternal;
 const originalModuleLoad = Module._load;
 Module._load = function (request: string) {
   if (request === 'vm') {
-    console.warn('The vm module of Node.js is deprecated in the renderer process and will be removed.');
+    console.warn('The vm module of Node.js is unsupported in Electron\'s renderer process due to incompatibilities with the Blink rendering engine. Crashes are likely and avoiding the module is highly recommended. This module may be removed in a future release.');
   }
   return originalModuleLoad.apply(this, arguments as any);
 };

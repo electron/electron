@@ -37,7 +37,10 @@ Process: [Main](../glossary.md#main-process)<br />
     to load unsigned libraries. Unless you specifically need this capability, it is best to leave this disabled.
     Default is `false`.
   * `respondToAuthRequestsFromMainProcess` boolean (optional) - With this flag, all HTTP 401 and 407 network
-    requests created via the [net module](net.md) will allow responding to them via the [`app#login`](app.md#event-login) event in the main process instead of the default [`login`](client-request.md#event-login) event on the [`ClientRequest`](client-request.md) object.
+    requests created via the [net module](net.md) will allow responding to them via the
+    [`app#login`](app.md#event-login) event in the main process instead of the default
+    [`login`](client-request.md#event-login) event on the [`ClientRequest`](client-request.md) object. Default is
+    `false`.
 
 Returns [`UtilityProcess`](utility-process.md#class-utilityprocess)
 
@@ -86,8 +89,24 @@ true if the kill is successful, and false otherwise.
 #### `child.pid`
 
 A `Integer | undefined` representing the process identifier (PID) of the child process.
-If the child process fails to spawn due to errors, then the value is `undefined`. When
+Until the child process has spawned successfully, the value is `undefined`. When
 the child process exits, then the value is `undefined` after the `exit` event is emitted.
+
+```js
+const child = utilityProcess.fork(path.join(__dirname, 'test.js'))
+
+console.log(child.pid) // undefined
+
+child.on('spawn', () => {
+  console.log(child.pid) // Integer
+})
+
+child.on('exit', () => {
+  console.log(child.pid) // undefined
+})
+```
+
+**Note:** You can use the `pid` to determine if the process is currently running.
 
 #### `child.stdout`
 
@@ -127,12 +146,15 @@ Returns:
 
 Emitted when the child process needs to terminate due to non continuable error from V8.
 
+No matter if you listen to the `error` event, the `exit` event will be emitted after the
+child process terminates.
+
 #### Event: 'exit'
 
 Returns:
 
 * `code` number - Contains the exit code for
-the process obtained from waitpid on posix, or GetExitCodeProcess on windows.
+the process obtained from waitpid on POSIX, or GetExitCodeProcess on Windows.
 
 Emitted after the child process ends.
 

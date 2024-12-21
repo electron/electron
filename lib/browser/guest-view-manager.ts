@@ -1,10 +1,11 @@
-import { webContents } from 'electron/main';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseWebViewWebPreferences } from '@electron/internal/browser/parse-features-string';
-import { syncMethods, asyncMethods, properties, navigationHistorySyncMethods } from '@electron/internal/common/web-view-methods';
 import { webViewEvents } from '@electron/internal/browser/web-view-events';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+import { syncMethods, asyncMethods, properties, navigationHistorySyncMethods } from '@electron/internal/common/web-view-methods';
+
+import { webContents } from 'electron/main';
 
 interface GuestInstance {
   elementInstanceId: number;
@@ -167,8 +168,8 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
     sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'will-frame-navigate', {
       url: event.url,
       isMainFrame: event.isMainFrame,
-      frameProcessId: event.frame.processId,
-      frameRoutingId: event.frame.routingId
+      frameProcessId: event.processId,
+      frameRoutingId: event.routingId
     });
   });
 

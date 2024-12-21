@@ -7,7 +7,7 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index 0de909d74fffc91b9e3afead3204f9c8234fa131..0eca9f62f2bda366c93fa1c57f30e707f228f2a5 100644
+index fcb8c33ad26b5137798ab7251346f9664192f7fe..af0c3e3d75bf241768574c95d5492e88ba78992a 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
 @@ -132,6 +132,7 @@ class KeyStorageLinux;
@@ -36,10 +36,10 @@ index 0de909d74fffc91b9e3afead3204f9c8234fa131..0eca9f62f2bda366c93fa1c57f30e707
    friend class ::ProfileImpl;
    friend class ::ScopedAllowBlockingForProfile;
    friend class ::StartupTabProviderImpl;
-@@ -619,6 +624,7 @@ class BASE_EXPORT ScopedAllowBlocking {
-   friend class crosapi::LacrosThreadTypeDelegate;
+@@ -620,6 +625,7 @@ class BASE_EXPORT ScopedAllowBlocking {
    friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
    friend class drive::FakeDriveService;
+   friend class extensions::DesktopAndroidExtensionSystem;
 +  friend class electron::ScopedAllowBlockingForElectron;
    friend class extensions::InstalledLoader;
    friend class extensions::UnpackedInstaller;

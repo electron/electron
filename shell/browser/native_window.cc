@@ -91,8 +91,6 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 }  // namespace
 
-const char kElectronNativeWindowKey[] = "__ELECTRON_NATIVE_WINDOW__";
-
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
     : widget_(std::make_unique<views::Widget>()), parent_(parent) {
@@ -256,7 +254,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
 #if BUILDFLAG(IS_MAC)
   std::string type;
   if (options.Get(options::kVibrancyType, &type)) {
-    SetVibrancy(type);
+    SetVibrancy(type, 0);
   }
 #elif BUILDFLAG(IS_WIN)
   std::string material;
@@ -334,7 +332,7 @@ extensions::SizeConstraints NativeWindow::GetSizeConstraints() const {
   if (size_constraints_)
     return *size_constraints_;
   if (!content_size_constraints_)
-    return extensions::SizeConstraints();
+    return {};
   // Convert content size constraints to window size constraints.
   extensions::SizeConstraints constraints;
   if (content_size_constraints_->HasMaximumSize()) {
@@ -368,7 +366,7 @@ extensions::SizeConstraints NativeWindow::GetContentSizeConstraints() const {
   if (content_size_constraints_)
     return *content_size_constraints_;
   if (!size_constraints_)
-    return extensions::SizeConstraints();
+    return {};
   // Convert window size constraints to content size constraints.
   // Note that we are not caching the results, because Chromium reccalculates
   // window frame size everytime when min/max sizes are passed, and we must
@@ -463,7 +461,7 @@ std::optional<std::string> NativeWindow::GetTabbingIdentifier() const {
   return "";  // for non-Mac platforms
 }
 
-void NativeWindow::SetVibrancy(const std::string& type) {
+void NativeWindow::SetVibrancy(const std::string& type, int duration) {
   vibrancy_ = type;
 }
 
@@ -534,9 +532,17 @@ void NativeWindow::NotifyWindowClosed() {
   WindowList::RemoveWindow(this);
 }
 
-void NativeWindow::NotifyWindowEndSession() {
+void NativeWindow::NotifyWindowQueryEndSession(
+    const std::vector<std::string>& reasons,
+    bool* prevent_default) {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowEndSession();
+    observer.OnWindowQueryEndSession(reasons, prevent_default);
+}
+
+void NativeWindow::NotifyWindowEndSession(
+    const std::vector<std::string>& reasons) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowEndSession(reasons);
 }
 
 void NativeWindow::NotifyWindowBlur() {
@@ -665,9 +671,10 @@ void NativeWindow::NotifyWindowAlwaysOnTopChanged() {
     observer.OnWindowAlwaysOnTopChanged();
 }
 
-void NativeWindow::NotifyWindowExecuteAppCommand(const std::string& command) {
+void NativeWindow::NotifyWindowExecuteAppCommand(
+    const std::string_view command_name) {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnExecuteAppCommand(command);
+    observer.OnExecuteAppCommand(command_name);
 }
 
 void NativeWindow::NotifyTouchBarItemInteraction(const std::string& item_id,

@@ -1,15 +1,18 @@
-import * as path from 'node:path';
-import * as url from 'node:url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
-import { closeAllWindows } from './lib/window-helpers';
-import { emittedUntil } from './lib/events-helpers';
-import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
-import { expect } from 'chai';
-import * as http from 'node:http';
+
 import * as auth from 'basic-auth';
+import { expect } from 'chai';
+
 import { once } from 'node:events';
+import * as http from 'node:http';
+import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
+import * as url from 'node:url';
+
+import { emittedUntil } from './lib/events-helpers';
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
+import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 declare let WebView: any;
 const features = process._linkedBinding('electron_common_features');
@@ -1697,6 +1700,7 @@ describe('<webview> tag', function () {
         await loadWebViewAndWaitForEvent(w, {
           src: `file://${fixtures}/pages/dom-ready.html?port=${port}`
         }, 'dom-ready');
+        defer(() => { server.close(); });
       });
 
       itremote('throws a custom error when an API method is called before the event is emitted', () => {

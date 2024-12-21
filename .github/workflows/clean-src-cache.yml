@@ -1,0 +1,21 @@
+name: Clean Source Cache
+
+on:
+  schedule:
+    - cron: "0 0 * * SUN"  # Run at midnight every Sunday
+
+jobs:
+  clean-src-cache:
+    runs-on: electron-arc-linux-amd64-32core
+    container:
+      image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+    steps:
+    - name: Cleanup Source Cache
+      shell: bash
+      run: |
+        df -h /mnt/cross-instance-cache
+        find /mnt/cross-instance-cache -type f -mtime +30 -delete
+        df -h /mnt/cross-instance-cache

@@ -49,10 +49,10 @@ v8::Local<v8::Value> GetHiddenValue(v8::Isolate* isolate,
   v8::Local<v8::Value> value;
   v8::Maybe<bool> result = object->HasPrivate(context, privateKey);
   if (!(result.IsJust() && result.FromJust()))
-    return v8::Local<v8::Value>();
+    return {};
   if (object->GetPrivate(context, privateKey).ToLocal(&value))
     return value;
-  return v8::Local<v8::Value>();
+  return {};
 }
 
 void SetHiddenValue(v8::Isolate* isolate,

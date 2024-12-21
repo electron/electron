@@ -159,8 +159,9 @@ void FileSelectHelper::OnListDone(int error) {
   } else {
     std::vector<FileChooserFileInfoPtr> chooser_files;
     for (const auto& file_path : entry->results_) {
-      chooser_files.push_back(FileChooserFileInfo::NewNativeFile(
-          blink::mojom::NativeFileInfo::New(file_path, std::u16string())));
+      chooser_files.push_back(
+          FileChooserFileInfo::NewNativeFile(blink::mojom::NativeFileInfo::New(
+              file_path, std::u16string(), std::vector<std::u16string>())));
     }
 
     listener_->FileSelected(std::move(chooser_files), base_dir_,
@@ -179,8 +180,8 @@ void FileSelectHelper::ConvertToFileChooserFileInfoList(
   for (const auto& file : files) {
     chooser_files.push_back(
         FileChooserFileInfo::NewNativeFile(blink::mojom::NativeFileInfo::New(
-            file.local_path,
-            base::FilePath(file.display_name).AsUTF16Unsafe())));
+            file.local_path, base::FilePath(file.display_name).AsUTF16Unsafe(),
+            std::vector<std::u16string>())));
   }
 
   PerformContentAnalysisIfNeeded(std::move(chooser_files));
@@ -530,7 +531,7 @@ bool FileSelectHelper::IsAcceptTypeValid(const std::string& accept_type) {
 base::FilePath FileSelectHelper::GetSanitizedFileName(
     const base::FilePath& suggested_filename) {
   if (suggested_filename.empty())
-    return base::FilePath();
+    return {};
   return net::GenerateFileName(
       GURL(), std::string(), std::string(), suggested_filename.AsUTF8Unsafe(),
       std::string(), l10n_util::GetStringUTF8(IDS_DEFAULT_DOWNLOAD_FILENAME));

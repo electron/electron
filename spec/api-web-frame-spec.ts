@@ -1,8 +1,11 @@
-import { expect } from 'chai';
-import * as path from 'node:path';
 import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
-import { defer } from './lib/spec-helpers';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
+import * as path from 'node:path';
+
+import { defer } from './lib/spec-helpers';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -74,8 +77,9 @@ describe('webFrame module', () => {
 
   describe('api', () => {
     let w: WebContents;
+    let win: BrowserWindow;
     before(async () => {
-      const win = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
+      win = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
       await win.loadURL('data:text/html,<iframe name="test"></iframe>');
       w = win.webContents;
       await w.executeJavaScript(`
@@ -84,6 +88,11 @@ describe('webFrame module', () => {
         childFrame = webFrame.firstChild;
         null
       `);
+    });
+
+    after(() => {
+      win.close();
+      win = null as unknown as BrowserWindow;
     });
 
     describe('top', () => {

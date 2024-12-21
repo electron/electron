@@ -19,6 +19,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/no_destructor.h"
+#include "base/notreached.h"
 #include "base/path_service.h"
 #include "base/process/process_metrics.h"
 #include "base/strings/escape.h"
@@ -264,9 +265,7 @@ bool AllowFileAccess(const std::string& extension_id,
              extension_id);
 }
 
-RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(
-    const GURL& url,
-    extensions::ExtensionRegistry* registry) {
+RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(const GURL& url) {
   // Default to a normal renderer cause it is lower privileged. This should only
   // occur if the URL on a site instance is either malformed, or uninitialized.
   // If it is malformed, then there is no need for better privileges anyways.
@@ -487,7 +486,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     }
 #else
     if (!base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path)) {
-      CHECK(false) << "Unable to get child process binary name.";
+      NOTREACHED() << "Unable to get child process binary name.";
     }
     SCOPED_CRASH_KEY_STRING256("ChildProcess", "child_process_exe",
                                child_path.AsUTF8Unsafe());
@@ -532,12 +531,16 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
     // Copy following switches to child process.
-    static const char* const kCommonSwitchNames[] = {
-        switches::kStandardSchemes,      switches::kEnableSandbox,
-        switches::kSecureSchemes,        switches::kBypassCSPSchemes,
-        switches::kCORSSchemes,          switches::kFetchSchemes,
-        switches::kServiceWorkerSchemes, switches::kStreamingSchemes,
-        switches::kCodeCacheSchemes};
+    static constexpr std::array<const char*, 9U> kCommonSwitchNames = {
+        switches::kStandardSchemes.c_str(),
+        switches::kEnableSandbox.c_str(),
+        switches::kSecureSchemes.c_str(),
+        switches::kBypassCSPSchemes.c_str(),
+        switches::kCORSSchemes.c_str(),
+        switches::kFetchSchemes.c_str(),
+        switches::kServiceWorkerSchemes.c_str(),
+        switches::kStreamingSchemes.c_str(),
+        switches::kCodeCacheSchemes.c_str()};
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                    kCommonSwitchNames);
     if (process_type == ::switches::kUtilityProcess ||
@@ -594,7 +597,7 @@ ElectronBrowserClient::GetGeneratedCodeCacheSettings(
   // If we pass 0 for size, disk_cache will pick a default size using the
   // heuristics based on available disk size. These are implemented in
   // disk_cache::PreferredCacheSize in net/disk_cache/cache_util.cc.
-  return content::GeneratedCodeCacheSettings(true, 0, cache_path);
+  return {true, 0, cache_path};
 }
 
 void ElectronBrowserClient::AllowCertificateError(
@@ -627,7 +630,7 @@ base::OnceClosure ElectronBrowserClient::SelectClientCertificate(
         std::move(client_certs), std::move(delegate));
   }
 
-  return base::OnceClosure();
+  return {};
 }
 
 bool ElectronBrowserClient::CanCreateWindow(
@@ -731,15 +734,12 @@ bool ElectronBrowserClient::IsSuitableHost(
     const GURL& site_url) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context = process_host->GetBrowserContext();
-  extensions::ExtensionRegistry* registry =
-      extensions::ExtensionRegistry::Get(browser_context);
   extensions::ProcessMap* process_map =
       extensions::ProcessMap::Get(browser_context);
 
   // Otherwise, just make sure the process privilege matches the privilege
   // required by the site.
-  RenderProcessHostPrivilege privilege_required =
-      GetPrivilegeRequiredByUrl(site_url, registry);
+  const auto privilege_required = GetPrivilegeRequiredByUrl(site_url);
   return GetProcessPrivilege(process_host, process_map) == privilege_required;
 #else
   return content::ContentBrowserClient::IsSuitableHost(process_host, site_url);
@@ -792,7 +792,7 @@ ElectronBrowserClient::CreateClientCertStore(
 #elif BUILDFLAG(IS_MAC)
   return std::make_unique<net::ClientCertStoreMac>();
 #elif defined(USE_OPENSSL)
-  return std::unique_ptr<net::ClientCertStore>();
+  return ();
 #endif
 }
 
@@ -801,7 +801,7 @@ ElectronBrowserClient::OverrideSystemLocationProvider() {
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
   return std::make_unique<FakeLocationProvider>();
 #else
-  return nullptr;
+  return {};
 #endif
 }
 
@@ -924,6 +924,7 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     bool has_user_gesture,
     const std::optional<url::Origin>& initiating_origin,
     content::RenderFrameHost* initiator_document,
+    const net::IsolationInfo& isolation_info,
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
@@ -982,7 +983,7 @@ base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
   base::FilePath download_path;
   if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_path))
     return download_path;
-  return base::FilePath();
+  return {};
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
@@ -1458,6 +1459,7 @@ void ElectronBrowserClient::
                                                       render_frame_host);
           },
           &render_frame_host));
+#if BUILDFLAG(ENABLE_PLUGINS)
   associated_registry.AddInterface<mojom::ElectronPluginInfoHost>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
@@ -1468,6 +1470,7 @@ void ElectronBrowserClient::
                 std::move(receiver));
           },
           &render_frame_host));
+#endif
 #if BUILDFLAG(ENABLE_PRINTING)
   associated_registry.AddInterface<printing::mojom::PrintManagerHost>(
       base::BindRepeating(
@@ -1646,14 +1649,17 @@ ElectronBrowserClient::CreateLoginDelegate(
     content::WebContents* web_contents,
     content::BrowserContext* browser_context,
     const content::GlobalRequestID& request_id,
-    bool is_main_frame,
+    bool is_request_for_primary_main_frame,
+    bool is_request_for_navigation,
     const GURL& url,
     scoped_refptr<net::HttpResponseHeaders> response_headers,
     bool first_auth_attempt,
+    content::GuestPageHolder* guest_page_holder,
     LoginAuthRequiredCallback auth_required_callback) {
   return std::make_unique<LoginHandler>(
-      auth_info, web_contents, is_main_frame, base::kNullProcessId, url,
-      response_headers, first_auth_attempt, std::move(auth_required_callback));
+      auth_info, web_contents, is_request_for_primary_main_frame,
+      is_request_for_navigation, base::kNullProcessId, url, response_headers,
+      first_auth_attempt, std::move(auth_required_callback));
 }
 
 std::vector<std::unique_ptr<blink::URLLoaderThrottle>>
@@ -1663,7 +1669,7 @@ ElectronBrowserClient::CreateURLLoaderThrottles(
     const base::RepeatingCallback<content::WebContents*()>& wc_getter,
     content::NavigationUIData* navigation_ui_data,
     content::FrameTreeNodeId frame_tree_node_id,
-    absl::optional<int64_t> navigation_id) {
+    std::optional<int64_t> navigation_id) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   std::vector<std::unique_ptr<blink::URLLoaderThrottle>> result;

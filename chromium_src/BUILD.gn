@@ -30,6 +30,8 @@ static_library("chrome") {
     "//chrome/browser/devtools/devtools_file_system_indexer.cc",
     "//chrome/browser/devtools/devtools_file_system_indexer.h",
     "//chrome/browser/devtools/devtools_settings.h",
+    "//chrome/browser/devtools/features.cc",
+    "//chrome/browser/devtools/features.h",
     "//chrome/browser/devtools/visual_logging.cc",
     "//chrome/browser/devtools/visual_logging.h",
     "//chrome/browser/extensions/global_shortcut_listener.cc",
@@ -158,13 +160,11 @@ static_library("chrome") {
       "//chrome/browser/icon_loader_win.cc",
       "//chrome/browser/media/webrtc/window_icon_util_win.cc",
       "//chrome/browser/process_singleton_win.cc",
-      "//chrome/browser/ui/frame/window_frame_util.h",
       "//chrome/browser/win/chrome_process_finder.cc",
       "//chrome/browser/win/chrome_process_finder.h",
       "//chrome/browser/win/chrome_select_file_dialog_factory.cc",
       "//chrome/browser/win/chrome_select_file_dialog_factory.h",
       "//chrome/browser/win/titlebar_config.cc",
-      "//chrome/browser/win/titlebar_config.h",
       "//chrome/browser/win/titlebar_config.h",
       "//chrome/browser/win/util_win_service.cc",
       "//chrome/browser/win/util_win_service.h",
@@ -180,13 +180,14 @@ static_library("chrome") {
   public_deps = [
     "//chrome/browser:dev_ui_browser_resources",
     "//chrome/browser/resources/accessibility:resources",
+    "//chrome/browser/ui/color:color_headers",
     "//chrome/browser/ui/color:mixers",
     "//chrome/common",
     "//chrome/common:version_header",
+    "//components/global_media_controls",
     "//components/keyed_service/content",
     "//components/paint_preview/buildflags",
     "//components/proxy_config",
-    "//components/services/language_detection/public/mojom",
     "//content/public/browser",
     "//services/strings",
   ]
@@ -195,6 +196,7 @@ static_library("chrome") {
     "//chrome/app/vector_icons",
     "//chrome/browser:resource_prefetch_predictor_proto",
     "//chrome/browser/resource_coordinator:mojo_bindings",
+    "//chrome/browser/task_manager/common:impl",
     "//chrome/browser/ui/webui/tab_search:mojo_bindings",
     "//chrome/browser/web_applications/mojom:mojom_web_apps_enum",
     "//components/enterprise/buildflags",
@@ -217,7 +219,11 @@ static_library("chrome") {
   }
 
   if (is_linux) {
-    sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
+    sources += [
+      "//chrome/browser/extensions/global_shortcut_listener_linux.cc",
+      "//chrome/browser/extensions/global_shortcut_listener_linux.h",
+      "//chrome/browser/icon_loader_auralinux.cc",
+    ]
     if (use_ozone) {
       deps += [ "//ui/ozone" ]
       sources += [
@@ -235,10 +241,7 @@ static_library("chrome") {
       "//chrome/browser/ui/views/dark_mode_manager_linux.cc",
       "//chrome/browser/ui/views/dark_mode_manager_linux.h",
     ]
-    public_deps += [
-      "//components/dbus/menu",
-      "//components/dbus/thread_linux",
-    ]
+    public_deps += [ "//components/dbus" ]
   }
 
   if (is_win) {

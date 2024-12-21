@@ -10,28 +10,19 @@ V8 requires C++20 support as of https://chromium-review.googlesource.com/c/v8/v8
 This can be removed when Electron upgrades to a version of Node.js containing the required V8 version.
 
 diff --git a/common.gypi b/common.gypi
-index 8736ad12eec294070a5160a64248044cd16347c9..216200c279c599f6dee228120ff5f3943fa52ffd 100644
+index 74616453e2e047acbb9e25f2f93ebeab06011669..bce15fc4a8b3f2fa0b5a588e6a2b28d2b8b6ac45 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -307,7 +307,7 @@
-       'VCCLCompilerTool': {
-         'AdditionalOptions': [
-           '/Zc:__cplusplus',
--          '-std:c++17'
-+          '-std:c++20'
+@@ -518,7 +518,7 @@
+           '-fno-rtti',
+           '-fno-exceptions',
+           '-fno-strict-aliasing',
+-          '-std=gnu++17',
++          '-std=gnu++20',
          ],
-         'BufferSecurityCheck': 'true',
-         'DebugInformationFormat': 1,          # /Z7 embed info in .obj files
-@@ -489,7 +489,7 @@
-       }],
-       [ 'OS in "linux freebsd openbsd solaris android aix os400 cloudabi"', {
-         'cflags': [ '-Wall', '-Wextra', '-Wno-unused-parameter', ],
--        'cflags_cc': [ '-fno-rtti', '-fno-exceptions', '-std=gnu++17' ],
-+        'cflags_cc': [ '-fno-rtti', '-fno-exceptions', '-std=gnu++20' ],
          'defines': [ '__STDC_FORMAT_MACROS' ],
          'ldflags': [ '-rdynamic' ],
-         'target_conditions': [
-@@ -660,7 +660,7 @@
+@@ -688,7 +688,7 @@
            ['clang==1', {
              'xcode_settings': {
                'GCC_VERSION': 'com.apple.compilers.llvm.clang.1_0',

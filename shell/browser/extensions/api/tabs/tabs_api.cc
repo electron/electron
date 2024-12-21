@@ -6,6 +6,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -39,7 +40,7 @@ namespace extensions {
 
 namespace tabs = api::tabs;
 
-const char kFrameNotFoundError[] = "No frame with id * in tab *.";
+constexpr std::string_view kFrameNotFoundError = "No frame with id * in tab *.";
 const char kPerOriginOnlyInAutomaticError[] =
     "Can only set scope to "
     "\"per-origin\" in \"automatic\" mode.";
@@ -197,6 +198,10 @@ ScriptExecutor* ExecuteCodeInTabFunction::GetScriptExecutor(
 
 bool ExecuteCodeInTabFunction::IsWebView() const {
   return false;
+}
+
+int ExecuteCodeInTabFunction::GetRootFrameId() const {
+  return ExtensionApiFrameIdMap::kTopFrameId;
 }
 
 const GURL& ExecuteCodeInTabFunction::GetWebViewSrc() const {
@@ -578,9 +583,7 @@ base::expected<GURL, std::string> PrepareURLForNavigation(
   // Don't let the extension navigate directly to file scheme pages, unless
   // they have file access.
   if (url.SchemeIsFile() &&
-      !AllowFileAccess(extension->id(), browser_context) &&
-      base::FeatureList::IsEnabled(
-          extensions_features::kRestrictFileURLNavigation)) {
+      !AllowFileAccess(extension->id(), browser_context)) {
     const char kFileUrlsNotAllowedInExtensionNavigations[] =
         "Cannot navigate to a file URL without local file access.";
     return base::unexpected(kFileUrlsNotAllowedInExtensionNavigations);

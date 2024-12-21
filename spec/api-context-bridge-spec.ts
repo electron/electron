@@ -1,15 +1,17 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
 import { contextBridge } from 'electron/renderer';
+
 import { expect } from 'chai';
+
+import * as cp from 'node:child_process';
+import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import * as cp from 'node:child_process';
 
-import { closeWindow } from './lib/window-helpers';
 import { listen } from './lib/spec-helpers';
-import { once } from 'node:events';
+import { closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
 

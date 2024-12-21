@@ -30,7 +30,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
-#include "url/url_util.h"
 
 namespace gin {
 
@@ -101,12 +100,25 @@ namespace electron::api {
 
 namespace {
 
-bool DomainIs(std::string_view host, const std::string_view domain) {
-  // Strip any leading '.' character from the input cookie domain.
-  if (host.starts_with('.'))
-    host.remove_prefix(1);
+// Returns whether |domain| matches |filter|.
+bool MatchesDomain(std::string filter, const std::string& domain) {
+  // Add a leading '.' character to the filter domain if it doesn't exist.
+  if (net::cookie_util::DomainIsHostOnly(filter))
+    filter.insert(0, ".");
 
-  return url::DomainIs(host, domain);
+  std::string sub_domain(domain);
+  // Strip any leading '.' character from the input cookie domain.
+  if (!net::cookie_util::DomainIsHostOnly(sub_domain))
+    sub_domain = sub_domain.substr(1);
+
+  // Now check whether the domain argument is a subdomain of the filter domain.
+  for (sub_domain.insert(0, "."); sub_domain.length() >= filter.length();) {
+    if (sub_domain == filter)
+      return true;
+    const size_t next_dot = sub_domain.find('.', 1);  // Skip over leading dot.
+    sub_domain.erase(0, next_dot);
+  }
+  return false;
 }
 
 // Returns whether |cookie| matches |filter|.
@@ -117,7 +129,8 @@ bool MatchesCookie(const base::Value::Dict& filter,
     return false;
   if ((str = filter.FindString("path")) && *str != cookie.Path())
     return false;
-  if ((str = filter.FindString("domain")) && !DomainIs(cookie.Domain(), *str))
+  if ((str = filter.FindString("domain")) &&
+      !MatchesDomain(*str, cookie.Domain()))
     return false;
   std::optional<bool> secure_filter = filter.FindBool("secure");
   if (secure_filter && *secure_filter != cookie.SecureAttribute())
@@ -155,7 +168,7 @@ void FilterCookieWithStatuses(
 // Parse dictionary property to CanonicalCookie time correctly.
 base::Time ParseTimeProperty(const std::optional<double>& value) {
   if (!value)  // empty time means ignoring the parameter
-    return base::Time();
+    return {};
   if (*value == 0)  // FromSecondsSinceUnixEpoch would convert 0 to empty Time
     return base::Time::UnixEpoch();
   return base::Time::FromSecondsSinceUnixEpoch(*value);
@@ -279,8 +292,8 @@ std::string StringToCookieSameSite(const std::string* str_ptr,
 
 gin::WrapperInfo Cookies::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Cookies::Cookies(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
-    : browser_context_(browser_context) {
+Cookies::Cookies(ElectronBrowserContext* browser_context)
+    : browser_context_{browser_context} {
   cookie_change_subscription_ =
       browser_context_->cookie_change_notifier()->RegisterCookieChangeCallback(
           base::BindRepeating(&Cookies::OnCookieChanged,
@@ -372,9 +385,11 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
 
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
+    net::CookieInclusionStatus cookie_inclusion_status;
+    cookie_inclusion_status.AddExclusionReason(
+        net::CookieInclusionStatus::ExclusionReason::EXCLUDE_INVALID_DOMAIN);
     promise.RejectWithErrorMessage(
-        InclusionStatusToString(net::CookieInclusionStatus(
-            net::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN)));
+        InclusionStatusToString(cookie_inclusion_status));
     return handle;
   }
 
@@ -388,11 +403,11 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       &status);
 
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
+    net::CookieInclusionStatus cookie_inclusion_status;
+    cookie_inclusion_status.AddExclusionReason(
+        net::CookieInclusionStatus::ExclusionReason::EXCLUDE_FAILURE_TO_STORE);
     promise.RejectWithErrorMessage(InclusionStatusToString(
-        !status.IsInclude()
-            ? status
-            : net::CookieInclusionStatus(
-                  net::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE)));
+        !status.IsInclude() ? status : cookie_inclusion_status));
     return handle;
   }
 
@@ -445,7 +460,7 @@ void Cookies::OnCookieChanged(const net::CookieChangeInfo& change) {
 // static
 gin::Handle<Cookies> Cookies::Create(v8::Isolate* isolate,
                                      ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate, new Cookies(isolate, browser_context));
+  return gin::CreateHandle(isolate, new Cookies{browser_context});
 }
 
 gin::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(

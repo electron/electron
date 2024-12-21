@@ -1,16 +1,18 @@
+import { getRawHeader } from '@electron/asar';
+import { flipFuses, FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
+import { resedit } from '@electron/packager/dist/resedit';
+
 import { expect } from 'chai';
+import * as originalFs from 'node:original-fs';
+
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
-import * as originalFs from 'node:original-fs';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { ifdescribe } from './lib/spec-helpers';
 
-import { getRawHeader } from '@electron/asar';
-import { resedit } from '@electron/packager/dist/resedit';
-import { flipFuses, FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
 import { copyApp } from './lib/fs-helpers';
+import { ifdescribe } from './lib/spec-helpers';
 
 const bufferReplace = (haystack: Buffer, needle: string, replacement: string, throwOnMissing = true): Buffer => {
   const needleBuffer = Buffer.from(needle);
@@ -54,7 +56,7 @@ const expectToHaveCrashed = (res: SpawnResult) => {
     expect(res.signal).to.equal(null);
   } else {
     expect(res.code).to.equal(null);
-    expect(res.signal).to.equal('SIGTRAP');
+    expect(res.signal).to.be.oneOf(['SIGABRT', 'SIGTRAP']);
   }
 };
 
