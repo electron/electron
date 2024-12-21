@@ -155,8 +155,6 @@ static_library("chrome") {
 
   if (is_win) {
     sources += [
-      "//chrome/browser/extensions/global_shortcut_listener_win.cc",
-      "//chrome/browser/extensions/global_shortcut_listener_win.h",
       "//chrome/browser/icon_loader_win.cc",
       "//chrome/browser/media/webrtc/window_icon_util_win.cc",
       "//chrome/browser/process_singleton_win.cc",
@@ -204,6 +202,7 @@ static_library("chrome") {
     "//components/enterprise/obfuscation/core:enterprise_obfuscation",
     "//components/safe_browsing/core/browser/db:safebrowsing_proto",
     "//components/vector_icons:vector_icons",
+    "//ui/base/accelerators/global_accelerator_listener",
     "//ui/snapshot",
     "//ui/views/controls/webview",
   ]
@@ -224,13 +223,6 @@ static_library("chrome") {
       "//chrome/browser/extensions/global_shortcut_listener_linux.h",
       "//chrome/browser/icon_loader_auralinux.cc",
     ]
-    if (use_ozone) {
-      deps += [ "//ui/ozone" ]
-      sources += [
-        "//chrome/browser/extensions/global_shortcut_listener_ozone.cc",
-        "//chrome/browser/extensions/global_shortcut_listener_ozone.h",
-      ]
-    }
     sources += [
       "//chrome/browser/ui/views/status_icons/concat_menu_model.cc",
       "//chrome/browser/ui/views/status_icons/concat_menu_model.h",
@@ -263,8 +255,6 @@ static_library("chrome") {
 
   if (is_mac) {
     sources += [
-      "//chrome/browser/extensions/global_shortcut_listener_mac.h",
-      "//chrome/browser/extensions/global_shortcut_listener_mac.mm",
       "//chrome/browser/icon_loader_mac.mm",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",

@@ -10,7 +10,7 @@ usage of BrowserList and Browser as we subclass related methods and use our
 WindowList.
 
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-index d0fe2040a65211c6ba25ce74c71b397573b7519c..7dfe50a1c90b028b79a22534800ee498a262ac35 100644
+index 440b5ad4dbaede496ad17e218dc2a84b51972cb1..25781373c4183fadf432b4260fcf789f6b4a1840 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 @@ -43,6 +43,7 @@
@@ -22,7 +22,7 @@ index d0fe2040a65211c6ba25ce74c71b397573b7519c..7dfe50a1c90b028b79a22534800ee498
  #include "ui/accessibility/ax_updates_and_events.h"
  #include "ui/accessibility/platform/ax_platform_node.h"
 @@ -169,7 +170,7 @@ base::Value::Dict BuildTargetDescriptor(content::RenderViewHost* rvh) {
-                                accessibility_mode);
+                                rvh->GetRoutingID(), accessibility_mode);
  }
  
 -#if !BUILDFLAG(IS_ANDROID)

@@ -193,7 +193,7 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
       if (permission == blink::PermissionType::MIDI_SYSEX) {
         content::ChildProcessSecurityPolicy::GetInstance()
             ->GrantSendMidiSysExMessage(
-                render_frame_host->GetProcess()->GetID());
+                render_frame_host->GetProcess()->GetDeprecatedID());
       } else if (permission == blink::PermissionType::GEOLOCATION) {
         ElectronBrowserMainParts::Get()
             ->GetGeolocationControl()

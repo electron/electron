@@ -56,7 +56,7 @@ Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::ToV8(
   if (!rfh)
     return v8::Null(isolate);
 
-  const int process_id = rfh->GetProcess()->GetID();
+  const int32_t process_id = rfh->GetProcess()->GetID().GetUnsafeValue();
   const int routing_id = rfh->GetRoutingID();
 
   if (rfh_templ.IsEmpty()) {

@@ -85,7 +85,8 @@ class WebContentsPreferences
   friend class ElectronBrowserClient;
 
   // Get WebContents according to process ID.
-  static content::WebContents* GetWebContentsFromProcessID(int process_id);
+  static content::WebContents* GetWebContentsFromProcessID(
+      content::ChildProcessId process_id);
 
   void Clear();
   void SaveLastPreferences();
