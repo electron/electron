@@ -31,10 +31,10 @@ index e76c702ed12cbc51a418ec8056abbd33b371bfb9..ead485e17a27ec0654cd681b98853028
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index 8bb81e7e47734f51a3b87b4a92e50800bb38e665..8256db9d878bcfcff855d69e4ac0c9b2b9c1a990 100644
+index 776c9b4bad591bb0174457caadf5bcab5ffc490b..b5475b328299d823c2cee8cae2fc9111ebc033cb 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
-@@ -87,12 +87,14 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
+@@ -84,12 +84,14 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
      BrowserContext* browser_context,
      scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
      RenderProcessHost* render_process_host,
@@ -49,7 +49,7 @@ index 8bb81e7e47734f51a3b87b4a92e50800bb38e665..8256db9d878bcfcff855d69e4ac0c9b2
        browser_context_(browser_context),
        service_worker_context_(std::move(service_worker_context)),
        render_process_host_id_(render_process_host->GetDeprecatedID()),
-@@ -184,7 +186,7 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
+@@ -181,7 +183,7 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
        creator_type_);
  
    browser_context_->GetPlatformNotificationService()->DisplayNotification(
@@ -79,10 +79,10 @@ index e7cc73f375ada7ee8715d331c3d372e0f59a0cdf..c0a142bea4a9a30c10dbb30c72fedce9
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index c58fcfafde1f3c2dbedbd56fcd0e0fedd1e30424..64e8b88edc09cdd6a538f690021c87a11f09fd7c 100644
+index 07e06ac6a3f14081f61f44620b537e5442419660..f2b8a977277c1f1ab014edd007d5df766b70f328 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-@@ -132,7 +132,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
+@@ -129,7 +129,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
      notification_service_ = std::make_unique<BlinkNotificationServiceImpl>(
          notification_context_.get(), &browser_context_,
          embedded_worker_helper_->context_wrapper(), &render_process_host_,

@@ -250,7 +250,7 @@ index dc27e91ad0da93a5b68053f132f219f95f641ca1..38ba1110da3f77df4681ccb0ebcee78d
      switch (c_signature->ReturnInfo().GetType()) {
        case CTypeInfo::Type::kVoid:
 diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
-index be5b5f47e58a0091e5f406b5a643160f46855501..fef5434ef37bc878432e5af39e25409b84f2e378 100644
+index c33a2bfa2b843c97b664c831128d15ba8cb62680..53a19a3ebb0e8f9f020e9d36e89e14e00a7dbcf0 100644
 --- a/test/cctest/test-api.cc
 +++ b/test/cctest/test-api.cc
 @@ -29827,6 +29827,16 @@ static Trivial* UnwrapTrivialObject(Local<Object> object) {

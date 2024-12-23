@@ -13,7 +13,7 @@ Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5979766
 This reverts commit c41f7a0ef99bd1c9752ee79923f634145ebc4153.
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 1e4285a014a6f8e91b83db48936577da5ae46941..178bf3c5fd06f6002d8c3750758b88a6c4a87d59 100644
+index 35ab90bc743acce711c5f499363e40e55bf2a0e1..576c43a1a3c28842d3afcb794f950bb94895e4fd 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
 @@ -1350,16 +1350,6 @@ Local<FunctionTemplate> FunctionTemplate::NewWithCFunctionOverloads(
@@ -208,7 +208,7 @@ index 171e66c427991bfe7db5c2875d12559767a24b55..b97b37e5746433d3801de19d4666a19a
                         const ConvertReturnValue& convert_return_value,
                         const InitializeOptions& initialize_options,
 diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
-index 52b1d0837dcbbe2ab4bc84f5f1777ab5c543e18c..263dbab5a52c49cf5d2f6ab51aa25a64665566bf 100644
+index 72a7c71f94feb7e6d9a087d934c5ccdceffe085c..e641fa6a16be04129e8c9f27ec56f5d08cd4d8f1 100644
 --- a/src/compiler/js-call-reducer.cc
 +++ b/src/compiler/js-call-reducer.cc
 @@ -631,11 +631,11 @@ class FastApiCallReducerAssembler : public JSCallReducerAssembler {
@@ -669,10 +669,10 @@ index d1238e5b3032b241690952cdabae70e4ee757b66..c1eeef0db1261e064118db98bfe94f87
        // There is one return in addition to the return value of the C function,
        // which indicates if a fast API call actually happened.
 diff --git a/src/compiler/turboshaft/operations.h b/src/compiler/turboshaft/operations.h
-index 30011907a4b610370eae1f8be4701d8f2a524a8a..ebd0b2c3cf3063434b88e6097eb38fbc1b9fa892 100644
+index 0702af8d1f6f1cea3750bc9ebd9f415d3564c2ed..0ca25729355c70414c1e2755a631ad5124e9e7de 100644
 --- a/src/compiler/turboshaft/operations.h
 +++ b/src/compiler/turboshaft/operations.h
-@@ -6407,16 +6407,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
+@@ -6300,16 +6300,24 @@ struct Float64SameValueOp : FixedArityOperationT<2, Float64SameValueOp> {
  };
  
  struct FastApiCallParameters : public NON_EXPORTED_BASE(ZoneObject) {
@@ -705,7 +705,7 @@ index 30011907a4b610370eae1f8be4701d8f2a524a8a..ebd0b2c3cf3063434b88e6097eb38fbc
  };
  
 diff --git a/src/compiler/wasm-compiler.cc b/src/compiler/wasm-compiler.cc
-index 59af3bf6bdfa4e492a8d0a57255bc568511e92cb..8e33d210594fc67257acae4093a2b7eeebd97ce1 100644
+index 81f1c9aa875ab4db7792b6e2f13ea9e18618513e..665c0e9197bb1338099b118a71d5db6a78a59f19 100644
 --- a/src/compiler/wasm-compiler.cc
 +++ b/src/compiler/wasm-compiler.cc
 @@ -8254,13 +8254,19 @@ class WasmWrapperGraphBuilder : public WasmGraphBuilder {
