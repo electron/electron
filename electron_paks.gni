@@ -85,7 +85,7 @@ template("electron_extra_paks") {
       "//net:net_resources",
       "//third_party/blink/public:devtools_inspector_resources",
       "//third_party/blink/public:resources",
-      "//ui/resources",
+      "//ui/webui/resources",
     ]
     if (defined(invoker.deps)) {
       deps += invoker.deps
@@ -98,7 +98,7 @@ template("electron_extra_paks") {
     sources += [
       "$root_gen_dir/content/browser/devtools/devtools_resources.pak",
       "$root_gen_dir/content/process_resources.pak",
-      "$root_gen_dir/ui/resources/webui_resources.pak",
+      "$root_gen_dir/ui/webui/resources/webui_resources.pak",
     ]
     deps += [ "//content/browser/devtools:devtools_resources" ]
     if (enable_pdf_viewer) {
