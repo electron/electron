@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة فري فاير</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #121212;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #282828;
+            border: 1px solid #444;
+        }
+
+        #game-container, #menu {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #6200ea;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background-color: #4e00c7;
+        }
+
+        #menu {
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="menu" class="visible">
+        <h1>لعبة فري فاير</h1>
+        <button id="startGame">ابدأ اللعبة</button>
+        <button id="settings">الإعدادات</button>
+        <button id="login">تسجيل الدخول</button>
+        <button id="logout">تسجيل الخروج</button>
+    </div>
+
+    <div id="settingsMenu" class="hidden">
+        <h2>الإعدادات</h2>
+        <label>
+            <input type="checkbox" id="toggleSound"> تشغيل/إيقاف الصوت
+        </label>
+        <br>
+        <label>
+            <input type="checkbox" id="toggleEffects"> تشغيل/إيقاف المؤثرات الصوتية
+        </label>
+        <br>
+        <button id="backToMenu">رجوع</button>
+    </div>
+
+    <div id="game-container" class="hidden">
+        <h1>مرحبًا بك في لعبة فري فاير البسيطة</h1>
+        <p>ابدأ اللعب واستمتع بخوض معركة البقاء على قيد الحياة!</p>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <h2>النقاط: <span id="score">0</span></h2>
+        <div id="weaponsMenu" class="hidden">
+            <h2>اختر سلاحك</h2>
+            <select id="weaponSelect"></select>
+            <button id="chooseWeapon">اختر</button>
+        </div>
+
+        <div id="mapsMenu" class="hidden">
+            <h2>اختر الخريطة</h2>
+            <select id="mapSelect">
+                <option value="city">المدينة</option>
+                <option value="forest">الغابة</option>
+                <option value="desert">الصحراء</option>
+                <option value="moon">القمر</option>
+                <option value="island">الجزيرة</option>
+            </select>
+            <button id="chooseMap">اختر</button>
+        </div>
+    </div>
+
+    <script>
+        const menu = document.getElementById('menu');
+        const settingsMenu = document.getElementById('settingsMenu');
+        const gameContainer = document.getElementById('game-container');
+        const startGameButton = document.getElementById('startGame');
+        const settingsButton = document.getElementById('settings');
+        const backToMenuButton = document.getElementById('backToMenu');
+        const weaponsMenu = document.getElementById('weaponsMenu');
+        const weaponSelect = document.getElementById('weaponSelect');
+        const chooseWeaponButton = document.getElementById('chooseWeapon');
+        const mapsMenu = document.getElementById('mapsMenu');
+        const mapSelect = document.getElementById('mapSelect');
+        const chooseMapButton = document.getElementById('chooseMap');
+
+        let soundOn = true;
+        let effectsOn = true;
+        let currentWeapon = null;
+        let currentMap = null;
+
+        const weapons = Array.from({ length: 50 }, (_, i) => ({
+            name: `سلاح ${i + 1}`,
+            damage: Math.floor(Math.random() * 100) + 10,
+            range: Math.floor(Math.random() * 300) + 50
+        }));
+
+        weapons.forEach(weapon => {
+            const option = document.createElement('option');
+            option.value = weapon.name;
+            option.textContent = `${weapon.name} (ضرر: ${weapon.damage}, مدى: ${weapon.range})`;
+            weaponSelect.appendChild(option);
+        });
+
+        document.getElementById('toggleSound').addEventListener('change', (e) => {
+            soundOn = e.target.checked;
+            console.log(`الصوت: ${soundOn ? 'تشغيل' : 'إيقاف'}`);
+        });
+
+        document.getElementById('toggleEffects').addEventListener('change', (e) => {
+            effectsOn = e.target.checked;
+            console.log(`المؤثرات الصوتية: ${effectsOn ? 'تشغيل' : 'إيقاف'}`);
+        });
+
+        settingsButton.addEventListener('click', () => {
+            menu.classList.add('hidden');
+            settingsMenu.classList.remove('hidden');
+        });
+
+        backToMenuButton.addEventListener('click', () => {
+            settingsMenu.classList.add('hidden');
+            menu.classList.remove('hidden');
+        });
+
+        startGameButton.addEventListener('click', () => {
+            menu.classList.add('hidden');
+            weaponsMenu.classList.remove('hidden');
+        });
+
+        chooseWeaponButton.addEventListener('click', () => {
+            const selectedWeaponName = weaponSelect.value;
+            currentWeapon = weapons.find(w => w.name === selectedWeaponName);
+            console.log(`تم اختيار السلاح: ${currentWeapon.name}`);
+            weaponsMenu.classList.add('hidden');
+            mapsMenu.classList.remove('hidden');
+        });
+
+        chooseMapButton.addEventListener('click', () => {
+            currentMap = mapSelect.value;
+            console.log(`تم اختيار الخريطة: ${currentMap}`);
+            mapsMenu.classList.add('hidden');
+            gameContainer.classList.remove('hidden');
+            startGame();
+        });
+
+        function startGame() {
+            console.log('بدء اللعبة');
+            console.log(`السلاح الحالي: ${currentWeapon.name}`);
+            console.log(`الخريطة الحالية: ${currentMap}`);
+            gameRunning = true;
+            resetGame();
+
+            setInterval(spawnEnemy, 2000);
+            setInterval(updateGame, 50);
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+
+        let player = { x: 400, y: 300, size: 20, color: 'blue', speed: 5, inCar: false };
+        let car = { x: 300, y: 300, width: 50, height: 30, color: 'green', speed: 8, active: false };
+        let enemies = [];
+        let bullets = [];
+        let grenades = [];
+        let gameRunning = false;
+        let score = 0;
+
+        function drawPlayer() {
+            if (!player.inCar) {
+                ctx.fillStyle = player.color;
+                ctx.fillRect(player.x, player.y, player.size, player.size);
+            }
+        }
+
+        function drawCar() {
+            if (car.active) {
+                ctx.fillStyle = car.color;
+                ctx.fillRect(car.x, car.y, car.width, car.height);
+            }
+        }
+
+        function spawnEnemy() {
+            const size = 20;
+            const x = Math.random() * (canvas.width - size);
+            const y = Math.random() * (canvas.height - size);
+            enemies.push({ x, y, size, color: 'red', speed: Math.random() * 2 + 1 });
+        }
+
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+            });
+        }
+
+        function updateGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
+            drawCar();
+            drawEnemies();
+
+            // Move player (placeholder logic for movement)
+            if (player.inCar) {
+                car.x += car.speed;
+                if (car.x > canvas.width) car.x = 0;
+            }
+        }
+
+        function resetGame() {
+            enemies = [];
+            bullets = [];
+            grenades = [];
+            score = 0;
+            scoreElement.textContent = score;
+        }
+
+    </script>
+</body>
+</html>
