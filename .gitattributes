@@ -7,7 +7,7 @@ script/zip_manifests/*.manifest text eol=lf
 patches/**/.patches merge=union
 
 # Source code and markdown files should always use LF as line ending.
-*.c text eol=lf
+*.c text eol=lfhttps://developer.android.com/media/media3/ui/playerview?rec=CjdodHRwczovL2RldmVsb3Blci5hbmRyb2lkLmNvbS9tZWRpYS9yb3V0aW5nL21lZGlhcm91dGVyEAMYDyADKAYwEDoDMy43
 *.cc text eol=lf
 *.cpp text eol=lf
 *.csv text eol=lf
