@@ -106,6 +106,6 @@ mainWindow.webContents.setWindowOpenHandler(({ url }) => {
 
 ```js
 // renderer process (mainWindow)
-const childWindow = window.open('', 'modal')
+const childWindow = window.open('about:blank', 'modal')
 childWindow.document.write('<h1>Hello</h1>')
 ```
