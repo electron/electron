@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 97bec1f29bc3b70722603f5d50bca08e2b14b26e..62307f3428c12ab5d48c46609956123a99776b9b 100644
+index a3adebbb867322d4f9371e55c3ee6e080fb2228c..0df9633a837c2353fc6e481e47b342432a019850 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1028,6 +1028,7 @@ component("base") {
@@ -186,10 +186,10 @@ index c4df04713a7f76c2ff50c1d2bc750e18bb1865e0..0392602987d99b4e5d776408e75ea605
  
    if (is_win) {
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index d87682447b850e4cf9065f0d26d14077acbe467d..a179c9bc02158130f4b15bf8022721f4b53a8303 100644
+index ad374646d1a78f61d3924d6d9bb1144c57b7be98..a7fa25575be84d1dabb04bdc458e2a6d4358ddc1 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
-@@ -14,6 +14,7 @@
+@@ -15,6 +15,7 @@
  #include "base/rand_util.h"
  #include "build/branding_buildflags.h"
  #include "crypto/apple_keychain.h"
@@ -1449,7 +1449,7 @@ index b11c365f42dd1ddc363de0d94c387b13ac65bef3..5da42beb20b514396287cc6dc5cba608
    // The root CALayer to display the current frame. This does not change
    // over the lifetime of the object.
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
-index b99461d52e3a62b58330691e65f9956748cfbf02..f0c3bb1b809a29eee3d990b0a8bbffddb7500895 100644
+index fd4356bd9a81b01de51c59dcd6637be2b2d8b6ee..ffc0b4e8aaa186840905cfc8b9efcd77e31d7617 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 @@ -10,6 +10,7 @@
@@ -1897,7 +1897,7 @@ index 6a18c94e8c9d531ab3a59faf6027848caed8de57..63aa6b3ba824a3fa71c5a3db94b9ac5e
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 65f84a62c250dacd32e42772dac1cf4473646df4..683815d479420378806476c80afc32cc804d20ae 100644
+index f7ddd05fd9a8165622ff45e182919a0588c53f80..0de4ff37eab3220a59ad1f90bcdd861170691fb5 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -21,6 +21,7 @@
@@ -1908,10 +1908,10 @@ index 65f84a62c250dacd32e42772dac1cf4473646df4..683815d479420378806476c80afc32cc
  #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
  #include "ui/accessibility/accessibility_features.h"
-@@ -350,7 +351,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
- NativeWidgetMacNSWindowHost::GetNativeViewAccessibleForNSView() const {
-   if (in_process_ns_window_bridge_)
+@@ -352,7 +353,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+   if (in_process_ns_window_bridge_) {
      return in_process_ns_window_bridge_->ns_view();
+   }
 +#if !IS_MAS_BUILD()
    return remote_view_accessible_;
 +#else
@@ -1920,7 +1920,7 @@ index 65f84a62c250dacd32e42772dac1cf4473646df4..683815d479420378806476c80afc32cc
  }
  
  gfx::NativeViewAccessible
-@@ -365,7 +370,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -367,7 +372,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
      return [in_process_ns_window_bridge_->ns_view() window];
    }
  
@@ -1932,7 +1932,7 @@ index 65f84a62c250dacd32e42772dac1cf4473646df4..683815d479420378806476c80afc32cc
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1339,9 +1348,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1371,9 +1380,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // for PWAs. However this breaks accessibility on in-process windows,
    // so set it back to NO when a local window gains focus. See
    // https://crbug.com/41485830.
@@ -1943,8 +1943,8 @@ index 65f84a62c250dacd32e42772dac1cf4473646df4..683815d479420378806476c80afc32cc
 +#endif
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
-   if (is_key && is_content_first_responder)
-@@ -1480,17 +1491,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+   if (is_key && is_content_first_responder) {
+@@ -1514,17 +1525,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -1965,7 +1965,7 @@ index 65f84a62c250dacd32e42772dac1cf4473646df4..683815d479420378806476c80afc32cc
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1503,6 +1517,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1537,6 +1551,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);

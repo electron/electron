@@ -33,10 +33,10 @@ index 0a236366b3f5050fa5d07971404afa111e699ce8..fb0f867dcf846f64887abc11f1aec67c
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index cdafc174f996a9f024bc8408d63b69d884c12c09..5f33330ed9d0c896b40ca9522b76c5fc81c2db39 100644
+index a3acf17d52b73429e380cd68235f1e0b1d65c965..af0accd54bb9333b602f0ae412bbadb4088929eb 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4529,7 +4529,7 @@ static_library("browser") {
+@@ -4527,7 +4527,7 @@ static_library("browser") {
            [ "//chrome/browser/ui/webui/signin:profile_impl" ]
      }
  
@@ -46,10 +46,10 @@ index cdafc174f996a9f024bc8408d63b69d884c12c09..5f33330ed9d0c896b40ca9522b76c5fc
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index e95f3d6a3b07c1baaf446d64502a340f6ecea138..1ed91922dfec39da6e718efa687c190ec622179b 100644
+index 4d3b89089bc5b297704133863ad711b4f9ce5055..29633e98faa6dda984854eaf656bc1a083327a88 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6904,9 +6904,12 @@ test("unit_tests") {
+@@ -6914,9 +6914,12 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
@@ -63,7 +63,7 @@ index e95f3d6a3b07c1baaf446d64502a340f6ecea138..1ed91922dfec39da6e718efa687c190e
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -7845,6 +7848,10 @@ test("unit_tests") {
+@@ -7856,6 +7859,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index e95f3d6a3b07c1baaf446d64502a340f6ecea138..1ed91922dfec39da6e718efa687c190e
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -7898,7 +7905,6 @@ test("unit_tests") {
+@@ -7909,7 +7916,6 @@ test("unit_tests") {
      # Non-android deps for "unit_tests" target.
      deps += [
        "../browser/screen_ai:screen_ai_install_state",

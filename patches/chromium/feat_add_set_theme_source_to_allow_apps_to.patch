@@ -13,7 +13,7 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 728069cfdba9abd10bee1af9a195d1883ff91b6b..fc4f6e75b08bae70209ec28a033f8ed7b9b51a71 100644
+index 04e3441cdc0b3c01187e95900e7a805a65c2231e..1f2bded9105248b7cc06a97d75ca57b6838da355 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
 @@ -211,6 +211,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
@@ -26,7 +26,7 @@ index 728069cfdba9abd10bee1af9a195d1883ff91b6b..fc4f6e75b08bae70209ec28a033f8ed7
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 12aba4abcbd6dca71dbdf7f8428dfc3286a7f13d..cfa067e492d84f24ae2a8d3e190e7bf0e1ef047e 100644
+index 8489d256dd898c92bc77210f4a6239f5eb93b8e0..8d3eb64742948a3f8d04cfa7a585df35a84c8961 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -447,6 +447,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -62,13 +62,13 @@ index 12aba4abcbd6dca71dbdf7f8428dfc3286a7f13d..cfa067e492d84f24ae2a8d3e190e7bf0
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 1b098cbb291fe904f34d59ce5aaab7a0e48b28ea..9d27e7b3dc503a3f25d71f0342a3fd4f17a42ea0 100644
+index d34f90e8a6b9304798e73349aa73963dfc45bad6..99513deae31d7e4a37acbc16a35c42a4360960c2 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -678,6 +678,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
-   // ...unless --force-dark-mode was specified in which case caveat emptor.
-   if (InForcedColorsMode() && !IsForcedDarkMode())
+@@ -688,6 +688,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+   if (InForcedColorsMode() && !IsForcedDarkMode()) {
      return false;
+   }
 +  if (theme_source() == ThemeSource::kForcedLight) return false;
 +  if (theme_source() == ThemeSource::kForcedDark) return true;
    return NativeTheme::ShouldUseDarkColors();
