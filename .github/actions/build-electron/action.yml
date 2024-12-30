@@ -69,7 +69,7 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES -d explain
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
