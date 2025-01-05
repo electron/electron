@@ -2,7 +2,11 @@
 
 > Allows access to simple encryption and decryption of strings for storage on the local machine.
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-proce
+
+https://github.com/user-attachments/assets/93187cc5-ce82-4135-9d24-aa3f1a12cb18
+
+ss)
 
 This module adds extra protection to data being stored on disk by using OS-provided cryptography systems. Current
 security semantics for each platform are outlined below.
