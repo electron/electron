@@ -1,0 +1,115 @@
+From 3dc17c461b12fd735c1173a90a2ca62c086a4110 Mon Sep 17 00:00:00 2001
+From: Orko Garai <orko@igalia.com>
+Date: Fri, 29 Nov 2024 16:17:04 +0000
+Subject: [PATCH] Wayland IME: Underline composition text fallback
+
+At this time text-input-v3 does not provide any styling information.
+As a quality-of-life improvement, ensure that a default composition
+style is applied so that the composition text is underlined.
+
+This will also ensure that the user experience is consistent with
+ozone/x11.
+
+Bug: 355238629
+Change-Id: I8d4bce5e5700510d72f114bb57171f43646be098
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/5741768
+Commit-Queue: Orko Garai <orko@igalia.com>
+Reviewed-by: Darren Shen <shend@chromium.org>
+Reviewed-by: Kramer Ge <fangzhoug@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1389833}
+---
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_input_method_context.cc b/ui/ozone/platform/wayland/host/wayland_input_method_context.cc
+index 715e181a..2cfa5cc 100644
+--- a/ui/ozone/platform/wayland/host/wayland_input_method_context.cc
++++ b/ui/ozone/platform/wayland/host/wayland_input_method_context.cc
+@@ -530,6 +530,7 @@
+     const gfx::Range& preedit_cursor) {
+   CompositionText composition_text;
+   composition_text.text = base::UTF8ToUTF16(text);
++  bool has_composition_style = false;
+   for (const auto& span : spans) {
+     auto start_offset = OffsetFromUTF8Offset(text, span.index);
+     if (!start_offset)
+@@ -540,9 +541,18 @@
+     const auto& style = span.style;
+     if (!style.has_value())
+       continue;
++    if (style->type == ImeTextSpan::Type::kComposition) {
++      has_composition_style = true;
++    }
+     composition_text.ime_text_spans.emplace_back(style->type, *start_offset,
+                                                  *end_offset, style->thickness);
+   }
++  if (!composition_text.text.empty() && !has_composition_style) {
++    // If no explicit composition style is specified, add default composition
++    // style to the composition text.
++    composition_text.ime_text_spans.emplace_back(
++        ImeTextSpan::Type::kComposition, 0, composition_text.text.length());
++  }
+   if (!preedit_cursor.IsValid()) {
+     // This is the case if a preceding preedit_cursor event in text-input-v1 was
+     // not received or an explicit negative value was requested to hide the
+diff --git a/ui/ozone/platform/wayland/host/wayland_input_method_context_unittest.cc b/ui/ozone/platform/wayland/host/wayland_input_method_context_unittest.cc
+index d005de4..dbb339d 100644
+--- a/ui/ozone/platform/wayland/host/wayland_input_method_context_unittest.cc
++++ b/ui/ozone/platform/wayland/host/wayland_input_method_context_unittest.cc
+@@ -1174,6 +1174,34 @@
+   });
+ }
+ 
++TEST_P(WaylandInputMethodContextTest, OnPreeditChangedDefaultCompositionStyle) {
++  constexpr std::string_view kPreeditString("PreeditString");
++  constexpr gfx::Range kSelection{7, 13};
++  input_method_context_->OnPreeditString(
++      kPreeditString,
++      // No composition style provided.
++      {{1,
++        3,
++        {{ImeTextSpan::Type::kMisspellingSuggestion,
++          ImeTextSpan::Thickness::kNone}}}},
++      kSelection);
++  EXPECT_TRUE(input_method_context_delegate_->was_on_preedit_changed_called());
++  EXPECT_EQ(input_method_context_delegate_->last_preedit()->ime_text_spans,
++            (ImeTextSpans{ImeTextSpan(ImeTextSpan::Type::kMisspellingSuggestion,
++                                      1, 4, ImeTextSpan::Thickness::kNone),
++                          // Default composition should be applied.
++                          ImeTextSpan(ImeTextSpan::Type::kComposition, 0,
++                                      kPreeditString.size(),
++                                      ImeTextSpan::Thickness::kThin)}));
++  EXPECT_EQ(
++      input_method_context_->predicted_state_for_testing().surrounding_text,
++      u"PreeditString");
++  EXPECT_EQ(input_method_context_->predicted_state_for_testing().composition,
++            gfx::Range(0, kPreeditString.size()));
++  EXPECT_EQ(input_method_context_->predicted_state_for_testing().selection,
++            kSelection);
++}
++
+ TEST_P(WaylandInputMethodContextTest, OnPreeditChanged) {
+   constexpr std::string_view kPreeditString("PreeditString");
+   constexpr gfx::Range kSelection{7, 13};
+@@ -1181,13 +1209,19 @@
+       kPreeditString,
+       {{0,
+         static_cast<uint32_t>(kPreeditString.size()),
+-        {{ImeTextSpan::Type::kComposition, ImeTextSpan::Thickness::kThin}}}},
++        {{ImeTextSpan::Type::kComposition, ImeTextSpan::Thickness::kThick}}},
++       {1,
++        3,
++        {{ImeTextSpan::Type::kMisspellingSuggestion,
++          ImeTextSpan::Thickness::kNone}}}},
+       kSelection);
+   EXPECT_TRUE(input_method_context_delegate_->was_on_preedit_changed_called());
+   EXPECT_EQ(input_method_context_delegate_->last_preedit()->ime_text_spans,
+-            ImeTextSpans{ImeTextSpan(ImeTextSpan::Type::kComposition, 0,
+-                                     kPreeditString.size(),
+-                                     ImeTextSpan::Thickness::kThin)});
++            (ImeTextSpans{ImeTextSpan(ImeTextSpan::Type::kComposition, 0,
++                                      kPreeditString.size(),
++                                      ImeTextSpan::Thickness::kThick),
++                          ImeTextSpan(ImeTextSpan::Type::kMisspellingSuggestion,
++                                      1, 4, ImeTextSpan::Thickness::kNone)}));
+   EXPECT_EQ(
+       input_method_context_->predicted_state_for_testing().surrounding_text,
+       u"PreeditString");
