@@ -143,7 +143,8 @@ class RendererClientBase : public content::ContentRendererClient
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // app_shell embedders may need custom extensions client interfaces.
   // This class takes ownership of the returned object.
-  virtual extensions::ExtensionsClient* CreateExtensionsClient();
+  virtual std::unique_ptr<extensions::ExtensionsClient>
+  CreateExtensionsClient();
 #endif
 
  private:
