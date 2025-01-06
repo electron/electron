@@ -24,7 +24,8 @@ try:
       cwd=os.path.abspath(os.path.join(os.path.dirname(__file__), '..')),
       stderr=subprocess.PIPE,
       universal_newlines=True)
-  version = output.strip().replace('v', '')
+  # only remove the 'v' prefix from the tag name.
+  version = output.strip().replace('v', '', 1)
   print(version)
 except Exception:
   # When there is error we print a null version string instead of throwing an
