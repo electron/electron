@@ -1,7 +1,7 @@
-From 3dc17c461b12fd735c1173a90a2ca62c086a4110 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Orko Garai <orko@igalia.com>
 Date: Fri, 29 Nov 2024 16:17:04 +0000
-Subject: [PATCH] Wayland IME: Underline composition text fallback
+Subject: Wayland IME: Underline composition text fallback
 
 At this time text-input-v3 does not provide any styling information.
 As a quality-of-life improvement, ensure that a default composition
@@ -17,13 +17,12 @@ Commit-Queue: Orko Garai <orko@igalia.com>
 Reviewed-by: Darren Shen <shend@chromium.org>
 Reviewed-by: Kramer Ge <fangzhoug@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1389833}
----
 
 diff --git a/ui/ozone/platform/wayland/host/wayland_input_method_context.cc b/ui/ozone/platform/wayland/host/wayland_input_method_context.cc
-index 715e181a..2cfa5cc 100644
+index 71a51ce25b808ee5dc5359ce99becac3da3869bc..1985765618f228102f411282f9476f04a450b4e1 100644
 --- a/ui/ozone/platform/wayland/host/wayland_input_method_context.cc
 +++ b/ui/ozone/platform/wayland/host/wayland_input_method_context.cc
-@@ -530,6 +530,7 @@
+@@ -598,6 +598,7 @@ void WaylandInputMethodContext::OnPreeditString(
      const gfx::Range& preedit_cursor) {
    CompositionText composition_text;
    composition_text.text = base::UTF8ToUTF16(text);
@@ -31,7 +30,7 @@ index 715e181a..2cfa5cc 100644
    for (const auto& span : spans) {
      auto start_offset = OffsetFromUTF8Offset(text, span.index);
      if (!start_offset)
-@@ -540,9 +541,18 @@
+@@ -608,9 +609,18 @@ void WaylandInputMethodContext::OnPreeditString(
      const auto& style = span.style;
      if (!style.has_value())
        continue;
@@ -51,10 +50,10 @@ index 715e181a..2cfa5cc 100644
      // This is the case if a preceding preedit_cursor event in text-input-v1 was
      // not received or an explicit negative value was requested to hide the
 diff --git a/ui/ozone/platform/wayland/host/wayland_input_method_context_unittest.cc b/ui/ozone/platform/wayland/host/wayland_input_method_context_unittest.cc
-index d005de4..dbb339d 100644
+index 41a3f5de13b506871f00780b7803bd65a169c22c..22d7a4b82a2e9183dbe1556a73ec236b4cac5048 100644
 --- a/ui/ozone/platform/wayland/host/wayland_input_method_context_unittest.cc
 +++ b/ui/ozone/platform/wayland/host/wayland_input_method_context_unittest.cc
-@@ -1174,6 +1174,34 @@
+@@ -1324,6 +1324,34 @@ TEST_P(WaylandInputMethodContextTest, SetInputTypeAfterFocus) {
    });
  }
  
@@ -89,7 +88,7 @@ index d005de4..dbb339d 100644
  TEST_P(WaylandInputMethodContextTest, OnPreeditChanged) {
    constexpr std::string_view kPreeditString("PreeditString");
    constexpr gfx::Range kSelection{7, 13};
-@@ -1181,13 +1209,19 @@
+@@ -1331,13 +1359,19 @@ TEST_P(WaylandInputMethodContextTest, OnPreeditChanged) {
        kPreeditString,
        {{0,
          static_cast<uint32_t>(kPreeditString.size()),
