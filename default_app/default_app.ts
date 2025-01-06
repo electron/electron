@@ -48,7 +48,7 @@ async function createWindow (backgroundColor?: string) {
 
   const options: Electron.BrowserWindowConstructorOptions = {
     width: 960,
-    height: 620,
+    height: 540,
     autoHideMenuBar: true,
     backgroundColor,
     webPreferences: {
