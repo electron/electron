@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Kasting <pkasting@chromium.org>
+Date: Wed, 23 Oct 2024 09:38:17 -0700
+Subject: Fix compiler failure on older Clang.
+
+On crrev.com/c/5774729 someone reported that omitting `typename` in a
+few places caused an error for them. This should be allowed in C++20,
+but apparently was not accepted by (what the author believes is)
+Clang 15. I don't know whether V8 officially supports this version.
+
+Since it's harmless to explicitly add the `typename` here, go ahead and
+do so to make life less painful.
+
+Bug: none
+Change-Id: I97a125a6ac9fa21fa15723888ca00790cc4fb4ee
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5957255
+Reviewed-by: Anton Bikineev <bikineev@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Peter Kasting <pkasting@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#96791}
+
+diff --git a/include/v8-internal.h b/include/v8-internal.h
+index a13db2bd74ad4b412cf8bd067c7b25c2acb1bcb8..99099fb1bb617014365b1ba3eaf4bd99d6eb6d4b 100644
+--- a/include/v8-internal.h
++++ b/include/v8-internal.h
+@@ -1430,7 +1430,7 @@ struct MaybeDefineIteratorConcept {};
+ template <typename Iterator>
+ struct MaybeDefineIteratorConcept<
+     Iterator, std::enable_if_t<kHaveIteratorConcept<Iterator>>> {
+-  using iterator_concept = Iterator::iterator_concept;
++  using iterator_concept = typename Iterator::iterator_concept;
+ };
+ // Otherwise fall back to `std::iterator_traits<Iterator>` if possible.
+ template <typename Iterator>
+@@ -1443,7 +1443,8 @@ struct MaybeDefineIteratorConcept<
+   // TODO(pkasting): Add this unconditionally after dropping support for old
+   // libstdc++ versions.
+ #if __has_include(<ranges>)
+-  using iterator_concept = std::iterator_traits<Iterator>::iterator_concept;
++  using iterator_concept =
++      typename std::iterator_traits<Iterator>::iterator_concept;
+ #endif
+ };
+ 
