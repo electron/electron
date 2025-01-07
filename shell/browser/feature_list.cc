@@ -43,9 +43,6 @@ void InitializeFeatureList() {
 
 #if BUILDFLAG(IS_WIN)
   disable_features +=
-      // Disable async spellchecker suggestions for Windows, which causes
-      // an empty suggestions list to be returned
-      std::string(",") + spellcheck::kWinRetrieveSuggestionsOnlyOnDemand.name +
       // Delayed spellcheck initialization is causing the
       // 'custom dictionary word list API' spec to crash.
       std::string(",") + spellcheck::kWinDelaySpellcheckServiceInit.name;
