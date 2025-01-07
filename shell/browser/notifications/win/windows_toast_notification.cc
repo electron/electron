@@ -66,7 +66,7 @@ namespace {
 constexpr wchar_t kGroup[] = L"Notifications";
 
 void DebugLog(std::string_view log_msg) {
-  if (base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS"))
+  if (electron::debug_notifications)
     LOG(INFO) << log_msg;
 }
 
