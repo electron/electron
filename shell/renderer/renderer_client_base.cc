@@ -239,7 +239,7 @@ void RendererClientBase::RenderThreadStarted() {
                                                      true);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_client_ = CreateExtensionsClient();
+  extensions_client_ = std::make_unique<ElectronExtensionsClient>();
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
   extensions_renderer_client_ =
@@ -564,13 +564,6 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
   else
     return frame->MainWorldScriptContext();
 }
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-std::unique_ptr<extensions::ExtensionsClient>
-RendererClientBase::CreateExtensionsClient() {
-  return std::make_unique<ElectronExtensionsClient>();
-}
-#endif
 
 bool RendererClientBase::IsWebViewFrame(
     v8::Local<v8::Context> context,
