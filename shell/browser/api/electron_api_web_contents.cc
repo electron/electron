@@ -192,6 +192,14 @@
 #include "content/public/browser/plugin_service.h"
 #endif
 
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_factory.h"
+#include "chrome/browser/spellchecker/spellcheck_service.h"
+#include "components/spellcheck/browser/spellcheck_platform.h"
+#include "components/spellcheck/common/spellcheck_common.h"
+#include "components/spellcheck/common/spellcheck_features.h"
+#endif
+
 #if !IS_MAS_BUILD()
 #include "chrome/browser/hang_monitor/hang_crash_dump.h"  // nogncheck
 #endif
@@ -1465,10 +1473,43 @@ void WebContents::RendererResponsive(
 
 bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
                                     const content::ContextMenuParams& params) {
-  Emit("context-menu", std::make_pair(params, &render_frame_host));
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  if (!params.misspelled_word.empty() && spellcheck::UseBrowserSpellChecker()) {
+    SpellcheckService* spellcheck_service =
+        SpellcheckServiceFactory::GetForContext(
+            render_frame_host.GetBrowserContext());
+    if (spellcheck_service) {
+      spellcheck_platform::GetPerLanguageSuggestions(
+          spellcheck_service->platform_spell_checker(), params.misspelled_word,
+          base::BindOnce(&WebContents::OnGetPlatformSuggestionsComplete,
+                         GetWeakPtr(), render_frame_host, params));
+    }
+  } else {
+#endif
+    Emit("context-menu",
+         std::make_tuple(params, &render_frame_host,
+                         std::optional<std::vector<std::u16string>>{}));
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  }
+#endif
 
   return true;
 }
+
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+void WebContents::OnGetPlatformSuggestionsComplete(
+    const content::RenderFrameHost& render_frame_host,
+    const content::ContextMenuParams& params,
+    const spellcheck::PerLanguageSuggestions&
+        platform_per_language_suggestions) {
+  std::vector<std::u16string> combined_suggestions;
+  spellcheck::FillSuggestions(platform_per_language_suggestions,
+                              &combined_suggestions);
+  Emit("context-menu",
+       std::make_tuple(params, &render_frame_host,
+                       std::make_optional(combined_suggestions)));
+}
+#endif
 
 void WebContents::FindReply(content::WebContents* web_contents,
                             int request_id,

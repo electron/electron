@@ -55,6 +55,10 @@ class ScriptExecutor;
 }
 #endif
 
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "components/spellcheck/common/spellcheck_common.h"
+#endif
+
 namespace blink {
 struct DeviceEmulationParams;
 // enum class PermissionType;
@@ -794,6 +798,14 @@ class WebContents final : public ExclusiveAccessContext,
   void SetHtmlApiFullscreen(bool enter_fullscreen);
   // Update the html fullscreen flag in both browser and renderer.
   void UpdateHtmlApiFullscreen(bool fullscreen);
+
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  void OnGetPlatformSuggestionsComplete(
+      const content::RenderFrameHost& render_frame_host,
+      const content::ContextMenuParams& params,
+      const spellcheck::PerLanguageSuggestions&
+          platform_per_language_suggestions);
+#endif
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
