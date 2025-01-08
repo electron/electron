@@ -142,3 +142,4 @@ cherry-pick-923797bac925.patch
 cherry-pick-e699ac35ac6c.patch
 ui_add_missing_shortcut_text_for_vkey_command_on_linux.patch
 wayland_support_outgoing_dnd_sessions_with_no_offered_mime_types.patch
+cherry-pick-f3300abe2fcd.patch
