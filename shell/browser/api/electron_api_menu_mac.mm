@@ -63,8 +63,8 @@ void MenuMac::PopupAt(BaseWindow* window,
     return;
 
   base::WeakPtr<WebFrameMain> weak_frame;
-  if (frame) {
-    weak_frame = frame->GetWeakPtr();
+  if (frame && frame.value()) {
+    weak_frame = frame.value()->GetWeakPtr();
   }
 
   // Make sure the Menu object would not be garbage-collected until the callback
