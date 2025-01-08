@@ -242,7 +242,7 @@ void RendererClientBase::RenderThreadStarted() {
                                                      true);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_client_.reset(CreateExtensionsClient());
+  extensions_client_ = CreateExtensionsClient();
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
   extensions_renderer_client_ =
@@ -569,8 +569,9 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
-  return new ElectronExtensionsClient;
+std::unique_ptr<extensions::ExtensionsClient>
+RendererClientBase::CreateExtensionsClient() {
+  return std::make_unique<ElectronExtensionsClient>();
 }
 #endif
 
