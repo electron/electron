@@ -279,25 +279,33 @@ security-conscious developers might want to assume the very opposite.
 #### How?
 
 ```js title='main.js (Main Process)'
-const { session } = require('electron')
+const { app, session } = require('electron')
 const { URL } = require('url')
 
-session
-  .fromPartition('some-partition')
-  .setPermissionRequestHandler((webContents, permission, callback) => {
-    const parsedUrl = new URL(webContents.getURL())
+app.whenReady().then(() => { 
+  // Your function responsible for creating the BrowserWindow and loading your web application
+  createWindow()
+}).then(() => {
+  session.defaultSession.webRequest
+    .setPermissionRequestHandler((webContents, permission, callback) => {
+      const parsedUrl = new URL(webContents.getURL())
 
-    if (permission === 'notifications') {
-      // Approves the permissions request
-      callback(true)
-    }
+      if (permission === 'notifications') {
+        // Approves the permissions request
+        callback(true)
+        return
+      }
 
-    // Verify URL
-    if (parsedUrl.protocol !== 'https:' || parsedUrl.host !== 'example.com') {
-      // Denies the permissions request
-      return callback(false)
-    }
-  })
+      // Verify URL
+      if (parsedUrl.protocol !== 'https:' || parsedUrl.host !== 'example.com') {
+        // Denies the permissions request
+        callback(false)
+        return
+      }
+
+      // Default is deny
+    })
+})
 ```
 
 ### 6. Do not disable `webSecurity`
@@ -378,14 +386,21 @@ which can be set using Electron's
 handler:
 
 ```js title='main.js (Main Process)'
-const { session } = require('electron')
+const { app, session } = require('electron')
 
-session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-  callback({
-    responseHeaders: {
-      ...details.responseHeaders,
-      'Content-Security-Policy': ['default-src \'none\'']
-    }
+app.whenReady().then(() => {
+  // Your function responsible for creating the BrowserWindow and loading your web application
+  createWindow()
+}).then(() => {
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': ["default-src 'none'"]
+        // Multiple policies are provided like this, going from specific to general
+        // 'Content-Security-Policy': ["img-src 'self'; script-src 'self' https://apis.example.com; default-src 'none'"]
+      }
+    })
   })
 })
 ```
