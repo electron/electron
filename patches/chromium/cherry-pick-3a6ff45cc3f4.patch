@@ -1,0 +1,52 @@
+From 3a6ff45cc3f48a359772f81c512c512b4f2d2643 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Sat, 14 Dec 2024 11:06:00 -0800
+Subject: [PATCH] [M130] Prevent ImageData from being reclaimed while in use
+
+Cherry-picked from:
+  https://chromium-review.googlesource.com/c/chromium/src/+/5990752
+
+Bug: chromium:368222741
+Change-Id: If830b19287fd7c4aa07137044f23a14f8ce6912d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6093379
+Reviewed-by: Prudhvikumar Bommana <pbommana@google.com>
+Owners-Override: Prudhvikumar Bommana <pbommana@google.com>
+Commit-Queue: Prudhvikumar Bommana <pbommana@google.com>
+Cr-Commit-Position: refs/branch-heads/6723@{#2713}
+Cr-Branched-From: 985f2961df230630f9cbd75bd6fe463009855a11-refs/heads/main@{#1356013}
+---
+
+diff --git a/cc/tiles/gpu_image_decode_cache.cc b/cc/tiles/gpu_image_decode_cache.cc
+index df1d24b..39fa3ff 100644
+--- a/cc/tiles/gpu_image_decode_cache.cc
++++ b/cc/tiles/gpu_image_decode_cache.cc
+@@ -2401,6 +2401,9 @@
+ 
+   image_data->decode.ResetData();
+ 
++  // Prevent image_data from being deleted while lock is not held.
++  scoped_refptr<ImageData> image_data_holder(image_data);
++
+   // Decode the image into `aux_image_data` while the lock is not held.
+   DecodedAuxImageData aux_image_data[kAuxImageCount];
+   {
+@@ -2728,6 +2731,9 @@
+   sk_sp<SkImage> uploaded_v_image =
+       image_data->decode.image(2, AuxImage::kDefault);
+ 
++  // Prevent image_data from being deleted while lock is not held.
++  scoped_refptr<ImageData> image_data_holder(image_data);
++
+   // For kGpu, we upload and color convert (if necessary).
+   if (image_data->mode == DecodedDataMode::kGpu) {
+     DCHECK(!use_transfer_cache_);
+@@ -2815,6 +2821,9 @@
+   DCHECK(!use_transfer_cache_);
+   DCHECK(!image_data->info.yuva.has_value());
+ 
++  // Prevent image_data from being deleted while lock is not held.
++  scoped_refptr<ImageData> image_data_holder(image_data);
++
+   // RGBX decoding is below.
+   // For kGpu, we upload and color convert (if necessary).
+   if (image_data->mode == DecodedDataMode::kGpu) {
