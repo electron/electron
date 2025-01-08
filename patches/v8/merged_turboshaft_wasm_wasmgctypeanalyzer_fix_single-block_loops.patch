@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Mon, 16 Dec 2024 20:41:57 +0100
+Subject: Merged: [turboshaft][wasm] WasmGCTypeAnalyzer: Fix single-block loops
+ properly
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+While https://crrev.com/c/6087921 fixed a bug where the type in the
+loop header revisit was reflecting "older" knowledge, it didn't address
+the general issue of loop phis dependencies in single block loops where
+it might require many iterations until all type information has
+stabilized.
+
+The fix linked above also introduce too specific DCHECKs, as even
+outside of single-block loops we can end up with phis where a phi input
+appears in the same block before the phi itself.
+The binaryen fuzzer found the following pattern:
+  v113 = Phi(v26, v113)
+  v114 = Phi(v26, v113)
+
+In follow-up changes it should be ensured that the useless phi v113
+doesn't get emitted, then v114 wouldn't have that issue (and it could
+also be removed.)
+
+(cherry picked from commit c84e01e92bfd61d29541c59e378b9a15ba6fc891)
+
+Fixed: 383356864
+Bug: 383814042
+Change-Id: I222dc493bf0a2613d14ebb7df2bdeca931c8daa6
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6097772
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Eva Herencsárová <evih@chromium.org>
+Reviewed-by: Eva Herencsárová <evih@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.0@{#47}
+Cr-Branched-From: 4be854bd71ea878a25b236a27afcecffa2e29360-refs/heads/13.0.245@{#1}
+Cr-Branched-From: 1f5183f7ad6cca21029fd60653d075730c644432-refs/heads/main@{#96103}
+
+diff --git a/src/compiler/turboshaft/wasm-gc-typed-optimization-reducer.cc b/src/compiler/turboshaft/wasm-gc-typed-optimization-reducer.cc
+index 0a9cfb178f7a0acb2228fe7e8e943a65a95f672a..eae36b35e0e04242b2ac6f7e017127aa38440f93 100644
+--- a/src/compiler/turboshaft/wasm-gc-typed-optimization-reducer.cc
++++ b/src/compiler/turboshaft/wasm-gc-typed-optimization-reducer.cc
+@@ -45,9 +45,23 @@ void WasmGCTypeAnalyzer::Run() {
+         // defines more precise types than the previous iteration).
+         if (needs_revisit) {
+           block_to_snapshot_[loop_header.index()] = MaybeSnapshot(snapshot);
+-          // This will push the successors of the loop header to the iterator
+-          // stack, so the loop body will be visited in the next iteration.
+-          iterator.MarkLoopForRevisitSkipHeader();
++          if (block.index() != loop_header.index()) {
++            // This will push the successors of the loop header to the iterator
++            // stack, so the loop body will be visited in the next iteration.
++            iterator.MarkLoopForRevisitSkipHeader();
++          } else {
++            // A single-block loop doesn't have any successors which would be
++            // re-evaluated and which might trigger another re-evaluation of the
++            // loop header.
++            // TODO(mliedtke): This is not a great design: We don't just
++            // schedule revisiting the loop header but afterwards we revisit it
++            // once again to evaluate whether we need to revisit it more times,
++            // so for single block loops the revisitation count will always be a
++            // multiple of 2. While this is inefficient, single-block loops are
++            // rare and are either endless loops or need to trigger an exception
++            // (e.g. a wasm trap) to terminate.
++            iterator.MarkLoopForRevisit();
++          }
+         }
+       }
+     }
+@@ -267,12 +281,9 @@ wasm::ValueType WasmGCTypeAnalyzer::GetTypeForPhiInput(const PhiOp& phi,
+   if (current_block_->begin().id() <= input.id() && input.id() < phi_id.id()) {
+     // Phi instructions have to be at the beginning of the block, so this can
+     // only happen for inputs that are also phis. Furthermore, this is only
+-    // possible in loop headers of loops with a single block (endless loops) and
+-    // only for the backedge-input.
++    // possible in loop headers of loops and only for the backedge-input.
+     DCHECK(graph_.Get(input).Is<PhiOp>());
+     DCHECK(current_block_->IsLoop());
+-    DCHECK(current_block_->HasBackedge(graph_));
+-    DCHECK_EQ(current_block_->LastPredecessor(), current_block_);
+     DCHECK_EQ(input_index, 1);
+     return types_table_.Get(input);
+   }
