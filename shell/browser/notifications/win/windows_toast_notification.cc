@@ -13,7 +13,6 @@
 #include <shlobj.h>
 #include <wrl\wrappers\corewrappers.h>
 
-#include "base/environment.h"
 #include "base/hash/hash.h"
 #include "base/logging.h"
 #include "base/strings/strcat.h"

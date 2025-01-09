@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/hash/md5.h"
 #include "base/logging.h"
