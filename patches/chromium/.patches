@@ -143,4 +143,6 @@ m126-lts_don_t_perform_pseudo-element_ident_parsing_on_non-ascii.patch
 m130_extensions_serviceworker_skip_worker_for_isolated_world.patch
 cherry-pick-923797bac925.patch
 cherry-pick-e699ac35ac6c.patch
+cherry-pick-3a6ff45cc3f4.patch
+cherry-pick-a51e7ebb7663.patch
 cherry-pick-f3300abe2fcd.patch
