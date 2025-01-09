@@ -1,0 +1,65 @@
+From 0d3c44362eeaf34833df66ab035e2735247987be Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Wed, 18 Dec 2024 12:14:14 +0100
+Subject: [PATCH] Merged: [wasm][arm][tail-call] Free scratch register earlier
+
+In Liftoff's PrepareTailCall, we kept the UseScratchRegisterScope open
+for longer than necessary. Close the scope earlier to ensure that we
+don't run out of scratch registers in the last "sub" instruction if it
+needs one.
+
+R=clemensb@chromium.org
+
+Fixed: 384565015
+(cherry picked from commit 7c9e628fd07a457635db098483f7a956ecfa385a)
+
+Change-Id: I0100569d5276aa9188ccbc3c7ee409a9dd49be31
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6148448
+Reviewed-by: Daniel Lehmann <dlehmann@chromium.org>
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.0@{#49}
+Cr-Branched-From: 4be854bd71ea878a25b236a27afcecffa2e29360-refs/heads/13.0.245@{#1}
+Cr-Branched-From: 1f5183f7ad6cca21029fd60653d075730c644432-refs/heads/main@{#96103}
+---
+
+diff --git a/src/wasm/baseline/arm/liftoff-assembler-arm-inl.h b/src/wasm/baseline/arm/liftoff-assembler-arm-inl.h
+index 99df0d9..30069c7 100644
+--- a/src/wasm/baseline/arm/liftoff-assembler-arm-inl.h
++++ b/src/wasm/baseline/arm/liftoff-assembler-arm-inl.h
+@@ -498,21 +498,23 @@
+ 
+ void LiftoffAssembler::PrepareTailCall(int num_callee_stack_params,
+                                        int stack_param_delta) {
+-  UseScratchRegisterScope temps(this);
+-  Register scratch = temps.Acquire();
++  {
++    UseScratchRegisterScope temps(this);
++    Register scratch = temps.Acquire();
+ 
+-  // Push the return address and frame pointer to complete the stack frame.
+-  sub(sp, sp, Operand(8));
+-  ldr(scratch, MemOperand(fp, 4));
+-  str(scratch, MemOperand(sp, 4));
+-  ldr(scratch, MemOperand(fp, 0));
+-  str(scratch, MemOperand(sp, 0));
++    // Push the return address and frame pointer to complete the stack frame.
++    sub(sp, sp, Operand(8));
++    ldr(scratch, MemOperand(fp, 4));
++    str(scratch, MemOperand(sp, 4));
++    ldr(scratch, MemOperand(fp, 0));
++    str(scratch, MemOperand(sp, 0));
+ 
+-  // Shift the whole frame upwards.
+-  int slot_count = num_callee_stack_params + 2;
+-  for (int i = slot_count - 1; i >= 0; --i) {
+-    ldr(scratch, MemOperand(sp, i * 4));
+-    str(scratch, MemOperand(fp, (i - stack_param_delta) * 4));
++    // Shift the whole frame upwards.
++    int slot_count = num_callee_stack_params + 2;
++    for (int i = slot_count - 1; i >= 0; --i) {
++      ldr(scratch, MemOperand(sp, i * 4));
++      str(scratch, MemOperand(fp, (i - stack_param_delta) * 4));
++    }
+   }
+ 
+   // Set the new stack and frame pointer.
