@@ -1,0 +1,95 @@
+From aad648bd2af9815d0c48eeb78cbf3d8e6471d094 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Thu, 05 Dec 2024 16:03:33 +0100
+Subject: [PATCH] Merged: [maglev] Avoid retagging loop phi backedges too early
+
+When we decide that a loop phi should remain tagged, we call
+EnsurePhiInputsTagged to ensures that it only has tagged inputs, which
+calls EnsurePhiTagged, which might cause retagging of any untagged
+phi it has as input.
+
+In order to avoid retagging multiple times the same Phi, we have a
+SnaphotTable (`phi_taggings_`), which records existing tagging in the
+predecessors, and in which EnsurePhiTagged looks to avoid creating
+new retagging nodes. For loop phis, the backedge predecessor won't
+have an entry yet in this SnapshotTable (since we only visit loops
+once, this has to be the first time we visit the header and thus
+we can't have already visited the backedge block), and we should
+thus not call EnsurePhiTagged on the backedge.
+
+Note that the backedge input will anyways be properly tagged when
+FixLoopPhisBackedge is later called from the JumpLoop backedge.
+
+Fixed: chromium:382190919
+(cherry picked from commit e4ecfc909687511aeb20b88ce6ae2a7a1a80afe5)
+
+Change-Id: Ib24f311cb443eabe278f537c00bbc3274bf82415
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6084686
+Auto-Submit: Olivier Flückiger <olivf@chromium.org>
+Commit-Queue: Olivier Flückiger <olivf@chromium.org>
+Commit-Queue: Camillo Bruni <cbruni@chromium.org>
+Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.0@{#41}
+Cr-Branched-From: 4be854bd71ea878a25b236a27afcecffa2e29360-refs/heads/13.0.245@{#1}
+Cr-Branched-From: 1f5183f7ad6cca21029fd60653d075730c644432-refs/heads/main@{#96103}
+---
+
+diff --git a/src/maglev/maglev-phi-representation-selector.cc b/src/maglev/maglev-phi-representation-selector.cc
+index c03974e..b4d913d 100644
+--- a/src/maglev/maglev-phi-representation-selector.cc
++++ b/src/maglev/maglev-phi-representation-selector.cc
+@@ -334,7 +334,8 @@
+   // should be tagged. We'll thus insert tagging operation on the untagged phi
+   // inputs of {phi}.
+ 
+-  for (int i = 0; i < phi->input_count(); i++) {
++  const int skip_backedge = phi->is_loop_phi() ? 1 : 0;
++  for (int i = 0; i < phi->input_count() - skip_backedge; i++) {
+     ValueNode* input = phi->input(i).node();
+     if (Phi* phi_input = input->TryCast<Phi>()) {
+       phi->change_input(i, EnsurePhiTagged(phi_input, phi->predecessor_at(i),
+diff --git a/test/mjsunit/maglev/regress-382190919.js b/test/mjsunit/maglev/regress-382190919.js
+new file mode 100644
+index 0000000..773f442
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-382190919.js
+@@ -0,0 +1,39 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --no-maglev-loop-peeling
++
++function g() { }
++%NeverOptimizeFunction(g);
++
++function foo(b) {
++  let phi1 = 0;
++  for (let i = 0; i < 10; i++) {
++    phi1++; // Int32 use so that {phi1} gets untagged.
++  }
++
++  let phi2 = undefined; // Not untaggable.
++  let j = 0;
++
++  if (b) {
++    g(phi1); // Triggering retagging of {phi1}.
++  }
++
++  // Nothing between the `if` and the loop header, so that the loop header ends
++  // up having 2 incoming forward edges.
++
++  for (; j < 5; j++) {
++    phi2 = phi1; // New retagging of {phi1} since previous one is not available
++                 // in all predecessors.
++  }
++
++  return phi2;
++}
++
++%PrepareFunctionForOptimization(foo);
++foo(true);
++foo(false);
++
++%OptimizeMaglevOnNextCall(foo);
++foo(true);
