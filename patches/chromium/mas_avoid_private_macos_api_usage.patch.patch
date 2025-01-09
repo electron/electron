@@ -174,10 +174,10 @@ index 94a028be3c315edc0056408ab9ab41b6b001a1c1..abf9003bc71506d389ff77dc708c8971
  
  }  // namespace base
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index c4df04713a7f76c2ff50c1d2bc750e18bb1865e0..0392602987d99b4e5d776408e75ea605fe6550c4 100644
+index c85da95a847384311429febab48fd10c8f8e68f4..d3b18d08a74e88929066fc5156bbf72b3b443950 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -48,6 +48,7 @@ component("os_crypt") {
+@@ -47,6 +47,7 @@ component("os_crypt") {
        "os_crypt_mac.mm",
      ]
      deps += [ "//crypto:mock_apple_keychain" ]
