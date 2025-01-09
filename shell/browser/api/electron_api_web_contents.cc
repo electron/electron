@@ -1482,7 +1482,7 @@ bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
       spellcheck_platform::GetPerLanguageSuggestions(
           spellcheck_service->platform_spell_checker(), params.misspelled_word,
           base::BindOnce(&WebContents::OnGetPlatformSuggestionsComplete,
-                         GetWeakPtr(), render_frame_host, params));
+                         GetWeakPtr(), std::cref(render_frame_host), params));
     }
   } else {
 #endif
