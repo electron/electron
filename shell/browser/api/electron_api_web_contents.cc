@@ -1482,7 +1482,7 @@ bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
       spellcheck_platform::GetPerLanguageSuggestions(
           spellcheck_service->platform_spell_checker(), params.misspelled_word,
           base::BindOnce(&WebContents::OnGetPlatformSuggestionsComplete,
-                         GetWeakPtr(), std::cref(render_frame_host), params));
+                         GetWeakPtr(), std::ref(render_frame_host), params));
     }
   } else {
 #endif
@@ -1498,7 +1498,7 @@ bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
 
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 void WebContents::OnGetPlatformSuggestionsComplete(
-    const content::RenderFrameHost& render_frame_host,
+    content::RenderFrameHost& render_frame_host,
     const content::ContextMenuParams& params,
     const spellcheck::PerLanguageSuggestions&
         platform_per_language_suggestions) {

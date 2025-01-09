@@ -801,7 +801,7 @@ class WebContents final : public ExclusiveAccessContext,
 
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   void OnGetPlatformSuggestionsComplete(
-      const content::RenderFrameHost& render_frame_host,
+      content::RenderFrameHost& render_frame_host,
       const content::ContextMenuParams& params,
       const spellcheck::PerLanguageSuggestions&
           platform_per_language_suggestions);
