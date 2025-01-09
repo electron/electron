@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: James Price <jrprice@google.com>
 Date: Wed, 20 Nov 2024 19:06:01 +0000
-Subject: [tint] Validate layout constraints for all address spaces
+Subject: Validate layout constraints for all address spaces
 
 The WGSL spec has a non-normative note that the layout constraints
 should be validated for all non-host-shareable address spaces, using

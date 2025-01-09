@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: James Price <jrprice@google.com>
 Date: Wed, 20 Nov 2024 22:41:04 +0000
-Subject: [msl] Use packed_vec3 for workgroup storage
+Subject: Use packed_vec3 for workgroup storage
 
 This makes sure that the threadgroup allocation sizes that Tint
 reflects to Dawn match the sizes of the types used in the generated

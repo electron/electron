@@ -1,7 +1,10 @@
-From aad648bd2af9815d0c48eeb78cbf3d8e6471d094 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Darius Mercadier <dmercadier@chromium.org>
-Date: Thu, 05 Dec 2024 16:03:33 +0100
-Subject: [PATCH] Merged: [maglev] Avoid retagging loop phi backedges too early
+Date: Thu, 5 Dec 2024 16:03:33 +0100
+Subject: Merged: [maglev] Avoid retagging loop phi backedges too early
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 When we decide that a loop phi should remain tagged, we call
 EnsurePhiInputsTagged to ensures that it only has tagged inputs, which
@@ -32,13 +35,12 @@ Reviewed-by: Camillo Bruni <cbruni@chromium.org>
 Cr-Commit-Position: refs/branch-heads/13.0@{#41}
 Cr-Branched-From: 4be854bd71ea878a25b236a27afcecffa2e29360-refs/heads/13.0.245@{#1}
 Cr-Branched-From: 1f5183f7ad6cca21029fd60653d075730c644432-refs/heads/main@{#96103}
----
 
 diff --git a/src/maglev/maglev-phi-representation-selector.cc b/src/maglev/maglev-phi-representation-selector.cc
-index c03974e..b4d913d 100644
+index 8d6aa0e4ff3be654ca32c824a6e076885092a5cc..29bbaf417e668fa906f05ba9a269b9f6446ef27e 100644
 --- a/src/maglev/maglev-phi-representation-selector.cc
 +++ b/src/maglev/maglev-phi-representation-selector.cc
-@@ -334,7 +334,8 @@
+@@ -329,7 +329,8 @@ void MaglevPhiRepresentationSelector::EnsurePhiInputsTagged(Phi* phi) {
    // should be tagged. We'll thus insert tagging operation on the untagged phi
    // inputs of {phi}.
  
@@ -50,7 +52,7 @@ index c03974e..b4d913d 100644
        phi->change_input(i, EnsurePhiTagged(phi_input, phi->predecessor_at(i),
 diff --git a/test/mjsunit/maglev/regress-382190919.js b/test/mjsunit/maglev/regress-382190919.js
 new file mode 100644
-index 0000000..773f442
+index 0000000000000000000000000000000000000000..773f442cb98b914328cdd6e24a8eca1ef6d8a9d6
 --- /dev/null
 +++ b/test/mjsunit/maglev/regress-382190919.js
 @@ -0,0 +1,39 @@
