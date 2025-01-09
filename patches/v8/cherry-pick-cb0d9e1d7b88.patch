@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Olivier=20Fl=C3=BCckiger?= <olivf@chromium.org>
+Date: Fri, 13 Dec 2024 13:19:30 +0100
+Subject: Merged: [ic] fix Object.assign clearing object hashes
+
+The Object.assign fastcase should not override the hash of the to
+object.
+
+Bug: 383647255
+(cherry picked from commit 357d0dd4bc7f64eb81cdf49c5cf3699cf151909d)
+
+Change-Id: I2bbf10614d7997a396800cef33144875309010d9
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6097572
+Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.0@{#43}
+Cr-Branched-From: 4be854bd71ea878a25b236a27afcecffa2e29360-refs/heads/13.0.245@{#1}
+Cr-Branched-From: 1f5183f7ad6cca21029fd60653d075730c644432-refs/heads/main@{#96103}
+
+diff --git a/src/builtins/builtins-object-gen.cc b/src/builtins/builtins-object-gen.cc
+index d5f2cd711ab4b5774bfd62a88df874e929561402..4cda7f415fafa03f5a8f3e37ddbabb3029c64097 100644
+--- a/src/builtins/builtins-object-gen.cc
++++ b/src/builtins/builtins-object-gen.cc
+@@ -486,6 +486,13 @@ TF_BUILTIN(ObjectAssign, ObjectBuiltinsAssembler) {
+     GotoIfNot(TaggedEqual(LoadElements(CAST(to)), EmptyFixedArrayConstant()),
+               &slow_path);
+ 
++    // Ensure the properties field is not used to store a hash.
++    TNode<Object> properties = LoadJSReceiverPropertiesOrHash(to);
++    GotoIf(TaggedIsSmi(properties), &slow_path);
++    CSA_DCHECK(this,
++               Word32Or(TaggedEqual(properties, EmptyFixedArrayConstant()),
++                        IsPropertyArray(CAST(properties))));
++
+     // Check if our particular source->target combination is fast clonable.
+     // E.g., this ensures that we only have fast properties and in general that
+     // the binary layout is compatible for `FastCloneJSObject`.
