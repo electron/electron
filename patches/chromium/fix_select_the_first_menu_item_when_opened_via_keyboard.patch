@@ -6,12 +6,12 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 3a406a6489f4254ba364f165c5a636dbb4f1dad6..4180518615b0dfa49ce0998c1ea52e81ec451ede 100644
+index 68d61ad5c27a84e6fcb5b8eabf332eca924b89c1..6c76aa9634024f9d5e63ac0a9ac359cfc5da59ed 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -648,6 +648,14 @@ void MenuController::Run(Widget* parent,
-   // Set the selection, which opens the initial menu.
-   SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+@@ -699,6 +699,14 @@ void MenuController::Run(Widget* parent,
+     SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+   }
  
 +  if (source_type == ui::mojom::MenuSourceType::kKeyboard && context_menu && root->HasSubmenu()) {
 +    // For context menus opened via the keyboard we select the first item by default
@@ -24,7 +24,7 @@ index 3a406a6489f4254ba364f165c5a636dbb4f1dad6..4180518615b0dfa49ce0998c1ea52e81
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2299,19 +2307,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2405,19 +2413,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  

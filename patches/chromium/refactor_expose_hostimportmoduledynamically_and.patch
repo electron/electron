@@ -7,7 +7,7 @@ Subject: refactor: expose HostImportModuleDynamically and
 This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 98da84ea08da05a486651d188c3eb8d14a2002cf..4ce1c044cf70525bd9ab4fee5a94e55017313910 100644
+index 464528ea26471e5e0d834055b2119f9718f2f644..eb8c67dd8e65ca4a15eb5acdfa155d430555d360 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 @@ -637,7 +637,9 @@ bool WasmJSPromiseIntegrationEnabledCallback(v8::Local<v8::Context> context) {
@@ -30,7 +30,7 @@ index 98da84ea08da05a486651d188c3eb8d14a2002cf..4ce1c044cf70525bd9ab4fee5a94e550
                                   v8::Local<v8::Module> module,
                                   v8::Local<v8::Object> meta) {
    v8::Isolate* isolate = context->GetIsolate();
-@@ -758,9 +760,6 @@ std::ostream& operator<<(std::ostream& os, const PrintV8OOM& oom_details) {
+@@ -762,9 +764,6 @@ std::ostream& operator<<(std::ostream& os, const PrintV8OOM& oom_details) {
    return os;
  }
  
@@ -40,7 +40,7 @@ index 98da84ea08da05a486651d188c3eb8d14a2002cf..4ce1c044cf70525bd9ab4fee5a94e550
  void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
    // Set up garbage collection before setting up anything else as V8 may trigger
    // GCs during Blink setup.
-@@ -780,9 +779,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
+@@ -784,9 +783,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
    isolate->SetWasmJSPIEnabledCallback(WasmJSPromiseIntegrationEnabledCallback);
    isolate->SetSharedArrayBufferConstructorEnabledCallback(
        SharedArrayBufferConstructorEnabledCallback);
@@ -49,9 +49,9 @@ index 98da84ea08da05a486651d188c3eb8d14a2002cf..4ce1c044cf70525bd9ab4fee5a94e550
    isolate->SetHostInitializeImportMetaObjectCallback(
 -      HostGetImportMetaProperties);
 +      V8Initializer::HostGetImportMetaProperties);
+   isolate->SetIsJSApiWrapperNativeErrorCallback(IsDOMExceptionWrapper);
    isolate->SetMetricsRecorder(std::make_shared<V8MetricsRecorder>(isolate));
  
- #if BUILDFLAG(IS_WIN)
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
 index be5df8f98c3f7e308d79d43c1811a16c644b6158..5c25a3bb7f04ea74ee8587b158e125f4aa651912 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h

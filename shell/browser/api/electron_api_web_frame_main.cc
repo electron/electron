@@ -362,10 +362,10 @@ base::ProcessId WebFrameMain::OSProcessID() const {
   return base::GetProcId(process_handle);
 }
 
-int WebFrameMain::ProcessID() const {
+int32_t WebFrameMain::ProcessID() const {
   if (!CheckRenderFrame())
     return -1;
-  return render_frame_->GetProcess()->GetID();
+  return render_frame_->GetProcess()->GetID().GetUnsafeValue();
 }
 
 int WebFrameMain::RoutingID() const {

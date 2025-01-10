@@ -311,10 +311,10 @@ index d85a71dde16218bc942245c895666ecf038bcef7..ebfc2bb1006950dcff8e8f8792779c41
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index e7db48a793d59272906eed8b1a7c2932a3822a9f..bc5aa4f37da5fe950847a9b9f26c2fdfb212a417 100644
+index 68f0d2c6a097fb6bf30c5303ed14b98bc5dde1d8..ee080009f75a0b9e07a12f929086008454ef8621 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -329,8 +329,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -328,8 +328,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          break;
        }
  
@@ -332,7 +332,7 @@ index e7db48a793d59272906eed8b1a7c2932a3822a9f..bc5aa4f37da5fe950847a9b9f26c2fdf
          // For the other capturers, when a bug reports the type of capture it's
          // easy enough to determine which capturer was used, but it's a little
          // fuzzier with window capture.
-@@ -346,13 +354,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -345,13 +353,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        }
  #endif  // defined(USE_AURA) || BUILDFLAG(IS_MAC)
  

@@ -186,11 +186,11 @@ class App final : public ElectronBrowserClient::Delegate,
 
   void SetAppPath(const base::FilePath& app_path);
   void ChildProcessLaunched(int process_type,
-                            int pid,
+                            content::ChildProcessId pid,
                             base::ProcessHandle handle,
                             const std::string& service_name = std::string(),
                             const std::string& name = std::string());
-  void ChildProcessDisconnected(int pid);
+  void ChildProcessDisconnected(content::ChildProcessId pid);
 
   void SetAppLogsPath(gin_helper::ErrorThrower thrower,
                       std::optional<base::FilePath> custom_path);
@@ -275,7 +275,9 @@ class App final : public ElectronBrowserClient::Delegate,
   base::FilePath app_path_;
 
   // pid -> electron::ProcessMetric
-  base::flat_map<int, std::unique_ptr<electron::ProcessMetric>> app_metrics_;
+  base::flat_map<content::ChildProcessId,
+                 std::unique_ptr<electron::ProcessMetric>>
+      app_metrics_;
 
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;

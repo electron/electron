@@ -7,10 +7,10 @@ Allows implementing electron::mojom::ElectronPluginInfoHost interface
 which provides plugin details between browser<->renderer.
 
 diff --git a/content/public/common/BUILD.gn b/content/public/common/BUILD.gn
-index b84e3a73036b0bc2b782d35c04359ba401521917..2d8b206a118592f15a93c2a7bcb2c37c80571cd8 100644
+index bfb8b8a712274e7326bbfd0f7c2c8e60106ea135..ce7abdc8dbf30f63694f5f576851a6d6259e3ec0 100644
 --- a/content/public/common/BUILD.gn
 +++ b/content/public/common/BUILD.gn
-@@ -377,6 +377,7 @@ mojom("interfaces") {
+@@ -372,6 +372,7 @@ mojom("interfaces") {
      "//content/common/*",
      "//extensions/common:mojom",
      "//extensions/common:mojom_blink",
