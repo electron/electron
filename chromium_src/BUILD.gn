@@ -219,9 +219,9 @@ static_library("chrome") {
 
   if (is_linux) {
     sources += [
-      "//chrome/browser/extensions/global_shortcut_listener_linux.cc",
-      "//chrome/browser/extensions/global_shortcut_listener_linux.h",
       "//chrome/browser/icon_loader_auralinux.cc",
+      "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc",
+      "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h",
     ]
     sources += [
       "//chrome/browser/ui/views/status_icons/concat_menu_model.cc",
