@@ -399,8 +399,9 @@ content::TtsPlatform* ElectronBrowserClient::GetTtsPlatform() {
   return nullptr;
 }
 
-void ElectronBrowserClient::OverrideWebkitPrefs(
+void ElectronBrowserClient::OverrideWebPreferences(
     content::WebContents* web_contents,
+    content::SiteInstance& main_frame_site,
     blink::web_pref::WebPreferences* prefs) {
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
@@ -434,8 +435,7 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   SetFontDefaults(prefs);
 
   // Custom preferences of guest page.
-  auto* web_preferences = WebContentsPreferences::From(web_contents);
-  if (web_preferences) {
+  if (auto* web_preferences = WebContentsPreferences::From(web_contents)) {
     web_preferences->OverrideWebkitPrefs(prefs, renderer_prefs);
   }
 }
