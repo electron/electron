@@ -29,7 +29,7 @@ StatusIconGtk::StatusIconGtk() : icon_(TakeGObject(gtk_status_icon_new())) {
 
 StatusIconGtk::~StatusIconGtk() = default;
 
-void StatusIconGtk::SetIcon(const gfx::ImageSkia& image) {
+void StatusIconGtk::SetImage(const gfx::ImageSkia& image) {
   if (image.isNull())
     return;
 
@@ -53,7 +53,7 @@ void StatusIconGtk::RefreshPlatformContextMenu() {
 }
 
 void StatusIconGtk::OnSetDelegate() {
-  SetIcon(delegate_->GetImage());
+  SetImage(delegate_->GetImage());
   SetToolTip(delegate_->GetToolTip());
   UpdatePlatformContextMenu(delegate_->GetMenuModel());
   gtk_status_icon_set_visible(icon_, TRUE);

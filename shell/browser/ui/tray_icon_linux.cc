@@ -41,7 +41,7 @@ TrayIconLinux::~TrayIconLinux() = default;
 void TrayIconLinux::SetImage(const gfx::Image& image) {
   image_ = GetBestImageRep(image.AsImageSkia());
   if (auto* status_icon = GetStatusIcon())
-    status_icon->SetIcon(image_);
+    status_icon->SetImage(image_);
 }
 
 void TrayIconLinux::SetToolTip(const std::string& tool_tip) {

@@ -28,7 +28,7 @@ class StatusIconGtk : public ui::StatusIconLinux {
   ~StatusIconGtk() override;
 
   // ui::StatusIconLinux:
-  void SetIcon(const gfx::ImageSkia& image) override;
+  void SetImage(const gfx::ImageSkia& image) override;
   void SetToolTip(const std::u16string& tool_tip) override;
   void UpdatePlatformContextMenu(ui::MenuModel* model) override;
   void RefreshPlatformContextMenu() override;
