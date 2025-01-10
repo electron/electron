@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 04e3441cdc0b3c01187e95900e7a805a65c2231e..1f2bded9105248b7cc06a97d75ca57b6838da355 100644
+index aa2d789b3aec5b333e66e10ac31a60ef159b6407..3f016b16ee35f356887dec82879db26be41718b1 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -211,6 +211,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
+@@ -210,6 +210,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
  NativeTheme::~NativeTheme() = default;
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,10 +26,10 @@ index 04e3441cdc0b3c01187e95900e7a805a65c2231e..1f2bded9105248b7cc06a97d75ca57b6
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 8489d256dd898c92bc77210f4a6239f5eb93b8e0..8d3eb64742948a3f8d04cfa7a585df35a84c8961 100644
+index 4c8e8c2b171fc7181f576d12a48c9706af4e2d04..ef150acdeed57c844616db7b51aa0e6fdfe9b203 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -447,6 +447,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -457,6 +457,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
@@ -53,7 +53,7 @@ index 8489d256dd898c92bc77210f4a6239f5eb93b8e0..8d3eb64742948a3f8d04cfa7a585df35
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -684,6 +701,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -694,6 +711,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
    std::optional<base::TimeDelta> caret_blink_interval_;
    bool use_overlay_scrollbars_ = false;
