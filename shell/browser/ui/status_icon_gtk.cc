@@ -12,6 +12,7 @@
 #include "shell/browser/ui/gtk/menu_gtk.h"
 #include "shell/browser/ui/gtk_util.h"
 #include "ui/gfx/image/image_skia.h"
+#include "ui/gfx/paint_vector_icon.h"
 
 namespace electron {
 
@@ -36,6 +37,10 @@ void StatusIconGtk::SetImage(const gfx::ImageSkia& image) {
   GdkPixbuf* pixbuf = gtk_util::GdkPixbufFromSkBitmap(*image.bitmap());
   gtk_status_icon_set_from_pixbuf(icon_, pixbuf);
   g_object_unref(pixbuf);
+}
+
+void StatusIconGtk::SetIcon(const gfx::VectorIcon& icon) {
+  SetImage(gfx::CreateVectorIcon(icon, SK_ColorBLACK));
 }
 
 void StatusIconGtk::SetToolTip(const std::u16string& tool_tip) {
