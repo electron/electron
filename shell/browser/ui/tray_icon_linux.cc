@@ -60,6 +60,10 @@ const gfx::ImageSkia& TrayIconLinux::GetImage() const {
   return image_;
 }
 
+const gfx::VectorIcon* TrayIconLinux::GetIcon() const {
+  return nullptr;
+}
+
 const std::u16string& TrayIconLinux::GetToolTip() const {
   return tool_tip_;
 }
