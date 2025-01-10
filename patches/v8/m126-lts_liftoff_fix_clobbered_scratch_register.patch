@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Clemens Backes <clemensb@chromium.org>
 Date: Fri, 15 Nov 2024 16:00:15 +0100
-Subject: [M126-LTS][liftoff] Fix clobbered scratch register
+Subject: Fix clobbered scratch register
 
 `GetMemOp` returns an `Operand` which can contain `kScratchRegister`. We
 should hence not clobber that register until after the last use of the
