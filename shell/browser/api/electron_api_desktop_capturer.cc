@@ -265,16 +265,6 @@ void DesktopCapturer::DesktopListListener::OnSourceRemoved() {
   std::move(update_callback_).Run();
 }
 
-void DesktopCapturer::DesktopListListener::OnThumbnailRefresh() {
-    if (have_selection_) {
-      have_selection_ = false;
-
-      std::move(update_callback_).Run();
-  } else {
-    have_thumbnail_ = true;
-  }
-}
-
 void DesktopCapturer::DesktopListListener::OnDelegatedSourceListDismissed() {
   std::move(failure_callback_).Run();
 }
