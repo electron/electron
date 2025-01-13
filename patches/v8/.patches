@@ -9,3 +9,6 @@ cherry-pick-d9893f4856af.patch
 merged_liftoff_fix_clobbered_scratch_register.patch
 cherry-pick-aad648bd2af9.patch
 cherry-pick-cb0d9e1d7b88.patch
+merged_wasm_arm_tail-call_free_scratch_register_earlier.patch
+merged_turboshaft_wasm_wasmgctypeanalyzer_fix_phi_input_for.patch
+merged_turboshaft_wasm_wasmgctypeanalyzer_fix_single-block_loops.patch
