@@ -4,6 +4,13 @@
 
 Process: [Main](../glossary.md#main-process)
 
+> [!NOTE]
+> This API is a subtle variation of [`IpcMain`](ipc-main.md)—targeted for
+> communicating with service workers. For communicating with web frames,
+> consult the `IpcMain` documentation.
+
+<!-- TODO(samuelmaddock): refactor doc gen to allow generics to reduce duplication -->
+
 ### Instance Methods
 
 #### `ipcMainServiceWorker.on(channel, listener)`
