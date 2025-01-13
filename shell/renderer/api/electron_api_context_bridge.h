@@ -43,7 +43,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
      */
     v8::Local<v8::Value> parent_value,
     bool support_dynamic_properties,
-    BridgeErrorTarget error_target);
+    BridgeErrorTarget error_target,
+    context_bridge::ObjectCache* existing_object_cache = nullptr);
 
 }  // namespace electron::api
 

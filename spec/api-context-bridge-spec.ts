@@ -408,6 +408,17 @@ describe('contextBridge', () => {
         expect(result).equal(true);
       });
 
+      it('should proxy function arguments only once', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', (a: any, b: any) => a === b);
+        });
+        const result = await callWithBindings(async (root: any) => {
+          const obj = { foo: 1 };
+          return root.example(obj, obj);
+        });
+        expect(result).to.be.true();
+      });
+
       it('should properly handle errors thrown in proxied functions', async () => {
         await makeBindingWindow(() => {
           contextBridge.exposeInMainWorld('example', () => { throw new Error('oh no'); });
@@ -1364,6 +1375,22 @@ describe('contextBridge', () => {
             });
           });
           await donePromise;
+        });
+
+        it('proxies arguments only once', async () => {
+          await makeBindingWindow(() => {
+            const obj = {};
+            // @ts-ignore
+            globalThis.result = contextBridge.executeInMainWorld({
+              func: (a, b) => a === b,
+              args: [obj, obj]
+            });
+          });
+          const result = await callWithBindings(() => {
+            // @ts-ignore
+            return globalThis.result;
+          }, 999);
+          expect(result).to.be.true();
         });
 
         it('safely clones returned objects', async () => {

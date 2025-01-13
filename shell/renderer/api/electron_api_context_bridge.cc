@@ -149,13 +149,6 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     bool support_dynamic_properties,
     int recursion_depth,
     BridgeErrorTarget error_target);
-v8::MaybeLocal<v8::Value> PassValueToOtherContext(
-    v8::Local<v8::Context> source_context,
-    v8::Local<v8::Context> destination_context,
-    v8::Local<v8::Value> value,
-    v8::Local<v8::Value> parent_value,
-    bool support_dynamic_properties,
-    BridgeErrorTarget error_target);
 
 v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     v8::Local<v8::Context> source_context,
@@ -467,15 +460,20 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     v8::Local<v8::Value> value,
     v8::Local<v8::Value> parent_value,
     bool support_dynamic_properties,
-    BridgeErrorTarget error_target) {
+    BridgeErrorTarget error_target,
+    context_bridge::ObjectCache* existing_object_cache) {
   TRACE_EVENT0("electron", "ContextBridge::PassValueToOtherContext");
-  context_bridge::ObjectCache object_cache;
+
+  context_bridge::ObjectCache local_object_cache;
+  context_bridge::ObjectCache* object_cache =
+      existing_object_cache ? existing_object_cache : &local_object_cache;
+
   const blink::ExecutionContext* source_execution_context =
       blink::ExecutionContext::From(source_context);
   DCHECK(source_execution_context);
   return PassValueToOtherContextInner(
       source_context, source_execution_context, destination_context, value,
-      parent_value, &object_cache, support_dynamic_properties, 0, error_target);
+      parent_value, object_cache, support_dynamic_properties, 0, error_target);
 }
 
 void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
@@ -509,15 +507,18 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
   {
     v8::Context::Scope func_owning_context_scope(func_owning_context);
 
+    // Cache duplicate arguments as the same proxied value.
+    context_bridge::ObjectCache object_cache;
+
     std::vector<v8::Local<v8::Value>> original_args;
     std::vector<v8::Local<v8::Value>> proxied_args;
     args.GetRemaining(&original_args);
 
     for (auto value : original_args) {
-      auto arg = PassValueToOtherContext(calling_context, func_owning_context,
-                                         value, calling_context->Global(),
-                                         support_dynamic_properties,
-                                         BridgeErrorTarget::kSource);
+      auto arg = PassValueToOtherContext(
+          calling_context, func_owning_context, value,
+          calling_context->Global(), support_dynamic_properties,
+          BridgeErrorTarget::kSource, &object_cache);
       if (arg.IsEmpty())
         return;
       proxied_args.push_back(arg.ToLocalChecked());
@@ -1015,6 +1016,9 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
     bool support_dynamic_properties = false;
     uint32_t args_length = args_array.IsEmpty() ? 0 : args_array->Length();
 
+    // Cache duplicate arguments as the same proxied value.
+    context_bridge::ObjectCache object_cache;
+
     for (uint32_t i = 0; i < args_length; ++i) {
       v8::Local<v8::Value> arg;
       if (!args_array->Get(source_context, i).ToLocal(&arg)) {
@@ -1025,7 +1029,8 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
 
       auto proxied_arg = PassValueToOtherContext(
           source_context, target_context, arg, source_context->Global(),
-          support_dynamic_properties, BridgeErrorTarget::kSource);
+          support_dynamic_properties, BridgeErrorTarget::kSource,
+          &object_cache);
       if (proxied_arg.IsEmpty()) {
         gin_helper::ErrorThrower(isolate).ThrowError(
             base::StringPrintf("Failed to proxy argument at index %d", i));
