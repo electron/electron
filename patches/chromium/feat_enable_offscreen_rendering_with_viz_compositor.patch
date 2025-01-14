@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index d1e67270f6b71771a37613c11ebb5119990bbe41..325428e33e445ad696bf09695474d22e21549be3 100644
+index f74231c7cdfbcb7895b6a77a8e434c3b0f43e2b0..95711b3ffbcfc53bcf4cb278e7c41fc9a812a103 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -171,6 +171,8 @@ viz_component("service") {
@@ -117,7 +117,7 @@ index 7fbb05e606fc26364c674c6330b8a5eb9c016fb3..a190a42c2127011ab54aae937a3cab36
    virtual gpu::SharedImageManager* GetSharedImageManager() = 0;
    virtual gpu::SyncPointManager* GetSyncPointManager() = 0;
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 98e50a61cb7d936350eff235d00f79b4734016ca..29d4dacbc168ce3e1a7c90e079040de7bd26771b 100644
+index 91867015698f6cbde6439922bdedec66e6493975..cc670cdb81324dcbd841d10669fab04c8a1fadeb 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -24,6 +24,7 @@
@@ -177,8 +177,8 @@ index 98e50a61cb7d936350eff235d00f79b4734016ca..29d4dacbc168ce3e1a7c90e079040de7
 +#endif
 +
  #if BUILDFLAG(IS_WIN)
-   return CreateSoftwareOutputDeviceWin(surface_handle, &output_device_backing_,
-                                        display_client);
+   HWND child_hwnd;
+   auto device = CreateSoftwareOutputDeviceWin(
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.h b/components/viz/service/display_embedder/output_surface_provider_impl.h
 index e4b46a79560e7698a6400b2ab8a57f38205a8718..3cb2518c6644cf0618f625d981befd466a3dfb2c 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.h
@@ -238,10 +238,10 @@ index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..25c427e337a1bc049cd6977a13c4113085dc9401
+index 0000000000000000000000000000000000000000..d3a04dfd9be25ffda095be1eb2ebad9746a5f01c
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,161 @@
+@@ -0,0 +1,162 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -253,7 +253,6 @@ index 0000000000000000000000000000000000000000..25c427e337a1bc049cd6977a13c41130
 +#include "base/trace_event/trace_event.h"
 +#include "build/build_config.h"
 +#include "components/viz/common/resources/resource_sizes.h"
-+#include "components/viz/service/display_embedder/output_device_backing.h"
 +#include "mojo/public/cpp/system/platform_handle.h"
 +#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
 +#include "skia/ext/platform_canvas.h"
@@ -261,6 +260,7 @@ index 0000000000000000000000000000000000000000..25c427e337a1bc049cd6977a13c41130
 +#include "ui/gfx/skia_util.h"
 +
 +#if BUILDFLAG(IS_WIN)
++#include "components/viz/service/display_embedder/output_device_backing.h"
 +#include "skia/ext/skia_utils_win.h"
 +#include "ui/gfx/gdi_util.h"
 +#include "ui/gfx/win/hwnd_util.h"
@@ -355,7 +355,7 @@ index 0000000000000000000000000000000000000000..25c427e337a1bc049cd6977a13c41130
 +#if defined(WIN32)
 +  canvas_ = skia::CreatePlatformCanvasWithSharedSection(
 +      viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
-+      region.GetPlatformHandle(), skia::CRASH_ON_FAILURE);
++      region.GetPlatformHandle(), 0, skia::CRASH_ON_FAILURE);
 +#else
 +  shm_mapping_ = region.Map();
 +  if (!shm_mapping_.IsValid()) {
@@ -365,7 +365,8 @@ index 0000000000000000000000000000000000000000..25c427e337a1bc049cd6977a13c41130
 +
 +  canvas_ = skia::CreatePlatformCanvasWithPixels(
 +      viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
-+      static_cast<uint8_t*>(shm_mapping_.memory()), skia::CRASH_ON_FAILURE);
++      static_cast<uint8_t*>(shm_mapping_.memory()), 0,
++      skia::CRASH_ON_FAILURE);
 +#endif
 +
 +  // Transfer region ownership to the browser process.
@@ -508,10 +509,10 @@ index 0000000000000000000000000000000000000000..e1a22ee881c0fd679ac2d2d4d11a3c93
 +
 +#endif  // COMPONENTS_VIZ_SERVICE_DISPLAY_EMBEDDER_SOFTWARE_OUTPUT_DEVICE_PROXY_H_
 diff --git a/components/viz/service/display_embedder/software_output_device_win.cc b/components/viz/service/display_embedder/software_output_device_win.cc
-index ed90f0edef90ae52e7990c89c80dc4bb74cd7fb1..898cd9751662bad6e93f4787ba4172287e630114 100644
+index ac6fe5e683c2ab5291c10167b8478a601d44fe85..ddf3d046b9a8cf91fa78be1b04ab65c93dc9c89e 100644
 --- a/components/viz/service/display_embedder/software_output_device_win.cc
 +++ b/components/viz/service/display_embedder/software_output_device_win.cc
-@@ -147,7 +147,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
+@@ -149,7 +149,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
    if (!canvas_)
      return;
  
