@@ -1,3 +1,4 @@
+import '@electron/internal/sandboxed_renderer/pre-init';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import { createPreloadProcessObject, executeSandboxedPreloadScripts } from '@electron/internal/sandboxed_renderer/preload';
@@ -6,27 +7,9 @@ import * as events from 'events';
 import { setImmediate, clearImmediate } from 'timers';
 
 declare const binding: {
-  get: (name: string) => any;
   process: NodeJS.Process;
   createPreloadScript: (src: string) => Function
 };
-
-const { EventEmitter } = events;
-
-process._linkedBinding = binding.get;
-
-const v8Util = process._linkedBinding('electron_common_v8_util');
-// Expose Buffer shim as a hidden value. This is used by C++ code to
-// deserialize Buffer instances sent from browser process.
-v8Util.setHiddenValue(global, 'Buffer', Buffer);
-// The process object created by webpack is not an event emitter, fix it so
-// the API is more compatible with non-sandboxed renderers.
-for (const prop of Object.keys(EventEmitter.prototype) as (keyof typeof process)[]) {
-  if (Object.hasOwn(process, prop)) {
-    delete process[prop];
-  }
-}
-Object.setPrototypeOf(process, EventEmitter.prototype);
 
 const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
 
@@ -58,12 +41,12 @@ const loadableModules = new Map<string, Function>([
 const preloadProcess = createPreloadProcessObject();
 
 // InvokeEmitProcessEvent in ElectronSandboxedRendererClient will look for this
+const v8Util = process._linkedBinding('electron_common_v8_util');
 v8Util.setHiddenValue(global, 'emit-process-event', (event: string) => {
   (process as events.EventEmitter).emit(event);
   (preloadProcess as events.EventEmitter).emit(event);
 });
 
-Object.assign(process, binding.process);
 Object.assign(process, processProps);
 
 Object.assign(preloadProcess, binding.process);
