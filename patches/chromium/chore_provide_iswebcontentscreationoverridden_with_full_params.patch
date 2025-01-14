@@ -141,10 +141,10 @@ index ca72b324bf7c3b81ac94b53f0ff454d2df177950..d60ef3075d126e2bbd50c8469f2bf67c
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index 6da0f39ea7990ed96e9c8148b034cd591ffdf7f1..4ade4aaa36e4e1b3588bdb146f787dd14d9b9e33 100644
+index f2c33e0a67040bf445797c3d09296ee07c1480c0..e9f6c6fb9e562516c876b132ab142a0733e3ca6f 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-@@ -96,8 +96,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+@@ -97,8 +97,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -155,7 +155,7 @@ index 6da0f39ea7990ed96e9c8148b034cd591ffdf7f1..4ade4aaa36e4e1b3588bdb146f787dd1
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index ff8fe40db4e4d2b76c57e4b3a987c6ba13e30b7f..6049f8c69567e60364f212e69cc33cb6a858f6b8 100644
+index be627a347fb9888c978c0e7d11498491e880e301..97293f41a905d9bcc97e0e57b12524d5ba7263ca 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -185,14 +185,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -176,7 +176,7 @@ index ff8fe40db4e4d2b76c57e4b3a987c6ba13e30b7f..6049f8c69567e60364f212e69cc33cb6
                                                                    java_gurl);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index 9484a324478d3fe746a51e645368eb3b602ce91d..0676e60fe7773cfcb22e62abff67a66ef6153128 100644
+index d97d10767fe420f598998e04f4d6429bf9a5f2f8..ee52cd7a3d4738c273c96528adde5bb9de880bdb 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
 @@ -82,8 +82,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3db9896711a47072447bea1becccd689d568580d..f79e5ab68a95229a32f0b2ae158be687a87888b2 100644
+index 73a3138043bd85835d5f5d40da26b9b64a816808..fb78446dcb7293b06c5a10264eacc74c3610838a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4850,8 +4850,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4862,8 +4862,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // TODO(crbug.com/40202416): Support a way for MPArch guests to support this.
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -232,7 +232,7 @@ index 3db9896711a47072447bea1becccd689d568580d..f79e5ab68a95229a32f0b2ae158be687
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 4d2c03d7102d1217d1b436bf17fa9f293239b049..a9849b1b799d0d017050ce56ee9bdbd239324c0b 100644
+index 17933dabfe7818fc815d016b8ca0f314a4c8b953..f2e4a7f7d5f202dec875c1d8149149a6249d260c 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -152,8 +152,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -246,7 +246,7 @@ index 4d2c03d7102d1217d1b436bf17fa9f293239b049..a9849b1b799d0d017050ce56ee9bdbd2
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 826ec370d56989606adc6edbceb35b2bf7f2572c..473cbec053d022653027021847d2abe50d8b5f12 100644
+index f318aa37654d668a95fb2f97b5a85c5786f5407d..8b2740bccd8670cc49a162d510e3deb53a534b14 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -345,8 +345,7 @@ class CONTENT_EXPORT WebContentsDelegate {
@@ -380,7 +380,7 @@ index 1012a909ef1fcae51c218ae519fe7e0db65ab087..127b1ae940bc9313aecb635e2b01bb6f
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 2a4ca917708d51abbceaee6ea4d2cdb39a249dc0..16e3a71d5d9b0dd0b4a8bb94d0f275f38a5cd70f 100644
+index cb9f320fbe3dd53e673325e626655e30db71eebf..baad1b9c834fd947431e7f7d37c8b7eb2e87587f 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -207,8 +207,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {

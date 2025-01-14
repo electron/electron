@@ -11,7 +11,7 @@ counter to the design of globalShortcuts, and so we need to instead
 use `ui::MediaKeysListener`.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener.cc b/chrome/browser/extensions/global_shortcut_listener.cc
-index 8d574cf5817d32d14583013736d38eeec0248243..54888cdb2df9f57042b9ac979d29c84637a7dfc2 100644
+index d85ca38ff6f9ce37ce639f67a5a7c41f4209cc12..6cab15339aa7dbe684001916db573fb8893422f8 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener.cc
 @@ -14,6 +14,7 @@
@@ -22,8 +22,8 @@ index 8d574cf5817d32d14583013736d38eeec0248243..54888cdb2df9f57042b9ac979d29c846
  #include "ui/base/accelerators/accelerator.h"
  #include "ui/base/accelerators/command.h"
  #include "ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h"
-@@ -71,6 +72,22 @@ void GlobalShortcutListener::UnregisterAccelerator(
-   RemoveAccelerator(accelerator);
+@@ -59,6 +60,22 @@ void GlobalShortcutListener::UnregisterAccelerator(
+   global_accelerator_listener_->UnregisterAccelerator(accelerator, observer);
  }
  
 +// static
@@ -44,9 +44,9 @@ index 8d574cf5817d32d14583013736d38eeec0248243..54888cdb2df9f57042b9ac979d29c846
 +
  void GlobalShortcutListener::UnregisterAccelerators(Observer* observer) {
    CHECK(global_accelerator_listener_);
- 
+   global_accelerator_listener_->UnregisterAccelerators(observer);
 diff --git a/chrome/browser/extensions/global_shortcut_listener.h b/chrome/browser/extensions/global_shortcut_listener.h
-index 78804b1a87fe366070d686ef822ec0c9080da467..f0ddcab90243d71a986704d70be39a47047d998e 100644
+index 062b08acc1c7a32f4819542a2ba6b1db1de8cd07..511c023ebce329ba76e1e72fcb42433a33ccff18 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.h
 +++ b/chrome/browser/extensions/global_shortcut_listener.h
 @@ -36,6 +36,8 @@ class GlobalShortcutListener {

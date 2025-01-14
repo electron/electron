@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 24d7eb9b879b1504e27023539814f48382645764..50837e0ac42ab1c3afe95bb5a5175399a8c2c13f 100644
+index a6085be0cf7961ee9ecb1ad5b594ec77646af9c4..8014118a5881510341a51848a65bb4c5f8d63e72 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1030,6 +1030,7 @@ component("base") {
@@ -335,7 +335,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..149de0175c2ec0e41e3ba40caad7019c
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 945b01f2132547fa0f6a97ee4895994c500d1410..864f93f7c4159abc63e1535195fbf9d112558b91 100644
+index d55914779bc097cab8afb144f2c47c001bfa7350..e55db3f550b4c082aa087fbcab6760da237f8471 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -9,6 +9,7 @@
@@ -363,7 +363,7 @@ index 945b01f2132547fa0f6a97ee4895994c500d1410..864f93f7c4159abc63e1535195fbf9d1
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 4f875587289f19b06041c5e8a7f76ab9cba169c9..952febab99656f59efee8c0d267d8f76f9943197 100644
+index 0454bc58a7f89c26042db787dff8f379b2a4e65f..527f0f90498aee1fb31517fa965f1c118f09eaf2 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -26,6 +26,7 @@
@@ -393,7 +393,7 @@ index 4f875587289f19b06041c5e8a7f76ab9cba169c9..952febab99656f59efee8c0d267d8f76
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -157,6 +162,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -158,6 +163,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
  }
  @end
  
@@ -402,7 +402,7 @@ index 4f875587289f19b06041c5e8a7f76ab9cba169c9..952febab99656f59efee8c0d267d8f76
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -184,6 +191,8 @@ - (BOOL)usesCustomDrawing {
+@@ -185,6 +192,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -411,7 +411,7 @@ index 4f875587289f19b06041c5e8a7f76ab9cba169c9..952febab99656f59efee8c0d267d8f76
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -380,6 +389,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -382,6 +391,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -420,7 +420,7 @@ index 4f875587289f19b06041c5e8a7f76ab9cba169c9..952febab99656f59efee8c0d267d8f76
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -391,6 +402,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -393,6 +404,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -430,7 +430,7 @@ index 4f875587289f19b06041c5e8a7f76ab9cba169c9..952febab99656f59efee8c0d267d8f76
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index e02a94bbc7a5332254a313037981c9b345c43dee..b646bd041794c73ae1bdc50930fd45d0c266b5ba 100644
+index 3b8e96fbc7aa4cf1601230e81ff32cf9792be1da..6d8b41ffff28200daec6d554a5b7f1c792693105 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -41,6 +41,7 @@
@@ -455,7 +455,7 @@ index e02a94bbc7a5332254a313037981c9b345c43dee..b646bd041794c73ae1bdc50930fd45d0
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 32a1a1d3da8a9d2caf2ca617bbbfcf9012c01a07..d1e67270f6b71771a37613c11ebb5119990bbe41 100644
+index 29881faeeeafd09efcea13c5bfb1ee2c091fd5be..f74231c7cdfbcb7895b6a77a8e434c3b0f43e2b0 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -381,6 +381,7 @@ viz_component("service") {
@@ -466,7 +466,7 @@ index 32a1a1d3da8a9d2caf2ca617bbbfcf9012c01a07..d1e67270f6b71771a37613c11ebb5119
    }
  
    if (is_android || use_ozone) {
-@@ -666,6 +667,7 @@ viz_source_set("unit_tests") {
+@@ -680,6 +681,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -560,7 +560,7 @@ index 038646bfa3ac442c64380a81bdb1d3043e50c107..33f2bcae6353a527710f05aa03770136
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ba2fd8bb446a65b0e65a9d7e0df76935563ee8c3..a58afc346820fa27deeb8af91f5feb6c5c1939fa 100644
+index d745020d00eae9862fd2d5c89e7a412cdd43b7d3..4d0f7cf33eeeee072afe12741f62427525c7b846 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -327,6 +327,7 @@ source_set("browser") {
@@ -691,10 +691,10 @@ index 08d8189a8887fa29bff99a56c742f14ed8b9fb41..ce263cccaf912ab1b0b73ea14c832229
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 4e886e0444991ae26163d53ebc1a0b9c18b7e496..9dcda56933881bcfc3f088e0606fadf9f83c2714 100644
+index 9c312682be17f1add7e9aa56772c3e1a2e22f98b..5f4362d3c717f24f787ab9298d4f5103442f3073 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -327,6 +327,7 @@ target(link_target_type, "renderer") {
+@@ -329,6 +329,7 @@ target(link_target_type, "renderer") {
      "//ui/surface",
      "//url",
      "//v8",
@@ -773,7 +773,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 2564f6d2f73177c84077a8f4c2f65b1728f2426e..2a790f72386067cb07da88e79e79942a6bfdf392 100644
+index 89d48cc1cc827d9981b91af68ba95498d9063107..702aae59098449b70ff6a8d8a82f3e564c569499 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -647,6 +647,7 @@ static_library("test_support") {
@@ -792,7 +792,7 @@ index 2564f6d2f73177c84077a8f4c2f65b1728f2426e..2a790f72386067cb07da88e79e79942a
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1908,6 +1910,7 @@ test("content_browsertests") {
+@@ -1912,6 +1914,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -800,7 +800,7 @@ index 2564f6d2f73177c84077a8f4c2f65b1728f2426e..2a790f72386067cb07da88e79e79942a
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3190,6 +3193,7 @@ test("content_unittests") {
+@@ -3195,6 +3198,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1840,10 +1840,10 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 469c6beaa15995c4832d4f54c333cb4de6450b27..8b262cccfc27ac4b91d27a200191f65cf24c380b 100644
+index 1aed3dbbf2bc6826eb5271c1db73fa0f4cf78a6c..7fd73e12c1e08c431010f7fb94742e694622ac24 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -715,6 +715,8 @@ component("views") {
+@@ -717,6 +717,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1852,7 +1852,7 @@ index 469c6beaa15995c4832d4f54c333cb4de6450b27..8b262cccfc27ac4b91d27a200191f65c
    }
  
    if (is_win) {
-@@ -1132,6 +1134,8 @@ source_set("test_support") {
+@@ -1134,6 +1136,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  

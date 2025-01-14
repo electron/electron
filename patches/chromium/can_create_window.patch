@@ -21,10 +21,10 @@ index 429e12a6e583f33753e79fd08ba8c327a8c969b7..ca22810494ae4e85242fa2a933315733
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 7ecebb0291c8abe2a7c6f3747f3fa3fc7eaa7fcc..34c4d49bd856a38bd9fc4d22c7a94e807734e2ab 100644
+index f462c6c1cf933b8b268e4d714cbf3820f9997e5f..6e41598b82a7b69a27e700ab17f758b7257c58fc 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4968,6 +4968,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4980,6 +4980,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    SetPartitionedPopinOpenerOnNewWindowIfNeeded(new_contents_impl, params,
                                                 opener);
  
@@ -37,7 +37,7 @@ index 7ecebb0291c8abe2a7c6f3747f3fa3fc7eaa7fcc..34c4d49bd856a38bd9fc4d22c7a94e80
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5009,12 +5015,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5021,12 +5027,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -100,7 +100,7 @@ index 7815862ceee021ac194af0658ef71c0ac69f41c5..9d1f4e3102b381dab71f8e36542434c2
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 2f27fcb0b320d1dcfeb398d34770a9a48ea49915..4d2c03d7102d1217d1b436bf17fa9f293239b049 100644
+index 6375d4c0618e027aa4f784d94ce5893521f37768..17933dabfe7818fc815d016b8ca0f314a4c8b953 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -31,6 +31,17 @@ namespace content {
@@ -122,7 +122,7 @@ index 2f27fcb0b320d1dcfeb398d34770a9a48ea49915..4d2c03d7102d1217d1b436bf17fa9f29
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index f1ef8c59ee4054df802cf4dc527c10975113fafb..826ec370d56989606adc6edbceb35b2bf7f2572c 100644
+index c3acd4321e2c84a0b3b1627cd5ce8f2c07cad40a..f318aa37654d668a95fb2f97b5a85c5786f5407d 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -18,6 +18,7 @@
