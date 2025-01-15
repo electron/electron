@@ -1,14 +1,27 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Keeley Hammond <khammond@slack-corp.com>
-Date: Wed, 21 Aug 2024 19:00:00 -0700
-Subject: feat: make MacOS SCContentSharingPicker work in Electron
+Date: Tue, 14 Jan 2025 15:50:29 -0800
+Subject: feat: allow desktop capturer to return either screen, window or both
+ and make MacOS SCContentSharingPicker work in Electron
 
 This patch is a work in progress that contains assorted changes to make the MacOS SCContentSharingPicker upstream implementation work within Electron. If this comment is still in this patch during PR review, it is not ready for prime time
 
 This patch can be removed after our desktopCapturer is refactored.
 
+diff --git a/chrome/browser/media/webrtc/capture_policy_utils.cc b/chrome/browser/media/webrtc/capture_policy_utils.cc
+index 85320190d406bdd37175ddb5d207d124b278b648..677dfdbc761dcc942b865ed073b16ea7c8a269da 100644
+--- a/chrome/browser/media/webrtc/capture_policy_utils.cc
++++ b/chrome/browser/media/webrtc/capture_policy_utils.cc
+@@ -362,6 +362,7 @@ void FilterMediaList(std::vector<DesktopMediaList::Type>& media_types,
+       media_types, [capture_level](const DesktopMediaList::Type& type) {
+         switch (type) {
+           case DesktopMediaList::Type::kNone:
++            // return capture_level < AllowedScreenCaptureLevel::kDesktop;
+             NOTREACHED();
+           // SameOrigin is more restrictive than just Tabs, so as long as
+           // at least SameOrigin is allowed, these entries should stay.
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 6599311831b638f49658e768fe35e19e9961ef1d..9979651fc2bafa1f363a34b2cd60d4d7219711f0 100644
+index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d2ec9baf3219f4b38db4771a1ca1b3b5fd86dba0 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
 @@ -15,6 +15,7 @@
@@ -23,18 +36,19 @@ index 6599311831b638f49658e768fe35e19e9961ef1d..9979651fc2bafa1f363a34b2cd60d4d7
  void DesktopMediaListBase::Update(UpdateCallback callback, bool refresh_thumbnails) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    DCHECK(sources_.empty());
-+#if BUILDFLAG(IS_MAC)
-+  if (!ShouldUseSCContentSharingPicker()) {
+-  DCHECK(!refresh_callback_);
++  #if BUILDFLAG(IS_MAC)
++   if (!ShouldUseSCContentSharingPicker()) {
 +    DCHECK(!refresh_callback_);
-+  };
-+#else
-   DCHECK(!refresh_callback_);
-+#endif
++   };
++  #else
++    DCHECK(!refresh_callback_);
++  #endif
    refresh_callback_ = std::move(callback);
    Refresh(refresh_thumbnails);
  }
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 95a1c18438619c19a1dd71ca3e6e23af5e0ebacb..68ece50018124992f951557e817a12aa45d65956 100644
+index 0ac8e20073bd2db507e49200fd0b48f8535d666b..dd82cd565c5cb61d5d530d3d67bbbb384772466e 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -46,6 +46,7 @@
@@ -45,27 +59,56 @@ index 95a1c18438619c19a1dd71ca3e6e23af5e0ebacb..68ece50018124992f951557e817a12aa
  #include "components/remote_cocoa/browser/scoped_cg_window_id.h"
  #endif
  
-@@ -545,11 +546,23 @@ NativeDesktopMediaList::Worker::FormatSources(
+@@ -181,14 +182,16 @@ BASE_FEATURE(kWindowCaptureMacV2,
+ 
+ content::DesktopMediaID::Type ConvertToDesktopMediaIDType(
+     DesktopMediaList::Type type) {
++  // LOG(INFO) << "Inside ConvertToDesktopMediaIDType";
+   switch (type) {
+     case DesktopMediaList::Type::kScreen:
+       return content::DesktopMediaID::Type::TYPE_SCREEN;
+     case DesktopMediaList::Type::kWindow:
+       return content::DesktopMediaID::Type::TYPE_WINDOW;
++    case DesktopMediaList::Type::kNone:
++      // return content::DesktopMediaID::Type::TYPE_NONE;
+     case DesktopMediaList::Type::kWebContents:
+     case DesktopMediaList::Type::kCurrentTab:
+-    case DesktopMediaList::Type::kNone:
+       break;
+   }
+   NOTREACHED();
+@@ -532,7 +535,10 @@ NativeDesktopMediaList::Worker::FormatSources(
+   std::vector<SourceDescription> source_descriptions;
+   std::u16string title;
+   for (size_t i = 0; i < sources.size(); ++i) {
++    // LOG(INFO) << "source_type" << source_type;
+     switch (source_type) {
++      // case DesktopMediaID::Type::TYPE_NONE:
++        // continue;
+       case DesktopMediaID::Type::TYPE_SCREEN:
+         // Just in case 'Screen' is inflected depending on the screen number,
+         // use plural formatter.
+@@ -545,11 +551,23 @@ NativeDesktopMediaList::Worker::FormatSources(
          break;
  
        case DesktopMediaID::Type::TYPE_WINDOW:
-+#if BUILDFLAG(IS_MAC)
-+        // If using NativeScreenCapturePickerMac,
-+        // skipping the picker will skip the first window selection.
-+        if (ShouldUseSCContentSharingPicker()) {
-+          title = base::UTF8ToUTF16(sources[i].title);
-+        } else if (sources[i].id == excluded_window_id) {
-+        // Skip the picker dialog window.
-+          continue;
-+        }
-+        title = base::UTF8ToUTF16(sources[i].title);
-+ #else
++      #if BUILDFLAG(IS_MAC)
++              // If using NativeScreenCapturePickerMac,
++              // skipping the picker will skip the first window selection.
++              if (ShouldUseSCContentSharingPicker()) {
++                title = base::UTF8ToUTF16(sources[i].title);
++              } else if (sources[i].id == excluded_window_id) {
++              // Skip the picker dialog window.
++                continue;
++              }
++              title = base::UTF8ToUTF16(sources[i].title);
++      #else
          // Skip the picker dialog window.
          if (sources[i].id == excluded_window_id) {
            continue;
          }
          title = base::UTF8ToUTF16(sources[i].title);
-+#endif
++      #endif
          break;
  
        default:
@@ -84,10 +127,10 @@ index 12a74f8f32cc00a7f3d7802865ae4b309961341d..acbcfb08ae8c44e24a04b32609628942
  bool ShouldUseThumbnailCapturerMac(DesktopMediaList::Type type);
  
 diff --git a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
-index 2215bf4589342fa4619fb58ec3e21ff5ef3ed3b4..f674a907a96a7a76a514d798779aa726441cebc9 100644
+index 47a5ad2b7e2bc86a614488fd3fe85da1e3e2d6f2..7f11a73e8a109c3bdf689d510850e82902305e6e 100644
 --- a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
 +++ b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
-@@ -1006,6 +1006,8 @@ void OnCapturedFrame(base::apple::ScopedCFTypeRef<CGImageRef> image,
+@@ -761,6 +761,8 @@ void OnCapturedFrame(base::apple::ScopedCFTypeRef<CGImageRef> image,
                                        source_id);
  }
  
@@ -95,8 +138,8 @@ index 2215bf4589342fa4619fb58ec3e21ff5ef3ed3b4..f674a907a96a7a76a514d798779aa726
 +
  bool ShouldUseSCContentSharingPicker() {
    if (@available(macOS 15.0, *)) {
-     if (base::FeatureList::IsEnabled(kUseSCContentSharingPicker)) {
-@@ -1020,8 +1022,6 @@ bool ShouldUseSCContentSharingPicker() {
+     if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
+@@ -770,8 +772,6 @@ bool ShouldUseSCContentSharingPicker() {
    return false;
  }
  
@@ -106,23 +149,32 @@ index 2215bf4589342fa4619fb58ec3e21ff5ef3ed3b4..f674a907a96a7a76a514d798779aa726
    // There was a bug in ScreenCaptureKit that was fixed in 14.4,
    // see b/40076027.
 diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-index b34d8402c213329620683e41588c0411d45124fb..1b8e95f476a032f60ea7e578fac480344924ab50 100644
+index f3dbdd0db5f6c3d07b600f3dfa3267d0a5a57b81..c61e1c9d4a67bc52deb69429abf2dc4bf9a79556 100644
 --- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
 +++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-@@ -132,8 +132,11 @@ void Open(DesktopMediaID::Type type,
-     base::OnceCallback<void()> cancel_callback,
-     base::OnceCallback<void()> error_callback) {
+@@ -99,6 +99,7 @@ void Open(DesktopMediaID::Type type,
+             base::OnceCallback<void(Source)> picker_callback,
+             base::OnceClosure cancel_callback,
+             base::OnceClosure error_callback) override;
++            // boolean use_system_picker) override;
+   void Close(DesktopMediaID device_id) override;
+   std::unique_ptr<media::VideoCaptureDevice> CreateDevice(
+       const DesktopMediaID& source) override;
+@@ -138,8 +139,11 @@ void Open(DesktopMediaID::Type type,
+     base::OnceClosure cancel_callback,
+     base::OnceClosure error_callback) {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  CHECK(type == DesktopMediaID::Type::TYPE_SCREEN ||
+-        type == DesktopMediaID::Type::TYPE_WINDOW);
 +  // Chrome doesn't allow both screens & windows in their picker,
 +  // but Electron does - add a check for TYPE_NONE.
-   CHECK(type == DesktopMediaID::Type::TYPE_SCREEN ||
--        type == DesktopMediaID::Type::TYPE_WINDOW);
-+        type == DesktopMediaID::Type::TYPE_WINDOW ||
-+        type == DesktopMediaID::Type::TYPE_NONE);
++  // CHECK(type == DesktopMediaID::Type::TYPE_SCREEN ||
++  //       type == DesktopMediaID::Type::TYPE_WINDOW ||
++  //       type == DesktopMediaID::Type::TYPE_NONE);
    if (@available(macOS 14.0, *)) {
      NSNumber* source_id = @(next_id_);
      auto picker_observer = [[PickerObserver alloc]
-@@ -150,19 +153,13 @@ void Open(DesktopMediaID::Type type,
+@@ -157,19 +161,26 @@ void Open(DesktopMediaID::Type type,
      // TODO(https://crbug.com/360781940): Add support for changing selected
      // content. The problem to solve is how this should interact with stream
      // restart.
@@ -140,11 +192,24 @@ index b34d8402c213329620683e41588c0411d45124fb..1b8e95f476a032f60ea7e578fac48034
 -      picker.maximumStreamCount = max_stream_count;
 -      [picker presentPickerUsingContentStyle:SCShareableContentStyleWindow];
 -    }
++    // LOG(ERROR) << "Type: " << type;
 +    // Chrome doesn't allow both screens & windows in their picker,
 +    // but Electron does; we patch out the MediaID::Type conditional here
++    // if (type == DesktopMediaID::Type::TYPE_SCREEN) {
++    //   config.allowedPickerModes = SCContentSharingPickerModeSingleDisplay;
++    //   picker.defaultConfiguration = config;
++    //   picker.maximumStreamCount = max_stream_count;
++    //   [picker presentPickerUsingContentStyle:SCShareableContentStyleDisplay];
++    // } else if (type == DesktopMediaID::Type::TYPE_WINDOW) {
++    //   config.allowedPickerModes = SCContentSharingPickerModeSingleWindow;
++    //   picker.defaultConfiguration = config;
++    //   picker.maximumStreamCount = max_stream_count;
++    //   [picker presentPickerUsingContentStyle:SCShareableContentStyleWindow];
++    // } else {
 +    picker.defaultConfiguration = config;
 +    picker.maximumStreamCount = max_stream_count;
 +    [picker present];
++    // }
    } else {
      NOTREACHED();
    }
