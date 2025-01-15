@@ -8,7 +8,7 @@ If you’re already using web technologies for your application, you can skip st
 
 ## Why choose web technologies
 
-Web technologies include HTML, CSS, and JavaScript. They’re the storefront of the modern Internet. Those technologies have emerged as the best choice for building user interfaces — both for consumer applications as well as mission-critical business applications. This is true both for applications that need to run in a browser as well as desktop applications that are not accessible from a browser. Our bold claim here is that this isn’t just true for cross-platform applications that need to run on multiple operating systems but true overall.
+Web technologies include HTML, CSS, JavaScript, and WebAssembly. They’re the storefront of the modern Internet. Those technologies have emerged as the best choice for building user interfaces — both for consumer applications as well as mission-critical business applications. This is true both for applications that need to run in a browser as well as desktop applications that are not accessible from a browser. Our bold claim here is that this isn’t just true for cross-platform applications that need to run on multiple operating systems but true overall.
 
 As an example, NASA’s actual [Mission Control](https://github.com/nasa/openmct) is written with web technologies. The [Bloomberg Terminal](https://en.wikipedia.org/wiki/Bloomberg_Terminal), the computer system found at every financial institution, is written with web technologies and runs inside Chromium. It costs $25,000 per user, per year. The McDonald’s ordering kiosk, powering the world’s biggest food retailer, is entirely built with Chromium. The [SpaceX’s Dragon 2 space capsule](https://old.reddit.com/r/spacex/comments/gxb7j1/we_are_the_spacex_software_team_ask_us_anything/ft62781/?context=3) uses Chromium to display its interface. You get the point: web technologies are a great tech stack to build user interfaces.
 
@@ -16,13 +16,13 @@ Here are the reasons we, the Electron maintainers, are betting on the web.
 
 ### Versatility
 
-Modern versions of HTML and CSS enable your developers and designers to fully express themselves. The web’s showcase includes Google Earth, Netflix, Spotify, Gmail, TikTok, Facebook, Airbnb, or GitHub. Whatever interface your application needs, you will be able to express it with HTML, CSS, and JavaScript.
+Modern versions of HTML and CSS enable your developers and designers to fully express themselves. The web’s showcase includes Google Earth, Netflix, Spotify, Gmail, Facebook, Airbnb, or GitHub. Whatever interface your application needs, you will be able to express it with HTML, CSS, and JavaScript.
 
 If you want to focus on building a great product without figuring out how you can realize your designer’s vision in a specific UI framework, the web is a safe bet.
 
 ### Reliability
 
-Web technologies are the most-used foundation for user interfaces on the planet. The have been hardened accordingly. Modern computers have been optimized from the CPU to the operating system to be good at running web technologies. The manufacturers of your user’s devices—be that an Android phone or the latest MacBook—will ensure that theycan visit websites, play videos on YouTube, or display emails. In turn, they’ll also ensure that your app has a stable foundation, even if you have just one user.
+Web technologies are the most-used foundation for user interfaces on the planet. The have been hardened accordingly. Modern computers have been optimized from the CPU to the operating system to be good at running web technologies. The manufacturers of your user’s devices—be that an Android phone or the latest MacBook—will ensure that they can visit websites, play videos on YouTube, or display emails. In turn, they’ll also ensure that your app has a stable foundation, even if you have just one user.
 
 If you want to focus on building a great product without debugging a weird quirk that nobody has found before, the web is a safe bet.
 
@@ -34,7 +34,7 @@ There will be virtually no platform where your app cannot run if you build it wi
 
 ### Ubiquity
 
-It’s easy to find developers with experience building with web technologies. If you’re a developer, it’ll be easy to find answers to your questions on Google, Stack Overflow, GitHub, or a coding AI of your choice. Whatever problem you need to solve, it’s likely that somebody has solved it well before —and that you can find the answer to the puzzle online.
+It’s easy to find developers with experience building with web technologies. If you’re a developer, it’ll be easy to find answers to your questions on Google, Stack Overflow, GitHub, or a coding AI of your choice. Whatever problem you need to solve, it’s likely that somebody has solved it well before—and that you can find the answer to the puzzle online.
 
 If you want to focus on building a great product with ample access to resources and materials, the web is a safe bet.
 
@@ -42,7 +42,7 @@ If you want to focus on building a great product with ample access to resources 
 
 Electron combines Chromium, Node.js, and the ability to write custom native code into one framework for building powerful desktop applications. There are three main reasons to use Electron:
 
-### Enterprise-Grade
+### Enterprise-grade
 
 Electron is reliable, secure, stable, and mature. It is the premier choice for companies building their flagship product. We have a list of some of those companies on our homepage, but just among chat apps, Slack, Microsoft Teams, Discord, and Skype are built with Electron. Among AI applications, both OpenAI’s ChatGPT and Anthropic’s Claude use Electron. Visual Studio Code, Loom, Canva, Notion, Docker, and countless other leading developers of software bet on Electron.
 
@@ -50,14 +50,14 @@ We did make it a priority to make Electron easy to work with and a delight for d
 
 ### Mature
 
-Our current estimation is that most desktop computers on the planet run at least one Electron app. Electron has grown by prioritizing talent in its maintainer group, fostering excellent and sustainable engineering practices in managing the ongoing maintenance, and proactively inviting companies betting on Electron to directly contribute to the project. We’re a an impact project with the OpenJS foundation, which is itself a part of the Linux foundation. We share resources and expertise with other foundation projects like Node.js, ESLint, Webpack - or the Linux Kernel or Kubernetes.
+Our current estimation is that most desktop computers on the planet run at least one Electron app. Electron has grown by prioritizing talent in its maintainer group, fostering excellent and sustainable engineering practices in managing the ongoing maintenance, and proactively inviting companies betting on Electron to directly contribute to the project. We’re an impact project with the OpenJS foundation, which is itself a part of the Linux foundation. We share resources and expertise with other foundation projects like Node.js, ESLint, Webpack - or the Linux Kernel or Kubernetes.
 
 What does all of that mean for you, a developer, in practice?
 
 - **Reliable release schedule**: Electron will release a new major version in lockstep with every second major Chromium release, usually on the same day as Chromium. A lot of work, both in the form of building processes and tools, but also in terms of raw invested hours every week, has to go into making that happen.
 - **No dictators**: Sometimes, betting on a technology also requires you to bet on a single person or company. In turn, it requires you to trust that the person or company never has a breakdown, starts fighting you directly, or does anything else drastic that’ll force you rethink your entire tech stack. Electron is maintained by a diverse set of companies (Microsoft, Slack/Salesforce, Notion, and more) and will continue to welcome more companies interested in ensuring their “seat at the decision-making table”.
 
-### Stability, Security, Performance
+### Stability, security, performance
 
 Electron delivers the best experience on all target platforms (macOS, Windows, Linux) by bundling the latest version of Chromium, V8, and Node.js directly with the application binary. When it comes to running and rendering web content with upmost stability, security, and performance, we currently believe that stack to be “best in class”.
 
@@ -68,7 +68,7 @@ You might wonder why we bundle Chromium’s web stack with our apps when most mo
 When using an operating system's built-in web view, you're limited by the browser version included in the oldest operating system version you need to support. We have found the following problems with this approach:
 
 - **Stability**: The modern web technology stack is complex, and as a result, you’ll sooner or later encounter bugs. If you use the operating system’s web view, your only recourse will be to ask your customers to upgrade their operating system. If no upgrade is available for that machine (because of no ability to upgrade to the latest macOS or Windows 11), you’ll have to ask them to buy a new computer. If you’re unlucky, you’re now losing a major customer because they will not upgrade their entire fleet of thousands of machines just because one team wanted to try your startup’s app. You have _no recourse_ in this situation. Even the risk of that happening is unacceptable to the companies that employ the Electron maintainers.
-- **Security:** Similar to how you can fix stability bugs by releasing an app update you can also release security fixes to your application without asking your customer to upgrade their operating system. Even if operating system providers prioritize updates to their built-in browser, we have not seen them reliably update the built-in web views with similar urgency. Bundling a web renderer gives you, the developer, control.
+- **Security:** Similar to how you can fix stability bugs by releasing an app update, you can also release security fixes to your application without asking your customer to upgrade their operating system. Even if operating system providers prioritize updates to their built-in browser, we have not seen them reliably update the built-in web views with similar urgency. Bundling a web renderer gives you, the developer, control.
 - **Performance:** For simple HTML documents, a built-in web view will sometimes use fewer resources than an app with a bundled framework. For bigger apps, it is our experience that we can deliver better performance with the latest version of Chromium than we can with built-in web views. You might think that the built-in view can share a lot of resources with other apps and the operating system— but for security reasons, apps have to run in their own sandboxes, isolated from each other. At that point, the question is whether the OS’ web view is more performant than Chromium. Across many apps, our experience is that bundling Chromium and Node.js enables us to build better and more performant experiences.
 
 #### Why bundle Chromium and Node.js
@@ -77,14 +77,14 @@ Electron aims to enable the apps it supports to deliver the best possible user e
 
 - **Native code when you want it**: Thanks to Node.js’ mature native addon system, you can always write native code. There is no system API out of reach for you. Whatever macOS, Windows, or Linux feature you’ll want to integrate with —as long as you can do it in C, C++, Objective-C, Rust, or another native language, you’ll be able to do it in Electron. Again, this gives you, the developer, maximum control. With Electron, you can use web technologies without choosing _only_ web technologies.
 
-### Developer Experience
+### Developer experience
 
 To summarize, we aim to build an Electron that is mature, enterprise-grade, and ready for mission-critical applications. We prioritize reliability, stability, security, and performance. That said, you might also choose Electron for its developer experience:
 
 - **Powerful ecosystem**: Anything you find on npm will run inside Electron. Any resource available to you about how to work with Node.js also applies to Electron. In addition, Electron itself has a [thriving ecosystem](https://www.npmjs.com/search?q=electron) — including plenty of choices for installers, updaters, deeper operating system-integration, and more.
 - **Plenty of built-in capabilities:** Over the last ten years, Electron’s core has gained plenty of native capabilities that you might need to build your application. Written in C++ and Objective-C, Electron has [dozens of easy-to-use APIs for deeper operating-system integration](https://www.electronjs.org/docs/latest/api/app) — like advanced window customization for transparent or oddly shaped widgets, receiving push notifications from the Apple Push Notification Network, or handling a custom URL protocol for your app.
 - **Open source**: The entire stack is open source and open to your inspection. This ensures your freedom to add any feature or fix any bug you might encounter in the future.
-- **Native code when you need it:** It bears repeating that Electron allows you to mix and match web technologies and C++, C, Objective-C, Rust, and other native languages. Whether it be Sqlite, a whole LLM, or just the ability to call one specific native API, Electron will make it easy.
+- **Native code when you need it:** It bears repeating that Electron allows you to mix and match web technologies and C++, C, Objective-C, Rust, and other native languages. Whether it be SQLite, a whole LLM, or just the ability to call one specific native API, Electron will make it easy.
 
 ---
 
