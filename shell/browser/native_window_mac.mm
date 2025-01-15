@@ -194,6 +194,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
+  // Allow painting before shown, to be later disabled in ElectronNSWindow.
+  params.headless_mode = true;
   params.native_widget =
       new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));

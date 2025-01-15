@@ -8,8 +8,6 @@
 #include "electron/mas.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_mac.h"
-#include "shell/browser/ui/cocoa/delayed_native_view_host.h"
-#include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
@@ -113,7 +111,36 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
                            method_getImplementation(new_swipe_with_event));
 }
 #endif
+
 }  // namespace
+
+class ElectronNativeWindowObserver : public electron::NativeWindowObserver {
+ public:
+  ElectronNativeWindowObserver(electron::NativeWindowMac* observed_window,
+                               ElectronNSWindow* bound_ns_window)
+      : observed_window_(observed_window), bound_ns_window_(bound_ns_window) {
+    CHECK(observed_window_);
+    observed_window_->AddObserver(this);
+  }
+  ~ElectronNativeWindowObserver() override {
+    if (observed_window_) {
+      observed_window_->RemoveObserver(this);
+      observed_window_ = nullptr;
+    }
+  }
+
+  void OnWindowClosed() override {
+    CHECK(observed_window_);
+    observed_window_->RemoveObserver(this);
+    [bound_ns_window_ onElectronNativeWindowClosed];
+    observed_window_ = nullptr;
+    bound_ns_window_ = nullptr;
+  }
+
+ private:
+  raw_ptr<electron::NativeWindowMac> observed_window_ = nullptr;
+  ElectronNSWindow* bound_ns_window_ = nullptr;
+};
 
 @implementation ElectronNSWindow
 
@@ -164,12 +191,18 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     SwizzleSwipeWithEvent(view, @selector(swiz_nsview_swipeWithEvent:));
 #endif  // IS_MAS_BUILD
     shell_ = shell;
+    electron_native_window_observer_ =
+        std::make_unique<ElectronNativeWindowObserver>(shell_, self);
   }
   return self;
 }
 
 - (electron::NativeWindowMac*)shell {
   return shell_;
+}
+
+- (void)onElectronNativeWindowClosed {
+  shell_ = nullptr;
 }
 
 - (id)accessibilityFocusedUIElement {
@@ -253,6 +286,17 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   // the frame directly when resize is disabled
   if (!electron::ScopedDisableResize::IsResizeDisabled())
     [super setFrame:windowFrame display:displayViews];
+}
+
+- (void)orderWindow:(NSWindowOrderingMode)place relativeTo:(NSInteger)otherWin {
+  if (shell_) {
+    // We initialize the window in headless mode to allow painting before it is
+    // shown, but we don't want the headless behavior of allowing the window to
+    // be placed unconstrained.
+    self.isHeadless = false;
+    shell_->widget()->DisableHeadlessMode();
+  }
+  [super orderWindow:place relativeTo:otherWin];
 }
 
 - (id)accessibilityAttributeValue:(NSString*)attribute {
