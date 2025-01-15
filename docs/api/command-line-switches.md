@@ -315,17 +315,19 @@ The default is `verbatim` and `dns.setDefaultResultOrder()` have higher priority
 
 ## Chromium Flags
 
-While a list of all available Chromium switches doesn't exist, there are a few ways of discovering them.
+There isn't a documented list of all Chromium switches, but there are a few ways to find them.
 
-The easiest method is Chromium's flags, via `about://flags`, while those flags don't translate 1:1 to their switch names, they are listed in the process's Command Line argument.
+The easiest way is through Chromiums's flags page, which you can access at `about://flags`. These flags don't directly match switch names, but they show up in the process's command-line arguments.
 
-You can enable a flag, then navigate to `about://version` in your Chromium browser, where you can find the list of Command Line arguments. There you can find `--flag-switches-begin --your --list --of --switches --flag-switches-end`.
+To see these arguments, enable a flag in` about://flags`, then go to `about://version` in Chromium. You'll find a list of command-line arguments, including `--flag-switches-begin --your --list --flag-switches-end`, which contains the list of your flag enabled switches.
 
-While most flags are an argument to `--enable-features=`, some are standalone, such as `--enable-experimental-web-platform-features` some of which can be found at https://peter.sh/experiments/chromium-command-line-switches/. That list however is not version locked and non-exhaustive.
+Most flags are included as part of `--enable-features=`, but some are standalone switches, like `--enable-experimental-web-platform-features`.
 
-Do note that many standalone switches can be split up into individual features, so this list is non-exhaustive as well.
+A complete list of flags exists in [Chromium's flag metadata page](https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/flag-metadata.json), but this list includes platform, environment, GPU, expired and potentially non-functional flags, so many of them might not always work in every situation.
 
-While adding Chromium switches, make sure the Chromium version of Electron and the browser you're discovering said flags on are the same.
+Keep in mind that standalone switches can sometimes be split into individual features, so there's no fully complete list of switches.
+
+Finally, you'll need to ensure make sure the version of Chromium in Electron matches the version of the browser you're using to cross-reference the switches.
 
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value
