@@ -323,7 +323,7 @@ To see these arguments, enable a flag in` about://flags`, then go to `about://ve
 
 Most flags are included as part of `--enable-features=`, but some are standalone switches, like `--enable-experimental-web-platform-features`.
 
-A complete list of flags exists in [Chromium's flag metadata page](https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/flag-metadata.json), but this list includes platform, environment, GPU, expired and potentially non-functional flags, so many of them might not always work in every situation.
+A complete list of flags exists in [Chromium's flag metadata page](https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/flag-metadata.json), but this list includes platform, environment and GPU specific, expired and potentially non-functional flags, so many of them might not always work in every situation.
 
 Keep in mind that standalone switches can sometimes be split into individual features, so there's no fully complete list of switches.
 
