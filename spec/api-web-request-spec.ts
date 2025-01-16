@@ -101,6 +101,12 @@ describe('webRequest module', () => {
       await expect(ajax(defaultURL)).to.eventually.be.rejected();
     });
 
+    it('matches all requests when no filters are defined', async () => {
+      ses.webRequest.onBeforeRequest(cancel);
+      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+    });
+
     it('can filter URLs', async () => {
       const filter = { urls: [defaultURL + 'filter/*'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
