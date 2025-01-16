@@ -7,8 +7,8 @@
 #include <algorithm>
 #include <cmath>
 
-#include "base/strings/stringprintf.h"
 #include "content/public/common/color_parser.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 
 namespace {
 
@@ -48,12 +48,12 @@ SkColor ParseCSSColor(const std::string& color_string) {
 }
 
 std::string ToRGBHex(SkColor color) {
-  return base::StringPrintf("#%02X%02X%02X", SkColorGetR(color),
-                            SkColorGetG(color), SkColorGetB(color));
+  return absl::StrFormat("#%02X%02X%02X", SkColorGetR(color),
+                         SkColorGetG(color), SkColorGetB(color));
 }
 
 std::string ToRGBAHex(SkColor color, bool include_hash) {
-  std::string color_str = base::StringPrintf(
+  std::string color_str = absl::StrFormat(
       "%02X%02X%02X%02X", SkColorGetR(color), SkColorGetG(color),
       SkColorGetB(color), SkColorGetA(color));
   if (include_hash) {

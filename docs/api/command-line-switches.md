@@ -38,7 +38,7 @@ Without `*` prefix the URL has to match exactly.
 
 ### --disable-ntlm-v2
 
-Disables NTLM v2 for posix platforms, no effect elsewhere.
+Disables NTLM v2 for POSIX platforms, no effect elsewhere.
 
 ### --disable-http-cache
 
@@ -240,6 +240,13 @@ Force using discrete GPU when there are multiple GPUs available.
 ### --force_low_power_gpu
 
 Force using integrated GPU when there are multiple GPUs available.
+
+### --xdg-portal-required-version=`version`
+
+Sets the minimum required version of XDG portal implementation to `version`
+in order to use the portal backend for file dialogs on linux. File dialogs
+will fallback to using gtk or kde depending on the desktop environment when
+the required version is unavailable. Current default is set to `3`.
 
 ## Node.js Flags
 

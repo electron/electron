@@ -16,7 +16,6 @@
 #include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/timer/timer.h"
 #include "base/uuid.h"
@@ -52,6 +51,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/application_info.h"
 #include "shell/common/platform_util.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/logging/logging_utils.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
@@ -70,25 +70,26 @@ namespace electron {
 
 namespace {
 
-const char kChromeUIDevToolsURL[] =
+constexpr std::string_view kChromeUIDevToolsURL =
     "devtools://devtools/bundled/devtools_app.html?"
     "remoteBase=%s&"
     "can_dock=%s&"
     "toolbarColor=rgba(223,223,223,1)&"
     "textColor=rgba(0,0,0,1)&"
     "experiments=true";
-const char kChromeUIDevToolsRemoteFrontendBase[] =
+constexpr std::string_view kChromeUIDevToolsRemoteFrontendBase =
     "https://chrome-devtools-frontend.appspot.com/";
-const char kChromeUIDevToolsRemoteFrontendPath[] = "serve_file";
+constexpr std::string_view kChromeUIDevToolsRemoteFrontendPath = "serve_file";
 
-const char kDevToolsBoundsPref[] = "electron.devtools.bounds";
-const char kDevToolsZoomPref[] = "electron.devtools.zoom";
-const char kDevToolsPreferences[] = "electron.devtools.preferences";
+constexpr std::string_view kDevToolsBoundsPref = "electron.devtools.bounds";
+constexpr std::string_view kDevToolsZoomPref = "electron.devtools.zoom";
+constexpr std::string_view kDevToolsPreferences =
+    "electron.devtools.preferences";
 
-const char kFrontendHostId[] = "id";
-const char kFrontendHostMethod[] = "method";
-const char kFrontendHostParams[] = "params";
-const char kTitleFormat[] = "Developer Tools - %s";
+constexpr std::string_view kFrontendHostId = "id";
+constexpr std::string_view kFrontendHostMethod = "method";
+constexpr std::string_view kFrontendHostParams = "params";
+constexpr std::string_view kTitleFormat = "Developer Tools - %s";
 
 const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
 
@@ -137,16 +138,15 @@ double GetNextZoomLevel(double level, bool out) {
 }
 
 GURL GetRemoteBaseURL() {
-  return GURL(base::StringPrintf("%s%s/%s/",
-                                 kChromeUIDevToolsRemoteFrontendBase,
-                                 kChromeUIDevToolsRemoteFrontendPath,
-                                 content::GetChromiumGitRevision().c_str()));
+  return GURL(absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
+                              kChromeUIDevToolsRemoteFrontendPath,
+                              content::GetChromiumGitRevision().c_str()));
 }
 
 GURL GetDevToolsURL(bool can_dock) {
-  auto url_string = base::StringPrintf(kChromeUIDevToolsURL,
-                                       GetRemoteBaseURL().spec().c_str(),
-                                       can_dock ? "true" : "");
+  auto url_string =
+      absl::StrFormat(kChromeUIDevToolsURL, GetRemoteBaseURL().spec().c_str(),
+                      can_dock ? "true" : "");
   return GURL(url_string);
 }
 
@@ -603,7 +603,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
     // process. Grant the devtools process the ability to request URLs from the
     // extension.
     content::ChildProcessSecurityPolicy::GetInstance()->GrantRequestOrigin(
-        web_contents_->GetPrimaryMainFrame()->GetProcess()->GetID(),
+        web_contents_->GetPrimaryMainFrame()->GetProcess()->GetDeprecatedID(),
         url::Origin::Create(extension->url()));
 
     base::Value::Dict extension_info;
@@ -632,7 +632,7 @@ void InspectableWebContents::InspectedURLChanged(const std::string& url) {
   if (managed_devtools_web_contents_) {
     if (devtools_title_.empty()) {
       view_->SetTitle(
-          base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
+          base::UTF8ToUTF16(absl::StrFormat(kTitleFormat, url.c_str())));
     }
   }
 }
@@ -817,8 +817,7 @@ void InspectableWebContents::DispatchProtocolMessageFromDevToolsFrontend(
   }
 
   if (agent_host_)
-    agent_host_->DispatchProtocolMessage(
-        this, base::as_bytes(base::make_span(message)));
+    agent_host_->DispatchProtocolMessage(this, base::as_byte_span(message));
 }
 
 void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
@@ -1032,7 +1031,7 @@ void InspectableWebContents::DidFinishNavigation(
   // most likely bug in chromium.
   base::ReplaceFirstSubstringAfterOffset(&it->second, 0, "var chrome",
                                          "var chrome = window.chrome ");
-  auto script = base::StringPrintf(
+  auto script = absl::StrFormat(
       "%s(\"%s\")", it->second.c_str(),
       base::Uuid::GenerateRandomV4().AsLowercaseString().c_str());
   // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);

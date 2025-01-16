@@ -11,7 +11,6 @@
 
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
-#include "base/strings/stringprintf.h"
 #include "components/network_hints/renderer/web_prescient_networking_impl.h"
 #include "content/common/buildflags.h"
 #include "content/public/common/content_constants.h"
@@ -36,6 +35,7 @@
 #include "shell/renderer/content_settings_observer.h"
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_autofill_agent.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -112,8 +112,9 @@ void SetIsWebView(v8::Isolate* isolate, v8::Local<v8::Object> object) {
   dict.SetHidden("isWebView", true);
 }
 
-std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
-                                               const char* switch_name) {
+std::vector<std::string> ParseSchemesCLISwitch(
+    base::CommandLine* command_line,
+    const std::string_view switch_name) {
   std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
   return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);
@@ -131,7 +132,7 @@ class ChromePdfInternalPluginDelegate final
   ~ChromePdfInternalPluginDelegate() override = default;
 
   // `pdf::PdfInternalPluginDelegate`:
-  bool IsAllowedOrigin(const url::Origin& origin) const override {
+  [[nodiscard]] bool IsAllowedOrigin(const url::Origin& origin) const override {
     return origin.scheme() == extensions::kExtensionScheme &&
            origin.host() == extension_misc::kPdfExtensionId;
   }
@@ -204,8 +205,8 @@ RendererClientBase* RendererClientBase::Get() {
 void RendererClientBase::BindProcess(v8::Isolate* isolate,
                                      gin_helper::Dictionary* process,
                                      content::RenderFrame* render_frame) {
-  auto context_id = base::StringPrintf(
-      "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
+  auto context_id = absl::StrFormat("%s-%" PRId64, renderer_client_id_.c_str(),
+                                    ++next_context_id_);
 
   process->SetReadOnly("isMainFrame", render_frame->IsMainFrame());
   process->SetReadOnly("contextIsolated",
@@ -238,7 +239,7 @@ void RendererClientBase::RenderThreadStarted() {
                                                      true);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_client_.reset(CreateExtensionsClient());
+  extensions_client_ = std::make_unique<ElectronExtensionsClient>();
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
   extensions_renderer_client_ =
@@ -455,7 +456,7 @@ v8::Local<v8::Object> RendererClientBase::GetScriptableObject(
   if (container_manager)
     return container_manager->GetScriptableObject(plugin_element, isolate);
 #endif
-  return v8::Local<v8::Object>();
+  return {};
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>
@@ -563,12 +564,6 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
   else
     return frame->MainWorldScriptContext();
 }
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
-  return new ElectronExtensionsClient;
-}
-#endif
 
 bool RendererClientBase::IsWebViewFrame(
     v8::Local<v8::Context> context,

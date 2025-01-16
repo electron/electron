@@ -13,7 +13,7 @@
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 #include "third_party/blink/public/mojom/choosers/popup_menu.mojom.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom-forward.h"
-#include "ui/base/ui_base_types.h"
+#include "ui/base/mojom/menu_source_type.mojom-forward.h"
 
 namespace content {
 struct ContextMenuParams;
@@ -26,7 +26,9 @@ struct NativeWebKeyboardEvent;
 }
 
 using ContextMenuParamsWithRenderFrameHost =
-    std::pair<content::ContextMenuParams, content::RenderFrameHost*>;
+    std::tuple<content::ContextMenuParams,
+               content::RenderFrameHost*,
+               std::optional<std::vector<std::u16string>>>;
 
 namespace gin {
 
@@ -44,12 +46,12 @@ struct Converter<ContextMenuParamsWithRenderFrameHost> {
 };
 
 template <>
-struct Converter<ui::MenuSourceType> {
+struct Converter<ui::mojom::MenuSourceType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const ui::MenuSourceType& val);
+                                   const ui::mojom::MenuSourceType& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     ui::MenuSourceType* out);
+                     ui::mojom::MenuSourceType* out);
 };
 
 template <>

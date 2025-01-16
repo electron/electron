@@ -48,9 +48,9 @@ static_assert(std::size(MenuSourceTypes) ==
               static_cast<int32_t>(ui::mojom::MenuSourceType::kMaxValue) + 1);
 
 // static
-v8::Local<v8::Value> Converter<ui::MenuSourceType>::ToV8(
+v8::Local<v8::Value> Converter<ui::mojom::MenuSourceType>::ToV8(
     v8::Isolate* isolate,
-    const ui::MenuSourceType& in) {
+    const ui::mojom::MenuSourceType& in) {
   for (auto const& [key, val] : MenuSourceTypes)
     if (in == val)
       return StringToV8(isolate, key);
@@ -58,9 +58,10 @@ v8::Local<v8::Value> Converter<ui::MenuSourceType>::ToV8(
 }
 
 // static
-bool Converter<ui::MenuSourceType>::FromV8(v8::Isolate* isolate,
-                                           v8::Local<v8::Value> val,
-                                           ui::MenuSourceType* out) {
+bool Converter<ui::mojom::MenuSourceType>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    ui::mojom::MenuSourceType* out) {
   return FromV8WithLookup(isolate, val, MenuSourceTypes, out);
 }
 
@@ -87,8 +88,7 @@ v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
 v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     v8::Isolate* isolate,
     const ContextMenuParamsWithRenderFrameHost& val) {
-  const auto& params = val.first;
-  content::RenderFrameHost* render_frame_host = val.second;
+  auto [params, render_frame_host, optional_suggestions] = val;
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetGetter("frame", render_frame_host, v8::DontEnum);
   dict.Set("x", params.x);
@@ -113,7 +113,11 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
   dict.Set("misspelledWord", params.misspelled_word);
   dict.Set("selectionRect", params.selection_rect);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  dict.Set("dictionarySuggestions", params.dictionary_suggestions);
+  if (optional_suggestions) {
+    dict.Set("dictionarySuggestions", optional_suggestions.value());
+  } else {
+    dict.Set("dictionarySuggestions", params.dictionary_suggestions);
+  }
   dict.Set("spellcheckEnabled", params.spellcheck_enabled);
 #else
   dict.Set("spellcheckEnabled", false);

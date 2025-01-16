@@ -7,6 +7,7 @@
 
 #include <map>
 #include <set>
+#include <string_view>
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
@@ -35,16 +36,20 @@ namespace electron {
 
 class ElectronBrowserContext;
 
+inline constexpr std::string_view kPortNameKey = "name";
+inline constexpr std::string_view kTokenKey = "token";
+inline constexpr std::string_view kBluetoothDevicePathKey =
+    "bluetooth_device_path";
 #if BUILDFLAG(IS_WIN)
-extern const char kDeviceInstanceIdKey[];
+inline constexpr std::string_view kDeviceInstanceIdKey = "device_instance_id";
 #else
-extern const char kVendorIdKey[];
-extern const char kProductIdKey[];
-extern const char kSerialNumberKey[];
-#if BUILDFLAG(IS_MAC)
-extern const char kUsbDriverKey[];
-#endif  // BUILDFLAG(IS_MAC)
+inline constexpr std::string_view kVendorIdKey = "vendor_id";
+inline constexpr std::string_view kProductIdKey = "product_id";
+inline constexpr std::string_view kSerialNumberKey = "serial_number";
 #endif  // BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_MAC)
+inline constexpr std::string_view kUsbDriverKey = "usb_driver";
+#endif  // BUILDFLAG(IS_MAC)
 
 class SerialChooserContext : public KeyedService,
                              public device::mojom::SerialPortManagerClient {

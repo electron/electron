@@ -5,6 +5,7 @@
 #include "electron/shell/renderer/electron_api_service_impl.h"
 
 #include <memory>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -32,7 +33,7 @@ namespace electron {
 
 namespace {
 
-const char kIpcKey[] = "ipcNative";
+constexpr std::string_view kIpcKey = "ipcNative";
 
 // Gets the private object under kIpcKey
 v8::Local<v8::Object> GetIpcObject(v8::Local<v8::Context> context) {
@@ -44,7 +45,7 @@ v8::Local<v8::Object> GetIpcObject(v8::Local<v8::Context> context) {
       global_object->GetPrivate(context, private_binding_key).ToLocalChecked();
   if (value.IsEmpty() || !value->IsObject()) {
     LOG(ERROR) << "Attempted to get the 'ipcNative' object but it was missing";
-    return v8::Local<v8::Object>();
+    return {};
   }
   return value->ToObject(context).ToLocalChecked();
 }

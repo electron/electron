@@ -85,7 +85,7 @@ class BrowserObserver : public base::CheckedObserver {
 #endif
 
  protected:
-  ~BrowserObserver() override {}
+  ~BrowserObserver() override = default;
 };
 
 }  // namespace electron

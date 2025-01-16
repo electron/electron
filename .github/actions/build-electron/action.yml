@@ -5,10 +5,10 @@ inputs:
     description: 'Target arch'
     required: true
   target-platform:
-    description: 'Target platform'
+    description: 'Target platform, should be linux, win, macos'
     required: true
   artifact-platform:
-    description: 'Artifact platform, should be linux, darwin or mas'
+    description: 'Artifact platform, should be linux, win, darwin or mas'
     required: true
   step-suffix:
     description: 'Suffix for build steps'
@@ -63,15 +63,15 @@ runs:
       run: |
         cd src
         electron/script/copy-debug-symbols.py --target-cpu="${{ inputs.target-arch }}" --out-dir=out/Default/debug --compress
-        electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}"
+        electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}" --verbose
         electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES -d explain
         if [ "${{ inputs.is-asan }}" != "true" ]; then
-          target_os=${{ inputs.target-platform == 'linux' && 'linux' || 'mac'}}
+          target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
             target_os="${target_os}_mas"
           fi
@@ -82,7 +82,7 @@ runs:
       run: |
         cd src
         e build --target electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
-        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         # Remove unused args from mksnapshot_args
         SEDOPTION="-i"
         if [ "`uname`" = "Darwin" ]; then
@@ -91,7 +91,7 @@ runs:
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
 
-        if [ "`uname`" = "Linux" ]; then
+        if [ "${{ inputs.target-platform }}" = "linux" ]; then
           if [ "${{ inputs.target-arch }}" = "arm" ]; then
             electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
             electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/v8_context_snapshot_generator
@@ -105,7 +105,13 @@ runs:
         fi
 
         e build --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
-        (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
+          cd out/Default
+          powershell Compress-Archive -update mksnapshot_args mksnapshot.zip
+          powershell Compress-Archive -update gen/v8/embedded.S mksnapshot.zip
+        else
+          (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+        fi
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
@@ -159,21 +165,19 @@ runs:
       run: |
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
-        autoninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
-        cd src
-        autoninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Libcxx ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
-        cd src
-        autoninja -C out/Default electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        autoninja -C out/Default electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        autoninja -C out/Default electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate TypeScript Definitions ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
       shell: bash

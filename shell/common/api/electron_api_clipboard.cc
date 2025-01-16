@@ -7,6 +7,7 @@
 #include <map>
 
 #include "base/containers/contains.h"
+#include "base/containers/to_vector.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/browser.h"
@@ -43,8 +44,8 @@ std::vector<std::u16string> Clipboard::AvailableFormats(
 bool Clipboard::Has(const std::string& format_string,
                     gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  ui::ClipboardFormatType format(
-      ui::ClipboardFormatType::GetType(format_string));
+  ui::ClipboardFormatType format =
+      ui::ClipboardFormatType::CustomPlatformType(format_string);
   if (format.GetName().empty())
     format = ui::ClipboardFormatType::CustomPlatformType(format_string);
   return clipboard->IsFormatAvailable(format, GetClipboardBuffer(args),
@@ -230,7 +231,7 @@ gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
     args->ThrowError(
         "clipboard.readImage is available only after app ready in the main "
         "process");
-    return gfx::Image();
+    return {};
   }
 
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
@@ -270,7 +271,7 @@ void Clipboard::WriteImage(const gfx::Image& image,
 #if !BUILDFLAG(IS_MAC)
 void Clipboard::WriteFindText(const std::u16string& text) {}
 std::u16string Clipboard::ReadFindText() {
-  return std::u16string();
+  return {};
 }
 #endif
 
@@ -280,11 +281,8 @@ void Clipboard::Clear(gin_helper::Arguments* args) {
 
 // This exists for testing purposes ONLY.
 void Clipboard::WriteFilesForTesting(const std::vector<base::FilePath>& files) {
-  std::vector<ui::FileInfo> file_infos;
-  for (const auto& file : files) {
-    file_infos.emplace_back(ui::FileInfo(ui::FileInfo(file, file.BaseName())));
-  }
-
+  auto to_info = [](const auto& p) { return ui::FileInfo{p, p.BaseName()}; };
+  auto file_infos = base::ToVector(files, to_info);
   ui::ScopedClipboardWriter writer(ui::ClipboardBuffer::kCopyPaste);
   writer.WriteFilenames(ui::FileInfosToURIList(file_infos));
 }

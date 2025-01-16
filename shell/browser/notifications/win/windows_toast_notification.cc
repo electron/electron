@@ -13,7 +13,6 @@
 #include <shlobj.h>
 #include <wrl\wrappers\corewrappers.h>
 
-#include "base/environment.h"
 #include "base/hash/hash.h"
 #include "base/logging.h"
 #include "base/strings/strcat.h"
@@ -66,7 +65,7 @@ namespace {
 constexpr wchar_t kGroup[] = L"Notifications";
 
 void DebugLog(std::string_view log_msg) {
-  if (base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS"))
+  if (electron::debug_notifications)
     LOG(INFO) << log_msg;
 }
 
@@ -664,8 +663,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     winui::Notifications::IToastFailedEventArgs* e) {
   HRESULT error;
   e->get_ErrorCode(&error);
-  std::string errorMessage =
-      "Notification failed. HRESULT:" + std::to_string(error);
+  std::string errorMessage = base::StrCat(
+      {"Notification failed. HRESULT:", base::NumberToString(error)});
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&Notification::NotificationFailed,
                                 notification_, errorMessage));

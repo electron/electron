@@ -66,7 +66,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
 
   // Returns the WebContents for pending render processes.
-  content::WebContents* GetWebContentsFromProcessID(int process_id);
+  content::WebContents* GetWebContentsFromProcessID(
+      content::ChildProcessId process_id);
 
   NotificationPresenter* GetNotificationPresenter();
 
@@ -289,6 +290,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const GURL& url,
       scoped_refptr<net::HttpResponseHeaders> response_headers,
       bool first_auth_attempt,
+      content::GuestPageHolder* guest_page_holder,
       LoginAuthRequiredCallback auth_required_callback) override;
   void SiteInstanceGotProcessAndSite(
       content::SiteInstance* site_instance) override;
@@ -326,12 +328,13 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const GURL& url,
       content::RenderFrameHost* rfh) const;
 
-  bool IsRendererSubFrame(int process_id) const;
+  bool IsRendererSubFrame(content::ChildProcessId process_id) const;
 
   // pending_render_process => web contents.
-  base::flat_map<int, content::WebContents*> pending_processes_;
+  base::flat_map<content::ChildProcessId, content::WebContents*>
+      pending_processes_;
 
-  base::flat_set<int> renderer_is_subframe_;
+  base::flat_set<content::ChildProcessId> renderer_is_subframe_;
 
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;

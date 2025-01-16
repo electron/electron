@@ -87,6 +87,9 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   management_policy_ = std::make_unique<ManagementPolicy>();
 }
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+namespace {
+
 std::unique_ptr<base::Value::Dict> ParseManifest(
     const std::string_view manifest_contents) {
   JSONStringValueDeserializer deserializer(manifest_contents);
@@ -95,14 +98,17 @@ std::unique_ptr<base::Value::Dict> ParseManifest(
 
   if (!manifest.get() || !manifest->is_dict()) {
     LOG(ERROR) << "Failed to parse extension manifest.";
-    return std::unique_ptr<base::Value::Dict>();
+    return {};
   }
   return std::make_unique<base::Value::Dict>(std::move(*manifest).TakeDict());
 }
 
+}  // namespace
+#endif  // if BUILDFLAG(ENABLE_PDF_VIEWER)
+
 void ElectronExtensionSystem::LoadComponentExtensions() {
-  std::string utf8_error;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
+  std::string utf8_error;
   std::string pdf_manifest_string = pdf_extension_util::GetManifest();
   std::unique_ptr<base::Value::Dict> pdf_manifest =
       ParseManifest(pdf_manifest_string);

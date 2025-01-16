@@ -9,7 +9,7 @@ ChildProcessSecurityPolicyImpl::CanAccessDataForOrigin contains explicit
 exceptions to allow built-in non-standard schemes, but does not check
 for non-standard schemes registered by the embedder.
 
-This patch adjusts the origin calculation for non-standard schemes in
+This patch adjusts the origin calculation for subframe non-standard schemes in
  - browser process at `NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo`
  - render process at `DocumentLoader::CalculateOrigin`
 
@@ -18,19 +18,24 @@ as `null` without any derivation. It is only in cases where there is a `initiato
 then the origin is derived from it, which is usually the case for renderer initiated
 navigations and iframes are no exceptions from this rule.
 
+The patch should be removed in favor of either:
+  - Remove support for non-standard custom schemes
+  - Register non-standard custom schemes as websafe schemes and update
+  CPSPI::CanAccessDataForOrigin to allow them for any navigation.
+  - Update the callsite to use RFHI::CanCommitOriginAndUrl in upstream, previous
+  effort to do this can be found at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
+
 Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
-Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
-
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 53bba48293111e74daba50dde617fb78f1bcc7ee..67083fb13db2020f432ec488a784bcfb9570d737 100644
+index cc3a15808ad7c0f0764944f145499f9bc462c787..49f43795209fe3cbf12a949312c3edbbfb5aa255 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -10788,6 +10788,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
+@@ -10817,6 +10817,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
          "blob");
    }
  
-+  if (!common_params().url.IsStandard()) {
++  if (!IsInMainFrame() && !common_params().url.IsStandard()) {
 +    return std::make_pair(url::Origin::Resolve(common_params().url,
 +                                               url::Origin()),
 +                          "url_non_standard");
@@ -40,10 +45,10 @@ index 53bba48293111e74daba50dde617fb78f1bcc7ee..67083fb13db2020f432ec488a784bcfb
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index ca0f254f2d38c238851ae0daf50b49b10922c186..c5063f9b0b428b8ece8816a812e6616e207504b0 100644
+index f4d01820da41368f872e1f04a4736946eb304a93..8fd4b90f490d6b063ab780caf301bed68f36737e 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2264,6 +2264,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2317,6 +2317,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -54,7 +59,7 @@ index ca0f254f2d38c238851ae0daf50b49b10922c186..c5063f9b0b428b8ece8816a812e6616e
    StringBuilder debug_info_builder;
    // Whether the origin is newly created within this call, instead of copied
    // from an existing document's origin or from `origin_to_commit_`. If this is
-@@ -2317,6 +2321,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2370,6 +2374,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      // the end of this function.
      origin = origin_to_commit_;
      debug_info_builder.Append("use_origin_to_commit");

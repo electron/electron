@@ -90,10 +90,10 @@ using blink::mojom::PermissionStatus;
 // }
 const char kDefaultLastPickedDirectoryKey[] = "default-id";
 const char kCustomLastPickedDirectoryKey[] = "custom-id";
-const char kPathKey[] = "path";
-const char kPathTypeKey[] = "path-type";
-const char kDisplayNameKey[] = "display-name";
-const char kTimestampKey[] = "timestamp";
+constexpr std::string_view kPathKey = "path";
+constexpr std::string_view kPathTypeKey = "path-type";
+constexpr std::string_view kDisplayNameKey = "display-name";
+constexpr std::string_view kTimestampKey = "timestamp";
 
 constexpr base::TimeDelta kPermissionRevocationTimeout = base::Seconds(5);
 
@@ -165,8 +165,10 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
        ChromeFileSystemAccessPermissionContext::kBlockedPaths) {
     if (key == ChromeFileSystemAccessPermissionContext::kNoBasePathKey) {
       rules.emplace_back(base::FilePath{rule_path}, type);
-    } else if (base::FilePath path; base::PathService::Get(key, &path)) {
-      rules.emplace_back(rule_path ? path.Append(rule_path) : path, type);
+    } else if (base::FilePath block_path;
+               base::PathService::Get(key, &block_path)) {
+      rules.emplace_back(rule_path ? block_path.Append(rule_path) : block_path,
+                         type);
     }
   }
 

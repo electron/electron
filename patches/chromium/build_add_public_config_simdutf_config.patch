@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Mon, 9 Dec 2024 11:22:20 -0600
+Subject: build: add public config simdutf_config
+
+To avoid building two copies of simdutf, we have electron_node ignore
+third_party/electron_node/deps/simdutf and use
+third_party/simdutf instead.
+
+To accomplish this, we need to make simdutf's config public here
+for use by third_party/electron_node.
+
+diff --git a/third_party/simdutf/BUILD.gn b/third_party/simdutf/BUILD.gn
+index d88fe7e43ac2a8129702e58bd2cd2aea094452e3..3cbeb89587f37b0ebc3622258fea0161ebf1d7b2 100644
+--- a/third_party/simdutf/BUILD.gn
++++ b/third_party/simdutf/BUILD.gn
+@@ -6,9 +6,14 @@ source_set("header") {
+   sources = [ "simdutf.h" ]
+ }
+ 
++config("simdutf_config") {
++  include_dirs = [ "." ]
++}
++
+ source_set("simdutf") {
+   sources = [ "simdutf.cpp" ]
+   public_deps = [ ":header" ]
++  public_configs = [ ":simdutf_config" ]
+   cflags_cc = [
+     "-Wno-unused-const-variable",
+     "-Wno-unused-function",

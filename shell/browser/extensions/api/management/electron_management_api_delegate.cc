@@ -9,7 +9,6 @@
 #include <string>
 #include <utility>
 
-#include "base/strings/stringprintf.h"
 #include "chrome/common/extensions/extension_metrics.h"
 #include "chrome/common/extensions/manifest_handlers/app_launch_info.h"
 #include "chrome/common/webui_url_constants.h"
@@ -24,6 +23,7 @@
 #include "extensions/common/api/management.h"
 #include "extensions/common/extension.h"
 #include "services/data_decoder/public/cpp/data_decoder.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/mojom/manifest/display_mode.mojom.h"
 
 namespace {
@@ -202,7 +202,7 @@ GURL ElectronManagementAPIDelegate::GetIconURL(
     int icon_size,
     ExtensionIconSet::Match match,
     bool grayscale) const {
-  GURL icon_url(base::StringPrintf(
+  GURL icon_url(absl::StrFormat(
       "%s%s/%d/%d%s", chrome::kChromeUIExtensionIconURL,
       extension->id().c_str(), icon_size, static_cast<int>(match),
       grayscale ? "?grayscale=true" : ""));

@@ -36,6 +36,11 @@ template <typename T>
 class Handle;
 }  // namespace gin
 
+namespace gin_helper {
+template <typename T>
+class Promise;
+}  // namespace gin_helper
+
 namespace electron::api {
 
 class WebContents;
@@ -117,7 +122,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   content::FrameTreeNodeId FrameTreeNodeID() const;
   std::string Name() const;
   base::ProcessId OSProcessID() const;
-  int ProcessID() const;
+  int32_t ProcessID() const;
   int RoutingID() const;
   GURL URL() const;
   std::string Origin() const;
@@ -127,6 +132,12 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   content::RenderFrameHost* Parent() const;
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
+
+  v8::Local<v8::Promise> CollectDocumentJSCallStack(gin::Arguments* args);
+  void CollectedJavaScriptCallStack(
+      gin_helper::Promise<base::Value> promise,
+      const std::string& untrusted_javascript_call_stack,
+      const std::optional<blink::LocalFrameToken>& remote_frame_token);
 
   void DOMContentLoaded();
 

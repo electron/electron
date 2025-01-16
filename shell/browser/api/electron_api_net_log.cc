@@ -63,8 +63,7 @@ scoped_refptr<base::SequencedTaskRunner> CreateFileTaskRunner() {
 }
 
 base::File OpenFileForWriting(base::FilePath path) {
-  return base::File(path,
-                    base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
+  return {path, base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE};
 }
 
 void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
@@ -93,7 +92,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
                                             gin::Arguments* args) {
   if (log_path.empty()) {
     args->ThrowTypeError("The first parameter must be a valid string");
-    return v8::Local<v8::Promise>();
+    return {};
   }
 
   net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::kDefault;
@@ -106,7 +105,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
       if (!gin::ConvertFromV8(args->isolate(), capture_mode_v8,
                               &capture_mode)) {
         args->ThrowTypeError("Invalid value for captureMode");
-        return v8::Local<v8::Promise>();
+        return {};
       }
     }
     v8::Local<v8::Value> max_file_size_v8;
@@ -114,14 +113,14 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
       if (!gin::ConvertFromV8(args->isolate(), max_file_size_v8,
                               &max_file_size)) {
         args->ThrowTypeError("Invalid value for maxFileSize");
-        return v8::Local<v8::Promise>();
+        return {};
       }
     }
   }
 
   if (net_log_exporter_) {
     args->ThrowTypeError("There is already a net log running");
-    return v8::Local<v8::Promise>();
+    return {};
   }
 
   pending_start_promise_ =
@@ -166,6 +165,7 @@ void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
     std::move(*pending_start_promise_)
         .RejectWithErrorMessage(
             base::File::ErrorToString(output_file.error_details()));
+    pending_start_promise_.reset();
     net_log_exporter_.reset();
     return;
   }
@@ -178,6 +178,7 @@ void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
 void NetLog::NetLogStarted(int32_t error) {
   DCHECK(pending_start_promise_);
   ResolvePromiseWithNetError(std::move(*pending_start_promise_), error);
+  pending_start_promise_.reset();
 }
 
 void NetLog::OnConnectionError() {
@@ -185,6 +186,7 @@ void NetLog::OnConnectionError() {
   if (pending_start_promise_) {
     std::move(*pending_start_promise_)
         .RejectWithErrorMessage("Failed to start net log exporter");
+    pending_start_promise_.reset();
   }
 }
 

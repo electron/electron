@@ -21,8 +21,16 @@ describe('webFrameMain module', () => {
   type Server = { server: http.Server, url: string, crossOriginUrl: string }
 
   /** Creates an HTTP server whose handler embeds the given iframe src. */
-  const createServer = async (): Promise<Server> => {
+  const createServer = async (options: {
+    headers?: Record<string, string>
+  } = {}): Promise<Server> => {
     const server = http.createServer((req, res) => {
+      if (options.headers) {
+        for (const [k, v] of Object.entries(options.headers)) {
+          res.setHeader(k, v);
+        }
+      }
+
       const params = new URLSearchParams(new URL(req.url || '', `http://${req.headers.host}`).search || '');
       if (params.has('frameSrc')) {
         res.end(`<iframe src="${params.get('frameSrc')}"></iframe>`);
@@ -444,6 +452,29 @@ describe('webFrameMain module', () => {
     });
   });
 
+  describe('webFrameMain.collectJavaScriptCallStack', () => {
+    let server: Server;
+    before(async () => {
+      server = await createServer({
+        headers: {
+          'Document-Policy': 'include-js-call-stacks-in-crash-reports'
+        }
+      });
+    });
+    after(() => {
+      server.server.close();
+    });
+
+    it('collects call stack during JS execution', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(server.url);
+      const callStackPromise = w.webContents.mainFrame.collectJavaScriptCallStack();
+      w.webContents.mainFrame.executeJavaScript('"run a lil js"');
+      const callStack = await callStackPromise;
+      expect(callStack).to.be.a('string');
+    });
+  });
+
   describe('"frame-created" event', () => {
     it('emits when the main frame is created', async () => {
       const w = new BrowserWindow({ show: false });
@@ -464,6 +495,9 @@ describe('webFrameMain module', () => {
 
     it('is not emitted upon cross-origin navigation', async () => {
       const server = await createServer();
+      defer(() => {
+        server.server.close();
+      });
 
       const w = new BrowserWindow({ show: false });
       await w.webContents.loadURL(server.url);

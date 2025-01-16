@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <vertedinde@electronjs.org>
+Date: Tue, 12 Nov 2024 21:16:15 -0800
+Subject: build: disable thin_lto on mac
+
+This patch disables thin lto on mac only. After Node 22 was merged into
+main, release builds began failing due to missing symbols, which seem to
+be being stripped out by thin lto.
+
+This patch can (and should) be removed when we can prevent those symbols
+from being stripped in the release build.
+
+diff --git a/build/config/compiler/compiler.gni b/build/config/compiler/compiler.gni
+index 5b98b4aedab5b700d21d6a8eac11c81cc13f6b39..8ee6f54f67c300a52074f33f9d6fe08a68e3be4b 100644
+--- a/build/config/compiler/compiler.gni
++++ b/build/config/compiler/compiler.gni
+@@ -79,7 +79,7 @@ declare_args() {
+   # have the same LLVM revisions as us, making bitcode useless to them.
+   use_thin_lto =
+       is_cfi || (is_clang && is_official_build && chrome_pgo_phase != 1 &&
+-                 (is_linux || is_win || is_mac ||
++                 (is_linux || is_win ||
+                   (is_ios && use_lld && !is_cronet_build) ||
+                   (is_android && target_os != "chromeos") ||
+                   (is_chromeos && is_chromeos_device)))

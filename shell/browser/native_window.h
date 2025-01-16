@@ -10,11 +10,13 @@
 #include <optional>
 #include <queue>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
+#include "base/strings/cstring_view.h"
 #include "base/supports_user_data.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -44,7 +46,8 @@ class PersistentDictionary;
 
 namespace electron {
 
-extern const char kElectronNativeWindowKey[];
+inline constexpr base::cstring_view kElectronNativeWindowKey =
+    "__ELECTRON_NATIVE_WINDOW__";
 
 class ElectronMenuModel;
 class BackgroundThrottlingSource;
@@ -218,7 +221,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // Vibrancy API
   const std::string& vibrancy() const { return vibrancy_; }
-  virtual void SetVibrancy(const std::string& type);
+  virtual void SetVibrancy(const std::string& type, int duration);
 
   const std::string& background_material() const {
     return background_material_;
@@ -299,7 +302,9 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowRequestPreferredWidth(int* width);
   void NotifyWindowCloseButtonClicked();
   void NotifyWindowClosed();
-  void NotifyWindowEndSession();
+  void NotifyWindowQueryEndSession(const std::vector<std::string>& reasons,
+                                   bool* prevent_default);
+  void NotifyWindowEndSession(const std::vector<std::string>& reasons);
   void NotifyWindowBlur();
   void NotifyWindowFocus();
   void NotifyWindowShow();
@@ -326,7 +331,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowAlwaysOnTopChanged();
-  void NotifyWindowExecuteAppCommand(const std::string& command);
+  void NotifyWindowExecuteAppCommand(std::string_view command_name);
   void NotifyTouchBarItemInteraction(const std::string& item_id,
                                      base::Value::Dict details);
   void NotifyNewWindowForTab();

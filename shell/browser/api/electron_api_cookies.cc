@@ -168,7 +168,7 @@ void FilterCookieWithStatuses(
 // Parse dictionary property to CanonicalCookie time correctly.
 base::Time ParseTimeProperty(const std::optional<double>& value) {
   if (!value)  // empty time means ignoring the parameter
-    return base::Time();
+    return {};
   if (*value == 0)  // FromSecondsSinceUnixEpoch would convert 0 to empty Time
     return base::Time::UnixEpoch();
   return base::Time::FromSecondsSinceUnixEpoch(*value);
@@ -292,8 +292,8 @@ std::string StringToCookieSameSite(const std::string* str_ptr,
 
 gin::WrapperInfo Cookies::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Cookies::Cookies(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
-    : browser_context_(browser_context) {
+Cookies::Cookies(ElectronBrowserContext* browser_context)
+    : browser_context_{browser_context} {
   cookie_change_subscription_ =
       browser_context_->cookie_change_notifier()->RegisterCookieChangeCallback(
           base::BindRepeating(&Cookies::OnCookieChanged,
@@ -385,9 +385,11 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
 
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
+    net::CookieInclusionStatus cookie_inclusion_status;
+    cookie_inclusion_status.AddExclusionReason(
+        net::CookieInclusionStatus::ExclusionReason::EXCLUDE_INVALID_DOMAIN);
     promise.RejectWithErrorMessage(
-        InclusionStatusToString(net::CookieInclusionStatus(
-            net::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN)));
+        InclusionStatusToString(cookie_inclusion_status));
     return handle;
   }
 
@@ -401,11 +403,11 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       &status);
 
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
+    net::CookieInclusionStatus cookie_inclusion_status;
+    cookie_inclusion_status.AddExclusionReason(
+        net::CookieInclusionStatus::ExclusionReason::EXCLUDE_FAILURE_TO_STORE);
     promise.RejectWithErrorMessage(InclusionStatusToString(
-        !status.IsInclude()
-            ? status
-            : net::CookieInclusionStatus(
-                  net::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE)));
+        !status.IsInclude() ? status : cookie_inclusion_status));
     return handle;
   }
 
@@ -458,7 +460,7 @@ void Cookies::OnCookieChanged(const net::CookieChangeInfo& change) {
 // static
 gin::Handle<Cookies> Cookies::Create(v8::Isolate* isolate,
                                      ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate, new Cookies(isolate, browser_context));
+  return gin::CreateHandle(isolate, new Cookies{browser_context});
 }
 
 gin::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(

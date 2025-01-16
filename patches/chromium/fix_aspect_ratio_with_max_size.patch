@@ -11,10 +11,10 @@ enlarge window above dimensions set during creation of the
 BrowserWindow.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index fc0c3a59dc308d675cc3997231df2c9b9ad02e83..6b5ed4cec3847ace96b8c1f028b789154b9cad7f 100644
+index af7124ca3b93e85dfb1dddd9a7e8adf3c80d363f..3e7066bcdc551f1c798c75f279b57318b4bf18e4 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3694,14 +3694,29 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
+@@ -3717,15 +3717,30 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
    delegate_->GetMinMaxSize(&min_window_size, &max_window_size);
    min_window_size = delegate_->DIPToScreenSize(min_window_size);
    max_window_size = delegate_->DIPToScreenSize(max_window_size);
@@ -35,8 +35,9 @@ index fc0c3a59dc308d675cc3997231df2c9b9ad02e83..6b5ed4cec3847ace96b8c1f028b78915
 +  }
  
    std::optional<gfx::Size> max_size_param;
-   if (!max_window_size.IsEmpty())
+   if (!max_window_size.IsEmpty()) {
      max_size_param = max_window_size;
+   }
  
 -  gfx::SizeRectToAspectRatioWithExcludedMargin(
 +  gfx::SizeRectToAspectRatio(

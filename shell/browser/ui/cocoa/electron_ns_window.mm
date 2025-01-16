@@ -6,7 +6,10 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "electron/mas.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_mac.h"
+#include "shell/browser/ui/cocoa/delayed_native_view_host.h"
+#include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
@@ -188,6 +191,27 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 // NSWindow overrides.
+
+- (void)sendEvent:(NSEvent*)event {
+  // Draggable regions only respond to left-click dragging, but the system will
+  // still suppress right-clicks in a draggable region. Temporarily disabling
+  // draggable regions allows the underlying views to respond to right-click
+  // to potentially bring up a frame context menu.
+  BOOL shouldDisableDraggable =
+      (event.type == NSEventTypeRightMouseDown ||
+       (event.type == NSEventTypeLeftMouseDown &&
+        ([event modifierFlags] & NSEventModifierFlagControl)));
+
+  if (shouldDisableDraggable) {
+    electron::api::WebContents::SetDisableDraggableRegions(true);
+  }
+
+  [super sendEvent:event];
+
+  if (shouldDisableDraggable) {
+    electron::api::WebContents::SetDisableDraggableRegions(false);
+  }
+}
 
 - (void)rotateWithEvent:(NSEvent*)event {
   shell_->NotifyWindowRotateGesture(event.rotation);

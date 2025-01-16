@@ -2,6 +2,7 @@
 
 import subprocess
 import os
+import re
 
 # Find the nearest tag to the current HEAD.
 # This is equivalent to our old logic of "use a value in package.json" for the
@@ -24,7 +25,8 @@ try:
       cwd=os.path.abspath(os.path.join(os.path.dirname(__file__), '..')),
       stderr=subprocess.PIPE,
       universal_newlines=True)
-  version = output.strip().replace('v', '')
+  # only remove the 'v' prefix from the tag name.
+  version = re.sub('^v', '', output.strip())
   print(version)
 except Exception:
   # When there is error we print a null version string instead of throwing an

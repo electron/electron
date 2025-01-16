@@ -9,7 +9,6 @@
 
 #include "base/containers/contains.h"
 #include "base/functional/bind.h"
-#include "base/strings/stringprintf.h"
 #include "content/public/browser/web_contents.h"
 #include "device/bluetooth/public/cpp/bluetooth_uuid.h"
 #include "services/device/public/cpp/bluetooth/bluetooth_utils.h"
@@ -22,6 +21,7 @@
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace gin {
@@ -38,10 +38,10 @@ struct Converter<device::mojom::SerialPortInfoPtr> {
       dict.Set("displayName", *port->display_name);
     }
     if (port->has_vendor_id) {
-      dict.Set("vendorId", base::StringPrintf("%u", port->vendor_id));
+      dict.Set("vendorId", absl::StrFormat("%u", port->vendor_id));
     }
     if (port->has_product_id) {
-      dict.Set("productId", base::StringPrintf("%u", port->product_id));
+      dict.Set("productId", absl::StrFormat("%u", port->product_id));
     }
     if (port->serial_number && !port->serial_number->empty()) {
       dict.Set("serialNumber", *port->serial_number);

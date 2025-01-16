@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Maddock <smaddock@slack-corp.com>
+Date: Fri, 22 Nov 2024 15:18:05 -0500
+Subject: test: use static method names in call stacks
+
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5907815
+
+diff --git a/test/message/assert_throws_stack.out b/test/message/assert_throws_stack.out
+index b1f3ea2108ba9c1a4f98928062b44b927eea31f2..897ddf36a04eb03edd01dd6b9a6fb4394cbdf114 100644
+--- a/test/message/assert_throws_stack.out
++++ b/test/message/assert_throws_stack.out
+@@ -23,7 +23,7 @@ AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+   actual: Error: foo
+       at assert.throws.bar (*assert_throws_stack.js:*)
+       at getActual (node:assert:*)
+-      at Function.throws (node:assert:*)
++      at strict.throws (node:assert:*)
+       at Object.<anonymous> (*assert_throws_stack.js:*:*)
+       at *
+       at *
+diff --git a/test/message/internal_assert_fail.out b/test/message/internal_assert_fail.out
+index 9fc86673262dbacb45e544340c81b4d14ee3f845..5f1026791f323d6a5965810917c0ef33ae4bfd53 100644
+--- a/test/message/internal_assert_fail.out
++++ b/test/message/internal_assert_fail.out
+@@ -6,7 +6,7 @@ Error [ERR_INTERNAL_ASSERTION]: Unreachable!
+ This is caused by either a bug in Node.js or incorrect usage of Node.js internals.
+ Please open an issue with this stack trace at https://github.com/nodejs/node/issues
+ 
+-    at Function.fail (node:internal/assert:*:*)
++    at assert.fail (node:internal/assert:*:*)
+     at * (*test*message*internal_assert_fail.js:7:8)
+     at *
+     at *
+diff --git a/test/parallel/test-fs-promises.js b/test/parallel/test-fs-promises.js
+index d28af0f4833c4901e8542c8938cbcf51ff22464d..796ad3224c4dba06b53b2da14fc8469b158f206d 100644
+--- a/test/parallel/test-fs-promises.js
++++ b/test/parallel/test-fs-promises.js
+@@ -58,7 +58,7 @@ assert.strictEqual(
+       code: 'ENOENT',
+       name: 'Error',
+       message: /^ENOENT: no such file or directory, access/,
+-      stack: /at async Function\.rejects/
++      stack: /at async ok\.rejects/
+     }
+   ).then(common.mustCall());
+ 

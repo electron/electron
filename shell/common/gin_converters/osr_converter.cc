@@ -27,7 +27,7 @@ std::string OsrVideoPixelFormatToString(media::VideoPixelFormat format) {
     case media::PIXEL_FORMAT_ABGR:
       return "rgba";
     default:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
   }
 }
 
@@ -38,7 +38,7 @@ std::string OsrWidgetTypeToString(content::WidgetType type) {
     case content::WidgetType::kFrame:
       return "frame";
     default:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
   }
 }
 
@@ -54,7 +54,7 @@ struct OffscreenReleaseHolderMonitor {
     holder_ = nullptr;
   }
 
-  bool IsTextureReleased() const { return holder_ == nullptr; }
+  [[nodiscard]] bool IsTextureReleased() const { return holder_ == nullptr; }
 
   v8::Persistent<v8::Value>* CreatePersistent(v8::Isolate* isolate,
                                               v8::Local<v8::Value> value) {

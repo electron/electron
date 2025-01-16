@@ -139,13 +139,6 @@ class RendererClientBase : public content::ContentRendererClient
                       bool was_created_by_renderer,
                       const url::Origin* outermost_origin) override;
 
- protected:
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // app_shell embedders may need custom extensions client interfaces.
-  // This class takes ownership of the returned object.
-  virtual extensions::ExtensionsClient* CreateExtensionsClient();
-#endif
-
  private:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<extensions::ExtensionsClient> extensions_client_;

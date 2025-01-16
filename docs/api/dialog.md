@@ -78,6 +78,11 @@ dialog.showOpenDialogSync(mainWindow, {
 })
 ```
 
+**Note:** On Linux `defaultPath` is not supported when using portal file chooser
+dialogs unless the portal backend is version 4 or higher. You can use `--xdg-portal-required-version`
+[command-line switch](./command-line-switches.md#--xdg-portal-required-versionversion)
+to force gtk or kde dialogs.
+
 ### `dialog.showOpenDialog([window, ]options)`
 
 * `window` [BaseWindow](base-window.md) (optional)
@@ -149,6 +154,11 @@ dialog.showOpenDialog(mainWindow, {
   console.log(err)
 })
 ```
+
+**Note:** On Linux `defaultPath` is not supported when using portal file chooser
+dialogs unless the portal backend is version 4 or higher. You can use `--xdg-portal-required-version`
+[command-line switch](./command-line-switches.md#--xdg-portal-required-versionversion)
+to force gtk or kde dialogs.
 
 ### `dialog.showSaveDialogSync([window, ]options)`
 
@@ -350,7 +360,7 @@ On Windows the options are more limited, due to the Win32 APIs used:
 
 ## Bookmarks array
 
-`showOpenDialog`, `showOpenDialogSync`, `showSaveDialog`, and `showSaveDialogSync` will return a `bookmarks` array.
+`showOpenDialog` and `showSaveDialog` resolve to an object with a `bookmarks` field. This field is an array of Base64 encoded strings that contain the [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) data for the saved file. The `securityScopedBookmarks` option must be enabled for this to be present.
 
 | Build Type | securityScopedBookmarks boolean | Return Type | Return Value                   |
 |------------|---------------------------------|:-----------:|--------------------------------|

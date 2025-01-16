@@ -306,13 +306,17 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) {
-      if (shouldThrowStatError(options)) throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
+      if (shouldThrowStatError(options)) {
+        throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
+      };
       return null;
     }
 
     const stats = archive.stat(filePath);
     if (!stats) {
-      if (shouldThrowStatError(options)) throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
+      if (shouldThrowStatError(options)) {
+        throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
+      };
       return null;
     }
 
@@ -690,7 +694,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const { encoding } = options;
     const buffer = Buffer.alloc(info.size);
     const fd = archive.getFdAndValidateIntegrityLater();
-    if (!(fd >= 0)) throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
+    if (!(fd >= 0)) {
+      throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
+    }
 
     logASARAccess(asarPath, filePath, info.offset);
     fs.readSync(fd, buffer, 0, info.size, info.offset);
@@ -755,7 +761,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     nextTick(callback!, [null, files]);
   };
 
-  const { readdir: readdirPromise } = require('fs').promises;
+  const { readdir: readdirPromise } = fs.promises;
   fs.promises.readdir = async function (pathArgument: string, options: ReaddirOptions) {
     options = getOptions(options);
     pathArgument = getValidatedPath(pathArgument);
@@ -841,37 +847,30 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return files;
   };
 
-  const binding = internalBinding('fs');
-  const { internalModuleReadJSON, kUsePromises } = binding;
-  internalBinding('fs').internalModuleReadJSON = (pathArgument: string) => {
-    const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return internalModuleReadJSON(pathArgument);
+  const modBinding = internalBinding('modules');
+  const { readPackageJSON } = modBinding;
+  internalBinding('modules').readPackageJSON = (
+    jsonPath: string,
+    isESM: boolean,
+    base: undefined | string,
+    specifier: undefined | string
+  ) => {
+    const pathInfo = splitPath(jsonPath);
+    if (!pathInfo.isAsar) return readPackageJSON(jsonPath, isESM, base, specifier);
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
-    if (!archive) return [];
+    if (!archive) return undefined;
 
-    const info = archive.getFileInfo(filePath);
-    if (!info) return [];
-    if (info.size === 0) return ['', false];
-    if (info.unpacked) {
-      const realPath = archive.copyFileOut(filePath);
-      const str = fs.readFileSync(realPath, { encoding: 'utf8' });
-      return [str, str.length > 0];
-    }
+    const realPath = archive.copyFileOut(filePath);
+    if (!realPath) return undefined;
 
-    const buffer = Buffer.alloc(info.size);
-    const fd = archive.getFdAndValidateIntegrityLater();
-    if (!(fd >= 0)) return [];
-
-    logASARAccess(asarPath, filePath, info.offset);
-    fs.readSync(fd, buffer, 0, info.size, info.offset);
-    validateBufferIntegrity(buffer, info.integrity);
-    const str = buffer.toString('utf8');
-    return [str, str.length > 0];
+    return readPackageJSON(realPath, isESM, base, specifier);
   };
 
-  const { internalModuleStat } = internalBinding('fs');
+  const binding = internalBinding('fs');
+
+  const { internalModuleStat } = binding;
   internalBinding('fs').internalModuleStat = (pathArgument: string) => {
     const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) return internalModuleStat(pathArgument);
@@ -888,6 +887,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return (stats.type === AsarFileType.kDirectory) ? 1 : 0;
   };
 
+  const { kUsePromises } = binding;
   async function readdirRecursive (originalPath: string, options: ReaddirOptions) {
     const result: any[] = [];
 

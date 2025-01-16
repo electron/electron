@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Maddock <smaddock@slack-corp.com>
+Date: Tue, 12 Nov 2024 17:30:42 -0500
+Subject: refactor: unfilter unresponsive events
+
+RendererUnresponsive events are filtered out when
+* DisableHangMonitor switch is set
+* WebContents is awaiting a clipboard scan
+* Any remote debugger is attached
+* Any local debugger is attached
+* Visibility state is not visible
+* Renderer process is not initialized
+
+This CL removes these filters so the unresponsive event can still be
+accessed from our JS event. The filtering is moved into Electron's code.
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 042f69afa3192e9161264c244499b76184f53e70..4b92604378e30c93b438e0b474b47d6cea2ec7a4 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -9684,25 +9684,13 @@ void WebContentsImpl::RendererUnresponsive(
+     base::RepeatingClosure hang_monitor_restarter) {
+   OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RendererUnresponsive",
+                         "render_widget_host", render_widget_host);
+-  if (ShouldIgnoreUnresponsiveRenderer()) {
++  if (IsBeingDestroyed()) {
+     return;
+   }
+ 
+   bool visible = GetVisibility() == Visibility::VISIBLE;
+   RecordRendererUnresponsiveMetrics(visible, render_widget_host);
+ 
+-  // Do not report hangs (to task manager, to hang renderer dialog, etc.) for
+-  // invisible tabs (like extension background page, background tabs).  See
+-  // https://crbug.com/881812 for rationale and for choosing the visibility
+-  // (rather than process priority) as the signal here.
+-  if (!visible) {
+-    return;
+-  }
+-
+-  if (!render_widget_host->renderer_initialized()) {
+-    return;
+-  }
+-
+   CrashRepHandlingOutcome outcome =
+       base::CommandLine::ForCurrentProcess()->HasSwitch(
+           switches::kNoErrorDialogs)

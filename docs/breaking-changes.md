@@ -12,7 +12,7 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
-## Planned Breaking API Changes (34.0)
+## Planned Breaking API Changes (35.0)
 
 ### Deprecated: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
 
@@ -28,6 +28,14 @@ webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame
 ```
 
 Additionally, `level` is now a string with possible values of `info`, `warning`, `error`, and `debug`.
+
+## Planned Breaking API Changes (34.0)
+
+### Behavior Changed: menu bar will be hidden during fullscreen on Windows
+
+This brings the behavior to parity with Linux. Prior behavior: Menu bar is still visible during fullscreen on Windows. New behavior: Menu bar is hidden during fullscreen on Windows.
+
+**Correction**: This was previously listed as a breaking change in Electron 33, but was first released in Electron 34.
 
 ## Planned Breaking API Changes (33.0)
 
@@ -86,10 +94,6 @@ mainWindow.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script
 mainWindow.loadURL('other://index.html')
 ```
 
-### Behavior Changed: menu bar will be hidden during fullscreen on Windows
-
-This brings the behavior to parity with Linux. Prior behavior: Menu bar is still visible during fullscreen on Windows. New behavior: Menu bar is hidden during fullscreen on Windows.
-
 ### Behavior Changed: `webContents` property on `login` on `app`
 
 The `webContents` property in the `login` event from `app` will be `null`
@@ -128,14 +132,14 @@ The nonstandard `path` property of the Web `File` object was added in an early v
 ```js
 // Before (renderer)
 
-const file = document.querySelector('input[type=file]')
+const file = document.querySelector('input[type=file]').files[0]
 alert(`Uploaded file path was: ${file.path}`)
 ```
 
 ```js
 // After (renderer)
 
-const file = document.querySelector('input[type=file]')
+const file = document.querySelector('input[type=file]').files[0]
 electron.showFilePath(file)
 
 // (preload)
