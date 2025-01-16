@@ -677,9 +677,9 @@ void WebRequest::SetListener(Event event,
       dict.Get("excludeUrls", &filter_exclude_patterns);
       dict.Get("types", &filter_types);
       args->GetNext(&arg);
-      // filter.SetFilterDefined(true);
     } else {
-      // If no filter is defined, create one with <all_urls>
+      // If no filter is defined, create one with <all_urls> so it matches all
+      // requests
       dict = gin::Dictionary::CreateEmpty(args->isolate());
       filter_include_patterns.insert("<all_urls>");
       dict.Set("urls", filter_include_patterns);

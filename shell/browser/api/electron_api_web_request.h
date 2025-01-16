@@ -57,7 +57,6 @@ class WebRequest final : public gin::Wrappable<WebRequest>,
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-
   const char* GetTypeName() override;
 
   // WebRequestAPI:
