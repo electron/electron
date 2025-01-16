@@ -34,8 +34,6 @@ static_library("chrome") {
     "//chrome/browser/devtools/features.h",
     "//chrome/browser/devtools/visual_logging.cc",
     "//chrome/browser/devtools/visual_logging.h",
-    "//chrome/browser/extensions/global_shortcut_listener.cc",
-    "//chrome/browser/extensions/global_shortcut_listener.h",
     "//chrome/browser/file_system_access/file_system_access_features.cc",
     "//chrome/browser/file_system_access/file_system_access_features.h",
     "//chrome/browser/icon_loader.cc",
@@ -147,6 +145,8 @@ static_library("chrome") {
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
     "//ui/views/native_window_tracker.h",
+    "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc",
+    "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h",
   ]
 
   if (is_posix) {
