@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James Godfrey-Kittle <jamesgk@google.com>
+Date: Tue, 17 Dec 2024 12:14:17 -0500
+Subject: [ganesh] Avoid overflow when combining AAHairlineOps
+
+Bug: b/382786791
+Change-Id: I955d943015cce76f75221df9fab0897a6f22fe4b
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/930577
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: James Godfrey-Kittle <jamesgk@google.com>
+(cherry picked from commit 8b030e47588af50f56ef380d81a17667baeb582b)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/935337
+Reviewed-by: James Godfrey-Kittle <jamesgk@google.com>
+Auto-Submit: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+
+diff --git a/src/gpu/ganesh/ops/AAHairLinePathRenderer.cpp b/src/gpu/ganesh/ops/AAHairLinePathRenderer.cpp
+index 352790443969808d7147d57061a712de0224a867..2c04f3109806e2fd057efef31263b52dd6fe2035 100644
+--- a/src/gpu/ganesh/ops/AAHairLinePathRenderer.cpp
++++ b/src/gpu/ganesh/ops/AAHairLinePathRenderer.cpp
+@@ -27,6 +27,7 @@
+ #include "include/private/base/SkPoint_impl.h"
+ #include "include/private/base/SkTArray.h"
+ #include "include/private/gpu/ganesh/GrTypesPriv.h"
++#include "src/base/SkSafeMath.h"
+ #include "src/core/SkGeometry.h"
+ #include "src/core/SkMatrixPriv.h"
+ #include "src/core/SkPointPriv.h"
+@@ -1219,16 +1220,28 @@ void AAHairlineOp::onPrepareDraws(GrMeshDrawTarget* target) {
+ 
+     int instanceCount = fPaths.size();
+     bool convertConicsToQuads = !target->caps().shaderCaps()->fFloatIs32Bits;
+-    for (int i = 0; i < instanceCount; i++) {
++    SkSafeMath safeMath;
++    for (int i = 0; i < instanceCount && safeMath.ok(); i++) {
+         const PathData& args = fPaths[i];
+-        quadCount += gather_lines_and_quads(args.fPath, args.fViewMatrix, args.fDevClipBounds,
+-                                            args.fCapLength, convertConicsToQuads, &lines, &quads,
+-                                            &conics, &qSubdivs, &cWeights);
++        quadCount = safeMath.addInt(quadCount,
++                                    gather_lines_and_quads(args.fPath,
++                                                           args.fViewMatrix,
++                                                           args.fDevClipBounds,
++                                                           args.fCapLength,
++                                                           convertConicsToQuads,
++                                                           &lines,
++                                                           &quads,
++                                                           &conics,
++                                                           &qSubdivs,
++                                                           &cWeights));
+     }
+ 
+     int lineCount = lines.size() / 2;
+     int conicCount = conics.size() / 3;
+-    int quadAndConicCount = conicCount + quadCount;
++    int quadAndConicCount = safeMath.addInt(conicCount, quadCount);
++    if (!safeMath.ok()) {
++        return;
++    }
+ 
+     static constexpr int kMaxLines = SK_MaxS32 / kLineSegNumVertices;
+     static constexpr int kMaxQuadsAndConics = SK_MaxS32 / kQuadNumVertices;
