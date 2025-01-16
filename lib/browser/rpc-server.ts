@@ -45,18 +45,8 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, function (event, me
 });
 
 const getPreloadScriptsFromEvent = (event: ElectronInternal.IpcMainInternalEvent) => {
-  const session: Electron.Session = event.type === 'service-worker' ? event.session : event.sender.session;
-  let preloadScripts = session.getPreloadScripts();
-
-  if (event.type === 'frame') {
-    preloadScripts = preloadScripts.filter(script => script.type === 'frame');
-    const preload = event.sender._getPreloadScript();
-    if (preload) preloadScripts.push(preload);
-  } else if (event.type === 'service-worker') {
-    preloadScripts = preloadScripts.filter(script => script.type === 'service-worker');
-  } else {
-    throw new Error(`getPreloadScriptsFromEvent: event.type is invalid (${(event as any).type})`);
-  }
+  const session: Electron.Session = event.sender.session;
+  const preloadScripts = session.getPreloadScripts().filter(script => script.type === 'frame');
 
   // TODO(samuelmaddock): Remove filter after Session.setPreloads is fully
   // deprecated. The new API will prevent relative paths from being registered.
