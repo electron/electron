@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Mon, 18 Nov 2024 16:02:28 -0800
+Subject: Merged: [interpreter] Fix hole elision scope for switch jump tables
+
+(cherry picked from commit 5c3b50c26c50e68dbedf8ff991249e75e46ef06e)
+
+Change-Id: Id6bf2b62598b85a05c6cc7bd06b6cce673d7342a
+Bug: 374627491
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6042925
+Commit-Queue: Shu-yu Guo <syg@chromium.org>
+Commit-Queue: Rezvan Mahdavi Hezaveh <rezvan@chromium.org>
+Auto-Submit: Shu-yu Guo <syg@chromium.org>
+Reviewed-by: Rezvan Mahdavi Hezaveh <rezvan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.2@{#18}
+Cr-Branched-From: 24068c59cedad9ee976ddc05431f5f497b1ebd71-refs/heads/13.2.152@{#1}
+Cr-Branched-From: 6054ba94db0969220be4f94dc1677fc4696bdc4f-refs/heads/main@{#97085}
+
+diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
+index 05d48601ec63c7df0c1a4c351be464074ad8b262..2c28bb53c88c70fd65bc0d208542ad35490f5044 100644
+--- a/src/interpreter/bytecode-generator.cc
++++ b/src/interpreter/bytecode-generator.cc
+@@ -2353,6 +2353,9 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
+   // Are we still using any if-else bytecodes to evaluate the switch?
+   bool use_jumps = n_comp_cases != 0;
+ 
++  // Does the comparison for non-jump table jumps need an elision scope?
++  bool jump_comparison_needs_hole_check_elision_scope = false;
++
+   SwitchBuilder switch_builder(builder(), block_coverage_builder_, stmt,
+                                n_comp_cases, jump_table);
+   ControlScopeForBreakable scope(this, stmt, &switch_builder);
+@@ -2410,6 +2413,10 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
+                                          info.covered_cases);
+ 
+     if (use_jumps) {
++      // When using a jump table, the first jump comparison is conditionally
++      // executed if the discriminant wasn't matched by anything in the jump
++      // table, and so needs its own elision scope.
++      jump_comparison_needs_hole_check_elision_scope = true;
+       builder()->LoadAccumulatorWithRegister(r1);
+     }
+   }
+@@ -2430,16 +2437,14 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
+       // The comparisons linearly dominate, so no need to open a new elision
+       // scope for each one.
+       base::Optional<HoleCheckElisionScope> elider;
+-      bool first_jump_emitted = false;
+       for (int i = 0; i < clauses->length(); ++i) {
+         CaseClause* clause = clauses->at(i);
+         if (clause->is_default()) {
+           info.default_case = i;
+         } else if (!info.CaseExists(clause->label())) {
+-          // The first non-default label is
+-          // unconditionally executed, so we only need to emplace it before
+-          // visiting the second non-default label.
+-          if (first_jump_emitted) elider.emplace(this);
++          if (jump_comparison_needs_hole_check_elision_scope && !elider) {
++            elider.emplace(this);
++          }
+ 
+           // Perform label comparison as if via '===' with tag.
+           VisitForAccumulatorValue(clause->label());
+@@ -2450,7 +2455,9 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
+ #endif
+           switch_builder.JumpToCaseIfTrue(ToBooleanMode::kAlreadyBoolean,
+                                           case_compare_ctr++);
+-          first_jump_emitted = true;
++          // The second and subsequent non-default comparisons are always
++          // conditionally executed, and need an elision scope.
++          jump_comparison_needs_hole_check_elision_scope = true;
+         }
+       }
+     }
+diff --git a/test/mjsunit/regress/regress-374627491.js b/test/mjsunit/regress/regress-374627491.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ebb7e1d93f788f10606b4787cfacd79c3807ca0c
+--- /dev/null
++++ b/test/mjsunit/regress/regress-374627491.js
+@@ -0,0 +1,26 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++class B { }
++class C extends B {
++  constructor() {
++    let x = 0;
++    switch (0) {
++      case 0:
++      case 1:
++      case 2:
++      case 3:
++      case 4:
++      case 5:
++      case 6:
++      case 7:
++      case 8:
++      case 9:
++        x += this;
++        break;
++      case this:
++    }
++  }
++}
++assertThrows(() => { new C(); }, ReferenceError);
