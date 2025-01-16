@@ -111,6 +111,10 @@ declare namespace NodeJS {
     setListeningForShutdown(listening: boolean): void;
   }
 
+  interface ServiceWorkerMainBinding {
+    ServiceWorkerMain: typeof Electron.ServiceWorkerMain;
+  }
+
   interface SessionBinding {
     fromPartition: typeof Electron.Session.fromPartition,
     fromPath: typeof Electron.Session.fromPath,
@@ -228,6 +232,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_safe_storage'): { safeStorage: Electron.SafeStorage };
     _linkedBinding(name: 'electron_browser_session'): SessionBinding;
     _linkedBinding(name: 'electron_browser_screen'): { createScreen(): Electron.Screen };
+    _linkedBinding(name: 'electron_browser_service_worker_main'): ServiceWorkerMainBinding;
     _linkedBinding(name: 'electron_browser_system_preferences'): { systemPreferences: Electron.SystemPreferences };
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };
     _linkedBinding(name: 'electron_browser_view'): { View: Electron.View };
