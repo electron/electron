@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 73a3138043bd85835d5f5d40da26b9b64a816808..fb78446dcb7293b06c5a10264eacc74c3610838a 100644
+index 752bcb7d692de3590c748053fc8e59a238b1ff16..924720fc2b7e49051e3663bf02d5f80ac8a0f3ac 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4862,8 +4862,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4873,8 +4873,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // TODO(crbug.com/40202416): Support a way for MPArch guests to support this.
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -380,7 +380,7 @@ index 1012a909ef1fcae51c218ae519fe7e0db65ab087..127b1ae940bc9313aecb635e2b01bb6f
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index cb9f320fbe3dd53e673325e626655e30db71eebf..baad1b9c834fd947431e7f7d37c8b7eb2e87587f 100644
+index dedaef2c3920065aecf37333b9431868b884cf1e..ebaacb3572e2da3776bc9df05024ee4a6dd75a1c 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -207,8 +207,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {

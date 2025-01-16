@@ -13,7 +13,7 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index aa2d789b3aec5b333e66e10ac31a60ef159b6407..3f016b16ee35f356887dec82879db26be41718b1 100644
+index 95876b4040844b598ea7219732a044b4423f8d97..4e02620b7887d1b70b2a9b9e21b819d99efdca18 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
 @@ -210,6 +210,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
@@ -26,7 +26,7 @@ index aa2d789b3aec5b333e66e10ac31a60ef159b6407..3f016b16ee35f356887dec82879db26b
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 4c8e8c2b171fc7181f576d12a48c9706af4e2d04..ef150acdeed57c844616db7b51aa0e6fdfe9b203 100644
+index 8f90bb52b3cef64af2f880c13ff8182c61d6a091..ee24a241b48cd27d84dbf3268fdf6f8447082077 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -457,6 +457,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -53,7 +53,7 @@ index 4c8e8c2b171fc7181f576d12a48c9706af4e2d04..ef150acdeed57c844616db7b51aa0e6f
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -694,6 +711,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -712,6 +729,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
    std::optional<base::TimeDelta> caret_blink_interval_;
    bool use_overlay_scrollbars_ = false;
@@ -62,7 +62,7 @@ index 4c8e8c2b171fc7181f576d12a48c9706af4e2d04..ef150acdeed57c844616db7b51aa0e6f
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index d34f90e8a6b9304798e73349aa73963dfc45bad6..99513deae31d7e4a37acbc16a35c42a4360960c2 100644
+index f9680f5f46180313ef98df97e242f72ac3dfd0dc..5571532504b4752faad2ed5712ba1ef813e32a84 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -688,6 +688,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {

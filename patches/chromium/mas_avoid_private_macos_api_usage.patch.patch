@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a6085be0cf7961ee9ecb1ad5b594ec77646af9c4..8014118a5881510341a51848a65bb4c5f8d63e72 100644
+index fc9f68629f8f20f8097cd646e8ad853ff5d492e9..ef445d21451cb35e203b86941e67d54a497a1604 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1030,6 +1030,7 @@ component("base") {
@@ -174,7 +174,7 @@ index 94a028be3c315edc0056408ab9ab41b6b001a1c1..abf9003bc71506d389ff77dc708c8971
  
  }  // namespace base
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index 2b98a6031a9d0cbcf66581bdb3ff2497d9f80f13..d0f65e6eb429b4d4cdde5d03ce56c788e9a62ce7 100644
+index 8120f75eb9d4f0b6a8921c2b0d48073c558ca334..dbb07434a0ea72a6846dbee83f39a534f8148945 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
 @@ -47,6 +47,7 @@ component("os_crypt") {
@@ -679,7 +679,7 @@ index 9185fd223c9611faee546570c0df36bc94cdb28c..86886e94e9e2c52e297a82175f607185
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 08d8189a8887fa29bff99a56c742f14ed8b9fb41..ce263cccaf912ab1b0b73ea14c8322296feac89e 100644
+index 804e0934004a465b610fb9b83692adea15808d87..486dffeffc1637af3a4eba4d037e71628573c6ac 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -285,6 +285,7 @@ source_set("common") {
@@ -1615,7 +1615,7 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..c2ac4da580e3e7f749a0a4de1e859af6
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index fd73152fa4b6da606c1f7709ff314912d90f10fe..e3607fa0677d059f4a20cf4bef24726c57188be9 100644
+index 90762aa4f4edcb2f965bdb48c72e4d19a0b49ba6..d4c8463a43c6f693f3646fe88aeda653ae389d05 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -362,6 +362,13 @@ component("base") {
