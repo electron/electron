@@ -146,6 +146,7 @@ base::flat_map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
 #endif
 
 std::unique_ptr<ThumbnailCapturer> MakeScreenAndWindowCapturer() {
+  LOG(INFO) << "MakeScreenAndWindowCapturer";
 #if BUILDFLAG(IS_MAC)
   if (ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kNone)) {
     LOG(INFO) << "Use the thumbnail capturer";
@@ -298,7 +299,8 @@ void DesktopCapturer::StartHandling(bool capture_window,
     //     webrtc::DesktopCapturer::CreateGenericCapturer(
     //         content::desktop_capture::CreateDesktopCaptureOptions());
     LOG(INFO) << "capture_window && capture_screen";
-    // auto capturer = desktop_capturer ? std::make_unique<DesktopCapturerWrapper>(
+    // auto capturer = desktop_capturer ?
+    // std::make_unique<DesktopCapturerWrapper>(
     //                                        std::move(desktop_capturer))
     //                                  : nullptr;
     // if (capturer && capturer->GetDelegatedSourceListController()) {
@@ -310,8 +312,8 @@ void DesktopCapturer::StartHandling(bool capture_window,
     //   window_capturer_->SetThumbnailSize(thumbnail_size);
 
     //   OnceCallback update_callback = base::BindOnce(
-    //       &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
-    //       window_capturer_.get());
+    //       &DesktopCapturer::UpdateSourcesList,
+    //       weak_ptr_factory_.GetWeakPtr(), window_capturer_.get());
     //   OnceCallback failure_callback = base::BindOnce(
     //       &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
 
@@ -329,42 +331,45 @@ void DesktopCapturer::StartHandling(bool capture_window,
       LOG(INFO) << "Inside the IsDisplayMediaSystemPickerAvailable logic";
       capture_screen_ = false;
       capture_window_ = capture_window;
-        screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
-            DesktopMediaList::Type::kNone, std::move(capturer), true, true);
-        LOG(INFO) << "Made capturer?";
-        screen_capturer_->SetThumbnailSize(thumbnail_size);
-        LOG(INFO) << "Made thumbnails?";
-        screen_capturer_->ShowDelegatedList();
-        LOG(INFO) << "Showed delegated list?";
+      screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
+          DesktopMediaList::Type::kNone, std::move(capturer), true, true);
+      LOG(INFO) << "Made capturer?";
+      screen_capturer_->SetThumbnailSize(thumbnail_size);
+      LOG(INFO) << "Made thumbnails?";
+      screen_capturer_->ShowDelegatedList();
+      LOG(INFO) << "Showed delegated list?";
 #if BUILDFLAG(IS_MAC)
-        screen_capturer_->skip_next_refresh_ =
-            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kNone) ? 2
-                                                                           : 0;
+      screen_capturer_->skip_next_refresh_ =
+          ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kNone) ? 2 : 0;
 #endif
 
-        OnceCallback update_callback = base::BindOnce(
-            &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
-            screen_capturer_.get());
-        LOG(INFO) << "Updated source list?";
+      OnceCallback update_callback = base::BindOnce(
+          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
+          screen_capturer_.get());
+      LOG(INFO) << "Updated source list?";
 
-        // Needed to force a refresh for the native MacOS Picker
-        OnceCallback wrapped_update_callback = base::BindOnce(
-            &DesktopCapturer::RequestUpdate, weak_ptr_factory_.GetWeakPtr(),
-            screen_capturer_.get(), std::move(update_callback));
+      // Needed to force a refresh for the native MacOS Picker
+      OnceCallback wrapped_update_callback = base::BindOnce(
+          &DesktopCapturer::RequestUpdate, weak_ptr_factory_.GetWeakPtr(),
+          screen_capturer_.get(), std::move(update_callback));
 
-        if (screen_capturer_->IsSourceListDelegated()) {
-          OnceCallback failure_callback = base::BindOnce(
-              &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
-          screen_listener_ = std::make_unique<DesktopListListener>(
-              std::move(wrapped_update_callback), std::move(failure_callback),
-              thumbnail_size.IsEmpty());
-          screen_capturer_->StartUpdating(screen_listener_.get());
-        } else {
-          screen_capturer_->Update(std::move(update_callback),
-                                   /* refresh_thumbnails = */ true);
-        }
+      if (screen_capturer_->IsSourceListDelegated()) {
+        LOG(INFO) << "Source list is delegated...";
+        OnceCallback failure_callback = base::BindOnce(
+            &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
+        screen_listener_ = std::make_unique<DesktopListListener>(
+            std::move(wrapped_update_callback), std::move(failure_callback),
+            thumbnail_size.IsEmpty());
+        LOG(INFO)
+            << "Screen listener made. Starting to update screen capturer...";
+        screen_capturer_->StartUpdating(screen_listener_.get());
+      } else {
+        LOG(INFO) << "Updating screen capturer..., refreshing thumbnails";
+        screen_capturer_->Update(std::move(update_callback),
+                                 /* refresh_thumbnails = */ true);
+      }
 
-        return;
+      return;
     }
   }
 
@@ -578,6 +583,7 @@ void DesktopCapturer::HandleFailure() {
 
 // static
 gin::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
+  LOG(INFO) << "Creating DesktopCapturer...";
   auto handle = gin::CreateHandle(isolate, new DesktopCapturer(isolate));
 
   // Keep reference alive until capturing has finished.

@@ -21,10 +21,14 @@ index 85320190d406bdd37175ddb5d207d124b278b648..677dfdbc761dcc942b865ed073b16ea7
            // SameOrigin is more restrictive than just Tabs, so as long as
            // at least SameOrigin is allowed, these entries should stay.
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d2ec9baf3219f4b38db4771a1ca1b3b5fd86dba0 100644
+index 08400be4d1bae18502d19beed6b2d9057e55dd4f..29d915ec7cc0e639dc71080a9913a57881cdfb35 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -15,6 +15,7 @@
+@@ -12,9 +12,11 @@
+ #include <set>
+ #include <utility>
+ 
++#include "base/logging.h"
  #include "base/functional/bind.h"
  #include "base/hash/hash.h"
  #include "chrome/browser/media/webrtc/desktop_media_list.h"
@@ -32,12 +36,13 @@ index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d2ec9baf3219f4b38db4771a1ca1b3b5
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "third_party/skia/include/core/SkBitmap.h"
-@@ -77,7 +78,13 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
+@@ -77,7 +79,14 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
  void DesktopMediaListBase::Update(UpdateCallback callback, bool refresh_thumbnails) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    DCHECK(sources_.empty());
 -  DCHECK(!refresh_callback_);
 +  #if BUILDFLAG(IS_MAC)
++  LOG(INFO) << "Desktopmedialistbase update, should use sccontent sharing picker: " << ShouldUseSCContentSharingPicker();
 +   if (!ShouldUseSCContentSharingPicker()) {
 +    DCHECK(!refresh_callback_);
 +   };
@@ -48,7 +53,7 @@ index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d2ec9baf3219f4b38db4771a1ca1b3b5
    Refresh(refresh_thumbnails);
  }
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 0ac8e20073bd2db507e49200fd0b48f8535d666b..dd82cd565c5cb61d5d530d3d67bbbb384772466e 100644
+index 0ac8e20073bd2db507e49200fd0b48f8535d666b..d328c3cd7dafc3f516acac99996d7f6fc427c1ad 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -46,6 +46,7 @@
@@ -63,20 +68,31 @@ index 0ac8e20073bd2db507e49200fd0b48f8535d666b..dd82cd565c5cb61d5d530d3d67bbbb38
  
  content::DesktopMediaID::Type ConvertToDesktopMediaIDType(
      DesktopMediaList::Type type) {
-+  // LOG(INFO) << "Inside ConvertToDesktopMediaIDType";
++  LOG(INFO) << "Inside ConvertToDesktopMediaIDType";
    switch (type) {
      case DesktopMediaList::Type::kScreen:
        return content::DesktopMediaID::Type::TYPE_SCREEN;
      case DesktopMediaList::Type::kWindow:
        return content::DesktopMediaID::Type::TYPE_WINDOW;
 +    case DesktopMediaList::Type::kNone:
-+      // return content::DesktopMediaID::Type::TYPE_NONE;
++      return content::DesktopMediaID::Type::TYPE_NONE;
      case DesktopMediaList::Type::kWebContents:
      case DesktopMediaList::Type::kCurrentTab:
 -    case DesktopMediaList::Type::kNone:
        break;
    }
    NOTREACHED();
+@@ -411,8 +414,8 @@ NativeDesktopMediaList::Worker::Worker(
+                                 nullptr) {
+   DCHECK(capturer_);
+ 
+-  DCHECK(source_type_ == DesktopMediaID::Type::TYPE_WINDOW ||
+-         !add_current_process_windows_);
++  // DCHECK(source_type_ == DesktopMediaID::Type::TYPE_WINDOW ||
++  //        !add_current_process_windows_);
+ }
+ 
+ NativeDesktopMediaList::Worker::~Worker() {
 @@ -532,7 +535,10 @@ NativeDesktopMediaList::Worker::FormatSources(
    std::vector<SourceDescription> source_descriptions;
    std::u16string title;
@@ -88,13 +104,15 @@ index 0ac8e20073bd2db507e49200fd0b48f8535d666b..dd82cd565c5cb61d5d530d3d67bbbb38
        case DesktopMediaID::Type::TYPE_SCREEN:
          // Just in case 'Screen' is inflected depending on the screen number,
          // use plural formatter.
-@@ -545,11 +551,23 @@ NativeDesktopMediaList::Worker::FormatSources(
+@@ -545,17 +551,36 @@ NativeDesktopMediaList::Worker::FormatSources(
          break;
  
        case DesktopMediaID::Type::TYPE_WINDOW:
++      case DesktopMediaID::Type::TYPE_NONE:
 +      #if BUILDFLAG(IS_MAC)
 +              // If using NativeScreenCapturePickerMac,
 +              // skipping the picker will skip the first window selection.
++              LOG(INFO) << "ShouldUseSCContentSharingPicker: " << ShouldUseSCContentSharingPicker();
 +              if (ShouldUseSCContentSharingPicker()) {
 +                title = base::UTF8ToUTF16(sources[i].title);
 +              } else if (sources[i].id == excluded_window_id) {
@@ -112,6 +130,72 @@ index 0ac8e20073bd2db507e49200fd0b48f8535d666b..dd82cd565c5cb61d5d530d3d67bbbb38
          break;
  
        default:
+         NOTREACHED();
+     }
+     DesktopMediaID source_id(source_type, sources[i].id);
++    // for each source log its id
++    for (size_t j = 0; j < sources.size(); ++j) {
++      LOG(INFO) << "for loop source_id: " << sources[j].id;
++    }
++    LOG(INFO) << "source_id: " << source_id.id;
+ #if BUILDFLAG(IS_CHROMEOS_LACROS)
+     // We need to communicate this in_process_id to
+     // |RefreshForVizFrameSinkWindows|, so we'll use the window_id. If
+@@ -820,14 +845,18 @@ NativeDesktopMediaList::NativeDesktopMediaList(
+       is_source_list_delegated_(capturer->GetDelegatedSourceListController() !=
+                                 nullptr) {
+   type_ = type;
+-
+-  DCHECK(type_ == DesktopMediaList::Type::kWindow ||
+-         !add_current_process_windows_);
++  LOG(INFO) << "is_source_list_delegated_: " << is_source_list_delegated_;
++            LOG(INFO) << "Inside NativeDesktopMediaList, type of kwindow: " << static_cast<int>(DesktopMediaList::Type::kWindow) << ";";
++            LOG(INFO) << "Inside NativeDesktopMediaList, type of kscreen: " << static_cast<int>(DesktopMediaList::Type::kScreen) << ";";
++            LOG(INFO) << "Inside NativeDesktopMediaList, type of kwebcontents: " << static_cast<int>(DesktopMediaList::Type::kWebContents) << ";";
++            LOG(INFO) << "Inside NativeDesktopMediaList, type of kcurrenttab: " << static_cast<int>(DesktopMediaList::Type::kCurrentTab) << ";";
++            LOG(INFO) << "Inside NativeDesktopMediaList, type of knone: " << static_cast<int>(DesktopMediaList::Type::kNone) << ";";
++  LOG(INFO) << "Inside NativeDesktopMediaList, type: " << static_cast<int>(type_) << ";";
++  LOG(INFO) << "Inside NativeDesktopMediaList, add_current_process_windows: " << !add_current_process_windows_ << ";";
++  // DCHECK(type_ == DesktopMediaList::Type::kWindow ||
++  //        !add_current_process_windows_);
+ 
+ #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
+-  // webrtc::DesktopCapturer implementations on Windows, MacOS and Fuchsia
+-  // expect to run on a thread with a UI message pump. Under Fuchsia the
+-  // capturer needs an async loop to support FIDL I/O.
+   base::MessagePumpType thread_type = base::MessagePumpType::UI;
+ #else
+   base::MessagePumpType thread_type = base::MessagePumpType::DEFAULT;
+@@ -839,8 +868,11 @@ NativeDesktopMediaList::NativeDesktopMediaList(
+       std::move(capturer), add_current_process_windows_,
+       auto_show_delegated_source_list);
+ 
+-  if (!is_source_list_delegated_)
++  if (!is_source_list_delegated_) {
++    LOG(INFO) << "Inside NativeDesktopMediaList, is_source_list_delegated_: " << is_source_list_delegated_ << ";";
++    LOG(INFO) << "start capture, sourcelist not delegated";
+     StartCapturer();
++  }
+ }
+ 
+ NativeDesktopMediaList::~NativeDesktopMediaList() {
+@@ -892,11 +924,16 @@ bool NativeDesktopMediaList::IsSourceListDelegated() const {
+ void NativeDesktopMediaList::StartDelegatedCapturer() {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   DCHECK(IsSourceListDelegated());
++  LOG(INFO) << "Inside NativeDesktopMediaList, StartDelegatedCapturer";
++  // starting again, this time from the call "startupdating the delegated capturer";
++  LOG(INFO) << "is_capturer_started_ we could be starting again: " << is_capturer_started_ << ";";
+   StartCapturer();
+ }
+ 
+ void NativeDesktopMediaList::StartCapturer() {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
++  LOG(INFO) << "Inside NativeDesktopMediaList, StartCapturer";
++  LOG(INFO) << "is_capturer_started_: " << is_capturer_started_ << ";";
+   DCHECK(!is_capturer_started_);
+   // base::Unretained is safe here because we own the lifetime of both the
+   // worker and the thread and ensure that destroying the worker is the last
 diff --git a/chrome/browser/media/webrtc/thumbnail_capturer_mac.h b/chrome/browser/media/webrtc/thumbnail_capturer_mac.h
 index 12a74f8f32cc00a7f3d7802865ae4b309961341d..acbcfb08ae8c44e24a04b326096289428bc6ff60 100644
 --- a/chrome/browser/media/webrtc/thumbnail_capturer_mac.h
@@ -127,10 +211,44 @@ index 12a74f8f32cc00a7f3d7802865ae4b309961341d..acbcfb08ae8c44e24a04b32609628942
  bool ShouldUseThumbnailCapturerMac(DesktopMediaList::Type type);
  
 diff --git a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
-index 47a5ad2b7e2bc86a614488fd3fe85da1e3e2d6f2..7f11a73e8a109c3bdf689d510850e82902305e6e 100644
+index 47a5ad2b7e2bc86a614488fd3fe85da1e3e2d6f2..d6db4e5e22c568f70fb3e6c5f479807a2bfeecff 100644
 --- a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
 +++ b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
-@@ -761,6 +761,8 @@ void OnCapturedFrame(base::apple::ScopedCFTypeRef<CGImageRef> image,
+@@ -13,6 +13,7 @@
+ #include <optional>
+ #include <unordered_map>
+ 
++#include "base/logging.h"
+ #include "base/apple/bridging.h"
+ #include "base/apple/foundation_util.h"
+ #include "base/apple/scoped_cftyperef.h"
+@@ -80,11 +81,12 @@
+       return content::DesktopMediaID::Type::TYPE_SCREEN;
+     case DesktopMediaList::Type::kWindow:
+       return content::DesktopMediaID::Type::TYPE_WINDOW;
++    case DesktopMediaList::Type::kNone:
++      return content::DesktopMediaID::Type::TYPE_NONE;
+     case DesktopMediaList::Type::kWebContents:
+     case DesktopMediaList::Type::kCurrentTab:
+       return content::DesktopMediaID::Type::TYPE_WEB_CONTENTS;
+-    case DesktopMediaList::Type::kNone:
+-      break;
++      // break;
+   }
+   NOTREACHED();
+ }
+@@ -479,8 +481,9 @@ void OnCapturedFrame(base::apple::ScopedCFTypeRef<CGImageRef> image,
+       max_frame_rate_(kThumbnailCapturerMacMaxFrameRate.Get()),
+       minimum_window_size_(kThumbnailCapturerMacMinWindowSize.Get()),
+       shareable_windows_([[NSArray<SCWindow*> alloc] init]) {
++        LOG(INFO) << "ThumbnailCapturerMac::ThumbnailCapturerMac";
+   CHECK(type_ == DesktopMediaList::Type::kWindow ||
+-        type_ == DesktopMediaList::Type::kScreen);
++        type_ == DesktopMediaList::Type::kScreen || type_ == DesktopMediaList::Type::kNone);
+ }
+ 
+ ThumbnailCapturerMac::~ThumbnailCapturerMac() {
+@@ -761,17 +764,19 @@ void OnCapturedFrame(base::apple::ScopedCFTypeRef<CGImageRef> image,
                                        source_id);
  }
  
@@ -138,8 +256,15 @@ index 47a5ad2b7e2bc86a614488fd3fe85da1e3e2d6f2..7f11a73e8a109c3bdf689d510850e829
 +
  bool ShouldUseSCContentSharingPicker() {
    if (@available(macOS 15.0, *)) {
-     if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
-@@ -770,8 +772,6 @@ bool ShouldUseSCContentSharingPicker() {
+-    if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
+-      return true;
+-    }
++    // if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
++    //   return true;
++    // }
++    // TODO: turn on this flag
++    return true;
+   }
    return false;
  }
  
@@ -148,6 +273,74 @@ index 47a5ad2b7e2bc86a614488fd3fe85da1e3e2d6f2..7f11a73e8a109c3bdf689d510850e829
  bool ShouldUseThumbnailCapturerMac(DesktopMediaList::Type type) {
    // There was a bug in ScreenCaptureKit that was fixed in 14.4,
    // see b/40076027.
+@@ -785,6 +790,8 @@ bool ShouldUseThumbnailCapturerMac(DesktopMediaList::Type type) {
+         return ShouldUseSCContentSharingPicker() ||
+                base::FeatureList::IsEnabled(kScreenCaptureKitPickerScreen);
+       case DesktopMediaList::Type::kNone:
++               // TODO: george
++               return true;
+       case DesktopMediaList::Type::kCurrentTab:
+       case DesktopMediaList::Type::kWebContents:
+         return false;
+@@ -798,12 +805,15 @@ bool ShouldUseThumbnailCapturerMac(DesktopMediaList::Type type) {
+ std::unique_ptr<ThumbnailCapturer> CreateThumbnailCapturerMac(
+     DesktopMediaList::Type type) {
+   CHECK(ShouldUseThumbnailCapturerMac(type));
++    LOG(INFO) << "CreateThumbnailCapturerMac";
+   if (ShouldUseSCContentSharingPicker()) {
++    LOG(INFO) << "CreateThumbnailCapturerMac: SCContentSharingPicker";
+     return std::make_unique<DesktopCapturerWrapper>(
+         std::make_unique<DelegatedSourceListCapturer>(
+             ConvertToDesktopMediaIDType(type)));
+   }
+   if (@available(macOS 14.4, *)) {
++    LOG(INFO) << "CreateThumbnailCapturerMac: ThumbnailCapturerMac, no sccontentsharingpicker";
+     return std::make_unique<ThumbnailCapturerMac>(type);
+   }
+   NOTREACHED();
+diff --git a/chrome/browser/ui/views/desktop_capture/desktop_media_list_controller.cc b/chrome/browser/ui/views/desktop_capture/desktop_media_list_controller.cc
+index 6508bad4af0d95e6dfc1eb4f688be71a5869af63..f24b12704b19c20fa12ec241481bc3e210f8bba8 100644
+--- a/chrome/browser/ui/views/desktop_capture/desktop_media_list_controller.cc
++++ b/chrome/browser/ui/views/desktop_capture/desktop_media_list_controller.cc
+@@ -122,6 +122,7 @@ void DesktopMediaListController::FocusView() {
+ }
+ 
+ void DesktopMediaListController::ShowDelegatedList() {
++  LOG(INFO) << "ShowDelegatedList, controller";
+   media_list_->ShowDelegatedList();
+   dialog_->GetWidget()->Hide();
+ }
+diff --git a/content/browser/media/capture/native_screen_capture_picker.cc b/content/browser/media/capture/native_screen_capture_picker.cc
+index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..400d7a2e7bb5d7d590181b9ada950f29f8b391bf 100644
+--- a/content/browser/media/capture/native_screen_capture_picker.cc
++++ b/content/browser/media/capture/native_screen_capture_picker.cc
+@@ -7,18 +7,23 @@
+ #if BUILDFLAG(IS_MAC)
+ #include "content/browser/media/capture/native_screen_capture_picker_mac.h"
+ #include "media/base/media_switches.h"
++#include "base/logging.h"
+ #endif
+ 
+ namespace content {
+ 
+ std::unique_ptr<NativeScreenCapturePicker>
+ MaybeCreateNativeScreenCapturePicker() {
++  LOG(INFO) << "content::MaybeCreateNativeScreenCapturePicker()";
+ #if BUILDFLAG(IS_MAC)
+-  if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
++
++  // if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
++    LOG(INFO) << "content::MaybeCreateNativeScreenCapturePicker() - CreateNativeScreenCapturePickerMac()";
+     return CreateNativeScreenCapturePickerMac();
+-  }
+-#endif
++  // }
++#else
+   return nullptr;
++#endif
+ }
+ 
+ }  // namespace content
 diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
 index f3dbdd0db5f6c3d07b600f3dfa3267d0a5a57b81..c61e1c9d4a67bc52deb69429abf2dc4bf9a79556 100644
 --- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
@@ -213,3 +406,19 @@ index f3dbdd0db5f6c3d07b600f3dfa3267d0a5a57b81..c61e1c9d4a67bc52deb69429abf2dc4b
    } else {
      NOTREACHED();
    }
+diff --git a/content/browser/renderer_host/media/in_process_video_capture_provider.cc b/content/browser/renderer_host/media/in_process_video_capture_provider.cc
+index 4462efa154a2be9cc25f82688fdbc7edf71a7bb1..a9d87514b9f5099ee1ea9a3cc36a4e0df089c3ea 100644
+--- a/content/browser/renderer_host/media/in_process_video_capture_provider.cc
++++ b/content/browser/renderer_host/media/in_process_video_capture_provider.cc
+@@ -9,9 +9,10 @@
+ #include "base/functional/bind.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "content/browser/renderer_host/media/in_process_video_capture_device_launcher.h"
++#include "content/browser/media/capture/native_screen_capture_picker.h"
+ 
+ namespace content {
+-
++// TODO: note here
+ InProcessVideoCaptureProvider::InProcessVideoCaptureProvider(
+     scoped_refptr<base::SingleThreadTaskRunner> device_task_runner)
+     : native_screen_capture_picker_(MaybeCreateNativeScreenCapturePicker()),
