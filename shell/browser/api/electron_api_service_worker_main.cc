@@ -184,7 +184,7 @@ bool ServiceWorkerMain::IsDestroyed() const {
 }
 
 const blink::StorageKey ServiceWorkerMain::GetStorageKey() {
-  GURL scope = version_info()->scope;
+  GURL scope = version_info_ ? version_info()->scope : GURL::EmptyGURL();
   return blink::StorageKey::CreateFirstParty(url::Origin::Create(scope));
 }
 
@@ -235,6 +235,8 @@ void ServiceWorkerMain::FinishExternalRequest(v8::Isolate* isolate,
 }
 
 size_t ServiceWorkerMain::CountExternalRequests() {
+  if (version_destroyed_)
+    return 0;
   auto& storage_key = GetStorageKey();
   return service_worker_context_->CountExternalRequestsForTest(storage_key);
 }
