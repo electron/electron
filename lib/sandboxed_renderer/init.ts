@@ -53,15 +53,18 @@ Object.assign(preloadProcess, processProps);
 
 Object.assign(process, processProps);
 
+// Common renderer initialization
+require('@electron/internal/renderer/common-init');
+
 executeSandboxedPreloadScripts({
-  loadedModules: loadedModules,
-  loadableModules: loadableModules,
+  loadedModules,
+  loadableModules,
   process: preloadProcess,
   createPreloadScript: binding.createPreloadScript,
   exposeGlobals: {
-    Buffer: Buffer,
-    global: global,
-    setImmediate: setImmediate,
-    clearImmediate: clearImmediate
+    Buffer,
+    global,
+    setImmediate,
+    clearImmediate
   }
 }, preloadScripts);
