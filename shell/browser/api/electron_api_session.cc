@@ -160,7 +160,8 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
   return quota_mask;
 }
 
-constexpr BrowsingDataRemover::DataType kClearDataTypeAll = ~0ULL;
+constexpr BrowsingDataRemover::DataType kClearDataTypeAll =
+    ~0ULL & ~BrowsingDataRemover::DATA_TYPE_AVOID_CLOSING_CONNECTIONS;
 constexpr BrowsingDataRemover::OriginType kClearOriginTypeAll =
     BrowsingDataRemover::ORIGIN_TYPE_UNPROTECTED_WEB |
     BrowsingDataRemover::ORIGIN_TYPE_PROTECTED_WEB;
