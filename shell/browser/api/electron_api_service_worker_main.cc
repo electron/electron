@@ -218,12 +218,6 @@ gin_helper::Dictionary ServiceWorkerMain::StartExternalRequest(
 
 void ServiceWorkerMain::FinishExternalRequest(v8::Isolate* isolate,
                                               std::string uuid) {
-  if (version_destroyed_) {
-    isolate->ThrowException(v8::Exception::TypeError(
-        gin::StringToV8(isolate, "ServiceWorkerMain is destroyed")));
-    return;
-  }
-
   base::Uuid request_uuid = base::Uuid::ParseLowercase(uuid);
   if (!request_uuid.is_valid()) {
     isolate->ThrowException(v8::Exception::TypeError(
@@ -231,7 +225,37 @@ void ServiceWorkerMain::FinishExternalRequest(v8::Isolate* isolate,
     return;
   }
 
-  service_worker_context_->FinishedExternalRequest(version_id_, request_uuid);
+  DCHECK(service_worker_context_);
+  if (!service_worker_context_)
+    return;
+
+  content::ServiceWorkerExternalRequestResult result =
+      service_worker_context_->FinishedExternalRequest(version_id_,
+                                                       request_uuid);
+
+  std::string error;
+  switch (result) {
+    case content::ServiceWorkerExternalRequestResult::kOk:
+      break;
+    case content::ServiceWorkerExternalRequestResult::kBadRequestId:
+      error = "Unknown external request UUID";
+      break;
+    case content::ServiceWorkerExternalRequestResult::kWorkerNotRunning:
+      error = "Service worker is no longer running";
+      break;
+    case content::ServiceWorkerExternalRequestResult::kWorkerNotFound:
+      error = "Service worker was not found";
+      break;
+    case content::ServiceWorkerExternalRequestResult::kNullContext:
+    default:
+      error = "Service worker context is unavailable and may be shutting down";
+      break;
+  }
+
+  if (!error.empty()) {
+    isolate->ThrowException(
+        v8::Exception::TypeError(gin::StringToV8(isolate, error)));
+  }
 }
 
 size_t ServiceWorkerMain::CountExternalRequests() {
