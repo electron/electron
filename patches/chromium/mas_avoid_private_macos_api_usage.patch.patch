@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index fc9f68629f8f20f8097cd646e8ad853ff5d492e9..ef445d21451cb35e203b86941e67d54a497a1604 100644
+index 914cc1a96f6ee64debeb82214048b74ab040a5df..3eb9cd76212b5d89651fedbbebf7f7e96399e20b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1030,6 +1030,7 @@ component("base") {
+@@ -1029,6 +1029,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -174,17 +174,18 @@ index 94a028be3c315edc0056408ab9ab41b6b001a1c1..abf9003bc71506d389ff77dc708c8971
  
  }  // namespace base
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index 8120f75eb9d4f0b6a8921c2b0d48073c558ca334..dbb07434a0ea72a6846dbee83f39a534f8148945 100644
+index bfb0d2f208170f77df96fb9f14c8525e9dec6e11..e234d95a862198148bae97b4b276d93922f3ca92 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -47,6 +47,7 @@ component("os_crypt") {
+@@ -43,6 +43,8 @@ component("os_crypt") {
        "os_crypt_mac.mm",
      ]
      deps += [ "//crypto:mock_apple_keychain" ]
 +    deps += ["//electron/build/config:generate_mas_config"]
-   }
- 
-   if (is_win) {
++
+   } else if (is_win) {
+     sources += [ "os_crypt_win.cc" ]
+     deps += [ "//components/version_info" ]
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
 index d87682447b850e4cf9065f0d26d14077acbe467d..a179c9bc02158130f4b15bf8022721f4b53a8303 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
@@ -363,7 +364,7 @@ index d55914779bc097cab8afb144f2c47c001bfa7350..e55db3f550b4c082aa087fbcab6760da
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 0454bc58a7f89c26042db787dff8f379b2a4e65f..527f0f90498aee1fb31517fa965f1c118f09eaf2 100644
+index 2eba7ccc91d7689d48cd990635718bec4e3dc69c..5373ee02934f706386d3dd7c863766a6a7e8cc86 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -26,6 +26,7 @@
@@ -455,7 +456,7 @@ index 3b8e96fbc7aa4cf1601230e81ff32cf9792be1da..6d8b41ffff28200daec6d554a5b7f1c7
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 29881faeeeafd09efcea13c5bfb1ee2c091fd5be..f74231c7cdfbcb7895b6a77a8e434c3b0f43e2b0 100644
+index 556c71957399d772cfda093852db1f328bbe538f..d4ea42bf4098a7f571fc5cfe34353a0c488dc5f9 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -381,6 +381,7 @@ viz_component("service") {
@@ -560,7 +561,7 @@ index 038646bfa3ac442c64380a81bdb1d3043e50c107..33f2bcae6353a527710f05aa03770136
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d745020d00eae9862fd2d5c89e7a412cdd43b7d3..4d0f7cf33eeeee072afe12741f62427525c7b846 100644
+index 8a48699a703acd019a57916058bdd99a223306ff..6d2d9a41cfb20e469b33b9039b7ef7c293a5a400 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -327,6 +327,7 @@ source_set("browser") {
@@ -773,7 +774,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 89d48cc1cc827d9981b91af68ba95498d9063107..702aae59098449b70ff6a8d8a82f3e564c569499 100644
+index 23858defb34c7f40458b5ec6da337b95cdeb347f..08097629fbcd4e30860157523d91d0cf069b1f9a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -647,6 +647,7 @@ static_library("test_support") {
@@ -800,7 +801,7 @@ index 89d48cc1cc827d9981b91af68ba95498d9063107..702aae59098449b70ff6a8d8a82f3e56
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3195,6 +3198,7 @@ test("content_unittests") {
+@@ -3196,6 +3199,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1840,10 +1841,10 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 1aed3dbbf2bc6826eb5271c1db73fa0f4cf78a6c..7fd73e12c1e08c431010f7fb94742e694622ac24 100644
+index 94afec13361d4ee8d0441da3cbe37d62e287c94b..fd13add3291b113dc57c69700f35ac9943124786 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -717,6 +717,8 @@ component("views") {
+@@ -718,6 +718,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1852,7 +1853,7 @@ index 1aed3dbbf2bc6826eb5271c1db73fa0f4cf78a6c..7fd73e12c1e08c431010f7fb94742e69
    }
  
    if (is_win) {
-@@ -1134,6 +1136,8 @@ source_set("test_support") {
+@@ -1135,6 +1137,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
