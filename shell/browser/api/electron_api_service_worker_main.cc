@@ -258,7 +258,7 @@ void ServiceWorkerMain::FinishExternalRequest(v8::Isolate* isolate,
   }
 }
 
-size_t ServiceWorkerMain::CountExternalRequests() {
+size_t ServiceWorkerMain::CountExternalRequestsForTest() {
   if (version_destroyed_)
     return 0;
   auto& storage_key = GetStorageKey();
@@ -320,7 +320,7 @@ void ServiceWorkerMain::FillObjectTemplate(
       .SetMethod("_finishExternalRequest",
                  &ServiceWorkerMain::FinishExternalRequest)
       .SetMethod("_countExternalRequests",
-                 &ServiceWorkerMain::CountExternalRequests)
+                 &ServiceWorkerMain::CountExternalRequestsForTest)
       .SetProperty("versionId", &ServiceWorkerMain::VersionID)
       .SetProperty("scope", &ServiceWorkerMain::ScopeURL)
       .Build();
