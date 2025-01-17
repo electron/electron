@@ -27,10 +27,10 @@ RC2 Ciphers: rc2-40-cbc
 
 It's unclear whether this would be accepted upstream. We should try regardless.
 
-diff --git a/crypto/cipher_extra/cipher_extra.cc b/crypto/cipher_extra/cipher_extra.cc
+diff --git a/crypto/cipher/get_cipher.cc b/crypto/cipher/get_cipher.cc
 index 2d0f369bdeba84b157db82bd87c293ae2344c560..9088a0f29a95fe7abbb98cbf7e8be2577e5617ac 100644
---- a/crypto/cipher_extra/cipher_extra.cc
-+++ b/crypto/cipher_extra/cipher_extra.cc
+--- a/crypto/cipher/get_cipher.cc
++++ b/crypto/cipher/get_cipher.cc
 @@ -26,6 +26,7 @@ static const struct {
    const EVP_CIPHER *(*func)(void);
  } kCiphers[] = {

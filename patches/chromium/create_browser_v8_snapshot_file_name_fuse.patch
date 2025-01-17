@@ -95,10 +95,10 @@ index 801bfd401ea4a8e72417d88efaa718cc6fb60883..663fec68d0c2855cdf83bb259b85c229
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 689743f6e99db37edf8c1795a20011678fca0b49..f82811d04510150691966f9a0f388494def03a29 100644
+index 59abc24988ab4d194461a3ca4f4b2bb68395bada..9e0b16dda73900210bfc6305a5d32e51a704513e 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -654,8 +654,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -663,8 +663,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -108,7 +108,7 @@ index 689743f6e99db37edf8c1795a20011678fca0b49..f82811d04510150691966f9a0f388494
    if (g_mapped_snapshot) {
      // TODO(crbug.com/40558459): Confirm not loading different type of snapshot
      // files in a process.
-@@ -664,10 +663,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -673,10 +672,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =
@@ -128,7 +128,7 @@ index 689743f6e99db37edf8c1795a20011678fca0b49..f82811d04510150691966f9a0f388494
  void V8Initializer::LoadV8SnapshotFromFile(
      base::File snapshot_file,
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index cd7b010978f3f595263761e0692945667b9b3f89..328315aaa34fdd24d7b3dfe5373ec366cceaa124 100644
+index ec64afd9dd91b292604ca834a91b9cfbd52eb853..6f7382cd600cd34916d9382878aee4b469dae5d0 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
 @@ -7,6 +7,8 @@
@@ -140,7 +140,7 @@ index cd7b010978f3f595263761e0692945667b9b3f89..328315aaa34fdd24d7b3dfe5373ec366
  #include "base/files/file.h"
  #include "base/files/memory_mapped_file.h"
  #include "build/build_config.h"
-@@ -42,6 +44,7 @@ class GIN_EXPORT V8Initializer {
+@@ -43,6 +45,7 @@ class GIN_EXPORT V8Initializer {
                                          int* snapshot_size_out);
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)

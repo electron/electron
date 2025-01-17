@@ -218,7 +218,7 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 752bcb7d692de3590c748053fc8e59a238b1ff16..924720fc2b7e49051e3663bf02d5f80ac8a0f3ac 100644
+index 816ce30c7082294146550025ad98c866b937c8d9..a9467d329765ef7eda47e4d0d9521ab36343ae03 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4873,8 +4873,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -324,10 +324,10 @@ index e39031afd8fff7cb6e278555cc58a48d86407d65..f67f6a5603c1fa9e66ccdde9b601df9a
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 4cd72afe01d78f4abb152c1031071e3a08ecc79e..07015078ff94cd799f14a460da25a3e392f02dfd 100644
+index 61f132263c03d95870ecdc5bf3bdebb918ad7b4f..4ecf934005d01463bee92b3caf82c9161dab97e3 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-@@ -450,8 +450,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
+@@ -452,8 +452,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -380,7 +380,7 @@ index 1012a909ef1fcae51c218ae519fe7e0db65ab087..127b1ae940bc9313aecb635e2b01bb6f
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index dedaef2c3920065aecf37333b9431868b884cf1e..ebaacb3572e2da3776bc9df05024ee4a6dd75a1c 100644
+index 0101dbe4aa8cfe3103ba6ca9c9ac62ee46cffb2d..87b7cb41635c47a3ff7d19a7b46f63ed576be33d 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -207,8 +207,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
