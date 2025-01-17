@@ -114,8 +114,9 @@ You should at least follow these steps to improve the security of your applicati
 15. [Do not use `shell.openExternal` with untrusted content](#15-do-not-use-shellopenexternal-with-untrusted-content)
 16. [Use a current version of Electron](#16-use-a-current-version-of-electron)
 17. [Validate the `sender` of all IPC messages](#17-validate-the-sender-of-all-ipc-messages)
-18. [Avoid usage of the `file://` protocol and prefer usage of custom protocols](#18-avoid-usage-of-the-file-protocol-and-prefer-usage-of-custom-protocols)
-19. [Check which fuses you can change](#19-check-which-fuses-you-can-change)
+18. [Do not expose Electron APIs to untrusted web content](#18-do-not-expose-electrons-apis-to-untrusted-web-content)
+19. [Avoid usage of the `file://` protocol and prefer usage of custom protocols](#19-avoid-usage-of-the-file-protocol-and-prefer-usage-of-custom-protocols)
+20. [Check which fuses you can change](#20-check-which-fuses-you-can-change)
 
 To automate the detection of misconfigurations and insecure patterns, it is
 possible to use
@@ -229,7 +230,7 @@ API to remotely loaded content via the [contextBridge API](../api/context-bridge
 ### 3. Enable Context Isolation
 
 :::info
-This recommendation is the default behavior in Electron since 12.0.0.
+Context Isolation is the default behavior in Electron since 12.0.0.
 :::
 
 Context isolation is an Electron feature that allows developers to run code
@@ -761,7 +762,47 @@ function validateSender (frame) {
 }
 ```
 
-### 18. Avoid usage of the `file://` protocol and prefer usage of custom protocols
+### 18. Do not expose Electron's APIs to untrusted web content
+
+You should not directly expose Electron's APIs, especially IPC, to untrusted web content in your
+preload scripts.
+
+### Why?
+
+Exposing raw APIs like `ipcRenderer.on` is dangerous because it gives renderer processes direct
+access to the entire IPC event system, allowing them to listen for any IPC events, not just the ones
+intended for them. To avoid that exposure, we also cannot pass callbacks directly through: The first
+argument to IPC event callbacks is an `IpcRendererEvent` object, which includes properties like `sender`
+that provide access to the underlying `ipcRenderer` instance. Even if you only listen for specific
+events, passing the callback directly means the renderer gets access to this event object.
+
+In short, we want the untrusted web content to only have access to necessary information and APIs.
+
+### How?
+
+```js title='preload'.js'
+// Bad
+contextBridge.exposeInMainWorld('electronAPI', {
+  on: ipcRenderer.on
+})
+
+// Also bad
+contextBridge.exposeInMainWorld('electronAPI', {
+  onUpdateCounter: (callback) => ipcRenderer.on('update-counter', callback)
+})
+
+// Good
+contextBridge.exposeInMainWorld('electronAPI', {
+  onUpdateCounter: (callback) => ipcRenderer.on('update-counter', (_event, value) => callback(value))
+})
+```
+
+:::info
+For more information on what `contextIsolation` is and how to use it to secure your app,
+please see the [Context Isolation](context-isolation.md) document.
+:::
+
+### 19. Avoid usage of the `file://` protocol and prefer usage of custom protocols
 
 You should serve local pages from a custom protocol instead of the `file://` protocol.
 
@@ -782,7 +823,7 @@ set of files.
 Follow the [`protocol.handle`](../api/protocol.md#protocolhandlescheme-handler) examples to
 learn how to serve files / content from a custom protocol.
 
-### 19. Check which fuses you can change
+### 20. Check which fuses you can change
 
 Electron ships with a number of options that can be useful but a large portion of
 applications probably don't need. In order to avoid having to build your own version of
