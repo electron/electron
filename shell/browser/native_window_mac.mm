@@ -1676,6 +1676,7 @@ void NativeWindowMac::Cleanup() {
   DCHECK(!IsClosed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
   display::Screen::GetScreen()->RemoveObserver(this);
+  [window_ cleanup];
 }
 
 class NativeAppWindowFrameViewMac : public views::NativeFrameViewMac {

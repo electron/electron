@@ -114,34 +114,6 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 
 }  // namespace
 
-class ElectronNativeWindowObserver : public electron::NativeWindowObserver {
- public:
-  ElectronNativeWindowObserver(electron::NativeWindowMac* observed_window,
-                               ElectronNSWindow* bound_ns_window)
-      : observed_window_(observed_window), bound_ns_window_(bound_ns_window) {
-    CHECK(observed_window_);
-    observed_window_->AddObserver(this);
-  }
-  ~ElectronNativeWindowObserver() override {
-    if (observed_window_) {
-      observed_window_->RemoveObserver(this);
-      observed_window_ = nullptr;
-    }
-  }
-
-  void OnWindowClosed() override {
-    CHECK(observed_window_);
-    observed_window_->RemoveObserver(this);
-    [bound_ns_window_ onElectronNativeWindowClosed];
-    observed_window_ = nullptr;
-    bound_ns_window_ = nullptr;
-  }
-
- private:
-  raw_ptr<electron::NativeWindowMac> observed_window_ = nullptr;
-  ElectronNSWindow* bound_ns_window_ = nullptr;
-};
-
 @implementation ElectronNSWindow
 
 @synthesize acceptsFirstMouse;
@@ -191,18 +163,16 @@ class ElectronNativeWindowObserver : public electron::NativeWindowObserver {
     SwizzleSwipeWithEvent(view, @selector(swiz_nsview_swipeWithEvent:));
 #endif  // IS_MAS_BUILD
     shell_ = shell;
-    electron_native_window_observer_ =
-        std::make_unique<ElectronNativeWindowObserver>(shell_, self);
   }
   return self;
 }
 
-- (electron::NativeWindowMac*)shell {
-  return shell_;
+- (void)cleanup {
+  shell_ = nullptr;
 }
 
-- (void)onElectronNativeWindowClosed {
-  shell_ = nullptr;
+- (electron::NativeWindowMac*)shell {
+  return shell_;
 }
 
 - (id)accessibilityFocusedUIElement {
