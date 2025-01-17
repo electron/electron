@@ -144,9 +144,9 @@ static_library("chrome") {
     "//chrome/browser/ui/webui/accessibility/accessibility_ui.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
-    "//ui/views/native_window_tracker.h",
     "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc",
     "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h",
+    "//ui/views/native_window_tracker.h",
   ]
 
   if (is_posix) {
@@ -176,7 +176,6 @@ static_library("chrome") {
   }
 
   public_deps = [
-    "//chrome/browser:dev_ui_browser_resources",
     "//chrome/browser/resources/accessibility:resources",
     "//chrome/browser/ui/color:color_headers",
     "//chrome/browser/ui/color:mixers",
