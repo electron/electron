@@ -169,9 +169,6 @@ class NativeWindowMac : public NativeWindow,
   void NotifyWindowDidFailToEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
 
-  // views::WidgetDelegate:
-  views::View* GetContentsView() override;
-
   // Cleanup observers when window is getting closed. Note that the destructor
   // can be called much later after window gets closed, so we should not do
   // cleanup in destructor.
@@ -223,6 +220,7 @@ class NativeWindowMac : public NativeWindow,
 
  protected:
   // views::WidgetDelegate:
+  views::View* GetContentsView() override;
   bool CanMaximize() const override;
   std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
       views::Widget* widget) override;
