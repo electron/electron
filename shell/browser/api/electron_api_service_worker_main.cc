@@ -101,8 +101,18 @@ ServiceWorkerMain::~ServiceWorkerMain() {
 void ServiceWorkerMain::Destroy() {
   version_destroyed_ = true;
   InvalidateVersionInfo();
+  MaybeDisconnectRemote();
   GetVersionIdMap().erase(key_);
   Unpin();
+}
+
+void ServiceWorkerMain::MaybeDisconnectRemote() {
+  if (remote_.is_bound() &&
+      (version_destroyed_ ||
+       (!service_worker_context_->IsLiveStartingServiceWorker(version_id_) &&
+        !service_worker_context_->IsLiveRunningServiceWorker(version_id_)))) {
+    remote_.reset();
+  }
 }
 
 mojom::ElectronRenderer* ServiceWorkerMain::GetRendererApi() {
@@ -157,14 +167,10 @@ void ServiceWorkerMain::InvalidateVersionInfo() {
 }
 
 void ServiceWorkerMain::OnRunningStatusChanged() {
-  InvalidateVersionInfo();
-
   // Disconnect remote when content::ServiceWorkerHost has terminated.
-  if (remote_.is_bound() &&
-      !service_worker_context_->IsLiveStartingServiceWorker(version_id_) &&
-      !service_worker_context_->IsLiveRunningServiceWorker(version_id_)) {
-    remote_.reset();
-  }
+  MaybeDisconnectRemote();
+
+  InvalidateVersionInfo();
 }
 
 void ServiceWorkerMain::OnVersionRedundant() {

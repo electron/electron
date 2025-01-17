@@ -122,6 +122,7 @@ class ServiceWorkerMain final
 
  private:
   void Destroy();
+  void MaybeDisconnectRemote();
   const blink::StorageKey GetStorageKey();
 
   // Increments external requests for the service worker to keep it alive.
