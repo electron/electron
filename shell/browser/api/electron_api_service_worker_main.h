@@ -129,7 +129,7 @@ class ServiceWorkerMain final
   gin_helper::Dictionary StartExternalRequest(v8::Isolate* isolate,
                                               bool has_timeout);
   void FinishExternalRequest(v8::Isolate* isolate, std::string uuid);
-  size_t CountExternalRequests();
+  size_t CountExternalRequestsForTest();
 
   // Get or create a Mojo connection to the renderer process.
   mojom::ElectronRenderer* GetRendererApi();
