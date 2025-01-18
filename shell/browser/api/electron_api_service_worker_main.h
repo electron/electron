@@ -111,7 +111,7 @@ class ServiceWorkerMain final
   ServiceWorkerMain(const ServiceWorkerMain&) = delete;
   ServiceWorkerMain& operator=(const ServiceWorkerMain&) = delete;
 
-  void OnRunningStatusChanged();
+  void OnRunningStatusChanged(blink::EmbeddedWorkerStatus running_status);
   void OnVersionRedundant();
 
  protected:
@@ -158,6 +158,9 @@ class ServiceWorkerMain final
 
   // Whether the Service Worker version has been destroyed.
   bool version_destroyed_ = false;
+
+  // Whether the Service Worker version's state is redundant.
+  bool redundant_ = false;
 
   // Store copy of version info so it's accessible when not running.
   std::unique_ptr<content::ServiceWorkerVersionBaseInfo> version_info_;

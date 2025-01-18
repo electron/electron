@@ -94,7 +94,7 @@ void ServiceWorkerContext::OnRunningStatusChanged(
   ServiceWorkerMain* worker =
       ServiceWorkerMain::FromVersionID(version_id, storage_partition_);
   if (worker)
-    worker->OnRunningStatusChanged();
+    worker->OnRunningStatusChanged(running_status);
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);

@@ -30,6 +30,9 @@ describe('ServiceWorkerMain module', () => {
       serviceWorkers.on('console-message', (_e, details) => {
         console.log(details.message);
       });
+      serviceWorkers.on('running-status-changed', ({ versionId, runningStatus }) => {
+        console.log(`version ${versionId} is ${runningStatus}`);
+      });
     }
 
     const uuid = crypto.randomUUID();
@@ -49,7 +52,7 @@ describe('ServiceWorkerMain module', () => {
     wc = webContentsInternal.create({ session: ses });
 
     if (DEBUG) {
-      wc.on('console-message', (_e, _l, message) => {
+      wc.on('console-message', ({ message }) => {
         console.log(message);
       });
     }
@@ -252,7 +255,7 @@ describe('ServiceWorkerMain module', () => {
       expect(() => serviceWorker.startTask()).to.throw();
     });
 
-    it('throws when ending task after destroyed', async () => {
+    it('throws when ending task after destroyed', async function () {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker();
       const task = serviceWorker.startTask();

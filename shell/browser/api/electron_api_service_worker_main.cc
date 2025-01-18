@@ -166,17 +166,25 @@ void ServiceWorkerMain::InvalidateVersionInfo() {
   }
 }
 
-void ServiceWorkerMain::OnRunningStatusChanged() {
+void ServiceWorkerMain::OnRunningStatusChanged(
+    blink::EmbeddedWorkerStatus running_status) {
   // Disconnect remote when content::ServiceWorkerHost has terminated.
   MaybeDisconnectRemote();
 
   InvalidateVersionInfo();
+
+  // Redundant worker has been marked for deletion. Now that it's stopped, let's
+  // destroy our wrapper.
+  if (redundant_ && running_status == blink::EmbeddedWorkerStatus::kStopped) {
+    Destroy();
+  }
 }
 
 void ServiceWorkerMain::OnVersionRedundant() {
-  // Redundant service workers have become either unregistered or replaced.
-  // A new ServiceWorkerMain will need to be created.
-  Destroy();
+  // Redundant service workers have been either unregistered or replaced. A new
+  // ServiceWorkerMain will need to be created.
+  // Set internal state to mark it for deletion once it has fully stopped.
+  redundant_ = true;
 }
 
 bool ServiceWorkerMain::IsDestroyed() const {
