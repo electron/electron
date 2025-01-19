@@ -218,7 +218,7 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 816ce30c7082294146550025ad98c866b937c8d9..a9467d329765ef7eda47e4d0d9521ab36343ae03 100644
+index 7bbe1f1d7052f45c1e17fe9d4e8fe3164d3b0ba5..90d93722ef9fbb1ab4072f722db17af96faea062 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4873,8 +4873,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(

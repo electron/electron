@@ -30,10 +30,10 @@ index 6469dd594bb984ba4cd8c1464e7891396a35d8b3..6af0932ff13b2223d2177a4f13bf4e41
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 9175adcf5757dd4adecf4f27dcef423a6dac9477..9e7840facec0f4f2449089c538de0e955f445657 100644
+index 7c6752807590bc0f168820d0d9d8d3277ca9713d..65978e2ebbd31ee9b735a689c751681c155833e7 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2007,6 +2007,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
+@@ -2008,6 +2008,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_) {
      view_->UpdateCursor(cursor);
    }
@@ -44,7 +44,7 @@ index 9175adcf5757dd4adecf4f27dcef423a6dac9477..9e7840facec0f4f2449089c538de0e95
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 8fdbe376e63133a662e1d1c4b24c3b487b8b90cb..816ce30c7082294146550025ad98c866b937c8d9 100644
+index f33889dbaaa23908962c56f2dbe072c3bd9e7070..7bbe1f1d7052f45c1e17fe9d4e8fe3164d3b0ba5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5740,6 +5740,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {

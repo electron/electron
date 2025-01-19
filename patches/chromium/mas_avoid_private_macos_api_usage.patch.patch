@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 914cc1a96f6ee64debeb82214048b74ab040a5df..3eb9cd76212b5d89651fedbbebf7f7e96399e20b 100644
+index 99d5767a59455484f9c5c058e216654ad7780aac..5df91947dac1c23d3153d4b0b5aab3d735aa1ab5 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1029,6 +1029,7 @@ component("base") {
+@@ -1031,6 +1031,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -456,10 +456,10 @@ index 3b8e96fbc7aa4cf1601230e81ff32cf9792be1da..6d8b41ffff28200daec6d554a5b7f1c7
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 556c71957399d772cfda093852db1f328bbe538f..d4ea42bf4098a7f571fc5cfe34353a0c488dc5f9 100644
+index f43d8a8803b801c116fe3cea31839caddf57da28..8720a29e13ce052db99a6fb7925efd4b43472b9a 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -381,6 +381,7 @@ viz_component("service") {
+@@ -378,6 +378,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -467,7 +467,7 @@ index 556c71957399d772cfda093852db1f328bbe538f..d4ea42bf4098a7f571fc5cfe34353a0c
    }
  
    if (is_android || use_ozone) {
-@@ -680,6 +681,7 @@ viz_source_set("unit_tests") {
+@@ -676,6 +677,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
