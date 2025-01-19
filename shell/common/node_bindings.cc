@@ -377,7 +377,7 @@ void SetNodeOptions(base::Environment* env) {
       
       bool is_packaged_app = electron::api::App::IsPackaged();
 
-      if (env->HasVar("ELECTRON_LESS_RESTRICTIVE_NODE_OPTIONS_IN_PACKAGED_APP") {
+      if (env->HasVar("ELECTRON_LESS_RESTRICTIVE_NODE_OPTIONS_IN_PACKAGED_APP")) {
         is_packaged_app = false;
       }
 
