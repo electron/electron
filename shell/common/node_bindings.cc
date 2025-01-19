@@ -329,9 +329,6 @@ bool IsAllowedOption(const std::string_view option) {
       "--throw-deprecation",
       "--trace-deprecation",
       "--trace-warnings",
-      "--enable-source-maps",
-      "--async-stack-traces",
-      "--experimental-specifier-resolution=node",
   });
 
   if (debug_options.contains(option))
@@ -358,7 +355,7 @@ void SetNodeOptions(base::Environment* env) {
       "--max-http-header-size",
       "--enable-source-maps",
       "--async-stack-traces",
-      "--experimental-specifier-resolution=node",
+      "--experimental-specifier-resolution",
   });
 
   if (env->HasVar("NODE_EXTRA_CA_CERTS")) {
@@ -376,10 +373,6 @@ void SetNodeOptions(base::Environment* env) {
           options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
       
       bool is_packaged_app = electron::api::App::IsPackaged();
-
-      if (env->HasVar("ELECTRON_LESS_RESTRICTIVE_NODE_OPTIONS_IN_PACKAGED_APP")) {
-        is_packaged_app = false;
-      }
 
       for (const auto& part : parts) {
         // Strip off values passed to individual NODE_OPTIONs
