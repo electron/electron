@@ -31,6 +31,11 @@
 #include "components/services/print_compositor/public/mojom/print_compositor.mojom.h"  // nogncheck
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+#include "chrome/services/printing/print_backend_service_impl.h"
+#include "chrome/services/printing/public/mojom/print_backend_service.mojom.h"
+#endif  // BUILDFLAG(ENABLE_OOP_PRINTING)
+
 #if BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN)
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
 #endif
@@ -71,6 +76,21 @@ auto RunPrintCompositor(
       content::UtilityThread::Get()->GetIOTaskRunner());
 }
 #endif
+
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+auto RunPrintingSandboxedPrintBackendHost(
+    mojo::PendingReceiver<printing::mojom::SandboxedPrintBackendHost>
+        receiver) {
+  return std::make_unique<printing::SandboxedPrintBackendHostImpl>(
+      std::move(receiver));
+}
+auto RunPrintingUnsandboxedPrintBackendHost(
+    mojo::PendingReceiver<printing::mojom::UnsandboxedPrintBackendHost>
+        receiver) {
+  return std::make_unique<printing::UnsandboxedPrintBackendHostImpl>(
+      std::move(receiver));
+}
+#endif  // BUILDFLAG(ENABLE_OOP_PRINTING)
 
 auto RunProxyResolver(
     mojo::PendingReceiver<proxy_resolver::mojom::ProxyResolverFactory>
@@ -120,6 +140,11 @@ void ElectronContentUtilityClient::RegisterMainThreadServices(
 
 #if BUILDFLAG(ENABLE_PRINTING)
   services.Add(RunPrintCompositor);
+#endif
+
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+  services.Add(RunPrintingSandboxedPrintBackendHost);
+  services.Add(RunPrintingUnsandboxedPrintBackendHost);
 #endif
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) || \
