@@ -653,7 +653,7 @@ index 6809c4576c71bc1e1a6ad4e0a37707272a9a10f4..3aad10424a6a31dab2ca393d00149ec6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 18a8d64167b66d0de67c0c89779af90814b827c6..33079deee8720a447e2b4e1f3601542b59e1cf16 100644
+index 18a8d64167b66d0de67c0c89779af90814b827c6..52b95469f0392fbb108bef3f6d5ea0f8a81410fd 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -52,6 +52,7 @@
@@ -771,7 +771,7 @@ index 18a8d64167b66d0de67c0c89779af90814b827c6..33079deee8720a447e2b4e1f3601542b
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2359,29 +2374,37 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2359,29 +2374,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -803,10 +803,18 @@ index 18a8d64167b66d0de67c0c89779af90814b827c6..33079deee8720a447e2b4e1f3601542b
  
    bool center_on_paper = !IsPrintingPdfFrame(frame, node);
 -  settings.params->print_scaling_option =
-+  settings->params->print_scaling_option =
-       center_on_paper ? mojom::PrintScalingOption::kCenterShrinkToFitPaper
-                       : mojom::PrintScalingOption::kSourceSize;
+-      center_on_paper ? mojom::PrintScalingOption::kCenterShrinkToFitPaper
+-                      : mojom::PrintScalingOption::kSourceSize;
 -  RecordDebugEvent(settings.params->printed_doc_type ==
++  bool silent = new_settings.FindBool("silent").value_or(false);
++  if (silent) {
++    settings->params->print_scaling_option = mojom::PrintScalingOption::kFitToPrintableArea;
++  } else {
++    settings->params->print_scaling_option =
++        center_on_paper ? mojom::PrintScalingOption::kCenterShrinkToFitPaper
++                        : mojom::PrintScalingOption::kSourceSize;
++  }
++
 +  RecordDebugEvent(settings->params->printed_doc_type ==
                             mojom::SkiaDocumentType::kMSKP
                         ? DebugEvent::kSetPrintSettings5
