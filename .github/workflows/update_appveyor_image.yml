@@ -44,7 +44,7 @@ jobs:
         fi
     - name: (Optionally) Update Appveyor Image
       if: ${{ env.APPVEYOR_IMAGE_VERSION }}
-      uses: mikefarah/yq@4839dbbf80445070a31c7a9c1055da527db2d5ee # v4.44.6
+      uses: mikefarah/yq@8bf425b4d1344db7cd469a8d10a390876e0c77fd # v4.45.1
       with:
         cmd: |
           yq '.image = "${{ env.APPVEYOR_IMAGE_VERSION }}"' "appveyor.yml" > "appveyor2.yml"
