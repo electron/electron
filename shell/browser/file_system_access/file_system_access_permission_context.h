@@ -144,9 +144,11 @@ class FileSystemAccessPermissionContext
                                     content::GlobalRenderFrameHostId frame_id,
                                     bool should_block);
 
-  void RunRestrictedPathCallback(SensitiveEntryResult result);
+  void RunRestrictedPathCallback(const base::FilePath& file_path,
+                                 SensitiveEntryResult result);
 
-  void OnRestrictedPathResult(gin::Arguments* args);
+  void OnRestrictedPathResult(const base::FilePath& file_path,
+                              gin::Arguments* args);
 
   void MaybeEvictEntries(base::Value::Dict& dict);
 
@@ -170,7 +172,8 @@ class FileSystemAccessPermissionContext
 
   std::map<url::Origin, base::Value::Dict> id_pathinfo_map_;
 
-  base::OnceCallback<void(SensitiveEntryResult)> callback_;
+  std::map<base::FilePath, base::OnceCallback<void(SensitiveEntryResult)>>
+      callback_map_;
 
   base::WeakPtrFactory<FileSystemAccessPermissionContext> weak_factory_{this};
 };
