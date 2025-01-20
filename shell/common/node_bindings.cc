@@ -329,6 +329,9 @@ bool IsAllowedOption(const std::string_view option) {
       "--throw-deprecation",
       "--trace-deprecation",
       "--trace-warnings",
+      "--enable-source-maps",
+      "--async-stack-traces",
+      "--experimental-specifier-resolution",
   });
 
   if (debug_options.contains(option))
