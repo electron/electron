@@ -282,7 +282,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
 }
 
 void ErrorMessageListener(v8::Local<v8::Message> message,
-                          v8::Local<v8::Value> data) {
+                          v8::Local<v8::Value> /*data*/) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   node::Environment* env = node::Environment::GetCurrent(isolate);
   if (env) {

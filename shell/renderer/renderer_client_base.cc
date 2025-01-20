@@ -202,7 +202,7 @@ RendererClientBase* RendererClientBase::Get() {
   return g_renderer_client_base;
 }
 
-void RendererClientBase::BindProcess(v8::Isolate* isolate,
+void RendererClientBase::BindProcess(v8::Isolate* /*isolate*/,
                                      gin_helper::Dictionary* process,
                                      content::RenderFrame* render_frame) {
   auto context_id = absl::StrFormat("%s-%" PRId64, renderer_client_id_.c_str(),
@@ -546,7 +546,7 @@ void RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
 }
 
 void RendererClientBase::WebViewCreated(blink::WebView* web_view,
-                                        bool was_created_by_renderer,
+                                        bool /*was_created_by_renderer*/,
                                         const url::Origin* outermost_origin) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   new extensions::ExtensionWebViewHelper(web_view, outermost_origin);

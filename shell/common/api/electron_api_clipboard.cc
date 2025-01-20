@@ -292,9 +292,9 @@ void Clipboard::WriteFilesForTesting(const std::vector<base::FilePath>& files) {
 namespace {
 
 void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
+                v8::Local<v8::Value> /*unused*/,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("availableFormats",
                  &electron::api::Clipboard::AvailableFormats);

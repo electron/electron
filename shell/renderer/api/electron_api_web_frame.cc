@@ -315,7 +315,7 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
   }
 
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
-                                int world_id) final {
+                                int /*world_id*/) final {
     // Unset spell checker when the script context is going to be released, as
     // the spell check implementation lives there.
     UnsetAndDestroy();
@@ -775,7 +775,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
     blink::SetIsolatedWorldInfo(world_id, info);
   }
 
-  blink::WebCacheResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
+  blink::WebCacheResourceTypeStats GetResourceUsage() {
     blink::WebCacheResourceTypeStats stats;
     blink::WebCache::GetResourceTypeStats(&stats);
     return stats;
@@ -802,7 +802,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
   }
 #endif
 
-  void ClearCache(v8::Isolate* isolate) {
+  void ClearCache() {
     blink::WebCache::Clear();
     base::MemoryPressureListener::NotifyMemoryPressure(
         base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);
@@ -915,7 +915,7 @@ namespace {
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   using namespace electron::api;  // NOLINT(build/namespaces)
 
   v8::Isolate* isolate = context->GetIsolate();

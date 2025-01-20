@@ -32,8 +32,8 @@ ElectronMessagingDelegate::~ElectronMessagingDelegate() = default;
 
 MessagingDelegate::PolicyPermission
 ElectronMessagingDelegate::IsNativeMessagingHostAllowed(
-    content::BrowserContext* browser_context,
-    const std::string& native_host_name) {
+    content::BrowserContext* /*browser_context*/,
+    const std::string& /*native_host_name*/) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   return PolicyPermission::DISALLOW;
@@ -56,7 +56,7 @@ std::optional<base::Value::Dict> ElectronMessagingDelegate::MaybeGetTabInfo(
 }
 
 content::WebContents* ElectronMessagingDelegate::GetWebContentsByTabId(
-    content::BrowserContext* browser_context,
+    content::BrowserContext* /*browser_context*/,
     int tab_id) {
   auto* contents = electron::api::WebContents::FromID(tab_id);
   if (!contents) {
@@ -114,22 +114,22 @@ std::unique_ptr<MessagePort> ElectronMessagingDelegate::CreateReceiverForTab(
 
 std::unique_ptr<MessagePort>
 ElectronMessagingDelegate::CreateReceiverForNativeApp(
-    content::BrowserContext* browser_context,
+    content::BrowserContext* /*browser_context*/,
     base::WeakPtr<MessagePort::ChannelDelegate> channel_delegate,
-    content::RenderFrameHost* source,
-    const std::string& extension_id,
-    const PortId& receiver_port_id,
-    const std::string& native_app_name,
-    bool allow_user_level,
-    std::string* error_out) {
+    content::RenderFrameHost* /*source*/,
+    const std::string& /*extension_id*/,
+    const PortId& /*receiver_port_id*/,
+    const std::string& /*native_app_name*/,
+    bool /*allow_user_level*/,
+    std::string* /*error_out*/) {
   return nullptr;
 }
 
 void ElectronMessagingDelegate::QueryIncognitoConnectability(
     content::BrowserContext* context,
-    const Extension* target_extension,
-    content::WebContents* source_contents,
-    const GURL& source_url,
+    const Extension* /*target_extension*/,
+    content::WebContents* /*source_contents*/,
+    const GURL& /*source_url*/,
     base::OnceCallback<void(bool)> callback) {
   DCHECK(context->IsOffTheRecord());
   std::move(callback).Run(false);

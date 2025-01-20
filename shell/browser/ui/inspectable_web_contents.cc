@@ -150,7 +150,8 @@ GURL GetDevToolsURL(bool can_dock) {
   return GURL(url_string);
 }
 
-void OnOpenItemComplete(const base::FilePath& path, const std::string& result) {
+void OnOpenItemComplete(const base::FilePath& path,
+                        const std::string& /*result*/) {
   platform_util::ShowItemInFolder(path);
 }
 
@@ -816,8 +817,8 @@ void InspectableWebContents::DispatchProtocolMessageFromDevToolsFrontend(
 }
 
 void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
-                                             const std::string& browser_id,
-                                             const std::string& url) {
+                                             const std::string& /*browser_id*/,
+                                             const std::string& /*url*/) {
   std::move(callback).Run(nullptr);
 }
 
@@ -898,7 +899,7 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
 }
 
 void InspectableWebContents::DispatchProtocolMessage(
-    content::DevToolsAgentHost* agent_host,
+    content::DevToolsAgentHost* /*agent_host*/,
     base::span<const uint8_t> message) {
   if (!frontend_loaded_)
     return;
@@ -924,7 +925,7 @@ void InspectableWebContents::DispatchProtocolMessage(
 }
 
 void InspectableWebContents::RenderFrameHostChanged(
-    content::RenderFrameHost* old_host,
+    content::RenderFrameHost* /*old_host*/,
     content::RenderFrameHost* new_host) {
   if (new_host->GetParent())
     return;
@@ -956,7 +957,7 @@ bool InspectableWebContents::HandleKeyboardEvent(
   return !delegate || delegate->HandleKeyboardEvent(source, event);
 }
 
-void InspectableWebContents::CloseContents(content::WebContents* source) {
+void InspectableWebContents::CloseContents(content::WebContents* /*source*/) {
   // This is where the devtools closes itself (by clicking the x button).
   CloseDevTools();
 }

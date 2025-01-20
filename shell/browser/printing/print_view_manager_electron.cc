@@ -111,12 +111,12 @@ void PrintViewManagerElectron::ScriptedPrint(
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
 void PrintViewManagerElectron::SetupScriptedPrintPreview(
-    SetupScriptedPrintPreviewCallback callback) {
+    SetupScriptedPrintPreviewCallback /*callback*/) {
   mojo::ReportBadMessage(kInvalidSetupScriptedPrintPreviewCall);
 }
 
 void PrintViewManagerElectron::ShowScriptedPrintPreview(
-    bool source_is_modifiable) {
+    bool /*source_is_modifiable*/) {
   mojo::ReportBadMessage(kInvalidShowScriptedPrintPreviewCall);
 }
 
@@ -125,8 +125,8 @@ void PrintViewManagerElectron::RequestPrintPreview(
   mojo::ReportBadMessage(kInvalidRequestPrintPreviewCall);
 }
 
-void PrintViewManagerElectron::CheckForCancel(int32_t preview_ui_id,
-                                              int32_t request_id,
+void PrintViewManagerElectron::CheckForCancel(int32_t /*preview_ui_id*/,
+                                              int32_t /*request_id*/,
                                               CheckForCancelCallback callback) {
   std::move(callback).Run(false);
 }

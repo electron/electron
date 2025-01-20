@@ -12,23 +12,23 @@ SpecialStoragePolicy::SpecialStoragePolicy() = default;
 
 SpecialStoragePolicy::~SpecialStoragePolicy() = default;
 
-bool SpecialStoragePolicy::IsStorageProtected(const GURL& origin) {
+bool SpecialStoragePolicy::IsStorageProtected(const GURL& /*origin*/) {
   return true;
 }
 
-bool SpecialStoragePolicy::IsStorageUnlimited(const GURL& origin) {
+bool SpecialStoragePolicy::IsStorageUnlimited(const GURL& /*origin*/) {
   return true;
 }
 
-bool SpecialStoragePolicy::IsStorageDurable(const GURL& origin) {
+bool SpecialStoragePolicy::IsStorageDurable(const GURL& /*origin*/) {
   return true;
 }
 
-bool SpecialStoragePolicy::HasIsolatedStorage(const GURL& origin) {
+bool SpecialStoragePolicy::HasIsolatedStorage(const GURL& /*origin*/) {
   return false;
 }
 
-bool SpecialStoragePolicy::IsStorageSessionOnly(const GURL& origin) {
+bool SpecialStoragePolicy::IsStorageSessionOnly(const GURL& /*origin*/) {
   return false;
 }
 

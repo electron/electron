@@ -793,7 +793,7 @@ bool NativeWindowViews::IsFullscreen() const {
   return widget()->IsFullscreen();
 }
 
-void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
+void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool /*animate*/) {
 #if BUILDFLAG(IS_WIN)
   if (is_moving_ || is_resizing_) {
     pending_bounds_change_ = bounds;
@@ -1064,8 +1064,8 @@ bool NativeWindowViews::IsClosable() const {
 }
 
 void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
-                                       const std::string& level,
-                                       int relativeLevel) {
+                                       const std::string& /*level*/,
+                                       int /*relativeLevel*/) {
   bool level_changed = z_order != widget()->GetZOrderLevel();
   widget()->SetZOrderLevel(z_order);
 
@@ -1217,7 +1217,7 @@ bool NativeWindowViews::HasShadow() const {
          wm::kShadowElevationNone;
 }
 
-void NativeWindowViews::SetOpacity(const double opacity) {
+void NativeWindowViews::SetOpacity(const double /*opacity*/) {
 #if BUILDFLAG(IS_WIN)
   const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
   HWND hwnd = GetAcceleratedWidget();
@@ -1238,7 +1238,7 @@ double NativeWindowViews::GetOpacity() const {
   return opacity_;
 }
 
-void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
+void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool /*forward*/) {
 #if BUILDFLAG(IS_WIN)
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
   if (ignore)
@@ -1421,7 +1421,7 @@ gfx::NativeWindow NativeWindowViews::GetNativeWindow() const {
 }
 
 void NativeWindowViews::SetProgressBar(double progress,
-                                       NativeWindow::ProgressState state) {
+                                       NativeWindow::ProgressState /*state*/) {
 #if BUILDFLAG(IS_WIN)
   taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress, state);
 #elif BUILDFLAG(IS_LINUX)
@@ -1489,8 +1489,8 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
 
 void NativeWindowViews::SetVisibleOnAllWorkspaces(
     bool visible,
-    bool visibleOnFullScreen,
-    bool skipTransformProcessType) {
+    bool /*visibleOnFullScreen*/,
+    bool /*skipTransformProcessType*/) {
   widget()->SetVisibleOnAllWorkspaces(visible);
 }
 
@@ -1660,7 +1660,7 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
 }
 
 void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
-                                              const gfx::Rect& bounds) {
+                                              const gfx::Rect& /*bounds*/) {
   if (changed_widget != widget())
     return;
 
@@ -1691,13 +1691,13 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
   }
 }
 
-void NativeWindowViews::OnWidgetDestroying(views::Widget* widget) {
+void NativeWindowViews::OnWidgetDestroying(views::Widget* /*widget*/) {
   aura::Window* window = GetNativeWindow();
   if (window)
     window->RemovePreTargetHandler(this);
 }
 
-void NativeWindowViews::OnWidgetDestroyed(views::Widget* changed_widget) {
+void NativeWindowViews::OnWidgetDestroyed(views::Widget* /*changed_widget*/) {
   widget_destroyed_ = true;
 }
 
@@ -1726,7 +1726,7 @@ views::View* NativeWindowViews::GetContentsView() {
 }
 
 bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
-    gfx::NativeView child,
+    gfx::NativeView /*child*/,
     const gfx::Point& location) {
   return NonClientHitTest(location) == HTNOWHERE;
 }

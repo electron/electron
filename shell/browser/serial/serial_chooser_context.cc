@@ -86,7 +86,7 @@ SerialChooserContext::~SerialChooserContext() {
 void SerialChooserContext::GrantPortPermission(
     const url::Origin& origin,
     const device::mojom::SerialPortInfo& port,
-    content::RenderFrameHost* render_frame_host) {
+    content::RenderFrameHost* /*render_frame_host*/) {
   port_info_.insert({port.token, port.Clone()});
 
   if (CanStorePersistentEntry(port)) {
@@ -105,7 +105,7 @@ void SerialChooserContext::GrantPortPermission(
 bool SerialChooserContext::HasPortPermission(
     const url::Origin& origin,
     const device::mojom::SerialPortInfo& port,
-    content::RenderFrameHost* render_frame_host) {
+    content::RenderFrameHost* /*render_frame_host*/) {
   auto it = ephemeral_ports_.find(origin);
   if (it != ephemeral_ports_.end()) {
     const std::set<base::UnguessableToken>& ports = it->second;

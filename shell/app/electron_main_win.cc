@@ -86,7 +86,7 @@ void WINAPI FiberBinder(void* params) {
 }
 #endif  // defined(ARCH_CPU_32_BITS)
 
-int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
+int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* /*cmd*/, int) {
 #if defined(ARCH_CPU_32_BITS)
   enum class FiberStatus { kConvertFailed, kCreateFiberFailed, kSuccess };
   FiberStatus fiber_status = FiberStatus::kSuccess;

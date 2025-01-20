@@ -103,7 +103,7 @@ ElectronExtensionsAPIClient::CreateManagementAPIDelegate() const {
 
 std::unique_ptr<MimeHandlerViewGuestDelegate>
 ElectronExtensionsAPIClient::CreateMimeHandlerViewGuestDelegate(
-    MimeHandlerViewGuest* guest) const {
+    MimeHandlerViewGuest* /*guest*/) const {
   return std::make_unique<ElectronMimeHandlerViewGuestDelegate>();
 }
 

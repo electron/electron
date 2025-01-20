@@ -59,11 +59,11 @@ void StatusIconGtk::OnSetDelegate() {
   gtk_status_icon_set_visible(icon_, TRUE);
 }
 
-void StatusIconGtk::OnClick(GtkStatusIcon* status_icon) {
+void StatusIconGtk::OnClick(GtkStatusIcon* /*status_icon*/) {
   delegate_->OnClick();
 }
 
-void StatusIconGtk::OnContextMenuRequested(GtkStatusIcon* status_icon,
+void StatusIconGtk::OnContextMenuRequested(GtkStatusIcon* /*status_icon*/,
                                            guint button,
                                            guint32 activate_time) {
   if (menu_.get()) {

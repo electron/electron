@@ -25,8 +25,8 @@ void CertVerifierClient::Verify(
     const net::CertVerifyResult& default_result,
     const scoped_refptr<net::X509Certificate>& certificate,
     const std::string& hostname,
-    int flags,
-    const std::optional<std::string>& ocsp_response,
+    int /*flags*/,
+    const std::optional<std::string>& /*ocsp_response*/,
     VerifyCallback callback) {
   VerifyRequestParams params;
   params.hostname = hostname;

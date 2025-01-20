@@ -208,7 +208,7 @@ class GtkMessageBox : private NativeWindowObserver {
   std::vector<ScopedGSignal> signals_;
 };
 
-void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
+void GtkMessageBox::OnResponseDialog(GtkWidget* /*widget*/, int response) {
   if (id_)
     GetDialogsMap().erase(*id_);
   gtk_widget_hide(dialog_);

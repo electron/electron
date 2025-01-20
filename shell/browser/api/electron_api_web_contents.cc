@@ -870,7 +870,7 @@ void WebContents::InitZoomController(content::WebContents* web_contents,
 }
 
 void WebContents::InitWithSessionAndOptions(
-    v8::Isolate* isolate,
+    v8::Isolate* /*isolate*/,
     std::unique_ptr<content::WebContents> owned_web_contents,
     gin::Handle<api::Session> session,
     const gin_helper::Dictionary& options) {
@@ -1078,7 +1078,7 @@ void WebContents::OnDidAddMessageToConsole(
     const std::u16string& message,
     int32_t line_no,
     const std::u16string& source_id,
-    const std::optional<std::u16string>& untrusted_stack_trace) {
+    const std::optional<std::u16string>& /*untrusted_stack_trace*/) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
@@ -1111,9 +1111,9 @@ void WebContents::OnCreateWindow(
 }
 
 void WebContents::WebContentsCreatedWithFullParams(
-    content::WebContents* source_contents,
-    int opener_render_process_id,
-    int opener_render_frame_id,
+    content::WebContents* /*source_contents*/,
+    int /*opener_render_process_id*/,
+    int /*opener_render_frame_id*/,
     const content::mojom::CreateNewWindowParams& params,
     content::WebContents* new_contents) {
   ChildWebContentsTracker::CreateForWebContents(new_contents);
@@ -1140,9 +1140,9 @@ void WebContents::WebContentsCreatedWithFullParams(
 }
 
 bool WebContents::IsWebContentsCreationOverridden(
-    content::SiteInstance* source_site_instance,
-    content::mojom::WindowContainerType window_container_type,
-    const GURL& opener_url,
+    content::SiteInstance* /*source_site_instance*/,
+    content::mojom::WindowContainerType /*window_container_type*/,
+    const GURL& /*opener_url*/,
     const content::mojom::CreateNewWindowParams& params) {
   bool default_prevented = Emit(
       "-will-add-new-contents", params.target_url, params.frame_name,
@@ -1163,25 +1163,25 @@ void WebContents::SetNextChildWebPreferences(
 }
 
 content::WebContents* WebContents::CreateCustomWebContents(
-    content::RenderFrameHost* opener,
-    content::SiteInstance* source_site_instance,
-    bool is_new_browsing_instance,
-    const GURL& opener_url,
-    const std::string& frame_name,
-    const GURL& target_url,
-    const content::StoragePartitionConfig& partition_config,
-    content::SessionStorageNamespace* session_storage_namespace) {
+    content::RenderFrameHost* /*opener*/,
+    content::SiteInstance* /*source_site_instance*/,
+    bool /*is_new_browsing_instance*/,
+    const GURL& /*opener_url*/,
+    const std::string& /*frame_name*/,
+    const GURL& /*target_url*/,
+    const content::StoragePartitionConfig& /*partition_config*/,
+    content::SessionStorageNamespace* /*session_storage_namespace*/) {
   return nullptr;
 }
 
 content::WebContents* WebContents::AddNewContents(
-    content::WebContents* source,
+    content::WebContents* /*source*/,
     std::unique_ptr<content::WebContents> new_contents,
-    const GURL& target_url,
+    const GURL& /*target_url*/,
     WindowOpenDisposition disposition,
     const blink::mojom::WindowFeatures& window_features,
     bool user_gesture,
-    bool* was_blocked) {
+    bool* /*was_blocked*/) {
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents.get());
   DCHECK(tracker);
 
@@ -1253,7 +1253,7 @@ content::WebContents* WebContents::OpenURLFromTab(
   return source;
 }
 
-void WebContents::BeforeUnloadFired(content::WebContents* tab,
+void WebContents::BeforeUnloadFired(content::WebContents* /*tab*/,
                                     bool proceed,
                                     bool* proceed_to_fire_unload) {
   // Note that Chromium does not emit this for navigations.
@@ -1270,7 +1270,7 @@ void WebContents::SetContentsBounds(content::WebContents* source,
       observer.OnSetContentBounds(rect);
 }
 
-void WebContents::CloseContents(content::WebContents* source) {
+void WebContents::CloseContents(content::WebContents* /*source*/) {
   Emit("close");
 
   auto* autofill_driver_factory =
@@ -1287,7 +1287,7 @@ void WebContents::ActivateContents(content::WebContents* source) {
     observer.OnActivateContents();
 }
 
-void WebContents::UpdateTargetURL(content::WebContents* source,
+void WebContents::UpdateTargetURL(content::WebContents* /*source*/,
                                   const GURL& url) {
   Emit("update-target-url", url);
 }
@@ -1326,7 +1326,7 @@ bool WebContents::PlatformHandleKeyboardEvent(
 #endif
 
 content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
-    content::WebContents* source,
+    content::WebContents* /*source*/,
     const input::NativeWebKeyboardEvent& event) {
   if (exclusive_access_manager_.HandleUserKeyEvent(event))
     return content::KeyboardEventProcessingResult::HANDLED;
@@ -1443,7 +1443,7 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
 void WebContents::RendererUnresponsive(
     content::WebContents* source,
     content::RenderWidgetHost* render_widget_host,
-    base::RepeatingClosure hang_monitor_restarter) {
+    base::RepeatingClosure /*hang_monitor_restarter*/) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   gin::Handle<gin_helper::internal::Event> event =
@@ -1466,8 +1466,8 @@ void WebContents::RendererUnresponsive(
 }
 
 void WebContents::RendererResponsive(
-    content::WebContents* source,
-    content::RenderWidgetHost* render_widget_host) {
+    content::WebContents* /*source*/,
+    content::RenderWidgetHost* /*render_widget_host*/) {
   Emit("responsive");
 }
 
@@ -1511,7 +1511,7 @@ void WebContents::OnGetPlatformSuggestionsComplete(
 }
 #endif
 
-void WebContents::FindReply(content::WebContents* web_contents,
+void WebContents::FindReply(content::WebContents* /*web_contents*/,
                             int request_id,
                             int number_of_matches,
                             const gfx::Rect& selection_rect,
@@ -1806,7 +1806,7 @@ void WebContents::PrimaryMainFrameRenderProcessGone(
 }
 
 void WebContents::PluginCrashed(const base::FilePath& plugin_path,
-                                base::ProcessId plugin_pid) {
+                                base::ProcessId /*plugin_pid*/) {
 #if BUILDFLAG(ENABLE_PLUGINS)
   content::WebPluginInfo info;
   auto* plugin_service = content::PluginService::GetInstance();
@@ -1815,15 +1815,15 @@ void WebContents::PluginCrashed(const base::FilePath& plugin_path,
 #endif  // BUILDFLAG(ENABLE_PLUGINS)
 }
 
-void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
-                                      const content::MediaPlayerId& id) {
+void WebContents::MediaStartedPlaying(const MediaPlayerInfo& /*video_type*/,
+                                      const content::MediaPlayerId& /*id*/) {
   Emit("media-started-playing");
 }
 
 void WebContents::MediaStoppedPlaying(
-    const MediaPlayerInfo& video_type,
-    const content::MediaPlayerId& id,
-    content::WebContentsObserver::MediaStoppedReason reason) {
+    const MediaPlayerInfo& /*video_type*/,
+    const content::MediaPlayerId& /*id*/,
+    content::WebContentsObserver::MediaStoppedReason /*reason*/) {
   Emit("media-paused");
 }
 
@@ -1841,12 +1841,12 @@ void WebContents::DidAcquireFullscreen(content::RenderFrameHost* rfh) {
 }
 
 void WebContents::OnWebContentsFocused(
-    content::RenderWidgetHost* render_widget_host) {
+    content::RenderWidgetHost* /*render_widget_host*/) {
   Emit("focus");
 }
 
 void WebContents::OnWebContentsLostFocus(
-    content::RenderWidgetHost* render_widget_host) {
+    content::RenderWidgetHost* /*render_widget_host*/) {
   Emit("blur");
 }
 
@@ -1861,7 +1861,7 @@ void WebContents::DOMContentLoaded(
 }
 
 void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
-                                const GURL& validated_url) {
+                                const GURL& /*validated_url*/) {
   bool is_main_frame = !render_frame_host->GetParent();
   int32_t frame_process_id =
       render_frame_host->GetProcess()->GetID().GetUnsafeValue();
@@ -2110,7 +2110,7 @@ void WebContents::MessageHost(const std::string& channel,
 
 void WebContents::DraggableRegionsChanged(
     const std::vector<blink::mojom::DraggableRegionPtr>& regions,
-    content::WebContents* contents) {
+    content::WebContents* /*contents*/) {
   if (owner_window() && owner_window()->has_frame()) {
     return;
   }
@@ -2244,7 +2244,7 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
 }
 
 void WebContents::DidUpdateFaviconURL(
-    content::RenderFrameHost* render_frame_host,
+    content::RenderFrameHost* /*render_frame_host*/,
     const std::vector<blink::mojom::FaviconURLPtr>& urls) {
   std::set<GURL> unique_urls;
   for (const auto& iter : urls) {
@@ -3891,7 +3891,7 @@ void WebContents::PDFReadyToPrint() {
   Emit("-pdf-ready-to-print");
 }
 
-void WebContents::OnInputEvent(const content::RenderWidgetHost& rfh,
+void WebContents::OnInputEvent(const content::RenderWidgetHost& /*rfh*/,
                                const blink::WebInputEvent& event) {
   Emit("input-event", event);
 }
@@ -3902,7 +3902,7 @@ void WebContents::RunJavaScriptDialog(content::WebContents* web_contents,
                                       const std::u16string& message_text,
                                       const std::u16string& default_prompt_text,
                                       DialogClosedCallback callback,
-                                      bool* did_suppress_message) {
+                                      bool* /*did_suppress_message*/) {
   CHECK_EQ(web_contents, this->web_contents());
 
   auto* isolate = JavascriptEnvironment::GetIsolate();
@@ -3917,16 +3917,16 @@ void WebContents::RunJavaScriptDialog(content::WebContents* web_contents,
   EmitWithoutEvent("-run-dialog", info, std::move(callback));
 }
 
-void WebContents::RunBeforeUnloadDialog(content::WebContents* web_contents,
-                                        content::RenderFrameHost* rfh,
-                                        bool is_reload,
+void WebContents::RunBeforeUnloadDialog(content::WebContents* /*web_contents*/,
+                                        content::RenderFrameHost* /*rfh*/,
+                                        bool /*is_reload*/,
                                         DialogClosedCallback callback) {
   // TODO: asyncify?
   bool default_prevented = Emit("will-prevent-unload");
   std::move(callback).Run(default_prevented, std::u16string());
 }
 
-void WebContents::CancelDialogs(content::WebContents* web_contents,
+void WebContents::CancelDialogs(content::WebContents* /*web_contents*/,
                                 bool reset_state) {
   auto* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
@@ -4001,7 +4001,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   (*raw_ptr)->TakeHeapSnapshot(
       mojo::WrapPlatformFile(base::ScopedPlatformFile(file.TakePlatformFile())),
       base::BindOnce(
-          [](mojo::Remote<mojom::ElectronRenderer>* ep,
+          [](mojo::Remote<mojom::ElectronRenderer>* /*ep*/,
              gin_helper::Promise<void> promise, bool success) {
             if (success) {
               promise.Resolve();
@@ -4013,7 +4013,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   return handle;
 }
 
-void WebContents::UpdatePreferredSize(content::WebContents* web_contents,
+void WebContents::UpdatePreferredSize(content::WebContents* /*web_contents*/,
                                       const gfx::Size& pref_size) {
   Emit("preferred-size-changed", pref_size);
 }
@@ -4044,7 +4044,7 @@ void WebContents::EnumerateDirectory(
 }
 
 bool WebContents::IsFullscreenForTabOrPending(
-    const content::WebContents* source) {
+    const content::WebContents* /*source*/) {
   if (!owner_window())
     return is_html_fullscreen();
 
@@ -4726,7 +4726,7 @@ std::vector<gin::Handle<WebContents>> GetAllWebContentsAsV8(
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(context));

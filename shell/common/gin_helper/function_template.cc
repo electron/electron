@@ -20,7 +20,7 @@ CallbackHolderBase::DisposeObserver::~DisposeObserver() {
     per_isolate_data_->RemoveDisposeObserver(this);
 }
 void CallbackHolderBase::DisposeObserver::OnBeforeDispose(
-    v8::Isolate* isolate) {
+    v8::Isolate* /*isolate*/) {
   holder_->v8_ref_.Reset();
 }
 void CallbackHolderBase::DisposeObserver::OnDisposed() {

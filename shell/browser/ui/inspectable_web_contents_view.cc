@@ -55,7 +55,7 @@ class DevToolsWindowDelegate : public views::ClientView,
   views::Widget* GetWidget() override { return widget_; }
   const views::Widget* GetWidget() const override { return widget_; }
   views::View* GetContentsView() override { return view_; }
-  views::ClientView* CreateClientView(views::Widget* widget) override {
+  views::ClientView* CreateClientView(views::Widget* /*widget*/) override {
     return this;
   }
 

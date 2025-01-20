@@ -572,8 +572,9 @@ gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
 }
 
 #if !BUILDFLAG(IS_MAC)
-gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
-                                                           std::string name) {
+gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(
+    gin::Arguments* args,
+    std::string /*name*/) {
   return CreateEmpty(args->isolate());
 }
 #endif
@@ -625,9 +626,9 @@ namespace {
 using electron::api::NativeImage;
 
 void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
+                v8::Local<v8::Value> /*unused*/,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   auto native_image = gin_helper::Dictionary::CreateEmpty(isolate);

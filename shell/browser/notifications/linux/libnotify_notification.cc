@@ -177,13 +177,14 @@ void LibnotifyNotification::Dismiss() {
 }
 
 void LibnotifyNotification::OnNotificationClosed(
-    NotifyNotification* notification) {
+    NotifyNotification* /*notification*/) {
   NotificationDismissed(!on_dismissing_);
 }
 
-void LibnotifyNotification::OnNotificationView(NotifyNotification* notification,
-                                               char* action,
-                                               gpointer user_data) {
+void LibnotifyNotification::OnNotificationView(
+    NotifyNotification* /*notification*/,
+    char* /*action*/,
+    gpointer user_data) {
   LibnotifyNotification* that = static_cast<LibnotifyNotification*>(user_data);
   DCHECK(that);
   that->NotificationClicked();

@@ -25,7 +25,7 @@ ProxyingWebSocket::ProxyingWebSocket(
     bool has_extra_headers,
     int process_id,
     int render_frame_id,
-    content::BrowserContext* browser_context,
+    content::BrowserContext* /*browser_context*/,
     uint64_t* request_id_generator)
     : web_request_api_(web_request_api),
       request_(request),
@@ -209,7 +209,7 @@ void ProxyingWebSocket::OnBeforeSendHeaders(
 }
 
 void ProxyingWebSocket::OnHeadersReceived(const std::string& headers,
-                                          const net::IPEndPoint& endpoint,
+                                          const net::IPEndPoint& /*endpoint*/,
                                           OnHeadersReceivedCallback callback) {
   DCHECK(receiver_as_header_client_.is_bound());
 
@@ -391,7 +391,7 @@ void ProxyingWebSocket::OnAuthRequiredComplete(AuthRequiredResponse rv) {
 }
 
 void ProxyingWebSocket::OnHeadersReceivedCompleteForAuth(
-    const net::AuthChallengeInfo& auth_info,
+    const net::AuthChallengeInfo& /*auth_info*/,
     int rv) {
   if (rv != net::OK) {
     OnError(rv);

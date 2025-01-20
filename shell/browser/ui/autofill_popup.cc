@@ -248,12 +248,12 @@ gfx::Rect AutofillPopup::popup_bounds_in_view() {
   return {origin, popup_bounds_.size()};
 }
 
-void AutofillPopup::OnViewBoundsChanged(views::View* view) {
+void AutofillPopup::OnViewBoundsChanged(views::View* /*view*/) {
   UpdatePopupBounds();
   view_->DoUpdateBoundsAndRedrawPopup();
 }
 
-void AutofillPopup::OnViewIsDeleting(views::View* view) {
+void AutofillPopup::OnViewIsDeleting(views::View* /*view*/) {
   Hide();
 }
 

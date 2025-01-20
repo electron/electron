@@ -229,7 +229,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
                       const content::PathInfo& path_info,
                       HandleType handle_type,
                       GrantType type,
-                      UserAction user_action)
+                      UserAction /*user_action*/)
       : context_{std::move(context)},
         origin_{origin},
         handle_type_{handle_type},
@@ -562,26 +562,26 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
 }
 
 bool FileSystemAccessPermissionContext::IsFileTypeDangerous(
-    const base::FilePath& path,
-    const url::Origin& origin) {
+    const base::FilePath& /*path*/,
+    const url::Origin& /*origin*/) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   return false;
 }
 
 base::expected<void, std::string>
 FileSystemAccessPermissionContext::CanShowFilePicker(
-    content::RenderFrameHost* rfh) {
+    content::RenderFrameHost* /*rfh*/) {
   return base::ok();
 }
 
 bool FileSystemAccessPermissionContext::CanObtainReadPermission(
-    const url::Origin& origin) {
+    const url::Origin& /*origin*/) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   return true;
 }
 
 bool FileSystemAccessPermissionContext::CanObtainWritePermission(
-    const url::Origin& origin) {
+    const url::Origin& /*origin*/) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   return true;
 }
@@ -631,7 +631,7 @@ void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
 
 void FileSystemAccessPermissionContext::PerformAfterWriteChecks(
     std::unique_ptr<content::FileSystemAccessWriteItem> item,
-    content::GlobalRenderFrameHostId frame_id,
+    content::GlobalRenderFrameHostId /*frame_id*/,
     base::OnceCallback<void(AfterWriteCheckResult)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   std::move(callback).Run(AfterWriteCheckResult::kAllow);
@@ -657,7 +657,7 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
     const content::PathInfo& path_info,
     HandleType handle_type,
     UserAction user_action,
-    content::GlobalRenderFrameHostId frame_id,
+    content::GlobalRenderFrameHostId /*frame_id*/,
     bool should_block) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
@@ -779,7 +779,7 @@ content::PathInfo FileSystemAccessPermissionContext::GetLastPickedDirectory(
 
 base::FilePath FileSystemAccessPermissionContext::GetWellKnownDirectoryPath(
     blink::mojom::WellKnownDirectory directory,
-    const url::Origin& origin) {
+    const url::Origin& /*origin*/) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   int key = base::PATH_START;
@@ -862,7 +862,7 @@ void FileSystemAccessPermissionContext::OnFileCreatedFromShowSaveFilePicker(
 
 void FileSystemAccessPermissionContext::CheckPathsAgainstEnterprisePolicy(
     std::vector<content::PathInfo> entries,
-    content::GlobalRenderFrameHostId frame_id,
+    content::GlobalRenderFrameHostId /*frame_id*/,
     EntriesAllowedByEnterprisePolicyCallback callback) {
   std::move(callback).Run(std::move(entries));
 }

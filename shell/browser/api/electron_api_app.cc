@@ -690,20 +690,20 @@ void App::OnDidResignActive() {
 
 bool App::CanCreateWindow(
     content::RenderFrameHost* opener,
-    const GURL& opener_url,
-    const GURL& opener_top_level_frame_url,
-    const url::Origin& source_origin,
-    content::mojom::WindowContainerType container_type,
+    const GURL& /*opener_url*/,
+    const GURL& /*opener_top_level_frame_url*/,
+    const url::Origin& /*source_origin*/,
+    content::mojom::WindowContainerType /*container_type*/,
     const GURL& target_url,
     const content::Referrer& referrer,
     const std::string& frame_name,
     WindowOpenDisposition disposition,
-    const blink::mojom::WindowFeatures& features,
+    const blink::mojom::WindowFeatures& /*features*/,
     const std::string& raw_features,
     const scoped_refptr<network::ResourceRequestBody>& body,
-    bool user_gesture,
-    bool opener_suppressed,
-    bool* no_javascript_access) {
+    bool /*user_gesture*/,
+    bool /*opener_suppressed*/,
+    bool* /*no_javascript_access*/) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   content::WebContents* web_contents =
@@ -726,7 +726,7 @@ void App::AllowCertificateError(
     const net::SSLInfo& ssl_info,
     const GURL& request_url,
     bool is_main_frame_request,
-    bool strict_enforcement,
+    bool /*strict_enforcement*/,
     base::OnceCallback<void(content::CertificateRequestResultType)> callback) {
   auto adapted_callback = base::AdaptCallbackForRepeating(std::move(callback));
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -742,8 +742,8 @@ void App::AllowCertificateError(
 }
 
 base::OnceClosure App::SelectClientCertificate(
-    content::BrowserContext* browser_context,
-    int process_id,
+    content::BrowserContext* /*browser_context*/,
+    int /*process_id*/,
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList identities,
@@ -1827,7 +1827,7 @@ namespace {
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("app", electron::api::App::Create(isolate));

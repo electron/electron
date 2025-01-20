@@ -133,7 +133,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
   }
 
   // ui::SelectFileDialog::Listener
-  void FileSelected(const ui::SelectedFileInfo& file, int index) override {
+  void FileSelected(const ui::SelectedFileInfo& file, int /*index*/) override {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);

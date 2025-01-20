@@ -212,7 +212,7 @@ void ElectronURLLoaderFactory::RedirectedRequest::FollowRedirect(
     const std::vector<std::string>& removed_headers,
     const net::HttpRequestHeaders& modified_headers,
     const net::HttpRequestHeaders& modified_cors_exempt_headers,
-    const std::optional<GURL>& new_url) {
+    const std::optional<GURL>& /*new_url*/) {
   // Update |request_| with info from the redirect, so that it's accurate
   // The following references code in WorkerScriptLoader::FollowRedirect
   bool should_clear_upload = false;
@@ -307,7 +307,7 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
 // static
 void ElectronURLLoaderFactory::OnComplete(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-    int32_t request_id,
+    int32_t /*request_id*/,
     const network::URLLoaderCompletionStatus& status) {
   if (client.is_valid()) {
     mojo::Remote<network::mojom::URLLoaderClient> client_remote(

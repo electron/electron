@@ -87,7 +87,7 @@ void WebViewGuestDelegate::OnZoomChanged(
 }
 
 void WebViewGuestDelegate::OnZoomControllerDestroyed(
-    WebContentsZoomController* zoom_controller) {
+    WebContentsZoomController* /*zoom_controller*/) {
   ResetZoomController();
 }
 

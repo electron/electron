@@ -125,9 +125,9 @@ void OnMediaStreamRequestResponse(
     content::MediaResponseCallback callback,
     const blink::mojom::StreamDevicesSet& stream_devices_set,
     MediaStreamRequestResult result,
-    bool blocked_by_permissions_policy,
-    ContentSetting audio_setting,
-    ContentSetting video_setting) {
+    bool /*blocked_by_permissions_policy*/,
+    ContentSetting /*audio_setting*/,
+    ContentSetting /*video_setting*/) {
   std::move(callback).Run(stream_devices_set, result, nullptr);
 }
 
@@ -210,7 +210,7 @@ void WebContentsPermissionHelper::RequestPermission(
     content::RenderFrameHost* requesting_frame,
     blink::PermissionType permission,
     base::OnceCallback<void(bool)> callback,
-    bool user_gesture,
+    bool /*user_gesture*/,
     base::Value::Dict details) {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());

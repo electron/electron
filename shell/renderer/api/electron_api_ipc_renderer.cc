@@ -211,7 +211,7 @@ gin::WrapperInfo IPCRenderer::kWrapperInfo = {gin::kEmbedderNativeGin};
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   gin::Dictionary dict(context->GetIsolate(), exports);
   dict.Set("ipc", IPCRenderer::Create(context->GetIsolate()));
 }

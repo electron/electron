@@ -30,8 +30,9 @@ void AutoUpdater::CheckForUpdates() {}
 
 void AutoUpdater::QuitAndInstall() {}
 
-bool AutoUpdater::IsVersionAllowedForUpdate(const std::string& current_version,
-                                            const std::string& target_version) {
+bool AutoUpdater::IsVersionAllowedForUpdate(
+    const std::string& /*current_version*/,
+    const std::string& /*target_version*/) {
   return false;
 }
 #endif

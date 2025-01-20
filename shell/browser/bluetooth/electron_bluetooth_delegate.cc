@@ -67,94 +67,94 @@ ElectronBluetoothDelegate::RunBluetoothChooser(
 // The following methods are not currently called in Electron.
 std::unique_ptr<content::BluetoothScanningPrompt>
 ElectronBluetoothDelegate::ShowBluetoothScanningPrompt(
-    content::RenderFrameHost* frame,
-    const content::BluetoothScanningPrompt::EventHandler& event_handler) {
+    content::RenderFrameHost* /*frame*/,
+    const content::BluetoothScanningPrompt::EventHandler& /*event_handler*/) {
   NOTIMPLEMENTED();
   return nullptr;
 }
 
 WebBluetoothDeviceId ElectronBluetoothDelegate::GetWebBluetoothDeviceId(
-    RenderFrameHost* frame,
-    const std::string& device_address) {
+    RenderFrameHost* /*frame*/,
+    const std::string& /*device_address*/) {
   NOTIMPLEMENTED();
   return WebBluetoothDeviceId::Create();
 }
 
 std::string ElectronBluetoothDelegate::GetDeviceAddress(
-    RenderFrameHost* frame,
-    const WebBluetoothDeviceId& device_id) {
+    RenderFrameHost* /*frame*/,
+    const WebBluetoothDeviceId& /*device_id*/) {
   NOTIMPLEMENTED();
   return "";
 }
 
 WebBluetoothDeviceId ElectronBluetoothDelegate::AddScannedDevice(
-    RenderFrameHost* frame,
-    const std::string& device_address) {
+    RenderFrameHost* /*frame*/,
+    const std::string& /*device_address*/) {
   NOTIMPLEMENTED();
   return WebBluetoothDeviceId::Create();
 }
 
 WebBluetoothDeviceId ElectronBluetoothDelegate::GrantServiceAccessPermission(
-    RenderFrameHost* frame,
-    const device::BluetoothDevice* device,
-    const blink::mojom::WebBluetoothRequestDeviceOptions* options) {
+    RenderFrameHost* /*frame*/,
+    const device::BluetoothDevice* /*device*/,
+    const blink::mojom::WebBluetoothRequestDeviceOptions* /*options*/) {
   NOTIMPLEMENTED();
   return WebBluetoothDeviceId::Create();
 }
 
 bool ElectronBluetoothDelegate::HasDevicePermission(
-    RenderFrameHost* frame,
-    const WebBluetoothDeviceId& device_id) {
+    RenderFrameHost* /*frame*/,
+    const WebBluetoothDeviceId& /*device_id*/) {
   NOTIMPLEMENTED();
   return true;
 }
 
 void ElectronBluetoothDelegate::RevokeDevicePermissionWebInitiated(
-    RenderFrameHost* frame,
-    const WebBluetoothDeviceId& device_id) {
+    RenderFrameHost* /*frame*/,
+    const WebBluetoothDeviceId& /*device_id*/) {
   NOTIMPLEMENTED();
 }
 
-bool ElectronBluetoothDelegate::MayUseBluetooth(RenderFrameHost* frame) {
+bool ElectronBluetoothDelegate::MayUseBluetooth(RenderFrameHost* /*frame*/) {
   return true;
 }
 
 bool ElectronBluetoothDelegate::IsAllowedToAccessService(
-    RenderFrameHost* frame,
-    const WebBluetoothDeviceId& device_id,
-    const BluetoothUUID& service) {
+    RenderFrameHost* /*frame*/,
+    const WebBluetoothDeviceId& /*device_id*/,
+    const BluetoothUUID& /*service*/) {
   NOTIMPLEMENTED();
   return true;
 }
 
 bool ElectronBluetoothDelegate::IsAllowedToAccessAtLeastOneService(
-    RenderFrameHost* frame,
-    const WebBluetoothDeviceId& device_id) {
+    RenderFrameHost* /*frame*/,
+    const WebBluetoothDeviceId& /*device_id*/) {
   NOTIMPLEMENTED();
   return true;
 }
 
 bool ElectronBluetoothDelegate::IsAllowedToAccessManufacturerData(
-    RenderFrameHost* frame,
-    const WebBluetoothDeviceId& device_id,
-    uint16_t manufacturer_code) {
+    RenderFrameHost* /*frame*/,
+    const WebBluetoothDeviceId& /*device_id*/,
+    uint16_t /*manufacturer_code*/) {
   NOTIMPLEMENTED();
   return true;
 }
 
 void ElectronBluetoothDelegate::AddFramePermissionObserver(
-    FramePermissionObserver* observer) {
+    FramePermissionObserver* /*observer*/) {
   NOTIMPLEMENTED();
 }
 
 void ElectronBluetoothDelegate::RemoveFramePermissionObserver(
-    FramePermissionObserver* observer) {
+    FramePermissionObserver* /*observer*/) {
   NOTIMPLEMENTED();
 }
 
 std::vector<blink::mojom::WebBluetoothDevicePtr>
 ElectronBluetoothDelegate::GetPermittedDevices(
-    content::RenderFrameHost* frame) {
+    content::RenderFrameHost* /*frame*/) {
   std::vector<blink::mojom::WebBluetoothDevicePtr> permitted_devices;
   NOTIMPLEMENTED();
   return permitted_devices;

@@ -55,7 +55,7 @@ class TCPServerSocketFactory : public content::DevToolsSocketFactory {
     return socket;
   }
   std::unique_ptr<net::ServerSocket> CreateForTethering(
-      std::string* name) override {
+      std::string* /*name*/) override {
     return {};
   }
 
@@ -103,7 +103,7 @@ DevToolsManagerDelegate::~DevToolsManagerDelegate() = default;
 void DevToolsManagerDelegate::Inspect(content::DevToolsAgentHost* agent_host) {}
 
 void DevToolsManagerDelegate::HandleCommand(
-    content::DevToolsAgentHostClientChannel* channel,
+    content::DevToolsAgentHostClientChannel* /*channel*/,
     base::span<const uint8_t> message,
     NotHandledCallback callback) {
   crdtp::Dispatchable dispatchable(crdtp::SpanFrom(message));
@@ -124,8 +124,8 @@ void DevToolsManagerDelegate::HandleCommand(
 }
 
 scoped_refptr<content::DevToolsAgentHost>
-DevToolsManagerDelegate::CreateNewTarget(const GURL& url,
-                                         TargetType target_type) {
+DevToolsManagerDelegate::CreateNewTarget(const GURL& /*url*/,
+                                         TargetType /*target_type*/) {
   return nullptr;
 }
 

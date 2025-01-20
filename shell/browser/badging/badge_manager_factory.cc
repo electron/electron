@@ -32,7 +32,7 @@ BadgeManagerFactory::~BadgeManagerFactory() = default;
 
 std::unique_ptr<KeyedService>
 BadgeManagerFactory::BuildServiceInstanceForBrowserContext(
-    content::BrowserContext* context) const {
+    content::BrowserContext* /*context*/) const {
   return std::make_unique<BadgeManager>();
 }
 

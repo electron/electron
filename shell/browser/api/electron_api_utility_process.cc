@@ -67,7 +67,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     std::map<IOHandle, IOType> stdio,
     base::EnvironmentMap env_map,
     base::FilePath current_working_directory,
-    bool use_plugin_helper,
+    bool /*use_plugin_helper*/,
     bool create_network_observer) {
 #if BUILDFLAG(IS_WIN)
   base::win::ScopedHandle stdout_write(nullptr);
@@ -498,7 +498,7 @@ namespace {
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("_fork", &electron::api::UtilityProcessWrapper::Create);

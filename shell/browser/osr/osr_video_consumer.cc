@@ -162,7 +162,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
       pixels,
       media::VideoFrame::RowBytes(media::VideoFrame::Plane::kARGB,
                                   info->pixel_format, info->coded_size.width()),
-      [](void* addr, void* context) {
+      [](void* /*addr*/, void* context) {
         delete static_cast<FramePinner*>(context);
       },
       new FramePinner{std::move(mapping), std::move(callbacks)});

@@ -361,7 +361,7 @@ void OpenExternal(const GURL& url,
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& path,
-                              bool delete_on_fail,
+                              bool /*delete_on_fail*/,
                               std::string* error) {
   Microsoft::WRL::ComPtr<IFileOperation> pfo;
   if (FAILED(::CoCreateInstance(CLSID_FileOperation, nullptr, CLSCTX_ALL,

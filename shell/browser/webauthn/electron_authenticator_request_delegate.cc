@@ -10,7 +10,7 @@ ElectronWebAuthenticationDelegate::~ElectronWebAuthenticationDelegate() =
     default;
 
 bool ElectronWebAuthenticationDelegate::SupportsResidentKeys(
-    content::RenderFrameHost* render_frame_host) {
+    content::RenderFrameHost* /*render_frame_host*/) {
   return true;
 }
 

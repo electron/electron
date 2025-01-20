@@ -358,13 +358,13 @@ gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() {
 }
 
 blink::mojom::PointerLockResult OffScreenRenderWidgetHostView::LockPointer(
-    bool request_unadjusted_movement) {
+    bool /*request_unadjusted_movement*/) {
   return blink::mojom::PointerLockResult::kUnsupportedOptions;
 }
 
 blink::mojom::PointerLockResult
 OffScreenRenderWidgetHostView::ChangePointerLock(
-    bool request_unadjusted_movement) {
+    bool /*request_unadjusted_movement*/) {
   return blink::mojom::PointerLockResult::kUnsupportedOptions;
 }
 
@@ -397,7 +397,7 @@ void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
 void OffScreenRenderWidgetHostView::InitAsPopup(
     content::RenderWidgetHostView* parent_host_view,
     const gfx::Rect& bounds,
-    const gfx::Rect& anchor_rect) {
+    const gfx::Rect& /*anchor_rect*/) {
   DCHECK_EQ(parent_host_view_, parent_host_view);
   DCHECK_EQ(widget_type_, content::WidgetType::kPopup);
 
@@ -511,7 +511,7 @@ content::RenderWidgetHostViewBase*
 OffScreenRenderWidgetHostView::CreateViewForWidget(
     content::RenderWidgetHost* render_widget_host,
     content::RenderWidgetHost* embedder_render_widget_host,
-    content::WebContentsView* web_contents_view) {
+    content::WebContentsView* /*web_contents_view*/) {
   if (auto* rwhv = render_widget_host->GetView())
     return static_cast<content::RenderWidgetHostViewBase*>(rwhv);
 

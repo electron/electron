@@ -72,7 +72,8 @@ void ElectronExtensionSystem::Shutdown() {
   extension_loader_.reset();
 }
 
-void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
+void ElectronExtensionSystem::InitForRegularProfile(
+    bool /*extensions_enabled*/) {
   service_worker_manager_ =
       std::make_unique<ServiceWorkerManager>(browser_context_);
   quota_service_ = std::make_unique<QuotaService>();
@@ -179,28 +180,28 @@ ContentVerifier* ElectronExtensionSystem::content_verifier() {
 }
 
 std::unique_ptr<ExtensionSet> ElectronExtensionSystem::GetDependentExtensions(
-    const Extension* extension) {
+    const Extension* /*extension*/) {
   return std::make_unique<ExtensionSet>();
 }
 
 void ElectronExtensionSystem::InstallUpdate(
-    const std::string& extension_id,
-    const std::string& public_key,
-    const base::FilePath& temp_dir,
-    bool install_immediately,
+    const std::string& /*extension_id*/,
+    const std::string& /*public_key*/,
+    const base::FilePath& /*temp_dir*/,
+    bool /*install_immediately*/,
     InstallUpdateCallback install_update_callback) {
   NOTREACHED();
 }
 
 bool ElectronExtensionSystem::FinishDelayedInstallationIfReady(
-    const std::string& extension_id,
-    bool install_immediately) {
+    const std::string& /*extension_id*/,
+    bool /*install_immediately*/) {
   NOTREACHED();
 }
 
 void ElectronExtensionSystem::PerformActionBasedOnOmahaAttributes(
-    const std::string& extension_id,
-    const base::Value::Dict& attributes) {
+    const std::string& /*extension_id*/,
+    const base::Value::Dict& /*attributes*/) {
   NOTREACHED();
 }
 

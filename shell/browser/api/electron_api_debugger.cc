@@ -25,7 +25,7 @@ namespace electron::api {
 
 gin::WrapperInfo Debugger::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Debugger::Debugger(v8::Isolate* isolate, content::WebContents* web_contents)
+Debugger::Debugger(v8::Isolate* /*isolate*/, content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents), web_contents_(web_contents) {}
 
 Debugger::~Debugger() = default;
@@ -79,7 +79,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
   }
 }
 
-void Debugger::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
+void Debugger::RenderFrameHostChanged(content::RenderFrameHost* /*old_rfh*/,
                                       content::RenderFrameHost* new_rfh) {
   if (agent_host_) {
     agent_host_->DisconnectWebContents();

@@ -237,7 +237,7 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
 // Output variable contraction_words will contain individual
 // words in the contraction.
 bool SpellCheckClient::IsContraction(
-    const SpellCheckScope& scope,
+    const SpellCheckScope& /*scope*/,
     const std::u16string& contraction,
     std::vector<std::u16string>* contraction_words) {
   DCHECK(contraction_iterator_.IsInitialized());

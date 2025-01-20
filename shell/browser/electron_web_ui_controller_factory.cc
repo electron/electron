@@ -23,7 +23,7 @@ ElectronWebUIControllerFactory::ElectronWebUIControllerFactory() = default;
 ElectronWebUIControllerFactory::~ElectronWebUIControllerFactory() = default;
 
 content::WebUI::TypeID ElectronWebUIControllerFactory::GetWebUIType(
-    content::BrowserContext* browser_context,
+    content::BrowserContext* /*browser_context*/,
     const GURL& url) {
   if (const std::string_view host = url.host_piece();
       host == chrome::kChromeUIDevToolsHost ||

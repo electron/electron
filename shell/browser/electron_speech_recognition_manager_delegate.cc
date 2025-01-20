@@ -17,7 +17,7 @@ ElectronSpeechRecognitionManagerDelegate::
     ~ElectronSpeechRecognitionManagerDelegate() = default;
 
 void ElectronSpeechRecognitionManagerDelegate::CheckRecognitionIsAllowed(
-    int session_id,
+    int /*session_id*/,
     base::OnceCallback<void(bool ask_user, bool is_allowed)> callback) {
   std::move(callback).Run(true, true);
 }

@@ -50,7 +50,7 @@ namespace electron::api {
 
 gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Menu::Menu(gin::Arguments* args)
+Menu::Menu(gin::Arguments* /*args*/)
     : model_(std::make_unique<ElectronMenuModel>(this)) {
   model_->AddObserver(this);
 
@@ -141,7 +141,7 @@ void Menu::ExecuteCommand(int command_id, int flags) {
                          CreateEventFromFlags(flags), command_id);
 }
 
-void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
+void Menu::OnMenuWillShow(ui::SimpleMenuModel* /*source*/) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   gin_helper::CallMethod(isolate, const_cast<Menu*>(this), "_menuWillShow");
@@ -155,7 +155,7 @@ base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
   if (GetWrapper(isolate).ToLocal(&self)) {
     v8::Global<v8::Value> ref(isolate, self);
     return base::BindOnce(
-        [](base::OnceClosure callback, v8::Global<v8::Value> ref) {
+        [](base::OnceClosure callback, v8::Global<v8::Value> /*ref*/) {
           std::move(callback).Run();
         },
         std::move(callback), std::move(ref));
@@ -315,9 +315,9 @@ namespace {
 using electron::api::Menu;
 
 void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
+                v8::Local<v8::Value> /*unused*/,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
 
   gin_helper::Dictionary dict(isolate, exports);

@@ -47,7 +47,7 @@ void ElectronDesktopWindowTreeHostLinux::OnWidgetInitDone() {
 }
 
 gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
-    ui::PlatformWindowState window_state) const {
+    ui::PlatformWindowState /*window_state*/) const {
   // If we are not showing frame, the insets should be zero.
   if (native_window_view_->IsFullscreen()) {
     return {};
@@ -142,7 +142,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
 }
 
 void ElectronDesktopWindowTreeHostLinux::OnNativeThemeUpdated(
-    ui::NativeTheme* observed_theme) {
+    ui::NativeTheme* /*observed_theme*/) {
   UpdateFrameHints();
 }
 

@@ -590,7 +590,7 @@ Session::~Session() {
 #endif
 }
 
-void Session::OnDownloadCreated(content::DownloadManager* manager,
+void Session::OnDownloadCreated(content::DownloadManager* /*manager*/,
                                 download::DownloadItem* item) {
   if (item->IsSavePackageDownload())
     return;
@@ -1329,18 +1329,19 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
   return gin::ConvertToV8(isolate_, extensions_vector);
 }
 
-void Session::OnExtensionLoaded(content::BrowserContext* browser_context,
+void Session::OnExtensionLoaded(content::BrowserContext* /*browser_context*/,
                                 const extensions::Extension* extension) {
   Emit("extension-loaded", extension);
 }
 
-void Session::OnExtensionUnloaded(content::BrowserContext* browser_context,
-                                  const extensions::Extension* extension,
-                                  extensions::UnloadedExtensionReason reason) {
+void Session::OnExtensionUnloaded(
+    content::BrowserContext* /*browser_context*/,
+    const extensions::Extension* extension,
+    extensions::UnloadedExtensionReason /*reason*/) {
   Emit("extension-unloaded", extension);
 }
 
-void Session::OnExtensionReady(content::BrowserContext* browser_context,
+void Session::OnExtensionReady(content::BrowserContext* /*browser_context*/,
                                const extensions::Extension* extension) {
   Emit("extension-ready", extension);
 }
@@ -1890,7 +1891,7 @@ v8::Local<v8::Value> FromPath(const base::FilePath& path,
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("Session", Session::GetConstructor(context));

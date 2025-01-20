@@ -28,7 +28,7 @@ ScopedTemporaryFile::~ScopedTemporaryFile() {
   }
 }
 
-bool ScopedTemporaryFile::Init(const base::FilePath::StringType& ext) {
+bool ScopedTemporaryFile::Init(const base::FilePath::StringType& /*ext*/) {
   if (!path_.empty())
     return true;
 

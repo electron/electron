@@ -19,8 +19,9 @@ namespace certificate_trust {
 // store for the current user.
 //
 // This requires prompting the user to confirm they trust the certificate.
-BOOL AddToTrustedRootStore(const PCCERT_CONTEXT cert_context,
-                           const scoped_refptr<net::X509Certificate>& cert) {
+BOOL AddToTrustedRootStore(
+    const PCCERT_CONTEXT cert_context,
+    const scoped_refptr<net::X509Certificate>& /*cert*/) {
   auto* root_cert_store = CertOpenStore(
       CERT_STORE_PROV_SYSTEM, 0, 0, CERT_SYSTEM_STORE_CURRENT_USER, L"Root");
 

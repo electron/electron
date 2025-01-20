@@ -103,7 +103,7 @@ void MenuDelegate::WillHideMenu(views::MenuItemView* menu) {
   adapter_->WillHideMenu(menu);
 }
 
-void MenuDelegate::OnMenuClosed(views::MenuItemView* menu) {
+void MenuDelegate::OnMenuClosed(views::MenuItemView* /*menu*/) {
   for (Observer& obs : observers_)
     obs.OnMenuClosed();
 
@@ -114,10 +114,10 @@ void MenuDelegate::OnMenuClosed(views::MenuItemView* menu) {
 }
 
 views::MenuItemView* MenuDelegate::GetSiblingMenu(
-    views::MenuItemView* menu,
+    views::MenuItemView* /*menu*/,
     const gfx::Point& screen_point,
-    views::MenuAnchorPosition* anchor,
-    bool* has_mnemonics,
+    views::MenuAnchorPosition* /*anchor*/,
+    bool* /*has_mnemonics*/,
     views::MenuButton**) {
   if (hold_first_switch_) {
     hold_first_switch_ = false;

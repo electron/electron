@@ -29,10 +29,10 @@ void ElectronExtensionHostDelegate::OnExtensionHostCreated(
 
 void ElectronExtensionHostDelegate::CreateTab(
     std::unique_ptr<content::WebContents> web_contents,
-    const std::string& extension_id,
-    WindowOpenDisposition disposition,
-    const blink::mojom::WindowFeatures& window_features,
-    bool user_gesture) {
+    const std::string& /*extension_id*/,
+    WindowOpenDisposition /*disposition*/,
+    const blink::mojom::WindowFeatures& /*window_features*/,
+    bool /*user_gesture*/) {
   // TODO(jamescook): Should app_shell support opening popup windows?
   NOTREACHED();
 }
@@ -48,8 +48,8 @@ void ElectronExtensionHostDelegate::ProcessMediaAccessRequest(
 }
 
 bool ElectronExtensionHostDelegate::CheckMediaAccessPermission(
-    content::RenderFrameHost* render_frame_host,
-    const url::Origin& security_origin,
+    content::RenderFrameHost* /*render_frame_host*/,
+    const url::Origin& /*security_origin*/,
     blink::mojom::MediaStreamType type,
     const Extension* extension) {
   media_capture_util::VerifyMediaAccessPermission(type, extension);
@@ -58,7 +58,7 @@ bool ElectronExtensionHostDelegate::CheckMediaAccessPermission(
 
 content::PictureInPictureResult
 ElectronExtensionHostDelegate::EnterPictureInPicture(
-    content::WebContents* web_contents) {
+    content::WebContents* /*web_contents*/) {
   NOTREACHED();
 }
 

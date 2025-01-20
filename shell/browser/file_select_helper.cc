@@ -76,7 +76,7 @@ FileSelectHelper::~FileSelectHelper() {
 }
 
 void FileSelectHelper::FileSelected(const ui::SelectedFileInfo& file,
-                                    int index) {
+                                    int /*index*/) {
   if (!render_frame_host_) {
     RunFileChooserEnd();
     return;
@@ -488,7 +488,7 @@ void FileSelectHelper::EnumerateDirectoryEnd() {
 
 void FileSelectHelper::RenderFrameHostChanged(
     content::RenderFrameHost* old_host,
-    content::RenderFrameHost* new_host) {
+    content::RenderFrameHost* /*new_host*/) {
   // The |old_host| and its children are now pending deletion. Do not give them
   // file access past this point.
   for (content::RenderFrameHost* host = render_frame_host_; host;

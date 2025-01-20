@@ -27,7 +27,7 @@ MediaCaptureDevicesDispatcher::~MediaCaptureDevicesDispatcher() = default;
 
 const std::optional<blink::MediaStreamDevice>
 MediaCaptureDevicesDispatcher::GetPreferredAudioDeviceForBrowserContext(
-    content::BrowserContext* browser_context,
+    content::BrowserContext* /*browser_context*/,
     const std::vector<std::string>& eligible_audio_device_ids) const {
   auto audio_devices = GetAudioCaptureDevices();
   if (!eligible_audio_device_ids.empty()) {
@@ -43,7 +43,7 @@ MediaCaptureDevicesDispatcher::GetPreferredAudioDeviceForBrowserContext(
 
 const std::optional<blink::MediaStreamDevice>
 MediaCaptureDevicesDispatcher::GetPreferredVideoDeviceForBrowserContext(
-    content::BrowserContext* browser_context,
+    content::BrowserContext* /*browser_context*/,
     const std::vector<std::string>& eligible_video_device_ids) const {
   auto video_devices = GetVideoCaptureDevices();
   if (!eligible_video_device_ids.empty()) {

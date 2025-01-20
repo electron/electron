@@ -112,7 +112,7 @@ ElectronContentUtilityClient::~ElectronContentUtilityClient() = default;
 // The guts of this came from the chromium implementation
 // https://source.chromium.org/chromium/chromium/src/+/main:chrome/utility/chrome_content_utility_client.cc
 void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
-    mojo::BinderMap* binders) {
+    mojo::BinderMap* /*binders*/) {
 #if BUILDFLAG(IS_WIN)
   const auto& cmd_line = *base::CommandLine::ForCurrentProcess();
   auto sandbox_type = sandbox::policy::SandboxTypeFromCommandLine(cmd_line);

@@ -74,7 +74,7 @@ void ResolveHostFunction::Run() {
 }
 
 void ResolveHostFunction::OnComplete(
-    int result,
+    int /*result*/,
     const net::ResolveErrorInfo& resolve_error_info,
     const std::optional<net::AddressList>& resolved_addresses,
     const std::optional<net::HostResolverEndpointResults>&

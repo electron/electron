@@ -480,7 +480,7 @@ int WebRequest::OnHeadersReceived(
     net::CompletionOnceCallback callback,
     const net::HttpResponseHeaders* original_response_headers,
     scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
-    GURL* allowed_unsafe_redirect_url) {
+    GURL* /*allowed_unsafe_redirect_url*/) {
   return HandleOnHeadersReceivedResponseEvent(
       info, request, std::move(callback), original_response_headers,
       override_response_headers);

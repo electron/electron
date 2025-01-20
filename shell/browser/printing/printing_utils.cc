@@ -41,7 +41,7 @@
 
 namespace electron {
 
-gfx::Size GetDefaultPrinterDPI(const std::u16string& device_name) {
+gfx::Size GetDefaultPrinterDPI(const std::u16string& /*device_name*/) {
 #if BUILDFLAG(IS_MAC)
   return gfx::Size(printing::kDefaultMacDpi, printing::kDefaultMacDpi);
 #elif BUILDFLAG(IS_WIN)

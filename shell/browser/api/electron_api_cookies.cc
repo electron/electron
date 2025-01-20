@@ -350,7 +350,7 @@ v8::Local<v8::Promise> Cookies::Remove(v8::Isolate* isolate,
   manager->DeleteCookies(
       std::move(cookie_deletion_filter),
       base::BindOnce(
-          [](gin_helper::Promise<void> promise, uint32_t num_deleted) {
+          [](gin_helper::Promise<void> promise, uint32_t /*num_deleted*/) {
             gin_helper::Promise<void>::ResolvePromise(std::move(promise));
           },
           std::move(promise)));

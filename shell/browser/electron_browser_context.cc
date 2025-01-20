@@ -161,9 +161,7 @@ media::mojom::CaptureHandlePtr CreateCaptureHandle(
 }
 
 // Copied from chrome/browser/media/webrtc/desktop_capture_devices_util.cc.
-std::optional<int> GetZoomLevel(content::WebContents* capturer,
-                                const url::Origin& capturer_origin,
-                                const content::DesktopMediaID& captured_id) {
+std::optional<int> GetZoomLevel(const content::DesktopMediaID& captured_id) {
   content::RenderFrameHost* const captured_rfh =
       content::RenderFrameHost::FromID(
           captured_id.web_contents_id.render_process_id,
@@ -218,8 +216,7 @@ DesktopMediaIDToDisplayMediaInformation(
       display_surface = media::mojom::DisplayCaptureSurfaceType::BROWSER;
       cursor = media::mojom::CursorCaptureType::MOTION;
       capture_handle = CreateCaptureHandle(capturer, capturer_origin, media_id);
-      zoom_level =
-          GetZoomLevel(capturer, capturer_origin, media_id).value_or(100);
+      zoom_level = GetZoomLevel(media_id).value_or(100);
       break;
     case content::DesktopMediaID::TYPE_NONE:
       break;

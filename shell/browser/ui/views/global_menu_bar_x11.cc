@@ -312,7 +312,7 @@ void GlobalMenuBarX11::RegisterAccelerator(DbusmenuMenuitem* item,
 }
 
 void GlobalMenuBarX11::OnItemActivated(DbusmenuMenuitem* item,
-                                       unsigned int timestamp) {
+                                       unsigned int /*timestamp*/) {
   size_t id;
   ElectronMenuModel* model = ModelForMenuItem(item);
   if (model && GetMenuItemID(item, &id))

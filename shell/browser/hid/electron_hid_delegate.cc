@@ -152,7 +152,7 @@ bool ElectronHidDelegate::CanRequestDevicePermission(
 
 bool ElectronHidDelegate::HasDevicePermission(
     content::BrowserContext* browser_context,
-    content::RenderFrameHost* render_frame_host,
+    content::RenderFrameHost* /*render_frame_host*/,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
   return browser_context && GetChooserContext(browser_context)
@@ -161,7 +161,7 @@ bool ElectronHidDelegate::HasDevicePermission(
 
 void ElectronHidDelegate::RevokeDevicePermission(
     content::BrowserContext* browser_context,
-    content::RenderFrameHost* render_frame_host,
+    content::RenderFrameHost* /*render_frame_host*/,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
   if (browser_context) {

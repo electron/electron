@@ -159,7 +159,7 @@ void ElectronExtensionLoader::FinishExtensionLoad(
 }
 
 void ElectronExtensionLoader::FinishExtensionReload(
-    const ExtensionId& old_extension_id,
+    const ExtensionId& /*old_extension_id*/,
     std::pair<scoped_refptr<const Extension>, std::string> result) {
   scoped_refptr<const Extension> extension = result.first;
   if (extension) {
@@ -197,7 +197,7 @@ void ElectronExtensionLoader::PostDeactivateExtension(
 void ElectronExtensionLoader::LoadExtensionForReload(
     const ExtensionId& extension_id,
     const base::FilePath& path,
-    LoadErrorBehavior load_error_behavior) {
+    LoadErrorBehavior /*load_error_behavior*/) {
   CHECK(!path.empty());
 
   // TODO(nornagon): we should save whether file access was granted
@@ -211,16 +211,19 @@ void ElectronExtensionLoader::LoadExtensionForReload(
   did_schedule_reload_ = true;
 }
 
-bool ElectronExtensionLoader::CanEnableExtension(const Extension* extension) {
+bool ElectronExtensionLoader::CanEnableExtension(
+    const Extension* /*extension*/) {
   return true;
 }
 
-bool ElectronExtensionLoader::CanDisableExtension(const Extension* extension) {
+bool ElectronExtensionLoader::CanDisableExtension(
+    const Extension* /*extension*/) {
   // Extensions cannot be disabled by the user.
   return false;
 }
 
-bool ElectronExtensionLoader::ShouldBlockExtension(const Extension* extension) {
+bool ElectronExtensionLoader::ShouldBlockExtension(
+    const Extension* /*extension*/) {
   return false;
 }
 

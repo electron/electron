@@ -98,7 +98,7 @@ void RunUntilIdle() {
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("getHiddenValue", &GetHiddenValue);
   dict.SetMethod("setHiddenValue", &SetHiddenValue);

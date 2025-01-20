@@ -187,7 +187,7 @@ void ElectronContentClient::AddPlugins(
 
 void ElectronContentClient::AddContentDecryptionModules(
     std::vector<content::CdmInfo>* cdms,
-    std::vector<media::CdmHostFilePath>* cdm_host_file_paths) {
+    std::vector<media::CdmHostFilePath>* /*cdm_host_file_paths*/) {
   if (cdms) {
 #if BUILDFLAG(ENABLE_WIDEVINE)
     base::FilePath cdm_path;

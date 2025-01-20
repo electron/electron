@@ -189,7 +189,7 @@ bool ExecuteCodeInTabFunction::CanExecuteScriptOnPage(std::string* error) {
 }
 
 ScriptExecutor* ExecuteCodeInTabFunction::GetScriptExecutor(
-    std::string* error) {
+    std::string* /*error*/) {
   auto* contents = electron::api::WebContents::FromID(execute_tab_id_);
   if (!contents)
     return nullptr;
@@ -624,7 +624,7 @@ ExtensionFunction::ResponseAction TabsUpdateFunction::Run() {
 }
 
 bool TabsUpdateFunction::UpdateURL(const std::string& url_string,
-                                   int tab_id,
+                                   int /*tab_id*/,
                                    std::string* error) {
   auto url =
       PrepareURLForNavigation(url_string, extension(), browser_context());

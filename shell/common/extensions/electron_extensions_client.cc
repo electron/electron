@@ -44,16 +44,16 @@ class ElectronPermissionMessageProvider
   }
 
   [[nodiscard]] bool IsPrivilegeIncrease(
-      const extensions::PermissionSet& granted_permissions,
-      const extensions::PermissionSet& requested_permissions,
-      extensions::Manifest::Type extension_type) const override {
+      const extensions::PermissionSet& /*granted_permissions*/,
+      const extensions::PermissionSet& /*requested_permissions*/,
+      extensions::Manifest::Type /*extension_type*/) const override {
     // Ensure we implement this before shipping.
     NOTREACHED();
   }
 
   [[nodiscard]] extensions::PermissionIDSet GetAllPermissionIDs(
-      const extensions::PermissionSet& permissions,
-      extensions::Manifest::Type extension_type) const override {
+      const extensions::PermissionSet& /*permissions*/,
+      extensions::Manifest::Type /*extension_type*/) const override {
     return {};
   }
 };
@@ -91,9 +91,9 @@ const std::string ElectronExtensionsClient::GetProductName() {
 }
 
 void ElectronExtensionsClient::FilterHostPermissions(
-    const extensions::URLPatternSet& hosts,
-    extensions::URLPatternSet* new_hosts,
-    extensions::PermissionIDSet* permissions) const {
+    const extensions::URLPatternSet& /*hosts*/,
+    extensions::URLPatternSet* /*new_hosts*/,
+    extensions::PermissionIDSet* /*permissions*/) const {
   NOTIMPLEMENTED();
 }
 
@@ -110,13 +110,13 @@ ElectronExtensionsClient::GetScriptingAllowlist() const {
 
 extensions::URLPatternSet
 ElectronExtensionsClient::GetPermittedChromeSchemeHosts(
-    const extensions::Extension* extension,
-    const extensions::APIPermissionSet& api_permissions) const {
+    const extensions::Extension* /*extension*/,
+    const extensions::APIPermissionSet& /*api_permissions*/) const {
   return {};
 }
 
-bool ElectronExtensionsClient::IsScriptableURL(const GURL& url,
-                                               std::string* error) const {
+bool ElectronExtensionsClient::IsScriptableURL(const GURL& /*url*/,
+                                               std::string* /*error*/) const {
   // No restrictions on URLs.
   return true;
 }
@@ -133,7 +133,7 @@ const GURL& ElectronExtensionsClient::GetWebstoreUpdateURL() const {
   return webstore_update_url_;
 }
 
-bool ElectronExtensionsClient::IsBlocklistUpdateURL(const GURL& url) const {
+bool ElectronExtensionsClient::IsBlocklistUpdateURL(const GURL& /*url*/) const {
   return false;
 }
 

@@ -19,7 +19,7 @@ namespace electron::api {
 
 gin::WrapperInfo NativeTheme::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-NativeTheme::NativeTheme(v8::Isolate* isolate,
+NativeTheme::NativeTheme(v8::Isolate* /*isolate*/,
                          ui::NativeTheme* ui_theme,
                          ui::NativeTheme* web_theme)
     : ui_theme_(ui_theme), web_theme_(web_theme) {
@@ -34,7 +34,7 @@ void NativeTheme::OnNativeThemeUpdatedOnUI() {
   Emit("updated");
 }
 
-void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
+void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* /*theme*/) {
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
                                 base::Unretained(this)));
@@ -127,9 +127,9 @@ namespace {
 using electron::api::NativeTheme;
 
 void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
+                v8::Local<v8::Value> /*unused*/,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
   gin::Dictionary dict(isolate, exports);
   dict.Set("nativeTheme", NativeTheme::Create(isolate));

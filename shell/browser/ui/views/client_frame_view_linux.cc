@@ -181,7 +181,7 @@ SkRRect ClientFrameViewLinux::GetRoundedWindowContentBounds() const {
 }
 
 void ClientFrameViewLinux::OnNativeThemeUpdated(
-    ui::NativeTheme* observed_theme) {
+    ui::NativeTheme* /*observed_theme*/) {
   UpdateThemeValues();
 }
 

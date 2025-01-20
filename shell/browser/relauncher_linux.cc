@@ -50,7 +50,7 @@ void RelauncherSynchronizeWithParent() {
   parentWaiter.Wait();
 }
 
-int LaunchProgram(const StringVector& relauncher_args,
+int LaunchProgram(const StringVector& /*relauncher_args*/,
                   const StringVector& argv) {
   // Redirect the stdout of child process to /dev/null, otherwise after
   // relaunch the child process will raise exception when writing to stdout.

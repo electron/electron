@@ -97,12 +97,12 @@ void Browser::AddRecentDocument(const base::FilePath& path) {}
 void Browser::ClearRecentDocuments() {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                         gin::Arguments* args) {
+                                         gin::Arguments* /*args*/) {
   return SetDefaultWebClient(protocol);
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
-                                      gin::Arguments* args) {
+                                      gin::Arguments* /*args*/) {
   auto env = base::Environment::Create();
 
   if (protocol.empty())
@@ -120,8 +120,8 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 }
 
 // Todo implement
-bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
-                                            gin::Arguments* args) {
+bool Browser::RemoveAsDefaultProtocolClient(const std::string& /*protocol*/,
+                                            gin::Arguments* /*args*/) {
   return false;
 }
 
@@ -146,7 +146,7 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {}
 
 v8::Local<v8::Value> Browser::GetLoginItemSettings(
-    const LoginItemSettings& options) {
+    const LoginItemSettings& /*options*/) {
   LoginItemSettings settings;
   return gin::ConvertToV8(JavascriptEnvironment::GetIsolate(), settings);
 }

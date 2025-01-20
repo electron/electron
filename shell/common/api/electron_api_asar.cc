@@ -210,9 +210,9 @@ static void SplitPath(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
+                v8::Local<v8::Value> /*unused*/,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   auto* isolate = exports->GetIsolate();
 
   auto cons = Archive::CreateFunctionTemplate(isolate)

@@ -397,7 +397,7 @@ ElectronPermissionManager::GetPermissionStatusForCurrentDocument(
 blink::mojom::PermissionStatus
 ElectronPermissionManager::GetPermissionStatusForWorker(
     blink::PermissionType permission,
-    content::RenderProcessHost* render_process_host,
+    content::RenderProcessHost* /*render_process_host*/,
     const GURL& worker_origin) {
   return GetPermissionStatus(permission, worker_origin, worker_origin);
 }

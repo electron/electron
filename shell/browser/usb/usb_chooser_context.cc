@@ -166,7 +166,7 @@ void UsbChooserContext::RevokeDevicePermissionWebInitiated(
 void UsbChooserContext::RevokeObjectPermissionInternal(
     const url::Origin& origin,
     const base::Value& object,
-    bool revoked_by_website = false) {
+    bool /*revoked_by_website*/ = false) {
   const base::Value::Dict* object_dict = object.GetIfDict();
   DCHECK(object_dict != nullptr);
 

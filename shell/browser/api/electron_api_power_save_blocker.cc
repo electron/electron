@@ -43,7 +43,7 @@ namespace electron::api {
 
 gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
+PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* /*isolate*/)
     : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension) {}
 
 PowerSaveBlocker::~PowerSaveBlocker() = default;
@@ -135,9 +135,9 @@ const char* PowerSaveBlocker::GetTypeName() {
 namespace {
 
 void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
+                v8::Local<v8::Value> /*unused*/,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
   gin::Dictionary dict(isolate, exports);
   dict.Set("powerSaveBlocker",

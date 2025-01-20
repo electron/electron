@@ -94,7 +94,7 @@ void GlobalMenuBarRegistrarX11::UnregisterXWindow(x11::Window window) {
                     nullptr, nullptr, nullptr);
 }
 
-void GlobalMenuBarRegistrarX11::OnProxyCreated(GObject* source,
+void GlobalMenuBarRegistrarX11::OnProxyCreated(GObject* /*source*/,
                                                GAsyncResult* result,
                                                gpointer user_data) {
   GlobalMenuBarRegistrarX11* that =

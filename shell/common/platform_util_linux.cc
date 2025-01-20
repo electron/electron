@@ -350,7 +350,7 @@ void OpenFolder(const base::FilePath& full_path) {
 }
 
 void OpenExternal(const GURL& url,
-                  const OpenExternalOptions& options,
+                  const OpenExternalOptions& /*options*/,
                   OpenCallback callback) {
   // Don't wait for exit, since we don't want to wait for the browser/email
   // client window to close before returning
@@ -364,7 +364,7 @@ void OpenExternal(const GURL& url,
   }
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
+bool MoveItemToTrash(const base::FilePath& full_path, bool /*delete_on_fail*/) {
   auto env = base::Environment::Create();
 
   // find the trash method

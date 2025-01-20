@@ -202,7 +202,7 @@ void OpaqueFrameView::Layout(PassKey) {
   LayoutWindowControlsOverlay();
 }
 
-void OpaqueFrameView::OnPaint(gfx::Canvas* canvas) {
+void OpaqueFrameView::OnPaint(gfx::Canvas* /*canvas*/) {
   if (!window()->IsWindowControlsOverlayEnabled())
     return;
 
@@ -327,8 +327,8 @@ int OpaqueFrameView::FrameTopBorderThickness(bool restored) const {
 }
 
 OpaqueFrameView::TopAreaPadding OpaqueFrameView::GetTopAreaPadding(
-    bool has_leading_buttons,
-    bool has_trailing_buttons) const {
+    bool /*has_leading_buttons*/,
+    bool /*has_trailing_buttons*/) const {
   const auto padding = FrameBorderInsets(false);
   return TopAreaPadding{padding.left(), padding.right()};
 }
@@ -365,7 +365,7 @@ int OpaqueFrameView::NonClientTopHeight(bool restored) const {
                              kContentEdgeShadowThickness;
 }
 
-int OpaqueFrameView::CaptionButtonY(views::FrameButton button_id,
+int OpaqueFrameView::CaptionButtonY(views::FrameButton /*button_id*/,
                                     bool restored) const {
   return DefaultCaptionButtonY(restored);
 }
@@ -380,7 +380,7 @@ int OpaqueFrameView::DefaultCaptionButtonY(bool restored) const {
              : views::NonClientFrameView::kFrameShadowThickness;
 }
 
-gfx::Insets OpaqueFrameView::FrameEdgeInsets(bool restored) const {
+gfx::Insets OpaqueFrameView::FrameEdgeInsets(bool /*restored*/) const {
   return RestoredFrameEdgeInsets();
 }
 
@@ -549,9 +549,9 @@ int OpaqueFrameView::GetTopAreaHeight() const {
   return top_height;
 }
 
-int OpaqueFrameView::GetWindowCaptionSpacing(views::FrameButton button_id,
-                                             bool leading_spacing,
-                                             bool is_leading_button) const {
+int OpaqueFrameView::GetWindowCaptionSpacing(views::FrameButton /*button_id*/,
+                                             bool /*leading_spacing*/,
+                                             bool /*is_leading_button*/) const {
   return 0;
 }
 

@@ -79,8 +79,8 @@ bool ElectronExtensionsBrowserClient::IsShuttingDown() {
 }
 
 bool ElectronExtensionsBrowserClient::AreExtensionsDisabled(
-    const base::CommandLine& command_line,
-    BrowserContext* context) {
+    const base::CommandLine& /*command_line*/,
+    BrowserContext* /*context*/) {
   return false;
 }
 
@@ -99,12 +99,12 @@ bool ElectronExtensionsBrowserClient::IsSameContext(BrowserContext* first,
 }
 
 bool ElectronExtensionsBrowserClient::HasOffTheRecordContext(
-    BrowserContext* context) {
+    BrowserContext* /*context*/) {
   return false;
 }
 
 BrowserContext* ElectronExtensionsBrowserClient::GetOffTheRecordContext(
-    BrowserContext* context) {
+    BrowserContext* /*context*/) {
   // app_shell only supports a single context.
   return nullptr;
 }
@@ -137,24 +137,24 @@ ElectronExtensionsBrowserClient::GetContextForOriginalOnly(
 }
 
 bool ElectronExtensionsBrowserClient::AreExtensionsDisabledForContext(
-    content::BrowserContext* context) {
+    content::BrowserContext* /*context*/) {
   return false;
 }
 
 bool ElectronExtensionsBrowserClient::IsGuestSession(
-    BrowserContext* context) const {
+    BrowserContext* /*context*/) const {
   return false;
 }
 
 bool ElectronExtensionsBrowserClient::IsExtensionIncognitoEnabled(
-    const std::string& extension_id,
-    content::BrowserContext* context) const {
+    const std::string& /*extension_id*/,
+    content::BrowserContext* /*context*/) const {
   return false;
 }
 
 bool ElectronExtensionsBrowserClient::CanExtensionCrossIncognito(
-    const extensions::Extension* extension,
-    content::BrowserContext* context) const {
+    const extensions::Extension* /*extension*/,
+    content::BrowserContext* /*context*/) const {
   return false;
 }
 
@@ -268,9 +268,9 @@ ElectronExtensionsBrowserClient::GetProcessManagerDelegate() const {
 
 mojo::PendingRemote<network::mojom::URLLoaderFactory>
 ElectronExtensionsBrowserClient::GetControlledFrameEmbedderURLLoader(
-    const url::Origin& app_origin,
+    const url::Origin& /*app_origin*/,
     content::FrameTreeNodeId frame_tree_node_id,
-    content::BrowserContext* browser_context) {
+    content::BrowserContext* /*browser_context*/) {
   return mojo::PendingRemote<network::mojom::URLLoaderFactory>();
 }
 
@@ -281,7 +281,7 @@ ElectronExtensionsBrowserClient::
 }
 
 bool ElectronExtensionsBrowserClient::DidVersionUpdate(
-    BrowserContext* context) {
+    BrowserContext* /*context*/) {
   // TODO(jamescook): We might want to tell extensions when app_shell updates.
   return false;
 }
@@ -293,7 +293,7 @@ bool ElectronExtensionsBrowserClient::IsInDemoMode() {
 }
 
 bool ElectronExtensionsBrowserClient::IsScreensaverInDemoMode(
-    const std::string& app_id) {
+    const std::string& /*app_id*/) {
   return false;
 }
 
@@ -302,7 +302,7 @@ bool ElectronExtensionsBrowserClient::IsRunningInForcedAppMode() {
 }
 
 bool ElectronExtensionsBrowserClient::IsAppModeForcedForApp(
-    const extensions::ExtensionId& extension_id) {
+    const extensions::ExtensionId& /*extension_id*/) {
   return false;
 }
 
@@ -361,7 +361,7 @@ bool ElectronExtensionsBrowserClient::IsBackgroundUpdateAllowed() {
 }
 
 bool ElectronExtensionsBrowserClient::IsMinBrowserVersionSupported(
-    const std::string& min_version) {
+    const std::string& /*min_version*/) {
   return true;
 }
 

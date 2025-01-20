@@ -149,7 +149,7 @@ bool AutofillPopupView::CanStartDragForView(views::View*,
 }
 
 void AutofillPopupView::OnSelectedRowChanged(
-    std::optional<int> previous_row_selection,
+    std::optional<int> /*previous_row_selection*/,
     std::optional<int> current_row_selection) {
   SchedulePaint();
 
@@ -406,7 +406,7 @@ void AutofillPopupView::OnNativeFocusChanged(gfx::NativeView focused_now) {
 }
 
 void AutofillPopupView::OnWidgetBoundsChanged(views::Widget* widget,
-                                              const gfx::Rect& new_bounds) {
+                                              const gfx::Rect& /*new_bounds*/) {
   if (widget != parent_widget_)
     return;
   if (popup_)

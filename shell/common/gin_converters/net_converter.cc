@@ -449,7 +449,7 @@ class ChunkedDataPipeReadableStream final
     }
   }
 
-  void OnHandleReadable(MojoResult result) {
+  void OnHandleReadable(MojoResult /*result*/) {
     DCHECK(!buf_.IsEmpty());
 
     v8::HandleScope handle_scope(isolate_);

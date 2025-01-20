@@ -85,8 +85,8 @@ PlatformNotificationService::~PlatformNotificationService() = default;
 void PlatformNotificationService::DisplayNotification(
     content::RenderFrameHost* render_frame_host,
     const std::string& notification_id,
-    const GURL& origin,
-    const GURL& document_url,
+    const GURL& /*origin*/,
+    const GURL& /*document_url*/,
     const blink::PlatformNotificationData& notification_data,
     const blink::NotificationResources& notification_resources) {
   auto* presenter = browser_client_->GetNotificationPresenter();

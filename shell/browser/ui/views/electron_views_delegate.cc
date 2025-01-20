@@ -41,10 +41,10 @@ void ViewsDelegate::SaveWindowPlacement(const views::Widget* window,
 }
 
 bool ViewsDelegate::GetSavedWindowPlacement(
-    const views::Widget* widget,
-    const std::string& window_name,
-    gfx::Rect* bounds,
-    ui::mojom::WindowShowState* show_state) const {
+    const views::Widget* /*widget*/,
+    const std::string& /*window_name*/,
+    gfx::Rect* /*bounds*/,
+    ui::mojom::WindowShowState* /*show_state*/) const {
   return false;
 }
 
@@ -61,7 +61,7 @@ gfx::ImageSkia* ViewsDelegate::GetDefaultWindowIcon() const {
 #endif
 
 std::unique_ptr<views::NonClientFrameView>
-ViewsDelegate::CreateDefaultNonClientFrameView(views::Widget* widget) {
+ViewsDelegate::CreateDefaultNonClientFrameView(views::Widget* /*widget*/) {
   return nullptr;
 }
 

@@ -453,7 +453,7 @@ void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
 }
 
-bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
+bool NativeWindow::AddTabbedWindow(NativeWindow* /*window*/) {
   return true;  // for non-Mac platforms
 }
 
@@ -461,7 +461,7 @@ std::optional<std::string> NativeWindow::GetTabbingIdentifier() const {
   return "";  // for non-Mac platforms
 }
 
-void NativeWindow::SetVibrancy(const std::string& type, int duration) {
+void NativeWindow::SetVibrancy(const std::string& type, int /*duration*/) {
   vibrancy_ = type;
 }
 

@@ -376,7 +376,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
 }
 
 bool ElectronDownloadManagerDelegate::ShouldOpenDownload(
-    download::DownloadItem* download,
+    download::DownloadItem* /*download*/,
     content::DownloadOpenDelayedCallback callback) {
   return true;
 }

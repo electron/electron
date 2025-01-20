@@ -62,7 +62,7 @@ namespace electron::api {
 
 gin::WrapperInfo PowerMonitor::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
+PowerMonitor::PowerMonitor(v8::Isolate* /*isolate*/) {
 #if BUILDFLAG(IS_MAC)
   Browser::Get()->SetShutdownHandler(base::BindRepeating(
       &PowerMonitor::ShouldShutdown, base::Unretained(this)));
@@ -193,9 +193,9 @@ base::PowerThermalObserver::DeviceThermalState GetCurrentThermalState() {
 }
 
 void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
+                v8::Local<v8::Value> /*unused*/,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("createPowerMonitor",

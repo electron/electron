@@ -64,7 +64,7 @@ void DelayEmitWithMetrics(Screen* screen,
 
 }  // namespace
 
-Screen::Screen(v8::Isolate* isolate, display::Screen* screen)
+Screen::Screen(v8::Isolate* /*isolate*/, display::Screen* screen)
     : screen_(screen) {
   screen_->AddObserver(this);
 }
@@ -173,9 +173,9 @@ namespace {
 using electron::api::Screen;
 
 void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
+                v8::Local<v8::Value> /*unused*/,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("createScreen", base::BindRepeating(&Screen::Create));

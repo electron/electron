@@ -316,8 +316,8 @@ void WebContentsZoomController::WebContentsDestroyed() {
 }
 
 void WebContentsZoomController::RenderFrameHostChanged(
-    content::RenderFrameHost* old_host,
-    content::RenderFrameHost* new_host) {
+    content::RenderFrameHost* /*old_host*/,
+    content::RenderFrameHost* /*new_host*/) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   // If our associated HostZoomMap changes, update our subscription.
   content::HostZoomMap* new_host_zoom_map =

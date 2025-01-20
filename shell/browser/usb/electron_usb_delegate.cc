@@ -149,8 +149,8 @@ ElectronUsbDelegate::~ElectronUsbDelegate() = default;
 
 void ElectronUsbDelegate::AdjustProtectedInterfaceClasses(
     content::BrowserContext* browser_context,
-    const url::Origin& origin,
-    content::RenderFrameHost* frame,
+    const url::Origin& /*origin*/,
+    content::RenderFrameHost* /*frame*/,
     std::vector<uint8_t>& classes) {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context->GetPermissionControllerDelegate());
@@ -209,7 +209,7 @@ const device::mojom::UsbDeviceInfo* ElectronUsbDelegate::GetDeviceInfo(
 
 bool ElectronUsbDelegate::HasDevicePermission(
     content::BrowserContext* browser_context,
-    content::RenderFrameHost* frame,
+    content::RenderFrameHost* /*frame*/,
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device_info) {
   if (IsDevicePermissionAutoGranted(origin, device_info))

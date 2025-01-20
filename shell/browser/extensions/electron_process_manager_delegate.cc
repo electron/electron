@@ -18,18 +18,18 @@ ElectronProcessManagerDelegate::ElectronProcessManagerDelegate() = default;
 ElectronProcessManagerDelegate::~ElectronProcessManagerDelegate() = default;
 
 bool ElectronProcessManagerDelegate::AreBackgroundPagesAllowedForContext(
-    content::BrowserContext* context) const {
+    content::BrowserContext* /*context*/) const {
   return true;
 }
 
 bool ElectronProcessManagerDelegate::IsExtensionBackgroundPageAllowed(
-    content::BrowserContext* context,
-    const Extension& extension) const {
+    content::BrowserContext* /*context*/,
+    const Extension& /*extension*/) const {
   return true;
 }
 
 bool ElectronProcessManagerDelegate::DeferCreatingStartupBackgroundHosts(
-    content::BrowserContext* context) const {
+    content::BrowserContext* /*context*/) const {
   return false;
 }
 

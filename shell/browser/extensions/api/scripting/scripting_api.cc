@@ -383,8 +383,8 @@ bool CollectFramesForInjection(const api::scripting::InjectionTarget& target,
 // if the target cannot be accessed, populates `error_out`.
 bool CanAccessTarget(const PermissionsData& permissions,
                      const api::scripting::InjectionTarget& target,
-                     content::BrowserContext* browser_context,
-                     bool include_incognito_information,
+                     content::BrowserContext* /*browser_context*/,
+                     bool /*include_incognito_information*/,
                      ScriptExecutor** script_executor_out,
                      ScriptExecutor::FrameScope* frame_scope_out,
                      std::set<int>* frame_ids_out,
@@ -481,7 +481,7 @@ ConvertRegisteredContentScriptToSerializedUserScript(
 }
 
 std::unique_ptr<UserScript> ParseUserScript(
-    content::BrowserContext* browser_context,
+    content::BrowserContext* /*browser_context*/,
     const Extension& extension,
     bool allowed_in_incognito,
     api::scripting::RegisteredContentScript content_script,

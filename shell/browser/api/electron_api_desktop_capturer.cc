@@ -238,7 +238,8 @@ void DesktopCapturer::DesktopListListener::OnDelegatedSourceListSelection() {
   }
 }
 
-void DesktopCapturer::DesktopListListener::OnSourceThumbnailChanged(int index) {
+void DesktopCapturer::DesktopListListener::OnSourceThumbnailChanged(
+    int /*index*/) {
   if (have_selection_) {
     // This is called every time a thumbnail is refreshed. Reset variable to
     // ensure that the callback is not run again.
@@ -527,7 +528,7 @@ namespace {
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createDesktopCapturer",
                  &electron::api::DesktopCapturer::Create);

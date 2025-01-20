@@ -89,7 +89,6 @@ const base::Value::Dict* GetNodeFromPath(std::string path,
 
 bool FillFileInfoWithNode(Archive::FileInfo* info,
                           uint32_t header_size,
-                          bool load_integrity,
                           const base::Value::Dict* node) {
   if (std::optional<int> size = node->FindInt("size")) {
     info->size = static_cast<uint32_t>(*size);
@@ -288,7 +287,7 @@ bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
   if (link)
     return GetFileInfo(base::FilePath::FromUTF8Unsafe(*link), info);
 
-  return FillFileInfoWithNode(info, header_size_, header_validated_, node);
+  return FillFileInfoWithNode(info, header_size_, node);
 }
 
 bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
@@ -310,7 +309,7 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
     return true;
   }
 
-  return FillFileInfoWithNode(stats, header_size_, header_validated_, node);
+  return FillFileInfoWithNode(stats, header_size_, node);
 }
 
 bool Archive::Readdir(const base::FilePath& path,

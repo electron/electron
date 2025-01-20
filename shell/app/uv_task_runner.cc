@@ -15,7 +15,7 @@ UvTaskRunner::UvTaskRunner(uv_loop_t* loop) : loop_{loop} {}
 
 UvTaskRunner::~UvTaskRunner() = default;
 
-bool UvTaskRunner::PostDelayedTask(const base::Location& from_here,
+bool UvTaskRunner::PostDelayedTask(const base::Location& /*from_here*/,
                                    base::OnceClosure task,
                                    base::TimeDelta delay) {
   auto on_timeout = [](uv_timer_t* timer) {

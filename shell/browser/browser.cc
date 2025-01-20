@@ -263,7 +263,7 @@ bool Browser::HandleBeforeQuit() {
   return !prevent_default;
 }
 
-void Browser::OnWindowCloseCancelled(NativeWindow* window) {
+void Browser::OnWindowCloseCancelled(NativeWindow* /*window*/) {
   if (is_quitting_)
     // Once a beforeunload handler has prevented the closing, we think the quit
     // is cancelled too.

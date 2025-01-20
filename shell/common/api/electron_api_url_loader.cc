@@ -410,12 +410,12 @@ void SimpleURLLoaderWrapper::PinBodyGetter(v8::Local<v8::Value> body_getter) {
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() = default;
 
 void SimpleURLLoaderWrapper::OnAuthRequired(
-    const std::optional<base::UnguessableToken>& window_id,
-    int32_t request_id,
-    const GURL& url,
-    bool first_auth_attempt,
+    const std::optional<base::UnguessableToken>& /*window_id*/,
+    int32_t /*request_id*/,
+    const GURL& /*url*/,
+    bool /*first_auth_attempt*/,
     const net::AuthChallengeInfo& auth_info,
-    const scoped_refptr<net::HttpResponseHeaders>& head_headers,
+    const scoped_refptr<net::HttpResponseHeaders>& /*head_headers*/,
     mojo::PendingRemote<network::mojom::AuthChallengeResponder>
         auth_challenge_responder) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -442,20 +442,20 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
 }
 
 void SimpleURLLoaderWrapper::OnSSLCertificateError(
-    const GURL& url,
+    const GURL& /*url*/,
     int net_error,
-    const net::SSLInfo& ssl_info,
-    bool fatal,
+    const net::SSLInfo& /*ssl_info*/,
+    bool /*fatal*/,
     OnSSLCertificateErrorCallback response) {
   std::move(response).Run(net_error);
 }
 
 void SimpleURLLoaderWrapper::OnClearSiteData(
-    const GURL& url,
-    const std::string& header_value,
-    int32_t load_flags,
-    const std::optional<net::CookiePartitionKey>& cookie_partition_key,
-    bool partitioned_state_allowed_only,
+    const GURL& /*url*/,
+    const std::string& /*header_value*/,
+    int32_t /*load_flags*/,
+    const std::optional<net::CookiePartitionKey>& /*cookie_partition_key*/,
+    bool /*partitioned_state_allowed_only*/,
     OnClearSiteDataCallback callback) {
   std::move(callback).Run();
 }
@@ -466,10 +466,10 @@ void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
 }
 
 void SimpleURLLoaderWrapper::OnSharedStorageHeaderReceived(
-    const url::Origin& request_origin,
+    const url::Origin& /*request_origin*/,
     std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
         methods,
-    const std::optional<std::string>& with_lock,
+    const std::optional<std::string>& /*with_lock*/,
     OnSharedStorageHeaderReceivedCallback callback) {
   std::move(callback).Run();
 }
@@ -752,7 +752,7 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
 }
 
 void SimpleURLLoaderWrapper::OnRedirect(
-    const GURL& url_before_redirect,
+    const GURL& /*url_before_redirect*/,
     const net::RedirectInfo& redirect_info,
     const network::mojom::URLResponseHead& response_head,
     std::vector<std::string>* removed_headers) {

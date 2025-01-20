@@ -34,13 +34,13 @@ void ElectronRuntimeAPIDelegate::ReloadExtension(
 }
 
 bool ElectronRuntimeAPIDelegate::CheckForUpdates(
-    const std::string& extension_id,
+    const std::string& /*extension_id*/,
     UpdateCheckCallback callback) {
   LOG(INFO) << "chrome.runtime.requestUpdateCheck is not supported in Electron";
   return false;
 }
 
-void ElectronRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {
+void ElectronRuntimeAPIDelegate::OpenURL(const GURL& /*uninstall_url*/) {
   LOG(INFO) << "chrome.runtime.openURL is not supported in Electron";
 }
 

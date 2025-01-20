@@ -232,9 +232,9 @@ void Tray::SetToolTip(const std::string& tool_tip) {
   tray_icon_->SetToolTip(tool_tip);
 }
 
-void Tray::SetTitle(const std::string& title,
-                    const std::optional<gin_helper::Dictionary>& options,
-                    gin::Arguments* args) {
+void Tray::SetTitle(const std::string& /*title*/,
+                    const std::optional<gin_helper::Dictionary>& /*options*/,
+                    gin::Arguments* /*args*/) {
   if (!CheckAlive())
     return;
 #if BUILDFLAG(IS_MAC)
@@ -272,7 +272,7 @@ std::string Tray::GetTitle() {
 #endif
 }
 
-void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
+void Tray::SetIgnoreDoubleClickEvents(bool /*ignore*/) {
   if (!CheckAlive())
     return;
 #if BUILDFLAG(IS_MAC)
@@ -438,9 +438,9 @@ namespace {
 using electron::api::Tray;
 
 void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
+                v8::Local<v8::Value> /*unused*/,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
 
   gin::Dictionary dict(isolate, exports);

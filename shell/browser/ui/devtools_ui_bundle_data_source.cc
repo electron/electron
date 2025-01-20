@@ -87,7 +87,7 @@ std::string BundledDataSource::GetSource() {
 
 void BundledDataSource::StartDataRequest(
     const GURL& url,
-    const content::WebContents::Getter& wc_getter,
+    const content::WebContents::Getter& /*wc_getter*/,
     GotDataCallback callback) {
   const std::string path = content::URLDataSource::URLToRequestPath(url);
   // Serve request from local bundle.

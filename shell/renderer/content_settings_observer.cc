@@ -21,7 +21,8 @@ ContentSettingsObserver::ContentSettingsObserver(
 
 ContentSettingsObserver::~ContentSettingsObserver() = default;
 
-bool ContentSettingsObserver::AllowStorageAccessSync(StorageType storage_type) {
+bool ContentSettingsObserver::AllowStorageAccessSync(
+    StorageType /*storage_type*/) {
   blink::WebFrame* frame = render_frame()->GetWebFrame();
   if (frame->GetSecurityOrigin().IsOpaque() ||
       frame->Top()->GetSecurityOrigin().IsOpaque())

@@ -491,7 +491,7 @@ void WebFrameMain::DOMContentLoaded() {
 }
 
 // static
-gin::Handle<WebFrameMain> WebFrameMain::New(v8::Isolate* isolate) {
+gin::Handle<WebFrameMain> WebFrameMain::New(v8::Isolate* /*isolate*/) {
   return {};
 }
 
@@ -595,9 +595,9 @@ v8::Local<v8::Value> FromFtnIdIfExists(gin_helper::ErrorThrower thrower,
 }
 
 void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
+                v8::Local<v8::Value> /*unused*/,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebFrameMain", WebFrameMain::GetConstructor(context));

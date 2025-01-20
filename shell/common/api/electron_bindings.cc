@@ -41,7 +41,7 @@ ElectronBindings::ElectronBindings(uv_loop_t* loop) {
 ElectronBindings::~ElectronBindings() = default;
 
 // static
-void ElectronBindings::BindProcess(v8::Isolate* isolate,
+void ElectronBindings::BindProcess(v8::Isolate* /*isolate*/,
                                    gin_helper::Dictionary* process,
                                    base::ProcessMetrics* metrics) {
   // These bindings are shared between sandboxed & unsandboxed renderers

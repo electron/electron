@@ -11,7 +11,7 @@ ElectronKioskDelegate::ElectronKioskDelegate() = default;
 ElectronKioskDelegate::~ElectronKioskDelegate() = default;
 
 bool ElectronKioskDelegate::IsAutoLaunchedKioskApp(
-    const extensions::ExtensionId& id) const {
+    const extensions::ExtensionId& /*id*/) const {
   return false;
 }
 

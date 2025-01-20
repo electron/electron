@@ -308,7 +308,7 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 #if BUILDFLAG(IS_LINUX)
-int GetCrashSignalFD(const base::CommandLine& command_line) {
+int GetCrashSignalFD() {
   int fd;
   return crash_reporter::GetHandlerSocket(&fd, nullptr) ? fd : -1;
 }
@@ -370,9 +370,9 @@ content::WebContents* ElectronBrowserClient::GetWebContentsFromProcessID(
 }
 
 content::SiteInstance* ElectronBrowserClient::GetSiteInstanceFromAffinity(
-    content::BrowserContext* browser_context,
-    const GURL& url,
-    content::RenderFrameHost* rfh) const {
+    content::BrowserContext* /*browser_context*/,
+    const GURL& /*url*/,
+    content::RenderFrameHost* /*rfh*/) const {
   return nullptr;
 }
 
@@ -765,8 +765,8 @@ bool ElectronBrowserClient::ShouldUseProcessPerSite(
 
 void ElectronBrowserClient::GetMediaDeviceIDSalt(
     content::RenderFrameHost* rfh,
-    const net::SiteForCookies& site_for_cookies,
-    const blink::StorageKey& storage_key,
+    const net::SiteForCookies& /*site_for_cookies*/,
+    const blink::StorageKey& /*storage_key*/,
     base::OnceCallback<void(bool, const std::string&)> callback) {
   constexpr bool persistent_media_device_id_allowed = true;
   std::string persistent_media_device_id_salt =
@@ -783,7 +783,7 @@ base::FilePath ElectronBrowserClient::GetLoggingFileName(
 
 std::unique_ptr<net::ClientCertStore>
 ElectronBrowserClient::CreateClientCertStore(
-    content::BrowserContext* browser_context) {
+    content::BrowserContext* /*browser_context*/) {
 #if BUILDFLAG(USE_NSS_CERTS)
   return std::make_unique<net::ClientCertStoreNSS>(
       base::BindRepeating([](const net::HostPortPair& server) {
@@ -811,8 +811,8 @@ ElectronBrowserClient::OverrideSystemLocationProvider() {
 
 void ElectronBrowserClient::ConfigureNetworkContextParams(
     content::BrowserContext* browser_context,
-    bool in_memory,
-    const base::FilePath& relative_partition_path,
+    bool /*in_memory*/,
+    const base::FilePath& /*relative_partition_path*/,
     network::mojom::NetworkContextParams* network_context_params,
     cert_verifier::mojom::CertVerifierCreationParams*
         cert_verifier_creation_params) {
@@ -870,7 +870,7 @@ void ElectronBrowserClient::RenderProcessReady(
 
 void ElectronBrowserClient::RenderProcessExited(
     content::RenderProcessHost* host,
-    const content::ChildProcessTerminationInfo& info) {
+    const content::ChildProcessTerminationInfo& /*info*/) {
   if (delegate_) {
     static_cast<api::App*>(delegate_)->RenderProcessExited(host);
   }
@@ -920,16 +920,16 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     const GURL& url,
     content::WebContents::Getter web_contents_getter,
     content::FrameTreeNodeId frame_tree_node_id,
-    content::NavigationUIData* navigation_data,
-    bool is_primary_main_frame,
-    bool is_in_fenced_frame_tree,
-    network::mojom::WebSandboxFlags sandbox_flags,
-    ui::PageTransition page_transition,
+    content::NavigationUIData* /*navigation_data*/,
+    bool /*is_primary_main_frame*/,
+    bool /*is_in_fenced_frame_tree*/,
+    network::mojom::WebSandboxFlags /*sandbox_flags*/,
+    ui::PageTransition /*page_transition*/,
     bool has_user_gesture,
-    const std::optional<url::Origin>& initiating_origin,
+    const std::optional<url::Origin>& /*initiating_origin*/,
     content::RenderFrameHost* initiator_document,
-    const net::IsolationInfo& isolation_info,
-    mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
+    const net::IsolationInfo& /*isolation_info*/,
+    mojo::PendingRemote<network::mojom::URLLoaderFactory>* /*out_factory*/) {
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&HandleExternalProtocolInUI, url,
@@ -1097,11 +1097,11 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   // network::mojom::URLLoaderFactory:
   void CreateLoaderAndStart(
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
-      int32_t request_id,
-      uint32_t options,
+      int32_t /*request_id*/,
+      uint32_t /*options*/,
       const network::ResourceRequest& request,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
+      const net::MutableNetworkTrafficAnnotationTag& /*traffic_annotation*/)
       override {
     if (!content::ChildProcessSecurityPolicy::GetInstance()->CanRequestURL(
             child_id_, request.url)) {
@@ -1125,7 +1125,7 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
 void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     int render_process_id,
     int render_frame_id,
-    const std::optional<url::Origin>& request_initiator_origin,
+    const std::optional<url::Origin>& /*request_initiator_origin*/,
     NonNetworkURLLoaderFactoryMap* factories) {
   auto* render_process_host =
       content::RenderProcessHost::FromID(render_process_id);
@@ -1297,16 +1297,16 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
     content::RenderFrameHost* frame_host,
     int render_process_id,
     URLLoaderFactoryType type,
-    const url::Origin& request_initiator,
-    const net::IsolationInfo& isolation_info,
+    const url::Origin& /*request_initiator*/,
+    const net::IsolationInfo& /*isolation_info*/,
     std::optional<int64_t> navigation_id,
     ukm::SourceIdObj ukm_source_id,
     network::URLLoaderFactoryBuilder& factory_builder,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
         header_client,
     bool* bypass_redirect_checks,
-    bool* disable_secure_dns,
-    network::mojom::URLLoaderFactoryOverridePtr* factory_override,
+    bool* /*disable_secure_dns*/,
+    network::mojom::URLLoaderFactoryOverridePtr* /*factory_override*/,
     scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
@@ -1363,11 +1363,12 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
 
 std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
 ElectronBrowserClient::WillCreateURLLoaderRequestInterceptors(
-    content::NavigationUIData* navigation_ui_data,
+    content::NavigationUIData* /*navigation_ui_data*/,
     content::FrameTreeNodeId frame_tree_node_id,
-    int64_t navigation_id,
-    bool force_no_https_upgrade,
-    scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner) {
+    int64_t /*navigation_id*/,
+    bool /*force_no_https_upgrade*/,
+    scoped_refptr<
+        base::SequencedTaskRunner> /*navigation_response_task_runner*/) {
   std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
       interceptors;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -1638,9 +1639,9 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
 #if BUILDFLAG(IS_LINUX)
 void ElectronBrowserClient::GetAdditionalMappedFilesForChildProcess(
     const base::CommandLine& command_line,
-    int child_process_id,
+    int /*child_process_id*/,
     content::PosixFileDescriptorInfo* mappings) {
-  int crash_signal_fd = GetCrashSignalFD(command_line);
+  int crash_signal_fd = GetCrashSignalFD();
   if (crash_signal_fd >= 0) {
     mappings->Share(kCrashDumpSignal, crash_signal_fd);
   }
@@ -1651,14 +1652,14 @@ std::unique_ptr<content::LoginDelegate>
 ElectronBrowserClient::CreateLoginDelegate(
     const net::AuthChallengeInfo& auth_info,
     content::WebContents* web_contents,
-    content::BrowserContext* browser_context,
-    const content::GlobalRequestID& request_id,
+    content::BrowserContext* /*browser_context*/,
+    const content::GlobalRequestID& /*request_id*/,
     bool is_request_for_primary_main_frame,
     bool is_request_for_navigation,
     const GURL& url,
     scoped_refptr<net::HttpResponseHeaders> response_headers,
     bool first_auth_attempt,
-    content::GuestPageHolder* guest_page_holder,
+    content::GuestPageHolder* /*guest_page_holder*/,
     LoginAuthRequiredCallback auth_required_callback) {
   return std::make_unique<LoginHandler>(
       auth_info, web_contents, is_request_for_primary_main_frame,
@@ -1669,9 +1670,9 @@ ElectronBrowserClient::CreateLoginDelegate(
 std::vector<std::unique_ptr<blink::URLLoaderThrottle>>
 ElectronBrowserClient::CreateURLLoaderThrottles(
     const network::ResourceRequest& request,
-    content::BrowserContext* browser_context,
-    const base::RepeatingCallback<content::WebContents*()>& wc_getter,
-    content::NavigationUIData* navigation_ui_data,
+    content::BrowserContext* /*browser_context*/,
+    const base::RepeatingCallback<content::WebContents*()>& /*wc_getter*/,
+    content::NavigationUIData* /*navigation_ui_data*/,
     content::FrameTreeNodeId frame_tree_node_id,
     std::optional<int64_t> navigation_id) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
@@ -1738,8 +1739,9 @@ void BindBadgeServiceForServiceWorker(
 }  // namespace
 
 void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
-    content::BrowserContext* browser_context,
-    const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
+    content::BrowserContext* /*browser_context*/,
+    const content::
+        ServiceWorkerVersionBaseInfo& /*service_worker_version_info*/,
     mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
         map) {
   map->Add<blink::mojom::BadgeService>(

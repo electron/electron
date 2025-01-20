@@ -77,7 +77,7 @@ ElectronManagementAPIDelegate::~ElectronManagementAPIDelegate() = default;
 
 bool ElectronManagementAPIDelegate::LaunchAppFunctionDelegate(
     const extensions::Extension* extension,
-    content::BrowserContext* context) const {
+    content::BrowserContext* /*context*/) const {
   // Note: Chromium looks for an existing profile and determines whether
   // the user has set a launch preference
   // See: https://chromium-review.googlesource.com/c/chromium/src/+/4389621
@@ -94,8 +94,8 @@ GURL ElectronManagementAPIDelegate::GetFullLaunchURL(
 }
 
 extensions::LaunchType ElectronManagementAPIDelegate::GetLaunchType(
-    const extensions::ExtensionPrefs* prefs,
-    const extensions::Extension* extension) const {
+    const extensions::ExtensionPrefs* /*prefs*/,
+    const extensions::Extension* /*extension*/) const {
   // TODO(sentialx)
   return extensions::LAUNCH_TYPE_DEFAULT;
 }
@@ -120,24 +120,24 @@ ElectronManagementAPIDelegate::UninstallFunctionDelegate(
 }
 
 bool ElectronManagementAPIDelegate::CreateAppShortcutFunctionDelegate(
-    extensions::ManagementCreateAppShortcutFunction* function,
-    const extensions::Extension* extension,
-    std::string* error) const {
+    extensions::ManagementCreateAppShortcutFunction* /*function*/,
+    const extensions::Extension* /*extension*/,
+    std::string* /*error*/) const {
   return false;  // TODO(sentialx): route event and return true
 }
 
 std::unique_ptr<extensions::AppForLinkDelegate>
 ElectronManagementAPIDelegate::GenerateAppForLinkFunctionDelegate(
-    extensions::ManagementGenerateAppForLinkFunction* function,
-    content::BrowserContext* context,
-    const std::string& title,
-    const GURL& launch_url) const {
+    extensions::ManagementGenerateAppForLinkFunction* /*function*/,
+    content::BrowserContext* /*context*/,
+    const std::string& /*title*/,
+    const GURL& /*launch_url*/) const {
   // TODO(sentialx)
   return nullptr;
 }
 
 bool ElectronManagementAPIDelegate::CanContextInstallWebApps(
-    content::BrowserContext* context) const {
+    content::BrowserContext* /*context*/) const {
   // TODO(sentialx)
   return false;
 }
@@ -178,10 +178,10 @@ void ElectronManagementAPIDelegate::DisableExtension(
 }
 
 bool ElectronManagementAPIDelegate::UninstallExtension(
-    content::BrowserContext* context,
-    const extensions::ExtensionId& transient_extension_id,
-    extensions::UninstallReason reason,
-    std::u16string* error) const {
+    content::BrowserContext* /*context*/,
+    const extensions::ExtensionId& /*transient_extension_id*/,
+    extensions::UninstallReason /*reason*/,
+    std::u16string* /*error*/) const {
   // TODO(sentialx): we don't have ExtensionService
   // return extensions::ExtensionSystem::Get(context)
   //     ->extension_service()
@@ -211,8 +211,8 @@ GURL ElectronManagementAPIDelegate::GetIconURL(
 }
 
 GURL ElectronManagementAPIDelegate::GetEffectiveUpdateURL(
-    const extensions::Extension& extension,
-    content::BrowserContext* context) const {
+    const extensions::Extension& /*extension*/,
+    content::BrowserContext* /*context*/) const {
   // TODO(codebytere): we do not currently support ExtensionManagement.
   return GURL::EmptyGURL();
 }

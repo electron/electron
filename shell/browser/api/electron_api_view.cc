@@ -387,7 +387,7 @@ void View::SetVisible(bool visible) {
   view_->SetVisible(visible);
 }
 
-void View::OnViewBoundsChanged(views::View* observed_view) {
+void View::OnViewBoundsChanged(views::View* /*observed_view*/) {
   ApplyBorderRadius();
   Emit("bounds-changed");
 }
@@ -455,9 +455,9 @@ namespace {
 using electron::api::View;
 
 void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
+                v8::Local<v8::Value> /*unused*/,
                 v8::Local<v8::Context> context,
-                void* priv) {
+                void* /*priv*/) {
   v8::Isolate* isolate = context->GetIsolate();
 
   gin_helper::Dictionary dict(isolate, exports);

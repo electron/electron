@@ -18,7 +18,7 @@ SavePageHandler::SavePageHandler(content::WebContents* web_contents,
 
 SavePageHandler::~SavePageHandler() = default;
 
-void SavePageHandler::OnDownloadCreated(content::DownloadManager* manager,
+void SavePageHandler::OnDownloadCreated(content::DownloadManager* /*manager*/,
                                         download::DownloadItem* item) {
   // OnDownloadCreated is invoked during WebContents::SavePage, so the |item|
   // here is the one stated by WebContents::SavePage.

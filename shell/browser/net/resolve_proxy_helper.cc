@@ -70,7 +70,7 @@ void ResolveProxyHelper::StartPendingRequest() {
 }
 
 void ResolveProxyHelper::OnProxyLookupComplete(
-    int32_t net_error,
+    int32_t /*net_error*/,
     const std::optional<net::ProxyInfo>& proxy_info) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!pending_requests_.empty());
