@@ -566,7 +566,7 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
     content::GlobalRenderFrameHostId frame_id,
     base::OnceCallback<void(SensitiveEntryResult)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  callback_map_.try_emplace(path_info.path, std::move(callback));
+  callback_map_.try_emplace(path, std::move(callback));
 
   auto after_blocklist_check_callback = base::BindOnce(
       &FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist,
@@ -636,7 +636,7 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
   if (user_action == UserAction::kNone) {
     auto result = should_block ? SensitiveEntryResult::kAbort
                                : SensitiveEntryResult::kAllowed;
-    RunRestrictedPathCallback(path_info.path, result);
+    RunRestrictedPathCallback(path, result);
     return;
   }
 
@@ -655,11 +655,11 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
         "file-system-access-restricted", details,
         base::BindRepeating(
             &FileSystemAccessPermissionContext::OnRestrictedPathResult,
-            weak_factory_.GetWeakPtr(), path_info.path));
+            weak_factory_.GetWeakPtr(), path));
     return;
   }
 
-  RunRestrictedPathCallback(path_info.path, SensitiveEntryResult::kAllowed);
+  RunRestrictedPathCallback(path, SensitiveEntryResult::kAllowed);
 }
 
 void FileSystemAccessPermissionContext::MaybeEvictEntries(
