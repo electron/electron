@@ -566,7 +566,7 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
     content::GlobalRenderFrameHostId frame_id,
     base::OnceCallback<void(SensitiveEntryResult)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  callback_ = std::move(callback);
+  callback_map_.try_emplace(path, std::move(callback));
 
   auto after_blocklist_check_callback = base::BindOnce(
       &FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist,
@@ -610,16 +610,18 @@ void FileSystemAccessPermissionContext::PerformAfterWriteChecks(
 }
 
 void FileSystemAccessPermissionContext::RunRestrictedPathCallback(
+    const base::FilePath& file_path,
     SensitiveEntryResult result) {
-  if (callback_)
-    std::move(callback_).Run(result);
+  if (auto val = callback_map_.extract(file_path))
+    std::move(val.mapped()).Run(result);
 }
 
 void FileSystemAccessPermissionContext::OnRestrictedPathResult(
+    const base::FilePath& file_path,
     gin::Arguments* args) {
   SensitiveEntryResult result = SensitiveEntryResult::kAbort;
   args->GetNext(&result);
-  RunRestrictedPathCallback(result);
+  RunRestrictedPathCallback(file_path, result);
 }
 
 void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
@@ -632,8 +634,9 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   if (user_action == UserAction::kNone) {
-    RunRestrictedPathCallback(should_block ? SensitiveEntryResult::kAbort
-                                           : SensitiveEntryResult::kAllowed);
+    auto result = should_block ? SensitiveEntryResult::kAbort
+                               : SensitiveEntryResult::kAllowed;
+    RunRestrictedPathCallback(path, result);
     return;
   }
 
@@ -652,11 +655,11 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
         "file-system-access-restricted", details,
         base::BindRepeating(
             &FileSystemAccessPermissionContext::OnRestrictedPathResult,
-            weak_factory_.GetWeakPtr()));
+            weak_factory_.GetWeakPtr(), path));
     return;
   }
 
-  RunRestrictedPathCallback(SensitiveEntryResult::kAllowed);
+  RunRestrictedPathCallback(path, SensitiveEntryResult::kAllowed);
 }
 
 void FileSystemAccessPermissionContext::MaybeEvictEntries(
