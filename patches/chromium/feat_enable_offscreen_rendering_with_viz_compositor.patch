@@ -238,7 +238,7 @@ index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..d3a04dfd9be25ffda095be1eb2ebad9746a5f01c
+index 0000000000000000000000000000000000000000..ef5cb8ae4c398e5834496c8b24eb98c41b10a7b3
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
 @@ -0,0 +1,162 @@
@@ -355,7 +355,7 @@ index 0000000000000000000000000000000000000000..d3a04dfd9be25ffda095be1eb2ebad97
 +#if defined(WIN32)
 +  canvas_ = skia::CreatePlatformCanvasWithSharedSection(
 +      viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
-+      region.GetPlatformHandle(), 0, skia::CRASH_ON_FAILURE);
++      region.GetPlatformHandle(), skia::CRASH_ON_FAILURE);
 +#else
 +  shm_mapping_ = region.Map();
 +  if (!shm_mapping_.IsValid()) {

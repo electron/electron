@@ -48,7 +48,7 @@ void LayeredWindowUpdater::OnAllocatedSharedMemory(
 #if defined(WIN32)
   canvas_ = skia::CreatePlatformCanvasWithSharedSection(
       pixel_size.width(), pixel_size.height(), false,
-      region.GetPlatformHandle(), 0, skia::CRASH_ON_FAILURE);
+      region.GetPlatformHandle(), skia::CRASH_ON_FAILURE);
 #else
   shm_mapping_ = region.Map();
   if (!shm_mapping_.IsValid()) {
