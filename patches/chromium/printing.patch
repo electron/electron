@@ -653,7 +653,7 @@ index 3c2fdc9f9a6c60efc4b0afacbfb83eef55917791..8fd9aff538fa03da6c171927c316d4f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 423cea4420bc868baad6260fb7c6b33430eaaf95..19bbf42e976a005b52167cf0bf9e3198d185e78e 100644
+index 423cea4420bc868baad6260fb7c6b33430eaaf95..4a51a5156b9e15e2bbfac521cfbb3f397acaeccc 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -52,6 +52,7 @@
@@ -771,7 +771,7 @@ index 423cea4420bc868baad6260fb7c6b33430eaaf95..19bbf42e976a005b52167cf0bf9e3198
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2360,29 +2375,42 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2360,29 +2375,44 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -810,6 +810,8 @@ index 423cea4420bc868baad6260fb7c6b33430eaaf95..19bbf42e976a005b52167cf0bf9e3198
 +  if (silent) {
 +    settings->params->print_scaling_option = mojom::PrintScalingOption::kFitToPrintableArea;
 +  } else {
++    const auto plugin_node = delegate_->GetPdfElement(frame);
++    const bool center_on_paper = !IsPrintingPdfFrame(frame, plugin_node);
 +    settings->params->print_scaling_option =
 +        center_on_paper ? mojom::PrintScalingOption::kCenterShrinkToFitPaper
 +                        : mojom::PrintScalingOption::kSourceSize;
