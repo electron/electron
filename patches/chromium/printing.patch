@@ -604,6 +604,19 @@ index 402be34ab888cdf834d0fb65de0832e9a8021ced..82ddc92a35d824926c30279e660cc4e8
  }
  
  #if BUILDFLAG(IS_CHROMEOS)
+diff --git a/chrome/browser/printing/printer_query_oop.cc b/chrome/browser/printing/printer_query_oop.cc
+index e271d17b3261c47f3dbeaf9be0b3c4229ee27181..00b906660580aca7d5aabcde54d68c2161ea71dd 100644
+--- a/chrome/browser/printing/printer_query_oop.cc
++++ b/chrome/browser/printing/printer_query_oop.cc
+@@ -127,7 +127,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
+     std::unique_ptr<PrintSettings> new_settings,
+     mojom::ResultCode result) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+-  if (result == mojom::ResultCode::kSuccess) {
++  if (result == mojom::ResultCode::kSuccess && query_with_ui_client_id_.has_value()) {
+     // Want the same PrintBackend service as the query so that we use the same
+     // device context.
+     print_document_client_id_ =
 diff --git a/components/printing/browser/print_manager.cc b/components/printing/browser/print_manager.cc
 index 21c81377d32ae8d4185598a7eba88ed1d2063ef0..0767f4e9369e926b1cea99178c1a1975941f1765 100644
 --- a/components/printing/browser/print_manager.cc
