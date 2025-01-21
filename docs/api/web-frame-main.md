@@ -165,6 +165,13 @@ app.on('web-contents-created', (_, webContents) => {
 })
 ```
 
+#### `frame.copyImageAt(x, y)`
+
+* `x` Integer
+* `y` Integer
+
+Copy the image at the given position to the clipboard.
+
 ### Instance Properties
 
 #### `frame.ipc` _Readonly_

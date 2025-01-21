@@ -3417,12 +3417,6 @@ void WebContents::ShowDefinitionForSelection() {
 #endif
 }
 
-void WebContents::CopyImageAt(int x, int y) {
-  auto* const host = web_contents()->GetPrimaryMainFrame();
-  if (host)
-    host->CopyImageAt(x, y);
-}
-
 void WebContents::Focus() {
   // Focusing on WebContents does not automatically focus the window on macOS
   // and Linux, do it manually to match the behavior on Windows.
@@ -4538,7 +4532,6 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetMethod("showDefinitionForSelection",
                  &WebContents::ShowDefinitionForSelection)
-      .SetMethod("copyImageAt", &WebContents::CopyImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)

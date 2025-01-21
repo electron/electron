@@ -282,7 +282,6 @@ class WebContents final : public ExclusiveAccessContext,
   uint32_t FindInPage(gin::Arguments* args);
   void StopFindInPage(content::StopFindAction action);
   void ShowDefinitionForSelection();
-  void CopyImageAt(int x, int y);
 
   // Focus.
   void Focus();

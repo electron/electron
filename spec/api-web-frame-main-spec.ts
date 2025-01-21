@@ -1,3 +1,4 @@
+import { clipboard } from 'electron';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 
 import { expect } from 'chai';
@@ -472,6 +473,76 @@ describe('webFrameMain module', () => {
       w.webContents.mainFrame.executeJavaScript('"run a lil js"');
       const callStack = await callStackPromise;
       expect(callStack).to.be.a('string');
+    });
+  });
+
+  describe('webFrameMain.copyImageAt', () => {
+    const insertImageInFrame = async (frame: WebFrameMain) => {
+      const imgPath = path.join(fixtures, 'assets', 'capybara.png');
+      const imgSrc = url.pathToFileURL(imgPath);
+      await frame.executeJavaScript(`(${(src: string) => {
+        return new Promise((resolve) => {
+          const img = document.createElement('img');
+          img.onload = resolve;
+          img.src = src;
+          document.body.appendChild(img);
+        });
+      }})(${JSON.stringify(imgSrc)})`);
+    };
+
+    const getFramePosition = async (frame: WebFrameMain) => {
+      const point = await frame.executeJavaScript(`(${() => {
+        const iframe = document.querySelector('iframe');
+        if (!iframe) return;
+        const rect = iframe.getBoundingClientRect();
+        return { x: Math.floor(rect.x), y: Math.floor(rect.y) };
+      }})()`) as Electron.Point;
+      expect(point).to.be.an('object');
+      return point;
+    };
+
+    const copyImageInFrame = async (frame: WebFrameMain) => {
+      const point = await frame.executeJavaScript(`(${() => {
+        const img = document.querySelector('img');
+        if (!img) return;
+        const rect = img.getBoundingClientRect();
+        return {
+          x: Math.floor(rect.x + rect.width / 2),
+          y: Math.floor(rect.y + rect.height / 2)
+        };
+      }})()`) as Electron.Point;
+      expect(point).to.be.an('object');
+
+      // Translate coordinate to be relative of main frame
+      if (frame.parent) {
+        const framePosition = await getFramePosition(frame.parent);
+        point.x += framePosition.x;
+        point.y += framePosition.y;
+      }
+
+      frame.copyImageAt(point.x, point.y);
+    };
+
+    beforeEach(() => {
+      clipboard.clear();
+    });
+
+    it('copies image in main frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.webContents.loadFile(path.join(fixtures, 'blank.html'));
+      await insertImageInFrame(w.webContents.mainFrame);
+      await copyImageInFrame(w.webContents.mainFrame);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+    });
+
+    it('copies image in subframe', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
+      const subframe = w.webContents.mainFrame.frames[0];
+      expect(subframe).to.exist();
+      await insertImageInFrame(subframe);
+      await copyImageInFrame(subframe);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
     });
   });
 

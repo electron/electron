@@ -107,6 +107,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
+  void CopyImageAt(int x, int y);
   bool Reload();
   bool IsDestroyed() const;
   void Send(v8::Isolate* isolate,

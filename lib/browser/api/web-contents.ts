@@ -476,6 +476,10 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
   }
 };
 
+WebContents.prototype.copyImageAt = function (x: number, y: number) {
+  this.mainFrame.copyImageAt(x, y);
+};
+
 const addReplyToEvent = (event: Electron.IpcMainEvent) => {
   const { processId, frameId } = event;
   event.reply = (channel: string, ...args: any[]) => {

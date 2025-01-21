@@ -241,6 +241,12 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   return handle;
 }
 
+void WebFrameMain::CopyImageAt(int x, int y) {
+  if (!CheckRenderFrame())
+    return;
+  return render_frame_->CopyImageAt(x, y);
+}
+
 bool WebFrameMain::Reload() {
   if (!CheckRenderFrame())
     return false;
@@ -520,6 +526,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
       .SetMethod("collectJavaScriptCallStack",
                  &WebFrameMain::CollectDocumentJSCallStack)
+      .SetMethod("copyImageAt", &WebFrameMain::CopyImageAt)
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("isDestroyed", &WebFrameMain::IsDestroyed)
       .SetMethod("_send", &WebFrameMain::Send)
