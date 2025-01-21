@@ -405,9 +405,9 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
   prefs->plugins_enabled = true;
-  prefs->dom_paste_enabled = true;
+  prefs->dom_paste_enabled = false;
+  prefs->javascript_can_access_clipboard = false;
   prefs->allow_scripts_to_close_windows = true;
-  prefs->javascript_can_access_clipboard = true;
   prefs->local_storage_enabled = true;
   prefs->databases_enabled = true;
   prefs->allow_universal_access_from_file_urls =
