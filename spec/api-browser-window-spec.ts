@@ -1272,6 +1272,7 @@ describe('BrowserWindow module', () => {
         // We first need to resign app focus for this test to work
         const isInactive = once(app, 'did-resign-active');
         childProcess.execSync('osascript -e \'tell application "Finder" to activate\'');
+        defer(() => childProcess.execSync('osascript -e \'tell application "Finder" to quit\''));
         await isInactive;
 
         // Create new window

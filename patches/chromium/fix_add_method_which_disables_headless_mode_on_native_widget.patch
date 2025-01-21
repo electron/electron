@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cezary Kulakowski <cezary@openfin.co>
+Date: Mon, 22 Jul 2024 16:23:13 +0200
+Subject: fix: add method which disables headless mode on native widget
+
+We need this method as we create window in headless mode and we
+switch it back to normal mode only after inital paint is done in
+order to get some events like WebContents.beginFrameSubscription.
+If we don't set `is_headless_` to false then some child windows
+e.g. autofill popups will be created in headless mode leading to
+ui problems (like dissapearing popup during typing in html's
+input list.
+
+diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
+index 37522f51d0c98120b9161bd25cb85cb6e2cd518b..0abe6f9be010a6ec93d28183c674374d88759d97 100644
+--- a/ui/views/widget/widget.h
++++ b/ui/views/widget/widget.h
+@@ -1171,6 +1171,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+   // True if widget was created in headless mode.
+   bool is_headless() const { return is_headless_; }
+ 
++  void DisableHeadlessMode() { is_headless_ = false; }
++
+   // True if the window size will follow the content preferred size.
+   bool is_autosized() const { return is_autosized_; }
+ 
