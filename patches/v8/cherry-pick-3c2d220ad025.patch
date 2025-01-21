@@ -1,7 +1,7 @@
-From 3c2d220ad025e2c532ea17289d8d29350f0b722a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shu-yu Guo <syg@chromium.org>
 Date: Mon, 18 Nov 2024 16:02:28 -0800
-Subject: [PATCH] Merged: [interpreter] Fix hole elision scope for switch jump tables
+Subject: Merged: [interpreter] Fix hole elision scope for switch jump tables
 
 (cherry picked from commit 5c3b50c26c50e68dbedf8ff991249e75e46ef06e)
 
@@ -15,13 +15,12 @@ Reviewed-by: Rezvan Mahdavi Hezaveh <rezvan@chromium.org>
 Cr-Commit-Position: refs/branch-heads/13.2@{#18}
 Cr-Branched-From: 24068c59cedad9ee976ddc05431f5f497b1ebd71-refs/heads/13.2.152@{#1}
 Cr-Branched-From: 6054ba94db0969220be4f94dc1677fc4696bdc4f-refs/heads/main@{#97085}
----
 
 diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
-index a99cc34..5f1e6b3 100644
+index c0f7bca3472c857d88fdd29b51d9dd412cfbce12..415eb3a06c5330a5e2d2be4c559746fe590219d2 100644
 --- a/src/interpreter/bytecode-generator.cc
 +++ b/src/interpreter/bytecode-generator.cc
-@@ -2526,6 +2526,9 @@
+@@ -2458,6 +2458,9 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
    // Are we still using any if-else bytecodes to evaluate the switch?
    bool use_jumps = n_comp_cases != 0;
  
@@ -31,7 +30,7 @@ index a99cc34..5f1e6b3 100644
    SwitchBuilder switch_builder(builder(), block_coverage_builder_, stmt,
                                 n_comp_cases, jump_table);
    ControlScopeForBreakable scope(this, stmt, &switch_builder);
-@@ -2583,6 +2586,10 @@
+@@ -2515,6 +2518,10 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
                                           info.covered_cases);
  
      if (use_jumps) {
@@ -42,7 +41,7 @@ index a99cc34..5f1e6b3 100644
        builder()->LoadAccumulatorWithRegister(r1);
      }
    }
-@@ -2603,16 +2610,14 @@
+@@ -2535,16 +2542,14 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
        // The comparisons linearly dominate, so no need to open a new elision
        // scope for each one.
        std::optional<HoleCheckElisionScope> elider;
@@ -62,7 +61,7 @@ index a99cc34..5f1e6b3 100644
  
            // Perform label comparison as if via '===' with tag.
            VisitForAccumulatorValue(clause->label());
-@@ -2623,7 +2628,9 @@
+@@ -2555,7 +2560,9 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
  #endif
            switch_builder.JumpToCaseIfTrue(ToBooleanMode::kAlreadyBoolean,
                                            case_compare_ctr++);
@@ -75,7 +74,7 @@ index a99cc34..5f1e6b3 100644
      }
 diff --git a/test/mjsunit/regress/regress-374627491.js b/test/mjsunit/regress/regress-374627491.js
 new file mode 100644
-index 0000000..ebb7e1d
+index 0000000000000000000000000000000000000000..ebb7e1d93f788f10606b4787cfacd79c3807ca0c
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-374627491.js
 @@ -0,0 +1,26 @@

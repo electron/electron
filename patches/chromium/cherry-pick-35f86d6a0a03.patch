@@ -1,7 +1,7 @@
-From 35f86d6a0a03295e4da9dff23eddfe4032350db3 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Roger McFarlane <rogerm@chromium.org>
 Date: Tue, 17 Dec 2024 12:20:05 -0800
-Subject: [PATCH] Remove PersistentMemoryAllocator::GetAllocSize()
+Subject: Remove PersistentMemoryAllocator::GetAllocSize()
 
 This CL removes PersistentMemoryAllocator::GetAllocSize() in favor
 of allowing various other API entry points to return the alloc size.
@@ -24,13 +24,12 @@ Commit-Queue: Luc Nguyen <lucnguyen@google.com>
 Reviewed-by: Luc Nguyen <lucnguyen@google.com>
 Cr-Commit-Position: refs/branch-heads/6834@{#2335}
 Cr-Branched-From: 47a3549fac11ee8cb7be6606001ede605b302b9f-refs/heads/main@{#1381561}
----
 
 diff --git a/base/metrics/field_trial.cc b/base/metrics/field_trial.cc
-index 829a5c4..bf2ffe6 100644
+index 2fc84a4215755a5fc16c1b6699cdb1c4369c8b4c..8d29d8fcf6490497382e9dbd21bde13ceb767795 100644
 --- a/base/metrics/field_trial.cc
 +++ b/base/metrics/field_trial.cc
-@@ -124,7 +124,7 @@
+@@ -124,7 +124,7 @@ void PickleFieldTrial(const FieldTrial::PickleState& trial_state,
  }
  
  // Returns the boundary value for comparing against the FieldTrial's added
@@ -39,7 +38,7 @@ index 829a5c4..bf2ffe6 100644
  FieldTrial::Probability GetGroupBoundaryValue(
      FieldTrial::Probability divisor,
      double entropy_value) {
-@@ -138,7 +138,7 @@
+@@ -138,7 +138,7 @@ FieldTrial::Probability GetGroupBoundaryValue(
    const double kEpsilon = 1e-8;
    const FieldTrial::Probability result =
        static_cast<FieldTrial::Probability>(divisor * entropy_value + kEpsilon);
@@ -48,7 +47,7 @@ index 829a5c4..bf2ffe6 100644
    return std::min(result, divisor - 1);
  }
  
-@@ -259,7 +259,7 @@
+@@ -259,7 +259,7 @@ void FieldTrial::AppendGroup(const std::string& name,
    if (forced_) {
      DCHECK(!group_name_.empty());
      if (name == group_name_) {
@@ -57,7 +56,7 @@ index 829a5c4..bf2ffe6 100644
        // forced trial, it will not have the same value as the default group
        // number returned from the non-forced |FactoryGetFieldTrial()| call,
        // which takes care to ensure that this does not happen.
-@@ -326,7 +326,7 @@
+@@ -326,7 +326,7 @@ bool FieldTrial::IsOverridden() const {
  void FieldTrial::EnableBenchmarking() {
    // We don't need to see field trials created via CreateFieldTrial() for
    // benchmarking, because such field trials have only a single group and are
@@ -66,7 +65,7 @@ index 829a5c4..bf2ffe6 100644
    DCHECK_EQ(0u, FieldTrialList::GetRandomizedFieldTrialCount());
    enable_benchmarking_ = true;
  }
-@@ -453,7 +453,7 @@
+@@ -453,7 +453,7 @@ void FieldTrial::FinalizeGroupChoice() {
    if (group_ != kNotFinalized)
      return;
    accumulated_group_probability_ = divisor_;
@@ -75,7 +74,7 @@ index 829a5c4..bf2ffe6 100644
    // finalized.
    DCHECK(!forced_);
    SetGroupChoice(default_group_name_, kDefaultGroupNumber);
-@@ -807,7 +807,7 @@
+@@ -807,7 +807,7 @@ FieldTrial* FieldTrialList::CreateFieldTrial(std::string_view name,
    field_trial = new FieldTrial(name, kTotalProbability, group_name, 0,
                                 is_low_anonymity, is_overridden);
    // The group choice will be finalized in this method. So
@@ -84,7 +83,7 @@ index 829a5c4..bf2ffe6 100644
    FieldTrialList::Register(field_trial, /*is_randomized_trial=*/false);
    // Force the trial, which will also finalize the group choice.
    field_trial->SetForced();
-@@ -910,12 +910,12 @@
+@@ -910,12 +910,12 @@ bool FieldTrialList::GetParamsFromSharedMemory(
    if (!field_trial->ref_)
      return false;
  
@@ -101,10 +100,10 @@ index 829a5c4..bf2ffe6 100644
        sizeof(FieldTrial::FieldTrialEntry) + entry->pickle_size;
    if (allocated_size < actual_size)
 diff --git a/base/metrics/persistent_histogram_allocator.cc b/base/metrics/persistent_histogram_allocator.cc
-index d6cf8c6..07a3ab0 100644
+index 6951fe4436e388a5aad3716c4684b1e168992c4b..3e830e4b8c70959a01626c90b4aaec1cfa5d9f4a 100644
 --- a/base/metrics/persistent_histogram_allocator.cc
 +++ b/base/metrics/persistent_histogram_allocator.cc
-@@ -89,13 +89,13 @@
+@@ -89,13 +89,13 @@ std::unique_ptr<BucketRanges> CreateRangesFromData(
  }
  
  // Calculate the number of bytes required to store all of a histogram's
@@ -120,7 +119,7 @@ index d6cf8c6..07a3ab0 100644
    // perhaps as the result of a malicious actor, then return zero to
    // indicate the problem to the caller.
    if (bucket_count > std::numeric_limits<size_t>::max() / kBytesPerBucket)
-@@ -176,7 +176,7 @@
+@@ -190,7 +190,7 @@ std::vector<PersistentMemoryAllocator::Reference>
  PersistentSparseHistogramDataManager::LoadRecords(
      PersistentSampleMapRecords* sample_map_records,
      std::optional<HistogramBase::Sample> until_value) {
@@ -129,7 +128,7 @@ index d6cf8c6..07a3ab0 100644
    // vectors.
    base::AutoLock auto_lock(lock_);
  
-@@ -222,7 +222,7 @@
+@@ -236,7 +236,7 @@ PersistentSparseHistogramDataManager::LoadRecords(
    }
  
    // Return all references found that have not yet been seen by
@@ -138,7 +137,7 @@ index d6cf8c6..07a3ab0 100644
    std::vector<PersistentMemoryAllocator::Reference> new_references;
    CHECK_GE(found_records.size(), sample_map_records->seen_);
    auto new_found_records = base::make_span(found_records)
-@@ -230,9 +230,9 @@
+@@ -244,9 +244,9 @@ PersistentSparseHistogramDataManager::LoadRecords(
    new_references.reserve(new_found_records.size());
    for (const auto& new_record : new_found_records) {
      new_references.push_back(new_record.reference);
@@ -150,7 +149,7 @@ index d6cf8c6..07a3ab0 100644
      if (until_value.has_value() && new_record.value == until_value.value()) {
        break;
      }
-@@ -321,9 +321,9 @@
+@@ -335,9 +335,9 @@ std::unique_ptr<HistogramBase> PersistentHistogramAllocator::GetHistogram(
    // count data (while these must reference the persistent counts) and always
    // add it to the local list of known histograms (while these may be simple
    // references to histograms in other processes).
@@ -162,7 +161,7 @@ index d6cf8c6..07a3ab0 100644
  
    // Check that metadata is reasonable: name is null-terminated and non-empty,
    // ID fields have been loaded with a hash of the name (0 is considered
-@@ -331,7 +331,7 @@
+@@ -345,7 +345,7 @@ std::unique_ptr<HistogramBase> PersistentHistogramAllocator::GetHistogram(
    if (!data || data->name[0] == '\0' ||
        reinterpret_cast<char*>(data)[length - 1] != '\0' ||
        data->samples_metadata.id == 0 || data->logged_metadata.id == 0 ||
@@ -171,7 +170,7 @@ index d6cf8c6..07a3ab0 100644
        (data->logged_metadata.id != data->samples_metadata.id &&
         data->logged_metadata.id != data->samples_metadata.id + 1) ||
        // Most non-matching values happen due to truncated names. Ideally, we
-@@ -374,7 +374,7 @@
+@@ -388,7 +388,7 @@ std::unique_ptr<HistogramBase> PersistentHistogramAllocator::AllocateHistogram(
      histogram_data->histogram_type = histogram_type;
      histogram_data->flags = flags | HistogramBase::kIsPersistent;
  
@@ -180,7 +179,7 @@ index d6cf8c6..07a3ab0 100644
      // should always be the case, manually zero it out again here in case there
      // was memory corruption (e.g. if the memory was mapped from a corrupted
      // spare file).
-@@ -388,7 +388,7 @@
+@@ -402,7 +402,7 @@ std::unique_ptr<HistogramBase> PersistentHistogramAllocator::AllocateHistogram(
      size_t bucket_count = bucket_ranges->bucket_count();
      size_t counts_bytes = CalculateRequiredCountsBytes(bucket_count);
      if (counts_bytes == 0) {
@@ -189,7 +188,7 @@ index d6cf8c6..07a3ab0 100644
        return nullptr;
      }
  
-@@ -396,8 +396,8 @@
+@@ -410,8 +410,8 @@ std::unique_ptr<HistogramBase> PersistentHistogramAllocator::AllocateHistogram(
      // objects for re-use, it would be dangerous for one to hold a reference
      // from a persistent allocator that is not the global one (which is
      // permanent once set). If this stops being the case, this check can
@@ -200,7 +199,7 @@ index d6cf8c6..07a3ab0 100644
      DCHECK_EQ(this, GlobalHistogramAllocator::Get());
  
      // Re-use an existing BucketRanges persistent allocation if one is known;
-@@ -434,7 +434,7 @@
+@@ -448,7 +448,7 @@ std::unique_ptr<HistogramBase> PersistentHistogramAllocator::AllocateHistogram(
      if (ranges_ref && histogram_data) {
        histogram_data->minimum = minimum;
        histogram_data->maximum = maximum;
@@ -209,7 +208,7 @@ index d6cf8c6..07a3ab0 100644
        // array would have failed for being too large; the allocator supports
        // less than 4GB total size.
        histogram_data->bucket_count = static_cast<uint32_t>(bucket_count);
-@@ -447,7 +447,7 @@
+@@ -461,7 +461,7 @@ std::unique_ptr<HistogramBase> PersistentHistogramAllocator::AllocateHistogram(
  
    if (histogram_data) {
      // Create the histogram using resources in persistent memory. This ends up
@@ -218,7 +217,7 @@ index d6cf8c6..07a3ab0 100644
      // using what is already known above but avoids duplicating the switch
      // statement here and serves as a double-check that everything is
      // correct before commiting the new histogram to persistent space.
-@@ -588,17 +588,16 @@
+@@ -600,17 +600,16 @@ std::unique_ptr<HistogramBase> PersistentHistogramAllocator::CreateHistogram(
    uint32_t histogram_ranges_ref = histogram_data_ptr->ranges_ref;
    uint32_t histogram_ranges_checksum = histogram_data_ptr->ranges_checksum;
  
@@ -238,7 +237,7 @@ index d6cf8c6..07a3ab0 100644
    if (!ranges_data || histogram_bucket_count < 2 ||
        histogram_bucket_count >= max_buckets ||
        allocated_bytes < required_bytes) {
-@@ -626,11 +625,14 @@
+@@ -638,11 +637,14 @@ std::unique_ptr<HistogramBase> PersistentHistogramAllocator::CreateHistogram(
    }
  
    size_t counts_bytes = CalculateRequiredCountsBytes(histogram_bucket_count);
@@ -256,7 +255,7 @@ index d6cf8c6..07a3ab0 100644
      return nullptr;
    }
  
-@@ -958,7 +960,7 @@
+@@ -970,7 +972,7 @@ void GlobalHistogramAllocator::Set(GlobalHistogramAllocator* allocator) {
    // histogram allocator was initialized.
    //
    // TODO(crbug.com/40945497): CHECK(histogram_count == 0) and remove emit of
@@ -266,10 +265,10 @@ index d6cf8c6..07a3ab0 100644
    size_t histogram_count = StatisticsRecorder::GetHistogramCount();
    if (histogram_count != 0) {
 diff --git a/base/metrics/persistent_histogram_allocator.h b/base/metrics/persistent_histogram_allocator.h
-index da6756c..e9e7f893 100644
+index 1f7f6a3c92392998b388e6ee52ef0db05cfeaf9a..f31b01c6021c87421eab26a8ca2de145ab07705b 100644
 --- a/base/metrics/persistent_histogram_allocator.h
 +++ b/base/metrics/persistent_histogram_allocator.h
-@@ -48,8 +48,8 @@
+@@ -47,8 +47,8 @@ class BASE_EXPORT PersistentSparseHistogramDataManager {
    ~PersistentSparseHistogramDataManager();
  
    // Returns an object that manages persistent-sample-map records for a given
@@ -280,7 +279,7 @@ index da6756c..e9e7f893 100644
    std::unique_ptr<PersistentSampleMapRecords> CreateSampleMapRecords(
        uint64_t id);
  
-@@ -72,19 +72,19 @@
+@@ -71,19 +71,19 @@ class BASE_EXPORT PersistentSparseHistogramDataManager {
    std::vector<ReferenceAndSample>* GetSampleMapRecordsWhileLocked(uint64_t id)
        EXCLUSIVE_LOCKS_REQUIRED(lock_);
  
@@ -306,7 +305,7 @@ index da6756c..e9e7f893 100644
    std::vector<PersistentMemoryAllocator::Reference> LoadRecords(
        PersistentSampleMapRecords* sample_map_records,
        std::optional<HistogramBase::Sample> until_value);
-@@ -113,7 +113,7 @@
+@@ -112,7 +112,7 @@ class BASE_EXPORT PersistentSampleMapRecords {
    // Constructs an instance of this class. The manager object must live longer
    // than all instances of this class that reference it, which is not usually
    // a problem since these objects are generally managed from within that
@@ -315,7 +314,7 @@ index da6756c..e9e7f893 100644
    PersistentSampleMapRecords(
        PersistentSparseHistogramDataManager* data_manager,
        uint64_t sample_map_id,
-@@ -126,18 +126,18 @@
+@@ -125,18 +125,18 @@ class BASE_EXPORT PersistentSampleMapRecords {
  
    ~PersistentSampleMapRecords();
  
@@ -338,7 +337,7 @@ index da6756c..e9e7f893 100644
    // a reference to it.
    PersistentMemoryAllocator::Reference CreateNew(HistogramBase::Sample value);
  
-@@ -161,7 +161,7 @@
+@@ -160,7 +160,7 @@ class BASE_EXPORT PersistentSampleMapRecords {
    // ID of PersistentSampleMap to which these records apply.
    const uint64_t sample_map_id_;
  
@@ -347,7 +346,7 @@ index da6756c..e9e7f893 100644
    size_t seen_ = 0;
  
    // This is the set of records found during iteration through memory, owned by
-@@ -186,7 +186,7 @@
+@@ -185,7 +185,7 @@ class BASE_EXPORT PersistentHistogramAllocator {
    // See PersistentMemoryAllocator::Iterator for more information.
    class BASE_EXPORT Iterator {
     public:
@@ -356,7 +355,7 @@ index da6756c..e9e7f893 100644
      // The allocator must live beyond the lifetime of the iterator.
      explicit Iterator(PersistentHistogramAllocator* allocator);
  
-@@ -199,7 +199,7 @@
+@@ -198,7 +198,7 @@ class BASE_EXPORT PersistentHistogramAllocator {
      std::unique_ptr<HistogramBase> GetNext() { return GetNextWithIgnore(0); }
  
      // Gets the next histogram from persistent memory, ignoring one particular
@@ -365,7 +364,7 @@ index da6756c..e9e7f893 100644
      std::unique_ptr<HistogramBase> GetNextWithIgnore(Reference ignore);
  
     private:
-@@ -240,7 +240,7 @@
+@@ -239,7 +239,7 @@ class BASE_EXPORT PersistentHistogramAllocator {
  
    // Recreate a Histogram from data held in persistent memory. Though this
    // object will be local to the current process, the sample data will be
@@ -374,7 +373,7 @@ index da6756c..e9e7f893 100644
    // to where the top-level histogram data may be found in this allocator.
    // This method will return null if any problem is detected with the data.
    std::unique_ptr<HistogramBase> GetHistogram(Reference ref);
-@@ -257,7 +257,7 @@
+@@ -256,7 +256,7 @@ class BASE_EXPORT PersistentHistogramAllocator {
        Reference* ref_ptr);
  
    // Finalize the creation of the histogram, making it available to other
@@ -383,7 +382,7 @@ index da6756c..e9e7f893 100644
    // True, forgetting it otherwise.
    void FinalizeHistogram(Reference ref, bool registered);
  
-@@ -280,35 +280,35 @@
+@@ -274,35 +274,35 @@ class BASE_EXPORT PersistentHistogramAllocator {
        const HistogramBase* histogram);
  
    // Returns an object that manages persistent-sample-map records for a given
@@ -430,7 +429,7 @@ index da6756c..e9e7f893 100644
    // operation without that optimization.
    void ClearLastCreatedReferenceForTesting();
  
-@@ -334,7 +334,7 @@
+@@ -328,7 +328,7 @@ class BASE_EXPORT PersistentHistogramAllocator {
        PersistentHistogramData* histogram_data_ptr);
  
    // Gets or creates an object in the global StatisticsRecorder matching
@@ -439,7 +438,7 @@ index da6756c..e9e7f893 100644
    // one could not be created.
    HistogramBase* GetOrCreateStatisticsRecorderHistogram(
        const HistogramBase* histogram);
-@@ -370,7 +370,7 @@
+@@ -364,7 +364,7 @@ class BASE_EXPORT GlobalHistogramAllocator
  
    ~GlobalHistogramAllocator() override;
  
@@ -448,7 +447,7 @@ index da6756c..e9e7f893 100644
    // other parameters. Ownership of the memory segment remains with the caller.
    static void CreateWithPersistentMemory(void* base,
                                           size_t size,
-@@ -379,17 +379,17 @@
+@@ -373,17 +373,17 @@ class BASE_EXPORT GlobalHistogramAllocator
                                           std::string_view name);
  
    // Create a global allocator using an internal block of memory of the
@@ -470,7 +469,7 @@ index da6756c..e9e7f893 100644
    // that disallows multiple concurrent writers (no effect on non-Windows).
    static bool CreateWithFile(const FilePath& file_path,
                               size_t size,
-@@ -397,9 +397,9 @@
+@@ -391,9 +391,9 @@ class BASE_EXPORT GlobalHistogramAllocator
                               std::string_view name,
                               bool exclusive_write = false);
  
@@ -483,7 +482,7 @@ index da6756c..e9e7f893 100644
    // used as the active file. Otherwise, the file will be created using the
    // given size, id, and name. Returns whether the global allocator was set.
    static bool CreateWithActiveFile(const FilePath& base_path,
-@@ -410,9 +410,9 @@
+@@ -404,9 +404,9 @@ class BASE_EXPORT GlobalHistogramAllocator
                                     std::string_view name);
  
    // Uses ConstructBaseActivePairFilePaths() to build a pair of file names which
@@ -495,7 +494,7 @@ index da6756c..e9e7f893 100644
    static bool CreateWithActiveFileInDir(const FilePath& dir,
                                          size_t size,
                                          uint64_t id,
-@@ -447,7 +447,7 @@
+@@ -441,7 +441,7 @@ class BASE_EXPORT GlobalHistogramAllocator
  #endif
  
    // Create a global allocator using a block of shared memory accessed
@@ -504,7 +503,7 @@ index da6756c..e9e7f893 100644
    // current process's virtual address space and frees it upon destruction.
    // The memory will continue to live if other processes have access to it.
    static void CreateWithSharedMemoryRegion(
-@@ -486,7 +486,7 @@
+@@ -480,7 +480,7 @@ class BASE_EXPORT GlobalHistogramAllocator
    bool HasPersistentLocation() const;
  
    // Moves the file being used to persist this allocator's data to the directory
@@ -514,10 +513,10 @@ index da6756c..e9e7f893 100644
  
    // Writes the internal data to a previously set location. This is generally
 diff --git a/base/metrics/persistent_memory_allocator.cc b/base/metrics/persistent_memory_allocator.cc
-index 9e5f585..59473af 100644
+index 9e5f585864557cae21836484c3a966debb2819b0..59473aff8fab42e00eafd5ca66d81b8695083159 100644
 --- a/base/metrics/persistent_memory_allocator.cc
 +++ b/base/metrics/persistent_memory_allocator.cc
-@@ -59,7 +59,7 @@
+@@ -59,7 +59,7 @@ constexpr uint32_t kGlobalCookie = 0x408305DC;
  // the metadata, the version number can be queried to operate in a backward-
  // compatible manner until the memory segment is completely re-initalized.
  // Note: If you update the metadata in a non-backwards compatible way, reset
@@ -526,7 +525,7 @@ index 9e5f585..59473af 100644
  constexpr uint32_t kGlobalVersion = 3;
  static constexpr uint32_t kOldCompatibleVersions[] = {2};
  
-@@ -146,12 +146,12 @@
+@@ -146,12 +146,12 @@ struct PersistentMemoryAllocator::SharedMetadata {
  
    // The "iterable" queue is an M&S Queue as described here, append-only:
    // https://www.research.ibm.com/people/m/michael/podc-1996.pdf
@@ -541,7 +540,7 @@ index 9e5f585..59473af 100644
  // can be used to indicate that it hasn't been added at all. It is part of
  // the SharedMetadata structure which itself is always located at offset zero.
  const PersistentMemoryAllocator::Reference
-@@ -207,7 +207,8 @@
+@@ -207,7 +207,8 @@ PersistentMemoryAllocator::Iterator::GetLast() {
  }
  
  PersistentMemoryAllocator::Reference
@@ -551,7 +550,7 @@ index 9e5f585..59473af 100644
    // Make a copy of the existing count of found-records, acquiring all changes
    // made to the allocator, notably "freeptr" (see comment in loop for why
    // the load of that value cannot be moved above here) that occurred during
-@@ -218,12 +219,13 @@
+@@ -218,12 +219,13 @@ PersistentMemoryAllocator::Iterator::GetNext(uint32_t* type_return) {
    // "count" was fetched _after_ "freeptr" then it would be possible for
    // this thread to be interrupted between them and other threads perform
    // multiple allocations, make-iterables, and iterations (with the included
@@ -567,7 +566,7 @@ index 9e5f585..59473af 100644
    while (true) {
      const volatile BlockHeader* block =
          allocator_->GetBlock(last, 0, 0, true, false);
-@@ -244,7 +246,7 @@
+@@ -244,7 +246,7 @@ PersistentMemoryAllocator::Iterator::GetNext(uint32_t* type_return) {
      next = block->next.load(std::memory_order_acquire);
      if (next == kReferenceQueue)  // No next allocation in queue.
        return kReferenceNull;
@@ -576,7 +575,7 @@ index 9e5f585..59473af 100644
      if (!block) {  // Memory is corrupt.
        allocator_->SetCorrupt();
        return kReferenceNull;
-@@ -285,21 +287,29 @@
+@@ -285,21 +287,29 @@ PersistentMemoryAllocator::Iterator::GetNext(uint32_t* type_return) {
    // It does not matter if it falls behind temporarily so long as it never
    // gets ahead.
    record_count_.fetch_add(1, std::memory_order_release);
@@ -610,7 +609,7 @@ index 9e5f585..59473af 100644
  // static
  bool PersistentMemoryAllocator::IsMemoryAcceptable(const void* base,
                                                     size_t size,
-@@ -474,12 +484,12 @@
+@@ -474,12 +484,12 @@ uint64_t PersistentMemoryAllocator::Id() const {
  
  const char* PersistentMemoryAllocator::Name() const {
    Reference name_ref = shared_meta()->name;
@@ -626,7 +625,7 @@ index 9e5f585..59473af 100644
    if (name_cstr[name_length - 1] != '\0') {
      NOTREACHED();
    }
-@@ -536,23 +546,6 @@
+@@ -536,23 +546,6 @@ PersistentMemoryAllocator::Reference PersistentMemoryAllocator::GetAsReference(
    return ref;
  }
  
@@ -650,7 +649,7 @@ index 9e5f585..59473af 100644
  uint32_t PersistentMemoryAllocator::GetType(Reference ref) const {
    const volatile BlockHeader* const block = GetBlock(ref, 0, 0, false, false);
    if (!block)
-@@ -622,13 +615,15 @@
+@@ -622,13 +615,15 @@ bool PersistentMemoryAllocator::ChangeType(Reference ref,
  
  PersistentMemoryAllocator::Reference PersistentMemoryAllocator::Allocate(
      size_t req_size,
@@ -669,7 +668,7 @@ index 9e5f585..59473af 100644
    DCHECK_NE(access_mode_, kReadOnly);
  
    // Validate req_size to ensure it won't overflow when used as 32-bit value.
-@@ -790,6 +785,11 @@
+@@ -790,6 +785,11 @@ PersistentMemoryAllocator::Reference PersistentMemoryAllocator::AllocateImpl(
      block->size = static_cast<uint32_t>(size);
      block->cookie = kBlockCookieAllocated;
      block->type_id.store(type_id, std::memory_order_relaxed);
@@ -681,7 +680,7 @@ index 9e5f585..59473af 100644
      return freeptr;
    }
  }
-@@ -901,17 +901,16 @@
+@@ -901,17 +901,16 @@ bool PersistentMemoryAllocator::IsFull() const {
    return CheckFlag(&shared_meta()->flags, kFlagFull);
  }
  
@@ -704,7 +703,7 @@ index 9e5f585..59473af 100644
    // Handle special cases.
    if (ref == kReferenceQueue && queue_ok)
      return reinterpret_cast<const volatile BlockHeader*>(mem_base_ + ref);
-@@ -930,29 +929,39 @@
+@@ -930,29 +929,39 @@ PersistentMemoryAllocator::GetBlock(Reference ref,
      return nullptr;
    }
  
@@ -718,19 +717,18 @@ index 9e5f585..59473af 100644
      if (block->cookie != kBlockCookieAllocated)
        return nullptr;
 -    if (block->size < size)
--      return nullptr;
--    uint32_t block_size;
--    if (!base::CheckAdd(ref, block->size).AssignIfValid(&block_size)) {
 +    const uint32_t block_size = block->size;
 +    if (block_size < size) {
        return nullptr;
-     }
--    if (block_size > mem_size_) {
+-    uint32_t block_size;
+-    if (!base::CheckAdd(ref, block->size).AssignIfValid(&block_size)) {
++    }
 +    // Find a validate the end of the block.
 +    uint32_t block_end_ref;
 +    if (!base::CheckAdd(ref, block_size).AssignIfValid(&block_end_ref)) {
-+      return nullptr;
-+    }
+       return nullptr;
+     }
+-    if (block_size > mem_size_) {
 +    if (block_end_ref > mem_size_) {
 +      // The end of the alloc extends beyond the allocator's bounds.
 +      SetCorrupt();
@@ -752,7 +750,7 @@ index 9e5f585..59473af 100644
  }
  
  void PersistentMemoryAllocator::FlushPartial(size_t length, bool sync) {
-@@ -973,10 +982,11 @@
+@@ -973,10 +982,11 @@ uint32_t PersistentMemoryAllocator::version() const {
  const volatile void* PersistentMemoryAllocator::GetBlockData(
      Reference ref,
      uint32_t type_id,
@@ -766,7 +764,7 @@ index 9e5f585..59473af 100644
    if (!block)
      return nullptr;
    return reinterpret_cast<const volatile char*>(block) + sizeof(BlockHeader);
-@@ -1155,14 +1165,14 @@
+@@ -1155,14 +1165,14 @@ void FilePersistentMemoryAllocator::Cache() {
                                                  base::BlockingType::MAY_BLOCK);
  
    // Calculate begin/end addresses so that the first byte of every page
@@ -783,7 +781,7 @@ index 9e5f585..59473af 100644
    // can't omit the read.
    int total = 0;
    for (const volatile char* memory = mem_begin; memory < mem_end;
-@@ -1170,7 +1180,7 @@
+@@ -1170,7 +1180,7 @@ void FilePersistentMemoryAllocator::Cache() {
      total += *memory;
    }
  
@@ -792,7 +790,7 @@ index 9e5f585..59473af 100644
    // the memory accesses above.
    debug::Alias(&total);
  }
-@@ -1240,7 +1250,8 @@
+@@ -1240,7 +1250,8 @@ span<uint8_t> DelayedPersistentAllocation::GetUntyped() const {
  #endif  // !BUILDFLAG(IS_NACL)
  
    if (!ref) {
@@ -802,7 +800,7 @@ index 9e5f585..59473af 100644
      if (!ref) {
        return span<uint8_t>();
      }
-@@ -1256,7 +1267,7 @@
+@@ -1256,7 +1267,7 @@ span<uint8_t> DelayedPersistentAllocation::GetUntyped() const {
        // allocation, and stored its reference. Purge the allocation that was
        // just done and use the other one instead.
        DCHECK_EQ(type_, allocator_->GetType(existing));
@@ -811,7 +809,7 @@ index 9e5f585..59473af 100644
        allocator_->ChangeType(ref, 0, type_, /*clear=*/false);
        ref = existing;
  #if !BUILDFLAG(IS_NACL)
-@@ -1292,13 +1303,13 @@
+@@ -1292,13 +1303,13 @@ span<uint8_t> DelayedPersistentAllocation::GetUntyped() const {
      SCOPED_CRASH_KEY_NUMBER("PersistentMemoryAllocator", "size_", size_);
      if (ref == 0xC8799269) {
        // There are many crash reports containing the corrupted "0xC8799269"
@@ -828,10 +826,10 @@ index 9e5f585..59473af 100644
        // arithmetic here -- it should theoretically be safe, unless something
        // went terribly wrong...
 diff --git a/base/metrics/persistent_memory_allocator.h b/base/metrics/persistent_memory_allocator.h
-index 3ab70be..4cf07a1 100644
+index 3ab70bec2fd87c378001807b9e074d6dcf76d5e5..4cf07a195321f36a3d18624f5c8709a8ff8faa3b 100644
 --- a/base/metrics/persistent_memory_allocator.h
 +++ b/base/metrics/persistent_memory_allocator.h
-@@ -171,13 +171,13 @@
+@@ -171,13 +171,13 @@ class BASE_EXPORT PersistentMemoryAllocator {
    // eventually quit.
    class BASE_EXPORT Iterator {
     public:
@@ -847,7 +845,7 @@ index 3ab70be..4cf07a1 100644
      // to GetNext() will return the next object found after that reference. The
      // reference must be to an "iterable" object; references to non-iterable
      // objects (those that never had MakeIterable() called for them) will cause
-@@ -193,7 +193,7 @@
+@@ -193,7 +193,7 @@ class BASE_EXPORT PersistentMemoryAllocator {
      // Resets the iterator back to the beginning.
      void Reset();
  
@@ -856,7 +854,7 @@ index 3ab70be..4cf07a1 100644
      void Reset(Reference starting_after);
  
      // Returns the previously retrieved reference, or kReferenceNull if none.
-@@ -201,17 +201,17 @@
+@@ -201,17 +201,17 @@ class BASE_EXPORT PersistentMemoryAllocator {
      // that value.
      Reference GetLast();
  
@@ -878,7 +876,7 @@ index 3ab70be..4cf07a1 100644
  
      // As above but works using object type.
      template <typename T>
-@@ -244,8 +244,8 @@
+@@ -244,8 +244,8 @@ class BASE_EXPORT PersistentMemoryAllocator {
      }
  
      // Convert a generic pointer back into a reference. A null reference will
@@ -889,7 +887,7 @@ index 3ab70be..4cf07a1 100644
      Reference GetAsReference(const void* memory, uint32_t type_id) const {
        return allocator_->GetAsReference(memory, type_id);
      }
-@@ -308,12 +308,12 @@
+@@ -308,12 +308,12 @@ class BASE_EXPORT PersistentMemoryAllocator {
    // The allocator operates on any arbitrary block of memory. Creation and
    // persisting or sharing of that block with another process is the
    // responsibility of the caller. The allocator needs to know only the
@@ -906,7 +904,7 @@ index 3ab70be..4cf07a1 100644
    // allocator. Only the primary owner of the segment should define this value;
    // other processes can learn it from the shared state. If the access mode
    // is kReadOnly then no changes will be made to it. The resulting object
-@@ -367,12 +367,12 @@
+@@ -367,12 +367,12 @@ class BASE_EXPORT PersistentMemoryAllocator {
    uint8_t GetMemoryState() const;
  
    // Create internal histograms for tracking memory use and allocation sizes
@@ -922,7 +920,7 @@ index 3ab70be..4cf07a1 100644
    //    UMA.PersistentAllocator.name.Errors
    //    UMA.PersistentAllocator.name.UsedPct
    void CreateTrackingHistograms(std::string_view name);
-@@ -382,13 +382,13 @@
+@@ -382,13 +382,13 @@ class BASE_EXPORT PersistentMemoryAllocator {
    // OS that all the data should be sent to the disk immediately. This is
    // useful in the rare case where something has just been stored that needs
    // to survive a hard shutdown of the machine like from a power failure.
@@ -940,7 +938,7 @@ index 3ab70be..4cf07a1 100644
    // advisory.
    void Flush(bool sync);
  
-@@ -400,9 +400,9 @@
+@@ -400,9 +400,9 @@ class BASE_EXPORT PersistentMemoryAllocator {
    size_t size() const { return mem_size_; }
    size_t used() const;
  
@@ -953,7 +951,7 @@ index 3ab70be..4cf07a1 100644
    // kTypeIdAny (zero) will match any though the size is still checked. NULL is
    // returned if any problem is detected, such as corrupted storage or incorrect
    // parameters. Callers MUST check that the returned value is not-null EVERY
-@@ -422,7 +422,7 @@
+@@ -422,7 +422,7 @@ class BASE_EXPORT PersistentMemoryAllocator {
    // largest architecture, including at the end.
    //
    // To protected against mistakes, all objects must have the attribute
@@ -962,7 +960,7 @@ index 3ab70be..4cf07a1 100644
    // numerical value -- NNN, not sizeof(T) -- that can be tested. If the
    // instance size is not fixed, at least one build will fail.
    //
-@@ -442,27 +442,28 @@
+@@ -442,27 +442,28 @@ class BASE_EXPORT PersistentMemoryAllocator {
    // nature of that keyword to the caller. It can add it back, if necessary,
    // based on knowledge of how the allocator is being used.
    template <typename T>
@@ -999,7 +997,7 @@ index 3ab70be..4cf07a1 100644
    //
    // Remember that an array of char is a string but may not be NUL terminated.
    //
-@@ -470,29 +471,29 @@
+@@ -470,29 +471,29 @@ class BASE_EXPORT PersistentMemoryAllocator {
    // compatibilty when using these accessors. Only use fixed-size types such
    // as char, float, double, or (u)intXX_t.
    template <typename T>
@@ -1040,7 +1038,7 @@ index 3ab70be..4cf07a1 100644
    // Access the internal "type" of an object. This generally isn't necessary
    // but can be used to "clear" the type and so effectively mark it as deleted
    // even though the memory stays valid and allocated. Changing the type is
-@@ -500,8 +501,8 @@
+@@ -500,8 +501,8 @@ class BASE_EXPORT PersistentMemoryAllocator {
    // It will return false if the existing type is not what is expected.
    //
    // Changing the type doesn't mean the data is compatible with the new type.
@@ -1051,7 +1049,7 @@ index 3ab70be..4cf07a1 100644
    // that it is done in a manner that is thread-safe. Memory is guaranteed to
    // be zeroed atomically by machine-word in a monotonically increasing order.
    //
-@@ -553,13 +554,15 @@
+@@ -553,13 +554,15 @@ class BASE_EXPORT PersistentMemoryAllocator {
    // While the above works much like malloc & free, these next methods provide
    // an "object" interface similar to new and delete.
  
@@ -1070,7 +1068,7 @@ index 3ab70be..4cf07a1 100644
  
    // Allocate and construct an object in persistent memory. The type must have
    // both (size_t) kExpectedInstanceSize and (uint32_t) kPersistentTypeId
-@@ -586,7 +589,7 @@
+@@ -586,7 +589,7 @@ class BASE_EXPORT PersistentMemoryAllocator {
    }
  
    // Similar to New, above, but construct the object out of an existing memory
@@ -1079,7 +1077,7 @@ index 3ab70be..4cf07a1 100644
    // before construction. Though this is not standard object behavior, it
    // is present to match with new allocations that always come from zeroed
    // memory. Anything previously present simply ceases to exist; no destructor
-@@ -596,13 +599,16 @@
+@@ -596,13 +599,16 @@ class BASE_EXPORT PersistentMemoryAllocator {
    // results. USE WITH CARE!
    template <typename T>
    T* New(Reference ref, uint32_t from_type_id, bool clear) {
@@ -1098,7 +1096,7 @@ index 3ab70be..4cf07a1 100644
      // Ensure the allocator's internal alignment is sufficient for this object.
      // This protects against coding errors in the allocator.
      DCHECK_EQ(0U, reinterpret_cast<uintptr_t>(mem) & (alignof(T) - 1));
-@@ -633,7 +639,7 @@
+@@ -633,7 +639,7 @@ class BASE_EXPORT PersistentMemoryAllocator {
      // First change the type to "transitioning" so there is no race condition
      // where another thread could find the object through iteration while it
      // is been destructed. This will "acquire" the memory so no changes get
@@ -1107,7 +1105,7 @@ index 3ab70be..4cf07a1 100644
      if (!ChangeType(ref, kTypeIdTransitioning, T::kPersistentTypeId, false))
        return;
      // Destruct the object.
-@@ -677,7 +683,7 @@
+@@ -677,7 +683,7 @@ class BASE_EXPORT PersistentMemoryAllocator {
    };
  
    // Constructs the allocator. Everything is the same as the public allocator
@@ -1116,7 +1114,7 @@ index 3ab70be..4cf07a1 100644
    // the base address.
    PersistentMemoryAllocator(Memory memory,
                              size_t size,
-@@ -715,32 +721,52 @@
+@@ -715,32 +721,52 @@ class BASE_EXPORT PersistentMemoryAllocator {
    }
  
    // Actual method for doing the allocation.
@@ -1177,7 +1175,7 @@ index 3ab70be..4cf07a1 100644
    }
  
    // Returns the offset to the first free space segment.
-@@ -785,12 +811,12 @@
+@@ -785,12 +811,12 @@ class BASE_EXPORT LocalPersistentMemoryAllocator
    ~LocalPersistentMemoryAllocator() override;
  
   private:
@@ -1192,7 +1190,7 @@ index 3ab70be..4cf07a1 100644
    static void DeallocateLocalMemory(void* memory, size_t size, MemoryType type);
  };
  
-@@ -858,8 +884,8 @@
+@@ -858,8 +884,8 @@ class BASE_EXPORT ReadOnlySharedPersistentMemoryAllocator
  class BASE_EXPORT FilePersistentMemoryAllocator
      : public PersistentMemoryAllocator {
   public:
@@ -1203,7 +1201,7 @@ index 3ab70be..4cf07a1 100644
    // permissions (read, read/write, or read/write/extend).
    FilePersistentMemoryAllocator(std::unique_ptr<MemoryMappedFile> file,
                                  size_t max_size,
-@@ -909,18 +935,18 @@
+@@ -909,18 +935,18 @@ class BASE_EXPORT DelayedPersistentAllocation {
   public:
    using Reference = PersistentMemoryAllocator::Reference;
  
@@ -1230,10 +1228,10 @@ index 3ab70be..4cf07a1 100644
    DelayedPersistentAllocation(PersistentMemoryAllocator* allocator,
                                std::atomic<Reference>* ref,
 diff --git a/base/metrics/persistent_memory_allocator_unittest.cc b/base/metrics/persistent_memory_allocator_unittest.cc
-index 01ac173..a0b96616 100644
+index 7d69a9f657e528f4b555bebb12a8c3976804eb14..14cd381da3dd9306987c1851c4c2457728cadd0d 100644
 --- a/base/metrics/persistent_memory_allocator_unittest.cc
 +++ b/base/metrics/persistent_memory_allocator_unittest.cc
-@@ -141,11 +141,12 @@
+@@ -140,11 +140,12 @@ TEST_F(PersistentMemoryAllocatorTest, AllocateAndIterate) {
    ASSERT_TRUE(obj1);
    Reference block1 = allocator_->GetAsReference(obj1);
    ASSERT_NE(0U, block1);
@@ -1250,7 +1248,7 @@ index 01ac173..a0b96616 100644
    PersistentMemoryAllocator::MemoryInfo meminfo1;
    allocator_->GetMemoryInfo(&meminfo1);
    EXPECT_EQ(meminfo0.total, meminfo1.total);
-@@ -181,11 +182,12 @@
+@@ -180,11 +181,12 @@ TEST_F(PersistentMemoryAllocatorTest, AllocateAndIterate) {
    ASSERT_TRUE(obj2);
    Reference block2 = allocator_->GetAsReference(obj2);
    ASSERT_NE(0U, block2);
@@ -1267,7 +1265,7 @@ index 01ac173..a0b96616 100644
    PersistentMemoryAllocator::MemoryInfo meminfo2;
    allocator_->GetMemoryInfo(&meminfo2);
    EXPECT_EQ(meminfo1.total, meminfo2.total);
-@@ -966,10 +968,10 @@
+@@ -965,10 +967,10 @@ TEST(FilePersistentMemoryAllocatorTest, AcceptableTest) {
        uint32_t type_id;
        Reference ref;
        while ((ref = iter.GetNext(&type_id)) != 0) {
@@ -1281,10 +1279,10 @@ index 01ac173..a0b96616 100644
          (void)data;
          (void)type;
 diff --git a/components/metrics/persistent_system_profile.cc b/components/metrics/persistent_system_profile.cc
-index 5f53ff2..3cef1f2 100644
+index 8b453c667df7f0644c64b878e83c509be864dacb..88095fc1b322c5af786c9c08d67584b28cc76d4c 100644
 --- a/components/metrics/persistent_system_profile.cc
 +++ b/components/metrics/persistent_system_profile.cc
-@@ -109,7 +109,7 @@
+@@ -109,7 +109,7 @@ bool PersistentSystemProfile::RecordAllocator::Write(RecordType type,
        if (!AddSegment(remaining_size))
          return false;
      }
@@ -1293,7 +1291,7 @@ index 5f53ff2..3cef1f2 100644
      // are updated in place.
      if (!WriteData(type, &data, &remaining_size))
        return false;
-@@ -152,8 +152,7 @@
+@@ -152,8 +152,7 @@ bool PersistentSystemProfile::RecordAllocator::Read(RecordType* type,
  
  bool PersistentSystemProfile::RecordAllocator::NextSegment() const {
    base::PersistentMemoryAllocator::Iterator iter(allocator_, alloc_reference_);
@@ -1303,7 +1301,7 @@ index 5f53ff2..3cef1f2 100644
    end_offset_ = 0;
    return alloc_reference_ != 0;
  }
-@@ -174,13 +173,15 @@
+@@ -174,13 +173,15 @@ bool PersistentSystemProfile::RecordAllocator::AddSegment(size_t min_size) {
    size_t size =
        std::max(CalculateRecordSize(min_size), kSystemProfileAllocSize);
  
@@ -1321,7 +1319,7 @@ index 5f53ff2..3cef1f2 100644
    return true;
  }
  
-@@ -289,7 +290,7 @@
+@@ -289,7 +290,7 @@ void PersistentSystemProfile::RegisterPersistentAllocator(
      base::PersistentMemoryAllocator* memory_allocator) {
    DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
  
