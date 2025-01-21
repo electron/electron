@@ -613,7 +613,7 @@ index e271d17b3261c47f3dbeaf9be0b3c4229ee27181..00b906660580aca7d5aabcde54d68c21
      mojom::ResultCode result) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 -  if (result == mojom::ResultCode::kSuccess) {
-+  if (result == mojom::ResultCode::kSuccess && query_with_ui_client_id_.has_value()) {
++  if (result == mojom::ResultCode::kSuccess && query_with_ui_client_id_) {
      // Want the same PrintBackend service as the query so that we use the same
      // device context.
      print_document_client_id_ =
