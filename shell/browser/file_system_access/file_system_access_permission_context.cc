@@ -594,7 +594,7 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
     content::GlobalRenderFrameHostId frame_id,
     base::OnceCallback<void(SensitiveEntryResult)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  callback_map_[path_info.path] = std::move(callback);
+  callback_map_.try_emplace(path_info.path, std::move(callback));
 
   auto after_blocklist_check_callback = base::BindOnce(
       &FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist,
@@ -640,8 +640,8 @@ void FileSystemAccessPermissionContext::PerformAfterWriteChecks(
 void FileSystemAccessPermissionContext::RunRestrictedPathCallback(
     const base::FilePath& file_path,
     SensitiveEntryResult result) {
-  if (base::Contains(callback_map_, file_path))
-    std::move(callback_map_[file_path]).Run(result);
+  if (auto val = callback_map_.extract(file_path))
+    std::move(val.mapped()).Run(result);
 }
 
 void FileSystemAccessPermissionContext::OnRestrictedPathResult(
