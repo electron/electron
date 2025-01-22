@@ -68,7 +68,7 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
                                     const std::string& command_id) {
   if (!command_callback_map_.contains(command_id)) {
-    // This should never occur, because if it does, GlobalShortcutListener
+    // This should never occur, because if it does, GlobalAcceleratorListener
     // notifies us with wrong command.
     NOTREACHED();
   }
@@ -113,7 +113,7 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
   }
 #endif
 
-  auto* instance = ui::GlobalShortcutListener::GetInstance();
+  auto* instance = ui::GlobalAcceleratorListener::GetInstance();
   if (!instance) {
     return false;
   }
@@ -180,9 +180,9 @@ void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
   }
 #endif
 
-  if (ui::GlobalShortcutListener::GetInstance()) {
-    ui::GlobalShortcutListener::GetInstance()->UnregisterAccelerator(accelerator,
-                                                                 this);
+  if (ui::GlobalAcceleratorListener::GetInstance()) {
+    ui::GlobalAcceleratorListener::GetInstance()->UnregisterAccelerator(
+        accelerator, this);
   }
 }
 
@@ -209,8 +209,8 @@ void GlobalShortcut::UnregisterAll() {
     return;
   }
   accelerator_callback_map_.clear();
-  if (ui::lobalShortcutListener::GetInstance()) {
-    ui::GlobalShortcutListener::GetInstance()->UnregisterAccelerators(this);
+  if (ui::GlobalAcceleratorListener::GetInstance()) {
+    ui::GlobalAcceleratorListener::GetInstance()->UnregisterAccelerators(this);
   }
 }
 
