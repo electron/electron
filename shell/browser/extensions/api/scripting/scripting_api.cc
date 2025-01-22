@@ -490,14 +490,8 @@ std::unique_ptr<UserScript> ParseUserScript(
       ConvertRegisteredContentScriptToSerializedUserScript(
           std::move(content_script));
 
-  std::unique_ptr<UserScript> user_script =
-      script_serialization::ParseSerializedUserScript(
-          serialized_script, extension, allowed_in_incognito, error);
-  if (!user_script) {
-    return nullptr;  // Parsing failed.
-  }
-
-  return user_script;
+  return script_serialization::ParseSerializedUserScript(
+      serialized_script, extension, allowed_in_incognito, error);
 }
 
 // Converts a UserScript object to a api::scripting::RegisteredContentScript
