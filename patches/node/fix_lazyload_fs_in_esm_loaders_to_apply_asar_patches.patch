@@ -38,11 +38,11 @@ index 605e812d515fc467001e4ab88fc15b4af3fd4aa2..463e76cb1abc0c2fdddba4db2ca2e00f
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index f05c6f99c0037193c5802024be46a967d6cf47a0..f3dad958b2ec275992554477b9344214c8c1e2c8 100644
+index ee2cc03892c01141b71571989b18eec387d3c766..c13475102a75d65329908f44def06a60f4a2c4f1 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -24,7 +24,7 @@ const {
- } = primordials;
+@@ -25,7 +25,7 @@ const {
+ const assert = require('internal/assert');
  const internalFS = require('internal/fs/utils');
  const { BuiltinModule } = require('internal/bootstrap/realm');
 -const { realpathSync } = require('fs');
@@ -60,10 +60,10 @@ index f05c6f99c0037193c5802024be46a967d6cf47a0..f3dad958b2ec275992554477b9344214
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index d182eedf5e96039e0029d36e51f40b75c6fb2a39..06b31af80ebbfbf35ec787a94f345775eb512ebf 100644
+index 25ee090bbb4884d3e5f2530cc7153f9215754fae..45a0abc6423a4e53e070f3c117fac2a3554b188d 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -34,7 +34,7 @@ const {
+@@ -24,7 +24,7 @@ const {
  
  const { BuiltinModule } = require('internal/bootstrap/realm');
  const assert = require('internal/assert');
@@ -71,8 +71,8 @@ index d182eedf5e96039e0029d36e51f40b75c6fb2a39..06b31af80ebbfbf35ec787a94f345775
 +const fs = require('fs');
  const { dirname, extname, isAbsolute } = require('path');
  const {
-   loadBuiltinModule,
-@@ -335,7 +335,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+   assertBufferSource,
+@@ -269,7 +269,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
  
    try {
      // We still need to read the FS to detect the exports.
@@ -81,7 +81,7 @@ index d182eedf5e96039e0029d36e51f40b75c6fb2a39..06b31af80ebbfbf35ec787a94f345775
    } catch {
      // Continue regardless of error.
    }
-@@ -403,7 +403,7 @@ function cjsPreparseModuleExports(filename, source) {
+@@ -336,7 +336,7 @@ function cjsPreparseModuleExports(filename, source) {
        isAbsolute(resolved)) {
          // TODO: this should be calling the `load` hook chain to get the source
          // (and fallback to reading the FS only if the source is nullish).

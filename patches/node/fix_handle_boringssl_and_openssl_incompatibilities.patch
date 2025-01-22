@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index eb3533bb4623b152605c3c590f37f086cce5f073..ded231aeaa15af22845704cfcc7d24a44bd88f8e 100644
+index 457bd2f6c5b18956d06c716fbfae429496fb352d..e954cb2e53f3d8c297d21ef9f698d824ca574106 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -6,13 +6,11 @@
@@ -35,7 +35,7 @@ index eb3533bb4623b152605c3c590f37f086cce5f073..ded231aeaa15af22845704cfcc7d24a4
  
  namespace ncrypto {
  namespace {
-@@ -665,7 +663,7 @@ bool SafeX509SubjectAltNamePrint(const BIOPointer& out, X509_EXTENSION* ext) {
+@@ -694,7 +692,7 @@ bool SafeX509SubjectAltNamePrint(const BIOPointer& out, X509_EXTENSION* ext) {
  
    bool ok = true;
  
@@ -44,7 +44,7 @@ index eb3533bb4623b152605c3c590f37f086cce5f073..ded231aeaa15af22845704cfcc7d24a4
      GENERAL_NAME* gen = sk_GENERAL_NAME_value(names, i);
  
      if (i != 0)
-@@ -691,7 +689,7 @@ bool SafeX509InfoAccessPrint(const BIOPointer& out, X509_EXTENSION* ext) {
+@@ -720,7 +718,7 @@ bool SafeX509InfoAccessPrint(const BIOPointer& out, X509_EXTENSION* ext) {
  
    bool ok = true;
  
@@ -53,7 +53,25 @@ index eb3533bb4623b152605c3c590f37f086cce5f073..ded231aeaa15af22845704cfcc7d24a4
      ACCESS_DESCRIPTION* desc = sk_ACCESS_DESCRIPTION_value(descs, i);
  
      if (i != 0)
-@@ -1002,7 +1000,11 @@ BIOPointer BIOPointer::NewMem() {
+@@ -857,13 +855,17 @@ BIOPointer X509View::getValidTo() const {
+ 
+ int64_t X509View::getValidToTime() const {
+   struct tm tp;
++#ifndef OPENSSL_IS_BORINGSSL
+   ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
++#endif
+   return PortableTimeGM(&tp);
+ }
+ 
+ int64_t X509View::getValidFromTime() const {
+   struct tm tp;
++#ifndef OPENSSL_IS_BORINGSSL
+   ASN1_TIME_to_tm(X509_get0_notBefore(cert_), &tp);
++#endif
+   return PortableTimeGM(&tp);
+ }
+ 
+@@ -1043,7 +1045,11 @@ BIOPointer BIOPointer::NewMem() {
  }
  
  BIOPointer BIOPointer::NewSecMem() {
@@ -65,7 +83,7 @@ index eb3533bb4623b152605c3c590f37f086cce5f073..ded231aeaa15af22845704cfcc7d24a4
  }
  
  BIOPointer BIOPointer::New(const BIO_METHOD* method) {
-@@ -1057,8 +1059,10 @@ BignumPointer DHPointer::FindGroup(const std::string_view name,
+@@ -1098,8 +1104,10 @@ BignumPointer DHPointer::FindGroup(const std::string_view name,
                                     FindGroupOption option) {
  #define V(n, p) if (EqualNoCase(name, n)) return BignumPointer(p(nullptr));
    if (option != FindGroupOption::NO_SMALL_PRIMES) {
@@ -76,7 +94,7 @@ index eb3533bb4623b152605c3c590f37f086cce5f073..ded231aeaa15af22845704cfcc7d24a4
      V("modp5", BN_get_rfc3526_prime_1536);
    }
    V("modp14", BN_get_rfc3526_prime_2048);
-@@ -1130,11 +1134,13 @@ DHPointer::CheckPublicKeyResult DHPointer::checkPublicKey(const BignumPointer& p
+@@ -1171,11 +1179,13 @@ DHPointer::CheckPublicKeyResult DHPointer::checkPublicKey(const BignumPointer& p
    int codes = 0;
    if (DH_check_pub_key(dh_.get(), pub_key.get(), &codes) != 1)
      return DHPointer::CheckPublicKeyResult::CHECK_FAILED;
@@ -92,10 +110,10 @@ index eb3533bb4623b152605c3c590f37f086cce5f073..ded231aeaa15af22845704cfcc7d24a4
    }
    return CheckPublicKeyResult::NONE;
 diff --git a/deps/ncrypto/ncrypto.h b/deps/ncrypto/ncrypto.h
-index 60bfce3ea8999e8e145aaf8cd14f0fdf21ed9c54..55aae783bb57273d1b49927f65b6c0830d09d115 100644
+index 20b69dc67b13fd4f0bd44f7adf6a0d928a2c10c4..2320f92c50543fb9b426bce1c6d182bddf7658de 100644
 --- a/deps/ncrypto/ncrypto.h
 +++ b/deps/ncrypto/ncrypto.h
-@@ -400,17 +400,21 @@ public:
+@@ -493,17 +493,21 @@ public:
      UNABLE_TO_CHECK_GENERATOR = DH_UNABLE_TO_CHECK_GENERATOR,
      NOT_SUITABLE_GENERATOR = DH_NOT_SUITABLE_GENERATOR,
      Q_NOT_PRIME = DH_CHECK_Q_NOT_PRIME,
@@ -131,7 +149,7 @@ index ea024af73e215b3cad5f08796ac405f419530c86..41061b524eea74330b8d2452635a38c4
    }
  }
 diff --git a/node.gni b/node.gni
-index 32709b860ccb12d8d1e75342a65dda0b86129b21..18d58591e3d0f1f3512db00033c3410a65702864 100644
+index 852f64fa9cfb50fe6e9ce7aa46be336d3196d5b8..461bff93e151c454cd0a9575daa01d3f7c0ec9c3 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -10,6 +10,8 @@ declare_args() {
@@ -144,10 +162,10 @@ index 32709b860ccb12d8d1e75342a65dda0b86129b21..18d58591e3d0f1f3512db00033c3410a
    node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")
  
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index fe35a8e0f6bbb7ab515a0343a7ed046c44e86474..43a7abbf237d8d809953e302b83755a3283a1bf4 100644
+index a81ab8e95f2fc23e1e315fb9c69364934377a0c1..dbe12ba2413ef29ff06a7e8abde50000eaf277e2 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
-@@ -1078,7 +1078,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+@@ -1080,7 +1080,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
      if (EVP_PKEY_decrypt_init(ctx.get()) <= 0) {
        return ThrowCryptoError(env, ERR_get_error());
      }
@@ -156,7 +174,7 @@ index fe35a8e0f6bbb7ab515a0343a7ed046c44e86474..43a7abbf237d8d809953e302b83755a3
      int rsa_pkcs1_implicit_rejection =
          EVP_PKEY_CTX_ctrl_str(ctx.get(), "rsa_pkcs1_implicit_rejection", "1");
      // From the doc -2 means that the option is not supported.
-@@ -1094,6 +1094,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+@@ -1096,6 +1096,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
            "RSA_PKCS1_PADDING is no longer supported for private decryption,"
            " this can be reverted with --security-revert=CVE-2024-PEND");
      }
@@ -165,7 +183,7 @@ index fe35a8e0f6bbb7ab515a0343a7ed046c44e86474..43a7abbf237d8d809953e302b83755a3
  
    const EVP_MD* digest = nullptr;
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index 6a967702b22df0eb8aa10e853fd232794955860d..31058cccc6ffeed6b09aaecda320ee2f15849ec8 100644
+index 43a126f863779d3f364f92bd237039474b489845..77a3caee93049f65faef37e93b871c467ebca7e5 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -134,7 +134,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
@@ -254,7 +272,7 @@ index 6a967702b22df0eb8aa10e853fd232794955860d..31058cccc6ffeed6b09aaecda320ee2f
    crypto::EVPKeyPointer key(raw_key);
  
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index c924a54639e8c22d765dc240dffacfffb200ca0c..287afcc792a0a2b7e19126ee9a48ebe21cc8844e 100644
+index aa5fc61f19e435b4833f3f49df10fa1edf2142c7..0a338b018a4ec20cb5bce250faf60d3f3bf192d4 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -94,7 +94,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
@@ -290,7 +308,7 @@ index c924a54639e8c22d765dc240dffacfffb200ca0c..287afcc792a0a2b7e19126ee9a48ebe2
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index e5664dfa2bc7e11922fa965f28acdf21470d1147..33ffbbb85d05f5356183e3aa1ca23707c5629b5d 100644
+index d760a0d3ea1d12184a558f5e87cb22043d26a0f5..f973941b3b9ea954f35f2ea135f8ee3d77b98958 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -7,7 +7,9 @@
@@ -375,7 +393,7 @@ index e5664dfa2bc7e11922fa965f28acdf21470d1147..33ffbbb85d05f5356183e3aa1ca23707
        break;
    }
 @@ -398,9 +398,11 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
-     key_params = EVPKeyPointer(EVP_PKEY_new());
+     key_params = EVPKeyPointer::New();
      CHECK(key_params);
      CHECK_EQ(EVP_PKEY_assign_DH(key_params.get(), dh.release()), 1);
 -  } else if (int* prime_size = std::get_if<int>(&params->params.prime)) {
@@ -398,7 +416,7 @@ index e5664dfa2bc7e11922fa965f28acdf21470d1147..33ffbbb85d05f5356183e3aa1ca23707
      UNREACHABLE();
    }
 diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
-index 5d081863cf2dcdcf8c2d09db6060eeb5e78c452f..67523ec1c406e345945e1dde663c784c43a1c624 100644
+index b557de774117e442d7f429e92d63a6e1faa236fd..0aca233ced39269b09c383e5b32d85cf36260a1e 100644
 --- a/src/crypto/crypto_dsa.cc
 +++ b/src/crypto/crypto_dsa.cc
 @@ -40,7 +40,7 @@ namespace crypto {
@@ -422,10 +440,10 @@ index 5d081863cf2dcdcf8c2d09db6060eeb5e78c452f..67523ec1c406e345945e1dde663c784c
      return EVPKeyCtxPointer();
  
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index 8488fc57faaf722174032c5a927d150c76120d60..c51efc92d4818ee7701b4725585fb7e1d2d644ad 100644
+index 6af8d089ca6bcd73aff314638443610b9cc4bf7e..c84cbd5b4708e0c403ab0a1e1ddf5fc72eb3d148 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
-@@ -1204,6 +1204,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
+@@ -1059,6 +1059,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
  }
  
  bool KeyObjectHandle::CheckEcKeyData() const {
@@ -433,7 +451,7 @@ index 8488fc57faaf722174032c5a927d150c76120d60..c51efc92d4818ee7701b4725585fb7e1
    MarkPopErrorOnReturn mark_pop_error_on_return;
  
    const auto& key = data_.GetAsymmetricKey();
-@@ -1220,6 +1221,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
+@@ -1075,6 +1076,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
  #else
    return EVP_PKEY_public_check(ctx.get()) == 1;
  #endif
@@ -457,27 +475,25 @@ index b59e394d9a7e2c19fdf1f2b0177753ff488da0fa..91218f49da5392c6f769495ee7f9275a
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<void>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index 02e8e24b4054afd4c3ca797c19a78927319a0d9e..d2a931a3f8f9490fe17ef8a82d0204ee2cca409d 100644
+index 6d360554b31d53a597d61fcbd660f703a903ca21..86fafe98222d4c18f062032d80104f3ef00dbc01 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
-@@ -608,10 +608,11 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
+@@ -608,10 +608,13 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
        }
  
        if (params->saltLength != nullptr) {
--        if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
--          ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
--          return Nothing<void>();
--        }
++#ifndef OPENSSL_IS_BORINGSSL
 +        // TODO(codebytere): Upstream a shim to BoringSSL?
-+        // if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
-+        //   ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
-+        //   return Nothing<void>();
-+        // }
+         if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
+           ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
+           return Nothing<void>();
+         }
++#endif
        }
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 793c196f8ce538c66b20611d00e12392ff9e878b..ee81048caab4ccfe26ea9e677782c9c955d162a9 100644
+index 12ee0cde0897024bccb0face49053544a0bcfcd7..8a6a36a3c31532ed585c287ba8cee14026d315b4 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -495,24 +495,15 @@ Maybe<void> Decorate(Environment* env,
@@ -538,7 +554,7 @@ index 793c196f8ce538c66b20611d00e12392ff9e878b..ee81048caab4ccfe26ea9e677782c9c9
  }  // namespace
  
 diff --git a/src/env.h b/src/env.h
-index fc8dbd615255851cad90e1d8ffe225f5e0c6a718..49ca9c0042ccf22ad1fffa54f05fd443cbc681ba 100644
+index 55124cd38e75ab67c092f6bf5c909a50e7232045..3ef093e612b23d5e1e7cacf56055e5f9818bcb02 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -50,7 +50,7 @@
@@ -550,7 +566,7 @@ index fc8dbd615255851cad90e1d8ffe225f5e0c6a718..49ca9c0042ccf22ad1fffa54f05fd443
  #include <openssl/evp.h>
  #endif
  
-@@ -1073,7 +1073,7 @@ class Environment final : public MemoryRetainer {
+@@ -1060,7 +1060,7 @@ class Environment final : public MemoryRetainer {
      kExitInfoFieldCount
    };
  
@@ -573,7 +589,7 @@ index c59e65ad1fe3fac23f1fc25ca77e6133d1ccaccd..f2f07434e076e2977755ef7dac7d489a
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index cfc599ec9a6197231c3469d318f02c620cdb03a8..29630fcccc3bd9d24ad6aec64bef2fedfc3c4031 100644
+index d3b59690e917afcf725cbfb1232d6ed9f298ee3a..3c42f9b87c11a0f88800d6709515c1c9e2972fc0 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -586,7 +602,7 @@ index cfc599ec9a6197231c3469d318f02c620cdb03a8..29630fcccc3bd9d24ad6aec64bef2fed
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 9e656a2815045aa5da7eb267708c03058be9f362..600e0850f01e01024414d42b25605f256200540a 100644
+index fc7f898a6b9b6072c15d77710c20ed1ba580966b..f39dcad0a28ae483e6d0e5df3816693119ac823e 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
@@ -599,10 +615,10 @@ index 9e656a2815045aa5da7eb267708c03058be9f362..600e0850f01e01024414d42b25605f25
  #endif
  
 diff --git a/unofficial.gni b/unofficial.gni
-index de6ff5548ca5282199b7d85c11941c1fa351a9d9..3d8b7957e791ce2fa2a8d0937a87b6010087803d 100644
+index f6793b8bf22d6ac911a1977edaa881b6dbbe7ac7..ddfbb97276b29df114ab455a2eed3b186b3af5d2 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -145,7 +145,6 @@ template("node_gn_build") {
+@@ -150,7 +150,6 @@ template("node_gn_build") {
      ]
      deps = [
        ":run_node_js2c",
@@ -610,7 +626,7 @@ index de6ff5548ca5282199b7d85c11941c1fa351a9d9..3d8b7957e791ce2fa2a8d0937a87b601
        "deps/cares",
        "deps/histogram",
        "deps/llhttp",
-@@ -156,6 +155,8 @@ template("node_gn_build") {
+@@ -161,6 +160,8 @@ template("node_gn_build") {
        "deps/sqlite",
        "deps/uvwasi",
        "//third_party/zlib",
@@ -619,7 +635,7 @@ index de6ff5548ca5282199b7d85c11941c1fa351a9d9..3d8b7957e791ce2fa2a8d0937a87b601
        "$node_v8_path:v8_libplatform",
      ]
  
-@@ -182,10 +183,8 @@ template("node_gn_build") {
+@@ -187,10 +188,8 @@ template("node_gn_build") {
        deps += [ "//third_party/icu" ]
      }
      if (node_use_openssl) {

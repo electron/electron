@@ -19,10 +19,10 @@ index 463e76cb1abc0c2fdddba4db2ca2e00f7c591e12..d7bc3c35c77b5bf9ec122b38248d0cf1
        context = { __proto__: context, source };
      }
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 06b31af80ebbfbf35ec787a94f345775eb512ebf..deca5aa4b8829ba9921440fcb5c285a10e40c8f0 100644
+index 45a0abc6423a4e53e070f3c117fac2a3554b188d..abd89e9cccba1060f8e76580d5bb338e65a710ea 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -354,6 +354,9 @@ function cjsPreparseModuleExports(filename, source) {
+@@ -287,6 +287,9 @@ function cjsPreparseModuleExports(filename, source) {
    if (module && module[kModuleExportNames] !== undefined) {
      return { module, exportNames: module[kModuleExportNames] };
    }
@@ -33,7 +33,7 @@ index 06b31af80ebbfbf35ec787a94f345775eb512ebf..deca5aa4b8829ba9921440fcb5c285a1
    if (!loaded) {
      module = new CJSModule(filename);
 diff --git a/lib/internal/modules/run_main.js b/lib/internal/modules/run_main.js
-index 1e1a1ea46fc6c1b43cad4038ab0d9cdf21d6ba3d..95e2fa5479ea31559fdb5a2e03515f243b231b75 100644
+index ab4783a7982b9feb8fa85b62e3e3b181f93309bd..34f91026451d7347ae278712d083e4fe281e50f3 100644
 --- a/lib/internal/modules/run_main.js
 +++ b/lib/internal/modules/run_main.js
 @@ -2,6 +2,7 @@
@@ -58,7 +58,7 @@ index 1e1a1ea46fc6c1b43cad4038ab0d9cdf21d6ba3d..95e2fa5479ea31559fdb5a2e03515f24
    const defaultType = getOptionValue('--experimental-default-type');
    /** @type {string} */
    let mainPath;
-@@ -63,6 +71,13 @@ function resolveMainPath(main) {
+@@ -62,6 +70,13 @@ function resolveMainPath(main) {
   * @param {string} mainPath - Absolute path to the main entry point
   */
  function shouldUseESMLoader(mainPath) {

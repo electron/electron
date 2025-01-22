@@ -11,7 +11,7 @@ This patch can be removed when we upgrade to a V8 version that
 contains the above CL.
 
 diff --git a/src/node.cc b/src/node.cc
-index ccc1085a84b214d241687fa9ebd45b55b2cc60d8..1df8e1f00a0e2ffa63bfd4369240b837ab6a9c50 100644
+index 1a2a43bdd37441400323a800c147fcb89f0d549a..ae0b40b40e601e86d22e223a764c20106ae29d70 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -804,7 +804,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,

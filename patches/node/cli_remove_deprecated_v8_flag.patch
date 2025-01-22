@@ -18,10 +18,10 @@ Reviewed-By: Michaël Zasso <targos@protonmail.com>
 Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index 0cfed4a4a91a3d3fb5aee6c9a4db3405ba836565..61d980a12fcf7c799e726e1462c65ce478a8ed0c 100644
+index 62d3d37a061f787babe44649143d45010ce90011..1f614cabf0f31d7adff9dd7a039ca591d805d3bd 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -3151,7 +3151,6 @@ V8 options that are allowed are:
+@@ -3177,7 +3177,6 @@ V8 options that are allowed are:
  * `--disallow-code-generation-from-strings`
  * `--enable-etw-stack-walking`
  * `--expose-gc`
@@ -30,10 +30,10 @@ index 0cfed4a4a91a3d3fb5aee6c9a4db3405ba836565..61d980a12fcf7c799e726e1462c65ce4
  * `--jitless`
  * `--max-old-space-size`
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 4b3f7751db2871c8ce76b197a84a2417097030ea..21e53e1053fe2e4194d91b27a726d3a1306b1683 100644
+index 6f9a8d3e0884bc6e356413f2f39522a7109c86b5..ccf740bfd631aca608244b6b3998177ca5f47f75 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -922,11 +922,6 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(
+@@ -929,11 +929,6 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(
              "disallow eval and friends",
              V8Option{},
              kAllowedInEnvvar);
@@ -46,10 +46,10 @@ index 4b3f7751db2871c8ce76b197a84a2417097030ea..21e53e1053fe2e4194d91b27a726d3a1
              "disable runtime allocation of executable memory",
              V8Option{},
 diff --git a/test/parallel/test-cli-node-options.js b/test/parallel/test-cli-node-options.js
-index e898a81af09ca6852ddc866310e5b8e0dc82971b..22d5a342df5d55f065383a6ebe1aebe59dc0f8d2 100644
+index 03ffe7aa03f48156f04bb527316221ec10e7e0df..69bf136559c1a8a18a7bfc444a439d161f622635 100644
 --- a/test/parallel/test-cli-node-options.js
 +++ b/test/parallel/test-cli-node-options.js
-@@ -70,7 +70,6 @@ if (common.hasCrypto) {
+@@ -72,7 +72,6 @@ if (common.hasCrypto) {
  expect('--abort_on-uncaught_exception', 'B\n');
  expect('--disallow-code-generation-from-strings', 'B\n');
  expect('--expose-gc', 'B\n');

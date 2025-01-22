@@ -871,9 +871,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const binding = internalBinding('fs');
 
   const { internalModuleStat } = binding;
-  internalBinding('fs').internalModuleStat = (pathArgument: string) => {
+  internalBinding('fs').internalModuleStat = (receiver: unknown, pathArgument: string) => {
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return internalModuleStat(pathArgument);
+    if (!pathInfo.isAsar) return internalModuleStat(receiver, pathArgument);
     const { asarPath, filePath } = pathInfo;
 
     // -ENOENT
@@ -908,7 +908,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       if (withFileTypes) {
         initialItem = [
           [...initialItem], initialItem.map((p: string) => {
-            return internalBinding('fs').internalModuleStat(path.join(originalPath, p));
+            return internalBinding('fs').internalModuleStat(binding, path.join(originalPath, p));
           })
         ];
       }
@@ -941,7 +941,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
               readdirResult = [
                 [...files], files.map((p: string) => {
-                  return internalBinding('fs').internalModuleStat(path.join(direntPath, p));
+                  return internalBinding('fs').internalModuleStat(binding, path.join(direntPath, p));
                 })
               ];
             } else {
@@ -962,7 +962,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         const { 0: pathArg, 1: readDir } = queue.pop();
         for (const ent of readDir) {
           const direntPath = path.join(pathArg, ent);
-          const stat = internalBinding('fs').internalModuleStat(direntPath);
+          const stat = internalBinding('fs').internalModuleStat(binding, direntPath);
           result.push(path.relative(originalPath, direntPath));
 
           if (stat === 1) {
@@ -1014,7 +1014,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         if (withFileTypes) {
           readdirResult = [
             [...readdirResult], readdirResult.map((p: string) => {
-              return internalBinding('fs').internalModuleStat(path.join(pathArg, p));
+              return internalBinding('fs').internalModuleStat(binding, path.join(pathArg, p));
             })
           ];
         }
@@ -1054,7 +1054,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         for (let i = 0; i < readdirResult.length; i++) {
           const resultPath = path.join(pathArg, readdirResult[i]);
           const relativeResultPath = path.relative(basePath, resultPath);
-          const stat = internalBinding('fs').internalModuleStat(resultPath);
+          const stat = internalBinding('fs').internalModuleStat(binding, resultPath);
 
           readdirResults.push(relativeResultPath);
           if (stat === 1) pathsQueue.push(resultPath);
