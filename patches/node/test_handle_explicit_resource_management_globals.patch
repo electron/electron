@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C3=ABl=20Zasso?= <targos@protonmail.com>
+Date: Sat, 21 Dec 2024 09:25:55 +0100
+Subject: test: handle explicit resource management globals
+
+https://chromium-review.googlesource.com/c/chromium/src/+/6174695
+
+diff --git a/test/common/globals.js b/test/common/globals.js
+index 5d1c4415eeb09e92d062330afc0aecb1d297b6d3..2c1dac019ba2aa0a23c2434997e2007dd2eacde8 100644
+--- a/test/common/globals.js
++++ b/test/common/globals.js
+@@ -64,6 +64,9 @@ const intrinsics = new Set([
+   'Atomics',
+   'WebAssembly',
+   'Iterator',
++  'SuppressedError',
++  'DisposableStack',
++  'AsyncDisposableStack',
+ ]);
+ 
+ if (global.gc) {
