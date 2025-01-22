@@ -31,7 +31,7 @@ export async function getSources (args: Electron.SourcesOptions, useSystemPicker
   const captureWindow = args.types.includes('window');
   const captureScreen = args.types.includes('screen');
 
-  const { thumbnailSize = { width: 150, height: 150 } } = args;
+  const { thumbnailSize = { width: 0, height: 0 } } = args;
   const { fetchWindowIcons = false } = args;
 
   const options = {

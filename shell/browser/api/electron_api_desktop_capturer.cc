@@ -331,6 +331,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
       LOG(INFO) << "Inside the IsDisplayMediaSystemPickerAvailable logic";
       capture_screen_ = false;
       capture_window_ = capture_window;
+      LOG(INFO) << "Capture Window: " << capture_window;
       screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
           DesktopMediaList::Type::kNone, std::move(capturer), true, true);
       LOG(INFO) << "Made capturer?";
@@ -469,9 +470,14 @@ void DesktopCapturer::RequestUpdate(DesktopMediaList* list,
 }
 
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
+  LOG(INFO) << "UpdateSourcesList";
+  LOG(INFO) << "capture_window: " << capture_window_;
+  LOG(INFO) << "capture_screen: " << capture_screen_;
   if (capture_window_ &&
-      list->GetMediaListType() == DesktopMediaList::Type::kWindow) {
+      (list->GetMediaListType() == DesktopMediaList::Type::kWindow ||
+       list->GetMediaListType() == DesktopMediaList::Type::kNone)) {
     capture_window_ = false;
+    LOG(INFO) << "GetSourceCount (windows): " << list->GetSourceCount();
     std::vector<DesktopCapturer::Source> window_sources;
     window_sources.reserve(list->GetSourceCount());
     for (int i = 0; i < list->GetSourceCount(); i++) {
@@ -483,8 +489,10 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   }
 
   if (capture_screen_ &&
-      list->GetMediaListType() == DesktopMediaList::Type::kScreen) {
+      (list->GetMediaListType() == DesktopMediaList::Type::kScreen ||
+       list->GetMediaListType() == DesktopMediaList::Type::kNone)) {
     capture_screen_ = false;
+    LOG(INFO) << "GetSourceCount (screens): " << list->GetSourceCount();
     std::vector<DesktopCapturer::Source> screen_sources;
     screen_sources.reserve(list->GetSourceCount());
     for (int i = 0; i < list->GetSourceCount(); i++) {
@@ -553,7 +561,8 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     std::move(screen_sources.begin(), screen_sources.end(),
               std::back_inserter(captured_sources_));
   }
-
+  LOG(INFO) << "capture_window: " << capture_window_;
+  LOG(INFO) << "capture_screen: " << capture_screen_;
   if (!capture_window_ && !capture_screen_)
     HandleSuccess();
 }
