@@ -250,8 +250,8 @@ int NodeMain() {
 
       uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                            node::EnvironmentFlags::kHideConsoleWindows;
-      env = node::CreateEnvironment(
-          isolate_data, isolate->GetCurrentContext(), result->args(),
+      env = electron::util::CreateEnvironment(
+          isolate, isolate_data, isolate->GetCurrentContext(), result->args(),
           result->exec_args(),
           static_cast<node::EnvironmentFlags::Flags>(env_flags));
       CHECK_NE(nullptr, env);
