@@ -11,7 +11,7 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index d393d4336a0c1e681e4f6b4e5c7cf2bcc5fc287e..807cb5172e0c2178b6c20e81f8175141d3a0284f 100644
+index 2799af0f8dd4923ef5ccd372922ea39a66f93470..3012ea1da2db6b22dc6c6a1cac12ec4c5b44487a 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
 @@ -30,7 +30,7 @@ const {
@@ -23,7 +23,7 @@ index d393d4336a0c1e681e4f6b4e5c7cf2bcc5fc287e..807cb5172e0c2178b6c20e81f8175141
  const {
    loadPreloadModules,
    initializeFrozenIntrinsics,
-@@ -273,12 +273,13 @@ let _forceDefaultLoader = false;
+@@ -276,12 +276,13 @@ let _forceDefaultLoader = false;
   * @param {boolean} [forceDefaultLoader=false] - A boolean indicating disabling custom loaders.
   */
  function initializeESM(forceDefaultLoader = false) {
@@ -40,7 +40,7 @@ index d393d4336a0c1e681e4f6b4e5c7cf2bcc5fc287e..807cb5172e0c2178b6c20e81f8175141
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 48b61e8b7600701c4992a98ff802614ce915faee..4e9835e502a8d078a448aa4253f37de0f49f4854 100644
+index e2252639cf45184b72ebe669f7603bd5e6d92b9a..05353281c0a773d5cf5585cb1698126e17f677a0 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
 @@ -813,7 +813,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(

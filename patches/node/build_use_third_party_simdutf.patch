@@ -6,7 +6,7 @@ Subject: build: use third_party/simdutf
 use the Chromium version of simdutf to avoid duplicate symbols
 
 diff --git a/node.gni b/node.gni
-index 99ec540ec41ddf5682eed7618ba87d6935b3b982..274e627fe27b318218f10e982ca5a0773a9075a5 100644
+index 461bff93e151c454cd0a9575daa01d3f7c0ec9c3..a1eab549b8686c24399f5206f9b611bcbce3d470 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -12,6 +12,8 @@ declare_args() {
@@ -19,10 +19,10 @@ index 99ec540ec41ddf5682eed7618ba87d6935b3b982..274e627fe27b318218f10e982ca5a077
    node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")
  
 diff --git a/unofficial.gni b/unofficial.gni
-index c23922a301a721662ff34bf6e54fd26b41f25ccc..988dd1d73e72ccd3a6eb10b326b8dc7fcd8e257b 100644
+index 87bfc313dd1408e597e929ba93c8c0f52ae39ced..4ef97ab65bdfacca4d6dbbc603da0218214b039d 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -150,7 +150,7 @@ template("node_gn_build") {
+@@ -155,7 +155,7 @@ template("node_gn_build") {
        "deps/nbytes",
        "deps/nghttp2",
        "deps/postject",
@@ -31,7 +31,7 @@ index c23922a301a721662ff34bf6e54fd26b41f25ccc..988dd1d73e72ccd3a6eb10b326b8dc7f
        "deps/sqlite",
        "deps/uvwasi",
        "//third_party/zlib",
-@@ -305,7 +305,7 @@ template("node_gn_build") {
+@@ -310,7 +310,7 @@ template("node_gn_build") {
    executable("node_js2c") {
      defines = []
      deps = [
@@ -40,7 +40,7 @@ index c23922a301a721662ff34bf6e54fd26b41f25ccc..988dd1d73e72ccd3a6eb10b326b8dc7f
        "deps/uv",
      ]
      sources = [
-@@ -412,7 +412,7 @@ template("node_gn_build") {
+@@ -417,7 +417,7 @@ template("node_gn_build") {
        "deps/googletest",
        "deps/googletest:gtest_main",
        "deps/nbytes",

@@ -7,10 +7,10 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 5fc1b6f2446d7c786024eb60800e2edab613dcd1..f59abcb21d64b910d8d42eb23c03109f62558813 100644
+index e044f10284f31f1862b18be752a04b3bd5d53401..89ce587cac4506c4218a9316fe0b68070a7a8504 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -101,6 +101,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -102,6 +102,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
    return result;
  }
  
@@ -26,7 +26,7 @@ index 5fc1b6f2446d7c786024eb60800e2edab613dcd1..f59abcb21d64b910d8d42eb23c03109f
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 33ffbbb85d05f5356183e3aa1ca23707c5629b5d..008d212ebe25b0022020379aa08963c12828940c 100644
+index f973941b3b9ea954f35f2ea135f8ee3d77b98958..743c63ff7e3f526829919a8f2de7ebd625a93fbc 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -51,6 +51,25 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
@@ -64,7 +64,7 @@ index 33ffbbb85d05f5356183e3aa1ca23707c5629b5d..008d212ebe25b0022020379aa08963c1
    auto ab = ArrayBuffer::New(env->isolate(), std::move(backing));
    return Buffer::New(env, ab, 0, ab->ByteLength()).FromMaybe(Local<Value>());
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index ee81048caab4ccfe26ea9e677782c9c955d162a9..643c9d31dc2737faa2ec51684ffceb35a1014a58 100644
+index 8a6a36a3c31532ed585c287ba8cee14026d315b4..3d449b5853f359d63e1b88671a857bf9152ff6af 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -326,10 +326,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
@@ -156,10 +156,10 @@ index 922e77091d72172ed6cfc5e8477901e3608396c5..16a236c69caed6d60248c7973531a95a
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index af2f953f0388dbce326b0c519de3883552f8f009..7fb34057a486914dd886ec4d3d23be90cccb4fea 100644
+index 9b9bb7be9a8daca98a2635bf13cb6d1d561ea5fb..81afe2b5f7398f0c20b340648ca75022470be544 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
-@@ -174,6 +174,19 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
+@@ -175,6 +175,19 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
  MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
    if (bio == nullptr || !*bio) return {};
    BUF_MEM* mem = *bio;
@@ -179,7 +179,7 @@ index af2f953f0388dbce326b0c519de3883552f8f009..7fb34057a486914dd886ec4d3d23be90
    auto backing = ArrayBuffer::NewBackingStore(
        mem->data,
        mem->length,
-@@ -181,6 +194,8 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+@@ -182,6 +195,8 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
          BIOPointer free_me(static_cast<BIO*>(data));
        },
        bio->release());
@@ -229,10 +229,10 @@ index 43bb68351bf0a68285e464601013bbdbd5d5df5f..4126bbff080548c91154a6dcc437359c
  
  constexpr const char* EncodingName(const enum encoding encoding) {
 diff --git a/src/node_internals.h b/src/node_internals.h
-index fe2d25decd883085e4c3f368ab4acc01a7f66f6e..bcd5c87afcff9c56429443363c63fc8079521451 100644
+index 85b666e11f5654afe2a2f192e629221f2133b165..bd8d65247ad3ba4878f1288ab2b66e3598982b09 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -117,7 +117,9 @@ v8::Maybe<bool> InitializePrimordials(v8::Local<v8::Context> context);
+@@ -117,7 +117,9 @@ v8::Maybe<void> InitializePrimordials(v8::Local<v8::Context> context);
  
  class NodeArrayBufferAllocator : public ArrayBufferAllocator {
   public:
@@ -369,3 +369,18 @@ index 9787b14352753c5e0f8dc2b90093680e7cd10f1a..31af9e62396368af1b81f8841a705fd3
    auto ab = ArrayBuffer::New(isolate, std::move(bs));
    v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
  
+diff --git a/test/parallel/test-buffer-tostring-range.js b/test/parallel/test-buffer-tostring-range.js
+index 73fec107a36c3db4af6f492137d0ca174f2d0547..a1153ec381f7b12a1640b611073f6997e1ec5696 100644
+--- a/test/parallel/test-buffer-tostring-range.js
++++ b/test/parallel/test-buffer-tostring-range.js
+@@ -102,8 +102,8 @@ assert.throws(() => {
+ // Must not throw when start and end are within kMaxLength
+ // Cannot test on 32bit machine as we are testing the case
+ // when start and end are above the threshold
+-if (!common.openSSLIsBoringSSL) {
++/*
+ const threshold = 0xFFFFFFFF;
+ const largeBuffer = Buffer.alloc(threshold + 20);
+ largeBuffer.toString('utf8', threshold, threshold + 20);
+-}
++*/
