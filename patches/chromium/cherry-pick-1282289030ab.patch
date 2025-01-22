@@ -1,7 +1,7 @@
-From 1282289030ab2026a8db4fb82dc6e20d3bf028be Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kevin Ellis <kevers@google.com>
 Date: Thu, 12 Dec 2024 06:47:30 -0800
-Subject: [PATCH] Prune superfluous calls to SetCompositorPending
+Subject: Prune superfluous calls to SetCompositorPending
 
 We only need to call SetCompositorPending with the pending cancel
 reason if the animation is running on the compositor.
@@ -17,13 +17,12 @@ Reviewed-by: Robert Flack <flackr@chromium.org>
 Commit-Queue: Kevin Ellis <kevers@chromium.org>
 Reviewed-by: Claire Chambers <clchambers@microsoft.com>
 Cr-Commit-Position: refs/heads/main@{#1395390}
----
 
 diff --git a/third_party/blink/renderer/core/animation/animation.cc b/third_party/blink/renderer/core/animation/animation.cc
-index 9e162a6f..b58b017 100644
+index 1b384beef682c87b4bec3c9233d45529c5569b56..694ca51b1a59270289fabe70dbb381167fc89a83 100644
 --- a/third_party/blink/renderer/core/animation/animation.cc
 +++ b/third_party/blink/renderer/core/animation/animation.cc
-@@ -1271,14 +1271,7 @@
+@@ -1269,14 +1269,7 @@ void Animation::setEffect(AnimationEffect* new_effect) {
    ResolveTimelineOffsets(timeline_ ? timeline_->GetTimelineRange()
                                     : TimelineRange());
  
@@ -39,7 +38,7 @@ index 9e162a6f..b58b017 100644
  
    // Notify of a potential state change.
    NotifyProbe();
-@@ -2375,6 +2368,26 @@
+@@ -2373,6 +2366,26 @@ void Animation::StartAnimationOnCompositor(
            timeline()->IsMonotonicallyIncreasing(), boundary_aligned);
  }
  
@@ -66,7 +65,7 @@ index 9e162a6f..b58b017 100644
  // TODO(crbug.com/960944): Rename to SetPendingCommit. This method handles both
  // composited and non-composited animations. The use of 'compositor' in the name
  // is confusing.
-@@ -2833,7 +2846,7 @@
+@@ -2831,7 +2844,7 @@ bool Animation::Update(TimingUpdateReason reason) {
      // After updating the animation time if the animation is no longer current
      // blink will no longer composite the element (see
      // CompositingReasonFinder::RequiresCompositingFor*Animation).
@@ -75,7 +74,7 @@ index 9e162a6f..b58b017 100644
        SetCompositorPending(CompositorPendingReason::kPendingCancel);
      }
    }
-@@ -2874,6 +2887,9 @@
+@@ -2872,6 +2885,9 @@ void Animation::UpdateIfNecessary() {
  }
  
  void Animation::EffectInvalidated() {
@@ -85,7 +84,7 @@ index 9e162a6f..b58b017 100644
    SetOutdated();
    UpdateFinishedState(UpdateType::kContinuous, NotificationType::kAsync);
    // FIXME: Needs to consider groups when added.
-@@ -3381,15 +3397,22 @@
+@@ -3379,15 +3395,22 @@ bool Animation::IsInDisplayLockedSubtree() {
  }
  
  void Animation::UpdateCompositedPaintStatus() {
@@ -110,7 +109,7 @@ index 9e162a6f..b58b017 100644
    Element* target = keyframe_effect->EffectTarget();
    if (!target) {
      return;
-@@ -3398,14 +3421,7 @@
+@@ -3396,14 +3419,7 @@ void Animation::UpdateCompositedPaintStatus() {
    ElementAnimations* element_animations = target->GetElementAnimations();
    DCHECK(element_animations);
  
@@ -127,10 +126,10 @@ index 9e162a6f..b58b017 100644
  
  void Animation::Trace(Visitor* visitor) const {
 diff --git a/third_party/blink/renderer/core/animation/animation.h b/third_party/blink/renderer/core/animation/animation.h
-index 61007d7..bc0a891 100644
+index c20180d785ca62417ba5e05417462fec5beeae5b..cfd2b44724c86b272982dee4db54ed5191e51d22 100644
 --- a/third_party/blink/renderer/core/animation/animation.h
 +++ b/third_party/blink/renderer/core/animation/animation.h
-@@ -393,6 +393,15 @@
+@@ -393,6 +393,15 @@ class CORE_EXPORT Animation : public EventTarget,
      start_time_ = start_time;
    }
  
@@ -146,7 +145,7 @@ index 61007d7..bc0a891 100644
   protected:
    DispatchEventResult DispatchEventInternal(Event&) override;
    void AddedEventListener(const AtomicString& event_type,
-@@ -583,6 +592,13 @@
+@@ -583,6 +592,13 @@ class CORE_EXPORT Animation : public EventTarget,
  
    Member<Event> pending_remove_event_;
  
@@ -161,10 +160,10 @@ index 61007d7..bc0a891 100644
    // mutually exclusive pending_play_ and pending_pause_ flags.
    enum class CompositorAction { kNone, kStart, kCancel };
 diff --git a/third_party/blink/renderer/core/animation/element_animations.cc b/third_party/blink/renderer/core/animation/element_animations.cc
-index ca2864f..b1f3b32 100644
+index ca2864f2f7ef8b8969d63a25e85f23f5c9a97b74..b1f3b32332af4f948bb2598f1646f29c97660413 100644
 --- a/third_party/blink/renderer/core/animation/element_animations.cc
 +++ b/third_party/blink/renderer/core/animation/element_animations.cc
-@@ -97,43 +97,59 @@
+@@ -97,43 +97,59 @@ void ElementAnimations::RecalcCompositedStatusForKeyframeChange(
      Element& element,
      AnimationEffect* effect) {
    if (KeyframeEffect* keyframe_effect = DynamicTo<KeyframeEffect>(effect)) {
@@ -251,10 +250,10 @@ index ca2864f..b1f3b32 100644
        element->GetLayoutObject()->SetShouldDoFullPaintInvalidation();
        // For clip paths, we also need to update the paint properties to switch
 diff --git a/third_party/blink/renderer/core/animation/element_animations.h b/third_party/blink/renderer/core/animation/element_animations.h
-index 624f542..3171061 100644
+index 624f542785befe6ce92e7f75eb8595a2015a77ef..3171061ceb1a0dad426481454d3698c1eee22fd0 100644
 --- a/third_party/blink/renderer/core/animation/element_animations.h
 +++ b/third_party/blink/renderer/core/animation/element_animations.h
-@@ -120,7 +120,7 @@
+@@ -120,7 +120,7 @@ class CORE_EXPORT ElementAnimations final
  
    void RecalcCompositedStatusForKeyframeChange(Element& element,
                                                 AnimationEffect* effect);
