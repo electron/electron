@@ -12,8 +12,16 @@ shortcuts.
 not have the keyboard focus. This module cannot be used before the `ready`
 event of the app module is emitted.
 
+Please also note that it is also possible to use Chromium's
+`GlobalShortcutsPortal` implementation, which allows apps to bind global
+shortcuts when running within a Wayland session.
+
 ```js
 const { app, globalShortcut } = require('electron')
+
+// Enable usage of Portal's globalShortcuts. This is essential for cases when
+// the app runs in a Wayland session.
+app.commandLine.appendSwitch('enable-features', 'GlobalShortcutsPortal')
 
 app.whenReady().then(() => {
   // Register a 'CommandOrControl+X' shortcut listener.
