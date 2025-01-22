@@ -27,7 +27,7 @@ jobs:
           PROJECT_NUMBER=$(gh project list --owner electron --format json | jq -r '.projects | map(select(.title | test("^[0-9]+-x-y$"))) | max_by(.number) | .number')
           echo "PROJECT_NUMBER=$PROJECT_NUMBER" >> "$GITHUB_OUTPUT"
       - name: Update Completed Stable Prep Items
-        uses: dsanders11/project-actions/completed-by@8bc0bd421be3a2f9e96e160c4cb703f97cd3be55 # v1.5.0
+        uses: dsanders11/project-actions/completed-by@9c80cd31f58599941c64f74636bea95ba5d46090 # v1.5.1
         with:
           field: Prep Status
           field-value: ✅ Complete
