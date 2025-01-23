@@ -107,10 +107,10 @@ index ac2d771555126a4f43b8c3a3fd299d40019e6622..769fe636ef2b5d02ecc9ff753e64d93e
    }
    return CheckPublicKeyResult::NONE;
 diff --git a/deps/ncrypto/ncrypto.h b/deps/ncrypto/ncrypto.h
-index 20b69dc67b13fd4f0bd44f7adf6a0d928a2c10c4..2320f92c50543fb9b426bce1c6d182bddf7658de 100644
+index fffa75ec718facc61cebf48f33ddc3909b9b9413..19757016a4f50e2f656a76bf60cb87e601845afe 100644
 --- a/deps/ncrypto/ncrypto.h
 +++ b/deps/ncrypto/ncrypto.h
-@@ -493,17 +493,21 @@ public:
+@@ -516,17 +516,21 @@ class DHPointer final {
      UNABLE_TO_CHECK_GENERATOR = DH_UNABLE_TO_CHECK_GENERATOR,
      NOT_SUITABLE_GENERATOR = DH_NOT_SUITABLE_GENERATOR,
      Q_NOT_PRIME = DH_CHECK_Q_NOT_PRIME,
@@ -425,10 +425,10 @@ index b557de774117e442d7f429e92d63a6e1faa236fd..0aca233ced39269b09c383e5b32d85cf
      return EVPKeyCtxPointer();
  
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index 6af8d089ca6bcd73aff314638443610b9cc4bf7e..c84cbd5b4708e0c403ab0a1e1ddf5fc72eb3d148 100644
+index ac4103400e1e293909e7c524f4a1422c5f04e707..c44c11cbd533350d8bf149032c658d5585303b7d 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
-@@ -1059,6 +1059,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
+@@ -945,6 +945,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
  }
  
  bool KeyObjectHandle::CheckEcKeyData() const {
@@ -436,7 +436,7 @@ index 6af8d089ca6bcd73aff314638443610b9cc4bf7e..c84cbd5b4708e0c403ab0a1e1ddf5fc7
    MarkPopErrorOnReturn mark_pop_error_on_return;
  
    const auto& key = data_.GetAsymmetricKey();
-@@ -1075,6 +1076,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
+@@ -961,6 +962,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
  #else
    return EVP_PKEY_public_check(ctx.get()) == 1;
  #endif
@@ -539,7 +539,7 @@ index 12ee0cde0897024bccb0face49053544a0bcfcd7..8a6a36a3c31532ed585c287ba8cee140
  }  // namespace
  
 diff --git a/src/env.h b/src/env.h
-index 55124cd38e75ab67c092f6bf5c909a50e7232045..3ef093e612b23d5e1e7cacf56055e5f9818bcb02 100644
+index 16312e548e526b80ec9a230bc3c772f45685b61f..0a3f09ebc7e2e7c1f8b9499d4439e2ca90b86810 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -50,7 +50,7 @@
@@ -551,7 +551,7 @@ index 55124cd38e75ab67c092f6bf5c909a50e7232045..3ef093e612b23d5e1e7cacf56055e5f9
  #include <openssl/evp.h>
  #endif
  
-@@ -1060,7 +1060,7 @@ class Environment final : public MemoryRetainer {
+@@ -1062,7 +1062,7 @@ class Environment final : public MemoryRetainer {
      kExitInfoFieldCount
    };
  
@@ -574,7 +574,7 @@ index c59e65ad1fe3fac23f1fc25ca77e6133d1ccaccd..f2f07434e076e2977755ef7dac7d489a
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index d3b59690e917afcf725cbfb1232d6ed9f298ee3a..3c42f9b87c11a0f88800d6709515c1c9e2972fc0 100644
+index a03daec2bd74d7857d38238ea0479e36e054a7a3..f70e0917f6caa66210107cdb2ef891685563ba96 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -587,7 +587,7 @@ index d3b59690e917afcf725cbfb1232d6ed9f298ee3a..3c42f9b87c11a0f88800d6709515c1c9
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index fc7f898a6b9b6072c15d77710c20ed1ba580966b..f39dcad0a28ae483e6d0e5df3816693119ac823e 100644
+index ab6ea77b2e9ce54af44e21c29fcba929f117c41b..23923ccd645e810d84b0a08e57e486d012b5796b 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

@@ -51,4 +51,3 @@ index 5d67892bb8e1fd265df414b3f41e62cdabbec873..10091f9b02e6ab0485325dddbae24125
    }
  
    // We need to initialize the global console here again with process.stdout
- 

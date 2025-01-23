@@ -18,10 +18,10 @@ Reviewed-By: Michaël Zasso <targos@protonmail.com>
 Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index 62d3d37a061f787babe44649143d45010ce90011..1f614cabf0f31d7adff9dd7a039ca591d805d3bd 100644
+index 770d2ca4fcf003352c2c12815ac885a7a5e67b7f..4af66f690e626b0159a88d58f6ee81391573ebab 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -3177,7 +3177,6 @@ V8 options that are allowed are:
+@@ -3232,7 +3232,6 @@ V8 options that are allowed are:
  * `--disallow-code-generation-from-strings`
  * `--enable-etw-stack-walking`
  * `--expose-gc`
@@ -30,10 +30,10 @@ index 62d3d37a061f787babe44649143d45010ce90011..1f614cabf0f31d7adff9dd7a039ca591
  * `--jitless`
  * `--max-old-space-size`
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 6f9a8d3e0884bc6e356413f2f39522a7109c86b5..ccf740bfd631aca608244b6b3998177ca5f47f75 100644
+index ec419cf96a14989338e3261b85c92b81ba8b50d9..5a4d536ff0d090fa6b43ea4cbd403d4aa23171c1 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -929,11 +929,6 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(
+@@ -970,11 +970,6 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(
              "disallow eval and friends",
              V8Option{},
              kAllowedInEnvvar);

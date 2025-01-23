@@ -21,7 +21,8 @@ index d6909b95886f4de3f0b953c2a2992f69066b7434..972955f9144aafcd3a3fe278b7aaad40
 +    cflags_c = [ "-Wdeprecated-literal-operator" ]
    }
  }
-index 9dca810decebd75aab427e306b3cc37c80fb55c9..852f64fa9cfb50fe6e9ce7aa46be336d3196d5b8 100644
+diff --git a/node.gni b/node.gni
+index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3fd219be7d 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -5,10 +5,10 @@
@@ -65,10 +66,10 @@ index 9dca810decebd75aab427e306b3cc37c80fb55c9..852f64fa9cfb50fe6e9ce7aa46be336d
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 1bec44f6f29b0b652e92d2bb336fdb74b85eee30..599b59873dbb17ae5e7463403859e088ffb86cda 100644
+index 9aaf5626fcfe4a9b168e069df0265df7b535b76e..ece9c4656919d8dc408112142367791628dd5f8b 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -778,6 +778,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -779,6 +779,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -90,10 +91,10 @@ index a73de23a1debfdac66873e0baccf882e383bfc36..7ac5291be093773ee7efd39e77e01bf5
  // Handles compilation and caching of built-in JavaScript modules and
  // bootstrap scripts, whose source are bundled into the binary as static data.
 diff --git a/tools/install.py b/tools/install.py
-index bf54249b66c0d4e179deaae5a9fd55568e694fe0..31b94d2e4b532d3b8202b512e2d2f41d29a2a546 100755
+index 17515720ba9c85d533465365188021074a8d30f4..7232be863d517c8445059a57c5938c2cbdeaf81b 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -285,6 +285,7 @@ def headers(options, action):
+@@ -291,6 +291,7 @@ def headers(options, action):
        'include/v8-promise.h',
        'include/v8-proxy.h',
        'include/v8-regexp.h',
@@ -260,10 +261,10 @@ index 65d0e1be42f0a85418491ebb548278cf431aa6a0..d4a31342f1c6107b029394c6e1d00a1d
    except Exception as e:
      print(str(e))
 diff --git a/unofficial.gni b/unofficial.gni
-index c3b311e4a7f5444b07d4d7028d4621806959804e..f6793b8bf22d6ac911a1977edaa881b6dbbe7ac7 100644
+index 9e496d99d7141bf42ef7374a3c676c7b333eeeab..3632d5bd21e277fcbd8d62dc65598a7f7c87f00e 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -139,6 +144,7 @@ template("node_gn_build") {
+@@ -145,6 +145,7 @@ template("node_gn_build") {
      public_deps = [
        "deps/ada",
        "deps/uv",
@@ -271,9 +272,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..f6793b8bf22d6ac911a1977edaa881b6
        "deps/simdjson",
        "$node_v8_path",
      ]
---- a/unofficial.gni
-+++ b/unofficial.gni
-@@ -156,7 +156,6 @@ template("node_gn_build") {
+@@ -156,7 +157,6 @@ template("node_gn_build") {
        "deps/llhttp",
        "deps/nbytes",
        "deps/nghttp2",
@@ -281,7 +280,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..f6793b8bf22d6ac911a1977edaa881b6
        "deps/postject",
        "deps/sqlite",
        "deps/uvwasi",
-@@ -159,7 +164,11 @@ template("node_gn_build") {
+@@ -165,7 +165,11 @@ template("node_gn_build") {
        "$node_v8_path:v8_libplatform",
      ]
  
@@ -293,7 +292,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..f6793b8bf22d6ac911a1977edaa881b6
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -185,7 +185,7 @@ template("node_gn_build") {
+@@ -185,7 +189,7 @@ template("node_gn_build") {
      }
      if (node_use_openssl) {
        deps += [ "deps/ncrypto" ]
@@ -302,7 +301,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..f6793b8bf22d6ac911a1977edaa881b6
        sources += gypi_values.node_crypto_sources
      }
      if (node_enable_inspector) {
-@@ -282,6 +282,7 @@ template("node_gn_build") {
+@@ -282,6 +286,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -310,7 +309,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..f6793b8bf22d6ac911a1977edaa881b6
      deps = [
        "deps/uv",
        "$node_simdutf_path",
-@@ -286,26 +298,75 @@ template("node_gn_build") {
+@@ -292,26 +297,75 @@ template("node_gn_build") {
        "src/embedded_data.cc",
        "src/embedded_data.h",
      ]
@@ -396,7 +395,7 @@ index c3b311e4a7f5444b07d4d7028d4621806959804e..f6793b8bf22d6ac911a1977edaa881b6
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -319,11 +380,11 @@ template("node_gn_build") {
+@@ -325,11 +379,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  
