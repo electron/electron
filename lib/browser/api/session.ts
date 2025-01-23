@@ -7,6 +7,13 @@ const { fromPartition, fromPath, Session } = process._linkedBinding('electron_br
 const { isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
 
 async function getNativePickerSource (preferredDisplaySurface: string) {
+
+  // Fake video window that activates the native system picker
+  // This is used to get around the need for a screen/window
+  // id in Chrome's desktopCapturer.
+  let fakeVideoWindowId = -1;
+  const kMacOsNativePickerId = -4;
+
   if (process.platform !== 'darwin') {
     throw new Error('Native system picker option is currently only supported on MacOS');
   }
@@ -40,6 +47,15 @@ async function getNativePickerSource (preferredDisplaySurface: string) {
   };
 
   const mediaStreams = await desktopCapturer.getSources(options);
+
+  // edit the first media stream's id to be window:${kMacOsNativePickerId}:${fakeVideoWindowId--}
+
+  if (mediaStreams.length === 0) {
+    throw new Error('No media streams found');
+  }
+
+  mediaStreams[0].id = `window:${kMacOsNativePickerId}:${fakeVideoWindowId--}`;
+
   console.log("MEDIASREEAMS", mediaStreams);
   return mediaStreams[0];
 }
