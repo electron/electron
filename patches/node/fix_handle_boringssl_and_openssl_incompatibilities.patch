@@ -147,7 +147,7 @@ index 245a43920c7baf000ba63192a84a4c3fd219be7d..56a554175b805c1703f13d62041f8c80
    # The location of simdutf - use the one from node's deps by default.
    node_simdutf_path = "$node_path/deps/simdutf"
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index a81ab8e95f2fc23e1e315fb9c69364934377a0c1..dbe12ba2413ef29ff06a7e8abde50000eaf277e2 100644
+index c7588583530cf291946d01cec807390d987706cf..495fb92355a7eadc2f7ec885a3b529988bb3bd02 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
 @@ -1080,7 +1080,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
@@ -159,9 +159,9 @@ index a81ab8e95f2fc23e1e315fb9c69364934377a0c1..dbe12ba2413ef29ff06a7e8abde50000
      int rsa_pkcs1_implicit_rejection =
          EVP_PKEY_CTX_ctrl_str(ctx.get(), "rsa_pkcs1_implicit_rejection", "1");
      // From the doc -2 means that the option is not supported.
-@@ -1096,6 +1096,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
-           "RSA_PKCS1_PADDING is no longer supported for private decryption,"
-           " this can be reverted with --security-revert=CVE-2024-PEND");
+@@ -1095,6 +1095,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+           env,
+           "RSA_PKCS1_PADDING is no longer supported for private decryption");
      }
 +#endif
    }
