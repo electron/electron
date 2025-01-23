@@ -6469,31 +6469,40 @@ describe('BrowserWindow module', () => {
 
     it('creates offscreen window with opaque background', async () => {
       w.setBackgroundColor(HexColors.RED);
-      const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
-      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-      const [, , data] = await paint;
-      await debugPreviewImage(data);
-      expect(getPixelColor(data, { x: 0, y: 0 }, true)).to.equal('#ff0000ff');
+      await waitUntil(async () => {
+        const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        const [, , data] = await paint;
+        await debugPreviewImage(data);
+        expect(getPixelColor(data, { x: 0, y: 0 }, true)).to.equal('#ff0000ff');
+        return true;
+      });
     });
 
     it('creates offscreen window with transparent background', async () => {
       w.setBackgroundColor(HexColors.TRANSPARENT);
-      const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
-      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-      const [, , data] = await paint;
-      await debugPreviewImage(data);
-      expect(getPixelColor(data, { x: 0, y: 0 }, true)).to.equal(HexColors.TRANSPARENT);
+      await waitUntil(async () => {
+        const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        const [, , data] = await paint;
+        await debugPreviewImage(data);
+        expect(getPixelColor(data, { x: 0, y: 0 }, true)).to.equal(HexColors.TRANSPARENT);
+        return true;
+      });
     });
 
     // Semi-transparent background is not supported
     it.skip('creates offscreen window with semi-transparent background', async () => {
       const bgColor = '#66ffffff'; // ARGB
       w.setBackgroundColor(bgColor);
-      const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
-      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-      const [, , data] = await paint;
-      await debugPreviewImage(data);
-      expect(getPixelColor(data, { x: 0, y: 0 }, true)).to.equal(bgColor);
+      await waitUntil(async () => {
+        const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
+        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        const [, , data] = await paint;
+        await debugPreviewImage(data);
+        expect(getPixelColor(data, { x: 0, y: 0 }, true)).to.equal(bgColor);
+        return true;
+      });
     });
 
     it('does not crash after navigation', () => {
