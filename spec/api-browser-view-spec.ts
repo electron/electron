@@ -90,6 +90,7 @@ describe('BrowserView module', () => {
       w.show();
       w.setBounds(display.bounds);
       w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
+      ScreenCapture.setWindowOnTop(w);
       await w.loadURL('about:blank');
 
       view = new BrowserView();
@@ -109,6 +110,7 @@ describe('BrowserView module', () => {
       w.show();
       w.setBounds(display.bounds);
       w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
+      ScreenCapture.setWindowOnTop(w);
       await w.loadURL('about:blank');
 
       view = new BrowserView();

@@ -103,6 +103,27 @@ export class ScreenCapture {
   /** Timeout to wait for expected color to match. */
   static TIMEOUT = 3000;
 
+  /**
+   * Get window options which make it ideal to capture.
+   */
+  static getWindowOptions () {
+    const display = screen.getPrimaryDisplay();
+    return {
+      ...display.workArea,
+      frame: false,
+      hasShadow: false,
+      roundedCorners: false
+    };
+  }
+
+  /**
+   * Set window to appear above notifications on macOS.
+   */
+  static setWindowOnTop (window: Electron.BaseWindow) {
+    const level = process.platform === 'darwin' ? 'screen-saver' : undefined;
+    window.setAlwaysOnTop(true, level);
+  }
+
   constructor (display?: Electron.Display) {
     this.display = display || screen.getPrimaryDisplay();
   }

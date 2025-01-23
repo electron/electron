@@ -287,13 +287,10 @@ describe('WebContentsView', () => {
         display = screen.getPrimaryDisplay();
 
         w = new BaseWindow({
-          ...display.workArea,
-          show: true,
-          frame: false,
-          hasShadow: false,
-          backgroundColor: HexColors.BLUE,
-          roundedCorners: false
+          ...ScreenCapture.getWindowOptions(),
+          backgroundColor: HexColors.BLUE
         });
+        ScreenCapture.setWindowOnTop(w);
 
         v = new WebContentsView();
         w.setContentView(v);
@@ -319,7 +316,7 @@ describe('WebContentsView', () => {
       });
 
       it('should render with cutout corners', async () => {
-        const screenCapture = new ScreenCapture(display);
+        const screenCapture = new ScreenCapture();
 
         for (const corner of corners) {
           await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.BLUE, () => corner);
@@ -334,7 +331,7 @@ describe('WebContentsView', () => {
         v.setBorderRadius(0);
 
         await nextFrameTime();
-        const screenCapture = new ScreenCapture(display);
+        const screenCapture = new ScreenCapture();
         await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.GREEN, () => corner);
         await screenCapture.expectColorAtCenterMatches(HexColors.GREEN);
       });
@@ -350,7 +347,7 @@ describe('WebContentsView', () => {
         await readyForCapture;
 
         const corner = corners[0];
-        const screenCapture = new ScreenCapture(display);
+        const screenCapture = new ScreenCapture();
         await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.BLUE, () => corner);
         await screenCapture.expectColorAtCenterMatches(HexColors.GREEN);
       });

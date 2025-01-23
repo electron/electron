@@ -6647,29 +6647,24 @@ describe('BrowserWindow module', () => {
 
     // FIXME(codebytere): figure out why these are failing on MAS arm64.
     ifit(hasCapturableScreen() && !(process.mas && process.arch === 'arm64'))('should not display a visible background', async () => {
-      const display = screen.getPrimaryDisplay();
-
       const backgroundWindow = new BrowserWindow({
-        ...display.bounds,
-        frame: false,
-        backgroundColor: HexColors.GREEN,
-        hasShadow: false
+        ...ScreenCapture.getWindowOptions(),
+        backgroundColor: HexColors.GREEN
       });
+      ScreenCapture.setWindowOnTop(backgroundWindow);
 
       await backgroundWindow.loadURL('about:blank');
 
       const foregroundWindow = new BrowserWindow({
-        ...display.bounds,
-        show: true,
-        transparent: true,
-        frame: false,
-        hasShadow: false
+        ...ScreenCapture.getWindowOptions(),
+        transparent: true
       });
+      ScreenCapture.setWindowOnTop(foregroundWindow);
 
       const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
       await foregroundWindow.loadFile(colorFile);
 
-      const screenCapture = new ScreenCapture(display);
+      const screenCapture = new ScreenCapture();
       await screenCapture.expectColorAtPointOnDisplayMatches(
         HexColors.GREEN,
         (size) => ({
@@ -6688,48 +6683,43 @@ describe('BrowserWindow module', () => {
 
     // FIXME(codebytere): figure out why these are failing on MAS arm64.
     ifit(hasCapturableScreen() && !(process.mas && process.arch === 'arm64'))('Allows setting a transparent window via CSS', async () => {
-      const display = screen.getPrimaryDisplay();
-
       const backgroundWindow = new BrowserWindow({
-        ...display.bounds,
-        frame: false,
-        backgroundColor: HexColors.PURPLE,
-        hasShadow: false
+        ...ScreenCapture.getWindowOptions(),
+        backgroundColor: HexColors.PURPLE
       });
+      ScreenCapture.setWindowOnTop(backgroundWindow);
 
       await backgroundWindow.loadURL('about:blank');
 
       const foregroundWindow = new BrowserWindow({
-        ...display.bounds,
-        frame: false,
+        ...ScreenCapture.getWindowOptions(),
         transparent: true,
-        hasShadow: false,
         webPreferences: {
           contextIsolation: false,
           nodeIntegration: true
         }
       });
+      ScreenCapture.setWindowOnTop(foregroundWindow);
 
       foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
       await once(ipcMain, 'set-transparent');
 
-      const screenCapture = new ScreenCapture(display);
+      const screenCapture = new ScreenCapture();
       await screenCapture.expectColorAtCenterMatches(HexColors.PURPLE);
     });
 
     ifit(hasCapturableScreen())('should not make background transparent if falsy', async () => {
-      const display = screen.getPrimaryDisplay();
-
       for (const transparent of [false, undefined]) {
         const window = new BrowserWindow({
-          ...display.bounds,
+          ...ScreenCapture.getWindowOptions(),
           transparent
         });
+        ScreenCapture.setWindowOnTop(window);
 
         await once(window, 'show');
         await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
 
-        const screenCapture = new ScreenCapture(display);
+        const screenCapture = new ScreenCapture();
         // color-scheme is set to dark so background should not be white
         await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
 
@@ -6742,18 +6732,16 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     ifit(hasCapturableScreen())('should display the set color', async () => {
-      const display = screen.getPrimaryDisplay();
-
       const w = new BrowserWindow({
-        ...display.bounds,
-        show: true,
+        ...ScreenCapture.getWindowOptions(),
         backgroundColor: HexColors.BLUE
       });
+      ScreenCapture.setWindowOnTop(w);
 
       w.loadURL('about:blank');
       await once(w, 'ready-to-show');
 
-      const screenCapture = new ScreenCapture(display);
+      const screenCapture = new ScreenCapture();
       await screenCapture.expectColorAtCenterMatches(HexColors.BLUE);
     });
   });
