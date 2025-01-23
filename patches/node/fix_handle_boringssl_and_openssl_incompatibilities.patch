@@ -600,10 +600,10 @@ index fc7f898a6b9b6072c15d77710c20ed1ba580966b..f39dcad0a28ae483e6d0e5df38166931
  #endif
  
 diff --git a/unofficial.gni b/unofficial.gni
-index f6793b8bf22d6ac911a1977edaa881b6dbbe7ac7..ddfbb97276b29df114ab455a2eed3b186b3af5d2 100644
+index 3632d5bd21e277fcbd8d62dc65598a7f7c87f00e..08a4ed939fb1482a897def94128282fdfd63dc62 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -150,7 +150,6 @@ template("node_gn_build") {
+@@ -151,7 +151,6 @@ template("node_gn_build") {
      ]
      deps = [
        ":run_node_js2c",
@@ -617,19 +617,6 @@ index f6793b8bf22d6ac911a1977edaa881b6dbbe7ac7..ddfbb97276b29df114ab455a2eed3b18
        "//third_party/zlib",
 +      "//third_party/brotli:dec",
 +      "//third_party/brotli:enc",
+       "$node_simdutf_path",
        "$node_v8_path:v8_libplatform",
      ]
- 
-@@ -187,10 +188,8 @@ template("node_gn_build") {
-       deps += [ "//third_party/icu" ]
-     }
-     if (node_use_openssl) {
--      deps += [
--        "deps/ncrypto",
--        "//third_party/boringssl"
--      ]
-+      deps += [ "deps/ncrypto" ]
-+      public_deps += [ "$node_crypto_path" ]
-       sources += gypi_values.node_crypto_sources
-     }
-     if (node_enable_inspector) {
