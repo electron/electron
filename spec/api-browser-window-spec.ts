@@ -1,4 +1,4 @@
-import { NativeImage, nativeImage } from 'electron';
+import { nativeImage } from 'electron';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
 
 import { expect } from 'chai';
@@ -16,7 +16,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as nodeUrl from 'node:url';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
-import { previewNativeImage } from './lib/image-helpers';
+import { debugPreviewImage } from './lib/image-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture, getPixelColor } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
@@ -6440,9 +6440,6 @@ describe('BrowserWindow module', () => {
   });
 
   describe('offscreen rendering', () => {
-    // Toggle to display windows previewing OSR NativeImage results
-    const DEBUG_OFFSCREEN = false;
-
     let w: BrowserWindow;
     beforeEach(function () {
       w = new BrowserWindow({
@@ -6457,19 +6454,13 @@ describe('BrowserWindow module', () => {
     });
     afterEach(closeAllWindows);
 
-    const preview = async (image: NativeImage) => {
-      if (DEBUG_OFFSCREEN) {
-        await previewNativeImage(image);
-      }
-    };
-
     it('creates offscreen window with correct size', async () => {
       const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
       const [, , data] = await paint;
       expect(data.constructor.name).to.equal('NativeImage');
       expect(data.isEmpty()).to.be.false('data is empty');
-      await preview(data);
+      await debugPreviewImage(data);
       const size = data.getSize();
       const { scaleFactor } = screen.getPrimaryDisplay();
       expect(size.width).to.be.closeTo(100 * scaleFactor, 2);
@@ -6481,7 +6472,7 @@ describe('BrowserWindow module', () => {
       const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
       const [, , data] = await paint;
-      await preview(data);
+      await debugPreviewImage(data);
       expect(getPixelColor(data, { x: 0, y: 0 }, true)).to.equal('#ff0000ff');
     });
 
@@ -6490,7 +6481,7 @@ describe('BrowserWindow module', () => {
       const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
       const [, , data] = await paint;
-      await preview(data);
+      await debugPreviewImage(data);
       expect(getPixelColor(data, { x: 0, y: 0 }, true)).to.equal(HexColors.TRANSPARENT);
     });
 
@@ -6501,7 +6492,7 @@ describe('BrowserWindow module', () => {
       const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
       const [, , data] = await paint;
-      await preview(data);
+      await debugPreviewImage(data);
       expect(getPixelColor(data, { x: 0, y: 0 }, true)).to.equal(bgColor);
     });
 
