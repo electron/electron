@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/common/index.js b/test/common/index.js
-index b95e812c5a9fab59f742e1557e9f218155638af4..6d2566c43f16493cbb2a0f9469ed386c41686782 100644
+index d1eaf6e69f603b0a7037e44be6ef185283972090..e3f26d32dbad2e4ccb47dea028dbf1a855525cfb 100644
 --- a/test/common/index.js
 +++ b/test/common/index.js
 @@ -65,6 +65,8 @@ const opensslVersionNumber = (major = 0, minor = 0, patch = 0) => {
@@ -123,7 +123,7 @@ index 81a469c226c261564dee1e0b06b6571b18a41f1f..58b66045dba4201b7ebedd78b129420f
  
  const availableCurves = new Set(crypto.getCurves());
 diff --git a/test/parallel/test-crypto-dh-errors.js b/test/parallel/test-crypto-dh-errors.js
-index fcf1922bcdba733af6c22f142db4f7b099947757..9f72ae4e41a113e752f40795103c2af514538780 100644
+index 476ca64b4425b5b8b0fa2dc8352ee6f03d563813..2250a8f24a875d6af198426891870b450078ee5f 100644
 --- a/test/parallel/test-crypto-dh-errors.js
 +++ b/test/parallel/test-crypto-dh-errors.js
 @@ -32,9 +32,9 @@ for (const bits of [-1, 0, 1]) {
@@ -585,7 +585,7 @@ index 543ee176fb6af38874fee9f14be76f3fdda11060..fef9f1bc2f9fc6c220cf47847e86e038
  }
  
 diff --git a/test/parallel/test-https-agent-session-eviction.js b/test/parallel/test-https-agent-session-eviction.js
-index da5600710560b22049eba1ef18bbb742d447a673..8917b96f666de916616af2fb3ce3a58d00af7438 100644
+index e0986e53c1103b63cf15002a7fa4ce8bc4844d90..33c8a2aa72c56dd4a98558aab2102f03fae2b3cf 100644
 --- a/test/parallel/test-https-agent-session-eviction.js
 +++ b/test/parallel/test-https-agent-session-eviction.js
 @@ -14,7 +14,7 @@ const options = {
@@ -598,7 +598,7 @@ index da5600710560b22049eba1ef18bbb742d447a673..8917b96f666de916616af2fb3ce3a58d
  
  // Create TLS1.2 server
 diff --git a/test/parallel/test-tls-getprotocol.js b/test/parallel/test-tls-getprotocol.js
-index 571f400cea574662bda6be8eecd22ceccaf75420..2296362dc625ee663df11927297ccf124233a19b 100644
+index a9c8775e2f112f2b5e1f4e80f22264f219bf6a9d..4550d28125379e6043962826b8e97b692d63804b 100644
 --- a/test/parallel/test-tls-getprotocol.js
 +++ b/test/parallel/test-tls-getprotocol.js
 @@ -27,7 +27,7 @@ const clientConfigs = [
