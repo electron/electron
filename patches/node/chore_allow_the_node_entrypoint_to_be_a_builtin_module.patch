@@ -8,30 +8,30 @@ they use themselves as the entry point. We should try to upstream some form
 of this.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index ad8d41a06bde1ca22d0245fa49143e080365b5e1..69d7743767d025453e43d99b32235700d8122c9a 100644
+index ccd038dc136480cdd84a13e58f4012b71cd40928..5be90bc3df67751b55e67a05ac1c5b9a12d9c585 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1518,6 +1518,13 @@ Module.prototype._compile = function(content, filename, format) {
-   if (getOptionValue('--inspect-brk') && process._eval == null) {
-     if (!resolvedArgv) {
-       // We enter the repl if we're not given a filename argument.
-+      // process._firstFileName is used by Embedders to tell node what
-+      // the first "real" file is when they use themselves as the entry
-+      // point
-+      if (process._firstFileName) {
-+        resolvedArgv = process._firstFileName
-+        delete process._firstFileName
-+      } else
-       if (process.argv[1]) {
-         try {
-           resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
+@@ -1563,6 +1563,13 @@ Module.prototype._compile = function(content, filename, format) {
+   this[kIsExecuting] = true;
+   if (this[kIsMainSymbol] && getOptionValue('--inspect-brk')) {
+     const { callAndPauseOnStart } = internalBinding('inspector');
++    // process._firstFileName is used by Embedders to tell node what
++    // the first "real" file is when they use themselves as the entry
++    // point
++    if (process._firstFileName) {
++      resolvedArgv = process._firstFileName;
++      delete process._firstFileName;
++    }
+     result = callAndPauseOnStart(compiledWrapper, thisValue, exports,
+                                  require, module, filename, dirname,
+                                  process, localGlobal, localBuffer);
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 848ff7f142fc700dd3b4b7a6b14d3c537e0fd280..be3018296dd3c63a930328fa9cb1d902cc779b89 100644
+index 5d67892bb8e1fd265df414b3f41e62cdabbec873..10091f9b02e6ab0485325dddbae241254411e765 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -245,12 +245,14 @@ function patchProcessObject(expandArgv1) {
-   if (expandArgv1 && process.argv[1] &&
-       !StringPrototypeStartsWith(process.argv[1], '-')) {
+@@ -243,13 +243,14 @@ function patchProcessObject(expandArgv1) {
+   // the entry point.
+   if (expandArgv1 && process.argv[1] && process.argv[1][0] !== '-') {
      // Expand process.argv[1] into a full path.
 -    const path = require('path');
 -    try {
@@ -39,6 +39,7 @@ index 848ff7f142fc700dd3b4b7a6b14d3c537e0fd280..be3018296dd3c63a930328fa9cb1d902
 -      process.argv[1] = mainEntry;
 -    } catch {
 -      // Continue regardless of error.
+-    }
 +    if (!process.argv[1] || !process.argv[1].startsWith('electron/js2c')) {
 +      const path = require('path');
 +      try {
@@ -47,6 +48,7 @@ index 848ff7f142fc700dd3b4b7a6b14d3c537e0fd280..be3018296dd3c63a930328fa9cb1d902
 +      } catch {
 +        // Continue regardless of error.
 +      }
-     }
    }
+ 
+   // We need to initialize the global console here again with process.stdout
  
