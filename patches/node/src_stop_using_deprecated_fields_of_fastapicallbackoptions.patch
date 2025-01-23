@@ -40,10 +40,10 @@ index c62a5b8952400ff0dd8818c31a3e07622b63725c..36f61f57e951e1abfeb2fedb831b55c6
    }
    HistogramBase* histogram;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 6b98a13099990918dc619c47124c8538bbee5e2d..307492bf3dfce7b4a476c448bec666b8116dc431 100644
+index 4bdbfa1be2c22f6a823acc380efe15c8d72f66ce..83f482612fae2d7ebf9bfd6817d334c239f8a218 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -1060,22 +1060,10 @@ static int32_t FastInternalModuleStat(
+@@ -1060,13 +1060,8 @@ static int32_t FastInternalModuleStat(
      // NOLINTNEXTLINE(runtime/references) This is V8 api.
      FastApiCallbackOptions& options) {
    // This needs a HandleScope which needs an isolate.
@@ -54,20 +54,11 @@ index 6b98a13099990918dc619c47124c8538bbee5e2d..307492bf3dfce7b4a476c448bec666b8
 -  }
 -
 -  HandleScope scope(isolate);
--  Environment* env = Environment::GetCurrent(recv->GetCreationContextChecked());
 +  Environment* env = Environment::GetCurrent(options.isolate);
 +  HandleScope scope(env->isolate());
  
    auto path = std::filesystem::path(input.data, input.data + input.length);
--  if (!env->permission()->is_granted(
--          env, permission::PermissionScope::kFileSystemRead, path.string()))
--      [[unlikely]] {
--    options.fallback = true;
--    return -1;
--  }
  
-   switch (std::filesystem::status(path).type()) {
-     case std::filesystem::file_type::directory:
 diff --git a/src/node_wasi.cc b/src/node_wasi.cc
 index 468c2e59903fefe58d9c178d3afac3ef5b09f611..23a376e52e08a8af49dd47c47488552e01287426 100644
 --- a/src/node_wasi.cc
