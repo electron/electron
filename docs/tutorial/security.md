@@ -114,9 +114,9 @@ You should at least follow these steps to improve the security of your applicati
 15. [Do not use `shell.openExternal` with untrusted content](#15-do-not-use-shellopenexternal-with-untrusted-content)
 16. [Use a current version of Electron](#16-use-a-current-version-of-electron)
 17. [Validate the `sender` of all IPC messages](#17-validate-the-sender-of-all-ipc-messages)
-18. [Do not expose Electron APIs to untrusted web content](#18-do-not-expose-electrons-apis-to-untrusted-web-content)
-19. [Avoid usage of the `file://` protocol and prefer usage of custom protocols](#19-avoid-usage-of-the-file-protocol-and-prefer-usage-of-custom-protocols)
-20. [Check which fuses you can change](#20-check-which-fuses-you-can-change)
+18. [Avoid usage of the `file://` protocol and prefer usage of custom protocols](#18-avoid-usage-of-the-file-protocol-and-prefer-usage-of-custom-protocols)
+19. [Check which fuses you can change](#19-check-which-fuses-you-can-change)
+20. [Do not expose Electron APIs to untrusted web content](#20-do-not-expose-electron-apis-to-untrusted-web-content)
 
 To automate the detection of misconfigurations and insecure patterns, it is
 possible to use
@@ -762,7 +762,50 @@ function validateSender (frame) {
 }
 ```
 
-### 18. Do not expose Electron's APIs to untrusted web content
+### 18. Avoid usage of the `file://` protocol and prefer usage of custom protocols
+
+You should serve local pages from a custom protocol instead of the `file://` protocol.
+
+#### Why?
+
+The `file://` protocol gets more privileges in Electron than in a web browser and even in
+browsers it is treated differently to http/https URLs. Using a custom protocol allows you
+to be more aligned with classic web url behavior while retaining even more control about
+what can be loaded and when.
+
+Pages running on `file://` have unilateral access to every file on your machine meaning
+that XSS issues can be used to load arbitrary files from the users machine. Using a custom
+protocol prevents issues like this as you can limit the protocol to only serving a specific
+set of files.
+
+#### How?
+
+Follow the [`protocol.handle`](../api/protocol.md#protocolhandlescheme-handler) examples to
+learn how to serve files / content from a custom protocol.
+
+### 19. Check which fuses you can change
+
+Electron ships with a number of options that can be useful but a large portion of
+applications probably don't need. In order to avoid having to build your own version of
+Electron, these can be turned off or on using [Fuses](./fuses.md).
+
+#### Why?
+
+Some fuses, like `runAsNode` and `nodeCliInspect`, allow the application to behave differently
+when run from the command line using specific environment variables or CLI arguments. These
+can be used to execute commands on the device through your application.
+
+This can let external scripts run commands that they potentially would not be allowed to, but
+that your application might have the rights for.
+
+#### How?
+
+We've made a module, [`@electron/fuses`](https://npmjs.com/package/@electron/fuses), to make
+flipping these fuses easy. Check out the README of that module for more details on usage and
+potential error cases, and refer to
+[How do I flip the fuses?](./fuses.md#how-do-i-flip-the-fuses) in our documentation.
+
+### 20. Do not expose Electron APIs to untrusted web content
 
 You should not directly expose Electron's APIs, especially IPC, to untrusted web content in your
 preload scripts.
@@ -771,7 +814,9 @@ preload scripts.
 
 Exposing raw APIs like `ipcRenderer.on` is dangerous because it gives renderer processes direct
 access to the entire IPC event system, allowing them to listen for any IPC events, not just the ones
-intended for them. To avoid that exposure, we also cannot pass callbacks directly through: The first
+intended for them.
+
+To avoid that exposure, we also cannot pass callbacks directly through: The first
 argument to IPC event callbacks is an `IpcRendererEvent` object, which includes properties like `sender`
 that provide access to the underlying `ipcRenderer` instance. Even if you only listen for specific
 events, passing the callback directly means the renderer gets access to this event object.
@@ -801,49 +846,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 For more information on what `contextIsolation` is and how to use it to secure your app,
 please see the [Context Isolation](context-isolation.md) document.
 :::
-
-### 19. Avoid usage of the `file://` protocol and prefer usage of custom protocols
-
-You should serve local pages from a custom protocol instead of the `file://` protocol.
-
-#### Why?
-
-The `file://` protocol gets more privileges in Electron than in a web browser and even in
-browsers it is treated differently to http/https URLs. Using a custom protocol allows you
-to be more aligned with classic web url behavior while retaining even more control about
-what can be loaded and when.
-
-Pages running on `file://` have unilateral access to every file on your machine meaning
-that XSS issues can be used to load arbitrary files from the users machine. Using a custom
-protocol prevents issues like this as you can limit the protocol to only serving a specific
-set of files.
-
-#### How?
-
-Follow the [`protocol.handle`](../api/protocol.md#protocolhandlescheme-handler) examples to
-learn how to serve files / content from a custom protocol.
-
-### 20. Check which fuses you can change
-
-Electron ships with a number of options that can be useful but a large portion of
-applications probably don't need. In order to avoid having to build your own version of
-Electron, these can be turned off or on using [Fuses](./fuses.md).
-
-#### Why?
-
-Some fuses, like `runAsNode` and `nodeCliInspect`, allow the application to behave differently
-when run from the command line using specific environment variables or CLI arguments. These
-can be used to execute commands on the device through your application.
-
-This can let external scripts run commands that they potentially would not be allowed to, but
-that your application might have the rights for.
-
-#### How?
-
-We've made a module, [`@electron/fuses`](https://npmjs.com/package/@electron/fuses), to make
-flipping these fuses easy. Check out the README of that module for more details on usage and
-potential error cases, and refer to
-[How do I flip the fuses?](./fuses.md#how-do-i-flip-the-fuses) in our documentation.
 
 [breaking-changes]: ../breaking-changes.md
 [browser-window]: ../api/browser-window.md
