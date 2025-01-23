@@ -2,7 +2,7 @@ import { parseArgs } from 'node:util';
 
 import { runReleaseCIJobs } from '../run-release-ci-jobs';
 
-const { values: { ghRelease, job, arch, ci, commit, newVersion }, positionals } = parseArgs({
+const { values: { ghRelease, job, arch, ci, newVersion }, positionals } = parseArgs({
   options: {
     ghRelease: {
       type: 'boolean'
@@ -14,9 +14,6 @@ const { values: { ghRelease, job, arch, ci, commit, newVersion }, positionals } 
       type: 'string'
     },
     ci: {
-      type: 'string'
-    },
-    commit: {
       type: 'string'
     },
     newVersion: {
@@ -44,10 +41,9 @@ if (ci === 'GitHubActions' || !ci) {
 }
 
 runReleaseCIJobs(targetBranch, {
-  ci: ci as 'GitHubActions' | 'AppVeyor',
+  ci: ci as 'GitHubActions',
   ghRelease,
   job: job as any,
   arch,
-  newVersion: newVersion!,
-  commit
+  newVersion: newVersion!
 });
