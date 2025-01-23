@@ -649,7 +649,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
                                            static_cast<void*>(isolate_data));
 
-  node::Environment* env;
   uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                        node::EnvironmentFlags::kHideConsoleWindows |
                        node::EnvironmentFlags::kNoGlobalSearchPaths |
@@ -675,24 +674,10 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     env_flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
   }
 
-  {
-    v8::TryCatch try_catch(isolate);
-    env = node::CreateEnvironment(
-        static_cast<node::IsolateData*>(isolate_data), context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(env_flags));
-
-    if (try_catch.HasCaught()) {
-      std::string err_msg =
-          "Failed to initialize node environment in process: " + process_type;
-      v8::Local<v8::Message> message = try_catch.Message();
-      std::string msg;
-      if (!message.IsEmpty() &&
-          gin::ConvertFromV8(isolate, message->Get(), &msg))
-        err_msg += " , with error: " + msg;
-      LOG(ERROR) << err_msg;
-    }
-  }
-
+  node::Environment* env = electron::util::CreateEnvironment(
+      isolate, static_cast<node::IsolateData*>(isolate_data), context, args,
+      exec_args, static_cast<node::EnvironmentFlags::Flags>(env_flags),
+      process_type);
   DCHECK(env);
 
   node::IsolateSettings is;
