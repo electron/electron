@@ -26,10 +26,10 @@ index ccd038dc136480cdd84a13e58f4012b71cd40928..5be90bc3df67751b55e67a05ac1c5b9a
                                   require, module, filename, dirname,
                                   process, localGlobal, localBuffer);
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 5d67892bb8e1fd265df414b3f41e62cdabbec873..10091f9b02e6ab0485325dddbae241254411e765 100644
+index 5d67892bb8e1fd265df414b3f41e62cdabbec873..89660076c41e1c05b26c17609a62a028c1e2ec5a 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -243,13 +243,14 @@ function patchProcessObject(expandArgv1) {
+@@ -243,12 +243,14 @@ function patchProcessObject(expandArgv1) {
    // the entry point.
    if (expandArgv1 && process.argv[1] && process.argv[1][0] !== '-') {
      // Expand process.argv[1] into a full path.
@@ -39,7 +39,6 @@ index 5d67892bb8e1fd265df414b3f41e62cdabbec873..10091f9b02e6ab0485325dddbae24125
 -      process.argv[1] = mainEntry;
 -    } catch {
 -      // Continue regardless of error.
--    }
 +    if (!process.argv[1] || !process.argv[1].startsWith('electron/js2c')) {
 +      const path = require('path');
 +      try {
@@ -48,6 +47,6 @@ index 5d67892bb8e1fd265df414b3f41e62cdabbec873..10091f9b02e6ab0485325dddbae24125
 +      } catch {
 +        // Continue regardless of error.
 +      }
+     }
    }
  
-   // We need to initialize the global console here again with process.stdout
