@@ -138,24 +138,6 @@ index fcf1922bcdba733af6c22f142db4f7b099947757..9f72ae4e41a113e752f40795103c2af5
      });
    }
  }
-@@ -43,7 +43,7 @@ for (const g of [-1, 1]) {
-   const ex = {
-     code: 'ERR_OSSL_DH_BAD_GENERATOR',
-     name: 'Error',
--    message: /bad generator/,
-+    message: /bad generator|BAD_GENERATOR/,
-   };
-   assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
-   assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
-@@ -55,7 +55,7 @@ for (const g of [Buffer.from([]),
-   const ex = {
-     code: 'ERR_OSSL_DH_BAD_GENERATOR',
-     name: 'Error',
--    message: /bad generator/,
-+    message: /bad generator|BAD_GENERATOR/,
-   };
-   assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
-   assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
 index 9ebe14011eed223994e0901bc22dcc582b4b0739..e78f90eb76380916ce7098fb517c83a954edb053 100644
 --- a/test/parallel/test-crypto-dh.js
@@ -319,19 +301,6 @@ index f1f14b472997e76bb4100edb1c6cf4fc24d1074d..5057e3f9bc5bb78aceffa5e79530f8ce
  });
  
  // No-pad encrypted string should return the same:
-diff --git a/test/parallel/test-crypto-private-decrypt-gh32240.js b/test/parallel/test-crypto-private-decrypt-gh32240.js
-index 1785f5eef3d202976666081d09850ed744d83446..e88227a215ba4f7fa196f7642ae694a57d55b3ca 100644
---- a/test/parallel/test-crypto-private-decrypt-gh32240.js
-+++ b/test/parallel/test-crypto-private-decrypt-gh32240.js
-@@ -24,7 +24,7 @@ const pkeyEncrypted =
-   pair.privateKey.export({
-     type: 'pkcs1',
-     format: 'pem',
--    cipher: 'aes128',
-+    cipher: 'aes-128-cbc',
-     passphrase: 'secret',
-   });
- 
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
 index 5f4fafdfffbf726b7cb39c472baa3df25c9794cf..d52376da2cddd90adcdf8a9b7dcd03e348d9f2b4 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
@@ -471,7 +440,7 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index 15e1f53bb05faf60fa808eb5901591d1512edf3c..329f0d00c869cd19580acea18c904cf9900fb816 100644
+index bd906c25b9ee194ff34fe5fb8ecb68d7a672138c..5b631a32d07bd916ff7cd847e52b26f694bd00c6 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
 @@ -96,8 +96,10 @@ const der = Buffer.from(
@@ -485,83 +454,15 @@ index 15e1f53bb05faf60fa808eb5901591d1512edf3c..329f0d00c869cd19580acea18c904cf9
    assert.strictEqual(
      x509.fingerprint,
      '8B:89:16:C4:99:87:D2:13:1A:64:94:36:38:A5:32:01:F0:95:3B:53');
-@@ -113,7 +115,7 @@ const der = Buffer.from(
-     '5A:42:63:E0:21:2F:D6:70:63:07:96:6F:27:A7:78:12:08:02:7A:8B'
-   );
-   assert.strictEqual(x509.keyUsage, undefined);
--  assert.strictEqual(x509.serialNumber, '147D36C1C2F74206DE9FAB5F2226D78ADB00A426');
-+  assert.match(x509.serialNumber, /147D36C1C2F74206DE9FAB5F2226D78ADB00A426/i);
- 
-   assert.deepStrictEqual(x509.raw, der);
- 
-@@ -255,6 +257,16 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
-   });
-   mc.port2.postMessage(x509);
- 
-+  const modulusOSSL = 'D456320AFB20D3827093DC2C4284ED04DFBABD56E1DDAE529E28B790CD42' +
-+                      '56DB273349F3735FFD337C7A6363ECCA5A27B7F73DC7089A96C6D886DB0C' +
-+                      '62388F1CDD6A963AFCD599D5800E587A11F908960F84ED50BA25A28303EC' +
-+                      'DA6E684FBE7BAEDC9CE8801327B1697AF25097CEE3F175E400984C0DB6A8' +
-+                      'EB87BE03B4CF94774BA56FFFC8C63C68D6ADEB60ABBE69A7B14AB6A6B9E7' +
-+                      'BAA89B5ADAB8EB07897C07F6D4FA3D660DFF574107D28E8F63467A788624' +
-+                      'C574197693E959CEA1362FFAE1BBA10C8C0D88840ABFEF103631B2E8F5C3' +
-+                      '9B5548A7EA57E8A39F89291813F45A76C448033A2B7ED8403F4BAA147CF3' +
-+                      '5E2D2554AA65CE49695797095BF4DC6B';
-+
-   // Verify that legacy encoding works
-   const legacyObjectCheck = {
-     subject: Object.assign({ __proto__: null }, {
-@@ -279,15 +291,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
-       'OCSP - URI': ['http://ocsp.nodejs.org/'],
-       'CA Issuers - URI': ['http://ca.nodejs.org/ca.cert']
-     }),
--    modulus: 'D456320AFB20D3827093DC2C4284ED04DFBABD56E1DDAE529E28B790CD42' +
--              '56DB273349F3735FFD337C7A6363ECCA5A27B7F73DC7089A96C6D886DB0C' +
--              '62388F1CDD6A963AFCD599D5800E587A11F908960F84ED50BA25A28303EC' +
--              'DA6E684FBE7BAEDC9CE8801327B1697AF25097CEE3F175E400984C0DB6A8' +
--              'EB87BE03B4CF94774BA56FFFC8C63C68D6ADEB60ABBE69A7B14AB6A6B9E7' +
--              'BAA89B5ADAB8EB07897C07F6D4FA3D660DFF574107D28E8F63467A788624' +
--              'C574197693E959CEA1362FFAE1BBA10C8C0D88840ABFEF103631B2E8F5C3' +
--              '9B5548A7EA57E8A39F89291813F45A76C448033A2B7ED8403F4BAA147CF3' +
--              '5E2D2554AA65CE49695797095BF4DC6B',
-+    modulusPattern: new RegExp(modulusOSSL, 'i'),
-     bits: 2048,
-     exponent: '0x10001',
-     valid_from: 'Sep  3 21:40:37 2022 GMT',
-@@ -300,7 +304,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
-       '51:62:18:39:E2:E2:77:F5:86:11:E8:C0:CA:54:43:7C:76:83:19:05:D0:03:' +
-       '24:21:B8:EB:14:61:FB:24:16:EB:BD:51:1A:17:91:04:30:03:EB:68:5F:DC:' +
-       '86:E1:D1:7C:FB:AF:78:ED:63:5F:29:9C:32:AF:A1:8E:22:96:D1:02',
--    serialNumber: '147D36C1C2F74206DE9FAB5F2226D78ADB00A426'
-+    serialNumberPattern: /147D36C1C2F74206DE9FAB5F2226D78ADB00A426/i
-   };
- 
-   const legacyObject = x509.toLegacyObject();
-@@ -309,7 +313,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
-   assert.deepStrictEqual(legacyObject.subject, legacyObjectCheck.subject);
-   assert.deepStrictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
-   assert.deepStrictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
--  assert.strictEqual(legacyObject.modulus, legacyObjectCheck.modulus);
-+  assert.match(legacyObject.modulus, legacyObjectCheck.modulusPattern);
-   assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
-   assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
-   assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -318,11 +322,12 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
-   assert.strictEqual(
-     legacyObject.fingerprint256,
-     legacyObjectCheck.fingerprint256);
--  assert.strictEqual(
-+  assert.match(
-     legacyObject.serialNumber,
--    legacyObjectCheck.serialNumber);
-+    legacyObjectCheck.serialNumberPattern);
+@@ -325,6 +327,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+     legacyObjectCheck.serialNumberPattern);
  }
  
 +if (!common.openSSLIsBoringSSL) {
  {
    // This X.509 Certificate can be parsed by OpenSSL because it contains a
    // structurally sound TBSCertificate structure. However, the SPKI field of the
-@@ -361,6 +366,7 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
+@@ -363,6 +366,7 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
  
    assert.strictEqual(cert.checkIssued(cert), false);
  }
@@ -569,7 +470,7 @@ index 15e1f53bb05faf60fa808eb5901591d1512edf3c..329f0d00c869cd19580acea18c904cf9
  
  {
    // Test date parsing of `validFromDate` and `validToDate` fields, according to RFC 5280.
-@@ -398,8 +404,10 @@ UidvpWWipVLZgK+oDks+bKTobcoXGW9oXobiIYqslXPy
+@@ -400,8 +404,10 @@ UidvpWWipVLZgK+oDks+bKTobcoXGW9oXobiIYqslXPy
  -----END CERTIFICATE-----`.trim();
    const c1 = new X509Certificate(certPemUTCTime);
  
@@ -580,7 +481,7 @@ index 15e1f53bb05faf60fa808eb5901591d1512edf3c..329f0d00c869cd19580acea18c904cf9
  
    // The GeneralizedTime format is used for dates in 2050 or later.
    const certPemGeneralizedTime = `-----BEGIN CERTIFICATE-----
-@@ -433,6 +441,8 @@ CWwQO8JZjJqFtqtuzy2n+gLCvqePgG/gmSqHOPm2ZbLW
+@@ -435,6 +441,8 @@ CWwQO8JZjJqFtqtuzy2n+gLCvqePgG/gmSqHOPm2ZbLW
  -----END CERTIFICATE-----`.trim();
    const c2 = new X509Certificate(certPemGeneralizedTime);
  
@@ -696,33 +597,6 @@ index da5600710560b22049eba1ef18bbb742d447a673..8917b96f666de916616af2fb3ce3a58d
  };
  
  // Create TLS1.2 server
-diff --git a/test/parallel/test-tls-getcertificate-x509.js b/test/parallel/test-tls-getcertificate-x509.js
-index aa685ca9e09cf0d17ff4d5480089e9977dd51f72..ccafa427433922155c1afd5d95ba69d8108825ef 100644
---- a/test/parallel/test-tls-getcertificate-x509.js
-+++ b/test/parallel/test-tls-getcertificate-x509.js
-@@ -20,9 +20,7 @@ const server = tls.createServer(options, function(cleartext) {
- server.once('secureConnection', common.mustCall(function(socket) {
-   const cert = socket.getX509Certificate();
-   assert(cert instanceof X509Certificate);
--  assert.strictEqual(
--    cert.serialNumber,
--    '5B75D77EDC7FB5B7FA9F1424DA4C64FB815DCBDE');
-+  assert.match(cert.serialNumber, /5B75D77EDC7FB5B7FA9F1424DA4C64FB815DCBDE/i)
- }));
- 
- server.listen(0, common.mustCall(function() {
-@@ -33,10 +31,7 @@ server.listen(0, common.mustCall(function() {
-     const peerCert = socket.getPeerX509Certificate();
-     assert(peerCert.issuerCertificate instanceof X509Certificate);
-     assert.strictEqual(peerCert.issuerCertificate.issuerCertificate, undefined);
--    assert.strictEqual(
--      peerCert.issuerCertificate.serialNumber,
--      '147D36C1C2F74206DE9FAB5F2226D78ADB00A425'
--    );
-+    assert.match(peerCert.issuerCertificate.serialNumber, /147D36C1C2F74206DE9FAB5F2226D78ADB00A425/i);
-     server.close();
-   }));
-   socket.end('Hello');
 diff --git a/test/parallel/test-tls-getprotocol.js b/test/parallel/test-tls-getprotocol.js
 index 571f400cea574662bda6be8eecd22ceccaf75420..2296362dc625ee663df11927297ccf124233a19b 100644
 --- a/test/parallel/test-tls-getprotocol.js
