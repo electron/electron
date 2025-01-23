@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C5=82=20Pichli=C5=84ski?=
+ <michal.pichlinski@openfin.co>
+Date: Tue, 29 Oct 2024 21:16:29 +0100
+Subject: fix: Put NSVisualEffectView before ViewsCompositorSuperview
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/6030552
+
+Otherwise when using `vibrancy` in `BrowserWindow` NSVisualEffectView
+will hide content displayed by the compositor.
+
+diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+index 07c3997e6565cf77362ee73959c4d21da4fefe96..3353a7847df90b58eec34ea4d6ff8fb19617f5cc 100644
+--- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
++++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+@@ -223,8 +223,19 @@ NSComparisonResult SubviewSorter(__kindof NSView* lhs,
+                                  void* rank_as_void) {
+   DCHECK_NE(lhs, rhs);
+ 
+-  if ([lhs isKindOfClass:[ViewsCompositorSuperview class]])
++
++  // Put NSVisualEffectView before ViewsCompositorSuperview otherwise when using
++  // `vibrancy` in `BrowserWindow` NSVisualEffectView will hide content
++  // displayed by the compositor.
++  if ([lhs isKindOfClass:[NSVisualEffectView class]]) {
+     return NSOrderedAscending;
++  }
++  if ([lhs isKindOfClass:[ViewsCompositorSuperview class]]) {
++    if ([rhs isKindOfClass:[NSVisualEffectView class]]) {
++      return NSOrderedDescending;
++    }
++    return NSOrderedAscending;
++  }
+ 
+   const RankMap* rank = static_cast<const RankMap*>(rank_as_void);
+   auto left_rank = rank->find(lhs);
