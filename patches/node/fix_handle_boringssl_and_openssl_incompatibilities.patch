@@ -133,31 +133,19 @@ index 20b69dc67b13fd4f0bd44f7adf6a0d928a2c10c4..2320f92c50543fb9b426bce1c6d182bd
      CHECK_FAILED = 512,
    };
    // Check to see if the given public key is suitable for this DH instance.
-diff --git a/deps/ncrypto/unofficial.gni b/deps/ncrypto/unofficial.gni
-index ea024af73e215b3cad5f08796ac405f419530c86..41061b524eea74330b8d2452635a38c48f21386b 100644
---- a/deps/ncrypto/unofficial.gni
-+++ b/deps/ncrypto/unofficial.gni
-@@ -27,6 +27,6 @@ template("ncrypto_gn_build") {
-     forward_variables_from(invoker, "*")
-     public_configs = [ ":ncrypto_config" ]
-     sources = gypi_values.ncrypto_sources
--    deps = [ "../openssl" ]
-+    deps = [ "$node_crypto_path" ]
-   }
- }
 diff --git a/node.gni b/node.gni
-index 852f64fa9cfb50fe6e9ce7aa46be336d3196d5b8..461bff93e151c454cd0a9575daa01d3f7c0ec9c3 100644
+index 245a43920c7baf000ba63192a84a4c3fd219be7d..56a554175b805c1703f13d62041f8c80d6e94dd9 100644
 --- a/node.gni
 +++ b/node.gni
-@@ -10,6 +10,8 @@ declare_args() {
-   # The location of V8, use the one from node's deps by default.
+@@ -11,7 +11,7 @@ declare_args() {
    node_v8_path = "//v8"
  
-+  node_crypto_path = "//third_party/boringssl"
-+
-   # The NODE_MODULE_VERSION defined in node_version.h.
-   node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")
+   # The location of OpenSSL - use the one from node's deps by default.
+-  node_openssl_path = "$node_path/deps/openssl"
++  node_openssl_path = "//third_party/boringssl"
  
+   # The location of simdutf - use the one from node's deps by default.
+   node_simdutf_path = "$node_path/deps/simdutf"
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
 index a81ab8e95f2fc23e1e315fb9c69364934377a0c1..dbe12ba2413ef29ff06a7e8abde50000eaf277e2 100644
 --- a/src/crypto/crypto_cipher.cc
