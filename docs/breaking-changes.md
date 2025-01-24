@@ -92,13 +92,13 @@ return `null` in the case of late access where the webpage has changed.
 
 ```js
 ipcMain.on('unload-event', (event) => {
-  event.senderFrame; // ✅ accessed immediately
-});
+  event.senderFrame // ✅ accessed immediately
+})
 
 ipcMain.on('unload-event', async (event) => {
-  await crossOriginNavigationPromise;
-  event.senderFrame; // ❌ returns `null` due to late access
-});
+  await crossOriginNavigationPromise
+  event.senderFrame // ❌ returns `null` due to late access
+})
 ```
 
 ### Behavior Changed: custom protocol URL handling on Windows
