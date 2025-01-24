@@ -97,7 +97,7 @@ If the service worker does not exist or is not running this method will throw an
 
 * `versionId` number - ID of the service worker version
 
-Returns [`ServiceWorkerMain | undefined`](service-worker-main.md) - Instance of the service worker associated with the given version ID.
+Returns [`ServiceWorkerMain | undefined`](service-worker-main.md) - Instance of the service worker associated with the given version ID. If there's no associated version, or its running status has changed to 'stopped', this will return `undefined`.
 
 #### `serviceWorkers.startWorkerForScope(scope)` _Experimental_
 
