@@ -75,6 +75,7 @@ The `menu` object has the following instance methods:
   * `window` [BaseWindow](base-window.md) (optional) - Default is the focused window.
   * `frame` [WebFrameMain](web-frame-main.md) (optional) - Provide the relevant frame
     if you want certain OS-level features such as Writing Tools on macOS to function correctly. Typically, this should be `params.frame` from the [`context-menu` event](web-contents.md#event-context-menu) on a WebContents.
+    Default is the main frame of `window` if it is a `BrowserWindow`, otherwise `undefined`.
   * `x` number (optional) - Default is the current mouse cursor position.
     Must be declared if `y` is declared.
   * `y` number (optional) - Default is the current mouse cursor position.

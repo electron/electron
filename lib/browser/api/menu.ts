@@ -1,7 +1,7 @@
 import { sortMenuItems } from '@electron/internal/browser/api/menu-utils';
 import { setApplicationMenuWasSet } from '@electron/internal/browser/default-menu';
 
-import { BaseWindow, MenuItem, webContents, Menu as MenuType, MenuItemConstructorOptions } from 'electron/main';
+import { BaseWindow, BrowserWindow, MenuItem, webContents, Menu as MenuType, MenuItemConstructorOptions } from 'electron/main';
 
 const bindings = process._linkedBinding('electron_browser_menu');
 
@@ -70,7 +70,7 @@ Menu.prototype.popup = function (options = {}) {
   if (options == null || typeof options !== 'object') {
     throw new TypeError('Options must be an object');
   }
-  let { window, x, y, positioningItem, sourceType, callback } = options;
+  let { window, x, y, positioningItem, sourceType, callback, frame } = options;
 
   // no callback passed
   if (!callback || typeof callback !== 'function') callback = () => {};
@@ -93,7 +93,12 @@ Menu.prototype.popup = function (options = {}) {
     }
   }
 
-  this.popupAt(window as unknown as BaseWindow, options.frame, x, y, positioningItem, sourceType, callback);
+  // default frame to `window`'s main frame if it is a BrowserWindow
+  if (!frame && window instanceof BrowserWindow) {
+    frame = (window as BrowserWindow).webContents.mainFrame;
+  }
+
+  this.popupAt(window as unknown as BaseWindow, frame, x, y, positioningItem, sourceType, callback);
   return { browserWindow: window, x, y, position: positioningItem };
 };
 
