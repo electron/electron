@@ -13,7 +13,7 @@ on:
         required: false
         default: '1'
         type: string
-      run-macos-publish:
+      run-windows-publish:
         description: 'Run the publish jobs vs just the build jobs'
         type: boolean
         default: false
@@ -48,7 +48,7 @@ jobs:
     needs: checkout-windows
     with:
       environment: production-release
-      build-runs-on: macos-14-xlarge
+      build-runs-on: electron-arc-windows-amd64-16core
       target-platform: win
       target-arch: x64
       is-release: true
@@ -62,7 +62,7 @@ jobs:
     needs: checkout-windows
     with:
       environment: production-release
-      build-runs-on: macos-14-xlarge
+      build-runs-on: electron-arc-windows-amd64-16core
       target-platform: win
       target-arch: arm64
       is-release: true
@@ -76,7 +76,7 @@ jobs:
     needs: checkout-windows
     with:
       environment: production-release
-      build-runs-on: macos-14-xlarge
+      build-runs-on: electron-arc-windows-amd64-16core
       target-platform: win
       target-arch: x86
       is-release: true
