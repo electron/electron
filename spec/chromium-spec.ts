@@ -98,9 +98,7 @@ describe('window.postMessage', () => {
   });
 });
 
-// Tests disabled due to regression in Chromium upgrade
-// https://github.com/electron/electron/issues/45322
-ifdescribe(!(process.platform === 'win32' && process.arch === 'ia32'))('focus handling', () => {
+describe('focus handling', () => {
   let webviewContents: WebContents;
   let w: BrowserWindow;
 
