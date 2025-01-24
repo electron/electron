@@ -11,8 +11,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/task/sequenced_task_runner.h"
-#include "content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h"
-#include "content/browser/renderer_host/render_widget_host_view_mac.h"
+#include "content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h"  // nogncheck
+#include "content/browser/renderer_host/render_widget_host_view_mac.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
@@ -168,8 +168,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 
   if (frame) {
     auto* rwhvm = static_cast<content::RenderWidgetHostViewMac*>(
-        frame.value()
-            ->render_frame_host()
+        frame->render_frame_host()
             ->GetOutermostMainFrameOrEmbedder()
             ->GetView());
     RenderWidgetHostViewCocoa* cocoa_view = rwhvm->GetInProcessNSView();
