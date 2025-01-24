@@ -80,10 +80,10 @@ index 4fd8dff1089cd6afa6a66dc185734d7671657281..0a1f4268ea771a3d5d4a2668928c6e5d
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index e0582db3e8e88bbafeeb9f1aa9bd0bbbeb265a17..a485afdd0283983b6e9de67ebdcbc0ec321b1146 100644
+index d12aaf1f53b7a5e3965c61b678c8c867184f5688..01b03d94dcd96b9aee958ff5887dd81b162d2fb4 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2212,12 +2212,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2204,12 +2204,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,7 +99,7 @@ index e0582db3e8e88bbafeeb9f1aa9bd0bbbeb265a17..a485afdd0283983b6e9de67ebdcbc0ec
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 0ee8fee2166f023f1fedc5ea9733ed2d37acd8d1..0743620d722d48caba2a1f4ac91d353169049239 100644
+index f743c9520c2decf43d35bbfa26555d82506e8b41..8e211764db88b45ec23acd55e853cd0900b8175d 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -976,8 +976,7 @@ class Browser : public TabStripModelObserver,
@@ -155,10 +155,10 @@ index f2c33e0a67040bf445797c3d09296ee07c1480c0..e9f6c6fb9e562516c876b132ab142a07
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index be627a347fb9888c978c0e7d11498491e880e301..97293f41a905d9bcc97e0e57b12524d5ba7263ca 100644
+index 3f2a017628e0146d355f95843f0bed5c93516a65..a1c64735e1b344ebcc3bd98bcef15ef9f67942a7 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-@@ -185,14 +185,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
+@@ -188,14 +188,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -176,7 +176,7 @@ index be627a347fb9888c978c0e7d11498491e880e301..97293f41a905d9bcc97e0e57b12524d5
                                                                    java_gurl);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index d97d10767fe420f598998e04f4d6429bf9a5f2f8..ee52cd7a3d4738c273c96528adde5bb9de880bdb 100644
+index 9484a324478d3fe746a51e645368eb3b602ce91d..0676e60fe7773cfcb22e62abff67a66ef6153128 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
 @@ -82,8 +82,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 7bbe1f1d7052f45c1e17fe9d4e8fe3164d3b0ba5..90d93722ef9fbb1ab4072f722db17af96faea062 100644
+index 5a80e3c1970c37495dd8a1e36fb4faedf9e4b456..7c23ea8e2884f314304b04d0e9d3c132b328387d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4873,8 +4873,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4886,8 +4886,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // TODO(crbug.com/40202416): Support a way for MPArch guests to support this.
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -232,7 +232,7 @@ index 7bbe1f1d7052f45c1e17fe9d4e8fe3164d3b0ba5..90d93722ef9fbb1ab4072f722db17af9
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 17933dabfe7818fc815d016b8ca0f314a4c8b953..f2e4a7f7d5f202dec875c1d8149149a6249d260c 100644
+index 4d2c03d7102d1217d1b436bf17fa9f293239b049..a9849b1b799d0d017050ce56ee9bdbd239324c0b 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -152,8 +152,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -246,7 +246,7 @@ index 17933dabfe7818fc815d016b8ca0f314a4c8b953..f2e4a7f7d5f202dec875c1d8149149a6
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index f318aa37654d668a95fb2f97b5a85c5786f5407d..8b2740bccd8670cc49a162d510e3deb53a534b14 100644
+index 826ec370d56989606adc6edbceb35b2bf7f2572c..473cbec053d022653027021847d2abe50d8b5f12 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -345,8 +345,7 @@ class CONTENT_EXPORT WebContentsDelegate {
@@ -296,7 +296,7 @@ index 136448c9df06b9704e95d2797a60907d7ec5170a..21cc7b08dd8f9e4a32d29dd35c42ec2c
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/extension_options/extension_options_guest.cc b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
-index ccba95521c54a893ea5168f6b25f86db4a5471c7..1aeae4978dea95d17c7ae76942e294aad7968630 100644
+index 2fca443b4bebf29c2835440a9db8a56f7373032f..6b704b57c08714b0a314e98d49e58676987d2995 100644
 --- a/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 +++ b/extensions/browser/guest_view/extension_options/extension_options_guest.cc
 @@ -262,8 +262,7 @@ bool ExtensionOptionsGuest::IsWebContentsCreationOverridden(

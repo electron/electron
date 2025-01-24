@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 6469dd594bb984ba4cd8c1464e7891396a35d8b3..6af0932ff13b2223d2177a4f13bf4e4165a05080 100644
+index ecb007b668458da1f8db4fca75f9c4428221dfbf..063007699b5b09ef8e6dbb39e044e4a1b8e6d8ae 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -28,6 +28,7 @@
@@ -19,7 +19,7 @@ index 6469dd594bb984ba4cd8c1464e7891396a35d8b3..6af0932ff13b2223d2177a4f13bf4e41
  #include "ui/gfx/native_widget_types.h"
  
  namespace blink {
-@@ -294,6 +295,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -295,6 +296,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Returns the associated RenderViewHostDelegateView*, if possible.
    virtual RenderViewHostDelegateView* GetDelegateView();
  
@@ -30,10 +30,10 @@ index 6469dd594bb984ba4cd8c1464e7891396a35d8b3..6af0932ff13b2223d2177a4f13bf4e41
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 7c6752807590bc0f168820d0d9d8d3277ca9713d..65978e2ebbd31ee9b735a689c751681c155833e7 100644
+index 04e0e09dc4f390314eb0ca1357530be9cf4e6262..7e9f399ad01ce2b205ed1c24f42fcef144abbbd1 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2008,6 +2008,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
+@@ -2012,6 +2012,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_) {
      view_->UpdateCursor(cursor);
    }
@@ -44,10 +44,10 @@ index 7c6752807590bc0f168820d0d9d8d3277ca9713d..65978e2ebbd31ee9b735a689c751681c
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f33889dbaaa23908962c56f2dbe072c3bd9e7070..7bbe1f1d7052f45c1e17fe9d4e8fe3164d3b0ba5 100644
+index 62fbe1baa45ad1b99694094f439eef980bb23abf..5a80e3c1970c37495dd8a1e36fb4faedf9e4b456 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5740,6 +5740,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -5753,6 +5753,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,10 +60,10 @@ index f33889dbaaa23908962c56f2dbe072c3bd9e7070..7bbe1f1d7052f45c1e17fe9d4e8fe316
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 08f5271be41f876d01b006a7b03de94930cd6ecb..0c42373bd65aea5a854181c330aafca1a494101f 100644
+index 834356cd3538b88fde1d923b6fd4a82697fa67c0..60c740d800f168532e2e8a266308c460fb809dc2 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1149,6 +1149,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1162,6 +1162,7 @@ class CONTENT_EXPORT WebContentsImpl
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -72,7 +72,7 @@ index 08f5271be41f876d01b006a7b03de94930cd6ecb..0c42373bd65aea5a854181c330aafca1
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 5e73c1f7cce2f2c40f1ad2fc1e1258af236408c8..970a6efb203b6c66a3b50c5dd3d2dc5fe74a9497 100644
+index 111a314c7b039b3ef864f82d8f9bddbc4f8b6927..39a98125567bbb6572cf923b22b34eda37b1b71f 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -37,6 +37,7 @@
@@ -83,7 +83,7 @@ index 5e73c1f7cce2f2c40f1ad2fc1e1258af236408c8..970a6efb203b6c66a3b50c5dd3d2dc5f
  #include "ui/base/page_transition_types.h"
  #include "ui/base/window_open_disposition.h"
  
-@@ -635,6 +636,9 @@ class CONTENT_EXPORT WebContentsObserver : public base::CheckedObserver {
+@@ -636,6 +637,9 @@ class CONTENT_EXPORT WebContentsObserver : public base::CheckedObserver {
    // Invoked when the primary main frame changes size.
    virtual void PrimaryMainFrameWasResized(bool width_changed) {}
  

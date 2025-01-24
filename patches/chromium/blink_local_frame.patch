@@ -49,7 +49,7 @@ index e662d4d61595735a30d5c721147a95698d4da3d9..6a0388aad469422dd1c0c2164f8aa858
    // its owning reference back to our owning LocalFrame.
    client_->Detached(type);
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index ddfe1b5566e44c062b32cb6d98ee854922943867..c87ebb8fb68dc8355c37066002148dc67fe9089f 100644
+index 1c63e6f0385c0c28bfc7bc78de5998b9d94eae88..e48d32f8927992bd209aa50d113ff7acba207c6e 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -748,10 +748,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {

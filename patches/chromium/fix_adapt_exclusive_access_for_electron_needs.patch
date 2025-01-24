@@ -152,10 +152,10 @@ index 5ad01788be680f005f3179141995aef72e36bd0c..da05b9ee80d537cfa5e039f1e1a46696
      // Check if the origin has been visited more than a day ago and whether it's
      // on an allowlist, then record those bits of information in a metric.
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-index 3c7a057de47b35217a6b06a21630bf5f8961f935..9f2493ed7319e730d6064f873d1f5ed3a61cbdeb 100644
+index 7fdf883310b13e3334ba007580a1a4287d49d592..d7c2bdaa08cae1645bf52f1d9b9d84b1cdb78c66 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-@@ -253,10 +253,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+@@ -250,10 +250,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {
    // Used in testing to set the state to tab fullscreen.
    bool is_tab_fullscreen_for_testing_ = false;
  
