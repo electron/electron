@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 99d5767a59455484f9c5c058e216654ad7780aac..5df91947dac1c23d3153d4b0b5aab3d735aa1ab5 100644
+index b940c4bca3d827660f90bb95f4743b0e8218101c..506fb9763546cb101d645053ac0912260d1ccd36 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1031,6 +1031,7 @@ component("base") {
@@ -141,18 +141,17 @@ index 1baeaec5125bbdc19dccbd18c8702f291ccc71ba..613c644eda45c7e4bf1a7a06dad6d8b4
    if (options.disclaim_responsibility) {
      DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
    }
-diff --git a/base/process/process_info_mac.cc b/base/process/process_info_mac.cc
-index 94a028be3c315edc0056408ab9ab41b6b001a1c1..abf9003bc71506d389ff77dc708c897113bba412 100644
---- a/base/process/process_info_mac.cc
-+++ b/base/process/process_info_mac.cc
-@@ -4,19 +4,27 @@
+diff --git a/base/process/process_info_mac.mm b/base/process/process_info_mac.mm
+index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e650417647b45a6af 100644
+--- a/base/process/process_info_mac.mm
++++ b/base/process/process_info_mac.mm
+@@ -4,15 +4,20 @@
  
  #include "base/process/process_info.h"
  
 +#include "electron/mas.h"
 +
- #include <stdio.h>
- #include <stdlib.h>
+ #import <AppKit/AppKit.h>
  #include <unistd.h>
  
 +#if !IS_MAS_BUILD()
@@ -161,12 +160,31 @@ index 94a028be3c315edc0056408ab9ab41b6b001a1c1..abf9003bc71506d389ff77dc708c8971
  }
 +#endif
  
+ namespace {
+ 
++#if !IS_MAS_BUILD()
+ bool AppContainsBluetoothUsageDescription(NSRunningApplication* app) {
+   NSURL* bundle_url = app.bundleURL;
+   if (!bundle_url) {
+@@ -24,12 +29,14 @@ bool AppContainsBluetoothUsageDescription(NSRunningApplication* app) {
+       [bundle objectForInfoDictionaryKey:@"NSBluetoothAlwaysUsageDescription"];
+   return bluetooth_entry != nil;
+ }
++#endif
+ 
+ }  // namespace
+ 
  namespace base {
  
- bool IsProcessSelfResponsible() {
+ bool DoesResponsibleProcessHaveBluetoothMetadata() {
 +#if !IS_MAS_BUILD()
    const pid_t pid = getpid();
-   return responsibility_get_pid_responsible_for_pid(pid) == pid;
+   const pid_t responsible_pid = responsibility_get_pid_responsible_for_pid(pid);
+   // Returns true directly if this is a self-responsible app(e.g. Chrome opens
+@@ -46,6 +53,9 @@ bool DoesResponsibleProcessHaveBluetoothMetadata() {
+     return AppContainsBluetoothUsageDescription(app);
+   }
+   return false;
 +#else
 +  return true;
 +#endif
@@ -456,7 +474,7 @@ index 3b8e96fbc7aa4cf1601230e81ff32cf9792be1da..6d8b41ffff28200daec6d554a5b7f1c7
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f43d8a8803b801c116fe3cea31839caddf57da28..8720a29e13ce052db99a6fb7925efd4b43472b9a 100644
+index bd49fc6c0ca04da472ada7dca57cfa40d3c65ea2..2c9d5e7607a3e843859d09c33b44851dddcfa41f 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -378,6 +378,7 @@ viz_component("service") {
@@ -467,7 +485,7 @@ index f43d8a8803b801c116fe3cea31839caddf57da28..8720a29e13ce052db99a6fb7925efd4b
    }
  
    if (is_android || use_ozone) {
-@@ -676,6 +677,7 @@ viz_source_set("unit_tests") {
+@@ -678,6 +679,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -561,7 +579,7 @@ index 038646bfa3ac442c64380a81bdb1d3043e50c107..33f2bcae6353a527710f05aa03770136
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8a48699a703acd019a57916058bdd99a223306ff..6d2d9a41cfb20e469b33b9039b7ef7c293a5a400 100644
+index 0097a2fa4e4f433869daf89df1474209e6c27eab..95fab24bc92225ac8edc579fa950de79fa38b66a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -327,6 +327,7 @@ source_set("browser") {
@@ -774,10 +792,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 23858defb34c7f40458b5ec6da337b95cdeb347f..08097629fbcd4e30860157523d91d0cf069b1f9a 100644
+index b5dc7900bca95856adfb77b728ed15a2b793fbdd..c0e855ccaba56ef3f698b1fc745fe2ccf2a7eb4e 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -647,6 +647,7 @@ static_library("test_support") {
+@@ -652,6 +652,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -785,7 +803,7 @@ index 23858defb34c7f40458b5ec6da337b95cdeb347f..08097629fbcd4e30860157523d91d0cf
    ]
  
    data_deps = [
-@@ -1102,6 +1103,7 @@ static_library("browsertest_support") {
+@@ -1107,6 +1108,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -793,7 +811,7 @@ index 23858defb34c7f40458b5ec6da337b95cdeb347f..08097629fbcd4e30860157523d91d0cf
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1912,6 +1914,7 @@ test("content_browsertests") {
+@@ -1918,6 +1920,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -801,7 +819,7 @@ index 23858defb34c7f40458b5ec6da337b95cdeb347f..08097629fbcd4e30860157523d91d0cf
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3196,6 +3199,7 @@ test("content_unittests") {
+@@ -3202,6 +3205,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -822,7 +840,7 @@ index 8779cf7cbbe2a583fda51867eaebc627f00bd4cd..98da1587fdc8cc8358a69db2b51d3982
  
    # TODO(crbug.com/40139469): Blink test plugin must be migrated from PPAPI.
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index f2164b5fcc5282820b343df8bde70700374b81be..2a04f4f7f0f9203ebf57c8d1e12d127c8bf35527 100644
+index c535974212704d17466f947a0e0ab40895b06c7a..4bd00e15ce5277a8ad2029dc1c8ab8c5145fe710 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -258,6 +258,7 @@ component("bluetooth") {
@@ -1374,7 +1392,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index af37f79916034980172a94f585ccc9458060c21c..f4838163122b2daf765380d92d2982227688e369 100644
+index 076ae475b3c4f0d2568e5efc9fedf2de7ccc82ad..b961c9c000bbb82c5f6ae63466c6d5d679d92de6 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -409,6 +409,7 @@ component("core") {
@@ -1418,7 +1436,7 @@ index 79501bed8f5853d5dacaaaf08af833b81f3babb7..d3d2759e0b6512ab01d1ef386f43468f
  }
  
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
-index b11c365f42dd1ddc363de0d94c387b13ac65bef3..5da42beb20b514396287cc6dc5cba608e1660b2e 100644
+index 4cbd3fc082ead782e64a950dd5314b1de7e550d5..0f4be1fa6b78c2340ebadb57a62cd47f9b10cebf 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
 @@ -7,6 +7,7 @@
@@ -1439,7 +1457,7 @@ index b11c365f42dd1ddc363de0d94c387b13ac65bef3..5da42beb20b514396287cc6dc5cba608
  @class CALayer;
  
  namespace ui {
-@@ -110,7 +113,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
+@@ -108,7 +111,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
    // both the current tree and the pending trees.
    size_t presented_ca_layer_trees_max_length_ = 2;
  
@@ -1450,7 +1468,7 @@ index b11c365f42dd1ddc363de0d94c387b13ac65bef3..5da42beb20b514396287cc6dc5cba608
    // The root CALayer to display the current frame. This does not change
    // over the lifetime of the object.
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
-index fd4356bd9a81b01de51c59dcd6637be2b2d8b6ee..ffc0b4e8aaa186840905cfc8b9efcd77e31d7617 100644
+index cfb80b21ada7f04ff615b0437403ac1c6c95bb14..34341007de140aba2e6eeb9d8e8de0ea492c2466 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 @@ -10,6 +10,7 @@
@@ -1461,15 +1479,15 @@ index fd4356bd9a81b01de51c59dcd6637be2b2d8b6ee..ffc0b4e8aaa186840905cfc8b9efcd77
  #include "ui/base/cocoa/animation_utils.h"
  #include "ui/base/cocoa/remote_layer_api.h"
  #include "ui/gfx/ca_layer_params.h"
-@@ -33,6 +34,7 @@
-       new_presentation_feedback_timestamps_(
-           new_presentation_feedback_timestamps),
+@@ -30,6 +31,7 @@
+       allow_av_sample_buffer_display_layer_(
+           allow_av_sample_buffer_display_layer),
        buffer_presented_callback_(buffer_presented_callback) {
 +#if !IS_MAS_BUILD()
    if (allow_remote_layers_) {
      root_ca_layer_ = [[CALayer alloc] init];
  #if BUILDFLAG(IS_MAC)
-@@ -61,6 +63,7 @@
+@@ -58,6 +60,7 @@
  #endif
      ca_context_.layer = root_ca_layer_;
    }
@@ -1477,7 +1495,7 @@ index fd4356bd9a81b01de51c59dcd6637be2b2d8b6ee..ffc0b4e8aaa186840905cfc8b9efcd77
  }
  
  CALayerTreeCoordinator::~CALayerTreeCoordinator() = default;
-@@ -164,9 +167,13 @@
+@@ -161,9 +164,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
@@ -1616,10 +1634,10 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..c2ac4da580e3e7f749a0a4de1e859af6
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 90762aa4f4edcb2f965bdb48c72e4d19a0b49ba6..d4c8463a43c6f693f3646fe88aeda653ae389d05 100644
+index 5ca4c8fc961d24985aa4e0459dc2c42003a5346f..2f5880d1d3fbc3aa1461bbe611c33f789a6f4dde 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -362,6 +362,13 @@ component("base") {
+@@ -363,6 +363,13 @@ component("base") {
      ]
    }
  
@@ -1633,7 +1651,7 @@ index 90762aa4f4edcb2f965bdb48c72e4d19a0b49ba6..d4c8463a43c6f693f3646fe88aeda653
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -512,6 +519,12 @@ component("base") {
+@@ -514,6 +521,12 @@ component("base") {
      "//url",
    ]
  
@@ -1898,7 +1916,7 @@ index 6a18c94e8c9d531ab3a59faf6027848caed8de57..63aa6b3ba824a3fa71c5a3db94b9ac5e
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index f7ddd05fd9a8165622ff45e182919a0588c53f80..0de4ff37eab3220a59ad1f90bcdd861170691fb5 100644
+index 489885fb9be64850cb7d8f0d27c1cf91207075f1..7fd40c40b648774318ad527eb5fa756ab8782e0e 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -21,6 +21,7 @@
