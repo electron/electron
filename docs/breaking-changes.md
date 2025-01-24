@@ -19,7 +19,7 @@ This document uses the following convention to categorize breaking changes:
 `registerPreloadScript`, `unregisterPreloadScript`, and `getPreloadScripts` are introduced as a
 replacement for the deprecated methods. These new APIs allow third-party libraries to register
 preload scripts without replacing existing scripts. Also, the new `type` option allows for
-additional preload targets such as `service-worker`.
+additional preload targets beyond `frame`.
 
 ```ts
 // Deprecated

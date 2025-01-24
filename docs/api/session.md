@@ -1338,7 +1338,7 @@ Adds scripts that will be executed on ALL web contents that are associated with
 this session just before normal `preload` scripts run.
 
 **Deprecated:** Use the new `ses.registerPreloadScript` API. This will overwrite any preload scripts
-registered for `service-worker` context types.
+registered for non-`frame` context types.
 
 #### `ses.getPreloads()` _Deprecated_
 
