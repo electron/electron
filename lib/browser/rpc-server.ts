@@ -5,6 +5,7 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import { clipboard } from 'electron/common';
 
 import * as fs from 'fs';
+import * as path from 'path';
 
 // Implements window.close()
 ipcMainInternal.on(IPC_MESSAGES.BROWSER_WINDOW_CLOSE, function (event) {
@@ -43,22 +44,40 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, function (event, me
   return (clipboard as any)[method](...args);
 });
 
-const getPreloadScript = async function (preloadPath: string) {
-  let preloadSrc = null;
-  let preloadError = null;
+const getPreloadScriptsFromEvent = (event: ElectronInternal.IpcMainInternalEvent) => {
+  const session: Electron.Session = event.sender.session;
+  const preloadScripts = session.getPreloadScripts();
+  const framePreloads = preloadScripts.filter(script => script.type === 'frame');
+
+  const webPrefPreload = event.sender._getPreloadScript();
+  if (webPrefPreload) framePreloads.push(webPrefPreload);
+
+  // TODO(samuelmaddock): Remove filter after Session.setPreloads is fully
+  // deprecated. The new API will prevent relative paths from being registered.
+  return framePreloads.filter(script => path.isAbsolute(script.filePath));
+};
+
+const readPreloadScript = async function (script: Electron.PreloadScript): Promise<ElectronInternal.PreloadScript> {
+  let contents;
+  let error;
   try {
-    preloadSrc = await fs.promises.readFile(preloadPath, 'utf8');
-  } catch (error) {
-    preloadError = error;
+    contents = await fs.promises.readFile(script.filePath, 'utf8');
+  } catch (err) {
+    if (err instanceof Error) {
+      error = err;
+    }
   }
-  return { preloadPath, preloadSrc, preloadError };
+  return {
+    ...script,
+    contents,
+    error
+  };
 };
 
 ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD, async function (event) {
-  const preloadPaths = event.sender._getPreloadPaths();
-
+  const preloadScripts = getPreloadScriptsFromEvent(event);
   return {
-    preloadScripts: await Promise.all(preloadPaths.map(path => getPreloadScript(path))),
+    preloadScripts: await Promise.all(preloadScripts.map(readPreloadScript)),
     process: {
       arch: process.arch,
       platform: process.platform,
@@ -71,7 +90,8 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD, async function (event
 });
 
 ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD, function (event) {
-  return { preloadPaths: event.sender._getPreloadPaths() };
+  const preloadScripts = getPreloadScriptsFromEvent(event);
+  return { preloadPaths: preloadScripts.map(script => script.filePath) };
 });
 
 ipcMainInternal.on(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, function (event, preloadPath: string, error: Error) {

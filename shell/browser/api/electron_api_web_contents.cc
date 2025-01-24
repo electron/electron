@@ -3757,16 +3757,15 @@ void WebContents::DoGetZoomLevel(
   std::move(callback).Run(GetZoomLevel());
 }
 
-std::vector<base::FilePath> WebContents::GetPreloadPaths() const {
-  auto result = SessionPreferences::GetValidPreloads(GetBrowserContext());
-
+std::optional<PreloadScript> WebContents::GetPreloadScript() const {
   if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
     if (auto preload = web_preferences->GetPreloadPath()) {
-      result.emplace_back(*preload);
+      auto preload_script = PreloadScript{
+          "", PreloadScript::ScriptType::kWebFrame, preload.value()};
+      return preload_script;
     }
   }
-
-  return result;
+  return std::nullopt;
 }
 
 v8::Local<v8::Value> WebContents::GetLastWebPreferences(
@@ -4520,7 +4519,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
       .SetMethod("getType", &WebContents::type)
-      .SetMethod("_getPreloadPaths", &WebContents::GetPreloadPaths)
+      .SetMethod("_getPreloadScript", &WebContents::GetPreloadScript)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
