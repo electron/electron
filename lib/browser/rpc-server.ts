@@ -46,11 +46,15 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, function (event, me
 
 const getPreloadScriptsFromEvent = (event: ElectronInternal.IpcMainInternalEvent) => {
   const session: Electron.Session = event.sender.session;
-  const preloadScripts = session.getPreloadScripts().filter(script => script.type === 'frame');
+  const preloadScripts = session.getPreloadScripts();
+  const framePreloads = preloadScripts.filter(script => script.type === 'frame');
+
+  const webPrefPreload = event.sender._getPreloadScript();
+  if (webPrefPreload) framePreloads.push(webPrefPreload);
 
   // TODO(samuelmaddock): Remove filter after Session.setPreloads is fully
   // deprecated. The new API will prevent relative paths from being registered.
-  return preloadScripts.filter(script => path.isAbsolute(script.filePath));
+  return framePreloads.filter(script => path.isAbsolute(script.filePath));
 };
 
 const readPreloadScript = async function (script: Electron.PreloadScript): Promise<ElectronInternal.PreloadScript> {
