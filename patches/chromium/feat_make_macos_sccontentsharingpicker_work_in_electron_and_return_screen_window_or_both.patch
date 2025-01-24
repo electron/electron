@@ -421,7 +421,7 @@ index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..400d7a2e7bb5d7d590181b9ada950f29
  
  }  // namespace content
 diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-index f3dbdd0db5f6c3d07b600f3dfa3267d0a5a57b81..c61e1c9d4a67bc52deb69429abf2dc4bf9a79556 100644
+index f3dbdd0db5f6c3d07b600f3dfa3267d0a5a57b81..cd8e789de46372370b0fe4fce19803a4dbe33abc 100644
 --- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
 +++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
 @@ -99,6 +99,7 @@ void Open(DesktopMediaID::Type type,
@@ -436,13 +436,12 @@ index f3dbdd0db5f6c3d07b600f3dfa3267d0a5a57b81..c61e1c9d4a67bc52deb69429abf2dc4b
      base::OnceClosure cancel_callback,
      base::OnceClosure error_callback) {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
--  CHECK(type == DesktopMediaID::Type::TYPE_SCREEN ||
--        type == DesktopMediaID::Type::TYPE_WINDOW);
 +  // Chrome doesn't allow both screens & windows in their picker,
 +  // but Electron does - add a check for TYPE_NONE.
-+  // CHECK(type == DesktopMediaID::Type::TYPE_SCREEN ||
-+  //       type == DesktopMediaID::Type::TYPE_WINDOW ||
-+  //       type == DesktopMediaID::Type::TYPE_NONE);
+   CHECK(type == DesktopMediaID::Type::TYPE_SCREEN ||
+-        type == DesktopMediaID::Type::TYPE_WINDOW);
++        type == DesktopMediaID::Type::TYPE_WINDOW ||
++        type == DesktopMediaID::Type::TYPE_NONE);
    if (@available(macOS 14.0, *)) {
      NSNumber* source_id = @(next_id_);
      auto picker_observer = [[PickerObserver alloc]
@@ -485,35 +484,36 @@ index f3dbdd0db5f6c3d07b600f3dfa3267d0a5a57b81..c61e1c9d4a67bc52deb69429abf2dc4b
    } else {
      NOTREACHED();
    }
+@@ -199,6 +210,7 @@ void Open(DesktopMediaID::Type type,
+ 
+ std::unique_ptr<media::VideoCaptureDevice>
+ NativeScreenCapturePickerMac::CreateDevice(const DesktopMediaID& source) {
++  DLOG(INFO) << " start CreateDevice";
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+   cached_content_filters_cleanup_timers_.erase(source.id);
+@@ -209,7 +221,7 @@ void Open(DesktopMediaID::Type type,
+     filter = [picker_observer contentFilter];
+     cached_content_filters_[source_id] = filter;
+   }
+-
++  DLOG(INFO) << "CreateDevice: " << source.id;
+   return CreateScreenCaptureKitDeviceMac(source, filter);
+ }
+ 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index ebfc2bb1006950dcff8e8f8792779c414c870a0b..2191337dae3c17c528bead5f250d4fa135477910 100644
+index ebfc2bb1006950dcff8e8f8792779c414c870a0b..fc0b018d1a66aa9144fcb6b9d39a79ddeca867e0 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -333,7 +333,12 @@ void OnShareableContentCreated(SCShareableContent* content) {
-         break;
-       case DesktopMediaID::TYPE_WINDOW:
-         for (SCWindow* window in content.windows) {
--          if (source_.id == window.windowID) {
-+          LOG(INFO) << "Window ID: " << window.windowID;
-+          LOG(INFO) << "Source ID: " << source_.id;
-+          // if (source_.id == window.windowID) {
-+          // if (source_.id == 0) {
-+          // if (2 == window.windowID) {
-+            LOG(INFO) << "Found window";
-             filter = [[SCContentFilter alloc]
-                 initWithDesktopIndependentWindow:window];
-             CGRect frame = window.frame;
-@@ -341,7 +346,8 @@ void OnShareableContentCreated(SCShareableContent* content) {
+@@ -341,6 +341,7 @@ void OnShareableContentCreated(SCShareableContent* content) {
              if (!fullscreen_module_) {
                fullscreen_module_ = MaybeCreateScreenCaptureKitFullscreenModule(
                    device_task_runner_, *this, window);
--            }
 +            break;
-+            // }
+             }
            }
          }
-         break;
-@@ -568,9 +574,13 @@ void OnStart(std::optional<bool> use_native_picker) override {
+@@ -568,9 +569,13 @@ void OnStart(std::optional<bool> use_native_picker) override {
  
      if (@available(macOS 15.0, *)) {
        constexpr bool DefaultUseNativePicker = true;
@@ -527,7 +527,7 @@ index ebfc2bb1006950dcff8e8f8792779c414c870a0b..2191337dae3c17c528bead5f250d4fa1
          auto* picker = [SCContentSharingPicker sharedPicker];
          ScreenCaptureKitDeviceMac::active_streams_++;
          picker.maximumStreamCount = @(ScreenCaptureKitDeviceMac::active_streams_);
-@@ -603,6 +613,7 @@ void OnStop() override {
+@@ -603,6 +608,7 @@ void OnStop() override {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
  
      if (stream_) {
@@ -535,6 +535,22 @@ index ebfc2bb1006950dcff8e8f8792779c414c870a0b..2191337dae3c17c528bead5f250d4fa1
        auto stream_stopped_callback = base::BindPostTask(
            device_task_runner_,
            base::BindRepeating(&ScreenCaptureKitDeviceMac::OnStreamStopped,
+@@ -702,6 +708,7 @@ void ResetStreamTo(SCWindow* window) override {
+     SCContentFilter* filter) {
+   switch (source.type) {
+     case DesktopMediaID::TYPE_SCREEN:
++    case DesktopMediaID::TYPE_NONE:
+       // ScreenCaptureKitDeviceMac only supports a single display at a time.
+       // It will not stitch desktops together. If
+       // kScreenCaptureKitFullDesktopFallback is enabled, we will fallback to
+@@ -723,6 +730,7 @@ void ResetStreamTo(SCWindow* window) override {
+       return nullptr;
+   }
+ 
++  DLOG(INFO) << "CreateScreenCaptureKitDeviceMac CREATED: " << source.id;
+   IncrementDesktopCaptureCounter(SCREEN_CAPTURER_CREATED);
+   IncrementDesktopCaptureCounter(source.audio_share
+                                      ? SCREEN_CAPTURER_CREATED_WITH_AUDIO
 diff --git a/content/browser/media/capture/screen_capture_kit_fullscreen_module.mm b/content/browser/media/capture/screen_capture_kit_fullscreen_module.mm
 index b2de06333e3a3115af8baba393e92024ae3e070e..07c137fd8622d64f60146513633d386e34b5c214 100644
 --- a/content/browser/media/capture/screen_capture_kit_fullscreen_module.mm
@@ -578,10 +594,10 @@ index b2de06333e3a3115af8baba393e92024ae3e070e..07c137fd8622d64f60146513633d386e
    return nullptr;
  }
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ffd1ba5ac5 100644
+index ee080009f75a0b9e07a12f929086008454ef8621..fb2944bc9835a4c83e4c27c905bef1d21da6f449 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -187,15 +187,21 @@ DesktopCaptureImplementation CreatePlatformDependentVideoCaptureDevice(
+@@ -187,29 +187,45 @@ DesktopCaptureImplementation CreatePlatformDependentVideoCaptureDevice(
      std::unique_ptr<media::VideoCaptureDevice>& device_out) {
    DCHECK_EQ(device_out.get(), nullptr);
  #if BUILDFLAG(IS_MAC)
@@ -610,8 +626,18 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
  
    // Prefer using ScreenCaptureKit. After that try DesktopCaptureDeviceMac, and
    // if both fail, use the generic DesktopCaptureDevice.
-@@ -206,10 +212,14 @@ DesktopCaptureImplementation CreatePlatformDependentVideoCaptureDevice(
-        base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen))) {
++  DLOG(INFO) << "base::FeatureList::IsEnabled(kScreenCaptureKitMac): " << base::FeatureList::IsEnabled(kScreenCaptureKitMac);
++  DLOG(INFO) << "desktop_id.type == DesktopMediaID::TYPE_WINDOW && base::FeatureList::IsEnabled(kScreenCaptureKitMacWindow): " << (desktop_id.type == DesktopMediaID::TYPE_WINDOW && base::FeatureList::IsEnabled(kScreenCaptureKitMacWindow));
++  DLOG(INFO) << "desktop_id.type == DesktopMediaID::TYPE_SCREEN && base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen): " << (desktop_id.type == DesktopMediaID::TYPE_SCREEN && base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen));
++  DLOG(INFO) << "desktop_id.type == DesktopMediaID::TYPE_NONE " << (desktop_id.type == DesktopMediaID::TYPE_NONE);
+   if (base::FeatureList::IsEnabled(kScreenCaptureKitMac) ||
+       (desktop_id.type == DesktopMediaID::TYPE_WINDOW &&
+        base::FeatureList::IsEnabled(kScreenCaptureKitMacWindow)) ||
+       (desktop_id.type == DesktopMediaID::TYPE_SCREEN &&
+-       base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen))) {
++       base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen)) ||
++       desktop_id.type == DesktopMediaID::TYPE_NONE) {
++        DLOG(INFO) << "ScreenCaptureKitMac enabled";
      device_out = CreateScreenCaptureKitDeviceMac(desktop_id);
      if (device_out) {
 +      DLOG(INFO) << "ScreenCaptureKit device created by feature";
@@ -625,7 +651,7 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
      return kDesktopCaptureDeviceMac;
    }
  #endif  // BUILDFLAG(IS_MAC)
-@@ -233,6 +243,7 @@ InProcessVideoCaptureDeviceLauncher::InProcessVideoCaptureDeviceLauncher(
+@@ -233,6 +249,7 @@ InProcessVideoCaptureDeviceLauncher::InProcessVideoCaptureDeviceLauncher(
  InProcessVideoCaptureDeviceLauncher::~InProcessVideoCaptureDeviceLauncher() {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
    DCHECK(state_ == State::READY_TO_LAUNCH);
@@ -633,7 +659,7 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
  }
  
  void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
-@@ -249,6 +260,9 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -249,6 +266,9 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
    DCHECK(state_ == State::READY_TO_LAUNCH);
  
    if (receiver_on_io_thread) {
@@ -643,7 +669,7 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
      std::ostringstream string_stream;
      string_stream
          << "InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync: Posting "
-@@ -269,12 +283,14 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -269,12 +289,14 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        base::BindPostTaskToCurrentDefault(base::BindOnce(
            &InProcessVideoCaptureDeviceLauncher::OnDeviceStarted,
            base::Unretained(this), callbacks, std::move(done_cb)));
@@ -663,20 +689,24 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
  #if BUILDFLAG(ENABLE_SCREEN_CAPTURE)
      case blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE:
        start_capture_closure = base::BindOnce(
-@@ -286,8 +302,12 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -286,9 +308,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
      case blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE:
      case blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE:
      case blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE_THIS_TAB:
 +    case blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE:
      case blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE_SET: {
        const DesktopMediaID desktop_id = DesktopMediaID::Parse(device_id);
+-      if (desktop_id.is_null()) {
++      DLOG(INFO) << "Desktop device ID: " << device_id.c_str();
 +      DLOG(INFO) << "Desktop media ID: " << desktop_id.id;
 +      DLOG(INFO) << "Desktop media ID fakeid: " << DesktopMediaID::kFakeId;
 +      DLOG(INFO) << "Desktop media ID is null? " << desktop_id.is_null();
-       if (desktop_id.is_null()) {
++      DLOG(INFO) << "would window be null " << DesktopMediaID::Parse("window:-4:-1").is_null();
++      if (desktop_id.is_null() && desktop_id.id != DesktopMediaID::kMacOsNativePickerId) {
          DLOG(ERROR) << "Desktop media ID is null";
          start_capture_closure =
-@@ -308,6 +328,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+             base::BindOnce(std::move(after_start_capture_callback), nullptr);
+@@ -308,6 +336,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        }
  
        if (desktop_id.type == DesktopMediaID::TYPE_WEB_CONTENTS) {
@@ -684,7 +714,7 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
          after_start_capture_callback = base::BindOnce(
              [](const DesktopMediaID& device_id, ReceiveDeviceCallback callback,
                 std::unique_ptr<media::VideoCaptureDevice> device) {
-@@ -320,6 +341,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -320,6 +349,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
                std::move(callback).Run(std::move(device));
              },
              desktop_id, std::move(after_start_capture_callback));
@@ -692,7 +722,7 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
          start_capture_closure = base::BindOnce(
              &InProcessVideoCaptureDeviceLauncher::
                  DoStartTabCaptureOnDeviceThread,
-@@ -330,7 +352,13 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -330,7 +360,13 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
  
  #if defined(USE_AURA)
        bool allow_window_id = false;
@@ -706,7 +736,7 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
        bool allow_window_id =
          desktop_id.id == DesktopMediaID::kMacOsNativePickerId;
  #endif
-@@ -344,6 +372,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -344,6 +380,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          TRACE_EVENT_INSTANT0(
              TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
              "UsingVizFrameSinkCapturer", TRACE_EVENT_SCOPE_THREAD);
@@ -714,7 +744,7 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
          start_capture_closure = base::BindOnce(
              &InProcessVideoCaptureDeviceLauncher::
                  DoStartVizFrameSinkWindowCaptureOnDeviceThread,
-@@ -355,9 +384,11 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -355,9 +392,11 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
  
        media::VideoCaptureParams updated_params = params;
        updated_params.use_native_picker = stream_type != blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE;
@@ -726,7 +756,7 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
        start_capture_closure = base::BindOnce(
            &InProcessVideoCaptureDeviceLauncher::
                DoStartDesktopCaptureOnDeviceThread,
-@@ -366,11 +397,13 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -366,11 +405,13 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
                               kMaxNumberOfBuffers, std::move(receiver),
                               std::move(receiver_on_io_thread)),
            std::move(after_start_capture_callback));
@@ -740,7 +770,7 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
        NOTREACHED() << "unsupported stream type=" << stream_type;
    }
  
-@@ -517,7 +550,8 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
+@@ -517,7 +558,8 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
      std::unique_ptr<media::VideoCaptureDeviceClient> device_client,
      ReceiveDeviceCallback result_callback) {
    DCHECK(device_task_runner_->BelongsToCurrentThread());
@@ -750,7 +780,7 @@ index ee080009f75a0b9e07a12f929086008454ef8621..704cf5c61918b99325e464ca5b5538ff
  
    std::unique_ptr<media::VideoCaptureDevice> video_capture_device;
    DesktopCaptureImplementation implementation =
-@@ -529,6 +563,7 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
+@@ -529,6 +571,7 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
    if (video_capture_device)
      video_capture_device->AllocateAndStart(params, std::move(device_client));
    std::move(result_callback).Run(std::move(video_capture_device));
@@ -830,7 +860,7 @@ index 06681956d6a3b51f5c26dbfd77348d4cdc3d3ee3..1d233003afda69f92e501c64a08d980c
  }
  
 diff --git a/content/public/browser/desktop_media_id.cc b/content/public/browser/desktop_media_id.cc
-index b39b684ff84baaf292eef1a23b7f9fb4585023c5..85ec7e489a1abdb6ce230684fdbdd987e228f9c7 100644
+index b39b684ff84baaf292eef1a23b7f9fb4585023c5..55507f7a782a9472800221f1e908618a5bad2914 100644
 --- a/content/public/browser/desktop_media_id.cc
 +++ b/content/public/browser/desktop_media_id.cc
 @@ -21,6 +21,7 @@ namespace content {
@@ -841,7 +871,16 @@ index b39b684ff84baaf292eef1a23b7f9fb4585023c5..85ec7e489a1abdb6ce230684fdbdd987
  
  #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
  // static
-@@ -104,6 +105,8 @@ std::string DesktopMediaID::ToString() const {
+@@ -82,6 +83,8 @@ DesktopMediaID DesktopMediaID::Parse(const std::string& str) {
+     type = TYPE_SCREEN;
+   } else if (parts[0] == kWindowPrefix) {
+     type = TYPE_WINDOW;
++  } else if (parts[0] == kNonePrefix) {
++    type = TYPE_NONE;
+   } else {
+     return DesktopMediaID();
+   }
+@@ -104,6 +107,8 @@ std::string DesktopMediaID::ToString() const {
    std::string prefix;
    switch (type) {
      case TYPE_NONE:
