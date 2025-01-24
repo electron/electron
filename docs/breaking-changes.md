@@ -14,6 +14,25 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (35.0)
 
+### Deprecated: `setPreloads`, `getPreloads` on `Session`
+
+`registerPreloadScript`, `unregisterPreloadScript`, and `getPreloadScripts` are introduced as a
+replacement for the deprecated methods. These new APIs allow third-party libraries to register
+preload scripts without replacing existing scripts. Also, the new `type` option allows for
+additional preload targets such as `service-worker`.
+
+```ts
+// Deprecated
+session.setPreloads([path.join(__dirname, 'preload.js')])
+
+// Replace with:
+session.registerPreloadScript({
+  type: 'frame',
+  id: 'app-preload',
+  filePath: path.join(__dirname, 'preload.js')
+})
+```
+
 ### Deprecated: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
 
 The `console-message` event on `WebContents` has been updated to provide details on the `Event`

@@ -1,4 +1,5 @@
 import { fetchWithSession } from '@electron/internal/browser/api/net-fetch';
+import * as deprecate from '@electron/internal/common/deprecate';
 
 import { net } from 'electron/main';
 
@@ -34,6 +35,31 @@ Session.prototype.setDisplayMediaRequestHandler = function (handler, opts) {
 
     return handler(req, callback);
   }, opts);
+};
+
+const getPreloadsDeprecated = deprecate.warnOnce('session.getPreloads', 'session.getPreloadScripts');
+Session.prototype.getPreloads = function () {
+  getPreloadsDeprecated();
+  return this.getPreloadScripts()
+    .filter((script) => script.type === 'frame')
+    .map((script) => script.filePath);
+};
+
+const setPreloadsDeprecated = deprecate.warnOnce('session.setPreloads', 'session.registerPreloadScript');
+Session.prototype.setPreloads = function (preloads) {
+  setPreloadsDeprecated();
+  this.getPreloadScripts()
+    .filter((script) => script.type === 'frame')
+    .forEach((script) => {
+      this.unregisterPreloadScript(script.id);
+    });
+  preloads.map(filePath => ({
+    type: 'frame',
+    filePath,
+    _deprecated: true
+  }) as Electron.PreloadScriptRegistration).forEach(script => {
+    this.registerPreloadScript(script);
+  });
 };
 
 export default {
