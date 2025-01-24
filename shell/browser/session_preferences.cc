@@ -30,4 +30,13 @@ SessionPreferences* SessionPreferences::FromBrowserContext(
   return static_cast<SessionPreferences*>(context->GetUserData(&kLocatorKey));
 }
 
+bool SessionPreferences::HasServiceWorkerPreloadScript() {
+  const auto& preloads = preload_scripts();
+  auto it = std::find_if(
+      preloads.begin(), preloads.end(), [](const PreloadScript& script) {
+        return script.script_type == PreloadScript::ScriptType::kServiceWorker;
+      });
+  return it != preloads.end();
+}
+
 }  // namespace electron

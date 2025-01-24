@@ -114,6 +114,7 @@ A `string` representing the current process's type, can be:
 
 * `browser` - The main process
 * `renderer` - A renderer process
+* `service-worker` - In a service worker
 * `worker` - In a web worker
 * `utility` - In a node process launched as a service
 

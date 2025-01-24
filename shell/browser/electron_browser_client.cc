@@ -581,6 +581,18 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         web_preferences->AppendCommandLineSwitches(
             command_line, IsRendererSubFrame(unsafe_process_id));
     }
+
+    // Service worker processes should only run preloads if one has been
+    // registered prior to startup.
+    auto* render_process_host = content::RenderProcessHost::FromID(process_id);
+    if (render_process_host) {
+      auto* browser_context = render_process_host->GetBrowserContext();
+      auto* session_prefs =
+          SessionPreferences::FromBrowserContext(browser_context);
+      if (session_prefs->HasServiceWorkerPreloadScript()) {
+        command_line->AppendSwitch(switches::kServiceWorkerPreload);
+      }
+    }
   }
 }
 
