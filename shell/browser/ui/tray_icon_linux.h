@@ -31,6 +31,7 @@ class TrayIconLinux : public TrayIcon, public ui::StatusIconLinux::Delegate {
   void OnClick() override;
   bool HasClickAction() override;
   const gfx::ImageSkia& GetImage() const override;
+  const gfx::VectorIcon* GetIcon() const override;
   const std::u16string& GetToolTip() const override;
   ui::MenuModel* GetMenuModel() const override;
   void OnImplInitializationFailed() override;

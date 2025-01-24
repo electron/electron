@@ -34,8 +34,6 @@ static_library("chrome") {
     "//chrome/browser/devtools/features.h",
     "//chrome/browser/devtools/visual_logging.cc",
     "//chrome/browser/devtools/visual_logging.h",
-    "//chrome/browser/extensions/global_shortcut_listener.cc",
-    "//chrome/browser/extensions/global_shortcut_listener.h",
     "//chrome/browser/file_system_access/file_system_access_features.cc",
     "//chrome/browser/file_system_access/file_system_access_features.h",
     "//chrome/browser/icon_loader.cc",
@@ -146,6 +144,8 @@ static_library("chrome") {
     "//chrome/browser/ui/webui/accessibility/accessibility_ui.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
+    "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc",
+    "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h",
     "//ui/views/native_window_tracker.h",
   ]
 
@@ -176,7 +176,6 @@ static_library("chrome") {
   }
 
   public_deps = [
-    "//chrome/browser:dev_ui_browser_resources",
     "//chrome/browser/resources/accessibility:resources",
     "//chrome/browser/ui/color:color_headers",
     "//chrome/browser/ui/color:mixers",
@@ -219,9 +218,9 @@ static_library("chrome") {
 
   if (is_linux) {
     sources += [
-      "//chrome/browser/extensions/global_shortcut_listener_linux.cc",
-      "//chrome/browser/extensions/global_shortcut_listener_linux.h",
       "//chrome/browser/icon_loader_auralinux.cc",
+      "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc",
+      "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h",
     ]
     sources += [
       "//chrome/browser/ui/views/status_icons/concat_menu_model.cc",
