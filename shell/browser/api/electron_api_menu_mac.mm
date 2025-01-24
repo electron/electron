@@ -167,12 +167,12 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   base::mac::ScopedSendingEvent sendingEventScoper;
 
   if (frame) {
-    auto* rwhvm = static_cast<content::RenderWidgetHostViewMac*>(
-        frame->render_frame_host()
-            ->GetOutermostMainFrameOrEmbedder()
-            ->GetView());
-    RenderWidgetHostViewCocoa* cocoa_view = rwhvm->GetInProcessNSView();
-    view = cocoa_view;
+    auto* rfh = frame->render_frame_host()->GetOutermostMainFrameOrEmbedder();
+    if (rfh->IsRenderFrameLive()) {
+      auto* rwhvm = static_cast<content::RenderWidgetHostViewMac*>(rfh->GetView());
+      RenderWidgetHostViewCocoa* cocoa_view = rwhvm->GetInProcessNSView();
+      view = cocoa_view;
+    }
   }
 
   NSEvent* dummy_event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
