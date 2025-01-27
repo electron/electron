@@ -169,7 +169,8 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   if (frame) {
     auto* rfh = frame->render_frame_host()->GetOutermostMainFrameOrEmbedder();
     if (rfh->IsRenderFrameLive()) {
-      auto* rwhvm = static_cast<content::RenderWidgetHostViewMac*>(rfh->GetView());
+      auto* rwhvm =
+          static_cast<content::RenderWidgetHostViewMac*>(rfh->GetView());
       RenderWidgetHostViewCocoa* cocoa_view = rwhvm->GetInProcessNSView();
       view = cocoa_view;
     }
