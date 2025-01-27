@@ -108,7 +108,9 @@ Examples of valid `color` values:
 
 #### `view.getVisible()`
 
-Returns `boolean` - Whether the view is displayed.
+Returns `boolean` - Whether the view should be drawn. Note that this is
+different from whether the view is visible on screen—it may still be obscured
+or out of view.
 
 ### Instance Properties
 
