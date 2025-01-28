@@ -26,6 +26,7 @@
   "parallel/test-crypto-secure-heap",
   "parallel/test-dgram-send-cb-quelches-error",
   "parallel/test-domain-error-types",
+  "parallel/test-fs-readdir-types-symlinks",
   "parallel/test-fs-utimes-y2K38",
   "parallel/test-http2-clean-output",
   "parallel/test-http2-https-fallback",

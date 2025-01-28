@@ -711,19 +711,26 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const processReaddirResult = (args: any) => (args.context.withFileTypes ? handleDirents(args) : handleFilePaths(args));
 
-  function handleDirents ({ result, currentPath, context }: { result: string[], currentPath: string, context: any }) {
-    const { 0: names, 1: types } = result;
-    const { length } = names;
-
+  function handleDirents ({ result, currentPath, context }: { result: any[], currentPath: string, context: any }) {
+    const length = result[0].length;
     for (let i = 0; i < length; i++) {
-      // Avoid excluding symlinks, as they are not directories.
-      // Refs: https://github.com/nodejs/node/issues/52663
-      const fullPath = path.join(currentPath, names[i]);
-      const dirent = getDirent(currentPath, names[i], types[i]);
-      context.readdirResults.push(dirent);
+      const resultPath = path.join(currentPath, result[0][i]);
+      const info = splitPath(resultPath);
 
-      if (dirent.isDirectory() || binding.internalModuleStat(binding, fullPath) === 1) {
-        context.pathsQueue.push(fullPath);
+      let type = result[1][i];
+      if (info.isAsar) {
+        const archive = getOrCreateArchive(info.asarPath);
+        if (!archive) return;
+        const stats = archive.stat(info.filePath);
+        if (!stats) continue;
+        type = stats.type;
+      }
+
+      const dirent = getDirent(currentPath, result[0][i], type);
+
+      context.readdirResults.push(dirent);
+      if (dirent.isDirectory() || binding.internalModuleStat(binding, resultPath) === 1) {
+        context.pathsQueue.push(path.join(dirent.path, dirent.name));
       }
     }
   }
@@ -1108,40 +1115,15 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         );
       }
 
-      if (readdirResult === undefined) return;
-
-      if (context.withFileTypes) {
-        const length = readdirResult[0].length;
-        for (let i = 0; i < length; i++) {
-          const resultPath = path.join(pathArg, readdirResult[0][i]);
-          const info = splitPath(resultPath);
-
-          let type = readdirResult[1][i];
-          if (info.isAsar) {
-            const archive = getOrCreateArchive(info.asarPath);
-            if (!archive) return;
-            const stats = archive.stat(info.filePath);
-            if (!stats) continue;
-            type = stats.type;
-          }
-
-          const dirent = getDirent(pathArg, readdirResult[0][i], type);
-
-          context.readdirResults.push(dirent);
-          if (dirent.isDirectory()) {
-            context.pathsQueue.push(path.join(dirent.path, dirent.name));
-          }
-        }
-      } else {
-        for (let i = 0; i < readdirResult.length; i++) {
-          const resultPath = path.join(pathArg, readdirResult[i]);
-          const relativeResultPath = path.relative(basePath, resultPath);
-          const stat = internalBinding('fs').internalModuleStat(binding, resultPath);
-
-          context.readdirResults.push(relativeResultPath);
-          if (stat === 1) context.pathsQueue.push(resultPath);
-        }
+      if (readdirResult === undefined) {
+        return;
       }
+
+      processReaddirResult({
+        result: readdirResult,
+        currentPath: path,
+        context
+      });
     }
 
     for (let i = 0; i < context.pathsQueue.length; i++) {
