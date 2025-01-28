@@ -16,7 +16,7 @@ jobs:
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
-      - uses: actions/stale@28ca1036281a5e5922ead5184a1bbf96e5fc984e # tag: v9.0.0
+      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # tag: v9.1.0
         with:
           repo-token: ${{ steps.generate-token.outputs.token }}
           days-before-stale: 90
@@ -39,7 +39,7 @@ jobs:
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
-      - uses: actions/stale@28ca1036281a5e5922ead5184a1bbf96e5fc984e # tag: v9.0.0
+      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # tag: v9.1.0
         with:
           repo-token: ${{ steps.generate-token.outputs.token }}
           days-before-stale: -1
