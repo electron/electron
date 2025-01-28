@@ -34,7 +34,7 @@ jobs:
       build-image-sha: ${{ inputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         path: src/electron
         fetch-depth: 0
