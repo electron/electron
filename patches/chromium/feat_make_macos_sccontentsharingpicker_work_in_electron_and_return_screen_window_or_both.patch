@@ -390,10 +390,10 @@ index 835c1e860501bcc8cb7c7dfe192c113de3d623ff..95950c348f2144761b960fef86390f6c
  
    return result;
 diff --git a/content/browser/media/capture/native_screen_capture_picker.cc b/content/browser/media/capture/native_screen_capture_picker.cc
-index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..400d7a2e7bb5d7d590181b9ada950f29f8b391bf 100644
+index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..d46e91ede102c4f4cdac164cabea2e1ac1464f78 100644
 --- a/content/browser/media/capture/native_screen_capture_picker.cc
 +++ b/content/browser/media/capture/native_screen_capture_picker.cc
-@@ -7,18 +7,23 @@
+@@ -7,6 +7,7 @@
  #if BUILDFLAG(IS_MAC)
  #include "content/browser/media/capture/native_screen_capture_picker_mac.h"
  #include "media/base/media_switches.h"
@@ -401,15 +401,13 @@ index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..400d7a2e7bb5d7d590181b9ada950f29
  #endif
  
  namespace content {
- 
+@@ -14,11 +15,13 @@ namespace content {
  std::unique_ptr<NativeScreenCapturePicker>
  MaybeCreateNativeScreenCapturePicker() {
-+  LOG(INFO) << "content::MaybeCreateNativeScreenCapturePicker()";
  #if BUILDFLAG(IS_MAC)
 -  if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
 +
 +  // if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
-+    LOG(INFO) << "content::MaybeCreateNativeScreenCapturePicker() - CreateNativeScreenCapturePickerMac()";
      return CreateNativeScreenCapturePickerMac();
 -  }
 -#endif

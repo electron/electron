@@ -13,7 +13,7 @@
 
 namespace electron {
 
-// cf: 
+// cf:
 // Chrome also allows browser here, but Electron does not.
 enum PreferredDisplaySurface {
   NO_PREFERENCE,

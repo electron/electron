@@ -12,8 +12,9 @@
 
 namespace gin {
 
-v8::Local<v8::Value> Converter<blink::mojom::PreferredDisplaySurface>::ToV8(v8::Isolate* isolate,
-                                  blink::mojom::PreferredDisplaySurface type) {
+v8::Local<v8::Value> Converter<blink::mojom::PreferredDisplaySurface>::ToV8(
+    v8::Isolate* isolate,
+    blink::mojom::PreferredDisplaySurface type) {
   switch (type) {
     case blink::mojom::PreferredDisplaySurface::NO_PREFERENCE:
       return StringToV8(isolate, "no_preference");
