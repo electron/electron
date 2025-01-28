@@ -1,6 +1,7 @@
 [
   "abort/test-abort-backtrace",
   "es-module/test-vm-compile-function-lineoffset",
+  "es-module/test-cjs-legacyMainResolve-permission.js",
   "parallel/test-async-context-frame",
   "parallel/test-bootstrap-modules",
   "parallel/test-child-process-fork-exec-path",
