@@ -727,9 +727,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       }
 
       const dirent = getDirent(currentPath, result[0][i], type);
+      const stat = internalBinding('fs').internalModuleStat(binding, resultPath);
 
       context.readdirResults.push(dirent);
-      if (dirent.isDirectory() || binding.internalModuleStat(binding, resultPath) === 1) {
+      if (dirent.isDirectory() || stat === 1) {
         context.pathsQueue.push(path.join(dirent.path, dirent.name));
       }
     }
@@ -739,7 +740,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     for (let i = 0; i < result.length; i++) {
       const resultPath = path.join(currentPath, result[i]);
       const relativeResultPath = path.relative(context.basePath, resultPath);
-      const stat = binding.internalModuleStat(binding, resultPath);
+      const stat = internalBinding('fs').internalModuleStat(binding, resultPath);
       context.readdirResults.push(relativeResultPath);
 
       if (stat === 1) {
@@ -761,7 +762,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     function read (pathArg: string) {
       const req = new binding.FSReqCallback();
-      req.oncomplete = (err: any, result: any) => {
+      req.oncomplete = (err: any, result: string) => {
         if (err) {
           callback(err);
           return;
@@ -785,12 +786,54 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         }
       };
 
-      binding.readdir(
-        pathArg,
-        context.encoding,
-        context.withFileTypes,
-        req
-      );
+      const pathInfo = splitPath(pathArg);
+      if (pathInfo.isAsar) {
+        let readdirResult;
+        const { asarPath, filePath } = pathInfo;
+
+        const archive = getOrCreateArchive(asarPath);
+        if (!archive) {
+          const error = createError(AsarError.INVALID_ARCHIVE, { asarPath });
+          nextTick(callback, [error]);
+          return;
+        }
+
+        readdirResult = archive.readdir(filePath);
+        if (!readdirResult) {
+          const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
+          nextTick(callback, [error]);
+          return;
+        }
+
+        // If we're in an asar dir, we need to ensure the result is in the same format as the
+        // native call to readdir withFileTypes i.e. an array of arrays.
+        if (context.withFileTypes) {
+          readdirResult = [
+            [...readdirResult], readdirResult.map((p: string) => {
+              return internalBinding('fs').internalModuleStat(binding, path.join(pathArg, p));
+            })
+          ];
+        }
+
+        processReaddirResult({
+          result: readdirResult,
+          currentPath: pathArg,
+          context
+        });
+
+        if (i < context.pathsQueue.length) {
+          read(context.pathsQueue[i++]);
+        } else {
+          callback(null, context.readdirResults);
+        }
+      } else {
+        binding.readdir(
+          pathArg,
+          context.encoding,
+          context.withFileTypes,
+          req
+        );
+      }
     }
 
     read(context.pathsQueue[i++]);
@@ -1121,7 +1164,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
       processReaddirResult({
         result: readdirResult,
-        currentPath: path,
+        currentPath: pathArg,
         context
       });
     }
