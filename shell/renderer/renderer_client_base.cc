@@ -425,7 +425,7 @@ bool RendererClientBase::IsPluginHandledExternally(
 
   if (plugin_info->actual_mime_type == pdf::kInternalPluginMimeType) {
     if (IsPdfInternalPluginAllowedOrigin(
-            render_frame->GetWebFrame()->GetSecurityOrigin())) {
+            render_frame->GetWebFrame()->GetSecurityOrigin(), {})) {
       return true;
     }
   }
