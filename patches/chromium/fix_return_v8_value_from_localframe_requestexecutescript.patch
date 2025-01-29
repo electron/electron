@@ -104,7 +104,7 @@ index 223fe3d3bb6bdb829421b20f70eab803bacfa8f1..2eedd1e9744e687b21d094533e683ce2
        wants_result
            ? mojom::blink::WantResultOption::kWantResultDateAndRegExpAllowed
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.cc b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
-index 9b344e09e545b4a24deb2272d0f093d551866f97..8f3a45312bedc030bf217638eacead6989335ca5 100644
+index 9b344e09e545b4a24deb2272d0f093d551866f97..f4d0431f981b3c521c4ce0620886e0564efb3096 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 @@ -246,7 +246,7 @@ void PausableScriptExecutor::CreateAndRun(
@@ -140,7 +140,7 @@ index 9b344e09e545b4a24deb2272d0f093d551866f97..8f3a45312bedc030bf217638eacead69
 +    // is permitted. Ensure a valid scope is present for the callback.
 +    // See https://crbug.com/840719.
 +    ScriptState::Scope script_scope(script_state_);
-+    std::move(raw_callback_).Run(Vector<v8::Local<v8::Value>>());
++    std::move(raw_callback_).Run(std::vector<v8::Local<v8::Value>>());
 +  }
    Dispose();
  }
@@ -158,12 +158,16 @@ index 9b344e09e545b4a24deb2272d0f093d551866f97..8f3a45312bedc030bf217638eacead69
        user_activation_option_(user_activation_option),
        blocking_option_(blocking_option),
        want_result_option_(want_result_option),
-@@ -423,6 +434,9 @@ void PausableScriptExecutor::HandleResults(
+@@ -423,6 +434,13 @@ void PausableScriptExecutor::HandleResults(
      std::move(callback_).Run(std::move(value), start_time_);
    }
  
-+  if (raw_callback_)
-+    std::move(raw_callback_).Run(results);
++  if (raw_callback_) {
++    // TODO: use `v8::LocalVector` instead of `std::vector<v8::Local<...>>`
++    // (see https://crbug.com/40272194)
++    std::move(raw_callback_)
++        .Run(std::vector<v8::Local<v8::Value>>(results.begin(), results.end()));
++  }
 +
    Dispose();
  }
