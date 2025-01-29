@@ -819,4 +819,8 @@ const char* SimpleURLLoaderWrapper::GetTypeName() {
   return "SimpleURLLoaderWrapper";
 }
 
+void SimpleURLLoaderWrapper::WillBeDestroyed() {
+  ClearWeak();
+}
+
 }  // namespace electron::api

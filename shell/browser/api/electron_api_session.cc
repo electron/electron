@@ -1909,6 +1909,10 @@ const char* Session::GetTypeName() {
   return GetClassName();
 }
 
+void Session::WillBeDestroyed() {
+  ClearWeak();
+}
+
 }  // namespace electron::api
 
 namespace {
