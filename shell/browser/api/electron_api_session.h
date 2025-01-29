@@ -102,6 +102,9 @@ class Session final : public gin::Wrappable<Session>,
   static const char* GetClassName() { return "Session"; }
   const char* GetTypeName() override;
 
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
+
   // Methods.
   v8::Local<v8::Promise> ResolveHost(
       std::string host,

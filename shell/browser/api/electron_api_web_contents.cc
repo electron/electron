@@ -4570,6 +4570,10 @@ const char* WebContents::GetTypeName() {
   return GetClassName();
 }
 
+void WebContents::WillBeDestroyed() {
+  ClearWeak();
+}
+
 ElectronBrowserContext* WebContents::GetBrowserContext() const {
   return static_cast<ElectronBrowserContext*>(
       web_contents()->GetBrowserContext());
