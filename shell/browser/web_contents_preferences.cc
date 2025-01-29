@@ -148,6 +148,7 @@ void WebContentsPreferences::Clear() {
       blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
   preload_path_ = std::nullopt;
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
+  deprecated_paste_enabled_ = false;
 
 #if BUILDFLAG(IS_MAC)
   scroll_bounce_ = false;
@@ -244,6 +245,9 @@ void WebContentsPreferences::SetFromDictionary(
   }
 
   web_preferences.Get("v8CacheOptions", &v8_cache_options_);
+
+  web_preferences.Get(options::kDeprecatedPasteEnabled,
+                      &deprecated_paste_enabled_);
 
 #if BUILDFLAG(IS_MAC)
   web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
@@ -472,6 +476,8 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->webview_tag = webview_tag_;
 
   prefs->v8_cache_options = v8_cache_options_;
+
+  prefs->dom_paste_enabled = deprecated_paste_enabled_;
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences);
