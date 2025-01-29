@@ -407,9 +407,9 @@ void DesktopCapturer::StartHandling(bool capture_window,
             window_capturer_.get());
 
         // Needed to force a refresh for the native MacOS Picker
-        // OnceCallback wrapped_update_callback = base::BindOnce(
-        //     &DesktopCapturer::RequestUpdate, weak_ptr_factory_.GetWeakPtr(),
-        //     window_capturer_.get(), std::move(update_callback));
+        OnceCallback wrapped_update_callback = base::BindOnce(
+            &DesktopCapturer::RequestUpdate, weak_ptr_factory_.GetWeakPtr(),
+            window_capturer_.get(), std::move(update_callback));
 
         if (window_capturer_->IsSourceListDelegated()) {
           OnceCallback failure_callback = base::BindOnce(
@@ -433,16 +433,18 @@ void DesktopCapturer::StartHandling(bool capture_window,
             DesktopMediaList::Type::kScreen, std::move(capturer));
         screen_capturer_->SetThumbnailSize(thumbnail_size);
         LOG(INFO) << "Show Delegated List...";
-        // screen_capturer_->ShowDelegatedList();
+        // screen_capturer_->ShowDelegatedList()
         LOG(INFO) << "Showed Delegated List...";
-        // #if BUILDFLAG(IS_MAC)
-        //         LOG(INFO) << "should skip next refresh";
-        //         screen_capturer_->skip_next_refresh_ =
-        //             ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen)
-        //             ? 2
-        //                                                                            : 0;
-        // #endif
+        #if BUILDFLAG(IS_MAC)
+                LOG(INFO) << "should skip next refresh";
+                screen_capturer_->skip_next_refresh_ =
+                    ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen)
+                    ? 2
+                                                                                   : 0;
 
+        #endif
+
+        LOG(INFO) << "skip next refresh" << screen_capturer_->skip_next_refresh_;
         OnceCallback update_callback = base::BindOnce(
             &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
             screen_capturer_.get());

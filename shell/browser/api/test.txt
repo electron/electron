@@ -1,0 +1,74 @@
+Saving files to temp directory...
+Saved files to /var/folders/pp/g5shgj3s1h1b29c0mh697dh80000gp/T/electron-fiddle-925-DXta0SMPyLDu
+Electron v999.999.999 started.
+[20549:0128/173346.950366:WARNING:viz_main_impl.cc(85)] VizNullHypothesis is disabled (not a warning)
+[20548:0128/173347.072669:INFO:CONSOLE(8347)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (8347)
+{
+  accelerometerSupport: 'unknown',
+  bounds: { x: 0, y: 0, width: 2560, height: 1440 },
+  colorDepth: 24,
+  colorSpace: '{r:[0.6855, 0.3086], g:[0.2636, 0.6688], b:[0.1503, 0.0576], w:[0.3127, 0.3290]}, transfer:{0.0777*x + 0.0000 if abs(x) < 0.0450 else sign(x)*((0.9495*abs(x) + 0.0495)**2.3955 + 0.0003)}, matrix:RGB, range:FULL}',
+  depthPerComponent: 8,
+  detected: true,
+  displayFrequency: 99.94628143310547,
+  id: 3,
+  internal: false,
+  label: '27GL850',
+  maximumCursorSize: { width: 0, height: 0 },
+  monochrome: false,
+  nativeOrigin: { x: 0, y: 0 },
+  rotation: 0,
+  scaleFactor: 1,
+  size: { width: 2560, height: 1440 },
+  workArea: { x: 0, y: 25, width: 2560, height: 1415 },
+  workAreaSize: { width: 2560, height: 1415 },
+  touchSupport: 'unknown'
+}
+[20548:0128/173347.174552:INFO:electron_api_desktop_capturer.cc(353)] Starting screen capturer
+[20548:0128/173347.174651:INFO:native_desktop_media_list.cc(843)] NativeDesktopMediaList::StartCapturer source not delegated
+[20548:0128/173347.174656:INFO:native_desktop_media_list.cc(902)] NativeDesktopMediaList::StartCapturer
+[20548:0128/173347.174680:INFO:electron_api_desktop_capturer.cc(360)] Setting skip_next_refresh_
+[20548:0128/173347.174685:INFO:electron_api_desktop_capturer.cc(379)] Starting screen capturer without listener
+[20548:0128/173347.174688:INFO:native_desktop_media_list.cc(953)] NativeDesktopMediaList::Refresh
+[20548:0128/173347.174691:INFO:native_desktop_media_list.cc(955)] NativeDesktopMediaList::Refresh can_refresh
+[20548:0128/173347.176293:INFO:CONSOLE(8347)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/sandbox_bundle (8347)
+[20548:0128/173347.176612:INFO:native_desktop_media_list.cc(976)] NativeDesktopMediaList::RefreshForVizFrameSinkWindows
+[20548:0128/173347.176622:INFO:native_desktop_media_list.cc(978)] NativeDesktopMediaList::RefreshForVizFrameSinkWindows can_refresh
+2025-01-28 17:33:47.226 Electron[20548:479820] +[IMKClient subclass]: chose IMKClient_Modern
+2025-01-28 17:33:47.226 Electron[20548:479820] +[IMKInputSession subclass]: chose IMKInputSession_Modern
+[20548:0128/173347.320382:INFO:native_desktop_media_list.cc(976)] NativeDesktopMediaList::RefreshForVizFrameSinkWindows
+[20548:0128/173347.320408:INFO:native_desktop_media_list.cc(978)] NativeDesktopMediaList::RefreshForVizFrameSinkWindows can_refresh
+[20548:0128/173347.469103:INFO:native_desktop_media_list.cc(976)] NativeDesktopMediaList::RefreshForVizFrameSinkWindows
+[20548:0128/173347.469121:INFO:native_desktop_media_list.cc(978)] NativeDesktopMediaList::RefreshForVizFrameSinkWindows can_refresh
+NativeImage {
+  toPNG: [Function: toPNG],
+  toJPEG: [Function: toJPEG],
+  toBitmap: [Function: toBitmap],
+  getBitmap: [Function: getBitmap],
+  getScaleFactors: [Function: getScaleFactors],
+  getNativeHandle: [Function: getNativeHandle],
+  toDataURL: [Function: toDataURL],
+  isEmpty: [Function: isEmpty],
+  getSize: [Function: getSize],
+  setTemplateImage: [Function: setTemplateImage],
+  isTemplateImage: [Function: isTemplateImage],
+  isMacTemplateImage: [Getter/Setter],
+  resize: [Function: resize],
+  crop: [Function: crop],
+  getAspectRatio: [Function: getAspectRatio],
+  addRepresentation: [Function: addRepresentation]
+}
