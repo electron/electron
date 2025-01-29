@@ -236,6 +236,10 @@ const char* Notification::GetTypeName() {
   return GetClassName();
 }
 
+void Notification::WillBeDestroyed() {
+  ClearWeak();
+}
+
 }  // namespace electron::api
 
 namespace {

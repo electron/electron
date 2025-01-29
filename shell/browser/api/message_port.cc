@@ -306,6 +306,10 @@ const char* MessagePort::GetTypeName() {
   return "MessagePort";
 }
 
+void MessagePort::WillBeDestroyed() {
+  ClearWeak();
+}
+
 }  // namespace electron
 
 namespace {

@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_helper/wrappable.h"
 
+#include "gin/public/isolate_holder.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "v8/include/v8-function.h"
 
@@ -60,8 +61,10 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
 // static
 void WrappableBase::FirstWeakCallback(
     const v8::WeakCallbackInfo<WrappableBase>& data) {
-  auto* wrappable = static_cast<WrappableBase*>(data.GetInternalField(0));
-  if (wrappable) {
+  WrappableBase* wrappable = data.GetParameter();
+  auto* wrappable_from_field =
+      static_cast<WrappableBase*>(data.GetInternalField(0));
+  if (wrappable && wrappable == wrappable_from_field) {
     wrappable->wrapper_.Reset();
     data.SetSecondPassCallback(SecondWeakCallback);
   }
@@ -70,6 +73,9 @@ void WrappableBase::FirstWeakCallback(
 // static
 void WrappableBase::SecondWeakCallback(
     const v8::WeakCallbackInfo<WrappableBase>& data) {
+  if (gin::IsolateHolder::DestroyedMicrotasksRunner()) {
+    return;
+  }
   delete static_cast<WrappableBase*>(data.GetInternalField(0));
 }
 
