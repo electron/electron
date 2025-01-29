@@ -48,7 +48,8 @@ enable_cet_shadow_stack = false
 is_cfi = false
 
 # TODO: fix this once sysroots have been updated.
-use_qt = false
+use_qt5 = false
+use_qt6 = false
 
 # Disables the builtins PGO for V8
 v8_builtins_profiling_log_file = ""
