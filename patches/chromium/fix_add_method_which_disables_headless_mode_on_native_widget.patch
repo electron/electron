@@ -12,7 +12,7 @@ ui problems (like dissapearing popup during typing in html's
 input list.
 
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index b8bd367e2f81583b9fc852775ec34557de4ed4b7..0e81e73c382718a8cc19bfad1347568944c9a021 100644
+index 8f83d17264c0aacb69966c1bc75df1bb4a58d79f..50f713e2f21d2355e3405cc9ccfe5e838c7b0e3b 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -1196,6 +1196,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
