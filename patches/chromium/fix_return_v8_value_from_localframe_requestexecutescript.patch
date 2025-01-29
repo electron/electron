@@ -32,10 +32,10 @@ index a94b2a36c8fe789f9f2c5a7f6553d375f2783275..0e9b778184e78c639638a763a5523ded
                                      mojom::WantResultOption,
                                      mojom::PromiseResultOption) = 0;
 diff --git a/third_party/blink/public/web/web_script_execution_callback.h b/third_party/blink/public/web/web_script_execution_callback.h
-index cba373664bec3a32abad6fe0396bd67b53b7e67f..7a985067b1371604644d48159f2f5aa7a7abb88d 100644
+index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd4344bbcbf0 100644
 --- a/third_party/blink/public/web/web_script_execution_callback.h
 +++ b/third_party/blink/public/web/web_script_execution_callback.h
-@@ -14,8 +14,17 @@ class TimeTicks;
+@@ -14,6 +14,12 @@ class TimeTicks;
  class Value;
  }
  
@@ -47,18 +47,13 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..7a985067b1371604644d48159f2f5aa7
 +
  namespace blink {
  
-+template <typename T>
-+class WebVector;
-+
  // Non-nullopt `base::Value` is passed to the callback if
- // -`WantResultOption::kWantResult` or
- //  `WantResultOption::kWantResultDateAndRegexpAllowed` is used,
-@@ -43,6 +52,9 @@ namespace blink {
+@@ -43,6 +49,9 @@ namespace blink {
  using WebScriptExecutionCallback =
      base::OnceCallback<void(std::optional<base::Value>, base::TimeTicks)>;
  
 +using WebScriptExecutionCallbackUnmodified =
-+    base::OnceCallback<void(const WebVector<v8::Local<v8::Value>>&)>;
++    base::OnceCallback<void(const std::vector<v8::Local<v8::Value>>&)>;
 +
  }  // namespace blink
  
