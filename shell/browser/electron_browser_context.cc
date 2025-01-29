@@ -458,6 +458,10 @@ void ElectronBrowserContext::InitPrefs() {
     }
   }
 #endif
+
+  // Unique uuid for global shortcuts.
+  registry->RegisterStringPref(electron::kElectronGlobalShortcutsUuid,
+                               std::string());
 }
 
 void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {

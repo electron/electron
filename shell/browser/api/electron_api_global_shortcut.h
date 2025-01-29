@@ -44,6 +44,7 @@ class GlobalShortcut final
  private:
   typedef std::map<ui::Accelerator, base::RepeatingClosure>
       AcceleratorCallbackMap;
+  typedef std::map<std::string, base::RepeatingClosure> CommandCallbackMap;
 
   bool RegisterAll(const std::vector<ui::Accelerator>& accelerators,
                    const base::RepeatingClosure& callback);
@@ -60,6 +61,7 @@ class GlobalShortcut final
                       const std::string& command_id) override;
 
   AcceleratorCallbackMap accelerator_callback_map_;
+  CommandCallbackMap command_callback_map_;
 };
 
 }  // namespace electron::api
