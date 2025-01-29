@@ -137,3 +137,4 @@ refactor_unfilter_unresponsive_events.patch
 support_bstr_pkey_appusermodel_id_in_windows_shortcuts.patch
 cherry-pick-1282289030ab.patch
 cherry-pick-3dc17c461b12.patch
+ignore_parse_errors_for_pkey_appusermodel_toastactivatorclsid.patch
