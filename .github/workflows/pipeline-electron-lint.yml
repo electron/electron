@@ -9,8 +9,8 @@ on:
         type: string
 
 concurrency:
-  group: electron-lint-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
+  group: electron-lint-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
 
 jobs:
   lint:
