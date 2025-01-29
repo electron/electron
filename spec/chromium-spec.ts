@@ -3326,6 +3326,101 @@ describe('navigator.clipboard.write', () => {
   });
 });
 
+describe('paste execCommand', () => {
+  const readClipboard: any = (w: BrowserWindow) => {
+    return w.webContents.executeJavaScript(`
+      new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          resolve('');
+        }, 2000);
+        document.addEventListener('paste', (event) => {
+          clearTimeout(timeout);
+          event.preventDefault();
+          let paste = event.clipboardData.getData("text");
+          resolve(paste);
+        });
+        document.execCommand('paste');
+      });
+    `, true);
+  };
+
+  afterEach(() => {
+    session.defaultSession.setPermissionCheckHandler(null);
+    closeAllWindows();
+  });
+
+  it('is disabled by default', async () => {
+    const w: BrowserWindow = new BrowserWindow({});
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    const text = 'Sync Clipboard Disabled by default';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.be.empty();
+    expect(clipboard.readText()).to.equal(text);
+  });
+
+  it('does not execute with default permissions', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        deprecatedPasteEnabled: true
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    const text = 'Sync Clipboard Disabled by default permissions';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.be.empty();
+    expect(clipboard.readText()).to.equal(text);
+  });
+
+  it('does not execute with permission denied', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        deprecatedPasteEnabled: true
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+      if (permission === 'deprecated-sync-clipboard-read') {
+        return false;
+      }
+      return true;
+    });
+    const text = 'Sync Clipboard Disabled by permission denied';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.be.empty();
+    expect(clipboard.readText()).to.equal(text);
+  });
+
+  it('can trigger paste event when permission is granted', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        deprecatedPasteEnabled: true
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+      if (permission === 'deprecated-sync-clipboard-read') {
+        return true;
+      }
+      return false;
+    });
+    const text = 'Sync Clipboard Test';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.equal(text);
+  });
+});
+
 ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.setAppBadge/clearAppBadge', () => {
   let w: BrowserWindow;
 

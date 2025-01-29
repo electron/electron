@@ -31,6 +31,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/web_contents_utility.mojom.h"
 #include "shell/renderer/api/context_bridge/object_cache.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"

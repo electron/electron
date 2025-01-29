@@ -10,9 +10,9 @@
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/common/api/api.mojom.h"
 
 namespace content {
 class RenderFrameHost;

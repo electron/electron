@@ -26,3 +26,16 @@ mojom("plugin") {
     "//mojo/public/mojom/base",
   ]
 }
+
+mojom("web_contents_utility") {
+  # We don't want Blink variants of these bindings to be generated.
+  disable_variants = true
+
+  sources = [ "web_contents_utility.mojom" ]
+
+  public_deps = [
+    "//content/public/common:interfaces",
+    "//third_party/blink/public/mojom/tokens",
+    "//url/mojom:url_mojom_origin",
+  ]
+}

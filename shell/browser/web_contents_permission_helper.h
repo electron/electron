@@ -32,7 +32,7 @@ class WebContentsPermissionHelper
     HID,
     USB,
     KEYBOARD_LOCK,
-    FILE_SYSTEM
+    FILE_SYSTEM,
   };
 
   // Asynchronous Requests

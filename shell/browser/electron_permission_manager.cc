@@ -298,8 +298,13 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     base::Value::Dict details) const {
-  if (check_handler_.is_null())
-    return true;
+  if (check_handler_.is_null()) {
+    if (permission == blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ) {
+      return false;
+    } else {
+      return true;
+    }
+  }
 
   auto* web_contents =
       render_frame_host
