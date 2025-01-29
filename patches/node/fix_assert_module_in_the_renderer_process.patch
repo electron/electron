@@ -58,10 +58,10 @@ index 89ce587cac4506c4218a9316fe0b68070a7a8504..b74fb837fc1cfee839c8b5b8c0b9a6f8
  }
  
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 3c42f9b87c11a0f88800d6709515c1c9e2972fc0..6f9a8d3e0884bc6e356413f2f39522a7109c86b5 100644
+index f70e0917f6caa66210107cdb2ef891685563ba96..ec419cf96a14989338e3261b85c92b81ba8b50d9 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1476,14 +1476,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
+@@ -1517,14 +1517,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
    }
    Isolate* isolate = args.GetIsolate();
  

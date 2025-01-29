@@ -14,10 +14,10 @@ We don't need to do this for zlib, as the existing gn workflow uses the same
 Upstreamed at https://github.com/nodejs/node/pull/55903
 
 diff --git a/unofficial.gni b/unofficial.gni
-index ddfbb97276b29df114ab455a2eed3b186b3af5d2..87bfc313dd1408e597e929ba93c8c0f52ae39ced 100644
+index 08a4ed939fb1482a897def94128282fdfd63dc62..23367db388ce9e83e123d4c6e8c6325266dd52dc 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -152,7 +152,6 @@ template("node_gn_build") {
+@@ -153,7 +153,6 @@ template("node_gn_build") {
        ":run_node_js2c",
        "deps/cares",
        "deps/histogram",
@@ -25,7 +25,7 @@ index ddfbb97276b29df114ab455a2eed3b186b3af5d2..87bfc313dd1408e597e929ba93c8c0f5
        "deps/nbytes",
        "deps/nghttp2",
        "deps/postject",
-@@ -183,7 +182,17 @@ template("node_gn_build") {
+@@ -184,7 +183,17 @@ template("node_gn_build") {
        configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
        configs += [ "//build/config/gcc:symbol_visibility_default" ]
      }
@@ -44,7 +44,7 @@ index ddfbb97276b29df114ab455a2eed3b186b3af5d2..87bfc313dd1408e597e929ba93c8c0f5
      if (v8_enable_i18n_support) {
        deps += [ "//third_party/icu" ]
      }
-@@ -210,6 +219,19 @@ template("node_gn_build") {
+@@ -211,6 +220,19 @@ template("node_gn_build") {
        sources += node_inspector.node_inspector_sources +
                   node_inspector.node_inspector_generated_sources
      }
