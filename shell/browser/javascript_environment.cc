@@ -132,11 +132,16 @@ v8::Isolate* JavascriptEnvironment::GetIsolate() {
 void JavascriptEnvironment::CreateMicrotasksRunner() {
   DCHECK(!microtasks_runner_);
   microtasks_runner_ = std::make_unique<MicrotasksRunner>(isolate());
+  isolate_holder_.WillCreateMicrotasksRunner();
   base::CurrentThread::Get()->AddTaskObserver(microtasks_runner_.get());
 }
 
 void JavascriptEnvironment::DestroyMicrotasksRunner() {
   DCHECK(microtasks_runner_);
+  // Should be called before running gin_helper::CleanedUpAtExit::DoCleanup.
+  // This helps to signal wrappable finalizer callbacks to not act on freed
+  // parameters.
+  isolate_holder_.WillDestroyMicrotasksRunner();
   {
     v8::HandleScope scope(isolate_);
     gin_helper::CleanedUpAtExit::DoCleanup();
