@@ -61,6 +61,9 @@ class MessagePort final : public gin::Wrappable<MessagePort>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
+
  private:
   MessagePort();
 

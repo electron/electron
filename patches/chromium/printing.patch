@@ -605,7 +605,7 @@ index 402be34ab888cdf834d0fb65de0832e9a8021ced..82ddc92a35d824926c30279e660cc4e8
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/printer_query_oop.cc b/chrome/browser/printing/printer_query_oop.cc
-index e271d17b3261c47f3dbeaf9be0b3c4229ee27181..00b906660580aca7d5aabcde54d68c2161ea71dd 100644
+index e271d17b3261c47f3dbeaf9be0b3c4229ee27181..ed19764250d9125915f0f948896acd7eae7911a6 100644
 --- a/chrome/browser/printing/printer_query_oop.cc
 +++ b/chrome/browser/printing/printer_query_oop.cc
 @@ -127,7 +127,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(

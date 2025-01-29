@@ -431,6 +431,10 @@ const char* Tray::GetTypeName() {
   return GetClassName();
 }
 
+void Tray::WillBeDestroyed() {
+  ClearWeak();
+}
+
 }  // namespace electron::api
 
 namespace {
