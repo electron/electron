@@ -41,6 +41,16 @@ The `ipcRenderer` module has the following method to listen for events and send 
 Listens to `channel`, when a new message arrives `listener` would be called with
 `listener(event, args...)`.
 
+:::warning
+Do not expose the `event` argument to the renderer for security reasons! Wrap any
+callback that you receive from the renderer in another function like this:
+`ipcRenderer.on('my-channel', (event, ...args) => callback(...args))`.
+Not wrapping the callback in such a function would expose dangerous Electron APIs
+to the renderer process. See the
+[security guide](../tutorial/security.md#20-do-not-expose-electron-apis-to-untrusted-web-content)
+for more info.
+:::
+
 ### `ipcRenderer.off(channel, listener)`
 
 * `channel` string
