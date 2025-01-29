@@ -435,16 +435,16 @@ void DesktopCapturer::StartHandling(bool capture_window,
         LOG(INFO) << "Show Delegated List...";
         // screen_capturer_->ShowDelegatedList()
         LOG(INFO) << "Showed Delegated List...";
-        #if BUILDFLAG(IS_MAC)
-                LOG(INFO) << "should skip next refresh";
-                screen_capturer_->skip_next_refresh_ =
-                    ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen)
-                    ? 2
-                                                                                   : 0;
+#if BUILDFLAG(IS_MAC)
+        LOG(INFO) << "should skip next refresh";
+        screen_capturer_->skip_next_refresh_ =
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen) ? 2
+                                                                           : 0;
 
-        #endif
+#endif
 
-        LOG(INFO) << "skip next refresh" << screen_capturer_->skip_next_refresh_;
+        LOG(INFO) << "skip next refresh"
+                  << screen_capturer_->skip_next_refresh_;
         OnceCallback update_callback = base::BindOnce(
             &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
             screen_capturer_.get());

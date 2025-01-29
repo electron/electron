@@ -21,10 +21,14 @@ index 85320190d406bdd37175ddb5d207d124b278b648..677dfdbc761dcc942b865ed073b16ea7
            // SameOrigin is more restrictive than just Tabs, so as long as
            // at least SameOrigin is allowed, these entries should stay.
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d2ec9baf3219f4b38db4771a1ca1b3b5fd86dba0 100644
+index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d83487885d566336d72bc5c4232d50a6a13ec3c2 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -15,6 +15,7 @@
+@@ -12,9 +12,11 @@
+ #include <set>
+ #include <utility>
+ 
++#include "base/logging.h"
  #include "base/functional/bind.h"
  #include "base/hash/hash.h"
  #include "chrome/browser/media/webrtc/desktop_media_list.h"
@@ -32,7 +36,18 @@ index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d2ec9baf3219f4b38db4771a1ca1b3b5
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "third_party/skia/include/core/SkBitmap.h"
-@@ -77,7 +78,13 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
+@@ -67,8 +69,9 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
+       observer_->OnSourceAdded(i);
+     }
+   }
+-
++  LOG(INFO)<< "Refresh callback_ is null: " << refresh_callback_.is_null() << ";";
+   DCHECK(!refresh_callback_);
++  LOG(INFO) << "dcheck passed";
+   refresh_callback_ = base::BindOnce(&DesktopMediaListBase::ScheduleNextRefresh,
+                                      weak_factory_.GetWeakPtr());
+   Refresh(true);
+@@ -77,7 +80,13 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
  void DesktopMediaListBase::Update(UpdateCallback callback, bool refresh_thumbnails) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    DCHECK(sources_.empty());
@@ -48,7 +63,7 @@ index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d2ec9baf3219f4b38db4771a1ca1b3b5
    Refresh(refresh_thumbnails);
  }
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 0ac8e20073bd2db507e49200fd0b48f8535d666b..bdac26dcb020adb45731cecdfe0938c2334d0b51 100644
+index 0ac8e20073bd2db507e49200fd0b48f8535d666b..2dc8259cd978799b97db8fae525922dbe05f2413 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -46,6 +46,7 @@
@@ -219,6 +234,52 @@ index 0ac8e20073bd2db507e49200fd0b48f8535d666b..bdac26dcb020adb45731cecdfe0938c2
    DCHECK(!is_capturer_started_);
    // base::Unretained is safe here because we own the lifetime of both the
    // worker and the thread and ensure that destroying the worker is the last
+@@ -948,7 +993,18 @@ void NativeDesktopMediaList::ShowDelegatedList() {
+ }
+ 
+ void NativeDesktopMediaList::Refresh(bool update_thumbnails) {
+-  DCHECK(can_refresh());
++  #if BUILDFLAG(IS_MAC)
++    LOG(INFO) << "Inside NativeDesktopMediaList, Refresh";
++    if (!ShouldUseSCContentSharingPicker()) {
++      LOG(INFO) << "Inside NativeDesktopMediaList, Refresh, !ShouldUseSCContentSharingPicker";
++    LOG(INFO)<< "dcheck(!can_refresh()): " << !can_refresh() << ";";
++      DCHECK(!can_refresh());
++    }
++  #else
++   LOG(INFO) << "Inside NativeDesktopMediaList, Refresh, not mac";
++    DCHECK(!can_refresh());
++    LOG(INFO)<< "dcheck: " << !can_refresh() << ";";
++  #endif
+ 
+ #if defined(USE_AURA)
+   DCHECK_EQ(pending_aura_capture_requests_, 0);
+@@ -969,7 +1025,16 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+     std::vector<SourceDescription> sources,
+     bool update_thumbnails) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+-  DCHECK(can_refresh());
++  #if BUILDFLAG(IS_MAC)
++    LOG(INFO) << "Inside NativeDesktopMediaList, RefreshForVizFrameSinkWindows";
++    if (!ShouldUseSCContentSharingPicker()) {
++      DCHECK(!can_refresh());
++      LOG(INFO) << "Dcheck passed";
++    }
++  #else
++    LOG(INFO) << "Inside NativeDesktopMediaList, RefreshForVizFrameSinkWindows, ShouldUseSCContentSharingPicker";
++    DCHECK(!can_refresh());
++  #endif
+ 
+   auto source_it = sources.begin();
+   while (source_it != sources.end()) {
+@@ -1073,6 +1138,7 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+ }
+ 
+ void NativeDesktopMediaList::UpdateNativeThumbnailsFinished() {
++  LOG(INFO) << "Inside NativeDesktopMediaList, UpdateNativeThumbnailsFinished";
+ #if defined(USE_AURA)
+   DCHECK(pending_native_thumbnail_capture_);
+   pending_native_thumbnail_capture_ = false;
 diff --git a/chrome/browser/media/webrtc/thumbnail_capturer_mac.h b/chrome/browser/media/webrtc/thumbnail_capturer_mac.h
 index 12a74f8f32cc00a7f3d7802865ae4b309961341d..acbcfb08ae8c44e24a04b326096289428bc6ff60 100644
 --- a/chrome/browser/media/webrtc/thumbnail_capturer_mac.h
@@ -234,7 +295,7 @@ index 12a74f8f32cc00a7f3d7802865ae4b309961341d..acbcfb08ae8c44e24a04b32609628942
  bool ShouldUseThumbnailCapturerMac(DesktopMediaList::Type type);
  
 diff --git a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
-index 47a5ad2b7e2bc86a614488fd3fe85da1e3e2d6f2..d6db4e5e22c568f70fb3e6c5f479807a2bfeecff 100644
+index 47a5ad2b7e2bc86a614488fd3fe85da1e3e2d6f2..775cc4c018780e0d8e079f07ee3c8f80749c112b 100644
 --- a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
 +++ b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
 @@ -13,6 +13,7 @@
@@ -279,12 +340,9 @@ index 47a5ad2b7e2bc86a614488fd3fe85da1e3e2d6f2..d6db4e5e22c568f70fb3e6c5f479807a
 +
  bool ShouldUseSCContentSharingPicker() {
    if (@available(macOS 15.0, *)) {
--    if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
--      return true;
--    }
-+    // if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
-+    //   return true;
-+    // }
+     if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
+       return true;
+     }
 +    // TODO: turn on this flag
 +    return true;
    }
@@ -887,3 +945,16 @@ index b39b684ff84baaf292eef1a23b7f9fb4585023c5..55507f7a782a9472800221f1e908618a
        NOTREACHED();
      case TYPE_SCREEN:
        prefix = kScreenPrefix;
+diff --git a/media/base/media_switches.cc b/media/base/media_switches.cc
+index a7268707fe6e03f7c62e061e07cbf43434f023af..35663a557927f2d1464b0fc7f2c3a0da8e1d0857 100644
+--- a/media/base/media_switches.cc
++++ b/media/base/media_switches.cc
+@@ -376,7 +376,7 @@ BASE_FEATURE(kMacLoopbackAudioForScreenShare,
+ // is required to avoid recurring permission dialogs.
+ BASE_FEATURE(kUseSCContentSharingPicker,
+              "UseSCContentSharingPicker",
+-             base::FEATURE_DISABLED_BY_DEFAULT);
++             base::FEATURE_ENABLED_BY_DEFAULT);
+ #endif  // BUILDFLAG(IS_MAC)
+ 
+ #if BUILDFLAG(IS_LINUX)
