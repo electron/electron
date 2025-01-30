@@ -47,18 +47,12 @@ async function getNativePickerSource (preferredDisplaySurface: string) {
 
   const mediaStreams = await desktopCapturer.getSources(options);
 
-  // print out type of source
-  console.log('SOURCE 1: ', mediaStreams[0].id);
-
-  // edit the first media stream's id to be none:${kMacOsNativePickerId}:${fakeVideoWindowId--}
-
   if (mediaStreams.length === 0) {
     throw new Error('No media streams found');
   }
 
   mediaStreams[0].id = `none:${kMacOsNativePickerId}:${fakeVideoWindowId--}`;
 
-  console.log('MEDIASREEAMS', mediaStreams);
   return mediaStreams[0];
 }
 
