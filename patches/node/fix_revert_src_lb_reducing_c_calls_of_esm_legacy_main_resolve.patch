@@ -15,10 +15,10 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index f2fbb576da23fc0a48b0c979a263aa2dbe3600eb..97d3b4e9bd9303e1271bb62b1c9851da1100e019 100644
+index f2fbb576da23fc0a48b0c979a263aa2dbe3600eb..c2d55296e5a35723173c0124a015e18f02087d4c 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -28,14 +28,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
+@@ -28,15 +28,15 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
  const fs = require('fs');
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
@@ -33,9 +33,19 @@ index f2fbb576da23fc0a48b0c979a263aa2dbe3600eb..97d3b4e9bd9303e1271bb62b1c9851da
  const { canParse: URLCanParse } = internalBinding('url');
 -const { legacyMainResolve: FSLegacyMainResolve } = internalBinding('fs');
  const {
++  ERR_ACCESS_DENIED,
    ERR_INPUT_TYPE_NOT_ALLOWED,
    ERR_INVALID_ARG_TYPE,
-@@ -183,6 +182,15 @@ const legacyMainResolveExtensionsIndexes = {
+   ERR_INVALID_MODULE_SPECIFIER,
+@@ -53,6 +53,7 @@ const { Module: CJSModule } = require('internal/modules/cjs/loader');
+ const { getConditionsSet } = require('internal/modules/esm/utils');
+ const packageJsonReader = require('internal/modules/package_json_reader');
+ const internalFsBinding = internalBinding('fs');
++const permission = require('internal/process/permission');
+ 
+ /**
+  * @typedef {import('internal/modules/esm/package_config.js').PackageConfig} PackageConfig
+@@ -183,6 +184,20 @@ const legacyMainResolveExtensionsIndexes = {
    kResolvedByPackageAndNode: 9,
  };
  
@@ -44,14 +54,19 @@ index f2fbb576da23fc0a48b0c979a263aa2dbe3600eb..97d3b4e9bd9303e1271bb62b1c9851da
 + * @returns {boolean}
 + */
 +function fileExists(url) {
++  const { Buffer } = require('buffer');
 +  const namespaced = toNamespacedPath(toPathIfFileURL(url));
++  if (permission.isEnabled() && !permission.has('fs.read', namespaced)) {
++    const resource = Buffer.isBuffer(namespaced) ? Buffer.toString(namespaced) : namespaced;
++    throw new ERR_ACCESS_DENIED('Access to this API has been restricted', 'FileSystemRead', resource);
++  }
 +  return internalFsBinding.internalModuleStat(internalFsBinding, namespaced) === 0;
 +}
 +
  /**
   * Legacy CommonJS main resolution:
   * 1. let M = pkg_url + (json main field)
-@@ -199,18 +207,45 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
+@@ -199,18 +214,45 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
    assert(isURL(packageJSONUrl));
    const pkgPath = fileURLToPath(new URL('.', packageJSONUrl));
  
