@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: James Godfrey-Kittle <jamesgk@google.com>
 Date: Tue, 17 Dec 2024 12:14:17 -0500
-Subject: [ganesh] Avoid overflow when combining AAHairlineOps
+Subject: Avoid overflow when combining AAHairlineOps
 
 Bug: b/382786791
 Change-Id: I955d943015cce76f75221df9fab0897a6f22fe4b

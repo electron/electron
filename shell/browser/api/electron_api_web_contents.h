@@ -171,6 +171,9 @@ class WebContents final : public ExclusiveAccessContext,
   static gin::WrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
+
   void Destroy();
   void Close(std::optional<gin_helper::Dictionary> options);
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }

@@ -139,3 +139,4 @@ support_bstr_pkey_appusermodel_id_in_windows_shortcuts.patch
 cherry-pick-3dc17c461b12.patch
 cherry-pick-35f86d6a0a03.patch
 ignore_parse_errors_for_pkey_appusermodel_toastactivatorclsid.patch
+feat_add_signals_when_embedder_cleanup_callbacks_run_for.patch
