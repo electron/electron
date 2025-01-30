@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 2c9d5e7607a3e843859d09c33b44851dddcfa41f..1c0a05eb95fb80c35800d6ecf683558cf17b2a70 100644
+index 6ac941799bda10ce7f93612691a438018160a9dd..5ee0a80cb435a1aaacbea08614a5fe3b26afbe10 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -168,6 +168,8 @@ viz_component("service") {
@@ -597,7 +597,7 @@ index 7d19b6be8bb0e0269c381cf6efdf79eaeff1e935..b8ec06ade095df99c024396a601dbf1a
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 8ffd1de69da7429fd69709476a890b72766662ab..e67ef2981d2e8e97fbaad7feb048ca2d2321bd99 100644
+index 7c9ea17904d861b1f2284124e43e7250bd60dc0f..935971e7b446ed0fa23eec4b4983750842dd70c9 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -39,6 +39,7 @@ struct RootCompositorFrameSinkParams {

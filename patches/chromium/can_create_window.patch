@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 80802b6393eb073f46e314e1508f97e16b9a7c86..3078614cd0e5bfec4d126fc320ce57f09a05262e 100644
+index a28f1825107b411e17a2a7e5fac38488afef0d37..999282378d149cb813ce615ba7bd59dbf888ffd1 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -9403,6 +9403,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 80802b6393eb073f46e314e1508f97e16b9a7c86..3078614cd0e5bfec4d126fc320ce57f0
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 762946d0e8a0b3a45d157750d4ce7abddb8efb7c..e38ab8c1ff33c570c4c5efd363401d2f20b5f0ed 100644
+index 9c957e02ff49742cc70c71316c2c695334317d0e..f9eddb8d8f482789da3d74abd298f7b39acea386 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4976,6 +4976,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -148,7 +148,7 @@ index 6f8cb1cafde354923f494c1151169e916735de7f..375d5b8c8046b66aff9c7b5e482c347e
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 94f215345f681ca296e8c30af633996829a69e4b..7350f824749d15fb99115bcb297c142c2d4727a5 100644
+index 4db85df1bd41ed1c9220a42cf1db57d9241e5817..d86148672f36ecc42f4635d61cf474f6e9348ada 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -6891,6 +6891,10 @@ WebView* RenderFrameImpl::CreateNewWindow(

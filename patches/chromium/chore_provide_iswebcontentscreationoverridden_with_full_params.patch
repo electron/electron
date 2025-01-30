@@ -80,7 +80,7 @@ index 4fd8dff1089cd6afa6a66dc185734d7671657281..0a1f4268ea771a3d5d4a2668928c6e5d
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 811de3a8558f1f2016a33e74eae78e6b08fbcd05..f26da936a58c5299badfea17ff4f0f9d439e2c36 100644
+index 79dc99f9c0ccb87725dbad44de7f0b6de7c05ca1..cd9d136ea162efb45a69324246debf7c128bf942 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -2203,12 +2203,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -141,10 +141,10 @@ index ca72b324bf7c3b81ac94b53f0ff454d2df177950..d60ef3075d126e2bbd50c8469f2bf67c
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index f2c33e0a67040bf445797c3d09296ee07c1480c0..e9f6c6fb9e562516c876b132ab142a0733e3ca6f 100644
+index 83a0a538fef0da1d3674293d20dac7b8a252273f..155c8a0af46e20f68f8b028c056092b404062861 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-@@ -97,8 +97,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+@@ -99,8 +99,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,7 +218,7 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4ede21bd74991e04c4acf9f108a1d50833c56fe2..fe58c241324c5e0846a7dd504740a9a0bd213f53 100644
+index e7583ddd3bd825e1ca68cbe19c6958b761742dd0..a024b3c7e78e7967aeebcd33932bb4e541378a6d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4858,8 +4858,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(

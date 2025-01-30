@@ -49,10 +49,10 @@ index 76e4130d4f84348af2ace1dfe809c48e4b4d4d6a..24c715db250227818dbe889597f46857
      mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
      mojo::PendingRemote<mojom::URLLoaderNetworkServiceObserver>
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 237c97c0e9ec40f16894808ca3243fbba181c37c..bcb808b3ede3fe6473c58166903703dbffc8a3ba 100644
+index de0780c4f29026d3cc7d2742d8e80acddc6916ad..76c724151ee12fccecd36d2e9a6b7f264a9907d7 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
-@@ -95,6 +95,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
+@@ -48,6 +48,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
    out->allow_cookies_from_browser = data.allow_cookies_from_browser();
    out->include_request_cookies_with_response =
        data.include_request_cookies_with_response();
@@ -61,10 +61,10 @@ index 237c97c0e9ec40f16894808ca3243fbba181c37c..bcb808b3ede3fe6473c58166903703db
        mojo::PendingRemote<network::mojom::CookieAccessObserver>>();
    out->trust_token_observer = data.TakeTrustTokenObserver<
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 46e36ea59abe3efdd24c56093f4161d6bc57c882..5f6a283272f0d153d2f4b78b9f6dac410b0ebcd8 100644
+index 60feb8454fb3d41e5297a2b10c04baee4a4c01bf..08f82304444f4596a6054b758feb3803dfa3618e 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
-@@ -77,6 +77,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
+@@ -70,6 +70,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
        const network::ResourceRequest::TrustedParams& trusted_params) {
      return trusted_params.include_request_cookies_with_response;
    }
@@ -76,10 +76,10 @@ index 46e36ea59abe3efdd24c56093f4161d6bc57c882..5f6a283272f0d153d2f4b78b9f6dac41
    cookie_observer(
        const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index 1741c2c040bcb4bf90cb155f75a8eeaee0df31fa..a6c33c5d1226106251a571912ebcca0223b057cd 100644
+index 3e5dae789846c667f7537b04252a49b28298d53d..a229e56674cc75e8dfb78c26962f108ffd59c5e9 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
-@@ -82,6 +82,9 @@ struct TrustedUrlRequestParams {
+@@ -73,6 +73,9 @@ struct TrustedUrlRequestParams {
    // client which should not be able to see them.
    bool include_request_cookies_with_response = false;
  

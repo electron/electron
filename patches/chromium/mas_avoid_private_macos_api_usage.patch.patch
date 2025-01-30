@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c09afe031ba5c46ce0dd021b4fd4ef680b588e53..1ea1db8938114e5bc605e0c931afcc0b122961c1 100644
+index 3934ff75fa9f0841d062f00e52a1ccb9af327177..a0c81d907db6143e11de04ebfa7f629c7e11911c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1031,6 +1031,7 @@ component("base") {
+@@ -1028,6 +1028,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -474,7 +474,7 @@ index 89aca4b47c202f137a5ffe8390986ef6dd62942a..59276806afa7659573eb276149ff8ed4
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index bd49fc6c0ca04da472ada7dca57cfa40d3c65ea2..2c9d5e7607a3e843859d09c33b44851dddcfa41f 100644
+index 3f1b98692d11116f965fe0eb7e4b6cae308a4f19..6ac941799bda10ce7f93612691a438018160a9dd 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -378,6 +378,7 @@ viz_component("service") {
@@ -840,7 +840,7 @@ index 8779cf7cbbe2a583fda51867eaebc627f00bd4cd..98da1587fdc8cc8358a69db2b51d3982
  
    # TODO(crbug.com/40139469): Blink test plugin must be migrated from PPAPI.
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index c535974212704d17466f947a0e0ab40895b06c7a..4bd00e15ce5277a8ad2029dc1c8ab8c5145fe710 100644
+index af32815b302dff9750a1dcd83b6e03df7d5f2dc9..7f20a6affe68057eb51d3176d7a901c85cacf2e0 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -258,6 +258,7 @@ component("bluetooth") {

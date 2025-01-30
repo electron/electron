@@ -6,10 +6,10 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index 994850cb7737aa8787504f37ab91037b28df5690..fd9d07ac3953ded9a4f36e62721eb16097e77dba 100644
+index b8462d19d3b61e5813a0248b8667af5bbace4716..3939abfd02fa8728d48e99b1ee1c00135f8220c5 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-@@ -163,6 +163,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
+@@ -168,6 +168,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
                (network::mojom::AttributionSupport support),
                (override));
  
