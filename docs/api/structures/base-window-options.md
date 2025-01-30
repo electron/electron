@@ -121,8 +121,11 @@
   tabbing identifier will be grouped together. This also adds a native new
   tab button to your window's tab bar and allows your `app` and window to
   receive the `new-window-for-tab` event.
-* `gamescopeOverlay` boolean (optional) _Linux_ - Sets the window to appear
-  as an overlay for SteamOS's Gamescope compositor.
+* `gamescopeOverlay` boolean (optional) _Linux_ - When enabled, sets the window
+  to appear as an overlay in [SteamOS's Gamescope compositor][gamescope] (used
+  in Game Mode on the Steam Deck). To function properly in Game Mode, the
+  window must be running under XWayland. If not set automatically, you may need
+  to force the X display by setting: `app.commandLine.appendSwitch("display", ":0")`
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -158,3 +161,4 @@ Possible values are:
 
 [overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables
 [overlay-javascript-apis]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#javascript-apis
+[gamescope]: https://github.com/ValveSoftware/gamescope
