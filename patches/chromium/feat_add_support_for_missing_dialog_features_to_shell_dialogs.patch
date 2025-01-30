@@ -199,7 +199,7 @@ index 64a79ebe2e2d21d5a6b4a98042d1cdb7b6edad52..16f2ae01a8d33e6341ed52638e963c34
            &SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse, this,
            parent));
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index b6a116654ef6815e3d97dd9302d2a9930877dda8..f236b72625b70624c30783da7731cdd4dc68feb3 100644
+index b6a116654ef6815e3d97dd9302d2a9930877dda8..f87f31921d3e8d58e8c8ba0bdc049f9f545831e4 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -7,6 +7,7 @@
@@ -275,26 +275,37 @@ index b6a116654ef6815e3d97dd9302d2a9930877dda8..f236b72625b70624c30783da7731cdd4
  bool SelectFileDialogLinuxPortal::IsRunning(
      gfx::NativeWindow parent_window) const {
    return parent_window && host_ && host_.get() == parent_window->GetHost();
-@@ -379,13 +399,16 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -377,11 +397,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+     const PortalFilterSet& filter_set) {
+   DbusDictionary dict;
  
++  std::string accept_label = button_label_.empty() ? "" : button_label_;
++
    switch (type_) {
      case SelectFileDialog::SELECT_UPLOAD_FOLDER:
 -      dict.PutAs(kFileChooserOptionAcceptLabel,
-+      const std::string accept_label =
-+        button_label_.empty() ? kFileChooserOptionAcceptLabel : button_label_;
-+      dict.PutAs(accept_label,
-                  DbusString(l10n_util::GetStringUTF8(
-                      IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON)));
+-                 DbusString(l10n_util::GetStringUTF8(
+-                     IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON)));
++      if (accept_label.empty()) {
++        accept_label = l10n_util::GetStringUTF8(
++            IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON);
++      }
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-       dict.PutAs(kFileChooserOptionDirectory, DbusBoolean(true));
-+      dict.PutAs(kFileChooserOptionMultiple, DbusBoolean(allow_multiple_selection_));
+@@ -394,6 +417,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
-     case SelectFileDialog::SELECT_OPEN_MULTI_FILE:
-       dict.PutAs(kFileChooserOptionMultiple, DbusBoolean(true));
+   }
+ 
++  if (!accept_label.empty()) {
++    dict.PutAs(kFileChooserOptionAcceptLabel, DbusString(accept_label));
++  }
++
+   if (!default_path.empty()) {
+     if (default_path_exists) {
+       // If this is an existing directory, navigate to that directory, with no
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.h b/ui/shell_dialogs/select_file_dialog_linux_portal.h
-index 651684b1840eaff664f3d73d99bbea40e097c866..72f1f0063d7d23071705884ff0c10cba3bb22875 100644
+index 651684b1840eaff664f3d73d99bbea40e097c866..9a9d541f1e9586d9d545f8547d3f09ff33dce48d 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.h
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.h
 @@ -45,6 +45,9 @@ class SelectFileDialogLinuxPortal : public SelectFileDialogLinux {
@@ -306,14 +317,4 @@ index 651684b1840eaff664f3d73d99bbea40e097c866..72f1f0063d7d23071705884ff0c10cba
 +
   protected:
    ~SelectFileDialogLinuxPortal() override;
- 
-@@ -147,6 +150,9 @@ class SelectFileDialogLinuxPortal : public SelectFileDialogLinux {
-   // The task runner the SelectFileImpl method was called on.
-   scoped_refptr<base::SequencedTaskRunner> invoker_task_runner_;
- 
-+  std::string button_label_;
-+  bool allow_multiple_selection_ = false;
-+
-   // This should be used by the invoker task runner.
-   base::WeakPtr<aura::WindowTreeHost> host_;
  
