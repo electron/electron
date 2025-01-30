@@ -360,6 +360,16 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     if (!window_type.empty())
       SetWindowType(static_cast<x11::Window>(GetAcceleratedWidget()),
                     window_type);
+
+    // Allow window to overlay gamescope on SteamOS
+    bool gamescope_overlay = false;
+    if (options.Get("gamescopeOverlay", &gamescope_overlay) &&
+        gamescope_overlay) {
+      auto* connection = x11::Connection::Get();
+      connection->SetProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
+                              x11::GetAtom("GAMESCOPE_EXTERNAL_OVERLAY"),
+                              x11::Atom::CARDINAL, 1);
+    }
   }
 #endif
 

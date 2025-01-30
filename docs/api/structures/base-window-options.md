@@ -121,6 +121,8 @@
   tabbing identifier will be grouped together. This also adds a native new
   tab button to your window's tab bar and allows your `app` and window to
   receive the `new-window-for-tab` event.
+* `gamescopeOverlay` boolean (optional) _Linux_ - Sets the window to appear
+  as an overlay for SteamOS's Gamescope compositor.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
