@@ -263,7 +263,7 @@ index 835c1e860501bcc8cb7c7dfe192c113de3d623ff..2ea8dc71c864137d33ed29255881babb
        std::unique_ptr<webrtc::DesktopCapturer> window_capturer;
        if (auto generic_capturer =
 diff --git a/content/browser/media/capture/native_screen_capture_picker.cc b/content/browser/media/capture/native_screen_capture_picker.cc
-index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..5779b647f66fbd7941d93d75dea3a0bfded14619 100644
+index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..d57df80dff9c6867cddf669efe3f90c43c03a0a7 100644
 --- a/content/browser/media/capture/native_screen_capture_picker.cc
 +++ b/content/browser/media/capture/native_screen_capture_picker.cc
 @@ -7,6 +7,7 @@
@@ -274,17 +274,6 @@ index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..5779b647f66fbd7941d93d75dea3a0bf
  #endif
  
  namespace content {
-@@ -17,8 +18,9 @@ MaybeCreateNativeScreenCapturePicker() {
-   if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
-     return CreateNativeScreenCapturePickerMac();
-   }
--#endif
-+#else
-   return nullptr;
-+#endif
- }
- 
- }  // namespace content
 diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
 index f3dbdd0db5f6c3d07b600f3dfa3267d0a5a57b81..2b37a27d37a994694855afed441ae82fe2671c90 100644
 --- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
@@ -370,7 +359,7 @@ index ebfc2bb1006950dcff8e8f8792779c414c870a0b..a864d9e892dc6051aaf884b7fe6a502e
        // It will not stitch desktops together. If
        // kScreenCaptureKitFullDesktopFallback is enabled, we will fallback to
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index ee080009f75a0b9e07a12f929086008454ef8621..3e6528095853d97dcad2dcae45f80bb528b1a9a5 100644
+index ee080009f75a0b9e07a12f929086008454ef8621..7163b1c4ce38a1ad0e0df105a6e28cf213934ae0 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 @@ -189,13 +189,13 @@ DesktopCaptureImplementation CreatePlatformDependentVideoCaptureDevice(
@@ -401,7 +390,7 @@ index ee080009f75a0b9e07a12f929086008454ef8621..3e6528095853d97dcad2dcae45f80bb5
 -       base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen))) {
 +       base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen)) ||
 +      (desktop_id.type == DesktopMediaID::TYPE_NONE &&
-+       (base::FeatureList::IsEnabled(kScreenCaptureKitMacWindow) || base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen))) {
++       (base::FeatureList::IsEnabled(kScreenCaptureKitMacWindow) || base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen)))) {
      device_out = CreateScreenCaptureKitDeviceMac(desktop_id);
      if (device_out) {
        return kScreenCaptureKitDeviceMac;
