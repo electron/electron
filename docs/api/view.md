@@ -106,6 +106,10 @@ Examples of valid `color` values:
 
 * `visible` boolean - If false, the view will be hidden from display.
 
+#### `view.getVisible()`
+
+Returns `boolean` - Whether the view is displayed.
+
 ### Instance Properties
 
 Objects created with `new View` have the following properties:
