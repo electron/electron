@@ -1,6 +1,7 @@
 import { fetchWithSession } from '@electron/internal/browser/api/net-fetch';
 import { addIpcDispatchListeners } from '@electron/internal/browser/ipc-dispatch';
 import * as deprecate from '@electron/internal/common/deprecate';
+
 import { desktopCapturer, net } from 'electron/main';
 
 const { fromPartition, fromPath, Session } = process._linkedBinding('electron_browser_session');
