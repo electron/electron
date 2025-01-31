@@ -6234,12 +6234,17 @@ describe('BrowserWindow module', () => {
 
   ifdescribe(process.platform === 'darwin')('previewFile', () => {
     afterEach(closeAllWindows);
-    it('opens the path in Quick Look on macOS', () => {
+    it('opens the path in Quick Look on macOS', async () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
         w.previewFile(__filename);
         w.closeFilePreview();
       }).to.not.throw();
+
+      // [QLPreviewPanel sharedPreviewPanel] appears to open late sometimes in
+      // CI. Try to close again after a slight delay.
+      await setTimeout(10);
+      w.closeFilePreview();
     });
 
     it('should not call BrowserWindow show event', async () => {
