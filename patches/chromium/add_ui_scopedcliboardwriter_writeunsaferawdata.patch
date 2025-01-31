@@ -8,7 +8,7 @@ was removed as part of the Raw Clipboard API scrubbing.
 https://bugs.chromium.org/p/chromium/issues/detail?id=1217643
 
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.cc b/ui/base/clipboard/scoped_clipboard_writer.cc
-index bbdd3598894f5455f890ffde1d3cf8076b9a9176..7b2724f8c2baa2461645e85c07b6487b93540251 100644
+index 48f0b7a7812a073c31ac1d7af156470efbb1b051..296ee0b51e3bdd68ceb63df4fbe5813a91669b7c 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.cc
 +++ b/ui/base/clipboard/scoped_clipboard_writer.cc
 @@ -227,6 +227,16 @@ void ScopedClipboardWriter::WriteData(const std::u16string& format,
@@ -27,9 +27,9 @@ index bbdd3598894f5455f890ffde1d3cf8076b9a9176..7b2724f8c2baa2461645e85c07b6487b
 +
  void ScopedClipboardWriter::Reset() {
    objects_.clear();
-   platform_representations_.clear();
+   raw_objects_.clear();
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.h b/ui/base/clipboard/scoped_clipboard_writer.h
-index af932ade8d50f304be850dc1ff4f77b618c12c1f..a907fdebfa901938abded0eae203c093d8387f5b 100644
+index e63c08b06c00dc0b1bd9c8339d3c6375e952e4f7..9e35ab7e6512c749fdea75fa863a97318541d350 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.h
 +++ b/ui/base/clipboard/scoped_clipboard_writer.h
 @@ -88,6 +88,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {

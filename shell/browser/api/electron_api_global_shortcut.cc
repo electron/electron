@@ -22,7 +22,7 @@
 #endif
 
 using extensions::Command;
-using extensions::GlobalShortcutListener;
+using ui::GlobalAcceleratorListener;
 
 namespace {
 
@@ -53,8 +53,8 @@ GlobalShortcut::~GlobalShortcut() {
 
 void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
   if (!base::Contains(accelerator_callback_map_, accelerator)) {
-    // This should never occur, because if it does, GlobalShortcutListener
-    // notifies us with wrong accelerator.
+    // This should never occur, because if it does,
+    // ui::GlobalAcceleratorListener notifies us with wrong accelerator.
     NOTREACHED();
   }
   accelerator_callback_map_[accelerator].Run();
@@ -99,12 +99,12 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     if (RegisteringMediaKeyForUntrustedClient(accelerator))
       return false;
 
-    GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(false);
+    ui::GlobalAcceleratorListener::SetShouldUseInternalMediaKeyHandling(false);
   }
 #endif
 
-  if (!GlobalShortcutListener::GetInstance()->RegisterAccelerator(accelerator,
-                                                                  this)) {
+  if (!ui::GlobalAcceleratorListener::GetInstance()->RegisterAccelerator(
+          accelerator, this)) {
     return false;
   }
 
@@ -123,12 +123,12 @@ void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
 
 #if BUILDFLAG(IS_MAC)
   if (accelerator.IsMediaKey() && !MapHasMediaKeys(accelerator_callback_map_)) {
-    GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(true);
+    ui::GlobalAcceleratorListener::SetShouldUseInternalMediaKeyHandling(true);
   }
 #endif
 
-  GlobalShortcutListener::GetInstance()->UnregisterAccelerator(accelerator,
-                                                               this);
+  ui::GlobalAcceleratorListener::GetInstance()->UnregisterAccelerator(
+      accelerator, this);
 }
 
 void GlobalShortcut::UnregisterSome(
@@ -149,7 +149,7 @@ void GlobalShortcut::UnregisterAll() {
     return;
   }
   accelerator_callback_map_.clear();
-  GlobalShortcutListener::GetInstance()->UnregisterAccelerators(this);
+  ui::GlobalAcceleratorListener::GetInstance()->UnregisterAccelerators(this);
 }
 
 // static

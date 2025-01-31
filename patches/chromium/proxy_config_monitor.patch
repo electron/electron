@@ -6,7 +6,7 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index ecc6f393533139045b9153c428bfb34a45e9c272..bb7725b920a95052e777e35b855b4b43991e1604 100644
+index 1c1bce347bbebe0e1932d025f0cd3b773bdd1590..c541bc048d90021f9d4ffaff135e3320b77d8fe1 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -11,7 +11,9 @@
@@ -21,7 +21,7 @@ index ecc6f393533139045b9153c428bfb34a45e9c272..bb7725b920a95052e777e35b855b4b43
  #include "mojo/public/cpp/bindings/pending_remote.h"
 @@ -21,12 +23,13 @@
  #include "chrome/browser/ash/profiles/profile_helper.h"
- #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
+ #endif  // BUILDFLAG(IS_CHROMEOS)
  
 -#if BUILDFLAG(ENABLE_EXTENSIONS)
 +#if 0

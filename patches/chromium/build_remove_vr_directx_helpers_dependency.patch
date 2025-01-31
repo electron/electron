@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: samuelmaddock <samuel.maddock@gmail.com>
+Date: Tue, 21 Jan 2025 19:04:46 -0500
+Subject: build: remove vr directx_helpers dependency
+
+This removes the //device/vr:directx_helpers dependency which
+otherwise breaks the build due to enable_vr being disabled.
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/6186102
+
+diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
+index c48c98b2da0629d06cfc1ed7c36fa6ad9f8466e8..f7711333244b7e85267df6dcfba82b53b324839d 100644
+--- a/chrome/test/BUILD.gn
++++ b/chrome/test/BUILD.gn
+@@ -12414,7 +12414,7 @@ source_set("xr_browser_tests_common") {
+   if (enable_vr) {
+     deps += [ "//device/vr" ]
+   }
+-  if (is_win) {
++  if (enable_vr && is_win) {
+     deps += [ "//device/vr:directx_helpers" ]
+   }
+ 

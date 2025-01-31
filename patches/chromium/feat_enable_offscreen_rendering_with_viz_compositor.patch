@@ -90,10 +90,10 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 664df443242ae9af565cc83786398d68e6d655c4..70d59ca1d1d53f992c7f96a81d440e723dbc7656 100644
+index 8720a29e13ce052db99a6fb7925efd4b43472b9a..20df5575efd0ae37d5885b6088be69a29c75579f 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -171,6 +171,8 @@ viz_component("service") {
+@@ -168,6 +168,8 @@ viz_component("service") {
      "display_embedder/skia_output_surface_impl_on_gpu_debug_capture.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
@@ -117,18 +117,18 @@ index 7fbb05e606fc26364c674c6330b8a5eb9c016fb3..a190a42c2127011ab54aae937a3cab36
    virtual gpu::SharedImageManager* GetSharedImageManager() = 0;
    virtual gpu::SyncPointManager* GetSyncPointManager() = 0;
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 98e50a61cb7d936350eff235d00f79b4734016ca..29d4dacbc168ce3e1a7c90e079040de7bd26771b 100644
+index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd1279ef8fa6 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -24,6 +24,7 @@
- #include "components/viz/service/display_embedder/server_shared_bitmap_manager.h"
+@@ -23,6 +23,7 @@
+ #include "components/viz/service/display/display_compositor_memory_and_task_controller.h"
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
 +#include "components/viz/service/display_embedder/software_output_device_proxy.h"
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
  #include "gpu/command_buffer/client/shared_memory_limits.h"
-@@ -31,6 +32,7 @@
+@@ -30,6 +31,7 @@
  #include "gpu/command_buffer/service/scheduler_sequence.h"
  #include "gpu/config/gpu_finch_features.h"
  #include "gpu/ipc/common/surface_handle.h"
@@ -136,7 +136,7 @@ index 98e50a61cb7d936350eff235d00f79b4734016ca..29d4dacbc168ce3e1a7c90e079040de7
  #include "ui/base/ui_base_switches.h"
  
  #if BUILDFLAG(IS_WIN)
-@@ -94,7 +96,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -93,7 +95,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
      const RendererSettings& renderer_settings,
@@ -146,7 +146,7 @@ index 98e50a61cb7d936350eff235d00f79b4734016ca..29d4dacbc168ce3e1a7c90e079040de7
  #if BUILDFLAG(IS_CHROMEOS)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -102,7 +105,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -101,7 +104,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      return std::make_unique<SoftwareOutputSurface>(
@@ -155,7 +155,7 @@ index 98e50a61cb7d936350eff235d00f79b4734016ca..29d4dacbc168ce3e1a7c90e079040de7
    } else {
      DCHECK(gpu_dependency);
  
-@@ -141,10 +144,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -140,10 +143,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -177,8 +177,8 @@ index 98e50a61cb7d936350eff235d00f79b4734016ca..29d4dacbc168ce3e1a7c90e079040de7
 +#endif
 +
  #if BUILDFLAG(IS_WIN)
-   return CreateSoftwareOutputDeviceWin(surface_handle, &output_device_backing_,
-                                        display_client);
+   HWND child_hwnd;
+   auto device = CreateSoftwareOutputDeviceWin(
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.h b/components/viz/service/display_embedder/output_surface_provider_impl.h
 index e4b46a79560e7698a6400b2ab8a57f38205a8718..3cb2518c6644cf0618f625d981befd466a3dfb2c 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.h
@@ -238,10 +238,10 @@ index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..25c427e337a1bc049cd6977a13c4113085dc9401
+index 0000000000000000000000000000000000000000..ef5cb8ae4c398e5834496c8b24eb98c41b10a7b3
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,161 @@
+@@ -0,0 +1,162 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -253,7 +253,6 @@ index 0000000000000000000000000000000000000000..25c427e337a1bc049cd6977a13c41130
 +#include "base/trace_event/trace_event.h"
 +#include "build/build_config.h"
 +#include "components/viz/common/resources/resource_sizes.h"
-+#include "components/viz/service/display_embedder/output_device_backing.h"
 +#include "mojo/public/cpp/system/platform_handle.h"
 +#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
 +#include "skia/ext/platform_canvas.h"
@@ -261,6 +260,7 @@ index 0000000000000000000000000000000000000000..25c427e337a1bc049cd6977a13c41130
 +#include "ui/gfx/skia_util.h"
 +
 +#if BUILDFLAG(IS_WIN)
++#include "components/viz/service/display_embedder/output_device_backing.h"
 +#include "skia/ext/skia_utils_win.h"
 +#include "ui/gfx/gdi_util.h"
 +#include "ui/gfx/win/hwnd_util.h"
@@ -365,7 +365,8 @@ index 0000000000000000000000000000000000000000..25c427e337a1bc049cd6977a13c41130
 +
 +  canvas_ = skia::CreatePlatformCanvasWithPixels(
 +      viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
-+      static_cast<uint8_t*>(shm_mapping_.memory()), skia::CRASH_ON_FAILURE);
++      static_cast<uint8_t*>(shm_mapping_.memory()), 0,
++      skia::CRASH_ON_FAILURE);
 +#endif
 +
 +  // Transfer region ownership to the browser process.
@@ -508,10 +509,10 @@ index 0000000000000000000000000000000000000000..e1a22ee881c0fd679ac2d2d4d11a3c93
 +
 +#endif  // COMPONENTS_VIZ_SERVICE_DISPLAY_EMBEDDER_SOFTWARE_OUTPUT_DEVICE_PROXY_H_
 diff --git a/components/viz/service/display_embedder/software_output_device_win.cc b/components/viz/service/display_embedder/software_output_device_win.cc
-index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf2a707ac8 100644
+index 4d6cc977ed5000d93918336a0dd57f60c0e95bbb..54d936e86b60f0538c70c4ee69e109ccda35248f 100644
 --- a/components/viz/service/display_embedder/software_output_device_win.cc
 +++ b/components/viz/service/display_embedder/software_output_device_win.cc
-@@ -193,7 +193,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
+@@ -149,7 +149,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
    if (!canvas_)
      return;
  
@@ -521,7 +522,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 977161762c67e126e182c24c5e8e7a3e7523dacb..1773488b3b5fce5e1c99f484988620edd8da9034 100644
+index 44774a898ee6346624827e8d534ba9b6b808ea32..25f356de45ba2c27e702e0543db74fbaa66f2454 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -111,7 +111,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -563,10 +564,10 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index c8986a3972555fffd8c5bb617d9d9cdc5e4f8ec8..0307e1618351dd5be51e29b309cb89f9b0a5c765 100644
+index 68ab07c7a6955f363a0e0eb3a6607c95edb521d3..01edb81229bf7a9205e1de54cdbb8e0dd0f4da80 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -386,8 +386,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -441,8 +441,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -596,7 +597,7 @@ index 7d19b6be8bb0e0269c381cf6efdf79eaeff1e935..b8ec06ade095df99c024396a601dbf1a
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 29dd2361ecbce33ca720ea655b81516a1d213595..83becdd42e6948c3c7ba69327addd195e4d27cad 100644
+index 8ffd1de69da7429fd69709476a890b72766662ab..e67ef2981d2e8e97fbaad7feb048ca2d2321bd99 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -39,6 +39,7 @@ struct RootCompositorFrameSinkParams {
@@ -619,7 +620,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index ad696fdb49e0045302c9c9a7f2f1cf66c550c13a..970768eaa311139d0b27f5be893d601e20052825 100644
+index b8f57342a59bd1790f275dfbcac2541359235ce6..8b983f7b7f921674d22afeccb7e9aee9be7eb249 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -89,6 +89,7 @@ class DisplayPrivate;
@@ -657,7 +658,7 @@ index ad696fdb49e0045302c9c9a7f2f1cf66c550c13a..970768eaa311139d0b27f5be893d601e
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -562,6 +576,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -583,6 +597,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
        simple_begin_frame_observers_;
    std::unique_ptr<ui::HostBeginFrameObserver> host_begin_frame_observer_;
  
