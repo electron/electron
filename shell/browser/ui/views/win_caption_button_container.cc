@@ -39,7 +39,8 @@ std::unique_ptr<WinCaptionButton> CreateCaptionButton(
 }
 
 bool HitTestCaptionButton(WinCaptionButton* button, const gfx::Point& point) {
-  return button && button->GetVisible() && button->bounds().Contains(point);
+  return button && button->GetVisible() &&
+         button->GetMirroredBounds().Contains(point);
 }
 
 }  // anonymous namespace
