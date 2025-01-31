@@ -34,18 +34,25 @@ async function loadSVG (element: HTMLSpanElement) {
 
 async function initialize () {
   const electronPath = await ipcRenderer.invoke('bootstrap');
-
-  function replaceText (selector: string, text: string) {
+  function replaceText (selector: string, text: string, link?: string) {
     const element = document.querySelector<HTMLElement>(selector);
     if (element) {
-      element.innerText = text;
+      if (link) {
+        const anchor = document.createElement('a');
+        anchor.textContent = text;
+        anchor.href = link;
+        anchor.target = '_blank';
+        element.appendChild(anchor);
+      } else {
+        element.innerText = text;
+      }
     }
   }
 
-  replaceText('.electron-version', `Electron v${process.versions.electron}`);
-  replaceText('.chrome-version', `Chromium v${process.versions.chrome}`);
-  replaceText('.node-version', `Node v${process.versions.node}`);
-  replaceText('.v8-version', `v8 v${process.versions.v8}`);
+  replaceText('.electron-version', `Electron v${process.versions.electron}`, 'https://electronjs.org/docs');
+  replaceText('.chrome-version', `Chromium v${process.versions.chrome}`, 'https://developer.chrome.com/docs/chromium');
+  replaceText('.node-version', `Node v${process.versions.node}`, `https://nodejs.org/docs/v${process.versions.node}/api`);
+  replaceText('.v8-version', `v8 v${process.versions.v8}`, 'https://v8.dev/docs');
   replaceText('.command-example', `${electronPath} path-to-app`);
 
   for (const element of document.querySelectorAll<HTMLSpanElement>('.octicon')) {
