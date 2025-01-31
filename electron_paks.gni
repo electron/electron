@@ -176,7 +176,7 @@ template("electron_paks") {
     }
 
     source_patterns = [
-      "${root_gen_dir}/chrome/chromium_strings_",
+      "${root_gen_dir}/chrome/branded_strings_",
       "${root_gen_dir}/chrome/locale_settings_",
       "${root_gen_dir}/chrome/platform_locale_settings_",
       "${root_gen_dir}/chrome/generated_resources_",

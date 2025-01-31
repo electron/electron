@@ -39,7 +39,7 @@ index e87c180342b967756efeb701c73207fcee8754f1..42e37564e585987d367921568f0f1d2b
            NOTREACHED();
        }
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
-index e4a772c18a67e93248e3488b2c2b798ddcfbb2ff..43b210d16598f08236ecd23ec5f49a7130fd4be7 100644
+index c98ecc36007185052481b6479b2ba4608e326021..dd0e4553b78997beea0f11242eeb9f759359066f 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
 @@ -111,7 +111,8 @@ bool GlobalAcceleratorListenerOzone::StartListeningForAccelerator(

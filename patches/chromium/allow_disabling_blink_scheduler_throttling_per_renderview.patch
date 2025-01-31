@@ -6,10 +6,10 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index 994850cb7737aa8787504f37ab91037b28df5690..fd9d07ac3953ded9a4f36e62721eb16097e77dba 100644
+index b8462d19d3b61e5813a0248b8667af5bbace4716..3939abfd02fa8728d48e99b1ee1c00135f8220c5 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-@@ -163,6 +163,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
+@@ -168,6 +168,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
                (network::mojom::AttributionSupport support),
                (override));
  
@@ -23,7 +23,7 @@ index 994850cb7737aa8787504f37ab91037b28df5690..fd9d07ac3953ded9a4f36e62721eb160
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 0b5f50023e642845807712c6f8736d4d99e00d68..d4f280e7e7a6c5ed5a59499fd933f3d6448872b4 100644
+index 6e61c80ad9779c3c703d20d0617529583cbf5973..5a756e2e5d3cef2f4ad0137dd59f22bb6b68ddb2 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -754,6 +754,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -51,7 +51,7 @@ index 5fb8a3dc69dc5fc5bfa08e01d8f03707a23c9274..41774b60b8cb7e0a22cedc597dc07ad1
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index fe691a1ae2126409b23649824e32bc2a2dd711e6..47d375776347948b08702b733f5a5d051d63c015 100644
+index e2d7bfcc45c6450de38a1dd1a743ac3de61f3d35..09a67ee96d89df82f14c4b10e2cf856feece66eb 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -579,8 +579,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
@@ -116,7 +116,7 @@ index 083af135d890c2837e72c314e170e81931bd2a20..5245ea88441ef84c15b8052a9011ce70
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 041ef7c3079f41a273300bcaeddd32342a5e94c4..aa786f1b88186bea18bccb2a99c9d393df7c684c 100644
+index 7a5ad6c9f2b0598f2aab5fabcea09cf60101e890..bf141e3d121736ac38ae918cbe8400ee92325824 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2468,6 +2468,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
@@ -155,7 +155,7 @@ index 041ef7c3079f41a273300bcaeddd32342a5e94c4..aa786f1b88186bea18bccb2a99c9d393
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 4f77ef1379390973fa912640a33a5033dc8db68f..12d4932d82df824e459a8a90b6f24222172618df 100644
+index 1700e9ae4809eb34bfa9e477131c928afcc87814..16bb378b55eec58f5bb1d717c3f2dd1e5ab072e3 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -448,6 +448,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
