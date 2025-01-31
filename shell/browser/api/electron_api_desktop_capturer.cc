@@ -381,16 +381,15 @@ void DesktopCapturer::StartHandling(bool capture_window,
         window_capturer_ = std::make_unique<NativeDesktopMediaList>(
             DesktopMediaList::Type::kWindow, std::move(capturer), true, true);
         window_capturer_->SetThumbnailSize(thumbnail_size);
-        // window_capturer_->ShowDelegatedList();
-#if BUILDFLAG(IS_MAC)
-        window_capturer_->skip_next_refresh_ =
-            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow) ? 2
-                                                                           : 0;
-#endif
 
         OnceCallback update_callback = base::BindOnce(
             &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
             window_capturer_.get());
+
+#if BUILDFLAG(IS_MAC)
+        window_capturer_->skip_next_refresh_ =
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow) ? 2
+                                                                           : 0;
 
         if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
           window_capturer_->ShowDelegatedList();
@@ -399,7 +398,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
               &DesktopCapturer::RequestUpdate, weak_ptr_factory_.GetWeakPtr(),
               window_capturer_.get(), std::move(update_callback));
         }
-
+#endif
         if (window_capturer_->IsSourceListDelegated()) {
           OnceCallback failure_callback = base::BindOnce(
               &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
@@ -421,15 +420,14 @@ void DesktopCapturer::StartHandling(bool capture_window,
             DesktopMediaList::Type::kScreen, std::move(capturer));
         screen_capturer_->SetThumbnailSize(thumbnail_size);
 
+        OnceCallback update_callback = base::BindOnce(
+            &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
+            screen_capturer_.get());
+
 #if BUILDFLAG(IS_MAC)
         screen_capturer_->skip_next_refresh_ =
             ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen) ? 2
                                                                            : 0;
-#endif
-
-        OnceCallback update_callback = base::BindOnce(
-            &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
-            screen_capturer_.get());
 
         if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
           screen_capturer_->ShowDelegatedList();
@@ -438,6 +436,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
               &DesktopCapturer::RequestUpdate, weak_ptr_factory_.GetWeakPtr(),
               screen_capturer_.get(), std::move(update_callback));
         }
+#endif
 
         if (screen_capturer_->IsSourceListDelegated()) {
           OnceCallback failure_callback = base::BindOnce(
