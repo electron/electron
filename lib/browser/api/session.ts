@@ -1,4 +1,5 @@
 import { fetchWithSession } from '@electron/internal/browser/api/net-fetch';
+import { addIpcDispatchListeners } from '@electron/internal/browser/ipc-dispatch';
 import * as deprecate from '@electron/internal/common/deprecate';
 
 import { net } from 'electron/main';
@@ -20,6 +21,10 @@ Object.defineProperty(systemPickerVideoSource, 'id', {
 });
 systemPickerVideoSource.name = '';
 Object.freeze(systemPickerVideoSource);
+
+Session.prototype._init = function () {
+  addIpcDispatchListeners(this, this.serviceWorkers);
+};
 
 Session.prototype.fetch = function (input: RequestInfo, init?: RequestInit) {
   return fetchWithSession(input, init, this, net.request);
