@@ -246,7 +246,7 @@ void WebContentsPreferences::SetFromDictionary(
 
   web_preferences.Get("v8CacheOptions", &v8_cache_options_);
 
-  web_preferences.Get(options::kDeprecatedPasteEnabled,
+  web_preferences.Get(options::kEnableDeprecatedPaste,
                       &deprecated_paste_enabled_);
 
 #if BUILDFLAG(IS_MAC)
