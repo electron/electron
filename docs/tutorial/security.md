@@ -810,7 +810,7 @@ potential error cases, and refer to
 You should not directly expose Electron's APIs, especially IPC, to untrusted web content in your
 preload scripts.
 
-### Why?
+#### Why?
 
 Exposing raw APIs like `ipcRenderer.on` is dangerous because it gives renderer processes direct
 access to the entire IPC event system, allowing them to listen for any IPC events, not just the ones
@@ -823,7 +823,7 @@ events, passing the callback directly means the renderer gets access to this eve
 
 In short, we want the untrusted web content to only have access to necessary information and APIs.
 
-### How?
+#### How?
 
 ```js title='preload'.js'
 // Bad
