@@ -27,7 +27,7 @@ const targetBranch = positionals[0];
 
 if (positionals.length < 1) {
   console.log(`Trigger CI to build release builds of electron.
-  Usage: ci-release-build.js [--job=CI_JOB_NAME] [--arch=INDIVIDUAL_ARCH] [--ci=AppVeyor|GitHubActions]
+  Usage: ci-release-build.js [--job=CI_JOB_NAME] [--arch=INDIVIDUAL_ARCH] [--ci=GitHubActions]
   [--ghRelease] [--commit=sha] [--newVersion=version_tag] TARGET_BRANCH
   `);
   process.exit(0);

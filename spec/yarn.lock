@@ -144,13 +144,6 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
-"@marshallofsound/mocha-appveyor-reporter@^0.4.3":
-  version "0.4.3"
-  resolved "https://registry.yarnpkg.com/@marshallofsound/mocha-appveyor-reporter/-/mocha-appveyor-reporter-0.4.3.tgz#a9225224391a90e3c6bb48415d5015de895a7114"
-  integrity sha512-uKMY+VTNWQRcMr9P7ErRqi0TKAC6oceFs2Y6MDdXqDNxOU4AQYQ6WNrH8LuCQFeV9Y/vMU7wFJvD7oQeWsQzWQ==
-  dependencies:
-    got "^11.8.6"
-
 "@nornagon/put@0.0.8":
   version "0.0.8"
   resolved "https://registry.yarnpkg.com/@nornagon/put/-/put-0.0.8.tgz#9d497ec46c9364acc3f8b59aa3cf8ee4134ae337"
@@ -1361,7 +1354,7 @@ gopd@^1.0.1:
   dependencies:
     get-intrinsic "^1.1.3"
 
-got@^11.8.5, got@^11.8.6:
+got@^11.8.5:
   version "11.8.6"
   resolved "https://registry.yarnpkg.com/got/-/got-11.8.6.tgz#276e827ead8772eddbcfc97170590b841823233a"
   integrity sha512-6tfZ91bOr7bOXnK7PRDCGBLa1H4U080YHNaAQ2KsMGlLEzRbk44nsZF2E1IeRc3vtJHPVbKCYgdFbaGO2ljd8g==

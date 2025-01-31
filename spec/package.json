@@ -26,7 +26,6 @@
     "@electron-ci/external-ab": "file:./fixtures/native-addon/external-ab/",
     "@electron/fuses": "^1.8.0",
     "@electron/packager": "^18.3.2",
-    "@marshallofsound/mocha-appveyor-reporter": "^0.4.3",
     "@types/sinon": "^9.0.4",
     "@types/ws": "^7.2.0",
     "basic-auth": "^2.0.1",
