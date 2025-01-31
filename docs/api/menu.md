@@ -2,7 +2,10 @@
 
 ## Class: Menu
 
-> Create native application menus and context menus.
+> Create application menus and context menus.
+>
+> * Menus under Windows and Linux look visually similar to Chromium.
+> * Menus under macOS are native.
 
 Process: [Main](../glossary.md#main-process)
 
