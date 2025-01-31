@@ -31,8 +31,12 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
   v8::MaybeLocal<v8::Function> compiled = builtin_loader.LookupAndCompile(
       context, id, parameters, node::Realm::GetCurrent(context));
 
-  if (compiled.IsEmpty())
+  if (compiled.IsEmpty()) {
+    // TODO(samuelmaddock): how can we get the compilation error message?
+    LOG(ERROR) << "CompileAndCall failed to compile electron script (" << id
+               << ")";
     return {};
+  }
 
   v8::Local<v8::Function> fn = compiled.ToLocalChecked().As<v8::Function>();
   v8::MaybeLocal<v8::Value> ret = fn->Call(
@@ -47,7 +51,7 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     } else if (try_catch.HasTerminated()) {
       msg = "script execution has been terminated";
     }
-    LOG(ERROR) << "Failed to CompileAndCall electron script (" << id
+    LOG(ERROR) << "CompileAndCall failed to evaluate electron script (" << id
                << "): " << msg;
   }
   return ret;

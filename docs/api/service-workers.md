@@ -107,8 +107,6 @@ Returns `Promise<ServiceWorkerMain>` - Resolves with the service worker when it'
 
 Starts the service worker or does nothing if already running.
 
-<!-- TODO(samuelmaddock): extend example to send IPC after starting worker -->
-
 ```js
 const { app, session } = require('electron')
 const { serviceWorkers } = session.defaultSession
@@ -120,7 +118,8 @@ app.on('browser-window-created', async (event, window) => {
   for (const scope of workerScopes) {
     try {
       // Ensure worker is started
-      await serviceWorkers.startWorkerForScope(scope)
+      const serviceWorker = await serviceWorkers.startWorkerForScope(scope)
+      serviceWorker.send('window-created', { windowId: window.id })
     } catch (error) {
       console.error(`Failed to start service worker for ${scope}`)
       console.error(error)

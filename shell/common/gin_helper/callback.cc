@@ -33,7 +33,10 @@ struct TranslatorHolder {
 };
 
 // Cached JavaScript version of |CallTranslator|.
-v8::Persistent<v8::FunctionTemplate> g_call_translator;
+// v8::Persistent handles are bound to a specific v8::Isolate. Require
+// initializing per-thread to avoid using the wrong isolate from service
+// worker preload scripts.
+thread_local v8::Persistent<v8::FunctionTemplate> g_call_translator;
 
 void CallTranslator(v8::Local<v8::External> external,
                     v8::Local<v8::Object> state,

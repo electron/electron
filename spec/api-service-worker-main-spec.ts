@@ -1,4 +1,4 @@
-import { session, webContents as webContentsModule, WebContents } from 'electron/main';
+import { ipcMain, session, webContents as webContentsModule, WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -14,6 +14,7 @@ const DEBUG = !process.env.CI;
 
 describe('ServiceWorkerMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
+  const preloadRealmFixtures = path.resolve(fixtures, 'api/preload-realm');
   const webContentsInternal: typeof ElectronInternal.WebContents = webContentsModule as any;
 
   let ses: Electron.Session;
@@ -61,7 +62,16 @@ describe('ServiceWorkerMain module', () => {
   afterEach(async () => {
     if (!wc.isDestroyed()) wc.destroy();
     server.close();
+    ses.getPreloadScripts().map(({ id }) => ses.unregisterPreloadScript(id));
   });
+
+  function registerPreload (scriptName: string) {
+    const id = ses.registerPreloadScript({
+      type: 'service-worker',
+      filePath: path.resolve(preloadRealmFixtures, scriptName)
+    });
+    expect(id).to.be.a('string');
+  }
 
   async function loadWorkerScript (scriptUrl?: string) {
     const scriptParams = scriptUrl ? `?scriptUrl=${scriptUrl}` : '';
@@ -92,6 +102,21 @@ describe('ServiceWorkerMain module', () => {
     expect(serviceWorker).to.not.be.undefined();
     return serviceWorker!;
   }
+
+  /** Runs a test using the framework in preload-tests.js */
+  const runTest = async (serviceWorker: Electron.ServiceWorkerMain, rpc: { name: string, args: any[] }) => {
+    const uuid = crypto.randomUUID();
+    serviceWorker.send('test', uuid, rpc.name, ...rpc.args);
+    return new Promise((resolve, reject) => {
+      serviceWorker.ipc.once(`test-result-${uuid}`, (_event, { error, result }) => {
+        if (error) {
+          reject(result);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+  };
 
   describe('serviceWorkers.getWorkerFromVersionID', () => {
     it('returns undefined for non-live service worker', () => {
@@ -255,7 +280,7 @@ describe('ServiceWorkerMain module', () => {
       expect(() => serviceWorker.startTask()).to.throw();
     });
 
-    it('throws when ending task after destroyed', async function () {
+    it('throws when ending task after destroyed', async () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker();
       const task = serviceWorker.startTask();
@@ -286,6 +311,115 @@ describe('ServiceWorkerMain module', () => {
       if (!serviceWorker) return;
       expect(serviceWorker).to.have.property('scope').that.is.a('string');
       expect(serviceWorker.scope).to.equal(`${baseUrl}/`);
+    });
+  });
+
+  describe('ipc', () => {
+    beforeEach(() => {
+      registerPreload('preload-tests.js');
+    });
+
+    describe('on(channel)', () => {
+      it('can receive a message during startup', async () => {
+        registerPreload('preload-send-ping.js');
+        loadWorkerScript();
+        const serviceWorker = await waitForServiceWorker();
+        const pingPromise = once(serviceWorker.ipc, 'ping');
+        await pingPromise;
+      });
+
+      it('receives a message', async () => {
+        loadWorkerScript();
+        const serviceWorker = await waitForServiceWorker('running');
+        const pingPromise = once(serviceWorker.ipc, 'ping');
+        runTest(serviceWorker, { name: 'testSend', args: ['ping'] });
+        await pingPromise;
+      });
+
+      it('does not receive message on ipcMain', async () => {
+        loadWorkerScript();
+        const serviceWorker = await waitForServiceWorker('running');
+        const abortController = new AbortController();
+        try {
+          let pingReceived = false;
+          once(ipcMain, 'ping', { signal: abortController.signal }).then(() => {
+            pingReceived = true;
+          });
+          runTest(serviceWorker, { name: 'testSend', args: ['ping'] });
+          await once(ses, '-ipc-message');
+          await new Promise<void>(queueMicrotask);
+          expect(pingReceived).to.be.false();
+        } finally {
+          abortController.abort();
+        }
+      });
+    });
+
+    describe('handle(channel)', () => {
+      it('receives and responds to message', async () => {
+        loadWorkerScript();
+        const serviceWorker = await waitForServiceWorker('running');
+        serviceWorker.ipc.handle('ping', () => 'pong');
+        const result = await runTest(serviceWorker, { name: 'testInvoke', args: ['ping'] });
+        expect(result).to.equal('pong');
+      });
+
+      it('works after restarting worker', async () => {
+        loadWorkerScript();
+        const serviceWorker = await waitForServiceWorker('running');
+        const { scope } = serviceWorker;
+        serviceWorker.ipc.handle('ping', () => 'pong');
+        await serviceWorkers._stopAllWorkers();
+        await serviceWorkers.startWorkerForScope(scope);
+        const result = await runTest(serviceWorker, { name: 'testInvoke', args: ['ping'] });
+        expect(result).to.equal('pong');
+      });
+    });
+  });
+
+  describe('contextBridge', () => {
+    beforeEach(() => {
+      registerPreload('preload-tests.js');
+    });
+
+    it('can evaluate func from preload realm', async () => {
+      loadWorkerScript();
+      const serviceWorker = await waitForServiceWorker('running');
+      const result = await runTest(serviceWorker, { name: 'testEvaluate', args: ['evalConstructorName'] });
+      expect(result).to.equal('ServiceWorkerGlobalScope');
+    });
+  });
+
+  describe('extensions', () => {
+    const extensionFixtures = path.join(fixtures, 'extensions');
+    const testExtensionFixture = path.join(extensionFixtures, 'mv3-service-worker');
+
+    beforeEach(async () => {
+      ses = session.fromPartition(`persist:${crypto.randomUUID()}-service-worker-main-spec`);
+      serviceWorkers = ses.serviceWorkers;
+    });
+
+    it('can observe extension service workers', async () => {
+      const serviceWorkerPromise = waitForServiceWorker();
+      const extension = await ses.loadExtension(testExtensionFixture);
+      const serviceWorker = await serviceWorkerPromise;
+      expect(serviceWorker.scope).to.equal(extension.url);
+    });
+
+    it('has extension state available when preload runs', async () => {
+      registerPreload('preload-send-extension.js');
+      const serviceWorkerPromise = waitForServiceWorker();
+      const extensionPromise = ses.loadExtension(testExtensionFixture);
+      const serviceWorker = await serviceWorkerPromise;
+      const result = await new Promise<any>((resolve) => {
+        serviceWorker.ipc.handleOnce('preload-extension-result', (_event, result) => {
+          resolve(result);
+        });
+      });
+      const extension = await extensionPromise;
+      expect(result).to.be.an('object');
+      expect(result.id).to.equal(extension.id);
+      expect(result.manifest).to.deep.equal(result.manifest);
     });
   });
 });
