@@ -387,6 +387,10 @@ void View::SetVisible(bool visible) {
   view_->SetVisible(visible);
 }
 
+bool View::GetVisible() const {
+  return view_ ? view_->GetVisible() : false;
+}
+
 void View::OnViewBoundsChanged(views::View* observed_view) {
   ApplyBorderRadius();
   Emit("bounds-changed");
@@ -445,7 +449,8 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBackgroundColor", &View::SetBackgroundColor)
       .SetMethod("setBorderRadius", &View::SetBorderRadius)
       .SetMethod("setLayout", &View::SetLayout)
-      .SetMethod("setVisible", &View::SetVisible);
+      .SetMethod("setVisible", &View::SetVisible)
+      .SetMethod("getVisible", &View::GetVisible);
 }
 
 }  // namespace electron::api
