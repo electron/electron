@@ -205,6 +205,11 @@ inline constexpr std::string_view kEnablePreferredSizeMode =
 inline constexpr std::string_view kHiddenPage = "hiddenPage";
 
 inline constexpr std::string_view kSpellcheck = "spellcheck";
+
+// Enables the permission managed support for
+// document.execCommand("paste").
+inline constexpr std::string_view kEnableDeprecatedPaste =
+    "enableDeprecatedPaste";
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.
