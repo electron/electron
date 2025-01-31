@@ -107,9 +107,9 @@ std::unique_ptr<MessagePort> ElectronMessagingDelegate::CreateReceiverForTab(
   if (!receiver_rfh)
     return nullptr;
 
-  return std::make_unique<ExtensionMessagePort>(
-      channel_delegate, receiver_port_id, extension_id, receiver_rfh,
-      include_child_frames);
+  return ExtensionMessagePort::CreateForTab(channel_delegate, receiver_port_id,
+                                            extension_id, receiver_rfh,
+                                            include_child_frames);
 }
 
 std::unique_ptr<MessagePort>

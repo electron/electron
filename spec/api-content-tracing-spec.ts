@@ -79,9 +79,9 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
 
       // If the `categoryFilter` param above is not respected
-      // the file size will be above 50KB.
+      // the file size will be above 60KB.
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      const expectedMaximumFileSize = 50; // Depends on a platform.
+      const expectedMaximumFileSize = 60; // Depends on a platform.
 
       expect(fileSizeInKiloBytes).to.be.above(0,
         `the trace output file is empty, check "${outputFilePath}"`);

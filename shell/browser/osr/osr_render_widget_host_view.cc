@@ -195,8 +195,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
 
-  bool opaque = SkColorGetA(background_color_) == SK_AlphaOPAQUE;
-  root_layer()->SetFillsBoundsOpaquely(opaque);
   root_layer()->SetColor(background_color_);
 
   ui::ContextFactory* context_factory = content::GetContextFactory();
@@ -991,8 +989,6 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
     return;
   background_color_ = color;
 
-  bool opaque = SkColorGetA(color) == SK_AlphaOPAQUE;
-  root_layer()->SetFillsBoundsOpaquely(opaque);
   root_layer()->SetColor(color);
 }
 
