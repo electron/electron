@@ -71,4 +71,4 @@ See [Coding Style](https://electronjs.org/docs/development/coding-style) for inf
 ## Further Reading
 
 For more in-depth guides on developing Electron, see
-[/docs/development](/docs/development/README.md)
+[/docs/development](/docs/development/README.md).
