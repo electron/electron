@@ -1,8 +1,10 @@
+import { getIPCRenderer } from '@electron/internal/renderer/ipc-renderer-bindings';
+
 import { EventEmitter } from 'events';
 
-const { ipc } = process._linkedBinding('electron_renderer_ipc');
-
+const ipc = getIPCRenderer();
 const internal = false;
+
 class IpcRenderer extends EventEmitter implements Electron.IpcRenderer {
   send (channel: string, ...args: any[]) {
     return ipc.send(internal, channel, args);
