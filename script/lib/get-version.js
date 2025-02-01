@@ -4,8 +4,9 @@ const path = require('node:path');
 
 const { ELECTRON_DIR, getOutDir } = require('./utils');
 
+// Most win32 machines have python.exe but no python3.exe.
 function findWindowsPython() {
-  for (const python of ['python3', 'python']) {
+  for (const python of ['python', 'python3']) {
     if (spawnSync('where', [python]).status === 0) {
       return python;
     }
