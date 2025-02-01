@@ -4,6 +4,16 @@ const path = require('node:path');
 
 const { ELECTRON_DIR, getOutDir } = require('./utils');
 
+function findWindowsPython() {
+  for (const python of ['python3', 'python']) {
+    if (spawnSync('where', [python]).status === 0) {
+      return python;
+    }
+  }
+
+  return null;
+}
+
 // Print the value of electron_version set in gn config.
 module.exports.getElectronVersion = () => {
   // Read the override_electron_version from args.gn file.
@@ -20,6 +30,10 @@ module.exports.getElectronVersion = () => {
     // valid case and error will be ignored.
   }
   // Get the version from git tag if it is not defined in gn args.
+  const python = process.platform === 'win32' ? findWindowsPython() : 'python3';
+  if (!python) {
+    throw new Error('Could not find Python executable on the system');
+  }
   const output = spawnSync('python3', [path.join(ELECTRON_DIR, 'script', 'get-git-version.py')]);
   if (output.status !== 0) {
     throw new Error(`Failed to get git tag, script quit with ${output.status}: ${output.stdout}`);
