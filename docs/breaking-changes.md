@@ -121,7 +121,6 @@ modules with `--std=c++20` rather than `--std=c++17`. Images using gcc9 or
 lower may need to update to gcc10 in order to compile. See
 [#43555](https://github.com/electron/electron/pull/43555) for more details.
 
-
 ### Deprecated: `systemPreferences.accessibilityDisplayShouldReduceTransparency`
 
 The `systemPreferences.accessibilityDisplayShouldReduceTransparency` property is now deprecated in favor of the new `nativeTheme.prefersReducedTransparency`, which provides identical information and works cross-platform.
