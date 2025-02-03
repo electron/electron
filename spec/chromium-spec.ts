@@ -3344,8 +3344,13 @@ describe('paste execCommand', () => {
     `, true);
   };
 
+  let ses: Electron.Session;
+  beforeEach(() => {
+    ses = session.fromPartition(`paste-execCommand-${Math.random()}`);
+  });
+
   afterEach(() => {
-    session.defaultSession.setPermissionCheckHandler(null);
+    ses.setPermissionCheckHandler(null);
     closeAllWindows();
   });
 
@@ -3364,7 +3369,8 @@ describe('paste execCommand', () => {
   it('does not execute with default permissions', async () => {
     const w: BrowserWindow = new BrowserWindow({
       webPreferences: {
-        enableDeprecatedPaste: true
+        enableDeprecatedPaste: true,
+        session: ses
       }
     });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
@@ -3380,11 +3386,12 @@ describe('paste execCommand', () => {
   it('does not execute with permission denied', async () => {
     const w: BrowserWindow = new BrowserWindow({
       webPreferences: {
-        enableDeprecatedPaste: true
+        enableDeprecatedPaste: true,
+        session: ses
       }
     });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-    session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+    ses.setPermissionCheckHandler((webContents, permission) => {
       if (permission === 'deprecated-sync-clipboard-read') {
         return false;
       }
@@ -3402,11 +3409,12 @@ describe('paste execCommand', () => {
   it('can trigger paste event when permission is granted', async () => {
     const w: BrowserWindow = new BrowserWindow({
       webPreferences: {
-        enableDeprecatedPaste: true
+        enableDeprecatedPaste: true,
+        session: ses
       }
     });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-    session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
+    ses.setPermissionCheckHandler((webContents, permission) => {
       if (permission === 'deprecated-sync-clipboard-read') {
         return true;
       }
@@ -3417,6 +3425,50 @@ describe('paste execCommand', () => {
       text
     });
     const paste = await readClipboard(w);
+    expect(paste).to.equal(text);
+  });
+
+  it('can trigger paste event when permission is granted for child windows', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        session: ses
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    w.webContents.setWindowOpenHandler(details => {
+      if (details.url === 'about:blank') {
+        return {
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            webPreferences: {
+              enableDeprecatedPaste: true,
+              session: ses
+            }
+          }
+        };
+      } else {
+        return {
+          action: 'deny'
+        };
+      }
+    });
+    ses.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+      if (requestingOrigin === `${webContents?.opener?.origin}/` &&
+          details.requestingUrl === 'about:blank' &&
+          permission === 'deprecated-sync-clipboard-read') {
+        return true;
+      }
+      return false;
+    });
+    const childPromise = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
+    w.webContents.executeJavaScript('window.open("about:blank")', true);
+    const [childWindow] = await childPromise;
+    expect(childWindow.webContents.opener).to.equal(w.webContents.mainFrame);
+    const text = 'Sync Clipboard Test for Child Window';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(childWindow);
     expect(paste).to.equal(text);
   });
 });
