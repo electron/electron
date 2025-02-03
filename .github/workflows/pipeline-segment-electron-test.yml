@@ -74,6 +74,7 @@ jobs:
         echo "C:\Program Files\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "C:\Program Files\Git\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         echo "C:\Python311" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        cp "C:\Python311\python.exe" "C:\Python311\python3.exe"
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
       uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6
