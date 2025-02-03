@@ -369,9 +369,6 @@ def main():
           patch_file.close()
           os.unlink(patch_file.name)
         else:
-          print(
-            'To patch these files, run:',
-            f"$ git apply {patch_file.name}", sep='\n')
           filename=patch_file.name
           print(f"\nTo patch these files, run:\n$ git apply {filename}\n")
 

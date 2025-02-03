@@ -48,7 +48,7 @@ index 867a1c4aca54b9d41490d23a5eb55088b7e941cc..09f4c65a18efea262b1f854f993c6f18
  
  static v8::CFunction fast_equal(v8::CFunction::Make(FastTimingSafeEqual));
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 2302e8d94da3250e7fb4ee0c5e6a51d3d6941fbc..ed72476e16036d972de54d39cf4bd37bbbed5c5f 100644
+index cd51d9acf9540d506ec35812b9d2c530fce24912..07068344262f7b73a83073d4da75bffe8b747a61 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -44,6 +44,14 @@
@@ -74,7 +74,7 @@ index 2302e8d94da3250e7fb4ee0c5e6a51d3d6941fbc..ed72476e16036d972de54d39cf4bd37b
  using v8::FunctionCallbackInfo;
  using v8::Global;
  using v8::HandleScope;
-@@ -581,19 +588,24 @@ void SlowCopy(const FunctionCallbackInfo<Value>& args) {
+@@ -582,19 +589,24 @@ void SlowCopy(const FunctionCallbackInfo<Value>& args) {
  
  // Assume caller has properly validated args.
  uint32_t FastCopy(Local<Value> receiver,
@@ -107,7 +107,7 @@ index 2302e8d94da3250e7fb4ee0c5e6a51d3d6941fbc..ed72476e16036d972de54d39cf4bd37b
    return to_copy;
  }
  
-@@ -857,19 +869,17 @@ void Compare(const FunctionCallbackInfo<Value> &args) {
+@@ -858,19 +870,17 @@ void Compare(const FunctionCallbackInfo<Value> &args) {
  }
  
  int32_t FastCompare(v8::Local<v8::Value>,
@@ -135,7 +135,7 @@ index 2302e8d94da3250e7fb4ee0c5e6a51d3d6941fbc..ed72476e16036d972de54d39cf4bd37b
  }
  
  static v8::CFunction fast_compare(v8::CFunction::Make(FastCompare));
-@@ -1140,14 +1150,13 @@ void SlowIndexOfNumber(const FunctionCallbackInfo<Value>& args) {
+@@ -1141,14 +1151,13 @@ void SlowIndexOfNumber(const FunctionCallbackInfo<Value>& args) {
  }
  
  int32_t FastIndexOfNumber(v8::Local<v8::Value>,
@@ -153,7 +153,7 @@ index 2302e8d94da3250e7fb4ee0c5e6a51d3d6941fbc..ed72476e16036d972de54d39cf4bd37b
  }
  
  static v8::CFunction fast_index_of_number(
-@@ -1552,21 +1561,31 @@ void SlowWriteString(const FunctionCallbackInfo<Value>& args) {
+@@ -1501,21 +1510,31 @@ void SlowWriteString(const FunctionCallbackInfo<Value>& args) {
  
  template <encoding encoding>
  uint32_t FastWriteString(Local<Value> receiver,
@@ -194,10 +194,10 @@ index 2302e8d94da3250e7fb4ee0c5e6a51d3d6941fbc..ed72476e16036d972de54d39cf4bd37b
  
  static v8::CFunction fast_write_string_ascii(
 diff --git a/src/node_external_reference.h b/src/node_external_reference.h
-index 38a4ff7e6c2c9997f004c7c1f94cb5a9ffc2ffe0..48e73168f994d79ae3564b813acb5546ca8f2526 100644
+index 8d49a119c218323674e29a522ecf71bd22cdaf1b..d39693f2f45f39e45960453112b0f6460a1b3a4d 100644
 --- a/src/node_external_reference.h
 +++ b/src/node_external_reference.h
-@@ -34,16 +34,16 @@ using CFunctionCallbackWithStrings =
+@@ -40,16 +40,16 @@ using CFunctionCallbackWithStrings =
               const v8::FastOneByteString& base);
  using CFunctionCallbackWithTwoUint8Arrays =
      int32_t (*)(v8::Local<v8::Value>,
@@ -219,7 +219,7 @@ index 38a4ff7e6c2c9997f004c7c1f94cb5a9ffc2ffe0..48e73168f994d79ae3564b813acb5546
                  uint32_t,
                  int64_t,
                  bool);
-@@ -58,18 +58,20 @@ using CFunctionWithBool = void (*)(v8::Local<v8::Value>, bool);
+@@ -68,18 +68,20 @@ using CFunctionWithBool = void (*)(v8::Local<v8::Value>,
  
  using CFunctionWriteString =
      uint32_t (*)(v8::Local<v8::Value> receiver,
@@ -246,19 +246,18 @@ index 38a4ff7e6c2c9997f004c7c1f94cb5a9ffc2ffe0..48e73168f994d79ae3564b813acb5546
  // This class manages the external references from the V8 heap
  // to the C++ addresses in Node.js.
 diff --git a/src/util.h b/src/util.h
-index a6da8720c499df54ab4608eb03cff905759c2232..43ef977363e565a6f9422c9454e25b8fe0b327d5 100644
+index b1f316eebc7199a3737f05a5f9a1dd7fc289490c..23a0a486244ce38277ef11df5806da1266b901ac 100644
 --- a/src/util.h
 +++ b/src/util.h
-@@ -57,6 +57,8 @@
- 
+@@ -59,6 +59,7 @@
  namespace node {
  
-+static constexpr size_t kMaxSizeInHeap = 64;                                 \
-+
+ constexpr char kPathSeparator = std::filesystem::path::preferred_separator;
++static constexpr size_t kMaxSizeInHeap = 64;
+ 
  #ifdef _WIN32
  /* MAX_PATH is in characters, not bytes. Make sure we have enough headroom. */
- #define PATH_MAX_BYTES (MAX_PATH * 4)
-@@ -573,6 +575,16 @@ class BufferValue : public MaybeStackBuffer<char> {
+@@ -576,6 +577,16 @@ class BufferValue : public MaybeStackBuffer<char> {
        static_cast<char*>(name->Buffer()->Data()) + name##_offset;              \
    if (name##_length > 0) CHECK_NE(name##_data, nullptr);
  

@@ -10,54 +10,6 @@ receive remote control events until it begins playing audio. This runs
 counter to the design of globalShortcuts, and so we need to instead
 use `ui::MediaKeysListener`.
 
-diff --git a/chrome/browser/extensions/global_shortcut_listener.cc b/chrome/browser/extensions/global_shortcut_listener.cc
-index 7a5635aa2beec3f46fde571f68adf5ae6c20ea11..897d1dc7c5896edde32f0dc5a46143ed2e8ea03c 100644
---- a/chrome/browser/extensions/global_shortcut_listener.cc
-+++ b/chrome/browser/extensions/global_shortcut_listener.cc
-@@ -14,6 +14,7 @@
- #include "base/notreached.h"
- #include "build/config/linux/dbus/buildflags.h"
- #include "content/public/browser/browser_thread.h"
-+#include "content/public/browser/media_keys_listener_manager.h"
- #include "ui/base/accelerators/accelerator.h"
- #include "ui/base/accelerators/command.h"
- #include "ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h"
-@@ -91,6 +92,22 @@ void GlobalShortcutListener::UnregisterAccelerator(
-   RemoveAccelerator(accelerator);
- }
- 
-+// static
-+void GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(bool should_use) {
-+  if (content::MediaKeysListenerManager::
-+            IsMediaKeysListenerManagerEnabled()) {
-+    content::MediaKeysListenerManager* media_keys_listener_manager =
-+        content::MediaKeysListenerManager::GetInstance();
-+    DCHECK(media_keys_listener_manager);
-+
-+    if (should_use) {
-+      media_keys_listener_manager->EnableInternalMediaKeyHandling();
-+    } else {
-+      media_keys_listener_manager->DisableInternalMediaKeyHandling();
-+    }
-+  }
-+}
-+
- void GlobalShortcutListener::UnregisterAccelerators(Observer* observer) {
-   CHECK(global_accelerator_listener_);
- 
-diff --git a/chrome/browser/extensions/global_shortcut_listener.h b/chrome/browser/extensions/global_shortcut_listener.h
-index ec203528129a3d13753d6ce477dd5796e80ddf71..2dd2403e0ae57dd8162fbcc8c8d3ebdd6e57c95c 100644
---- a/chrome/browser/extensions/global_shortcut_listener.h
-+++ b/chrome/browser/extensions/global_shortcut_listener.h
-@@ -41,6 +41,8 @@ class GlobalShortcutListener {
-   // The instance may be nullptr.
-   static GlobalShortcutListener* GetInstance();
- 
-+  static void SetShouldUseInternalMediaKeyHandling(bool should_use);
-+
-   // Register an observer for when a certain |accelerator| is struck. Returns
-   // true if register successfully, or false if 1) the specificied |accelerator|
-   // has been registered by another caller or other native applications, or
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
 index 42e37564e585987d367921568f0f1d2b7507f953..9baf89efbade01e8b60c579255f10799914e144f 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
@@ -96,3 +48,52 @@ index 42e37564e585987d367921568f0f1d2b7507f953..9baf89efbade01e8b60c579255f10799
    EnsureAuxiliaryServices();
  }
  
+diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc
+index cdf35a5bcec7b30f1b75e77cc29a9b7bb591cfd6..b6dfeee587faa742beb4f1d871db4c4f76bf46ab 100644
+--- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc
++++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc
+@@ -65,6 +65,22 @@ void GlobalAcceleratorListener::UnregisterAccelerator(
+   }
+ }
+ 
++// static
++void GlobalAcceleratorListener::SetShouldUseInternalMediaKeyHandling(bool should_use) {
++  if (content::MediaKeysListenerManager::
++            IsMediaKeysListenerManagerEnabled()) {
++    content::MediaKeysListenerManager* media_keys_listener_manager =
++        content::MediaKeysListenerManager::GetInstance();
++    DCHECK(media_keys_listener_manager);
++
++    if (should_use) {
++      media_keys_listener_manager->EnableInternalMediaKeyHandling();
++    } else {
++      media_keys_listener_manager->DisableInternalMediaKeyHandling();
++    }
++  }
++}
++
+ void GlobalAcceleratorListener::UnregisterAccelerators(Observer* observer) {
+   if (IsShortcutHandlingSuspended()) {
+     return;
+diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
+index 701808699796b0ef1a87d4d12f79fb6cf580c617..bf6e38410cedd6dd6d339b6f2f456124770bbd96 100644
+--- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
++++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
+@@ -8,6 +8,7 @@
+ #include <map>
+ 
+ #include "base/memory/raw_ptr.h"
++#include "content/public/browser/media_keys_listener_manager.h"
+ #include "ui/base/accelerators/command.h"
+ 
+ namespace ui {
+@@ -38,6 +39,9 @@ class GlobalAcceleratorListener {
+   // The instance may be nullptr.
+   static GlobalAcceleratorListener* GetInstance();
+ 
++  // enables media keys to work with Electron's globalShortcut module.
++  static void SetShouldUseInternalMediaKeyHandling(bool should_use);
++
+   // Register an observer for when a certain `accelerator` is struck. Returns
+   // true if register successfully, or false if the specified `accelerator`
+   // has been registered by another caller or other native applications.

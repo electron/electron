@@ -1,0 +1,168 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 29 Jan 2025 17:01:03 +0900
+Subject: feat: add signals when embedder cleanup callbacks run for
+ gin::wrappable
+
+Current setup of finalization callbacks does not work well with
+gin_helper::CleanedUpAtExit for wrappables specifically on environment
+shutdown leading to UAF in the second pass.
+
+Details at  https://github.com/microsoft/vscode/issues/192119#issuecomment-2375851531
+
+The signals exposed in this patch does the following 2 things,
+
+1) Fix weak state of the wrapped object when the finializer callbacks
+   have not yet been processed
+2) Avoid calling into the second pass when the embedder has already
+  destroyed the wrapped object via CleanedUpAtExit.
+
+This patch is more of a bandaid fix to improve the lifetime
+management with existing finalizer callbacks. We should be able to
+remove this patch once gin::Wrappable can be managed by V8 Oilpan
+
+Refs https://issues.chromium.org/issues/40210365 which is blocked
+on https://issues.chromium.org/issues/42203693
+
+diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
+index 2be37976a1305f1deed561b3b829dbb5d7ae85e7..44eb16f17d272125e2b4a590f8962eb8144d9755 100644
+--- a/gin/isolate_holder.cc
++++ b/gin/isolate_holder.cc
+@@ -34,6 +34,8 @@ v8::ArrayBuffer::Allocator* g_array_buffer_allocator = nullptr;
+ const intptr_t* g_reference_table = nullptr;
+ v8::FatalErrorCallback g_fatal_error_callback = nullptr;
+ v8::OOMErrorCallback g_oom_error_callback = nullptr;
++bool g_initialized_microtasks_runner = false;
++bool g_destroyed_microtasks_runner = false;
+ 
+ std::unique_ptr<v8::Isolate::CreateParams> getModifiedIsolateParams(
+     std::unique_ptr<v8::Isolate::CreateParams> params,
+@@ -198,10 +200,26 @@ IsolateHolder::getDefaultIsolateParams() {
+   return params;
+ }
+ 
++// static
++bool IsolateHolder::DestroyedMicrotasksRunner() {
++  return g_initialized_microtasks_runner &&
++         g_destroyed_microtasks_runner;
++}
++
+ void IsolateHolder::EnableIdleTasks(
+     std::unique_ptr<V8IdleTaskRunner> idle_task_runner) {
+   DCHECK(isolate_data_.get());
+   isolate_data_->EnableIdleTasks(std::move(idle_task_runner));
+ }
+ 
++void IsolateHolder::WillCreateMicrotasksRunner() {
++  DCHECK(!g_initialized_microtasks_runner);
++  g_initialized_microtasks_runner = true;
++}
++
++void IsolateHolder::WillDestroyMicrotasksRunner() {
++  DCHECK(g_initialized_microtasks_runner);
++  g_destroyed_microtasks_runner = true;
++}
++
+ }  // namespace gin
+diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
+index 52b8c1af58678b9fee684ff75340c98fcc73b552..f79407d741a30298d09efd53589f16dc9b26107f 100644
+--- a/gin/public/isolate_holder.h
++++ b/gin/public/isolate_holder.h
+@@ -131,6 +131,8 @@ class GIN_EXPORT IsolateHolder {
+   // Should only be called after v8::IsolateHolder::Initialize() is invoked.
+   static std::unique_ptr<v8::Isolate::CreateParams> getDefaultIsolateParams();
+ 
++  static bool DestroyedMicrotasksRunner();
++
+   v8::Isolate* isolate() { return isolate_; }
+ 
+   // This method returns if v8::Locker is needed to access isolate.
+@@ -144,6 +146,9 @@ class GIN_EXPORT IsolateHolder {
+ 
+   void EnableIdleTasks(std::unique_ptr<V8IdleTaskRunner> idle_task_runner);
+ 
++  void WillCreateMicrotasksRunner();
++  void WillDestroyMicrotasksRunner();
++
+   // This method returns V8IsolateMemoryDumpProvider of this isolate, used for
+   // testing.
+   V8IsolateMemoryDumpProvider* isolate_memory_dump_provider_for_testing()
+diff --git a/gin/wrappable.cc b/gin/wrappable.cc
+index 402355cb836cea14e9ee725a142a4bad44fd5bed..7e7f028dcfb87c7b80adebabac19ced8791f642e 100644
+--- a/gin/wrappable.cc
++++ b/gin/wrappable.cc
+@@ -13,6 +13,9 @@ namespace gin {
+ WrappableBase::WrappableBase() = default;
+ 
+ WrappableBase::~WrappableBase() {
++  if (!wrapper_.IsEmpty()) {
++    wrapper_.ClearWeak();
++  }
+   wrapper_.Reset();
+ }
+ 
+@@ -28,15 +31,24 @@ const char* WrappableBase::GetTypeName() {
+ void WrappableBase::FirstWeakCallback(
+     const v8::WeakCallbackInfo<WrappableBase>& data) {
+   WrappableBase* wrappable = data.GetParameter();
+-  wrappable->dead_ = true;
+-  wrappable->wrapper_.Reset();
+-  data.SetSecondPassCallback(SecondWeakCallback);
++  WrappableBase* wrappable_from_field =
++      static_cast<WrappableBase*>(data.GetInternalField(1));
++  if (wrappable && wrappable == wrappable_from_field) {
++    wrappable->dead_ = true;
++    wrappable->wrapper_.Reset();
++    data.SetSecondPassCallback(SecondWeakCallback);
++  }
+ }
+ 
+ void WrappableBase::SecondWeakCallback(
+     const v8::WeakCallbackInfo<WrappableBase>& data) {
++  if (IsolateHolder::DestroyedMicrotasksRunner()) {
++    return;
++  }
+   WrappableBase* wrappable = data.GetParameter();
+-  delete wrappable;
++  if (wrappable) {
++    delete wrappable;
++  }
+ }
+ 
+ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapperImpl(v8::Isolate* isolate,
+@@ -71,10 +83,16 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapperImpl(v8::Isolate* isolate,
+   void* values[] = {info, this};
+   wrapper->SetAlignedPointerInInternalFields(2, indices, values);
+   wrapper_.Reset(isolate, wrapper);
+-  wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kParameter);
++  wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kInternalFields);
+   return v8::MaybeLocal<v8::Object>(wrapper);
+ }
+ 
++void WrappableBase::ClearWeak() {
++  if (!wrapper_.IsEmpty()) {
++    wrapper_.ClearWeak();
++  }
++}
++
+ namespace internal {
+ 
+ void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val,
+diff --git a/gin/wrappable.h b/gin/wrappable.h
+index 4e7115685a5bf6997e78edcc1851e28bd00b1aa2..ca51fe33605e855438e88969e3d3cc734ef4523e 100644
+--- a/gin/wrappable.h
++++ b/gin/wrappable.h
+@@ -80,6 +80,13 @@ class GIN_EXPORT WrappableBase {
+   v8::MaybeLocal<v8::Object> GetWrapperImpl(v8::Isolate* isolate,
+                                             WrapperInfo* wrapper_info);
+ 
++  // Make this wrappable strong again. This is useful when the wrappable is
++  // destroyed outside the finalizer callbacks and we want to avoid scheduling
++  // the weak callbacks if they haven't been scheduled yet.
++  // NOTE!!! this does not prevent finalization callbacks from running if they
++  // have already been processed.
++  void ClearWeak();
++
+  private:
+   static void FirstWeakCallback(
+       const v8::WeakCallbackInfo<WrappableBase>& data);

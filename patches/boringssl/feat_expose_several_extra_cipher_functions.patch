@@ -27,11 +27,11 @@ RC2 Ciphers: rc2-40-cbc
 
 It's unclear whether this would be accepted upstream. We should try regardless.
 
-diff --git a/crypto/cipher_extra/cipher_extra.cc b/crypto/cipher_extra/cipher_extra.cc
-index 62850ab6a216d401d023f81007fb59a33b4585f3..95bd172c99874610ec9157c52df4fe0232e78c7f 100644
---- a/crypto/cipher_extra/cipher_extra.cc
-+++ b/crypto/cipher_extra/cipher_extra.cc
-@@ -73,6 +73,7 @@ static const struct {
+diff --git a/crypto/cipher/get_cipher.cc b/crypto/cipher/get_cipher.cc
+index 2d0f369bdeba84b157db82bd87c293ae2344c560..9088a0f29a95fe7abbb98cbf7e8be2577e5617ac 100644
+--- a/crypto/cipher/get_cipher.cc
++++ b/crypto/cipher/get_cipher.cc
+@@ -26,6 +26,7 @@ static const struct {
    const EVP_CIPHER *(*func)(void);
  } kCiphers[] = {
      {NID_aes_128_cbc, "aes-128-cbc", EVP_aes_128_cbc},
@@ -39,7 +39,7 @@ index 62850ab6a216d401d023f81007fb59a33b4585f3..95bd172c99874610ec9157c52df4fe02
      {NID_aes_128_ctr, "aes-128-ctr", EVP_aes_128_ctr},
      {NID_aes_128_ecb, "aes-128-ecb", EVP_aes_128_ecb},
      {NID_aes_128_gcm, "aes-128-gcm", EVP_aes_128_gcm},
-@@ -83,17 +84,23 @@ static const struct {
+@@ -36,17 +37,23 @@ static const struct {
      {NID_aes_192_gcm, "aes-192-gcm", EVP_aes_192_gcm},
      {NID_aes_192_ofb128, "aes-192-ofb", EVP_aes_192_ofb},
      {NID_aes_256_cbc, "aes-256-cbc", EVP_aes_256_cbc},
@@ -118,10 +118,10 @@ index 9fd0e0225fa48b0afb90b525236e54cff17c1c84..dded715011ac8c1dd9e4525f0bdd6408
    callback(EVP_des_ede3_cbc(), "des-ede3-cbc", NULL, arg);
    callback(EVP_rc2_cbc(), "rc2-cbc", NULL, arg);
 diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
-index 18c1e708a42d7802b7d52564bceb93a53b7ab9c5..08b830a40e4587435b4e026dee4b205b4813c357 100644
+index ad0f13919299a036d1e1121a05f62e096406a6c5..7baea6a73d3da02e2834c33e5579b8ad2b984221 100644
 --- a/include/openssl/cipher.h
 +++ b/include/openssl/cipher.h
-@@ -476,6 +476,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
+@@ -429,6 +429,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
  
  // EVP_aes_128_cfb128 is only available in decrepit.
  OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_128_cfb128(void);

@@ -66,6 +66,9 @@ class SimpleURLLoaderWrapper final
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
+
  private:
   SimpleURLLoaderWrapper(ElectronBrowserContext* browser_context,
                          std::unique_ptr<network::ResourceRequest> request,

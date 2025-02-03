@@ -150,13 +150,11 @@ class ScriptExecutionCallback {
         "An unknown exception occurred while getting the result of the script";
     {
       v8::TryCatch try_catch(isolate);
-      context_bridge::ObjectCache object_cache;
       v8::Local<v8::Context> source_context =
           result->GetCreationContextChecked();
-      maybe_result =
-          PassValueToOtherContext(source_context, promise_.GetContext(), result,
-                                  source_context->Global(), &object_cache,
-                                  false, 0, BridgeErrorTarget::kSource);
+      maybe_result = PassValueToOtherContext(
+          source_context, promise_.GetContext(), result,
+          source_context->Global(), false, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }

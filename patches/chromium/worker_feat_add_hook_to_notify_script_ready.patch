@@ -35,10 +35,10 @@ index 07c014a28ed1ef5878a50fbb194e38fe762361e9..ae4c9c011024a32354a4cc25c63835a4
    // from the worker thread.
    virtual void WillDestroyWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 86684e38d8cb84889c090576ab7f0f0e05b5c2b6..33977bfee6ded55f37ad58bc43bae4cf17c59ea3 100644
+index 5c958673a6778012c8ac039df987a584a103c756..fcd5f12d6aff7867c707c4fbe839d02f0491b5d1 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -899,6 +899,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
+@@ -904,6 +904,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
        worker);
  }
  
@@ -52,7 +52,7 @@ index 86684e38d8cb84889c090576ab7f0f0e05b5c2b6..33977bfee6ded55f37ad58bc43bae4cf
      const blink::WebSecurityOrigin& script_origin) {
    return GetContentClient()->renderer()->AllowScriptExtensionForServiceWorker(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 54cebcbc49875287b5ae008b14e7df515f31a2d5..c501ef55d85e9743dd7e0f6bcddfa3de2c155146 100644
+index a619e126f3c91fc6a9eda0de5099934d93c83703..33f7bb2df623b3ff2f0473184f5d82896b450747 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
 @@ -196,6 +196,8 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
@@ -65,7 +65,7 @@ index 54cebcbc49875287b5ae008b14e7df515f31a2d5..c501ef55d85e9743dd7e0f6bcddfa3de
    bool AllowScriptExtensionForServiceWorker(
        const blink::WebSecurityOrigin& script_origin) override;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 38c6e96ac42ff064cb337a4edb493ecf95bd6820..1bfd7a66d38e01fa173e02c656495e5ba674fa80 100644
+index 5e66e386fbb05b06e14597778933b2976dda79c0..7e76e82d959def21ece9ffe1553fec4a9c366d31 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
 @@ -662,6 +662,8 @@ class BLINK_PLATFORM_EXPORT Platform {

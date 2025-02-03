@@ -98,12 +98,13 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
       tracing_controller, gin::V8Platform::GetCurrentPageAllocator());
 
   v8::V8::InitializePlatform(platform_.get());
-  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
-                                 gin::ArrayBufferAllocator::SharedInstance(),
-                                 nullptr /* external_reference_table */,
-                                 js_flags, nullptr /* fatal_error_callback */,
-                                 nullptr /* oom_error_callback */,
-                                 false /* create_v8_platform */);
+  gin::IsolateHolder::Initialize(
+      gin::IsolateHolder::kNonStrictMode,
+      gin::ArrayBufferAllocator::SharedInstance(),
+      nullptr /* external_reference_table */, js_flags,
+      false /* disallow_v8_feature_flag_overrides */,
+      nullptr /* fatal_error_callback */, nullptr /* oom_error_callback */,
+      false /* create_v8_platform */);
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);
@@ -132,11 +133,16 @@ v8::Isolate* JavascriptEnvironment::GetIsolate() {
 void JavascriptEnvironment::CreateMicrotasksRunner() {
   DCHECK(!microtasks_runner_);
   microtasks_runner_ = std::make_unique<MicrotasksRunner>(isolate());
+  isolate_holder_.WillCreateMicrotasksRunner();
   base::CurrentThread::Get()->AddTaskObserver(microtasks_runner_.get());
 }
 
 void JavascriptEnvironment::DestroyMicrotasksRunner() {
   DCHECK(microtasks_runner_);
+  // Should be called before running gin_helper::CleanedUpAtExit::DoCleanup.
+  // This helps to signal wrappable finalizer callbacks to not act on freed
+  // parameters.
+  isolate_holder_.WillDestroyMicrotasksRunner();
   {
     v8::HandleScope scope(isolate_);
     gin_helper::CleanedUpAtExit::DoCleanup();

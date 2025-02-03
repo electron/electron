@@ -49,39 +49,40 @@
 #include "shell/common/crash_keys.h"
 #endif
 
-#define ELECTRON_BROWSER_BINDINGS(V)     \
-  V(electron_browser_app)                \
-  V(electron_browser_auto_updater)       \
-  V(electron_browser_content_tracing)    \
-  V(electron_browser_crash_reporter)     \
-  V(electron_browser_desktop_capturer)   \
-  V(electron_browser_dialog)             \
-  V(electron_browser_event_emitter)      \
-  V(electron_browser_global_shortcut)    \
-  V(electron_browser_image_view)         \
-  V(electron_browser_in_app_purchase)    \
-  V(electron_browser_menu)               \
-  V(electron_browser_message_port)       \
-  V(electron_browser_native_theme)       \
-  V(electron_browser_notification)       \
-  V(electron_browser_power_monitor)      \
-  V(electron_browser_power_save_blocker) \
-  V(electron_browser_protocol)           \
-  V(electron_browser_printing)           \
-  V(electron_browser_push_notifications) \
-  V(electron_browser_safe_storage)       \
-  V(electron_browser_session)            \
-  V(electron_browser_screen)             \
-  V(electron_browser_system_preferences) \
-  V(electron_browser_base_window)        \
-  V(electron_browser_tray)               \
-  V(electron_browser_utility_process)    \
-  V(electron_browser_view)               \
-  V(electron_browser_web_contents)       \
-  V(electron_browser_web_contents_view)  \
-  V(electron_browser_web_frame_main)     \
-  V(electron_browser_web_view_manager)   \
-  V(electron_browser_window)             \
+#define ELECTRON_BROWSER_BINDINGS(V)      \
+  V(electron_browser_app)                 \
+  V(electron_browser_auto_updater)        \
+  V(electron_browser_content_tracing)     \
+  V(electron_browser_crash_reporter)      \
+  V(electron_browser_desktop_capturer)    \
+  V(electron_browser_dialog)              \
+  V(electron_browser_event_emitter)       \
+  V(electron_browser_global_shortcut)     \
+  V(electron_browser_image_view)          \
+  V(electron_browser_in_app_purchase)     \
+  V(electron_browser_menu)                \
+  V(electron_browser_message_port)        \
+  V(electron_browser_native_theme)        \
+  V(electron_browser_notification)        \
+  V(electron_browser_power_monitor)       \
+  V(electron_browser_power_save_blocker)  \
+  V(electron_browser_protocol)            \
+  V(electron_browser_printing)            \
+  V(electron_browser_push_notifications)  \
+  V(electron_browser_safe_storage)        \
+  V(electron_browser_service_worker_main) \
+  V(electron_browser_session)             \
+  V(electron_browser_screen)              \
+  V(electron_browser_system_preferences)  \
+  V(electron_browser_base_window)         \
+  V(electron_browser_tray)                \
+  V(electron_browser_utility_process)     \
+  V(electron_browser_view)                \
+  V(electron_browser_web_contents)        \
+  V(electron_browser_web_contents_view)   \
+  V(electron_browser_web_frame_main)      \
+  V(electron_browser_web_view_manager)    \
+  V(electron_browser_window)              \
   V(electron_common_net)
 
 #define ELECTRON_COMMON_BINDINGS(V)   \
@@ -649,7 +650,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
                                            static_cast<void*>(isolate_data));
 
-  node::Environment* env;
   uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                        node::EnvironmentFlags::kHideConsoleWindows |
                        node::EnvironmentFlags::kNoGlobalSearchPaths |
@@ -675,24 +675,10 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     env_flags |= node::EnvironmentFlags::kNoStartDebugSignalHandler;
   }
 
-  {
-    v8::TryCatch try_catch(isolate);
-    env = node::CreateEnvironment(
-        static_cast<node::IsolateData*>(isolate_data), context, args, exec_args,
-        static_cast<node::EnvironmentFlags::Flags>(env_flags));
-
-    if (try_catch.HasCaught()) {
-      std::string err_msg =
-          "Failed to initialize node environment in process: " + process_type;
-      v8::Local<v8::Message> message = try_catch.Message();
-      std::string msg;
-      if (!message.IsEmpty() &&
-          gin::ConvertFromV8(isolate, message->Get(), &msg))
-        err_msg += " , with error: " + msg;
-      LOG(ERROR) << err_msg;
-    }
-  }
-
+  node::Environment* env = electron::util::CreateEnvironment(
+      isolate, static_cast<node::IsolateData*>(isolate_data), context, args,
+      exec_args, static_cast<node::EnvironmentFlags::Flags>(env_flags),
+      process_type);
   DCHECK(env);
 
   node::IsolateSettings is;
