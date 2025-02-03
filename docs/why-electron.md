@@ -22,7 +22,7 @@ If you want to focus on building a great product without figuring out how you ca
 
 ### Reliability
 
-Web technologies are the most-used foundation for user interfaces on the planet. The have been hardened accordingly. Modern computers have been optimized from the CPU to the operating system to be good at running web technologies. The manufacturers of your user’s devices—be that an Android phone or the latest MacBook—will ensure that they can visit websites, play videos on YouTube, or display emails. In turn, they’ll also ensure that your app has a stable foundation, even if you have just one user.
+Web technologies are the most-used foundation for user interfaces on the planet. They have been hardened accordingly. Modern computers have been optimized from the CPU to the operating system to be good at running web technologies. The manufacturers of your user’s devices—be that an Android phone or the latest MacBook—will ensure that they can visit websites, play videos on YouTube, or display emails. In turn, they’ll also ensure that your app has a stable foundation, even if you have just one user.
 
 If you want to focus on building a great product without debugging a weird quirk that nobody has found before, the web is a safe bet.
 
