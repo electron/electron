@@ -35,15 +35,8 @@ class IpcDispatcher {
 
   void Invoke(gin::Handle<gin_helper::internal::Event>& event,
               const std::string& channel,
-              blink::CloneableMessage arguments,
-              electron::mojom::ElectronApiIPC::InvokeCallback callback) {
-    TRACE_EVENT1("electron", "IpcHelper::Invoke", "channel", channel);
-
-    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-    gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
-    dict.Set("_replyChannel", gin_helper::internal::ReplyChannel::Create(
-                                  isolate, std::move(callback)));
-
+              blink::CloneableMessage arguments) {
+    TRACE_EVENT1("electron", "IpcDispatcher::Invoke", "channel", channel);
     emitter()->EmitWithoutEvent("-ipc-invoke", event, channel,
                                 std::move(arguments));
   }
@@ -51,6 +44,8 @@ class IpcDispatcher {
   void ReceivePostMessage(gin::Handle<gin_helper::internal::Event>& event,
                           const std::string& channel,
                           blink::TransferableMessage message) {
+    TRACE_EVENT1("electron", "IpcDispatcher::ReceivePostMessage", "channel",
+                 channel);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
     auto wrapped_ports =
@@ -61,18 +56,10 @@ class IpcDispatcher {
                                 std::move(wrapped_ports));
   }
 
-  void MessageSync(
-      gin::Handle<gin_helper::internal::Event>& event,
-      const std::string& channel,
-      blink::CloneableMessage arguments,
-      electron::mojom::ElectronApiIPC::MessageSyncCallback callback) {
-    TRACE_EVENT1("electron", "IpcHelper::MessageSync", "channel", channel);
-
-    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-    gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
-    dict.Set("_replyChannel", gin_helper::internal::ReplyChannel::Create(
-                                  isolate, std::move(callback)));
-
+  void MessageSync(gin::Handle<gin_helper::internal::Event>& event,
+                   const std::string& channel,
+                   blink::CloneableMessage arguments) {
+    TRACE_EVENT1("electron", "IpcDispatcher::MessageSync", "channel", channel);
     emitter()->EmitWithoutEvent("-ipc-message-sync", event, channel,
                                 std::move(arguments));
   }

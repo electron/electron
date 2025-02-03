@@ -392,29 +392,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
-
-  // this.emit(name, new Event(sender, message), args...);
-  template <typename... Args>
-  bool EmitWithSender(const std::string_view name,
-                      content::RenderFrameHost* frame,
-                      electron::mojom::ElectronApiIPC::InvokeCallback callback,
-                      Args&&... args) {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::HandleScope handle_scope(isolate);
-
-    gin::Handle<gin_helper::internal::Event> event =
-        MakeEventWithSender(isolate, frame, std::move(callback));
-    if (event.IsEmpty())
-      return false;
-    EmitWithoutEvent(name, event, std::forward<Args>(args)...);
-    return event->GetDefaultPrevented();
-  }
-
-  gin::Handle<gin_helper::internal::Event> MakeEventWithSender(
-      v8::Isolate* isolate,
-      content::RenderFrameHost* frame,
-      electron::mojom::ElectronApiIPC::InvokeCallback callback);
+  void MessageHost(gin::Handle<gin_helper::internal::Event>& event,
+                   const std::string& channel,
+                   blink::CloneableMessage arguments);
 
   WebContents* embedder() { return embedder_; }
 
@@ -447,29 +427,6 @@ class WebContents final : public ExclusiveAccessContext,
   void set_fullscreen_frame(content::RenderFrameHost* rfh) {
     fullscreen_frame_ = rfh;
   }
-
-  // mojom::ElectronApiIPC
-  void Message(bool internal,
-               const std::string& channel,
-               blink::CloneableMessage arguments,
-               content::RenderFrameHost* render_frame_host);
-  void Invoke(bool internal,
-              const std::string& channel,
-              blink::CloneableMessage arguments,
-              electron::mojom::ElectronApiIPC::InvokeCallback callback,
-              content::RenderFrameHost* render_frame_host);
-  void ReceivePostMessage(const std::string& channel,
-                          blink::TransferableMessage message,
-                          content::RenderFrameHost* render_frame_host);
-  void MessageSync(
-      bool internal,
-      const std::string& channel,
-      blink::CloneableMessage arguments,
-      electron::mojom::ElectronApiIPC::MessageSyncCallback callback,
-      content::RenderFrameHost* render_frame_host);
-  void MessageHost(const std::string& channel,
-                   blink::CloneableMessage arguments,
-                   content::RenderFrameHost* render_frame_host);
 
   // mojom::ElectronWebContentsUtility
   void OnFirstNonEmptyLayout(content::RenderFrameHost* render_frame_host);

@@ -1,13 +1,11 @@
 import { openGuestWindow, makeWebPreferences, parseContentTypeFormat } from '@electron/internal/browser/guest-window-manager';
 import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
-import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
-import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import * as deprecate from '@electron/internal/common/deprecate';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-import { app, ipcMain, session, webFrameMain, dialog } from 'electron/main';
+import { app, session, webFrameMain, dialog } from 'electron/main';
 import type { BrowserWindowConstructorOptions, MessageBoxOptions, NavigationEntry } from 'electron/main';
 
 import * as path from 'path';
@@ -17,8 +15,6 @@ import * as url from 'url';
 // before the webContents module.
 // eslint-disable-next-line no-unused-expressions
 session;
-
-const webFrameMainBinding = process._linkedBinding('electron_browser_web_frame_main');
 
 let nextId = 0;
 const getNextId = function () {
@@ -480,24 +476,6 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
   }
 };
 
-const addReplyToEvent = (event: Electron.IpcMainEvent) => {
-  const { processId, frameId } = event;
-  event.reply = (channel: string, ...args: any[]) => {
-    event.sender.sendToFrame([processId, frameId], channel, ...args);
-  };
-};
-
-const addSenderToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent, sender: Electron.WebContents) => {
-  event.sender = sender;
-};
-
-const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
-  Object.defineProperty(event, 'returnValue', {
-    set: (value) => event._replyChannel.sendReply(value),
-    get: () => {}
-  });
-};
-
 const commandLine = process._linkedBinding('electron_common_command_line');
 const environment = process._linkedBinding('electron_common_environment');
 
@@ -577,28 +555,6 @@ WebContents.prototype._init = function () {
     enumerable: true
   });
 
-  /**
-   * Cached IPC emitters sorted by dispatch priority.
-   * Caching is used to avoid frequent array allocations.
-   *
-   * 0: WebFrameMain ipc
-   * 1: WebContents ipc
-   * 2: ipcMain
-   */
-  const cachedIpcEmitters: (ElectronInternal.IpcMainInternal | undefined)[] = [undefined, ipc, ipcMain];
-
-  // Get list of relevant IPC emitters for dispatch.
-  const getIpcEmittersForEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent): (ElectronInternal.IpcMainInternal | undefined)[] => {
-    // Lookup by FrameTreeNode ID to ensure IPCs received after a frame swap are
-    // always received. This occurs when a RenderFrame sends an IPC while it's
-    // unloading and its internal state is pending deletion.
-    const { frameTreeNodeId } = event;
-    const webFrameByFtn = frameTreeNodeId ? webFrameMainBinding._fromFtnIdIfExists(frameTreeNodeId) : undefined;
-    cachedIpcEmitters[0] = webFrameByFtn?.ipc;
-
-    return cachedIpcEmitters;
-  };
-
   // Add navigationHistory property which handles session history,
   // maintaining a list of navigation entries for backward and forward navigation.
   Object.defineProperty(this, 'navigationHistory', {
@@ -639,71 +595,6 @@ WebContents.prototype._init = function () {
     },
     writable: false,
     enumerable: true
-  });
-
-  // Dispatch IPC messages to the ipc module.
-  this.on('-ipc-message', function (this: Electron.WebContents, event, internal, channel, args) {
-    addSenderToEvent(event, this);
-    if (internal) {
-      ipcMainInternal.emit(channel, event, ...args);
-    } else {
-      addReplyToEvent(event);
-      this.emit('ipc-message', event, channel, ...args);
-      for (const ipcEmitter of getIpcEmittersForEvent(event)) {
-        ipcEmitter?.emit(channel, event, ...args);
-      }
-    }
-  });
-
-  this.on('-ipc-invoke', async function (this: Electron.WebContents, event, internal, channel, args) {
-    addSenderToEvent(event, this);
-    const replyWithResult = (result: any) => event._replyChannel.sendReply({ result });
-    const replyWithError = (error: Error) => {
-      console.error(`Error occurred in handler for '${channel}':`, error);
-      event._replyChannel.sendReply({ error: error.toString() });
-    };
-    const targets: (ElectronInternal.IpcMainInternal | undefined)[] = internal ? [ipcMainInternal] : getIpcEmittersForEvent(event);
-    const target = targets.find(target => (target as any)?._invokeHandlers.has(channel));
-    if (target) {
-      const handler = (target as any)._invokeHandlers.get(channel);
-      try {
-        replyWithResult(await Promise.resolve(handler(event, ...args)));
-      } catch (err) {
-        replyWithError(err as Error);
-      }
-    } else {
-      replyWithError(new Error(`No handler registered for '${channel}'`));
-    }
-  });
-
-  this.on('-ipc-message-sync', function (this: Electron.WebContents, event, internal, channel, args) {
-    addSenderToEvent(event, this);
-    addReturnValueToEvent(event);
-    if (internal) {
-      ipcMainInternal.emit(channel, event, ...args);
-    } else {
-      addReplyToEvent(event);
-      const ipcEmitters = getIpcEmittersForEvent(event);
-      if (
-        this.listenerCount('ipc-message-sync') === 0 &&
-        ipcEmitters.every(emitter => !emitter || emitter.listenerCount(channel) === 0)
-      ) {
-        console.warn(`WebContents #${this.id} called ipcRenderer.sendSync() with '${channel}' channel without listeners.`);
-      }
-      this.emit('ipc-message-sync', event, channel, ...args);
-      for (const ipcEmitter of ipcEmitters) {
-        ipcEmitter?.emit(channel, event, ...args);
-      }
-    }
-  });
-
-  this.on('-ipc-ports', function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
-    addSenderToEvent(event, this);
-    event.ports = ports.map(p => new MessagePortMain(p));
-    const ipcEmitters = getIpcEmittersForEvent(event);
-    for (const ipcEmitter of ipcEmitters) {
-      ipcEmitter?.emit(channel, event, message);
-    }
   });
 
   this.on('render-process-gone', (event, details) => {
