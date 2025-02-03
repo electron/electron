@@ -429,7 +429,13 @@ void NativeWindowMac::ShowInactive() {
   if (parent())
     InternalSetParentWindow(parent(), true);
 
+  // Triggers `NativeWidgetMacNSWindowHost::OnVisibilityChanged`.
+  widget()->ShowInactive();
+  // `Widget::ShowInactive` is not sufficient to bring window to front.
   [window_ orderFrontRegardless];
+  // Above calls do not trigger `orderWindow: relativeTo:` in which headless
+  // mode is being disabled.
+  [window_ disableHeadlessMode];
 }
 
 void NativeWindowMac::Hide() {
