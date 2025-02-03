@@ -260,10 +260,18 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_kde.cc b/ui/shell_dialogs/select_file_dialog_linux_kde.cc
-index 64a79ebe2e2d21d5a6b4a98042d1cdb7b6edad52..748c2506781a237641b25b426876be14c8b7ba82 100644
+index 64a79ebe2e2d21d5a6b4a98042d1cdb7b6edad52..400cce91b020ecd5e48566f125515d2cfe3ea6af 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_kde.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_kde.cc
-@@ -154,9 +154,20 @@ class SelectFileDialogLinuxKde : public SelectFileDialogLinux {
+@@ -8,6 +8,7 @@
+ #include <string_view>
+ 
+ #include "base/command_line.h"
++#include "base/files/file_util.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/logging.h"
+@@ -154,9 +155,20 @@ class SelectFileDialogLinuxKde : public SelectFileDialogLinux {
    void OnSelectMultiFileDialogResponse(
        gfx::AcceleratedWidget parent,
        std::unique_ptr<KDialogOutputParams> results);
@@ -284,7 +292,27 @@ index 64a79ebe2e2d21d5a6b4a98042d1cdb7b6edad52..748c2506781a237641b25b426876be14
  
    // Should be either DESKTOP_ENVIRONMENT_KDE3, KDE4, KDE5, or KDE6.
    base::nix::DesktopEnvironment desktop_;
-@@ -461,6 +472,7 @@ void SelectFileDialogLinuxKde::CreateSelectFolderDialog(
+@@ -413,10 +425,16 @@ void SelectFileDialogLinuxKde::GetKDialogCommandLine(
+   }
+   command_line->AppendSwitch(type);
+   // The path should never be empty. If it is, set it to PWD.
+-  if (path.empty())
+-    command_line->AppendArgPath(base::FilePath("."));
+-  else
++  auto pwd = base::FilePath(".");
++  if (path.empty()) {
++    command_line->AppendArgPath(pwd);
++  } else if (path.IsAbsolute()) {
+     command_line->AppendArgPath(path);
++  } else {
++    // KDialog won't set the default name in the Name field for relative paths.
++    auto abs_path = base::MakeAbsoluteFilePathNoResolveSymbolicLinks(path);
++    command_line->AppendArgPath(abs_path.value_or(pwd));
++  }
+   // Depending on the type of the operation we need, get the path to the
+   // file/folder and set up mime type filters.
+   if (file_operation)
+@@ -461,6 +479,7 @@ void SelectFileDialogLinuxKde::CreateSelectFolderDialog(
    int title_message_id = (type == SELECT_UPLOAD_FOLDER)
                               ? IDS_SELECT_UPLOAD_FOLDER_DIALOG_TITLE
                               : IDS_SELECT_FOLDER_DIALOG_TITLE;
@@ -292,7 +320,7 @@ index 64a79ebe2e2d21d5a6b4a98042d1cdb7b6edad52..748c2506781a237641b25b426876be14
    pipe_task_runner_->PostTaskAndReplyWithResult(
        FROM_HERE,
        base::BindOnce(
-@@ -468,10 +480,12 @@ void SelectFileDialogLinuxKde::CreateSelectFolderDialog(
+@@ -468,10 +487,12 @@ void SelectFileDialogLinuxKde::CreateSelectFolderDialog(
            KDialogParams(
                "--getexistingdirectory", GetTitle(title, title_message_id),
                default_path.empty() ? *last_opened_path() : default_path, parent,
@@ -308,7 +336,7 @@ index 64a79ebe2e2d21d5a6b4a98042d1cdb7b6edad52..748c2506781a237641b25b426876be14
  }
  
  void SelectFileDialogLinuxKde::CreateFileOpenDialog(
-@@ -561,7 +575,8 @@ void SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse(
+@@ -561,7 +582,8 @@ void SelectFileDialogLinuxKde::OnSelectSingleFolderDialogResponse(
    SelectSingleFileHelper(true, std::move(results));
  }
  
@@ -318,7 +346,7 @@ index 64a79ebe2e2d21d5a6b4a98042d1cdb7b6edad52..748c2506781a237641b25b426876be14
      gfx::AcceleratedWidget parent,
      std::unique_ptr<KDialogOutputParams> results) {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-@@ -579,7 +594,7 @@ void SelectFileDialogLinuxKde::OnSelectMultiFileDialogResponse(
+@@ -579,7 +601,7 @@ void SelectFileDialogLinuxKde::OnSelectMultiFileDialogResponse(
         base::SplitStringPiece(results->output, "\n", base::KEEP_WHITESPACE,
                                base::SPLIT_WANT_NONEMPTY)) {
      base::FilePath path(line);
@@ -327,7 +355,7 @@ index 64a79ebe2e2d21d5a6b4a98042d1cdb7b6edad52..748c2506781a237641b25b426876be14
        continue;
      filenames_fp.push_back(path);
    }
-@@ -591,4 +606,16 @@ void SelectFileDialogLinuxKde::OnSelectMultiFileDialogResponse(
+@@ -591,4 +613,16 @@ void SelectFileDialogLinuxKde::OnSelectMultiFileDialogResponse(
    MultiFilesSelected(filenames_fp);
  }
  
