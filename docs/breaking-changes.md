@@ -111,6 +111,17 @@ macOS 10.15 (Catalina) is no longer supported by [Chromium](https://chromium-rev
 Older versions of Electron will continue to run on Catalina, but macOS 11 (Big Sur)
 or later will be required to run Electron v33.0.0 and higher.
 
+### Behavior Changed: Native modules now require C++20
+
+Due to changes made upstream, both
+[V8](https://chromium-review.googlesource.com/c/v8/v8/+/5587859) and
+[Node.js](https://github.com/nodejs/node/pull/45427) now require C++20 as a
+minimum version. Developers using native node modules should build their
+modules with `--std=c++20` rather than `--std=c++17`. Images using gcc9 or
+lower may need to update to gcc10 in order to compile. See
+[#43555](https://github.com/electron/electron/pull/43555) for more details.
+
+
 ### Deprecated: `systemPreferences.accessibilityDisplayShouldReduceTransparency`
 
 The `systemPreferences.accessibilityDisplayShouldReduceTransparency` property is now deprecated in favor of the new `nativeTheme.prefersReducedTransparency`, which provides identical information and works cross-platform.
