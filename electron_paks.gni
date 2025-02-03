@@ -55,7 +55,6 @@ template("electron_extra_paks") {
       "$root_gen_dir/chrome/accessibility_resources.pak",
       "$root_gen_dir/chrome/browser_resources.pak",
       "$root_gen_dir/chrome/common_resources.pak",
-      "$root_gen_dir/chrome/dev_ui_browser_resources.pak",
       "$root_gen_dir/components/components_resources.pak",
       "$root_gen_dir/content/browser/resources/media/media_internals_resources.pak",
       "$root_gen_dir/content/browser/tracing/tracing_resources.pak",
@@ -69,7 +68,6 @@ template("electron_extra_paks") {
       "$target_gen_dir/electron_resources.pak",
     ]
     deps = [
-      "//chrome/browser:dev_ui_browser_resources",
       "//chrome/browser:resources",
       "//chrome/browser/resources/accessibility:resources",
       "//chrome/common:resources",

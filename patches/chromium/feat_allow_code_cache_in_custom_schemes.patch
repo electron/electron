@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index fa46d81e3a46a6d3f289fc8d184b434da1888d7a..169dd7dc24b09d319a7510184aab3b1bb96a1a85 100644
+index bba85bb47e489b73c2341bbeb9aa04099d712889..4bd69c3c5511a4f492f78f203284c8e546c9f067 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -12,6 +12,7 @@
@@ -117,7 +117,7 @@ index fa46d81e3a46a6d3f289fc8d184b434da1888d7a..169dd7dc24b09d319a7510184aab3b1b
  
  // Generates the cache key for the given |resource_url|, |origin_lock| and
 diff --git a/content/browser/code_cache/generated_code_cache.h b/content/browser/code_cache/generated_code_cache.h
-index e0cdc785d2557bc79bde98728c23c239ed8d0961..74e0acbea1e0c18a6ac8971170efc945ca58f4ed 100644
+index c5fb0546fb8724a6ba34b55d8d52b2f70ad5bc0c..883c4022aa58e5eb5345ec4e8815a1374160d96c 100644
 --- a/content/browser/code_cache/generated_code_cache.h
 +++ b/content/browser/code_cache/generated_code_cache.h
 @@ -52,12 +52,14 @@ class CONTENT_EXPORT GeneratedCodeCache {

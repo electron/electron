@@ -18,7 +18,7 @@ This partially (leaves the removal of the feature flag) reverts
 ef865130abd5539e7bce12308659b19980368f12.
 
 diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-index fc4de264da58bcea7329c82409d1087e67b62f25..6ac3d932f4567fabfb2b9fac001aef21db755e01 100644
+index 2991489fae8a4eecad97b1ecb2271f096d9a9229..6c735286bf901fc7ff3872830d83fe119dd3bd33 100644
 --- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 @@ -126,13 +126,11 @@ @implementation WebContentsViewCocoa {
@@ -37,7 +37,7 @@ index fc4de264da58bcea7329c82409d1087e67b62f25..6ac3d932f4567fabfb2b9fac001aef21
  
  - (instancetype)initWithViewsHostableView:(ui::ViewsHostableView*)v {
    self = [super initWithFrame:NSZeroRect tracking:YES];
-@@ -479,6 +477,20 @@ - (void)updateWebContentsVisibility {
+@@ -487,6 +485,20 @@ - (void)updateWebContentsVisibility {
    [self updateWebContentsVisibility:visibility];
  }
  
@@ -58,7 +58,7 @@ index fc4de264da58bcea7329c82409d1087e67b62f25..6ac3d932f4567fabfb2b9fac001aef21
  - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
    // Subviews do not participate in auto layout unless the the size this view
    // changes. This allows RenderWidgetHostViewMac::SetBounds(..) to select a
-@@ -501,11 +513,20 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+@@ -509,11 +521,20 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
  
    NSWindow* oldWindow = [self window];
  
@@ -83,7 +83,7 @@ index fc4de264da58bcea7329c82409d1087e67b62f25..6ac3d932f4567fabfb2b9fac001aef21
    }
  
    if (newWindow) {
-@@ -513,27 +534,49 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+@@ -521,27 +542,49 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
                             selector:@selector(windowChangedOcclusionState:)
                                 name:NSWindowDidChangeOcclusionStateNotification
                               object:newWindow];
