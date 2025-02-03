@@ -259,13 +259,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (void)orderWindow:(NSWindowOrderingMode)place relativeTo:(NSInteger)otherWin {
-  if (shell_) {
-    // We initialize the window in headless mode to allow painting before it is
-    // shown, but we don't want the headless behavior of allowing the window to
-    // be placed unconstrained.
-    self.isHeadless = false;
-    shell_->widget()->DisableHeadlessMode();
-  }
+  [self disableHeadlessMode];
   [super orderWindow:place relativeTo:otherWin];
 }
 
@@ -325,6 +319,16 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     return [self cornerMask];
   } else {
     return [super _cornerMask];
+  }
+}
+
+- (void)disableHeadlessMode {
+  if (shell_) {
+    // We initialize the window in headless mode to allow painting before it is
+    // shown, but we don't want the headless behavior of allowing the window to
+    // be placed unconstrained.
+    self.isHeadless = false;
+    shell_->widget()->DisableHeadlessMode();
   }
 }
 
