@@ -97,9 +97,10 @@
   * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels. Default is system height.
 * `trafficLightPosition` [Point](point.md) (optional) _macOS_ -
   Set a custom position for the traffic light buttons in frameless windows.
-* `roundedCorners` boolean (optional) _macOS_ - Whether frameless window
-  should have rounded corners on macOS. Default is `true`. Setting this property
-  to `false` will prevent the window from being fullscreenable.
+* `roundedCorners` boolean (optional) _macOS_ _Windows_ - Whether frameless window
+  should have rounded corners. Default is `true`. Setting this property
+  to `false` will prevent the window from being fullscreenable on macOS.
+  Requires at least Windows 11 Build 22000.
 * `thickFrame` boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
   Windows, which adds standard window frame. Setting it to `false` will remove
   window shadow and window animations. Default is `true`.
