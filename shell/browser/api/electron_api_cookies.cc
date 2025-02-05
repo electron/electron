@@ -255,8 +255,10 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
             "Cookie aliases that of another with a different source_port or "
             "source scheme. I.e.: Two or more cookies share the same name "
             "but have different ports/schemes."}});
+  // add 1 to MAX_EXCLUSION_REASON because enum values are zero-based, and we
+  // want the total count of reasons.
   static_assert(Reasons.size() ==
-                static_cast<size_t>(Reason::MAX_EXCLUSION_REASON));
+                static_cast<size_t>(Reason::MAX_EXCLUSION_REASON) + 1);
 
   std::ostringstream reason;
   reason << "Failed to set cookie - ";
