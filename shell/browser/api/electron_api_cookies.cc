@@ -182,7 +182,8 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
   using Reason = net::CookieInclusionStatus::ExclusionReason;
   static constexpr auto Reasons =
       base::MakeFixedFlatMap<Reason, std::string_view>(
-          {{Status::EXCLUDE_HTTP_ONLY,
+          {{Status::EXCLUDE_UNKNOWN_ERROR, "Unknown error"},
+           {Status::EXCLUDE_HTTP_ONLY,
             "The cookie was HttpOnly, but the attempted access was through a "
             "non-HTTP API."},
            {Status::EXCLUDE_SECURE_ONLY,
@@ -203,9 +204,8 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
             "an appropriate SameSiteCookieContext"},
            {Status::EXCLUDE_SAMESITE_UNSPECIFIED_TREATED_AS_LAX,
             "The cookie did not specify a SameSite attribute, and therefore "
-            "was "
-            "treated as if it were SameSite=Lax, and the attempted access did "
-            "not have an appropriate SameSiteCookieContext."},
+            "was treated as if it were SameSite=Lax, and the attempted "
+            "access did not have an appropriate SameSiteCookieContext."},
            {Status::EXCLUDE_SAMESITE_NONE_INSECURE,
             "The cookie specified SameSite=None, but it was not Secure."},
            {Status::EXCLUDE_USER_PREFERENCES,
@@ -251,9 +251,13 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
            {Status::EXCLUDE_THIRD_PARTY_PHASEOUT,
             "The cookie is blocked for third-party cookie phaseout."},
            {Status::EXCLUDE_NO_COOKIE_CONTENT,
-            "The cookie contains no content or only whitespace."}});
+            "The cookie contains no content or only whitespace."},
+           {Status::EXCLUDE_ALIASING,
+            "Cookie aliases that of another with a different source_port or "
+            "source scheme. I.e.: Two or more cookies share the same name "
+            "but have different ports/schemes."}});
+  static_assert(Reasons.size() == Status::NUM_EXCLUSION_REASONS);
 
-  // net::CookieInclusionStatus::ExclusionReason::NUM_EXCLUSION_REASONS>
   std::ostringstream reason;
   reason << "Failed to set cookie - ";
   for (const auto& [val, str] : Reasons) {
