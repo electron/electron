@@ -427,6 +427,7 @@ source_set("electron_lib") {
     "chromium_src:chrome_spellchecker",
     "shell/common:mojo",
     "shell/common:plugin",
+    "shell/common:web_contents_utility",
     "shell/services/node/public/mojom",
     "//base:base_static",
     "//base/allocator:buildflags",

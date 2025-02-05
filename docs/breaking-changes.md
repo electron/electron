@@ -14,6 +14,15 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (33.0)
 
+### Deprecated: `document.execCommand("paste")`
+
+The synchronous clipboard read API [document.execCommand("paste")](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Interact_with_the_clipboard) has been
+deprecated in favor of [async clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API). This is to align with the browser defaults.
+
+The `enableDeprecatedPaste` option on `WebPreferences` that triggers the permission
+checks for this API and the associated permission type `deprecated-sync-clipboard-read`
+are also deprecated.
+
 ### Behavior Changed: frame properties may retrieve detached WebFrameMain instances or none at all
 
 APIs which provide access to a `WebFrameMain` instance may return an instance
