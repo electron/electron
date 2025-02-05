@@ -45,10 +45,6 @@ bool ContentSettingsObserver::AllowStorageAccessSync(StorageType storage_type) {
 
 bool ContentSettingsObserver::AllowReadFromClipboardSync() {
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
-  if (frame->GetSecurityOrigin().IsOpaque()) {
-    return false;
-  }
-
   if (frame->View()->GetWebPreferences().dom_paste_enabled) {
     blink::mojom::PermissionStatus status{
         blink::mojom::PermissionStatus::DENIED};
