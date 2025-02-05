@@ -3364,7 +3364,7 @@ describe('paste execCommand', () => {
   it('does not execute with default permissions', async () => {
     const w: BrowserWindow = new BrowserWindow({
       webPreferences: {
-        deprecatedPasteEnabled: true
+        enableDeprecatedPaste: true
       }
     });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
@@ -3380,7 +3380,7 @@ describe('paste execCommand', () => {
   it('does not execute with permission denied', async () => {
     const w: BrowserWindow = new BrowserWindow({
       webPreferences: {
-        deprecatedPasteEnabled: true
+        enableDeprecatedPaste: true
       }
     });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
@@ -3402,7 +3402,7 @@ describe('paste execCommand', () => {
   it('can trigger paste event when permission is granted', async () => {
     const w: BrowserWindow = new BrowserWindow({
       webPreferences: {
-        deprecatedPasteEnabled: true
+        enableDeprecatedPaste: true
       }
     });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
