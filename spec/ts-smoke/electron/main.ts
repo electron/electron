@@ -370,6 +370,8 @@ if (process.platform === 'win32') {
   // @ts-expect-error Removed API
   systemPreferences.on('high-contrast-color-scheme-changed', (_, highContrast) => console.log(highContrast ? 'high contrast' : 'not high contrast'));
   console.log('Color for menu is', systemPreferences.getColor('menu'));
+  // @ts-expect-error Removed API
+  systemPreferences.isAeroGlassEnabled();
 }
 
 if (process.platform === 'darwin') {
