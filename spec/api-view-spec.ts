@@ -79,4 +79,17 @@ describe('View', () => {
     v.setBorderRadius(9999999);
     v.setBorderRadius(-9999999);
   });
+
+  describe('view.getVisible|setVisible', () => {
+    it('is visible by default', () => {
+      const v = new View();
+      expect(v.getVisible()).to.be.true();
+    });
+
+    it('can be set to not visible', () => {
+      const v = new View();
+      v.setVisible(false);
+      expect(v.getVisible()).to.be.false();
+    });
+  });
 });
