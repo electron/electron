@@ -255,7 +255,8 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
             "Cookie aliases that of another with a different source_port or "
             "source scheme. I.e.: Two or more cookies share the same name "
             "but have different ports/schemes."}});
-  static_assert(Reasons.size() == Reason::MAX_EXCLUSION_REASON);
+  static_assert(Reasons.size() ==
+                static_cast<size_t>(Reason::MAX_EXCLUSION_REASON));
 
   std::ostringstream reason;
   reason << "Failed to set cookie - ";
