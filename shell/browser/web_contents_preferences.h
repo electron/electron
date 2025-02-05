@@ -133,6 +133,7 @@ class WebContentsPreferences
   blink::mojom::ImageAnimationPolicy image_animation_policy_;
   std::optional<base::FilePath> preload_path_;
   blink::mojom::V8CacheOptions v8_cache_options_;
+  bool deprecated_paste_enabled_ = false;
 
 #if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;
