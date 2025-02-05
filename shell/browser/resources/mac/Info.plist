@@ -64,5 +64,7 @@
         <string>${DEFAULT_APP_ASAR_HEADER_SHA}</string>
       </dict>
     </dict>
+    <key>NSPrefersDisplaySafeAreaCompatibilityMode</key>
+    <false/>
   </dict>
 </plist>
