@@ -28,6 +28,8 @@ class SessionPreferences : public base::SupportsUserData::Data {
 
   std::vector<PreloadScript>& preload_scripts() { return preload_scripts_; }
 
+  bool HasServiceWorkerPreloadScript();
+
  private:
   SessionPreferences();
 

@@ -25,6 +25,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/world_ids.h"
+#include "shell/renderer/preload_realm_context.h"
 #include "third_party/blink/public/web/web_blob.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -765,6 +766,14 @@ v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
         world_id == WorldIDs::MAIN_WORLD_ID
             ? frame->MainWorldScriptContext()
             : frame->GetScriptContextFromWorldId(isolate, world_id);
+  } else if (execution_context->IsShadowRealmGlobalScope()) {
+    if (world_id != WorldIDs::MAIN_WORLD_ID) {
+      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
+          isolate, "Isolated worlds are not supported in preload realms.")));
+      return maybe_target_context;
+    }
+    maybe_target_context =
+        electron::preload_realm::GetInitiatorContext(source_context);
   } else {
     NOTREACHED();
   }

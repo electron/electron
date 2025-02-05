@@ -78,6 +78,7 @@
 #include "shell/browser/bluetooth/electron_bluetooth_delegate.h"
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/electron_api_ipc_handler_impl.h"
+#include "shell/browser/electron_api_sw_ipc_handler_impl.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
@@ -580,6 +581,18 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       if (web_preferences)
         web_preferences->AppendCommandLineSwitches(
             command_line, IsRendererSubFrame(unsafe_process_id));
+    }
+
+    // Service worker processes should only run preloads if one has been
+    // registered prior to startup.
+    auto* render_process_host = content::RenderProcessHost::FromID(process_id);
+    if (render_process_host) {
+      auto* browser_context = render_process_host->GetBrowserContext();
+      auto* session_prefs =
+          SessionPreferences::FromBrowserContext(browser_context);
+      if (session_prefs->HasServiceWorkerPreloadScript()) {
+        command_line->AppendSwitch(switches::kServiceWorkerPreload);
+      }
     }
   }
 }
@@ -1409,6 +1422,13 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
     const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
     blink::AssociatedInterfaceRegistry& associated_registry) {
+  CHECK(service_worker_version_info.process_id !=
+        content::ChildProcessHost::kInvalidUniqueID);
+  associated_registry.AddInterface<mojom::ElectronApiIPC>(
+      base::BindRepeating(&ElectronApiSWIPCHandlerImpl::BindReceiver,
+                          service_worker_version_info.process_id,
+                          service_worker_version_info.version_id));
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   associated_registry.AddInterface<extensions::mojom::RendererHost>(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
