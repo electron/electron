@@ -700,6 +700,15 @@ void NativeWindowViews::Minimize() {
 }
 
 void NativeWindowViews::Restore() {
+#if BUILDFLAG(IS_WIN)
+  if (IsMaximized() && transparent()) {
+    SetBounds(restore_bounds_, false);
+    NotifyWindowRestore();
+    UpdateThickFrame();
+    return;
+  }
+#endif
+
   widget()->Restore();
 
 #if BUILDFLAG(IS_WIN)
