@@ -95,6 +95,8 @@ extern const char kHiddenPage[];
 extern const char kSpellcheck[];
 #endif
 
+extern const char kEnableDeprecatedPaste[];
+
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.

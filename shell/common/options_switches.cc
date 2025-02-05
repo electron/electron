@@ -187,6 +187,10 @@ const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
 
 const char ktitleBarOverlay[] = "titleBarOverlay";
 
+// Enables the permission managed support for
+// document.execCommand("paste").
+const char kEnableDeprecatedPaste[] = "enableDeprecatedPaste";
+
 }  // namespace options
 
 namespace switches {
