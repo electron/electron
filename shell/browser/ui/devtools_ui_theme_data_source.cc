@@ -149,7 +149,7 @@ void ThemeDataSource::SendColorsCss(
           std::string set_name, ui::ColorId start, ui::ColorId end,
           ColorIdCSSCallback color_css_name) {
         // Only return these mappings if specified in the query parameter.
-        auto it = base::ranges::find(color_id_sets, set_name);
+        auto it = std::ranges::find(color_id_sets, set_name);
         if (it == color_id_sets.end()) {
           return std::string();
         }
