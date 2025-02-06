@@ -205,6 +205,9 @@ inline constexpr std::string_view kEnablePreferredSizeMode =
 inline constexpr std::string_view kHiddenPage = "hiddenPage";
 
 inline constexpr std::string_view kSpellcheck = "spellcheck";
+
+// Whether the -electron-corner-smoothing CSS rule is enabled.
+inline constexpr std::string_view kCornerSmothingCSS = "cornerSmoothingCSS";
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.

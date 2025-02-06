@@ -4,7 +4,7 @@ Date: Mon, 9 Dec 2024 16:58:15 -0700
 Subject: feat: Corner Smoothing CSS rule and Blink painting
 
 This patch implements the `-electron-corner-smoothing` CSS rule by
-making two primary changes to Blink:
+making three primary changes to Blink:
 
 1. Adds the `-electron-corner-smoothing` CSS rule:
     * Metadata in `blink/renderer/core/css/css_properties.json5`
@@ -17,6 +17,61 @@ making two primary changes to Blink:
     * Modifies all call sites of `blink::FloatRoundedRect::operator SkRRect`
       to identify and use smooth rounded corners.
 
+3. Adds a renderer preference / web setting:
+    * Controls whether the CSS rule is available.
+
+diff --git a/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc b/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc
+index 94f5f30924e3a81897767cfea29e1d2e8d44d0f6..cd7e42858df83d1a34ccf93bebee2dac15834088 100644
+--- a/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc
++++ b/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc
+@@ -120,6 +120,8 @@ bool StructTraits<blink::mojom::RendererPreferencesDataView,
+     return false;
+   }
+ 
++  out->electron_corner_smoothing_css = data.electron_corner_smoothing_css();
++
+   return true;
+ }
+ 
+diff --git a/third_party/blink/public/common/renderer_preferences/renderer_preferences.h b/third_party/blink/public/common/renderer_preferences/renderer_preferences.h
+index c148d0386e10f2cf10f46cad8ba4601663e1af46..1e6d893a9b55b0cdb00656e1409f8c1d03d2e382 100644
+--- a/third_party/blink/public/common/renderer_preferences/renderer_preferences.h
++++ b/third_party/blink/public/common/renderer_preferences/renderer_preferences.h
+@@ -93,6 +93,7 @@ struct BLINK_COMMON_EXPORT RendererPreferences {
+   bool plugin_fullscreen_allowed{true};
+   bool caret_browsing_enabled{false};
+   std::vector<uint16_t> explicitly_allowed_network_ports;
++  bool electron_corner_smoothing_css;
+ 
+   RendererPreferences();
+   RendererPreferences(const RendererPreferences& other);
+diff --git a/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h b/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h
+index 47a27d3c06fd1cfd00b7bd652e716b243d9f3800..8a4612f365c44a91a2cf9536c9df04775c332b24 100644
+--- a/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h
++++ b/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h
+@@ -261,6 +261,11 @@ struct BLINK_COMMON_EXPORT
+     return data.explicitly_allowed_network_ports;
+   }
+ 
++  static const bool& electron_corner_smoothing_css(
++      const ::blink::RendererPreferences& data) {
++    return data.electron_corner_smoothing_css;
++  }
++
+   static bool Read(blink::mojom::RendererPreferencesDataView,
+                    ::blink::RendererPreferences* out);
+ };
+diff --git a/third_party/blink/public/mojom/renderer_preferences.mojom b/third_party/blink/public/mojom/renderer_preferences.mojom
+index 79b8f8cd5365241165df4f69348385266f85adbf..0c15cd117fd1261570f326f9d29a3093f816d6e1 100644
+--- a/third_party/blink/public/mojom/renderer_preferences.mojom
++++ b/third_party/blink/public/mojom/renderer_preferences.mojom
+@@ -189,4 +189,6 @@ struct RendererPreferences {
+   bool selection_clipboard_buffer_available = false;
+ 
+   array<uint16> explicitly_allowed_network_ports;
++
++  bool electron_corner_smoothing_css;
+ };
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 index 0aa01d192d8bfe91f4a4d6d6560e31921c7377e4..4ce74a780a47135921f1cbbf7086cc0f7a8837e7 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
@@ -29,6 +84,18 @@ index 0aa01d192d8bfe91f4a4d6d6560e31921c7377e4..4ce74a780a47135921f1cbbf7086cc0f
  
      // This CSSSampleId represents page load for CSS histograms. It is recorded once
      // per page visit for each CSS histogram being logged on the blink side and the
+diff --git a/third_party/blink/public/web/web_settings.h b/third_party/blink/public/web/web_settings.h
+index 0255879e4ae048554041ca03891fbc7ba8484187..8248d8f54eb5d35caa39a306a6477ace6597b03a 100644
+--- a/third_party/blink/public/web/web_settings.h
++++ b/third_party/blink/public/web/web_settings.h
+@@ -284,6 +284,7 @@ class WebSettings {
+   virtual void SetModalContextMenu(bool) = 0;
+   virtual void SetRequireTransientActivationAndAuthorizationForSubAppsAPIs(
+       bool) = 0;
++  virtual void SetCornerSmoothingCSS(bool) = 0;
+ 
+  protected:
+   ~WebSettings() = default;
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
 index a28a04a85f7aef24e5a6c6438e2d12023e429385..f804cc6b354351594ddc977ec13dd8fa9d767f96 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
@@ -73,10 +140,10 @@ index abdf3baaa5bb5cef6923c4817dc34dd01b2cbf6f..6743bfe4ce5ed4364ac4c3bd4bc3616c
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 1eeb75ba07d767abac6a76106bbdf3b6429c0322..139c943c112d54d9d97b7e3744b68c841134cd3e 100644
+index 1eeb75ba07d767abac6a76106bbdf3b6429c0322..630193d562db74186b71a64e09269679b8fcacc9 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -11470,5 +11470,19 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -11470,5 +11470,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -84,6 +151,12 @@ index 1eeb75ba07d767abac6a76106bbdf3b6429c0322..139c943c112d54d9d97b7e3744b68c84
 +    CSSParserTokenStream& stream,
 +    const CSSParserContext& context,
 +    const CSSParserLocalContext&) const {
++  // Fail parsing if this rule is disabled by document settings.
++  if (Settings* settings = context.GetDocument()->GetSettings();
++      settings && !settings->GetElectronCornerSmoothingCSS()) {
++    return nullptr;
++  }
++
 +  // Try to parse `system-ui` keyword first.
 +  if (auto* ident =
 +          css_parsing_utils::ConsumeIdent<CSSValueID::kSystemUi>(stream)) {
@@ -126,6 +199,60 @@ index f16f3e32bc4d6d57f31b3538b17cde3ae1678b7c..32c5b6c610e277af9f3b72683186b875
  };
  
  template <typename T>
+diff --git a/third_party/blink/renderer/core/exported/web_settings_impl.cc b/third_party/blink/renderer/core/exported/web_settings_impl.cc
+index 673bafce059a21da812155ef1c6c5577fe211a91..40dfafd5828cac131bb1b4bbc0c8d64f2d09d4f2 100644
+--- a/third_party/blink/renderer/core/exported/web_settings_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_settings_impl.cc
+@@ -809,4 +809,8 @@ void WebSettingsImpl::
+       is_required);
+ }
+ 
++void WebSettingsImpl::SetCornerSmoothingCSS(bool available) {
++  settings_->SetElectronCornerSmoothingCSS(available);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/exported/web_settings_impl.h b/third_party/blink/renderer/core/exported/web_settings_impl.h
+index ea27e0cfabfec4cba6d39b4dbfbaca59cae84f8e..48abf7909b9e6b095d431739094bf8145282a01c 100644
+--- a/third_party/blink/renderer/core/exported/web_settings_impl.h
++++ b/third_party/blink/renderer/core/exported/web_settings_impl.h
+@@ -236,6 +236,7 @@ class CORE_EXPORT WebSettingsImpl final : public WebSettings {
+   void SetModalContextMenu(bool) override;
+   void SetRequireTransientActivationAndAuthorizationForSubAppsAPIs(
+       bool) override;
++  void SetCornerSmoothingCSS(bool) override;
+ 
+   bool RenderVSyncNotificationEnabled() const {
+     return render_v_sync_notification_enabled_;
+diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
+index eaeb83e0ae7c5d1088ea097ced5dd7aee97314ea..0ad7e3a877f722ea2b41dd43ba84548e216802cf 100644
+--- a/third_party/blink/renderer/core/exported/web_view_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
+@@ -3571,6 +3571,9 @@ void WebViewImpl::UpdateRendererPreferences(
+ #endif
+ 
+   MaybePreloadSystemFonts(GetPage());
++
++  GetSettings()->SetCornerSmoothingCSS(
++      renderer_preferences_.electron_corner_smoothing_css);
+ }
+ 
+ void WebViewImpl::SetHistoryOffsetAndLength(int32_t history_offset,
+diff --git a/third_party/blink/renderer/core/frame/settings.json5 b/third_party/blink/renderer/core/frame/settings.json5
+index e974941a5a2b8e32165af41dc1b5649d09ea18c5..0f27178fb72da94eec62fe31c3a0b8b4191ab4eb 100644
+--- a/third_party/blink/renderer/core/frame/settings.json5
++++ b/third_party/blink/renderer/core/frame/settings.json5
+@@ -1253,5 +1253,10 @@
+       initial: false,
+       type: "bool"
+     },
++    {
++      name: "electronCornerSmoothingCSS",
++      initial: true,
++      invalidate: ["Style"],
++    },
+   ],
+ }
 diff --git a/third_party/blink/renderer/core/paint/box_border_painter.cc b/third_party/blink/renderer/core/paint/box_border_painter.cc
 index 6eb5ad4ddd265c379efde17a0c3a2f954e0d4d82..6534eaecc914f84b5bab6941e487d99cf12c19e5 100644
 --- a/third_party/blink/renderer/core/paint/box_border_painter.cc
