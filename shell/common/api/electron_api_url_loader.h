@@ -66,6 +66,9 @@ class SimpleURLLoaderWrapper final
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
+
  private:
   SimpleURLLoaderWrapper(ElectronBrowserContext* browser_context,
                          std::unique_ptr<network::ResourceRequest> request,
@@ -114,7 +117,9 @@ class SimpleURLLoaderWrapper final
                             OnLoadingStateUpdateCallback callback) override;
   void OnSharedStorageHeaderReceived(
       const url::Origin& request_origin,
-      std::vector<network::mojom::SharedStorageModifierMethodPtr> methods,
+      std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
+          methods,
+      const std::optional<std::string>& with_lock,
       OnSharedStorageHeaderReceivedCallback callback) override;
   void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
                        int64_t recv_bytes,

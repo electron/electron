@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents } from 'electron/main';
+import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents, BaseWindow, WebContentsView } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -13,7 +13,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
@@ -63,6 +63,7 @@ describe('webContents module', () => {
   });
 
   describe('fromFrame()', () => {
+    afterEach(cleanupWebContents);
     it('returns WebContents for mainFrame', () => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create();
       expect(webContents.fromFrame(contents.mainFrame)).to.equal(contents);
@@ -85,6 +86,7 @@ describe('webContents module', () => {
   });
 
   describe('fromDevToolsTargetId()', () => {
+    afterEach(closeAllWindows);
     it('returns WebContents for attached DevTools target', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
@@ -103,7 +105,10 @@ describe('webContents module', () => {
   });
 
   describe('will-prevent-unload event', function () {
-    afterEach(closeAllWindows);
+    afterEach(async () => {
+      await closeAllWindows();
+      await cleanupWebContents();
+    });
     it('does not emit if beforeunload returns undefined in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', () => {
@@ -305,11 +310,13 @@ describe('webContents module', () => {
       ]);
       let w: BrowserWindow;
 
-      before(async () => {
+      beforeEach(async () => {
         w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false } });
         await w.loadURL('about:blank');
       });
-      after(closeAllWindows);
+      afterEach(async () => {
+        await closeAllWindows();
+      });
 
       it('resolves the returned promise with the result', async () => {
         const result = await w.webContents.executeJavaScript(code);
@@ -380,6 +387,8 @@ describe('webContents module', () => {
       await w.loadURL('about:blank');
     });
 
+    after(() => w.close());
+
     it('resolves the returned promise with the result', async () => {
       await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X = 123' }]);
       const isolatedResult = await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X' }]);
@@ -391,6 +400,14 @@ describe('webContents module', () => {
 
   describe('loadURL() promise API', () => {
     let w: BrowserWindow;
+    let s: http.Server;
+
+    afterEach(() => {
+      if (s) {
+        s.close();
+        s = null as unknown as http.Server;
+      }
+    });
 
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
@@ -494,19 +511,18 @@ describe('webContents module', () => {
     });
 
     it('rejects if the load is aborted', async () => {
-      const s = http.createServer(() => { /* never complete the request */ });
+      s = http.createServer(() => { /* never complete the request */ });
       const { port } = await listen(s);
       const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).to.eventually.be.rejectedWith(Error, /ERR_ABORTED/);
       // load a different file before the first load completes, causing the
       // first load to be aborted.
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
       await p;
-      s.close();
     });
 
     it("doesn't reject when a subframe fails to load", async () => {
       let resp = null as unknown as http.ServerResponse;
-      const s = http.createServer((req, res) => {
+      s = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.write('<iframe src="http://err.name.not.resolved"></iframe>');
         resp = res;
@@ -524,12 +540,11 @@ describe('webContents module', () => {
       await p;
       resp.end();
       await main;
-      s.close();
     });
 
     it("doesn't resolve when a subframe loads", async () => {
       let resp = null as unknown as http.ServerResponse;
-      const s = http.createServer((req, res) => {
+      s = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.write('<iframe src="about:blank"></iframe>');
         resp = res;
@@ -548,7 +563,6 @@ describe('webContents module', () => {
       resp.destroy(); // cause the main request to fail
       await expect(main).to.eventually.be.rejected()
         .and.have.property('errno', -355); // ERR_INCOMPLETE_CHUNKED_ENCODING
-      s.close();
     });
 
     it('subsequent load failures reject each time', async () => {
@@ -820,6 +834,7 @@ describe('webContents module', () => {
   });
 
   describe('isFocused() API', () => {
+    afterEach(closeAllWindows);
     it('returns false when the window is hidden', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
@@ -1177,6 +1192,7 @@ describe('webContents module', () => {
   });
 
   describe('startDrag({file, icon})', () => {
+    afterEach(closeAllWindows);
     it('throws errors for a missing file or a missing/empty icon', () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
@@ -1281,6 +1297,7 @@ describe('webContents module', () => {
   });
 
   describe('userAgent APIs', () => {
+    afterEach(closeAllWindows);
     it('is not empty by default', () => {
       const w = new BrowserWindow({ show: false });
       const userAgent = w.webContents.getUserAgent();
@@ -1311,6 +1328,7 @@ describe('webContents module', () => {
   });
 
   describe('audioMuted APIs', () => {
+    afterEach(closeAllWindows);
     it('can set the audio mute level (functions)', () => {
       const w = new BrowserWindow({ show: false });
 
@@ -1526,6 +1544,9 @@ describe('webContents module', () => {
           res.end();
         });
       });
+      defer(() => {
+        server.close();
+      });
       listen(server).then(({ url }) => {
         const content = `<iframe src=${url}></iframe>`;
         w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
@@ -1538,8 +1559,6 @@ describe('webContents module', () => {
               done();
             } catch (e) {
               done(e);
-            } finally {
-              server.close();
             }
           }
         });
@@ -2023,11 +2042,12 @@ describe('webContents module', () => {
             return done();
           } catch (e) {
             return done(e);
-          } finally {
-            server.close();
           }
         }
         res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>');
+      });
+      defer(() => {
+        server.close();
       });
       listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
@@ -2054,6 +2074,9 @@ describe('webContents module', () => {
           }
         }
         res.end('');
+      });
+      defer(() => {
+        server.close();
       });
       listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
@@ -2731,8 +2754,79 @@ describe('webContents module', () => {
       expect(params.y).to.be.a('number');
     });
 
+    // Skipping due to lack of native click support.
+    it.skip('emits the correct number of times when right-clicked in page', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+
+      let contextMenuEmitCount = 0;
+
+      w.webContents.on('context-menu', () => {
+        contextMenuEmitCount++;
+      });
+
+      // TODO(samuelmaddock): Perform native right-click. We've tried then
+      // dropped robotjs and nutjs so for now this is a manual test.
+
+      await once(w.webContents, 'context-menu');
+      await setTimeout(100);
+
+      expect(contextMenuEmitCount).to.equal(1);
+    });
+
     it('emits when right-clicked in page in a draggable region', async () => {
       const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'draggable-page.html'));
+
+      const promise = once(w.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
+
+      // Simulate right-click to create context-menu event.
+      const opts = { x: 0, y: 0, button: 'right' as const };
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
+
+      const [, params] = await promise;
+
+      expect(params.pageURL).to.equal(w.webContents.getURL());
+      expect(params.frame).to.be.an('object');
+      expect(params.x).to.be.a('number');
+      expect(params.y).to.be.a('number');
+    });
+
+    it('emits when right clicked in a WebContentsView', async () => {
+      const w = new BaseWindow({ show: false });
+
+      const mainView = new WebContentsView({
+        webPreferences: {
+          preload: path.join(__dirname, 'preload.js')
+        }
+      });
+
+      const draggablePage = path.join(fixturesPath, 'pages', 'draggable-page.html');
+      await mainView.webContents.loadFile(draggablePage);
+
+      w.contentView.addChildView(mainView);
+
+      const { width, height } = w.getContentBounds();
+      mainView.setBounds({ x: 0, y: 0, width, height });
+
+      const promise = once(mainView.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
+
+      // Simulate right-click to create context-menu event.
+      const opts = { x: 0, y: 0, button: 'right' as const };
+      mainView.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
+      mainView.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
+
+      const [, params] = await promise;
+
+      expect(params.pageURL).to.equal(mainView.webContents.getURL());
+      expect(params.frame).to.be.an('object');
+      expect(params.x).to.be.a('number');
+      expect(params.y).to.be.a('number');
+    });
+
+    it('emits when right clicked in a BrowserWindow with vibrancy', async () => {
+      const w = new BrowserWindow({ show: false, vibrancy: 'titlebar' });
       await w.loadFile(path.join(fixturesPath, 'pages', 'draggable-page.html'));
 
       const promise = once(w.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
@@ -2752,7 +2846,10 @@ describe('webContents module', () => {
   });
 
   describe('close() method', () => {
-    afterEach(closeAllWindows);
+    afterEach(async () => {
+      await closeAllWindows();
+      await cleanupWebContents();
+    });
 
     it('closes when close() is called', async () => {
       const w = (webContents as typeof ElectronInternal.WebContents).create();

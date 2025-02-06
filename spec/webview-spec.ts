@@ -1700,6 +1700,7 @@ describe('<webview> tag', function () {
         await loadWebViewAndWaitForEvent(w, {
           src: `file://${fixtures}/pages/dom-ready.html?port=${port}`
         }, 'dom-ready');
+        defer(() => { server.close(); });
       });
 
       itremote('throws a custom error when an API method is called before the event is emitted', () => {

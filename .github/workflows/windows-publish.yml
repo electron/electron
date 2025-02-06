@@ -1,0 +1,84 @@
+name: Publish Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      build-image-sha:
+        type: string
+        description: 'SHA for electron/build image'
+        default: 'bc2f48b2415a670de18d13605b1cf0eb5fdbaae1'
+        required: true
+      upload-to-storage:
+        description: 'Uploads to Azure storage'
+        required: false
+        default: '1'
+        type: string
+      run-windows-publish:
+        description: 'Run the publish jobs vs just the build jobs'
+        type: boolean
+        default: false
+
+jobs:
+  checkout-windows:
+    runs-on: electron-arc-linux-amd64-32core
+    container:
+      image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
+      options: --user root --device /dev/fuse --cap-add SYS_ADMIN
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+    env:
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
+      TARGET_OS: 'win'
+      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
+    outputs:
+      build-image-sha: ${{ inputs.build-image-sha }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+
+  publish-x64-win:
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: checkout-windows
+    with:
+      environment: production-release
+      build-runs-on: electron-arc-windows-amd64-16core
+      target-platform: win
+      target-arch: x64
+      is-release: true
+      gn-build-type: release
+      generate-symbols: true
+      upload-to-storage: ${{ inputs.upload-to-storage }}
+    secrets: inherit
+
+  publish-arm64-win:
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: checkout-windows
+    with:
+      environment: production-release
+      build-runs-on: electron-arc-windows-amd64-16core
+      target-platform: win
+      target-arch: arm64
+      is-release: true
+      gn-build-type: release
+      generate-symbols: true
+      upload-to-storage: ${{ inputs.upload-to-storage }}
+    secrets: inherit
+
+  publish-x86-win:
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: checkout-windows
+    with:
+      environment: production-release
+      build-runs-on: electron-arc-windows-amd64-16core
+      target-platform: win
+      target-arch: x86
+      is-release: true
+      gn-build-type: release
+      generate-symbols: true
+      upload-to-storage: ${{ inputs.upload-to-storage }}
+    secrets: inherit

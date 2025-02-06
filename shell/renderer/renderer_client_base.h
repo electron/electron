@@ -10,8 +10,6 @@
 
 #include "content/public/renderer/content_renderer_client.h"
 #include "electron/buildflags/buildflags.h"
-// In SHARED_INTERMEDIATE_DIR.
-#include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "services/service_manager/public/cpp/binder_registry.h"
@@ -138,13 +136,6 @@ class RendererClientBase : public content::ContentRendererClient
   void WebViewCreated(blink::WebView* web_view,
                       bool was_created_by_renderer,
                       const url::Origin* outermost_origin) override;
-
- protected:
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // app_shell embedders may need custom extensions client interfaces.
-  // This class takes ownership of the returned object.
-  virtual extensions::ExtensionsClient* CreateExtensionsClient();
-#endif
 
  private:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

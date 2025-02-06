@@ -5,6 +5,10 @@ inputs:
     description: 'Whether to generate and persist a SAS token for the item in the cache'
     required: false
     default: 'false'
+  use-cache:
+    description: 'Whether to persist the cache to the shared drive'
+    required: false
+    default: 'true'
 runs:
   using: "composite"
   steps:
@@ -13,31 +17,27 @@ runs:
     run: |
       echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
   - name: Install Dependencies
-    shell: bash
-    run: |
-      cd src/electron
-      node script/yarn install --frozen-lockfile
+    uses: ./src/electron/.github/actions/install-dependencies
+  - name: Install Build Tools
+    uses: ./src/electron/.github/actions/install-build-tools
   - name: Get Depot Tools
     shell: bash
     run: |
-      git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      if [[ ! -d depot_tools ]]; then
+        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
-      sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-      # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-      cd depot_tools
-      git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-
-      # Ensure depot_tools does not update.
-      test -d depot_tools && cd depot_tools
-      touch .disable_auto_update
+        # Ensure depot_tools does not update.
+        test -d depot_tools && cd depot_tools
+        touch .disable_auto_update
+      fi
   - name: Add Depot Tools to PATH
     shell: bash
     run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
   - name: Generate DEPS Hash
     shell: bash
     run: |
-      node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
-      echo "DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+      node src/electron/script/generate-deps-hash.js
+      echo "DEPSHASH=v1-src-cache-$(cat src/electron/.depshash)" >> $GITHUB_ENV
   - name: Generate SAS Key
     if: ${{ inputs.generate-sas-token == 'true' }}
     shell: bash
@@ -45,7 +45,7 @@ runs:
       curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$DEPSHASH.tar" > sas-token
   - name: Save SAS Key
     if: ${{ inputs.generate-sas-token == 'true' }}
-    uses: actions/cache/save@v4
+    uses: actions/cache/save@1bd1e32a3bdc45362d1e726936510720a7c30a57
     with:
       path: |
         sas-token
@@ -54,18 +54,23 @@ runs:
     id: check-cache
     shell: bash
     run: |
-      cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
-      echo "Using cache key: $DEPSHASH"
-      echo "Checking for cache in: $cache_path"
-      if [ ! -f "$cache_path" ] || [ `du $cache_path | cut -f1` = "0" ]; then
+      if [[ "${{ inputs.use-cache }}" == "false" ]]; then
+        echo "Not using cache this time..."
         echo "cache_exists=false" >> $GITHUB_OUTPUT
-        echo "Cache Does Not Exist for $DEPSHASH"
       else
-        echo "cache_exists=true" >> $GITHUB_OUTPUT
-        echo "Cache Already Exists for $DEPSHASH, Skipping.."
+        cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
+        echo "Using cache key: $DEPSHASH"
+        echo "Checking for cache in: $cache_path"
+        if [ ! -f "$cache_path" ] || [ `du $cache_path | cut -f1` = "0" ]; then
+          echo "cache_exists=false" >> $GITHUB_OUTPUT
+          echo "Cache Does Not Exist for $DEPSHASH"
+        else
+          echo "cache_exists=true" >> $GITHUB_OUTPUT
+          echo "Cache Already Exists for $DEPSHASH, Skipping.."
+        fi
       fi
   - name: Check cross instance cache disk space
-    if: steps.check-cache.outputs.cache_exists == 'false'
+    if: steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache  == 'true'
     shell: bash
     run: |    
       # if there is less than 20 GB free space then creating the cache might fail so exit early
@@ -81,13 +86,17 @@ runs:
     if: steps.check-cache.outputs.cache_exists == 'false'
     shell: bash
     run: |
-      gclient config \
+      e d gclient config \
         --name "src/electron" \
         --unmanaged \
         ${GCLIENT_EXTRA_ARGS} \
         "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
 
-      ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags -vvvvv
+      if [ "$TARGET_OS" != "" ]; then
+        echo "target_os=['$TARGET_OS']" >> ./.gclient
+      fi
+
+      ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags -vv
       if [ "${{ inputs.is-release }}" != "true" && -n "${{ env.PATCH_UP_APP_CREDS }}" ]; then
         # Re-export all the patches to check if there were changes.
         python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
@@ -128,13 +137,13 @@ runs:
   # https://dawn-review.googlesource.com/c/dawn/+/83901
   # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
   - name: Delete .git directories under src to free space
-    if: steps.check-cache.outputs.cache_exists == 'false'
+    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
     run: |
       cd src
       ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
   - name: Minimize Cache Size for Upload
-    if: steps.check-cache.outputs.cache_exists == 'false'
+    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
     run: |
       rm -rf src/android_webview
@@ -145,9 +154,12 @@ runs:
       rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
       rm -rf src/third_party/swift-toolchain
       rm -rf src/third_party/swiftshader/tests/regres/testlists
+      cp src/electron/.github/actions/checkout/action.yml ./
       rm -rf src/electron
+      mkdir -p src/electron/.github/actions/checkout
+      mv action.yml src/electron/.github/actions/checkout
   - name: Compress Src Directory
-    if: steps.check-cache.outputs.cache_exists == 'false'
+    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
     run: |
       echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
@@ -155,7 +167,7 @@ runs:
       echo "Compressed src to $(du -sh $DEPSHASH.tar | cut -f1 -d' ')"
       cp ./$DEPSHASH.tar /mnt/cross-instance-cache/
   - name: Persist Src Cache
-    if: steps.check-cache.outputs.cache_exists == 'false'
+    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
     run: |
       final_cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar

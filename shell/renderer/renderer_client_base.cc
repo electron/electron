@@ -239,7 +239,7 @@ void RendererClientBase::RenderThreadStarted() {
                                                      true);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_client_.reset(CreateExtensionsClient());
+  extensions_client_ = std::make_unique<ElectronExtensionsClient>();
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
   extensions_renderer_client_ =
@@ -565,12 +565,6 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
     return frame->MainWorldScriptContext();
 }
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
-  return new ElectronExtensionsClient;
-}
-#endif
-
 bool RendererClientBase::IsWebViewFrame(
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) const {
@@ -617,10 +611,9 @@ void RendererClientBase::SetupMainWorldOverrides(
 
   v8::Local<v8::Value> guest_view_internal;
   if (global.GetHidden("guestViewInternal", &guest_view_internal)) {
-    api::context_bridge::ObjectCache object_cache;
     auto result = api::PassValueToOtherContext(
         source_context, context, guest_view_internal, source_context->Global(),
-        &object_cache, false, 0, api::BridgeErrorTarget::kSource);
+        false, api::BridgeErrorTarget::kSource);
     if (!result.IsEmpty()) {
       isolated_api.Set("guestViewInternal", result.ToLocalChecked());
     }

@@ -206,6 +206,11 @@ inline constexpr std::string_view kHiddenPage = "hiddenPage";
 
 inline constexpr std::string_view kSpellcheck = "spellcheck";
 
+// Enables the permission managed support for
+// document.execCommand("paste").
+inline constexpr std::string_view kEnableDeprecatedPaste =
+    "enableDeprecatedPaste";
+
 // Whether the -electron-corner-smoothing CSS rule is enabled.
 inline constexpr std::string_view kCornerSmothingCSS = "cornerSmoothingCSS";
 }  // namespace options
@@ -290,6 +295,10 @@ inline constexpr base::cstring_view kEnableAuthNegotiatePort =
 
 // If set, NTLM v2 is disabled for POSIX platforms.
 inline constexpr base::cstring_view kDisableNTLMv2 = "disable-ntlm-v2";
+
+// Indicates that preloads for service workers are registered.
+inline constexpr base::cstring_view kServiceWorkerPreload =
+    "service-worker-preload";
 
 }  // namespace switches
 

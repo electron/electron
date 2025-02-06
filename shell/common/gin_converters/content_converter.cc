@@ -88,8 +88,7 @@ v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
 v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     v8::Isolate* isolate,
     const ContextMenuParamsWithRenderFrameHost& val) {
-  const auto& params = val.first;
-  content::RenderFrameHost* render_frame_host = val.second;
+  auto [params, render_frame_host, optional_suggestions] = val;
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetGetter("frame", render_frame_host, v8::DontEnum);
   dict.Set("x", params.x);
@@ -114,7 +113,11 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
   dict.Set("misspelledWord", params.misspelled_word);
   dict.Set("selectionRect", params.selection_rect);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  dict.Set("dictionarySuggestions", params.dictionary_suggestions);
+  if (optional_suggestions) {
+    dict.Set("dictionarySuggestions", optional_suggestions.value());
+  } else {
+    dict.Set("dictionarySuggestions", params.dictionary_suggestions);
+  }
   dict.Set("spellcheckEnabled", params.spellcheck_enabled);
 #else
   dict.Set("spellcheckEnabled", false);
@@ -223,6 +226,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "speaker-selection");
     case blink::PermissionType::WEB_APP_INSTALLATION:
       return StringToV8(isolate, "web-app-installation");
+    case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+      return StringToV8(isolate, "deprecated-sync-clipboard-read");
     case blink::PermissionType::NUM:
       break;
   }

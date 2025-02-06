@@ -31,7 +31,6 @@
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/buildflags/buildflags.h"
-#include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "printing/buildflags/buildflags.h"
@@ -40,11 +39,14 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
 #include "shell/browser/osr/osr_paint_event.h"
+#include "shell/browser/preload_script.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/web_contents_utility.mojom.h"
 #include "ui/base/models/image_model.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -53,6 +55,10 @@
 namespace extensions {
 class ScriptExecutor;
 }
+#endif
+
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#include "components/spellcheck/common/spellcheck_common.h"
 #endif
 
 namespace blink {
@@ -151,6 +157,10 @@ class WebContents final : public ExclusiveAccessContext,
   static WebContents* FromID(int32_t id);
   static std::list<WebContents*> GetWebContentsList();
 
+  // Whether to disable draggable regions globally. This can be used to allow
+  // events to skip client region hit tests.
+  static void SetDisableDraggableRegions(bool disable);
+
   // Get the V8 wrapper of the |web_contents|, or create one if not existed.
   //
   // The lifetime of |web_contents| is NOT managed by this class, and the type
@@ -171,6 +181,9 @@ class WebContents final : public ExclusiveAccessContext,
   static gin::WrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
+
   void Destroy();
   void Close(std::optional<gin_helper::Dictionary> options);
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
@@ -179,7 +192,7 @@ class WebContents final : public ExclusiveAccessContext,
   bool GetBackgroundThrottling() const override;
 
   void SetBackgroundThrottling(bool allowed);
-  int GetProcessID() const;
+  int32_t GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
   [[nodiscard]] Type type() const { return type_; }
   bool Equal(const WebContents* web_contents) const;
@@ -333,8 +346,8 @@ class WebContents final : public ExclusiveAccessContext,
                       const std::string& features,
                       const scoped_refptr<network::ResourceRequestBody>& body);
 
-  // Returns the preload script path of current WebContents.
-  std::vector<base::FilePath> GetPreloadPaths() const;
+  // Returns the preload script of current WebContents.
+  std::optional<PreloadScript> GetPreloadScript() const;
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
@@ -464,7 +477,8 @@ class WebContents final : public ExclusiveAccessContext,
   void SetImageAnimationPolicy(const std::string& new_policy);
 
   // content::RenderWidgetHost::InputEventObserver:
-  void OnInputEvent(const blink::WebInputEvent& event) override;
+  void OnInputEvent(const content::RenderWidgetHost& rfh,
+                    const blink::WebInputEvent& event) override;
 
   // content::JavaScriptDialogManager:
   void RunJavaScriptDialog(content::WebContents* web_contents,
@@ -485,13 +499,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   void PDFReadyToPrint();
 
-  SkRegion* draggable_region() {
-    return force_non_draggable_ ? nullptr : draggable_region_.get();
-  }
-
-  void SetForceNonDraggable(bool force_non_draggable) {
-    force_non_draggable_ = force_non_draggable;
-  }
+  SkRegion* draggable_region();
 
   // disable copy
   WebContents(const WebContents&) = delete;
@@ -796,6 +804,14 @@ class WebContents final : public ExclusiveAccessContext,
   // Update the html fullscreen flag in both browser and renderer.
   void UpdateHtmlApiFullscreen(bool fullscreen);
 
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  void OnGetPlatformSuggestionsComplete(
+      content::RenderFrameHost& render_frame_host,
+      const content::ContextMenuParams& params,
+      const spellcheck::PerLanguageSuggestions&
+          platform_per_language_suggestions);
+#endif
+
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;
@@ -890,8 +906,6 @@ class WebContents final : public ExclusiveAccessContext,
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
   std::unique_ptr<SkRegion> draggable_region_;
-
-  bool force_non_draggable_ = false;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };

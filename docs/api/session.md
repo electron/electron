@@ -933,6 +933,7 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
+    * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
@@ -1330,17 +1331,42 @@ the initial state will be `interrupted`. The download will start only when the
 
 Returns `Promise<void>` - resolves when the session’s HTTP authentication cache has been cleared.
 
-#### `ses.setPreloads(preloads)`
+#### `ses.setPreloads(preloads)` _Deprecated_
 
 * `preloads` string[] - An array of absolute path to preload scripts
 
 Adds scripts that will be executed on ALL web contents that are associated with
 this session just before normal `preload` scripts run.
 
-#### `ses.getPreloads()`
+**Deprecated:** Use the new `ses.registerPreloadScript` API.
+
+#### `ses.getPreloads()` _Deprecated_
 
 Returns `string[]` an array of paths to preload scripts that have been
 registered.
+
+**Deprecated:** Use the new `ses.getPreloadScripts` API. This will only return preload script paths
+for `frame` context types.
+
+#### `ses.registerPreloadScript(script)`
+
+* `script` [PreloadScriptRegistration](structures/preload-script-registration.md) - Preload script
+
+Registers preload script that will be executed in its associated context type in this session. For
+`frame` contexts, this will run prior to any preload defined in the web preferences of a
+WebContents.
+
+Returns `string` - The ID of the registered preload script.
+
+#### `ses.unregisterPreloadScript(id)`
+
+* `id` string - Preload script ID
+
+Unregisters script.
+
+#### `ses.getPreloadScripts()`
+
+Returns [`PreloadScript[]`](structures/preload-script.md): An array of paths to preload scripts that have been registered.
 
 #### `ses.setCodeCachePath(path)`
 
@@ -1359,6 +1385,36 @@ specified when registering the protocol.
   * `urls` String[] (optional) - An array of url corresponding to the resource whose generated code cache needs to be removed. If the list is empty then all entries in the cache directory will be removed.
 
 Returns `Promise<void>` - resolves when the code cache clear operation is complete.
+
+#### `ses.getSharedDictionaryUsageInfo()`
+
+Returns `Promise<SharedDictionaryUsageInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+Shared dictionaries are used to power advanced compression of data sent over the wire, specifically with Brotli and ZStandard. You don't need to call any of the shared dictionary APIs in Electron to make use of this advanced web feature, but if you do, they allow deeper control and inspection of the shared dictionaries used during decompression.
+
+To get detailed information about a specific shared dictionary entry, call `getSharedDictionaryInfo(options)`.
+
+#### `ses.getSharedDictionaryInfo(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<SharedDictionaryInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+To get information about all present shared dictionaries, call `getSharedDictionaryUsageInfo()`.
+
+#### `ses.clearSharedDictionaryCache()`
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared, both in memory and on disk.
+
+#### `ses.clearSharedDictionaryCacheForIsolationKey(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared for the specified isolation key, both in memory and on disk.
 
 #### `ses.setSpellCheckerEnabled(enable)`
 
@@ -1536,6 +1592,8 @@ This method clears more types of data and is more thorough than the
 `clearStorageData` method.
 
 **Note:** Cookies are stored at a broader scope than origins. When removing cookies and filtering by `origins` (or `excludeOrigins`), the cookies will be removed at the [registrable domain](https://url.spec.whatwg.org/#host-registrable-domain) level. For example, clearing cookies for the origin `https://really.specific.origin.example.com/` will end up clearing all cookies for `example.com`. Clearing cookies for the origin `https://my.website.example.co.uk/` will end up clearing all cookies for `example.co.uk`.
+
+**Note:** Clearing cache data will also clear the shared dictionary cache. This means that any dictionaries used for compression may be reloaded after clearing the cache. If you wish to clear the shared dictionary cache but leave other cached data intact, you may want to use the `clearSharedDictionaryCache` method.
 
 For more information, refer to Chromium's [`BrowsingDataRemover` interface][browsing-data-remover].
 

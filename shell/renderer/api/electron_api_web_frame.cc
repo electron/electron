@@ -31,6 +31,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/web_contents_utility.mojom.h"
 #include "shell/renderer/api/context_bridge/object_cache.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
@@ -150,13 +151,11 @@ class ScriptExecutionCallback {
         "An unknown exception occurred while getting the result of the script";
     {
       v8::TryCatch try_catch(isolate);
-      context_bridge::ObjectCache object_cache;
       v8::Local<v8::Context> source_context =
           result->GetCreationContextChecked();
-      maybe_result =
-          PassValueToOtherContext(source_context, promise_.GetContext(), result,
-                                  source_context->Global(), &object_cache,
-                                  false, 0, BridgeErrorTarget::kSource);
+      maybe_result = PassValueToOtherContext(
+          source_context, promise_.GetContext(), result,
+          source_context->Global(), false, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }
@@ -736,7 +735,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
                                              std::move(completion_callback));
 
     render_frame->GetWebFrame()->RequestExecuteScript(
-        world_id, base::make_span(sources),
+        world_id, base::span(sources),
         has_user_gesture ? blink::mojom::UserActivationOption::kActivate
                          : blink::mojom::UserActivationOption::kDoNotActivate,
         script_execution_type, load_blocking_option, base::NullCallback(),

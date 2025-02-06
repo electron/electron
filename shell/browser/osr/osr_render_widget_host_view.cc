@@ -195,8 +195,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
 
-  bool opaque = SkColorGetA(background_color_) == SK_AlphaOPAQUE;
-  root_layer()->SetFillsBoundsOpaquely(opaque);
   root_layer()->SetColor(background_color_);
 
   ui::ContextFactory* context_factory = content::GetContextFactory();
@@ -980,7 +978,8 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
 
 viz::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId() {
   return viz::FrameSinkId(
-      base::checked_cast<uint32_t>(render_widget_host_->GetProcess()->GetID()),
+      base::checked_cast<uint32_t>(
+          render_widget_host_->GetProcess()->GetDeprecatedID()),
       base::checked_cast<uint32_t>(render_widget_host_->GetRoutingID()));
 }
 
@@ -990,8 +989,6 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
     return;
   background_color_ = color;
 
-  bool opaque = SkColorGetA(color) == SK_AlphaOPAQUE;
-  root_layer()->SetFillsBoundsOpaquely(opaque);
   root_layer()->SetColor(color);
 }
 

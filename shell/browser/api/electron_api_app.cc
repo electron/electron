@@ -474,7 +474,7 @@ void OnClientCertificateSelected(
     return;
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
-      base::as_bytes(base::make_span(data)), net::X509Certificate::FORMAT_AUTO);
+      base::as_byte_span(data), net::X509Certificate::FORMAT_AUTO);
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
     for (auto& identity : *identities) {
@@ -543,11 +543,12 @@ App::App() {
       ->set_delegate(this);
   Browser::Get()->AddObserver(this);
 
-  auto pid = content::ChildProcessHost::kInvalidUniqueID;
+  auto unsafe_pid = content::ChildProcessId::FromUnsafeValue(
+      content::ChildProcessHost::kInvalidUniqueID);
   auto process_metric = std::make_unique<electron::ProcessMetric>(
       content::PROCESS_TYPE_BROWSER, base::GetCurrentProcessHandle(),
       base::ProcessMetrics::CreateCurrentProcessMetrics());
-  app_metrics_[pid] = std::move(process_metric);
+  app_metrics_[unsafe_pid] = std::move(process_metric);
 }
 
 App::~App() {
@@ -785,26 +786,28 @@ void App::OnGpuInfoUpdate() {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
-  ChildProcessLaunched(data.process_type, data.id, data.GetProcess().Handle(),
-                       data.metrics_name, base::UTF16ToUTF8(data.name));
+  ChildProcessLaunched(data.process_type,
+                       content::ChildProcessId::FromUnsafeValue(data.id),
+                       data.GetProcess().Handle(), data.metrics_name,
+                       base::UTF16ToUTF8(data.name));
 }
 
 void App::BrowserChildProcessHostDisconnected(
     const content::ChildProcessData& data) {
-  ChildProcessDisconnected(data.id);
+  ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
 }
 
 void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(data.id);
+  ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
   BrowserChildProcessCrashedOrKilled(data, info);
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(data.id);
+  ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
   BrowserChildProcessCrashedOrKilled(data, info);
 }
 
@@ -834,7 +837,7 @@ void App::RenderProcessExited(content::RenderProcessHost* host) {
 }
 
 void App::ChildProcessLaunched(int process_type,
-                               int pid,
+                               content::ChildProcessId pid,
                                base::ProcessHandle handle,
                                const std::string& service_name,
                                const std::string& name) {
@@ -848,7 +851,7 @@ void App::ChildProcessLaunched(int process_type,
       process_type, handle, std::move(metrics), service_name, name);
 }
 
-void App::ChildProcessDisconnected(int pid) {
+void App::ChildProcessDisconnected(content::ChildProcessId pid) {
   app_metrics_.erase(pid);
 }
 

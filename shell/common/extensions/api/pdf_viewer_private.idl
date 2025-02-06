@@ -68,5 +68,10 @@ namespace pdfViewerPrivate {
     // Fired when the browser wants the listener to perform a save.
     // `streamUrl`: Unique ID for the instance that should perform the save.
     static void onSave(DOMString streamUrl);
+
+    // Fired when the browser wants the listener to update the viewport based on
+    // a different PDF URL.
+    // `pdfUrl`: The string of the PDF URL that should update the viewport.
+    static void onShouldUpdateViewport(DOMString pdfUrl);
   };
 };

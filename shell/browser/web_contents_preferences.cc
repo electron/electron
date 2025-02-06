@@ -148,6 +148,7 @@ void WebContentsPreferences::Clear() {
       blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
   preload_path_ = std::nullopt;
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
+  deprecated_paste_enabled_ = false;
   corner_smoothing_css_ = true;
 
 #if BUILDFLAG(IS_MAC)
@@ -247,6 +248,9 @@ void WebContentsPreferences::SetFromDictionary(
 
   web_preferences.Get("v8CacheOptions", &v8_cache_options_);
 
+  web_preferences.Get(options::kEnableDeprecatedPaste,
+                      &deprecated_paste_enabled_);
+
 #if BUILDFLAG(IS_MAC)
   web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
 #endif
@@ -285,7 +289,7 @@ bool WebContentsPreferences::IsSandboxed() const {
 
 // static
 content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
-    int process_id) {
+    content::ChildProcessId process_id) {
   for (WebContentsPreferences* preferences : Instances()) {
     content::WebContents* web_contents = preferences->web_contents_;
     if (web_contents->GetPrimaryMainFrame()->GetProcess()->GetID() ==
@@ -474,6 +478,8 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->webview_tag = webview_tag_;
 
   prefs->v8_cache_options = v8_cache_options_;
+
+  prefs->dom_paste_enabled = deprecated_paste_enabled_;
 
   renderer_prefs->electron_corner_smoothing_css = corner_smoothing_css_;
 }

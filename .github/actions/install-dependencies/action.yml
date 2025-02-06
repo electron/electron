@@ -1,0 +1,21 @@
+name: 'Install Dependencies'
+description: 'Installs yarn depdencies using cache when available'
+runs:
+  using: "composite"
+  steps:
+  - name: Get yarn cache directory path
+    shell: bash
+    id: yarn-cache-dir-path
+    run: echo "dir=$(node src/electron/script/yarn cache dir)" >> $GITHUB_OUTPUT
+  - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57
+    id: yarn-cache
+    with:
+      path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+      key: ${{ runner.os }}-yarn-${{ hashFiles('src/electron/yarn.lock') }}
+      restore-keys: |
+        ${{ runner.os }}-yarn-
+  - name: Install Dependencies
+    shell: bash
+    run: |
+      cd src/electron
+      node script/yarn install --frozen-lockfile --prefer-offline

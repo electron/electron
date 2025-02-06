@@ -9,8 +9,8 @@ on:
         type: string
 
 concurrency:
-  group: electron-lint-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
+  group: electron-lint-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
 
 jobs:
   lint:
@@ -24,10 +24,9 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
-      run: |
-        cd src/electron
-        node script/yarn install --frozen-lockfile
+      uses: ./src/electron/.github/actions/install-dependencies
     - name: Setup third_party Depot Tools
       shell: bash
       run: |

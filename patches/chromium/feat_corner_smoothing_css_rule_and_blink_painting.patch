@@ -21,10 +21,10 @@ making three primary changes to Blink:
     * Controls whether the CSS rule is available.
 
 diff --git a/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc b/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc
-index 94f5f30924e3a81897767cfea29e1d2e8d44d0f6..cd7e42858df83d1a34ccf93bebee2dac15834088 100644
+index 25cf6b544dcee15a9616b6963eaae0264aba3db6..13d5b30d00ce8dca96eb3bc5454f9d353375d4c6 100644
 --- a/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc
-@@ -120,6 +120,8 @@ bool StructTraits<blink::mojom::RendererPreferencesDataView,
+@@ -128,6 +128,8 @@ bool StructTraits<blink::mojom::RendererPreferencesDataView,
      return false;
    }
  
@@ -34,22 +34,22 @@ index 94f5f30924e3a81897767cfea29e1d2e8d44d0f6..cd7e42858df83d1a34ccf93bebee2dac
  }
  
 diff --git a/third_party/blink/public/common/renderer_preferences/renderer_preferences.h b/third_party/blink/public/common/renderer_preferences/renderer_preferences.h
-index c148d0386e10f2cf10f46cad8ba4601663e1af46..1e6d893a9b55b0cdb00656e1409f8c1d03d2e382 100644
+index cae096396b0635f1c4bba6ac8fee47fd957dc698..03db6cddab5cd1b9f3f7c90390bc53baa9e14b65 100644
 --- a/third_party/blink/public/common/renderer_preferences/renderer_preferences.h
 +++ b/third_party/blink/public/common/renderer_preferences/renderer_preferences.h
-@@ -93,6 +93,7 @@ struct BLINK_COMMON_EXPORT RendererPreferences {
-   bool plugin_fullscreen_allowed{true};
+@@ -91,6 +91,7 @@ struct BLINK_COMMON_EXPORT RendererPreferences {
    bool caret_browsing_enabled{false};
+   bool uses_platform_autofill{false};
    std::vector<uint16_t> explicitly_allowed_network_ports;
 +  bool electron_corner_smoothing_css;
  
    RendererPreferences();
    RendererPreferences(const RendererPreferences& other);
 diff --git a/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h b/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h
-index 47a27d3c06fd1cfd00b7bd652e716b243d9f3800..8a4612f365c44a91a2cf9536c9df04775c332b24 100644
+index 33b4bd3f0c9488f1013aea026c7fe559ba750cd8..6b4157199c14a4c276e65512e89f2429253aec5c 100644
 --- a/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h
-@@ -261,6 +261,11 @@ struct BLINK_COMMON_EXPORT
+@@ -275,6 +275,11 @@ struct BLINK_COMMON_EXPORT
      return data.explicitly_allowed_network_ports;
    }
  
@@ -62,18 +62,18 @@ index 47a27d3c06fd1cfd00b7bd652e716b243d9f3800..8a4612f365c44a91a2cf9536c9df0477
                     ::blink::RendererPreferences* out);
  };
 diff --git a/third_party/blink/public/mojom/renderer_preferences.mojom b/third_party/blink/public/mojom/renderer_preferences.mojom
-index 79b8f8cd5365241165df4f69348385266f85adbf..0c15cd117fd1261570f326f9d29a3093f816d6e1 100644
+index bbcec1dcdaaaf932b3d82c64e8aeb2e7c04b05bf..689205607a763c1d6e040069b1357d84e8ba4bd5 100644
 --- a/third_party/blink/public/mojom/renderer_preferences.mojom
 +++ b/third_party/blink/public/mojom/renderer_preferences.mojom
-@@ -189,4 +189,6 @@ struct RendererPreferences {
-   bool selection_clipboard_buffer_available = false;
+@@ -201,4 +201,6 @@ struct RendererPreferences {
+   bool uses_platform_autofill = false;
  
    array<uint16> explicitly_allowed_network_ports;
 +
 +  bool electron_corner_smoothing_css;
  };
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-index 0aa01d192d8bfe91f4a4d6d6560e31921c7377e4..4ce74a780a47135921f1cbbf7086cc0f7a8837e7 100644
+index 1785b7e2663dc2ab1e71b742109bb146627e9bc3..28bcc7900068189168ce8263cfa57c8a52d0990b 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 +++ b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 @@ -48,6 +48,7 @@ enum CSSSampleId {
@@ -97,10 +97,10 @@ index 0255879e4ae048554041ca03891fbc7ba8484187..8248d8f54eb5d35caa39a306a6477ace
   protected:
    ~WebSettings() = default;
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index a28a04a85f7aef24e5a6c6438e2d12023e429385..f804cc6b354351594ddc977ec13dd8fa9d767f96 100644
+index 6292928aa9cfc972b75d6a354da12d6b12d8b522..bbcb7740202daa98bb1a744631660f0985ef0bef 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8787,6 +8787,25 @@
+@@ -8810,6 +8810,25 @@
        converter: "ConvertInternalAlignContentBlock",
        invalidate: ["layout"],
      },
@@ -127,7 +127,7 @@ index a28a04a85f7aef24e5a6c6438e2d12023e429385..f804cc6b354351594ddc977ec13dd8fa
      {
        name: "-epub-caption-side",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index abdf3baaa5bb5cef6923c4817dc34dd01b2cbf6f..6743bfe4ce5ed4364ac4c3bd4bc3616cbcf64a44 100644
+index c10cfd1de3fffaf2aa6e5e505b7b7a6751da456e..240b7a3cbea5ad8297f10cba42b6134a5823fb67 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
 @@ -336,6 +336,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
@@ -140,10 +140,10 @@ index abdf3baaa5bb5cef6923c4817dc34dd01b2cbf6f..6743bfe4ce5ed4364ac4c3bd4bc3616c
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 1eeb75ba07d767abac6a76106bbdf3b6429c0322..630193d562db74186b71a64e09269679b8fcacc9 100644
+index 75221109017852f58cd33a4d695f0669c5a879d2..7be46778ddd6c618de20504c24e6b16701ec6854 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -11470,5 +11470,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -11510,5 +11510,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -170,10 +170,10 @@ index 1eeb75ba07d767abac6a76106bbdf3b6429c0322..630193d562db74186b71a64e09269679
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 0b46257c21e6d5bfe55562b36bab4ed538946af1..890229044c44b911bb192a72a7e711b718398170 100644
+index c96fc99f23773f0e7755e9199521699e9caf885d..2fc12966b5c1c355f7b9929aa58b1b214ee67ed5 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -3824,4 +3824,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
+@@ -3855,4 +3855,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
    return PositionArea(span[0], span[1], span[2], span[3]);
  }
  
@@ -187,10 +187,10 @@ index 0b46257c21e6d5bfe55562b36bab4ed538946af1..890229044c44b911bb192a72a7e711b7
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index f16f3e32bc4d6d57f31b3538b17cde3ae1678b7c..32c5b6c610e277af9f3b72683186b875b9a7ab9a 100644
+index 97dc5470e94715916e3f15a852f03009408655c1..49dad7c742d07823445709ef1f2eb6453abbde6b 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -416,6 +416,8 @@ class StyleBuilderConverter {
+@@ -422,6 +422,8 @@ class StyleBuilderConverter {
                                                   const CSSValue&);
  
    static PositionArea ConvertPositionArea(StyleResolverState&, const CSSValue&);
@@ -225,10 +225,10 @@ index ea27e0cfabfec4cba6d39b4dbfbaca59cae84f8e..48abf7909b9e6b095d431739094bf814
    bool RenderVSyncNotificationEnabled() const {
      return render_v_sync_notification_enabled_;
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index eaeb83e0ae7c5d1088ea097ced5dd7aee97314ea..0ad7e3a877f722ea2b41dd43ba84548e216802cf 100644
+index 9afdc8df7d36802f43ff4579240d92997949f03a..87a248f21856b91027c7de72a93a7659856f25c8 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3571,6 +3571,9 @@ void WebViewImpl::UpdateRendererPreferences(
+@@ -3583,6 +3583,9 @@ void WebViewImpl::UpdateRendererPreferences(
  #endif
  
    MaybePreloadSystemFonts(GetPage());
@@ -280,10 +280,10 @@ index 6eb5ad4ddd265c379efde17a0c3a2f954e0d4d82..6534eaecc914f84b5bab6941e487d99c
  
        cc::PaintFlags flags;
 diff --git a/third_party/blink/renderer/core/paint/box_painter_base.cc b/third_party/blink/renderer/core/paint/box_painter_base.cc
-index cf237c40ecda5b8e14a0785e650a6c0d30fae4df..a7dbe53647f7243da10ca5e472590bfc0108bec4 100644
+index 7eb05137650f1221a51f6fbc8277b493078bac68..20af18254c2ca301964859c81bccd6d05e8a4487 100644
 --- a/third_party/blink/renderer/core/paint/box_painter_base.cc
 +++ b/third_party/blink/renderer/core/paint/box_painter_base.cc
-@@ -295,7 +295,7 @@ void BoxPainterBase::PaintNormalBoxShadow(const PaintInfo& info,
+@@ -319,7 +319,7 @@ void BoxPainterBase::PaintNormalBoxShadow(const PaintInfo& info,
      context.SetDrawLooper(draw_looper_builder.DetachDrawLooper());
  
      if (has_border_radius) {
@@ -292,7 +292,7 @@ index cf237c40ecda5b8e14a0785e650a6c0d30fae4df..a7dbe53647f7243da10ca5e472590bfc
        ApplySpreadToShadowShape(rounded_fill_rect, shadow.Spread());
        context.FillRoundedRect(
            rounded_fill_rect, Color::kBlack,
-@@ -379,7 +379,7 @@ void BoxPainterBase::PaintInsetBoxShadow(const PaintInfo& info,
+@@ -403,7 +403,7 @@ void BoxPainterBase::PaintInsetBoxShadow(const PaintInfo& info,
  
      gfx::RectF inner_rect = bounds.Rect();
      AdjustRectForSideClipping(inner_rect, shadow, sides_to_include);
@@ -409,10 +409,10 @@ index f9f0cc13c043e4653d8a616d0ef4f2f776aace74..d4dd4351b763814d86c8e4828cf42204
    }
  
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index d206b245cb3690ac7abc8b11819f04bba49a1361..e8162cc7ed70b87f033ef2077bd77e9e13eec1e7 100644
+index d63c8ecca109fc1370dfd959e99c6700de4440d9..5a1b5f679b1e2e1791f944e141a2f934d9850481 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1626,6 +1626,8 @@ component("platform") {
+@@ -1627,6 +1627,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -493,10 +493,10 @@ index 95d4498a0e0b3484ecbf9fe50f5aef49a68b5dcb..5e13aa1c0b21e659585018729a772e1d
  
  constexpr bool operator!=(const FloatRoundedRect& a,
 diff --git a/third_party/blink/renderer/platform/graphics/compositing/paint_artifact_compositor.cc b/third_party/blink/renderer/platform/graphics/compositing/paint_artifact_compositor.cc
-index b6895c1bdcc949c76c160c3dcd1ffd9af18e182a..ad131c51b556abcfccd89e21cf8c520fcf9ceb2a 100644
+index 4952082b87f80611b16a0730615bc0eaabe79791..ae4be086ce7e18094d758b11eb3ac0b6ca8358be 100644
 --- a/third_party/blink/renderer/platform/graphics/compositing/paint_artifact_compositor.cc
 +++ b/third_party/blink/renderer/platform/graphics/compositing/paint_artifact_compositor.cc
-@@ -783,7 +783,7 @@ void SynthesizedClip::UpdateLayer(const ClipPaintPropertyNode& clip,
+@@ -800,7 +800,7 @@ void SynthesizedClip::UpdateLayer(const ClipPaintPropertyNode& clip,
    CHECK_EQ(layer_->client(), this);
  
    const auto& path = clip.ClipPath();
@@ -505,7 +505,7 @@ index b6895c1bdcc949c76c160c3dcd1ffd9af18e182a..ad131c51b556abcfccd89e21cf8c520f
    gfx::Rect layer_rect = gfx::ToEnclosingRect(clip.PaintClipRect().Rect());
    bool needs_display = false;
  
-@@ -797,7 +797,7 @@ void SynthesizedClip::UpdateLayer(const ClipPaintPropertyNode& clip,
+@@ -814,7 +814,7 @@ void SynthesizedClip::UpdateLayer(const ClipPaintPropertyNode& clip,
  
    if (!path && new_projection.IsIdentityOr2dTranslation()) {
      gfx::Vector2dF translation = new_projection.To2dTranslation();
@@ -514,7 +514,7 @@ index b6895c1bdcc949c76c160c3dcd1ffd9af18e182a..ad131c51b556abcfccd89e21cf8c520f
      needs_display = !rrect_is_local_ || new_rrect != rrect_;
      projection_.MakeIdentity();
      rrect_is_local_ = true;
-@@ -825,7 +825,11 @@ SynthesizedClip::PaintContentsToDisplayList() {
+@@ -842,7 +842,11 @@ SynthesizedClip::PaintContentsToDisplayList() {
    flags.setAntiAlias(true);
    cc_list->StartPaint();
    if (rrect_is_local_) {
@@ -527,7 +527,7 @@ index b6895c1bdcc949c76c160c3dcd1ffd9af18e182a..ad131c51b556abcfccd89e21cf8c520f
    } else {
      cc_list->push<cc::SaveOp>();
      if (projection_.IsIdentityOr2dTranslation()) {
-@@ -838,7 +842,11 @@ SynthesizedClip::PaintContentsToDisplayList() {
+@@ -855,7 +859,11 @@ SynthesizedClip::PaintContentsToDisplayList() {
        cc_list->push<cc::ClipPathOp>(path_->GetSkPath(), SkClipOp::kIntersect,
                                      true);
      }
@@ -541,7 +541,7 @@ index b6895c1bdcc949c76c160c3dcd1ffd9af18e182a..ad131c51b556abcfccd89e21cf8c520f
    }
    cc_list->EndPaintOfUnpaired(gfx::Rect(layer_->bounds()));
 diff --git a/third_party/blink/renderer/platform/graphics/compositing/paint_artifact_compositor.h b/third_party/blink/renderer/platform/graphics/compositing/paint_artifact_compositor.h
-index fb3919ca9e049ba1f1f15bdf295f9ae03d531ac8..85787a575404bc39b7ec28ee2237ce80328766e9 100644
+index fc4339bff1763d6dd6e99e3332e0e3bd1729e859..d501e499b25559da3084a9de8046ecfbf3f4b959 100644
 --- a/third_party/blink/renderer/platform/graphics/compositing/paint_artifact_compositor.h
 +++ b/third_party/blink/renderer/platform/graphics/compositing/paint_artifact_compositor.h
 @@ -94,7 +94,7 @@ class SynthesizedClip : public cc::ContentLayerClient {
@@ -574,10 +574,10 @@ index 4551b438ceb483bd9ad3e31fdc42c0d9cb689f92..0b60957d553fd3fdc9620409a97f34c5
        push<cc::ClipRectOp>(gfx::RectFToSkRect(combined_clip_rect.Rect()),
                             SkClipOp::kIntersect, antialias);
 diff --git a/third_party/blink/renderer/platform/graphics/compositing/property_tree_manager.cc b/third_party/blink/renderer/platform/graphics/compositing/property_tree_manager.cc
-index f32bfeab409aaba843834fce4e63083c1b75f539..193dfb3b93cb97e9faf5d7eb69720997e8bd3b96 100644
+index 2d3da8e35f9bfaf2918fe0f0aad3c0494ad35b05..92fc7a6fa39870aab04efa41391eb65c9e34a6ae 100644
 --- a/third_party/blink/renderer/platform/graphics/compositing/property_tree_manager.cc
 +++ b/third_party/blink/renderer/platform/graphics/compositing/property_tree_manager.cc
-@@ -914,7 +914,7 @@ std::optional<gfx::RRectF> PropertyTreeManager::ShaderBasedRRect(
+@@ -933,7 +933,7 @@ std::optional<gfx::RRectF> PropertyTreeManager::ShaderBasedRRect(
    if (type & CcEffectType::kSyntheticFor2dAxisAlignment) {
      return std::nullopt;
    }
@@ -587,10 +587,10 @@ index f32bfeab409aaba843834fce4e63083c1b75f539..193dfb3b93cb97e9faf5d7eb69720997
    }
  
 diff --git a/third_party/blink/renderer/platform/graphics/graphics_context.cc b/third_party/blink/renderer/platform/graphics/graphics_context.cc
-index 8503c0d22d68f63e0015bb76507dd22484d3a6d7..135e30f7a2ef0c9cc635d97349f59b157399323f 100644
+index e79a0e26223146b60443f960cc8978f97715d662..b5ba7c1a70f8ecf720fbd8f4f02bf532c1d37321 100644
 --- a/third_party/blink/renderer/platform/graphics/graphics_context.cc
 +++ b/third_party/blink/renderer/platform/graphics/graphics_context.cc
-@@ -648,11 +648,19 @@ void GraphicsContext::DrawImageRRect(
+@@ -646,11 +646,19 @@ void GraphicsContext::DrawImageRRect(
      image_flags.setFilterQuality(
          ComputeFilterQuality(image, dest.Rect(), src_rect));
      // Shader-based fast path.
@@ -612,7 +612,7 @@ index 8503c0d22d68f63e0015bb76507dd22484d3a6d7..135e30f7a2ef0c9cc635d97349f59b15
      image.Draw(canvas_, image_flags, dest.Rect(), src_rect, draw_options);
    }
  
-@@ -809,15 +817,24 @@ void GraphicsContext::FillRoundedRect(const FloatRoundedRect& rrect,
+@@ -807,15 +815,24 @@ void GraphicsContext::FillRoundedRect(const FloatRoundedRect& rrect,
  
    const cc::PaintFlags& fill_flags = ImmutableState()->FillFlags();
    const SkColor4f sk_color = color.toSkColor4f();
@@ -639,7 +639,7 @@ index 8503c0d22d68f63e0015bb76507dd22484d3a6d7..135e30f7a2ef0c9cc635d97349f59b15
  }
  
  namespace {
-@@ -869,6 +886,13 @@ void GraphicsContext::FillDRRect(const FloatRoundedRect& outer,
+@@ -867,6 +884,13 @@ void GraphicsContext::FillDRRect(const FloatRoundedRect& outer,
                                   const AutoDarkMode& auto_dark_mode) {
    DCHECK(canvas_);
  
@@ -653,7 +653,7 @@ index 8503c0d22d68f63e0015bb76507dd22484d3a6d7..135e30f7a2ef0c9cc635d97349f59b15
    const cc::PaintFlags& fill_flags = ImmutableState()->FillFlags();
    const SkColor4f sk_color = color.toSkColor4f();
    if (!IsSimpleDRRect(outer, inner)) {
-@@ -903,6 +927,10 @@ void GraphicsContext::FillRectWithRoundedHole(
+@@ -901,6 +925,10 @@ void GraphicsContext::FillRectWithRoundedHole(
      const FloatRoundedRect& rounded_hole_rect,
      const Color& color,
      const AutoDarkMode& auto_dark_mode) {
@@ -664,7 +664,7 @@ index 8503c0d22d68f63e0015bb76507dd22484d3a6d7..135e30f7a2ef0c9cc635d97349f59b15
    cc::PaintFlags flags(ImmutableState()->FillFlags());
    flags.setColor(color.toSkColor4f());
    canvas_->drawDRRect(SkRRect::MakeRect(gfx::RectFToSkRect(rect)),
-@@ -951,6 +979,10 @@ void GraphicsContext::ClipRoundedRect(const FloatRoundedRect& rrect,
+@@ -949,6 +977,10 @@ void GraphicsContext::ClipRoundedRect(const FloatRoundedRect& rrect,
      ClipRect(gfx::RectFToSkRect(rrect.Rect()), should_antialias, clip_op);
      return;
    }

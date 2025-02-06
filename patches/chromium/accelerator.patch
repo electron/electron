@@ -10,7 +10,7 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 3. Ctrl-Shift-= and Ctrl-Plus show up as such
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 3bcdf9fccf4c391e4239e87a83194f04e683a02c..c6b110eced004ae755a2dfc555b0ceb43bf574fa 100644
+index 1f90103d1ddb04a24797cf1214c3d0c862d77e9f..67eec0d3526349448a56acf9724806aec06104df 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -12,6 +12,7 @@
@@ -21,7 +21,7 @@ index 3bcdf9fccf4c391e4239e87a83194f04e683a02c..c6b110eced004ae755a2dfc555b0ceb4
  #include "base/strings/utf_string_conversions.h"
  #include "base/types/cxx23_to_underlying.h"
  #include "build/build_config.h"
-@@ -188,6 +189,11 @@ std::u16string Accelerator::GetShortcutText() const {
+@@ -109,6 +110,11 @@ std::u16string Accelerator::GetShortcutText() const {
  #endif
  
    if (shortcut.empty()) {
@@ -33,7 +33,7 @@ index 3bcdf9fccf4c391e4239e87a83194f04e683a02c..c6b110eced004ae755a2dfc555b0ceb4
  #if BUILDFLAG(IS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -212,6 +218,10 @@ std::u16string Accelerator::GetShortcutText() const {
+@@ -133,6 +139,10 @@ std::u16string Accelerator::GetShortcutText() const {
        shortcut +=
            static_cast<std::u16string::value_type>(base::ToUpperASCII(c));
  #endif
@@ -44,7 +44,7 @@ index 3bcdf9fccf4c391e4239e87a83194f04e683a02c..c6b110eced004ae755a2dfc555b0ceb4
    }
  
  #if BUILDFLAG(IS_MAC)
-@@ -396,7 +406,7 @@ std::u16string Accelerator::ApplyLongFormModifiers(
+@@ -317,7 +327,7 @@ std::u16string Accelerator::ApplyLongFormModifiers(
      const std::u16string& shortcut) const {
    std::u16string result = shortcut;
  
@@ -53,7 +53,7 @@ index 3bcdf9fccf4c391e4239e87a83194f04e683a02c..c6b110eced004ae755a2dfc555b0ceb4
      result = ApplyModifierToAcceleratorString(result, IDS_APP_SHIFT_KEY);
  
    // Note that we use 'else-if' in order to avoid using Ctrl+Alt as a shortcut.
-@@ -404,7 +414,7 @@ std::u16string Accelerator::ApplyLongFormModifiers(
+@@ -325,7 +335,7 @@ std::u16string Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())
      result = ApplyModifierToAcceleratorString(result, IDS_APP_CTRL_KEY);
@@ -63,18 +63,18 @@ index 3bcdf9fccf4c391e4239e87a83194f04e683a02c..c6b110eced004ae755a2dfc555b0ceb4
  
    if (IsCmdDown()) {
 diff --git a/ui/base/accelerators/accelerator.h b/ui/base/accelerators/accelerator.h
-index 276f7ded0d6e60b65e461872e23b1f3380542037..94a60d9df75790c85ec93313dada260cdd65f947 100644
+index 198c7469f410d3516b8a18493c5e4588d02487c2..e4995824ae2f3bb8045a3841a6213a4b315845a8 100644
 --- a/ui/base/accelerators/accelerator.h
 +++ b/ui/base/accelerators/accelerator.h
-@@ -16,6 +16,7 @@
+@@ -18,6 +18,7 @@
  #include <utility>
  
  #include "base/component_export.h"
 +#include "third_party/abseil-cpp/absl/types/optional.h"
  #include "base/time/time.h"
+ #include "build/blink_buildflags.h"
  #include "build/build_config.h"
- #include "ui/events/event_constants.h"
-@@ -132,6 +133,8 @@ class COMPONENT_EXPORT(UI_BASE) Accelerator {
+@@ -185,6 +186,8 @@ class COMPONENT_EXPORT(UI_BASE) Accelerator {
      return interrupted_by_mouse_event_;
    }
  

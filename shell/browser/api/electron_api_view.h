@@ -45,6 +45,7 @@ class View : public gin_helper::EventEmitter<View>,
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
   void SetVisible(bool visible);
+  bool GetVisible() const;
 
   // views::ViewObserver
   void OnViewBoundsChanged(views::View* observed_view) override;

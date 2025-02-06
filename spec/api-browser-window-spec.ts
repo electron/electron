@@ -935,6 +935,9 @@ describe('BrowserWindow module', () => {
           });
           url = (await listen(server)).url;
         });
+        after(() => {
+          server.close();
+        });
         it('for initial navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = [
@@ -1269,6 +1272,7 @@ describe('BrowserWindow module', () => {
         // We first need to resign app focus for this test to work
         const isInactive = once(app, 'did-resign-active');
         childProcess.execSync('osascript -e \'tell application "Finder" to activate\'');
+        defer(() => childProcess.execSync('osascript -e \'tell application "Finder" to quit\''));
         await isInactive;
 
         // Create new window
