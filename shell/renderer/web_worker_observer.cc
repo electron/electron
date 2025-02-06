@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "base/no_destructor.h"
-#include "base/ranges/algorithm.h"
 #include "base/threading/thread_local.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"

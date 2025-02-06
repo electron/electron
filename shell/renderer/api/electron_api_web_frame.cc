@@ -187,7 +187,7 @@ class ScriptExecutionCallback {
     }
   }
 
-  void Completed(const blink::WebVector<v8::Local<v8::Value>>& result) {
+  void Completed(const std::vector<v8::Local<v8::Value>>& result) {
     v8::Isolate* isolate = promise_.isolate();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
@@ -575,8 +575,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
           ->FrameWidget()
           ->GetActiveWebInputMethodController()
           ->CommitText(blink::WebString::FromUTF8(text),
-                       blink::WebVector<ui::ImeTextSpan>(), blink::WebRange(),
-                       0);
+                       std::vector<ui::ImeTextSpan>(), blink::WebRange(), 0);
     }
   }
 
