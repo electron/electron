@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 4b521179af8722f0a9917d1f925d9223b46e2c73..b3532822184507a2d37af607bd09aaff65fcb30f 100644
+index 15a237fd7354b76fd6c67c3f7c77c75d8ef34b11..2cd888ea6f4b1f18ab65945dfb2814f0601f7b58 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -652,6 +652,7 @@ static_library("test_support") {
@@ -819,7 +819,7 @@ index 4b521179af8722f0a9917d1f925d9223b46e2c73..b3532822184507a2d37af607bd09aaff
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3203,6 +3206,7 @@ test("content_unittests") {
+@@ -3204,6 +3207,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -932,7 +932,7 @@ index 36322ddd3047f96569f35807541a37d3c6672b09..0121a780cf3b79fc1120c1b85cd5cd30
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 45847b155ec8fb197aadb479eca78154436cfa81..e5de2b90a4c7d8181408ddfa62057b977015cbb8 100644
+index 977aa5b452c882ee69690ba034ec00c9e7ff7e24..3ae3e2ead48ea1af9307dcd12647ca2a24b3a6f4 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -198,6 +198,7 @@ source_set("audio") {
