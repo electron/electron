@@ -184,7 +184,7 @@ void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
 }
 
 bool WebFrameMain::CheckRenderFrame() const {
-  if (render_frame_disposed_) {
+  if (render_frame_disposed_ || render_frame_ == nullptr) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     gin_helper::ErrorThrower(isolate).ThrowError(
@@ -436,7 +436,7 @@ v8::Local<v8::Promise> WebFrameMain::CollectDocumentJSCallStack(
   gin_helper::Promise<base::Value> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  if (render_frame_disposed_) {
+  if (render_frame_disposed_ || render_frame_ == nullptr) {
     promise.RejectWithErrorMessage(
         "Render frame was disposed before WebFrameMain could be accessed");
     return handle;
@@ -464,7 +464,7 @@ void WebFrameMain::CollectedJavaScriptCallStack(
     gin_helper::Promise<base::Value> promise,
     const std::string& untrusted_javascript_call_stack,
     const std::optional<blink::LocalFrameToken>& remote_frame_token) {
-  if (render_frame_disposed_) {
+  if (render_frame_disposed_ || render_frame_ == nullptr) {
     promise.RejectWithErrorMessage(
         "Render frame was disposed before call stack was received");
     return;
