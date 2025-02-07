@@ -422,7 +422,7 @@ index d63c8ecca109fc1370dfd959e99c6700de4440d9..5a1b5f679b1e2e1791f944e141a2f934
  
    sources -= blink_platform_avx_files
 diff --git a/third_party/blink/renderer/platform/geometry/float_rounded_rect.h b/third_party/blink/renderer/platform/geometry/float_rounded_rect.h
-index 95d4498a0e0b3484ecbf9fe50f5aef49a68b5dcb..5e13aa1c0b21e659585018729a772e1d289a34c5 100644
+index 95d4498a0e0b3484ecbf9fe50f5aef49a68b5dcb..6affe36a214e93ef1128c65456997678ded87faf 100644
 --- a/third_party/blink/renderer/platform/geometry/float_rounded_rect.h
 +++ b/third_party/blink/renderer/platform/geometry/float_rounded_rect.h
 @@ -34,6 +34,7 @@
@@ -472,7 +472,7 @@ index 95d4498a0e0b3484ecbf9fe50f5aef49a68b5dcb..5e13aa1c0b21e659585018729a772e1d
   private:
    gfx::RectF rect_;
    Radii radii_;
-+  float smoothness_;
++  float smoothness_ = 0.0f;
  };
  
  inline FloatRoundedRect::operator SkRRect() const {
