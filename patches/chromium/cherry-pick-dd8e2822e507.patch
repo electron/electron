@@ -56,10 +56,10 @@ index 394bd53bb5c1dfea5abe24b9047eb190884c2648..7add42348ef28079196b447feda78210
    // Used when loading workers from network schemes.
    // WARNING: This does not populate referrer policy.
 diff --git a/content/browser/service_worker/service_worker_registry.cc b/content/browser/service_worker/service_worker_registry.cc
-index 930c7a0c51832f1577656357135a1cfd175839c6..429fe4e4fd632ee7eef04b483614b316c8cc2019 100644
+index aa1e8fb5d1b3eef93b799f29cc89e15315507d2d..68b5c2ba114aa084c5ad6bc2e4fd12d44393ed77 100644
 --- a/content/browser/service_worker/service_worker_registry.cc
 +++ b/content/browser/service_worker/service_worker_registry.cc
-@@ -1069,7 +1069,8 @@ ServiceWorkerRegistry::GetOrCreateRegistration(
+@@ -1084,7 +1084,8 @@ ServiceWorkerRegistry::GetOrCreateRegistration(
      if (data.policy_container_policies) {
        version->set_policy_container_host(
            base::MakeRefCounted<PolicyContainerHost>(
