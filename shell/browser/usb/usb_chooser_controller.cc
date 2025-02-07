@@ -8,7 +8,9 @@
 #include <cstddef>
 #include <utility>
 
+#include "base/command_line.h"
 #include "base/functional/bind.h"
+#include "chrome/browser/usb/usb_blocklist.h"
 #include "components/strings/grit/components_strings.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
@@ -140,6 +142,8 @@ void UsbChooserController::GotUsbDeviceList(
 
 bool UsbChooserController::DisplayDevice(
     const device::mojom::UsbDeviceInfo& device_info) const {
+  bool blocklist_disabled =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(kDisableUSBBlocklist);
   if (!device::UsbDeviceFilterMatchesAny(options_->filters, device_info)) {
     return false;
   }
@@ -148,6 +152,10 @@ bool UsbChooserController::DisplayDevice(
           options_->exclusion_filters, [&device_info](const auto& filter) {
             return device::UsbDeviceFilterMatches(*filter, device_info);
           })) {
+    return false;
+  }
+
+  if (!blocklist_disabled && UsbBlocklist::Get().IsExcluded(device_info)) {
     return false;
   }
 

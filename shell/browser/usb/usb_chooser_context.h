@@ -33,6 +33,8 @@ namespace electron {
 
 class ElectronBrowserContext;
 
+const char kDisableUSBBlocklist[] = "disable-usb-blocklist";
+
 class UsbChooserContext : public KeyedService,
                           public device::mojom::UsbDeviceManagerClient {
  public:
