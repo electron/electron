@@ -217,8 +217,7 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
 
   auto context = isolate_->GetCurrentContext();
   gin_helper::MicrotasksScope microtasks_scope{
-      isolate_, context->GetMicrotaskQueue(), false,
-      v8::MicrotasksScope::kDoNotRunMicrotasks};
+      context, false, v8::MicrotasksScope::kDoNotRunMicrotasks};
 
   v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate_, base::BindRepeating(&SpellCheckClient::OnSpellCheckDone,
