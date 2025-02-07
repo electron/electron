@@ -12,9 +12,11 @@
 #include "base/scoped_observation.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/serial_chooser.h"
+#include "content/public/browser/weak_document_ptr.h"
 #include "device/bluetooth/bluetooth_adapter.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
 #include "shell/browser/serial/serial_chooser_context.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/serial/serial.mojom-forward.h"
 
 namespace content {
@@ -66,6 +68,8 @@ class SerialChooserController final
   void GetDevices();
   void OnGetDevices(std::vector<device::mojom::SerialPortInfoPtr> ports);
   bool DisplayDevice(const device::mojom::SerialPortInfo& port) const;
+  void AddMessageToConsole(blink::mojom::ConsoleMessageLevel level,
+                           const std::string& message) const;
   void RunCallback(device::mojom::SerialPortInfoPtr port);
   void OnDeviceChosen(const std::string& port_id);
   void OnGetAdapter(base::OnceClosure callback,
@@ -78,6 +82,7 @@ class SerialChooserController final
   std::vector<blink::mojom::SerialPortFilterPtr> filters_;
   std::vector<::device::BluetoothUUID> allowed_bluetooth_service_class_ids_;
   content::SerialChooser::Callback callback_;
+  content::WeakDocumentPtr initiator_document_;
   url::Origin origin_;
 
   base::WeakPtr<SerialChooserContext> chooser_context_;
