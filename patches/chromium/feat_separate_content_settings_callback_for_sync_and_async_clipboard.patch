@@ -91,10 +91,10 @@ index 28f616f21f998c7cd1c794e58efaccf9e6c11e6e..c64896642209124e500db2ed6fe2357e
    // The common use case of this method is actually to selectively disable
    // MutationEvents, but it's been named for consistency with the rest of the
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index 271ca7ba88fc92b8f6bad5ee4cffedf7f1b05aee..d8d01062de4af45a59eb10a1c0fa046a4adf1894 100644
+index c269698764bb8ae7f85c5d476436f5ae5209576d..65d7fd94128a755609192784722074c6c2b7b7cf 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-@@ -121,7 +121,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
+@@ -122,7 +122,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
      return true;
    }
    return frame.GetContentSettingsClient() &&
@@ -103,7 +103,7 @@ index 271ca7ba88fc92b8f6bad5ee4cffedf7f1b05aee..d8d01062de4af45a59eb10a1c0fa046a
  }
  
  bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
-@@ -310,7 +310,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+@@ -311,7 +311,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
      return true;
    }
    return frame->GetContentSettingsClient() &&
