@@ -375,7 +375,7 @@ int WebFrameMain::RoutingID() const {
 
 GURL WebFrameMain::URL() const {
   if (!CheckRenderFrame())
-    return GURL::EmptyGURL();
+    return {};
   return render_frame_->GetLastCommittedURL();
 }
 

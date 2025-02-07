@@ -192,7 +192,7 @@ bool ServiceWorkerMain::IsDestroyed() const {
 }
 
 const blink::StorageKey ServiceWorkerMain::GetStorageKey() {
-  GURL scope = version_info_ ? version_info()->scope : GURL::EmptyGURL();
+  const GURL& scope = version_info_ ? version_info()->scope : GURL::EmptyGURL();
   return blink::StorageKey::CreateFirstParty(url::Origin::Create(scope));
 }
 
@@ -279,7 +279,7 @@ int64_t ServiceWorkerMain::VersionID() const {
 
 GURL ServiceWorkerMain::ScopeURL() const {
   if (version_destroyed_)
-    return GURL::EmptyGURL();
+    return {};
   return version_info()->scope;
 }
 
