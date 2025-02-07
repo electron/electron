@@ -57,7 +57,7 @@ the WebHID API:
 
 ### Blocklist
 
-By default Electron employs the same [blocklist](https://github.com/WICG/webhid/blob/main/blocklist.txt)
+By default Electron employs the same [blocklist](https://wicg.github.io/webhid/#blocklist)
 used by Chromium.  If you wish to override this behavior, you can do so by
 setting the `disable-hid-blocklist` flag:
 
@@ -106,7 +106,7 @@ There are several additional APIs for working with the Web Serial API:
 
 ### Blocklist
 
-By default Electron employs the same [blocklist](https://github.com/WICG/webhid/blob/main/blocklist.txt)
+By default Electron employs the same [blocklist](https://wicg.github.io/serial/#blocklist)
 used by Chromium.  If you wish to override this behavior, you can do so by
 setting the `disable-serial-blocklist` flag:
 
@@ -157,7 +157,7 @@ Electron provides several APIs for working with the WebUSB API:
 
 ### Blocklist
 
-By default Electron employs the same [blocklist](https://github.com/WICG/webusb/blob/main/blocklist.txt)
+By default Electron employs the same [blocklist](https://wicg.github.io/webusb/#blocklist)
 used by Chromium.  If you wish to override this behavior, you can do so by
 setting the `disable-usb-blocklist` flag:
 
