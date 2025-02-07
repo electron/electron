@@ -1,4 +1,4 @@
-# CSS Rule: `-electron-corner-smoothing` 
+## CSS Rule: `-electron-corner-smoothing`
 
 > Smoothes out the corner rounding of the `border-radius` CSS rule.
 
@@ -12,7 +12,7 @@ Integrating with the operating system and its design language is important to ma
 
 The `-electron-corner-smoothing` CSS rule is **only implemented for Electron** and has no effect in browsers. Avoid using this rule outside of Electron. This CSS rule is considered experimental and may require migration in the future if replaced by a CSS standard.
 
-## Example
+### Example
 
 The following example shows the effect of corner smoothing at different percents.
 
@@ -30,7 +30,7 @@ The following example shows the effect of corner smoothing at different percents
 | --- | --- | --- | --- |
 | ![A rectangle with round corners at 0% smoothness](../images/corner-smoothing-example-0.svg) | ![A rectangle with round corners at 30% smoothness](../images/corner-smoothing-example-30.svg) | ![A rectangle with round corners at 60% smoothness](../images/corner-smoothing-example-60.svg) | ![A rectangle with round corners at 100% smoothness](../images/corner-smoothing-example-100.svg) |
 
-## Matching the System UI
+### Matching the System UI
 
 Use the `system-ui` keyword to match the smoothness to the OS design language.
 
@@ -44,17 +44,16 @@ Use the `system-ui` keyword to match the smoothness to the OS design language.
 }
 ```
 
-
 | macOS | Windows, Linux |
 | --- | --- |
 | ![A rectangle with round corners whose smoothness matches macOS](../images/corner-smoothing-example-60.svg) | ![A rectangle with round corners whose smoothness matches Windows and Linux](../images/corner-smoothing-example-0.svg) |
 
-## Controlling Availibility
+### Controlling Availibility
 
 This CSS rule can be disabled by setting [the `cornerSmoothingCSS` web preference](./structures/web-preferences.md) to `false`.
 
 ```js
-myWindow = new BrowserWindow({
+const myWindow = new BrowserWindow({
   // [...]
   webPreferences: {
     cornerSmoothingCSS: false // Disables the `-electron-corner-smoothing` CSS rule
@@ -62,7 +61,7 @@ myWindow = new BrowserWindow({
 })
 ```
 
-## Formal Reference
+### Formal Reference
 
 * **Initial value**: `0%`
 * **Inherited**: No
