@@ -8,6 +8,7 @@
 
 #include "base/win/atl.h"  // Must be before UIAutomationCore.h
 #include "base/win/scoped_handle.h"
+#include "base/win/windows_version.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
@@ -206,25 +207,6 @@ bool IsScreenReaderActive() {
 
 std::set<NativeWindowViews*> NativeWindowViews::forwarding_windows_;
 HHOOK NativeWindowViews::mouse_hook_ = nullptr;
-
-void NativeWindowViews::Maximize() {
-  // Only use Maximize() when window is NOT transparent style
-  if (!transparent()) {
-    if (IsVisible()) {
-      widget()->Maximize();
-    } else {
-      widget()->native_widget_private()->Show(
-          ui::mojom::WindowShowState::kMaximized, gfx::Rect());
-      NotifyWindowShow();
-    }
-  } else {
-    restore_bounds_ = GetBounds();
-    auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
-        GetNativeWindow());
-    SetBounds(display.work_area(), false);
-    NotifyWindowMaximize();
-  }
-}
 
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   std::string command = AppCommandToString(command_id);
@@ -504,6 +486,24 @@ void NativeWindowViews::ResetWindowControls() {
     auto* frame_view = static_cast<WinFrameView*>(ncv->frame_view());
     frame_view->caption_button_container()->ResetWindowControls();
   }
+}
+
+// Windows with |backgroundMaterial| expand to the same dimensions and
+// placement as the display to approximate maximization - unless we remove
+// rounded corners there will be a gap between the window and the display
+// at the corners noticable to users.
+void NativeWindowViews::SetRoundedCorners(bool rounded) {
+  // DWMWA_WINDOW_CORNER_PREFERENCE is supported after Windows 11 Build 22000.
+  if (base::win::GetVersion() < base::win::Version::WIN11)
+    return;
+
+  DWM_WINDOW_CORNER_PREFERENCE round_pref =
+      rounded ? DWMWCP_ROUND : DWMWCP_DONOTROUND;
+  HRESULT result = DwmSetWindowAttribute(GetAcceleratedWidget(),
+                                         DWMWA_WINDOW_CORNER_PREFERENCE,
+                                         &round_pref, sizeof(round_pref));
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set rounded corners to " << rounded;
 }
 
 void NativeWindowViews::SetForwardMouseMessages(bool forward) {
