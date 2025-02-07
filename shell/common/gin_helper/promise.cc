@@ -17,8 +17,7 @@ namespace gin_helper {
 PromiseBase::SettleScope::SettleScope(const PromiseBase& base)
     : handle_scope_{base.isolate()},
       context_{base.GetContext()},
-      microtasks_scope_{base.isolate(), context_->GetMicrotaskQueue(), false,
-                        v8::MicrotasksScope::kRunMicrotasks},
+      microtasks_scope_{context_, false, v8::MicrotasksScope::kRunMicrotasks},
       context_scope_{context_} {}
 
 PromiseBase::SettleScope::~SettleScope() = default;

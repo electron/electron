@@ -47,8 +47,8 @@ void AutoUpdater::OnError(const std::string& message) {
     };
 
     gin_helper::MicrotasksScope microtasks_scope{
-        isolate, wrapper->GetCreationContextChecked()->GetMicrotaskQueue(),
-        true, v8::MicrotasksScope::kRunMicrotasks};
+        wrapper->GetCreationContextChecked(), true,
+        v8::MicrotasksScope::kRunMicrotasks};
 
     node::MakeCallback(isolate, wrapper, "emit", args.size(), args.data(),
                        {0, 0});
