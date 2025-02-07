@@ -25,7 +25,7 @@ v8::Local<v8::Value> CallMethodWithArgs(
 
   // Perform microtask checkpoint after running JavaScript.
   gin_helper::MicrotasksScope microtasks_scope{
-      isolate, obj->GetCreationContextChecked()->GetMicrotaskQueue(), true,
+      obj->GetCreationContextChecked(), true,
       v8::MicrotasksScope::kRunMicrotasks};
 
   // node::MakeCallback will also run pending tasks in Node.js.
