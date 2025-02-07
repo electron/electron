@@ -720,7 +720,11 @@ void NativeWindowViews::Restore() {
   if (IsMaximized() && IsTranslucent()) {
     SetBounds(restore_bounds_, false);
     NotifyWindowRestore();
-    UpdateThickFrame();
+    if (transparent()) {
+      UpdateThickFrame();
+    } else {
+      SetRoundedCorners(true);
+    }
     return;
   }
 #endif
