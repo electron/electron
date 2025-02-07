@@ -49,8 +49,7 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
   v8::Context::Scope context_scope(worker_context);
   auto* isolate = worker_context->GetIsolate();
   v8::MicrotasksScope microtasks_scope(
-      isolate, worker_context->GetMicrotaskQueue(),
-      v8::MicrotasksScope::kDoNotRunMicrotasks);
+      worker_context, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   // Start the embed thread.
   node_bindings_->PrepareEmbedThread();

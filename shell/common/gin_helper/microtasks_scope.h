@@ -16,8 +16,7 @@ namespace gin_helper {
 // In the render process creates a v8::MicrotasksScope.
 class MicrotasksScope {
  public:
-  MicrotasksScope(v8::Isolate* isolate,
-                  v8::MicrotaskQueue* microtask_queue,
+  MicrotasksScope(v8::Local<v8::Context> context,
                   bool ignore_browser_checkpoint,
                   v8::MicrotasksScope::Type scope_type);
   ~MicrotasksScope();

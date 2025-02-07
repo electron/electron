@@ -239,8 +239,7 @@ void ElectronBindings::DidReceiveMemoryDump(
   v8::Local<v8::Context> local_context =
       v8::Local<v8::Context>::New(isolate, context);
   gin_helper::MicrotasksScope microtasks_scope{
-      isolate, local_context->GetMicrotaskQueue(), true,
-      v8::MicrotasksScope::kRunMicrotasks};
+      local_context, true, v8::MicrotasksScope::kRunMicrotasks};
   v8::Context::Scope context_scope(local_context);
 
   if (!success) {
