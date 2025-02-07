@@ -49,6 +49,7 @@ class ElectronNativeWindowObserver;
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect;
 - (BOOL)toggleFullScreenMode:(id)sender;
 - (NSImage*)_cornerMask;
+- (void)disableHeadlessMode;
 @end
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_NS_WINDOW_H_
