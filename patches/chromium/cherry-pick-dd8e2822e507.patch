@@ -1,7 +1,7 @@
-From dd8e2822e507a24e1dd16306dca768d29333ba02 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Patrick Meenan <pmeenan@chromium.org>
-Date: Thu, 06 Feb 2025 07:41:40 -0800
-Subject: [PATCH] Set is_web_secure_context when initializing Service Worker from disk
+Date: Thu, 6 Feb 2025 07:41:40 -0800
+Subject: Set is_web_secure_context when initializing Service Worker from disk
 
 The value of is_web_secure_context is not serialized to disk when
 storing the service worker registration (only a few select policies
@@ -23,7 +23,6 @@ Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
 Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
 Commit-Queue: Patrick Meenan <pmeenan@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1416795}
----
 
 diff --git a/content/browser/renderer_host/policy_container_host.cc b/content/browser/renderer_host/policy_container_host.cc
 index 5f62b1a274bab7028beb9836f88805e7b5a83e2c..f16f56d8d5f0c4e9bc164c546eee8c28f6856693 100644
