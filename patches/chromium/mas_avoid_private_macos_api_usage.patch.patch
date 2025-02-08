@@ -1086,6 +1086,68 @@ index 095c639b9893e885d8937e29ed7d47a7c28bc6b6..7e0cf9b9f94b16741358bdb45122f8b2
  }
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
+diff --git a/sandbox/mac/sandbox_serializer.cc b/sandbox/mac/sandbox_serializer.cc
+index 899f231e9bc8e1c76682972dd3f41d4cc38f4868..1da42104cc82cbabfd0c14fdd7025d6963aa50d6 100644
+--- a/sandbox/mac/sandbox_serializer.cc
++++ b/sandbox/mac/sandbox_serializer.cc
+@@ -7,6 +7,7 @@
+ #include <string>
+ #include <vector>
+ 
++#include "electron/mas.h"
+ #include "sandbox/mac/sandbox_logging.h"
+ #include "sandbox/mac/seatbelt.h"
+ 
+@@ -31,6 +32,7 @@ void EncodeVarInt(uint64_t from, std::string* into) {
+   } while (from);
+ }
+ 
++#if !IS_MAS_BUILD()
+ bool DecodeVarInt(std::string_view* from, uint64_t* into) {
+   std::string_view::const_iterator it = from->begin();
+   int shift = 0;
+@@ -49,12 +51,12 @@ bool DecodeVarInt(std::string_view* from, uint64_t* into) {
+   from->remove_prefix(it - from->begin());
+   return true;
+ }
+-
++#endif
+ void EncodeString(const std::string& value, std::string* into) {
+   EncodeVarInt(value.length(), into);
+   into->append(value);
+ }
+-
++#if !IS_MAS_BUILD()
+ bool DecodeString(std::string_view* slice, std::string* value) {
+   uint64_t length;
+   if (!DecodeVarInt(slice, &length) || length < 0) {
+@@ -69,7 +71,7 @@ bool DecodeString(std::string_view* slice, std::string* value) {
+   slice->remove_prefix(size);
+   return true;
+ }
+-
++#endif
+ }  // namespace
+ 
+ SandboxSerializer::SandboxSerializer(Target mode) : mode_(mode) {
+@@ -140,6 +142,7 @@ bool SandboxSerializer::SerializePolicy(std::string& serialized_policy,
+ // static
+ bool SandboxSerializer::ApplySerializedPolicy(
+     const std::string& serialized_policy) {
++#if !IS_MAS_BUILD()
+   std::string_view policy = serialized_policy;
+   uint64_t mode;
+   if (!DecodeVarInt(&policy, &mode)) {
+@@ -201,6 +204,9 @@ bool SandboxSerializer::ApplySerializedPolicy(
+   }
+ 
+   return true;
++#else
++  return true;
++#endif
+ }
+ 
+ }  // namespace sandbox
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
 index 1960e1c8771fad615a098af09ff1f9a191f67764..29b97b352d08cd1fe73b17fd80cb41cc7e58dcaa 100644
 --- a/sandbox/mac/seatbelt.cc
