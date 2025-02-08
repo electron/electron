@@ -74,8 +74,6 @@ vars = {
     False,
   'checkout_android_native_support':
     False,
-  'checkout_google_benchmark':
-    False,
   'checkout_clang_tidy':
     True,
 }
