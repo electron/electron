@@ -25,10 +25,10 @@ Refs https://issues.chromium.org/issues/40210365 which is blocked
 on https://issues.chromium.org/issues/42203693
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 2be37976a1305f1deed561b3b829dbb5d7ae85e7..44eb16f17d272125e2b4a590f8962eb8144d9755 100644
+index d1b95149ea0d16af2606900f10898a355026ffe1..fe1d866cba3b1a221092e1d6dced027894b3f3af 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -34,6 +34,8 @@ v8::ArrayBuffer::Allocator* g_array_buffer_allocator = nullptr;
+@@ -35,6 +35,8 @@ v8::ArrayBuffer::Allocator* g_array_buffer_allocator = nullptr;
  const intptr_t* g_reference_table = nullptr;
  v8::FatalErrorCallback g_fatal_error_callback = nullptr;
  v8::OOMErrorCallback g_oom_error_callback = nullptr;
@@ -37,7 +37,7 @@ index 2be37976a1305f1deed561b3b829dbb5d7ae85e7..44eb16f17d272125e2b4a590f8962eb8
  
  std::unique_ptr<v8::Isolate::CreateParams> getModifiedIsolateParams(
      std::unique_ptr<v8::Isolate::CreateParams> params,
-@@ -198,10 +200,26 @@ IsolateHolder::getDefaultIsolateParams() {
+@@ -205,10 +207,26 @@ IsolateHolder::getDefaultIsolateParams() {
    return params;
  }
  
@@ -65,10 +65,10 @@ index 2be37976a1305f1deed561b3b829dbb5d7ae85e7..44eb16f17d272125e2b4a590f8962eb8
 +
  }  // namespace gin
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 52b8c1af58678b9fee684ff75340c98fcc73b552..f79407d741a30298d09efd53589f16dc9b26107f 100644
+index dc3a5b0678b9c686e241b492e2c3b5ac833611a3..32a7ba4f557e65d9525d2ca07e8597e7bd070b12 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -131,6 +131,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -132,6 +132,8 @@ class GIN_EXPORT IsolateHolder {
    // Should only be called after v8::IsolateHolder::Initialize() is invoked.
    static std::unique_ptr<v8::Isolate::CreateParams> getDefaultIsolateParams();
  
@@ -77,7 +77,7 @@ index 52b8c1af58678b9fee684ff75340c98fcc73b552..f79407d741a30298d09efd53589f16dc
    v8::Isolate* isolate() { return isolate_; }
  
    // This method returns if v8::Locker is needed to access isolate.
-@@ -144,6 +146,9 @@ class GIN_EXPORT IsolateHolder {
+@@ -145,6 +147,9 @@ class GIN_EXPORT IsolateHolder {
  
    void EnableIdleTasks(std::unique_ptr<V8IdleTaskRunner> idle_task_runner);
  

@@ -33,10 +33,10 @@ index 66ef563af7a9698ef76ac710824234885ecb6125..e11d4f2d11a4a701c3e02719cc71d3d1
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 512e796b8dd07f7d06a69d4183f915b72d3e3400..6b7118ad3e507f32d4dccd26e1dddfa06cf04819 100644
+index 50915667e6d64daea4b2ba5486192fdec63a1b93..f6122b26a50157e71418abaab70c6e9ccf83d3e0 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4531,7 +4531,7 @@ static_library("browser") {
+@@ -4526,7 +4526,7 @@ static_library("browser") {
            [ "//chrome/browser/ui/webui/signin:profile_impl" ]
      }
  
@@ -46,10 +46,10 @@ index 512e796b8dd07f7d06a69d4183f915b72d3e3400..6b7118ad3e507f32d4dccd26e1dddfa0
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index b9c2a5301ec9ff352bb7dc22478f6bdcaf73367d..46b9c69bf798fc2628442f3ce726ff4ed5f50fec 100644
+index 98a6352af08189d7ce34ab5b010935afc3fcfa3f..2cc0a5f0909372dcf24adde2186f90a6ce5f1911 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6997,9 +6997,12 @@ test("unit_tests") {
+@@ -6996,9 +6996,12 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
