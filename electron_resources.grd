@@ -2,7 +2,7 @@
 <!-- The Resource ids for messages start from 31750 and for includes
      it starts from 31950, make sure they don't overlap when the limit
      exceeds in //tools/gritsettings/resource_ids -->
-<grit latest_public_release="0" current_release="1" output_all_resource_defines="false"
+<grit latest_public_release="0" current_release="1"
       source_lang_id="en">
   <outputs>
     <output filename="grit/electron_resources.h" type="rc_header">
