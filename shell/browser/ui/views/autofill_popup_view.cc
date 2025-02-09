@@ -27,11 +27,6 @@
 
 namespace electron {
 
-void AutofillPopupChildView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->role = ax::mojom::Role::kMenuItem;
-  node_data->SetName(suggestion_);
-}
-
 BEGIN_METADATA(AutofillPopupChildView)
 END_METADATA
 
@@ -41,6 +36,8 @@ AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
   CreateChildViews();
   SetFocusBehavior(FocusBehavior::ALWAYS);
   set_drag_controller(this);
+  SetAccessibleRole(ax::mojom::Role::kMenu);
+  SetAccessibleName(u"Autofill Menu");
 }
 
 AutofillPopupView::~AutofillPopupView() {
@@ -263,11 +260,6 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
     view_proxy_->SetBounds(popup_->popup_bounds_in_view());
     view_proxy_->SetBitmap(bitmap);
   }
-}
-
-void AutofillPopupView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->role = ax::mojom::Role::kMenu;
-  node_data->SetName("Autofill Menu");
 }
 
 void AutofillPopupView::OnMouseCaptureLost() {
