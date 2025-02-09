@@ -36,9 +36,6 @@ class SubmenuButton : public views::MenuButton {
 
   char16_t accelerator() const { return accelerator_; }
 
-  // views::MenuButton:
-  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
-
   void PaintButtonContents(gfx::Canvas* canvas) override;
 
  private:
