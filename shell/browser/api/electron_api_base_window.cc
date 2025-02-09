@@ -1142,7 +1142,7 @@ void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
   if (!updated)
     return;
 
-    // If anything was updated, ensure the overlay is repainted.
+  // If anything was updated, ensure the overlay is repainted.
 #if BUILDFLAG(IS_WIN)
   auto* frame_view = static_cast<WinFrameView*>(
       window->widget()->non_client_view()->frame_view());

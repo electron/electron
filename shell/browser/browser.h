@@ -210,9 +210,9 @@ class Browser : private WindowListObserver {
   void ApplyForcedRTL();
 
   // Bounce the dock icon.
-  enum class BounceType{
-      kCritical = 0,        // NSCriticalRequest
-      kInformational = 10,  // NSInformationalRequest
+  enum class BounceType {
+    kCritical = 0,        // NSCriticalRequest
+    kInformational = 10,  // NSInformationalRequest
   };
   int DockBounce(BounceType type);
   void DockCancelBounce(int request_id);
