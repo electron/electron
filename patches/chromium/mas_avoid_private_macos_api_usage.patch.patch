@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 3934ff75fa9f0841d062f00e52a1ccb9af327177..a0c81d907db6143e11de04ebfa7f629c7e11911c 100644
+index a4ae9c4c242551f6850cdcbb42551b676db76c95..22281156bcfdd6999d15d511c508415f8f3f9ac7 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1028,6 +1028,7 @@ component("base") {
@@ -579,7 +579,7 @@ index a76028eed0249244d0559de102a756e3b2771b63..cb65efb56849d57e2e656f90d5b1d737
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 82518ae30b39aae406d5c142af60ae4c0829786b..84adb6a2163ea44fc36c8fa95057f2bbad757093 100644
+index 74ca66c0f38b4fc4448d50a9f3674cda6a078f0e..5c49a11dfbe1275f0f8cd21bf970d3b6b98cb71e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -329,6 +329,7 @@ source_set("browser") {
@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 15a237fd7354b76fd6c67c3f7c77c75d8ef34b11..2cd888ea6f4b1f18ab65945dfb2814f0601f7b58 100644
+index 27adf4138c7ea1cb90460bdd21586163f7614a48..6b422c331bb14489b36a762ad2ced88544d21b60 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -652,6 +652,7 @@ static_library("test_support") {
@@ -811,7 +811,7 @@ index 15a237fd7354b76fd6c67c3f7c77c75d8ef34b11..2cd888ea6f4b1f18ab65945dfb2814f0
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1918,6 +1920,7 @@ test("content_browsertests") {
+@@ -1924,6 +1926,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -819,7 +819,7 @@ index 15a237fd7354b76fd6c67c3f7c77c75d8ef34b11..2cd888ea6f4b1f18ab65945dfb2814f0
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3204,6 +3207,7 @@ test("content_unittests") {
+@@ -3210,6 +3213,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
