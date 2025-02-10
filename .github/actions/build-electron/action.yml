@@ -111,7 +111,6 @@ runs:
           powershell mkdir mktmp\\gen\\v8
           powershell Copy-Item gen\\v8\\embedded.S mktmp\\gen\\v8
           powershell Compress-Archive -update -Path mktmp\\gen mksnapshot.zip
-          powershell rmdir /s mktmp
         else
           (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
         fi
