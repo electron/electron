@@ -26,6 +26,8 @@ Emitted when system changes to battery power.
 
 ### Event: 'thermal-state-change' _macOS_
 
+Returns:
+
 * `details` Event\<\>
   * `state` string - The system's new thermal state. Can be `unknown`, `nominal`, `fair`, `serious`, `critical`.
 
