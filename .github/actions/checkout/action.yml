@@ -73,10 +73,10 @@ runs:
     if: steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache  == 'true'
     shell: bash
     run: |    
-      # if there is less than 20 GB free space then creating the cache might fail so exit early
+      # if there is less than 35 GB free space then creating the cache might fail so exit early
       freespace=`df -m /mnt/cross-instance-cache | grep -w /mnt/cross-instance-cache | awk '{print $4}'`
       freespace_human=`df -h /mnt/cross-instance-cache | grep -w /mnt/cross-instance-cache | awk '{print $4}'`
-      if [ $freespace -le 20000 ]; then
+      if [ $freespace -le 35000 ]; then
         echo "The cross mount cache has $freespace_human free space which is not enough - exiting"
         exit 1
       else
