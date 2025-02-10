@@ -2739,6 +2739,26 @@ describe('webContents module', () => {
       expect(params.y).to.be.a('number');
     });
 
+    // Skipping due to lack of native click support.
+    it.skip('emits the correct number of times when right-clicked in page', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+
+      let contextMenuEmitCount = 0;
+
+      w.webContents.on('context-menu', () => {
+        contextMenuEmitCount++;
+      });
+
+      // TODO(samuelmaddock): Perform native right-click. We've tried then
+      // dropped robotjs and nutjs so for now this is a manual test.
+
+      await once(w.webContents, 'context-menu');
+      await setTimeout(100);
+
+      expect(contextMenuEmitCount).to.equal(1);
+    });
+
     it('emits when right-clicked in page in a draggable region', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixturesPath, 'pages', 'draggable-page.html'));
