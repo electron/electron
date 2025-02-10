@@ -110,8 +110,8 @@ runs:
           cd out/Default
           powershell Expand-Archive -Path mksnapshot.zip -Destination mktmp
           powershell Copy-Item mksnapshot_args mktmp
-          powershell mkdir mktmp\gen\v8
-          powershell Copy-Item gen\v8\embedded.S mktmp\gen\v8
+          powershell mkdir mktmp\\gen\\v8
+          powershell Copy-Item gen\\v8\\embedded.S mktmp\\gen\\v8
           powershell Compress-Archive -update -Path mktmp mksnapshot.zip
         else
           (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
