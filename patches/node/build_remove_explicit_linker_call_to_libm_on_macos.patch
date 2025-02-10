@@ -40,7 +40,7 @@ index 5e07e106672a04508a77584c109c97a67926c858..91001fa43ea4807d061f296eaeccb751
      }
      if (is_clang || !is_win) {
 diff --git a/deps/uv/unofficial.gni b/deps/uv/unofficial.gni
-index 7a73f891e3fc3261b77af97af63fca2eade49849..6edc420993fba6a5a5e20a25822d2dc459a82247 100644
+index 7a73f891e3fc3261b77af97af63fca2eade49849..bda1b5dc899558c2b4a22377dde9fb3bcce5488c 100644
 --- a/deps/uv/unofficial.gni
 +++ b/deps/uv/unofficial.gni
 @@ -82,11 +82,11 @@ template("uv_gn_build") {
@@ -51,7 +51,8 @@ index 7a73f891e3fc3261b77af97af63fca2eade49849..6edc420993fba6a5a5e20a25822d2dc4
        ldflags = [ "-pthread" ]
      }
      if (is_linux) {
-       libs += [
+-      libs += [
++      libs = [
 +        "m",
          "dl",
          "rt",
