@@ -16,9 +16,6 @@ interface ElectronWebContentsUtility {
   SetTemporaryZoomLevel(double zoom_level);
 
   [Sync]
-  DoGetZoomLevel() => (double result);
-
-  [Sync]
   CanAccessClipboardDeprecated(
       PermissionName name,
       blink.mojom.LocalFrameToken frame_token) => (blink.mojom.PermissionStatus status);
