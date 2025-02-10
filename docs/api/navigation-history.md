@@ -75,17 +75,19 @@ Returns `boolean` - Whether the navigation entry was removed from the webContent
 
 Returns [`NavigationEntry[]`](structures/navigation-entry.md) - WebContents complete history.
 
-#### `navigationHistory.restore(index, entries)`
+#### `navigationHistory.restore(options)`
 
-Restores navigation history. Will make a best effort to restore not just the navigation stack but
-also the state of the individual pages - for instance including HTML form values or the scroll
-position. It's recommended to call this API before any navigation entries are created, so ideally
-before you call `loadURL()` or `loadFile()` on the `webContents` object.
+Restores navigation history and loads the given entry in the in stack. Will make a best effort
+to restore not just the navigation stack but also the state of the individual pages - for instance
+including HTML form values or the scroll position. It's recommended to call this API before any
+navigation entries are created, so ideally before you call `loadURL()` or `loadFile()` on the
+`webContents` object.
 
 This API allows you to create common flows that aim to restore, recreate, or clone other webContents.
 
-* `offset` Integer
-* `entries` [NavigationEntry[]](structures/navigation-entry.md)
+* `options` Object
+  * `entries` [NavigationEntry[]](structures/navigation-entry.md) - Result of a prior `getAllEntries()` call
+  * `index` Integer (optional) - Index of the stack that should be loaded. If you set it to `0`, the webContents will load the first (oldest) entry. If you leave it undefined, Electron will automatically load the last (newest) entry.
 
 Returns `Promise<void>` - the promise will resolve when the page has finished loading the selected navigation entry
 (see [`did-finish-load`](web-contents.md#event-did-finish-load)), and rejects
