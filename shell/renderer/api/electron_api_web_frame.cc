@@ -451,7 +451,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
     // Update the local web frame for coherence with synchronous calls to
     // |GetZoomLevel|.
     if (blink::WebFrameWidget* web_frame =
-            render_frame->GetWebFrame()->FrameWidget()) {
+            render_frame->GetWebFrame()->LocalRoot()->FrameWidget()) {
       web_frame->SetZoomLevel(level);
     }
   }
@@ -463,7 +463,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
     }
 
     blink::WebFrameWidget* web_frame =
-        render_frame->GetWebFrame()->FrameWidget();
+        render_frame->GetWebFrame()->LocalRoot()->FrameWidget();
     if (!web_frame) {
       return 0.0f;
     }
