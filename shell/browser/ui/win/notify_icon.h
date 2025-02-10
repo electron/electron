@@ -91,7 +91,7 @@ class NotifyIcon : public TrayIcon {
   UINT message_id_;
 
   // The currently-displayed icon for the window.
-  base::win::ScopedHICON icon_;
+  base::win::ScopedGDIObject<HICON> icon_;
 
   // The context menu.
   raw_ptr<ElectronMenuModel> menu_model_ = nullptr;
