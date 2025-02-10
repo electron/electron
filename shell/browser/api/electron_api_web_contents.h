@@ -470,9 +470,6 @@ class WebContents final : public ExclusiveAccessContext,
   // mojom::ElectronWebContentsUtility
   void OnFirstNonEmptyLayout(content::RenderFrameHost* render_frame_host);
   void SetTemporaryZoomLevel(double level);
-  void DoGetZoomLevel(
-      electron::mojom::ElectronWebContentsUtility::DoGetZoomLevelCallback
-          callback);
 
   void SetImageAnimationPolicy(const std::string& new_policy);
 
