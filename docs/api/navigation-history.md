@@ -86,3 +86,8 @@ This API allows you to create common flows that aim to restore, recreate, or clo
 
 * `offset` Integer
 * `entries` [NavigationEntry[]](structures/navigation-entry.md)
+
+Returns `Promise<void>` - the promise will resolve when the page has finished loading the selected navigation entry
+(see [`did-finish-load`](web-contents.md#event-did-finish-load)), and rejects
+if the page fails to load (see
+[`did-fail-load`](web-contents.md#event-did-fail-load)). A noop rejection handler is already attached, which avoids unhandled rejection errors.
