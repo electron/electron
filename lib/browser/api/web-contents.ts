@@ -627,7 +627,13 @@ WebContents.prototype._init = function () {
 
         const p = _awaitNextLoad.call(this, entries[index].url);
         p.catch(() => {});
-        this._restoreHistory(index, entries);
+
+        try {
+          this._restoreHistory(index, entries);
+        } catch (error) {
+          return Promise.reject(error);
+        }
+
         return p;
       }
     },
