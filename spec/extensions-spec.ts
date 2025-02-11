@@ -3,6 +3,7 @@ import { app, session, BrowserWindow, ipcMain, WebContents, Extension, Session }
 import { expect } from 'chai';
 import * as WebSocket from 'ws';
 
+import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
@@ -221,6 +222,57 @@ describe('chrome extensions', () => {
       const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
       expect(bg).to.equal('');
     }
+  });
+
+  describe('enable/disable', () => {
+    it('disables an extension', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+      const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
+
+      expect(extension.enabled).to.be.true();
+      customSession.disableExtension(extension.id);
+
+      expect(customSession.getExtension(extension.id)!.enabled).to.be.false();
+    });
+
+    it('enables a previously disabled extension', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+      const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
+
+      expect(extension.enabled).to.be.true();
+      customSession.disableExtension(extension.id);
+      expect(customSession.getExtension(extension.id)!.enabled).to.be.false();
+
+      customSession.enableExtension(extension.id);
+      expect(customSession.getExtension(extension.id)!.enabled).to.be.true();
+    });
+
+    it('persists disabled extensions', async () => {
+      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+      const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
+      customSession.disableExtension(extension.id);
+      customSession.removeExtension(extension.id);
+
+      const extension2 = await customSession.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
+      expect(extension2.enabled).to.be.false();
+    });
+
+    it('activates extension when enabled', async () => {
+      const runActivateExtensionTest = async () => {
+        const appPath = path.join(fixtures, 'apps', 'activate-extension', 'main.js');
+        const appProcess = spawn(process.execPath, [appPath], {
+          cwd: path.join(fixtures, 'apps', 'activate-extension'),
+          stdio: 'inherit'
+        });
+        const [code] = await once(appProcess, 'close');
+        expect(code).to.equal(0);
+      };
+
+      console.log('running test 1');
+      await runActivateExtensionTest();
+      console.log('running test 2');
+      await runActivateExtensionTest();
+    });
   });
 
   it('emits extension lifecycle events', async () => {

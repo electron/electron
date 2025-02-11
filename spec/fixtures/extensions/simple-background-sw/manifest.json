@@ -1,0 +1,9 @@
+{
+  "name": "Simple background sw",
+  "description": "just a lil service worker",
+  "version": "1.0",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "background.js"
+  }
+}

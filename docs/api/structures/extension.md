@@ -6,3 +6,4 @@
 * `path` string - The extension's file path.
 * `version` string
 * `url` string - The extension's `chrome-extension://` URL.
+* `enabled` boolean - Whether the extension is enabled.
