@@ -1900,6 +1900,8 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
       .SetMethod("loadExtension", &Session::LoadExtension)
       .SetMethod("removeExtension", &Session::RemoveExtension)
+      .SetMethod("enableExtension", &Session::EnableExtension)
+      .SetMethod("disableExtension", &Session::DisableExtension)
       .SetMethod("getExtension", &Session::GetExtension)
       .SetMethod("getAllExtensions", &Session::GetAllExtensions)
 #endif
