@@ -25,12 +25,14 @@ class BrowserContext;
 namespace extensions {
 
 class Extension;
+class ElectronExtensionSystem;
 
 // Handles extension loading and reloading using ExtensionRegistrar.
 class ElectronExtensionRegistrarDelegate : public ExtensionRegistrar::Delegate {
  public:
   explicit ElectronExtensionRegistrarDelegate(
-      content::BrowserContext* browser_context);
+      content::BrowserContext* browser_context,
+      ElectronExtensionSystem* extension_system);
   ~ElectronExtensionRegistrarDelegate() override;
 
   // disable copy
@@ -67,7 +69,13 @@ class ElectronExtensionRegistrarDelegate : public ExtensionRegistrar::Delegate {
   bool CanDisableExtension(const Extension* extension) override;
   bool ShouldBlockExtension(const Extension* extension) override;
 
-  raw_ptr<content::BrowserContext> browser_context_;  // Not owned.
+  // If the extension loaded successfully, enables it. If it's an app, launches
+  // it. If the load failed, updates ShellKeepAliveRequester.
+  void FinishExtensionReload(const Extension* extension,
+                             const ExtensionId& extension_id);
+
+  raw_ptr<content::BrowserContext> browser_context_;   // Not owned.
+  raw_ptr<ElectronExtensionSystem> extension_system_;  // Not owned.
   raw_ptr<ExtensionRegistrar> extension_registrar_ = nullptr;
 
   base::WeakPtrFactory<ElectronExtensionRegistrarDelegate> weak_factory_{this};

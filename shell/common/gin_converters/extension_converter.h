@@ -14,9 +14,10 @@ struct ElectronExtensionInfo;
 namespace gin {
 
 template <>
-struct Converter<const extensions::ElectronExtensionInfo> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const extensions::ElectronExtensionInfo& val);
+struct Converter<extensions::ElectronExtensionInfo> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const extensions::ElectronExtensionInfo& val);
 };
 
 }  // namespace gin

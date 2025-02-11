@@ -22,16 +22,16 @@
 #include "extensions/common/error_utils.h"
 #include "extensions/common/file_util.h"
 #include "extensions/common/manifest_constants.h"
+#include "shell/browser/extensions/electron_extension_system.h"
 
 namespace extensions {
 
 using LoadErrorBehavior = ExtensionRegistrar::LoadErrorBehavior;
 
-namespace {
-
 ElectronExtensionRegistrarDelegate::ElectronExtensionRegistrarDelegate(
-    content::BrowserContext* browser_context)
-    : browser_context_(browser_context) {}
+    content::BrowserContext* browser_context,
+    ElectronExtensionSystem* extension_system)
+    : browser_context_(browser_context), extension_system_(extension_system) {}
 
 ElectronExtensionRegistrarDelegate::~ElectronExtensionRegistrarDelegate() =
     default;
@@ -84,11 +84,18 @@ void ElectronExtensionRegistrarDelegate::LoadExtensionForReload(
   // when loading this extension and retain it here. As is, reloading an
   // extension will cause the file access permission to be dropped.
   int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;
-  GetExtensionFileTaskRunner()->PostTaskAndReplyWithResult(
-      FROM_HERE, base::BindOnce(&LoadUnpacked, path, load_flags),
+  extension_system_->LoadExtension(
+      path, load_flags,
       base::BindOnce(&ElectronExtensionRegistrarDelegate::FinishExtensionReload,
-                     weak_factory_.GetWeakPtr(), extension_id));
-  did_schedule_reload_ = true;
+                     weak_factory_.GetWeakPtr()));
+}
+
+void ElectronExtensionRegistrarDelegate::FinishExtensionReload(
+    const Extension* extension,
+    const ExtensionId& extension_id) {
+  if (extension) {
+    extension_system_->AddExtension(extension);
+  }
 }
 
 void ElectronExtensionRegistrarDelegate::ShowExtensionDisabledError(

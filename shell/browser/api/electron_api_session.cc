@@ -1310,7 +1310,8 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo() {
 v8::Local<v8::Promise> Session::LoadExtension(
     const base::FilePath& extension_path,
     gin::Arguments* args) {
-  gin_helper::Promise<const extensions::ElectronExtensionInfo&> promise(isolate_);
+  gin_helper::Promise<const extensions::ElectronExtensionInfo&> promise(
+      isolate_);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!extension_path.IsAbsolute()) {
@@ -1336,9 +1337,11 @@ v8::Local<v8::Promise> Session::LoadExtension(
 
   auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
-  extension_system->LoadExtension(extension_path, load_flags,
+  extension_system->LoadExtension(
+      extension_path, load_flags,
       base::BindOnce(
-          [](gin_helper::Promise<const extensions::Extension*> promise,
+          [](gin_helper::Promise<const extensions::ElectronExtensionInfo&>
+                 promise,
              base::WeakPtr<ElectronBrowserContext> browser_context,
              const extensions::Extension* extension,
              const std::string& error_msg) {
@@ -1346,8 +1349,9 @@ v8::Local<v8::Promise> Session::LoadExtension(
               if (!error_msg.empty())
                 util::EmitWarning(promise.isolate(), error_msg,
                                   "ExtensionLoadWarning");
-              auto& info = extensions::ElectronExtensionInfo(extension, browser_context.get());
-              promise.Resolve(info);
+              const auto& extension_info = extensions::ElectronExtensionInfo(
+                  extension, browser_context.get());
+              promise.Resolve(extension_info);
             } else {
               promise.RejectWithErrorMessage(error_msg);
             }
@@ -1358,21 +1362,15 @@ v8::Local<v8::Promise> Session::LoadExtension(
 }
 
 void Session::RemoveExtension(const std::string& extension_id) {
-  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
-      extensions::ExtensionSystem::Get(browser_context()));
-  extension_system->RemoveExtension(extension_id);
+  browser_context()->extension_system()->RemoveExtension(extension_id);
 }
 
 void Session::EnableExtension(const std::string& extension_id) {
-  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
-      extensions::ExtensionSystem::Get(browser_context()));
-  extension_system->EnableExtension(extension_id);
+  browser_context()->extension_system()->EnableExtension(extension_id);
 }
 
 void Session::DisableExtension(const std::string& extension_id) {
-  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
-      extensions::ExtensionSystem::Get(browser_context()));
-  extension_system->DisableExtension(extension_id);
+  browser_context()->extension_system()->DisableExtension(extension_id);
 }
 
 v8::Local<v8::Value> Session::GetExtension(const std::string& extension_id) {
@@ -1380,7 +1378,9 @@ v8::Local<v8::Value> Session::GetExtension(const std::string& extension_id) {
   const extensions::Extension* extension =
       registry->GetInstalledExtension(extension_id);
   if (extension) {
-    return gin::ConvertToV8(isolate_, extension);
+    const auto& extension_info =
+        extensions::ElectronExtensionInfo(extension, browser_context());
+    return gin::ConvertToV8(isolate_, extension_info);
   } else {
     return v8::Null(isolate_);
   }
@@ -1390,29 +1390,40 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
   auto* registry = extensions::ExtensionRegistry::Get(browser_context());
   const extensions::ExtensionSet extensions =
       registry->GenerateInstalledExtensionsSet();
-  std::vector<const extensions::Extension*> extensions_vector;
+  std::vector<extensions::ElectronExtensionInfo> extensions_vector;
   for (const auto& extension : extensions) {
     if (extension->location() !=
-        extensions::mojom::ManifestLocation::kComponent)
-      extensions_vector.emplace_back(extension.get());
+        extensions::mojom::ManifestLocation::kComponent) {
+      const auto& extension_info =
+          extensions::ElectronExtensionInfo(extension.get(), browser_context());
+      extensions_vector.emplace_back(extension_info);
+    }
   }
   return gin::ConvertToV8(isolate_, extensions_vector);
 }
 
-void Session::OnExtensionLoaded(content::BrowserContext* browser_context,
-                                const extensions::Extension* extension) {
-  Emit("extension-loaded", extension);
+void Session::OnExtensionLoaded(
+    content::BrowserContext* content_browser_context,
+    const extensions::Extension* extension) {
+  const auto& extension_info =
+      extensions::ElectronExtensionInfo(extension, browser_context());
+  Emit("extension-loaded", extension_info);
 }
 
-void Session::OnExtensionUnloaded(content::BrowserContext* browser_context,
-                                  const extensions::Extension* extension,
-                                  extensions::UnloadedExtensionReason reason) {
-  Emit("extension-unloaded", extension);
+void Session::OnExtensionUnloaded(
+    content::BrowserContext* content_browser_context,
+    const extensions::Extension* extension,
+    extensions::UnloadedExtensionReason reason) {
+  const auto& extension_info =
+      extensions::ElectronExtensionInfo(extension, browser_context());
+  Emit("extension-unloaded", extension_info);
 }
 
-void Session::OnExtensionReady(content::BrowserContext* browser_context,
+void Session::OnExtensionReady(content::BrowserContext* content_browser_context,
                                const extensions::Extension* extension) {
-  Emit("extension-ready", extension);
+  const auto& extension_info =
+      extensions::ElectronExtensionInfo(extension, browser_context());
+  Emit("extension-ready", extension_info);
 }
 #endif
 

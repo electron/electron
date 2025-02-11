@@ -45,12 +45,6 @@ class ElectronExtensionLoader {
                                              const std::string&)> cb);
 
  private:
-  // If the extension loaded successfully, enables it. If it's an app, launches
-  // it. If the load failed, updates ShellKeepAliveRequester.
-  void FinishExtensionReload(
-      const ExtensionId& old_extension_id,
-      std::pair<scoped_refptr<const Extension>, std::string> result);
-
   void FinishExtensionLoad(
       base::OnceCallback<void(const Extension*, const std::string&)> cb,
       std::pair<scoped_refptr<const Extension>, std::string> result);

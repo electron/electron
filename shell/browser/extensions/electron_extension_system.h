@@ -69,11 +69,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
   // Disables the extension. If the extension is already disabled, just adds
   // the incoming disable reason(s). If the extension cannot be disabled (due to
   // policy), does nothing.
-  void DisableExtension(const ExtensionId& extension_id,
-                        disable_reason::DisableReason disable_reason =
-                            disable_reason::DisableReason::DISABLE_NONE);
-  void DisableExtension(const ExtensionId& extension_id,
-                        const DisableReasonSet& disable_reasons);
+  void DisableExtension(const ExtensionId& extension_id);
 
   // KeyedService implementation:
   void Shutdown() override;
@@ -105,6 +101,10 @@ class ElectronExtensionSystem : public ExtensionSystem {
   void PerformActionBasedOnOmahaAttributes(
       const std::string& extension_id,
       const base::Value::Dict& attributes) override;
+
+  base::WeakPtr<ElectronExtensionSystem> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
  private:
   void OnExtensionRegisteredWithRequestContexts(

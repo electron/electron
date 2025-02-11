@@ -133,13 +133,4 @@ void ElectronExtensionLoader::FinishExtensionLoad(
   std::move(cb).Run(extension.get(), result.second);
 }
 
-void ElectronExtensionLoader::FinishExtensionReload(
-    const ExtensionId& old_extension_id,
-    std::pair<scoped_refptr<const Extension>, std::string> result) {
-  scoped_refptr<const Extension> extension = result.first;
-  if (extension) {
-    extension_system_->AddExtension(extension.get());
-  }
-}
-
 }  // namespace extensions

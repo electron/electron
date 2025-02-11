@@ -4,7 +4,6 @@
 
 #include "shell/common/gin_converters/extension_converter.h"
 
-
 #include "extensions/common/extension.h"
 #include "gin/dictionary.h"
 #include "shell/browser/extensions/electron_extension_info.h"
@@ -15,7 +14,7 @@
 namespace gin {
 
 // static
-v8::Local<v8::Value> Converter<const extensions::ElectronExtensionInfo*>::ToV8(
+v8::Local<v8::Value> Converter<extensions::ElectronExtensionInfo>::ToV8(
     v8::Isolate* isolate,
     const extensions::ElectronExtensionInfo& info) {
   auto dict = gin::Dictionary::CreateEmpty(isolate);

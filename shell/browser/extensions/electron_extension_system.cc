@@ -46,8 +46,8 @@ ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
     : browser_context_(browser_context),
       extension_registrar_delegate_(
-          std::make_unique<ElectronExtensionRegistrarDelegate>(
-              browser_context)),
+          std::make_unique<ElectronExtensionRegistrarDelegate>(browser_context,
+                                                               this)),
       extension_registrar_(browser_context,
                            extension_registrar_delegate_.get()),
       store_factory_(base::MakeRefCounted<value_store::ValueStoreFactoryImpl>(
@@ -93,15 +93,9 @@ void ElectronExtensionSystem::EnableExtension(const std::string& extension_id) {
 }
 
 void ElectronExtensionSystem::DisableExtension(
-    const ExtensionId& extension_id,
-    disable_reason::DisableReason disable_reason) {
-  DisableExtension(extension_id, DisableReasonSet({disable_reason}));
-}
-
-void ElectronExtensionSystem::DisableExtension(
-    const ExtensionId& extension_id,
-    const DisableReasonSet& disable_reasons) {
-  extension_registrar_.DisableExtension(extension_id, disable_reasons);
+    const ExtensionId& extension_id) {
+  extension_registrar_.DisableExtension(
+      extension_id, disable_reason::DisableReason::DISABLE_NONE);
 }
 
 void ElectronExtensionSystem::Shutdown() {
@@ -115,7 +109,7 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   user_script_manager_ = std::make_unique<UserScriptManager>(browser_context_);
   app_sorting_ = std::make_unique<NullAppSorting>();
   extension_loader_ =
-      std::make_unique<ElectronExtensionLoader>(browser_context_);
+      std::make_unique<ElectronExtensionLoader>(browser_context_, this);
 
   if (!browser_context_->IsOffTheRecord())
     LoadComponentExtensions();
@@ -156,7 +150,7 @@ void ElectronExtensionSystem::LoadComponentExtensions() {
         extensions::Extension::Create(
             root_directory, extensions::mojom::ManifestLocation::kComponent,
             *pdf_manifest, extensions::Extension::REQUIRE_KEY, &utf8_error);
-    AddExtension(pdf_extension);
+    AddExtension(pdf_extension.get());
   }
 #endif
 }
