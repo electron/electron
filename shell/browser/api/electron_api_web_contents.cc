@@ -54,6 +54,7 @@
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
+#include "content/public/browser/navigation_entry_restore_context.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -372,12 +373,25 @@ struct Converter<content::NavigationEntry*> {
 
     std::string url_str;
     std::string title;
+    std::string encoded_page_state;
     if (!dict.Get("url", &url_str) || !dict.Get("title", &title))
       return false;
 
     auto entry = content::NavigationEntry::Create();
     entry->SetURL(GURL(url_str));
     entry->SetTitle(base::UTF8ToUTF16(title));
+
+    if (dict.Get("pageState", &encoded_page_state)) {
+      std::string decoded_page_state;
+      if (base::Base64Decode(encoded_page_state, &decoded_page_state)) {
+        std::unique_ptr<content::NavigationEntryRestoreContext>
+            restore_context = content::NavigationEntryRestoreContext::Create();
+        entry->SetPageState(
+            blink::PageState::CreateFromEncodedData(decoded_page_state),
+            restore_context.get());
+      }
+    }
+
     *out = entry.release();
     return true;
   }
@@ -390,6 +404,14 @@ struct Converter<content::NavigationEntry*> {
     gin_helper::Dictionary dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("url", entry->GetURL().spec());
     dict.Set("title", entry->GetTitleForDisplay());
+
+    // Page state saves scroll position and values of any form fields
+    const blink::PageState& page_state = entry->GetPageState();
+    if (page_state.IsValid()) {
+      std::string encoded_data = base::Base64Encode(page_state.ToEncodedData());
+      dict.Set("pageState", encoded_data);
+    }
+
     return dict.GetHandle();
   }
 };
@@ -2609,6 +2631,7 @@ void WebContents::RestoreHistory(
 
   web_contents()->GetController().Restore(
       index, content::RestoreType::kRestored, navigation_entries.get());
+  web_contents()->GetController().LoadIfNecessary();
 }
 
 void WebContents::ClearHistory() {
