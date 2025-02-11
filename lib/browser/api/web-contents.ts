@@ -8,7 +8,7 @@ import * as deprecate from '@electron/internal/common/deprecate';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import { app, ipcMain, session, webFrameMain, dialog } from 'electron/main';
-import type { BrowserWindowConstructorOptions, MessageBoxOptions } from 'electron/main';
+import type { BrowserWindowConstructorOptions, MessageBoxOptions, NavigationEntry } from 'electron/main';
 
 import * as path from 'path';
 import * as url from 'url';
@@ -343,8 +343,8 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
 
 type LoadError = { errorCode: number, errorDescription: string, url: string };
 
-WebContents.prototype.loadURL = function (url, options) {
-  const p = new Promise<void>((resolve, reject) => {
+WebContents.prototype._awaitNextLoad = function (navigationUrl: string) {
+  return new Promise<void>((resolve, reject) => {
     const resolveAndCleanup = () => {
       removeListeners();
       resolve();
@@ -402,7 +402,7 @@ WebContents.prototype.loadURL = function (url, options) {
       // the only one is with a bad scheme, perhaps ERR_INVALID_ARGUMENT
       // would be more appropriate.
       if (!error) {
-        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url };
+        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url: navigationUrl };
       }
       finishListener();
     };
@@ -426,6 +426,10 @@ WebContents.prototype.loadURL = function (url, options) {
     this.on('did-stop-loading', stopLoadingListener);
     this.on('destroyed', stopLoadingListener);
   });
+};
+
+WebContents.prototype.loadURL = function (url, options) {
+  const p = this._awaitNextLoad(url);
   // Add a no-op rejection handler to silence the unhandled rejection error.
   p.catch(() => {});
   this._loadURL(url, options ?? {});
@@ -610,7 +614,16 @@ WebContents.prototype._init = function () {
       getEntryAtIndex: this._getNavigationEntryAtIndex.bind(this),
       removeEntryAtIndex: this._removeNavigationEntryAtIndex.bind(this),
       getAllEntries: this._getHistory.bind(this),
-      restore: this._restoreHistory.bind(this)
+      restore: (index: number, entries: NavigationEntry[]) => {
+        if (index < 0 || !entries[index]) {
+          throw new Error('Invalid index. Index must be a positive integer and within the bounds of the entries length.');
+        }
+
+        const p = this._awaitNextLoad(entries[index].url);
+        p.catch(() => {});
+        this._restoreHistory(index, entries);
+        return p;
+      }
     },
     writable: false,
     enumerable: true

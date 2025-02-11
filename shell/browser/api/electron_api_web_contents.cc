@@ -364,15 +364,11 @@ struct Converter<content::NavigationEntry*> {
     std::string url_str;
     std::string title;
     std::string encoded_page_state;
+    GURL url;
 
-    if (!dict.Get("url", &url_str) || !dict.Get("title", &title))
+    if (!dict.Get("url", &url) || !dict.Get("title", &title))
       return false;
 
-    GURL url(url_str);
-    if (!url.is_valid())
-      return false;
-
-    // Create entry with validated URL
     auto entry = content::NavigationEntry::Create();
     entry->SetURL(url);
     entry->SetTitle(base::UTF8ToUTF16(title));
@@ -2614,22 +2610,38 @@ std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
 void WebContents::RestoreHistory(
     int index,
     const std::vector<v8::Local<v8::Value>>& entries) {
+  if (!web_contents()
+           ->GetController()
+           .GetLastCommittedEntry()
+           ->IsInitialEntry()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError(
+            "Cannot restore history on webContents that have previously loaded "
+            "a page.");
+    return;
+  }
+
   auto navigation_entries = std::make_unique<
       std::vector<std::unique_ptr<content::NavigationEntry>>>();
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
   for (const auto& entry : entries) {
     content::NavigationEntry* nav_entry = nullptr;
-    if (gin::Converter<content::NavigationEntry*>::FromV8(isolate, entry,
-                                                          &nav_entry)) {
-      navigation_entries->push_back(
-          std::unique_ptr<content::NavigationEntry>(nav_entry));
+    if (!gin::Converter<content::NavigationEntry*>::FromV8(isolate, entry,
+                                                           &nav_entry) ||
+        !nav_entry) {
+      // Invalid entry, bail out early
+      return;
     }
+    navigation_entries->push_back(
+        std::unique_ptr<content::NavigationEntry>(nav_entry));
   }
 
-  web_contents()->GetController().Restore(
-      index, content::RestoreType::kRestored, navigation_entries.get());
-  web_contents()->GetController().LoadIfNecessary();
+  if (!navigation_entries->empty()) {
+    web_contents()->GetController().Restore(
+        index, content::RestoreType::kRestored, navigation_entries.get());
+    web_contents()->GetController().LoadIfNecessary();
+  }
 }
 
 void WebContents::ClearHistory() {

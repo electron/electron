@@ -72,6 +72,7 @@ declare namespace Electron {
   }
 
   interface WebContents {
+    _awaitNextLoad(expectedUrl: string): Promise<void>;
     _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
