@@ -71,6 +71,8 @@ class ElectronExtensionSystem : public ExtensionSystem {
   // policy), does nothing.
   void DisableExtension(const ExtensionId& extension_id);
 
+  bool IsExtensionEnabled(const ExtensionId& extension_id) const;
+
   // KeyedService implementation:
   void Shutdown() override;
 

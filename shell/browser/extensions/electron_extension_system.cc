@@ -98,6 +98,11 @@ void ElectronExtensionSystem::DisableExtension(
       extension_id, disable_reason::DisableReason::DISABLE_NONE);
 }
 
+bool ElectronExtensionSystem::IsExtensionEnabled(
+    const ExtensionId& extension_id) const {
+  return extension_registrar_.IsExtensionEnabled(extension_id);
+}
+
 void ElectronExtensionSystem::Shutdown() {
   extension_loader_.reset();
 }
