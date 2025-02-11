@@ -176,7 +176,7 @@ DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
     config.pszWindowTitle = base::as_wcstr(title);
   }
 
-  base::win::ScopedHICON hicon;
+  base::win::ScopedGDIObject<HICON> hicon;
   if (!icon.isNull()) {
     hicon = IconUtil::CreateHICONFromSkBitmap(*icon.bitmap());
     config.dwFlags |= TDF_USE_HICON_MAIN;
