@@ -15,7 +15,6 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { ScreenCapture } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { PipeTransport } from './pipe-transport';
@@ -656,8 +655,6 @@ describe('chromium features', () => {
     });
 
     it('should lock the keyboard', async () => {
-      const screenCapture = new ScreenCapture();
-      await screenCapture.takeScreenshot('keyboardlock');
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
 
