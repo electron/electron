@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a4ae9c4c242551f6850cdcbb42551b676db76c95..22281156bcfdd6999d15d511c508415f8f3f9ac7 100644
+index 05ba2110698b69af677ad1fe898ae6e5953c7af4..7bcbb8f647faea889e295d8919f67745a7f72136 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1028,6 +1028,7 @@ component("base") {
+@@ -1027,6 +1027,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -192,10 +192,10 @@ index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e65041764
  
  }  // namespace base
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index bfb0d2f208170f77df96fb9f14c8525e9dec6e11..e234d95a862198148bae97b4b276d93922f3ca92 100644
+index ff1e356ff696d3830d02644969c36a71fdf32ff6..b39c716c52524b95f2d3417a98e60c0c41147c93 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -43,6 +43,8 @@ component("os_crypt") {
+@@ -38,6 +38,8 @@ component("sync") {
        "os_crypt_mac.mm",
      ]
      deps += [ "//crypto:mock_apple_keychain" ]
@@ -269,7 +269,7 @@ index e9f4e5131238b9fb5f1b4b3e90a0cb84a7fc15b4..8b5f4cae3123ac5480ad73f0c873fca0
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 19fff43c3daaef5451b6b60b84a610a21311448e..240b954661d34fcc4329d39490be33c485fa8b6e 100644
+index 3a8b44a2a295119f37ca37d5866dfcfa21121db0..b408e9c73fe97dd8885b5479923481e20955cf8d 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,7 +9,9 @@
@@ -298,7 +298,7 @@ index 19fff43c3daaef5451b6b60b84a610a21311448e..240b954661d34fcc4329d39490be33c4
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -165,6 +170,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -163,6 +168,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -307,7 +307,7 @@ index 19fff43c3daaef5451b6b60b84a610a21311448e..240b954661d34fcc4329d39490be33c4
  // Handle "Move focus to the window toolbar" configured in System Preferences ->
  // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
  // tends to just be nil.
-@@ -175,8 +182,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
+@@ -173,8 +180,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
  }
  
  - (void)setAlwaysShowTrafficLights:(BOOL)alwaysShow {
@@ -354,7 +354,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..149de0175c2ec0e41e3ba40caad7019c
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index d55914779bc097cab8afb144f2c47c001bfa7350..e55db3f550b4c082aa087fbcab6760da237f8471 100644
+index 127a2829fafa04bfbab0b883304dfb815d7e1c22..61d7946e52862f3586b1e098d7d44a125656de81 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -9,6 +9,7 @@
@@ -382,7 +382,7 @@ index d55914779bc097cab8afb144f2c47c001bfa7350..e55db3f550b4c082aa087fbcab6760da
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 03ff0478f16f237e6b8082508d5399195bfdca44..9b74f6ca6de6ec057073e175170014b5512040b4 100644
+index 2b50e3c3750c9ac6dd84a514663062a5d754b43e..49ced9aa87d3bcb00cd3d76ac32d4eec89873549 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -26,6 +26,7 @@
@@ -449,7 +449,7 @@ index 03ff0478f16f237e6b8082508d5399195bfdca44..9b74f6ca6de6ec057073e175170014b5
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 89aca4b47c202f137a5ffe8390986ef6dd62942a..59276806afa7659573eb276149ff8ed47ca72c1f 100644
+index 36c522793dc37f7c72f7cccde50895927b5560cb..689351b5a6e6e6013b808c1b4924b8848dcc0fa2 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -41,6 +41,7 @@
@@ -579,10 +579,10 @@ index a76028eed0249244d0559de102a756e3b2771b63..cb65efb56849d57e2e656f90d5b1d737
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 74ca66c0f38b4fc4448d50a9f3674cda6a078f0e..5c49a11dfbe1275f0f8cd21bf970d3b6b98cb71e 100644
+index e5ca8881f7e05fc3c600cf6f785a2070efff2e5d..ce57b1e635f26ef248fbf8285cf69fe3c6c41105 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -329,6 +329,7 @@ source_set("browser") {
+@@ -330,6 +330,7 @@ source_set("browser") {
      "//ui/touch_selection",
      "//ui/webui/resources",
      "//v8:v8_version",
@@ -625,7 +625,7 @@ index bea4e26ef8577e8e8bc60287cf1b94c7dfcc9478..eed42b0cbc3422b7fd59ae1b2550c53d
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 9185fd223c9611faee546570c0df36bc94cdb28c..86886e94e9e2c52e297a82175f6071852e792148 100644
+index 430426a0123508a45bf48dcbfb46d1c4dc9d9347..efa697b7c4d428200d14e436ab062c13273916f4 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -48,6 +48,7 @@
@@ -647,7 +647,7 @@ index 9185fd223c9611faee546570c0df36bc94cdb28c..86886e94e9e2c52e297a82175f607185
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1616,8 +1619,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1622,8 +1625,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -658,7 +658,7 @@ index 9185fd223c9611faee546570c0df36bc94cdb28c..86886e94e9e2c52e297a82175f607185
    return [GetInProcessNSView() window];
  }
  
-@@ -1666,9 +1671,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1672,9 +1677,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -670,7 +670,7 @@ index 9185fd223c9611faee546570c0df36bc94cdb28c..86886e94e9e2c52e297a82175f607185
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2195,20 +2202,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2201,20 +2208,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 27adf4138c7ea1cb90460bdd21586163f7614a48..6b422c331bb14489b36a762ad2ced88544d21b60 100644
+index 190b593519ab8ccfc6309b40947c6e42ff8c6131..ec3dd70e677d7215df1c2cb504faa62ac1e6dff4 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -652,6 +652,7 @@ static_library("test_support") {
@@ -811,7 +811,7 @@ index 27adf4138c7ea1cb90460bdd21586163f7614a48..6b422c331bb14489b36a762ad2ced885
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1924,6 +1926,7 @@ test("content_browsertests") {
+@@ -1935,6 +1937,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -819,7 +819,7 @@ index 27adf4138c7ea1cb90460bdd21586163f7614a48..6b422c331bb14489b36a762ad2ced885
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3210,6 +3213,7 @@ test("content_unittests") {
+@@ -3228,6 +3231,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -932,10 +932,10 @@ index 36322ddd3047f96569f35807541a37d3c6672b09..0121a780cf3b79fc1120c1b85cd5cd30
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 977aa5b452c882ee69690ba034ec00c9e7ff7e24..3ae3e2ead48ea1af9307dcd12647ca2a24b3a6f4 100644
+index 87126a36725849cbaf478e2dc24dc3a628a30846..a3a88b07af91b86191d9e5727a1d021ebbbb22ce 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -198,6 +198,7 @@ source_set("audio") {
+@@ -196,6 +196,7 @@ source_set("audio") {
        "CoreMedia.framework",
      ]
      weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0
@@ -1023,18 +1023,18 @@ index 70d5665ad7b9ef62370497636af919ede2508ad4..f4dc3e2b8053cdb3e8c439ab1a1d6369
    }
  
 diff --git a/sandbox/mac/BUILD.gn b/sandbox/mac/BUILD.gn
-index 4e53d573ff67615bc7dcee7db6f855c67094f414..8b061d66b1a854b51a5a38b6a71eadab6a7dbbec 100644
+index 453e2185fc85fcb29fa7af3f94cce5bda8118b0c..1c383675bb9113b5b1df9280b8ee994123794dfc 100644
 --- a/sandbox/mac/BUILD.gn
 +++ b/sandbox/mac/BUILD.gn
-@@ -39,6 +39,7 @@ component("seatbelt") {
-   ]
-   public_deps = [ "//third_party/protobuf:protobuf_lite" ]
+@@ -25,6 +25,7 @@ component("seatbelt") {
+   libs = [ "sandbox" ]
+   deps = [ ":seatbelt_export" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
 +  deps += ["//electron/build/config:generate_mas_config"]
  }
  
  component("seatbelt_extension") {
-@@ -52,6 +53,7 @@ component("seatbelt_extension") {
+@@ -38,6 +39,7 @@ component("seatbelt_extension") {
    libs = [ "sandbox" ]
    public_deps = [ "//base" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
@@ -1042,7 +1042,7 @@ index 4e53d573ff67615bc7dcee7db6f855c67094f414..8b061d66b1a854b51a5a38b6a71eadab
  }
  
  component("system_services") {
-@@ -66,6 +68,7 @@ component("system_services") {
+@@ -52,6 +54,7 @@ component("system_services") {
    deps = [ ":seatbelt_export" ]
    public_deps = [ "//base" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
@@ -1050,36 +1050,6 @@ index 4e53d573ff67615bc7dcee7db6f855c67094f414..8b061d66b1a854b51a5a38b6a71eadab
  }
  
  source_set("sandbox_unittests") {
-diff --git a/sandbox/mac/sandbox_compiler.cc b/sandbox/mac/sandbox_compiler.cc
-index f35d9ef2a2df3db8ecbf1d7b909c7b1cf33f3cd9..5d52330d1bd70cd7b97ee3360721f10c8447c717 100644
---- a/sandbox/mac/sandbox_compiler.cc
-+++ b/sandbox/mac/sandbox_compiler.cc
-@@ -7,6 +7,7 @@
- #include <string>
- #include <vector>
- 
-+#include "electron/mas.h"
- #include "sandbox/mac/seatbelt.h"
- 
- namespace sandbox {
-@@ -47,6 +48,7 @@ bool SandboxCompiler::SetParameter(const std::string& key,
- }
- 
- bool SandboxCompiler::CompileAndApplyProfile(std::string& error) {
-+#if !IS_MAS_BUILD()
-   if (mode_ == Target::kSource) {
-     std::vector<const char*> params;
- 
-@@ -67,6 +69,9 @@ bool SandboxCompiler::CompileAndApplyProfile(std::string& error) {
-     }
-   }
-   return false;
-+#else
-+  return true;
-+#endif
- }
- 
- bool SandboxCompiler::CompilePolicyToProto(mac::SandboxPolicy& policy,
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
 index 095c639b9893e885d8937e29ed7d47a7c28bc6b6..7e0cf9b9f94b16741358bdb45122f8b2bd68c0f9 100644
 --- a/sandbox/mac/sandbox_logging.cc
@@ -1117,7 +1087,7 @@ index 095c639b9893e885d8937e29ed7d47a7c28bc6b6..7e0cf9b9f94b16741358bdb45122f8b2
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
-index 15c835e118456394c0a00ac98c11241c14ca75bd..a16faabe2bd63a5e0fbe9082a3b4b7c8aa0ea064 100644
+index 1960e1c8771fad615a098af09ff1f9a191f67764..29b97b352d08cd1fe73b17fd80cb41cc7e58dcaa 100644
 --- a/sandbox/mac/seatbelt.cc
 +++ b/sandbox/mac/seatbelt.cc
 @@ -4,12 +4,14 @@
@@ -1220,14 +1190,21 @@ index 15c835e118456394c0a00ac98c11241c14ca75bd..a16faabe2bd63a5e0fbe9082a3b4b7c8
  }
  
  // static
-@@ -129,10 +147,14 @@ bool Seatbelt::InitWithParams(const char* profile,
+@@ -129,16 +147,21 @@ bool Seatbelt::InitWithParams(const std::string& profile,
                                uint64_t flags,
-                               const char* const parameters[],
+                               const std::vector<std::string>& parameters,
                                std::string* error) {
 +#if !IS_MAS_BUILD()
+   std::vector<const char*> weak_params;
+   for (const std::string& param : parameters) {
+     weak_params.push_back(param.c_str());
+   }
+   // The parameters array must be null terminated.
+   weak_params.push_back(nullptr);
++
    char* errorbuf = nullptr;
-   int rv =
-       ::sandbox_init_with_parameters(profile, flags, parameters, &errorbuf);
+   int rv = ::sandbox_init_with_parameters(profile.c_str(), flags,
+                                           weak_params.data(), &errorbuf);
    return HandleSandboxResult(rv, errorbuf, error);
 +#else
 +  return true;
@@ -1235,7 +1212,7 @@ index 15c835e118456394c0a00ac98c11241c14ca75bd..a16faabe2bd63a5e0fbe9082a3b4b7c8
  }
  
  // static
-@@ -140,6 +162,7 @@ bool Seatbelt::Compile(const char* profile,
+@@ -146,6 +169,7 @@ bool Seatbelt::Compile(const char* profile,
                         const Seatbelt::Parameters& params,
                         std::string& compiled_profile,
                         std::string* error) {
@@ -1243,7 +1220,7 @@ index 15c835e118456394c0a00ac98c11241c14ca75bd..a16faabe2bd63a5e0fbe9082a3b4b7c8
    char* errorbuf = nullptr;
    sandbox_profile_t* sandbox_profile =
        ::sandbox_compile_string(profile, params.params(), &errorbuf);
-@@ -149,33 +172,44 @@ bool Seatbelt::Compile(const char* profile,
+@@ -155,33 +179,44 @@ bool Seatbelt::Compile(const char* profile,
    compiled_profile.assign(reinterpret_cast<const char*>(sandbox_profile->data),
                            sandbox_profile->size);
    ::sandbox_free_profile(sandbox_profile);
@@ -1392,7 +1369,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 076ae475b3c4f0d2568e5efc9fedf2de7ccc82ad..b961c9c000bbb82c5f6ae63466c6d5d679d92de6 100644
+index 17b3ddd66513a01a631d77535cfeb1ae94881e0e..bde6c61489fe4f88abba79fd2fb809c292a3f99a 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -409,6 +409,7 @@ component("core") {
@@ -1634,7 +1611,7 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..c2ac4da580e3e7f749a0a4de1e859af6
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 5ca4c8fc961d24985aa4e0459dc2c42003a5346f..2f5880d1d3fbc3aa1461bbe611c33f789a6f4dde 100644
+index f211074c41fd50597db8b72510149d27ffc8d90a..885511f666318ce1218a09c3ebf5ec1aa00e9ecf 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -363,6 +363,13 @@ component("base") {
@@ -1804,10 +1781,10 @@ index 29ae2da6a8a2c2a612dfb92f7f9c03ca5fa306b1..440c139a32a0c205e77b657d4aab6468
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 6cf9f1a38ed76edc8f64500476b4b3014dc7677f..54dcf71bd0bf5a1455b31f3d042305f0fc3e345b 100644
+index 230a9e8266fa494f870ed7fc7dc444d1db5bbb48..99facff7a8e98cbc175354ae4e1d1f592197320a 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -331,6 +331,12 @@ component("gfx") {
+@@ -332,6 +332,12 @@ component("gfx") {
      "//ui/base:ui_data_pack",
    ]
  
@@ -1859,7 +1836,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 94afec13361d4ee8d0441da3cbe37d62e287c94b..fd13add3291b113dc57c69700f35ac9943124786 100644
+index ee47ca61db4c321edce0d6ae49f9f6a21f01918a..c8fcad4a3af57cfb993018f0ad457c271bdefe0e 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -718,6 +718,8 @@ component("views") {
@@ -1871,7 +1848,7 @@ index 94afec13361d4ee8d0441da3cbe37d62e287c94b..fd13add3291b113dc57c69700f35ac99
    }
  
    if (is_win) {
-@@ -1135,6 +1137,8 @@ source_set("test_support") {
+@@ -1138,6 +1140,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  

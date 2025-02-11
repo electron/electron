@@ -102,7 +102,8 @@ bool IsTemplateFilename(const base::FilePath& path) {
 #endif
 
 #if BUILDFLAG(IS_WIN)
-base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
+base::win::ScopedGDIObject<HICON> ReadICOFromPath(int size,
+                                                  const base::FilePath& path) {
   // If file is in asar archive, we extract it to a temp file so LoadImage can
   // load it.
   base::FilePath asar_path, relative_path;
@@ -115,7 +116,7 @@ base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
   }
 
   // Load the icon from file.
-  return base::win::ScopedHICON(
+  return base::win::ScopedGDIObject<HICON>(
       static_cast<HICON>(LoadImage(nullptr, image_path.value().c_str(),
                                    IMAGE_ICON, size, size, LR_LOADFROMFILE)));
 }
