@@ -13,6 +13,7 @@
 #include "base/one_shot_event.h"
 #include "components/value_store/value_store_factory.h"
 #include "components/value_store/value_store_factory_impl.h"
+#include "extensions/browser/disable_reason.h"
 #include "extensions/browser/extension_registrar.h"
 #include "extensions/browser/extension_system.h"
 
@@ -60,6 +61,17 @@ class ElectronExtensionSystem : public ExtensionSystem {
   void ReloadExtension(const ExtensionId& extension_id);
 
   void RemoveExtension(const ExtensionId& extension_id);
+
+  // Enables the extension. If the extension is already enabled, does
+  // nothing.
+  void EnableExtension(const ExtensionId& extension_id);
+
+  // Disables the extension. If the extension is already disabled, just adds
+  // the incoming disable reason(s). If the extension cannot be disabled (due to
+  // policy), does nothing.
+  void DisableExtension(const ExtensionId& extension_id);
+
+  bool IsExtensionEnabled(const ExtensionId& extension_id) const;
 
   // KeyedService implementation:
   void Shutdown() override;

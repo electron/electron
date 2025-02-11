@@ -81,6 +81,22 @@ void ElectronExtensionSystem::RemoveExtension(const ExtensionId& extension_id) {
       extension_id, extensions::UnloadedExtensionReason::UNINSTALL);
 }
 
+void ElectronExtensionSystem::EnableExtension(const std::string& extension_id) {
+  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  extension_registrar_->EnableExtension(extension_id);
+}
+
+void ElectronExtensionSystem::DisableExtension(
+    const ExtensionId& extension_id) {
+  extension_registrar_->DisableExtension(
+      extension_id, disable_reason::DisableReason::DISABLE_USER_ACTION);
+}
+
+bool ElectronExtensionSystem::IsExtensionEnabled(
+    const ExtensionId& extension_id) const {
+  return extension_registrar_->IsExtensionEnabled(extension_id);
+}
+
 void ElectronExtensionSystem::Shutdown() {
   extension_loader_.reset();
 }
