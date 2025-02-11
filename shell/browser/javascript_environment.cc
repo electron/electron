@@ -90,7 +90,7 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
 
   // The V8Platform of gin relies on Chromium's task schedule, which has not
   // been started at this point, so we have to rely on Node's V8Platform.
-  auto* tracing_agent = node::CreateAgent();
+  auto* tracing_agent = new node::tracing::Agent();
   auto* tracing_controller = tracing_agent->GetTracingController();
   node::tracing::TraceEventHelper::SetAgent(tracing_agent);
   platform_ = node::MultiIsolatePlatform::Create(

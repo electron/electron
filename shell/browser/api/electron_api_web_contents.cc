@@ -70,7 +70,6 @@
 #include "content/public/common/webplugininfo.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/mas.h"
-#include "electron/shell/common/api/api.mojom.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "gin/handle.h"
@@ -110,6 +109,7 @@
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_view_guest_delegate.h"
 #include "shell/browser/web_view_manager.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/color_util.h"
@@ -3691,12 +3691,6 @@ double WebContents::GetZoomFactor() const {
 
 void WebContents::SetTemporaryZoomLevel(double level) {
   zoom_controller_->SetTemporaryZoomLevel(level);
-}
-
-void WebContents::DoGetZoomLevel(
-    electron::mojom::ElectronWebContentsUtility::DoGetZoomLevelCallback
-        callback) {
-  std::move(callback).Run(GetZoomLevel());
 }
 
 std::optional<PreloadScript> WebContents::GetPreloadScript() const {

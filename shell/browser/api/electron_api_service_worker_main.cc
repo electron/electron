@@ -13,13 +13,13 @@
 #include "base/no_destructor.h"
 #include "content/browser/service_worker/service_worker_context_wrapper.h"  // nogncheck
 #include "content/browser/service_worker/service_worker_version.h"  // nogncheck
-#include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -192,7 +192,7 @@ bool ServiceWorkerMain::IsDestroyed() const {
 }
 
 const blink::StorageKey ServiceWorkerMain::GetStorageKey() {
-  GURL scope = version_info_ ? version_info()->scope : GURL::EmptyGURL();
+  const GURL& scope = version_info_ ? version_info()->scope : GURL::EmptyGURL();
   return blink::StorageKey::CreateFirstParty(url::Origin::Create(scope));
 }
 
@@ -279,7 +279,7 @@ int64_t ServiceWorkerMain::VersionID() const {
 
 GURL ServiceWorkerMain::ScopeURL() const {
   if (version_destroyed_)
-    return GURL::EmptyGURL();
+    return {};
   return version_info()->scope;
 }
 

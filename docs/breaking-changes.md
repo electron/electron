@@ -65,7 +65,7 @@ Additionally, `level` is now a string with possible values of `info`, `warning`,
 
 ### Behavior Changed: `urls` property of `WebRequestFilter`.
 
-Previously, an empty urls array was interpreted as including all URLs. To explicitly include all URLs, developers should now use the `<all_urls>` pattern, which is a designated URL pattern that matches every possible URL. This change clarifies the intent and ensures more predictable behavior.
+Previously, an empty urls array was interpreted as including all URLs. To explicitly include all URLs, developers should now use the `<all_urls>` pattern, which is a [designated URL pattern](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns#all_urls) that matches every possible URL. This change clarifies the intent and ensures more predictable behavior.
 
 ```js
 // Deprecated
@@ -79,6 +79,13 @@ const newFilter = {
 }
 ```
 
+### Deprecated: `systemPreferences.isAeroGlassEnabled()`
+
+The `systemPreferences.isAeroGlassEnabled()` function has been deprecated without replacement.
+It has been always returning `true` since Electron 23, which only supports Windows 10+, where DWM composition can no longer be disabled.
+
+https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw#disabling-dwm-composition-windows7-and-earlier
+
 ## Planned Breaking API Changes (34.0)
 
 ### Behavior Changed: menu bar will be hidden during fullscreen on Windows
@@ -88,6 +95,15 @@ This brings the behavior to parity with Linux. Prior behavior: Menu bar is still
 **Correction**: This was previously listed as a breaking change in Electron 33, but was first released in Electron 34.
 
 ## Planned Breaking API Changes (33.0)
+
+### Deprecated: `document.execCommand("paste")`
+
+The synchronous clipboard read API [document.execCommand("paste")](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Interact_with_the_clipboard) has been
+deprecated in favor of [async clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API). This is to align with the browser defaults.
+
+The `enableDeprecatedPaste` option on `WebPreferences` that triggers the permission
+checks for this API and the associated permission type `deprecated-sync-clipboard-read`
+are also deprecated.
 
 ### Behavior Changed: frame properties may retrieve detached WebFrameMain instances or none at all
 
@@ -161,6 +177,16 @@ macOS 10.15 (Catalina) is no longer supported by [Chromium](https://chromium-rev
 Older versions of Electron will continue to run on Catalina, but macOS 11 (Big Sur)
 or later will be required to run Electron v33.0.0 and higher.
 
+### Behavior Changed: Native modules now require C++20
+
+Due to changes made upstream, both
+[V8](https://chromium-review.googlesource.com/c/v8/v8/+/5587859) and
+[Node.js](https://github.com/nodejs/node/pull/45427) now require C++20 as a
+minimum version. Developers using native node modules should build their
+modules with `--std=c++20` rather than `--std=c++17`. Images using gcc9 or
+lower may need to update to gcc10 in order to compile. See
+[#43555](https://github.com/electron/electron/pull/43555) for more details.
+
 ### Deprecated: `systemPreferences.accessibilityDisplayShouldReduceTransparency`
 
 The `systemPreferences.accessibilityDisplayShouldReduceTransparency` property is now deprecated in favor of the new `nativeTheme.prefersReducedTransparency`, which provides identical information and works cross-platform.
@@ -231,6 +257,14 @@ win.webContents.navigationHistory.goForward()
 win.webContents.navigationHistory.canGoToOffset()
 win.webContents.navigationHistory.goToOffset(index)
 ```
+
+### Behavior changed: Directory `databases` in `userData` will be deleted
+
+If you have a directory called `databases` in the directory returned by
+`app.getPath('userData')`, it will be deleted when Electron 32 is first run.
+The `databases` directory was used by WebSQL, which was removed in Electron 31.
+Chromium now performs a cleanup that deletes this directory. See
+[issue #45396](https://github.com/electron/electron/issues/45396).
 
 ## Planned Breaking API Changes (31.0)
 

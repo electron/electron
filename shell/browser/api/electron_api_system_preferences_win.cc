@@ -76,10 +76,6 @@ std::string ConvertDeviceAccessStatus(DeviceAccessStatus value) {
 
 namespace api {
 
-bool SystemPreferences::IsAeroGlassEnabled() {
-  return true;
-}
-
 std::string hexColorDWORDToRGBA(DWORD color) {
   DWORD rgba = color << 8 | color >> 24;
   std::ostringstream stream;

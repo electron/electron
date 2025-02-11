@@ -7,6 +7,7 @@ const check = process.argv.includes('--check');
 
 function findAllHeaders (basePath) {
   const allFiles = fs.readdirSync(basePath);
+  allFiles.sort();
   const toReturn = [];
   for (const file of allFiles) {
     const absPath = path.resolve(basePath, file);
@@ -48,7 +49,7 @@ for (const folder of ['libc++', 'libc++abi']) {
   const libcxxIncludeDir = path.resolve(__dirname, '..', '..', 'third_party', folder, 'src', 'include');
   const gclientPath = `third_party/${folder}/src/include`;
 
-  const headers = findAllHeaders(libcxxIncludeDir).map(absPath => path.relative(path.resolve(__dirname, '../..', gclientPath), absPath));
+  const headers = findAllHeaders(libcxxIncludeDir).map(absPath => path.relative(path.resolve(__dirname, '../..', gclientPath), absPath).replaceAll('\\', '/'));
 
   const newHeaders = headers.map(f => `//${path.posix.join(gclientPath, f)}`);
   const content = `${prettyName}_headers = [

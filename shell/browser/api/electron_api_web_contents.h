@@ -31,7 +31,6 @@
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/buildflags/buildflags.h"
-#include "electron/shell/common/api/api.mojom.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "printing/buildflags/buildflags.h"
@@ -43,9 +42,11 @@
 #include "shell/browser/preload_script.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/web_contents_utility.mojom.h"
 #include "ui/base/models/image_model.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -469,9 +470,6 @@ class WebContents final : public ExclusiveAccessContext,
   // mojom::ElectronWebContentsUtility
   void OnFirstNonEmptyLayout(content::RenderFrameHost* render_frame_host);
   void SetTemporaryZoomLevel(double level);
-  void DoGetZoomLevel(
-      electron::mojom::ElectronWebContentsUtility::DoGetZoomLevelCallback
-          callback);
 
   void SetImageAnimationPolicy(const std::string& new_policy);
 

@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Patrick Meenan <pmeenan@chromium.org>
+Date: Thu, 6 Feb 2025 07:41:40 -0800
+Subject: Set is_web_secure_context when initializing Service Worker from disk
+
+The value of is_web_secure_context is not serialized to disk when
+storing the service worker registration (only a few select policies
+are).
+
+When instantiating the policy container for an already-registered
+worker, it uses the default value (false) which is wrong.
+
+Since Service Workers are guaranteed to ALWAYS be a web secure
+context, this change explicitly sets it to true when restoring a
+serialized policy.
+
+See: https://w3c.github.io/webappsec-secure-contexts/#examples-service-workers
+
+Bug: 387258077,383070811
+Change-Id: I75efe895662ab4e6d68cacace6d05e004c5dfd33
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6236205
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Commit-Queue: Patrick Meenan <pmeenan@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1416795}
+
+diff --git a/content/browser/renderer_host/policy_container_host.cc b/content/browser/renderer_host/policy_container_host.cc
+index 5f62b1a274bab7028beb9836f88805e7b5a83e2c..f16f56d8d5f0c4e9bc164c546eee8c28f6856693 100644
+--- a/content/browser/renderer_host/policy_container_host.cc
++++ b/content/browser/renderer_host/policy_container_host.cc
+@@ -136,9 +136,11 @@ PolicyContainerPolicies::PolicyContainerPolicies(
+       allow_cross_origin_isolation(allow_cross_origin_isolation) {}
+ 
+ PolicyContainerPolicies::PolicyContainerPolicies(
+-    const blink::mojom::PolicyContainerPolicies& policies)
++    const blink::mojom::PolicyContainerPolicies& policies,
++    bool is_web_secure_context)
+     : referrer_policy(policies.referrer_policy),
+       ip_address_space(policies.ip_address_space),
++      is_web_secure_context(is_web_secure_context),
+       content_security_policies(
+           mojo::Clone(policies.content_security_policies)),
+       cross_origin_embedder_policy(policies.cross_origin_embedder_policy),
+diff --git a/content/browser/renderer_host/policy_container_host.h b/content/browser/renderer_host/policy_container_host.h
+index 394bd53bb5c1dfea5abe24b9047eb190884c2648..7add42348ef28079196b447feda78210815d1551 100644
+--- a/content/browser/renderer_host/policy_container_host.h
++++ b/content/browser/renderer_host/policy_container_host.h
+@@ -49,7 +49,8 @@ struct CONTENT_EXPORT PolicyContainerPolicies {
+       bool allow_cross_origin_isolation);
+ 
+   explicit PolicyContainerPolicies(
+-      const blink::mojom::PolicyContainerPolicies& policies);
++      const blink::mojom::PolicyContainerPolicies& policies,
++      bool is_web_secure_context);
+ 
+   // Used when loading workers from network schemes.
+   // WARNING: This does not populate referrer policy.
+diff --git a/content/browser/service_worker/service_worker_registry.cc b/content/browser/service_worker/service_worker_registry.cc
+index aa1e8fb5d1b3eef93b799f29cc89e15315507d2d..68b5c2ba114aa084c5ad6bc2e4fd12d44393ed77 100644
+--- a/content/browser/service_worker/service_worker_registry.cc
++++ b/content/browser/service_worker/service_worker_registry.cc
+@@ -1084,7 +1084,8 @@ ServiceWorkerRegistry::GetOrCreateRegistration(
+     if (data.policy_container_policies) {
+       version->set_policy_container_host(
+           base::MakeRefCounted<PolicyContainerHost>(
+-              PolicyContainerPolicies(*data.policy_container_policies)));
++              PolicyContainerPolicies(*data.policy_container_policies,
++                                      /*is_web_secure_context=*/true)));
+     }
+     if (data.router_rules) {
+       auto error = version->SetupRouterEvaluator(*data.router_rules);
