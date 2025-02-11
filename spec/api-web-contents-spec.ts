@@ -699,12 +699,14 @@ describe('webContents module', () => {
     describe('navigationHistory.getEntryAtIndex(index) API ', () => {
       it('should fetch default navigation entry when no urls are loaded', async () => {
         const result = w.webContents.navigationHistory.getEntryAtIndex(0);
-        expect(result).to.deep.equal({ url: '', title: '' });
+        expect(result.url).to.equal('');
+        expect(result.title).to.equal('');
       });
       it('should fetch navigation entry given a valid index', async () => {
         await w.loadURL(urlPage1);
         const result = w.webContents.navigationHistory.getEntryAtIndex(0);
-        expect(result).to.deep.equal({ url: urlPage1, title: 'Page 1' });
+        expect(result.url).to.equal(urlPage1);
+        expect(result.title).to.equal('Page 1');
       });
       it('should return null given an invalid index larger than history length', async () => {
         await w.loadURL(urlPage1);
@@ -763,7 +765,10 @@ describe('webContents module', () => {
         await w.loadURL(urlPage1);
         await w.loadURL(urlPage2);
         await w.loadURL(urlPage3);
-        const entries = w.webContents.navigationHistory.getAllEntries();
+        const entries = w.webContents.navigationHistory.getAllEntries().map(entry => ({
+          url: entry.url,
+          title: entry.title
+        }));
         expect(entries.length).to.equal(3);
         expect(entries[0]).to.deep.equal({ url: urlPage1, title: 'Page 1' });
         expect(entries[1]).to.deep.equal({ url: urlPage2, title: 'Page 2' });
@@ -773,6 +778,92 @@ describe('webContents module', () => {
       it('should return an empty array when there is no navigation history', async () => {
         const entries = w.webContents.navigationHistory.getAllEntries();
         expect(entries.length).to.equal(0);
+      });
+
+      it('should create a NavigationEntry with PageState that can be serialized/deserialized with JSON', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+
+        const entries = w.webContents.navigationHistory.getAllEntries();
+        const serialized = JSON.stringify(entries);
+        const deserialized = JSON.parse(serialized);
+        expect(deserialized).to.deep.equal(entries);
+      });
+    });
+
+    describe('navigationHistory.restore(index, entries) API', () => {
+      let server: http.Server;
+      let serverUrl: string;
+
+      before(async () => {
+        server = http.createServer((req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          res.end('<html><head><title>Form</title></head><body><form><input type="text" value="value" /></form></body></html>');
+        });
+        serverUrl = (await listen(server)).url;
+      });
+
+      after(async () => {
+        if (server) await new Promise(resolve => server.close(resolve));
+        server = null as any;
+      });
+
+      it('should restore navigation history with PageState', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(serverUrl);
+
+        // Fill out the form on the page
+        await w.webContents.executeJavaScript('document.querySelector("input").value = "Hi!";');
+
+        // PageState is committed:
+        // 1) When the page receives an unload event
+        // 2) During periodic serialization of page state
+        // To not wait randomly for the second option, we'll trigger another load
+        await w.loadURL(urlPage3);
+
+        // Save the navigation state
+        const entries = w.webContents.navigationHistory.getAllEntries();
+
+        // Close the window, make a new one
+        w.close();
+        w = new BrowserWindow();
+
+        const formValue = await new Promise<string>(resolve => {
+          w.webContents.once('dom-ready', () => resolve(w.webContents.executeJavaScript('document.querySelector("input").value')));
+
+          // Restore the navigation history
+          w.webContents.navigationHistory.restore(2, entries);
+        });
+
+        expect(formValue).to.equal('Hi!');
+      });
+
+      it('should handle invalid base64 pageState', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+
+        const brokenEntries = w.webContents.navigationHistory.getAllEntries().map(entry => ({
+          ...entry,
+          pageState: 'invalid base64'
+        }));
+
+        // Close the window, make a new one
+        w.close();
+        w = new BrowserWindow();
+        w.webContents.navigationHistory.restore(2, brokenEntries);
+
+        const entries = w.webContents.navigationHistory.getAllEntries();
+
+        // Check that we used the original url and titles but threw away the broken
+        // pageState
+        entries.forEach((entry, index) => {
+          expect(entry.url).to.equal(brokenEntries[index].url);
+          expect(entry.title).to.equal(brokenEntries[index].title);
+          expect(entry.pageState?.length).to.be.greaterThanOrEqual(100);
+        });
       });
     });
   });

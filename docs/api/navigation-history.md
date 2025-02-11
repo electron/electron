@@ -74,3 +74,15 @@ Returns `boolean` - Whether the navigation entry was removed from the webContent
 #### `navigationHistory.getAllEntries()`
 
 Returns [`NavigationEntry[]`](structures/navigation-entry.md) - WebContents complete history.
+
+#### `navigationHistory.restore(index, entries)`
+
+Restores navigation history. Will make a best effort to restore not just the navigation stack but
+also the state of the individual pages - for instance including HTML form values or the scroll
+position. It's recommended to call this API before any navigation entries are created, so ideally
+before you call `loadURL()` or `loadFile()` on the `webContents` object.
+
+This API allows you to create common flows that aim to restore, recreate, or clone other webContents.
+
+* `offset` Integer
+* `entries` [NavigationEntry[]](structures/navigation-entry.md)

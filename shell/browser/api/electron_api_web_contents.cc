@@ -374,21 +374,31 @@ struct Converter<content::NavigationEntry*> {
     std::string url_str;
     std::string title;
     std::string encoded_page_state;
+
     if (!dict.Get("url", &url_str) || !dict.Get("title", &title))
       return false;
 
+    GURL url(url_str);
+    if (!url.is_valid())
+      return false;
+
+    // Create entry with validated URL
     auto entry = content::NavigationEntry::Create();
-    entry->SetURL(GURL(url_str));
+    entry->SetURL(url);
     entry->SetTitle(base::UTF8ToUTF16(title));
 
+    // Handle optional page state
     if (dict.Get("pageState", &encoded_page_state)) {
       std::string decoded_page_state;
       if (base::Base64Decode(encoded_page_state, &decoded_page_state)) {
-        std::unique_ptr<content::NavigationEntryRestoreContext>
-            restore_context = content::NavigationEntryRestoreContext::Create();
-        entry->SetPageState(
-            blink::PageState::CreateFromEncodedData(decoded_page_state),
-            restore_context.get());
+        auto restore_context = content::NavigationEntryRestoreContext::Create();
+
+        auto page_state =
+            blink::PageState::CreateFromEncodedData(decoded_page_state);
+        if (!page_state.IsValid())
+          return false;
+
+        entry->SetPageState(std::move(page_state), restore_context.get());
       }
     }
 
