@@ -2620,22 +2620,22 @@ std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
 }
 
 void WebContents::RestoreHistory(
+    v8::Isolate* isolate,
+    gin_helper::ErrorThrower thrower,
     int index,
     const std::vector<v8::Local<v8::Value>>& entries) {
   if (!web_contents()
            ->GetController()
            .GetLastCommittedEntry()
            ->IsInitialEntry()) {
-    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
-        .ThrowError(
-            "Cannot restore history on webContents that have previously loaded "
-            "a page.");
+    thrower.ThrowError(
+        "Cannot restore history on webContents that have previously loaded "
+        "a page.");
     return;
   }
 
   auto navigation_entries = std::make_unique<
       std::vector<std::unique_ptr<content::NavigationEntry>>>();
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
   for (const auto& entry : entries) {
     content::NavigationEntry* nav_entry = nullptr;
