@@ -181,8 +181,7 @@ void ElectronExtensionLoader::PreAddExtension(const Extension* extension,
     extension_prefs->RemoveDisableReason(extension->id(),
                                          disable_reason::DISABLE_RELOAD);
     // Only re-enable the extension if there are no other disable reasons.
-    if (extension_prefs->GetDisableReasons(extension->id()) ==
-        disable_reason::DISABLE_NONE) {
+    if (extension_prefs->GetDisableReasons(extension->id()).empty()) {
       extension_prefs->SetExtensionEnabled(extension->id());
     }
   }
