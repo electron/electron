@@ -792,7 +792,7 @@ describe('webContents module', () => {
       });
     });
 
-    describe('navigationHistory.restore(index, entries) API', () => {
+    describe('navigationHistory.restore({ index, entries }) API', () => {
       let server: http.Server;
       let serverUrl: string;
 
@@ -834,7 +834,7 @@ describe('webContents module', () => {
           w.webContents.once('dom-ready', () => resolve(w.webContents.executeJavaScript('document.querySelector("input").value')));
 
           // Restore the navigation history
-          w.webContents.navigationHistory.restore(2, entries);
+          return w.webContents.navigationHistory.restore({ index: 2, entries });
         });
 
         expect(formValue).to.equal('Hi!');
@@ -853,7 +853,7 @@ describe('webContents module', () => {
         // Close the window, make a new one
         w.close();
         w = new BrowserWindow();
-        w.webContents.navigationHistory.restore(2, brokenEntries);
+        await w.webContents.navigationHistory.restore({ index: 2, entries: brokenEntries });
 
         const entries = w.webContents.navigationHistory.getAllEntries();
 

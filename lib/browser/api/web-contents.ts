@@ -614,7 +614,11 @@ WebContents.prototype._init = function () {
       getEntryAtIndex: this._getNavigationEntryAtIndex.bind(this),
       removeEntryAtIndex: this._removeNavigationEntryAtIndex.bind(this),
       getAllEntries: this._getHistory.bind(this),
-      restore: (index: number, entries: NavigationEntry[]) => {
+      restore: ({ index, entries }: { index?: number, entries: NavigationEntry[] }) => {
+        if (index === undefined) {
+          index = entries.length - 1;
+        }
+
         if (index < 0 || !entries[index]) {
           throw new Error('Invalid index. Index must be a positive integer and within the bounds of the entries length.');
         }
