@@ -85,6 +85,10 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
   auto* cmd = base::CommandLine::ForCurrentProcess();
   // --js-flags.
   std::string js_flags = "--no-freeze-flags-after-init ";
+#if defined(OS_LINUX)
+  // See https://issues.chromium.org/issues/378017037 - fixed in M134.
+  js_flags.append("--nodecommit_pooled_pages ");
+#endif
   js_flags.append(cmd->GetSwitchValueASCII(blink::switches::kJavaScriptFlags));
   v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
 
