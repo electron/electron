@@ -13,6 +13,8 @@
 #include "base/one_shot_event.h"
 #include "components/value_store/value_store_factory.h"
 #include "components/value_store/value_store_factory_impl.h"
+#include "extensions/browser/disable_reason.h"
+#include "extensions/browser/extension_registrar.h"
 #include "extensions/browser/extension_system.h"
 
 namespace base {
@@ -26,6 +28,7 @@ class BrowserContext;
 namespace extensions {
 
 class ElectronExtensionLoader;
+class ElectronExtensionRegistrarDelegate;
 class ValueStoreFactory;
 
 // A simplified version of ExtensionSystem for app_shell. Allows
@@ -39,6 +42,10 @@ class ElectronExtensionSystem : public ExtensionSystem {
   // disable copy
   ElectronExtensionSystem(const ElectronExtensionSystem&) = delete;
   ElectronExtensionSystem& operator=(const ElectronExtensionSystem&) = delete;
+
+  // Adds |extension| to this ExtensionService and notifies observers that the
+  // extension has been loaded.
+  void AddExtension(const Extension* extension);
 
   // Loads an unpacked extension from a directory. Returns the extension on
   // success, or nullptr otherwise.
@@ -54,6 +61,19 @@ class ElectronExtensionSystem : public ExtensionSystem {
   void ReloadExtension(const ExtensionId& extension_id);
 
   void RemoveExtension(const ExtensionId& extension_id);
+
+  // Enables the extension. If the extension is already enabled, does
+  // nothing.
+  void EnableExtension(const ExtensionId& extension_id);
+
+  // Disables the extension. If the extension is already disabled, just adds
+  // the incoming disable reason(s). If the extension cannot be disabled (due to
+  // policy), does nothing.
+  void DisableExtension(const ExtensionId& extension_id,
+                        disable_reason::DisableReason disable_reason =
+                            disable_reason::DisableReason::DISABLE_NONE);
+  void DisableExtension(const ExtensionId& extension_id,
+                        const DisableReasonSet& disable_reasons);
 
   // KeyedService implementation:
   void Shutdown() override;
@@ -98,6 +118,12 @@ class ElectronExtensionSystem : public ExtensionSystem {
   std::unique_ptr<UserScriptManager> user_script_manager_;
   std::unique_ptr<AppSorting> app_sorting_;
   std::unique_ptr<ManagementPolicy> management_policy_;
+
+  std::unique_ptr<ElectronExtensionRegistrarDelegate>
+      extension_registrar_delegate_;
+
+  // Helper to register and unregister extensions.
+  ExtensionRegistrar extension_registrar_;
 
   std::unique_ptr<ElectronExtensionLoader> extension_loader_;
 

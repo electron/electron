@@ -29,6 +29,7 @@
 #include "extensions/browser/user_script_manager.h"
 #include "extensions/common/constants.h"
 #include "shell/browser/extensions/electron_extension_loader.h"
+#include "shell/browser/extensions/electron_extension_registrar_delegate.h"
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "chrome/browser/pdf/pdf_extension_util.h"  // nogncheck
@@ -39,13 +40,26 @@ using content::BrowserThread;
 
 namespace extensions {
 
+using LoadErrorBehavior = ExtensionRegistrar::LoadErrorBehavior;
+
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
     : browser_context_(browser_context),
+      extension_registrar_delegate_(
+          std::make_unique<ElectronExtensionRegistrarDelegate>(
+              browser_context)),
+      extension_registrar_(browser_context,
+                           extension_registrar_delegate_.get()),
       store_factory_(base::MakeRefCounted<value_store::ValueStoreFactoryImpl>(
-          browser_context->GetPath())) {}
+          browser_context->GetPath())) {
+  extension_registrar_delegate_->set_extension_registrar(&extension_registrar_);
+}
 
 ElectronExtensionSystem::~ElectronExtensionSystem() = default;
+
+void ElectronExtensionSystem::AddExtension(const Extension* extension) {
+  extension_registrar_.AddExtension(extension);
+}
 
 void ElectronExtensionSystem::LoadExtension(
     const base::FilePath& extension_dir,
@@ -60,12 +74,34 @@ void ElectronExtensionSystem::FinishInitialization() {
 }
 
 void ElectronExtensionSystem::ReloadExtension(const ExtensionId& extension_id) {
-  extension_loader_->ReloadExtension(extension_id);
+  const Extension* extension = ExtensionRegistry::Get(browser_context_)
+                                   ->GetInstalledExtension(extension_id);
+  // We shouldn't be trying to reload extensions that haven't been added.
+  DCHECK(extension);
+
+  extension_registrar_.ReloadExtension(extension_id, LoadErrorBehavior::kQuiet);
 }
 
 void ElectronExtensionSystem::RemoveExtension(const ExtensionId& extension_id) {
-  extension_loader_->UnloadExtension(
+  extension_registrar_.RemoveExtension(
       extension_id, extensions::UnloadedExtensionReason::UNINSTALL);
+}
+
+void ElectronExtensionSystem::EnableExtension(const std::string& extension_id) {
+  CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
+  extension_registrar_.EnableExtension(extension_id);
+}
+
+void ElectronExtensionSystem::DisableExtension(
+    const ExtensionId& extension_id,
+    disable_reason::DisableReason disable_reason) {
+  DisableExtension(extension_id, DisableReasonSet({disable_reason}));
+}
+
+void ElectronExtensionSystem::DisableExtension(
+    const ExtensionId& extension_id,
+    const DisableReasonSet& disable_reasons) {
+  extension_registrar_.DisableExtension(extension_id, disable_reasons);
 }
 
 void ElectronExtensionSystem::Shutdown() {
@@ -120,7 +156,7 @@ void ElectronExtensionSystem::LoadComponentExtensions() {
         extensions::Extension::Create(
             root_directory, extensions::mojom::ManifestLocation::kComponent,
             *pdf_manifest, extensions::Extension::REQUIRE_KEY, &utf8_error);
-    extension_loader_->registrar()->AddExtension(pdf_extension);
+    AddExtension(pdf_extension);
   }
 #endif
 }
