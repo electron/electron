@@ -13,6 +13,7 @@
 #include "base/one_shot_event.h"
 #include "components/value_store/value_store_factory.h"
 #include "components/value_store/value_store_factory_impl.h"
+#include "extensions/browser/extension_registrar.h"
 #include "extensions/browser/extension_system.h"
 
 namespace base {
@@ -26,6 +27,7 @@ class BrowserContext;
 namespace extensions {
 
 class ElectronExtensionLoader;
+class ElectronExtensionRegistrarDelegate;
 class ValueStoreFactory;
 
 // A simplified version of ExtensionSystem for app_shell. Allows
@@ -39,6 +41,10 @@ class ElectronExtensionSystem : public ExtensionSystem {
   // disable copy
   ElectronExtensionSystem(const ElectronExtensionSystem&) = delete;
   ElectronExtensionSystem& operator=(const ElectronExtensionSystem&) = delete;
+
+  // Adds |extension| to this ExtensionService and notifies observers that the
+  // extension has been loaded.
+  void AddExtension(const Extension* extension);
 
   // Loads an unpacked extension from a directory. Returns the extension on
   // success, or nullptr otherwise.
@@ -86,6 +92,10 @@ class ElectronExtensionSystem : public ExtensionSystem {
       const std::string& extension_id,
       const base::Value::Dict& attributes) override;
 
+  base::WeakPtr<ElectronExtensionSystem> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
  private:
   void OnExtensionRegisteredWithRequestContexts(
       scoped_refptr<Extension> extension);
@@ -98,6 +108,12 @@ class ElectronExtensionSystem : public ExtensionSystem {
   std::unique_ptr<UserScriptManager> user_script_manager_;
   std::unique_ptr<AppSorting> app_sorting_;
   std::unique_ptr<ManagementPolicy> management_policy_;
+
+  std::unique_ptr<ElectronExtensionRegistrarDelegate>
+      extension_registrar_delegate_;
+
+  // Helper to register and unregister extensions.
+  std::unique_ptr<ExtensionRegistrar> extension_registrar_;
 
   std::unique_ptr<ElectronExtensionLoader> extension_loader_;
 
