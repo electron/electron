@@ -17,10 +17,10 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 677e8db2114350e5368b56bd8857957a5d99b419..9b5a1b7b66542aca6cace76d40cd8a3409d11f23 100644
+index babcf42e01be00da8b853a1207e869614765b2bb..1c051a64d77e3ea8909dced73d93764d06ed7152 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -170,6 +170,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
+@@ -177,6 +177,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
    allow_cookies_from_browser = other.allow_cookies_from_browser;
    include_request_cookies_with_response =
        other.include_request_cookies_with_response;
@@ -28,7 +28,7 @@ index 677e8db2114350e5368b56bd8857957a5d99b419..9b5a1b7b66542aca6cace76d40cd8a34
    cookie_observer =
        Clone(&const_cast<mojo::PendingRemote<mojom::CookieAccessObserver>&>(
            other.cookie_observer));
-@@ -204,6 +205,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
+@@ -211,6 +212,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
      const TrustedParams& other) const {
    return isolation_info.IsEqualForTesting(other.isolation_info) &&
           disable_secure_dns == other.disable_secure_dns &&
@@ -37,10 +37,10 @@ index 677e8db2114350e5368b56bd8857957a5d99b419..9b5a1b7b66542aca6cace76d40cd8a34
           allow_cookies_from_browser == other.allow_cookies_from_browser &&
           include_request_cookies_with_response ==
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index 76e4130d4f84348af2ace1dfe809c48e4b4d4d6a..24c715db250227818dbe889597f4685778eff557 100644
+index 23762da9e9ff297007685662f45343b68d7aa351..cc4b067095a46ca34e5d409b10f0c91486b399a8 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
-@@ -75,6 +75,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
+@@ -76,6 +76,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
      bool has_user_activation = false;
      bool allow_cookies_from_browser = false;
      bool include_request_cookies_with_response = false;
@@ -112,7 +112,7 @@ index 5c4b8a05034f8defacbc13671fe9bc92f76ade5a..e7390e01f113755613f42d592b36108b
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index d8d746faec7d3251835b8c8d070940bdfb5c4b6a..d5b54e9e4d4969199c4ad7a08bd384009e221743 100644
+index 805ebedd50772df795c13684d8f4e2452723fee9..3ef307958c8b1b95af797a95fe9deb131b8a0dbb 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -666,6 +666,9 @@ URLLoader::URLLoader(

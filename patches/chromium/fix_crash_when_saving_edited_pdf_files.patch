@@ -38,10 +38,10 @@ index 0bab3a5c852357bb6dc7758e573093a080e06b79..594d168331eba048b4bc5d25ad6f6834
    protected printingEnabled_: boolean = false;
    // <if expr="enable_pdf_ink2">
 diff --git a/pdf/pdf_features.cc b/pdf/pdf_features.cc
-index 387174b3ee8aa39f0e3c4c67274e8c6b738c889f..a8ee6d48009de8fb10eff8689a694ac2e60a3723 100644
+index aa8261c0ab75a948d5bcaff53a6de4aeb1e6ae2a..b7b3f0901e5c2062c12fc8500214b385e96f14f6 100644
 --- a/pdf/pdf_features.cc
 +++ b/pdf/pdf_features.cc
-@@ -55,7 +55,7 @@ BASE_FEATURE(kPdfTags, "PdfTags", base::FEATURE_DISABLED_BY_DEFAULT);
+@@ -49,7 +49,7 @@ BASE_FEATURE(kPdfTags, "PdfTags", base::FEATURE_DISABLED_BY_DEFAULT);
  
  BASE_FEATURE(kPdfUseShowSaveFilePicker,
               "PdfUseShowSaveFilePicker",

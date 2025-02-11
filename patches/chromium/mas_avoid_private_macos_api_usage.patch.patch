@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 05ba2110698b69af677ad1fe898ae6e5953c7af4..7bcbb8f647faea889e295d8919f67745a7f72136 100644
+index a644409aaa81cb9e72065702ff0a286eec1c80da..3023a34864848911cb5c9d99a7126b852cb5569b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1027,6 +1027,7 @@ component("base") {
@@ -269,7 +269,7 @@ index e9f4e5131238b9fb5f1b4b3e90a0cb84a7fc15b4..8b5f4cae3123ac5480ad73f0c873fca0
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 3a8b44a2a295119f37ca37d5866dfcfa21121db0..b408e9c73fe97dd8885b5479923481e20955cf8d 100644
+index 19fff43c3daaef5451b6b60b84a610a21311448e..240b954661d34fcc4329d39490be33c485fa8b6e 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,7 +9,9 @@
@@ -298,7 +298,7 @@ index 3a8b44a2a295119f37ca37d5866dfcfa21121db0..b408e9c73fe97dd8885b5479923481e2
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -163,6 +168,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -165,6 +170,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -307,7 +307,7 @@ index 3a8b44a2a295119f37ca37d5866dfcfa21121db0..b408e9c73fe97dd8885b5479923481e2
  // Handle "Move focus to the window toolbar" configured in System Preferences ->
  // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
  // tends to just be nil.
-@@ -173,8 +180,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
+@@ -175,8 +182,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
  }
  
  - (void)setAlwaysShowTrafficLights:(BOOL)alwaysShow {

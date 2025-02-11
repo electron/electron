@@ -85,10 +85,10 @@ index 31a2a14a95540477297943df9b09b1e4659a884d..c02a81b1bd14a300dbbb47ad7aac2d2d
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index 6baede18711c3e2fddaccb66632ea11f33699748..15339f4b1ea0e11f1823c264ff31685652c8de71 100644
+index 1d981cec12769d145b694b61772b4c09616df9f0..cf9d9bfe7af12e16520354ebd1f7bc4050c57ec7 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
-@@ -110,7 +110,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -107,7 +107,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        'mojo', base::MachRendezvousPort(endpoint.TakeMachReceiveRight())));
  
    options->environment = delegate_->GetEnvironment();
@@ -98,7 +98,7 @@ index 6baede18711c3e2fddaccb66632ea11f33699748..15339f4b1ea0e11f1823c264ff316856
    options->disclaim_responsibility = delegate_->DisclaimResponsibility();
    options->enable_cpu_security_mitigations =
        delegate_->EnableCpuSecurityMitigations();
-@@ -177,6 +178,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -175,6 +176,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
          base::StringPrintf("%s%d", sandbox::switches::kSeatbeltClient, pipe));
    }
  
@@ -187,10 +187,10 @@ index bdd5bec301f5fcff2d3e3d7994ecbc4eae46da36..f6082bada22c5f4e70af60ea6f555b0f
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 517415f7db0eca691d366b299da259fc1fae0785..b87ff8e533963b0af2a9e71d75436620053c7f18 100644
+index aa8b2a92140b2be01860f4de0b739b90942ecd4c..51962b374123297f89126b6a5ebe3fccf0606ca1 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
-@@ -184,11 +184,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
+@@ -188,11 +188,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
    return process_->GetData();
  }
  
@@ -206,7 +206,7 @@ index 517415f7db0eca691d366b299da259fc1fae0785..b87ff8e533963b0af2a9e71d75436620
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -235,6 +237,30 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+@@ -239,6 +241,30 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -237,7 +237,7 @@ index 517415f7db0eca691d366b299da259fc1fae0785..b87ff8e533963b0af2a9e71d75436620
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -441,9 +467,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -448,9 +474,26 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
