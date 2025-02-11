@@ -343,7 +343,7 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
 
 type LoadError = { errorCode: number, errorDescription: string, url: string };
 
-WebContents.prototype._awaitNextLoad = function (navigationUrl: string) {
+function _awaitNextLoad (this: Electron.WebContents, navigationUrl: string) {
   return new Promise<void>((resolve, reject) => {
     const resolveAndCleanup = () => {
       removeListeners();
@@ -429,7 +429,7 @@ WebContents.prototype._awaitNextLoad = function (navigationUrl: string) {
 };
 
 WebContents.prototype.loadURL = function (url, options) {
-  const p = this._awaitNextLoad(url);
+  const p = _awaitNextLoad.call(this, url);
   // Add a no-op rejection handler to silence the unhandled rejection error.
   p.catch(() => {});
   this._loadURL(url, options ?? {});
@@ -621,7 +621,7 @@ WebContents.prototype._init = function () {
           throw new Error('Invalid index. Index must be a positive integer and within the bounds of the entries length.');
         }
 
-        const p = this._awaitNextLoad(entries[index].url);
+        const p = _awaitNextLoad.call(this, entries[index].url);
         p.catch(() => {});
         this._restoreHistory(index, entries);
         return p;
