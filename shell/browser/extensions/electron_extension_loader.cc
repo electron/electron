@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "base/auto_reset.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
@@ -17,11 +16,11 @@
 #include "base/time/time.h"
 #include "extensions/browser/extension_file_task_runner.h"
 #include "extensions/browser/extension_prefs.h"
-#include "extensions/browser/extension_registry.h"
 #include "extensions/browser/pref_names.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/file_util.h"
 #include "extensions/common/manifest_constants.h"
+#include "shell/browser/extensions/electron_extension_system.h"
 
 namespace extensions {
 
@@ -111,7 +110,7 @@ void ElectronExtensionLoader::FinishExtensionLoad(
     std::pair<scoped_refptr<const Extension>, std::string> result) {
   scoped_refptr<const Extension> extension = result.first;
   if (extension) {
-    extension_system_.AddExtension(extension.get());
+    extension_system_->AddExtension(extension.get());
 
     // Write extension install time to ExtensionPrefs. This is required by
     // WebRequestAPI which calls extensions::ExtensionPrefs::GetInstallTime.
@@ -139,7 +138,7 @@ void ElectronExtensionLoader::FinishExtensionReload(
     std::pair<scoped_refptr<const Extension>, std::string> result) {
   scoped_refptr<const Extension> extension = result.first;
   if (extension) {
-    extension_system_.AddExtension(extension.get());
+    extension_system_->AddExtension(extension.get());
   }
 }
 

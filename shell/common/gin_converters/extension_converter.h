@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Slack Technologies, Inc.
+// Copyright (c) 2025 Salesforce, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -8,15 +8,15 @@
 #include "gin/converter.h"
 
 namespace extensions {
-class Extension;
+struct ElectronExtensionInfo;
 }
 
 namespace gin {
 
 template <>
-struct Converter<const extensions::Extension*> {
+struct Converter<const extensions::ElectronExtensionInfo> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const extensions::Extension* val);
+                                   const extensions::ElectronExtensionInfo& val);
 };
 
 }  // namespace gin

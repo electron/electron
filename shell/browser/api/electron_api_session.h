@@ -55,6 +55,12 @@ namespace net {
 class ProxyConfig;
 }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+namespace extensions {
+class ElectronExtensionSystem;
+}
+#endif
+
 namespace electron {
 
 class ElectronBrowserContext;

@@ -98,6 +98,7 @@
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/extension_registry.h"
+#include "shell/browser/extensions/electron_extension_info.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/common/gin_converters/extension_converter.h"
 #endif
@@ -1309,7 +1310,7 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo() {
 v8::Local<v8::Promise> Session::LoadExtension(
     const base::FilePath& extension_path,
     gin::Arguments* args) {
-  gin_helper::Promise<const extensions::Extension*> promise(isolate_);
+  gin_helper::Promise<const extensions::ElectronExtensionInfo&> promise(isolate_);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!extension_path.IsAbsolute()) {
@@ -1335,22 +1336,23 @@ v8::Local<v8::Promise> Session::LoadExtension(
 
   auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
       extensions::ExtensionSystem::Get(browser_context()));
-  extension_system->LoadExtension(
-      extension_path, load_flags,
+  extension_system->LoadExtension(extension_path, load_flags,
       base::BindOnce(
           [](gin_helper::Promise<const extensions::Extension*> promise,
+             base::WeakPtr<ElectronBrowserContext> browser_context,
              const extensions::Extension* extension,
              const std::string& error_msg) {
-            if (extension) {
+            if (extension && browser_context) {
               if (!error_msg.empty())
                 util::EmitWarning(promise.isolate(), error_msg,
                                   "ExtensionLoadWarning");
-              promise.Resolve(extension);
+              auto& info = extensions::ElectronExtensionInfo(extension, browser_context.get());
+              promise.Resolve(info);
             } else {
               promise.RejectWithErrorMessage(error_msg);
             }
           },
-          std::move(promise)));
+          std::move(promise), browser_context()->GetWeakPtr()));
 
   return handle;
 }
