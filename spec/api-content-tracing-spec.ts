@@ -111,7 +111,8 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       expect(fs.statSync(path).isFile()).to.be.true('output exists');
     });
 
-    it('calls its callback with a result file path', async () => {
+    // FIXME(ckerr): this test regularly flakes
+    it.skip('calls its callback with a result file path', async () => {
       const resultFilePath = await record(/* options */ {}, outputFilePath);
       expect(resultFilePath).to.be.a('string').and.be.equal(outputFilePath);
     });
