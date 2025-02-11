@@ -45,20 +45,13 @@ using LoadErrorBehavior = ExtensionRegistrar::LoadErrorBehavior;
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
     : browser_context_(browser_context),
-      extension_registrar_delegate_(
-          std::make_unique<ElectronExtensionRegistrarDelegate>(browser_context,
-                                                               this)),
-      extension_registrar_(browser_context,
-                           extension_registrar_delegate_.get()),
       store_factory_(base::MakeRefCounted<value_store::ValueStoreFactoryImpl>(
-          browser_context->GetPath())) {
-  extension_registrar_delegate_->set_extension_registrar(&extension_registrar_);
-}
+          browser_context->GetPath())) {}
 
 ElectronExtensionSystem::~ElectronExtensionSystem() = default;
 
 void ElectronExtensionSystem::AddExtension(const Extension* extension) {
-  extension_registrar_.AddExtension(extension);
+  extension_registrar_->AddExtension(extension);
 }
 
 void ElectronExtensionSystem::LoadExtension(
@@ -79,28 +72,29 @@ void ElectronExtensionSystem::ReloadExtension(const ExtensionId& extension_id) {
   // We shouldn't be trying to reload extensions that haven't been added.
   DCHECK(extension);
 
-  extension_registrar_.ReloadExtension(extension_id, LoadErrorBehavior::kQuiet);
+  extension_registrar_->ReloadExtension(extension_id,
+                                        LoadErrorBehavior::kQuiet);
 }
 
 void ElectronExtensionSystem::RemoveExtension(const ExtensionId& extension_id) {
-  extension_registrar_.RemoveExtension(
+  extension_registrar_->RemoveExtension(
       extension_id, extensions::UnloadedExtensionReason::UNINSTALL);
 }
 
 void ElectronExtensionSystem::EnableExtension(const std::string& extension_id) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  extension_registrar_.EnableExtension(extension_id);
+  extension_registrar_->EnableExtension(extension_id);
 }
 
 void ElectronExtensionSystem::DisableExtension(
     const ExtensionId& extension_id) {
-  extension_registrar_.DisableExtension(
-      extension_id, disable_reason::DisableReason::DISABLE_NONE);
+  extension_registrar_->DisableExtension(
+      extension_id, disable_reason::DisableReason::DISABLE_USER_ACTION);
 }
 
 bool ElectronExtensionSystem::IsExtensionEnabled(
     const ExtensionId& extension_id) const {
-  return extension_registrar_.IsExtensionEnabled(extension_id);
+  return extension_registrar_->IsExtensionEnabled(extension_id);
 }
 
 void ElectronExtensionSystem::Shutdown() {
@@ -108,6 +102,14 @@ void ElectronExtensionSystem::Shutdown() {
 }
 
 void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
+  extension_registrar_delegate_ =
+      std::make_unique<ElectronExtensionRegistrarDelegate>(browser_context_,
+                                                           this);
+  extension_registrar_ = std::make_unique<ExtensionRegistrar>(
+      browser_context_, extension_registrar_delegate_.get());
+  extension_registrar_delegate_->set_extension_registrar(
+      extension_registrar_.get());
+
   service_worker_manager_ =
       std::make_unique<ServiceWorkerManager>(browser_context_);
   quota_service_ = std::make_unique<QuotaService>();

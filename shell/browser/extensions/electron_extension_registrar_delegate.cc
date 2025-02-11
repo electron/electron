@@ -116,8 +116,7 @@ bool ElectronExtensionRegistrarDelegate::CanEnableExtension(
 
 bool ElectronExtensionRegistrarDelegate::CanDisableExtension(
     const Extension* extension) {
-  // Extensions cannot be disabled by the user.
-  return false;
+  return true;
 }
 
 bool ElectronExtensionRegistrarDelegate::ShouldBlockExtension(

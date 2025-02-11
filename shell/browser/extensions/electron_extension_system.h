@@ -125,7 +125,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
       extension_registrar_delegate_;
 
   // Helper to register and unregister extensions.
-  ExtensionRegistrar extension_registrar_;
+  std::unique_ptr<ExtensionRegistrar> extension_registrar_;
 
   std::unique_ptr<ElectronExtensionLoader> extension_loader_;
 
