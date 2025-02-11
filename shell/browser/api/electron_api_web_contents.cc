@@ -2631,6 +2631,10 @@ void WebContents::RestoreHistory(
                                                            &nav_entry) ||
         !nav_entry) {
       // Invalid entry, bail out early
+      thrower.ThrowError(
+          "Failed to restore navigation history: Invalid navigation entry at "
+          "index " +
+          std::to_string(index) + ".");
       return;
     }
     navigation_entries->push_back(
