@@ -363,12 +363,31 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
 
 template <>
 struct Converter<content::NavigationEntry*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     content::NavigationEntry** out) {
+    gin_helper::Dictionary dict;
+    if (!gin::ConvertFromV8(isolate, val, &dict))
+      return false;
+
+    std::string url_str;
+    std::string title;
+    if (!dict.Get("url", &url_str) || !dict.Get("title", &title))
+      return false;
+
+    auto entry = content::NavigationEntry::Create();
+    entry->SetURL(GURL(url_str));
+    entry->SetTitle(base::UTF8ToUTF16(title));
+    *out = entry.release();
+    return true;
+  }
+
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    content::NavigationEntry* entry) {
     if (!entry) {
       return v8::Null(isolate);
     }
-    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
+    gin_helper::Dictionary dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("url", entry->GetURL().spec());
     dict.Set("title", entry->GetTitleForDisplay());
     return dict.GetHandle();
@@ -2572,6 +2591,26 @@ std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
   return history;
 }
 
+void WebContents::RestoreHistory(
+    int index,
+    const std::vector<v8::Local<v8::Value>>& entries) {
+  auto navigation_entries = std::make_unique<
+      std::vector<std::unique_ptr<content::NavigationEntry>>>();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+
+  for (const auto& entry : entries) {
+    content::NavigationEntry* nav_entry = nullptr;
+    if (gin::Converter<content::NavigationEntry*>::FromV8(isolate, entry,
+                                                          &nav_entry)) {
+      navigation_entries->push_back(
+          std::unique_ptr<content::NavigationEntry>(nav_entry));
+    }
+  }
+
+  web_contents()->GetController().Restore(
+      index, content::RestoreType::kRestored, navigation_entries.get());
+}
+
 void WebContents::ClearHistory() {
   // In some rare cases (normally while there is no real history) we are in a
   // state where we can't prune navigation entries
@@ -4403,6 +4442,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::RemoveNavigationEntryAtIndex)
       .SetMethod("_getHistory", &WebContents::GetHistory)
       .SetMethod("_clearHistory", &WebContents::ClearHistory)
+      .SetMethod("_restoreHistory", &WebContents::RestoreHistory)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",
                  &WebContents::ForcefullyCrashRenderer)
