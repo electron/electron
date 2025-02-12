@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 5ad01788be680f005f3179141995aef72e36bd0c..da05b9ee80d537cfa5e039f1e1a46696e823771c 100644
+index 458029244ad9db7beace040778117d82d90f4bea..66202201b11de10bf2d781a52640a81f25d04780 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -20,12 +20,16 @@
@@ -36,7 +36,7 @@ index 5ad01788be680f005f3179141995aef72e36bd0c..da05b9ee80d537cfa5e039f1e1a46696
  #include "chrome/common/chrome_switches.h"
  #include "components/history/core/browser/history_service.h"
  #include "components/history/core/browser/history_types.h"
-@@ -263,11 +267,13 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -271,11 +275,13 @@ void FullscreenController::EnterFullscreenModeForTab(
      return;
    }
  
@@ -50,7 +50,7 @@ index 5ad01788be680f005f3179141995aef72e36bd0c..da05b9ee80d537cfa5e039f1e1a46696
  
    // Keep the current state. |SetTabWithExclusiveAccess| may change the return
    // value of |IsWindowFullscreenForTabOrPending|.
-@@ -381,12 +387,14 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
+@@ -389,12 +395,14 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
  void FullscreenController::FullscreenTabOpeningPopup(
      content::WebContents* opener,
      content::WebContents* popup) {
@@ -65,7 +65,7 @@ index 5ad01788be680f005f3179141995aef72e36bd0c..da05b9ee80d537cfa5e039f1e1a46696
  }
  
  void FullscreenController::OnTabDeactivated(
-@@ -476,10 +484,12 @@ void FullscreenController::FullscreenTransitionCompleted() {
+@@ -484,10 +492,12 @@ void FullscreenController::FullscreenTransitionCompleted() {
  #endif  // DCHECK_IS_ON()
    tab_fullscreen_target_display_id_ = display::kInvalidDisplayId;
    started_fullscreen_transition_ = false;
@@ -78,7 +78,7 @@ index 5ad01788be680f005f3179141995aef72e36bd0c..da05b9ee80d537cfa5e039f1e1a46696
  }
  
  void FullscreenController::RunOrDeferUntilTransitionIsComplete(
-@@ -604,18 +614,17 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -612,18 +622,17 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -102,7 +102,7 @@ index 5ad01788be680f005f3179141995aef72e36bd0c..da05b9ee80d537cfa5e039f1e1a46696
    if (option == TAB) {
      url = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -650,6 +659,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -658,6 +667,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        url = extension_caused_fullscreen_;
      }
    }
@@ -110,7 +110,7 @@ index 5ad01788be680f005f3179141995aef72e36bd0c..da05b9ee80d537cfa5e039f1e1a46696
  
    fullscreen_start_time_ = base::TimeTicks::Now();
    if (option == BROWSER) {
-@@ -671,6 +681,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -679,6 +689,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
      return;
    }
  
@@ -118,7 +118,7 @@ index 5ad01788be680f005f3179141995aef72e36bd0c..da05b9ee80d537cfa5e039f1e1a46696
    // `fullscreen_start_time_` is null if a fullscreen tab moves to a new window.
    if (fullscreen_start_time_ && exclusive_access_tab()) {
      ukm::SourceId source_id =
-@@ -682,15 +693,16 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -690,15 +701,16 @@ void FullscreenController::ExitFullscreenModeInternal() {
          .Record(ukm::UkmRecorder::Get());
      fullscreen_start_time_.reset();
    }
@@ -138,7 +138,7 @@ index 5ad01788be680f005f3179141995aef72e36bd0c..da05b9ee80d537cfa5e039f1e1a46696
    exclusive_access_manager()->context()->ExitFullscreen();
    extension_caused_fullscreen_ = GURL();
    exclusive_access_manager()->UpdateBubble(base::NullCallback());
-@@ -754,8 +766,12 @@ GURL FullscreenController::GetEmbeddingOrigin() const {
+@@ -762,8 +774,12 @@ GURL FullscreenController::GetEmbeddingOrigin() const {
  void FullscreenController::RecordMetricsOnFullscreenApiRequested(
      content::RenderFrameHost* requesting_frame) {
    history::HistoryService* service =

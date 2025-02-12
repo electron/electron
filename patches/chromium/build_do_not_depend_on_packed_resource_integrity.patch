@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 66ef563af7a9698ef76ac710824234885ecb6125..e11d4f2d11a4a701c3e02719cc71d3d1f92c74fd 100644
+index 1da9a118fedc612dfed638abba54e69b983d9185..f76f04f25307c9d49edf7462c16e0e04f64109aa 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -196,11 +196,16 @@ if (!is_android && !is_mac) {
@@ -33,10 +33,10 @@ index 66ef563af7a9698ef76ac710824234885ecb6125..e11d4f2d11a4a701c3e02719cc71d3d1
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 512e796b8dd07f7d06a69d4183f915b72d3e3400..6b7118ad3e507f32d4dccd26e1dddfa06cf04819 100644
+index 9f293f4ddd146e183e50ad3a99f464c10d2aaab5..9de2b989244cdf2966004b40118ea1b13d3be7b0 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4531,7 +4531,7 @@ static_library("browser") {
+@@ -4527,7 +4527,7 @@ static_library("browser") {
            [ "//chrome/browser/ui/webui/signin:profile_impl" ]
      }
  
@@ -46,10 +46,10 @@ index 512e796b8dd07f7d06a69d4183f915b72d3e3400..6b7118ad3e507f32d4dccd26e1dddfa0
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index b9c2a5301ec9ff352bb7dc22478f6bdcaf73367d..46b9c69bf798fc2628442f3ce726ff4ed5f50fec 100644
+index c3394f059fa284ebcfd3597951343b2e375c72f3..65576f0ba3335f8ede68037bf1a490f64ea495d7 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6997,9 +6997,12 @@ test("unit_tests") {
+@@ -7000,9 +7000,12 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
@@ -63,7 +63,7 @@ index b9c2a5301ec9ff352bb7dc22478f6bdcaf73367d..46b9c69bf798fc2628442f3ce726ff4e
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -7956,6 +7959,10 @@ test("unit_tests") {
+@@ -7960,6 +7963,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index b9c2a5301ec9ff352bb7dc22478f6bdcaf73367d..46b9c69bf798fc2628442f3ce726ff4e
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8011,7 +8018,6 @@ test("unit_tests") {
+@@ -8020,7 +8027,6 @@ test("unit_tests") {
      # Non-android deps for "unit_tests" target.
      deps += [
        "../browser/screen_ai:screen_ai_install_state",

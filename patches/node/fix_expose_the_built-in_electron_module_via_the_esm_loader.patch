@@ -69,9 +69,8 @@ index bfd9bd3d127404de1cbb6f30c43ab0342590759d..9e7d8ef0adef3b68a3ec186e4b218f59
    const { packageJSONUrl, packageJSONPath, packageSubpath } = packageJsonReader.getPackageJSONURL(specifier, base);
  
    const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
-
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 491dc3f450733a9181096a145cfa508767682658..23ed971daebdda3cb627907ffa3626daaa5b5b7b 100644
+index a587246e329b41f33a3fdfe5ef92910915911611..1b94d923b6d83cc7806d793497a4f9f978c5938c 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -182,7 +182,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
@@ -106,7 +105,7 @@ index 491dc3f450733a9181096a145cfa508767682658..23ed971daebdda3cb627907ffa3626da
  // This translator function must be sync, as `require` is sync.
  translators.set('require-commonjs-typescript', (url, source, isMain) => {
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 14b0ef61d2f91cf48bba9aceefc55751e7ed5db2..6d6b32f65131d1d55aeeae27dd2970440d99b4bd 100644
+index f6e58e196860fc9321e3367f8461ec2647d7e8f8..a80ecee888222e02f5d03f42f7af2c1ab9750cab 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
 @@ -1505,6 +1505,8 @@ function fileURLToPath(path, options = kEmptyObject) {

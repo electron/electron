@@ -66,10 +66,10 @@ index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3f
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 9aaf5626fcfe4a9b168e069df0265df7b535b76e..ece9c4656919d8dc408112142367791628dd5f8b 100644
+index 894fd515202cc3a1f933c2bbc618dd09869ad904..4f1ed661e9c432f3b50f2e7e348ad9794ff773d0 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -779,6 +779,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -781,6 +781,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
