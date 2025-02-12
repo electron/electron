@@ -19,7 +19,7 @@ index 22248b753c14960122f1d6b9bfe6b89fdb8d2010..9d245a04fbcb98dcd1c61e60f7cfe528
        context = { __proto__: context, source };
      }
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index f3dfc69cd2cdec50bc3b3f7cb2d63349812d87dd..b6f2d7194cb75ecc8c47869761c63184707ade40 100644
+index 9c9b403774e51e2f7e1201ad53e60e98fc3b26e8..477a3b2cf61fcaa154f01ac77c8047ef548ac1f8 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -375,6 +375,9 @@ function cjsPreparseModuleExports(filename, source) {

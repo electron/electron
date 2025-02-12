@@ -11,10 +11,10 @@ Bug: N/A
 Change-Id: I9fc472212b2d3afac2c8e18a2159bc2d50bbdf98
 
 diff --git a/AUTHORS b/AUTHORS
-index 6008db66fcb0686046a5ca40d04bb2534cb0b04a..d5079e68cef38168c4c66833a53121930fa59afd 100644
+index 897b6678b6d583f3361c41f62b960e46165d288d..13afc62098608e79faf02d504b54d9d6326b8ed3 100644
 --- a/AUTHORS
 +++ b/AUTHORS
-@@ -339,6 +339,7 @@ David Futcher <david.mike.futcher@gmail.com>
+@@ -336,6 +336,7 @@ David Futcher <david.mike.futcher@gmail.com>
  David Jin <davidjin@amazon.com>
  David Lechner <david@pybricks.com>
  David Leen <davileen@amazon.com>
@@ -23,10 +23,10 @@ index 6008db66fcb0686046a5ca40d04bb2534cb0b04a..d5079e68cef38168c4c66833a5312193
  David McAllister <mcdavid@amazon.com>
  David Michael Barr <david.barr@samsung.com>
 diff --git a/base/win/shortcut.cc b/base/win/shortcut.cc
-index 967e130e823f41c402411dfadb53b805e8a8c92b..3a9df7f31861ca69168fd24513ee554d0984798d 100644
+index 02f3e63d16c3324f546f6155d722900f0a81131a..1dfdb0c8dc5a7368382e73a0db1b4d135b4d2176 100644
 --- a/base/win/shortcut.cc
 +++ b/base/win/shortcut.cc
-@@ -356,8 +356,9 @@ bool ResolveShortcutProperties(const FilePath& shortcut_path,
+@@ -342,8 +342,9 @@ bool ResolveShortcutProperties(const FilePath& shortcut_path,
                *(pv_toast_activator_clsid.get().puuid));
            break;
          default:

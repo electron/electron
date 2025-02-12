@@ -118,10 +118,10 @@ index 4ba261014695cf1aa8eb53b21a2873f4c4ea8e43..b695d131bcdc331974f544924138bb5e
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index 2aa7cd98ecc179519a6bb1932dafa86a38bda4f5..79376bef2e674f05fd95380dd419e8778cb98623 100644
+index 1ddae30e97257be9f8145dcd419203dcf77aadac..bebe6fd7d139bcdd71e2be35831fd8a1d89ab15f 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
-@@ -106,7 +106,7 @@ namespace {
+@@ -103,7 +103,7 @@ namespace {
  
  template <typename T>
  MaybeLocal<Object> ToBufferEndian(Environment* env, MaybeStackBuffer<T>* buf) {
@@ -130,7 +130,7 @@ index 2aa7cd98ecc179519a6bb1932dafa86a38bda4f5..79376bef2e674f05fd95380dd419e877
    if (ret.IsEmpty())
      return ret;
  
-@@ -183,7 +183,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
+@@ -180,7 +180,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
      return {};
    }
  
@@ -139,7 +139,7 @@ index 2aa7cd98ecc179519a6bb1932dafa86a38bda4f5..79376bef2e674f05fd95380dd419e877
  }
  
  MaybeLocal<Object> TranscodeFromUcs2(Environment* env,
-@@ -228,7 +228,7 @@ MaybeLocal<Object> TranscodeUcs2FromUtf8(Environment* env,
+@@ -225,7 +225,7 @@ MaybeLocal<Object> TranscodeUcs2FromUtf8(Environment* env,
      return {};
    }
  
@@ -148,7 +148,7 @@ index 2aa7cd98ecc179519a6bb1932dafa86a38bda4f5..79376bef2e674f05fd95380dd419e877
  }
  
  MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
-@@ -252,7 +252,7 @@ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
+@@ -249,7 +249,7 @@ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
      return {};
    }
  

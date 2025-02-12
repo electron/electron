@@ -26,10 +26,10 @@ index 364469160af5e348f8890417de16a63c0d1dca67..75d5f58fe02fa8cfa7716ffaf761d567
          try {
            resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index a05d2846050c2f505eac16320f645e79182a27f6..348bb80ef7fae1e0e5f529b1313093eeadad9276 100644
+index 0bbabb80c26a1208860f6d32447c0ae53316f501..ba18bfa3cd17c2b8e977f53651ce2744b17a829f 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -243,12 +243,14 @@ function patchProcessObject(expandArgv1) {
+@@ -245,12 +245,14 @@ function patchProcessObject(expandArgv1) {
    // the entry point.
    if (expandArgv1 && process.argv[1] && process.argv[1][0] !== '-') {
      // Expand process.argv[1] into a full path.

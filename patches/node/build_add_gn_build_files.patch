@@ -2395,10 +2395,10 @@ index 0000000000000000000000000000000000000000..5259e6a7a1fd6b21df69dc461dee67d9
 +      transformed_contents = contents.replace('internal/fs/', 'internal/original-fs/').replace('require(\'fs', 'require(\'original-fs')
 +      transformed_f.write(transformed_contents)
 diff --git a/tools/install.py b/tools/install.py
-index b132c7bf26c02886a7ab341a1973bf449744ba0f..757e3e60a7be01fac55c5fbb010dbbae00b1bfca 100755
+index 2dceb5c39ea4a11034ce93899fa26dc406e0b5d0..a425de8ad7833f4d39c842fd896539c1f77468bc 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -264,6 +264,7 @@ def headers(options, action):
+@@ -270,6 +270,7 @@ def headers(options, action):
        'include/v8-forward.h',
        'include/v8-function-callback.h',
        'include/v8-function.h',
@@ -2406,7 +2406,7 @@ index b132c7bf26c02886a7ab341a1973bf449744ba0f..757e3e60a7be01fac55c5fbb010dbbae
        'include/v8-initialization.h',
        'include/v8-internal.h',
        'include/v8-isolate.h',
-@@ -284,6 +285,8 @@ def headers(options, action):
+@@ -290,6 +291,8 @@ def headers(options, action):
        'include/v8-promise.h',
        'include/v8-proxy.h',
        'include/v8-regexp.h',
@@ -2415,7 +2415,7 @@ index b132c7bf26c02886a7ab341a1973bf449744ba0f..757e3e60a7be01fac55c5fbb010dbbae
        'include/v8-script.h',
        'include/v8-snapshot.h',
        'include/v8-statistics.h',
-@@ -390,7 +393,7 @@ def parse_options(args):
+@@ -396,7 +399,7 @@ def parse_options(args):
    parser.add_argument('--build-dir', help='the location of built binaries',
                        default='out/Release')
    parser.add_argument('--v8-dir', help='the location of V8',
