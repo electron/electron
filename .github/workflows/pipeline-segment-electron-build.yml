@@ -125,6 +125,8 @@ jobs:
           GN_EXTRA_ARGS='is_asan=true'
         fi
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
