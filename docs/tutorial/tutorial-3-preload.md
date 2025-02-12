@@ -252,7 +252,7 @@ apps often use the preload script to set up inter-process communication (IPC) in
 to pass arbitrary messages between the two kinds of processes.
 
 In the next part of the tutorial, we will be showing you resources on adding more
-functionality to your app, then teaching you distributing your app to users.
+functionality to your app, then teaching you how to distribute your app to users.
 
 <!-- Links -->
 
