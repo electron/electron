@@ -13,6 +13,6 @@ runs:
       git config --global http.cookiefile ~/.gitcookies
 
       tr , \\t <<\__END__ >>~/.gitcookies
-      ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      ${{ env.CHROMIUM_GIT_COOKIE }}
       __END__
       eval 'set -o history' 2>/dev/null || unsetopt HIST_IGNORE_SPACE 2>/dev/null

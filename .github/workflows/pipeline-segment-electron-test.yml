@@ -36,6 +36,7 @@ permissions:
   pull-requests: read
 
 env:
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
