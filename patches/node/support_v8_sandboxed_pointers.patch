@@ -26,13 +26,13 @@ index e044f10284f31f1862b18be752a04b3bd5d53401..89ce587cac4506c4218a9316fe0b6807
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index f973941b3b9ea954f35f2ea135f8ee3d77b98958..743c63ff7e3f526829919a8f2de7ebd625a93fbc 100644
+index 5387d9625a28bb7d11f7f0f05a5f07d1fee2c216..1b3b8c7b70073926f8dbf02759c2e1af5d938679 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -51,6 +51,25 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+@@ -55,13 +55,32 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+ 
  namespace {
- MaybeLocal<Value> DataPointerToBuffer(Environment* env,
-                                       ncrypto::DataPointer&& data) {
+ MaybeLocal<Value> DataPointerToBuffer(Environment* env, DataPointer&& data) {
 +#if defined(V8_ENABLE_SANDBOX)
 +  std::unique_ptr<v8::BackingStore> backing;
 +  if (data.size() > 0) {
@@ -55,14 +55,14 @@ index f973941b3b9ea954f35f2ea135f8ee3d77b98958..743c63ff7e3f526829919a8f2de7ebd6
    auto backing = ArrayBuffer::NewBackingStore(
        data.get(),
        data.size(),
-@@ -59,6 +78,7 @@ MaybeLocal<Value> DataPointerToBuffer(Environment* env,
-       },
+       [](void* data, size_t len, void* ptr) { DataPointer free_me(data, len); },
        nullptr);
    data.release();
+-
 +#endif
- 
    auto ab = ArrayBuffer::New(env->isolate(), std::move(backing));
    return Buffer::New(env, ab, 0, ab->ByteLength()).FromMaybe(Local<Value>());
+ }
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
 index 8a6a36a3c31532ed585c287ba8cee14026d315b4..3d449b5853f359d63e1b88671a857bf9152ff6af 100644
 --- a/src/crypto/crypto_util.cc
