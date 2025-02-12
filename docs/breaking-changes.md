@@ -14,6 +14,11 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (35.0)
 
+### Removed:`isDefault` and `status` properties on `PrinterInfo`
+
+These properties have been removed from the PrinterInfo Object
+because they have been removed from upstream Chromium.
+
 ### Deprecated: `getFromVersionID` on `session.serviceWorkers`
 
 The `session.serviceWorkers.fromVersionID(versionId)` API has been deprecated
