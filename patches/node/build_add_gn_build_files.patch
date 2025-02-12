@@ -65,6 +65,19 @@ index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3f
  }
  
  assert(!node_enable_inspector || node_use_openssl,
+diff --git a/src/inspector/unofficial.gni b/src/inspector/unofficial.gni
+index 5d87f3c901ab509e534598ed1eb0796a96355b5e..e38149ea49cea4478520cbd5194abd9ab02dd74c 100644
+--- a/src/inspector/unofficial.gni
++++ b/src/inspector/unofficial.gni
+@@ -13,7 +13,7 @@ template("inspector_gn_build") {
+   }
+ 
+   node_gen_dir = get_label_info("../..", "target_gen_dir")
+-  protocol_tool_path = "../../tools/inspector_protocol"
++  protocol_tool_path = "../../deps/inspector_protocol"
+ 
+   gypi_values = exec_script(
+       "../../tools/gypi_to_gn.py",
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
 index 894fd515202cc3a1f933c2bbc618dd09869ad904..4f1ed661e9c432f3b50f2e7e348ad9794ff773d0 100644
 --- a/src/node_builtins.cc
