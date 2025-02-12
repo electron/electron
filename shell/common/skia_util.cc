@@ -30,6 +30,8 @@
 
 namespace electron::util {
 
+namespace {
+
 struct ScaleFactorPair {
   const char* name;
   float scale;
@@ -55,6 +57,25 @@ float GetScaleFactorFromPath(const base::FilePath& path) {
 
   return 1.0f;
 }
+
+bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
+                             const base::FilePath& path,
+                             double scale_factor) {
+  std::string file_contents;
+  {
+    electron::ScopedAllowBlockingForElectron allow_blocking;
+    if (!asar::ReadFileToString(path, &file_contents))
+      return false;
+  }
+
+  const auto* data =
+      reinterpret_cast<const unsigned char*>(file_contents.data());
+  size_t size = file_contents.size();
+
+  return AddImageSkiaRepFromBuffer(image, data, size, 0, 0, scale_factor);
+}
+
+}  // namespace
 
 bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
                             const unsigned char* data,
@@ -116,23 +137,6 @@ bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
 
   image->AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
   return true;
-}
-
-bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
-                             const base::FilePath& path,
-                             double scale_factor) {
-  std::string file_contents;
-  {
-    electron::ScopedAllowBlockingForElectron allow_blocking;
-    if (!asar::ReadFileToString(path, &file_contents))
-      return false;
-  }
-
-  const auto* data =
-      reinterpret_cast<const unsigned char*>(file_contents.data());
-  size_t size = file_contents.size();
-
-  return AddImageSkiaRepFromBuffer(image, data, size, 0, 0, scale_factor);
 }
 
 bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,

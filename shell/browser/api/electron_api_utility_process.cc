@@ -45,6 +45,8 @@
 
 namespace electron {
 
+namespace {
+
 base::IDMap<api::UtilityProcessWrapper*, base::ProcessId>&
 GetAllUtilityProcessWrappers() {
   static base::NoDestructor<
@@ -52,6 +54,8 @@ GetAllUtilityProcessWrappers() {
       s_all_utility_process_wrappers;
   return *s_all_utility_process_wrappers;
 }
+
+}  // namespace
 
 namespace api {
 
