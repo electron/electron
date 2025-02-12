@@ -62,10 +62,6 @@ vars = {
 
   'checkout_nacl':
     False,
-  'checkout_libaom':
-    True,
-  'checkout_oculus_sdk':
-    False,
   'checkout_openxr':
     False,
   'build_with_chromium':
@@ -73,8 +69,6 @@ vars = {
   'checkout_android':
     False,
   'checkout_android_native_support':
-    False,
-  'checkout_google_benchmark':
     False,
   'checkout_clang_tidy':
     True,
