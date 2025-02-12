@@ -238,10 +238,20 @@ index d94f6e1c82c4a62547b3b395f375c86ce4deb5de..b81b9005365272217c77e2b9289bd9f8
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index c89d591c6804ab7d41199d61452d10d12cdf7398..2d2fb57290c6c5092e95ebcd0dfc302f30ad6757 100644
+index c89d591c6804ab7d41199d61452d10d12cdf7398..05740c7dc599954bca0779b8c8d6bd615183288a 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -105,7 +105,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+@@ -26,7 +26,9 @@ using ncrypto::BIOPointer;
+ using ncrypto::ClearErrorOnReturn;
+ using ncrypto::CryptoErrorList;
+ using ncrypto::DHPointer;
++#ifndef OPENSSL_NO_ENGINE
+ using ncrypto::EnginePointer;
++#endif  // !OPENSSL_NO_ENGINE
+ using ncrypto::EVPKeyPointer;
+ using ncrypto::MarkPopErrorOnReturn;
+ using ncrypto::SSLPointer;
+@@ -105,7 +107,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
  
@@ -250,7 +260,7 @@ index c89d591c6804ab7d41199d61452d10d12cdf7398..2d2fb57290c6c5092e95ebcd0dfc302f
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -931,11 +931,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -931,11 +933,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -264,7 +274,7 @@ index c89d591c6804ab7d41199d61452d10d12cdf7398..2d2fb57290c6c5092e95ebcd0dfc302f
    DHPointer dh;
    {
      BIOPointer bio(LoadBIO(env, args[0]));
-@@ -1161,7 +1162,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -1161,7 +1164,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -459,10 +469,20 @@ index 05a3882c7e17d78e27aabb29891aa250789a47c0..1f2fccce6ed8f14525557644e0bdd130
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index e255288f6e013ce122f317c415d73d9c93d38580..4af50e85bfb6631bd6a29fe5b570a419f2a6a77d 100644
+index e255288f6e013ce122f317c415d73d9c93d38580..25fa9af8153852f49d5289aa253f3c8f7268d89c 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -502,24 +502,15 @@ Maybe<void> Decorate(Environment* env,
+@@ -29,7 +29,9 @@ namespace node {
+ using ncrypto::BignumPointer;
+ using ncrypto::BIOPointer;
+ using ncrypto::CryptoErrorList;
++#ifndef OPENSSL_NO_ENGINE
+ using ncrypto::EnginePointer;
++#endif  // !OPENSSL_NO_ENGINE
+ using ncrypto::EVPKeyCtxPointer;
+ using v8::ArrayBuffer;
+ using v8::BackingStore;
+@@ -502,24 +504,15 @@ Maybe<void> Decorate(Environment* env,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -488,7 +508,7 @@ index e255288f6e013ce122f317c415d73d9c93d38580..4af50e85bfb6631bd6a29fe5b570a419
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -661,7 +652,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -661,7 +654,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -497,7 +517,7 @@ index e255288f6e013ce122f317c415d73d9c93d38580..4af50e85bfb6631bd6a29fe5b570a419
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -672,7 +663,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -672,7 +665,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -506,7 +526,7 @@ index e255288f6e013ce122f317c415d73d9c93d38580..4af50e85bfb6631bd6a29fe5b570a419
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -680,10 +671,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -680,10 +673,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
