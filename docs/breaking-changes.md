@@ -14,6 +14,13 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (36.0)
 
+### Deprecated: Extension methods and events on `session`
+
+`session.loadExtension`, `session.removeExtension`, `session.getExtension`,
+`session.getAllExtensions`, 'extension-loaded' event, 'extension-unloaded'
+event, and 'extension-ready' events have all moved to the new
+`session.extensions` class.
+
 ### Removed: `systemPreferences.isAeroGlassEnabled()`
 
 The `systemPreferences.isAeroGlassEnabled()` function has been removed without replacement.
