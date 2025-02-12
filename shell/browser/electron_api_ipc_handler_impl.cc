@@ -97,8 +97,7 @@ void ElectronApiIPCHandlerImpl::MessageHost(const std::string& channel,
   auto event = MakeIPCEvent(isolate, session, false);
   if (event.IsEmpty())
     return;
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
-  api_web_contents->MessageHost(event, channel, std::move(arguments));
+  session->MessageHost(event, channel, std::move(arguments));
 }
 
 content::RenderFrameHost* ElectronApiIPCHandlerImpl::GetRenderFrameHost() {

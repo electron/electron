@@ -132,6 +132,10 @@ export function addIpcDispatchListeners (api: NodeJS.EventEmitter) {
     }
   } as any);
 
+  api.on('-ipc-message-host', function (event: Electron.IpcMainEvent, channel: string, args: any[]) {
+    event.sender.emit('-ipc-message-host', event, channel, args);
+  });
+
   api.on('-ipc-ports' as any, function (event: Electron.IpcMainEvent | Electron.IpcMainServiceWorkerEvent, channel: string, message: any, ports: any[]) {
     event.ports = ports.map(p => new MessagePortMain(p));
     if (event.type === 'frame') {

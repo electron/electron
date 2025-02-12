@@ -1999,13 +1999,6 @@ bool WebContents::EmitNavigationEvent(
   return event->GetDefaultPrevented();
 }
 
-void WebContents::MessageHost(gin::Handle<gin_helper::internal::Event>& event,
-                              const std::string& channel,
-                              blink::CloneableMessage arguments) {
-  TRACE_EVENT1("electron", "WebContents::MessageHost", "channel", channel);
-  EmitWithoutEvent("-ipc-message-host", event, channel, std::move(arguments));
-}
-
 void WebContents::OnFirstNonEmptyLayout(
     content::RenderFrameHost* render_frame_host) {
   if (render_frame_host == web_contents()->GetPrimaryMainFrame()) {

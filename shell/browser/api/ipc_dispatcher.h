@@ -64,6 +64,14 @@ class IpcDispatcher {
                                 std::move(arguments));
   }
 
+  void MessageHost(gin::Handle<gin_helper::internal::Event>& event,
+                   const std::string& channel,
+                   blink::CloneableMessage arguments) {
+    TRACE_EVENT1("electron", "IpcDispatcher::MessageHost", "channel", channel);
+    emitter()->EmitWithoutEvent("-ipc-message-host", event, channel,
+                                std::move(arguments));
+  }
+
  private:
   inline T* emitter() {
     // T must inherit from gin_helper::EventEmitterMixin<T>

@@ -392,9 +392,6 @@ class WebContents final : public ExclusiveAccessContext,
 
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
-  void MessageHost(gin::Handle<gin_helper::internal::Event>& event,
-                   const std::string& channel,
-                   blink::CloneableMessage arguments);
 
   WebContents* embedder() { return embedder_; }
 
