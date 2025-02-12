@@ -5,14 +5,14 @@ runs:
   steps:
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
+    uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57
     with:
       path: |
         sas-token
       key: sas-key-${{ github.run_number }}-1
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
+    uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57
     with:
       path: |
         sas-token
