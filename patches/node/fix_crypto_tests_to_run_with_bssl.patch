@@ -139,7 +139,7 @@ index 0af4db0310750cea9350ecff7fc44404c6df6c83..85ab03f6019989ad4fe93b779c3b4772
    }
  }
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index d7ffbe5eca92734aa2380f482c7f9bfe7e2a36c7..d8e09f4b2186c2a0688f6c08943b3cd7b522632c 100644
+index d7ffbe5eca92734aa2380f482c7f9bfe7e2a36c7..21ab2333431ea70bdf98dde43624e0b712566395 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
 @@ -60,18 +60,17 @@ const {
@@ -169,7 +169,7 @@ index d7ffbe5eca92734aa2380f482c7f9bfe7e2a36c7..d8e09f4b2186c2a0688f6c08943b3cd7
      };
    }
  
-@@ -98,15 +97,21 @@ const {
+@@ -98,17 +97,23 @@ const {
        dh3.computeSecret('');
      }, { message: hasOpenSSL3 && !hasOpenSSL3WithNewErrorMessage ?
        'Unspecified validation error' :
@@ -182,18 +182,20 @@ index d7ffbe5eca92734aa2380f482c7f9bfe7e2a36c7..d8e09f4b2186c2a0688f6c08943b3cd7
  {
    const g = 0;
 -  crypto.createDiffieHellman('abcdef', g);
--  crypto.createDiffieHellman('abcdef', 'hex', g);
 +  assert.throws(() => crypto.createDiffieHellman('abcdef', g), {
 +    code: /ERR_CRYPTO_OPERATION_FAILED/,
 +    name: 'Error'
 +  });
+   crypto.createDiffieHellman('abcdef', 'hex', g);
+ }
+ 
+ {
+-  crypto.createDiffieHellman('abcdef', Buffer.from([2]));  // OK
 +  assert.throws(() => crypto.createDiffieHellman('abcdef', Buffer.from([2])), {
 +    code: /ERR_CRYPTO_OPERATION_FAILED/,
 +    name: 'Error'
 +  });
  }
- 
- {
 diff --git a/test/parallel/test-crypto-getcipherinfo.js b/test/parallel/test-crypto-getcipherinfo.js
 index 64b79fc36ccf4d38f763fcd8c1930473c82cefd7..1c6717ebd46497384b9b13174b65894ca89e7f2d 100644
 --- a/test/parallel/test-crypto-getcipherinfo.js
@@ -292,6 +294,24 @@ index 48cd1ed4df61aaddeee8785cb90f83bdd9628187..a18aeb2bdffcc7a7e9ef12328b849994
  });
  
  // No-pad encrypted string should return the same:
+diff --git a/test/parallel/test-crypto-prime.js b/test/parallel/test-crypto-prime.js
+index 5ffdc1394282be046150e3759f82f8787f5604f7..e1c7a7b4824a2df20a405355696022398216fa4f 100644
+--- a/test/parallel/test-crypto-prime.js
++++ b/test/parallel/test-crypto-prime.js
+@@ -259,11 +259,11 @@ for (const checks of [-(2 ** 31), -1, 2 ** 31, 2 ** 32 - 1, 2 ** 32, 2 ** 50]) {
+   bytes[0] = 0x1;
+   assert.throws(() => checkPrime(bytes, common.mustNotCall()), {
+     code: 'ERR_OSSL_BN_BIGNUM_TOO_LONG',
+-    message: /bignum too long/
++    message: /bignum[_ ]too[_ ]long/i
+   });
+   assert.throws(() => checkPrimeSync(bytes), {
+     code: 'ERR_OSSL_BN_BIGNUM_TOO_LONG',
+-    message: /bignum too long/
++    message: /bignum[_ ]too[_ ]long/i
+   });
+ }
+ 
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
 index dcd5045daaf58c60e27c1e2f7941033302241339..6ac75565792b92a97c622baba73f821d754b8d01 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
