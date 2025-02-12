@@ -3,7 +3,8 @@ description: 'Sets an authenticated cookie from Chromium to allow for a higher r
 runs:
   using: "composite"
   steps:
-  - name: Set the git cookie from chromium.googlesource.com
+  - name: Set the git cookie from chromium.googlesource.com (Unix)
+    if: ${{ runner.os != 'Windows' }}
     shell: bash
     run: |
       eval 'set +o history' 2>/dev/null || setopt HIST_IGNORE_SPACE 2>/dev/null
@@ -16,3 +17,10 @@ runs:
       ${{ env.CHROMIUM_GIT_COOKIE }}
       __END__
       eval 'set -o history' 2>/dev/null || unsetopt HIST_IGNORE_SPACE 2>/dev/null
+  - name: Set the git cookie from chromium.googlesource.com (Windows)
+    if: ${{ runner.os == 'Windows' }}
+    shell: cmd
+    run: |
+      git config --global http.cookiefile "%USERPROFILE%\.gitcookies"
+      powershell -noprofile -nologo -command Write-Output "${{ env.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}" >>"%USERPROFILE%\.gitcookies"
+
