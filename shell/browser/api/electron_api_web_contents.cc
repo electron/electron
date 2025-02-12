@@ -54,6 +54,7 @@
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
+#include "content/public/browser/navigation_entry_restore_context.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -353,14 +354,60 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
 
 template <>
 struct Converter<content::NavigationEntry*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     content::NavigationEntry** out) {
+    gin_helper::Dictionary dict;
+    if (!gin::ConvertFromV8(isolate, val, &dict))
+      return false;
+
+    std::string url_str;
+    std::string title;
+    std::string encoded_page_state;
+    GURL url;
+
+    if (!dict.Get("url", &url) || !dict.Get("title", &title))
+      return false;
+
+    auto entry = content::NavigationEntry::Create();
+    entry->SetURL(url);
+    entry->SetTitle(base::UTF8ToUTF16(title));
+
+    // Handle optional page state
+    if (dict.Get("pageState", &encoded_page_state)) {
+      std::string decoded_page_state;
+      if (base::Base64Decode(encoded_page_state, &decoded_page_state)) {
+        auto restore_context = content::NavigationEntryRestoreContext::Create();
+
+        auto page_state =
+            blink::PageState::CreateFromEncodedData(decoded_page_state);
+        if (!page_state.IsValid())
+          return false;
+
+        entry->SetPageState(std::move(page_state), restore_context.get());
+      }
+    }
+
+    *out = entry.release();
+    return true;
+  }
+
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    content::NavigationEntry* entry) {
     if (!entry) {
       return v8::Null(isolate);
     }
-    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
+    gin_helper::Dictionary dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("url", entry->GetURL().spec());
     dict.Set("title", entry->GetTitleForDisplay());
+
+    // Page state saves scroll position and values of any form fields
+    const blink::PageState& page_state = entry->GetPageState();
+    if (page_state.IsValid()) {
+      std::string encoded_data = base::Base64Encode(page_state.ToEncodedData());
+      dict.Set("pageState", encoded_data);
+    }
+
     return dict.GetHandle();
   }
 };
@@ -2560,6 +2607,47 @@ std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
   return history;
 }
 
+void WebContents::RestoreHistory(
+    v8::Isolate* isolate,
+    gin_helper::ErrorThrower thrower,
+    int index,
+    const std::vector<v8::Local<v8::Value>>& entries) {
+  if (!web_contents()
+           ->GetController()
+           .GetLastCommittedEntry()
+           ->IsInitialEntry()) {
+    thrower.ThrowError(
+        "Cannot restore history on webContents that have previously loaded "
+        "a page.");
+    return;
+  }
+
+  auto navigation_entries = std::make_unique<
+      std::vector<std::unique_ptr<content::NavigationEntry>>>();
+
+  for (const auto& entry : entries) {
+    content::NavigationEntry* nav_entry = nullptr;
+    if (!gin::Converter<content::NavigationEntry*>::FromV8(isolate, entry,
+                                                           &nav_entry) ||
+        !nav_entry) {
+      // Invalid entry, bail out early
+      thrower.ThrowError(
+          "Failed to restore navigation history: Invalid navigation entry at "
+          "index " +
+          std::to_string(index) + ".");
+      return;
+    }
+    navigation_entries->push_back(
+        std::unique_ptr<content::NavigationEntry>(nav_entry));
+  }
+
+  if (!navigation_entries->empty()) {
+    web_contents()->GetController().Restore(
+        index, content::RestoreType::kRestored, navigation_entries.get());
+    web_contents()->GetController().LoadIfNecessary();
+  }
+}
+
 void WebContents::ClearHistory() {
   // In some rare cases (normally while there is no real history) we are in a
   // state where we can't prune navigation entries
@@ -4389,6 +4477,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::RemoveNavigationEntryAtIndex)
       .SetMethod("_getHistory", &WebContents::GetHistory)
       .SetMethod("_clearHistory", &WebContents::ClearHistory)
+      .SetMethod("_restoreHistory", &WebContents::RestoreHistory)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",
                  &WebContents::ForcefullyCrashRenderer)

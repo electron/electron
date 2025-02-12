@@ -214,6 +214,10 @@ class WebContents final : public ExclusiveAccessContext,
   bool RemoveNavigationEntryAtIndex(int index);
   std::vector<content::NavigationEntry*> GetHistory() const;
   void ClearHistory();
+  void RestoreHistory(v8::Isolate* isolate,
+                      gin_helper::ErrorThrower thrower,
+                      int index,
+                      const std::vector<v8::Local<v8::Value>>& entries);
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
