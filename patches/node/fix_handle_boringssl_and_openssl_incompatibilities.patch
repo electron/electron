@@ -147,10 +147,10 @@ index 245a43920c7baf000ba63192a84a4c3fd219be7d..56a554175b805c1703f13d62041f8c80
    # The location of simdutf - use the one from node's deps by default.
    node_simdutf_path = "$node_path/deps/simdutf"
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index c7588583530cf291946d01cec807390d987706cf..495fb92355a7eadc2f7ec885a3b529988bb3bd02 100644
+index 1754d1f71b8adbcb584bfe4606e2a341836fb671..ac0f529e75c30add0708dc20470846f2f56e4b86 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
-@@ -1080,7 +1080,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+@@ -1033,7 +1033,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
      if (EVP_PKEY_decrypt_init(ctx.get()) <= 0) {
        return ThrowCryptoError(env, ERR_get_error());
      }
@@ -159,7 +159,7 @@ index c7588583530cf291946d01cec807390d987706cf..495fb92355a7eadc2f7ec885a3b52998
      int rsa_pkcs1_implicit_rejection =
          EVP_PKEY_CTX_ctrl_str(ctx.get(), "rsa_pkcs1_implicit_rejection", "1");
      // From the doc -2 means that the option is not supported.
-@@ -1095,6 +1095,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+@@ -1048,6 +1048,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
            env,
            "RSA_PKCS1_PADDING is no longer supported for private decryption");
      }
@@ -168,45 +168,10 @@ index c7588583530cf291946d01cec807390d987706cf..495fb92355a7eadc2f7ec885a3b52998
  
    const EVP_MD* digest = nullptr;
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index 43a126f863779d3f364f92bd237039474b489845..77a3caee93049f65faef37e93b871c467ebca7e5 100644
+index d94f6e1c82c4a62547b3b395f375c86ce4deb5de..b81b9005365272217c77e2b9289bd9f877c0e77c 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
-@@ -134,7 +134,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
-   const unsigned char* buf;
-   size_t len;
-   size_t rem;
--
-+#ifndef OPENSSL_IS_BORINGSSL
-   if (!SSL_client_hello_get0_ext(
-           ssl.get(),
-           TLSEXT_TYPE_application_layer_protocol_negotiation,
-@@ -147,13 +147,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
-   len = (buf[0] << 8) | buf[1];
-   if (len + 2 != rem) return nullptr;
-   return reinterpret_cast<const char*>(buf + 3);
-+#endif
-+  return nullptr;
- }
- 
- const char* GetClientHelloServerName(const SSLPointer& ssl) {
-   const unsigned char* buf;
-   size_t len;
-   size_t rem;
--
-+#ifndef OPENSSL_IS_BORINGSSL
-   if (!SSL_client_hello_get0_ext(
-           ssl.get(),
-           TLSEXT_TYPE_server_name,
-@@ -175,6 +177,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
-   if (len + 2 > rem)
-     return nullptr;
-   return reinterpret_cast<const char*>(buf + 5);
-+#endif
-+  return nullptr;
- }
- 
- const char* GetServerName(SSL* ssl) {
-@@ -282,7 +286,7 @@ StackOfX509 CloneSSLCerts(X509Pointer&& cert,
+@@ -124,7 +124,7 @@ StackOfX509 CloneSSLCerts(X509Pointer&& cert,
    if (!peer_certs) return StackOfX509();
    if (cert && !sk_X509_push(peer_certs.get(), cert.release()))
      return StackOfX509();
@@ -215,47 +180,16 @@ index 43a126f863779d3f364f92bd237039474b489845..77a3caee93049f65faef37e93b871c46
      X509Pointer cert(X509_dup(sk_X509_value(ssl_certs, i)));
      if (!cert || !sk_X509_push(peer_certs.get(), cert.get()))
        return StackOfX509();
-@@ -298,7 +302,7 @@ MaybeLocal<Object> AddIssuerChainToObject(X509Pointer* cert,
+@@ -140,7 +140,7 @@ MaybeLocal<Object> AddIssuerChainToObject(X509Pointer* cert,
                                            Environment* const env) {
    cert->reset(sk_X509_delete(peer_certs.get(), 0));
    for (;;) {
 -    int i;
 +    size_t i;
      for (i = 0; i < sk_X509_num(peer_certs.get()); i++) {
-       ncrypto::X509View ca(sk_X509_value(peer_certs.get(), i));
+       X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
-@@ -384,14 +388,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
-     Environment* env,
-     const SSLPointer& ssl) {
-   EscapableHandleScope scope(env->isolate());
--  const unsigned char* buf;
--  size_t len = SSL_client_hello_get0_ciphers(ssl.get(), &buf);
-+  // const unsigned char* buf = nullptr;
-+  size_t len = 0; // SSL_client_hello_get0_ciphers(ssl.get(), &buf);
-   size_t count = len / 2;
-   MaybeStackBuffer<Local<Value>, 16> ciphers(count);
-   int j = 0;
-   for (size_t n = 0; n < len; n += 2) {
--    const SSL_CIPHER* cipher = SSL_CIPHER_find(ssl.get(), buf);
--    buf += 2;
-+    const SSL_CIPHER* cipher = nullptr; // SSL_CIPHER_find(ssl.get(), buf);
-+    // buf += 2;
-     Local<Object> obj = Object::New(env->isolate());
-     if (!Set(env->context(),
-              obj,
-@@ -444,8 +448,11 @@ MaybeLocal<Object> GetEphemeralKey(Environment* env, const SSLPointer& ssl) {
- 
-   EscapableHandleScope scope(env->isolate());
-   Local<Object> info = Object::New(env->isolate());
-+#ifndef OPENSSL_IS_BORINGSSL
-   if (!SSL_get_peer_tmp_key(ssl.get(), &raw_key)) return scope.Escape(info);
--
-+#else
-+  if (!SSL_get_server_tmp_key(ssl.get(), &raw_key)) return scope.Escape(info);
-+#endif
-   Local<Context> context = env->context();
-   crypto::EVPKeyPointer key(raw_key);
- 
+
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
 index aa5fc61f19e435b4833f3f49df10fa1edf2142c7..0a338b018a4ec20cb5bce250faf60d3f3bf192d4 100644
 --- a/src/crypto/crypto_context.cc
