@@ -46,19 +46,18 @@ index 5ba13096b98047ff33e4d44167c2a069ccc5e69d..a00b5979e3b5deb4ba315b4635c7e5d2
    }
  }
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 61c043e35c6ce9ef9d7255e009162289e80eaf4d..0c41492aa9652112df0b839361570a832daf3b13 100644
+index bfd9bd3d127404de1cbb6f30c43ab0342590759d..9e7d8ef0adef3b68a3ec186e4b218f591aa69266 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -791,6 +791,8 @@ function parsePackageName(specifier, base) {
-   return { packageName, packageSubpath, isScoped };
+@@ -751,6 +751,7 @@ function packageImportsResolve(name, base, conditions) {
+   throw importNotDefined(name, packageJSONUrl, base);
  }
  
 +const electronTypes = ['electron', 'electron/main', 'electron/common', 'electron/renderer'];
-+
+ 
  /**
   * Resolves a package specifier to a URL.
-  * @param {string} specifier - The package specifier to resolve.
-@@ -804,6 +806,11 @@ function packageResolve(specifier, base, conditions) {
+@@ -765,6 +766,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -67,9 +66,10 @@ index 61c043e35c6ce9ef9d7255e009162289e80eaf4d..0c41492aa9652112df0b839361570a83
 +    return new URL('electron:electron');
 +  }
 +
-   const { packageName, packageSubpath, isScoped } =
-     parsePackageName(specifier, base);
+   const { packageJSONUrl, packageJSONPath, packageSubpath } = packageJsonReader.getPackageJSONURL(specifier, base);
  
+   const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
+
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
 index 491dc3f450733a9181096a145cfa508767682658..23ed971daebdda3cb627907ffa3626daaa5b5b7b 100644
 --- a/lib/internal/modules/esm/translators.js
