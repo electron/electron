@@ -20,6 +20,8 @@ runs:
     uses: ./src/electron/.github/actions/install-dependencies
   - name: Install Build Tools
     uses: ./src/electron/.github/actions/install-build-tools
+  - name: Set Chromium Git Cookie
+    uses: ./src/electron/.github/actions/set-chromium-cookie
   - name: Get Depot Tools
     shell: bash
     run: |
