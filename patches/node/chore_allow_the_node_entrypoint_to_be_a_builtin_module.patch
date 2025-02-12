@@ -29,9 +29,9 @@ diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_ex
 index a05d2846050c2f505eac16320f645e79182a27f6..348bb80ef7fae1e0e5f529b1313093eeadad9276 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -247,12 +247,14 @@ function patchProcessObject(expandArgv1) {
-   if (expandArgv1 && process.argv[1] &&
-       !StringPrototypeStartsWith(process.argv[1], '-')) {
+@@ -243,12 +243,14 @@ function patchProcessObject(expandArgv1) {
+   // the entry point.
+   if (expandArgv1 && process.argv[1] && process.argv[1][0] !== '-') {
      // Expand process.argv[1] into a full path.
 -    const path = require('path');
 -    try {
