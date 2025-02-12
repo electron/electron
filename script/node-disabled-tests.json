@@ -72,6 +72,7 @@
   "parallel/test-snapshot-weak-reference",
   "parallel/test-snapshot-worker",
   "parallel/test-strace-openat-openssl",
+  "parallel/test-find-package-json",
   "parallel/test-tls-alpn-server-client",
   "parallel/test-tls-cli-min-version-1.0",
   "parallel/test-tls-cli-max-version-1.2",
