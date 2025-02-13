@@ -298,31 +298,25 @@ const { session } = require('electron')
 
 const { URL } = require('node:url')
 
-app.whenReady().then(() => { 
-  // Your function responsible for creating the BrowserWindow and loading your web application
-  createWindow()
-}).then(() => {
-  session.defaultSession.webRequest
-    .setPermissionRequestHandler((webContents, permission, callback) => {
-      const parsedUrl = new URL(webContents.getURL())
+session
+  .defaultSession
+  .setPermissionRequestHandler((webContents, permission, callback) => {
+    const parsedUrl = new URL(webContents.getURL())
 
-      if (permission === 'notifications') {
-        // Approves the permissions request
-        callback(true)
-        return
-      }
+    if (permission === 'notifications') {
+      // Approves the permissions request
+      callback(true)
+    }
 
-      // Verify URL
-      if (parsedUrl.protocol !== 'https:' || parsedUrl.host !== 'example.com') {
-        // Denies the permissions request
-        callback(false)
-        return
-      }
-
-      // Default is deny
-    })
-})
+    // Verify URL
+    if (parsedUrl.protocol !== 'https:' || parsedUrl.host !== 'example.com') {
+      // Denies the permissions request
+      return callback(false)
+    }
+  })
 ```
+
+Note: `session.defaultSession` is only available when app is ready.
 
 ### 6. Do not disable `webSecurity`
 
@@ -402,24 +396,21 @@ which can be set using Electron's
 handler:
 
 ```js title='main.js (Main Process)'
-const { app, session } = require('electron')
+const { session } = require('electron')
 
-app.whenReady().then(() => {
-  // Your function responsible for creating the BrowserWindow and loading your web application
-  createWindow()
-}).then(() => {
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': ["default-src 'none'"]
-        // Multiple policies are provided like this, going from specific to general
-        // 'Content-Security-Policy': ["img-src 'self'; script-src 'self' https://apis.example.com; default-src 'none'"]
-      }
-    })
+session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+  callback({
+    responseHeaders: {
+      ...details.responseHeaders,
+      'Content-Security-Policy': ['default-src \'none\'']
+      // Multiple policies are provided like this, going from specific to general
+      // 'Content-Security-Policy': ["img-src 'self'; script-src 'self' https://apis.example.com; default-src 'none'"]
+    }
   })
 })
 ```
+
+Note: `session.defaultSession` is only available when app is ready.
 
 #### CSP meta tag
 
