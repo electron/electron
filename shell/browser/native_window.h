@@ -10,15 +10,16 @@
 #include <optional>
 #include <queue>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
+#include "base/strings/cstring_view.h"
 #include "base/supports_user_data.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
-#include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
 #include "ui/views/widget/widget_delegate.h"
@@ -45,7 +46,8 @@ class PersistentDictionary;
 
 namespace electron {
 
-extern const char kElectronNativeWindowKey[];
+inline constexpr base::cstring_view kElectronNativeWindowKey =
+    "__ELECTRON_NATIVE_WINDOW__";
 
 class ElectronMenuModel;
 class BackgroundThrottlingSource;
@@ -71,8 +73,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
-  static NativeWindow* Create(const gin_helper::Dictionary& options,
-                              NativeWindow* parent = nullptr);
+  static std::unique_ptr<NativeWindow> Create(
+      const gin_helper::Dictionary& options,
+      NativeWindow* parent = nullptr);
 
   void InitFromOptions(const gin_helper::Dictionary& options);
 
@@ -171,20 +174,21 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsTabletMode() const;
   virtual void SetBackgroundColor(SkColor color) = 0;
   virtual SkColor GetBackgroundColor() const = 0;
-  virtual void InvalidateShadow();
+  virtual void InvalidateShadow() {}
+
   virtual void SetHasShadow(bool has_shadow) = 0;
   virtual bool HasShadow() const = 0;
   virtual void SetOpacity(const double opacity) = 0;
   virtual double GetOpacity() const = 0;
-  virtual void SetRepresentedFilename(const std::string& filename);
+  virtual void SetRepresentedFilename(const std::string& filename) {}
   virtual std::string GetRepresentedFilename() const;
-  virtual void SetDocumentEdited(bool edited);
+  virtual void SetDocumentEdited(bool edited) {}
   virtual bool IsDocumentEdited() const;
   virtual void SetIgnoreMouseEvents(bool ignore, bool forward) = 0;
   virtual void SetContentProtection(bool enable) = 0;
-  virtual void SetFocusable(bool focusable);
+  virtual void SetFocusable(bool focusable) {}
   virtual bool IsFocusable() const;
-  virtual void SetMenu(ElectronMenuModel* menu);
+  virtual void SetMenu(ElectronMenuModel* menu) {}
   virtual void SetParentWindow(NativeWindow* parent);
   virtual content::DesktopMediaID GetDesktopMediaID() const = 0;
   virtual gfx::NativeView GetNativeView() const = 0;
@@ -213,11 +217,11 @@ class NativeWindow : public base::SupportsUserData,
 
   virtual bool IsVisibleOnAllWorkspaces() const = 0;
 
-  virtual void SetAutoHideCursor(bool auto_hide);
+  virtual void SetAutoHideCursor(bool auto_hide) {}
 
   // Vibrancy API
   const std::string& vibrancy() const { return vibrancy_; }
-  virtual void SetVibrancy(const std::string& type);
+  virtual void SetVibrancy(const std::string& type, int duration);
 
   const std::string& background_material() const {
     return background_material_;
@@ -242,23 +246,23 @@ class NativeWindow : public base::SupportsUserData,
 
   // Touchbar API
   virtual void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
-  virtual void RefreshTouchBarItem(const std::string& item_id);
+  virtual void RefreshTouchBarItem(const std::string& item_id) {}
   virtual void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item);
 
   // Native Tab API
-  virtual void SelectPreviousTab();
-  virtual void SelectNextTab();
-  virtual void ShowAllTabs();
-  virtual void MergeAllWindows();
-  virtual void MoveTabToNewWindow();
-  virtual void ToggleTabBar();
+  virtual void SelectPreviousTab() {}
+  virtual void SelectNextTab() {}
+  virtual void ShowAllTabs() {}
+  virtual void MergeAllWindows() {}
+  virtual void MoveTabToNewWindow() {}
+  virtual void ToggleTabBar() {}
   virtual bool AddTabbedWindow(NativeWindow* window);
   virtual std::optional<std::string> GetTabbingIdentifier() const;
 
   // Toggle the menu bar.
-  virtual void SetAutoHideMenuBar(bool auto_hide);
+  virtual void SetAutoHideMenuBar(bool auto_hide) {}
   virtual bool IsMenuBarAutoHide() const;
-  virtual void SetMenuBarVisibility(bool visible);
+  virtual void SetMenuBarVisibility(bool visible) {}
   virtual bool IsMenuBarVisible() const;
 
   // Set the aspect ratio when resizing window.
@@ -270,8 +274,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // File preview APIs.
   virtual void PreviewFile(const std::string& path,
-                           const std::string& display_name);
-  virtual void CloseFilePreview();
+                           const std::string& display_name) {}
+  virtual void CloseFilePreview() {}
 
   virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) {}
 
@@ -298,7 +302,9 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowRequestPreferredWidth(int* width);
   void NotifyWindowCloseButtonClicked();
   void NotifyWindowClosed();
-  void NotifyWindowEndSession();
+  void NotifyWindowQueryEndSession(const std::vector<std::string>& reasons,
+                                   bool* prevent_default);
+  void NotifyWindowEndSession(const std::vector<std::string>& reasons);
   void NotifyWindowBlur();
   void NotifyWindowFocus();
   void NotifyWindowShow();
@@ -325,7 +331,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
   void NotifyWindowAlwaysOnTopChanged();
-  void NotifyWindowExecuteAppCommand(const std::string& command);
+  void NotifyWindowExecuteAppCommand(std::string_view command_name);
   void NotifyTouchBarItemInteraction(const std::string& item_id,
                                      base::Value::Dict details);
   void NotifyNewWindowForTab();
@@ -447,7 +453,7 @@ class NativeWindow : public base::SupportsUserData,
   // Minimum and maximum size.
   std::optional<extensions::SizeConstraints> size_constraints_;
   // Same as above but stored as content size, we are storing 2 types of size
-  // constraints beacause converting between them will cause rounding errors
+  // constraints because converting between them will cause rounding errors
   // on HiDPI displays on some environments.
   std::optional<extensions::SizeConstraints> content_size_constraints_;
 

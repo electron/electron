@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Mon, 4 Nov 2024 17:40:17 -0600
+Subject: chore: disable deprecation ftbfs in simdjson header
+
+Without this patch, building with simdjson fails with
+
+> error: identifier '_padded' preceded by whitespace in a literal operator
+> declaration is deprecated [-Werror,-Wdeprecated-literal-operator]
+
+This patch can be removed once this is fixed upstream in simdjson.
+
+diff --git a/deps/simdjson/simdjson.h b/deps/simdjson/simdjson.h
+index f21cd9381eef59ec43502c796fcaddb1b96525f5..e691fd24aa24d225f8c00fa5638be07265bfeeab 100644
+--- a/deps/simdjson/simdjson.h
++++ b/deps/simdjson/simdjson.h
+@@ -3654,12 +3654,17 @@ inline std::ostream& operator<<(std::ostream& out, simdjson_result<padded_string
+ 
+ } // namespace simdjson
+ 
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-literal-operator"
++
+ // This is deliberately outside of simdjson so that people get it without having to use the namespace
+ inline simdjson::padded_string operator "" _padded(const char *str, size_t len);
+ #ifdef __cpp_char8_t
+ inline simdjson::padded_string operator "" _padded(const char8_t *str, size_t len);
+ #endif
+ 
++#pragma clang diagnostic pop
++
+ namespace simdjson {
+ namespace internal {
+ 
+@@ -4037,6 +4042,9 @@ inline simdjson_result<padded_string> padded_string::load(std::string_view filen
+ 
+ } // namespace simdjson
+ 
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-literal-operator"
++
+ inline simdjson::padded_string operator "" _padded(const char *str, size_t len) {
+   return simdjson::padded_string(str, len);
+ }
+@@ -4045,6 +4053,8 @@ inline simdjson::padded_string operator "" _padded(const char8_t *str, size_t le
+   return simdjson::padded_string(reinterpret_cast<const char8_t *>(str), len);
+ }
+ #endif
++#pragma clang diagnostic pop
++
+ #endif // SIMDJSON_PADDED_STRING_INL_H
+ /* end file simdjson/padded_string-inl.h */
+ /* skipped duplicate #include "simdjson/padded_string_view.h" */
+@@ -118292,4 +118302,4 @@ namespace simdjson {
+ /* end file simdjson/ondemand.h */
+ 
+ #endif // SIMDJSON_H
+-/* end file simdjson.h */
++/* end file simdjson.h */
+\ No newline at end of file

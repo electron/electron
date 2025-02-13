@@ -17,6 +17,11 @@ runs:
       fi
 
       echo "Persisted cache is $(du -sh $cache_path | cut -f1)"
+      if [ `du  $cache_path | cut -f1` = "0" ]; then
+        echo "Cache is empty - exiting"
+        exit 1
+      fi
+
       mkdir temp-cache
       tar -xf $cache_path -C temp-cache
       echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"

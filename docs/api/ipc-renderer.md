@@ -7,6 +7,15 @@ hide_title: false
 
 # ipcRenderer
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/40330
+    description: "`ipcRenderer` can no longer be sent over the `contextBridge`"
+    breaking-changes-header: behavior-changed-ipcrenderer-can-no-longer-be-sent-over-the-contextbridge
+```
+-->
+
 > Communicate asynchronously from a renderer process to the main process.
 
 Process: [Renderer](../glossary.md#renderer-process)
@@ -32,6 +41,16 @@ The `ipcRenderer` module has the following method to listen for events and send 
 Listens to `channel`, when a new message arrives `listener` would be called with
 `listener(event, args...)`.
 
+:::warning
+Do not expose the `event` argument to the renderer for security reasons! Wrap any
+callback that you receive from the renderer in another function like this:
+`ipcRenderer.on('my-channel', (event, ...args) => callback(...args))`.
+Not wrapping the callback in such a function would expose dangerous Electron APIs
+to the renderer process. See the
+[security guide](../tutorial/security.md#20-do-not-expose-electron-apis-to-untrusted-web-content)
+for more info.
+:::
+
 ### `ipcRenderer.off(channel, listener)`
 
 * `channel` string
@@ -39,7 +58,8 @@ Listens to `channel`, when a new message arrives `listener` would be called with
   * `event` [IpcRendererEvent][ipc-renderer-event]
   * `...args` any[]
 
-Alias for [`ipcRenderer.removeListener`](#ipcrendererremovelistenerchannel-listener).
+Removes the specified `listener` from the listener array for the specified
+`channel`.
 
 ### `ipcRenderer.once(channel, listener)`
 
@@ -67,14 +87,13 @@ Alias for [`ipcRenderer.on`](#ipcrendereronchannel-listener).
   * `event` [IpcRendererEvent][ipc-renderer-event]
   * `...args` any[]
 
-Removes the specified `listener` from the listener array for the specified
-`channel`.
+Alias for [`ipcRenderer.off`](#ipcrendereroffchannel-listener).
 
-### `ipcRenderer.removeAllListeners(channel)`
+### `ipcRenderer.removeAllListeners([channel])`
 
-* `channel` string
+* `channel` string (optional)
 
-Removes all listeners, or those of the specified `channel`.
+Removes all listeners from the specified `channel`. Removes all listeners from all channels if no channel is specified.
 
 ### `ipcRenderer.send(channel, ...args)`
 

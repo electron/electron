@@ -58,7 +58,7 @@ void LayeredWindowUpdater::OnAllocatedSharedMemory(
 
   canvas_ = skia::CreatePlatformCanvasWithPixels(
       pixel_size.width(), pixel_size.height(), false,
-      static_cast<uint8_t*>(shm_mapping_.memory()), skia::CRASH_ON_FAILURE);
+      static_cast<uint8_t*>(shm_mapping_.memory()), 0, skia::CRASH_ON_FAILURE);
 #endif
 }
 
@@ -69,7 +69,7 @@ void LayeredWindowUpdater::Draw(const gfx::Rect& damage_rect,
 
   if (active_ && canvas_->peekPixels(&pixmap)) {
     bitmap.installPixels(pixmap);
-    callback_.Run(damage_rect, bitmap);
+    callback_.Run(damage_rect, bitmap, {});
   }
 
   std::move(draw_callback).Run();

@@ -49,7 +49,7 @@
 * `show` boolean (optional) - Whether window should be shown when created. Default is
   `true`.
 * `frame` boolean (optional) - Specify `false` to create a
-  [frameless window](../../tutorial/window-customization.md#create-frameless-windows). Default is `true`.
+  [frameless window](../../tutorial/custom-window-styles.md#frameless-windows). Default is `true`.
 * `parent` BaseWindow (optional) - Specify parent window. Default is `null`.
 * `modal` boolean (optional) - Whether this is a modal window. This only works when the
   window is a child window. Default is `false`.
@@ -70,7 +70,7 @@
   is only implemented on Windows and macOS.
 * `darkTheme` boolean (optional) - Forces using dark theme for the window, only works on
   some GTK+3 desktop environments. Default is `false`.
-* `transparent` boolean (optional) - Makes the window [transparent](../../tutorial/window-customization.md#create-transparent-windows).
+* `transparent` boolean (optional) - Makes the window [transparent](../../tutorial/custom-window-styles.md#transparent-windows).
   Default is `false`. On Windows, does not work unless the window is frameless.
 * `type` string (optional) - The type of window, default is normal window. See more about
   this below.
@@ -91,6 +91,10 @@
     title bar and a full size content window, the traffic light buttons will
     display when being hovered over in the top left of the window.
     **Note:** This option is currently experimental.
+* `titleBarOverlay` Object | Boolean (optional) -  When using a frameless window in conjunction with `win.setWindowButtonVisibility(true)` on macOS or using a `titleBarStyle` so that the standard window controls ("traffic lights" on macOS) are visible, this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. Specifying `true` will result in an overlay with default system colors. Default is `false`.
+  * `color` String (optional) _Windows_ _Linux_ - The CSS color of the Window Controls Overlay when enabled. Default is the system color.
+  * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled. Default is the system color.
+  * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels. Default is system height.
 * `trafficLightPosition` [Point](point.md) (optional) _macOS_ -
   Set a custom position for the traffic light buttons in frameless windows.
 * `roundedCorners` boolean (optional) _macOS_ - Whether frameless window
@@ -139,14 +143,16 @@ Possible values are:
     -webkit-app-region: drag. This type is commonly used for splash screens.
   * The `notification` type creates a window that behaves like a system notification.
 * On macOS, possible types are `desktop`, `textured`, `panel`.
-  * The `textured` type adds metal gradient appearance
-    (`NSWindowStyleMaskTexturedBackground`).
+  * The `textured` type adds metal gradient appearance. This option is **deprecated**.
   * The `desktop` type places the window at the desktop background window level
     (`kCGDesktopWindowLevel - 1`). Note that desktop window will not receive
     focus, keyboard or mouse events, but you can use `globalShortcut` to receive
     input sparingly.
   * The `panel` type enables the window to float on top of full-screened apps
-    by adding the `NSWindowStyleMaskNonactivatingPanel` style mask,normally
+    by adding the `NSWindowStyleMaskNonactivatingPanel` style mask, normally
     reserved for NSPanel, at runtime. Also, the window will appear on all
     spaces (desktops).
 * On Windows, possible type is `toolbar`.
+
+[overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables
+[overlay-javascript-apis]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#javascript-apis

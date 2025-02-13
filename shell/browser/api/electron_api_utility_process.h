@@ -18,6 +18,7 @@
 #include "mojo/public/cpp/bindings/message.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/net/url_loader_network_observer.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
 #include "v8/include/v8-forward.h"
@@ -38,11 +39,12 @@ class Connector;
 
 namespace electron::api {
 
-class UtilityProcessWrapper
+class UtilityProcessWrapper final
     : public gin::Wrappable<UtilityProcessWrapper>,
       public gin_helper::Pinnable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,
       public mojo::MessageReceiver,
+      public node::mojom::NodeServiceClient,
       public content::ServiceProcessHost::Observer {
  public:
   enum class IOHandle : size_t { STDIN = 0, STDOUT = 1, STDERR = 2 };
@@ -66,18 +68,23 @@ class UtilityProcessWrapper
                         std::map<IOHandle, IOType> stdio,
                         base::EnvironmentMap env_map,
                         base::FilePath current_working_directory,
-                        bool use_plugin_helper);
+                        bool use_plugin_helper,
+                        bool create_network_observer);
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
 
   void HandleTermination(uint64_t exit_code);
 
   void PostMessage(gin::Arguments* args);
-  bool Kill() const;
+  bool Kill();
   v8::Local<v8::Value> GetOSProcessId(v8::Isolate* isolate) const;
 
   // mojo::MessageReceiver
   bool Accept(mojo::Message* mojo_message) override;
+
+  // node::mojom::NodeServiceClient
+  void OnV8FatalError(const std::string& location,
+                      const std::string& report) override;
 
   // content::ServiceProcessHost::Observer
   void OnServiceProcessTerminatedNormally(
@@ -98,9 +105,14 @@ class UtilityProcessWrapper
   int stdout_read_fd_ = -1;
   int stderr_read_fd_ = -1;
   bool connector_closed_ = false;
+  bool terminated_ = false;
+  bool killed_ = false;
   std::unique_ptr<mojo::Connector> connector_;
   blink::MessagePortDescriptor host_port_;
+  mojo::Receiver<node::mojom::NodeServiceClient> receiver_{this};
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
+  std::optional<electron::URLLoaderNetworkObserver>
+      url_loader_network_observer_;
   base::WeakPtrFactory<UtilityProcessWrapper> weak_factory_{this};
 };
 

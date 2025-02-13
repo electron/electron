@@ -55,6 +55,8 @@ it becomes the topmost view.
 
 * `view` View - Child view to remove.
 
+If the view passed as a parameter is not a child of this view, this method is a no-op.
+
 #### `view.setBounds(bounds)`
 
 * `bounds` [Rectangle](structures/rectangle.md) - New bounds of the View.
@@ -103,6 +105,12 @@ Examples of valid `color` values:
 #### `view.setVisible(visible)`
 
 * `visible` boolean - If false, the view will be hidden from display.
+
+#### `view.getVisible()`
+
+Returns `boolean` - Whether the view should be drawn. Note that this is
+different from whether the view is visible on screen—it may still be obscured
+or out of view.
 
 ### Instance Properties
 

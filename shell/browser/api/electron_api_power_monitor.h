@@ -17,12 +17,12 @@
 
 namespace electron::api {
 
-class PowerMonitor : public gin::Wrappable<PowerMonitor>,
-                     public gin_helper::EventEmitterMixin<PowerMonitor>,
-                     public gin_helper::Pinnable<PowerMonitor>,
-                     private base::PowerStateObserver,
-                     private base::PowerSuspendObserver,
-                     private base::PowerThermalObserver {
+class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
+                           public gin_helper::EventEmitterMixin<PowerMonitor>,
+                           public gin_helper::Pinnable<PowerMonitor>,
+                           private base::PowerStateObserver,
+                           private base::PowerSuspendObserver,
+                           private base::PowerThermalObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
@@ -52,7 +52,8 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
 #endif
 
   // base::PowerStateObserver implementations:
-  void OnPowerStateChange(bool on_battery_power) override;
+  void OnBatteryPowerStatusChange(
+      BatteryPowerStatus battery_power_status) override;
 
   // base::PowerSuspendObserver implementations:
   void OnSuspend() override;

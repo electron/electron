@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import {
   app,
   autoUpdater,
@@ -357,15 +359,9 @@ app.commandLine.appendSwitch('vmodule', 'console=0');
 const browserOptions = {
   width: 1000,
   height: 800,
-  transparent: false,
-  frame: true
+  transparent: true,
+  frame: false
 };
-
-// Make the window transparent only if the platform supports it.
-if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
-  browserOptions.transparent = true;
-  browserOptions.frame = false;
-}
 
 if (process.platform === 'win32') {
   systemPreferences.on('color-changed', () => { console.log('color changed'); });
@@ -717,7 +713,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         label: 'Reload',
         accelerator: 'Command+R',
         click: (item, focusedWindow) => {
-          if (focusedWindow) {
+          if (focusedWindow instanceof BrowserWindow) {
             focusedWindow.webContents.reloadIgnoringCache();
           }
         }
@@ -726,7 +722,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         label: 'Toggle DevTools',
         accelerator: 'Alt+Command+I',
         click: (item, focusedWindow) => {
-          if (focusedWindow) {
+          if (focusedWindow instanceof BrowserWindow) {
             focusedWindow.webContents.toggleDevTools();
           }
         }
@@ -738,7 +734,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         label: 'Actual Size',
         accelerator: 'CmdOrCtrl+0',
         click: (item, focusedWindow) => {
-          if (focusedWindow) {
+          if (focusedWindow instanceof BrowserWindow) {
             focusedWindow.webContents.zoomLevel = 0;
           }
         }
@@ -747,7 +743,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         label: 'Zoom In',
         accelerator: 'CmdOrCtrl+Plus',
         click: (item, focusedWindow) => {
-          if (focusedWindow) {
+          if (focusedWindow instanceof BrowserWindow) {
             const { webContents } = focusedWindow;
             webContents.zoomLevel += 0.5;
           }
@@ -757,7 +753,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         label: 'Zoom Out',
         accelerator: 'CmdOrCtrl+-',
         click: (item, focusedWindow) => {
-          if (focusedWindow) {
+          if (focusedWindow instanceof BrowserWindow) {
             const { webContents } = focusedWindow;
             webContents.zoomLevel -= 0.5;
           }

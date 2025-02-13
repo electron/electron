@@ -30,11 +30,11 @@ class ErrorThrower;
 
 namespace electron::api {
 
-class Notification : public gin::Wrappable<Notification>,
-                     public gin_helper::EventEmitterMixin<Notification>,
-                     public gin_helper::Constructible<Notification>,
-                     public gin_helper::CleanedUpAtExit,
-                     public NotificationDelegate {
+class Notification final : public gin::Wrappable<Notification>,
+                           public gin_helper::EventEmitterMixin<Notification>,
+                           public gin_helper::Constructible<Notification>,
+                           public gin_helper::CleanedUpAtExit,
+                           public NotificationDelegate {
  public:
   static bool IsSupported();
 
@@ -56,6 +56,9 @@ class Notification : public gin::Wrappable<Notification>,
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
+
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
 
   // disable copy
   Notification(const Notification&) = delete;
@@ -103,8 +106,6 @@ class Notification : public gin::Wrappable<Notification>,
   std::u16string subtitle_;
   std::u16string body_;
   gfx::Image icon_;
-  std::u16string icon_path_;
-  bool has_icon_ = false;
   bool silent_ = false;
   bool has_reply_ = false;
   std::u16string timeout_type_;

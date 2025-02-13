@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "base/containers/contains.h"
-#include "base/strings/string_number_conversions.h"
+#include "base/containers/to_vector.h"
 #include "base/task/single_thread_task_runner.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
@@ -20,7 +20,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/messaging/transferable_message.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
@@ -29,11 +29,11 @@ namespace electron {
 
 namespace {
 
-bool IsValidWrappable(const v8::Local<v8::Value>& obj) {
-  v8::Local<v8::Object> port = v8::Local<v8::Object>::Cast(obj);
-
-  if (!port->IsObject())
+bool IsValidWrappable(const v8::Local<v8::Value>& val) {
+  if (!val->IsObject())
     return false;
+
+  v8::Local<v8::Object> port = val.As<v8::Object>();
 
   if (port->InternalFieldCount() != gin::kNumberOfInternalFields)
     return false;
@@ -225,7 +225,7 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
     const std::vector<gin::Handle<MessagePort>>& ports,
     bool* threw_exception) {
   if (ports.empty())
-    return std::vector<blink::MessagePortChannel>();
+    return {};
 
   std::unordered_set<MessagePort*> visited;
 
@@ -244,17 +244,13 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
       gin_helper::ErrorThrower(isolate).ThrowError(
           "Port at index " + base::NumberToString(i) + " is " + type + ".");
       *threw_exception = true;
-      return std::vector<blink::MessagePortChannel>();
+      return {};
     }
     visited.insert(port);
   }
 
   // Passed-in ports passed validity checks, so we can disentangle them.
-  std::vector<blink::MessagePortChannel> channels;
-  channels.reserve(ports.size());
-  for (auto port : ports)
-    channels.push_back(port->Disentangle());
-  return channels;
+  return base::ToVector(ports, [](auto& port) { return port->Disentangle(); });
 }
 
 void MessagePort::Pin() {
@@ -308,6 +304,10 @@ gin::ObjectTemplateBuilder MessagePort::GetObjectTemplateBuilder(
 
 const char* MessagePort::GetTypeName() {
   return "MessagePort";
+}
+
+void MessagePort::WillBeDestroyed() {
+  ClearWeak();
 }
 
 }  // namespace electron

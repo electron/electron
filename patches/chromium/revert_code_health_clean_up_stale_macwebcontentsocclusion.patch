@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Wed, 8 Jan 2025 23:53:27 -0800
+Subject: Revert "Code Health: Clean up stale MacWebContentsOcclusion"
+
+Chrome has removed this WebContentsOcclusion feature flag upstream,
+which is now causing our visibility tests to break. This patch
+restores the legacy occlusion behavior to ensure the roll can continue
+while we debug the issue.
+
+This patch can be removed when the root cause because the visibility
+specs failing on MacOS only is debugged and fixed. It should be removed
+before Electron 35's stable date.
+
+Refs: https://chromium-review.googlesource.com/c/chromium/src/+/6078344
+
+This partially (leaves the removal of the feature flag) reverts
+ef865130abd5539e7bce12308659b19980368f12.
+
+diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
+index 2991489fae8a4eecad97b1ecb2271f096d9a9229..6c735286bf901fc7ff3872830d83fe119dd3bd33 100644
+--- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
++++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
+@@ -126,13 +126,11 @@ @implementation WebContentsViewCocoa {
+ 
+   gfx::Rect _windowControlsOverlayRect;
+ 
++  BOOL _inFullScreenTransition;
+   BOOL _willSetWebContentsOccludedAfterDelay;
+ }
+ 
+-+ (void)initialize {
+-  // Create the WebContentsOcclusionCheckerMac shared instance.
+-  [WebContentsOcclusionCheckerMac sharedInstance];
+-}
+++ (void)initialize { }
+ 
+ - (instancetype)initWithViewsHostableView:(ui::ViewsHostableView*)v {
+   self = [super initWithFrame:NSZeroRect tracking:YES];
+@@ -487,6 +485,20 @@ - (void)updateWebContentsVisibility {
+   [self updateWebContentsVisibility:visibility];
+ }
+ 
++- (void)legacyUpdateWebContentsVisibility {
++  using remote_cocoa::mojom::Visibility;
++  if (!_host || _inFullScreenTransition)
++    return;
++  Visibility visibility = Visibility::kVisible;
++  if ([self isHiddenOrHasHiddenAncestor] || ![self window])
++    visibility = Visibility::kHidden;
++  else if ([[self window] occlusionState] & NSWindowOcclusionStateVisible)
++    visibility = Visibility::kVisible;
++  else
++    visibility = Visibility::kOccluded;
++  _host->OnWindowVisibilityChanged(visibility);
++}
++
+ - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
+   // Subviews do not participate in auto layout unless the the size this view
+   // changes. This allows RenderWidgetHostViewMac::SetBounds(..) to select a
+@@ -509,11 +521,20 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+ 
+   NSWindow* oldWindow = [self window];
+ 
++  _inFullScreenTransition = NO;
+   if (oldWindow) {
+-    [notificationCenter
+-        removeObserver:self
+-                  name:NSWindowDidChangeOcclusionStateNotification
+-                object:oldWindow];
++    NSArray* notificationsToRemove = @[
++      NSWindowDidChangeOcclusionStateNotification,
++      NSWindowWillEnterFullScreenNotification,
++      NSWindowDidEnterFullScreenNotification,
++      NSWindowWillExitFullScreenNotification,
++      NSWindowDidExitFullScreenNotification
++    ];
++    for (NSString* notificationName in notificationsToRemove) {
++      [notificationCenter removeObserver:self
++                                    name:notificationName
++                                  object:oldWindow];
++    }
+   }
+ 
+   if (newWindow) {
+@@ -521,27 +542,49 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+                            selector:@selector(windowChangedOcclusionState:)
+                                name:NSWindowDidChangeOcclusionStateNotification
+                              object:newWindow];
++    // The fullscreen transition causes spurious occlusion notifications.
++    // See https://crbug.com/1081229
++    [notificationCenter addObserver:self
++                           selector:@selector(fullscreenTransitionStarted:)
++                               name:NSWindowWillEnterFullScreenNotification
++                             object:newWindow];
++    [notificationCenter addObserver:self
++                           selector:@selector(fullscreenTransitionComplete:)
++                               name:NSWindowDidEnterFullScreenNotification
++                             object:newWindow];
++    [notificationCenter addObserver:self
++                           selector:@selector(fullscreenTransitionStarted:)
++                               name:NSWindowWillExitFullScreenNotification
++                             object:newWindow];
++    [notificationCenter addObserver:self
++                           selector:@selector(fullscreenTransitionComplete:)
++                               name:NSWindowDidExitFullScreenNotification
++                             object:newWindow];
+   }
+ }
+ 
+ - (void)windowChangedOcclusionState:(NSNotification*)aNotification {
+-  // Only respond to occlusion notifications sent by the occlusion checker.
+-  NSDictionary* userInfo = [aNotification userInfo];
+-  NSString* occlusionCheckerKey = [WebContentsOcclusionCheckerMac className];
+-  if (userInfo[occlusionCheckerKey] != nil)
+-    [self updateWebContentsVisibility];
++  [self legacyUpdateWebContentsVisibility];
++}
++
++- (void)fullscreenTransitionStarted:(NSNotification*)notification {
++  _inFullScreenTransition = YES;
++}
++
++- (void)fullscreenTransitionComplete:(NSNotification*)notification {
++  _inFullScreenTransition = NO;
+ }
+ 
+ - (void)viewDidMoveToWindow {
+-  [self updateWebContentsVisibility];
++  [self legacyUpdateWebContentsVisibility];
+ }
+ 
+ - (void)viewDidHide {
+-  [self updateWebContentsVisibility];
++  [self legacyUpdateWebContentsVisibility];
+ }
+ 
+ - (void)viewDidUnhide {
+-  [self updateWebContentsVisibility];
++  [self legacyUpdateWebContentsVisibility];
+ }
+ 
+ // ViewsHostable protocol implementation.

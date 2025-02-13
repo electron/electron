@@ -16,6 +16,7 @@
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
 #include "shell/common/color_util.h"
+#include "shell/common/process_util.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/win/hwnd_util.h"
 
@@ -74,10 +75,6 @@ std::string ConvertDeviceAccessStatus(DeviceAccessStatus value) {
 }  // namespace
 
 namespace api {
-
-bool SystemPreferences::IsAeroGlassEnabled() {
-  return true;
-}
 
 std::string hexColorDWORDToRGBA(DWORD color) {
   DWORD rgba = color << 8 | color >> 24;
@@ -153,7 +150,7 @@ std::string SystemPreferences::GetMediaAccessStatus(
         DeviceAccessStatus::DeviceAccessStatus_Allowed);
   } else {
     thrower.ThrowError("Invalid media type");
-    return std::string();
+    return {};
   }
 }
 

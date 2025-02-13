@@ -33,6 +33,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
+#include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/application_info.h"
@@ -195,6 +196,7 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
 void SystemNetworkContextManager::ConfigureDefaultNetworkContextParams(
     network::mojom::NetworkContextParams* network_context_params) {
   network_context_params->enable_brotli = true;
+  network_context_params->enable_zstd = true;
 
   network_context_params->enable_referrers = true;
 

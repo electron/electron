@@ -9,8 +9,8 @@ permissions: {}
 
 jobs:
   issue-commented:
-    name: Remove blocked/need-repro on comment
-    if: ${{ contains(github.event.issue.labels.*.name, 'blocked/need-repro') && !contains(fromJSON('["MEMBER", "OWNER"]'), github.event.comment.author_association) && github.event.comment.user.type != 'Bot' }}
+    name: Remove blocked/{need-info,need-repro} on comment
+    if: ${{ (contains(github.event.issue.labels.*.name, 'blocked/need-repro') || contains(github.event.issue.labels.*.name, 'blocked/need-info ❌')) && !contains(fromJSON('["MEMBER", "OWNER"]'), github.event.comment.author_association) && github.event.comment.user.type != 'Bot' }}
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub App token
@@ -23,4 +23,4 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
         run: |
-          gh issue edit $ISSUE_URL --remove-label 'blocked/need-repro'
+          gh issue edit $ISSUE_URL --remove-label 'blocked/need-repro','blocked/need-info ❌'

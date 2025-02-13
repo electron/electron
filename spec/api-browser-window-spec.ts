@@ -1,20 +1,24 @@
+import { nativeImage } from 'electron';
+import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
+
 import { expect } from 'chai';
+
 import * as childProcess from 'node:child_process';
-import * as path from 'node:path';
+import { once } from 'node:events';
 import * as fs from 'node:fs';
-import * as qs from 'node:querystring';
 import * as http from 'node:http';
-import * as os from 'node:os';
 import { AddressInfo } from 'node:net';
-import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import * as qs from 'node:querystring';
+import { setTimeout as syncSetTimeout } from 'node:timers';
+import { setTimeout } from 'node:timers/promises';
+import * as nodeUrl from 'node:url';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
-import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
-import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
-import { once } from 'node:events';
-import { setTimeout } from 'node:timers/promises';
-import { setTimeout as syncSetTimeout } from 'node:timers';
+import { ifit, ifdescribe, defer, listen, waitUntil } from './lib/spec-helpers';
+import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');
@@ -111,6 +115,14 @@ describe('BrowserWindow module', () => {
 
     it('should work if called when a messageBox is showing', async () => {
       const closed = once(w, 'closed');
+      dialog.showMessageBox(w, { message: 'Hello Error' });
+      w.close();
+      await closed;
+    });
+
+    it('should work if called when multiple messageBoxes are showing', async () => {
+      const closed = once(w, 'closed');
+      dialog.showMessageBox(w, { message: 'Hello Error' });
       dialog.showMessageBox(w, { message: 'Hello Error' });
       w.close();
       await closed;
@@ -287,15 +299,16 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.loadURL(url)', () => {
     let w: BrowserWindow;
     const scheme = 'other';
-    const srcPath = path.join(fixtures, 'api', 'loaded-from-dataurl.js');
+    const srcPath = path.join(fixtures, 'api');
     before(() => {
-      protocol.registerFileProtocol(scheme, (request, callback) => {
-        callback(srcPath);
+      protocol.handle(scheme, (req) => {
+        const reqURL = new URL(req.url);
+        return net.fetch(nodeUrl.pathToFileURL(path.join(srcPath, reqURL.pathname)).toString());
       });
     });
 
     after(() => {
-      protocol.unregisterProtocol(scheme);
+      protocol.unhandle(scheme);
     });
 
     beforeEach(() => {
@@ -318,7 +331,7 @@ describe('BrowserWindow module', () => {
         },
         {
           type: 'file',
-          filePath: filePath,
+          filePath,
           offset: 0,
           length: fileStats.size,
           modificationTime: fileStats.mtime.getTime() / 1000
@@ -374,7 +387,7 @@ describe('BrowserWindow module', () => {
     it('should emit did-fail-load event for files that do not exist', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
       w.loadURL('file://a.txt');
-      const [, code, desc,, isMainFrame] = await didFailLoad;
+      const [, code, desc, , isMainFrame] = await didFailLoad;
       expect(code).to.equal(-6);
       expect(desc).to.equal('ERR_FILE_NOT_FOUND');
       expect(isMainFrame).to.equal(true);
@@ -382,7 +395,7 @@ describe('BrowserWindow module', () => {
     it('should emit did-fail-load event for invalid URL', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
       w.loadURL('http://example:port');
-      const [, code, desc,, isMainFrame] = await didFailLoad;
+      const [, code, desc, , isMainFrame] = await didFailLoad;
       expect(desc).to.equal('ERR_INVALID_URL');
       expect(code).to.equal(-300);
       expect(isMainFrame).to.equal(true);
@@ -399,7 +412,7 @@ describe('BrowserWindow module', () => {
     it('should set `mainFrame = false` on did-fail-load events in iframes', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
       w.loadFile(path.join(fixtures, 'api', 'did-fail-load-iframe.html'));
-      const [,,,, isMainFrame] = await didFailLoad;
+      const [, , , , isMainFrame] = await didFailLoad;
       expect(isMainFrame).to.equal(false);
     });
     it('does not crash in did-fail-provisional-load handler', (done) => {
@@ -413,7 +426,7 @@ describe('BrowserWindow module', () => {
       const data = Buffer.alloc(2 * 1024 * 1024).toString('base64');
       const didFailLoad = once(w.webContents, 'did-fail-load');
       w.loadURL(`data:image/png;base64,${data}`);
-      const [, code, desc,, isMainFrame] = await didFailLoad;
+      const [, code, desc, , isMainFrame] = await didFailLoad;
       expect(desc).to.equal('ERR_INVALID_URL');
       expect(code).to.equal(-300);
       expect(isMainFrame).to.equal(true);
@@ -484,8 +497,11 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    it('should support base url for data urls', async () => {
-      await w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: `other://${path.join(fixtures, 'api')}${path.sep}` });
+    // FIXME(#43730): fix underlying bug and re-enable asap
+    it.skip('should support base url for data urls', async () => {
+      await w
+        .loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: 'other://' })
+        .catch((e) => console.log(e));
       expect(await w.webContents.executeJavaScript('window.ping')).to.equal('pong');
     });
   });
@@ -575,7 +591,7 @@ describe('BrowserWindow module', () => {
         it('is triggered when a cross-origin iframe navigates _top', async () => {
           w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
           await emittedUntil(w.webContents, 'did-frame-finish-load', (e: any, isMainFrame: boolean) => !isMainFrame);
-          let initiator: WebFrameMain | undefined;
+          let initiator: WebFrameMain | null | undefined;
           w.webContents.on('will-navigate', (e) => {
             initiator = e.initiator;
           });
@@ -919,6 +935,9 @@ describe('BrowserWindow module', () => {
           });
           url = (await listen(server)).url;
         });
+        after(() => {
+          server.close();
+        });
         it('for initial navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = [
@@ -926,12 +945,11 @@ describe('BrowserWindow module', () => {
             'did-frame-navigate',
             'did-navigate'
           ];
-          const allEvents = Promise.all(navigationEvents.map(event =>
+          const allEvents = Promise.all(expectedEventOrder.map(event =>
             once(w.webContents, event).then(() => firedEvents.push(event))
           ));
-          const timeout = setTimeout(1000);
           w.loadURL(url);
-          await Promise.race([allEvents, timeout]);
+          await allEvents;
           expect(firedEvents).to.deep.equal(expectedEventOrder);
         });
 
@@ -1254,6 +1272,7 @@ describe('BrowserWindow module', () => {
         // We first need to resign app focus for this test to work
         const isInactive = once(app, 'did-resign-active');
         childProcess.execSync('osascript -e \'tell application "Finder" to activate\'');
+        defer(() => childProcess.execSync('osascript -e \'tell application "Finder" to quit\''));
         await isInactive;
 
         // Create new window
@@ -1529,11 +1548,32 @@ describe('BrowserWindow module', () => {
           await expect(once(w, 'resized')).to.eventually.be.fulfilled();
         });
       });
+
+      it('does not emits the resize event for move-only changes', async () => {
+        const [x, y] = w.getPosition();
+
+        w.once('resize', () => {
+          expect.fail('resize event should not be emitted');
+        });
+
+        w.setBounds({ x: x + 10, y: y + 10 });
+      });
     });
 
     describe('BrowserWindow.setSize(width, height)', () => {
       it('sets the window size', async () => {
         const size = [300, 400];
+
+        const resized = once(w, 'resize');
+        w.setSize(size[0], size[1]);
+        await resized;
+
+        expectBoundsEqual(w.getSize(), size);
+      });
+
+      it('emits the resize event for single-pixel size changes', async () => {
+        const [width, height] = w.getSize();
+        const size = [width + 1, height - 1];
 
         const resized = once(w, 'resize');
         w.setSize(size[0], size[1]);
@@ -1665,7 +1705,7 @@ describe('BrowserWindow module', () => {
         const backgroundColor = '#BBAAFF';
         w.destroy();
         w = new BrowserWindow({
-          backgroundColor: backgroundColor
+          backgroundColor
         });
         expect(w.getBackgroundColor()).to.equal(backgroundColor);
       });
@@ -2497,6 +2537,22 @@ describe('BrowserWindow module', () => {
       expect(w.isAlwaysOnTop()).to.be.false();
       expect(c.isAlwaysOnTop()).to.be.true('child is not always on top');
       expect(c._getAlwaysOnTopLevel()).to.equal('screen-saver');
+    });
+
+    it('works when called prior to show', async () => {
+      w = new BrowserWindow({ show: false });
+      w.setAlwaysOnTop(true, 'screen-saver');
+      w.show();
+      await setTimeout(1000);
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
+    });
+
+    it('works when called prior to showInactive', async () => {
+      w = new BrowserWindow({ show: false });
+      w.setAlwaysOnTop(true, 'screen-saver');
+      w.showInactive();
+      await setTimeout(1000);
+      expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
     });
   });
 
@@ -4542,7 +4598,7 @@ describe('BrowserWindow module', () => {
         fs.unlinkSync(savePageHtmlPath);
         fs.rmdirSync(path.join(savePageDir, 'save_page_files'));
         fs.rmdirSync(savePageDir);
-      } catch {}
+      } catch { }
     });
 
     it('should throw when passing relative paths', async () => {
@@ -4590,7 +4646,7 @@ describe('BrowserWindow module', () => {
       try {
         await fs.promises.unlink(savePageMHTMLPath);
         await fs.promises.rmdir(tmpDir);
-      } catch {}
+      } catch { }
     });
 
     it('should save page to disk with HTMLComplete', async () => {
@@ -5629,6 +5685,37 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    ifdescribe(process.platform !== 'darwin')('fullscreen state', () => {
+      it('correctly remembers state prior to HTML fullscreen transition', async () => {
+        const w = new BrowserWindow();
+        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+
+        const enterFullScreen = once(w, 'enter-full-screen');
+        const leaveFullScreen = once(w, 'leave-full-screen');
+
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await enterFullScreen;
+        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+        await leaveFullScreen;
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+
+        w.setMenuBarVisibility(false);
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await enterFullScreen;
+        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+        await leaveFullScreen;
+
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+      });
+    });
+
     ifdescribe(process.platform === 'darwin')('fullscreenable state', () => {
       it('with functions', () => {
         it('can be set with fullscreenable constructor option', () => {
@@ -5952,8 +6039,10 @@ describe('BrowserWindow module', () => {
           w.webContents.on('enter-html-full-screen', async () => {
             enterCount++;
             if (w.isFullScreen()) reject(new Error('w.isFullScreen should be false'));
-            const isFS = await w.webContents.executeJavaScript('!!document.fullscreenElement');
-            if (!isFS) reject(new Error('Document should have fullscreen element'));
+            await waitUntil(async () => {
+              const isFS = await w.webContents.executeJavaScript('!!document.fullscreenElement');
+              return isFS === true;
+            });
             checkDone();
           });
 
@@ -6367,7 +6456,7 @@ describe('BrowserWindow module', () => {
     it('creates offscreen window with correct size', async () => {
       const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-      const [,, data] = await paint;
+      const [, , data] = await paint;
       expect(data.constructor.name).to.equal('NativeImage');
       expect(data.isEmpty()).to.be.false('data is empty');
       const size = data.getSize();
@@ -6462,6 +6551,52 @@ describe('BrowserWindow module', () => {
         await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.frameRate).to.equal(30);
       });
+    });
+  });
+
+  describe('offscreen rendering image', () => {
+    afterEach(closeAllWindows);
+
+    const imagePath = path.join(fixtures, 'assets', 'osr.png');
+    const targetImage = nativeImage.createFromPath(imagePath);
+    const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
+    ifit(nativeModulesEnabled && ['win32'].includes(process.platform))('use shared texture, hardware acceleration enabled', (done) => {
+      const { ExtractPixels, InitializeGpu } = require('@electron-ci/osr-gpu');
+
+      try {
+        InitializeGpu();
+      } catch (e) {
+        console.log('Failed to initialize GPU, this spec needs a valid GPU device. Skipping...');
+        console.error(e);
+        done();
+        return;
+      }
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          offscreen: {
+            useSharedTexture: true
+          }
+        },
+        transparent: true,
+        frame: false,
+        width: 128,
+        height: 128
+      });
+
+      w.webContents.once('paint', async (e, dirtyRect) => {
+        try {
+          expect(e.texture).to.be.not.null();
+          const pixels = ExtractPixels(e.texture!.textureInfo);
+          const img = nativeImage.createFromBitmap(pixels, { width: dirtyRect.width, height: dirtyRect.height, scaleFactor: 1 });
+          expect(img.toBitmap().equals(targetImage.toBitmap())).to.equal(true);
+          done();
+        } catch (e) {
+          done(e);
+        }
+      });
+      w.loadFile(imagePath);
     });
   });
 

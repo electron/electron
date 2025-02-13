@@ -1,11 +1,13 @@
 import { app } from 'electron';
-import { expect } from 'chai';
-import { startRemoteControlApp, ifdescribe } from './lib/spec-helpers';
 
+import { expect } from 'chai';
+import * as uuid from 'uuid';
+
+import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import * as uuid from 'uuid';
-import { once } from 'node:events';
+
+import { startRemoteControlApp, ifdescribe } from './lib/spec-helpers';
 
 function isTestingBindingAvailable () {
   try {
@@ -19,7 +21,7 @@ function isTestingBindingAvailable () {
 // This test depends on functions that are only available when DCHECK_IS_ON.
 ifdescribe(isTestingBindingAvailable())('logging', () => {
   it('does not log by default', async () => {
-    // ELECTRON_ENABLE_LOGGING is turned on in the appveyor config.
+    // ELECTRON_ENABLE_LOGGING might be set in the environment, so remove it
     const { ELECTRON_ENABLE_LOGGING: _, ...envWithoutEnableLogging } = process.env;
     const rc = await startRemoteControlApp([], { env: envWithoutEnableLogging });
     const stderrComplete = new Promise<string>(resolve => {

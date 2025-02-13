@@ -23,8 +23,8 @@ class ObjectTemplate;
 
 namespace gin_helper::internal {
 
-class Event : public gin::Wrappable<Event>,
-              public gin_helper::Constructible<Event> {
+class Event final : public gin::Wrappable<Event>,
+                    public gin_helper::Constructible<Event> {
  public:
   // gin_helper::Constructible
   static gin::Handle<Event> New(v8::Isolate* isolate);

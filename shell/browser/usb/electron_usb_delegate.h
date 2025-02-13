@@ -27,7 +27,7 @@ class RenderFrameHost;
 
 namespace mojo {
 template <typename T>
-class PendingReciever;
+class PendingReceiver;
 template <typename T>
 class PendingRemote;
 }  // namespace mojo

@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Maddock <smaddock@slack-corp.com>
+Date: Fri, 18 Oct 2024 11:11:11 -0400
+Subject: fix: software compositing infinite loop
+
+When GPU compositing is unavailable, LayerTreeView::RequestNewLayerTreeFrameSink
+may run in an infinite loop due to a race condition. Need to allow time to
+process CompositingModeFallbackToSoftware IPC to disable GPU compositing.
+
+https://issues.chromium.org/345275130
+
+diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc
+index 7253162094080c992bbb9f58dd9856d75a1f7476..14b74a675f7363b7aa3449459e0034f21d31dd87 100644
+--- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc
++++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_view.cc
+@@ -387,9 +387,13 @@ void LayerTreeView::DidFailToInitializeLayerTreeFrameSink() {
+   // unable to be killed after Chrome is closed.
+   // https://issues.chromium.org/336164423
+   if (!Platform::Current()->IsGpuRemoteDisconnected()) {
+-    layer_tree_host_->GetTaskRunnerProvider()->MainThreadTaskRunner()->PostTask(
++    // CompositingModeFallbackToSoftware IPC will disable GPU compositing in
++    // RenderThread. Post task with delay to give time to receive this IPC and
++    // prevent infinite loop of retries for software renderers.
++    // https://issues.chromium.org/345275130
++    layer_tree_host_->GetTaskRunnerProvider()->MainThreadTaskRunner()->PostDelayedTask(
+         FROM_HERE, base::BindOnce(&LayerTreeView::RequestNewLayerTreeFrameSink,
+-                                  weak_factory_.GetWeakPtr()));
++                                  weak_factory_.GetWeakPtr()), base::Milliseconds(10));
+   }
+ }
+ 

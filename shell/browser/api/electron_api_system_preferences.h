@@ -37,7 +37,7 @@ enum class NotificationCenterKind {
 };
 #endif
 
-class SystemPreferences
+class SystemPreferences final
     : public gin::Wrappable<SystemPreferences>,
       public gin_helper::EventEmitterMixin<SystemPreferences>
 #if BUILDFLAG(IS_WIN)
@@ -63,8 +63,6 @@ class SystemPreferences
                                    const std::string& media_type);
 #endif
 #if BUILDFLAG(IS_WIN)
-  bool IsAeroGlassEnabled();
-
   void InitializeWindow();
 
   // gfx::SysColorChangeListener:

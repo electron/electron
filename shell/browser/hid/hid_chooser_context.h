@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/containers/queue.h"
@@ -35,9 +36,8 @@ namespace electron {
 
 class ElectronBrowserContext;
 
-extern const char kHidDeviceNameKey[];
-extern const char kHidGuidKey[];
-extern const char kHidProductIdKey[];
+inline constexpr std::string_view kHidDeviceNameKey = "name";
+inline constexpr std::string_view kHidGuidKey = "guid";
 
 // Manages the internal state and connection to the device service for the
 // Human Interface Device (HID) chooser UI.

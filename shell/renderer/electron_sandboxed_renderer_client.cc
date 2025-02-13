@@ -11,18 +11,19 @@
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/containers/contains.h"
-#include "base/process/process_handle.h"
 #include "base/process/process_metrics.h"
 #include "content/public/renderer/render_frame.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
-#include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_render_frame_observer.h"
+#include "shell/renderer/preload_realm_context.h"
+#include "shell/renderer/preload_utils.h"
+#include "shell/renderer/service_worker_data.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
 #include "third_party/blink/public/web/blink.h"
@@ -33,67 +34,10 @@ namespace electron {
 
 namespace {
 
-const char kEmitProcessEventKey[] = "emit-process-event";
-const char kBindingCacheKey[] = "native-binding-cache";
+// Data which only lives on the service worker's thread
+constinit thread_local ServiceWorkerData* service_worker_data = nullptr;
 
-v8::Local<v8::Object> GetBindingCache(v8::Isolate* isolate) {
-  auto context = isolate->GetCurrentContext();
-  gin_helper::Dictionary global(isolate, context->Global());
-  v8::Local<v8::Value> cache;
-
-  if (!global.GetHidden(kBindingCacheKey, &cache)) {
-    cache = v8::Object::New(isolate);
-    global.SetHidden(kBindingCacheKey, cache);
-  }
-
-  return cache->ToObject(context).ToLocalChecked();
-}
-
-// adapted from node.cc
-v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
-                                v8::Local<v8::String> key,
-                                gin_helper::Arguments* margs) {
-  v8::Local<v8::Object> exports;
-  std::string binding_key = gin::V8ToString(isolate, key);
-  gin_helper::Dictionary cache(isolate, GetBindingCache(isolate));
-
-  if (cache.Get(binding_key.c_str(), &exports)) {
-    return exports;
-  }
-
-  auto* mod = node::binding::get_linked_module(binding_key.c_str());
-
-  if (!mod) {
-    char errmsg[1024];
-    snprintf(errmsg, sizeof(errmsg), "No such binding: %s",
-             binding_key.c_str());
-    margs->ThrowError(errmsg);
-    return exports;
-  }
-
-  exports = v8::Object::New(isolate);
-  DCHECK_EQ(mod->nm_register_func, nullptr);
-  DCHECK_NE(mod->nm_context_register_func, nullptr);
-  mod->nm_context_register_func(exports, v8::Null(isolate),
-                                isolate->GetCurrentContext(), mod->nm_priv);
-  cache.Set(binding_key.c_str(), exports);
-  return exports;
-}
-
-v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
-                                         v8::Local<v8::String> source) {
-  auto context = isolate->GetCurrentContext();
-  auto maybe_script = v8::Script::Compile(context, source);
-  v8::Local<v8::Script> script;
-  if (!maybe_script.ToLocal(&script))
-    return v8::Local<v8::Value>();
-  return script->Run(context).ToLocalChecked();
-}
-
-double Uptime() {
-  return (base::Time::Now() - base::Process::Current().CreationTime())
-      .InSecondsF();
-}
+constexpr std::string_view kEmitProcessEventKey = "emit-process-event";
 
 void InvokeEmitProcessEvent(v8::Local<v8::Context> context,
                             const std::string& event_name) {
@@ -132,8 +76,8 @@ void ElectronSandboxedRendererClient::InitializeBindings(
     content::RenderFrame* render_frame) {
   auto* isolate = context->GetIsolate();
   gin_helper::Dictionary b(isolate, binding);
-  b.SetMethod("get", GetBinding);
-  b.SetMethod("createPreloadScript", CreatePreloadScript);
+  b.SetMethod("get", preload_utils::GetBinding);
+  b.SetMethod("createPreloadScript", preload_utils::CreatePreloadScript);
 
   auto process = gin_helper::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);
@@ -141,7 +85,7 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   ElectronBindings::BindProcess(isolate, &process, metrics_.get());
   BindProcess(isolate, &process, render_frame);
 
-  process.SetMethod("uptime", Uptime);
+  process.SetMethod("uptime", preload_utils::Uptime);
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
   process.SetReadOnly("pid", base::GetCurrentProcId());
   process.SetReadOnly("sandboxed", true);
@@ -205,8 +149,7 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
 
   auto* isolate = context->GetIsolate();
   gin_helper::MicrotasksScope microtasks_scope{
-      isolate, context->GetMicrotaskQueue(), false,
-      v8::MicrotasksScope::kDoNotRunMicrotasks};
+      context, false, v8::MicrotasksScope::kDoNotRunMicrotasks};
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   InvokeEmitProcessEvent(context, "exit");
@@ -224,11 +167,50 @@ void ElectronSandboxedRendererClient::EmitProcessEvent(
 
   v8::Local<v8::Context> context = GetContext(frame, isolate);
   gin_helper::MicrotasksScope microtasks_scope{
-      isolate, context->GetMicrotaskQueue(), false,
-      v8::MicrotasksScope::kDoNotRunMicrotasks};
+      context, false, v8::MicrotasksScope::kDoNotRunMicrotasks};
   v8::Context::Scope context_scope(context);
 
   InvokeEmitProcessEvent(context, event_name);
+}
+
+void ElectronSandboxedRendererClient::WillEvaluateServiceWorkerOnWorkerThread(
+    blink::WebServiceWorkerContextProxy* context_proxy,
+    v8::Local<v8::Context> v8_context,
+    int64_t service_worker_version_id,
+    const GURL& service_worker_scope,
+    const GURL& script_url,
+    const blink::ServiceWorkerToken& service_worker_token) {
+  RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread(
+      context_proxy, v8_context, service_worker_version_id,
+      service_worker_scope, script_url, service_worker_token);
+
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kServiceWorkerPreload)) {
+    if (!service_worker_data) {
+      service_worker_data = new ServiceWorkerData(
+          context_proxy, service_worker_version_id, v8_context);
+    }
+
+    preload_realm::OnCreatePreloadableV8Context(v8_context,
+                                                service_worker_data);
+  }
+}
+
+void ElectronSandboxedRendererClient::
+    WillDestroyServiceWorkerContextOnWorkerThread(
+        v8::Local<v8::Context> context,
+        int64_t service_worker_version_id,
+        const GURL& service_worker_scope,
+        const GURL& script_url) {
+  if (service_worker_data) {
+    DCHECK_EQ(service_worker_version_id,
+              service_worker_data->service_worker_version_id());
+    delete service_worker_data;
+    service_worker_data = nullptr;
+  }
+
+  RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
+      context, service_worker_version_id, service_worker_scope, script_url);
 }
 
 }  // namespace electron

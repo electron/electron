@@ -35,7 +35,7 @@ class ElectronBrowserContext;
 namespace api {
 
 // The code is referenced from the net_log::NetExportFileWriter class.
-class NetLog : public gin::Wrappable<NetLog> {
+class NetLog final : public gin::Wrappable<NetLog> {
  public:
   static gin::Handle<NetLog> Create(v8::Isolate* isolate,
                                     ElectronBrowserContext* browser_context);

@@ -6,22 +6,22 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index 1931688e85d05ee2da4f88efb05d635cb43be233..afccc24392abff9eef2b9953fcffeb79ee71ad15 100644
+index 9519f947b8dfdc69808839948c9cb8434a0acf0e..23ce72d479f638c33edffcea7c35f5da6cab7cae 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
-@@ -30,6 +30,7 @@ const protocolHandlers = {
-   'http:': getHttpProtocolModuleFormat,
-   'https:': getHttpProtocolModuleFormat,
+@@ -26,6 +26,7 @@ const protocolHandlers = {
+   'data:': getDataProtocolModuleFormat,
+   'file:': getFileProtocolModuleFormat,
    'node:'() { return 'builtin'; },
 +  'electron:'() { return 'electron'; },
  };
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..6a15fcae677b3bda58fc85f705862bbcd9feec9d 100644
+index 5ba13096b98047ff33e4d44167c2a069ccc5e69d..a00b5979e3b5deb4ba315b4635c7e5d2801c376e 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
-@@ -142,7 +142,7 @@ async function defaultLoad(url, context = kEmptyObject) {
+@@ -119,7 +119,7 @@ async function defaultLoad(url, context = kEmptyObject) {
        // Now that we have the source for the module, run `defaultGetFormat` to detect its format.
        format = await defaultGetFormat(urlInstance, context);
  
@@ -30,37 +30,35 @@ index 5239bc8ed883a54df206d73c5dc0b70942c4f3df..6a15fcae677b3bda58fc85f705862bbc
          // For backward compatibility reasons, we need to discard the source in
          // order for the CJS loader to re-fetch it.
          source = null;
-@@ -224,6 +224,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
+@@ -200,12 +200,13 @@ function throwIfUnsupportedURLScheme(parsed) {
      protocol !== 'file:' &&
      protocol !== 'data:' &&
      protocol !== 'node:' &&
 +    protocol !== 'electron:' &&
      (
-       !experimentalNetworkImports ||
-       (
-@@ -232,7 +233,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
-       )
+       protocol !== 'https:' &&
+       protocol !== 'http:'
      )
    ) {
 -    const schemes = ['file', 'data', 'node'];
 +    const schemes = ['file', 'data', 'node', 'electron'];
-     if (experimentalNetworkImports) {
-       ArrayPrototypePush(schemes, 'https', 'http');
-     }
+     throw new ERR_UNSUPPORTED_ESM_URL_SCHEME(parsed, schemes);
+   }
+ }
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index e73a8ad60a13925d6773c32cead8d04ec9d96ee7..52cdb7d5e14a18ed7b1b65e429729cf47dce3f98 100644
+index 61c043e35c6ce9ef9d7255e009162289e80eaf4d..0c41492aa9652112df0b839361570a832daf3b13 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -741,6 +741,8 @@ function packageImportsResolve(name, base, conditions) {
-   throw importNotDefined(name, packageJSONUrl, base);
+@@ -791,6 +791,8 @@ function parsePackageName(specifier, base) {
+   return { packageName, packageSubpath, isScoped };
  }
  
 +const electronTypes = ['electron', 'electron/main', 'electron/common', 'electron/renderer'];
 +
  /**
-  * Returns the package type for a given URL.
-  * @param {URL} url - The URL to get the package type for.
-@@ -801,6 +803,11 @@ function packageResolve(specifier, base, conditions) {
+  * Resolves a package specifier to a URL.
+  * @param {string} specifier - The package specifier to resolve.
+@@ -804,6 +806,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -73,10 +71,10 @@ index e73a8ad60a13925d6773c32cead8d04ec9d96ee7..52cdb7d5e14a18ed7b1b65e429729cf4
      parsePackageName(specifier, base);
  
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 6772bbffd989d2257593bde76c94449dbd9272a8..232cf43c500056896eb754c15334858038b0525c 100644
+index 491dc3f450733a9181096a145cfa508767682658..23ed971daebdda3cb627907ffa3626daaa5b5b7b 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -283,7 +283,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -182,7 +182,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
  
    const { exportNames, module } = cjsPreparseModuleExports(filename, source);
    cjsCache.set(url, module);
@@ -85,7 +83,7 @@ index 6772bbffd989d2257593bde76c94449dbd9272a8..232cf43c500056896eb754c153348580
      [...exportNames] : ['default', ...exportNames];
  
    if (isMain) {
-@@ -305,8 +305,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -204,8 +204,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
        ({ exports } = module);
      }
      for (const exportName of exportNames) {
@@ -96,7 +94,7 @@ index 6772bbffd989d2257593bde76c94449dbd9272a8..232cf43c500056896eb754c153348580
          continue;
        }
        // We might trigger a getter -> dont fail.
-@@ -331,6 +331,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
+@@ -239,6 +239,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
    return createCJSModuleWrap(url, source);
  });
  
@@ -104,14 +102,14 @@ index 6772bbffd989d2257593bde76c94449dbd9272a8..232cf43c500056896eb754c153348580
 +  return createCJSModuleWrap('electron', '');
 +});
 +
- // Handle CommonJS modules referenced by `import` statements or expressions,
- // or as the initial entry point when the ESM loader handles a CommonJS entry.
- translators.set('commonjs', async function commonjsStrategy(url, source,
+ // Handle CommonJS modules referenced by `require` calls.
+ // This translator function must be sync, as `require` is sync.
+ translators.set('require-commonjs-typescript', (url, source, isMain) => {
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 34fb672ecb62b83cfb6a3a7484354165f4b02a85..679cb1302dfeb4a50d34219efccc73b518587066 100644
+index 14b0ef61d2f91cf48bba9aceefc55751e7ed5db2..6d6b32f65131d1d55aeeae27dd2970440d99b4bd 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1459,6 +1459,8 @@ function fileURLToPath(path, options = kEmptyObject) {
+@@ -1505,6 +1505,8 @@ function fileURLToPath(path, options = kEmptyObject) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

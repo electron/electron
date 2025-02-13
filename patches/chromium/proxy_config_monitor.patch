@@ -6,7 +6,7 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index c2adfa2bd0f79038cb50c69607827aef8fecca59..3db9b93e7c98544de7488ab97ad4a5addefdd2cd 100644
+index 1c1bce347bbebe0e1932d025f0cd3b773bdd1590..c541bc048d90021f9d4ffaff135e3320b77d8fe1 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -11,7 +11,9 @@
@@ -21,7 +21,7 @@ index c2adfa2bd0f79038cb50c69607827aef8fecca59..3db9b93e7c98544de7488ab97ad4a5ad
  #include "mojo/public/cpp/bindings/pending_remote.h"
 @@ -21,12 +23,13 @@
  #include "chrome/browser/ash/profiles/profile_helper.h"
- #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
+ #endif  // BUILDFLAG(IS_CHROMEOS)
  
 -#if BUILDFLAG(ENABLE_EXTENSIONS)
 +#if 0
@@ -42,27 +42,24 @@ index c2adfa2bd0f79038cb50c69607827aef8fecca59..3db9b93e7c98544de7488ab97ad4a5ad
  
  ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
    DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
-@@ -136,9 +140,11 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
+@@ -135,8 +139,10 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
  void ProxyConfigMonitor::OnPACScriptError(int32_t line_number,
                                            const std::string& details) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 +#if 0
    extensions::ProxyEventRouter::GetInstance()->OnPACScriptError(
-       g_browser_process->extension_event_router_forwarder(), profile_,
-       line_number, base::UTF8ToUTF16(details));
+       profile_, line_number, base::UTF8ToUTF16(details));
 +#endif
  }
  
  void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
-@@ -152,9 +158,10 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
-     // controlled.
+@@ -151,7 +157,9 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
      return;
    }
--
+ 
 +#if 0
-   extensions::ProxyEventRouter::GetInstance()->OnProxyError(
-       g_browser_process->extension_event_router_forwarder(), profile_,
-       net_error);
+   extensions::ProxyEventRouter::GetInstance()->OnProxyError(profile_,
+                                                             net_error);
 +#endif
  }
  #endif

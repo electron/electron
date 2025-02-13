@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sun, 17 Nov 2024 22:33:19 +0100
+Subject: build: allow unbundling of Node.js dependencies
+
+Linux distributions have guidelines on using distro-provided dependencies,
+rather than compiling them in statically.
+
+This PR this enables downstream packagers to unbundle these dependencies.
+We don't need to do this for zlib, as the existing gn workflow uses the same
+//third_party/zlib, so unbundling zlib with Chromium tools in
+//build/linux/unbundle works already. This adds support for some of the others.
+
+Upstreamed at https://github.com/nodejs/node/pull/55903
+
+diff --git a/unofficial.gni b/unofficial.gni
+index 08a4ed939fb1482a897def94128282fdfd63dc62..23367db388ce9e83e123d4c6e8c6325266dd52dc 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -153,7 +153,6 @@ template("node_gn_build") {
+       ":run_node_js2c",
+       "deps/cares",
+       "deps/histogram",
+-      "deps/llhttp",
+       "deps/nbytes",
+       "deps/nghttp2",
+       "deps/postject",
+@@ -184,7 +183,17 @@ template("node_gn_build") {
+       configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
+       configs += [ "//build/config/gcc:symbol_visibility_default" ]
+     }
+-
++    if (use_system_llhttp) {
++      libs += [ "llhttp" ]
++    } else {
++      deps += [ "deps/llhttp" ]
++    }
++    if (use_system_histogram) {
++      libs += [ "hdr_histogram" ]
++      include_dirs += [ "/usr/include/hdr" ]
++    } else {
++      deps += [ "deps/histogram" ]
++    }
+     if (v8_enable_i18n_support) {
+       deps += [ "//third_party/icu" ]
+     }
+@@ -211,6 +220,19 @@ template("node_gn_build") {
+       sources += node_inspector.node_inspector_sources +
+                  node_inspector.node_inspector_generated_sources
+     }
++    if (is_linux) {
++      import("//build/config/linux/pkg_config.gni")
++        if (use_system_cares) {
++          pkg_config("cares") {
++            packages = [ "libcares" ]
++          }
++        }
++      if (use_system_nghttp2) {
++        pkg_config("nghttp2") {
++          packages = [ "libnghttp2" ]
++        }
++      }
++    }
+   }
+ 
+   executable(target_name) {

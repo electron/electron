@@ -14,10 +14,10 @@ This patch likely can't be upstreamed as-is, as Chromium doesn't have
 this use case in mind currently.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 16b2e484757c686f6cfb5b2b014b406c3e0d21ae..ff9770991c6d1ceec19ce2e2f199475f5eaddada 100644
+index 3d1397ff82803c9ba45bdcee0b2c61ab5c8049a4..1e6a6715691e07c22202d865dce89c94b3e02d76 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -906,13 +906,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
+@@ -932,13 +932,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
  
  void HWNDMessageHandler::PaintAsActiveChanged() {
    if (!delegate_->HasNonClientView() || !delegate_->CanActivate() ||
@@ -33,9 +33,9 @@ index 16b2e484757c686f6cfb5b2b014b406c3e0d21ae..ff9770991c6d1ceec19ce2e2f199475f
  }
  
  void HWNDMessageHandler::SetWindowIcons(const gfx::ImageSkia& window_icon,
-@@ -2251,17 +2251,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
-   if (IsVisible())
+@@ -2327,17 +2327,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
      delegate_->SchedulePaint();
+   }
  
 -  // Calling DefWindowProc is only necessary if there's a system frame being
 -  // drawn. Otherwise it can draw an incorrect title bar and cause visual

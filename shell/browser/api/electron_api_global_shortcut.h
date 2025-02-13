@@ -9,9 +9,10 @@
 #include <vector>
 
 #include "base/functional/callback_forward.h"
-#include "chrome/browser/extensions/global_shortcut_listener.h"
+#include "extensions/common/extension_id.h"
 #include "gin/wrappable.h"
 #include "ui/base/accelerators/accelerator.h"
+#include "ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h"
 
 namespace gin {
 template <typename T>
@@ -20,8 +21,8 @@ class Handle;
 
 namespace electron::api {
 
-class GlobalShortcut : private extensions::GlobalShortcutListener::Observer,
-                       public gin::Wrappable<GlobalShortcut> {
+class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
+                             public gin::Wrappable<GlobalShortcut> {
  public:
   static gin::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 
@@ -42,6 +43,7 @@ class GlobalShortcut : private extensions::GlobalShortcutListener::Observer,
  private:
   typedef std::map<ui::Accelerator, base::RepeatingClosure>
       AcceleratorCallbackMap;
+  typedef std::map<std::string, base::RepeatingClosure> CommandCallbackMap;
 
   bool RegisterAll(const std::vector<ui::Accelerator>& accelerators,
                    const base::RepeatingClosure& callback);
@@ -52,10 +54,13 @@ class GlobalShortcut : private extensions::GlobalShortcutListener::Observer,
   void UnregisterSome(const std::vector<ui::Accelerator>& accelerators);
   void UnregisterAll();
 
-  // GlobalShortcutListener::Observer implementation.
+  // GlobalAcceleratorListener::Observer implementation.
   void OnKeyPressed(const ui::Accelerator& accelerator) override;
+  void ExecuteCommand(const extensions::ExtensionId& extension_id,
+                      const std::string& command_id) override;
 
   AcceleratorCallbackMap accelerator_callback_map_;
+  CommandCallbackMap command_callback_map_;
 };
 
 }  // namespace electron::api

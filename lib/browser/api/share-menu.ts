@@ -1,4 +1,5 @@
 import { BrowserWindow, Menu, SharingItem, PopupOptions } from 'electron/main';
+
 import { EventEmitter } from 'events';
 
 class ShareMenu extends EventEmitter implements Electron.ShareMenu {

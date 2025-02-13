@@ -5,7 +5,6 @@
 
 #include "shell/browser/extensions/electron_process_manager_delegate.h"
 
-#include "base/command_line.h"
 #include "base/one_shot_event.h"
 #include "extensions/browser/extension_system.h"
 #include "extensions/browser/process_manager.h"

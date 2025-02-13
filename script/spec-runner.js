@@ -1,19 +1,25 @@
 #!/usr/bin/env node
 
 const { ElectronVersions, Installer } = require('@electron/fiddle-core');
+
+const chalk = require('chalk');
+const { hashElement } = require('folder-hash');
+const minimist = require('minimist');
+
 const childProcess = require('node:child_process');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
-const { hashElement } = require('folder-hash');
 const os = require('node:os');
 const path = require('node:path');
+
 const unknownFlags = [];
 
-require('colors');
-const pass = '✓'.green;
-const fail = '✗'.red;
+const pass = chalk.green('✓');
+const fail = chalk.red('✗');
 
-const args = require('minimist')(process.argv, {
+const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
+
+const args = minimist(process.argv, {
   string: ['runners', 'target', 'electronVersion'],
   unknown: arg => unknownFlags.push(arg)
 });
@@ -152,6 +158,39 @@ async function runElectronTests () {
   }
 }
 
+async function asyncSpawn (exe, runnerArgs) {
+  return new Promise((resolve, reject) => {
+    let forceExitResult = 0;
+    const child = childProcess.spawn(exe, runnerArgs, {
+      cwd: path.resolve(__dirname, '../..')
+    });
+    if (process.env.ELECTRON_TEST_PID_DUMP_PATH && child.pid) {
+      fs.writeFileSync(process.env.ELECTRON_TEST_PID_DUMP_PATH, child.pid.toString());
+    }
+    child.stdout.pipe(process.stdout);
+    child.stderr.pipe(process.stderr);
+    if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
+      child.stdout.on('data', data => {
+        const failureRE = RegExp(`${FAILURE_STATUS_KEY}: (\\d.*)`);
+        const failures = data.toString().match(failureRE);
+        if (failures) {
+          forceExitResult = parseInt(failures[1], 10);
+        }
+      });
+    }
+    child.on('error', error => reject(error));
+    child.on('close', (status, signal) => {
+      let returnStatus = 0;
+      if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
+        returnStatus = forceExitResult;
+      } else {
+        returnStatus = status;
+      }
+      resolve({ status: returnStatus, signal });
+    });
+  });
+}
+
 async function runTestUsingElectron (specDir, testName) {
   let exe;
   if (args.electronVersion) {
@@ -165,10 +204,7 @@ async function runTestUsingElectron (specDir, testName) {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
     exe = 'python3';
   }
-  const { status, signal } = childProcess.spawnSync(exe, runnerArgs, {
-    cwd: path.resolve(__dirname, '../..'),
-    stdio: 'inherit'
-  });
+  const { status, signal } = await asyncSpawn(exe, runnerArgs);
   if (status !== 0) {
     if (status) {
       const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString();
@@ -186,14 +222,10 @@ async function runMainProcessElectronTests () {
 }
 
 async function installSpecModules (dir) {
-  // v8 headers use c++17 so override the gyp default of -std=c++14,
-  // but don't clobber any other CXXFLAGS that were passed into spec-runner.js
-  const CXXFLAGS = ['-std=c++17', process.env.CXXFLAGS].filter(x => !!x).join(' ');
-
   const env = {
+    npm_config_msvs_version: '2022',
     ...process.env,
-    CXXFLAGS,
-    npm_config_msvs_version: '2019',
+    CXXFLAGS: process.env.CXXFLAGS,
     npm_config_yes: 'true'
   };
   if (args.electronVersion) {

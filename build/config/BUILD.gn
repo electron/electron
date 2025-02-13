@@ -1,8 +1,11 @@
-# For MAS build, we force defining "MAS_BUILD".
-config("mas_build") {
+action("generate_mas_config") {
+  outputs = [ "$target_gen_dir/../../mas.h" ]
+  script = "../../script/generate-mas-config.py"
   if (is_mas_build) {
-    defines = [ "IS_MAS_BUILD()=1" ]
+    args = [ "true" ]
   } else {
-    defines = [ "IS_MAS_BUILD()=0" ]
+    args = [ "false" ]
   }
+
+  args += rebase_path(outputs)
 }

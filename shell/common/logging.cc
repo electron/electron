@@ -29,17 +29,16 @@ base::FilePath GetLogFileName(const base::CommandLine& command_line) {
   if (!filename.empty())
     return base::FilePath::FromUTF8Unsafe(filename);
 
-  const base::FilePath log_filename(FILE_PATH_LITERAL("electron_debug.log"));
-  base::FilePath log_path;
+  auto log_filename = base::FilePath{FILE_PATH_LITERAL("electron_debug.log")};
 
-  if (base::PathService::Get(chrome::DIR_LOGS, &log_path)) {
-    log_path = log_path.Append(log_filename);
-    return log_path;
-  } else {
-    // error with path service, just use some default file somewhere
-    return log_filename;
-  }
+  if (base::FilePath path; base::PathService::Get(chrome::DIR_LOGS, &path))
+    return path.Append(log_filename);
+
+  // error with path service, just use some default file somewhere
+  return log_filename;
 }
+
+namespace {
 
 bool HasExplicitLogFile(const base::CommandLine& command_line) {
   std::string filename = command_line.GetSwitchValueASCII(switches::kLogFile);
@@ -94,6 +93,8 @@ LoggingDestination DetermineLoggingDestination(
     return LOG_TO_FILE | (also_log_to_stderr ? LOG_TO_STDERR : 0);
   return LOG_TO_SYSTEM_DEBUG_LOG | LOG_TO_STDERR;
 }
+
+}  // namespace
 
 void InitElectronLogging(const base::CommandLine& command_line,
                          bool is_preinit) {

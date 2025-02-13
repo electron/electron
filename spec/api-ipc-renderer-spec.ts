@@ -1,7 +1,10 @@
-import { expect } from 'chai';
 import { ipcMain, BrowserWindow } from 'electron/main';
-import { closeWindow } from './lib/window-helpers';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
+
+import { closeWindow } from './lib/window-helpers';
 
 describe('ipcRenderer module', () => {
   let w: BrowserWindow;
@@ -15,6 +18,7 @@ describe('ipcRenderer module', () => {
       }
     });
     await w.loadURL('about:blank');
+    w.webContents.on('console-message', (event, ...args) => console.error(...args));
   });
   after(async () => {
     await closeWindow(w);
@@ -88,8 +92,8 @@ describe('ipcRenderer module', () => {
       }`);
 
       const child = { hello: 'world' };
-      const foo = { name: 'foo', child: child };
-      const bar = { name: 'bar', child: child };
+      const foo = { name: 'foo', child };
+      const bar = { name: 'bar', child };
       const array = [foo, bar];
 
       const [, arrayValue, fooValue, barValue, childValue] = await once(ipcMain, 'message');
@@ -136,6 +140,40 @@ describe('ipcRenderer module', () => {
     it('is not used for internals', async () => {
       const result = await w.webContents.executeJavaScript(`
         require('electron').ipcRenderer.eventNames()
+      `);
+      expect(result).to.deep.equal([]);
+    });
+  });
+
+  describe('ipcRenderer.removeAllListeners', () => {
+    it('removes only the given channel', async () => {
+      const result = await w.webContents.executeJavaScript(`
+        (() => {
+          const { ipcRenderer } = require('electron');
+
+          ipcRenderer.on('channel1', () => {});
+          ipcRenderer.on('channel2', () => {});
+
+          ipcRenderer.removeAllListeners('channel1');
+
+          return ipcRenderer.eventNames();
+        })()
+      `);
+      expect(result).to.deep.equal(['channel2']);
+    });
+
+    it('removes all channels if no channel is specified', async () => {
+      const result = await w.webContents.executeJavaScript(`
+        (() => {
+          const { ipcRenderer } = require('electron');
+
+          ipcRenderer.on('channel1', () => {});
+          ipcRenderer.on('channel2', () => {});
+
+          ipcRenderer.removeAllListeners();
+
+          return ipcRenderer.eventNames();
+        })()
       `);
       expect(result).to.deep.equal([]);
     });

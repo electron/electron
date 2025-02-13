@@ -186,15 +186,16 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
 
       if (entry) {
         GURL url = content::HostZoomMap::GetURLFromEntry(entry);
-        std::string host = net::GetHostOrSpecFromURL(url);
+        const std::string host = net::GetHostOrSpecFromURL(url);
+        const std::string scheme = url.scheme();
 
-        if (zoom_map->HasZoomLevel(url.scheme(), host)) {
+        if (zoom_map->HasZoomLevel(scheme, host)) {
           // If there are other tabs with the same origin, then set this tab's
           // zoom level to match theirs. The temporary zoom level will be
           // cleared below, but this call will make sure this tab re-draws at
           // the correct zoom level.
           double origin_zoom_level =
-              zoom_map->GetZoomLevelForHostAndScheme(url.scheme(), host);
+              zoom_map->GetZoomLevelForHostAndScheme(scheme, host);
           event_data_->new_zoom_level = origin_zoom_level;
           zoom_map->SetTemporaryZoomLevel(rfh_id, origin_zoom_level);
         } else {

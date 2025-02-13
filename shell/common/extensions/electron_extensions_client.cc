@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 
-#include "base/logging.h"
 #include "base/no_destructor.h"
 #include "components/version_info/version_info.h"
 #include "content/public/common/user_agent.h"
@@ -39,24 +38,23 @@ class ElectronPermissionMessageProvider
       const ElectronPermissionMessageProvider&) = delete;
 
   // PermissionMessageProvider implementation.
-  extensions::PermissionMessages GetPermissionMessages(
+  [[nodiscard]] extensions::PermissionMessages GetPermissionMessages(
       const extensions::PermissionIDSet& permissions) const override {
     return extensions::PermissionMessages();
   }
 
-  bool IsPrivilegeIncrease(
+  [[nodiscard]] bool IsPrivilegeIncrease(
       const extensions::PermissionSet& granted_permissions,
       const extensions::PermissionSet& requested_permissions,
       extensions::Manifest::Type extension_type) const override {
     // Ensure we implement this before shipping.
-    CHECK(false);
-    return false;
+    NOTREACHED();
   }
 
-  extensions::PermissionIDSet GetAllPermissionIDs(
+  [[nodiscard]] extensions::PermissionIDSet GetAllPermissionIDs(
       const extensions::PermissionSet& permissions,
       extensions::Manifest::Type extension_type) const override {
-    return extensions::PermissionIDSet();
+    return {};
   }
 };
 
@@ -114,7 +112,7 @@ extensions::URLPatternSet
 ElectronExtensionsClient::GetPermittedChromeSchemeHosts(
     const extensions::Extension* extension,
     const extensions::APIPermissionSet& api_permissions) const {
-  return extensions::URLPatternSet();
+  return {};
 }
 
 bool ElectronExtensionsClient::IsScriptableURL(const GURL& url,

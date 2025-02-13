@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/logging.h"
+#include "electron/mas.h"
 #include "shell/browser/notifications/mac/cocoa_notification.h"
 #include "shell/browser/notifications/mac/notification_presenter_mac.h"
 
@@ -38,7 +39,7 @@
        didActivateNotification:(NSUserNotification*)notif {
   auto* notification = presenter_->GetNotification(notif);
 
-  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
+  if (electron::debug_notifications) {
     LOG(INFO) << "Notification activated (" << [notif.identifier UTF8String]
               << ")";
   }

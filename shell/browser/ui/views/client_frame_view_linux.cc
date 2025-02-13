@@ -154,8 +154,8 @@ gfx::Insets ClientFrameViewLinux::GetBorderDecorationInsets() const {
 }
 
 gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
-  return gfx::Insets(
-      host_supports_client_frame_shadow_ ? -kResizeOutsideBorderSize : 0);
+  return gfx::Insets{
+      host_supports_client_frame_shadow_ ? -kResizeOutsideBorderSize : 0};
 }
 
 gfx::Rect ClientFrameViewLinux::GetWindowContentBounds() const {
@@ -409,15 +409,15 @@ void ClientFrameViewLinux::LayoutButtonsOnSide(
       frame_buttons = trailing_frame_buttons_;
       // We always lay buttons out going from the edge towards the center, but
       // they are given to us as left-to-right, so reverse them.
-      std::reverse(frame_buttons.begin(), frame_buttons.end());
+      std::ranges::reverse(frame_buttons);
       break;
     default:
       NOTREACHED();
   }
 
   for (views::FrameButton frame_button : frame_buttons) {
-    auto* button = std::find_if(
-        nav_buttons_.begin(), nav_buttons_.end(), [&](const NavButton& test) {
+    auto* button =
+        std::ranges::find_if(nav_buttons_, [&](const NavButton& test) {
           return test.type != skip_type && test.frame_button == frame_button;
         });
     CHECK(button != nav_buttons_.end())
@@ -457,7 +457,7 @@ void ClientFrameViewLinux::LayoutButtonsOnSide(
 
 gfx::Rect ClientFrameViewLinux::GetTitlebarBounds() const {
   if (frame_->IsFullscreen()) {
-    return gfx::Rect();
+    return {};
   }
 
   int font_height = gfx::FontList().GetHeight();

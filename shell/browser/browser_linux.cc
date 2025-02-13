@@ -7,9 +7,14 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
+#if BUILDFLAG(IS_LINUX)
+#include <gtk/gtk.h>
+#endif
+
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/process/launch.h"
+#include "base/strings/strcat.h"
 #include "electron/electron_version.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
@@ -20,7 +25,6 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "shell/browser/linux/unity_service.h"
-#include "ui/gtk/gtk_util.h"  // nogncheck
 #endif
 
 namespace electron {
@@ -62,9 +66,9 @@ std::optional<std::string> GetXdgAppOutput(
                                                &success_code);
 
   if (!ran_ok || success_code != EXIT_SUCCESS)
-    return std::optional<std::string>();
+    return {};
 
-  return std::make_optional(reply);
+  return reply;
 }
 
 bool SetDefaultWebClient(const std::string& protocol) {
@@ -124,7 +128,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   const std::vector<std::string> argv = {
       "xdg-mime", "query", "default",
-      std::string("x-scheme-handler/") + url.scheme()};
+      base::StrCat({"x-scheme-handler/", url.scheme_piece()})};
 
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }

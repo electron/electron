@@ -15,7 +15,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
-#include "ui/base/models/simple_menu_model.h"
+#include "ui/menus/simple_menu_model.h"
 #include "url/gurl.h"
 
 namespace electron {
@@ -37,7 +37,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
   class Delegate : public ui::SimpleMenuModel::Delegate {
    public:
-    ~Delegate() override {}
+    ~Delegate() override = default;
 
     virtual bool GetAcceleratorForCommandIdWithParams(
         int command_id,
@@ -63,7 +63,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
   class Observer : public base::CheckedObserver {
    public:
-    ~Observer() override {}
+    ~Observer() override = default;
 
     // Notifies the menu will open.
     virtual void OnMenuWillShow() {}

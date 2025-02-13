@@ -59,7 +59,7 @@ def skip_path(dep, dist_zip, target_cpu):
       and dep == "snapshot_blob.bin"
     )
   )
-  if should_skip:
+  if should_skip and os.environ.get('ELECTRON_DEBUG_ZIP_SKIP') == '1':
     print("Skipping {}".format(dep))
   return should_skip
 

@@ -1,12 +1,15 @@
-import * as cp from 'node:child_process';
-import * as path from 'node:path';
-import { assert, expect } from 'chai';
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
-import { sortMenuItems } from '../lib/browser/api/menu-utils';
+
+import { assert, expect } from 'chai';
+
+import * as cp from 'node:child_process';
+import { once } from 'node:events';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
+
 import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
-import { once } from 'node:events';
-import { setTimeout } from 'node:timers/promises';
+import { sortMenuItems } from '../lib/browser/api/menu-utils';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -922,6 +925,20 @@ describe('Menu module', function () {
         menu.closePopup();
       });
       w.show();
+    });
+
+    it('does not crash when rendering menu item with Super or meta accelerator', async () => {
+      const menu = Menu.buildFromTemplate([{
+        label: 'Test Super',
+        accelerator: 'Super+Ctrl+T'
+      }, {
+        label: 'Test Meta',
+        accelerator: 'Meta+Ctrl+T'
+      }]);
+      const menuWillClose = once(menu, 'menu-will-close');
+      menu.popup({ window: w });
+      menu.closePopup();
+      await menuWillClose;
     });
   });
 

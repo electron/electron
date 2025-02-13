@@ -1,0 +1,14 @@
+name: Maintainer Issue (not for public use)
+description: Only to be created by Electron maintainers
+body:
+- type: checkboxes
+  attributes:
+    label: Confirmation
+    options:
+      - label: I am a [maintainer](https://github.com/orgs/electron/people) of the Electron project. (If not, please create a [different issue type](https://github.com/electron/electron/issues/new/).)
+        required: true
+- type: textarea
+  attributes:
+    label: Description
+  validations:
+    required: true

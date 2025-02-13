@@ -20,7 +20,7 @@ class Handle;
 namespace electron::api {
 
 // Retains reference to the data pipe.
-class DataPipeHolder : public gin::Wrappable<DataPipeHolder> {
+class DataPipeHolder final : public gin::Wrappable<DataPipeHolder> {
  public:
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;

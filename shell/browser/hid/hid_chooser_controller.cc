@@ -10,7 +10,6 @@
 #include "base/command_line.h"
 #include "base/containers/contains.h"
 #include "base/functional/bind.h"
-#include "base/ranges/algorithm.h"
 #include "content/public/browser/web_contents.h"
 #include "gin/data_object_builder.h"
 #include "services/device/public/cpp/hid/hid_blocklist.h"
@@ -24,8 +23,10 @@
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/hid_device_info_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
-#include "shell/common/node_includes.h"
-#include "shell/common/process_util.h"
+#include "shell/common/node_util.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
+#include "third_party/blink/public/mojom/hid/hid.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace {
@@ -49,11 +50,11 @@ bool FilterMatch(const blink::mojom::HidDeviceFilterPtr& filter,
   if (filter->usage) {
     if (filter->usage->is_page()) {
       const uint16_t usage_page = filter->usage->get_page();
-      auto find_it =
-          std::find_if(device.collections.begin(), device.collections.end(),
-                       [=](const device::mojom::HidCollectionInfoPtr& c) {
-                         return usage_page == c->usage->usage_page;
-                       });
+      auto find_it = std::ranges::find_if(
+          device.collections,
+          [=](const device::mojom::HidCollectionInfoPtr& c) {
+            return usage_page == c->usage->usage_page;
+          });
       if (find_it == device.collections.end())
         return false;
     } else if (filter->usage->is_usage_and_page()) {
@@ -204,10 +205,9 @@ void HidChooserController::OnDeviceChosen(gin::Arguments* args) {
       }
       RunCallback(std::move(devices));
     } else {
-      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-      node::Environment* env = node::Environment::GetCurrent(isolate);
-      EmitWarning(env, "The device id " + device_id + " was not found.",
-                  "UnknownHIDDeviceId");
+      util::EmitWarning(
+          base::StrCat({"The device id ", device_id, " was not found."}),
+          "UnknownHIDDeviceId");
       RunCallback({});
     }
   }
@@ -277,7 +277,7 @@ bool HidChooserController::DisplayDevice(
 
     AddMessageToConsole(
         blink::mojom::ConsoleMessageLevel::kInfo,
-        base::StringPrintf(
+        absl::StrFormat(
             "Chooser dialog is not displaying a FIDO HID device: vendorId=%d, "
             "productId=%d, name='%s', serial='%s'",
             device.vendor_id, device.product_id, device.product_name.c_str(),
@@ -288,12 +288,12 @@ bool HidChooserController::DisplayDevice(
   if (device.is_excluded_by_blocklist) {
     AddMessageToConsole(
         blink::mojom::ConsoleMessageLevel::kInfo,
-        base::StringPrintf(
-            "Chooser dialog is not displaying a device excluded by "
-            "the HID blocklist: vendorId=%d, "
-            "productId=%d, name='%s', serial='%s'",
-            device.vendor_id, device.product_id, device.product_name.c_str(),
-            device.serial_number.c_str()));
+        absl::StrFormat("Chooser dialog is not displaying a device excluded by "
+                        "the HID blocklist: vendorId=%d, "
+                        "productId=%d, name='%s', serial='%s'",
+                        device.vendor_id, device.product_id,
+                        device.product_name.c_str(),
+                        device.serial_number.c_str()));
     return false;
   }
 

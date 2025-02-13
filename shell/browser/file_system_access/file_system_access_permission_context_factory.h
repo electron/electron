@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_FILE_SYSTEM_ACCESS_FILE_SYSTEM_ACCESS_PERMISSION_CONTEXT_FACTORY_H_
 #define ELECTRON_SHELL_BROWSER_FILE_SYSTEM_ACCESS_FILE_SYSTEM_ACCESS_PERMISSION_CONTEXT_FACTORY_H_
 
+#include <memory>
+
 #include "base/no_destructor.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 #include "shell/browser/file_system_access/file_system_access_permission_context.h"
@@ -18,9 +20,6 @@ class FileSystemAccessPermissionContextFactory
       content::BrowserContext* context);
   static FileSystemAccessPermissionContextFactory* GetInstance();
 
-  static std::unique_ptr<KeyedService> BuildInstanceFor(
-      content::BrowserContext* context);
-
   FileSystemAccessPermissionContextFactory(
       const FileSystemAccessPermissionContextFactory&) = delete;
   FileSystemAccessPermissionContextFactory& operator=(
@@ -33,7 +32,7 @@ class FileSystemAccessPermissionContextFactory
   ~FileSystemAccessPermissionContextFactory() override;
 
   // BrowserContextKeyedServiceFactory:
-  KeyedService* BuildServiceInstanceFor(
+  std::unique_ptr<KeyedService> BuildServiceInstanceForBrowserContext(
       content::BrowserContext* context) const override;
 };
 

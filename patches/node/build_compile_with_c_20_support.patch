@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 4 Sep 2024 16:39:23 +0200
+Subject: build: compile with C++20 support
+
+Refs https://github.com/nodejs/node/pull/45427
+
+V8 requires C++20 support as of https://chromium-review.googlesource.com/c/v8/v8/+/5587859.
+
+This can be removed when Electron upgrades to a version of Node.js containing the required V8 version.
+
+diff --git a/common.gypi b/common.gypi
+index 755bd203173a69564be203ad58c33eb50680b204..a7a0ffde7209de51ffcbf0db0ed7efcf09ad606d 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -518,7 +518,7 @@
+           '-fno-rtti',
+           '-fno-exceptions',
+           '-fno-strict-aliasing',
+-          '-std=gnu++17',
++          '-std=gnu++20',
+         ],
+         'defines': [ '__STDC_FORMAT_MACROS' ],
+         'ldflags': [ '-rdynamic' ],
+@@ -688,7 +688,7 @@
+           ['clang==1', {
+             'xcode_settings': {
+               'GCC_VERSION': 'com.apple.compilers.llvm.clang.1_0',
+-              'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++17',  # -std=gnu++17
++              'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++20',  # -std=gnu++20
+               'CLANG_CXX_LIBRARY': 'libc++',
+             },
+           }],

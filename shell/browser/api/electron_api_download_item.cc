@@ -15,7 +15,6 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
-#include "shell/common/node_includes.h"
 #include "url/gurl.h"
 
 namespace gin {
@@ -210,7 +209,7 @@ const GURL& DownloadItem::GetURL() const {
 
 v8::Local<v8::Value> DownloadItem::GetURLChain() const {
   if (!CheckAlive())
-    return v8::Local<v8::Value>();
+    return {};
   return gin::ConvertToV8(isolate_, download_item_->GetUrlChain());
 }
 

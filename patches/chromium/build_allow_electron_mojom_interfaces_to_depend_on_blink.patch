@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 9 Aug 2024 22:39:47 +0900
+Subject: build: allow electron mojom interfaces to depend on blink
+ mojom_platform
+
+Needed for:
+
+1) //electron/shell/common:plugin
+2) //electron/shell/common:web_contents_utility
+
+diff --git a/content/public/common/BUILD.gn b/content/public/common/BUILD.gn
+index 659f500a47eb0f2d1f753dee2b234bb7bf1027d4..8f6e733b1ae1081f19a090cbdf2372b164e514a8 100644
+--- a/content/public/common/BUILD.gn
++++ b/content/public/common/BUILD.gn
+@@ -379,6 +379,8 @@ mojom("interfaces") {
+     "//content/common/*",
+     "//extensions/common:mojom",
+     "//extensions/common:mojom_blink",
++    "//electron/shell/common:plugin",
++    "//electron/shell/common:web_contents_utility",
+   ]
+ 
+   sources = [

@@ -15,6 +15,7 @@
 #include "base/containers/contains.h"
 #include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
+#include "base/strings/utf_string_conversion_utils.h"
 #include "base/task/single_thread_task_runner.h"
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -29,12 +30,11 @@ namespace electron::api {
 
 namespace {
 
-bool HasWordCharacters(const std::u16string& text, int index) {
-  const char16_t* data = text.data();
-  int length = text.length();
-  while (index < length) {
-    uint32_t code = 0;
-    U16_NEXT(data, index, length, code);
+bool HasWordCharacters(const std::u16string& text, size_t index) {
+  base_icu::UChar32 code;
+  while (index < text.size() &&
+         base::ReadUnicodeCharacter(text.c_str(), text.size(), &index, &code)) {
+    ++index;
     UErrorCode error = U_ZERO_ERROR;
     if (uscript_getScript(code, &error) != USCRIPT_COMMON)
       return true;
@@ -60,7 +60,7 @@ class SpellCheckClient::SpellcheckRequest {
   SpellcheckRequest& operator=(const SpellcheckRequest&) = delete;
   ~SpellcheckRequest() = default;
 
-  const std::u16string& text() const { return text_; }
+  [[nodiscard]] const std::u16string& text() const { return text_; }
   blink::WebTextCheckingCompletion* completion() { return completion_.get(); }
   std::vector<Word>& wordlist() { return word_list_; }
 
@@ -118,14 +118,9 @@ bool SpellCheckClient::IsSpellCheckingEnabled() const {
   return true;
 }
 
-void SpellCheckClient::ShowSpellingUI(bool show) {}
-
 bool SpellCheckClient::IsShowingSpellingUI() {
   return false;
 }
-
-void SpellCheckClient::UpdateSpellingUIWithMisspelledWord(
-    const blink::WebString& word) {}
 
 void SpellCheckClient::SpellCheckText() {
   const auto& text = pending_request_param_->text();
@@ -222,8 +217,7 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
 
   auto context = isolate_->GetCurrentContext();
   gin_helper::MicrotasksScope microtasks_scope{
-      isolate_, context->GetMicrotaskQueue(), false,
-      v8::MicrotasksScope::kDoNotRunMicrotasks};
+      context, false, v8::MicrotasksScope::kDoNotRunMicrotasks};
 
   v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate_, base::BindRepeating(&SpellCheckClient::OnSpellCheckDone,

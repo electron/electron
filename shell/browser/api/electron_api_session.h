@@ -16,8 +16,9 @@
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/wrappable.h"
-#include "services/network/public/mojom/host_resolver.mojom.h"
-#include "services/network/public/mojom/ssl_config.mojom.h"
+#include "services/network/public/mojom/host_resolver.mojom-forward.h"
+#include "services/network/public/mojom/ssl_config.mojom-forward.h"
+#include "shell/browser/api/ipc_dispatcher.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
@@ -57,21 +58,23 @@ class ProxyConfig;
 namespace electron {
 
 class ElectronBrowserContext;
+struct PreloadScript;
 
 namespace api {
 
-class Session : public gin::Wrappable<Session>,
-                public gin_helper::Pinnable<Session>,
-                public gin_helper::Constructible<Session>,
-                public gin_helper::EventEmitterMixin<Session>,
-                public gin_helper::CleanedUpAtExit,
+class Session final : public gin::Wrappable<Session>,
+                      public gin_helper::Pinnable<Session>,
+                      public gin_helper::Constructible<Session>,
+                      public gin_helper::EventEmitterMixin<Session>,
+                      public gin_helper::CleanedUpAtExit,
+                      public IpcDispatcher<Session>,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-                private SpellcheckHunspellDictionary::Observer,
+                      private SpellcheckHunspellDictionary::Observer,
 #endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-                private extensions::ExtensionRegistryObserver,
+                      private extensions::ExtensionRegistryObserver,
 #endif
-                private content::DownloadManager::Observer {
+                      private content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
   static gin::Handle<Session> CreateFrom(
@@ -101,6 +104,9 @@ class Session : public gin::Wrappable<Session>,
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Session"; }
   const char* GetTypeName() override;
+
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
 
   // Methods.
   v8::Local<v8::Promise> ResolveHost(
@@ -138,8 +144,17 @@ class Session : public gin::Wrappable<Session>,
                                      const std::string& uuid);
   void DownloadURL(const GURL& url, gin::Arguments* args);
   void CreateInterruptedDownload(const gin_helper::Dictionary& options);
-  void SetPreloads(const std::vector<base::FilePath>& preloads);
-  std::vector<base::FilePath> GetPreloads() const;
+  std::string RegisterPreloadScript(gin_helper::ErrorThrower thrower,
+                                    const PreloadScript& new_preload_script);
+  void UnregisterPreloadScript(gin_helper::ErrorThrower thrower,
+                               const std::string& script_id);
+  std::vector<PreloadScript> GetPreloadScripts() const;
+  v8::Local<v8::Promise> GetSharedDictionaryInfo(
+      const gin_helper::Dictionary& options);
+  v8::Local<v8::Promise> GetSharedDictionaryUsageInfo();
+  v8::Local<v8::Promise> ClearSharedDictionaryCache();
+  v8::Local<v8::Promise> ClearSharedDictionaryCacheForIsolationKey(
+      const gin_helper::Dictionary& options);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);

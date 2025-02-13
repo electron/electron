@@ -1,13 +1,16 @@
-import { expect } from 'chai';
 import { app, session, BrowserWindow, ipcMain, WebContents, Extension, Session } from 'electron/main';
-import { closeAllWindows, closeWindow } from './lib/window-helpers';
+
+import { expect } from 'chai';
+import * as WebSocket from 'ws';
+
+import { once } from 'node:events';
+import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as path from 'node:path';
-import * as fs from 'node:fs/promises';
-import * as WebSocket from 'ws';
+
 import { emittedNTimes, emittedUntil } from './lib/events-helpers';
-import { ifit, listen } from './lib/spec-helpers';
-import { once } from 'node:events';
+import { ifit, listen, waitUntil } from './lib/spec-helpers';
+import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers';
 
 const uuid = require('uuid');
 
@@ -20,6 +23,7 @@ describe('chrome extensions', () => {
   let server: http.Server;
   let url: string;
   let port: number;
+  let wss: WebSocket.Server;
   before(async () => {
     server = http.createServer((req, res) => {
       if (req.url === '/cors') {
@@ -28,7 +32,7 @@ describe('chrome extensions', () => {
       res.end(emptyPage);
     });
 
-    const wss = new WebSocket.Server({ noServer: true });
+    wss = new WebSocket.Server({ noServer: true });
     wss.on('connection', function connection (ws) {
       ws.on('message', function incoming (message) {
         if (message === 'foo') {
@@ -39,8 +43,10 @@ describe('chrome extensions', () => {
 
     ({ port, url } = await listen(server));
   });
-  after(() => {
+  after(async () => {
     server.close();
+    wss.close();
+    await cleanupWebContents();
   });
   afterEach(closeAllWindows);
   afterEach(() => {
@@ -94,7 +100,7 @@ describe('chrome extensions', () => {
 
       const warning = await new Promise(resolve => { process.on('warning', resolve); });
 
-      const malformedHost = /Permission 'malformed_host' is unknown or URL pattern is malformed/;
+      const malformedHost = /URL pattern 'malformed_host' is malformed/;
 
       expect(warning).to.match(malformedHost);
     });
@@ -108,7 +114,7 @@ describe('chrome extensions', () => {
       const message = { method: 'query' };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [,, responseString] = await once(w.webContents, 'console-message');
+      const [{ message: responseString }] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
       expect(response).to.have.lengthOf(1);
@@ -280,6 +286,10 @@ describe('chrome extensions', () => {
       w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(url);
     });
+    afterEach(() => {
+      w.close();
+      w = null as unknown as BrowserWindow;
+    });
     it('getAcceptLanguages()', async () => {
       const result = await exec('getAcceptLanguages');
       expect(result).to.be.an('array').and.deep.equal(['en-US', 'en']);
@@ -304,6 +314,10 @@ describe('chrome extensions', () => {
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'));
       w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(url);
+    });
+    afterEach(async () => {
+      w.close();
+      w = null as unknown as BrowserWindow;
     });
     it('getManifest()', async () => {
       const result = await exec('getManifest');
@@ -355,11 +369,25 @@ describe('chrome extensions', () => {
       w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true, contextIsolation: true } });
     });
 
+    afterEach(() => {
+      w.close();
+      w = null as unknown as BrowserWindow;
+    });
+
     describe('onBeforeRequest', () => {
+      async function haveRejectedFetch () {
+        try {
+          await fetch(w.webContents, url);
+        } catch (ex: any) {
+          return ex.message === 'Failed to fetch';
+        }
+        return false;
+      }
+
       it('can cancel http requests', async () => {
         await w.loadURL(url);
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-        await expect(fetch(w.webContents, url)).to.eventually.be.rejectedWith('Failed to fetch');
+        await expect(waitUntil(haveRejectedFetch)).to.eventually.be.fulfilled();
       });
 
       it('does not cancel http requests when no extension loaded', async () => {
@@ -414,6 +442,7 @@ describe('chrome extensions', () => {
       customSession = session.fromPartition(`persist:${uuid.v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
     });
+    afterEach(closeAllWindows);
 
     it('executeScript', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
@@ -422,7 +451,7 @@ describe('chrome extensions', () => {
       const message = { method: 'executeScript', args: ['1 + 2'] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [, , responseString] = await once(w.webContents, 'console-message');
+      const [{ message: responseString }] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
       expect(response).to.equal(3);
@@ -436,7 +465,7 @@ describe('chrome extensions', () => {
       const message = { method: 'connectTab', args: [portName] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [,, responseString] = await once(w.webContents, 'console-message');
+      const [{ message: responseString }] = await once(w.webContents, 'console-message');
       const response = responseString.split(',');
       expect(response[0]).to.equal(portName);
       expect(response[1]).to.equal('howdy');
@@ -449,7 +478,7 @@ describe('chrome extensions', () => {
       const message = { method: 'sendMessage', args: ['Hello World!'] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [,, responseString] = await once(w.webContents, 'console-message');
+      const [{ message: responseString }] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
       expect(response.message).to.equal('Hello World!');
@@ -468,7 +497,7 @@ describe('chrome extensions', () => {
       const message = { method: 'update', args: [w2.webContents.id, { url }] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [,, responseString] = await once(w.webContents, 'console-message');
+      const [{ message: responseString }] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
       await w2Navigated;
@@ -480,6 +509,7 @@ describe('chrome extensions', () => {
   });
 
   describe('background pages', () => {
+    afterEach(closeAllWindows);
     it('loads a lazy background page when sending a message', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'));
@@ -547,8 +577,9 @@ describe('chrome extensions', () => {
 
   describe('devtools extensions', () => {
     let showPanelTimeoutId: any = null;
-    afterEach(() => {
+    afterEach(async () => {
       if (showPanelTimeoutId) clearTimeout(showPanelTimeoutId);
+      await closeAllWindows();
     });
     const showLastDevToolsPanel = (w: BrowserWindow) => {
       w.webContents.once('devtools-opened', () => {
@@ -594,7 +625,7 @@ describe('chrome extensions', () => {
 
     const addExtension = (name: string) => session.defaultSession.loadExtension(path.resolve(extensionPath, name));
     const removeAllExtensions = () => {
-      Object.keys(session.defaultSession.getAllExtensions()).map(extName => {
+      Object.keys(session.defaultSession.getAllExtensions()).forEach(extName => {
         session.defaultSession.removeExtension(extName);
       });
     };
@@ -683,13 +714,14 @@ describe('chrome extensions', () => {
               }
             });
 
-            ({ port, url } = await listen(server));
+            ({ port } = await listen(server));
 
             session.defaultSession.loadExtension(contentScript);
           });
 
           after(() => {
             session.defaultSession.removeExtension('content-script-test');
+            server.close();
           });
 
           beforeEach(() => {
@@ -746,10 +778,11 @@ describe('chrome extensions', () => {
   });
 
   describe('extension ui pages', () => {
-    afterEach(() => {
+    afterEach(async () => {
       for (const e of session.defaultSession.getAllExtensions()) {
         session.defaultSession.removeExtension(e.id);
       }
+      await closeAllWindows();
     });
 
     it('loads a ui page of an extension', async () => {
@@ -770,6 +803,7 @@ describe('chrome extensions', () => {
   });
 
   describe('manifest v3', () => {
+    afterEach(closeAllWindows);
     it('registers background service worker', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       const registrationPromise = new Promise<string>(resolve => {
@@ -789,7 +823,7 @@ describe('chrome extensions', () => {
 
       w.webContents.executeJavaScript('window.postMessage(\'fetch-confirmation\', \'*\')');
 
-      const [, , responseString] = await once(w.webContents, 'console-message');
+      const [{ message: responseString }] = await once(w.webContents, 'console-message');
       const { message } = JSON.parse(responseString);
 
       expect(message).to.equal('Hello from background.js');
@@ -822,7 +856,7 @@ describe('chrome extensions', () => {
         const message = { method: 'getAcceptLanguages' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [,, responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
 
         expect(response).to.be.an('array').that.is.not.empty('languages array is empty');
@@ -834,7 +868,7 @@ describe('chrome extensions', () => {
         const message = { method: 'getUILanguage' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [,, responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
 
         expect(response).to.be.a('string');
@@ -846,7 +880,7 @@ describe('chrome extensions', () => {
         const message = { method: 'getMessage' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [, , responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
 
         expect(response).to.equal('Hola mundo!!');
@@ -865,7 +899,7 @@ describe('chrome extensions', () => {
         const message = { method: 'detectLanguage', args: [greetings] };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [, , responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
 
         expect(response).to.be.an('array');
@@ -913,7 +947,7 @@ describe('chrome extensions', () => {
         const message = { method: 'isEnabled' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [, , responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
         expect(response).to.equal(false);
@@ -925,7 +959,7 @@ describe('chrome extensions', () => {
         const message = { method: 'setIcon' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [, , responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
         expect(response).to.equal(null);
@@ -937,7 +971,7 @@ describe('chrome extensions', () => {
         const message = { method: 'getBadgeText' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [, , responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
         expect(response).to.equal('');
@@ -970,7 +1004,7 @@ describe('chrome extensions', () => {
         const message = { method: 'getZoom' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [,, responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
         expect(response).to.equal(1);
@@ -982,7 +1016,7 @@ describe('chrome extensions', () => {
         const message = { method: 'setZoom', args: [2] };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [,, responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
         expect(response).to.deep.equal(2);
@@ -994,7 +1028,7 @@ describe('chrome extensions', () => {
         const message = { method: 'getZoomSettings' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [,, responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
         expect(response).to.deep.equal({
@@ -1010,7 +1044,7 @@ describe('chrome extensions', () => {
         const message = { method: 'setZoomSettings', args: [{ mode: 'disabled' }] };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [,, responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
         expect(response).to.deep.equal({
@@ -1021,13 +1055,14 @@ describe('chrome extensions', () => {
       });
 
       describe('get', () => {
+        afterEach(closeAllWindows);
         it('returns tab properties', async () => {
           await w.loadURL(url);
 
           const message = { method: 'get' };
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-          const [,, responseString] = await once(w.webContents, 'console-message');
+          const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
           const response = JSON.parse(responseString);
           expect(response).to.have.property('url').that.is.a('string');
@@ -1053,7 +1088,7 @@ describe('chrome extensions', () => {
           await w.loadURL(url);
 
           w.webContents.executeJavaScript('window.postMessage(\'{}\', \'*\')');
-          const [,, responseString] = await once(w.webContents, 'console-message');
+          const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const response = JSON.parse(responseString);
           expect(response).not.to.have.property('url');
           expect(response).not.to.have.property('title');
@@ -1080,7 +1115,7 @@ describe('chrome extensions', () => {
         const consoleMessage = once(w.webContents, 'console-message');
         const finish = once(w.webContents, 'did-finish-load');
 
-        await Promise.all([consoleMessage, finish]).then(([[,, responseString]]) => {
+        await Promise.all([consoleMessage, finish]).then(([[{ message: responseString }]]) => {
           const response = JSON.parse(responseString);
           expect(response.status).to.equal('reloaded');
         });
@@ -1093,7 +1128,7 @@ describe('chrome extensions', () => {
           const message = { method: 'update', args: [{ muted: true }] };
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-          const [,, responseString] = await once(w.webContents, 'console-message');
+          const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const response = JSON.parse(responseString);
 
           expect(response).to.have.property('mutedInfo').that.is.a('object');
@@ -1110,7 +1145,7 @@ describe('chrome extensions', () => {
           const message = { method: 'update', args: [{ url: 'chrome://crash' }] };
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-          const [,, responseString] = await once(w.webContents, 'console-message');
+          const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const { error } = JSON.parse(responseString);
           expect(error).to.eq('I\'m sorry. I\'m afraid I can\'t do that.');
         });
@@ -1121,7 +1156,7 @@ describe('chrome extensions', () => {
           const message = { method: 'update', args: [{ url: 'chrome://crash' }] };
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-          const [,, responseString] = await once(w.webContents, 'console-message');
+          const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const { error } = JSON.parse(responseString);
           expect(error).to.eq('I\'m sorry. I\'m afraid I can\'t do that.');
         });
@@ -1132,7 +1167,7 @@ describe('chrome extensions', () => {
           const message = { method: 'update', args: [{ url: 'devtools://blah' }] };
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-          const [, , responseString] = await once(w.webContents, 'console-message');
+          const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const { error } = JSON.parse(responseString);
           expect(error).to.eq('Cannot navigate to a devtools:// page without either the devtools or debugger permission.');
         });
@@ -1143,7 +1178,7 @@ describe('chrome extensions', () => {
           const message = { method: 'update', args: [{ url: 'chrome-untrusted://blah' }] };
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-          const [, , responseString] = await once(w.webContents, 'console-message');
+          const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const { error } = JSON.parse(responseString);
           expect(error).to.eq('Cannot navigate to a chrome-untrusted:// page.');
         });
@@ -1154,13 +1189,14 @@ describe('chrome extensions', () => {
           const message = { method: 'update', args: [{ url: 'file://blah' }] };
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-          const [, , responseString] = await once(w.webContents, 'console-message');
+          const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const { error } = JSON.parse(responseString);
           expect(error).to.eq('Cannot navigate to a file URL without local file access.');
         });
       });
 
       describe('query', () => {
+        afterEach(closeAllWindows);
         it('can query for a tab with specific properties', async () => {
           await w.loadURL(url);
 
@@ -1171,7 +1207,7 @@ describe('chrome extensions', () => {
           const message = { method: 'query', args: [{ muted: true }] };
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-          const [, , responseString] = await once(w.webContents, 'console-message');
+          const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const response = JSON.parse(responseString);
           expect(response).to.have.lengthOf(1);
 
@@ -1208,7 +1244,7 @@ describe('chrome extensions', () => {
           const message = { method: 'query', args: [{ muted: true }] };
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-          const [, , responseString] = await once(w.webContents, 'console-message');
+          const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const response = JSON.parse(responseString);
           expect(response).to.have.lengthOf(2);
           for (const tab of response) {
@@ -1258,7 +1294,7 @@ describe('chrome extensions', () => {
         const message = { method: 'registerContentScripts' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [,, responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
         expect(response).to.be.an('array').with.lengthOf(1);
         expect(response[0]).to.deep.equal({
@@ -1278,7 +1314,7 @@ describe('chrome extensions', () => {
 
         const message = { method: 'globalParams' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
-        const [,, responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
         expect(response).to.deep.equal({ changed: true });
       });
@@ -1292,7 +1328,7 @@ describe('chrome extensions', () => {
         const message = { method: 'insertCSS' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [,, responseString] = await once(w.webContents, 'console-message');
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
         expect(response.success).to.be.true();
 

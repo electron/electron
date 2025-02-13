@@ -10,8 +10,6 @@
 
 #include "content/public/renderer/content_renderer_client.h"
 #include "electron/buildflags/buildflags.h"
-// In SHARED_INTERMEDIATE_DIR.
-#include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "services/service_manager/public/cpp/binder_registry.h"
@@ -124,7 +122,8 @@ class RendererClientBase : public content::ContentRendererClient
       v8::Local<v8::Context> v8_context,
       int64_t service_worker_version_id,
       const GURL& service_worker_scope,
-      const GURL& script_url) override;
+      const GURL& script_url,
+      const blink::ServiceWorkerToken& service_worker_token) override;
   void DidStartServiceWorkerContextOnWorkerThread(
       int64_t service_worker_version_id,
       const GURL& service_worker_scope,
@@ -137,13 +136,6 @@ class RendererClientBase : public content::ContentRendererClient
   void WebViewCreated(blink::WebView* web_view,
                       bool was_created_by_renderer,
                       const url::Origin* outermost_origin) override;
-
- protected:
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // app_shell embedders may need custom extensions client interfaces.
-  // This class takes ownership of the returned object.
-  virtual extensions::ExtensionsClient* CreateExtensionsClient();
-#endif
 
  private:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

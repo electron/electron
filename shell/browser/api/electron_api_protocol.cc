@@ -21,8 +21,8 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
-#include "shell/common/process_util.h"
 #include "url/url_util.h"
 
 namespace {
@@ -162,7 +162,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
     }
   }
 
-  const auto AppendSchemesToCmdLine = [](const char* switch_name,
+  const auto AppendSchemesToCmdLine = [](const std::string_view switch_name,
                                          std::vector<std::string> schemes) {
     if (schemes.empty())
       return;
@@ -256,12 +256,11 @@ bool Protocol::IsProtocolIntercepted(const std::string& scheme) {
 
 v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme,
                                                    gin::Arguments* args) {
-  node::Environment* env = node::Environment::GetCurrent(args->isolate());
-  EmitWarning(env,
-              "The protocol.isProtocolHandled API is deprecated, use "
-              "protocol.isProtocolRegistered or protocol.isProtocolIntercepted "
-              "instead.",
-              "ProtocolDeprecateIsProtocolHandled");
+  util::EmitWarning(args->isolate(),
+                    "The protocol.isProtocolHandled API is deprecated, "
+                    "use protocol.isProtocolRegistered "
+                    "or protocol.isProtocolIntercepted instead.",
+                    "ProtocolDeprecateIsProtocolHandled");
   return gin_helper::Promise<bool>::ResolvedPromise(
       args->isolate(),
       IsProtocolRegistered(scheme) || IsProtocolIntercepted(scheme) ||
@@ -279,9 +278,8 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args,
                                       ProtocolError error) {
   base::RepeatingCallback<void(v8::Local<v8::Value>)> callback;
   if (args->GetNext(&callback)) {
-    node::Environment* env = node::Environment::GetCurrent(args->isolate());
-    EmitWarning(
-        env,
+    util::EmitWarning(
+        args->isolate(),
         "The callback argument of protocol module APIs is no longer needed.",
         "ProtocolDeprecateCallback");
     if (error == ProtocolError::kOK)
@@ -303,7 +301,7 @@ gin::Handle<Protocol> Protocol::Create(
 // static
 gin::Handle<Protocol> Protocol::New(gin_helper::ErrorThrower thrower) {
   thrower.ThrowError("Protocol cannot be created from JS");
-  return gin::Handle<Protocol>();
+  return {};
 }
 
 // static

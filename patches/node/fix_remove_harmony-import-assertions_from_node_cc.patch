@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 18 Oct 2024 17:01:06 +0200
+Subject: fix: remove harmony-import-assertions from node.cc
+
+harmony-import-assertions has been removed from V8 as of
+https://chromium-review.googlesource.com/c/v8/v8/+/5507047,
+so we should remove it from node.cc as well.
+
+This patch can be removed when we upgrade to a V8 version that
+contains the above CL.
+
+diff --git a/src/node.cc b/src/node.cc
+index f4365c0eda7330bd02a921608951902f41004f77..b2b10ffb572f010992f221de752618fd56b5d50e 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -808,7 +808,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
+   }
+   // TODO(nicolo-ribaudo): remove this once V8 doesn't enable it by default
+   // anymore.
+-  v8_args.emplace_back("--no-harmony-import-assertions");
++  // v8_args.emplace_back("--no-harmony-import-assertions");
+ 
+   auto env_opts = per_process::cli_options->per_isolate->per_env;
+   if (std::find(v8_args.begin(), v8_args.end(),

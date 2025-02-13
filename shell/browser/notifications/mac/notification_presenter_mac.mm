@@ -17,8 +17,8 @@
 namespace electron {
 
 // static
-NotificationPresenter* NotificationPresenter::Create() {
-  return new NotificationPresenterMac;
+std::unique_ptr<NotificationPresenter> NotificationPresenter::Create() {
+  return std::make_unique<NotificationPresenterMac>();
 }
 
 CocoaNotification* NotificationPresenterMac::GetNotification(
@@ -30,7 +30,7 @@ CocoaNotification* NotificationPresenterMac::GetNotification(
       return native_notification;
   }
 
-  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
+  if (electron::debug_notifications) {
     LOG(INFO) << "Could not find notification for "
               << [ns_notification.identifier UTF8String];
   }

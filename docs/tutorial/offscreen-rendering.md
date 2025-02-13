@@ -3,7 +3,8 @@
 ## Overview
 
 Offscreen rendering lets you obtain the content of a `BrowserWindow` in a
-bitmap, so it can be rendered anywhere, for example, on texture in a 3D scene.
+bitmap or a shared GPU texture, so it can be rendered anywhere, for example,
+on texture in a 3D scene.
 The offscreen rendering in Electron uses a similar approach to that of the
 [Chromium Embedded Framework](https://bitbucket.org/chromiumembedded/cef)
 project.
@@ -17,22 +18,39 @@ the dirty area is passed to the `paint` event to be more efficient.
 losses with no benefits.
 * When nothing is happening on a webpage, no frames are generated.
 * An offscreen window is always created as a
-[Frameless Window](../tutorial/window-customization.md)..
+[Frameless Window](../tutorial/window-customization.md).
 
 ### Rendering Modes
 
 #### GPU accelerated
 
-GPU accelerated rendering means that the GPU is used for composition. Because of
-that, the frame has to be copied from the GPU which requires more resources,
-thus this mode is slower than the Software output device. The benefit of this
-mode is that WebGL and 3D CSS animations are supported.
+GPU accelerated rendering means that the GPU is used for composition. The benefit
+of this mode is that WebGL and 3D CSS animations are supported. There are two
+different approaches depending on the `webPreferences.offscreen.useSharedTexture`
+setting.
+
+1. Use GPU shared texture
+
+    Used when `webPreferences.offscreen.useSharedTexture` is set to `true`.
+
+    This is an advanced feature requiring a native node module to work with your own code.
+    The frames are directly copied in GPU textures, thus this mode is very fast because
+    there's no CPU-GPU memory copies overhead, and you can directly import the shared
+    texture to your own rendering program.
+
+2. Use CPU shared memory bitmap
+
+    Used when `webPreferences.offscreen.useSharedTexture` is set to `false` (default behavior).
+
+    The texture is accessible using the `NativeImage` API at the cost of performance.
+    The frame has to be copied from the GPU to the CPU bitmap which requires more system
+    resources, thus this mode is slower than the Software output device mode. But it supports
+    GPU related functionalities.
 
 #### Software output device
 
 This mode uses a software output device for rendering in the CPU, so the frame
-generation is much faster. As a result, this mode is preferred over the GPU
-accelerated one.
+generation is faster than shared memory bitmap GPU accelerated mode.
 
 To enable this mode, GPU acceleration has to be disabled by calling the
 [`app.disableHardwareAcceleration()`][disablehardwareacceleration] API.

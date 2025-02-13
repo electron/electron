@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_PRESENTER_H_
 #define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_NOTIFICATION_PRESENTER_H_
 
+#include <memory>
 #include <set>
 #include <string>
 
@@ -17,7 +18,7 @@ class NotificationDelegate;
 
 class NotificationPresenter {
  public:
-  static NotificationPresenter* Create();
+  static std::unique_ptr<NotificationPresenter> Create();
 
   virtual ~NotificationPresenter();
 

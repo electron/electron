@@ -1,4 +1,5 @@
 const { app, safeStorage } = require('electron');
+
 const { expect } = require('chai');
 
 (async () => {

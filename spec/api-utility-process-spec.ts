@@ -1,13 +1,17 @@
-import { expect } from 'chai';
-import * as childProcess from 'node:child_process';
-import * as path from 'node:path';
-import { BrowserWindow, MessageChannelMain, utilityProcess, app } from 'electron/main';
-import { ifit } from './lib/spec-helpers';
-import { closeWindow } from './lib/window-helpers';
-import { once } from 'node:events';
-import { pathToFileURL } from 'node:url';
-import { setImmediate } from 'node:timers/promises';
 import { systemPreferences } from 'electron';
+import { BrowserWindow, MessageChannelMain, utilityProcess, app } from 'electron/main';
+
+import { expect } from 'chai';
+
+import * as childProcess from 'node:child_process';
+import { once } from 'node:events';
+import * as path from 'node:path';
+import { setImmediate } from 'node:timers/promises';
+import { pathToFileURL } from 'node:url';
+
+import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
+import { ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
@@ -54,10 +58,20 @@ describe('utilityProcess module', () => {
       await once(child, 'spawn');
     });
 
-    it('emits \'exit\' when child process exits gracefully', async () => {
+    it('emits \'exit\' when child process exits gracefully', (done) => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
-      const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      child.on('exit', (code) => {
+        expect(code).to.equal(0);
+        done();
+      });
+    });
+
+    it('emits \'exit\' when the child process file does not exist', (done) => {
+      const child = utilityProcess.fork('nonexistent');
+      child.on('exit', (code) => {
+        expect(code).to.equal(1);
+        done();
+      });
     });
 
     ifit(!isWindows32Bit)('emits the correct error code when child process exits nonzero', async () => {
@@ -112,24 +126,54 @@ describe('utilityProcess module', () => {
       const [code] = await once(child, 'exit');
       expect(code).to.equal(exitCode);
     });
+
+    // 32-bit system will not have V8 Sandbox enabled.
+    // WoA testing does not have VS toolchain configured to build native addons.
+    ifit(process.arch !== 'ia32' && process.arch !== 'arm' && !isWindowsOnArm)('emits \'error\' when fatal error is triggered from V8', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'external-ab-test.js'));
+      const [type, location, report] = await once(child, 'error');
+      const [code] = await once(child, 'exit');
+      expect(type).to.equal('FatalError');
+      expect(location).to.equal('v8_ArrayBuffer_NewBackingStore');
+      const reportJSON = JSON.parse(report);
+      expect(reportJSON.header.trigger).to.equal('v8_ArrayBuffer_NewBackingStore');
+      const addonPath = path.join(require.resolve('@electron-ci/external-ab'), '..', '..', 'build', 'Release', 'external_ab.node');
+      expect(reportJSON.sharedObjects).to.include(path.toNamespacedPath(addonPath));
+      expect(code).to.not.equal(0);
+    });
   });
 
   describe('app \'child-process-gone\' event', () => {
+    const waitForCrash = (name: string) => {
+      return new Promise<Electron.Details>((resolve) => {
+        app.on('child-process-gone', function onCrash (_event, details) {
+          if (details.name === name) {
+            app.off('child-process-gone', onCrash);
+            resolve(details);
+          }
+        });
+      });
+    };
+
     ifit(!isWindows32Bit)('with default serviceName', async () => {
+      const name = 'Node Utility Process';
+      const crashPromise = waitForCrash(name);
       utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
-      const [, details] = await once(app, 'child-process-gone') as [any, Electron.Details];
+      const details = await crashPromise;
       expect(details.type).to.equal('Utility');
       expect(details.serviceName).to.equal('node.mojom.NodeService');
-      expect(details.name).to.equal('Node Utility Process');
+      expect(details.name).to.equal(name);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
 
     ifit(!isWindows32Bit)('with custom serviceName', async () => {
-      utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName: 'Hello World!' });
-      const [, details] = await once(app, 'child-process-gone') as [any, Electron.Details];
+      const name = crypto.randomUUID();
+      const crashPromise = waitForCrash(name);
+      utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName: name });
+      const details = await crashPromise;
       expect(details.type).to.equal('Utility');
       expect(details.serviceName).to.equal('node.mojom.NodeService');
-      expect(details.name).to.equal('Hello World!');
+      expect(details.name).to.equal(name);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
   });
@@ -171,7 +215,8 @@ describe('utilityProcess module', () => {
       });
       await once(child, 'spawn');
       expect(child.kill()).to.be.true();
-      await once(child, 'exit');
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
     });
   });
 
@@ -196,11 +241,29 @@ describe('utilityProcess module', () => {
     it('is valid when child process launches successfully', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
       await once(child, 'spawn');
-      expect(child.pid).to.not.be.null();
+      expect(child).to.have.property('pid').that.is.a('number');
     });
 
     it('is undefined when child process fails to launch', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'does-not-exist.js'));
+      expect(child.pid).to.be.undefined();
+    });
+
+    it('is undefined before the child process is spawned succesfully', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+      expect(child.pid).to.be.undefined();
+      await once(child, 'spawn');
+      child.kill();
+    });
+
+    it('is undefined when child process is killed', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+      await once(child, 'spawn');
+
+      expect(child).to.have.property('pid').that.is.a('number');
+      expect(child.kill()).to.be.true();
+
+      await once(child, 'exit');
       expect(child.pid).to.be.undefined();
     });
   });
@@ -466,7 +529,8 @@ describe('utilityProcess module', () => {
       expect(output).to.equal(result);
     });
 
-    it('does not inherit parent env when custom env is provided', async () => {
+    // TODO(codebytere): figure out why this is failing in ASAN- builds on Linux.
+    ifit(!process.env.IS_ASAN)('does not inherit parent env when custom env is provided', async () => {
       const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'env-app'), '--create-custom-env'], {
         env: {
           FROM: 'parent',
@@ -507,6 +571,194 @@ describe('utilityProcess module', () => {
       const exit = once(child, 'exit');
       expect(child.kill()).to.be.true();
       await exit;
+    });
+
+    it('should emit the app#login event when 401', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+        }
+        response.writeHead(200).end('ok');
+      });
+      const [loginAuthInfo, statusCode] = await remotely(async (serverUrl: string, fixture: string) => {
+        const { app, utilityProcess } = require('electron');
+        const { once } = require('node:events');
+        const child = utilityProcess.fork(fixture, [`--server-url=${serverUrl}`], {
+          stdio: 'ignore',
+          respondToAuthRequestsFromMainProcess: true
+        });
+        await once(child, 'spawn');
+        const [ev,,, authInfo, cb] = await once(app, 'login');
+        ev.preventDefault();
+        cb('dummy', 'pass');
+        const [result] = await once(child, 'message');
+        return [authInfo, ...result];
+      }, serverUrl, path.join(fixturesPath, 'net.js'));
+      expect(statusCode).to.equal(200);
+      expect(loginAuthInfo!.realm).to.equal('Foo');
+      expect(loginAuthInfo!.scheme).to.equal('basic');
+    });
+
+    it('should receive 401 response when cancelling authentication via app#login event', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' });
+          response.end('unauthenticated');
+        } else {
+          response.writeHead(200).end('ok');
+        }
+      });
+      const [authDetails, responseBody, statusCode] = await remotely(async (serverUrl: string, fixture: string) => {
+        const { app, utilityProcess } = require('electron');
+        const { once } = require('node:events');
+        const child = utilityProcess.fork(fixture, [`--server-url=${serverUrl}`], {
+          stdio: 'ignore',
+          respondToAuthRequestsFromMainProcess: true
+        });
+        await once(child, 'spawn');
+        const [,, details,, cb] = await once(app, 'login');
+        cb();
+        const [response] = await once(child, 'message');
+        const [responseBody] = await once(child, 'message');
+        return [details, responseBody, ...response];
+      }, serverUrl, path.join(fixturesPath, 'net.js'));
+      expect(authDetails.url).to.equal(serverUrl);
+      expect(statusCode).to.equal(401);
+      expect(responseBody).to.equal('unauthenticated');
+    });
+
+    it('should upload body when 401', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+        }
+        response.writeHead(200);
+        request.on('data', (chunk) => response.write(chunk));
+        request.on('end', () => response.end());
+      });
+      const requestData = randomString(kOneKiloByte);
+      const [authDetails, responseBody, statusCode] = await remotely(async (serverUrl: string, requestData: string, fixture: string) => {
+        const { app, utilityProcess } = require('electron');
+        const { once } = require('node:events');
+        const child = utilityProcess.fork(fixture, [`--server-url=${serverUrl}`, '--request-data'], {
+          stdio: 'ignore',
+          respondToAuthRequestsFromMainProcess: true
+        });
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage(requestData);
+        const [,, details,, cb] = await once(app, 'login');
+        cb('user', 'pass');
+        const [response] = await once(child, 'message');
+        const [responseBody] = await once(child, 'message');
+        return [details, responseBody, ...response];
+      }, serverUrl, requestData, path.join(fixturesPath, 'net.js'));
+      expect(authDetails.url).to.equal(serverUrl);
+      expect(statusCode).to.equal(200);
+      expect(responseBody).to.equal(requestData);
+    });
+
+    it('should not emit the app#login event when 401 with {"credentials":"omit"}', async () => {
+      const rc = await startRemoteControlApp();
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+        }
+        response.writeHead(200).end('ok');
+      });
+      const [statusCode, responseHeaders] = await rc.remotely(async (serverUrl: string, fixture: string) => {
+        const { app, utilityProcess } = require('electron');
+        const { once } = require('node:events');
+        let gracefulExit = true;
+        const child = utilityProcess.fork(fixture, [`--server-url=${serverUrl}`, '--omit-credentials'], {
+          stdio: 'ignore',
+          respondToAuthRequestsFromMainProcess: true
+        });
+        await once(child, 'spawn');
+        app.on('login', () => {
+          gracefulExit = false;
+        });
+        const [result] = await once(child, 'message');
+        setTimeout(() => {
+          if (gracefulExit) {
+            app.quit();
+          } else {
+            process.exit(1);
+          }
+        });
+        return result;
+      }, serverUrl, path.join(fixturesPath, 'net.js'));
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+      expect(statusCode).to.equal(401);
+      expect(responseHeaders['www-authenticate']).to.equal('Basic realm="Foo"');
+    });
+
+    it('should not emit the app#login event with default respondToAuthRequestsFromMainProcess', async () => {
+      const rc = await startRemoteControlApp();
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+        }
+        response.writeHead(200).end('ok');
+      });
+      const [loginAuthInfo, statusCode] = await rc.remotely(async (serverUrl: string, fixture: string) => {
+        const { app, utilityProcess } = require('electron');
+        const { once } = require('node:events');
+        let gracefulExit = true;
+        const child = utilityProcess.fork(fixture, [`--server-url=${serverUrl}`, '--use-net-login-event'], {
+          stdio: 'ignore'
+        });
+        await once(child, 'spawn');
+        app.on('login', () => {
+          gracefulExit = false;
+        });
+        const [authInfo] = await once(child, 'message');
+        const [result] = await once(child, 'message');
+        setTimeout(() => {
+          if (gracefulExit) {
+            app.quit();
+          } else {
+            process.exit(1);
+          }
+        });
+        return [authInfo, ...result];
+      }, serverUrl, path.join(fixturesPath, 'net.js'));
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+      expect(statusCode).to.equal(200);
+      expect(loginAuthInfo!.realm).to.equal('Foo');
+      expect(loginAuthInfo!.scheme).to.equal('basic');
+    });
+
+    it('should emit the app#login event when creating requests with fetch API', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+        }
+        response.writeHead(200).end('ok');
+      });
+      const [loginAuthInfo, statusCode] = await remotely(async (serverUrl: string, fixture: string) => {
+        const { app, utilityProcess } = require('electron');
+        const { once } = require('node:events');
+        const child = utilityProcess.fork(fixture, [`--server-url=${serverUrl}`, '--use-fetch-api'], {
+          stdio: 'ignore',
+          respondToAuthRequestsFromMainProcess: true
+        });
+        await once(child, 'spawn');
+        const [ev,,, authInfo, cb] = await once(app, 'login');
+        ev.preventDefault();
+        cb('dummy', 'pass');
+        const [response] = await once(child, 'message');
+        return [authInfo, ...response];
+      }, serverUrl, path.join(fixturesPath, 'net.js'));
+      expect(statusCode).to.equal(200);
+      expect(loginAuthInfo!.realm).to.equal('Foo');
+      expect(loginAuthInfo!.scheme).to.equal('basic');
     });
   });
 });

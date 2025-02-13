@@ -1,6 +1,6 @@
-import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
-import { internalContextBridge } from '@electron/internal/renderer/api/context-bridge';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+import { internalContextBridge } from '@electron/internal/renderer/api/context-bridge';
+import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 
 const { contextIsolationEnabled } = internalContextBridge;
 
@@ -15,7 +15,7 @@ export const windowSetup = (isWebView: boolean, isHiddenPage: boolean) => {
 
   // But we do not support prompt().
   window.prompt = function () {
-    throw new Error('prompt() is and will not be supported.');
+    throw new Error('prompt() is not supported.');
   };
   if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['prompt'], window.prompt);
 

@@ -5,6 +5,8 @@
 #include "shell/browser/ui/views/frameless_view.h"
 
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "ui/aura/window.h"
 #include "ui/base/hit_test.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/views/widget/widget.h"
@@ -86,18 +88,6 @@ int FramelessView::NonClientHitTest(const gfx::Point& point) {
 
   return HTCLIENT;
 }
-
-void FramelessView::GetWindowMask(const gfx::Size& size, SkPath* window_mask) {}
-
-void FramelessView::ResetWindowControls() {}
-
-void FramelessView::UpdateWindowIcon() {}
-
-void FramelessView::InvalidateCaptionButtons() {}
-
-void FramelessView::UpdateWindowTitle() {}
-
-void FramelessView::SizeConstraintsChanged() {}
 
 views::View* FramelessView::TargetForRect(views::View* root,
                                           const gfx::Rect& rect) {

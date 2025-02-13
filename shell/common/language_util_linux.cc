@@ -22,7 +22,10 @@ std::vector<std::string> GetPreferredLanguages() {
   DCHECK(languages);   // A valid pointer is guaranteed.
   DCHECK(*languages);  // At least one entry, "C", is guaranteed.
 
-  for (; *languages; ++languages) {
+  // SAFETY: |g_get_language_names()| returns a glib-owned array
+  // of const C strings, terminated by an empty string.
+  // This loop is the correct way to walk through its return values.
+  for (; *languages; UNSAFE_BUFFERS(++languages)) {
     if (strcmp(*languages, "C") != 0) {
       preferredLanguages.push_back(base::i18n::GetCanonicalLocale(*languages));
     }

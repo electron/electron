@@ -1,0 +1,65 @@
+name: Archaeologist
+
+on:
+  pull_request:
+
+jobs:
+   archaeologist-dig:
+    name: Archaeologist Dig
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Electron
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.0.2
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js/npm
+        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
+        with:
+          node-version: 20.11.x
+      - name: Setting Up Dig Site
+        run: |
+          echo "remote: ${{ github.event.pull_request.head.repo.clone_url }}"
+          echo "sha ${{ github.event.pull_request.head.sha }}"
+          echo "base ref ${{ github.event.pull_request.base.ref }}"
+          git clone https://github.com/electron/electron.git electron          
+          cd electron
+          mkdir -p artifacts
+          git remote add fork ${{ github.event.pull_request.head.repo.clone_url }} && git fetch fork
+          git checkout  ${{ github.event.pull_request.head.sha }}
+          git merge-base origin/${{ github.event.pull_request.base.ref }} HEAD > .dig-old
+          echo  ${{ github.event.pull_request.head.sha }} > .dig-new
+          cp .dig-old artifacts
+
+      - name: Generating Types for SHA in .dig-new
+        uses: ./.github/actions/generate-types
+        with:
+          sha-file: .dig-new
+          filename: electron.new.d.ts
+      - name: Generating Types for SHA in .dig-old
+        uses: ./.github/actions/generate-types
+        with:
+          sha-file: .dig-old
+          filename: electron.old.d.ts
+      - name: Upload artifacts
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 #v4.6.0
+        with:
+          name: artifacts
+          path: electron/artifacts
+          include-hidden-files: true
+      - name: Set job output
+        run: |
+          git diff --no-index electron.old.d.ts electron.new.d.ts > patchfile || true
+          if [ -s patchfile ]; then
+            echo "Changes Detected"
+            echo "## Changes Detected" > $GITHUB_STEP_SUMMARY
+            echo "Looks like the \`electron.d.ts\` file changed." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`\`\`\`diff" >> $GITHUB_STEP_SUMMARY
+            cat patchfile >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`\`\`\`" >> $GITHUB_STEP_SUMMARY    
+          else
+            echo "No Changes Detected"
+            echo "## No Changes" > $GITHUB_STEP_SUMMARY
+            echo "We couldn't see any changes in the \`electron.d.ts\` artifact" >> $GITHUB_STEP_SUMMARY
+          fi
+        working-directory: ./electron/artifacts

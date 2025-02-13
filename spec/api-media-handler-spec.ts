@@ -1,8 +1,11 @@
-import { expect } from 'chai';
 import { BrowserWindow, session, desktopCapturer } from 'electron/main';
-import { closeAllWindows } from './lib/window-helpers';
+
+import { expect } from 'chai';
+
 import * as http from 'node:http';
+
 import { ifit, listen } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('setDisplayMediaRequestHandler', () => {
   afterEach(closeAllWindows);
@@ -229,16 +232,15 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok } = await w.webContents.executeJavaScript(`
+    const { ok, message } = await w.webContents.executeJavaScript(`
       navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
     `, true);
     expect(requestHandlerCalled).to.be.true();
-    // This is a little surprising... apparently chrome will generate a stream
-    // for this non-existent web contents?
-    expect(ok).to.be.true();
+    expect(ok).to.be.false();
+    expect(message).to.equal('Could not start video source');
   });
 
   it('is not called when calling getUserMedia', async () => {

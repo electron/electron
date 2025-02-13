@@ -19,6 +19,7 @@
 #include "gin/handle.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/mac_util.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia.h"
@@ -127,9 +128,8 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
     NSData* png_data = bufferFromNSImage(image);
 
     if (args->GetNext(&hsl_shift) && hsl_shift.size() == 3) {
-      gfx::Image gfx_image = gfx::Image::CreateFrom1xPNGBytes(
-          {reinterpret_cast<const uint8_t*>((char*)[png_data bytes]),
-           [png_data length]});
+      auto gfx_image = gfx::Image::CreateFrom1xPNGBytes(
+          electron::util::as_byte_span(png_data));
       color_utils::HSL shift = {safeShift(hsl_shift[0], -1),
                                 safeShift(hsl_shift[1], 0.5),
                                 safeShift(hsl_shift[2], 0.5)};
@@ -139,8 +139,8 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
               .AsNSImage());
     }
 
-    return CreateFromPNG(args->isolate(), (char*)[png_data bytes],
-                         [png_data length]);
+    return CreateFromPNG(args->isolate(),
+                         electron::util::as_byte_span(png_data));
   }
 }
 

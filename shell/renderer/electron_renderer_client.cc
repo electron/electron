@@ -92,8 +92,10 @@ void ElectronRendererClient::DidCreateScriptContext(
   }
 
   // Setup node tracing controller.
-  if (!node::tracing::TraceEventHelper::GetAgent())
-    node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
+  if (!node::tracing::TraceEventHelper::GetAgent()) {
+    auto* tracing_agent = new node::tracing::Agent();
+    node::tracing::TraceEventHelper::SetAgent(tracing_agent);
+  }
 
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
@@ -118,15 +120,15 @@ void ElectronRendererClient::DidCreateScriptContext(
   v8::Isolate* isolate = env->isolate();
   v8::Local<v8::Object> global = renderer_context->Global();
 
-  std::vector<std::string> keys = {"fetch", "Response", "FormData", "Request",
-                                   "Headers"};
+  std::vector<std::string> keys = {"fetch",   "Response", "FormData",
+                                   "Request", "Headers",  "EventSource"};
   for (const auto& key : keys) {
     v8::MaybeLocal<v8::Value> value =
-        global->Get(renderer_context, gin::StringToV8(isolate, key.c_str()));
+        global->Get(renderer_context, gin::StringToV8(isolate, key));
     if (!value.IsEmpty()) {
       std::string blink_key = "blink" + key;
       global
-          ->Set(renderer_context, gin::StringToV8(isolate, blink_key.c_str()),
+          ->Set(renderer_context, gin::StringToV8(isolate, blink_key),
                 value.ToLocalChecked())
           .Check();
     }

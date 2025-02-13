@@ -24,7 +24,7 @@
 
 namespace mojo {
 template <typename T>
-class PendingReciever;
+class PendingReceiver;
 template <typename T>
 class PendingRemote;
 }  // namespace mojo
@@ -47,9 +47,9 @@ class UsbChooserContext : public KeyedService,
   // connected.
   class DeviceObserver : public base::CheckedObserver {
    public:
-    virtual void OnDeviceAdded(const device::mojom::UsbDeviceInfo&);
-    virtual void OnDeviceRemoved(const device::mojom::UsbDeviceInfo&);
-    virtual void OnDeviceManagerConnectionError();
+    virtual void OnDeviceAdded(const device::mojom::UsbDeviceInfo&) {}
+    virtual void OnDeviceRemoved(const device::mojom::UsbDeviceInfo&) {}
+    virtual void OnDeviceManagerConnectionError() {}
 
     // Called when the BrowserContext is shutting down. Observers must remove
     // themselves before returning.

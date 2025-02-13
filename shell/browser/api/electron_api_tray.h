@@ -38,12 +38,12 @@ namespace electron::api {
 
 class Menu;
 
-class Tray : public gin::Wrappable<Tray>,
-             public gin_helper::EventEmitterMixin<Tray>,
-             public gin_helper::Constructible<Tray>,
-             public gin_helper::CleanedUpAtExit,
-             public gin_helper::Pinnable<Tray>,
-             private TrayIconObserver {
+class Tray final : public gin::Wrappable<Tray>,
+                   public gin_helper::EventEmitterMixin<Tray>,
+                   public gin_helper::Constructible<Tray>,
+                   public gin_helper::CleanedUpAtExit,
+                   public gin_helper::Pinnable<Tray>,
+                   private TrayIconObserver {
  public:
   // gin_helper::Constructible
   static gin::Handle<Tray> New(gin_helper::ErrorThrower thrower,
@@ -57,6 +57,9 @@ class Tray : public gin::Wrappable<Tray>,
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
+
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
 
   // disable copy
   Tray(const Tray&) = delete;

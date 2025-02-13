@@ -6,7 +6,6 @@
 
 #include <algorithm>
 
-#include "base/logging.h"
 #include "base/no_destructor.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list_observer.h"
@@ -85,7 +84,7 @@ void WindowList::CloseAllWindows() {
   std::vector<base::WeakPtr<NativeWindow>> weak_windows =
       ConvertToWeakPtrVector(GetInstance()->windows_);
 #if BUILDFLAG(IS_MAC)
-  std::reverse(weak_windows.begin(), weak_windows.end());
+  std::ranges::reverse(weak_windows);
 #endif
   for (const auto& window : weak_windows) {
     if (window && !window->IsClosed())

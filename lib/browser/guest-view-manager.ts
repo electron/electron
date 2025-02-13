@@ -1,10 +1,11 @@
-import { webContents } from 'electron/main';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseWebViewWebPreferences } from '@electron/internal/browser/parse-features-string';
-import { syncMethods, asyncMethods, properties, navigationHistorySyncMethods } from '@electron/internal/common/web-view-methods';
 import { webViewEvents } from '@electron/internal/browser/web-view-events';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+import { syncMethods, asyncMethods, properties, navigationHistorySyncMethods } from '@electron/internal/common/web-view-methods';
+
+import { webContents } from 'electron/main';
 
 interface GuestInstance {
   elementInstanceId: number;
@@ -167,8 +168,8 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
     sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'will-frame-navigate', {
       url: event.url,
       isMainFrame: event.isMainFrame,
-      frameProcessId: event.frame.processId,
-      frameRoutingId: event.frame.routingId
+      frameProcessId: event.processId,
+      frameRoutingId: event.routingId
     });
   });
 
@@ -237,7 +238,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
       }
     }
   };
-  embedder.on('-window-visibility-change' as any, onVisibilityChange);
+  embedder.on('-window-visibility-change', onVisibilityChange);
 
   embedder.once('will-destroy' as any, () => {
     // Usually the guestInstances is cleared when guest is destroyed, but it
@@ -249,7 +250,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
       }
     }
     // Clear the listeners.
-    embedder.removeListener('-window-visibility-change' as any, onVisibilityChange);
+    embedder.removeListener('-window-visibility-change', onVisibilityChange);
     watchedEmbedders.delete(embedder);
   });
 };
@@ -266,9 +267,10 @@ const isWebViewTagEnabled = function (contents: Electron.WebContents) {
 };
 
 const makeSafeHandler = function<Event extends { sender: Electron.WebContents }> (channel: string, handler: (event: Event, ...args: any[]) => any) {
-  return (event: Event, ...args: any[]) => {
+  return (event: Electron.IpcMainInvokeEvent | Electron.IpcMainServiceWorkerInvokeEvent, ...args: any[]) => {
+    if (event.type !== 'frame') return;
     if (isWebViewTagEnabled(event.sender)) {
-      return handler(event, ...args);
+      return handler(event as unknown as Event, ...args);
     } else {
       console.error(`<webview> IPC message ${channel} sent by WebContents with <webview> disabled (${event.sender.id})`);
       throw new Error('<webview> disabled');
@@ -280,7 +282,7 @@ const handleMessage = function (channel: string, handler: (event: Electron.IpcMa
   ipcMainInternal.handle(channel, makeSafeHandler(channel, handler));
 };
 
-const handleMessageSync = function (channel: string, handler: (event: ElectronInternal.IpcMainInternalEvent, ...args: any[]) => any) {
+const handleMessageSync = function (channel: string, handler: (event: { sender: Electron.WebContents }, ...args: any[]) => any) {
   ipcMainUtils.handleSync(channel, makeSafeHandler(channel, handler));
 };
 
@@ -293,8 +295,10 @@ handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, function (event,
 });
 
 // this message is sent by the actual <webview>
-ipcMainInternal.on(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, function (event: ElectronInternal.IpcMainInternalEvent, focus: boolean) {
-  event.sender.emit('-focus-change', {}, focus);
+ipcMainInternal.on(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, function (event, focus: boolean) {
+  if (event.type === 'frame') {
+    event.sender.emit('-focus-change', {}, focus);
+  }
 });
 
 handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, function (event, guestInstanceId: number, method: string, args: any[]) {

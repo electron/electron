@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/browser/media/webrtc/desktop_capturer_wrapper.h"
@@ -42,6 +41,12 @@
 #include "ui/gfx/x/randr.h"
 #endif
 
+#if BUILDFLAG(IS_MAC)
+#include "base/strings/string_number_conversions.h"
+#include "ui/base/cocoa/permissions_utils.h"
+#endif
+
+namespace {
 #if BUILDFLAG(IS_LINUX)
 // Private function in ui/base/x/x11_display_util.cc
 base::flat_map<x11::RandR::Output, int> GetMonitors(
@@ -137,8 +142,6 @@ base::flat_map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
   return monitor_atom_to_display;
 }
 #endif
-
-namespace {
 
 std::unique_ptr<ThumbnailCapturer> MakeWindowCapturer() {
 #if BUILDFLAG(IS_MAC)
@@ -283,7 +286,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
       capture_screen_ = false;
       capture_window_ = capture_window;
       window_capturer_ = std::make_unique<NativeDesktopMediaList>(
-          DesktopMediaList::Type::kWindow, std::move(capturer));
+          DesktopMediaList::Type::kWindow, std::move(capturer), true, true);
       window_capturer_->SetThumbnailSize(thumbnail_size);
 
       OnceCallback update_callback = base::BindOnce(
@@ -305,6 +308,13 @@ void DesktopCapturer::StartHandling(bool capture_window,
   capture_window_ = capture_window;
   capture_screen_ = capture_screen;
 
+#if BUILDFLAG(IS_MAC)
+  if (!ui::TryPromptUserForScreenCapture()) {
+    HandleFailure();
+    return;
+  }
+#endif
+
   {
     // Initialize the source list.
     // Apply the new thumbnail size and restart capture.
@@ -312,7 +322,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
       auto capturer = MakeWindowCapturer();
       if (capturer) {
         window_capturer_ = std::make_unique<NativeDesktopMediaList>(
-            DesktopMediaList::Type::kWindow, std::move(capturer));
+            DesktopMediaList::Type::kWindow, std::move(capturer), true, true);
         window_capturer_->SetThumbnailSize(thumbnail_size);
 #if BUILDFLAG(IS_MAC)
         window_capturer_->skip_next_refresh_ =
@@ -456,21 +466,25 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
               std::back_inserter(captured_sources_));
   }
 
-  if (!capture_window_ && !capture_screen_) {
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::HandleScope scope(isolate);
-    gin_helper::CallMethod(this, "_onfinished", captured_sources_);
+  if (!capture_window_ && !capture_screen_)
+    HandleSuccess();
+}
 
-    screen_capturer_.reset();
-    window_capturer_.reset();
+void DesktopCapturer::HandleSuccess() {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  gin_helper::CallMethod(this, "_onfinished", captured_sources_);
 
-    Unpin();
-  }
+  screen_capturer_.reset();
+  window_capturer_.reset();
+
+  Unpin();
 }
 
 void DesktopCapturer::HandleFailure() {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
+
   gin_helper::CallMethod(this, "_onerror", "Failed to get sources.");
 
   screen_capturer_.reset();
@@ -488,6 +502,13 @@ gin::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
 
   return handle;
 }
+
+// static
+#if !BUILDFLAG(IS_MAC)
+bool DesktopCapturer::IsDisplayMediaSystemPickerAvailable() {
+  return false;
+}
+#endif
 
 gin::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
@@ -510,6 +531,9 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createDesktopCapturer",
                  &electron::api::DesktopCapturer::Create);
+  dict.SetMethod(
+      "isDisplayMediaSystemPickerAvailable",
+      &electron::api::DesktopCapturer::IsDisplayMediaSystemPickerAvailable);
 }
 
 }  // namespace

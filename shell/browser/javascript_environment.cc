@@ -14,11 +14,9 @@
 #include "base/bits.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/no_destructor.h"
 #include "base/task/current_thread.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
-#include "base/trace_event/trace_event.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
@@ -31,48 +29,6 @@ namespace {
 v8::Isolate* g_isolate;
 }
 
-namespace gin {
-
-class ConvertableToTraceFormatWrapper final
-    : public base::trace_event::ConvertableToTraceFormat {
- public:
-  explicit ConvertableToTraceFormatWrapper(
-      std::unique_ptr<v8::ConvertableToTraceFormat> inner)
-      : inner_(std::move(inner)) {}
-  ~ConvertableToTraceFormatWrapper() override = default;
-
-  // disable copy
-  ConvertableToTraceFormatWrapper(const ConvertableToTraceFormatWrapper&) =
-      delete;
-  ConvertableToTraceFormatWrapper& operator=(
-      const ConvertableToTraceFormatWrapper&) = delete;
-
-  void AppendAsTraceFormat(std::string* out) const final {
-    inner_->AppendAsTraceFormat(out);
-  }
-
- private:
-  std::unique_ptr<v8::ConvertableToTraceFormat> inner_;
-};
-
-}  // namespace gin
-
-// Allow std::unique_ptr<v8::ConvertableToTraceFormat> to be a valid
-// initialization value for trace macros.
-template <>
-struct base::trace_event::TraceValue::Helper<
-    std::unique_ptr<v8::ConvertableToTraceFormat>> {
-  static constexpr unsigned char kType = TRACE_VALUE_TYPE_CONVERTABLE;
-  static inline void SetValue(
-      TraceValue* v,
-      std::unique_ptr<v8::ConvertableToTraceFormat> value) {
-    // NOTE: |as_convertable| is an owning pointer, so using new here
-    // is acceptable.
-    v->as_convertable =
-        new gin::ConvertableToTraceFormatWrapper(std::move(value));
-  }
-};
-
 namespace electron {
 
 namespace {
@@ -84,11 +40,14 @@ gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
   // This is necessary for important aspects of Node.js
   // including heap and cpu profilers to function properly.
 
-  return gin::IsolateHolder(
-      base::SingleThreadTaskRunner::GetCurrentDefault(),
-      gin::IsolateHolder::kSingleThread,
-      gin::IsolateHolder::IsolateType::kUtility, std::move(create_params),
-      gin::IsolateHolder::IsolateCreationMode::kNormal, nullptr, isolate);
+  return {base::SingleThreadTaskRunner::GetCurrentDefault(),
+          gin::IsolateHolder::kSingleThread,
+          gin::IsolateHolder::IsolateType::kUtility,
+          std::move(create_params),
+          gin::IsolateHolder::IsolateCreationMode::kNormal,
+          nullptr,
+          nullptr,
+          isolate};
 }
 
 }  // namespace
@@ -131,7 +90,7 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
 
   // The V8Platform of gin relies on Chromium's task schedule, which has not
   // been started at this point, so we have to rely on Node's V8Platform.
-  auto* tracing_agent = node::CreateAgent();
+  auto* tracing_agent = new node::tracing::Agent();
   auto* tracing_controller = tracing_agent->GetTracingController();
   node::tracing::TraceEventHelper::SetAgent(tracing_agent);
   platform_ = node::MultiIsolatePlatform::Create(
@@ -139,12 +98,13 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
       tracing_controller, gin::V8Platform::GetCurrentPageAllocator());
 
   v8::V8::InitializePlatform(platform_.get());
-  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
-                                 gin::ArrayBufferAllocator::SharedInstance(),
-                                 nullptr /* external_reference_table */,
-                                 js_flags, nullptr /* fatal_error_callback */,
-                                 nullptr /* oom_error_callback */,
-                                 false /* create_v8_platform */);
+  gin::IsolateHolder::Initialize(
+      gin::IsolateHolder::kNonStrictMode,
+      gin::ArrayBufferAllocator::SharedInstance(),
+      nullptr /* external_reference_table */, js_flags,
+      false /* disallow_v8_feature_flag_overrides */,
+      nullptr /* fatal_error_callback */, nullptr /* oom_error_callback */,
+      false /* create_v8_platform */);
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);
@@ -173,11 +133,16 @@ v8::Isolate* JavascriptEnvironment::GetIsolate() {
 void JavascriptEnvironment::CreateMicrotasksRunner() {
   DCHECK(!microtasks_runner_);
   microtasks_runner_ = std::make_unique<MicrotasksRunner>(isolate());
+  isolate_holder_.WillCreateMicrotasksRunner();
   base::CurrentThread::Get()->AddTaskObserver(microtasks_runner_.get());
 }
 
 void JavascriptEnvironment::DestroyMicrotasksRunner() {
   DCHECK(microtasks_runner_);
+  // Should be called before running gin_helper::CleanedUpAtExit::DoCleanup.
+  // This helps to signal wrappable finalizer callbacks to not act on freed
+  // parameters.
+  isolate_holder_.WillDestroyMicrotasksRunner();
   {
     v8::HandleScope scope(isolate_);
     gin_helper::CleanedUpAtExit::DoCleanup();

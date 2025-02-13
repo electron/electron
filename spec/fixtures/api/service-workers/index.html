@@ -2,7 +2,8 @@
 <html lang="en">
 <body>
     <script>
-        navigator.serviceWorker.register('sw.js', {
+        let scriptUrl = new URLSearchParams(location.search).get('scriptUrl') || 'sw.js';
+        navigator.serviceWorker.register(scriptUrl, {
             scope: location.pathname.split('/').slice(0, 2).join('/') + '/'
         })
     </script>

@@ -25,10 +25,10 @@ class Handle;
 
 namespace electron::api {
 
-class DownloadItem : public gin::Wrappable<DownloadItem>,
-                     public gin_helper::Pinnable<DownloadItem>,
-                     public gin_helper::EventEmitterMixin<DownloadItem>,
-                     private download::DownloadItem::Observer {
+class DownloadItem final : public gin::Wrappable<DownloadItem>,
+                           public gin_helper::Pinnable<DownloadItem>,
+                           public gin_helper::EventEmitterMixin<DownloadItem>,
+                           private download::DownloadItem::Observer {
  public:
   static gin::Handle<DownloadItem> FromOrCreate(v8::Isolate* isolate,
                                                 download::DownloadItem* item);

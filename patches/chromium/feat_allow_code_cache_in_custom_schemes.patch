@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index d9e3751608d19adc82bf67959a44926852d8eb85..3ad5a73c1326e4f9333d4f1af90bdd064e4024dd 100644
+index bba85bb47e489b73c2341bbeb9aa04099d712889..4bd69c3c5511a4f492f78f203284c8e546c9f067 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -12,6 +12,7 @@
@@ -117,7 +117,7 @@ index d9e3751608d19adc82bf67959a44926852d8eb85..3ad5a73c1326e4f9333d4f1af90bdd06
  
  // Generates the cache key for the given |resource_url|, |origin_lock| and
 diff --git a/content/browser/code_cache/generated_code_cache.h b/content/browser/code_cache/generated_code_cache.h
-index e0cdc785d2557bc79bde98728c23c239ed8d0961..74e0acbea1e0c18a6ac8971170efc945ca58f4ed 100644
+index c5fb0546fb8724a6ba34b55d8d52b2f70ad5bc0c..883c4022aa58e5eb5345ec4e8815a1374160d96c 100644
 --- a/content/browser/code_cache/generated_code_cache.h
 +++ b/content/browser/code_cache/generated_code_cache.h
 @@ -52,12 +52,14 @@ class CONTENT_EXPORT GeneratedCodeCache {
@@ -140,17 +140,20 @@ index e0cdc785d2557bc79bde98728c23c239ed8d0961..74e0acbea1e0c18a6ac8971170efc945
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index b6dd7405a5c9275ab699d4b347759427b30ef594..253918a2e54c98ce0075bce4e1a52134032ce367 100644
+index be7a332d8c071f09a2a09c382e7c6c906008c9ec..8227df3c7faa07552c7ce5cc88941285dfa9ca9c 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
-@@ -8,13 +8,18 @@
- #include "content/browser/code_cache/generated_code_cache.h"
+@@ -11,17 +11,22 @@
+ #include "base/time/time.h"
  #include "content/browser/code_cache/generated_code_cache_context.h"
  #include "content/browser/renderer_host/code_cache_host_impl.h"
 +#include "content/browser/storage_partition_impl.h"
+ #include "content/browser/web_contents/web_contents_impl.h"
+ #include "content/common/renderer.mojom.h"
 +#include "content/common/url_schemes.h"
  #include "content/public/browser/browser_context.h"
 +#include "content/public/browser/browser_thread.h"
+ #include "content/public/browser/render_process_host.h"
  #include "content/public/browser/storage_partition.h"
  #include "content/public/test/browser_test.h"
  #include "content/public/test/browser_test_utils.h"
@@ -158,11 +161,12 @@ index b6dd7405a5c9275ab699d4b347759427b30ef594..253918a2e54c98ce0075bce4e1a52134
  #include "content/public/test/content_browser_test_utils.h"
 +#include "content/public/test/test_browser_context.h"
  #include "content/shell/browser/shell.h"
+ #include "content/test/content_browser_test_utils_internal.h"
 +#include "content/test/test_content_client.h"
  #include "net/dns/mock_host_resolver.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/common/page/v8_compile_hints_histograms.h"
-@@ -23,6 +28,8 @@ namespace content {
+@@ -30,6 +35,8 @@ namespace content {
  
  namespace {
  
@@ -171,7 +175,7 @@ index b6dd7405a5c9275ab699d4b347759427b30ef594..253918a2e54c98ce0075bce4e1a52134
  bool SupportsSharedWorker() {
  #if BUILDFLAG(IS_ANDROID)
    // SharedWorkers are not enabled on Android. https://crbug.com/154571
-@@ -714,4 +721,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
+@@ -874,4 +881,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
    }
  }
  
@@ -255,7 +259,7 @@ index b6dd7405a5c9275ab699d4b347759427b30ef594..253918a2e54c98ce0075bce4e1a52134
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 15e731756530e684b583f25a3f2bdf4af3653d54..f68a97b3ebf1d2151fc19950d41b15915a334e9f 100644
+index e5f48a4e0a6059f9555516a3e824e2157e3b0b60..37cd9b6e15cbbc31a19ee8317786c9c5f09199e2 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -6,6 +6,7 @@
@@ -365,7 +369,7 @@ index 15e731756530e684b583f25a3f2bdf4af3653d54..f68a97b3ebf1d2151fc19950d41b1591
    }
  
    if (operation == CodeCacheHostImpl::Operation::kWrite) {
-@@ -427,6 +452,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
+@@ -433,6 +458,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
        process_lock.matches_scheme(url::kHttpsScheme) ||
        process_lock.matches_scheme(content::kChromeUIScheme) ||
        process_lock.matches_scheme(content::kChromeUIUntrustedScheme) ||
@@ -393,10 +397,10 @@ index ce9644d33fe83379127b01bf9a2b1c4badc3bc7c..fd486d4637ae4766ed78571dee7f9ceb
    if (schemes.allow_non_standard_schemes_in_origins)
      url::EnableNonStandardSchemesForAndroidWebView();
 diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
-index 9dc2d5a33858da7c31fd87bbbabe3899301fa52d..ebf0bb23b9aedb7bf9eb8af52b4756dba452183e 100644
+index cf71655553cf510e1309ac47bdd5ddab08e52672..0a02d17d06e080f40bf12bb2e48f51ad84ec17b8 100644
 --- a/content/public/common/content_client.h
 +++ b/content/public/common/content_client.h
-@@ -142,6 +142,9 @@ class CONTENT_EXPORT ContentClient {
+@@ -139,6 +139,9 @@ class CONTENT_EXPORT ContentClient {
      // Registers a URL scheme as strictly empty documents, allowing them to
      // commit synchronously.
      std::vector<std::string> empty_document_schemes;
@@ -407,7 +411,7 @@ index 9dc2d5a33858da7c31fd87bbbabe3899301fa52d..ebf0bb23b9aedb7bf9eb8af52b4756db
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index ce5225e121f5db611d95ba5dfa88cea42f32076b..d402cc9db212abcedd62018bb242eb524cc6acf2 100644
+index 67c4c5f3ce124e111fb7a70e16386120cf24d9b8..d9876cd58ff28ea1af87596691cd836b815825dd 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -135,6 +135,9 @@ struct SchemeRegistry {
@@ -420,7 +424,7 @@ index ce5225e121f5db611d95ba5dfa88cea42f32076b..d402cc9db212abcedd62018bb242eb52
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -716,6 +719,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -717,6 +720,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  

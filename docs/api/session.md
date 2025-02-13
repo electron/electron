@@ -27,7 +27,8 @@ The `session` module has the following methods:
 
 * `partition` string
 * `options` Object (optional)
-  * `cache` boolean - Whether to enable cache.
+  * `cache` boolean - Whether to enable cache. Default is `true` unless the
+    [`--disable-http-cache` switch](command-line-switches.md#--disable-http-cache) is used.
 
 Returns `Session` - A session instance from `partition` string. When there is an existing
 `Session` with the same `partition`, it will be returned; otherwise a new
@@ -46,7 +47,8 @@ of an existing `Session` object.
 
 * `path` string
 * `options` Object (optional)
-  * `cache` boolean - Whether to enable cache.
+  * `cache` boolean - Whether to enable cache. Default is `true` unless the
+    [`--disable-http-cache` switch](command-line-switches.md#--disable-http-cache) is used.
 
 Returns `Session` - A session instance from the absolute path as specified by the `path`
 string. When there is an existing `Session` with the same absolute path, it
@@ -268,7 +270,8 @@ Returns:
 * `event` Event
 * `details` Object
   * `deviceList` [HIDDevice[]](structures/hid-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
 * `callback` Function
   * `deviceId` string | null (optional)
 
@@ -332,7 +335,8 @@ Returns:
 * `event` Event
 * `details` Object
   * `device` [HIDDevice](structures/hid-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
 
 Emitted after `navigator.hid.requestDevice` has been called and
 `select-hid-device` has fired if a new device becomes available before
@@ -347,7 +351,8 @@ Returns:
 * `event` Event
 * `details` Object
   * `device` [HIDDevice](structures/hid-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
 
 Emitted after `navigator.hid.requestDevice` has been called and
 `select-hid-device` has fired if a device has been removed before the callback
@@ -473,7 +478,8 @@ Returns:
 * `event` Event
 * `details` Object
   * `port` [SerialPort](structures/serial-port.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
   * `origin` string - The origin that the device has been revoked from.
 
 Emitted after `SerialPort.forget()` has been called.  This event can be used
@@ -495,7 +501,7 @@ app.whenReady().then(() => {
 })
 ```
 
-```js
+```js @ts-nocheck
 // Renderer Process
 
 const portConnect = async () => {
@@ -517,7 +523,8 @@ Returns:
 * `event` Event
 * `details` Object
   * `deviceList` [USBDevice[]](structures/usb-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
 * `callback` Function
   * `deviceId` string (optional)
 
@@ -926,6 +933,7 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
+    * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
@@ -953,11 +961,12 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 })
 ```
 
-#### `ses.setDisplayMediaRequestHandler(handler)`
+#### `ses.setDisplayMediaRequestHandler(handler[, opts])`
 
 * `handler` Function | null
   * `request` Object
-    * `frame` [WebFrameMain](web-frame-main.md) - Frame that is requesting access to media.
+    * `frame` [WebFrameMain](web-frame-main.md) | null - Frame that is requesting access to media.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `securityOrigin` String - Origin of the page making the request.
     * `videoRequested` Boolean - true if the web content requested a video stream.
     * `audioRequested` Boolean - true if the web content requested an audio stream.
@@ -980,11 +989,17 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
          to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
          while recording). Default is `false`.
+* `opts` Object (optional) _macOS_ _Experimental_
+  * `useSystemPicker` Boolean - true if the available native system picker should be used. Default is `false`. _macOS_ _Experimental_
 
 This handler will be called when web content requests access to display media
 via the `navigator.mediaDevices.getDisplayMedia` API. Use the
 [desktopCapturer](desktop-capturer.md) API to choose which stream(s) to grant
 access to.
+
+`useSystemPicker` allows an application to use the system picker instead of providing a specific video source from `getSources`.
+This option is experimental, and currently available for MacOS 15+ only. If the system picker is available and `useSystemPicker`
+is set to `true`, the handler will not be invoked.
 
 ```js
 const { session, desktopCapturer } = require('electron')
@@ -994,7 +1009,11 @@ session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
     // Grant access to the first screen found.
     callback({ video: sources[0] })
   })
-})
+  // Use the system picker if available.
+  // Note: this is currently experimental. If the system picker
+  // is available, it will be used and the media request handler
+  // will not be invoked.
+}, { useSystemPicker: true })
 ```
 
 Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
@@ -1148,7 +1167,8 @@ app.whenReady().then(() => {
         pin displayed on the device.
       * `providePin`
         This prompt is requesting that a pin be provided for the device.
-    * `frame` [WebFrameMain](web-frame-main.md)
+    * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this handler.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
     * `pin` string (optional) - The pin value to verify if `pairingKind` is `confirmPin`.
   * `callback` Function
     * `response` Object
@@ -1311,17 +1331,42 @@ the initial state will be `interrupted`. The download will start only when the
 
 Returns `Promise<void>` - resolves when the session’s HTTP authentication cache has been cleared.
 
-#### `ses.setPreloads(preloads)`
+#### `ses.setPreloads(preloads)` _Deprecated_
 
 * `preloads` string[] - An array of absolute path to preload scripts
 
 Adds scripts that will be executed on ALL web contents that are associated with
 this session just before normal `preload` scripts run.
 
-#### `ses.getPreloads()`
+**Deprecated:** Use the new `ses.registerPreloadScript` API.
+
+#### `ses.getPreloads()` _Deprecated_
 
 Returns `string[]` an array of paths to preload scripts that have been
 registered.
+
+**Deprecated:** Use the new `ses.getPreloadScripts` API. This will only return preload script paths
+for `frame` context types.
+
+#### `ses.registerPreloadScript(script)`
+
+* `script` [PreloadScriptRegistration](structures/preload-script-registration.md) - Preload script
+
+Registers preload script that will be executed in its associated context type in this session. For
+`frame` contexts, this will run prior to any preload defined in the web preferences of a
+WebContents.
+
+Returns `string` - The ID of the registered preload script.
+
+#### `ses.unregisterPreloadScript(id)`
+
+* `id` string - Preload script ID
+
+Unregisters script.
+
+#### `ses.getPreloadScripts()`
+
+Returns [`PreloadScript[]`](structures/preload-script.md): An array of paths to preload scripts that have been registered.
 
 #### `ses.setCodeCachePath(path)`
 
@@ -1340,6 +1385,36 @@ specified when registering the protocol.
   * `urls` String[] (optional) - An array of url corresponding to the resource whose generated code cache needs to be removed. If the list is empty then all entries in the cache directory will be removed.
 
 Returns `Promise<void>` - resolves when the code cache clear operation is complete.
+
+#### `ses.getSharedDictionaryUsageInfo()`
+
+Returns `Promise<SharedDictionaryUsageInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+Shared dictionaries are used to power advanced compression of data sent over the wire, specifically with Brotli and ZStandard. You don't need to call any of the shared dictionary APIs in Electron to make use of this advanced web feature, but if you do, they allow deeper control and inspection of the shared dictionaries used during decompression.
+
+To get detailed information about a specific shared dictionary entry, call `getSharedDictionaryInfo(options)`.
+
+#### `ses.getSharedDictionaryInfo(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<SharedDictionaryInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+To get information about all present shared dictionaries, call `getSharedDictionaryUsageInfo()`.
+
+#### `ses.clearSharedDictionaryCache()`
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared, both in memory and on disk.
+
+#### `ses.clearSharedDictionaryCacheForIsolationKey(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared for the specified isolation key, both in memory and on disk.
 
 #### `ses.setSpellCheckerEnabled(enable)`
 
@@ -1490,9 +1565,11 @@ session is persisted on disk.  For in memory sessions this returns `null`.
 #### `ses.clearData([options])`
 
 * `options` Object (optional)
-  * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data.
+  * `dataTypes` String[] (optional) - The types of data to clear. By default, this will clear all types of data. This
+    can potentially include data types not explicitly listed here. (See Chromium's
+    [`BrowsingDataRemover`][browsing-data-remover] for the full list.)
     * `backgroundFetch` - Background Fetch
-    * `cache` - Cache
+    * `cache` - Cache (includes `cachestorage` and `shadercache`)
     * `cookies` - Cookies
     * `downloads` - Downloads
     * `fileSystems` - File Systems
@@ -1511,12 +1588,14 @@ Returns `Promise<void>` - resolves when all data has been cleared.
 
 Clears various different types of data.
 
-This method clears more types of data and is more thourough than the
+This method clears more types of data and is more thorough than the
 `clearStorageData` method.
 
 **Note:** Cookies are stored at a broader scope than origins. When removing cookies and filtering by `origins` (or `excludeOrigins`), the cookies will be removed at the [registrable domain](https://url.spec.whatwg.org/#host-registrable-domain) level. For example, clearing cookies for the origin `https://really.specific.origin.example.com/` will end up clearing all cookies for `example.com`. Clearing cookies for the origin `https://my.website.example.co.uk/` will end up clearing all cookies for `example.co.uk`.
 
-For more information, refer to Chromium's [`BrowsingDataRemover` interface](https://source.chromium.org/chromium/chromium/src/+/main:content/public/browser/browsing_data_remover.h).
+**Note:** Clearing cache data will also clear the shared dictionary cache. This means that any dictionaries used for compression may be reloaded after clearing the cache. If you wish to clear the shared dictionary cache but leave other cached data intact, you may want to use the `clearSharedDictionaryCache` method.
+
+For more information, refer to Chromium's [`BrowsingDataRemover` interface][browsing-data-remover].
 
 ### Instance Properties
 
@@ -1582,3 +1661,5 @@ app.whenReady().then(async () => {
   console.log('Net-logs written to', path)
 })
 ```
+
+[browsing-data-remover]: https://source.chromium.org/chromium/chromium/src/+/main:content/public/browser/browsing_data_remover.h

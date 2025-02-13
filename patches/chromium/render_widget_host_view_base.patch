@@ -6,11 +6,11 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 63cd2577218a518f2e883ae79d5d951f7545290d..8036e0bcc5c468f1dbefc1d20331a4867c36189c 100644
+index 51f836176bf924de5fc26081d8b968f918181947..641a9c7fa68328e868167cf2fcdfec01643fea18 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -779,6 +779,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
-   return false;
+@@ -639,6 +639,13 @@ void RenderWidgetHostViewBase::OnFrameTokenChangedForView(
+     host()->DidProcessFrame(frame_token, activation_time);
  }
  
 +RenderWidgetHostViewBase* RenderWidgetHostViewBase::CreateViewForWidget(
@@ -24,7 +24,7 @@ index 63cd2577218a518f2e883ae79d5d951f7545290d..8036e0bcc5c468f1dbefc1d20331a486
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index f1e4add6622951447a9b95ac5fa2a4f59758448c..8de0f9754a8172533dabf9c636d4c474c2dfb713 100644
+index 2a2edc6063b49a313fb359e99b39cf608c6233d1..96e6777899154e73661fb17184b9727cce2eb0a3 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -29,8 +29,11 @@
@@ -39,7 +39,7 @@ index f1e4add6622951447a9b95ac5fa2a4f59758448c..8de0f9754a8172533dabf9c636d4c474
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/page_visibility_state.h"
  #include "content/public/common/widget_type.h"
-@@ -76,9 +79,11 @@ namespace content {
+@@ -70,11 +73,13 @@ namespace content {
  class DevicePosturePlatformProvider;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
@@ -47,22 +47,24 @@ index f1e4add6622951447a9b95ac5fa2a4f59758448c..8de0f9754a8172533dabf9c636d4c474
  class ScopedViewTransitionResources;
  class TextInputManager;
  class TouchSelectionControllerClientManager;
-+class WebContentsView;
+ class TouchSelectionControllerInputObserver;
  class WebContentsAccessibility;
++class WebContentsView;
  class DelegatedFrameHost;
  class SyntheticGestureTarget;
-@@ -155,6 +160,10 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
-   void DidOverscroll(const ui::DidOverscrollParams& params) override {}
-   void DidStopFlinging() override {}
+ 
+@@ -145,6 +150,10 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+   void ProcessGestureEvent(const blink::WebGestureEvent& event,
+                            const ui::LatencyInfo& latency) override;
    RenderWidgetHostViewBase* GetRootView() override;
 +  virtual RenderWidgetHostViewBase* CreateViewForWidget(
 +      RenderWidgetHost* render_widget_host,
 +      RenderWidgetHost* embedder_render_widget_host,
 +      WebContentsView* web_contents_view);
-   viz::FrameSinkId GetRootFrameSinkId() override;
-   void NotifyHitTestRegionUpdated(
-       const viz::AggregatedHitTestRegion& region) override {}
-@@ -235,6 +244,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+   void OnAutoscrollStart() override;
+   const viz::DisplayHitTestQueryMap& GetDisplayHitTestQuery() const override;
+ 
+@@ -182,6 +191,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
        const gfx::Rect& keyboard_rect) override {}
    bool IsHTMLFormPopup() const override;
  

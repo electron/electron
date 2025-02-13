@@ -58,10 +58,7 @@ Notification::Notification(gin::Arguments* args) {
     opts.Get("title", &title_);
     opts.Get("subtitle", &subtitle_);
     opts.Get("body", &body_);
-    has_icon_ = opts.Get("icon", &icon_);
-    if (has_icon_) {
-      opts.Get("icon", &icon_path_);
-    }
+    opts.Get("icon", &icon_);
     opts.Get("silent", &silent_);
     opts.Get("replyPlaceholder", &reply_placeholder_);
     opts.Get("urgency", &urgency_);
@@ -84,7 +81,7 @@ gin::Handle<Notification> Notification::New(gin_helper::ErrorThrower thrower,
                                             gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Notification before app is ready");
-    return gin::Handle<Notification>();
+    return {};
   }
   return gin::CreateHandle(thrower.isolate(), new Notification(args));
 }
@@ -237,6 +234,10 @@ void Notification::FillObjectTemplate(v8::Isolate* isolate,
 
 const char* Notification::GetTypeName() {
   return GetClassName();
+}
+
+void Notification::WillBeDestroyed() {
+  ClearWeak();
 }
 
 }  // namespace electron::api

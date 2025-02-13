@@ -259,9 +259,9 @@ function checkFrames (frames) {
     duration += frames[i].duration;
   }
   return {
-    duration: duration,
-    width: width,
-    height: height
+    duration,
+    width,
+    height
   };
 }
 
@@ -399,7 +399,7 @@ function parseWebP (riff) {
     horizontalScale,
     verticalScale,
     data: VP8,
-    riff: riff
+    riff
   };
 }
 

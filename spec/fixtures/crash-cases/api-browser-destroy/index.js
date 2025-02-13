@@ -1,4 +1,5 @@
 const { app, BrowserWindow, BrowserView } = require('electron');
+
 const { expect } = require('chai');
 
 function createWindow () {

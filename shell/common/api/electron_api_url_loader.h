@@ -7,9 +7,9 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include <string_view>
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
@@ -21,6 +21,7 @@
 #include "services/network/public/mojom/url_loader_network_service_observer.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "url/gurl.h"
 #include "v8/include/v8-forward.h"
 
@@ -47,9 +48,10 @@ class ElectronBrowserContext;
 namespace electron::api {
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
-class SimpleURLLoaderWrapper
+class SimpleURLLoaderWrapper final
     : public gin::Wrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
+      public gin_helper::CleanedUpAtExit,
       private network::SimpleURLLoaderStreamConsumer,
       private network::mojom::URLLoaderNetworkServiceObserver {
  public:
@@ -64,6 +66,9 @@ class SimpleURLLoaderWrapper
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
+
  private:
   SimpleURLLoaderWrapper(ElectronBrowserContext* browser_context,
                          std::unique_ptr<network::ResourceRequest> request,
@@ -73,7 +78,7 @@ class SimpleURLLoaderWrapper
   void OnDataReceived(std::string_view string_view,
                       base::OnceClosure resume) override;
   void OnComplete(bool success) override;
-  void OnRetry(base::OnceClosure start_retry) override;
+  void OnRetry(base::OnceClosure start_retry) override {}
 
   // network::mojom::URLLoaderNetworkServiceObserver:
   void OnAuthRequired(
@@ -112,7 +117,9 @@ class SimpleURLLoaderWrapper
                             OnLoadingStateUpdateCallback callback) override;
   void OnSharedStorageHeaderReceived(
       const url::Origin& request_origin,
-      std::vector<network::mojom::SharedStorageOperationPtr> operations,
+      std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
+          methods,
+      const std::optional<std::string>& with_lock,
       OnSharedStorageHeaderReceivedCallback callback) override;
   void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
                        int64_t recv_bytes,
