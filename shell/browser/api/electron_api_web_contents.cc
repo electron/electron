@@ -3693,12 +3693,6 @@ void WebContents::SetTemporaryZoomLevel(double level) {
   zoom_controller_->SetTemporaryZoomLevel(level);
 }
 
-void WebContents::DoGetZoomLevel(
-    electron::mojom::ElectronWebContentsUtility::DoGetZoomLevelCallback
-        callback) {
-  std::move(callback).Run(GetZoomLevel());
-}
-
 std::optional<PreloadScript> WebContents::GetPreloadScript() const {
   if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
     if (auto preload = web_preferences->GetPreloadPath()) {
