@@ -44,7 +44,7 @@ using LifecycleState = content::RenderFrameHostImpl::LifecycleStateImpl;
 // RenderFrameHost::GetLifecycleState currently crashes when called for
 // speculative frames so we need to filter it out for now. Check
 // https://crbug.com/1183639 for details on when this can be removed.
-LifecycleState GetLifecycleState(content::RenderFrameHost* rfh) {
+[[nodiscard]] LifecycleState GetLifecycleState(content::RenderFrameHost* rfh) {
   auto* rfh_impl = static_cast<content::RenderFrameHostImpl*>(rfh);
   return rfh_impl->lifecycle_state();
 }
@@ -55,7 +55,7 @@ LifecycleState GetLifecycleState(content::RenderFrameHost* rfh) {
 // listeners. If an IPC is sent during an unload/beforeunload listener,
 // it's possible that it arrives after the RFH swap and has been
 // detached from the FrameTreeNode.
-bool IsDetachedFrameHost(content::RenderFrameHost* rfh) {
+[[nodiscard]] bool IsDetachedFrameHost(content::RenderFrameHost* rfh) {
   if (!rfh)
     return true;
 
@@ -63,8 +63,7 @@ bool IsDetachedFrameHost(content::RenderFrameHost* rfh) {
   // FrameTreeNode with a new RFH. In these cases, it's marked for
   // deletion. As this pending deletion RFH won't be following future
   // swaps, we need to indicate that its been detached.
-  return (GetLifecycleState(rfh) == LifecycleState::kRunningUnloadHandlers ||
-          GetLifecycleState(rfh) == LifecycleState::kReadyToBeDeleted);
+  return GetLifecycleState(rfh) == LifecycleState::kRunningUnloadHandlers;
 }
 
 }  // namespace
@@ -162,10 +161,9 @@ WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
   DCHECK(GetFrameTokenMap().find(frame_token_) == GetFrameTokenMap().end());
   GetFrameTokenMap().emplace(frame_token_, this);
 
-  // WebFrameMain should only be created for active frames. If a speculative
-  // frame reaches this, the code might not have checked for an existing
-  // WebFrameMain by looking it up using its FrameTreeNodeId.
-  DCHECK(GetLifecycleState(rfh) != LifecycleState::kSpeculative);
+  // WebFrameMain should only be created for active or unloading frames.
+  DCHECK(GetLifecycleState(rfh) == LifecycleState::kActive ||
+         GetLifecycleState(rfh) == LifecycleState::kRunningUnloadHandlers);
 }
 
 WebFrameMain::~WebFrameMain() {
@@ -174,7 +172,7 @@ WebFrameMain::~WebFrameMain() {
 
 void WebFrameMain::Destroyed() {
   if (FromFrameTreeNodeId(frame_tree_node_id_) == this) {
-    // WebFrameMain initialized as detached don't support FTN lookup and
+    // WebFrameMain initialized as detached doesn't support FTN lookup and
     // shouldn't erase the entry.
     DCHECK(!render_frame_detached_ || render_frame_disposed_);
     GetFrameTreeNodeIdMap().erase(frame_tree_node_id_);
@@ -559,12 +557,15 @@ gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
       web_frame = FromRenderFrameHost(rfh);
       break;
     case LifecycleState::kRunningUnloadHandlers:
-    case LifecycleState::kReadyToBeDeleted:
-      // Event/IPC emitted for a frame likely running unload handlers. In this
-      // case, we return the exact RFH so the security origin will be accurate.
+      // Event/IPC emitted for a frame running unload handlers. Return the exact
+      // RFH so the security origin will be accurate.
       web_frame = FromRenderFrameHost(rfh);
       break;
+    case LifecycleState::kReadyToBeDeleted:
+      // RFH is gone
+      return {};
     default:
+      // New state introduced upstream
       NOTREACHED();
   }
 
