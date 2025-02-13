@@ -57,6 +57,8 @@ jobs:
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
@@ -118,6 +120,8 @@ jobs:
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
