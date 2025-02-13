@@ -22,7 +22,7 @@ index 46106fa94b3055648e4f01cd28860d427268a253..e0bf37f09dceb93af58990438ab577a9
      int thread_pool_size,
      node::tracing::TracingController* tracing_controller) {
 diff --git a/src/node.h b/src/node.h
-index 6373adacb628459a4c9d7237da2587aee318e2d8..4f2eb9d0aab88b70c86339e750799080e980d7da 100644
+index ec5f6d0d25731dfb5ceeae3cd8749630298a8ba0..7d9d9afd049237646f82c3e22f5e7a8af7314a84 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -133,6 +133,7 @@ struct SnapshotData;

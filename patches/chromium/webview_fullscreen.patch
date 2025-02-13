@@ -37,10 +37,10 @@ index dae7654fc44e25ddc80dab4732b617f0784b47fc..8938f2b9d680c1850958b4a0a8794c35
    if (had_fullscreen_token && !GetView()->HasFocus())
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c4185b6238acefefc89b421a6e7fd0744f07ca17..53e3bc48242f07bd984308583b1f999360f4e9d2 100644
+index e290f4fc3a85f55137d055958ca9bef4987fa3a7..ec55a5a2807bb9fc328b33d18ee10444f4b98126 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4015,21 +4015,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
+@@ -4017,21 +4017,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
      const input::NativeWebKeyboardEvent& event) {
    OPTIONAL_TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
                          "WebContentsImpl::PreHandleKeyboardEvent");
@@ -78,7 +78,7 @@ index c4185b6238acefefc89b421a6e7fd0744f07ca17..53e3bc48242f07bd984308583b1f9993
  }
  
  bool WebContentsImpl::HandleMouseEvent(const blink::WebMouseEvent& event) {
-@@ -4188,7 +4192,7 @@ void WebContentsImpl::EnterFullscreenMode(
+@@ -4190,7 +4194,7 @@ void WebContentsImpl::EnterFullscreenMode(
    OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::EnterFullscreenMode");
    DCHECK(CanEnterFullscreenMode(requesting_frame));
    DCHECK(requesting_frame->IsActive());
