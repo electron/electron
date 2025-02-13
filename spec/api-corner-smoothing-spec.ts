@@ -1,5 +1,5 @@
 import { nativeImage } from 'electron/common';
-import { BrowserWindow } from 'electron/main';
+import { BrowserWindow, screen } from 'electron/main';
 
 import { AssertionError, expect } from 'chai';
 
@@ -39,10 +39,29 @@ async function test (
     'new Promise((resolve) => { requestAnimationFrame(() => resolve()); })'
   );
 
-  const actualImg = await w.webContents.capturePage();
+  let actualImg = await w.webContents.capturePage();
   expect(actualImg.isEmpty()).to.be.false('Failed to capture page image');
 
+  // Resize the image to a 1.0 scale factor
+  const [x, y] = w.getPosition();
+  const display = screen.getDisplayNearestPoint({ x, y });
+  if (display.scaleFactor !== 1) {
+    const { width, height } = actualImg.getSize();
+    actualImg = actualImg.resize({
+      width: width / 2.0,
+      height: height / 2.0
+    });
+  }
+
   const expectedImg = nativeImage.createFromPath(expectedImgPath);
+  if (expectedImg.isEmpty()) {
+    // TODO: remove this, just getting artifacts from CI
+    const artifactFileName = `corner-rounding-expected-${artifactName}.png`;
+    await createArtifact(artifactFileName, actualImg.toPNG());
+    throw new AssertionError(
+      `Failed to read expected reference image. Actual: "${artifactFileName}" in artifacts`
+    );
+  }
   expect(expectedImg.isEmpty()).to.be.false(
     'Failed to read expected reference image'
   );
