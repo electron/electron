@@ -320,7 +320,7 @@ gfx::Size NativeImage::GetSize(const std::optional<float> scale_factor) {
   float sf = scale_factor.value_or(1.0f);
   gfx::ImageSkiaRep image_rep = image_.AsImageSkia().GetRepresentation(sf);
 
-  return gfx::Size(image_rep.GetWidth(), image_rep.GetHeight());
+  return {image_rep.GetWidth(), image_rep.GetHeight()};
 }
 
 std::vector<float> NativeImage::GetScaleFactors() {
@@ -490,7 +490,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
     const gin_helper::Dictionary& options) {
   if (!node::Buffer::HasInstance(buffer)) {
     thrower.ThrowError("buffer must be a node Buffer");
-    return gin::Handle<NativeImage>();
+    return {};
   }
 
   int width = 0;
@@ -498,12 +498,12 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
 
   if (!options.Get("width", &width)) {
     thrower.ThrowError("width is required");
-    return gin::Handle<NativeImage>();
+    return {};
   }
 
   if (!options.Get("height", &height)) {
     thrower.ThrowError("height is required");
-    return gin::Handle<NativeImage>();
+    return {};
   }
 
   if (width <= 0 || height <= 0)
@@ -514,7 +514,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
 
   if (size_bytes != node::Buffer::Length(buffer)) {
     thrower.ThrowError("invalid buffer size");
-    return gin::Handle<NativeImage>();
+    return {};
   }
 
   SkBitmap bitmap;
@@ -536,7 +536,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBuffer(
     gin::Arguments* args) {
   if (!node::Buffer::HasInstance(buffer)) {
     thrower.ThrowError("buffer must be a node Buffer");
-    return gin::Handle<NativeImage>();
+    return {};
   }
 
   int width = 0;

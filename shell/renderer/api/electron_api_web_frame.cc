@@ -592,7 +592,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
 
     content::RenderFrame* render_frame;
     if (!MaybeGetRenderFrame(isolate, "insertCSS", &render_frame))
-      return std::u16string();
+      return {};
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
     if (web_frame->IsWebLocalFrame()) {
@@ -602,7 +602,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
                             css_origin)
           .Utf16();
     }
-    return std::u16string();
+    return {};
   }
 
   void RemoveInsertedCSS(v8::Isolate* isolate, const std::u16string& key) {

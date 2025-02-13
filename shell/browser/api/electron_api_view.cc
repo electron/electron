@@ -279,7 +279,7 @@ void View::SetBounds(const gfx::Rect& bounds) {
 
 gfx::Rect View::GetBounds() {
   if (!view_)
-    return gfx::Rect();
+    return {};
   return view_->bounds();
 }
 

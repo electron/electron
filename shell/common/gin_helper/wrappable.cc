@@ -25,16 +25,15 @@ v8::Local<v8::Object> WrappableBase::GetWrapper() const {
   if (!wrapper_.IsEmpty())
     return v8::Local<v8::Object>::New(isolate_, wrapper_);
   else
-    return v8::Local<v8::Object>();
+    return {};
 }
 
 v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(
     v8::Isolate* isolate) const {
   if (!wrapper_.IsEmpty())
-    return v8::MaybeLocal<v8::Object>(
-        v8::Local<v8::Object>::New(isolate, wrapper_));
+    return {v8::Local<v8::Object>::New(isolate, wrapper_)};
   else
-    return v8::MaybeLocal<v8::Object>();
+    return {};
 }
 
 void WrappableBase::InitWithArgs(gin::Arguments* args) {

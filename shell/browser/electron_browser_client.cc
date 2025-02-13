@@ -594,7 +594,7 @@ ElectronBrowserClient::GetGeneratedCodeCacheSettings(
   // If we pass 0 for size, disk_cache will pick a default size using the
   // heuristics based on available disk size. These are implemented in
   // disk_cache::PreferredCacheSize in net/disk_cache/cache_util.cc.
-  return content::GeneratedCodeCacheSettings(true, 0, cache_path);
+  return {true, 0, cache_path};
 }
 
 void ElectronBrowserClient::AllowCertificateError(
@@ -627,7 +627,7 @@ base::OnceClosure ElectronBrowserClient::SelectClientCertificate(
         std::move(client_certs), std::move(delegate));
   }
 
-  return base::OnceClosure();
+  return {};
 }
 
 bool ElectronBrowserClient::CanCreateWindow(
@@ -975,7 +975,7 @@ base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
   base::FilePath download_path;
   if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_path))
     return download_path;
-  return base::FilePath();
+  return {};
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
