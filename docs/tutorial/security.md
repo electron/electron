@@ -316,7 +316,7 @@ session
   })
 ```
 
-Note: `session.defaultSession` is only available when app is ready.
+Note: `session.defaultSession` is only available after `app.whenReady` is called.
 
 ### 6. Do not disable `webSecurity`
 
@@ -410,7 +410,7 @@ session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
 })
 ```
 
-Note: `session.defaultSession` is only available when app is ready.
+Note: `session.defaultSession` is only available after `app.whenReady` is called.
 
 #### CSP meta tag
 
