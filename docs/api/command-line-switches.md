@@ -313,6 +313,12 @@ Set the default value of the `verbatim` parameter in the Node.js [`dns.lookup()`
 
 The default is `verbatim` and `dns.setDefaultResultOrder()` have higher priority than `--dns-result-order`.
 
+### `--diagnostic-dir=directory`
+
+Set the directory to which all Node.js diagnostic output files are written. Defaults to current working directory.
+
+Affects the default output directory of [v8.setHeapSnapshotNearHeapLimit](https://nodejs.org/docs/latest/api/v8.html#v8setheapsnapshotnearheaplimitlimit).
+
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value
 [debugging-main-process]: ../tutorial/debugging-main-process.md
