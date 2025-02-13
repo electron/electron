@@ -52,7 +52,7 @@ index d03db1970fd7a1629a7a7719a5ff267402ab4a66..ce055fb5dfc84c75c486b99f01fea6b9
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
 diff --git a/src/node.h b/src/node.h
-index 0fec9477fd0f2a3c2aa68284131c510b0da0e025..c16204ad2a4787eeffe61eedda254d3a5509df8c 100644
+index 60598f54114b2424f10706e57d8aa50c4634bcb0..40880ccaca694f28ae47676254b1c0cc36de0d93 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@
