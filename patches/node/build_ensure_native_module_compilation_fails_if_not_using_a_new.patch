@@ -7,7 +7,7 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index 697b8bba6a55358924d6986f2eb347a99ff73889..bdf1a1f33f3ea09d933757c7fee87c563cc833ab 100644
+index 776a6dcf3a729a65b367fb5b4c5685f841089eea..690068f093f12b6831f8ccce41289d02d7047a7a 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -86,6 +86,8 @@
@@ -40,10 +40,10 @@ index 697b8bba6a55358924d6986f2eb347a99ff73889..bdf1a1f33f3ea09d933757c7fee87c56
        # list in v8/BUILD.gn.
        ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py
-index 0d089c35d1720e05c4c61d0226a2ebc276b65d6e..cf19b9d092698e1697508e8891926947bc2f7b12 100755
+index 0df90b176e9b5403efdb1393c0f2f37bb53dc6b2..ece665915ad4d6e02762ec3165cf7b987a87949d 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1585,6 +1585,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -1595,6 +1595,7 @@ def configure_library(lib, output, pkgname=None):
  
  
  def configure_v8(o):
@@ -52,7 +52,7 @@ index 0d089c35d1720e05c4c61d0226a2ebc276b65d6e..cf19b9d092698e1697508e8891926947
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
 diff --git a/src/node.h b/src/node.h
-index 4f2eb9d0aab88b70c86339e750799080e980d7da..df3fb3372d6357b5d77b4f683e309b8483998128 100644
+index 7d9d9afd049237646f82c3e22f5e7a8af7314a84..a941d9987abcbb0f9db3072b8c896a5f328dd027 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@

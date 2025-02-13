@@ -48,10 +48,10 @@ index 7b77af35a1dfebf6ad45ace521f1a55b5fa18293..ac24cf305bd5995ad13b37ee36f9e1fe
        ArrayPrototypePush(schemes, 'https', 'http');
      }
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index e73a8ad60a13925d6773c32cead8d04ec9d96ee7..52cdb7d5e14a18ed7b1b65e429729cf47dce3f98 100644
+index 93c7a040fd47f050b10b949e4f619d85660110c8..77b85490b1a65b594bb140deb07b33f3accc9736 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -741,6 +741,8 @@ function packageImportsResolve(name, base, conditions) {
+@@ -760,6 +760,8 @@ function packageImportsResolve(name, base, conditions) {
    throw importNotDefined(name, packageJSONUrl, base);
  }
  
@@ -60,7 +60,7 @@ index e73a8ad60a13925d6773c32cead8d04ec9d96ee7..52cdb7d5e14a18ed7b1b65e429729cf4
  /**
   * Returns the package type for a given URL.
   * @param {URL} url - The URL to get the package type for.
-@@ -801,6 +803,11 @@ function packageResolve(specifier, base, conditions) {
+@@ -820,6 +822,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -73,7 +73,7 @@ index e73a8ad60a13925d6773c32cead8d04ec9d96ee7..52cdb7d5e14a18ed7b1b65e429729cf4
      parsePackageName(specifier, base);
  
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 8f4b6b25d8889686d00613fd9821b0aa822a946a..89ca269294ee1afa7f5aeb0ac6b8958f7a8b49d0 100644
+index 044d820161a5f9809dd042be7e53b717de8678ab..5281d7c220c8adee0f3d7269a0116d082726ec91 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -272,7 +272,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
@@ -108,7 +108,7 @@ index 8f4b6b25d8889686d00613fd9821b0aa822a946a..89ca269294ee1afa7f5aeb0ac6b8958f
  // or as the initial entry point when the ESM loader handles a CommonJS entry.
  translators.set('commonjs', async function commonjsStrategy(url, source,
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index e6ed5466b8807a52633d8406824058bdc8c2ce13..e055facddf086eb8fb456b865ce006cdb7602b0a 100644
+index 42debfc20005b0d293e5507546dcd8caec2b6a4e..4b6d07b14bd92ac527b7f4bd55ff7005967cee7d 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
 @@ -1485,6 +1485,8 @@ function fileURLToPath(path, options = kEmptyObject) {
