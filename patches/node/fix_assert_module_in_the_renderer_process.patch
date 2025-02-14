@@ -44,7 +44,7 @@ index 59b5a16f1309a5e4055bccfdb7a529045ad30402..bfdaf6211466a01b64b7942f7b16c480
    let filename = call.getFileName();
    const line = call.getLineNumber() - 1;
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index f59abcb21d64b910d8d42eb23c03109f62558813..1b6613d1de8c89c8271066a652afd1024988362d 100644
+index a3c5697ef5b20a9dc43bfcd3513e703989f64d2d..837fdc8c79c6d80393b0c8ac9a18e4dd5e5a8dba 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -244,6 +244,9 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {

@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 5fc1b6f2446d7c786024eb60800e2edab613dcd1..f59abcb21d64b910d8d42eb23c03109f62558813 100644
+index 77c20a4b6b9db414444974f68c5def8788386d2b..a3c5697ef5b20a9dc43bfcd3513e703989f64d2d 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -101,6 +101,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
