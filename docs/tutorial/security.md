@@ -402,9 +402,7 @@ session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
   callback({
     responseHeaders: {
       ...details.responseHeaders,
-      'Content-Security-Policy': ['default-src \'none\'']
-      // Multiple policies are provided like this, going from specific to general
-      // 'Content-Security-Policy': ["img-src 'self'; script-src 'self' https://apis.example.com; default-src 'none'"]
+      'Content-Security-Policy': ['default-src \'none\'; script-src \'self\'']
     }
   })
 })
