@@ -522,7 +522,7 @@ index 4d6cc977ed5000d93918336a0dd57f60c0e95bbb..54d936e86b60f0538c70c4ee69e109cc
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 98b33c9def2596c820fc0fbf96de989f0b2cef02..6b915e3ebd9b96c68fe34a9f8c0e16bd0c2a9bee 100644
+index 2707617f5ba99783d604b32abe72b6d7220a58e5..8d0ab7d1d203371ae1f4269ece4e2aab394cb534 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -111,7 +111,8 @@ RootCompositorFrameSinkImpl::Create(
