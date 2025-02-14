@@ -660,18 +660,23 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index ee4d96b476864ed5ecad7e8421f41a39bb2f9268..c10d200ad270a8b9510cfac0f004733cd670163b 100644
+index ee4d96b476864ed5ecad7e8421f41a39bb2f9268..099e7812bfa700a42c2849f946fb819f691c85cf 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
-@@ -323,7 +323,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -323,6 +323,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
      legacyObjectCheck.serialNumberPattern);
  }
  
--{
-+if (!common.openSSLIsBoringSSL) {
++/*
+ {
    // This X.509 Certificate can be parsed by OpenSSL because it contains a
    // structurally sound TBSCertificate structure. However, the SPKI field of the
-   // TBSCertificate contains the subjectPublicKey as a BIT STRING, and this bit
+@@ -361,3 +362,4 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
+ 
+   assert.strictEqual(cert.checkIssued(cert), false);
+ }
++*/
+\ No newline at end of file
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index a8ceb169de2b3de73f062083c42292babc673e73..8fb950d0814e5014faf5c1ef576b65795857da1b 100644
 --- a/test/parallel/test-crypto.js
