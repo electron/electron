@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ben Noordhuis <info@bnoordhuis.nl>
+Date: Tue, 28 Jan 2025 09:27:58 +0100
+Subject: linux: try preadv64/pwritev64 before preadv/pwritev (#4683)
+
+Fixes: https://github.com/libuv/libuv/issues/4678
+Refs: https://github.com/libuv/libuv/issues/4532
+
+diff --git a/deps/uv/src/unix/fs.c b/deps/uv/src/unix/fs.c
+index 239ecda16a7eb9b40453502cf0362ae66366cf72..1631d9340bc10c2ac4c3d53a63ed9bc10f3e1c7c 100644
+--- a/deps/uv/src/unix/fs.c
++++ b/deps/uv/src/unix/fs.c
+@@ -461,12 +461,7 @@ static ssize_t uv__pwritev_emul(int fd,
+ 
+ /* The function pointer cache is an uintptr_t because _Atomic void*
+  * doesn't work on macos/ios/etc...
+- * Disable optimization on armv7 to work around the bug described in
+- * https://github.com/libuv/libuv/issues/4532
+  */
+-#if defined(__arm__) && (__ARM_ARCH == 7)
+-__attribute__((optimize("O0")))
+-#endif
+ static ssize_t uv__preadv_or_pwritev(int fd,
+                                      const struct iovec* bufs,
+                                      size_t nbufs,
+@@ -479,7 +474,12 @@ static ssize_t uv__preadv_or_pwritev(int fd,
+   p = (void*) atomic_load_explicit(cache, memory_order_relaxed);
+   if (p == NULL) {
+ #ifdef RTLD_DEFAULT
+-    p = dlsym(RTLD_DEFAULT, is_pread ? "preadv" : "pwritev");
++    /* Try _LARGEFILE_SOURCE version of preadv/pwritev first,
++     * then fall back to the plain version, for libcs like musl.
++     */
++    p = dlsym(RTLD_DEFAULT, is_pread ? "preadv64" : "pwritev64");
++    if (p == NULL)
++      p = dlsym(RTLD_DEFAULT, is_pread ? "preadv" : "pwritev");
+     dlerror();  /* Clear errors. */
+ #endif  /* RTLD_DEFAULT */
+     if (p == NULL)
+@@ -487,10 +487,7 @@ static ssize_t uv__preadv_or_pwritev(int fd,
+     atomic_store_explicit(cache, (uintptr_t) p, memory_order_relaxed);
+   }
+ 
+-  /* Use memcpy instead of `f = p` to work around a compiler bug,
+-   * see https://github.com/libuv/libuv/issues/4532
+-   */
+-  memcpy(&f, &p, sizeof(p));
++  f = p;
+   return f(fd, bufs, nbufs, off);
+ }
+ 

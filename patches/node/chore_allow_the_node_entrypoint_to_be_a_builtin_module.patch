@@ -8,30 +8,30 @@ they use themselves as the entry point. We should try to upstream some form
 of this.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index d49941881e6cfd8647a6d44a57e0daaf1c874702..f696fb263b356a76b87cd4b6c4b1a0fd60a84afd 100644
+index ccd038dc136480cdd84a13e58f4012b71cd40928..5be90bc3df67751b55e67a05ac1c5b9a12d9c585 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1518,6 +1518,13 @@ Module.prototype._compile = function(content, filename, format) {
-   if (getOptionValue('--inspect-brk') && process._eval == null) {
-     if (!resolvedArgv) {
-       // We enter the repl if we're not given a filename argument.
-+      // process._firstFileName is used by Embedders to tell node what
-+      // the first "real" file is when they use themselves as the entry
-+      // point
-+      if (process._firstFileName) {
-+        resolvedArgv = process._firstFileName
-+        delete process._firstFileName
-+      } else
-       if (process.argv[1]) {
-         try {
-           resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
+@@ -1563,6 +1563,13 @@ Module.prototype._compile = function(content, filename, format) {
+   this[kIsExecuting] = true;
+   if (this[kIsMainSymbol] && getOptionValue('--inspect-brk')) {
+     const { callAndPauseOnStart } = internalBinding('inspector');
++    // process._firstFileName is used by Embedders to tell node what
++    // the first "real" file is when they use themselves as the entry
++    // point
++    if (process._firstFileName) {
++      resolvedArgv = process._firstFileName;
++      delete process._firstFileName;
++    }
+     result = callAndPauseOnStart(compiledWrapper, thisValue, exports,
+                                  require, module, filename, dirname,
+                                  process, localGlobal, localBuffer);
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index cb96fd1bc4fcdce750ce241ee5f47f2ae39cfdc6..c46b270109697f7cc1683f8f9f463575e5040216 100644
+index 5d67892bb8e1fd265df414b3f41e62cdabbec873..89660076c41e1c05b26c17609a62a028c1e2ec5a 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -243,12 +243,14 @@ function patchProcessObject(expandArgv1) {
-   if (expandArgv1 && process.argv[1] &&
-       !StringPrototypeStartsWith(process.argv[1], '-')) {
+   // the entry point.
+   if (expandArgv1 && process.argv[1] && process.argv[1][0] !== '-') {
      // Expand process.argv[1] into a full path.
 -    const path = require('path');
 -    try {
