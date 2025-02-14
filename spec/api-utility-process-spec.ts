@@ -5,6 +5,8 @@ import { expect } from 'chai';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
@@ -759,6 +761,27 @@ describe('utilityProcess module', () => {
       expect(statusCode).to.equal(200);
       expect(loginAuthInfo!.realm).to.equal('Foo');
       expect(loginAuthInfo!.scheme).to.equal('basic');
+    });
+
+    it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', async () => {
+      const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-utility-oom-'));
+      const child = utilityProcess.fork(path.join(fixturesPath, 'oom-grow.js'), [], {
+        stdio: 'ignore',
+        execArgv: [
+          `--diagnostic-dir=${tmpDir}`,
+          '--js-flags=--max-old-space-size=50'
+        ],
+        env: {
+          NODE_DEBUG_NATIVE: 'diagnostic'
+        }
+      });
+      await once(child, 'spawn');
+      await once(child, 'exit');
+      const files = (await fs.readdir(tmpDir)).filter((file) => file.endsWith('.heapsnapshot'));
+      expect(files.length).to.be.equal(1);
+      const stat = await fs.stat(path.join(tmpDir, files[0]));
+      expect(stat.size).to.be.greaterThan(0);
+      await fs.rm(tmpDir, { recursive: true });
     });
   });
 });
