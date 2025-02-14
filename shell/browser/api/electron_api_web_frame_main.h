@@ -101,8 +101,14 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   void TeardownMojoConnection();
   void OnRendererConnectionError();
 
-  // WebFrameMain can outlive its RenderFrameHost pointer so we need to check
-  // whether its been disposed of prior to accessing it.
+  [[nodiscard]] constexpr bool HasRenderFrame() const {
+    return !render_frame_disposed_ && render_frame_ != nullptr;
+  }
+
+  // Throws a JS error if HasRenderFrame() is false.
+  // WebFrameMain can outlive its RenderFrameHost pointer,
+  // so we need to check whether its been disposed of
+  // prior to accessing it.
   bool CheckRenderFrame() const;
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,

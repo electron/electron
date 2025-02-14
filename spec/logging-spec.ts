@@ -21,7 +21,7 @@ function isTestingBindingAvailable () {
 // This test depends on functions that are only available when DCHECK_IS_ON.
 ifdescribe(isTestingBindingAvailable())('logging', () => {
   it('does not log by default', async () => {
-    // ELECTRON_ENABLE_LOGGING is turned on in the appveyor config.
+    // ELECTRON_ENABLE_LOGGING might be set in the environment, so remove it
     const { ELECTRON_ENABLE_LOGGING: _, ...envWithoutEnableLogging } = process.env;
     const rc = await startRemoteControlApp([], { env: envWithoutEnableLogging });
     const stderrComplete = new Promise<string>(resolve => {

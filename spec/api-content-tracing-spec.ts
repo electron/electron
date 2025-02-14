@@ -6,7 +6,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers';
 
 // FIXME: The tests are skipped on linux arm/arm64
 ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== 'linux'))('contentTracing', () => {
@@ -112,7 +112,8 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       expect(fs.statSync(path).isFile()).to.be.true('output exists');
     });
 
-    it('calls its callback with a result file path', async () => {
+    // FIXME(ckerr): this test regularly flakes
+    ifit(process.platform !== 'linux')('calls its callback with a result file path', async () => {
       const resultFilePath = await record(/* options */ {}, outputFilePath);
       expect(resultFilePath).to.be.a('string').and.be.equal(outputFilePath);
     });

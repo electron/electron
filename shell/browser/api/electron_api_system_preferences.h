@@ -63,8 +63,6 @@ class SystemPreferences final
                                    const std::string& media_type);
 #endif
 #if BUILDFLAG(IS_WIN)
-  bool IsAeroGlassEnabled();
-
   void InitializeWindow();
 
   // gfx::SysColorChangeListener:

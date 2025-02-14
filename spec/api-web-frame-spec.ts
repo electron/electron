@@ -176,15 +176,15 @@ describe('webFrame module', () => {
 
     describe('setZoomFactor()', () => {
       it('works', async () => {
-        const equal = await w.executeJavaScript('childFrame.setZoomFactor(2.0); childFrame.getZoomFactor() === 2.0');
-        expect(equal).to.be.true();
+        const zoom = await w.executeJavaScript('childFrame.setZoomFactor(2.0); childFrame.getZoomFactor()');
+        expect(zoom).to.equal(2.0);
       });
     });
 
     describe('setZoomLevel()', () => {
       it('works', async () => {
-        const equal = await w.executeJavaScript('childFrame.setZoomLevel(5); childFrame.getZoomLevel() === 5');
-        expect(equal).to.be.true();
+        const zoom = await w.executeJavaScript('childFrame.setZoomLevel(5); childFrame.getZoomLevel()');
+        expect(zoom).to.equal(5);
       });
     });
 

@@ -26,10 +26,10 @@ index 95876b4040844b598ea7219732a044b4423f8d97..4e02620b7887d1b70b2a9b9e21b819d9
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 8f90bb52b3cef64af2f880c13ff8182c61d6a091..ee24a241b48cd27d84dbf3268fdf6f8447082077 100644
+index 4e825d649919c88aad26e4c3b2fd80575ca57db0..de1d8fea0113b55065e5229b07f95d691ccb393e 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -457,6 +457,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -458,6 +458,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
@@ -53,7 +53,7 @@ index 8f90bb52b3cef64af2f880c13ff8182c61d6a091..ee24a241b48cd27d84dbf3268fdf6f84
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -712,6 +729,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -713,6 +730,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
    std::optional<base::TimeDelta> caret_blink_interval_;
    bool use_overlay_scrollbars_ = false;
@@ -62,7 +62,7 @@ index 8f90bb52b3cef64af2f880c13ff8182c61d6a091..ee24a241b48cd27d84dbf3268fdf6f84
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index f9680f5f46180313ef98df97e242f72ac3dfd0dc..5571532504b4752faad2ed5712ba1ef813e32a84 100644
+index 2b2a12cd9d1ac17a245f049cf0775b46c0596531..350586d35b29fb8d772ea70615768d0e62dc5474 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -688,6 +688,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {

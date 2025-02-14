@@ -11,10 +11,10 @@ Bug: N/A
 Change-Id: I9fc472212b2d3afac2c8e18a2159bc2d50bbdf98
 
 diff --git a/AUTHORS b/AUTHORS
-index 6008db66fcb0686046a5ca40d04bb2534cb0b04a..d5079e68cef38168c4c66833a53121930fa59afd 100644
+index e96a3afdabc731afe355cda83eec4923ea780fec..0b1dc07aad197eab7b79344bc5aee702a2d580ab 100644
 --- a/AUTHORS
 +++ b/AUTHORS
-@@ -339,6 +339,7 @@ David Futcher <david.mike.futcher@gmail.com>
+@@ -340,6 +340,7 @@ David Futcher <david.mike.futcher@gmail.com>
  David Jin <davidjin@amazon.com>
  David Lechner <david@pybricks.com>
  David Leen <davileen@amazon.com>

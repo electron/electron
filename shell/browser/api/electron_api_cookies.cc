@@ -178,85 +178,84 @@ base::Time ParseTimeProperty(const std::optional<double>& value) {
 
 const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
   // See net/cookies/cookie_inclusion_status.h for cookie error descriptions.
-  using Status = net::CookieInclusionStatus;
   using Reason = net::CookieInclusionStatus::ExclusionReason;
   static constexpr auto Reasons =
       base::MakeFixedFlatMap<Reason, std::string_view>(
-          {{Status::EXCLUDE_UNKNOWN_ERROR, "Unknown error"},
-           {Status::EXCLUDE_HTTP_ONLY,
+          {{Reason::EXCLUDE_UNKNOWN_ERROR, "Unknown error"},
+           {Reason::EXCLUDE_HTTP_ONLY,
             "The cookie was HttpOnly, but the attempted access was through a "
             "non-HTTP API."},
-           {Status::EXCLUDE_SECURE_ONLY,
+           {Reason::EXCLUDE_SECURE_ONLY,
             "The cookie was Secure, but the URL was not allowed to access "
             "Secure cookies."},
-           {Status::EXCLUDE_DOMAIN_MISMATCH,
+           {Reason::EXCLUDE_DOMAIN_MISMATCH,
             "The cookie's domain attribute did not match the domain of the URL "
             "attempting access."},
-           {Status::EXCLUDE_NOT_ON_PATH,
+           {Reason::EXCLUDE_NOT_ON_PATH,
             "The cookie's path attribute did not match the path of the URL "
             "attempting access."},
-           {Status::EXCLUDE_SAMESITE_STRICT,
+           {Reason::EXCLUDE_SAMESITE_STRICT,
             "The cookie had SameSite=Strict, and the attempted access did not "
             "have an appropriate SameSiteCookieContext"},
-           {Status::EXCLUDE_SAMESITE_LAX,
+           {Reason::EXCLUDE_SAMESITE_LAX,
             "The cookie had SameSite=Lax, and the attempted access did not "
             "have "
             "an appropriate SameSiteCookieContext"},
-           {Status::EXCLUDE_SAMESITE_UNSPECIFIED_TREATED_AS_LAX,
+           {Reason::EXCLUDE_SAMESITE_UNSPECIFIED_TREATED_AS_LAX,
             "The cookie did not specify a SameSite attribute, and therefore "
             "was treated as if it were SameSite=Lax, and the attempted "
             "access did not have an appropriate SameSiteCookieContext."},
-           {Status::EXCLUDE_SAMESITE_NONE_INSECURE,
+           {Reason::EXCLUDE_SAMESITE_NONE_INSECURE,
             "The cookie specified SameSite=None, but it was not Secure."},
-           {Status::EXCLUDE_USER_PREFERENCES,
+           {Reason::EXCLUDE_USER_PREFERENCES,
             "Caller did not allow access to the cookie."},
-           {Status::EXCLUDE_FAILURE_TO_STORE,
+           {Reason::EXCLUDE_FAILURE_TO_STORE,
             "The cookie was malformed and could not be stored"},
-           {Status::EXCLUDE_NONCOOKIEABLE_SCHEME,
+           {Reason::EXCLUDE_NONCOOKIEABLE_SCHEME,
             "Attempted to set a cookie from a scheme that does not support "
             "cookies."},
-           {Status::EXCLUDE_OVERWRITE_SECURE,
+           {Reason::EXCLUDE_OVERWRITE_SECURE,
             "The cookie would have overwritten a Secure cookie, and was not "
             "allowed to do so."},
-           {Status::EXCLUDE_OVERWRITE_HTTP_ONLY,
+           {Reason::EXCLUDE_OVERWRITE_HTTP_ONLY,
             "The cookie would have overwritten an HttpOnly cookie, and was not "
             "allowed to do so."},
-           {Status::EXCLUDE_INVALID_DOMAIN,
+           {Reason::EXCLUDE_INVALID_DOMAIN,
             "The cookie was set with an invalid Domain attribute."},
-           {Status::EXCLUDE_INVALID_PREFIX,
+           {Reason::EXCLUDE_INVALID_PREFIX,
             "The cookie was set with an invalid __Host- or __Secure- prefix."},
-           {Status::EXCLUDE_INVALID_PARTITIONED,
+           {Reason::EXCLUDE_INVALID_PARTITIONED,
             "Cookie was set with an invalid Partitioned attribute, which is "
             "only valid if the cookie has a __Host- prefix."},
-           {Status::EXCLUDE_NAME_VALUE_PAIR_EXCEEDS_MAX_SIZE,
+           {Reason::EXCLUDE_NAME_VALUE_PAIR_EXCEEDS_MAX_SIZE,
             "The cookie exceeded the name/value pair size limit."},
-           {Status::EXCLUDE_ATTRIBUTE_VALUE_EXCEEDS_MAX_SIZE,
+           {Reason::EXCLUDE_ATTRIBUTE_VALUE_EXCEEDS_MAX_SIZE,
             "Cookie exceeded the attribute size limit."},
-           {Status::EXCLUDE_DOMAIN_NON_ASCII,
+           {Reason::EXCLUDE_DOMAIN_NON_ASCII,
             "The cookie was set with a Domain attribute containing non ASCII "
             "characters."},
-           {Status::EXCLUDE_THIRD_PARTY_BLOCKED_WITHIN_FIRST_PARTY_SET,
+           {Reason::EXCLUDE_THIRD_PARTY_BLOCKED_WITHIN_FIRST_PARTY_SET,
             "The cookie is blocked by third-party cookie blocking but the two "
             "sites are in the same First-Party Set"},
-           {Status::EXCLUDE_PORT_MISMATCH,
+           {Reason::EXCLUDE_PORT_MISMATCH,
             "The cookie's source_port did not match the port of the request."},
-           {Status::EXCLUDE_SCHEME_MISMATCH,
+           {Reason::EXCLUDE_SCHEME_MISMATCH,
             "The cookie's source_scheme did not match the scheme of the "
             "request."},
-           {Status::EXCLUDE_SHADOWING_DOMAIN,
+           {Reason::EXCLUDE_SHADOWING_DOMAIN,
             "The cookie is a domain cookie and has the same name as an origin "
             "cookie on this origin."},
-           {Status::EXCLUDE_DISALLOWED_CHARACTER,
+           {Reason::EXCLUDE_DISALLOWED_CHARACTER,
             "The cookie contains ASCII control characters"},
-           {Status::EXCLUDE_THIRD_PARTY_PHASEOUT,
+           {Reason::EXCLUDE_THIRD_PARTY_PHASEOUT,
             "The cookie is blocked for third-party cookie phaseout."},
-           {Status::EXCLUDE_NO_COOKIE_CONTENT,
-            "The cookie contains no content or only whitespace."},
-           {Status::EXCLUDE_ALIASING,
-            "Cookie aliases that of another with a different source_port or "
-            "source scheme. I.e.: Two or more cookies share the same name "
-            "but have different ports/schemes."}});
-  static_assert(Reasons.size() == Status::NUM_EXCLUSION_REASONS);
+           {Reason::EXCLUDE_NO_COOKIE_CONTENT,
+            "The cookie contains no content or only whitespace."}});
+  static_assert(
+      Reasons.size() ==
+          net::CookieInclusionStatus::ExclusionReasonBitset::kValueCount,
+      "Please ensure all ExclusionReason variants are enumerated in "
+      "GetDebugString");
 
   std::ostringstream reason;
   reason << "Failed to set cookie - ";
