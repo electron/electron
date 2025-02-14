@@ -522,10 +522,10 @@ index 4d6cc977ed5000d93918336a0dd57f60c0e95bbb..54d936e86b60f0538c70c4ee69e109cc
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 2707617f5ba99783d604b32abe72b6d7220a58e5..8d0ab7d1d203371ae1f4269ece4e2aab394cb534 100644
+index 5f2da4e50e5b1ef4a120c4b8102ebcaea584681f..014e985ad5eaac42370657ebaf8484e376438332 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -111,7 +111,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -112,7 +112,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
@@ -564,7 +564,7 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 5ebe9fcc3baa5f780f0d588dc3b439ec5bba1b65..ec019b8628f9356770358ab2fff9dae913b5e8d1 100644
+index 378910976c702d81c263973d29e17646c3963494..84553085b75b8cb9296c4af726f9a7bfc0318980 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -441,8 +441,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
