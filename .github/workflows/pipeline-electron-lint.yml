@@ -12,6 +12,9 @@ concurrency:
   group: electron-lint-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
+env:
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}  
+
 jobs:
   lint:
     name: Lint
