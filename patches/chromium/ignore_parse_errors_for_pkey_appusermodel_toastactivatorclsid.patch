@@ -11,7 +11,7 @@ Bug: N/A
 Change-Id: I9fc472212b2d3afac2c8e18a2159bc2d50bbdf98
 
 diff --git a/AUTHORS b/AUTHORS
-index a3c3351e95ae3aff6ea161d66dc876169db870b2..aeb91134bd79c67c97b2672c82430f5dc3ec0b37 100644
+index e96a3afdabc731afe355cda83eec4923ea780fec..0b1dc07aad197eab7b79344bc5aee702a2d580ab 100644
 --- a/AUTHORS
 +++ b/AUTHORS
 @@ -340,6 +340,7 @@ David Futcher <david.mike.futcher@gmail.com>
