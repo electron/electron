@@ -7,7 +7,7 @@ runs:
     shell: bash
     id: yarn-cache-dir-path
     run: echo "dir=$(node src/electron/script/yarn cache dir)" >> $GITHUB_OUTPUT
-  - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
+  - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57
     id: yarn-cache
     with:
       path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
