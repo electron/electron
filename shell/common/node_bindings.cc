@@ -809,9 +809,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 #else
   auto args = ElectronCommandLine::argv();
 #endif
-  return CreateEnvironment(context, platform, 
-                           max_young_generation_size, 
-                           args, {}, on_app_code_ready);
+  return CreateEnvironment(context, platform, max_young_generation_size, args,
+                           {}, on_app_code_ready);
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
