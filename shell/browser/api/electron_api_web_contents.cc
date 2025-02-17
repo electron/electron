@@ -1561,6 +1561,12 @@ void WebContents::LostPointerLock() {
       ->ExitExclusiveAccessToPreviousState();
 }
 
+bool WebContents::IsWaitingForPointerLockPrompt(
+    content::WebContents* web_contents) {
+  return exclusive_access_manager_.pointer_lock_controller()
+      ->IsWaitingForPointerLockPrompt(web_contents);
+}
+
 void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,
                                         bool esc_key_locked,
                                         bool allowed) {
