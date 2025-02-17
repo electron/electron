@@ -31,6 +31,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
@@ -38,7 +39,7 @@ jobs:
   node-tests:
     name: Run Node.js Tests
     runs-on: electron-arc-linux-amd64-8core
-    timeout-minutes: 20
+    timeout-minutes: 30
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux
@@ -101,7 +102,7 @@ jobs:
   nan-tests:
     name: Run Nan Tests
     runs-on: electron-arc-linux-amd64-4core
-    timeout-minutes: 20
+    timeout-minutes: 30
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux

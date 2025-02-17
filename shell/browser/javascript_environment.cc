@@ -33,9 +33,15 @@ namespace electron {
 
 namespace {
 
-gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
+gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate,
+                                       size_t* max_young_generation_size) {
   std::unique_ptr<v8::Isolate::CreateParams> create_params =
       gin::IsolateHolder::getDefaultIsolateParams();
+  // The value is needed to adjust heap limit when capturing
+  // snapshot via v8.setHeapSnapshotNearHeapLimit(limit) or
+  // --heapsnapshot-near-heap-limit=max_count.
+  *max_young_generation_size =
+      create_params->constraints.max_young_generation_size_in_bytes();
   // Align behavior with V8 Isolate default for Node.js.
   // This is necessary for important aspects of Node.js
   // including heap and cpu profilers to function properly.
@@ -55,7 +61,8 @@ gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
                                              bool setup_wasm_streaming)
     : isolate_holder_{CreateIsolateHolder(
-          Initialize(event_loop, setup_wasm_streaming))},
+          Initialize(event_loop, setup_wasm_streaming),
+          &max_young_generation_size_)},
       isolate_{isolate_holder_.isolate()},
       locker_{isolate_} {
   isolate_->Enter();
@@ -90,7 +97,7 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
 
   // The V8Platform of gin relies on Chromium's task schedule, which has not
   // been started at this point, so we have to rely on Node's V8Platform.
-  auto* tracing_agent = node::CreateAgent();
+  auto* tracing_agent = new node::tracing::Agent();
   auto* tracing_controller = tracing_agent->GetTracingController();
   node::tracing::TraceEventHelper::SetAgent(tracing_agent);
   platform_ = node::MultiIsolatePlatform::Create(

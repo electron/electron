@@ -441,25 +441,34 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
     if (!MaybeGetRenderFrame(isolate, "setZoomLevel", &render_frame))
       return;
 
+    // Update the zoom controller.
     mojo::AssociatedRemote<mojom::ElectronWebContentsUtility>
         web_contents_utility_remote;
     render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
         &web_contents_utility_remote);
     web_contents_utility_remote->SetTemporaryZoomLevel(level);
+
+    // Update the local web frame for coherence with synchronous calls to
+    // |GetZoomLevel|.
+    if (blink::WebFrameWidget* web_frame =
+            render_frame->GetWebFrame()->LocalRoot()->FrameWidget()) {
+      web_frame->SetZoomLevel(level);
+    }
   }
 
   double GetZoomLevel(v8::Isolate* isolate) {
-    double result = 0.0;
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(isolate, "getZoomLevel", &render_frame))
-      return result;
+    if (!MaybeGetRenderFrame(isolate, "getZoomLevel", &render_frame)) {
+      return 0.0f;
+    }
 
-    mojo::AssociatedRemote<mojom::ElectronWebContentsUtility>
-        web_contents_utility_remote;
-    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
-        &web_contents_utility_remote);
-    web_contents_utility_remote->DoGetZoomLevel(&result);
-    return result;
+    blink::WebFrameWidget* web_frame =
+        render_frame->GetWebFrame()->LocalRoot()->FrameWidget();
+    if (!web_frame) {
+      return 0.0f;
+    }
+
+    return web_frame->GetZoomLevel();
   }
 
   void SetZoomFactor(gin_helper::ErrorThrower thrower, double factor) {
