@@ -38,7 +38,7 @@ index a00b5979e3b5deb4ba315b4635c7e5d2801c376e..c9d4a3536d0f60375ae623b48ca2fa70
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 0c41492aa9652112df0b839361570a832daf3b13..f2fbb576da23fc0a48b0c979a263aa2dbe3600eb 100644
+index 9e7d8ef0adef3b68a3ec186e4b218f591aa69266..2879e5cf541fb4d226cfd7cc0fe367ca448fb926 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -25,7 +25,7 @@ const {
@@ -60,7 +60,7 @@ index 0c41492aa9652112df0b839361570a832daf3b13..f2fbb576da23fc0a48b0c979a263aa2d
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 23ed971daebdda3cb627907ffa3626daaa5b5b7b..0f138b1099b4833176e8a0ce681c745422efc24a 100644
+index 1b94d923b6d83cc7806d793497a4f9f978c5938c..0caba80bb213e0edfb1f834250f895ccc05d0d1c 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -24,7 +24,7 @@ const {
@@ -72,7 +72,7 @@ index 23ed971daebdda3cb627907ffa3626daaa5b5b7b..0f138b1099b4833176e8a0ce681c7454
  const { dirname, extname, isAbsolute } = require('path');
  const {
    assertBufferSource,
-@@ -269,7 +269,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
+@@ -268,7 +268,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
  
    try {
      // We still need to read the FS to detect the exports.
@@ -81,7 +81,7 @@ index 23ed971daebdda3cb627907ffa3626daaa5b5b7b..0f138b1099b4833176e8a0ce681c7454
    } catch {
      // Continue regardless of error.
    }
-@@ -336,7 +336,7 @@ function cjsPreparseModuleExports(filename, source) {
+@@ -335,7 +335,7 @@ function cjsPreparseModuleExports(filename, source) {
        isAbsolute(resolved)) {
          // TODO: this should be calling the `load` hook chain to get the source
          // (and fallback to reading the FS only if the source is nullish).

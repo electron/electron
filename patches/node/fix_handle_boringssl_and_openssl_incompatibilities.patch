@@ -197,12 +197,11 @@ index d94f6e1c82c4a62547b3b395f375c86ce4deb5de..b81b9005365272217c77e2b9289bd9f8
      for (i = 0; i < sk_X509_num(peer_certs.get()); i++) {
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
-
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index aa5fc61f19e435b4833f3f49df10fa1edf2142c7..0a338b018a4ec20cb5bce250faf60d3f3bf192d4 100644
+index c89d591c6804ab7d41199d61452d10d12cdf7398..2d2fb57290c6c5092e95ebcd0dfc302f30ad6757 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -94,7 +94,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+@@ -105,7 +105,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
  
@@ -211,7 +210,7 @@ index aa5fc61f19e435b4833f3f49df10fa1edf2142c7..0a338b018a4ec20cb5bce250faf60d3f
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -920,11 +920,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -931,11 +931,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -225,7 +224,7 @@ index aa5fc61f19e435b4833f3f49df10fa1edf2142c7..0a338b018a4ec20cb5bce250faf60d3f
    DHPointer dh;
    {
      BIOPointer bio(LoadBIO(env, args[0]));
-@@ -1150,7 +1151,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -1161,7 +1162,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -235,7 +234,7 @@ index aa5fc61f19e435b4833f3f49df10fa1edf2142c7..0a338b018a4ec20cb5bce250faf60d3f
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index d760a0d3ea1d12184a558f5e87cb22043d26a0f5..f973941b3b9ea954f35f2ea135f8ee3d77b98958 100644
+index 7041eb985d9f6d163098a94342aec976cb6c2bb9..5387d9625a28bb7d11f7f0f05a5f07d1fee2c216 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -7,7 +7,9 @@
@@ -248,7 +247,7 @@ index d760a0d3ea1d12184a558f5e87cb22043d26a0f5..f973941b3b9ea954f35f2ea135f8ee3d
  #include "openssl/dh.h"
  #include "threadpoolwork-inl.h"
  #include "v8.h"
-@@ -86,11 +88,7 @@ void New(const FunctionCallbackInfo<Value>& args) {
+@@ -88,11 +90,7 @@ void New(const FunctionCallbackInfo<Value>& args) {
    if (args[0]->IsInt32()) {
      int32_t bits = args[0].As<Int32>()->Value();
      if (bits < 2) {
@@ -261,7 +260,7 @@ index d760a0d3ea1d12184a558f5e87cb22043d26a0f5..f973941b3b9ea954f35f2ea135f8ee3d
        return ThrowCryptoError(env, ERR_get_error(), "Invalid prime length");
      }
  
-@@ -103,7 +101,7 @@ void New(const FunctionCallbackInfo<Value>& args) {
+@@ -105,7 +103,7 @@ void New(const FunctionCallbackInfo<Value>& args) {
      }
      int32_t generator = args[1].As<Int32>()->Value();
      if (generator < 2) {
@@ -270,7 +269,7 @@ index d760a0d3ea1d12184a558f5e87cb22043d26a0f5..f973941b3b9ea954f35f2ea135f8ee3d
        return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
      }
  
-@@ -132,12 +130,12 @@ void New(const FunctionCallbackInfo<Value>& args) {
+@@ -134,12 +132,12 @@ void New(const FunctionCallbackInfo<Value>& args) {
    if (args[1]->IsInt32()) {
      int32_t generator = args[1].As<Int32>()->Value();
      if (generator < 2) {
@@ -285,7 +284,7 @@ index d760a0d3ea1d12184a558f5e87cb22043d26a0f5..f973941b3b9ea954f35f2ea135f8ee3d
        return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
      }
    } else {
-@@ -146,11 +144,11 @@ void New(const FunctionCallbackInfo<Value>& args) {
+@@ -148,11 +146,11 @@ void New(const FunctionCallbackInfo<Value>& args) {
        return THROW_ERR_OUT_OF_RANGE(env, "generator is too big");
      bn_g = BignumPointer(reinterpret_cast<uint8_t*>(arg1.data()), arg1.size());
      if (!bn_g) {
@@ -299,7 +298,7 @@ index d760a0d3ea1d12184a558f5e87cb22043d26a0f5..f973941b3b9ea954f35f2ea135f8ee3d
        return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
      }
    }
-@@ -258,15 +256,17 @@ void ComputeSecret(const FunctionCallbackInfo<Value>& args) {
+@@ -260,15 +258,17 @@ void ComputeSecret(const FunctionCallbackInfo<Value>& args) {
    BignumPointer key(key_buf.data(), key_buf.size());
  
    switch (dh.checkPublicKey(key)) {
@@ -319,7 +318,7 @@ index d760a0d3ea1d12184a558f5e87cb22043d26a0f5..f973941b3b9ea954f35f2ea135f8ee3d
      case DHPointer::CheckPublicKeyResult::NONE:
        break;
    }
-@@ -398,9 +398,11 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -400,9 +400,11 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      key_params = EVPKeyPointer::New();
      CHECK(key_params);
      CHECK_EQ(EVP_PKEY_assign_DH(key_params.get(), dh.release()), 1);
@@ -332,7 +331,7 @@ index d760a0d3ea1d12184a558f5e87cb22043d26a0f5..f973941b3b9ea954f35f2ea135f8ee3d
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -414,6 +416,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -416,6 +418,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      }
  
      key_params = EVPKeyPointer(raw_params);
@@ -343,10 +342,10 @@ index d760a0d3ea1d12184a558f5e87cb22043d26a0f5..f973941b3b9ea954f35f2ea135f8ee3d
      UNREACHABLE();
    }
 diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
-index b557de774117e442d7f429e92d63a6e1faa236fd..0aca233ced39269b09c383e5b32d85cf36260a1e 100644
+index 471fee77531139ce988292470dff443fdfb05b07..931f7c2ae3d7e12afce471545d610d22f63412d7 100644
 --- a/src/crypto/crypto_dsa.cc
 +++ b/src/crypto/crypto_dsa.cc
-@@ -40,7 +40,7 @@ namespace crypto {
+@@ -43,7 +43,7 @@ namespace crypto {
  EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
    EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DSA, nullptr));
    EVP_PKEY* raw_params = nullptr;
@@ -355,7 +354,7 @@ index b557de774117e442d7f429e92d63a6e1faa236fd..0aca233ced39269b09c383e5b32d85cf
    if (!param_ctx ||
        EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
        EVP_PKEY_CTX_set_dsa_paramgen_bits(
-@@ -55,7 +55,9 @@ EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
+@@ -58,7 +58,9 @@ EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
        return EVPKeyCtxPointer();
      }
    }
@@ -367,10 +366,10 @@ index b557de774117e442d7f429e92d63a6e1faa236fd..0aca233ced39269b09c383e5b32d85cf
      return EVPKeyCtxPointer();
  
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index ac4103400e1e293909e7c524f4a1422c5f04e707..c44c11cbd533350d8bf149032c658d5585303b7d 100644
+index f66c57b1079af6cd040dc6d11e72f353507b75e5..abd2bccb9669e06dd8355f66220f8b06c8e863dc 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
-@@ -945,6 +945,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
+@@ -949,6 +949,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
  }
  
  bool KeyObjectHandle::CheckEcKeyData() const {
@@ -378,7 +377,7 @@ index ac4103400e1e293909e7c524f4a1422c5f04e707..c44c11cbd533350d8bf149032c658d55
    MarkPopErrorOnReturn mark_pop_error_on_return;
  
    const auto& key = data_.GetAsymmetricKey();
-@@ -961,6 +962,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
+@@ -965,6 +966,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
  #else
    return EVP_PKEY_public_check(ctx.get()) == 1;
  #endif
@@ -389,10 +388,10 @@ index ac4103400e1e293909e7c524f4a1422c5f04e707..c44c11cbd533350d8bf149032c658d55
  
  void KeyObjectHandle::CheckEcKeyData(const FunctionCallbackInfo<Value>& args) {
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index b59e394d9a7e2c19fdf1f2b0177753ff488da0fa..91218f49da5392c6f769495ee7f9275a47ce09b1 100644
+index cb96698aa644c3b6c506c0979910f2b4421d63ad..b9b21329199b49c9e41f9ae708296e5b0edb39b0 100644
 --- a/src/crypto/crypto_random.cc
 +++ b/src/crypto/crypto_random.cc
-@@ -134,7 +134,7 @@ Maybe<void> RandomPrimeTraits::AdditionalConfig(
+@@ -143,7 +143,7 @@ Maybe<void> RandomPrimeTraits::AdditionalConfig(
  
    params->bits = bits;
    params->safe = safe;
@@ -402,10 +401,10 @@ index b59e394d9a7e2c19fdf1f2b0177753ff488da0fa..91218f49da5392c6f769495ee7f9275a
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<void>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index 6d360554b31d53a597d61fcbd660f703a903ca21..86fafe98222d4c18f062032d80104f3ef00dbc01 100644
+index 05a3882c7e17d78e27aabb29891aa250789a47c0..1f2fccce6ed8f14525557644e0bdd130eedf3337 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
-@@ -608,10 +608,13 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
+@@ -612,10 +612,13 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
        }
  
        if (params->saltLength != nullptr) {
@@ -420,10 +419,10 @@ index 6d360554b31d53a597d61fcbd660f703a903ca21..86fafe98222d4c18f062032d80104f3e
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 12ee0cde0897024bccb0face49053544a0bcfcd7..8a6a36a3c31532ed585c287ba8cee14026d315b4 100644
+index e255288f6e013ce122f317c415d73d9c93d38580..4af50e85bfb6631bd6a29fe5b570a419f2a6a77d 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -495,24 +495,15 @@ Maybe<void> Decorate(Environment* env,
+@@ -502,24 +502,15 @@ Maybe<void> Decorate(Environment* env,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -449,7 +448,7 @@ index 12ee0cde0897024bccb0face49053544a0bcfcd7..8a6a36a3c31532ed585c287ba8cee140
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -654,7 +645,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -661,7 +652,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -458,7 +457,7 @@ index 12ee0cde0897024bccb0face49053544a0bcfcd7..8a6a36a3c31532ed585c287ba8cee140
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -665,7 +656,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -672,7 +663,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -467,7 +466,7 @@ index 12ee0cde0897024bccb0face49053544a0bcfcd7..8a6a36a3c31532ed585c287ba8cee140
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -673,10 +664,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -680,10 +671,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -481,7 +480,7 @@ index 12ee0cde0897024bccb0face49053544a0bcfcd7..8a6a36a3c31532ed585c287ba8cee140
  }  // namespace
  
 diff --git a/src/env.h b/src/env.h
-index 16312e548e526b80ec9a230bc3c772f45685b61f..0a3f09ebc7e2e7c1f8b9499d4439e2ca90b86810 100644
+index 1239cbdbf2d375a50ada37ee0ed5592c751d4c5c..aed066852d7c257076cc7ca8b173fd2a3a353a00 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -50,7 +50,7 @@
@@ -493,7 +492,7 @@ index 16312e548e526b80ec9a230bc3c772f45685b61f..0a3f09ebc7e2e7c1f8b9499d4439e2ca
  #include <openssl/evp.h>
  #endif
  
-@@ -1062,7 +1062,7 @@ class Environment final : public MemoryRetainer {
+@@ -1071,7 +1071,7 @@ class Environment final : public MemoryRetainer {
      kExitInfoFieldCount
    };
  
@@ -516,7 +515,7 @@ index c59e65ad1fe3fac23f1fc25ca77e6133d1ccaccd..f2f07434e076e2977755ef7dac7d489a
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index a03daec2bd74d7857d38238ea0479e36e054a7a3..f70e0917f6caa66210107cdb2ef891685563ba96 100644
+index 1d81079a9b7d8a69ad2d87835090be88ae507bd8..3608ab2b4aeb09e985ca98e23f2dff23567ade71 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -529,7 +528,7 @@ index a03daec2bd74d7857d38238ea0479e36e054a7a3..f70e0917f6caa66210107cdb2ef89168
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index ab6ea77b2e9ce54af44e21c29fcba929f117c41b..23923ccd645e810d84b0a08e57e486d012b5796b 100644
+index 621f5eca96b10685734a39e56cce7cee6c8a25bf..41dd04f5e2b1cd54c32df70830389d44d7b39aa2 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

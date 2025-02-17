@@ -15,7 +15,7 @@ to recognize asar files.
 This reverts commit 9cf2e1f55b8446a7cde23699d00a3be73aa0c8f1.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index f2fbb576da23fc0a48b0c979a263aa2dbe3600eb..97d3b4e9bd9303e1271bb62b1c9851da1100e019 100644
+index 2879e5cf541fb4d226cfd7cc0fe367ca448fb926..19df6fab3e118ac237f930b1e5d41c02c9050fa2 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -28,14 +28,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');

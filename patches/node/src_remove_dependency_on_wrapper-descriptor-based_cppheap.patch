@@ -16,7 +16,7 @@ patch:
 (cherry picked from commit 30329d06235a9f9733b1d4da479b403462d1b326)
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index c460018af954e6333cd937059ae5dc81f179d8ca..d266eca6fc3300e657383feb4bb7a7194da79275 100644
+index 49c3513ee9b67b407a2bb6609ac89a5959a78cd1..9a8216354e646e86d692b25c2bed5134e267528c 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
 @@ -62,31 +62,6 @@ inline uv_loop_t* IsolateData::event_loop() const {
@@ -52,7 +52,7 @@ index c460018af954e6333cd937059ae5dc81f179d8ca..d266eca6fc3300e657383feb4bb7a719
    return &(wrapper_data_->cppgc_id);
  }
 diff --git a/src/env.cc b/src/env.cc
-index adb6cc1c2f1c0100b64e688d13e5ca81b1ae2775..579a15f0e1fdd97184ec81873dbc4547e747ec1d 100644
+index b428c922ed218cbdf19cdba50d18b1f81a56b8ca..1c1062a3996f2bb7de9e91f7f4385c8f8d20f490 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -23,6 +23,7 @@
@@ -71,7 +71,7 @@ index adb6cc1c2f1c0100b64e688d13e5ca81b1ae2775..579a15f0e1fdd97184ec81873dbc4547
  using worker::Worker;
  
  int const ContextEmbedderTag::kNodeContextTag = 0x6e6f64;
-@@ -531,6 +531,14 @@ void IsolateData::CreateProperties() {
+@@ -527,6 +527,14 @@ void IsolateData::CreateProperties() {
    CreateEnvProxyTemplate(this);
  }
  
@@ -86,7 +86,7 @@ index adb6cc1c2f1c0100b64e688d13e5ca81b1ae2775..579a15f0e1fdd97184ec81873dbc4547
  constexpr uint16_t kDefaultCppGCEmbedderID = 0x90de;
  Mutex IsolateData::isolate_data_mutex_;
  std::unordered_map<uint16_t, std::unique_ptr<PerIsolateWrapperData>>
-@@ -568,36 +576,16 @@ IsolateData::IsolateData(Isolate* isolate,
+@@ -564,36 +572,16 @@ IsolateData::IsolateData(Isolate* isolate,
    v8::CppHeap* cpp_heap = isolate->GetCppHeap();
  
    uint16_t cppgc_id = kDefaultCppGCEmbedderID;
@@ -130,7 +130,7 @@ index adb6cc1c2f1c0100b64e688d13e5ca81b1ae2775..579a15f0e1fdd97184ec81873dbc4547
  
    {
      // GC could still be run after the IsolateData is destroyed, so we store
-@@ -629,11 +617,12 @@ IsolateData::~IsolateData() {
+@@ -625,11 +613,12 @@ IsolateData::~IsolateData() {
    }
  }
  
@@ -146,7 +146,7 @@ index adb6cc1c2f1c0100b64e688d13e5ca81b1ae2775..579a15f0e1fdd97184ec81873dbc4547
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/env.h b/src/env.h
-index 0a3f09ebc7e2e7c1f8b9499d4439e2ca90b86810..d6f412cb13460f97f9444af397c8025c7a8bd290 100644
+index aed066852d7c257076cc7ca8b173fd2a3a353a00..1f8dc8f88d40ca95ba13d6517b2b5ed83184e1ce 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -175,10 +175,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
