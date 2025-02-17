@@ -6218,6 +6218,7 @@ describe('BrowserWindow module', () => {
       w.previewFile(__filename);
       await setTimeout(500);
       expect(showCalled).to.equal(false, 'should not have called show twice');
+      w.closeFilePreview();
     });
   });
 
