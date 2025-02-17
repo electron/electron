@@ -8,7 +8,14 @@
 
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
+#include "electron/mas.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+#include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_helper/reply_channel.h"
+
+#if !IS_MAS_BUILD()
+#include "shell/common/crash_keys.h"
+#endif
 
 namespace electron {
 ElectronApiIPCHandlerImpl::ElectronApiIPCHandlerImpl(
@@ -38,6 +45,9 @@ void ElectronApiIPCHandlerImpl::OnConnectionError() {
 void ElectronApiIPCHandlerImpl::Message(bool internal,
                                         const std::string& channel,
                                         blink::CloneableMessage arguments) {
+  electron::crash_keys::SetCrashKey("electron.ipc.method", "message");
+  electron::crash_keys::SetCrashKey("electron.ipc.channel", channel);
+
   api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->Message(internal, channel, std::move(arguments),
@@ -48,16 +58,27 @@ void ElectronApiIPCHandlerImpl::Invoke(bool internal,
                                        const std::string& channel,
                                        blink::CloneableMessage arguments,
                                        InvokeCallback callback) {
+  electron::crash_keys::SetCrashKey("electron.ipc.method", "invoke");
+  electron::crash_keys::SetCrashKey("electron.ipc.channel", channel);
+
   api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->Invoke(internal, channel, std::move(arguments),
                              std::move(callback), GetRenderFrameHost());
+  } else {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    gin_helper::internal::ReplyChannel::Create(isolate, std::move(callback))
+        ->SendError("WebContents does not exist");
   }
 }
 
 void ElectronApiIPCHandlerImpl::ReceivePostMessage(
     const std::string& channel,
     blink::TransferableMessage message) {
+  electron::crash_keys::SetCrashKey("electron.ipc.method", "post-message");
+  electron::crash_keys::SetCrashKey("electron.ipc.channel", channel);
+
   api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->ReceivePostMessage(channel, std::move(message),
@@ -69,6 +90,9 @@ void ElectronApiIPCHandlerImpl::MessageSync(bool internal,
                                             const std::string& channel,
                                             blink::CloneableMessage arguments,
                                             MessageSyncCallback callback) {
+  electron::crash_keys::SetCrashKey("electron.ipc.method", "message-sync");
+  electron::crash_keys::SetCrashKey("electron.ipc.channel", channel);
+
   api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->MessageSync(internal, channel, std::move(arguments),
@@ -78,6 +102,9 @@ void ElectronApiIPCHandlerImpl::MessageSync(bool internal,
 
 void ElectronApiIPCHandlerImpl::MessageHost(const std::string& channel,
                                             blink::CloneableMessage arguments) {
+  electron::crash_keys::SetCrashKey("electron.ipc.method", "message-host");
+  electron::crash_keys::SetCrashKey("electron.ipc.channel", channel);
+
   api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
     api_web_contents->MessageHost(channel, std::move(arguments),
