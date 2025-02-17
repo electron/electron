@@ -6208,10 +6208,12 @@ describe('BrowserWindow module', () => {
         w.closeFilePreview();
       }).to.not.throw();
 
-      // [QLPreviewPanel sharedPreviewPanel] appears to open late sometimes in
-      // CI. Try to close again after a slight delay.
-      await setTimeout(10);
-      w.closeFilePreview();
+      if (process.env.CI) {
+        // [QLPreviewPanel sharedPreviewPanel] appears to open late sometimes in
+        // CI. Try to close again after a slight delay.
+        await setTimeout(500);
+        w.closeFilePreview();
+      }
     });
 
     it('should not call BrowserWindow show event', async () => {
