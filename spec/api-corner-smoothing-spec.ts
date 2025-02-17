@@ -1,11 +1,12 @@
 import { NativeImage, nativeImage } from 'electron/common';
-import { BrowserWindow, screen } from 'electron/main';
+import { BrowserWindow } from 'electron/main';
 
 import { AssertionError, expect } from 'chai';
 
 import path = require('node:path');
 
 import { createArtifact } from './lib/artifacts';
+import { ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 const FIXTURE_PATH = path.resolve(
@@ -15,24 +16,56 @@ const FIXTURE_PATH = path.resolve(
   'corner-smoothing'
 );
 
-async function capturePageWithNormalizedScale (w: BrowserWindow): Promise<NativeImage> {
-  // Determine the scale factor for the window.
-  const [x, y] = w.getPosition();
-  const display = screen.getDisplayNearestPoint({ x, y });
-  const rescaleFactor = 1.0 / display.scaleFactor;
+/**
+ * Rendered images may "match" but slightly differ due to rendering artifacts
+ * like anti-aliasing and vector path resolution, among others. This tolerance
+ * is the cutoff for whether two images "match" or not.
+ *
+ * From testing, matching images were found to have an average global difference
+ * up to about 1.3 and mismatched images were found to have a difference of at
+ * least about 7.3.
+ *
+ * See the documentation on `compareImages` for more information.
+ */
+const COMPARISON_TOLERANCE = 2.5;
 
-  const img = await w.webContents.capturePage();
+/**
+ * Compares the average global difference of two images to determine if they
+ * are similar enough to "match" each other.
+ *
+ * "Average global difference" is the average difference of pixel components
+ * (RGB each) across an entire image.
+ *
+ * The cutoff for matching/not-matching is defined by the `COMPARISON_TOLERANCE`
+ * constant.
+ */
+function compareImages (img1: NativeImage, img2: NativeImage): boolean {
+  expect(img1.getSize()).to.deep.equal(
+    img2.getSize(),
+    'Cannot compare images with different sizes'
+  );
 
-  // Don't rescale if it's unnecessary.
-  if (img.isEmpty() || rescaleFactor === 1) {
-    return img;
+  const bitmap1 = img1.toBitmap();
+  const bitmap2 = img2.toBitmap();
+
+  const { width, height } = img1.getSize();
+
+  let totalDiff = 0;
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      const index = (x + y * width) * 4;
+      const pixel1 = bitmap1.subarray(index, index + 4);
+      const pixel2 = bitmap2.subarray(index, index + 4);
+      const diff =
+        Math.abs(pixel1[0] - pixel2[0]) +
+        Math.abs(pixel1[1] - pixel2[1]) +
+        Math.abs(pixel1[2] - pixel2[2]);
+      totalDiff += diff;
+    }
   }
 
-  const { width, height } = img.getSize();
-  return img.resize({
-    width: width / 2.0,
-    height: height / 2.0
-  });
+  const avgDiff = totalDiff / (width * height);
+  return avgDiff <= COMPARISON_TOLERANCE;
 }
 
 /**
@@ -64,7 +97,7 @@ async function pageCaptureTestRecipe (
     'new Promise((resolve) => { requestAnimationFrame(() => resolve()); })'
   );
 
-  const actualImg = await capturePageWithNormalizedScale(w);
+  const actualImg = await w.webContents.capturePage();
   expect(actualImg.isEmpty()).to.be.false('Failed to capture page image');
 
   const expectedImg = nativeImage.createFromPath(expectedImgPath);
@@ -72,9 +105,7 @@ async function pageCaptureTestRecipe (
     'Failed to read expected reference image'
   );
 
-  // Compare the actual page image to the expected reference image, creating an
-  // artifact if they do not match.
-  const matches = actualImg.toBitmap().equals(expectedImg.toBitmap());
+  const matches = compareImages(actualImg, expectedImg);
   if (!matches) {
     const artifactFileName = `corner-rounding-expected-${artifactName}.png`;
     await createArtifact(artifactFileName, actualImg.toPNG());
@@ -88,7 +119,9 @@ async function pageCaptureTestRecipe (
   }
 }
 
-describe('-electron-corner-smoothing', () => {
+// FIXME: these tests rely on live rendering results, which are too variable to
+// reproduce outside of CI, primarily due to display scaling.
+ifdescribe(!!process.env.CI)('-electron-corner-smoothing', () => {
   afterEach(async () => {
     await closeAllWindows();
   });
