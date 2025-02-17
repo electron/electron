@@ -107,7 +107,7 @@ void ElectronRendererClient::DidCreateScriptContext(
       blink::LoaderFreezeMode::kStrict);
 
   std::shared_ptr<node::Environment> env = node_bindings_->CreateEnvironment(
-      renderer_context, nullptr,
+      renderer_context, nullptr, 0,
       base::BindRepeating(&ElectronRendererClient::UndeferLoad,
                           base::Unretained(this), render_frame));
 
