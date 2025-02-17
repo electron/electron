@@ -23,10 +23,10 @@ index bb4d6c56978469d3c2efb4b2d519a7a69ef538b0..b164e89a394df060f6154ad2acadf15d
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 256275528ddbdbc22736e73e43d385d9cdfca264..a0884192a3137dade6704f3a26d726105478bf72 100644
+index d86148672f36ecc42f4635d61cf474f6e9348ada..48cb9025f830045aa9dbe0b6c71177d8f999b40c 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4779,6 +4779,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4780,6 +4780,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
