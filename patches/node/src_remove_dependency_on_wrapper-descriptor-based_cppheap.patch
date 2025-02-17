@@ -161,10 +161,10 @@ index 0a3f09ebc7e2e7c1f8b9499d4439e2ca90b86810..d6f412cb13460f97f9444af397c8025c
    inline MultiIsolatePlatform* platform() const;
    inline const SnapshotData* snapshot_data() const;
 diff --git a/src/node.h b/src/node.h
-index 120e3a1042e29590cbbf4be258a1cd2d3d4f0043..afb26ec5690ccd65a3c36f8b8a1b2de416b9d843 100644
+index 00de9a76d515290eba05aacada0942e611e11b22..e62501ae102a73408849fecdba703abe5c84e24d 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -1552,24 +1552,14 @@ void RegisterSignalHandler(int signal,
+@@ -1555,24 +1555,14 @@ void RegisterSignalHandler(int signal,
                             bool reset_handler = false);
  #endif  // _WIN32
  
