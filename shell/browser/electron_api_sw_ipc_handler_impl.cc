@@ -71,13 +71,12 @@ void ElectronApiSWIPCHandlerImpl::Message(bool internal,
                                           const std::string& channel,
                                           blink::CloneableMessage arguments) {
   auto* session = GetSession();
-  if (session) {
-    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-    v8::HandleScope handle_scope(isolate);
-    gin::Handle<gin_helper::internal::Event> event =
-        MakeIPCEvent(isolate, internal);
-    session->Message(event, channel, std::move(arguments));
-  }
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  auto event = MakeIPCEvent(isolate, session, internal);
+  if (event.IsEmpty())
+    return;
+  session->Message(event, channel, std::move(arguments));
 }
 
 void ElectronApiSWIPCHandlerImpl::Invoke(bool internal,
@@ -85,26 +84,24 @@ void ElectronApiSWIPCHandlerImpl::Invoke(bool internal,
                                          blink::CloneableMessage arguments,
                                          InvokeCallback callback) {
   auto* session = GetSession();
-  if (session) {
-    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-    v8::HandleScope handle_scope(isolate);
-    gin::Handle<gin_helper::internal::Event> event =
-        MakeIPCEvent(isolate, internal);
-    session->Invoke(event, channel, std::move(arguments), std::move(callback));
-  }
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  auto event = MakeIPCEvent(isolate, session, internal, std::move(callback));
+  if (event.IsEmpty())
+    return;
+  session->Invoke(event, channel, std::move(arguments));
 }
 
 void ElectronApiSWIPCHandlerImpl::ReceivePostMessage(
     const std::string& channel,
     blink::TransferableMessage message) {
   auto* session = GetSession();
-  if (session) {
-    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-    v8::HandleScope handle_scope(isolate);
-    gin::Handle<gin_helper::internal::Event> event =
-        MakeIPCEvent(isolate, false);
-    session->ReceivePostMessage(event, channel, std::move(message));
-  }
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  auto event = MakeIPCEvent(isolate, session, false);
+  if (event.IsEmpty())
+    return;
+  session->ReceivePostMessage(event, channel, std::move(message));
 }
 
 void ElectronApiSWIPCHandlerImpl::MessageSync(bool internal,
@@ -112,14 +109,12 @@ void ElectronApiSWIPCHandlerImpl::MessageSync(bool internal,
                                               blink::CloneableMessage arguments,
                                               MessageSyncCallback callback) {
   auto* session = GetSession();
-  if (session) {
-    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-    v8::HandleScope handle_scope(isolate);
-    gin::Handle<gin_helper::internal::Event> event =
-        MakeIPCEvent(isolate, internal);
-    session->MessageSync(event, channel, std::move(arguments),
-                         std::move(callback));
-  }
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  auto event = MakeIPCEvent(isolate, session, internal, std::move(callback));
+  if (event.IsEmpty())
+    return;
+  session->MessageSync(event, channel, std::move(arguments));
 }
 
 void ElectronApiSWIPCHandlerImpl::MessageHost(
@@ -139,7 +134,20 @@ api::Session* ElectronApiSWIPCHandlerImpl::GetSession() {
 }
 
 gin::Handle<gin_helper::internal::Event>
-ElectronApiSWIPCHandlerImpl::MakeIPCEvent(v8::Isolate* isolate, bool internal) {
+ElectronApiSWIPCHandlerImpl::MakeIPCEvent(
+    v8::Isolate* isolate,
+    api::Session* session,
+    bool internal,
+    electron::mojom::ElectronApiIPC::InvokeCallback callback) {
+  if (!session) {
+    if (callback) {
+      // We must always invoke the callback if present.
+      gin_helper::internal::ReplyChannel::Create(isolate, std::move(callback))
+          ->SendError("Session does not exist");
+    }
+    return {};
+  }
+
   gin::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
@@ -150,7 +158,11 @@ ElectronApiSWIPCHandlerImpl::MakeIPCEvent(v8::Isolate* isolate, bool internal) {
   dict.Set("processId", render_process_host_->GetID().GetUnsafeValue());
 
   // Set session to provide context for getting preloads
-  dict.Set("session", GetSession());
+  dict.Set("session", session);
+
+  if (callback)
+    dict.Set("_replyChannel", gin_helper::internal::ReplyChannel::Create(
+                                  isolate, std::move(callback)));
 
   if (internal)
     dict.SetHidden("internal", internal);

@@ -2005,102 +2005,11 @@ bool WebContents::EmitNavigationEvent(
   return event->GetDefaultPrevented();
 }
 
-void WebContents::Message(bool internal,
-                          const std::string& channel,
-                          blink::CloneableMessage arguments,
-                          content::RenderFrameHost* render_frame_host) {
-  TRACE_EVENT1("electron", "WebContents::Message", "channel", channel);
-  // webContents.emit('-ipc-message', new Event(), internal, channel,
-  // arguments);
-  EmitWithSender("-ipc-message", render_frame_host,
-                 electron::mojom::ElectronApiIPC::InvokeCallback(), internal,
-                 channel, std::move(arguments));
-}
-
-void WebContents::Invoke(
-    bool internal,
-    const std::string& channel,
-    blink::CloneableMessage arguments,
-    electron::mojom::ElectronApiIPC::InvokeCallback callback,
-    content::RenderFrameHost* render_frame_host) {
-  TRACE_EVENT1("electron", "WebContents::Invoke", "channel", channel);
-  // webContents.emit('-ipc-invoke', new Event(), internal, channel, arguments);
-  EmitWithSender("-ipc-invoke", render_frame_host, std::move(callback),
-                 internal, channel, std::move(arguments));
-}
-
 void WebContents::OnFirstNonEmptyLayout(
     content::RenderFrameHost* render_frame_host) {
   if (render_frame_host == web_contents()->GetPrimaryMainFrame()) {
     Emit("ready-to-show");
   }
-}
-
-gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
-    v8::Isolate* isolate,
-    content::RenderFrameHost* frame,
-    electron::mojom::ElectronApiIPC::InvokeCallback callback) {
-  v8::Local<v8::Object> wrapper;
-  if (!GetWrapper(isolate).ToLocal(&wrapper)) {
-    if (callback) {
-      // We must always invoke the callback if present.
-      gin_helper::internal::ReplyChannel::Create(isolate, std::move(callback))
-          ->SendError("WebContents was destroyed");
-    }
-    return {};
-  }
-  gin::Handle<gin_helper::internal::Event> event =
-      gin_helper::internal::Event::New(isolate);
-  gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
-  dict.Set("type", "frame");
-  if (callback)
-    dict.Set("_replyChannel", gin_helper::internal::ReplyChannel::Create(
-                                  isolate, std::move(callback)));
-  if (frame) {
-    dict.SetGetter("senderFrame", frame);
-    dict.Set("frameId", frame->GetRoutingID());
-    dict.Set("processId", frame->GetProcess()->GetID().GetUnsafeValue());
-    dict.Set("frameTreeNodeId", frame->GetFrameTreeNodeId());
-  }
-  return event;
-}
-
-void WebContents::ReceivePostMessage(
-    const std::string& channel,
-    blink::TransferableMessage message,
-    content::RenderFrameHost* render_frame_host) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  auto wrapped_ports =
-      MessagePort::EntanglePorts(isolate, std::move(message.ports));
-  v8::Local<v8::Value> message_value =
-      electron::DeserializeV8Value(isolate, message);
-  EmitWithSender("-ipc-ports", render_frame_host,
-                 electron::mojom::ElectronApiIPC::InvokeCallback(), false,
-                 channel, message_value, std::move(wrapped_ports));
-}
-
-void WebContents::MessageSync(
-    bool internal,
-    const std::string& channel,
-    blink::CloneableMessage arguments,
-    electron::mojom::ElectronApiIPC::MessageSyncCallback callback,
-    content::RenderFrameHost* render_frame_host) {
-  TRACE_EVENT1("electron", "WebContents::MessageSync", "channel", channel);
-  // webContents.emit('-ipc-message-sync', new Event(sender, message), internal,
-  // channel, arguments);
-  EmitWithSender("-ipc-message-sync", render_frame_host, std::move(callback),
-                 internal, channel, std::move(arguments));
-}
-
-void WebContents::MessageHost(const std::string& channel,
-                              blink::CloneableMessage arguments,
-                              content::RenderFrameHost* render_frame_host) {
-  TRACE_EVENT1("electron", "WebContents::MessageHost", "channel", channel);
-  // webContents.emit('ipc-message-host', new Event(), channel, args);
-  EmitWithSender("ipc-message-host", render_frame_host,
-                 electron::mojom::ElectronApiIPC::InvokeCallback(), channel,
-                 std::move(arguments));
 }
 
 void WebContents::DraggableRegionsChanged(

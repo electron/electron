@@ -23,7 +23,7 @@ systemPickerVideoSource.name = '';
 Object.freeze(systemPickerVideoSource);
 
 Session.prototype._init = function () {
-  addIpcDispatchListeners(this, this.serviceWorkers);
+  addIpcDispatchListeners(this);
 };
 
 Session.prototype.fetch = function (input: RequestInfo, init?: RequestInit) {
