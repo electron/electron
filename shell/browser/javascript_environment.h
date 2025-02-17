@@ -36,6 +36,9 @@ class JavascriptEnvironment {
 
   node::MultiIsolatePlatform* platform() const { return platform_.get(); }
   v8::Isolate* isolate() const { return isolate_; }
+  size_t max_young_generation_size_in_bytes() const {
+    return max_young_generation_size_;
+  }
 
   static v8::Isolate* GetIsolate();
 
@@ -43,6 +46,7 @@ class JavascriptEnvironment {
   v8::Isolate* Initialize(uv_loop_t* event_loop, bool setup_wasm_streaming);
   std::unique_ptr<node::MultiIsolatePlatform> platform_;
 
+  size_t max_young_generation_size_ = 0;
   gin::IsolateHolder isolate_holder_;
 
   // owned-by: isolate_holder_
