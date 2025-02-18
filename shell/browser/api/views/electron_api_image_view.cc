@@ -20,7 +20,7 @@ ImageView::ImageView() : View(new views::ImageView()) {
 ImageView::~ImageView() = default;
 
 void ImageView::SetImage(const gfx::Image& image) {
-  image_view()->SetImage(image.AsImageSkia());
+  image_view()->SetImage(ui::ImageModel::FromImage(image));
 }
 
 // static

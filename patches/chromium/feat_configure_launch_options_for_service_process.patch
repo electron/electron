@@ -187,10 +187,10 @@ index bdd5bec301f5fcff2d3e3d7994ecbc4eae46da36..f6082bada22c5f4e70af60ea6f555b0f
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 5521f41ee56e5fb46695e9f828a269a215eeedde..9fe00bd105d237cc411ce2e179a6ba6f91ded89b 100644
+index aa8b2a92140b2be01860f4de0b739b90942ecd4c..51962b374123297f89126b6a5ebe3fccf0606ca1 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
-@@ -184,11 +184,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
+@@ -188,11 +188,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
    return process_->GetData();
  }
  
@@ -206,7 +206,7 @@ index 5521f41ee56e5fb46695e9f828a269a215eeedde..9fe00bd105d237cc411ce2e179a6ba6f
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -235,6 +237,30 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+@@ -239,6 +241,30 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -237,7 +237,7 @@ index 5521f41ee56e5fb46695e9f828a269a215eeedde..9fe00bd105d237cc411ce2e179a6ba6f
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -442,9 +468,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -448,9 +474,26 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
