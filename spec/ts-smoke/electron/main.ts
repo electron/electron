@@ -359,15 +359,9 @@ app.commandLine.appendSwitch('vmodule', 'console=0');
 const browserOptions = {
   width: 1000,
   height: 800,
-  transparent: false,
-  frame: true
+  transparent: true,
+  frame: false
 };
-
-// Make the window transparent only if the platform supports it.
-if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
-  browserOptions.transparent = true;
-  browserOptions.frame = false;
-}
 
 if (process.platform === 'win32') {
   systemPreferences.on('color-changed', () => { console.log('color changed'); });
