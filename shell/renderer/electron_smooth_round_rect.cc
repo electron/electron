@@ -182,6 +182,59 @@ constexpr std::pair<float, float> ConstrainSmoothness(float size,
 
 }  // namespace
 
+// The algorithm for drawing this shape is based on the article
+// "Desperately seeking squircles" by Daniel Furse. A brief summary:
+//
+// In a simple round rectangle, each corner of a plain rectangle is replaced
+// with a quarter circle and connected to each edge of the corner.
+//
+//        Edge
+//      ←------→       ↖
+//     ----------o--__  `、 Corner (Quarter Circle)
+//                    `、 `、
+//                      |   ↘
+//                       |
+//                       o
+//                       | ↑
+//                       | | Edge
+//                       | ↓
+//
+// This creates sharp changes in the curvature at the points where the edge
+// transitions to the corner, suddenly curving at a constant rate. Our primary
+// goal is to smooth out that curvature profile, slowly ramping up and back
+// down, like turning a car with the steering wheel.
+//
+// To achieve this, we "expand" that point where the circular corner meets the
+// straight edge in both directions. We use this extra space to construct a
+// small curved path that eases the curvature from the edge to the corner
+// circle.
+//
+//      Edge  Curve
+//      ←--→ ←-----→
+//     -----o----___o   ↖、 Corner (Circular Arc)
+//                    `、 `↘
+//                      o
+//                      |  ↑
+//                       | | Curve
+//                       | ↓
+//                       o
+//                       | ↕ Edge
+//
+// Each curve is implemented as a cubic Bézier curve, composed of four control
+// points:
+//
+// * The first control point connects to the straight edge.
+// * The fourth (last) control point connects to the circular arc.
+// * The second & third control points both lie on the infinite line extending
+//   from the straight edge.
+// * The third control point (only) also lies on the infinite line tangent to
+//   the circular arc at the fourth control point.
+//
+// The first and fourth (last) control points are firmly fixed by attaching to
+// the straight edge and circular arc, respectively. The third control point is
+// fixed at the intersection between the edge and tangent lines. The second
+// control point, however, is only constrained to the infinite edge line, but
+// we may choose where.
 SkPath DrawSmoothRoundRect(float x,
                            float y,
                            float width,
