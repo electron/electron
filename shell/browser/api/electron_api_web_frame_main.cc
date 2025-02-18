@@ -464,7 +464,7 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   return frame_hosts;
 }
 
-const char* WebFrameMain::LifecycleStateForTesting() {
+const char* WebFrameMain::LifecycleStateForTesting() const {
   if (!HasRenderFrame())
     return {};
   return content::RenderFrameHostImpl::LifecycleStateImplToString(
