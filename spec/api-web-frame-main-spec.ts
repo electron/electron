@@ -455,7 +455,7 @@ describe('webFrameMain module', () => {
       // Test that no frame will crash due to a dangling render frame host
       const crashTest = () => {
         for (const frame of frames) {
-          expect(frame._lifecycleStateForTest).to.not.equal('Speculative');
+          expect(frame._lifecycleStateForTesting).to.not.equal('Speculative');
           try {
             expect(frame.url).to.be.a('string');
           } catch {

@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
 #include "content/public/browser/frame_tree_node_id.h"
@@ -137,7 +136,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
-  std::string LifecycleStateForTest();
+  const char* LifecycleStateForTesting();
 
   v8::Local<v8::Promise> CollectDocumentJSCallStack(gin::Arguments* args);
   void CollectedJavaScriptCallStack(
