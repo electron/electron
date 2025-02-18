@@ -27,6 +27,7 @@
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -44,8 +45,9 @@ using LifecycleState = content::RenderFrameHostImpl::LifecycleStateImpl;
 // RenderFrameHost::GetLifecycleState currently crashes when called for
 // speculative frames so we need to filter it out for now. Check
 // https://crbug.com/1183639 for details on when this can be removed.
-[[nodiscard]] LifecycleState GetLifecycleState(content::RenderFrameHost* rfh) {
-  auto* rfh_impl = static_cast<content::RenderFrameHostImpl*>(rfh);
+[[nodiscard]] LifecycleState GetLifecycleState(
+    const content::RenderFrameHost* rfh) {
+  const auto* rfh_impl = static_cast<const content::RenderFrameHostImpl*>(rfh);
   return rfh_impl->lifecycle_state();
 }
 
@@ -55,7 +57,7 @@ using LifecycleState = content::RenderFrameHostImpl::LifecycleStateImpl;
 // listeners. If an IPC is sent during an unload/beforeunload listener,
 // it's possible that it arrives after the RFH swap and has been
 // detached from the FrameTreeNode.
-[[nodiscard]] bool IsDetachedFrameHost(content::RenderFrameHost* rfh) {
+[[nodiscard]] bool IsDetachedFrameHost(const content::RenderFrameHost* rfh) {
   if (!rfh)
     return true;
 
@@ -462,9 +464,9 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   return frame_hosts;
 }
 
-std::string WebFrameMain::LifecycleStateForTest() {
+const char* WebFrameMain::LifecycleStateForTesting() {
   if (!HasRenderFrame())
-    return "";
+    return {};
   return content::RenderFrameHostImpl::LifecycleStateImplToString(
       GetLifecycleState(render_frame_host()));
 }
@@ -564,9 +566,6 @@ gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
     case LifecycleState::kReadyToBeDeleted:
       // RFH is gone
       return {};
-    default:
-      // New state introduced upstream
-      NOTREACHED();
   }
 
   if (web_frame)
@@ -604,8 +603,8 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("parent", &WebFrameMain::Parent)
       .SetProperty("frames", &WebFrameMain::Frames)
       .SetProperty("framesInSubtree", &WebFrameMain::FramesInSubtree)
-      .SetProperty("_lifecycleStateForTest",
-                   &WebFrameMain::LifecycleStateForTest)
+      .SetProperty("_lifecycleStateForTesting",
+                   &WebFrameMain::LifecycleStateForTesting)
       .Build();
 }
 
