@@ -132,6 +132,7 @@ declare namespace Electron {
     _send(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
+    _lifecycleStateForTest: string;
   }
 
   interface WebFrame {
