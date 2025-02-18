@@ -44,9 +44,10 @@ Use the `system-ui` keyword to match the smoothness to the OS design language.
 }
 ```
 
-| macOS | Windows, Linux |
-| --- | --- |
-| ![A rectangle with round corners whose smoothness matches macOS](../images/corner-smoothing-example-60.svg) | ![A rectangle with round corners whose smoothness matches Windows and Linux](../images/corner-smoothing-example-0.svg) |
+| OS: | macOS | Windows, Linux |
+| --- | --- | --- |
+| Value: | `60%` | `0%` |
+| Example: | ![A rectangle with round corners whose smoothness matches macOS](../images/corner-smoothing-example-60.svg) | ![A rectangle with round corners whose smoothness matches Windows and Linux](../images/corner-smoothing-example-0.svg) |
 
 ### Controlling Availibility
 
