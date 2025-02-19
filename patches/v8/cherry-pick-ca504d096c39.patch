@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Tue, 7 Jan 2025 13:35:04 +0100
+Subject: Merged: [compiler] Check max-args when calling bound functions
+
+Bug: 385155406
+(cherry picked from commit d35770876597b8c25de3c483b9368686f3a9fda8)
+
+Change-Id: I98c7166588f4099c5665ff94dc65da5c25be7535
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6175036
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.2@{#62}
+Cr-Branched-From: 24068c59cedad9ee976ddc05431f5f497b1ebd71-refs/heads/13.2.152@{#1}
+Cr-Branched-From: 6054ba94db0969220be4f94dc1677fc4696bdc4f-refs/heads/main@{#97085}
+
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index 7c248c80a519708eaa2a25e9289fd6094ed52424..c96910c0c12d8fc12fc21621227a6671896f23ab 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -4651,6 +4651,9 @@ Reduction JSCallReducer::ReduceJSCall(Node* node) {
+       // succeed.
+       FixedArrayRef bound_arguments = function.bound_arguments(broker());
+       const int bound_arguments_length = bound_arguments.length();
++      if (arity + bound_arguments_length > Code::kMaxArguments) {
++        return NoChange();
++      }
+       static constexpr int kInlineSize = 16;  // Arbitrary.
+       base::SmallVector<Node*, kInlineSize> args;
+       for (int i = 0; i < bound_arguments_length; ++i) {
+diff --git a/src/compiler/js-inlining.cc b/src/compiler/js-inlining.cc
+index ea49bb803ac043ad88853dace478c66b496f5735..04ae603717a39357bc4460cafb1713a6a4666544 100644
+--- a/src/compiler/js-inlining.cc
++++ b/src/compiler/js-inlining.cc
+@@ -250,6 +250,7 @@ FrameState JSInliner::CreateArtificialFrameState(
+     Node* context, Node* callee) {
+   const int parameter_count_with_receiver =
+       parameter_count + JSCallOrConstructNode::kReceiverOrNewTargetInputCount;
++  CHECK_LE(parameter_count_with_receiver, kMaxUInt16);
+   const FrameStateFunctionInfo* state_info =
+       common()->CreateFrameStateFunctionInfo(frame_state_type,
+                                              parameter_count_with_receiver, 0,

@@ -1,0 +1,94 @@
+From 97e828af5cbcf50c3ff0064a4a5c22e18c18b4b5 Mon Sep 17 00:00:00 2001
+From: Olivier Flückiger <olivf@chromium.org>
+Date: Wed, 08 Jan 2025 16:06:43 +0100
+Subject: [PATCH] Merged: [maglev] regalloc: handle non-loop resumable_loops
+
+Resumable loops which are not loops can be either:
+
+1. An unreachable loop with only a back-edge
+2. A fall-through to a resumable loop with a dead back-edge
+
+Only (1) starts with an empty register state.
+
+Fixed: 386143468
+(cherry picked from commit b44bd24761f1a2eae131bd90be15b5a68cc70f83)
+
+Change-Id: I9ebb028fe17c6f1de00825837acec6f8169dbf67
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6172463
+Auto-Submit: Olivier Flückiger <olivf@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.2@{#60}
+Cr-Branched-From: 24068c59cedad9ee976ddc05431f5f497b1ebd71-refs/heads/13.2.152@{#1}
+Cr-Branched-From: 6054ba94db0969220be4f94dc1677fc4696bdc4f-refs/heads/main@{#97085}
+---
+
+diff --git a/src/maglev/maglev-interpreter-frame-state.cc b/src/maglev/maglev-interpreter-frame-state.cc
+index 7d904bb..dce7517 100644
+--- a/src/maglev/maglev-interpreter-frame-state.cc
++++ b/src/maglev/maglev-interpreter-frame-state.cc
+@@ -1370,6 +1370,23 @@
+   }
+ }
+ 
++bool MergePointInterpreterFrameState::IsUnreachable() const {
++  DCHECK_EQ(predecessors_so_far_, predecessor_count_);
++  if (predecessor_count_ > 1) {
++    return false;
++  }
++  // This should actually only support predecessor_count == 1, but we
++  // currently don't eliminate resumable loop headers (and subsequent code
++  // until the next resume) that end up being unreachable from JumpLoop.
++  if (predecessor_count_ == 0) {
++    DCHECK(is_resumable_loop());
++    return true;
++  }
++  DCHECK_EQ(predecessor_count_, 1);
++  DCHECK_IMPLIES(is_loop(), predecessor_at(0)->control_node()->Is<JumpLoop>());
++  return is_loop();
++}
++
+ }  // namespace maglev
+ }  // namespace internal
+ }  // namespace v8
+diff --git a/src/maglev/maglev-interpreter-frame-state.h b/src/maglev/maglev-interpreter-frame-state.h
+index d8e618f..3d04b93 100644
+--- a/src/maglev/maglev-interpreter-frame-state.h
++++ b/src/maglev/maglev-interpreter-frame-state.h
+@@ -948,6 +948,8 @@
+            predecessors_so_far_ == 0;
+   }
+ 
++  bool IsUnreachable() const;
++
+   BasicBlockType basic_block_type() const {
+     return kBasicBlockTypeBits::decode(bitfield_);
+   }
+diff --git a/src/maglev/maglev-regalloc.cc b/src/maglev/maglev-regalloc.cc
+index 00456fa..a1d24ed 100644
+--- a/src/maglev/maglev-regalloc.cc
++++ b/src/maglev/maglev-regalloc.cc
+@@ -157,7 +157,7 @@
+   }
+ 
+   // Drop all values on resumable loop headers.
+-  if (target->has_state() && target->state()->is_resumable_loop()) return false;
++  if (target->is_loop() && target->state()->is_resumable_loop()) return false;
+ 
+   // TODO(verwaest): This should be true but isn't because we don't yet
+   // eliminate dead code.
+@@ -409,13 +409,9 @@
+       if (block->state()->is_exception_handler()) {
+         // Exceptions start from a blank state of register values.
+         ClearRegisterValues();
+-      } else if (block->state()->is_resumable_loop() &&
+-                 block->state()->predecessor_count() <= 1) {
++      } else if (block->state()->IsUnreachable()) {
+         // Loops that are only reachable through JumpLoop start from a blank
+         // state of register values.
+-        // This should actually only support predecessor_count == 1, but we
+-        // currently don't eliminate resumable loop headers (and subsequent code
+-        // until the next resume) that end up being unreachable from JumpLoop.
+         ClearRegisterValues();
+       } else {
+         InitializeRegisterValues(block->state()->register_state());
