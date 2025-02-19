@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Mon, 10 Feb 2025 14:31:16 +0100
+Subject: Merged: "Reland "Lower the maximum JS parameter count""
+
+This is a reland of commit 1827ed8345369ca50a55a10ab3e45bcc581c6339
+
+Before the change, one of the nodes had more than 2^16 inputs
+so optimization bailed out.
+After the change, the function has fewer parameters and gets
+optimized, and the register allocator struggles with that many
+parameters and times out.
+Just mark the test as slow for now.
+
+Original change's description:
+> Lower the maximum JS parameter count
+>
+> To allow extra implicit arguments on the call node without overflowing
+> the uint16_t input count, in particular in the wasm-to-js wrapper where
+> we don't have a bailout mechanism.
+>
+> R=verwaest@chromium.org
+>
+> Fixed: 394350433
+> Change-Id: I61d2e2387539cafd6a0909c3ee035c93d0217be3
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6239302
+> Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+> Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#98556}
+
+(cherry picked from commit 84a0e230dabc2c874a129c2280d6be4f45636225)
+
+Change-Id: Ibdfbc0850ca709f0418efdb1ed89a82796a9c378
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6268260
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.2@{#80}
+Cr-Branched-From: 24068c59cedad9ee976ddc05431f5f497b1ebd71-refs/heads/13.2.152@{#1}
+Cr-Branched-From: 6054ba94db0969220be4f94dc1677fc4696bdc4f-refs/heads/main@{#97085}
+
+diff --git a/src/objects/code.h b/src/objects/code.h
+index 122d0bba58b56343dca45cdcb0cbda13e6aba34e..ae443b70cc1537ad5dbdb319bc55b841f1bc63e0 100644
+--- a/src/objects/code.h
++++ b/src/objects/code.h
+@@ -436,7 +436,9 @@ class Code : public ExposedTrustedObject {
+ 
+   // Reserve one argument count value as the "don't adapt arguments" sentinel.
+   static const int kArgumentsBits = 16;
+-  static const int kMaxArguments = (1 << kArgumentsBits) - 2;
++  // Slightly less than 2^kArgumentBits-1 to allow for extra implicit arguments
++  // on the call nodes without overflowing the uint16_t input_count.
++  static const int kMaxArguments = (1 << kArgumentsBits) - 10;
+ 
+  private:
+   inline void set_instruction_start(IsolateForSandbox isolate, Address value);
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 2fa90fc9399f18411eef2a8a5eb9b40357492c8c..c16f009eeefd74644e212ee17ef051686139a1e5 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -228,6 +228,10 @@
+ 
+   # TODO(v8:12783): Turboshaft instruction selection not ported to these platforms yet.
+   'wasm/turboshaft/instruction-selection': [PASS, ['arch in [riscv32]', SKIP]],
++
++  # TODO(thibaudm): Register allocation struggles with the function in this
++  # test, which has the maximum allowed number of parameters.
++  'regress/regress-crbug-724153': [SLOW],
+ }],  # ALWAYS
+ 
+ ################################################################################
+diff --git a/test/mjsunit/regress/regress-11491.js b/test/mjsunit/regress/regress-11491.js
+index 795480a15db69b3ca30e97fc49d283546be3319e..4e188d44226341f5bba843dd10a46ff1fbaa4897 100644
+--- a/test/mjsunit/regress/regress-11491.js
++++ b/test/mjsunit/regress/regress-11491.js
+@@ -4,7 +4,7 @@
+ 
+ function test() {
+   // Create a generator constructor with the maximum number of allowed parameters.
+-  const args = new Array(65535);
++  const args = new Array(65526);
+   function* gen() {}
+   const c = gen.constructor.apply(null, args);
+ 
+diff --git a/test/mjsunit/regress/regress-crbug-724153.js b/test/mjsunit/regress/regress-crbug-724153.js
+index a571f8e0bf5e85accc53a926358e61aea6c3d981..282532e5026270334b2d2c40f77578e2596ab67c 100644
+--- a/test/mjsunit/regress/regress-crbug-724153.js
++++ b/test/mjsunit/regress/regress-crbug-724153.js
+@@ -6,7 +6,7 @@
+ 
+ (function TestParameterLimit() {
+   var src = '(function f(a,';
+-  for (var i = 0; i < 65534 - 2; i++) {
++  for (var i = 0; i < 65525 - 2; i++) {
+     src += 'b' + i + ',';
+   }
+   src += 'c) { return a + c })';
+diff --git a/test/mjsunit/regress/regress-v8-6716.js b/test/mjsunit/regress/regress-v8-6716.js
+index 87b72e148820e416ae698b9b414f3d5ce2b1bcb1..df8c06887720dd6694576e13d8423c8304da93f2 100644
+--- a/test/mjsunit/regress/regress-v8-6716.js
++++ b/test/mjsunit/regress/regress-v8-6716.js
+@@ -3,5 +3,5 @@
+ // found in the LICENSE file.
+ 
+ function f() {}
+-var a = Array(2 ** 16 - 2);  // Elements in large-object-space.
++var a = Array(2 ** 16 - 10);  // Elements in large-object-space.
+ f.bind(...a);
