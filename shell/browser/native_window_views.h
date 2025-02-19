@@ -277,8 +277,8 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect restore_bounds_;
 
   // The icons of window and taskbar.
-  base::win::ScopedHICON window_icon_;
-  base::win::ScopedHICON app_icon_;
+  base::win::ScopedGDIObject<HICON> window_icon_;
+  base::win::ScopedGDIObject<HICON> app_icon_;
 
   // The set of windows currently forwarding mouse messages.
   static std::set<NativeWindowViews*> forwarding_windows_;

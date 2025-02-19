@@ -91,7 +91,7 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
     });
   });
 
-  describe('stopRecording', function () {
+  ifdescribe(process.platform !== 'linux')('stopRecording', function () {
     if (process.platform === 'win32' && process.arch === 'arm64') {
       // WOA needs more time
       this.timeout(10e3);

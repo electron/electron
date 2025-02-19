@@ -99,7 +99,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
 
 #if BUILDFLAG(IS_WIN)
     texture.shared_texture_handle =
-        reinterpret_cast<uintptr_t>(gmb_handle.dxgi_handle.Get());
+        reinterpret_cast<uintptr_t>(gmb_handle.dxgi_handle().buffer_handle());
 #elif BUILDFLAG(IS_APPLE)
     texture.shared_texture_handle =
         reinterpret_cast<uintptr_t>(gmb_handle.io_surface.get());

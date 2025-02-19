@@ -1636,8 +1636,8 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
 #if BUILDFLAG(IS_WIN)
 void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
   // We are responsible for storing the images.
-  window_icon_ = base::win::ScopedHICON(CopyIcon(window_icon));
-  app_icon_ = base::win::ScopedHICON(CopyIcon(app_icon));
+  window_icon_ = base::win::ScopedGDIObject<HICON>(CopyIcon(window_icon));
+  app_icon_ = base::win::ScopedGDIObject<HICON>(CopyIcon(app_icon));
 
   HWND hwnd = GetAcceleratedWidget();
   SendMessage(hwnd, WM_SETICON, ICON_SMALL,

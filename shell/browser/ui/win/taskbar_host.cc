@@ -73,7 +73,8 @@ bool TaskbarHost::SetThumbarButtons(HWND window,
   // The number of buttons in thumbar can not be changed once it is created,
   // so we have to claim kMaxButtonsCount buttons initially in case users add
   // more buttons later.
-  auto icons = std::array<base::win::ScopedHICON, kMaxButtonsCount>{};
+  auto icons =
+      std::array<base::win::ScopedGDIObject<HICON>, kMaxButtonsCount>{};
   auto thumb_buttons = std::array<THUMBBUTTON, kMaxButtonsCount>{};
 
   for (size_t i = 0U; i < kMaxButtonsCount; ++i) {
