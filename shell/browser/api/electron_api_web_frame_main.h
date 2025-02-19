@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
 #include "content/public/browser/frame_tree_node_id.h"
@@ -72,7 +71,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   static gin::WrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
-  content::RenderFrameHost* render_frame_host() const { return render_frame_; }
+  content::RenderFrameHost* render_frame_host() const;
 
   // disable copy
   WebFrameMain(const WebFrameMain&) = delete;
@@ -101,9 +100,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   void TeardownMojoConnection();
   void OnRendererConnectionError();
 
-  [[nodiscard]] constexpr bool HasRenderFrame() const {
-    return !render_frame_disposed_ && render_frame_ != nullptr;
-  }
+  [[nodiscard]] bool HasRenderFrame() const;
 
   // Throws a JS error if HasRenderFrame() is false.
   // WebFrameMain can outlive its RenderFrameHost pointer,
@@ -139,6 +136,8 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
+  const char* LifecycleStateForTesting() const;
+
   v8::Local<v8::Promise> CollectDocumentJSCallStack(gin::Arguments* args);
   void CollectedJavaScriptCallStack(
       gin_helper::Promise<base::Value> promise,
@@ -152,8 +151,6 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
 
   content::FrameTreeNodeId frame_tree_node_id_;
   content::GlobalRenderFrameHostToken frame_token_;
-
-  raw_ptr<content::RenderFrameHost> render_frame_ = nullptr;
 
   // Whether the RenderFrameHost has been removed and that it should no longer
   // be accessed.
