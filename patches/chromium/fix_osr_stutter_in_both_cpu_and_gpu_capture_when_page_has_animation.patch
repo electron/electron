@@ -10,7 +10,7 @@ The upstream has a fix, which will be available in Chromium M135.
 Backport this fix for Electron versions before that.
 
 diff --git a/media/capture/content/video_capture_oracle.cc b/media/capture/content/video_capture_oracle.cc
-index dad9598799a670b3cfb14965bc8a7b4ea3b4f95f..05a82788ae1e5c304ee150a2390f346d7b454630 100644
+index f57bef2e36eeebc97316fd2d3bcc3ba1bbc78b43..3708a2f7e3fb6a83cfafbe54ad923db14cd39014 100644
 --- a/media/capture/content/video_capture_oracle.cc
 +++ b/media/capture/content/video_capture_oracle.cc
 @@ -118,8 +118,9 @@ void VideoCaptureOracle::SetCaptureSizeConstraints(
@@ -67,8 +67,8 @@ index dad9598799a670b3cfb14965bc8a7b4ea3b4f95f..05a82788ae1e5c304ee150a2390f346d
          }
          last_time_animation_was_detected_ = event_time;
        } else {
-@@ -198,8 +211,9 @@ bool VideoCaptureOracle::ObserveEventAndDecideCapture(
-       NOTREACHED();
+@@ -199,8 +212,9 @@ bool VideoCaptureOracle::ObserveEventAndDecideCapture(
+       break;
    }
  
 -  if (!should_sample)
@@ -78,7 +78,7 @@ index dad9598799a670b3cfb14965bc8a7b4ea3b4f95f..05a82788ae1e5c304ee150a2390f346d
  
    // If the exact duration of the next frame has not been determined, estimate
    // it using the difference between the current and last frame.
-@@ -373,16 +387,18 @@ void VideoCaptureOracle::RecordConsumerFeedback(
+@@ -374,16 +388,18 @@ void VideoCaptureOracle::RecordConsumerFeedback(
  
    // resource_utilization feedback.
  
@@ -99,7 +99,7 @@ index dad9598799a670b3cfb14965bc8a7b4ea3b4f95f..05a82788ae1e5c304ee150a2390f346d
  
    if (capture_size_throttling_mode_ != kThrottlingActive) {
      VLOG(1) << "Received consumer feedback at frame #" << frame_number
-@@ -553,12 +569,14 @@ int VideoCaptureOracle::AnalyzeForIncreasedArea(base::TimeTicks analyze_time) {
+@@ -554,12 +570,14 @@ int VideoCaptureOracle::AnalyzeForIncreasedArea(base::TimeTicks analyze_time) {
    const int current_area = capture_size_.GetArea();
    const int increased_area =
        resolution_chooser_.FindLargerFrameSize(current_area, 1).GetArea();
@@ -116,7 +116,7 @@ index dad9598799a670b3cfb14965bc8a7b4ea3b4f95f..05a82788ae1e5c304ee150a2390f346d
    if (buffer_pool_utilization_.current() > 0.0) {
      const int buffer_capable_area = base::saturated_cast<int>(
          current_area / buffer_pool_utilization_.current());
-@@ -593,8 +611,9 @@ int VideoCaptureOracle::AnalyzeForIncreasedArea(base::TimeTicks analyze_time) {
+@@ -594,8 +612,9 @@ int VideoCaptureOracle::AnalyzeForIncreasedArea(base::TimeTicks analyze_time) {
  
    // At this point, the system is currently under-utilized.  Reset the start
    // time if the system was not under-utilized when the last analysis was made.
