@@ -4,3 +4,5 @@ fix_disable_scope_reuse_associated_dchecks.patch
 fix_compiler_failure_on_older_clang.patch
 cherry-pick-3c2d220ad025.patch
 merged_reland_lower_the_maximum_js_parameter_count.patch
+cherry-pick-1c7ff4d5477f.patch
+cherry-pick-8834c16acfcc.patch
