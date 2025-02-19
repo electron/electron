@@ -156,15 +156,6 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
     position.x = position.x - [menu size].width;
 
   [popup_controllers_[window_id] setCloseCallback:std::move(close_callback)];
-  // Make sure events can be pumped while the menu is up.
-  base::CurrentThread::ScopedAllowApplicationTasksInNativeNestedLoop allow;
-
-  // One of the events that could be pumped is |window.close()|.
-  // User-initiated event-tracking loops protect against this by
-  // setting flags in -[CrApplication sendEvent:], but since
-  // web-content menus are initiated by IPC message the setup has to
-  // be done manually.
-  base::mac::ScopedSendingEvent sendingEventScoper;
 
   if (frame) {
     auto* rfh = frame->render_frame_host()->GetOutermostMainFrameOrEmbedder();
@@ -185,7 +176,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                                          eventNumber:0
                                           clickCount:1
                                             pressure:0];
-  ui::ShowContextMenu(menu, dummy_event, view, false);
+  ui::ShowContextMenu(menu, dummy_event, view, true);
 }
 
 void MenuMac::ClosePopupAt(int32_t window_id) {
