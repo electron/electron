@@ -134,7 +134,7 @@ class NativeImage final : public gin::Wrappable<NativeImage> {
   base::FilePath hicon_path_;
 
   // size -> hicon
-  base::flat_map<int, base::win::ScopedHICON> hicons_;
+  base::flat_map<int, base::win::ScopedGDIObject<HICON>> hicons_;
 #endif
 
   gfx::Image image_;

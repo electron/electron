@@ -79,6 +79,13 @@ const newFilter = {
 }
 ```
 
+### Deprecated: `systemPreferences.isAeroGlassEnabled()`
+
+The `systemPreferences.isAeroGlassEnabled()` function has been deprecated without replacement.
+It has been always returning `true` since Electron 23, which only supports Windows 10+, where DWM composition can no longer be disabled.
+
+https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw#disabling-dwm-composition-windows7-and-earlier
+
 ## Planned Breaking API Changes (34.0)
 
 ### Behavior Changed: menu bar will be hidden during fullscreen on Windows

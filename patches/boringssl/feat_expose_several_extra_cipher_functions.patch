@@ -28,10 +28,10 @@ RC2 Ciphers: rc2-40-cbc
 It's unclear whether this would be accepted upstream. We should try regardless.
 
 diff --git a/crypto/cipher/get_cipher.cc b/crypto/cipher/get_cipher.cc
-index 2d0f369bdeba84b157db82bd87c293ae2344c560..9088a0f29a95fe7abbb98cbf7e8be2577e5617ac 100644
+index 2622dc78d1da236862312f55bc0a40f26116486e..ac7aff6518ad5c2a0e48bd91d60a1f825851b634 100644
 --- a/crypto/cipher/get_cipher.cc
 +++ b/crypto/cipher/get_cipher.cc
-@@ -26,6 +26,7 @@ static const struct {
+@@ -31,6 +31,7 @@ static const struct {
    const EVP_CIPHER *(*func)(void);
  } kCiphers[] = {
      {NID_aes_128_cbc, "aes-128-cbc", EVP_aes_128_cbc},
@@ -39,7 +39,7 @@ index 2d0f369bdeba84b157db82bd87c293ae2344c560..9088a0f29a95fe7abbb98cbf7e8be257
      {NID_aes_128_ctr, "aes-128-ctr", EVP_aes_128_ctr},
      {NID_aes_128_ecb, "aes-128-ecb", EVP_aes_128_ecb},
      {NID_aes_128_gcm, "aes-128-gcm", EVP_aes_128_gcm},
-@@ -36,17 +37,23 @@ static const struct {
+@@ -41,17 +42,23 @@ static const struct {
      {NID_aes_192_gcm, "aes-192-gcm", EVP_aes_192_gcm},
      {NID_aes_192_ofb128, "aes-192-ofb", EVP_aes_192_ofb},
      {NID_aes_256_cbc, "aes-256-cbc", EVP_aes_256_cbc},
@@ -64,7 +64,7 @@ index 2d0f369bdeba84b157db82bd87c293ae2344c560..9088a0f29a95fe7abbb98cbf7e8be257
  
  const EVP_CIPHER *EVP_get_cipherbynid(int nid) {
 diff --git a/decrepit/evp/evp_do_all.cc b/decrepit/evp/evp_do_all.cc
-index 9fd0e0225fa48b0afb90b525236e54cff17c1c84..dded715011ac8c1dd9e4525f0bdd64088f8007cf 100644
+index 8fdf1c624794f568bfc77b7b6b0c510b23905a4d..2e40c031e8c681fe921331b26dbf63f4df2fcf71 100644
 --- a/decrepit/evp/evp_do_all.cc
 +++ b/decrepit/evp/evp_do_all.cc
 @@ -20,8 +20,10 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
@@ -118,10 +118,10 @@ index 9fd0e0225fa48b0afb90b525236e54cff17c1c84..dded715011ac8c1dd9e4525f0bdd6408
    callback(EVP_des_ede3_cbc(), "des-ede3-cbc", NULL, arg);
    callback(EVP_rc2_cbc(), "rc2-cbc", NULL, arg);
 diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
-index a7ca77d9d7a6c71a66229c89af6eeb76ec91d2c2..7abc9b92ba92a4fdddb4ab38b573224544c5cf85 100644
+index 6bb135801326bc1cbe2b93f02e561e38c90abeca..06bcba4451456c72b168266859482343af76a931 100644
 --- a/include/openssl/cipher.h
 +++ b/include/openssl/cipher.h
-@@ -443,6 +443,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
+@@ -448,6 +448,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
  
  // EVP_aes_128_cfb128 is only available in decrepit.
  OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_128_cfb128(void);
