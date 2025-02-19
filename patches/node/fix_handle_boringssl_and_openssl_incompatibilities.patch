@@ -388,7 +388,7 @@ index cf051585e779e2b03bd7b95fe5008b89cc7f8162..9de49c6828468fdf846dcd4ad445390f
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index e325b082dec6ae891a737a4fa7775937e4d7b7f9..efbe48e10b8408642a6b5010b1a7a3749068188a 100644
+index f6ff810953b224b7e343d91e1065d95bc3e78d39..b7ef44b018c7aec59d8311642a811d1280247689 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@

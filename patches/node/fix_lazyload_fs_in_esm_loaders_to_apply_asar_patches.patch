@@ -38,7 +38,7 @@ index ac24cf305bd5995ad13b37ee36f9e1fe3589c5d7..22248b753c14960122f1d6b9bfe6b89f
      const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
      if (!match) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 52cdb7d5e14a18ed7b1b65e429729cf47dce3f98..69f73f829706deddc4f328b78af9d58434af647d 100644
+index 77b85490b1a65b594bb140deb07b33f3accc9736..da99cc2d4ca930222ca018ddf42ee2e5f898576a 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -24,7 +24,7 @@ const {
@@ -50,7 +50,7 @@ index 52cdb7d5e14a18ed7b1b65e429729cf47dce3f98..69f73f829706deddc4f328b78af9d584
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
  const policy = getOptionValue('--experimental-policy') ?
-@@ -251,7 +251,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -257,7 +257,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
      throw err;
    }
  
@@ -59,7 +59,7 @@ index 52cdb7d5e14a18ed7b1b65e429729cf47dce3f98..69f73f829706deddc4f328b78af9d584
      StringPrototypeSlice(path, -1) : path));
  
    // Check for stats.isDirectory()
-@@ -267,7 +267,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -285,7 +285,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {
@@ -68,7 +68,7 @@ index 52cdb7d5e14a18ed7b1b65e429729cf47dce3f98..69f73f829706deddc4f328b78af9d584
        [internalFS.realpathCacheKey]: realpathCache,
      });
      const { search, hash } = resolved;
-@@ -826,7 +826,7 @@ function packageResolve(specifier, base, conditions) {
+@@ -845,7 +845,7 @@ function packageResolve(specifier, base, conditions) {
    let packageJSONPath = fileURLToPath(packageJSONUrl);
    let lastPath;
    do {
@@ -78,7 +78,7 @@ index 52cdb7d5e14a18ed7b1b65e429729cf47dce3f98..69f73f829706deddc4f328b78af9d584
      // Check for !stat.isDirectory()
      if (stat !== 1) {
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 89ca269294ee1afa7f5aeb0ac6b8958f7a8b49d0..f3dfc69cd2cdec50bc3b3f7cb2d63349812d87dd 100644
+index 5281d7c220c8adee0f3d7269a0116d082726ec91..9c9b403774e51e2f7e1201ad53e60e98fc3b26e8 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -36,7 +36,7 @@ const {

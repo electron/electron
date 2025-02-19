@@ -7,7 +7,7 @@ common.gypi is a file that's included in the node header bundle, despite
 the fact that we do not build node with gyp.
 
 diff --git a/common.gypi b/common.gypi
-index 1ece4f5e494533ea0fa25e0d35143fe424dbf70b..697b8bba6a55358924d6986f2eb347a99ff73889 100644
+index 04852d81103ef83c5213464f543839dea6f0b181..776a6dcf3a729a65b367fb5b4c5685f841089eea 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -88,6 +88,23 @@
