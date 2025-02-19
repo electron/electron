@@ -1,6 +1,5 @@
 # `git apply` and friends don't understand CRLF, even on windows. Force those
 # files to be checked out with LF endings even if core.autocrlf is true.
-*.patch text eol=lf
 DEPS text eol=lf
 yarn.lock text eol=lf
 script/zip_manifests/*.manifest text eol=lf
