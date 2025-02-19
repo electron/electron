@@ -12,6 +12,15 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (36.0)
+
+### Removed: `systemPreferences.isAeroGlassEnabled()`
+
+The `systemPreferences.isAeroGlassEnabled()` function has been removed without replacement.
+It has been always returning `true` since Electron 23, which only supports Windows 10+, where DWM composition can no longer be disabled.
+
+https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw#disabling-dwm-composition-windows7-and-earlier
+
 ## Planned Breaking API Changes (35.0)
 
 ### Removed:`isDefault` and `status` properties on `PrinterInfo`

@@ -181,16 +181,6 @@ Some popular `key` and `type`s are:
 Removes the `key` in `NSUserDefaults`. This can be used to restore the default
 or global value of a `key` previously set with `setUserDefault`.
 
-### `systemPreferences.isAeroGlassEnabled()` _Windows_ _Deprecated_
-
-Returns `boolean` - `true` if [DWM composition][dwm-composition] (Aero Glass) is
-enabled, and `false` otherwise.
-
-**Deprecated:**
-This function has been always returning `true` since Electron 23, which only supports Windows 10+.
-
-[dwm-composition]: https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw
-
 ### `systemPreferences.getAccentColor()` _Windows_ _macOS_
 
 Returns `string` - The users current system wide accent color preference in RGBA
