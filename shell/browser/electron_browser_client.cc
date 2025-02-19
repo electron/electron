@@ -1049,6 +1049,12 @@ void ElectronBrowserClient::
   // reason for it, and we could consider supporting it in future.
   protocol_registry->RegisterURLLoaderFactories(factories,
                                                 false /* allow_file_access */);
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  factories->emplace(
+      extensions::kExtensionScheme,
+      extensions::CreateExtensionWorkerMainResourceURLLoaderFactory(
+          browser_context));
+#endif
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
