@@ -1,0 +1,765 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: pthier <pthier@chromium.org>
+Date: Wed, 24 Jul 2024 09:43:55 +0200
+Subject: [maglev][sandbox] Add support to store trusted pointers to maglev
+
+- Add trusted constants. These are constants that live in trusted space
+  (and therefore have a different cage base).
+- Add possibility to store trusted pointers. Stores of trusted pointers
+  never store the pointer directly, but an index into the
+  TrustedPointerTable instead.
+
+This is in preparation to move RegExp data to trusted space
+(CreateRegExpLiteral will use the added logic when this is activated).
+
+Bug: 42204606
+Change-Id: Ie08aa328b3ed8173038842dfa56076b15270d43e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5730058
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Patrick Thier <pthier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#95206}
+
+diff --git a/src/maglev/arm64/maglev-assembler-arm64-inl.h b/src/maglev/arm64/maglev-assembler-arm64-inl.h
+index ac0ad9f131a02602db600990c23508d1a1ae2f39..ade77fe1479b892a6360361cebbb9b9dee5ebe55 100644
+--- a/src/maglev/arm64/maglev-assembler-arm64-inl.h
++++ b/src/maglev/arm64/maglev-assembler-arm64-inl.h
+@@ -655,6 +655,16 @@ inline void MaglevAssembler::StoreField(MemOperand operand, Register value,
+   }
+ }
+ 
++#ifdef V8_ENABLE_SANDBOX
++
++inline void MaglevAssembler::StoreTrustedPointerFieldNoWriteBarrier(
++    Register object, int offset, Register value) {
++  MacroAssembler::StoreTrustedPointerField(value,
++                                           FieldMemOperand(object, offset));
++}
++
++#endif  // V8_ENABLE_SANDBOX
++
+ inline void MaglevAssembler::ReverseByteOrder(Register value, int size) {
+   if (size == 2) {
+     Rev16(value, value);
+@@ -747,6 +757,9 @@ inline void MaglevAssembler::Move(Register dst, int32_t i) {
+ inline void MaglevAssembler::Move(Register dst, uint32_t i) {
+   Mov(dst.W(), Immediate(i));
+ }
++inline void MaglevAssembler::Move(Register dst, IndirectPointerTag i) {
++  Mov(dst, Immediate(i));
++}
+ inline void MaglevAssembler::Move(DoubleRegister dst, double n) {
+   Fmov(dst, n);
+ }
+diff --git a/src/maglev/maglev-assembler.cc b/src/maglev/maglev-assembler.cc
+index c21d204643787e9d17ae542ad22bcf68b6da7e3a..10ac28c46051a16ced77a50ffedef918b05f5b2d 100644
+--- a/src/maglev/maglev-assembler.cc
++++ b/src/maglev/maglev-assembler.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "src/maglev/maglev-assembler.h"
+ 
++#include "src/builtins/builtins-inl.h"
+ #include "src/maglev/maglev-assembler-inl.h"
+ #include "src/maglev/maglev-code-generator.h"
+ #include "src/numbers/conversions.h"
+@@ -530,6 +531,66 @@ void MaglevAssembler::CheckAndEmitDeferredWriteBarrier(
+   bind(*done);
+ }
+ 
++#ifdef V8_ENABLE_SANDBOX
++
++void MaglevAssembler::CheckAndEmitDeferredIndirectPointerWriteBarrier(
++    Register object, int offset, Register value,
++    RegisterSnapshot register_snapshot, IndirectPointerTag tag) {
++  ZoneLabelRef done(this);
++  Label* deferred_write_barrier = MakeDeferredCode(
++      [](MaglevAssembler* masm, ZoneLabelRef done, Register object, int offset,
++         Register value, RegisterSnapshot register_snapshot,
++         IndirectPointerTag tag) {
++        ASM_CODE_COMMENT_STRING(masm, "Write barrier slow path");
++
++        Register stub_object_reg =
++            IndirectPointerWriteBarrierDescriptor::ObjectRegister();
++        Register slot_reg =
++            IndirectPointerWriteBarrierDescriptor::SlotAddressRegister();
++        Register tag_reg =
++            IndirectPointerWriteBarrierDescriptor::IndirectPointerTagRegister();
++
++        RegList saved;
++        if (object != stub_object_reg &&
++            register_snapshot.live_registers.has(stub_object_reg)) {
++          saved.set(stub_object_reg);
++        }
++        if (register_snapshot.live_registers.has(slot_reg)) {
++          saved.set(slot_reg);
++        }
++        if (register_snapshot.live_registers.has(tag_reg)) {
++          saved.set(tag_reg);
++        }
++
++        __ PushAll(saved);
++
++        if (object != stub_object_reg) {
++          __ Move(stub_object_reg, object);
++          object = stub_object_reg;
++        }
++        __ SetSlotAddressForTaggedField(slot_reg, object, offset);
++        __ Move(tag_reg, tag);
++
++        SaveFPRegsMode const save_fp_mode =
++            !register_snapshot.live_double_registers.is_empty()
++                ? SaveFPRegsMode::kSave
++                : SaveFPRegsMode::kIgnore;
++
++        __ CallBuiltin(Builtins::IndirectPointerBarrier(save_fp_mode));
++
++        __ PopAll(saved);
++        __ Jump(*done);
++      },
++      done, object, offset, value, register_snapshot, tag);
++
++  AssertNotSmi(value);
++
++  JumpIfMarking(deferred_write_barrier);
++  bind(*done);
++}
++
++#endif  // V8_ENABLE_SANDBOX
++
+ void MaglevAssembler::StoreTaggedFieldWithWriteBarrier(
+     Register object, int offset, Register value,
+     RegisterSnapshot register_snapshot, ValueIsCompressed value_is_compressed,
+@@ -541,6 +602,19 @@ void MaglevAssembler::StoreTaggedFieldWithWriteBarrier(
+       value_can_be_smi);
+ }
+ 
++#ifdef V8_ENABLE_SANDBOX
++
++void MaglevAssembler::StoreTrustedPointerFieldWithWriteBarrier(
++    Register object, int offset, Register value,
++    RegisterSnapshot register_snapshot, IndirectPointerTag tag) {
++  AssertNotSmi(object);
++  StoreTrustedPointerFieldNoWriteBarrier(object, offset, value);
++  CheckAndEmitDeferredIndirectPointerWriteBarrier(object, offset, value,
++                                                  register_snapshot, tag);
++}
++
++#endif  // V8_ENABLE_SANDBOX
++
+ void MaglevAssembler::StoreFixedArrayElementWithWriteBarrier(
+     Register array, Register index, Register value,
+     RegisterSnapshot register_snapshot) {
+diff --git a/src/maglev/maglev-assembler.h b/src/maglev/maglev-assembler.h
+index 465e5093a08be82035b55a313566c5aa49c9de52..a5dda51cf6e341f36f649eb018963f98af385c53 100644
+--- a/src/maglev/maglev-assembler.h
++++ b/src/maglev/maglev-assembler.h
+@@ -231,6 +231,10 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
+                                         ValueIsCompressed value_is_compressed,
+                                         ValueCanBeSmi value_can_be_smi);
+ 
++  void CheckAndEmitDeferredIndirectPointerWriteBarrier(
++      Register object, int offset, Register value,
++      RegisterSnapshot register_snapshot, IndirectPointerTag tag);
++
+   // Preserves all registers that are in the register snapshot, but is otherwise
+   // allowed to clobber both input registers if they are not in the snapshot.
+   //
+@@ -253,6 +257,17 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
+                                      Tagged<Smi> value);
+ 
+   inline void StoreInt32Field(Register object, int offset, int32_t value);
++
++#ifdef V8_ENABLE_SANDBOX
++
++  void StoreTrustedPointerFieldWithWriteBarrier(
++      Register object, int offset, Register value,
++      RegisterSnapshot register_snapshot, IndirectPointerTag tag);
++  inline void StoreTrustedPointerFieldNoWriteBarrier(Register object,
++                                                     int offset,
++                                                     Register value);
++#endif  // V8_ENABLE_SANDBOX
++
+   inline void StoreField(MemOperand operand, Register value, int element_size);
+   inline void ReverseByteOrder(Register value, int element_size);
+ 
+@@ -402,6 +417,7 @@ class V8_EXPORT_PRIVATE MaglevAssembler : public MacroAssembler {
+   inline void Move(Register dst, Tagged<TaggedIndex> i);
+   inline void Move(Register dst, int32_t i);
+   inline void Move(Register dst, uint32_t i);
++  inline void Move(Register dst, IndirectPointerTag i);
+   inline void Move(DoubleRegister dst, double n);
+   inline void Move(DoubleRegister dst, Float64 n);
+   inline void Move(Register dst, Handle<HeapObject> obj);
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 64fc99d3ee8746bcb6403cacd5e86719d45eab07..930e2789219bcb8947f47c65426417b0ed24fb76 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -4097,16 +4097,26 @@ bool MaglevGraphBuilder::CanElideWriteBarrier(ValueNode* object,
+   return false;
+ }
+ 
+-void MaglevGraphBuilder::BuildInitializeStoreTaggedField(
+-    InlinedAllocation* object, ValueNode* value, int offset) {
+-  DCHECK(value->is_tagged());
++void MaglevGraphBuilder::BuildInitializeStore(InlinedAllocation* object,
++                                              ValueNode* value, int offset) {
++  const bool value_is_trusted = value->Is<TrustedConstant>();
++  DCHECK_IMPLIES(!value_is_trusted, value->is_tagged());
++  DCHECK_IMPLIES(value_is_trusted,
++                 value->value_representation() == ValueRepresentation::kIntPtr);
+   if (InlinedAllocation* inlined_value = value->TryCast<InlinedAllocation>()) {
+     auto deps = graph()->allocations().find(object);
+     CHECK(deps != graph()->allocations().end());
+     deps->second.push_back(inlined_value);
+     inlined_value->AddNonEscapingUses();
+   }
+-  BuildStoreTaggedField(object, value, offset, StoreTaggedMode::kInitializing);
++  if (value_is_trusted) {
++    BuildStoreTrustedPointerField(object, value, offset,
++                                  value->Cast<TrustedConstant>()->tag(),
++                                  StoreTaggedMode::kInitializing);
++  } else {
++    BuildStoreTaggedField(object, value, offset,
++                          StoreTaggedMode::kInitializing);
++  }
+ }
+ 
+ bool MaglevGraphBuilder::CanTrackObjectChanges(ValueNode* receiver,
+@@ -4210,6 +4220,17 @@ void MaglevGraphBuilder::BuildStoreTaggedFieldNoWriteBarrier(
+                                              store_mode);
+ }
+ 
++void MaglevGraphBuilder::BuildStoreTrustedPointerField(
++    ValueNode* object, ValueNode* value, int offset, IndirectPointerTag tag,
++    StoreTaggedMode store_mode) {
++#ifdef V8_ENABLE_SANDBOX
++  AddNewNode<StoreTrustedPointerFieldWithWriteBarrier>({object, value}, offset,
++                                                       tag, store_mode);
++#else
++  BuildStoreTaggedField(object, value, offset, store_mode);
++#endif  // V8_ENABLE_SANDBOX
++}
++
+ void MaglevGraphBuilder::BuildStoreFixedArrayElement(ValueNode* elements,
+                                                      ValueNode* index,
+                                                      ValueNode* value) {
+@@ -5886,6 +5907,22 @@ ValueNode* MaglevGraphBuilder::GetConstant(compiler::ObjectRef ref) {
+   return it->second;
+ }
+ 
++ValueNode* MaglevGraphBuilder::GetTrustedConstant(compiler::HeapObjectRef ref,
++                                                  IndirectPointerTag tag) {
++#ifdef V8_ENABLE_SANDBOX
++  auto it = graph_->trusted_constants().find(ref);
++  if (it == graph_->trusted_constants().end()) {
++    TrustedConstant* node = CreateNewConstantNode<TrustedConstant>(0, ref, tag);
++    graph_->trusted_constants().emplace(ref, node);
++    return node;
++  }
++  SBXCHECK_EQ(it->second->tag(), tag);
++  return it->second;
++#else
++  return GetConstant(ref);
++#endif
++}
++
+ void MaglevGraphBuilder::VisitGetNamedPropertyFromSuper() {
+   // GetNamedPropertyFromSuper <receiver> <name_index> <slot>
+   ValueNode* receiver = LoadRegister(0);
+@@ -11147,7 +11184,7 @@ ValueNode* MaglevGraphBuilder::BuildInlinedAllocation(
+       node = BuildInlinedAllocationForHeapNumber(
+           CreateHeapNumber(node->Cast<Float64Constant>()->value()),
+           allocation_type);
+-    } else {
++    } else if (!node->Is<TrustedConstant>()) {
+       node = GetTaggedValue(node);
+     }
+     values[i] = node;
+@@ -11158,8 +11195,7 @@ ValueNode* MaglevGraphBuilder::BuildInlinedAllocation(
+   BuildStoreMap(allocation, vobject->map(),
+                 StoreMap::initializing_kind(allocation_type));
+   for (uint32_t i = 0; i < vobject->slot_count(); i++) {
+-    BuildInitializeStoreTaggedField(allocation, values[i],
+-                                    (i + 1) * kTaggedSize);
++    BuildInitializeStore(allocation, values[i], (i + 1) * kTaggedSize);
+   }
+   return allocation;
+ }
+diff --git a/src/maglev/maglev-graph-builder.h b/src/maglev/maglev-graph-builder.h
+index 0630eac649d6d6c4aee2591ce2ce8be6955377c1..91b7178b1f86c327ee6674f5dd5e9362b7dc40c8 100644
+--- a/src/maglev/maglev-graph-builder.h
++++ b/src/maglev/maglev-graph-builder.h
+@@ -1342,6 +1342,9 @@ class MaglevGraphBuilder {
+ 
+   ValueNode* GetConstant(compiler::ObjectRef ref);
+ 
++  ValueNode* GetTrustedConstant(compiler::HeapObjectRef ref,
++                                IndirectPointerTag tag);
++
+   ValueNode* GetRegisterInput(Register reg) {
+     DCHECK(!graph_->register_inputs().has(reg));
+     graph_->register_inputs().set(reg);
+@@ -2086,8 +2089,8 @@ class MaglevGraphBuilder {
+ 
+   bool CanTrackObjectChanges(ValueNode* object, int offset);
+   bool CanElideWriteBarrier(ValueNode* object, ValueNode* value);
+-  void BuildInitializeStoreTaggedField(InlinedAllocation* alloc,
+-                                       ValueNode* value, int offset);
++  void BuildInitializeStore(InlinedAllocation* alloc, ValueNode* value,
++                            int offset);
+   void TryBuildStoreTaggedFieldToAllocation(ValueNode* object, ValueNode* value,
+                                             int offset);
+   ValueNode* BuildLoadTaggedField(ValueNode* object, int offset);
+@@ -2096,6 +2099,9 @@ class MaglevGraphBuilder {
+   void BuildStoreTaggedFieldNoWriteBarrier(ValueNode* object, ValueNode* value,
+                                            int offset,
+                                            StoreTaggedMode store_mode);
++  void BuildStoreTrustedPointerField(ValueNode* object, ValueNode* value,
++                                     int offset, IndirectPointerTag tag,
++                                     StoreTaggedMode store_mode);
+   void BuildStoreFixedArrayElement(ValueNode* elements, ValueNode* index,
+                                    ValueNode* value);
+ 
+diff --git a/src/maglev/maglev-graph-processor.h b/src/maglev/maglev-graph-processor.h
+index ca72ecabf46a83eec8a0617aa9c2e5804a2eae05..1d7e07f39ba451c254b87b3c5b5dfb5c27679234 100644
+--- a/src/maglev/maglev-graph-processor.h
++++ b/src/maglev/maglev-graph-processor.h
+@@ -108,6 +108,7 @@ class GraphProcessor {
+     process_constants(graph->uint32());
+     process_constants(graph->float64());
+     process_constants(graph->external_references());
++    process_constants(graph->trusted_constants());
+ 
+     for (block_it_ = graph->begin(); block_it_ != graph->end(); ++block_it_) {
+       BasicBlock* block = *block_it_;
+diff --git a/src/maglev/maglev-graph.h b/src/maglev/maglev-graph.h
+index f6dbf6ceaacbc64e48720e6be0a7b9dd405f13ee..30889c2799a3cd2f781cbccb7930a321d997ab97 100644
+--- a/src/maglev/maglev-graph.h
++++ b/src/maglev/maglev-graph.h
+@@ -42,6 +42,7 @@ class Graph final : public ZoneObject {
+         allocations_(zone),
+         register_inputs_(),
+         constants_(zone),
++        trusted_constants_(zone),
+         inlined_functions_(zone),
+         is_osr_(is_osr),
+         scope_infos_(zone) {}
+@@ -116,6 +117,12 @@ class Graph final : public ZoneObject {
+   compiler::ZoneRefMap<compiler::ObjectRef, Constant*>& constants() {
+     return constants_;
+   }
++
++  compiler::ZoneRefMap<compiler::HeapObjectRef, TrustedConstant*>&
++  trusted_constants() {
++    return trusted_constants_;
++  }
++
+   ZoneVector<OptimizedCompilationInfo::InlinedFunctionHolder>&
+   inlined_functions() {
+     return inlined_functions_;
+@@ -209,6 +216,8 @@ class Graph final : public ZoneObject {
+   ZoneMap<InlinedAllocation*, AllocationDependencies> allocations_;
+   RegList register_inputs_;
+   compiler::ZoneRefMap<compiler::ObjectRef, Constant*> constants_;
++  compiler::ZoneRefMap<compiler::HeapObjectRef, TrustedConstant*>
++      trusted_constants_;
+   ZoneVector<OptimizedCompilationInfo::InlinedFunctionHolder>
+       inlined_functions_;
+   bool has_recursive_calls_ = false;
+diff --git a/src/maglev/maglev-ir.cc b/src/maglev/maglev-ir.cc
+index b8b2ad1d4c89bad32d0d59b7ffec9c15bf13bdef..e02f3e1bf7e5cfc5fd087bccd25ca36884448450 100644
+--- a/src/maglev/maglev-ir.cc
++++ b/src/maglev/maglev-ir.cc
+@@ -935,6 +935,10 @@ Handle<Object> Constant::DoReify(LocalIsolate* isolate) const {
+   return object_.object();
+ }
+ 
++Handle<Object> TrustedConstant::DoReify(LocalIsolate* isolate) const {
++  return object_.object();
++}
++
+ Handle<Object> RootConstant::DoReify(LocalIsolate* isolate) const {
+   return isolate->root_handle(index());
+ }
+@@ -1046,6 +1050,10 @@ void RootConstant::DoLoadToRegister(MaglevAssembler* masm, Register reg) {
+   __ LoadRoot(reg, index());
+ }
+ 
++void TrustedConstant::DoLoadToRegister(MaglevAssembler* masm, Register reg) {
++  __ Move(reg, object_.object());
++}
++
+ // ---
+ // Arch agnostic nodes
+ // ---
+@@ -1080,6 +1088,14 @@ void Constant::SetValueLocationConstraints() { DefineAsConstant(this); }
+ void Constant::GenerateCode(MaglevAssembler* masm,
+                             const ProcessingState& state) {}
+ 
++void TrustedConstant::SetValueLocationConstraints() { DefineAsConstant(this); }
++void TrustedConstant::GenerateCode(MaglevAssembler* masm,
++                                   const ProcessingState& state) {
++#ifndef V8_ENABLE_SANDBOX
++  UNREACHABLE();
++#endif
++}
++
+ void RootConstant::SetValueLocationConstraints() { DefineAsConstant(this); }
+ void RootConstant::GenerateCode(MaglevAssembler* masm,
+                                 const ProcessingState& state) {}
+@@ -2617,6 +2633,28 @@ void StoreTaggedFieldWithWriteBarrier::GenerateCode(
+       MaglevAssembler::kValueCanBeSmi);
+ }
+ 
++int StoreTrustedPointerFieldWithWriteBarrier::MaxCallStackArgs() const {
++  return WriteBarrierDescriptor::GetStackParameterCount();
++}
++void StoreTrustedPointerFieldWithWriteBarrier::SetValueLocationConstraints() {
++  UseFixed(object_input(), WriteBarrierDescriptor::ObjectRegister());
++  UseRegister(value_input());
++}
++void StoreTrustedPointerFieldWithWriteBarrier::GenerateCode(
++    MaglevAssembler* masm, const ProcessingState& state) {
++#ifdef V8_ENABLE_SANDBOX
++  // TODO(leszeks): Consider making this an arbitrary register and push/popping
++  // in the deferred path.
++  Register object = WriteBarrierDescriptor::ObjectRegister();
++  DCHECK_EQ(object, ToRegister(object_input()));
++  Register value = ToRegister(value_input());
++  __ StoreTrustedPointerFieldWithWriteBarrier(object, offset(), value,
++                                              register_snapshot(), tag());
++#else
++  UNREACHABLE();
++#endif
++}
++
+ void LoadSignedIntDataViewElement::SetValueLocationConstraints() {
+   UseRegister(object_input());
+   UseRegister(index_input());
+@@ -6781,6 +6819,11 @@ void Constant::PrintParams(std::ostream& os,
+   os << "(" << *object_.object() << ")";
+ }
+ 
++void TrustedConstant::PrintParams(std::ostream& os,
++                                  MaglevGraphLabeller* graph_labeller) const {
++  os << "(" << *object_.object() << ")";
++}
++
+ void DeleteProperty::PrintParams(std::ostream& os,
+                                  MaglevGraphLabeller* graph_labeller) const {
+   os << "(" << LanguageMode2String(mode()) << ")";
+@@ -7046,6 +7089,11 @@ void StoreTaggedFieldWithWriteBarrier::PrintParams(
+   os << "(0x" << std::hex << offset() << std::dec << ")";
+ }
+ 
++void StoreTrustedPointerFieldWithWriteBarrier::PrintParams(
++    std::ostream& os, MaglevGraphLabeller* graph_labeller) const {
++  os << "(0x" << std::hex << offset() << std::dec << ")";
++}
++
+ void LoadNamedGeneric::PrintParams(std::ostream& os,
+                                    MaglevGraphLabeller* graph_labeller) const {
+   os << "(" << *name_.object() << ")";
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index 944e8a66ae57a5288c9401f6824138b808d31082..a1554fcfab230eff577335a737d0341b75fe33e7 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -140,7 +140,8 @@ class ExceptionHandlerInfo;
+   V(Uint32Constant)                 \
+   V(RootConstant)                   \
+   V(SmiConstant)                    \
+-  V(TaggedIndexConstant)
++  V(TaggedIndexConstant)            \
++  V(TrustedConstant)
+ 
+ #define INLINE_BUILTIN_NODE_LIST(V) \
+   V(BuiltinStringFromCharCode)      \
+@@ -287,61 +288,62 @@ class ExceptionHandlerInfo;
+   V(ConstantGapMove)          \
+   V(GapMove)
+ 
+-#define NODE_LIST(V)                        \
+-  V(AssertInt32)                            \
+-  V(CheckConstTrackingLetCell)              \
+-  V(CheckConstTrackingLetCellTagged)        \
+-  V(CheckDynamicValue)                      \
+-  V(CheckInt32IsSmi)                        \
+-  V(CheckUint32IsSmi)                       \
+-  V(CheckHoleyFloat64IsSmi)                 \
+-  V(CheckHeapObject)                        \
+-  V(CheckInt32Condition)                    \
+-  V(CheckCacheIndicesNotCleared)            \
+-  V(CheckFloat64IsNan)                      \
+-  V(CheckJSDataViewBounds)                  \
+-  V(CheckTypedArrayBounds)                  \
+-  V(CheckTypedArrayNotDetached)             \
+-  V(CheckMaps)                              \
+-  V(CheckMapsWithMigration)                 \
+-  V(CheckDetectableCallable)                \
+-  V(CheckNumber)                            \
+-  V(CheckSmi)                               \
+-  V(CheckString)                            \
+-  V(CheckSymbol)                            \
+-  V(CheckValue)                             \
+-  V(CheckValueEqualsInt32)                  \
+-  V(CheckValueEqualsFloat64)                \
+-  V(CheckValueEqualsString)                 \
+-  V(CheckInstanceType)                      \
+-  V(DebugBreak)                             \
+-  V(FunctionEntryStackCheck)                \
+-  V(GeneratorStore)                         \
+-  V(TryOnStackReplacement)                  \
+-  V(StoreMap)                               \
+-  V(StoreDoubleField)                       \
+-  V(StoreFixedArrayElementWithWriteBarrier) \
+-  V(StoreFixedArrayElementNoWriteBarrier)   \
+-  V(StoreFixedDoubleArrayElement)           \
+-  V(StoreFloat64)                           \
+-  V(StoreIntTypedArrayElement)              \
+-  V(StoreDoubleTypedArrayElement)           \
+-  V(StoreSignedIntDataViewElement)          \
+-  V(StoreDoubleDataViewElement)             \
+-  V(StoreTaggedFieldNoWriteBarrier)         \
+-  V(StoreTaggedFieldWithWriteBarrier)       \
+-  V(HandleNoHeapWritesInterrupt)            \
+-  V(ReduceInterruptBudgetForLoop)           \
+-  V(ReduceInterruptBudgetForReturn)         \
+-  V(ThrowReferenceErrorIfHole)              \
+-  V(ThrowSuperNotCalledIfHole)              \
+-  V(ThrowSuperAlreadyCalledIfNotHole)       \
+-  V(ThrowIfNotCallable)                     \
+-  V(ThrowIfNotSuperConstructor)             \
+-  V(TransitionElementsKind)                 \
+-  V(TransitionElementsKindOrCheckMap)       \
+-  V(SetContinuationPreservedEmbedderData)   \
+-  GAP_MOVE_NODE_LIST(V)                     \
++#define NODE_LIST(V)                          \
++  V(AssertInt32)                              \
++  V(CheckConstTrackingLetCell)                \
++  V(CheckConstTrackingLetCellTagged)          \
++  V(CheckDynamicValue)                        \
++  V(CheckInt32IsSmi)                          \
++  V(CheckUint32IsSmi)                         \
++  V(CheckHoleyFloat64IsSmi)                   \
++  V(CheckHeapObject)                          \
++  V(CheckInt32Condition)                      \
++  V(CheckCacheIndicesNotCleared)              \
++  V(CheckFloat64IsNan)                        \
++  V(CheckJSDataViewBounds)                    \
++  V(CheckTypedArrayBounds)                    \
++  V(CheckTypedArrayNotDetached)               \
++  V(CheckMaps)                                \
++  V(CheckMapsWithMigration)                   \
++  V(CheckDetectableCallable)                  \
++  V(CheckNumber)                              \
++  V(CheckSmi)                                 \
++  V(CheckString)                              \
++  V(CheckSymbol)                              \
++  V(CheckValue)                               \
++  V(CheckValueEqualsInt32)                    \
++  V(CheckValueEqualsFloat64)                  \
++  V(CheckValueEqualsString)                   \
++  V(CheckInstanceType)                        \
++  V(DebugBreak)                               \
++  V(FunctionEntryStackCheck)                  \
++  V(GeneratorStore)                           \
++  V(TryOnStackReplacement)                    \
++  V(StoreMap)                                 \
++  V(StoreDoubleField)                         \
++  V(StoreFixedArrayElementWithWriteBarrier)   \
++  V(StoreFixedArrayElementNoWriteBarrier)     \
++  V(StoreFixedDoubleArrayElement)             \
++  V(StoreFloat64)                             \
++  V(StoreIntTypedArrayElement)                \
++  V(StoreDoubleTypedArrayElement)             \
++  V(StoreSignedIntDataViewElement)            \
++  V(StoreDoubleDataViewElement)               \
++  V(StoreTaggedFieldNoWriteBarrier)           \
++  V(StoreTaggedFieldWithWriteBarrier)         \
++  V(StoreTrustedPointerFieldWithWriteBarrier) \
++  V(HandleNoHeapWritesInterrupt)              \
++  V(ReduceInterruptBudgetForLoop)             \
++  V(ReduceInterruptBudgetForReturn)           \
++  V(ThrowReferenceErrorIfHole)                \
++  V(ThrowSuperNotCalledIfHole)                \
++  V(ThrowSuperAlreadyCalledIfNotHole)         \
++  V(ThrowIfNotCallable)                       \
++  V(ThrowIfNotSuperConstructor)               \
++  V(TransitionElementsKind)                   \
++  V(TransitionElementsKindOrCheckMap)         \
++  V(SetContinuationPreservedEmbedderData)     \
++  GAP_MOVE_NODE_LIST(V)                       \
+   VALUE_NODE_LIST(V)
+ 
+ #define BRANCH_CONTROL_NODE_LIST(V) \
+@@ -508,7 +510,8 @@ constexpr bool IsSimpleFieldStore(Opcode opcode) {
+          opcode == Opcode::kUpdateJSArrayLength ||
+          opcode == Opcode::kStoreFixedArrayElementWithWriteBarrier ||
+          opcode == Opcode::kStoreFixedArrayElementNoWriteBarrier ||
+-         opcode == Opcode::kStoreFixedDoubleArrayElement;
++         opcode == Opcode::kStoreFixedDoubleArrayElement ||
++         opcode == Opcode::kStoreTrustedPointerFieldWithWriteBarrier;
+ }
+ constexpr bool IsElementsArrayWrite(Opcode opcode) {
+   return opcode == Opcode::kMaybeGrowFastElements ||
+@@ -1034,6 +1037,10 @@ class OpProperties {
+     return OpProperties(
+         kValueRepresentationBits::encode(ValueRepresentation::kIntPtr));
+   }
++  static constexpr OpProperties TrustedPointer() {
++    return OpProperties(
++        kValueRepresentationBits::encode(ValueRepresentation::kIntPtr));
++  }
+   static constexpr OpProperties ConversionNode() {
+     return OpProperties(kIsConversionBit::encode(true));
+   }
+@@ -4818,6 +4825,35 @@ class RootConstant : public FixedInputValueNodeT<0, RootConstant> {
+   const RootIndex index_;
+ };
+ 
++class TrustedConstant : public FixedInputValueNodeT<0, TrustedConstant> {
++  using Base = FixedInputValueNodeT<0, TrustedConstant>;
++
++ public:
++  using OutputRegister = Register;
++
++  explicit TrustedConstant(uint64_t bitfield, compiler::HeapObjectRef object,
++                           IndirectPointerTag tag)
++      : Base(bitfield), object_(object), tag_(tag) {}
++
++  static constexpr OpProperties kProperties = OpProperties::TrustedPointer();
++
++  bool ToBoolean(LocalIsolate* local_isolate) const { UNREACHABLE(); }
++
++  void SetValueLocationConstraints();
++  void GenerateCode(MaglevAssembler*, const ProcessingState&);
++  void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
++
++  compiler::HeapObjectRef object() const { return object_; }
++  IndirectPointerTag tag() const { return tag_; }
++
++  void DoLoadToRegister(MaglevAssembler*, OutputRegister);
++  Handle<Object> DoReify(LocalIsolate* isolate) const;
++
++ private:
++  const compiler::HeapObjectRef object_;
++  const IndirectPointerTag tag_;
++};
++
+ class CreateArrayLiteral : public FixedInputValueNodeT<0, CreateArrayLiteral> {
+   using Base = FixedInputValueNodeT<0, CreateArrayLiteral>;
+ 
+@@ -7494,6 +7530,55 @@ class StoreTaggedFieldWithWriteBarrier
+   const int offset_;
+ };
+ 
++class StoreTrustedPointerFieldWithWriteBarrier
++    : public FixedInputNodeT<2, StoreTrustedPointerFieldWithWriteBarrier> {
++  using Base = FixedInputNodeT<2, StoreTrustedPointerFieldWithWriteBarrier>;
++
++ public:
++  explicit StoreTrustedPointerFieldWithWriteBarrier(uint64_t bitfield,
++                                                    int offset,
++                                                    IndirectPointerTag tag,
++                                                    StoreTaggedMode store_mode)
++      : Base(bitfield | InitializingOrTransitioningField::encode(
++                            IsInitializingOrTransitioning(store_mode))),
++        offset_(offset),
++        tag_(tag) {}
++
++  static constexpr OpProperties kProperties =
++      OpProperties::CanWrite() | OpProperties::DeferredCall();
++  static constexpr typename Base::InputTypes kInputTypes{
++      ValueRepresentation::kTagged, ValueRepresentation::kIntPtr};
++
++  int offset() const { return offset_; }
++  IndirectPointerTag tag() const { return tag_; }
++  bool initializing_or_transitioning() const {
++    return InitializingOrTransitioningField::decode(bitfield());
++  }
++
++  static constexpr int kObjectIndex = 0;
++  static constexpr int kValueIndex = 1;
++  Input& object_input() { return input(kObjectIndex); }
++  Input& value_input() { return input(kValueIndex); }
++
++#ifdef V8_COMPRESS_POINTERS
++  void MarkTaggedInputsAsDecompressing() {
++    object_input().node()->SetTaggedResultNeedsDecompress();
++    // value is never compressed.
++  }
++#endif
++
++  int MaxCallStackArgs() const;
++  void SetValueLocationConstraints();
++  void GenerateCode(MaglevAssembler*, const ProcessingState&);
++  void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
++
++ private:
++  using InitializingOrTransitioningField = NextBitField<bool, 1>;
++
++  const int offset_;
++  const IndirectPointerTag tag_;
++};
++
+ class LoadGlobal : public FixedInputValueNodeT<1, LoadGlobal> {
+   using Base = FixedInputValueNodeT<1, LoadGlobal>;
+ 
+diff --git a/src/maglev/maglev-post-hoc-optimizations-processors.h b/src/maglev/maglev-post-hoc-optimizations-processors.h
+index 8b708dd9007cac94d3ce6a53227ad9321ef642f7..baea256357c5de4430d9d303385c2f74ff26ffb6 100644
+--- a/src/maglev/maglev-post-hoc-optimizations-processors.h
++++ b/src/maglev/maglev-post-hoc-optimizations-processors.h
+@@ -18,6 +18,7 @@ constexpr bool CanBeStoreToNonEscapedObject() {
+   return std::is_same_v<NodeT, StoreMap> ||
+          std::is_same_v<NodeT, StoreTaggedFieldWithWriteBarrier> ||
+          std::is_same_v<NodeT, StoreTaggedFieldNoWriteBarrier> ||
++         std::is_same_v<NodeT, StoreTrustedPointerFieldWithWriteBarrier> ||
+          std::is_same_v<NodeT, StoreFloat64>;
+ }
+ 
+diff --git a/src/maglev/maglev-regalloc.cc b/src/maglev/maglev-regalloc.cc
+index a7cffb386fe87a53c526b0871618a6c4c219d7f1..617c5d2f28e69c438f1a339bd5bb5b1fc959ce2d 100644
+--- a/src/maglev/maglev-regalloc.cc
++++ b/src/maglev/maglev-regalloc.cc
+@@ -393,6 +393,10 @@ void StraightForwardRegisterAllocator::AllocateRegisters() {
+     constant->SetConstantLocation();
+     USE(address);
+   }
++  for (const auto& [ref, constant] : graph_->trusted_constants()) {
++    constant->SetConstantLocation();
++    USE(ref);
++  }
+ 
+   for (block_it_ = graph_->begin(); block_it_ != graph_->end(); ++block_it_) {
+     BasicBlock* block = *block_it_;
+diff --git a/src/maglev/x64/maglev-assembler-x64-inl.h b/src/maglev/x64/maglev-assembler-x64-inl.h
+index 983f81a341b74b26c078b56cbde35f3e9360924d..edccfdf5f199ae1f561678542c6ad66182f9febc 100644
+--- a/src/maglev/x64/maglev-assembler-x64-inl.h
++++ b/src/maglev/x64/maglev-assembler-x64-inl.h
+@@ -499,6 +499,15 @@ inline void MaglevAssembler::StoreField(Operand operand, Register value,
+   }
+ }
+ 
++#ifdef V8_ENABLE_SANDBOX
++
++inline void MaglevAssembler::StoreTrustedPointerFieldNoWriteBarrier(
++    Register object, int offset, Register value) {
++  MacroAssembler::StoreTrustedPointerField(FieldOperand(object, offset), value);
++}
++
++#endif  // V8_ENABLE_SANDBOX
++
+ inline void MaglevAssembler::ReverseByteOrder(Register value, int size) {
+   if (size == 2) {
+     bswapl(value);
+@@ -605,6 +614,10 @@ inline void MaglevAssembler::Move(Register dst, uint32_t i) {
+   MacroAssembler::Move(dst, i);
+ }
+ 
++inline void MaglevAssembler::Move(Register dst, IndirectPointerTag i) {
++  MacroAssembler::Move(dst, i);
++}
++
+ inline void MaglevAssembler::Move(DoubleRegister dst, double n) {
+   MacroAssembler::Move(dst, n);
+ }
