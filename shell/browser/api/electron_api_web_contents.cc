@@ -4158,7 +4158,7 @@ void WebContents::DevToolsIndexPath(
     OnDevToolsIndexingDone(request_id, file_system_path);
     return;
   }
-  if (devtools_indexing_jobs_.count(request_id) != 0)
+  if (devtools_indexing_jobs_.contains(request_id))
     return;
   std::vector<std::string> excluded_folders;
   std::optional<base::Value> parsed_excluded_folders =
