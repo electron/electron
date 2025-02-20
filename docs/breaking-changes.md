@@ -63,6 +63,22 @@ webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame
 
 Additionally, `level` is now a string with possible values of `info`, `warning`, `error`, and `debug`.
 
+### Behavior Changed: `urls` property of `WebRequestFilter`.
+
+Previously, an empty urls array was interpreted as including all URLs. To explicitly include all URLs, developers should now use the `<all_urls>` pattern, which is a [designated URL pattern](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns#all_urls) that matches every possible URL. This change clarifies the intent and ensures more predictable behavior.
+
+```js
+// Deprecated
+const deprecatedFilter = {
+  urls: []
+}
+
+// Replace with
+const newFilter = {
+  urls: ['<all_urls>']
+}
+```
+
 ### Deprecated: `systemPreferences.isAeroGlassEnabled()`
 
 The `systemPreferences.isAeroGlassEnabled()` function has been deprecated without replacement.
