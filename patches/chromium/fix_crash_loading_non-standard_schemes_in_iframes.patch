@@ -35,10 +35,10 @@ index 84b894ac879b5a0ada509da98294db75eebe7fd7..fbc0fdf6ee5edf3c284260ac8db2f90c
          "blob");
    }
  
-+  if (!IsInMainFrame() && !common_params().url.IsStandard()) {
++  if (!common_params().url.IsStandard() && !common_params().url.IsAboutBlank()) {
 +    return std::make_pair(url::Origin::Resolve(common_params().url,
-+                                               url::Origin()),
-+                          "url_non_standard");
++                                url::Origin()),
++          "url_non_standard");
 +  }
 +
    // In cases not covered above, URLLoaderFactory should be associated with the
