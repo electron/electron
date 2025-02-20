@@ -226,7 +226,7 @@ index 61ddcbf7bf57e423099c7d392a19b3ec79b5d03f..7e52ce9f2f108f1aee4cfe2a95d5aa05
 -
 +const char kXdgPortalRequiredVersionFlag[] = "xdg-portal-required-version";
  struct FileChooserProperties : dbus::PropertySet {
--  dbus::Property<uint32_t> version;
+   dbus::Property<uint32_t> version;
  
    explicit FileChooserProperties(dbus::ObjectProxy* object_proxy)
        : dbus::PropertySet(object_proxy, kFileChooserInterfaceName, {}) {
