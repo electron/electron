@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "base/base64.h"
-#include "base/containers/contains.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
@@ -700,8 +699,7 @@ std::map<std::string, std::string> GetAddedFileSystemPaths(
 
 bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
                                const std::string& file_system_path) {
-  return base::Contains(GetAddedFileSystemPaths(web_contents),
-                        file_system_path);
+  return GetAddedFileSystemPaths(web_contents).contains(file_system_path);
 }
 
 content::RenderFrameHost* GetRenderFrameHost(

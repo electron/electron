@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/uuid.h"
 #include "components/prefs/pref_service.h"
@@ -58,7 +57,7 @@ GlobalShortcut::~GlobalShortcut() {
 }
 
 void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
-  if (!base::Contains(accelerator_callback_map_, accelerator)) {
+  if (!accelerator_callback_map_.contains(accelerator)) {
     // This should never occur, because if it does,
     // ui::GlobalAcceleratorListener notifies us with wrong accelerator.
     NOTREACHED();
@@ -68,7 +67,7 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 
 void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
                                     const std::string& command_id) {
-  if (!base::Contains(command_callback_map_, command_id)) {
+  if (!command_callback_map_.contains(command_id)) {
     // This should never occur, because if it does, GlobalAcceleratorListener
     // notifies us with wrong command.
     NOTREACHED();
@@ -195,12 +194,12 @@ void GlobalShortcut::UnregisterSome(
 }
 
 bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
-  if (base::Contains(accelerator_callback_map_, accelerator)) {
+  if (accelerator_callback_map_.contains(accelerator)) {
     return true;
   }
   const std::string command_str =
       extensions::Command::AcceleratorToString(accelerator);
-  return base::Contains(command_callback_map_, command_str);
+  return command_callback_map_.contains(command_str);
 }
 
 void GlobalShortcut::UnregisterAll() {
