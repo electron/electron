@@ -378,6 +378,11 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     if (!thick_frame_)
       frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
+
+    bool rounded_corner = true;
+    options.Get(options::kRoundedCorners, &rounded_corner);
+    if (!rounded_corner)
+      SetRoundedCorners(false);
   }
 
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
