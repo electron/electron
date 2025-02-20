@@ -4,7 +4,7 @@ runs:
   using: "composite"
   steps:
   - name: Set the git cookie from chromium.googlesource.com (Unix)
-    if: ${{ runner.os != 'Windows' }}
+    if: ${{ runner.os != 'Windows' && env.CHROMIUM_GIT_COOKIE }}
     shell: bash
     run: |
       eval 'set +o history' 2>/dev/null || setopt HIST_IGNORE_SPACE 2>/dev/null
@@ -18,7 +18,7 @@ runs:
       __END__
       eval 'set -o history' 2>/dev/null || unsetopt HIST_IGNORE_SPACE 2>/dev/null
   - name: Set the git cookie from chromium.googlesource.com (Windows)
-    if: ${{ runner.os == 'Windows' }}
+    if: ${{ runner.os == 'Windows' && env.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
     shell: cmd
     run: |
       git config --global http.cookiefile "%USERPROFILE%\.gitcookies"
