@@ -173,6 +173,8 @@ class InspectableWebContents
   void SetOpenNewWindowForPopups(bool value) override {}
   void RecordPerformanceHistogram(const std::string& name,
                                   double duration) override {}
+  void RecordPerformanceHistogramMedium(const std::string& name,
+                                        double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
   void RecordImpression(const ImpressionEvent& event) override {}
   void RecordResize(const ResizeEvent& event) override {}
