@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index a26102c62765825a7f94487ea72ca8d3c770060e..014012457bbda884ae6c9eaf46deb7f41e203351 100644
+index ecd0e705caf2bb5de1b51776fda897fe953ef833..2d111d63d24b4aef2ed8dfe1f2d3529ea269367f 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -159,6 +159,11 @@
@@ -136,7 +136,7 @@ index a26102c62765825a7f94487ea72ca8d3c770060e..014012457bbda884ae6c9eaf46deb7f4
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2569,6 +2674,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2576,6 +2681,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));

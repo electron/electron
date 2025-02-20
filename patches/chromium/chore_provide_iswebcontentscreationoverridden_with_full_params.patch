@@ -80,7 +80,7 @@ index 4fd8dff1089cd6afa6a66dc185734d7671657281..0a1f4268ea771a3d5d4a2668928c6e5d
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index ac52887ba23d3024db9b0b326eaa350c24f3e2a6..fa692bee467ea888914ebc6dafb6f6178b3eb73d 100644
+index 30981e3948bc1d579d31bb763626c17c4d365a59..f3d0cd9e0fc2ffada6c67cb9dfad82286e9837e4 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -2212,12 +2212,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -99,7 +99,7 @@ index ac52887ba23d3024db9b0b326eaa350c24f3e2a6..fa692bee467ea888914ebc6dafb6f617
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 23066b006559fccdfc556d2097fab7e2b08f185c..b1348af15c6fb246ae10520597e3655c7352e368 100644
+index f3e48d5153cfd759d58eff6d6338bf6188624236..de9e9d654ea0b0de72ef95687038290ba1b549bc 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -977,8 +977,7 @@ class Browser : public TabStripModelObserver,
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index bb132ec61070beaae27d583282bc3e9f34f5357b..90ac881d8e9f534c875b5eb259b06ef1db1c71d3 100644
+index aba4b872c962c82b34b36eae2149f5d66ddc59ff..c9bab9b813a80658ea670f731d35c83f0f666e81 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4885,8 +4885,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4894,8 +4894,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // TODO(crbug.com/40202416): Support a way for MPArch guests to support this.
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -246,7 +246,7 @@ index a955b37b93ca0887f3fba1ebea4a3c89e62aa6bc..7b764a2f9a18a1650c88e2ab22ca4c2e
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 3938045d8028abff5f44ad347b514e4f823748cd..ac40cfdbd35ba560f5363f84122140833315e907 100644
+index 7866c18da72e9d1def86d22202f29c45df10fe85..bfc42a837222df0e328242622519d92b77544799 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -345,8 +345,7 @@ class CONTENT_EXPORT WebContentsDelegate {
