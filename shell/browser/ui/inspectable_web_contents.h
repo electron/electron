@@ -112,6 +112,12 @@ class InspectableWebContents
   void RemoveFileSystem(const std::string& file_system_path) override;
   void UpgradeDraggedFileSystemPermissions(
       const std::string& file_system_url) override {}
+  void ConnectAutomaticFileSystem(DispatchCallback callback,
+                                  const std::string& file_system_path,
+                                  const std::string& file_system_uuid,
+                                  bool add_if_missing) override {}
+  void DisconnectAutomaticFileSystem(
+      const std::string& file_system_path) override {}
   void IndexPath(int index_request_id,
                  const std::string& file_system_path,
                  const std::string& excluded_folders) override;
