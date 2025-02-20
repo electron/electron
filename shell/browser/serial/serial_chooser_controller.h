@@ -33,7 +33,7 @@ class ElectronSerialDelegate;
 // SerialChooserController provides data for the Serial API permission prompt.
 class SerialChooserController final
     : private SerialChooserContext::PortObserver,
-      public device::BluetoothAdapter::Observer {
+      private device::BluetoothAdapter::Observer {
  public:
   SerialChooserController(
       content::RenderFrameHost* render_frame_host,
@@ -71,7 +71,7 @@ class SerialChooserController final
   void OnGetAdapter(base::OnceClosure callback,
                     scoped_refptr<device::BluetoothAdapter> adapter);
   // Whether it will only show ports from bluetooth devices.
-  bool IsWirelessSerialPortOnly();
+  [[nodiscard]] bool IsWirelessSerialPortOnly() const;
 
   base::WeakPtr<content::WebContents> web_contents_;
 
