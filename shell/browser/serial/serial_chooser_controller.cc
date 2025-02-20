@@ -164,6 +164,7 @@ void SerialChooserController::GetDevices() {
 
 void SerialChooserController::AdapterPoweredChanged(BluetoothAdapter* adapter,
                                                     bool powered) {
+  // TODO(codebytere): maybe emit an event here?
   if (powered) {
     GetDevices();
   }
@@ -274,7 +275,7 @@ void SerialChooserController::OnGetAdapter(
   std::move(callback).Run();
 }
 
-bool SerialChooserController::IsWirelessSerialPortOnly() {
+bool SerialChooserController::IsWirelessSerialPortOnly() const {
   if (allowed_bluetooth_service_class_ids_.empty()) {
     return false;
   }
