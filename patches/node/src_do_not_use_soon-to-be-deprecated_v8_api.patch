@@ -33,7 +33,7 @@ Reviewed-By: Rafael Gonzaga <rafael.nunu@hotmail.com>
 Reviewed-By: James M Snell <jasnell@gmail.com>
 
 diff --git a/src/node_process_object.cc b/src/node_process_object.cc
-index a13f8d15724cb00fe0e9d722395bd9b9514a3943..3f8a4fbd1a65971645e6785e469bc887a1afbad1 100644
+index 7dd24545fee674b25503b0fcff9b9af0d5c6a26a..5de8be7f8ed97e6b110e397fc4cacb9a246892b6 100644
 --- a/src/node_process_object.cc
 +++ b/src/node_process_object.cc
 @@ -13,7 +13,6 @@
@@ -44,7 +44,7 @@ index a13f8d15724cb00fe0e9d722395bd9b9514a3943..3f8a4fbd1a65971645e6785e469bc887
  using v8::EscapableHandleScope;
  using v8::Function;
  using v8::FunctionCallbackInfo;
-@@ -188,13 +187,12 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
+@@ -186,13 +185,12 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
  
    // process.title
    CHECK(process
@@ -59,7 +59,7 @@ index a13f8d15724cb00fe0e9d722395bd9b9514a3943..3f8a4fbd1a65971645e6785e469bc887
                  None,
                  SideEffectType::kHasNoSideEffect)
              .FromJust());
-@@ -213,9 +211,15 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
+@@ -211,9 +209,15 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
    READONLY_PROPERTY(process, "pid",
                      Integer::New(isolate, uv_os_getpid()));
  
@@ -78,7 +78,7 @@ index a13f8d15724cb00fe0e9d722395bd9b9514a3943..3f8a4fbd1a65971645e6785e469bc887
  
    // --security-revert flags
  #define V(code, _, __)                                                        \
-@@ -240,12 +244,15 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
+@@ -238,12 +242,15 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
  
    // process.debugPort
    CHECK(process

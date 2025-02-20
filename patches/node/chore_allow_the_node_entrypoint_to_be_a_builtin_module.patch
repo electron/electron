@@ -8,10 +8,10 @@ they use themselves as the entry point. We should try to upstream some form
 of this.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index ccd038dc136480cdd84a13e58f4012b71cd40928..5be90bc3df67751b55e67a05ac1c5b9a12d9c585 100644
+index 9b5772fe9b8babbb892c7a5ec79258472da55a76..3568fd6ea0816f62d97d46f5d497bb1b23bf4e25 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1563,6 +1563,13 @@ Module.prototype._compile = function(content, filename, format) {
+@@ -1555,6 +1555,13 @@ Module.prototype._compile = function(content, filename, format) {
    this[kIsExecuting] = true;
    if (this[kIsMainSymbol] && getOptionValue('--inspect-brk')) {
      const { callAndPauseOnStart } = internalBinding('inspector');
@@ -26,7 +26,7 @@ index ccd038dc136480cdd84a13e58f4012b71cd40928..5be90bc3df67751b55e67a05ac1c5b9a
                                   require, module, filename, dirname,
                                   process, localGlobal, localBuffer);
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 5d67892bb8e1fd265df414b3f41e62cdabbec873..89660076c41e1c05b26c17609a62a028c1e2ec5a 100644
+index d1c05d1717cdc825c4e48885c963c9ed65bcf51c..278665921c5160ff10b3178db27d4df319fab6b3 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -243,12 +243,14 @@ function patchProcessObject(expandArgv1) {
