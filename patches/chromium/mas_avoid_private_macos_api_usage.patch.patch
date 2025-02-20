@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index fe8369f613136fda2d7aee17f98870a89434254f..4e6b42f5274c7b3092f99e6a03f50de760ad2f7a 100644
+index 1be4016feadee70878a0ad7b34ca112d1ced16ad..90873381d52e39d0fa8415873bbfef4e231f48d5 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1029,6 +1029,7 @@ component("base") {
+@@ -1030,6 +1030,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -579,7 +579,7 @@ index 08186f30eaa97caf18ac2fe47655526e7733d9df..e4cd1f436ad1734f357429cb3ad6c854
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 12535fdf2224385b6bc0da41a4070574e382fd31..370c3be40b77864e82e6d01678915cf6f683ad4f 100644
+index ec64dcec61d0b122ad70ecb8cae585d71e44c68b..56867459e8e06df6c77c25a5c80f083cda4e8c35 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -331,6 +331,7 @@ source_set("browser") {
@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 32740ada99bf53b00648f8fd176bfdc63753bd56..d2c58affd41a23aa4ad6fa135d2f1c9161910ef2 100644
+index 884bd394083f3e129c37a1d6701701a15d5e1a53..fa1d264761bc0bfc18d227a14a00c1762c24f6e9 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -656,6 +656,7 @@ static_library("test_support") {
@@ -811,7 +811,7 @@ index 32740ada99bf53b00648f8fd176bfdc63753bd56..d2c58affd41a23aa4ad6fa135d2f1c91
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1942,6 +1944,7 @@ test("content_browsertests") {
+@@ -1943,6 +1945,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -819,7 +819,7 @@ index 32740ada99bf53b00648f8fd176bfdc63753bd56..d2c58affd41a23aa4ad6fa135d2f1c91
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3243,6 +3246,7 @@ test("content_unittests") {
+@@ -3244,6 +3247,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1898,7 +1898,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 20d44d7300c6f71da1fad70427587cadb0bfeef7..438920e570c953dcfc599020efc4326b9fc6d42f 100644
+index c19f5affab933815b6848f4a8b17d3ae03cdb8b5..8436286778bf6f267de7c08887e4b44ff01fb434 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -718,6 +718,8 @@ component("views") {
@@ -1910,7 +1910,7 @@ index 20d44d7300c6f71da1fad70427587cadb0bfeef7..438920e570c953dcfc599020efc4326b
    }
  
    if (is_win) {
-@@ -1138,6 +1140,8 @@ source_set("test_support") {
+@@ -1140,6 +1142,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
