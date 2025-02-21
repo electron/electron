@@ -19,7 +19,7 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index 9f9b497aaef2558d2fb02edb115ba5916e1dd578..4e36d3a028d0bb8cdfb100b6424be397915bd7ee 100644
+index 6a3645f020d7348f758ebcc93c49ddcbee709937..55994606517a4f52475610db2da26b5560865fab 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
 @@ -33,6 +33,7 @@
@@ -30,7 +30,7 @@ index 9f9b497aaef2558d2fb02edb115ba5916e1dd578..4e36d3a028d0bb8cdfb100b6424be397
  #endif
  
  #if BUILDFLAG(IS_POSIX)
-@@ -189,7 +190,10 @@ struct ChildProcessLauncherFileData {
+@@ -196,7 +197,10 @@ struct ChildProcessLauncherFileData {
        delete;
    ~ChildProcessLauncherFileData();
  
@@ -42,7 +42,7 @@ index 9f9b497aaef2558d2fb02edb115ba5916e1dd578..4e36d3a028d0bb8cdfb100b6424be397
    // Files opened by the browser and passed as corresponding file descriptors
    // in the child process. If a FilePath is provided, the file will be opened
    // and the descriptor cached for future process launches. If a ScopedFD is
-@@ -204,6 +208,15 @@ struct ChildProcessLauncherFileData {
+@@ -211,6 +215,15 @@ struct ChildProcessLauncherFileData {
    std::map<std::string, absl::variant<base::FilePath, base::ScopedFD>>
        files_to_preload;
  #endif
@@ -187,7 +187,7 @@ index bdd5bec301f5fcff2d3e3d7994ecbc4eae46da36..f6082bada22c5f4e70af60ea6f555b0f
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index aa8b2a92140b2be01860f4de0b739b90942ecd4c..51962b374123297f89126b6a5ebe3fccf0606ca1 100644
+index b0be2d050c84a2e824f7fe5f458dc60d4a53cc9e..59319bf14d79c27ef48a37e7463dfb868e412e23 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -188,11 +188,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -237,7 +237,7 @@ index aa8b2a92140b2be01860f4de0b739b90942ecd4c..51962b374123297f89126b6a5ebe3fcc
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -448,9 +474,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -449,9 +475,26 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  

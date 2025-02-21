@@ -33,10 +33,10 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 014012457bbda884ae6c9eaf46deb7f41e203351..311529eb8b306a647ef56416d3859245acb05cef 100644
+index 64dede12549790b8ce9e50b3de2a62154f5acf79..5d39f64bda0a48f1e278686f3ac567fd441afce4 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1795,6 +1795,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -1810,6 +1810,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -51,7 +51,7 @@ index 014012457bbda884ae6c9eaf46deb7f41e203351..311529eb8b306a647ef56416d3859245
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index cc94073bc278af202cd6bbb47882b56f48a2ebbe..16f63000f1d7c62430ca762240bbacf4d9d11436 100644
+index fe04f634b32e503f6e93ae6f20c8c7f7c85d02be..990df479da79b513cf8797aa2fcacba10c4fbbd9 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -317,6 +317,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
@@ -63,7 +63,7 @@ index cc94073bc278af202cd6bbb47882b56f48a2ebbe..16f63000f1d7c62430ca762240bbacf4
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CT_SUPPORTED)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 029287034d13f7c2bffa60900ecbbaa980330bf4..64688c3a31993dc2ae60f2c187d1fa1db1a40e19 100644
+index e928d012d77ccffe16263fd0ee7c2769adfe4bac..1be1b691fa240fa3c5e2c572821977a968841211 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -1253,6 +1253,9 @@ interface NetworkContext {
@@ -77,7 +77,7 @@ index 029287034d13f7c2bffa60900ecbbaa980330bf4..64688c3a31993dc2ae60f2c187d1fa1d
    SetAcceptLanguage(string new_accept_language);
  
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index 6b09b32c3a6206310baf87da0a2b4025d488fd09..6ff591e3adbfa4df938f1044009365d8ac2e7f26 100644
+index 97e8f9f145cecad9b0cd8b43a2de4af29cec7778..b9539a731d2252c8301d51ccb7a1bd7b1a23ca53 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -156,6 +156,7 @@ class TestNetworkContext : public mojom::NetworkContext {
