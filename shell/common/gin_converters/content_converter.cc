@@ -88,7 +88,8 @@ v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
 v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     v8::Isolate* isolate,
     const ContextMenuParamsWithRenderFrameHost& val) {
-  auto [params, render_frame_host, optional_suggestions] = val;
+  const auto& params = val.first;
+  content::RenderFrameHost* render_frame_host = val.second;
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetGetter("frame", render_frame_host, v8::DontEnum);
   dict.Set("x", params.x);
@@ -113,11 +114,7 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
   dict.Set("misspelledWord", params.misspelled_word);
   dict.Set("selectionRect", params.selection_rect);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (optional_suggestions) {
-    dict.Set("dictionarySuggestions", optional_suggestions.value());
-  } else {
-    dict.Set("dictionarySuggestions", params.dictionary_suggestions);
-  }
+  dict.Set("dictionarySuggestions", params.dictionary_suggestions);
   dict.Set("spellcheckEnabled", params.spellcheck_enabled);
 #else
   dict.Set("spellcheckEnabled", false);
