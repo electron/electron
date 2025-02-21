@@ -53,7 +53,7 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   void UnloadExtension(const ExtensionId& extension_id,
                        extensions::UnloadedExtensionReason reason);
 
-  ExtensionRegistrar* registrar() { return &extension_registrar_; }
+  raw_ptr<ExtensionRegistrar> registrar() { return extension_registrar_; }
 
  private:
   // If the extension loaded successfully, enables it. If it's an app, launches
@@ -92,7 +92,7 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   raw_ptr<content::BrowserContext> browser_context_;  // Not owned.
 
   // Registers and unregisters extensions.
-  ExtensionRegistrar extension_registrar_;
+  raw_ptr<ExtensionRegistrar> extension_registrar_;
 
   // Holds keep-alives for relaunching apps.
   //   ShellKeepAliveRequester keep_alive_requester_;
