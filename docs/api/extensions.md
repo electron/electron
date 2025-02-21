@@ -14,7 +14,7 @@ but it also happens to support some other extension capabilities.
 
 Electron only supports loading unpacked extensions (i.e., `.crx` files do not
 work). Extensions are installed per-`session`. To load an extension, call
-[`ses.loadExtension`](session.md#sesloadextensionpath-options):
+[`ses.extensions.loadExtension`](extensions-api.md#extensionsloadextensionpath-options):
 
 ```js
 const { session } = require('electron')
