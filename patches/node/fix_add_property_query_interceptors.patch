@@ -13,7 +13,7 @@ CL: https://chromium-review.googlesource.com/c/v8/v8/+/5630388
 This patch can be removed when the node change is incorporated into main.
 
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465e11439b8 100644
+index 87a05a56284cdfdb2ad849c56e32cb2eda90df77..9c80f38e95155a123f2f15c6b12608abe26577d4 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -49,6 +49,7 @@ using v8::FunctionTemplate;
@@ -24,7 +24,7 @@ index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465
  using v8::Isolate;
  using v8::Just;
  using v8::Local;
-@@ -484,14 +485,15 @@ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {
+@@ -484,13 +485,14 @@ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {
  }
  
  // static
@@ -33,7 +33,6 @@ index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465
 -    const PropertyCallbackInfo<Value>& args) {
 +Intercepted ContextifyContext::PropertyGetterCallback(
 +    Local<Name> property, const PropertyCallbackInfo<Value>& args) {
-   Environment* env = Environment::GetCurrent(args);
    ContextifyContext* ctx = ContextifyContext::Get(args);
  
    // Still initializing
@@ -44,7 +43,7 @@ index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465
  
    Local<Context> context = ctx->context();
    Local<Object> sandbox = ctx->sandbox();
-@@ -515,18 +517,22 @@ void ContextifyContext::PropertyGetterCallback(
+@@ -507,18 +509,22 @@ void ContextifyContext::PropertyGetterCallback(
        rv = ctx->global_proxy();
  
      args.GetReturnValue().Set(rv);
@@ -70,7 +69,7 @@ index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465
  
    Local<Context> context = ctx->context();
    PropertyAttribute attributes = PropertyAttribute::None;
-@@ -544,8 +550,9 @@ void ContextifyContext::PropertySetterCallback(
+@@ -536,8 +542,9 @@ void ContextifyContext::PropertySetterCallback(
        (static_cast<int>(attributes) &
        static_cast<int>(PropertyAttribute::ReadOnly));
  
@@ -82,7 +81,7 @@ index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465
  
    // true for x = 5
    // false for this.x = 5
-@@ -564,11 +571,16 @@ void ContextifyContext::PropertySetterCallback(
+@@ -556,11 +563,16 @@ void ContextifyContext::PropertySetterCallback(
  
    bool is_declared = is_declared_on_global_proxy || is_declared_on_sandbox;
    if (!is_declared && args.ShouldThrowOnError() && is_contextual_store &&
@@ -103,7 +102,7 @@ index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465
  
    Local<Value> desc;
    if (is_declared_on_sandbox &&
-@@ -582,19 +594,23 @@ void ContextifyContext::PropertySetterCallback(
+@@ -574,19 +586,23 @@ void ContextifyContext::PropertySetterCallback(
      // We have to specify the return value for any contextual or get/set
      // property
      if (desc_obj->HasOwnProperty(context, env->get_string()).FromMaybe(false) ||
@@ -132,7 +131,7 @@ index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465
  
    Local<Context> context = ctx->context();
  
-@@ -604,19 +620,23 @@ void ContextifyContext::PropertyDescriptorCallback(
+@@ -596,19 +612,23 @@ void ContextifyContext::PropertyDescriptorCallback(
      Local<Value> desc;
      if (sandbox->GetOwnPropertyDescriptor(context, property).ToLocal(&desc)) {
        args.GetReturnValue().Set(desc);
@@ -159,7 +158,7 @@ index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465
  
    Local<Context> context = ctx->context();
    Isolate* isolate = context->GetIsolate();
-@@ -635,7 +655,7 @@ void ContextifyContext::PropertyDefinerCallback(
+@@ -627,7 +647,7 @@ void ContextifyContext::PropertyDefinerCallback(
    // If the property is set on the global as neither writable nor
    // configurable, don't change it on the global or sandbox.
    if (is_declared && read_only && dont_delete) {
@@ -168,7 +167,7 @@ index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465
    }
  
    Local<Object> sandbox = ctx->sandbox();
-@@ -658,6 +678,9 @@ void ContextifyContext::PropertyDefinerCallback(
+@@ -650,6 +670,9 @@ void ContextifyContext::PropertyDefinerCallback(
          desc.has_set() ? desc.set() : Undefined(isolate).As<Value>());
  
      define_prop_on_sandbox(&desc_for_sandbox);
@@ -178,7 +177,7 @@ index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465
    } else {
      Local<Value> value =
          desc.has_value() ? desc.value() : Undefined(isolate).As<Value>();
-@@ -669,26 +692,32 @@ void ContextifyContext::PropertyDefinerCallback(
+@@ -661,26 +684,32 @@ void ContextifyContext::PropertyDefinerCallback(
        PropertyDescriptor desc_for_sandbox(value);
        define_prop_on_sandbox(&desc_for_sandbox);
      }
@@ -217,7 +216,7 @@ index 28ba7dbe66a44a43c39e3d75edf0be9513bcf732..0401b968916e5f45d148281c74b7e465
  }
  
  // static
-@@ -708,76 +737,84 @@ void ContextifyContext::PropertyEnumeratorCallback(
+@@ -700,76 +729,84 @@ void ContextifyContext::PropertyEnumeratorCallback(
  }
  
  // static
