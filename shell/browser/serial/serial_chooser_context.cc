@@ -42,8 +42,7 @@ namespace {
 std::string EncodeToken(const base::UnguessableToken& token) {
   const uint64_t data[2] = {token.GetHighForSerialization(),
                             token.GetLowForSerialization()};
-  return base::Base64Encode(
-      std::string_view(reinterpret_cast<const char*>(&data[0]), sizeof(data)));
+  return base::Base64Encode(base::as_byte_span(data));
 }
 
 base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
