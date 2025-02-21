@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/map_util.h"
 #include "base/feature_list.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
@@ -122,19 +123,13 @@ FrameTokenMap& GetFrameTokenMap() {
 // static
 WebFrameMain* WebFrameMain::FromFrameTreeNodeId(
     content::FrameTreeNodeId frame_tree_node_id) {
-  FrameTreeNodeIdMap& frame_map = GetFrameTreeNodeIdMap();
-  auto iter = frame_map.find(frame_tree_node_id);
-  auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
-  return web_frame;
+  return base::FindPtrOrNull(GetFrameTreeNodeIdMap(), frame_tree_node_id);
 }
 
 // static
 WebFrameMain* WebFrameMain::FromFrameToken(
     content::GlobalRenderFrameHostToken frame_token) {
-  FrameTokenMap& frame_map = GetFrameTokenMap();
-  auto iter = frame_map.find(frame_token);
-  auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
-  return web_frame;
+  return base::FindPtrOrNull(GetFrameTokenMap(), frame_token);
 }
 
 // static
