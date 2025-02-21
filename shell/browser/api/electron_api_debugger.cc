@@ -8,6 +8,7 @@
 #include <string_view>
 #include <utility>
 
+#include "base/containers/span.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
@@ -44,8 +45,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  std::string_view message_str(reinterpret_cast<const char*>(message.data()),
-                               message.size());
+  const std::string_view message_str = base::as_string_view(message);
   std::optional<base::Value> parsed_message = base::JSONReader::Read(
       message_str, base::JSON_REPLACE_INVALID_CHARACTERS);
   if (!parsed_message || !parsed_message->is_dict())
