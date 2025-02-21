@@ -9,7 +9,6 @@
 #include <string_view>
 #include <utility>
 
-#include "base/containers/contains.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/raw_ptr.h"
 #include "base/task/sequenced_task_runner.h"
@@ -251,7 +250,7 @@ bool WebRequest::RequestFilter::MatchesURL(
 
 bool WebRequest::RequestFilter::MatchesType(
     extensions::WebRequestResourceType type) const {
-  return types_.empty() || base::Contains(types_, type);
+  return types_.empty() || types_.contains(type);
 }
 
 bool WebRequest::RequestFilter::MatchesRequest(

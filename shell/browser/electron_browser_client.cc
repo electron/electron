@@ -379,7 +379,7 @@ content::SiteInstance* ElectronBrowserClient::GetSiteInstanceFromAffinity(
 
 bool ElectronBrowserClient::IsRendererSubFrame(
     content::ChildProcessId process_id) const {
-  return base::Contains(renderer_is_subframe_, process_id);
+  return renderer_is_subframe_.contains(process_id);
 }
 
 void ElectronBrowserClient::RenderProcessWillLaunch(
