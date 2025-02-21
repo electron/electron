@@ -50,10 +50,10 @@ index 4bf80aa6cc6385dc376fd0a3538efc27fe5bd0a2..3e37aa8b0c9696cceb3f3cfab9721f38
    BuiltinCodeCacheData cached_data{};
    {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 6456d87d4202c013aafe071adbac06852b3ae2c1..28ba7dbe66a44a43c39e3d75edf0be9513bcf732 100644
+index 8951cd378a9025f58fada47cf96f686d14639f95..87a05a56284cdfdb2ad849c56e32cb2eda90df77 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -877,16 +877,15 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
+@@ -869,16 +869,15 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
    host_defined_options->Set(
        isolate, loader::HostDefinedOptions::kID, id_symbol);
  
@@ -79,7 +79,7 @@ index 6456d87d4202c013aafe071adbac06852b3ae2c1..28ba7dbe66a44a43c39e3d75edf0be95
                        host_defined_options);
    ScriptCompiler::Source source(code, origin, cached_data);
    ScriptCompiler::CompileOptions compile_options =
-@@ -998,7 +997,7 @@ MaybeLocal<Function> CompileFunction(Local<Context> context,
+@@ -990,7 +989,7 @@ MaybeLocal<Function> CompileFunction(Local<Context> context,
                                       Local<String> filename,
                                       Local<String> content,
                                       std::vector<Local<String>>* parameters) {
@@ -88,7 +88,7 @@ index 6456d87d4202c013aafe071adbac06852b3ae2c1..28ba7dbe66a44a43c39e3d75edf0be95
    ScriptCompiler::Source script_source(content, script_origin);
  
    return ScriptCompiler::CompileFunction(context,
-@@ -1108,7 +1107,6 @@ bool ContextifyScript::EvalMachine(Local<Context> context,
+@@ -1100,7 +1099,6 @@ bool ContextifyScript::EvalMachine(Local<Context> context,
    }
  
    TryCatchScope try_catch(env);
@@ -96,7 +96,7 @@ index 6456d87d4202c013aafe071adbac06852b3ae2c1..28ba7dbe66a44a43c39e3d75edf0be95
    ContextifyScript* wrapped_script;
    ASSIGN_OR_RETURN_UNWRAP(&wrapped_script, args.This(), false);
    Local<UnboundScript> unbound_script =
-@@ -1286,8 +1284,7 @@ void ContextifyContext::CompileFunction(
+@@ -1278,8 +1276,7 @@ void ContextifyContext::CompileFunction(
    Local<PrimitiveArray> host_defined_options =
        GetHostDefinedOptions(isolate, id_symbol);
    ScriptCompiler::Source source =
@@ -106,7 +106,7 @@ index 6456d87d4202c013aafe071adbac06852b3ae2c1..28ba7dbe66a44a43c39e3d75edf0be95
                                  filename,
                                  line_offset,
                                  column_offset,
-@@ -1342,15 +1339,13 @@ void ContextifyContext::CompileFunction(
+@@ -1334,15 +1331,13 @@ void ContextifyContext::CompileFunction(
  }
  
  ScriptCompiler::Source ContextifyContext::GetCommonJSSourceInstance(
@@ -123,7 +123,7 @@ index 6456d87d4202c013aafe071adbac06852b3ae2c1..28ba7dbe66a44a43c39e3d75edf0be95
                        line_offset,     // line offset
                        column_offset,   // column offset
                        true,            // is cross origin
-@@ -1528,7 +1523,7 @@ void ContextifyContext::ContainsModuleSyntax(
+@@ -1520,7 +1515,7 @@ void ContextifyContext::ContainsModuleSyntax(
    Local<PrimitiveArray> host_defined_options =
        GetHostDefinedOptions(isolate, id_symbol);
    ScriptCompiler::Source source = GetCommonJSSourceInstance(
@@ -132,7 +132,7 @@ index 6456d87d4202c013aafe071adbac06852b3ae2c1..28ba7dbe66a44a43c39e3d75edf0be95
    ScriptCompiler::CompileOptions options = GetCompileOptions(source);
  
    std::vector<Local<String>> params = GetCJSParameters(env->isolate_data());
-@@ -1576,7 +1571,7 @@ void ContextifyContext::ContainsModuleSyntax(
+@@ -1568,7 +1563,7 @@ void ContextifyContext::ContainsModuleSyntax(
                code,
                String::NewFromUtf8(isolate, "})();").ToLocalChecked());
            ScriptCompiler::Source wrapped_source = GetCommonJSSourceInstance(
@@ -141,7 +141,7 @@ index 6456d87d4202c013aafe071adbac06852b3ae2c1..28ba7dbe66a44a43c39e3d75edf0be95
            std::ignore = ScriptCompiler::CompileFunction(
                context,
                &wrapped_source,
-@@ -1629,8 +1624,7 @@ static void CompileFunctionForCJSLoader(
+@@ -1621,8 +1616,7 @@ static void CompileFunctionForCJSLoader(
  
    Local<Symbol> symbol = env->vm_dynamic_import_default_internal();
    Local<PrimitiveArray> hdo = GetHostDefinedOptions(isolate, symbol);
