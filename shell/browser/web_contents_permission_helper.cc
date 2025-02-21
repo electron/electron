@@ -101,16 +101,20 @@ void HandleUserMediaRequest(const content::MediaStreamRequest& request,
             : "");
   }
 
-  if (request.video_type == MediaStreamType::GUM_TAB_VIDEO_CAPTURE ||
-      request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
+  if (request.video_type == MediaStreamType::GUM_TAB_VIDEO_CAPTURE) {
+    devices_ref.video_device =
+        blink::MediaStreamDevice(request.video_type, "", "");
+  } else if (request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
+    // If the DesktopMediaID can't be successfully parsed, throw an
+    // Invalid state error to match upstream.
+    auto dm_id = GetScreenId(request.requested_video_device_ids);
+    if (dm_id.is_null()) {
+      std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                              MediaStreamRequestResult::INVALID_STATE, nullptr);
+      return;
+    }
     devices_ref.video_device = blink::MediaStreamDevice(
-        request.video_type,
-        request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE
-            ? GetScreenId(request.requested_video_device_ids).ToString()
-            : "",
-        request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE
-            ? "Screen"
-            : "");
+        request.video_type, dm_id.ToString(), "Screen");
   }
 
   bool empty = !devices_ref.audio_device.has_value() &&
