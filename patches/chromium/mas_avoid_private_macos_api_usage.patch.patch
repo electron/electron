@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 1be4016feadee70878a0ad7b34ca112d1ced16ad..90873381d52e39d0fa8415873bbfef4e231f48d5 100644
+index bd024dbc6fdbdf7116453f7d36a9f0795713ebb6..fad6b58f6c44c9bafce89a132bf0f86f8fa291a8 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1030,6 +1030,7 @@ component("base") {
+@@ -1031,6 +1031,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -474,10 +474,10 @@ index 36c522793dc37f7c72f7cccde50895927b5560cb..689351b5a6e6e6013b808c1b4924b884
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 6e7ea90385f34b233a0c7beb6647f539ad976169..51fd7f87f0d8b07b1b7f531ff0033976d9327e53 100644
+index b1cb8132b0e8d7bb18848d49634ecaaa939eefd4..610ed4c922705697b27af569af55064daeff5d25 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -370,6 +370,7 @@ viz_component("service") {
+@@ -371,6 +371,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -485,7 +485,7 @@ index 6e7ea90385f34b233a0c7beb6647f539ad976169..51fd7f87f0d8b07b1b7f531ff0033976
    }
  
    if (is_android || use_ozone) {
-@@ -670,6 +671,7 @@ viz_source_set("unit_tests") {
+@@ -671,6 +672,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -579,12 +579,12 @@ index 08186f30eaa97caf18ac2fe47655526e7733d9df..e4cd1f436ad1734f357429cb3ad6c854
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ec64dcec61d0b122ad70ecb8cae585d71e44c68b..56867459e8e06df6c77c25a5c80f083cda4e8c35 100644
+index 6da224ff8aef4d9ede9fdfb84086fb798613aedb..634e4e79b090b3c88f4f60f7323a40c001435c32 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -331,6 +331,7 @@ source_set("browser") {
-     "//ui/touch_selection",
+@@ -332,6 +332,7 @@ source_set("browser") {
      "//ui/webui/resources",
+     "//v8",
      "//v8:v8_version",
 +    "//electron/build/config:generate_mas_config",
    ]
@@ -792,10 +792,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 884bd394083f3e129c37a1d6701701a15d5e1a53..fa1d264761bc0bfc18d227a14a00c1762c24f6e9 100644
+index b2bf9da029a9376376e2e7aecafd8b1ce7f169ed..85413670b3caf7f7aff4b6f1bc22b0149ea9b612 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -656,6 +656,7 @@ static_library("test_support") {
+@@ -658,6 +658,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -803,7 +803,7 @@ index 884bd394083f3e129c37a1d6701701a15d5e1a53..fa1d264761bc0bfc18d227a14a00c176
    ]
  
    data_deps = [
-@@ -1109,6 +1110,7 @@ static_library("browsertest_support") {
+@@ -1111,6 +1112,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -811,7 +811,7 @@ index 884bd394083f3e129c37a1d6701701a15d5e1a53..fa1d264761bc0bfc18d227a14a00c176
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1943,6 +1945,7 @@ test("content_browsertests") {
+@@ -1945,6 +1947,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -819,7 +819,7 @@ index 884bd394083f3e129c37a1d6701701a15d5e1a53..fa1d264761bc0bfc18d227a14a00c176
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3244,6 +3247,7 @@ test("content_unittests") {
+@@ -3246,6 +3249,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
