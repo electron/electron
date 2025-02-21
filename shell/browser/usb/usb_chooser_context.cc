@@ -4,11 +4,10 @@
 
 #include "shell/browser/usb/usb_chooser_context.h"
 
+#include <string_view>
 #include <utility>
 #include <vector>
 
-#include <string_view>
-#include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
@@ -158,7 +157,7 @@ UsbChooserContext::~UsbChooserContext() {
 void UsbChooserContext::RevokeDevicePermissionWebInitiated(
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device) {
-  DCHECK(base::Contains(devices_, device.guid));
+  DCHECK(devices_.contains(device.guid));
   RevokeObjectPermissionInternal(origin, DeviceInfoToValue(device),
                                  /*revoked_by_website=*/true);
 }
@@ -217,8 +216,7 @@ bool UsbChooserContext::HasDevicePermission(
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device_info) {
   auto it = ephemeral_devices_.find(origin);
-  if (it != ephemeral_devices_.end() &&
-      base::Contains(it->second, device_info.guid)) {
+  if (it != ephemeral_devices_.end() && it->second.contains(device_info.guid)) {
     return true;
   }
 
@@ -284,7 +282,7 @@ void UsbChooserContext::OnDeviceAdded(
     device::mojom::UsbDeviceInfoPtr device_info) {
   DCHECK(device_info);
   // Update the device list.
-  DCHECK(!base::Contains(devices_, device_info->guid));
+  DCHECK(!devices_.contains(device_info->guid));
   if (!ShouldExposeDevice(*device_info))
     return;
   devices_.insert(std::make_pair(device_info->guid, device_info->Clone()));
@@ -299,12 +297,12 @@ void UsbChooserContext::OnDeviceRemoved(
   DCHECK(device_info);
 
   if (!ShouldExposeDevice(*device_info)) {
-    DCHECK(!base::Contains(devices_, device_info->guid));
+    DCHECK(!devices_.contains(device_info->guid));
     return;
   }
 
   // Update the device list.
-  DCHECK(base::Contains(devices_, device_info->guid));
+  DCHECK(devices_.contains(device_info->guid));
   devices_.erase(device_info->guid);
 
   // Notify all device observers.

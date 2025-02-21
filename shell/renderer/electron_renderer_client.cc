@@ -236,7 +236,7 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
 
 node::Environment* ElectronRendererClient::GetEnvironment(
     content::RenderFrame* render_frame) const {
-  if (!base::Contains(injected_frames_, render_frame))
+  if (!injected_frames_.contains(render_frame))
     return nullptr;
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   auto context =

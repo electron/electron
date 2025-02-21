@@ -10,8 +10,6 @@
 
 #include "base/base_paths.h"
 #include "base/command_line.h"
-#include "base/containers/contains.h"
-#include "base/process/process_handle.h"
 #include "base/process/process_metrics.h"
 #include "content/public/renderer/render_frame.h"
 #include "shell/common/api/electron_bindings.h"
@@ -214,7 +212,7 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
 void ElectronSandboxedRendererClient::EmitProcessEvent(
     content::RenderFrame* render_frame,
     const char* event_name) {
-  if (!base::Contains(injected_frames_, render_frame))
+  if (!injected_frames_.contains(render_frame))
     return;
 
   blink::WebLocalFrame* frame = render_frame->GetWebFrame();
