@@ -83,7 +83,7 @@ AutofillDriver* AutofillDriverFactory::DriverForFrame(
                 driver.get());
     } else {
       driver_map_.erase(insertion_result.first);
-      DCHECK_EQ(driver_map_.count(render_frame_host), 0u);
+      DCHECK(!driver_map_.contains(render_frame_host));
       return nullptr;
     }
   }

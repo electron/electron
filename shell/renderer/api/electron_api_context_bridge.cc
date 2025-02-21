@@ -11,7 +11,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "base/feature_list.h"
 #include "base/json/json_writer.h"
 #include "base/trace_event/trace_event.h"
@@ -69,7 +68,7 @@ bool DeepFreeze(const v8::Local<v8::Object>& object,
                 const v8::Local<v8::Context>& context,
                 std::set<int> frozen = std::set<int>()) {
   int hash = object->GetIdentityHash();
-  if (base::Contains(frozen, hash))
+  if (frozen.contains(hash))
     return true;
   frozen.insert(hash);
 

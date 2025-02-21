@@ -6,7 +6,6 @@
 
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "extensions/common/command.h"
 #include "gin/dictionary.h"
 #include "gin/handle.h"
@@ -52,7 +51,7 @@ GlobalShortcut::~GlobalShortcut() {
 }
 
 void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
-  if (!base::Contains(accelerator_callback_map_, accelerator)) {
+  if (!accelerator_callback_map_.contains(accelerator)) {
     // This should never occur, because if it does,
     // ui::GlobalAcceleratorListener notifies us with wrong accelerator.
     NOTREACHED();
@@ -139,7 +138,7 @@ void GlobalShortcut::UnregisterSome(
 }
 
 bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
-  return base::Contains(accelerator_callback_map_, accelerator);
+  return accelerator_callback_map_.contains(accelerator);
 }
 
 void GlobalShortcut::UnregisterAll() {
