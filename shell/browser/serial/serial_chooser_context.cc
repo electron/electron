@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "base/base64.h"
-#include "base/containers/contains.h"
 #include "base/values.h"
 #include "content/public/browser/device_service.h"
 #include "content/public/browser/web_contents.h"
@@ -122,7 +121,7 @@ bool SerialChooserContext::HasPortPermission(
   auto it = ephemeral_ports_.find(origin);
   if (it != ephemeral_ports_.end()) {
     const std::set<base::UnguessableToken>& ports = it->second;
-    if (base::Contains(ports, port.token))
+    if (ports.contains(port.token))
       return true;
   }
 
@@ -240,7 +239,7 @@ base::WeakPtr<SerialChooserContext> SerialChooserContext::AsWeakPtr() {
 }
 
 void SerialChooserContext::OnPortAdded(device::mojom::SerialPortInfoPtr port) {
-  if (!base::Contains(port_info_, port->token))
+  if (!port_info_.contains(port->token))
     port_info_.insert({port->token, port->Clone()});
 
   for (auto& map_entry : ephemeral_ports_) {

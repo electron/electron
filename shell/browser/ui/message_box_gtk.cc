@@ -4,7 +4,6 @@
 
 #include "shell/browser/ui/message_box.h"
 
-#include "base/containers/contains.h"
 #include "base/containers/flat_map.h"
 #include "base/functional/bind.h"
 #include "base/memory/raw_ptr.h"
@@ -232,7 +231,7 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
-  if (settings.id && base::Contains(GetDialogsMap(), *settings.id))
+  if (settings.id && GetDialogsMap().contains(*settings.id))
     CloseMessageBox(*settings.id);
   (new GtkMessageBox(settings))->RunAsynchronous(std::move(callback));
 }

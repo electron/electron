@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "base/base64.h"
-#include "base/containers/contains.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
@@ -690,8 +689,7 @@ std::map<std::string, std::string> GetAddedFileSystemPaths(
 
 bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
                                const std::string& file_system_path) {
-  return base::Contains(GetAddedFileSystemPaths(web_contents),
-                        file_system_path);
+  return GetAddedFileSystemPaths(web_contents).contains(file_system_path);
 }
 
 content::RenderFrameHost* GetRenderFrameHost(
@@ -4241,7 +4239,7 @@ void WebContents::DevToolsIndexPath(
     OnDevToolsIndexingDone(request_id, file_system_path);
     return;
   }
-  if (devtools_indexing_jobs_.count(request_id) != 0)
+  if (devtools_indexing_jobs_.contains(request_id))
     return;
   std::vector<std::string> excluded_folders;
   std::optional<base::Value> parsed_excluded_folders =

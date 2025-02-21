@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/containers/contains.h"
 #include "content/common/url_schemes.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "gin/handle.h"
