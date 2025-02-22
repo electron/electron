@@ -11,6 +11,7 @@
 #include "base/containers/span.h"
 #include "gin/converter.h"
 #include "gin/wrappable.h"
+#include "shell/common/gin_adapters.h"
 
 namespace gin_helper {
 
