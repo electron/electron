@@ -728,17 +728,16 @@ void App::AllowCertificateError(
     bool is_main_frame_request,
     bool strict_enforcement,
     base::OnceCallback<void(content::CertificateRequestResultType)> callback) {
-  auto adapted_callback = base::AdaptCallbackForRepeating(std::move(callback));
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   bool prevent_default = Emit(
       "certificate-error", WebContents::FromOrCreate(isolate, web_contents),
       request_url, net::ErrorToString(cert_error), ssl_info.cert,
-      adapted_callback, is_main_frame_request);
+      std::move(callback), is_main_frame_request);
 
   // Deny the certificate by default.
   if (!prevent_default)
-    adapted_callback.Run(content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY);
+    std::move(callback).Run(content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY);
 }
 
 base::OnceClosure App::SelectClientCertificate(
