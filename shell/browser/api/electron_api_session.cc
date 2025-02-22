@@ -1523,7 +1523,7 @@ v8::Local<v8::Promise> Session::ClearCodeCaches(
   if (options.Get("urls", &url_list) && !url_list.empty()) {
     url_matcher = base::BindRepeating(
         [](const std::set<GURL>& url_list, const GURL& url) {
-          return base::Contains(url_list, url);
+          return url_list.contains(url);
         },
         url_list);
   }
