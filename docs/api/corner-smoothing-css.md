@@ -4,7 +4,7 @@
 
 The rounded corners of elements with [the `border-radius` CSS rule](https://developer.mozilla.org/en-US/docs/Web/CSS/border-radius) can be smoothed out using the `-electron-corner-smoothing` CSS rule. This smoothness is very similar to Apple's "continuous" rounded corners in SwiftUI and Figma's "corner smoothing" control on design elements.
 
-![There is a black rectangle on the left using simple rounded corners, and a blue rectangle on the right using smooth rounded corners. Inbetween those rectangles is a magnified view of the same corner from both rectangles overlapping to show the subtle difference in shape.](../images/corner-smoothing-summary.svg)
+![There is a black rectangle on the left using simple rounded corners, and a blue rectangle on the right using smooth rounded corners. In between those rectangles is a magnified view of the same corner from both rectangles overlapping to show the subtle difference in shape.](../images/corner-smoothing-summary.svg)
 
 Integrating with the operating system and its design language is important to many desktop applications. The shape of a rounded corner can be a subtle detail to many users. However, aligning closely to the system's design language that users are familiar with makes the application's design feel familiar too. Beyond matching the design language of macOS, designers may decide to use smoother round corners for many other reasons.
 
@@ -30,7 +30,7 @@ The following example shows the effect of corner smoothing at different percents
 | --- | --- | --- | --- |
 | ![A rectangle with round corners at 0% smoothness](../images/corner-smoothing-example-0.svg) | ![A rectangle with round corners at 30% smoothness](../images/corner-smoothing-example-30.svg) | ![A rectangle with round corners at 60% smoothness](../images/corner-smoothing-example-60.svg) | ![A rectangle with round corners at 100% smoothness](../images/corner-smoothing-example-100.svg) |
 
-### Matching the System UI
+### Matching the system UI
 
 Use the `system-ui` keyword to match the smoothness to the OS design language.
 
@@ -49,7 +49,7 @@ Use the `system-ui` keyword to match the smoothness to the OS design language.
 | Value: | `60%` | `0%` |
 | Example: | ![A rectangle with round corners whose smoothness matches macOS](../images/corner-smoothing-example-60.svg) | ![A rectangle with round corners whose smoothness matches Windows and Linux](../images/corner-smoothing-example-0.svg) |
 
-### Controlling Availibility
+### Controlling availibility
 
 This CSS rule can be disabled by setting [the `cornerSmoothingCSS` web preference](./structures/web-preferences.md) to `false`.
 
@@ -57,12 +57,14 @@ This CSS rule can be disabled by setting [the `cornerSmoothingCSS` web preferenc
 const myWindow = new BrowserWindow({
   // [...]
   webPreferences: {
-    cornerSmoothingCSS: false // Disables the `-electron-corner-smoothing` CSS rule
+    enableCornerSmoothingCSS: false // Disables the `-electron-corner-smoothing` CSS rule
   }
 })
 ```
 
-### Formal Reference
+The CSS rule will still parse, but will have no visual effect.
+
+### Formal reference
 
 * **Initial value**: `0%`
 * **Inherited**: No

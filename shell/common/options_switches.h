@@ -212,7 +212,8 @@ inline constexpr std::string_view kEnableDeprecatedPaste =
     "enableDeprecatedPaste";
 
 // Whether the -electron-corner-smoothing CSS rule is enabled.
-inline constexpr std::string_view kCornerSmothingCSS = "cornerSmoothingCSS";
+inline constexpr std::string_view kEnableCornerSmothingCSS =
+    "enableCornerSmoothingCSS";
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.
