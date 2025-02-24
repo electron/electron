@@ -898,7 +898,7 @@ copying data between CPU and GPU memory, with Chromium's hardware acceleration s
 Only a limited number of textures can exist at the same time, so it's important that you call `texture.release()` as soon as you're done with the texture.
 By managing the texture lifecycle by yourself, you can safely pass the `texture.textureInfo` to other processes through IPC.
 
-You can [read more here](../tutorial/offscreen-rendering.md), and read [this](https://github.com/electron/electron/blob/main/shell/browser/osr/README.md) to know how to handle the texture in native code.
+More details can be found in the [offscreen rendering tutorial](../tutorial/offscreen-rendering.md). To learn about how to handle the texture in native code, refer to [offscreen rendering's code documentation.](https://github.com/electron/electron/blob/main/shell/browser/osr/README.md).
 
 ```js
 const { BrowserWindow } = require('electron')
