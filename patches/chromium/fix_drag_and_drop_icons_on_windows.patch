@@ -65,14 +65,13 @@ index f23bf862d987d8d6ba59aef781c51034e9a3debe..f688214ef883994d09b7a428b8af9b7f
   protected:
    // Set/reset the image models for the icon with new colors.
 diff --git a/chrome/browser/ui/views/toolbar/toolbar_button.cc b/chrome/browser/ui/views/toolbar/toolbar_button.cc
-index 9dc31a69ab252c2f71061b01aad878930bb6e4d5..116ba2220f0148c9799948e170fe51e5c235008d 100644
+index 08c4a2164f25ca3b363c13558b04dc5c10855fb2..6d01c1077014bbc7d8bd6bf895825ce9be9a66ca 100644
 --- a/chrome/browser/ui/views/toolbar/toolbar_button.cc
 +++ b/chrome/browser/ui/views/toolbar/toolbar_button.cc
-@@ -124,6 +124,13 @@ ToolbarButton::ToolbarButton(PressedCallback callback,
- 
-   SetFocusBehavior(FocusBehavior::ACCESSIBLE_ONLY);
-   views::FocusRing::Get(this)->SetOutsetFocusRingDisabled(true);
-+
+@@ -128,6 +128,12 @@ ToolbarButton::ToolbarButton(PressedCallback callback,
+   if (model_) {
+     GetViewAccessibility().SetHasPopup(ax::mojom::HasPopup::kMenu);
+   }
 +#if BUILDFLAG(IS_WIN)
 +  // Paint image(s) to a layer so that the canvas is snapped to pixel
 +  // boundaries.
@@ -82,7 +81,7 @@ index 9dc31a69ab252c2f71061b01aad878930bb6e4d5..116ba2220f0148c9799948e170fe51e5
  }
  
  ToolbarButton::~ToolbarButton() = default;
-@@ -753,6 +760,24 @@ ToolbarButton::GetActionViewInterface() {
+@@ -724,6 +730,24 @@ ToolbarButton::GetActionViewInterface() {
    return std::make_unique<ToolbarButtonActionViewInterface>(this);
  }
  
@@ -108,24 +107,24 @@ index 9dc31a69ab252c2f71061b01aad878930bb6e4d5..116ba2220f0148c9799948e170fe51e5
      ToolbarButton* action_view)
      : views::LabelButtonActionViewInterface(action_view),
 diff --git a/chrome/browser/ui/views/toolbar/toolbar_button.h b/chrome/browser/ui/views/toolbar/toolbar_button.h
-index a6957be675eadd39707c0586ce79f7909cfbd675..4d9d985fe0a989555105b487a43669bbf025eb19 100644
+index 9d46beda5f6811e728dad5c5e2ddf04fe52b24f5..602e966ec72fd026e0ab3c454e9f15c08ddf11c2 100644
 --- a/chrome/browser/ui/views/toolbar/toolbar_button.h
 +++ b/chrome/browser/ui/views/toolbar/toolbar_button.h
-@@ -131,6 +131,9 @@ class ToolbarButton : public views::LabelButton,
-   void OnMouseExited(const ui::MouseEvent& event) override;
+@@ -132,6 +132,9 @@ class ToolbarButton : public views::LabelButton,
    void OnGestureEvent(ui::GestureEvent* event) override;
+   std::u16string GetTooltipText(const gfx::Point& p) const override;
    std::unique_ptr<views::ActionViewInterface> GetActionViewInterface() override;
 +  void AddLayerToRegion(ui::Layer* new_layer,
 +                        views::LayerRegion region) override;
 +  void RemoveLayerFromRegions(ui::Layer* old_layer) override;
  
-   // When IPH is showing we suppress the tooltip text. This means that we must
-   // provide an alternative accessible name, when this is the case. This is
+   // views::ContextMenuController:
+   void ShowContextMenuForViewImpl(
 diff --git a/ui/views/controls/button/label_button.cc b/ui/views/controls/button/label_button.cc
-index 10256f53f4f158150daa2fda406dceea9d171f07..74e63d3d0d35d3b72228f262b3557ed9b7ce5b95 100644
+index f17cd72dbe014adc51301ef6e07d9a6ca94c5d67..5b675ae814e09eca55f9eea6772acc8f9a6b0a1e 100644
 --- a/ui/views/controls/button/label_button.cc
 +++ b/ui/views/controls/button/label_button.cc
-@@ -79,13 +79,6 @@ LabelButton::LabelButton(
+@@ -78,13 +78,6 @@ LabelButton::LabelButton(
    SetTextInternal(text);
    SetLayoutManager(std::make_unique<DelegatingLayoutManager>(this));
    GetViewAccessibility().SetIsDefault(is_default_);
@@ -139,7 +138,7 @@ index 10256f53f4f158150daa2fda406dceea9d171f07..74e63d3d0d35d3b72228f262b3557ed9
  }
  
  LabelButton::~LabelButton() {
-@@ -540,10 +533,8 @@ void LabelButton::UpdateImage() {
+@@ -508,10 +501,8 @@ void LabelButton::UpdateImage() {
  
  void LabelButton::AddLayerToRegion(ui::Layer* new_layer,
                                     views::LayerRegion region) {
@@ -150,7 +149,7 @@ index 10256f53f4f158150daa2fda406dceea9d171f07..74e63d3d0d35d3b72228f262b3557ed9
    ink_drop_container()->SetVisible(true);
    ink_drop_container()->AddLayerToRegion(new_layer, region);
  }
-@@ -551,9 +542,7 @@ void LabelButton::AddLayerToRegion(ui::Layer* new_layer,
+@@ -519,9 +510,7 @@ void LabelButton::AddLayerToRegion(ui::Layer* new_layer,
  void LabelButton::RemoveLayerFromRegions(ui::Layer* old_layer) {
    ink_drop_container()->RemoveLayerFromRegions(old_layer);
    ink_drop_container()->SetVisible(false);
