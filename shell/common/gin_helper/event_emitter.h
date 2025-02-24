@@ -45,7 +45,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
         internal::Event::New(isolate);
     // It's possible that |this| will be deleted by EmitEvent, so save anything
     // we need from |this| before calling EmitEvent.
-    gin_helper::EmitEvent(isolate, GetWrapper(), name, event,
+    gin_helper::EmitEvent(isolate, wrapper, name, event,
                           std::forward<Args>(args)...);
     return event->GetDefaultPrevented();
   }
