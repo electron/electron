@@ -53,11 +53,12 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, args...);
   template <typename... Args>
   void EmitWithoutEvent(const std::string_view name, Args&&... args) {
-    v8::HandleScope handle_scope(isolate());
+    v8::Isolate* const isolate = this->isolate();
+    v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper = GetWrapper();
     if (wrapper.IsEmpty())
       return;
-    gin_helper::EmitEvent(isolate(), GetWrapper(), name,
+    gin_helper::EmitEvent(isolate, GetWrapper(), name,
                           std::forward<Args>(args)...);
   }
 
