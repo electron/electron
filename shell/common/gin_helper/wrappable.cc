@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_helper/wrappable.h"
 
+#include "base/notreached.h"
 #include "gin/public/isolate_holder.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "v8/include/v8-function.h"
@@ -31,10 +32,7 @@ v8::Local<v8::Object> WrappableBase::GetWrapper() const {
 
 v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(
     v8::Isolate* isolate) const {
-  if (!wrapper_.IsEmpty())
-    return {v8::Local<v8::Object>::New(isolate, wrapper_)};
-  else
-    return {};
+  NOTREACHED();
 }
 
 void WrappableBase::InitWithArgs(gin::Arguments* args) {
