@@ -36,15 +36,15 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, new Event(), args...);
   template <typename... Args>
   bool Emit(const std::string_view name, Args&&... args) {
-    v8::HandleScope handle_scope(isolate());
+    v8::Isolate* const isolate = this->isolate();
+    v8::HandleScope handle_scope{isolate};
     v8::Local<v8::Object> wrapper = GetWrapper();
     if (wrapper.IsEmpty())
       return false;
     gin::Handle<gin_helper::internal::Event> event =
-        internal::Event::New(isolate());
+        internal::Event::New(isolate);
     // It's possible that |this| will be deleted by EmitEvent, so save anything
     // we need from |this| before calling EmitEvent.
-    auto* isolate = this->isolate();
     gin_helper::EmitEvent(isolate, GetWrapper(), name, event,
                           std::forward<Args>(args)...);
     return event->GetDefaultPrevented();
