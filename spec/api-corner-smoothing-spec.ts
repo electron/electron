@@ -86,7 +86,7 @@ async function pageCaptureTestRecipe (
     height: 600,
     useContentSize: true,
     webPreferences: {
-      cornerSmoothingCSS: cornerSmoothingAvailable
+      enableCornerSmoothingCSS: cornerSmoothingAvailable
     }
   });
   await w.loadFile(pagePath);
