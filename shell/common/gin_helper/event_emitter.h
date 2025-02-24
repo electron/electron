@@ -31,12 +31,10 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
       return false;
-    gin::Handle<gin_helper::internal::Event> event =
-        internal::Event::New(isolate);
+    gin::Handle<internal::Event> event = internal::Event::New(isolate);
     // It's possible that |this| will be deleted by EmitEvent, so save anything
     // we need from |this| before calling EmitEvent.
-    gin_helper::EmitEvent(isolate, wrapper, name, event,
-                          std::forward<Args>(args)...);
+    EmitEvent(isolate, wrapper, name, event, std::forward<Args>(args)...);
     return event->GetDefaultPrevented();
   }
 
@@ -48,7 +46,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
       return;
-    gin_helper::EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
+    EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
   }
 
   // disable copy
