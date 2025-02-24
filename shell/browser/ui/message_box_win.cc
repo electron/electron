@@ -10,7 +10,6 @@
 
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "base/containers/flat_map.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
@@ -176,7 +175,7 @@ DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
     config.pszWindowTitle = base::as_wcstr(title);
   }
 
-  base::win::ScopedHICON hicon;
+  base::win::ScopedGDIObject<HICON> hicon;
   if (!icon.isNull()) {
     hicon = IconUtil::CreateHICONFromSkBitmap(*icon.bitmap());
     config.dwFlags |= TDF_USE_HICON_MAIN;
@@ -242,7 +241,7 @@ DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
   TaskDialogIndirect(&config, &id, nullptr, &verification_flag_checked);
 
   int button_id;
-  if (base::Contains(id_map, id))  // common button.
+  if (id_map.contains(id))  // common button.
     button_id = id_map[id];
   else if (id >= kIDStart)  // custom button.
     button_id = id - kIDStart;
@@ -289,7 +288,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   // kHwndReserve in the dialogs map for now.
   HWND* hwnd = nullptr;
   if (settings.id) {
-    if (base::Contains(GetDialogsMap(), *settings.id))
+    if (GetDialogsMap().contains(*settings.id))
       CloseMessageBox(*settings.id);
     auto it = GetDialogsMap().emplace(*settings.id,
                                       std::make_unique<HWND>(kHwndReserve));

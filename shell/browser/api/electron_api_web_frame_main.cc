@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/map_util.h"
 #include "base/feature_list.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
@@ -27,6 +28,7 @@
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -37,31 +39,34 @@
 
 namespace {
 
+using LifecycleState = content::RenderFrameHostImpl::LifecycleStateImpl;
+
+// RenderFrameCreated is called for speculative frames which may not be
+// used in certain cross-origin navigations. Invoking
+// RenderFrameHost::GetLifecycleState currently crashes when called for
+// speculative frames so we need to filter it out for now. Check
+// https://crbug.com/1183639 for details on when this can be removed.
+[[nodiscard]] LifecycleState GetLifecycleState(
+    const content::RenderFrameHost* rfh) {
+  const auto* rfh_impl = static_cast<const content::RenderFrameHostImpl*>(rfh);
+  return rfh_impl->lifecycle_state();
+}
+
 // RenderFrameHost (RFH) exists as a child of a FrameTreeNode. When a
 // cross-origin navigation occurs, the FrameTreeNode swaps RFHs. After
 // swapping, the old RFH will be marked for deletion and run any unload
 // listeners. If an IPC is sent during an unload/beforeunload listener,
 // it's possible that it arrives after the RFH swap and has been
 // detached from the FrameTreeNode.
-bool IsDetachedFrameHost(content::RenderFrameHost* rfh) {
+[[nodiscard]] bool IsDetachedFrameHost(const content::RenderFrameHost* rfh) {
   if (!rfh)
     return true;
-
-  // RenderFrameCreated is called for speculative frames which may not be
-  // used in certain cross-origin navigations. Invoking
-  // RenderFrameHost::GetLifecycleState currently crashes when called for
-  // speculative frames so we need to filter it out for now. Check
-  // https://crbug.com/1183639 for details on when this can be removed.
-  auto* rfh_impl = static_cast<content::RenderFrameHostImpl*>(rfh);
 
   // During cross-origin navigation, a RFH may be swapped out of its
   // FrameTreeNode with a new RFH. In these cases, it's marked for
   // deletion. As this pending deletion RFH won't be following future
-  // swaps, we need to indicate that its been pinned.
-  return (rfh_impl->lifecycle_state() !=
-              content::RenderFrameHostImpl::LifecycleStateImpl::kSpeculative &&
-          rfh->GetLifecycleState() ==
-              content::RenderFrameHost::LifecycleState::kPendingDeletion);
+  // swaps, we need to indicate that its been detached.
+  return GetLifecycleState(rfh) == LifecycleState::kRunningUnloadHandlers;
 }
 
 }  // namespace
@@ -117,21 +122,13 @@ FrameTokenMap& GetFrameTokenMap() {
 // static
 WebFrameMain* WebFrameMain::FromFrameTreeNodeId(
     content::FrameTreeNodeId frame_tree_node_id) {
-  // Pinned frames aren't tracked across navigations so only non-pinned
-  // frames will be retrieved.
-  FrameTreeNodeIdMap& frame_map = GetFrameTreeNodeIdMap();
-  auto iter = frame_map.find(frame_tree_node_id);
-  auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
-  return web_frame;
+  return base::FindPtrOrNull(GetFrameTreeNodeIdMap(), frame_tree_node_id);
 }
 
 // static
 WebFrameMain* WebFrameMain::FromFrameToken(
     content::GlobalRenderFrameHostToken frame_token) {
-  FrameTokenMap& frame_map = GetFrameTokenMap();
-  auto iter = frame_map.find(frame_token);
-  auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
-  return web_frame;
+  return base::FindPtrOrNull(GetFrameTokenMap(), frame_token);
 }
 
 // static
@@ -141,15 +138,29 @@ WebFrameMain* WebFrameMain::FromRenderFrameHost(content::RenderFrameHost* rfh) {
   return FromFrameToken(rfh->GetGlobalFrameToken());
 }
 
+content::RenderFrameHost* WebFrameMain::render_frame_host() const {
+  return render_frame_disposed_
+             ? nullptr
+             : content::RenderFrameHost::FromFrameToken(frame_token_);
+}
+
 gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
     : frame_tree_node_id_(rfh->GetFrameTreeNodeId()),
       frame_token_(rfh->GetGlobalFrameToken()),
-      render_frame_(rfh),
       render_frame_detached_(IsDetachedFrameHost(rfh)) {
-  GetFrameTreeNodeIdMap().emplace(frame_tree_node_id_, this);
+  // Detached RFH should not insert itself in FTN lookup since it has been
+  // swapped already.
+  if (!render_frame_detached_)
+    GetFrameTreeNodeIdMap().emplace(frame_tree_node_id_, this);
+
+  DCHECK(!GetFrameTokenMap().contains(frame_token_));
   GetFrameTokenMap().emplace(frame_token_, this);
+
+  // WebFrameMain should only be created for active or unloading frames.
+  DCHECK(GetLifecycleState(rfh) == LifecycleState::kActive ||
+         GetLifecycleState(rfh) == LifecycleState::kRunningUnloadHandlers);
 }
 
 WebFrameMain::~WebFrameMain() {
@@ -157,14 +168,19 @@ WebFrameMain::~WebFrameMain() {
 }
 
 void WebFrameMain::Destroyed() {
-  MarkRenderFrameDisposed();
-  GetFrameTreeNodeIdMap().erase(frame_tree_node_id_);
+  if (FromFrameTreeNodeId(frame_tree_node_id_) == this) {
+    // WebFrameMain initialized as detached doesn't support FTN lookup and
+    // shouldn't erase the entry.
+    DCHECK(!render_frame_detached_ || render_frame_disposed_);
+    GetFrameTreeNodeIdMap().erase(frame_tree_node_id_);
+  }
+
   GetFrameTokenMap().erase(frame_token_);
+  MarkRenderFrameDisposed();
   Unpin();
 }
 
 void WebFrameMain::MarkRenderFrameDisposed() {
-  render_frame_ = nullptr;
   render_frame_detached_ = true;
   render_frame_disposed_ = true;
   TeardownMojoConnection();
@@ -173,11 +189,14 @@ void WebFrameMain::MarkRenderFrameDisposed() {
 // Should only be called when swapping frames.
 void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   GetFrameTokenMap().erase(frame_token_);
+
+  // Ensure that RFH being swapped in doesn't already exist as its own
+  // WebFrameMain instance.
   frame_token_ = rfh->GetGlobalFrameToken();
+  DCHECK(!GetFrameTokenMap().contains(frame_token_));
   GetFrameTokenMap().emplace(frame_token_, this);
 
   render_frame_disposed_ = false;
-  render_frame_ = rfh;
   TeardownMojoConnection();
   MaybeSetupMojoConnection();
 }
@@ -218,7 +237,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
     return handle;
   }
 
-  static_cast<content::RenderFrameHostImpl*>(render_frame_)
+  static_cast<content::RenderFrameHostImpl*>(render_frame_host())
       ->ExecuteJavaScriptForTests(
           code, user_gesture, true /* resolve_promises */,
           /*honor_js_content_settings=*/true, content::ISOLATED_WORLD_ID_GLOBAL,
@@ -243,7 +262,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
 bool WebFrameMain::Reload() {
   if (!CheckRenderFrame())
     return false;
-  return render_frame_->Reload();
+  return render_frame_host()->Reload();
 }
 
 bool WebFrameMain::IsDestroyed() const {
@@ -287,13 +306,12 @@ void WebFrameMain::MaybeSetupMojoConnection() {
         &WebFrameMain::OnRendererConnectionError, weak_factory_.GetWeakPtr()));
   }
 
-  DCHECK(render_frame_);
+  content::RenderFrameHost* rfh = render_frame_host();
+  DCHECK(rfh);
 
   // Wait for RenderFrame to be created in renderer before accessing remote.
-  if (pending_receiver_ && render_frame_ &&
-      render_frame_->IsRenderFrameLive()) {
-    render_frame_->GetRemoteInterfaces()->GetInterface(
-        std::move(pending_receiver_));
+  if (pending_receiver_ && rfh && rfh->IsRenderFrameLive()) {
+    rfh->GetRemoteInterfaces()->GetInterface(std::move(pending_receiver_));
   }
 }
 
@@ -304,6 +322,17 @@ void WebFrameMain::TeardownMojoConnection() {
 
 void WebFrameMain::OnRendererConnectionError() {
   TeardownMojoConnection();
+}
+
+[[nodiscard]] bool WebFrameMain::HasRenderFrame() const {
+  if (render_frame_disposed_)
+    return false;
+
+  // If RFH is a nullptr, this instance of WebFrameMain is dangling and wasn't
+  // properly deleted.
+  CHECK(render_frame_host());
+
+  return true;
 }
 
 void WebFrameMain::PostMessage(v8::Isolate* isolate,
@@ -350,57 +379,57 @@ content::FrameTreeNodeId WebFrameMain::FrameTreeNodeID() const {
 std::string WebFrameMain::Name() const {
   if (!CheckRenderFrame())
     return {};
-  return render_frame_->GetFrameName();
+  return render_frame_host()->GetFrameName();
 }
 
 base::ProcessId WebFrameMain::OSProcessID() const {
   if (!CheckRenderFrame())
     return -1;
   base::ProcessHandle process_handle =
-      render_frame_->GetProcess()->GetProcess().Handle();
+      render_frame_host()->GetProcess()->GetProcess().Handle();
   return base::GetProcId(process_handle);
 }
 
 int32_t WebFrameMain::ProcessID() const {
   if (!CheckRenderFrame())
     return -1;
-  return render_frame_->GetProcess()->GetID().GetUnsafeValue();
+  return render_frame_host()->GetProcess()->GetID().GetUnsafeValue();
 }
 
 int WebFrameMain::RoutingID() const {
   if (!CheckRenderFrame())
     return -1;
-  return render_frame_->GetRoutingID();
+  return render_frame_host()->GetRoutingID();
 }
 
 GURL WebFrameMain::URL() const {
   if (!CheckRenderFrame())
-    return GURL::EmptyGURL();
-  return render_frame_->GetLastCommittedURL();
+    return {};
+  return render_frame_host()->GetLastCommittedURL();
 }
 
 std::string WebFrameMain::Origin() const {
   if (!CheckRenderFrame())
     return {};
-  return render_frame_->GetLastCommittedOrigin().Serialize();
+  return render_frame_host()->GetLastCommittedOrigin().Serialize();
 }
 
 blink::mojom::PageVisibilityState WebFrameMain::VisibilityState() const {
   if (!CheckRenderFrame())
     return blink::mojom::PageVisibilityState::kHidden;
-  return render_frame_->GetVisibilityState();
+  return render_frame_host()->GetVisibilityState();
 }
 
 content::RenderFrameHost* WebFrameMain::Top() const {
   if (!CheckRenderFrame())
     return nullptr;
-  return render_frame_->GetMainFrame();
+  return render_frame_host()->GetMainFrame();
 }
 
 content::RenderFrameHost* WebFrameMain::Parent() const {
   if (!CheckRenderFrame())
     return nullptr;
-  return render_frame_->GetParent();
+  return render_frame_host()->GetParent();
 }
 
 std::vector<content::RenderFrameHost*> WebFrameMain::Frames() const {
@@ -408,9 +437,9 @@ std::vector<content::RenderFrameHost*> WebFrameMain::Frames() const {
   if (!CheckRenderFrame())
     return frame_hosts;
 
-  render_frame_->ForEachRenderFrameHost(
+  render_frame_host()->ForEachRenderFrameHost(
       [&frame_hosts, this](content::RenderFrameHost* rfh) {
-        if (rfh->GetParent() == render_frame_)
+        if (rfh && rfh->GetParent() == render_frame_host())
           frame_hosts.push_back(rfh);
       });
 
@@ -422,12 +451,19 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   if (!CheckRenderFrame())
     return frame_hosts;
 
-  render_frame_->ForEachRenderFrameHost(
+  render_frame_host()->ForEachRenderFrameHost(
       [&frame_hosts](content::RenderFrameHost* rfh) {
         frame_hosts.push_back(rfh);
       });
 
   return frame_hosts;
+}
+
+const char* WebFrameMain::LifecycleStateForTesting() const {
+  if (!HasRenderFrame())
+    return {};
+  return content::RenderFrameHostImpl::LifecycleStateImplToString(
+      GetLifecycleState(render_frame_host()));
 }
 
 v8::Local<v8::Promise> WebFrameMain::CollectDocumentJSCallStack(
@@ -449,7 +485,8 @@ v8::Local<v8::Promise> WebFrameMain::CollectDocumentJSCallStack(
   }
 
   content::RenderProcessHostImpl* rph_impl =
-      static_cast<content::RenderProcessHostImpl*>(render_frame_->GetProcess());
+      static_cast<content::RenderProcessHostImpl*>(
+          render_frame_host()->GetProcess());
 
   rph_impl->GetJavaScriptCallStackGeneratorInterface()
       ->CollectJavaScriptCallStack(
@@ -469,7 +506,8 @@ void WebFrameMain::CollectedJavaScriptCallStack(
     return;
   }
 
-  const blink::LocalFrameToken& frame_token = render_frame_->GetFrameToken();
+  const blink::LocalFrameToken& frame_token =
+      render_frame_host()->GetFrameToken();
   if (remote_frame_token == frame_token) {
     base::Value base_value(untrusted_javascript_call_stack);
     promise.Resolve(base_value);
@@ -500,7 +538,31 @@ gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
   if (!rfh)
     return {};
 
-  auto* web_frame = FromRenderFrameHost(rfh);
+  WebFrameMain* web_frame;
+  switch (GetLifecycleState(rfh)) {
+    case LifecycleState::kSpeculative:
+    case LifecycleState::kPendingCommit:
+      // RFH is in the process of being swapped. Need to lookup by FTN to avoid
+      // creating dangling WebFrameMain.
+      web_frame = FromFrameTreeNodeId(rfh->GetFrameTreeNodeId());
+      break;
+    case LifecycleState::kPrerendering:
+    case LifecycleState::kActive:
+    case LifecycleState::kInBackForwardCache:
+      // RFH is already assigned to the FrameTreeNode and can safely be looked
+      // up directly.
+      web_frame = FromRenderFrameHost(rfh);
+      break;
+    case LifecycleState::kRunningUnloadHandlers:
+      // Event/IPC emitted for a frame running unload handlers. Return the exact
+      // RFH so the security origin will be accurate.
+      web_frame = FromRenderFrameHost(rfh);
+      break;
+    case LifecycleState::kReadyToBeDeleted:
+      // RFH is gone
+      return {};
+  }
+
   if (web_frame)
     return gin::CreateHandle(isolate, web_frame);
 
@@ -536,6 +598,8 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("parent", &WebFrameMain::Parent)
       .SetProperty("frames", &WebFrameMain::Frames)
       .SetProperty("framesInSubtree", &WebFrameMain::FramesInSubtree)
+      .SetProperty("_lifecycleStateForTesting",
+                   &WebFrameMain::LifecycleStateForTesting)
       .Build();
 }
 

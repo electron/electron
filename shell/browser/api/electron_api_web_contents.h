@@ -57,10 +57,6 @@ class ScriptExecutor;
 }
 #endif
 
-#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-#include "components/spellcheck/common/spellcheck_common.h"
-#endif
-
 namespace blink {
 struct DeviceEmulationParams;
 // enum class PermissionType;
@@ -219,6 +215,10 @@ class WebContents final : public ExclusiveAccessContext,
   bool RemoveNavigationEntryAtIndex(int index);
   std::vector<content::NavigationEntry*> GetHistory() const;
   void ClearHistory();
+  void RestoreHistory(v8::Isolate* isolate,
+                      gin_helper::ErrorThrower thrower,
+                      int index,
+                      const std::vector<v8::Local<v8::Value>>& entries);
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
@@ -470,9 +470,6 @@ class WebContents final : public ExclusiveAccessContext,
   // mojom::ElectronWebContentsUtility
   void OnFirstNonEmptyLayout(content::RenderFrameHost* render_frame_host);
   void SetTemporaryZoomLevel(double level);
-  void DoGetZoomLevel(
-      electron::mojom::ElectronWebContentsUtility::DoGetZoomLevelCallback
-          callback);
 
   void SetImageAnimationPolicy(const std::string& new_policy);
 
@@ -612,6 +609,8 @@ class WebContents final : public ExclusiveAccessContext,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
   void LostPointerLock() override;
+  bool IsWaitingForPointerLockPrompt(
+      content::WebContents* web_contents) override;
   void OnRequestKeyboardLock(content::WebContents* web_contents,
                              bool esc_key_locked,
                              bool allowed);
@@ -803,14 +802,6 @@ class WebContents final : public ExclusiveAccessContext,
   void SetHtmlApiFullscreen(bool enter_fullscreen);
   // Update the html fullscreen flag in both browser and renderer.
   void UpdateHtmlApiFullscreen(bool fullscreen);
-
-#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  void OnGetPlatformSuggestionsComplete(
-      content::RenderFrameHost& render_frame_host,
-      const content::ContextMenuParams& params,
-      const spellcheck::PerLanguageSuggestions&
-          platform_per_language_suggestions);
-#endif
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;

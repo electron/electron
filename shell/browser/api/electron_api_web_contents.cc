@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "base/base64.h"
-#include "base/containers/contains.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
@@ -54,6 +53,7 @@
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
+#include "content/public/browser/navigation_entry_restore_context.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -191,14 +191,6 @@
 
 #if BUILDFLAG(ENABLE_PLUGINS)
 #include "content/public/browser/plugin_service.h"
-#endif
-
-#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-#include "chrome/browser/spellchecker/spellcheck_factory.h"
-#include "chrome/browser/spellchecker/spellcheck_service.h"
-#include "components/spellcheck/browser/spellcheck_platform.h"
-#include "components/spellcheck/common/spellcheck_common.h"
-#include "components/spellcheck/common/spellcheck_features.h"
 #endif
 
 #if !IS_MAS_BUILD()
@@ -363,14 +355,60 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
 
 template <>
 struct Converter<content::NavigationEntry*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     content::NavigationEntry** out) {
+    gin_helper::Dictionary dict;
+    if (!gin::ConvertFromV8(isolate, val, &dict))
+      return false;
+
+    std::string url_str;
+    std::string title;
+    std::string encoded_page_state;
+    GURL url;
+
+    if (!dict.Get("url", &url) || !dict.Get("title", &title))
+      return false;
+
+    auto entry = content::NavigationEntry::Create();
+    entry->SetURL(url);
+    entry->SetTitle(base::UTF8ToUTF16(title));
+
+    // Handle optional page state
+    if (dict.Get("pageState", &encoded_page_state)) {
+      std::string decoded_page_state;
+      if (base::Base64Decode(encoded_page_state, &decoded_page_state)) {
+        auto restore_context = content::NavigationEntryRestoreContext::Create();
+
+        auto page_state =
+            blink::PageState::CreateFromEncodedData(decoded_page_state);
+        if (!page_state.IsValid())
+          return false;
+
+        entry->SetPageState(std::move(page_state), restore_context.get());
+      }
+    }
+
+    *out = entry.release();
+    return true;
+  }
+
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    content::NavigationEntry* entry) {
     if (!entry) {
       return v8::Null(isolate);
     }
-    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
+    gin_helper::Dictionary dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("url", entry->GetURL().spec());
     dict.Set("title", entry->GetTitleForDisplay());
+
+    // Page state saves scroll position and values of any form fields
+    const blink::PageState& page_state = entry->GetPageState();
+    if (page_state.IsValid()) {
+      std::string encoded_data = base::Base64Encode(page_state.ToEncodedData());
+      dict.Set("pageState", encoded_data);
+    }
+
     return dict.GetHandle();
   }
 };
@@ -653,8 +691,7 @@ std::map<std::string, std::string> GetAddedFileSystemPaths(
 
 bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
                                const std::string& file_system_path) {
-  return base::Contains(GetAddedFileSystemPaths(web_contents),
-                        file_system_path);
+  return GetAddedFileSystemPaths(web_contents).contains(file_system_path);
 }
 
 content::RenderFrameHost* GetRenderFrameHost(
@@ -1474,43 +1511,10 @@ void WebContents::RendererResponsive(
 
 bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
                                     const content::ContextMenuParams& params) {
-#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (!params.misspelled_word.empty() && spellcheck::UseBrowserSpellChecker()) {
-    SpellcheckService* spellcheck_service =
-        SpellcheckServiceFactory::GetForContext(
-            render_frame_host.GetBrowserContext());
-    if (spellcheck_service) {
-      spellcheck_platform::GetPerLanguageSuggestions(
-          spellcheck_service->platform_spell_checker(), params.misspelled_word,
-          base::BindOnce(&WebContents::OnGetPlatformSuggestionsComplete,
-                         GetWeakPtr(), std::ref(render_frame_host), params));
-    }
-  } else {
-#endif
-    Emit("context-menu",
-         std::make_tuple(params, &render_frame_host,
-                         std::optional<std::vector<std::u16string>>{}));
-#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  }
-#endif
+  Emit("context-menu", std::make_pair(params, &render_frame_host));
 
   return true;
 }
-
-#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-void WebContents::OnGetPlatformSuggestionsComplete(
-    content::RenderFrameHost& render_frame_host,
-    const content::ContextMenuParams& params,
-    const spellcheck::PerLanguageSuggestions&
-        platform_per_language_suggestions) {
-  std::vector<std::u16string> combined_suggestions;
-  spellcheck::FillSuggestions(platform_per_language_suggestions,
-                              &combined_suggestions);
-  Emit("context-menu",
-       std::make_tuple(params, &render_frame_host,
-                       std::make_optional(combined_suggestions)));
-}
-#endif
 
 void WebContents::FindReply(content::WebContents* web_contents,
                             int request_id,
@@ -1559,6 +1563,12 @@ void WebContents::RequestPointerLock(content::WebContents* web_contents,
 void WebContents::LostPointerLock() {
   exclusive_access_manager_.pointer_lock_controller()
       ->ExitExclusiveAccessToPreviousState();
+}
+
+bool WebContents::IsWaitingForPointerLockPrompt(
+    content::WebContents* web_contents) {
+  return exclusive_access_manager_.pointer_lock_controller()
+      ->IsWaitingForPointerLockPrompt(web_contents);
 }
 
 void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,
@@ -1739,7 +1749,6 @@ void WebContents::RenderFrameDeleted(
   // - An <iframe> is removed from the DOM.
   // - Cross-origin navigation creates a new RFH in a separate process which
   //   is swapped by content::RenderFrameHostManager.
-  //
 
   // WebFrameMain::FromRenderFrameHost(rfh) will use the RFH's FrameTreeNode ID
   // to find an existing instance of WebFrameMain. During a cross-origin
@@ -1747,8 +1756,13 @@ void WebContents::RenderFrameDeleted(
   // this special case, we need to also ensure that WebFrameMain's internal RFH
   // matches before marking it as disposed.
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
-  if (web_frame && web_frame->render_frame_host() == render_frame_host)
-    web_frame->MarkRenderFrameDisposed();
+  if (web_frame) {
+    // Need to directly compare frame tokens as frames pending deletion can no
+    // longer be looked up using content::RenderFrameHost::FromFrameToken().
+    if (web_frame->frame_token_ == render_frame_host->GetGlobalFrameToken()) {
+      web_frame->MarkRenderFrameDisposed();
+    }
+  }
 }
 
 void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
@@ -2570,6 +2584,47 @@ std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
     history.push_back(controller.GetEntryAtIndex(i));
 
   return history;
+}
+
+void WebContents::RestoreHistory(
+    v8::Isolate* isolate,
+    gin_helper::ErrorThrower thrower,
+    int index,
+    const std::vector<v8::Local<v8::Value>>& entries) {
+  if (!web_contents()
+           ->GetController()
+           .GetLastCommittedEntry()
+           ->IsInitialEntry()) {
+    thrower.ThrowError(
+        "Cannot restore history on webContents that have previously loaded "
+        "a page.");
+    return;
+  }
+
+  auto navigation_entries = std::make_unique<
+      std::vector<std::unique_ptr<content::NavigationEntry>>>();
+
+  for (const auto& entry : entries) {
+    content::NavigationEntry* nav_entry = nullptr;
+    if (!gin::Converter<content::NavigationEntry*>::FromV8(isolate, entry,
+                                                           &nav_entry) ||
+        !nav_entry) {
+      // Invalid entry, bail out early
+      thrower.ThrowError(
+          "Failed to restore navigation history: Invalid navigation entry at "
+          "index " +
+          std::to_string(index) + ".");
+      return;
+    }
+    navigation_entries->push_back(
+        std::unique_ptr<content::NavigationEntry>(nav_entry));
+  }
+
+  if (!navigation_entries->empty()) {
+    web_contents()->GetController().Restore(
+        index, content::RestoreType::kRestored, navigation_entries.get());
+    web_contents()->GetController().LoadIfNecessary();
+  }
 }
 
 void WebContents::ClearHistory() {
@@ -3693,12 +3748,6 @@ void WebContents::SetTemporaryZoomLevel(double level) {
   zoom_controller_->SetTemporaryZoomLevel(level);
 }
 
-void WebContents::DoGetZoomLevel(
-    electron::mojom::ElectronWebContentsUtility::DoGetZoomLevelCallback
-        callback) {
-  std::move(callback).Run(GetZoomLevel());
-}
-
 std::optional<PreloadScript> WebContents::GetPreloadScript() const {
   if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
     if (auto preload = web_preferences->GetPreloadPath()) {
@@ -4157,7 +4206,7 @@ void WebContents::DevToolsIndexPath(
     OnDevToolsIndexingDone(request_id, file_system_path);
     return;
   }
-  if (devtools_indexing_jobs_.count(request_id) != 0)
+  if (devtools_indexing_jobs_.contains(request_id))
     return;
   std::vector<std::string> excluded_folders;
   std::optional<base::Value> parsed_excluded_folders =
@@ -4403,6 +4452,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::RemoveNavigationEntryAtIndex)
       .SetMethod("_getHistory", &WebContents::GetHistory)
       .SetMethod("_clearHistory", &WebContents::ClearHistory)
+      .SetMethod("_restoreHistory", &WebContents::RestoreHistory)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",
                  &WebContents::ForcefullyCrashRenderer)

@@ -7,7 +7,6 @@
 #include <string>
 #include <utility>
 
-#include "base/containers/contains.h"
 #include "base/scoped_observation.h"
 #include "chrome/common/chrome_features.h"
 #include "content/public/browser/web_contents.h"
@@ -118,7 +117,7 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
 
   // Start observing HidChooserContext for permission and device events.
   GetContextObserver(browser_context);
-  DCHECK(base::Contains(observations_, browser_context));
+  DCHECK(observations_.contains(browser_context));
 
   HidChooserController* controller = ControllerForFrame(render_frame_host);
   if (controller) {
@@ -188,7 +187,7 @@ void ElectronHidDelegate::RemoveObserver(
     content::HidDelegate::Observer* observer) {
   if (!browser_context)
     return;
-  DCHECK(base::Contains(observations_, browser_context));
+  DCHECK(observations_.contains(browser_context));
   GetContextObserver(browser_context)->RemoveObserver(observer);
 }
 
@@ -222,7 +221,7 @@ bool ElectronHidDelegate::IsServiceWorkerAllowedForOrigin(
 ElectronHidDelegate::ContextObservation*
 ElectronHidDelegate::GetContextObserver(
     content::BrowserContext* browser_context) {
-  if (!base::Contains(observations_, browser_context)) {
+  if (!observations_.contains(browser_context)) {
     observations_.emplace(browser_context, std::make_unique<ContextObservation>(
                                                this, browser_context));
   }

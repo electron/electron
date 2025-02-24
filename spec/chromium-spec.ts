@@ -98,14 +98,13 @@ describe('window.postMessage', () => {
   });
 });
 
-// Tests disabled due to regression in Chromium upgrade
-// https://github.com/electron/electron/issues/45322
-ifdescribe(!(process.platform === 'win32' && process.arch === 'ia32'))('focus handling', () => {
+describe('focus handling', () => {
   let webviewContents: WebContents;
   let w: BrowserWindow;
 
   beforeEach(async () => {
     w = new BrowserWindow({
+      alwaysOnTop: true,
       show: true,
       webPreferences: {
         nodeIntegration: true,
@@ -655,7 +654,7 @@ describe('chromium features', () => {
       expect(size).to.be.a('number');
     });
 
-    it('should lock the keyboard', async () => {
+    ifit(process.platform !== 'darwin')('should lock the keyboard', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
 

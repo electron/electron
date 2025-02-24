@@ -163,7 +163,8 @@ v8::Local<v8::Value> ReadShortcutLink(gin_helper::ErrorThrower thrower,
   options.Set("icon", properties.icon);
   options.Set("iconIndex", properties.icon_index);
   options.Set("appUserModelId", properties.app_id);
-  options.Set("toastActivatorClsid", properties.toast_activator_clsid);
+  if (properties.options & ShortcutProperties::PROPERTIES_TOAST_ACTIVATOR_CLSID)
+    options.Set("toastActivatorClsid", properties.toast_activator_clsid);
   return gin::ConvertToV8(thrower.isolate(), options);
 }
 #endif

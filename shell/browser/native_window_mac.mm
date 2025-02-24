@@ -1596,8 +1596,11 @@ void NativeWindowMac::PreviewFile(const std::string& path,
 }
 
 void NativeWindowMac::CloseFilePreview() {
-  if ([QLPreviewPanel sharedPreviewPanelExists]) {
+  // Need to be careful about checking [QLPreviewPanel sharedPreviewPanel] as
+  // simply accessing it will cause it to reinitialize and reappear.
+  if ([QLPreviewPanel sharedPreviewPanelExists] && preview_item_) {
     [[QLPreviewPanel sharedPreviewPanel] close];
+    preview_item_ = nil;
   }
 }
 

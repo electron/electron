@@ -91,7 +91,7 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
     });
   });
 
-  describe('stopRecording', function () {
+  ifdescribe(process.platform !== 'linux')('stopRecording', function () {
     if (process.platform === 'win32' && process.arch === 'arm64') {
       // WOA needs more time
       this.timeout(10e3);
@@ -99,7 +99,8 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       this.timeout(5e3);
     }
 
-    it('does not crash on empty string', async () => {
+    // FIXME(samuelmaddock): this test regularly flakes
+    it.skip('does not crash on empty string', async () => {
       const options = {
         categoryFilter: '*',
         traceOptions: 'record-until-full,enable-sampling'

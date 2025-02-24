@@ -28,17 +28,17 @@ The patch should be removed in favor of either:
 Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 85044aec3ec4d3d03ff10b4c893a7ff257364d51..0c75e426cf32023ea35e6d5044abbfbec9845939 100644
+index 84b894ac879b5a0ada509da98294db75eebe7fd7..976b8ee4a6f9529727209a3e3a44524c62d0c798 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -10946,6 +10946,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
+@@ -10947,6 +10947,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
          "blob");
    }
  
-+  if (!IsInMainFrame() && !common_params().url.IsStandard()) {
++  if (!common_params().url.IsStandard() && !common_params().url.IsAboutBlank()) {
 +    return std::make_pair(url::Origin::Resolve(common_params().url,
-+                                               url::Origin()),
-+                          "url_non_standard");
++                                url::Origin()),
++          "url_non_standard");
 +  }
 +
    // In cases not covered above, URLLoaderFactory should be associated with the

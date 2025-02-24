@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 3 Feb 2025 21:44:36 +0900
+Subject: build: remove explicit linker call to libm on macOS
+
+/usr/lib/libm.tbd is available via libSystem.*.dylib and
+reexports sanitizer symbols. When building for asan
+this becomes an issue as the linker will resolve the symbols
+from the system library rather from libclang_rt.*
+
+For V8 that rely on specific version of these symbols
+that get bundled as part of clang, for ex:
+https://source.chromium.org/chromium/chromium/src/+/main:v8/src/heap/cppgc/platform.cc;l=93-97
+accepting nullptr for shadow_offset in `asan_get_shadow_mapping`,
+linking to system version that doesn't support this will lead to
+a crash.
+
+Clang driver eventually links with `-lSystem`
+https://github.com/llvm/llvm-project/blob/e82f93890daefeb38fe2a22ee3db87a89948ec57/clang/lib/Driver/ToolChains/Darwin.cpp#L1628-L1631,
+this is done after linking the sanitizer libraries which
+ensures right order of resolution for the symbols.
+
+PR-URL: https://github.com/nodejs/node/pull/56901
+Reviewed-By: Joyee Cheung <joyeec9h3@gmail.com>
+Reviewed-By: Chengzhong Wu <legendecas@gmail.com>
+Reviewed-By: Luigi Pinca <luigipinca@gmail.com>
+Reviewed-By: Shelley Vohr <shelley.vohr@gmail.com>
+
+diff --git a/deps/brotli/unofficial.gni b/deps/brotli/unofficial.gni
+index 5e07e106672a04508a77584c109c97a67926c858..91001fa43ea4807d061f296eaeccb7512e34863e 100644
+--- a/deps/brotli/unofficial.gni
++++ b/deps/brotli/unofficial.gni
+@@ -25,7 +25,7 @@ template("brotli_gn_build") {
+     } else if (target_os == "freebsd") {
+       defines = [ "OS_FREEBSD" ]
+     }
+-    if (!is_win) {
++    if (is_linux) {
+       libs = [ "m" ]
+     }
+     if (is_clang || !is_win) {
+diff --git a/deps/uv/unofficial.gni b/deps/uv/unofficial.gni
+index 348d2f0703e47ca7c5326a4b4c1d6ae31157eeb5..0944d6ddd241b113970ab6aa5804f9534fde882a 100644
+--- a/deps/uv/unofficial.gni
++++ b/deps/uv/unofficial.gni
+@@ -87,11 +87,11 @@ template("uv_gn_build") {
+       ]
+     }
+     if (is_posix) {
+-      libs = [ "m" ]
+       ldflags = [ "-pthread" ]
+     }
+     if (is_linux) {
+-      libs += [
++      libs = [
++        "m",
+         "dl",
+         "rt",
+       ]

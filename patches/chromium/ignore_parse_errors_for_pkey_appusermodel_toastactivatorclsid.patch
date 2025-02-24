@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?David=20L=C3=B6nnhager?= <dv.lnh.d@gmail.com>
+Date: Fri, 17 Jan 2025 14:30:48 +0100
+Subject: Ignore parse errors for PKEY_AppUserModel_ToastActivatorCLSID
+
+Some shortcuts store this as a string UUID as opposed to VT_CLSID,
+hitting NOTREACHED() and sometimes breaking parsing in Electron.
+Ignore this error instead.
+
+Bug: N/A
+Change-Id: I9fc472212b2d3afac2c8e18a2159bc2d50bbdf98
+
+diff --git a/AUTHORS b/AUTHORS
+index e96a3afdabc731afe355cda83eec4923ea780fec..0b1dc07aad197eab7b79344bc5aee702a2d580ab 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -340,6 +340,7 @@ David Futcher <david.mike.futcher@gmail.com>
+ David Jin <davidjin@amazon.com>
+ David Lechner <david@pybricks.com>
+ David Leen <davileen@amazon.com>
++David Lönnhager <dv.lnh.d@gmail.com>
+ David Manouchehri <david@davidmanouchehri.com>
+ David McAllister <mcdavid@amazon.com>
+ David Michael Barr <david.barr@samsung.com>
+diff --git a/base/win/shortcut.cc b/base/win/shortcut.cc
+index 967e130e823f41c402411dfadb53b805e8a8c92b..3a9df7f31861ca69168fd24513ee554d0984798d 100644
+--- a/base/win/shortcut.cc
++++ b/base/win/shortcut.cc
+@@ -356,8 +356,9 @@ bool ResolveShortcutProperties(const FilePath& shortcut_path,
+               *(pv_toast_activator_clsid.get().puuid));
+           break;
+         default:
+-          NOTREACHED() << "Unexpected variant type: "
+-                       << pv_toast_activator_clsid.get().vt;
++          // Shortcuts may use strings to represent the CLSID. This case is
++          // ignored.
++          break;
+       }
+     }
+   }

@@ -400,6 +400,23 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(ok).to.be.true(message);
   });
 
+  it('throws an error when calling legacy getUserMedia with invalid chromeMediaSourceId', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      new Promise((resolve, reject) => navigator.getUserMedia({
+         video: {
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: undefined,
+          },
+        },
+      }, x => resolve({ok: x instanceof MediaStream}), e => resolve({ ok: false, message: e.message })))
+    `);
+    expect(ok).to.be.false();
+    expect(message).to.equal('Invalid state');
+  });
+
   it('can remove a displayMediaRequestHandler', async () => {
     const ses = session.fromPartition('' + Math.random());
 

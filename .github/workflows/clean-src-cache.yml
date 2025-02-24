@@ -1,8 +1,12 @@
 name: Clean Source Cache
 
+description: |
+  This workflow cleans up the source cache on the cross-instance cache volume
+  to free up space. It runs daily at midnight and clears files older than 15 days.
+
 on:
   schedule:
-    - cron: "0 0 * * SUN"  # Run at midnight every Sunday
+    - cron: "0 0 * * *"
 
 jobs:
   clean-src-cache:
@@ -17,5 +21,5 @@ jobs:
       shell: bash
       run: |
         df -h /mnt/cross-instance-cache
-        find /mnt/cross-instance-cache -type f -mtime +30 -delete
+        find /mnt/cross-instance-cache -type f -mtime +15 -delete
         df -h /mnt/cross-instance-cache

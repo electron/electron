@@ -11,10 +11,10 @@ Without this patch, building with simdjson fails with
 This patch can be removed once this is fixed upstream in simdjson.
 
 diff --git a/deps/simdjson/simdjson.h b/deps/simdjson/simdjson.h
-index ddb6f2e4e0a6edd23d5e16db07bc4bb18974d4aa..533dfea4d5fd3c7f6f7fdf0ea525479b11634fd3 100644
+index f21cd9381eef59ec43502c796fcaddb1b96525f5..e691fd24aa24d225f8c00fa5638be07265bfeeab 100644
 --- a/deps/simdjson/simdjson.h
 +++ b/deps/simdjson/simdjson.h
-@@ -3650,12 +3650,17 @@ inline std::ostream& operator<<(std::ostream& out, simdjson_result<padded_string
+@@ -3654,12 +3654,17 @@ inline std::ostream& operator<<(std::ostream& out, simdjson_result<padded_string
  
  } // namespace simdjson
  
@@ -32,7 +32,7 @@ index ddb6f2e4e0a6edd23d5e16db07bc4bb18974d4aa..533dfea4d5fd3c7f6f7fdf0ea525479b
  namespace simdjson {
  namespace internal {
  
-@@ -4033,6 +4038,9 @@ inline simdjson_result<padded_string> padded_string::load(std::string_view filen
+@@ -4037,6 +4042,9 @@ inline simdjson_result<padded_string> padded_string::load(std::string_view filen
  
  } // namespace simdjson
  
@@ -42,7 +42,7 @@ index ddb6f2e4e0a6edd23d5e16db07bc4bb18974d4aa..533dfea4d5fd3c7f6f7fdf0ea525479b
  inline simdjson::padded_string operator "" _padded(const char *str, size_t len) {
    return simdjson::padded_string(str, len);
  }
-@@ -4041,6 +4049,8 @@ inline simdjson::padded_string operator "" _padded(const char8_t *str, size_t le
+@@ -4045,6 +4053,8 @@ inline simdjson::padded_string operator "" _padded(const char8_t *str, size_t le
    return simdjson::padded_string(reinterpret_cast<const char8_t *>(str), len);
  }
  #endif
@@ -51,7 +51,7 @@ index ddb6f2e4e0a6edd23d5e16db07bc4bb18974d4aa..533dfea4d5fd3c7f6f7fdf0ea525479b
  #endif // SIMDJSON_PADDED_STRING_INL_H
  /* end file simdjson/padded_string-inl.h */
  /* skipped duplicate #include "simdjson/padded_string_view.h" */
-@@ -118280,4 +118290,4 @@ namespace simdjson {
+@@ -118292,4 +118302,4 @@ namespace simdjson {
  /* end file simdjson/ondemand.h */
  
  #endif // SIMDJSON_H
