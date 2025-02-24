@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index bd024dbc6fdbdf7116453f7d36a9f0795713ebb6..fad6b58f6c44c9bafce89a132bf0f86f8fa291a8 100644
+index f16a24f070ff6e004473a794e3189e078126584c..54d6573cd704261e65fd0e4c3673d0e60b492101 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1031,6 +1031,7 @@ component("base") {
@@ -449,7 +449,7 @@ index 2b50e3c3750c9ac6dd84a514663062a5d754b43e..49ced9aa87d3bcb00cd3d76ac32d4eec
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 36c522793dc37f7c72f7cccde50895927b5560cb..689351b5a6e6e6013b808c1b4924b8848dcc0fa2 100644
+index bcd3ea598687c5a85cddc862cdb16eab2d8dbd5d..2ed210685453409a2aa330bf718694f70a3d862d 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -41,6 +41,7 @@
@@ -460,7 +460,7 @@ index 36c522793dc37f7c72f7cccde50895927b5560cb..689351b5a6e6e6013b808c1b4924b884
  #include "mojo/public/cpp/bindings/self_owned_receiver.h"
  #include "net/cert/x509_util_apple.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
-@@ -665,10 +666,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -676,10 +677,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -1898,10 +1898,10 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index c19f5affab933815b6848f4a8b17d3ae03cdb8b5..8436286778bf6f267de7c08887e4b44ff01fb434 100644
+index 0f9f25edf65eaee5191ac1f6b70bd43a25091578..e6cce5c607e437c8a9d0fe43eb472a125fdae0eb 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -718,6 +718,8 @@ component("views") {
+@@ -720,6 +720,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1910,7 +1910,7 @@ index c19f5affab933815b6848f4a8b17d3ae03cdb8b5..8436286778bf6f267de7c08887e4b44f
    }
  
    if (is_win) {
-@@ -1140,6 +1142,8 @@ source_set("test_support") {
+@@ -1142,6 +1144,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
