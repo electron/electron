@@ -42,7 +42,12 @@ class EventEmitter : public gin_helper::Wrappable<T> {
       return false;
     gin::Handle<gin_helper::internal::Event> event =
         internal::Event::New(isolate());
-    return EmitWithEvent(name, event, std::forward<Args>(args)...);
+    // It's possible that |this| will be deleted by EmitEvent, so save anything
+    // we need from |this| before calling EmitEvent.
+    auto* isolate = this->isolate();
+    gin_helper::EmitEvent(isolate, GetWrapper(), name, event,
+                          std::forward<Args>(args)...);
+    return event->GetDefaultPrevented();
   }
 
   // this.emit(name, args...);
@@ -62,20 +67,6 @@ class EventEmitter : public gin_helper::Wrappable<T> {
 
  protected:
   EventEmitter() = default;
-
- private:
-  // this.emit(name, event, args...);
-  template <typename... Args>
-  bool EmitWithEvent(const std::string_view name,
-                     gin::Handle<gin_helper::internal::Event> event,
-                     Args&&... args) {
-    // It's possible that |this| will be deleted by EmitEvent, so save anything
-    // we need from |this| before calling EmitEvent.
-    auto* isolate = this->isolate();
-    gin_helper::EmitEvent(isolate, GetWrapper(), name, event,
-                          std::forward<Args>(args)...);
-    return event->GetDefaultPrevented();
-  }
 };
 
 }  // namespace gin_helper
