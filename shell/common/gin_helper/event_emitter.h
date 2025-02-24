@@ -26,9 +26,9 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, new Event(), args...);
   template <typename... Args>
   bool Emit(const std::string_view name, Args&&... args) {
-    v8::Isolate* const isolate = Base::isolate();
+    v8::Isolate* const isolate = this->isolate();
     v8::HandleScope handle_scope{isolate};
-    v8::Local<v8::Object> wrapper = Base::GetWrapper();
+    v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
       return false;
     gin::Handle<gin_helper::internal::Event> event =
@@ -43,9 +43,9 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, args...);
   template <typename... Args>
   void EmitWithoutEvent(const std::string_view name, Args&&... args) {
-    v8::Isolate* const isolate = Base::isolate();
+    v8::Isolate* const isolate = this->isolate();
     v8::HandleScope handle_scope{isolate};
-    v8::Local<v8::Object> wrapper = Base::GetWrapper();
+    v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
       return;
     gin_helper::EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
@@ -57,9 +57,6 @@ class EventEmitter : public gin_helper::Wrappable<T> {
 
  protected:
   EventEmitter() = default;
-
- private:
-  using Base = gin_helper::Wrappable<T>;
 };
 
 }  // namespace gin_helper
