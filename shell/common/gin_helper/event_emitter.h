@@ -29,9 +29,6 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // https://isocpp.org/wiki/faq/templates#nondependent-name-lookup-members
   // v8::Isolate* isolate() const { return Base::isolate(); }
   v8::Local<v8::Object> GetWrapper() const { return Base::GetWrapper(); }
-  v8::MaybeLocal<v8::Object> GetWrapper(v8::Isolate* isolate) const {
-    return Base::GetWrapper(isolate);
-  }
 
   // this.emit(name, new Event(), args...);
   template <typename... Args>
