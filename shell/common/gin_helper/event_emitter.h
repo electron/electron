@@ -27,7 +27,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
 
   // Make the convenient methods visible:
   // https://isocpp.org/wiki/faq/templates#nondependent-name-lookup-members
-  v8::Isolate* isolate() const { return Base::isolate(); }
+  // v8::Isolate* isolate() const { return Base::isolate(); }
   v8::Local<v8::Object> GetWrapper() const { return Base::GetWrapper(); }
   v8::MaybeLocal<v8::Object> GetWrapper(v8::Isolate* isolate) const {
     return Base::GetWrapper(isolate);
@@ -36,7 +36,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, new Event(), args...);
   template <typename... Args>
   bool Emit(const std::string_view name, Args&&... args) {
-    v8::Isolate* const isolate = this->isolate();
+    v8::Isolate* const isolate = Base::isolate();
     v8::HandleScope handle_scope{isolate};
     v8::Local<v8::Object> wrapper = GetWrapper();
     if (wrapper.IsEmpty())
@@ -53,7 +53,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, args...);
   template <typename... Args>
   void EmitWithoutEvent(const std::string_view name, Args&&... args) {
-    v8::Isolate* const isolate = this->isolate();
+    v8::Isolate* const isolate = Base::isolate();
     v8::HandleScope handle_scope{isolate};
     v8::Local<v8::Object> wrapper = GetWrapper();
     if (wrapper.IsEmpty())
