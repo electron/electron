@@ -1534,6 +1534,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__locale_dir/support/bsd_like.h",
   "//third_party/libc++/src/include/__locale_dir/support/freebsd.h",
   "//third_party/libc++/src/include/__locale_dir/support/fuchsia.h",
+  "//third_party/libc++/src/include/__locale_dir/support/linux.h",
   "//third_party/libc++/src/include/__locale_dir/support/no_locale/characters.h",
   "//third_party/libc++/src/include/__locale_dir/support/no_locale/strtonum.h",
   "//third_party/libc++/src/include/__locale_dir/support/windows.h",
