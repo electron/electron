@@ -579,7 +579,7 @@ index 08186f30eaa97caf18ac2fe47655526e7733d9df..e4cd1f436ad1734f357429cb3ad6c854
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6da224ff8aef4d9ede9fdfb84086fb798613aedb..634e4e79b090b3c88f4f60f7323a40c001435c32 100644
+index 9a868b490b76e06bea11c8042989ef597448ee5e..5e5f3ba7c011fdb7aa6ac0f752c52ce19fb75675 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -332,6 +332,7 @@ source_set("browser") {
@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index b2bf9da029a9376376e2e7aecafd8b1ce7f169ed..85413670b3caf7f7aff4b6f1bc22b0149ea9b612 100644
+index 0418e7a1e0678b7a943281e7066677a6852960de..972fc355ea251de4758957c6c4b1e980591ec971 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -658,6 +658,7 @@ static_library("test_support") {
@@ -1431,10 +1431,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 6ac98727ed852dc0a801dfbb997b5c87719cf57c..837b92ae18307772e12869a0a62bfa3067061418 100644
+index cae611cd83ef3a32a0d4f7474f407c6299d2bfa1..69ce20735646f577386f175b0223b43035b4b20a 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -409,6 +409,7 @@ component("core") {
+@@ -414,6 +414,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
