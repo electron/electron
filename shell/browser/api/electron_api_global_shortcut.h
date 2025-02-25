@@ -37,7 +37,7 @@ class GlobalShortcut final
   GlobalShortcut& operator=(const GlobalShortcut&) = delete;
 
  protected:
-  explicit GlobalShortcut(v8::Isolate* isolate);
+  GlobalShortcut();
   ~GlobalShortcut() override;
 
  private:
