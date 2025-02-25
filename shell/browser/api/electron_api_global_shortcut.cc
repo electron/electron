@@ -44,7 +44,7 @@ namespace electron::api {
 
 gin::WrapperInfo GlobalShortcut::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-GlobalShortcut::GlobalShortcut(v8::Isolate* isolate) {}
+GlobalShortcut::GlobalShortcut() {}
 
 GlobalShortcut::~GlobalShortcut() {
   UnregisterAll();
@@ -153,7 +153,7 @@ void GlobalShortcut::UnregisterAll() {
 
 // static
 gin::Handle<GlobalShortcut> GlobalShortcut::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new GlobalShortcut(isolate));
+  return gin::CreateHandle(isolate, new GlobalShortcut());
 }
 
 // static
