@@ -14,3 +14,6 @@ merged_turboshaft_wasm_wasmgctypeanalyzer_fix_phi_input_for.patch
 merged_turboshaft_wasm_wasmgctypeanalyzer_fix_single-block_loops.patch
 merged_interpreter_fix_hole_elision_scope_for_switch_jump_tables.patch
 merged_reland_lower_the_maximum_js_parameter_count.patch
+cherry-pick-9209292e7898.patch
+cherry-pick-97e828af5cbc.patch
+cherry-pick-ca504d096c39.patch
