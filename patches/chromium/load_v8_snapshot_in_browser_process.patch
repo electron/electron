@@ -9,7 +9,7 @@ but due to the nature of electron, we need to load the v8 snapshot
 in the browser process.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index cefdfbba24ab6da7d12a94541c03b01a497e4036..68842f303c7ce77fedf8c7c0bc9824b52d0aac16 100644
+index 82e5123e35509d22493809a37e56be5e9bea4264..054f38d683280638c7ac618d2ff8f7aef1a0def0 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -292,11 +292,8 @@ void LoadV8SnapshotFile(const base::CommandLine& command_line) {

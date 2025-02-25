@@ -164,11 +164,11 @@ index cb0e7d5c5dc0154c6e88ad08ce097afdce4041f9..09b9cff76d9585297fe60f91970c610a
        base::BindOnce(&ChildProcessLauncherHelper::
                           FinishStartSandboxedProcessOnLauncherThread,
                       this));
-diff --git a/content/browser/service_process_host_impl.cc b/content/browser/service_process_host_impl.cc
-index bdd5bec301f5fcff2d3e3d7994ecbc4eae46da36..f6082bada22c5f4e70af60ea6f555b0f363919c5 100644
---- a/content/browser/service_process_host_impl.cc
-+++ b/content/browser/service_process_host_impl.cc
-@@ -205,6 +205,17 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
+diff --git a/content/browser/service_host/service_process_host_impl.cc b/content/browser/service_host/service_process_host_impl.cc
+index 96c9563aac5847e742de5d9c9236f78bcb6cfd9c..73c9d585579ad5bdc407687b8becd0b7f2d704af 100644
+--- a/content/browser/service_host/service_process_host_impl.cc
++++ b/content/browser/service_host/service_process_host_impl.cc
+@@ -66,6 +66,17 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
        options.allow_gpu_client.value()) {
      host->SetAllowGpuClient();
    }
@@ -186,11 +186,11 @@ index bdd5bec301f5fcff2d3e3d7994ecbc4eae46da36..f6082bada22c5f4e70af60ea6f555b0f
    host->Start();
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
-diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index b0be2d050c84a2e824f7fe5f458dc60d4a53cc9e..59319bf14d79c27ef48a37e7463dfb868e412e23 100644
---- a/content/browser/utility_process_host.cc
-+++ b/content/browser/utility_process_host.cc
-@@ -188,11 +188,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
+diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
+index 26966d77a2ca88ce62afa16fd0f33cd5815b8c95..b7dfacb25a09b105e982c013119271b8f137e7b9 100644
+--- a/content/browser/service_host/utility_process_host.cc
++++ b/content/browser/service_host/utility_process_host.cc
+@@ -189,11 +189,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
    return process_->GetData();
  }
  
@@ -206,7 +206,7 @@ index b0be2d050c84a2e824f7fe5f458dc60d4a53cc9e..59319bf14d79c27ef48a37e7463dfb86
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -239,6 +241,30 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+@@ -240,6 +242,30 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -237,7 +237,7 @@ index b0be2d050c84a2e824f7fe5f458dc60d4a53cc9e..59319bf14d79c27ef48a37e7463dfb86
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -449,9 +475,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -454,9 +480,26 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
@@ -265,10 +265,10 @@ index b0be2d050c84a2e824f7fe5f458dc60d4a53cc9e..59319bf14d79c27ef48a37e7463dfb86
  
  #if BUILDFLAG(IS_WIN)
      if (!preload_libraries_.empty()) {
-diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
-index 26de6bd23cb05ed3789727add5e246806aa56a08..66cbabae31236758eef35bab211d4874f8a5c699 100644
---- a/content/browser/utility_process_host.h
-+++ b/content/browser/utility_process_host.h
+diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
+index 066939fcbb7bc05e27a6bb4ed122750732629454..ab6b64737245a840a3e2b06d2ab501ef4aaed7a2 100644
+--- a/content/browser/service_host/utility_process_host.h
++++ b/content/browser/service_host/utility_process_host.h
 @@ -30,6 +30,10 @@
  #include "content/public/common/zygote/zygote_handle.h"
  #endif  // BUILDFLAG(USE_ZYGOTE)
@@ -346,10 +346,10 @@ index 26de6bd23cb05ed3789727add5e246806aa56a08..66cbabae31236758eef35bab211d4874
    // Indicates whether the process has been successfully launched yet, or if
    // launch failed.
    enum class LaunchState {
-diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index ab7c6eec5e852b9f6257db60e38c4943ddbda13b..0216c44fe97ee2409c10acb4e585eef5467945e5 100644
---- a/content/browser/utility_sandbox_delegate.cc
-+++ b/content/browser/utility_sandbox_delegate.cc
+diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
+index 824afc2cfd01a0321d1b01cd370243dafefa1d24..ab77c85595dd5bde9eb9fd21f4914e1f9dfd4433 100644
+--- a/content/browser/service_host/utility_sandbox_delegate.cc
++++ b/content/browser/service_host/utility_sandbox_delegate.cc
 @@ -38,17 +38,19 @@ UtilitySandboxedProcessLauncherDelegate::
      UtilitySandboxedProcessLauncherDelegate(
          sandbox::mojom::Sandbox sandbox_type,
@@ -405,10 +405,10 @@ index ab7c6eec5e852b9f6257db60e38c4943ddbda13b..0216c44fe97ee2409c10acb4e585eef5
  
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
-diff --git a/content/browser/utility_sandbox_delegate.h b/content/browser/utility_sandbox_delegate.h
-index f3167c642c1f594c29ef7aa2a92a246f1d045344..f1f1dc8082b6039bf119ce10e7e4ca0e941d4cbd 100644
---- a/content/browser/utility_sandbox_delegate.h
-+++ b/content/browser/utility_sandbox_delegate.h
+diff --git a/content/browser/service_host/utility_sandbox_delegate.h b/content/browser/service_host/utility_sandbox_delegate.h
+index cc122cb093ddd340b4e42436e461b27275f80456..ba113809f986dd125c5cdec99ca745c384c2ba83 100644
+--- a/content/browser/service_host/utility_sandbox_delegate.h
++++ b/content/browser/service_host/utility_sandbox_delegate.h
 @@ -34,7 +34,9 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
   public:
    UtilitySandboxedProcessLauncherDelegate(sandbox::mojom::Sandbox sandbox_type,
