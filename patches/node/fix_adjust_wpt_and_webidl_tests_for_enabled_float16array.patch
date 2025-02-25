@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 25 Feb 2025 11:07:25 +0000
+Subject: fix: adjust WPT and WebIDL tests for enabled Float16Array
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/6275531
+
+This commit updates the WPT and WebIDL tests to account for the fact that
+Float16Array is now enabled by default. This can be removed once
+Node.js upgrades to a version of V8 that has Float16Array enabled by
+default.
+
+diff --git a/test/common/globals.js b/test/common/globals.js
+index 2c1dac019ba2aa0a23c2434997e2007dd2eacde8..152d9afa8f8ef6b76fceb0ac4481d1df719b872b 100644
+--- a/test/common/globals.js
++++ b/test/common/globals.js
+@@ -35,6 +35,7 @@ const intrinsics = new Set([
+   'Int16Array',
+   'Uint32Array',
+   'Int32Array',
++  'Float16Array',
+   'Float32Array',
+   'Float64Array',
+   'Uint8ClampedArray',
+diff --git a/test/wpt/status/encoding.json b/test/wpt/status/encoding.json
+index f9378d7195a2a77eb89ae696ab26747fd8bf65b8..c258031e48556480d500a02925a8d9c29dfb2a18 100644
+--- a/test/wpt/status/encoding.json
++++ b/test/wpt/status/encoding.json
+@@ -70,12 +70,6 @@
+     "requires": ["full-icu"]
+   },
+   "encodeInto.any.js": {
+-    "fail": {
+-      "expected": [
+-        "Invalid encodeInto() destination: Float16Array, backed by: ArrayBuffer",
+-        "Invalid encodeInto() destination: Float16Array, backed by: SharedArrayBuffer"
+-      ]
+-    },
+     "requires": ["small-icu"]
+   },
+   "textdecoder-copy.any.js": {
