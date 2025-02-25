@@ -1,0 +1,161 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Fri, 21 Feb 2025 00:46:48 -0800
+Subject: fix: drag and drop icons on Windows
+
+This is a backport from Chromium of
+https://chromium-review.googlesource.com/c/chromium/src/+/6279834
+
+Change-Id: Ic642228f3a0a073b9b45fbec68de37be6cfd3934
+
+diff --git a/chrome/browser/ui/views/tabs/tab_close_button.cc b/chrome/browser/ui/views/tabs/tab_close_button.cc
+index 281d6c6fcccbf3bfc3396056e495ee8d19424f5a..ac335a68f3fd0e3931cb37c915de51e410734850 100644
+--- a/chrome/browser/ui/views/tabs/tab_close_button.cc
++++ b/chrome/browser/ui/views/tabs/tab_close_button.cc
+@@ -18,7 +18,6 @@
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/base/metadata/metadata_impl_macros.h"
+ #include "ui/base/pointer/touch_ui_controller.h"
+-#include "ui/compositor/layer.h"
+ #include "ui/gfx/canvas.h"
+ #include "ui/gfx/color_utils.h"
+ #include "ui/gfx/geometry/insets.h"
+@@ -63,8 +62,6 @@ TabCloseButton::TabCloseButton(PressedCallback pressed_callback,
+   views::InkDrop::Get(this)->GetInkDrop()->SetHoverHighlightFadeDuration(
+       base::TimeDelta());
+ 
+-  image_container_view()->DestroyLayer();
+-
+   // The ink drop highlight path is the same as the focus ring highlight path,
+   // but needs to be explicitly mirrored for RTL.
+   // TODO(http://crbug.com/1056490): Make ink drops in RTL work the same way as
+@@ -145,20 +142,6 @@ void TabCloseButton::OnGestureEvent(ui::GestureEvent* event) {
+   event->SetHandled();
+ }
+ 
+-void TabCloseButton::AddLayerToRegion(ui::Layer* new_layer,
+-                                      views::LayerRegion region) {
+-  image_container_view()->SetPaintToLayer();
+-  image_container_view()->layer()->SetFillsBoundsOpaquely(false);
+-  ink_drop_container()->SetVisible(true);
+-  ink_drop_container()->AddLayerToRegion(new_layer, region);
+-}
+-
+-void TabCloseButton::RemoveLayerFromRegions(ui::Layer* old_layer) {
+-  ink_drop_container()->RemoveLayerFromRegions(old_layer);
+-  ink_drop_container()->SetVisible(false);
+-  image_container_view()->DestroyLayer();
+-}
+-
+ gfx::Size TabCloseButton::CalculatePreferredSize(
+     const views::SizeBounds& available_size) const {
+   return kButtonSize;
+diff --git a/chrome/browser/ui/views/tabs/tab_close_button.h b/chrome/browser/ui/views/tabs/tab_close_button.h
+index f23bf862d987d8d6ba59aef781c51034e9a3debe..f688214ef883994d09b7a428b8af9b7f14c93af9 100644
+--- a/chrome/browser/ui/views/tabs/tab_close_button.h
++++ b/chrome/browser/ui/views/tabs/tab_close_button.h
+@@ -46,9 +46,6 @@ class TabCloseButton : public views::LabelButton,
+   void OnMouseReleased(const ui::MouseEvent& event) override;
+   void OnMouseMoved(const ui::MouseEvent& event) override;
+   void OnGestureEvent(ui::GestureEvent* event) override;
+-  void AddLayerToRegion(ui::Layer* new_layer,
+-                        views::LayerRegion region) override;
+-  void RemoveLayerFromRegions(ui::Layer* old_layer) override;
+ 
+  protected:
+   // Set/reset the image models for the icon with new colors.
+diff --git a/chrome/browser/ui/views/toolbar/toolbar_button.cc b/chrome/browser/ui/views/toolbar/toolbar_button.cc
+index 08c4a2164f25ca3b363c13558b04dc5c10855fb2..6d01c1077014bbc7d8bd6bf895825ce9be9a66ca 100644
+--- a/chrome/browser/ui/views/toolbar/toolbar_button.cc
++++ b/chrome/browser/ui/views/toolbar/toolbar_button.cc
+@@ -128,6 +128,12 @@ ToolbarButton::ToolbarButton(PressedCallback callback,
+   if (model_) {
+     GetViewAccessibility().SetHasPopup(ax::mojom::HasPopup::kMenu);
+   }
++#if BUILDFLAG(IS_WIN)
++  // Paint image(s) to a layer so that the canvas is snapped to pixel
++  // boundaries.
++  image_container_view()->SetPaintToLayer();
++  image_container_view()->layer()->SetFillsBoundsOpaquely(false);
++#endif
+ }
+ 
+ ToolbarButton::~ToolbarButton() = default;
+@@ -724,6 +730,24 @@ ToolbarButton::GetActionViewInterface() {
+   return std::make_unique<ToolbarButtonActionViewInterface>(this);
+ }
+ 
++void ToolbarButton::AddLayerToRegion(ui::Layer* new_layer,
++                                     views::LayerRegion region) {
++#if !BUILDFLAG(IS_WIN)
++  image_container_view()->SetPaintToLayer();
++  image_container_view()->layer()->SetFillsBoundsOpaquely(false);
++#endif
++  ink_drop_container()->SetVisible(true);
++  ink_drop_container()->AddLayerToRegion(new_layer, region);
++}
++
++void ToolbarButton::RemoveLayerFromRegions(ui::Layer* old_layer) {
++  ink_drop_container()->RemoveLayerFromRegions(old_layer);
++  ink_drop_container()->SetVisible(false);
++#if !BUILDFLAG(IS_WIN)
++  image_container_view()->DestroyLayer();
++#endif
++}
++
+ ToolbarButtonActionViewInterface::ToolbarButtonActionViewInterface(
+     ToolbarButton* action_view)
+     : views::LabelButtonActionViewInterface(action_view),
+diff --git a/chrome/browser/ui/views/toolbar/toolbar_button.h b/chrome/browser/ui/views/toolbar/toolbar_button.h
+index 9d46beda5f6811e728dad5c5e2ddf04fe52b24f5..602e966ec72fd026e0ab3c454e9f15c08ddf11c2 100644
+--- a/chrome/browser/ui/views/toolbar/toolbar_button.h
++++ b/chrome/browser/ui/views/toolbar/toolbar_button.h
+@@ -132,6 +132,9 @@ class ToolbarButton : public views::LabelButton,
+   void OnGestureEvent(ui::GestureEvent* event) override;
+   std::u16string GetTooltipText(const gfx::Point& p) const override;
+   std::unique_ptr<views::ActionViewInterface> GetActionViewInterface() override;
++  void AddLayerToRegion(ui::Layer* new_layer,
++                        views::LayerRegion region) override;
++  void RemoveLayerFromRegions(ui::Layer* old_layer) override;
+ 
+   // views::ContextMenuController:
+   void ShowContextMenuForViewImpl(
+diff --git a/ui/views/controls/button/label_button.cc b/ui/views/controls/button/label_button.cc
+index f17cd72dbe014adc51301ef6e07d9a6ca94c5d67..5b675ae814e09eca55f9eea6772acc8f9a6b0a1e 100644
+--- a/ui/views/controls/button/label_button.cc
++++ b/ui/views/controls/button/label_button.cc
+@@ -78,13 +78,6 @@ LabelButton::LabelButton(
+   SetTextInternal(text);
+   SetLayoutManager(std::make_unique<DelegatingLayoutManager>(this));
+   GetViewAccessibility().SetIsDefault(is_default_);
+-
+-#if BUILDFLAG(IS_WIN)
+-  // Paint image(s) to a layer so that the canvas is snapped to pixel
+-  // boundaries.
+-  image_container_view()->SetPaintToLayer();
+-  image_container_view()->layer()->SetFillsBoundsOpaquely(false);
+-#endif
+ }
+ 
+ LabelButton::~LabelButton() {
+@@ -508,10 +501,8 @@ void LabelButton::UpdateImage() {
+ 
+ void LabelButton::AddLayerToRegion(ui::Layer* new_layer,
+                                    views::LayerRegion region) {
+-#if !BUILDFLAG(IS_WIN)
+   image_container_view()->SetPaintToLayer();
+   image_container_view()->layer()->SetFillsBoundsOpaquely(false);
+-#endif
+   ink_drop_container()->SetVisible(true);
+   ink_drop_container()->AddLayerToRegion(new_layer, region);
+ }
+@@ -519,9 +510,7 @@ void LabelButton::AddLayerToRegion(ui::Layer* new_layer,
+ void LabelButton::RemoveLayerFromRegions(ui::Layer* old_layer) {
+   ink_drop_container()->RemoveLayerFromRegions(old_layer);
+   ink_drop_container()->SetVisible(false);
+-#if !BUILDFLAG(IS_WIN)
+   image_container_view()->DestroyLayer();
+-#endif
+ }
+ 
+ std::unique_ptr<ActionViewInterface> LabelButton::GetActionViewInterface() {
