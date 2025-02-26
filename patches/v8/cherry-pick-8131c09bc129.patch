@@ -1,0 +1,190 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Tue, 14 Jan 2025 08:51:44 +0100
+Subject: Merged: [maglev] Fix Phi untagging bug with CheckNumber(HoleyFloat64)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+So far, CheckNumber(untagged phi) was always removed, but for a
+holey float64, CheckNumber should fail on the hole nan.
+
+Bug: chromium:389330329
+(cherry picked from commit cc4c963c72b8da0c7c927680ef856cebdd87d60c)
+
+Change-Id: I4bc634789e2d8d7f364e36b69dceeeb2886c54b1
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6198231
+Reviewed-by: Olivier Flückiger <olivf@chromium.org>
+Commit-Queue: Olivier Flückiger <olivf@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.2@{#68}
+Cr-Branched-From: 24068c59cedad9ee976ddc05431f5f497b1ebd71-refs/heads/13.2.152@{#1}
+Cr-Branched-From: 6054ba94db0969220be4f94dc1677fc4696bdc4f-refs/heads/main@{#97085}
+
+diff --git a/src/compiler/turboshaft/maglev-graph-building-phase.cc b/src/compiler/turboshaft/maglev-graph-building-phase.cc
+index ac201ef2b17a9aeef14df98537e9abbde54055d7..806087bf2b6c38450c212a86296b93c731a3d125 100644
+--- a/src/compiler/turboshaft/maglev-graph-building-phase.cc
++++ b/src/compiler/turboshaft/maglev-graph-building-phase.cc
+@@ -2372,7 +2372,14 @@ class GraphBuilder {
+     __ DeoptimizeIf(RootEqual(node->object_input(), RootIndex::kTheHoleValue),
+                     frame_state, DeoptimizeReason::kHole,
+                     node->eager_deopt_info()->feedback_to_update());
+-    SetMap(node, Map(node->object_input()));
++    return maglev::ProcessResult::kContinue;
++  }
++  maglev::ProcessResult Process(maglev::CheckHoleyFloat64NotHole* node,
++                                const maglev::ProcessingState& state) {
++    GET_FRAME_STATE_MAYBE_ABORT(frame_state, node->eager_deopt_info());
++    __ DeoptimizeIf(__ Float64IsHole(Map(node->float64_input())), frame_state,
++                    DeoptimizeReason::kHole,
++                    node->eager_deopt_info()->feedback_to_update());
+     return maglev::ProcessResult::kContinue;
+   }
+ 
+diff --git a/src/maglev/maglev-ir.cc b/src/maglev/maglev-ir.cc
+index ab3d63c2e2e18332acf9b1a5fab2a6764124debe..1598458cc5902c91d6fae55f63365d25e01e1198 100644
+--- a/src/maglev/maglev-ir.cc
++++ b/src/maglev/maglev-ir.cc
+@@ -109,7 +109,7 @@ void NodeBase::CheckCanOverwriteWith(Opcode new_opcode,
+ #define CASE(op)                                                          \
+   case Opcode::k##op: {                                                   \
+     DCHECK_EQ(old_input_count, StaticInputCount(static_cast<op*>(this))); \
+-    DCHECK_EQ(sizeof(op), old_sizeof);                                    \
++    DCHECK_LE(sizeof(op), old_sizeof);                                    \
+     break;                                                                \
+   }
+     NODE_BASE_LIST(CASE)
+@@ -3387,6 +3387,19 @@ void CheckNotHole::GenerateCode(MaglevAssembler* masm,
+   __ EmitEagerDeoptIf(kEqual, DeoptimizeReason::kHole, this);
+ }
+ 
++void CheckHoleyFloat64NotHole::SetValueLocationConstraints() {
++  UseRegister(float64_input());
++  set_temporaries_needed(1);
++}
++void CheckHoleyFloat64NotHole::GenerateCode(MaglevAssembler* masm,
++                                            const ProcessingState& state) {
++  MaglevAssembler::TemporaryRegisterScope temps(masm);
++  Register scratch = temps.AcquireScratch();
++  __ JumpIfHoleNan(ToDoubleRegister(float64_input()), scratch,
++                   __ GetDeoptLabel(this, DeoptimizeReason::kHole),
++                   Label::kFar);
++}
++
+ void ConvertHoleToUndefined::SetValueLocationConstraints() {
+   UseRegister(object_input());
+   DefineSameAsFirst(this);
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index 1464025ef38bef809ce2a7429c7ddc8dcbd73798..a82d5c8ef1a20b1cdb4aaad939b0c1ffb58fe402 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -310,6 +310,7 @@ class ExceptionHandlerInfo;
+   V(CheckMapsWithMigration)                   \
+   V(CheckDetectableCallable)                  \
+   V(CheckNotHole)                             \
++  V(CheckHoleyFloat64NotHole)                 \
+   V(CheckNumber)                              \
+   V(CheckSmi)                                 \
+   V(CheckString)                              \
+@@ -9262,6 +9263,24 @@ class CheckNotHole : public FixedInputNodeT<1, CheckNotHole> {
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+ };
+ 
++class CheckHoleyFloat64NotHole
++    : public FixedInputNodeT<1, CheckHoleyFloat64NotHole> {
++  using Base = FixedInputNodeT<1, CheckHoleyFloat64NotHole>;
++
++ public:
++  explicit CheckHoleyFloat64NotHole(uint64_t bitfield) : Base(bitfield) {}
++
++  static constexpr OpProperties kProperties = OpProperties::EagerDeopt();
++  static constexpr
++      typename Base::InputTypes kInputTypes{ValueRepresentation::kHoleyFloat64};
++
++  Input& float64_input() { return input(0); }
++
++  void SetValueLocationConstraints();
++  void GenerateCode(MaglevAssembler*, const ProcessingState&);
++  void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
++};
++
+ class ConvertHoleToUndefined
+     : public FixedInputValueNodeT<1, ConvertHoleToUndefined> {
+   using Base = FixedInputValueNodeT<1, ConvertHoleToUndefined>;
+diff --git a/src/maglev/maglev-phi-representation-selector.cc b/src/maglev/maglev-phi-representation-selector.cc
+index b4d913dd45a488d70c92436bdbf173425c39d4c5..05054ab5cf06f356de929f74acef9c429d89fdea 100644
+--- a/src/maglev/maglev-phi-representation-selector.cc
++++ b/src/maglev/maglev-phi-representation-selector.cc
+@@ -772,13 +772,23 @@ ProcessResult MaglevPhiRepresentationSelector::UpdateNodePhiInput(
+ ProcessResult MaglevPhiRepresentationSelector::UpdateNodePhiInput(
+     CheckNumber* node, Phi* phi, int input_index,
+     const ProcessingState& state) {
+-  if (phi->value_representation() != ValueRepresentation::kTagged) {
+-    // The phi was untagged, so we know that it's a number. We thus remove this
+-    // CheckNumber from the graph.
+-    return ProcessResult::kRemove;
++  switch (phi->value_representation()) {
++    case ValueRepresentation::kInt32:
++    case ValueRepresentation::kFloat64:
++      // The phi was untagged to a Int32 or Float64, so we know that it's a
++      // number. We thus remove this CheckNumber from the graph.
++      return ProcessResult::kRemove;
++    case ValueRepresentation::kHoleyFloat64:
++      // We need to check that the phi is not the hole nan.
++      node->OverwriteWith<CheckHoleyFloat64NotHole>();
++      return ProcessResult::kContinue;
++    case ValueRepresentation::kTagged:
++      // {phi} wasn't untagged, so we don't need to do anything.
++      return ProcessResult::kContinue;
++    case ValueRepresentation::kUint32:
++    case ValueRepresentation::kIntPtr:
++      UNREACHABLE();
+   }
+-  return UpdateNodePhiInput(static_cast<NodeBase*>(node), phi, input_index,
+-                            state);
+ }
+ 
+ // If the input of a StoreTaggedFieldNoWriteBarrier was a Phi that got
+diff --git a/test/mjsunit/maglev/regress-389330329.js b/test/mjsunit/maglev/regress-389330329.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fb7500ffdc7800276a4e8257e31c0044017f0402
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-389330329.js
+@@ -0,0 +1,37 @@
++// Copyright 2025 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --no-maglev-loop-peeling
++// Flags: --maglev --no-always-turbofan
++
++let obj = { y: 19.5 };
++let arr = [, 2.5];
++function foo(limit) {
++  let val = arr[0];
++
++  for (let i = 0; i < limit; i += 1) {
++      i += val;
++      val = 40;
++  }
++
++  try { val.meh(); } catch (e) {}
++
++  obj.y = val;
++}
++
++%PrepareFunctionForOptimization(foo);
++foo(1);
++
++%OptimizeMaglevOnNextCall(foo);
++foo(0);
++// {foo} should have deopted right after being optimized.
++assertUnoptimized(foo);
++assertEquals(undefined, obj.y);
++
++
++%OptimizeMaglevOnNextCall(foo);
++foo(0);
++// {foo} should remain optimized now.
++assertOptimized(foo);
++assertEquals(undefined, obj.y);

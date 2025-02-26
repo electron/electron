@@ -1,0 +1,74 @@
+From 9209292e7898a05a98d271c3c597a09d66819292 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Wed, 08 Jan 2025 14:37:24 +0100
+Subject: [PATCH] Merged: [turbofan] Fix CallWithSpread bug when array prototype has changed
+
+Bug: chromium:385386138
+(cherry picked from commit 1be46f0e2e71159a74d8614f9ac108d334797729)
+
+Change-Id: I8b0c95c4072652e6b9ccab792b6685e0e0dcfbb9
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6172284
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.2@{#58}
+Cr-Branched-From: 24068c59cedad9ee976ddc05431f5f497b1ebd71-refs/heads/13.2.152@{#1}
+Cr-Branched-From: 6054ba94db0969220be4f94dc1677fc4696bdc4f-refs/heads/main@{#97085}
+---
+
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index a29bd4a..08fd278 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -5226,6 +5226,18 @@
+   DCHECK_EQ(static_cast<Node*>(arguments_list)->opcode(),
+             IrOpcode::kJSCreateEmptyLiteralArray);
+ 
++  // Check that arguments_list's prototype is still an array prototype.
++  TNode<Map> map = LoadMap(TNode<HeapObject>::UncheckedCast(arguments_list));
++  TNode<HeapObject> proto = TNode<HeapObject>::UncheckedCast(
++      LoadField(AccessBuilder::ForMapPrototype(), map));
++  TNode<HeapObject> initial_array_prototype =
++      HeapConstant(broker()
++                       ->target_native_context()
++                       .initial_array_prototype(broker())
++                       .object());
++  TNode<Boolean> check = ReferenceEqual(proto, initial_array_prototype);
++  CheckIf(check, DeoptimizeReason::kWrongMap, p.feedback());
++
+   // Turn the JSCallWithArrayLike or JSCallWithSpread roughly into:
+   //
+   //      "arguments_list array is still empty?"
+diff --git a/test/mjsunit/compiler/regress-385386138.js b/test/mjsunit/compiler/regress-385386138.js
+new file mode 100644
+index 0000000..72dadea
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-385386138.js
+@@ -0,0 +1,27 @@
++// Copyright 2024 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbofan --no-always-turbofan
++
++function foo() {
++  let val = [];
++  val.__proto__ = RegExp();
++  return Math.max(...val);
++}
++
++%PrepareFunctionForOptimization(foo);
++assertThrows(() => foo(), TypeError,
++             "Spread syntax requires ...iterable[Symbol.iterator] to be a function");
++
++%OptimizeFunctionOnNextCall(foo);
++assertThrows(() => foo(), TypeError,
++             "Spread syntax requires ...iterable[Symbol.iterator] to be a function");
++assertUnoptimized(foo);
++
++
++%OptimizeFunctionOnNextCall(foo);
++assertThrows(() => foo(), TypeError,
++             "Spread syntax requires ...iterable[Symbol.iterator] to be a function");
++// TF should not have speculatively optimized CallWithSpread.
++assertOptimized(foo);
