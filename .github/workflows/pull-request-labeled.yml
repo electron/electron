@@ -15,12 +15,12 @@ jobs:
       - name: Trigger Slack workflow
         uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
+          webhook: ${{ secrets.BACKPORT_REQUESTED_SLACK_WEBHOOK_URL }} 
+          webhook-type: webhook-trigger
           payload: |
             {
               "url": "${{ github.event.pull_request.html_url }}"
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.BACKPORT_REQUESTED_SLACK_WEBHOOK_URL }}
   pull-request-labeled-deprecation-review-complete:
     name: deprecation-review/complete label added
     if: github.event.label.name == 'deprecation-review/complete ✅'

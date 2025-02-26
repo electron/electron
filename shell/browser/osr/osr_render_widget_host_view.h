@@ -29,7 +29,6 @@
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/blink/public/mojom/widget/record_content_to_visible_time_request.mojom-forward.h"
-#include "third_party/blink/public/platform/web_vector.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
 #include "ui/compositor/compositor.h"
@@ -263,6 +262,7 @@ class OffScreenRenderWidgetHostView
   }
 
  private:
+  void ReleaseCompositor();
   void SetupFrameRate(bool force);
   void ResizeRootLayer(bool force);
 
@@ -315,7 +315,7 @@ class OffScreenRenderWidgetHostView
       delegated_frame_host_client_;
 
   // depends-on: delegated_frame_host_client_
-  const std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
+  std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
 
   std::unique_ptr<input::CursorManager> cursor_manager_;
 

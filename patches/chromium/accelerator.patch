@@ -10,7 +10,7 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 3. Ctrl-Shift-= and Ctrl-Plus show up as such
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 1f90103d1ddb04a24797cf1214c3d0c862d77e9f..67eec0d3526349448a56acf9724806aec06104df 100644
+index 5590f9d425229d87373c5b53651d2e2d17b779e4..407cbd7e7811e3053e35e26f24e3c049cdd59a46 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -12,6 +12,7 @@
@@ -48,20 +48,11 @@ index 1f90103d1ddb04a24797cf1214c3d0c862d77e9f..67eec0d3526349448a56acf9724806ae
      const std::u16string& shortcut) const {
    std::u16string result = shortcut;
  
--  if (IsShiftDown())
-+  if (!shifted_char && IsShiftDown())
+-  if (IsShiftDown()) {
++  if (!shifted_char && IsShiftDown()) {
      result = ApplyModifierToAcceleratorString(result, IDS_APP_SHIFT_KEY);
+   }
  
-   // Note that we use 'else-if' in order to avoid using Ctrl+Alt as a shortcut.
-@@ -325,7 +335,7 @@ std::u16string Accelerator::ApplyLongFormModifiers(
-   // more information.
-   if (IsCtrlDown())
-     result = ApplyModifierToAcceleratorString(result, IDS_APP_CTRL_KEY);
--  else if (IsAltDown())
-+  if (IsAltDown())
-     result = ApplyModifierToAcceleratorString(result, IDS_APP_ALT_KEY);
- 
-   if (IsCmdDown()) {
 diff --git a/ui/base/accelerators/accelerator.h b/ui/base/accelerators/accelerator.h
 index 198c7469f410d3516b8a18493c5e4588d02487c2..e4995824ae2f3bb8045a3841a6213a4b315845a8 100644
 --- a/ui/base/accelerators/accelerator.h

@@ -104,6 +104,7 @@ describe('focus handling', () => {
 
   beforeEach(async () => {
     w = new BrowserWindow({
+      alwaysOnTop: true,
       show: true,
       webPreferences: {
         nodeIntegration: true,
@@ -653,7 +654,7 @@ describe('chromium features', () => {
       expect(size).to.be.a('number');
     });
 
-    it('should lock the keyboard', async () => {
+    ifit(process.platform !== 'darwin')('should lock the keyboard', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
 
@@ -3321,6 +3322,153 @@ describe('navigator.clipboard.write', () => {
     });
     const clipboard = await writeClipboard();
     expect(clipboard).to.be.undefined();
+  });
+});
+
+describe('paste execCommand', () => {
+  const readClipboard: any = (w: BrowserWindow) => {
+    return w.webContents.executeJavaScript(`
+      new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          resolve('');
+        }, 2000);
+        document.addEventListener('paste', (event) => {
+          clearTimeout(timeout);
+          event.preventDefault();
+          let paste = event.clipboardData.getData("text");
+          resolve(paste);
+        });
+        document.execCommand('paste');
+      });
+    `, true);
+  };
+
+  let ses: Electron.Session;
+  beforeEach(() => {
+    ses = session.fromPartition(`paste-execCommand-${Math.random()}`);
+  });
+
+  afterEach(() => {
+    ses.setPermissionCheckHandler(null);
+    closeAllWindows();
+  });
+
+  it('is disabled by default', async () => {
+    const w: BrowserWindow = new BrowserWindow({});
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    const text = 'Sync Clipboard Disabled by default';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.be.empty();
+    expect(clipboard.readText()).to.equal(text);
+  });
+
+  it('does not execute with default permissions', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        enableDeprecatedPaste: true,
+        session: ses
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    const text = 'Sync Clipboard Disabled by default permissions';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.be.empty();
+    expect(clipboard.readText()).to.equal(text);
+  });
+
+  it('does not execute with permission denied', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        enableDeprecatedPaste: true,
+        session: ses
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    ses.setPermissionCheckHandler((webContents, permission) => {
+      if (permission === 'deprecated-sync-clipboard-read') {
+        return false;
+      }
+      return true;
+    });
+    const text = 'Sync Clipboard Disabled by permission denied';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.be.empty();
+    expect(clipboard.readText()).to.equal(text);
+  });
+
+  it('can trigger paste event when permission is granted', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        enableDeprecatedPaste: true,
+        session: ses
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    ses.setPermissionCheckHandler((webContents, permission) => {
+      if (permission === 'deprecated-sync-clipboard-read') {
+        return true;
+      }
+      return false;
+    });
+    const text = 'Sync Clipboard Test';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.equal(text);
+  });
+
+  it('can trigger paste event when permission is granted for child windows', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        session: ses
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    w.webContents.setWindowOpenHandler(details => {
+      if (details.url === 'about:blank') {
+        return {
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            webPreferences: {
+              enableDeprecatedPaste: true,
+              session: ses
+            }
+          }
+        };
+      } else {
+        return {
+          action: 'deny'
+        };
+      }
+    });
+    ses.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+      if (requestingOrigin === `${webContents?.opener?.origin}/` &&
+          details.requestingUrl === 'about:blank' &&
+          permission === 'deprecated-sync-clipboard-read') {
+        return true;
+      }
+      return false;
+    });
+    const childPromise = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
+    w.webContents.executeJavaScript('window.open("about:blank")', true);
+    const [childWindow] = await childPromise;
+    expect(childWindow.webContents.opener).to.equal(w.webContents.mainFrame);
+    const text = 'Sync Clipboard Test for Child Window';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(childWindow);
+    expect(paste).to.equal(text);
   });
 });
 

@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/uuid.h"
 #include "components/prefs/pref_service.h"
@@ -28,7 +27,7 @@
 #endif
 
 using extensions::Command;
-using extensions::GlobalShortcutListener;
+using ui::GlobalAcceleratorListener;
 
 namespace {
 
@@ -51,16 +50,16 @@ namespace electron::api {
 
 gin::WrapperInfo GlobalShortcut::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-GlobalShortcut::GlobalShortcut(v8::Isolate* isolate) {}
+GlobalShortcut::GlobalShortcut() {}
 
 GlobalShortcut::~GlobalShortcut() {
   UnregisterAll();
 }
 
 void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
-  if (!base::Contains(accelerator_callback_map_, accelerator)) {
-    // This should never occur, because if it does, GlobalShortcutListener
-    // notifies us with wrong accelerator.
+  if (!accelerator_callback_map_.contains(accelerator)) {
+    // This should never occur, because if it does,
+    // ui::GlobalAcceleratorListener notifies us with wrong accelerator.
     NOTREACHED();
   }
   accelerator_callback_map_[accelerator].Run();
@@ -68,8 +67,8 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 
 void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
                                     const std::string& command_id) {
-  if (!base::Contains(command_callback_map_, command_id)) {
-    // This should never occur, because if it does, GlobalShortcutListener
+  if (!command_callback_map_.contains(command_id)) {
+    // This should never occur, because if it does, GlobalAcceleratorListener
     // notifies us with wrong command.
     NOTREACHED();
   }
@@ -110,11 +109,11 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     if (RegisteringMediaKeyForUntrustedClient(accelerator))
       return false;
 
-    GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(false);
+    ui::GlobalAcceleratorListener::SetShouldUseInternalMediaKeyHandling(false);
   }
 #endif
 
-  auto* instance = GlobalShortcutListener::GetInstance();
+  auto* instance = ui::GlobalAcceleratorListener::GetInstance();
   if (!instance) {
     return false;
   }
@@ -126,7 +125,7 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     // Need a unique profile id. Set one if not generated yet, otherwise re-use
     // the same so that the session for the globalShortcuts is able to get
     // already registered shortcuts from the previous session. This will be used
-    // by GlobalShortcutListenerLinux as a session key.
+    // by GlobalAcceleratorListenerLinux as a session key.
     std::string profile_id = prefs->GetString(kElectronGlobalShortcutsUuid);
     if (profile_id.empty()) {
       profile_id = base::Uuid::GenerateRandomV4().AsLowercaseString();
@@ -177,13 +176,13 @@ void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
 
 #if BUILDFLAG(IS_MAC)
   if (accelerator.IsMediaKey() && !MapHasMediaKeys(accelerator_callback_map_)) {
-    GlobalShortcutListener::SetShouldUseInternalMediaKeyHandling(true);
+    ui::GlobalAcceleratorListener::SetShouldUseInternalMediaKeyHandling(true);
   }
 #endif
 
-  if (GlobalShortcutListener::GetInstance()) {
-    GlobalShortcutListener::GetInstance()->UnregisterAccelerator(accelerator,
-                                                                 this);
+  if (ui::GlobalAcceleratorListener::GetInstance()) {
+    ui::GlobalAcceleratorListener::GetInstance()->UnregisterAccelerator(
+        accelerator, this);
   }
 }
 
@@ -195,12 +194,12 @@ void GlobalShortcut::UnregisterSome(
 }
 
 bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
-  if (base::Contains(accelerator_callback_map_, accelerator)) {
+  if (accelerator_callback_map_.contains(accelerator)) {
     return true;
   }
   const std::string command_str =
       extensions::Command::AcceleratorToString(accelerator);
-  return base::Contains(command_callback_map_, command_str);
+  return command_callback_map_.contains(command_str);
 }
 
 void GlobalShortcut::UnregisterAll() {
@@ -210,14 +209,14 @@ void GlobalShortcut::UnregisterAll() {
     return;
   }
   accelerator_callback_map_.clear();
-  if (GlobalShortcutListener::GetInstance()) {
-    GlobalShortcutListener::GetInstance()->UnregisterAccelerators(this);
+  if (ui::GlobalAcceleratorListener::GetInstance()) {
+    ui::GlobalAcceleratorListener::GetInstance()->UnregisterAccelerators(this);
   }
 }
 
 // static
 gin::Handle<GlobalShortcut> GlobalShortcut::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new GlobalShortcut(isolate));
+  return gin::CreateHandle(isolate, new GlobalShortcut());
 }
 
 // static

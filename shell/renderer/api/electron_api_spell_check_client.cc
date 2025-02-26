@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/strings/utf_string_conversion_utils.h"
@@ -190,13 +189,13 @@ void SpellCheckClient::OnSpellCheckDone(
   auto& word_list = pending_request_param_->wordlist();
 
   for (const auto& word : word_list) {
-    if (base::Contains(misspelled, word.text)) {
+    if (misspelled.contains(word.text)) {
       // If this is a contraction, iterate through parts and accept the word
       // if none of them are misspelled
       if (!word.contraction_words.empty()) {
         auto all_correct = true;
         for (const auto& contraction_word : word.contraction_words) {
-          if (base::Contains(misspelled, contraction_word)) {
+          if (misspelled.contains(contraction_word)) {
             all_correct = false;
             break;
           }
@@ -217,8 +216,7 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
 
   auto context = isolate_->GetCurrentContext();
   gin_helper::MicrotasksScope microtasks_scope{
-      isolate_, context->GetMicrotaskQueue(), false,
-      v8::MicrotasksScope::kDoNotRunMicrotasks};
+      context, false, v8::MicrotasksScope::kDoNotRunMicrotasks};
 
   v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate_, base::BindRepeating(&SpellCheckClient::OnSpellCheckDone,

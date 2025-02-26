@@ -29,23 +29,23 @@ using dbusmenu_menuitem_new_func = DbusmenuMenuitem* (*)();
 using dbusmenu_menuitem_new_with_id_func = DbusmenuMenuitem* (*)(int id);
 
 using dbusmenu_menuitem_get_id_func = int (*)(DbusmenuMenuitem* item);
-using dbusmenu_menuitem_get_children_func = GList* (*)(DbusmenuMenuitem* item);
+using dbusmenu_menuitem_get_children_func = GList* (*)(DbusmenuMenuitem * item);
 using dbusmenu_menuitem_child_append_func =
-    DbusmenuMenuitem* (*)(DbusmenuMenuitem* parent, DbusmenuMenuitem* child);
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * parent, DbusmenuMenuitem* child);
 using dbusmenu_menuitem_property_set_func =
-    DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
                           const char* property,
                           const char* value);
 using dbusmenu_menuitem_property_set_variant_func =
-    DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
                           const char* property,
                           GVariant* value);
 using dbusmenu_menuitem_property_set_bool_func =
-    DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
                           const char* property,
                           bool value);
 using dbusmenu_menuitem_property_set_int_func =
-    DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
                           const char* property,
                           int value);
 

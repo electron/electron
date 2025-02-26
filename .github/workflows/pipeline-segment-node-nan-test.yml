@@ -27,10 +27,11 @@ on:
         default: testing
 
 concurrency:
-  group: electron-node-nan-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
+  group: electron-node-nan-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
@@ -38,7 +39,7 @@ jobs:
   node-tests:
     name: Run Node.js Tests
     runs-on: electron-arc-linux-amd64-8core
-    timeout-minutes: 20
+    timeout-minutes: 30
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux
@@ -57,6 +58,8 @@ jobs:
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
@@ -99,7 +102,7 @@ jobs:
   nan-tests:
     name: Run Nan Tests
     runs-on: electron-arc-linux-amd64-4core
-    timeout-minutes: 20
+    timeout-minutes: 30
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux
@@ -118,6 +121,8 @@ jobs:
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |

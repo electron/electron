@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 30 Jan 2025 20:28:38 +0900
+Subject: feat: separate content settings callback for sync and async clipboard
+
+`AllowReadFromClipboard` is called from both the types without a way to differentiate.
+
+[sync path] - third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
+[async path] - third_party/blink/renderer/modules/clipboard/clipboard_promise.cc
+
+This patch adds a new callback to separate these two paths so that we
+can have sync permission checks for the sync path.
+
+Additionally, `blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ`
+has been added to support type conversion in permission policy checks. We have extended
+`blink::PermissionType` in `electron::WebContentsPermissionHelper::PermissionType`
+but it is hard to import the latter into the content permission layer checks.
+
+This patch will be removed when the deprecated sync api support is
+removed.
+
+diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
+index 20056b1464699cc7d45717bfc710366eb48d85f6..b227ed62991cdf285c3b90f19e09e3718e2800ea 100644
+--- a/components/permissions/permission_util.cc
++++ b/components/permissions/permission_util.cc
+@@ -384,6 +384,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+       return ContentSettingsType::AUTOMATIC_FULLSCREEN;
+     case PermissionType::WEB_APP_INSTALLATION:
+       return ContentSettingsType::WEB_APP_INSTALLATION;
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+     case PermissionType::NUM:
+       break;
+   }
+diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
+index e991887c103618b35688cf72307ca05fdb202e6e..54894f3412d42264eae80d767be5215e52f08184 100644
+--- a/content/browser/permissions/permission_controller_impl.cc
++++ b/content/browser/permissions/permission_controller_impl.cc
+@@ -86,6 +86,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+     case PermissionType::POINTER_LOCK:
+     case PermissionType::AUTOMATIC_FULLSCREEN:
+     case PermissionType::WEB_APP_INSTALLATION:
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+       return std::nullopt;
+   }
+ }
+diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
+index 779b458094edfa866ac70d7e0ac6413cc700c6a5..b42cbc34f1d2e214d8cc6ed2aacfa9ae21c2569a 100644
+--- a/third_party/blink/common/permissions/permission_utils.cc
++++ b/third_party/blink/common/permissions/permission_utils.cc
+@@ -99,6 +99,8 @@ std::string GetPermissionString(PermissionType permission) {
+       return "AutomaticFullscreen";
+     case PermissionType::WEB_APP_INSTALLATION:
+       return "WebAppInstallation";
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
++      return "DeprecatedSyncClipboardRead";
+     case PermissionType::NUM:
+       NOTREACHED();
+   }
+@@ -171,6 +173,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+     case PermissionType::NOTIFICATIONS:
+     case PermissionType::KEYBOARD_LOCK:
+     case PermissionType::POINTER_LOCK:
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+       return std::nullopt;
+ 
+     case PermissionType::NUM:
+diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
+index f9b1db54dd367d1f0e42cdfcfd04255d452f0e1b..54b4b742298af03d8924f6ad613081f1b5dfae4d 100644
+--- a/third_party/blink/public/common/permissions/permission_utils.h
++++ b/third_party/blink/public/common/permissions/permission_utils.h
+@@ -64,6 +64,7 @@ enum class PermissionType {
+   AUTOMATIC_FULLSCREEN = 40,
+   HAND_TRACKING = 41,
+   WEB_APP_INSTALLATION = 42,
++  DEPRECATED_SYNC_CLIPBOARD_READ = 43,
+ 
+   // Always keep this at the end.
+   NUM,
+diff --git a/third_party/blink/public/platform/web_content_settings_client.h b/third_party/blink/public/platform/web_content_settings_client.h
+index 28f616f21f998c7cd1c794e58efaccf9e6c11e6e..c64896642209124e500db2ed6fe2357e426cd10b 100644
+--- a/third_party/blink/public/platform/web_content_settings_client.h
++++ b/third_party/blink/public/platform/web_content_settings_client.h
+@@ -55,6 +55,9 @@ class WebContentSettingsClient {
+   // Controls whether access to write the clipboard is allowed for this frame.
+   virtual bool AllowWriteToClipboard() { return false; }
+ 
++  // Controls whether synchronous access to read the clipboard is allowed for this frame.
++  virtual bool AllowReadFromClipboardSync() { return false; }
++
+   // Controls whether to enable MutationEvents for this frame.
+   // The common use case of this method is actually to selectively disable
+   // MutationEvents, but it's been named for consistency with the rest of the
+diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
+index c269698764bb8ae7f85c5d476436f5ae5209576d..65d7fd94128a755609192784722074c6c2b7b7cf 100644
+--- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
++++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
+@@ -122,7 +122,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
+     return true;
+   }
+   return frame.GetContentSettingsClient() &&
+-         frame.GetContentSettingsClient()->AllowReadFromClipboard();
++         frame.GetContentSettingsClient()->AllowReadFromClipboardSync();
+ }
+ 
+ bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
+@@ -311,7 +311,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+     return true;
+   }
+   return frame->GetContentSettingsClient() &&
+-         frame->GetContentSettingsClient()->AllowReadFromClipboard();
++         frame->GetContentSettingsClient()->AllowReadFromClipboardSync();
+ }
+ 
+ bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,

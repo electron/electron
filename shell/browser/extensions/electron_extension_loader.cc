@@ -94,7 +94,9 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
 ElectronExtensionLoader::ElectronExtensionLoader(
     content::BrowserContext* browser_context)
     : browser_context_(browser_context),
-      extension_registrar_(browser_context, this) {}
+      extension_registrar_(ExtensionRegistrar::Get(browser_context)) {
+  extension_registrar_->SetDelegate(this);
+}
 
 ElectronExtensionLoader::~ElectronExtensionLoader() = default;
 
@@ -119,7 +121,8 @@ void ElectronExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
   DCHECK_EQ(false, did_schedule_reload_);
   base::AutoReset<bool> reset_did_schedule_reload(&did_schedule_reload_, false);
 
-  extension_registrar_.ReloadExtension(extension_id, LoadErrorBehavior::kQuiet);
+  extension_registrar_->ReloadExtension(extension_id,
+                                        LoadErrorBehavior::kQuiet);
   if (did_schedule_reload_)
     return;
 }
@@ -127,7 +130,7 @@ void ElectronExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
 void ElectronExtensionLoader::UnloadExtension(
     const ExtensionId& extension_id,
     extensions::UnloadedExtensionReason reason) {
-  extension_registrar_.RemoveExtension(extension_id, reason);
+  extension_registrar_->RemoveExtension(extension_id, reason);
 }
 
 void ElectronExtensionLoader::FinishExtensionLoad(
@@ -135,7 +138,7 @@ void ElectronExtensionLoader::FinishExtensionLoad(
     std::pair<scoped_refptr<const Extension>, std::string> result) {
   scoped_refptr<const Extension> extension = result.first;
   if (extension) {
-    extension_registrar_.AddExtension(extension);
+    extension_registrar_->AddExtension(extension);
 
     // Write extension install time to ExtensionPrefs. This is required by
     // WebRequestAPI which calls extensions::ExtensionPrefs::GetInstallTime.
@@ -163,7 +166,7 @@ void ElectronExtensionLoader::FinishExtensionReload(
     std::pair<scoped_refptr<const Extension>, std::string> result) {
   scoped_refptr<const Extension> extension = result.first;
   if (extension) {
-    extension_registrar_.AddExtension(extension);
+    extension_registrar_->AddExtension(extension);
   }
 }
 
@@ -181,8 +184,7 @@ void ElectronExtensionLoader::PreAddExtension(const Extension* extension,
     extension_prefs->RemoveDisableReason(extension->id(),
                                          disable_reason::DISABLE_RELOAD);
     // Only re-enable the extension if there are no other disable reasons.
-    if (extension_prefs->GetDisableReasons(extension->id()) ==
-        disable_reason::DISABLE_NONE) {
+    if (extension_prefs->GetDisableReasons(extension->id()).empty()) {
       extension_prefs->SetExtensionEnabled(extension->id());
     }
   }
@@ -192,6 +194,16 @@ void ElectronExtensionLoader::PostActivateExtension(
     scoped_refptr<const Extension> extension) {}
 
 void ElectronExtensionLoader::PostDeactivateExtension(
+    scoped_refptr<const Extension> extension) {}
+
+void ElectronExtensionLoader::PreUninstallExtension(
+    scoped_refptr<const Extension> extension) {}
+
+void ElectronExtensionLoader::PostUninstallExtension(
+    scoped_refptr<const Extension> extension,
+    base::OnceClosure done_callback) {}
+
+void ElectronExtensionLoader::PostNotifyUninstallExtension(
     scoped_refptr<const Extension> extension) {}
 
 void ElectronExtensionLoader::LoadExtensionForReload(
@@ -209,6 +221,16 @@ void ElectronExtensionLoader::LoadExtensionForReload(
       base::BindOnce(&ElectronExtensionLoader::FinishExtensionReload,
                      weak_factory_.GetWeakPtr(), extension_id));
   did_schedule_reload_ = true;
+}
+
+void ElectronExtensionLoader::ShowExtensionDisabledError(
+    const Extension* extension,
+    bool is_remote_install) {}
+
+void ElectronExtensionLoader::FinishDelayedInstallationsIfAny() {}
+
+bool ElectronExtensionLoader::CanAddExtension(const Extension* extension) {
+  return true;
 }
 
 bool ElectronExtensionLoader::CanEnableExtension(const Extension* extension) {

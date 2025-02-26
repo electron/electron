@@ -129,7 +129,7 @@ void NotifyIcon::ResetIcon() {
 }
 
 void NotifyIcon::SetImage(HICON image) {
-  icon_ = base::win::ScopedHICON(CopyIcon(image));
+  icon_ = base::win::ScopedGDIObject<HICON>(CopyIcon(image));
 
   // Create the icon.
   NOTIFYICONDATA icon_data;

@@ -129,8 +129,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   CreateSpeechRecognitionManagerDelegate() override;
   content::TtsPlatform* GetTtsPlatform() override;
 
-  void OverrideWebkitPrefs(content::WebContents* web_contents,
-                           blink::web_pref::WebPreferences* prefs) override;
+  void OverrideWebPreferences(content::WebContents* web_contents,
+                              content::SiteInstance& main_frame_site,
+                              blink::web_pref::WebPreferences* prefs) override;
   void RegisterPendingSiteInstance(
       content::RenderFrameHost* render_frame_host,
       content::SiteInstance* pending_site_instance) override;
@@ -291,7 +292,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       scoped_refptr<net::HttpResponseHeaders> response_headers,
       bool first_auth_attempt,
       content::GuestPageHolder* guest_page_holder,
-      LoginAuthRequiredCallback auth_required_callback) override;
+      content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback)
+      override;
   void SiteInstanceGotProcessAndSite(
       content::SiteInstance* site_instance) override;
   std::vector<std::unique_ptr<blink::URLLoaderThrottle>>

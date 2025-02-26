@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_NODE_UTIL_H_
 #define ELECTRON_SHELL_COMMON_NODE_UTIL_H_
 
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -13,7 +14,13 @@
 
 namespace node {
 class Environment;
+class IsolateData;
+struct ThreadId;
+
+namespace EnvironmentFlags {
+enum Flags : uint64_t;
 }
+}  // namespace node
 
 namespace electron::util {
 
@@ -36,6 +43,15 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     const char* id,
     std::vector<v8::Local<v8::String>>* parameters,
     std::vector<v8::Local<v8::Value>>* arguments);
+
+// Wrapper for node::CreateEnvironment that logs failure
+node::Environment* CreateEnvironment(v8::Isolate* isolate,
+                                     node::IsolateData* isolate_data,
+                                     v8::Local<v8::Context> context,
+                                     const std::vector<std::string>& args,
+                                     const std::vector<std::string>& exec_args,
+                                     node::EnvironmentFlags::Flags env_flags,
+                                     std::string_view process_type = "");
 
 // Convenience function to view a Node buffer's data as a base::span().
 // Analogous to base::as_byte_span()

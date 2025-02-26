@@ -6,10 +6,10 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 605e812d515fc467001e4ab88fc15b4af3fd4aa2..463e76cb1abc0c2fdddba4db2ca2e00f7c591e12 100644
+index a00b5979e3b5deb4ba315b4635c7e5d2801c376e..c9d4a3536d0f60375ae623b48ca2fa7095c88d42 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
-@@ -8,7 +8,7 @@ const { kEmptyObject } = require('internal/util');
+@@ -10,7 +10,7 @@ const {
  const { defaultGetFormat } = require('internal/modules/esm/get_format');
  const { validateAttributes, emitImportAssertionWarning } = require('internal/modules/esm/assert');
  const { getOptionValue } = require('internal/options');
@@ -18,7 +18,7 @@ index 605e812d515fc467001e4ab88fc15b4af3fd4aa2..463e76cb1abc0c2fdddba4db2ca2e00f
  
  const defaultType =
    getOptionValue('--experimental-default-type');
-@@ -40,8 +40,7 @@ async function getSource(url, context) {
+@@ -38,8 +38,7 @@ async function getSource(url, context) {
    const responseURL = href;
    let source;
    if (protocol === 'file:') {
@@ -28,7 +28,7 @@ index 605e812d515fc467001e4ab88fc15b4af3fd4aa2..463e76cb1abc0c2fdddba4db2ca2e00f
    } else if (protocol === 'data:') {
      const result = dataURLProcessor(url);
      if (result === 'failure') {
-@@ -65,7 +64,7 @@ function getSourceSync(url, context) {
+@@ -63,7 +62,7 @@ function getSourceSync(url, context) {
    const responseURL = href;
    let source;
    if (protocol === 'file:') {
@@ -38,7 +38,7 @@ index 605e812d515fc467001e4ab88fc15b4af3fd4aa2..463e76cb1abc0c2fdddba4db2ca2e00f
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index ee2cc03892c01141b71571989b18eec387d3c766..c13475102a75d65329908f44def06a60f4a2c4f1 100644
+index 9e7d8ef0adef3b68a3ec186e4b218f591aa69266..2879e5cf541fb4d226cfd7cc0fe367ca448fb926 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -25,7 +25,7 @@ const {
@@ -50,7 +50,7 @@ index ee2cc03892c01141b71571989b18eec387d3c766..c13475102a75d65329908f44def06a60
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
  const { sep, posix: { relative: relativePosixPath }, resolve } = require('path');
-@@ -259,7 +259,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -277,7 +277,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {
@@ -60,7 +60,7 @@ index ee2cc03892c01141b71571989b18eec387d3c766..c13475102a75d65329908f44def06a60
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 25ee090bbb4884d3e5f2530cc7153f9215754fae..45a0abc6423a4e53e070f3c117fac2a3554b188d 100644
+index 1b94d923b6d83cc7806d793497a4f9f978c5938c..0caba80bb213e0edfb1f834250f895ccc05d0d1c 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -24,7 +24,7 @@ const {
@@ -72,7 +72,7 @@ index 25ee090bbb4884d3e5f2530cc7153f9215754fae..45a0abc6423a4e53e070f3c117fac2a3
  const { dirname, extname, isAbsolute } = require('path');
  const {
    assertBufferSource,
-@@ -269,7 +269,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
+@@ -268,7 +268,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
  
    try {
      // We still need to read the FS to detect the exports.
@@ -81,7 +81,7 @@ index 25ee090bbb4884d3e5f2530cc7153f9215754fae..45a0abc6423a4e53e070f3c117fac2a3
    } catch {
      // Continue regardless of error.
    }
-@@ -336,7 +336,7 @@ function cjsPreparseModuleExports(filename, source) {
+@@ -335,7 +335,7 @@ function cjsPreparseModuleExports(filename, source) {
        isAbsolute(resolved)) {
          // TODO: this should be calling the `load` hook chain to get the source
          // (and fallback to reading the FS only if the source is nullish).

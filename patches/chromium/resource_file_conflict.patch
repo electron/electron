@@ -52,10 +52,10 @@ Some alternatives to this patch:
 None of these options seems like a substantial maintainability win over this patch to me (@nornagon).
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 7ae2e00c79eb0764289a6666360abc897c531bbf..0a236366b3f5050fa5d07971404afa111e699ce8 100644
+index 7bad6d2fe242bc71014d3fbd6be4481280297366..bdf6d5865fb0069f4df368613167069d2fb50c86 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -1560,7 +1560,7 @@ if (is_chrome_branded && !is_android) {
+@@ -1546,7 +1546,7 @@ if (is_chrome_branded && !is_android) {
    }
  }
  
@@ -64,8 +64,8 @@ index 7ae2e00c79eb0764289a6666360abc897c531bbf..0a236366b3f5050fa5d07971404afa11
    chrome_paks("packed_resources") {
      if (is_mac) {
        output_dir = "$root_gen_dir/repack"
-@@ -1599,6 +1599,12 @@ if (!is_android) {
-   }
+@@ -1592,6 +1592,12 @@ repack("browser_tests_pak") {
+   deps = [ "//chrome/test/data/webui:resources" ]
  }
  
 +if (is_electron_build) {
@@ -74,6 +74,6 @@ index 7ae2e00c79eb0764289a6666360abc897c531bbf..0a236366b3f5050fa5d07971404afa11
 +  }
 +}
 +
- if (!is_android) {
-   repack("browser_tests_pak") {
-     testonly = true
+ group("strings") {
+   public_deps = [
+     "//chrome/app:branded_strings",

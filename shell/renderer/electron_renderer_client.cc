@@ -92,8 +92,10 @@ void ElectronRendererClient::DidCreateScriptContext(
   }
 
   // Setup node tracing controller.
-  if (!node::tracing::TraceEventHelper::GetAgent())
-    node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
+  if (!node::tracing::TraceEventHelper::GetAgent()) {
+    auto* tracing_agent = new node::tracing::Agent();
+    node::tracing::TraceEventHelper::SetAgent(tracing_agent);
+  }
 
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
@@ -107,7 +109,7 @@ void ElectronRendererClient::DidCreateScriptContext(
       blink::LoaderFreezeMode::kStrict);
 
   std::shared_ptr<node::Environment> env = node_bindings_->CreateEnvironment(
-      renderer_context, nullptr,
+      renderer_context, nullptr, 0,
       base::BindRepeating(&ElectronRendererClient::UndeferLoad,
                           base::Unretained(this), render_frame));
 
@@ -236,7 +238,7 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
 
 node::Environment* ElectronRendererClient::GetEnvironment(
     content::RenderFrame* render_frame) const {
-  if (!base::Contains(injected_frames_, render_frame))
+  if (!injected_frames_.contains(render_frame))
     return nullptr;
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   auto context =

@@ -112,6 +112,12 @@ class InspectableWebContents
   void RemoveFileSystem(const std::string& file_system_path) override;
   void UpgradeDraggedFileSystemPermissions(
       const std::string& file_system_url) override {}
+  void ConnectAutomaticFileSystem(DispatchCallback callback,
+                                  const std::string& file_system_path,
+                                  const std::string& file_system_uuid,
+                                  bool add_if_missing) override {}
+  void DisconnectAutomaticFileSystem(
+      const std::string& file_system_path) override {}
   void IndexPath(int index_request_id,
                  const std::string& file_system_path,
                  const std::string& excluded_folders) override;
@@ -167,6 +173,8 @@ class InspectableWebContents
   void SetOpenNewWindowForPopups(bool value) override {}
   void RecordPerformanceHistogram(const std::string& name,
                                   double duration) override {}
+  void RecordPerformanceHistogramMedium(const std::string& name,
+                                        double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
   void RecordImpression(const ImpressionEvent& event) override {}
   void RecordResize(const ResizeEvent& event) override {}

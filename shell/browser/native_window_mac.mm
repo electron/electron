@@ -429,7 +429,13 @@ void NativeWindowMac::ShowInactive() {
   if (parent())
     InternalSetParentWindow(parent(), true);
 
+  // Triggers `NativeWidgetMacNSWindowHost::OnVisibilityChanged`.
+  widget()->ShowInactive();
+  // `Widget::ShowInactive` is not sufficient to bring window to front.
   [window_ orderFrontRegardless];
+  // Above calls do not trigger `orderWindow: relativeTo:` in which headless
+  // mode is being disabled.
+  [window_ disableHeadlessMode];
 }
 
 void NativeWindowMac::Hide() {
@@ -1590,8 +1596,11 @@ void NativeWindowMac::PreviewFile(const std::string& path,
 }
 
 void NativeWindowMac::CloseFilePreview() {
-  if ([QLPreviewPanel sharedPreviewPanelExists]) {
+  // Need to be careful about checking [QLPreviewPanel sharedPreviewPanel] as
+  // simply accessing it will cause it to reinitialize and reappear.
+  if ([QLPreviewPanel sharedPreviewPanelExists] && preview_item_) {
     [[QLPreviewPanel sharedPreviewPanel] close];
+    preview_item_ = nil;
   }
 }
 

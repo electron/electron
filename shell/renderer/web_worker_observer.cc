@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "base/no_destructor.h"
-#include "base/ranges/algorithm.h"
 #include "base/threading/thread_local.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -49,15 +48,16 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
   v8::Context::Scope context_scope(worker_context);
   auto* isolate = worker_context->GetIsolate();
   v8::MicrotasksScope microtasks_scope(
-      isolate, worker_context->GetMicrotaskQueue(),
-      v8::MicrotasksScope::kDoNotRunMicrotasks);
+      worker_context, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   // Start the embed thread.
   node_bindings_->PrepareEmbedThread();
 
   // Setup node tracing controller.
-  if (!node::tracing::TraceEventHelper::GetAgent())
-    node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
+  if (!node::tracing::TraceEventHelper::GetAgent()) {
+    auto* tracing_agent = new node::tracing::Agent();
+    node::tracing::TraceEventHelper::SetAgent(tracing_agent);
+  }
 
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(worker_context);

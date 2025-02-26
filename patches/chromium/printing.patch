@@ -666,7 +666,7 @@ index 6809c4576c71bc1e1a6ad4e0a37707272a9a10f4..3aad10424a6a31dab2ca393d00149ec6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 18a8d64167b66d0de67c0c89779af90814b827c6..52b95469f0392fbb108bef3f6d5ea0f8a81410fd 100644
+index 08af2c8458fdc2539b437c3ff7e3fa2b5d36eeda..5a8d2f3cc57a66535afb027ee43eebc3b3ffe41c 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -52,6 +52,7 @@
@@ -677,7 +677,7 @@ index 18a8d64167b66d0de67c0c89779af90814b827c6..52b95469f0392fbb108bef3f6d5ea0f8
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1227,14 +1228,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1222,14 +1223,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -694,7 +694,7 @@ index 18a8d64167b66d0de67c0c89779af90814b827c6..52b95469f0392fbb108bef3f6d5ea0f8
    if (!weak_this) {
      return;
    }
-@@ -1265,12 +1266,14 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1260,12 +1261,14 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -712,7 +712,7 @@ index 18a8d64167b66d0de67c0c89779af90814b827c6..52b95469f0392fbb108bef3f6d5ea0f8
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint) {
      return;
-@@ -1287,9 +1290,10 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
+@@ -1282,9 +1285,10 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
  
      is_loading_ = frame->WillPrintSoon();
      if (is_loading_) {
@@ -726,7 +726,7 @@ index 18a8d64167b66d0de67c0c89779af90814b827c6..52b95469f0392fbb108bef3f6d5ea0f8
        SetupOnStopLoadingTimeout();
        return;
      }
-@@ -1299,7 +1303,7 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
+@@ -1294,7 +1298,7 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -735,7 +735,7 @@ index 18a8d64167b66d0de67c0c89779af90814b827c6..52b95469f0392fbb108bef3f6d5ea0f8
  
    if (render_frame_gone_) {
      return;
-@@ -1455,6 +1459,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1450,6 +1454,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -784,7 +784,7 @@ index 18a8d64167b66d0de67c0c89779af90814b827c6..52b95469f0392fbb108bef3f6d5ea0f8
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2359,29 +2374,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2362,29 +2377,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -838,7 +838,7 @@ index 18a8d64167b66d0de67c0c89779af90814b827c6..52b95469f0392fbb108bef3f6d5ea0f8
  }
  
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index ce8ac0a7098c8cd6bc03738d03dffef6b5a34141..93fe9da2e5943876c22801e3934d695ee88c3ba3 100644
+index 97cb6458bc9eec767db89b56abfc5f4b4136ff7b..d9a0b343158b8464b5c9aa8e0e655c0b6fb28b00 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -258,7 +258,7 @@ class PrintRenderFrameHelper
@@ -870,7 +870,7 @@ index ce8ac0a7098c8cd6bc03738d03dffef6b5a34141..93fe9da2e5943876c22801e3934d695e
  
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
-@@ -633,7 +635,8 @@ class PrintRenderFrameHelper
+@@ -637,7 +639,8 @@ class PrintRenderFrameHelper
    };
  
    void SetupOnStopLoadingTimeout();
@@ -881,10 +881,10 @@ index ce8ac0a7098c8cd6bc03738d03dffef6b5a34141..93fe9da2e5943876c22801e3934d695e
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 80aa68aef42c4a8511824f30f641689636acf446..80f8ec88683569ff7fd6a51b11e1a9de15527397 100644
+index 5e5f3ba7c011fdb7aa6ac0f752c52ce19fb75675..9dc336b7e6466b7f1084a1d4e9903363716a4432 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3039,8 +3039,9 @@ source_set("browser") {
+@@ -3103,8 +3103,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
