@@ -579,7 +579,7 @@ index a76028eed0249244d0559de102a756e3b2771b63..cb65efb56849d57e2e656f90d5b1d737
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index fec51f705d1a8424fdbff13d33aa6a2b16a650e5..42f5feab06cf2ebb20f851a78111aa952e8bff55 100644
+index fcb315726a70b150bf2238eef717dafcc8d8efd0..de8bfdd420e78b6dcf0415b360df207e4615d444 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -329,6 +329,7 @@ source_set("browser") {
@@ -591,7 +591,7 @@ index fec51f705d1a8424fdbff13d33aa6a2b16a650e5..42f5feab06cf2ebb20f851a78111aa95
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index bea4e26ef8577e8e8bc60287cf1b94c7dfcc9478..eed42b0cbc3422b7fd59ae1b2550c53d6c92c9e3 100644
+index 7e4bc62b4f0ea5ff4792831f012877c91787a345..a8aa56af877fa55dd497de1563ff5eed2de07ebc 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -23,6 +23,7 @@
@@ -612,7 +612,7 @@ index bea4e26ef8577e8e8bc60287cf1b94c7dfcc9478..eed42b0cbc3422b7fd59ae1b2550c53d
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -691,9 +694,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -692,9 +695,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -625,7 +625,7 @@ index bea4e26ef8577e8e8bc60287cf1b94c7dfcc9478..eed42b0cbc3422b7fd59ae1b2550c53d
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 9185fd223c9611faee546570c0df36bc94cdb28c..86886e94e9e2c52e297a82175f6071852e792148 100644
+index 25eb1d0d4536cf6d336ea99ea9ff5d9d4b6ce9ac..a98631cbb6fde0a41dedbbcd642cc721d36ac88d 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -48,6 +48,7 @@
@@ -647,7 +647,7 @@ index 9185fd223c9611faee546570c0df36bc94cdb28c..86886e94e9e2c52e297a82175f607185
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1616,8 +1619,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1620,8 +1623,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -658,7 +658,7 @@ index 9185fd223c9611faee546570c0df36bc94cdb28c..86886e94e9e2c52e297a82175f607185
    return [GetInProcessNSView() window];
  }
  
-@@ -1666,9 +1671,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1670,9 +1675,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -670,7 +670,7 @@ index 9185fd223c9611faee546570c0df36bc94cdb28c..86886e94e9e2c52e297a82175f607185
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2195,20 +2202,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2199,20 +2206,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
