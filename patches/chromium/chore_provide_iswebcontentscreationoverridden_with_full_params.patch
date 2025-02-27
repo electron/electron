@@ -80,10 +80,10 @@ index 4fd8dff1089cd6afa6a66dc185734d7671657281..0a1f4268ea771a3d5d4a2668928c6e5d
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 25e6f7807ecedd9df5d1ef91733b6bf47e1ab86b..526bf242dba614faca08d6870ada49ac96d6f7f0 100644
+index fafd84d08e33622aee01f1792c043180a13dd48d..4490915e0b5c8e93255c6d526d5f37eb6f6b362d 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2221,12 +2221,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2222,12 +2222,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,7 +99,7 @@ index 25e6f7807ecedd9df5d1ef91733b6bf47e1ab86b..526bf242dba614faca08d6870ada49ac
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index d203f5ae4c5bc7ea2e1cf45271df25223a4f7497..e074ffc6fb9b59b81f55817a80db5df4bc4569b8 100644
+index 8fda0dfbe8e10a3830bd03a994e7d39817584d36..baf24bbeb9f57fe2609a1af51a6ee4f5abd86ce2 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -980,8 +980,7 @@ class Browser : public TabStripModelObserver,
@@ -155,7 +155,7 @@ index 83a0a538fef0da1d3674293d20dac7b8a252273f..155c8a0af46e20f68f8b028c056092b4
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 7694765fb805b84acde96d64e561adb44cb313c9..50ac57f90736743f072c2db77b6ef1fe9ccec5dd 100644
+index fb08ed752db063c5a295c479bc5ad990826104cd..659e642cb660263a1cba9bb485ed3f67c2939c0f 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -188,14 +188,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -176,7 +176,7 @@ index 7694765fb805b84acde96d64e561adb44cb313c9..50ac57f90736743f072c2db77b6ef1fe
                                                                    java_gurl);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index d3889d7c75933393be4f6e3e25b8071995b685c2..6ef2996faa67964727e72080284423f125ff7ddf 100644
+index 45d0fc1b9dbeb1c1b5a28a07fb8cf26d3388bfd9..d311ea8dc016659ee8355bc4e7742b4e3ebc413c 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
 @@ -82,8 +82,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
@@ -187,8 +187,8 @@ index d3889d7c75933393be4f6e3e25b8071995b685c2..6ef2996faa67964727e72080284423f1
 -      const GURL& target_url) override;
 +      const content::mojom::CreateNewWindowParams& params) override;
    void CloseContents(content::WebContents* source) override;
-   void SetContentsBounds(content::WebContents* source,
-                          const gfx::Rect& bounds) override;
+   bool DidAddMessageToConsole(content::WebContents* source,
+                               blink::mojom::ConsoleMessageLevel log_level,
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.cc b/components/offline_pages/content/background_loader/background_loader_contents.cc
 index e0e9a5a8c1d8c242d39935e2456052619af33cc6..80518793447c70e8fc1dae9b42a59d40427ae52b 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.cc
@@ -218,7 +218,7 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 690d589eed3515113ad3c40506872f98c2c44bde..d96da1eb8143a5390bdfbf6fbba82c3f8150b211 100644
+index b2e68cacaf357147f357cffce0ee6d14726790bc..c6e46c170fa51233f3a1744dded3e5106f44f1b9 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4913,8 +4913,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -394,7 +394,7 @@ index 62be493c74423875af45a92c98b2ffceb928189f..ec82d8e47bf0a33f832b8ca242f395fe
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index d51816a633efee5aca5a5b7a0135bd331d604c14..0c0c937020ef486e6bfbeaa52cb2643a093d206a 100644
+index bf432db4ca8463f2451dc09d5ca484da1235634f..e144be74ce2d34f50d26d08d5bf206f7aa64c5d3 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -487,8 +487,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
