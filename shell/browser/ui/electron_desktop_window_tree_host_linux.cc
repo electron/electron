@@ -246,10 +246,12 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
 void ElectronDesktopWindowTreeHostLinux::DispatchEvent(ui::Event* event) {
   if (event->IsMouseEvent()) {
     auto* mouse_event = static_cast<ui::MouseEvent*>(event);
-    bool should_disable_drag =
-        mouse_event->IsRightMouseButton() ||
-        (mouse_event->IsLeftMouseButton() && mouse_event->IsControlDown());
-    if (should_disable_drag) {
+    bool is_mousedown = mouse_event->type() == ui::EventType::kMousePressed;
+    bool is_system_menu_trigger =
+        is_mousedown &&
+        (mouse_event->IsRightMouseButton() ||
+         (mouse_event->IsLeftMouseButton() && mouse_event->IsControlDown()));
+    if (is_system_menu_trigger) {
       electron::api::WebContents::SetDisableDraggableRegions(true);
       views::DesktopWindowTreeHostLinux::DispatchEvent(event);
       electron::api::WebContents::SetDisableDraggableRegions(false);
