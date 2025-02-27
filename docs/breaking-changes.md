@@ -14,6 +14,11 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (36.0)
 
+### Removed:`isDefault` and `status` properties on `PrinterInfo`
+
+These properties have been removed from the PrinterInfo Object
+because they have been removed from upstream Chromium.
+
 ### Deprecated: Extension methods and events on `session`
 
 `session.loadExtension`, `session.removeExtension`, `session.getExtension`,
@@ -29,11 +34,6 @@ It has been always returning `true` since Electron 23, which only supports Windo
 https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw#disabling-dwm-composition-windows7-and-earlier
 
 ## Planned Breaking API Changes (35.0)
-
-### Removed:`isDefault` and `status` properties on `PrinterInfo`
-
-These properties have been removed from the PrinterInfo Object
-because they have been removed from upstream Chromium.
 
 ### Deprecated: `getFromVersionID` on `session.serviceWorkers`
 
