@@ -1,0 +1,152 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Olivier=20Fl=C3=BCckiger?= <olivf@chromium.org>
+Date: Mon, 3 Feb 2025 10:18:36 +0100
+Subject: Merged: [runtime] Fix write barrier check in FastCloneJSObject
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add missing check for page being marked.
+
+Fixed: 392521083
+(cherry picked from commit ce071a295e54b32bf7f03373da943678231cb1ee)
+
+Change-Id: Iccfc1617862a6010ab34389aa4931f45e7389c05
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6221320
+Auto-Submit: Olivier Flückiger <olivf@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Olivier Flückiger <olivf@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.2@{#74}
+Cr-Branched-From: 24068c59cedad9ee976ddc05431f5f497b1ebd71-refs/heads/13.2.152@{#1}
+Cr-Branched-From: 6054ba94db0969220be4f94dc1677fc4696bdc4f-refs/heads/main@{#97085}
+
+diff --git a/src/codegen/code-stub-assembler-inl.h b/src/codegen/code-stub-assembler-inl.h
+index e50133901daf151f50673355220f19c87c7b63ef..eab3ffbb73c1816e9cf62ae401eafe0ffc2133c6 100644
+--- a/src/codegen/code-stub-assembler-inl.h
++++ b/src/codegen/code-stub-assembler-inl.h
+@@ -215,9 +215,8 @@ TNode<Object> CodeStubAssembler::FastCloneJSObject(
+     Label if_no_write_barrier(this),
+         if_needs_write_barrier(this, Label::kDeferred);
+ 
+-    TNode<BoolT> needs_write_barrier = IsPageFlagReset(
+-        BitcastTaggedToWord(target), MemoryChunk::kIsInYoungGenerationMask);
+-    Branch(needs_write_barrier, &if_needs_write_barrier, &if_no_write_barrier);
++    TrySkipWriteBarrier(target, &if_needs_write_barrier);
++    Goto(&if_no_write_barrier);
+ 
+     BIND(&if_needs_write_barrier);
+     EmitCopyLoop(true);
+diff --git a/src/codegen/code-stub-assembler.cc b/src/codegen/code-stub-assembler.cc
+index bd2c37d3f10b019851a413d7577360735ba98311..c867c2d5c85cb235e970c642141e6cf27582adb0 100644
+--- a/src/codegen/code-stub-assembler.cc
++++ b/src/codegen/code-stub-assembler.cc
+@@ -5604,21 +5604,18 @@ void CodeStubAssembler::FillFixedDoubleArrayWithZero(
+                 std::make_pair(MachineType::UintPtr(), byte_length));
+ }
+ 
+-void CodeStubAssembler::JumpIfPointersFromHereAreInteresting(
+-    TNode<Object> object, Label* interesting) {
+-  Label finished(this);
+-  TNode<IntPtrT> object_word = BitcastTaggedToWord(object);
+-  TNode<IntPtrT> object_page_header = MemoryChunkFromAddress(object_word);
+-  TNode<IntPtrT> page_flags = UncheckedCast<IntPtrT>(
+-      Load(MachineType::IntPtr(), object_page_header,
+-           IntPtrConstant(MemoryChunkLayout::kFlagsOffset)));
+-  Branch(
+-      WordEqual(WordAnd(page_flags,
+-                        IntPtrConstant(
+-                            MemoryChunk::kPointersFromHereAreInterestingMask)),
+-                IntPtrConstant(0)),
+-      &finished, interesting);
+-  BIND(&finished);
++void CodeStubAssembler::TrySkipWriteBarrier(TNode<Object> object,
++                                            Label* if_needs_write_barrier) {
++  TNode<BoolT> may_need_write_barrier =
++      IsPageFlagSet(BitcastTaggedToWord(object),
++                    MemoryChunk::kPointersFromHereAreInterestingMask);
++  // TODO(olivf): Also skip the WB with V8_ENABLE_STICKY_MARK_BITS if the mark
++  // bit is set.
++  GotoIf(may_need_write_barrier, if_needs_write_barrier);
++
++  CSA_DCHECK(this, TaggedEqual(CallRuntime(Runtime::kIsNoWriteBarrierNeeded,
++                                           NoContextConstant(), object),
++                               TrueConstant()));
+ }
+ 
+ void CodeStubAssembler::MoveElements(ElementsKind kind,
+@@ -5646,7 +5643,7 @@ void CodeStubAssembler::MoveElements(ElementsKind kind,
+   // The write barrier can be ignored if {dst_elements} is in new space, or if
+   // the elements pointer is FixedDoubleArray.
+   if (needs_barrier_check) {
+-    JumpIfPointersFromHereAreInteresting(elements, &needs_barrier);
++    TrySkipWriteBarrier(elements, &needs_barrier);
+   }
+ 
+   const TNode<IntPtrT> source_byte_length =
+@@ -5740,7 +5737,7 @@ void CodeStubAssembler::CopyElements(ElementsKind kind,
+   // The write barrier can be ignored if {dst_elements} is in new space, or if
+   // the elements pointer is FixedDoubleArray.
+   if (needs_barrier_check) {
+-    JumpIfPointersFromHereAreInteresting(dst_elements, &needs_barrier);
++    TrySkipWriteBarrier(dst_elements, &needs_barrier);
+   }
+ 
+   TNode<IntPtrT> source_byte_length =
+diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
+index 7902e08b163436ac4bca4ee129b0edd14c81698e..1bc6cce71567336e24313dd20f8f96609fd2aef7 100644
+--- a/src/codegen/code-stub-assembler.h
++++ b/src/codegen/code-stub-assembler.h
+@@ -2295,8 +2295,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
+       HoleConversionMode convert_holes = HoleConversionMode::kDontConvert,
+       TVariable<BoolT>* var_holes_converted = nullptr);
+ 
+-  void JumpIfPointersFromHereAreInteresting(TNode<Object> object,
+-                                            Label* interesting);
++  void TrySkipWriteBarrier(TNode<Object> object, Label* if_needs_write_barrier);
+ 
+   // Efficiently copy elements within a single array. The regions
+   // [src_index, src_index + length) and [dst_index, dst_index + length)
+diff --git a/src/runtime/runtime-test.cc b/src/runtime/runtime-test.cc
+index b76afdb9fe2acd2e9071e9998972319fff25a460..19b6a93b39f28d8a750770f7916c542940dc1541 100644
+--- a/src/runtime/runtime-test.cc
++++ b/src/runtime/runtime-test.cc
+@@ -2206,5 +2206,26 @@ RUNTIME_FUNCTION(Runtime_GetFeedback) {
+ #endif  // OBJECT_PRINT
+ }
+ 
++RUNTIME_FUNCTION(Runtime_IsNoWriteBarrierNeeded) {
++  HandleScope scope(isolate);
++  DisallowGarbageCollection no_gc;
++  if (args.length() != 1) {
++    return CrashUnlessFuzzing(isolate);
++  }
++  DirectHandle<Object> object = args.at(0);
++  if (!(*object).IsHeapObject()) {
++    return CrashUnlessFuzzing(isolate);
++  }
++  auto heap_object = Cast<HeapObject>(object);
++  if (InReadOnlySpace(*heap_object)) {
++    return ReadOnlyRoots(isolate).true_value();
++  }
++  if (WriteBarrier::GetWriteBarrierModeForObject(*heap_object, no_gc) !=
++      WriteBarrierMode::SKIP_WRITE_BARRIER) {
++    return ReadOnlyRoots(isolate).false_value();
++  }
++  return ReadOnlyRoots(isolate).true_value();
++}
++
+ }  // namespace internal
+ }  // namespace v8
+diff --git a/src/runtime/runtime.h b/src/runtime/runtime.h
+index 6088fced3a07b63a008b1d8b20597c8f12e06aa8..bb3d12dcaab31947b04d0923dc81cebab6c0a321 100644
+--- a/src/runtime/runtime.h
++++ b/src/runtime/runtime.h
+@@ -578,6 +578,7 @@ namespace internal {
+   F(IsEfficiencyModeEnabled, 0, 1)            \
+   F(IsInPlaceInternalizableString, 1, 1)      \
+   F(IsInternalizedString, 1, 1)               \
++  F(IsNoWriteBarrierNeeded, 1, 1)             \
+   F(IsMaglevEnabled, 0, 1)                    \
+   F(IsSameHeapObject, 2, 1)                   \
+   F(IsSharedString, 1, 1)                     \
