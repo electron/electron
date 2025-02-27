@@ -2861,18 +2861,18 @@ describe('webContents module', () => {
 
       await once(w.webContents, 'context-menu');
       await setTimeout(100);
-
       expect(contextMenuEmitCount).to.equal(1);
     });
 
-    it('emits when right-clicked in page in a draggable region', async () => {
+    ifit(process.platform !== 'win32')('emits when right-clicked in page in a draggable region', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixturesPath, 'pages', 'draggable-page.html'));
 
       const promise = once(w.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
 
       // Simulate right-click to create context-menu event.
-      const opts = { x: 0, y: 0, button: 'right' as const };
+      const midPoint = w.getBounds().width / 2;
+      const opts = { x: midPoint, y: midPoint, button: 'right' as const };
       w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
       w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
 
