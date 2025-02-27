@@ -246,4 +246,9 @@ bool ElectronExtensionLoader::ShouldBlockExtension(const Extension* extension) {
   return false;
 }
 
+void ElectronExtensionLoader::GrantActivePermissions(
+    const Extension* extension) {
+  NOTIMPLEMENTED();
+}
+
 }  // namespace extensions
