@@ -6,7 +6,6 @@
 
 #include <string>
 
-#include "base/containers/contains.h"
 #include "base/functional/callback_helpers.h"
 #include "content/public/browser/device_service.h"
 #include "gin/dictionary.h"
@@ -110,7 +109,7 @@ bool PowerSaveBlocker::Stop(int id) {
 }
 
 bool PowerSaveBlocker::IsStarted(int id) const {
-  return base::Contains(wake_lock_types_, id);
+  return wake_lock_types_.contains(id);
 }
 
 // static
