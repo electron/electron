@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Wed, 31 Jul 2024 14:45:11 +0200
+Subject: [maglev] Fold ConvertToHole and CheckNotHole for constant inputs
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Drive-by: CheckNotHole shouldn't be a value node.
+
+Bug: v8:7700
+Change-Id: I14513d147a44c0717ae6cb3a8f9aeb8aab6c44e2
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5752341
+Reviewed-by: Olivier Flückiger <olivf@chromium.org>
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#95412}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 930e2789219bcb8947f47c65426417b0ed24fb76..9e1be7ad47b7c6cbabc97ef8eb95b1357d8926ce 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -5133,7 +5133,7 @@ ReduceResult MaglevGraphBuilder::TryBuildElementLoadOnJSArrayOrJSObject(
+   ValueNode* length = is_jsarray ? GetInt32(BuildLoadJSArrayLength(object))
+                                  : BuildLoadFixedArrayLength(elements_array);
+ 
+-  auto emit_load = [&] {
++  auto emit_load = [&]() -> ReduceResult {
+     ValueNode* result;
+     if (elements_kind == HOLEY_DOUBLE_ELEMENTS) {
+       if (CanTreatHoleAsUndefined(maps) && LoadModeHandlesHoles(load_mode)) {
+@@ -5150,9 +5150,9 @@ ReduceResult MaglevGraphBuilder::TryBuildElementLoadOnJSArrayOrJSObject(
+       result = AddNewNode<LoadFixedArrayElement>({elements_array, index});
+       if (IsHoleyElementsKind(elements_kind)) {
+         if (CanTreatHoleAsUndefined(maps) && LoadModeHandlesHoles(load_mode)) {
+-          result = AddNewNode<ConvertHoleToUndefined>({result});
++          result = BuildConvertHoleToUndefined(result);
+         } else {
+-          result = AddNewNode<CheckNotHole>({result});
++          RETURN_IF_ABORT(BuildCheckNotHole(result));
+           if (IsSmiElementsKind(elements_kind)) {
+             EnsureType(result, NodeType::kSmi);
+           }
+@@ -5168,7 +5168,7 @@ ReduceResult MaglevGraphBuilder::TryBuildElementLoadOnJSArrayOrJSObject(
+     ValueNode* positive_index;
+     GET_VALUE_OR_ABORT(positive_index, GetUint32ElementIndex(index));
+     ValueNode* uint32_length = AddNewNode<UnsafeInt32ToUint32>({length});
+-    return Select(
++    return SelectReduction(
+         [&](auto& builder) {
+           return BuildBranchIfUint32Compare(builder, Operation::kLessThan,
+                                             positive_index, uint32_length);
+@@ -8822,6 +8822,28 @@ ReduceResult MaglevGraphBuilder::BuildCheckValue(ValueNode* node,
+   return ReduceResult::Done();
+ }
+ 
++ValueNode* MaglevGraphBuilder::BuildConvertHoleToUndefined(ValueNode* node) {
++  if (!node->is_tagged()) return node;
++  compiler::OptionalHeapObjectRef maybe_constant = TryGetConstant(node);
++  if (maybe_constant) {
++    return maybe_constant.value().IsTheHole()
++               ? GetRootConstant(RootIndex::kUndefinedValue)
++               : node;
++  }
++  return AddNewNode<ConvertHoleToUndefined>({node});
++}
++
++ReduceResult MaglevGraphBuilder::BuildCheckNotHole(ValueNode* node) {
++  if (!node->is_tagged()) return ReduceResult::Done();
++  compiler::OptionalHeapObjectRef maybe_constant = TryGetConstant(node);
++  if (maybe_constant) {
++    return maybe_constant.value().IsTheHole() ? ReduceResult::Done()
++                                              : ReduceResult::DoneWithAbort();
++  }
++  AddNewNode<CheckNotHole>({node});
++  return ReduceResult::Done();
++}
++
+ void MaglevGraphBuilder::BuildCheckConstTrackingLetCell(ValueNode* context,
+                                                         ValueNode* value,
+                                                         int index) {
+diff --git a/src/maglev/maglev-graph-builder.h b/src/maglev/maglev-graph-builder.h
+index 91b7178b1f86c327ee6674f5dd5e9362b7dc40c8..de182cf0dce8f05d5cad28075a4a08eab1f595a2 100644
+--- a/src/maglev/maglev-graph-builder.h
++++ b/src/maglev/maglev-graph-builder.h
+@@ -2076,6 +2076,9 @@ class MaglevGraphBuilder {
+   ReduceResult BuildCheckValue(ValueNode* node, compiler::ObjectRef ref);
+   ReduceResult BuildCheckValue(ValueNode* node, compiler::HeapObjectRef ref);
+ 
++  ValueNode* BuildConvertHoleToUndefined(ValueNode* node);
++  ReduceResult BuildCheckNotHole(ValueNode* node);
++
+   // Checks whether we're invalidating the constness of a const tracking let
+   // variable, and if yes, deopts.
+   void BuildCheckConstTrackingLetCell(ValueNode* context, ValueNode* value,
+diff --git a/src/maglev/maglev-ir.cc b/src/maglev/maglev-ir.cc
+index c0c1264107ca62ea62f0bb25128ef5f2229577d9..da14400b39dc4a81658c9632cabd7a3f2c998f99 100644
+--- a/src/maglev/maglev-ir.cc
++++ b/src/maglev/maglev-ir.cc
+@@ -3338,13 +3338,10 @@ void CheckDetectableCallable::GenerateCode(MaglevAssembler* masm,
+ 
+ void CheckNotHole::SetValueLocationConstraints() {
+   UseRegister(object_input());
+-  DefineSameAsFirst(this);
+ }
+ void CheckNotHole::GenerateCode(MaglevAssembler* masm,
+                                 const ProcessingState& state) {
+-  DCHECK_EQ(ToRegister(object_input()), ToRegister(result()));
+-  Register reg = ToRegister(object_input());
+-  __ CompareRoot(reg, RootIndex::kTheHoleValue);
++  __ CompareRoot(ToRegister(object_input()), RootIndex::kTheHoleValue);
+   __ EmitEagerDeoptIf(kEqual, DeoptimizeReason::kHole, this);
+ }
+ 
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index a1554fcfab230eff577335a737d0341b75fe33e7..1d6005c3c371dd44cbed256a8bdb2fc853a12777 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -166,7 +166,6 @@ class ExceptionHandlerInfo;
+   V(Construct)                                      \
+   V(CheckConstructResult)                           \
+   V(CheckDerivedConstructResult)                    \
+-  V(CheckNotHole)                                   \
+   V(ConstructWithSpread)                            \
+   V(ConvertReceiver)                                \
+   V(ConvertHoleToUndefined)                         \
+@@ -306,6 +305,7 @@ class ExceptionHandlerInfo;
+   V(CheckMaps)                                \
+   V(CheckMapsWithMigration)                   \
+   V(CheckDetectableCallable)                  \
++  V(CheckNotHole)                             \
+   V(CheckNumber)                              \
+   V(CheckSmi)                                 \
+   V(CheckString)                              \
+@@ -9103,8 +9103,8 @@ class CheckDerivedConstructResult
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+ };
+ 
+-class CheckNotHole : public FixedInputValueNodeT<1, CheckNotHole> {
+-  using Base = FixedInputValueNodeT<1, CheckNotHole>;
++class CheckNotHole : public FixedInputNodeT<1, CheckNotHole> {
++  using Base = FixedInputNodeT<1, CheckNotHole>;
+ 
+  public:
+   explicit CheckNotHole(uint64_t bitfield) : Base(bitfield) {}
