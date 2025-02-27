@@ -39,7 +39,7 @@ index d8aacbdf1a8fc858c792ad3ce17ca2f46baebe7e..4625008c048532c2c3340130670647d2
  
    void HandleDouble(double value) override {
 diff --git a/src/inspector/node_string.h b/src/inspector/node_string.h
-index 08e00f9b94918e3385aed18de80eec5c7ad81095..23e678da55c373400d86e67caec436800531d40d 100644
+index 08e00f9b94918e3385aed18de80eec5c7ad81095..e84281c0e06f1d09889c5e1f2b2c5144f1b77564 100644
 --- a/src/inspector/node_string.h
 +++ b/src/inspector/node_string.h
 @@ -63,7 +63,7 @@ class Binary {
@@ -47,7 +47,7 @@ index 08e00f9b94918e3385aed18de80eec5c7ad81095..23e678da55c373400d86e67caec43680
      UNREACHABLE();
    }
 -  static Binary fromSpan(const uint8_t* data, size_t size) { UNREACHABLE(); }
-+  static Binary fromSpan(crdtp::span<const uint8_t> data) { UNREACHABLE(); }
++  static Binary fromSpan(crdtp::span<uint8_t> data) { UNREACHABLE(); }
  };
  
  }  // namespace protocol
