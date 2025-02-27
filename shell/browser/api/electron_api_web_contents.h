@@ -847,7 +847,7 @@ class WebContents final : public ExclusiveAccessContext,
   const scoped_refptr<base::TaskRunner> print_task_runner_;
 #endif
 
-  // Stores the frame thats currently in fullscreen, nullptr if there is none.
+  // Stores the frame that's currently in fullscreen, nullptr if there is none.
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
   std::unique_ptr<SkRegion> draggable_region_;

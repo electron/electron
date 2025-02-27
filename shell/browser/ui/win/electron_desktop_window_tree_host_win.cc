@@ -99,7 +99,7 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEventForCaption(
   // Chromium lets the OS handle caption buttons for FrameMode::SYSTEM_DRAWN but
   // again this does not generate the SC_MINIMIZE, SC_MAXIMIZE, SC_RESTORE
   // commands when Non-client mouse events are generated for HTCLOSE,
-  // HTMINBUTTON, HTMAXBUTTON. To workaround this issue, wit this delegate we
+  // HTMINBUTTON, HTMAXBUTTON. To workaround this issue, with this delegate we
   // let chromium handle the mouse events via
   // HWNDMessageHandler::HandleMouseInputForCaption instead of the OS and this
   // will generate the necessary system commands to perform caption button
