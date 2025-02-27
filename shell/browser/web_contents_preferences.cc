@@ -229,7 +229,7 @@ void WebContentsPreferences::SetFromDictionary(
   if (web_preferences.Get(options::kDisableBlinkFeatures,
                           &disable_blink_features))
     disable_blink_features_ = disable_blink_features;
-  web_preferences.Get(options::kEnableCornerSmothingCSS,
+  web_preferences.Get(options::kEnableCornerSmoothingCSS,
                       &corner_smoothing_css_);
 
   base::FilePath::StringType preload_path;

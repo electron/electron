@@ -302,10 +302,10 @@ index 7eb05137650f1221a51f6fbc8277b493078bac68..20af18254c2ca301964859c81bccd6d0
      if (inner_rounded_rect.IsEmpty()) {
        // |AutoDarkMode::Disabled()| is used because |shadow_color| has already
 diff --git a/third_party/blink/renderer/core/paint/rounded_border_geometry.cc b/third_party/blink/renderer/core/paint/rounded_border_geometry.cc
-index 1641321846aeaca69df21125141c722f76b27ebc..14e8794a917fe2f1b6a936a841d21eb13b7667c0 100644
+index 1641321846aeaca69df21125141c722f76b27ebc..54461eb691cdd66d92bdd3120a0ee26f6ae43099 100644
 --- a/third_party/blink/renderer/core/paint/rounded_border_geometry.cc
 +++ b/third_party/blink/renderer/core/paint/rounded_border_geometry.cc
-@@ -32,6 +32,20 @@ FloatRoundedRect::Radii CalcRadiiFor(const ComputedStyle& style,
+@@ -32,6 +32,21 @@ FloatRoundedRect::Radii CalcRadiiFor(const ComputedStyle& style,
            : gfx::SizeF());
  }
  
@@ -313,6 +313,7 @@ index 1641321846aeaca69df21125141c722f76b27ebc..14e8794a917fe2f1b6a936a841d21eb1
 +  if (length.IsNone()) {
 +    return 0.0f;
 +  }
++  // `system-ui` keyword
 +  if (length.HasAuto()) {
 +#if BUILDFLAG(IS_MAC)
 +    return 0.6f;
@@ -326,7 +327,7 @@ index 1641321846aeaca69df21125141c722f76b27ebc..14e8794a917fe2f1b6a936a841d21eb1
  }  // anonymous namespace
  
  FloatRoundedRect RoundedBorderGeometry::RoundedBorder(
-@@ -42,6 +56,8 @@ FloatRoundedRect RoundedBorderGeometry::RoundedBorder(
+@@ -42,6 +57,8 @@ FloatRoundedRect RoundedBorderGeometry::RoundedBorder(
      rounded_rect.SetRadii(
          CalcRadiiFor(style, gfx::SizeF(border_rect.size), PhysicalBoxSides()));
      rounded_rect.ConstrainRadii();
@@ -335,7 +336,7 @@ index 1641321846aeaca69df21125141c722f76b27ebc..14e8794a917fe2f1b6a936a841d21eb1
    }
    return rounded_rect;
  }
-@@ -55,6 +71,8 @@ FloatRoundedRect RoundedBorderGeometry::PixelSnappedRoundedBorder(
+@@ -55,6 +72,8 @@ FloatRoundedRect RoundedBorderGeometry::PixelSnappedRoundedBorder(
      rounded_rect.SetRadii(
          CalcRadiiFor(style, gfx::SizeF(border_rect.size), sides_to_include));
      rounded_rect.ConstrainRadii();
@@ -344,7 +345,7 @@ index 1641321846aeaca69df21125141c722f76b27ebc..14e8794a917fe2f1b6a936a841d21eb1
    }
    return rounded_rect;
  }
-@@ -68,6 +86,8 @@ FloatRoundedRect RoundedBorderGeometry::RoundedInnerBorder(
+@@ -68,6 +87,8 @@ FloatRoundedRect RoundedBorderGeometry::RoundedInnerBorder(
                             .set_right(style.BorderRightWidth())
                             .set_bottom(style.BorderBottomWidth())
                             .set_left(style.BorderLeftWidth()));
@@ -353,7 +354,7 @@ index 1641321846aeaca69df21125141c722f76b27ebc..14e8794a917fe2f1b6a936a841d21eb1
    return rounded_border;
  }
  
-@@ -113,6 +133,8 @@ FloatRoundedRect RoundedBorderGeometry::PixelSnappedRoundedBorderWithOutsets(
+@@ -113,6 +134,8 @@ FloatRoundedRect RoundedBorderGeometry::PixelSnappedRoundedBorderWithOutsets(
          PixelSnappedRoundedBorder(style, border_rect, sides_to_include);
      pixel_snapped_rounded_border.Outset(gfx::OutsetsF(adjusted_outsets));
      rounded_rect.SetRadii(pixel_snapped_rounded_border.GetRadii());
