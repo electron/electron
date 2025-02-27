@@ -12,6 +12,7 @@
 
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
@@ -241,4 +242,23 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
     SizeConstraintsChanged();
   }
 }
+
+void ElectronDesktopWindowTreeHostLinux::DispatchEvent(ui::Event* event) {
+  if (event->IsMouseEvent()) {
+    auto* mouse_event = static_cast<ui::MouseEvent*>(event);
+    bool is_mousedown = mouse_event->type() == ui::EventType::kMousePressed;
+    bool is_system_menu_trigger =
+        is_mousedown &&
+        (mouse_event->IsRightMouseButton() ||
+         (mouse_event->IsLeftMouseButton() && mouse_event->IsControlDown()));
+    if (is_system_menu_trigger) {
+      electron::api::WebContents::SetDisableDraggableRegions(true);
+      views::DesktopWindowTreeHostLinux::DispatchEvent(event);
+      electron::api::WebContents::SetDisableDraggableRegions(false);
+      return;
+    }
+  }
+  views::DesktopWindowTreeHostLinux::DispatchEvent(event);
+}
+
 }  // namespace electron
