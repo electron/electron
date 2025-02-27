@@ -262,7 +262,9 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
       : ArgumentHolder<indices, ArgTypes>(args, invoker_options)...,
         args_(args) {}
 
-  bool IsOK() { return And(ArgumentHolder<indices, ArgTypes>::ok...); }
+  [[nodiscard]] bool IsOK() const {
+    return (... && ArgumentHolder<indices, ArgTypes>::ok);
+  }
 
   template <typename ReturnType>
   void DispatchToCallback(
@@ -285,12 +287,6 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
   }
 
  private:
-  static bool And() { return true; }
-  template <typename... T>
-  static bool And(bool arg1, T... args) {
-    return arg1 && And(args...);
-  }
-
   raw_ptr<gin::Arguments> args_;
 };
 
