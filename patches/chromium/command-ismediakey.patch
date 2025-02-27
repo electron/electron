@@ -159,10 +159,10 @@ index a955d19eedfe56ae3a115ce4c77fea016fd66d49..ad2557495a02cae03dd2b87df8659a6f
    }
  
 diff --git a/ui/base/x/x11_global_shortcut_listener.cc b/ui/base/x/x11_global_shortcut_listener.cc
-index 9e73ed854072bf3d66dbab4cfb5b0a6a9068aafa..82ca3354afc2a0c4c09c6332512902859c77f4c9 100644
+index 838b89cd8d2c1884ce253a42325faabe73ee3985..b47019cd02202b8f1ea29d45e6b1741e2a9a953e 100644
 --- a/ui/base/x/x11_global_shortcut_listener.cc
 +++ b/ui/base/x/x11_global_shortcut_listener.cc
-@@ -34,11 +34,13 @@ const auto kModifiersMasks = std::to_array<x11::ModMask>({
+@@ -34,11 +34,13 @@ constexpr auto kModifiersMasks = std::to_array<x11::ModMask>({
  
  x11::ModMask GetNativeModifiers(bool is_alt_down,
                                  bool is_ctrl_down,

@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index f16a24f070ff6e004473a794e3189e078126584c..54d6573cd704261e65fd0e4c3673d0e60b492101 100644
+index a8684cc2bf48a7df896847ad1b8f34308db3c28f..de55a37e5acaa72dbe8c898b6c909fc3b4b53dbc 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1031,6 +1031,7 @@ component("base") {
@@ -579,10 +579,10 @@ index 08186f30eaa97caf18ac2fe47655526e7733d9df..e4cd1f436ad1734f357429cb3ad6c854
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 9a868b490b76e06bea11c8042989ef597448ee5e..5e5f3ba7c011fdb7aa6ac0f752c52ce19fb75675 100644
+index 32ec2d854847d28b8c9ad665a1b8a50a6bad3100..885d487afbaae02c0401b322dd59273116c91ad0 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -332,6 +332,7 @@ source_set("browser") {
+@@ -333,6 +333,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -710,10 +710,10 @@ index 9de0d44a70c4c2587a7e4283783b614174393819..87dfae661a98819118d48cd973862d8f
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 9c312682be17f1add7e9aa56772c3e1a2e22f98b..5f4362d3c717f24f787ab9298d4f5103442f3073 100644
+index dcb22228bcc86d081c9d0a0a7bdeab896ed07ca7..3e863d861c22e044099e227346845bb6422e21fd 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -329,6 +329,7 @@ target(link_target_type, "renderer") {
+@@ -331,6 +331,7 @@ target(link_target_type, "renderer") {
      "//ui/surface",
      "//url",
      "//v8",
@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 0418e7a1e0678b7a943281e7066677a6852960de..972fc355ea251de4758957c6c4b1e980591ec971 100644
+index 856af923d58b66f06f85cfb167e06b54b1090059..8bb78dc0bc7cd6aea37b3b3d839dc7d99ccb5ef1 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -658,6 +658,7 @@ static_library("test_support") {
@@ -819,7 +819,7 @@ index 0418e7a1e0678b7a943281e7066677a6852960de..972fc355ea251de4758957c6c4b1e980
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3246,6 +3249,7 @@ test("content_unittests") {
+@@ -3250,6 +3253,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1431,7 +1431,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index cae611cd83ef3a32a0d4f7474f407c6299d2bfa1..69ce20735646f577386f175b0223b43035b4b20a 100644
+index cffd2db61ae3e2e7fdd2e0faeb18b742249197f5..c4ceda3eb634ac5e35219196105e59f4a35ca3fd 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -414,6 +414,7 @@ component("core") {
@@ -1843,10 +1843,10 @@ index 29ae2da6a8a2c2a612dfb92f7f9c03ca5fa306b1..440c139a32a0c205e77b657d4aab6468
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 230a9e8266fa494f870ed7fc7dc444d1db5bbb48..99facff7a8e98cbc175354ae4e1d1f592197320a 100644
+index ce11b87ffe8824cbe190c1cde30f05723006141f..a9eb639710a11122d2c1200a4a69f45562b5ae40 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -332,6 +332,12 @@ component("gfx") {
+@@ -334,6 +334,12 @@ component("gfx") {
      "//ui/base:ui_data_pack",
    ]
  
