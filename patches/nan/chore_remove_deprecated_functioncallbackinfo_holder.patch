@@ -10,10 +10,10 @@ Callers are supposed to use FunctionCallbackInfo::This() instead.
 See https://chromium-review.googlesource.com/c/v8/v8/+/6309166
 
 diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
-index 1af2459efcf54fa97ff24aaa221892eede6eb0d3..53301c537d2f5f4190e1d2eaa28472bac5dadc57 100644
+index 1af2459efcf54fa97ff24aaa221892eede6eb0d3..e8505247a5070dba572954ba63bc193c9fd51eb6 100644
 --- a/nan_callbacks_12_inl.h
 +++ b/nan_callbacks_12_inl.h
-@@ -109,7 +109,12 @@ class FunctionCallbackInfo {
+@@ -109,7 +109,14 @@ class FunctionCallbackInfo {
    inline v8::Local<v8::Function> Callee() const { return info_.Callee(); }
  #endif
    inline v8::Local<v8::Value> Data() const { return data_; }
@@ -22,6 +22,8 @@ index 1af2459efcf54fa97ff24aaa221892eede6eb0d3..53301c537d2f5f4190e1d2eaa28472ba
 +(V8_MINOR_VERSION < 5 || (V8_MINOR_VERSION == 5 &&                             \
 +defined(V8_BUILD_NUMBER) && V8_BUILD_NUMBER < 191))))
    inline v8::Local<v8::Object> Holder() const { return info_.Holder(); }
++#else
++  inline v8::Local<v8::Object> Holder() const { return info_.This(); }
 +#endif
    inline bool IsConstructCall() const { return info_.IsConstructCall(); }
    inline int Length() const { return info_.Length(); }
