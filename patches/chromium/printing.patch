@@ -881,7 +881,7 @@ index 97cb6458bc9eec767db89b56abfc5f4b4136ff7b..d9a0b343158b8464b5c9aa8e0e655c0b
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 42f5feab06cf2ebb20f851a78111aa952e8bff55..5048a28983ad629fba2f300f57fd869056fcb510 100644
+index de8bfdd420e78b6dcf0415b360df207e4615d444..2d374ea7c1bbe77a931b16239e39d453b2d18575 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -3085,8 +3085,9 @@ source_set("browser") {
