@@ -26,22 +26,42 @@ const tests = {
       const constructorName = prototype.constructor.name;
 
       const result = contextBridge.executeInMainWorld({
-        func: (value, constructorName) => ({
-          // Test that main world prototype matches the value prototype
-          protoMatches:
-            globalThis[constructorName].prototype ===
-            Object.getPrototypeOf(value),
-          // Pass back value
-          value
-        }),
+        func: (value) => {
+          // Deeply check that value prototypes exist in the local world
+          const check = (v) => {
+            if (typeof v === 'undefined' || v === null) return true;
+            const prototype = Object.getPrototypeOf(v);
+            const constructorName = prototype.constructor.name;
+            const localPrototype = globalThis[constructorName].prototype;
+            if (prototype !== localPrototype) return false;
+            if (Array.isArray(v)) return v.every(check);
+            if (typeof v === 'object') return Object.values(v).every(check);
+            if (typeof v === 'function') return check(v());
+            return true;
+          };
+          return { protoMatches: check(value), value };
+        },
         args: [value, constructorName]
       });
+
+      // Deeply check that value prototypes exist in the local world
+      const check = (v) => {
+        if (typeof v === 'undefined' || v === null) return true;
+        const prototype = Object.getPrototypeOf(v);
+        const constructorName = prototype.constructor.name;
+        const localPrototype = globalThis[constructorName].prototype;
+        if (prototype !== localPrototype) return false;
+        if (Array.isArray(v)) return v.every(check);
+        if (typeof v === 'object') return Object.values(v).every(check);
+        if (typeof v === 'function') return check(v());
+        return true;
+      };
 
       return (
         // Prototype matched in main world
         result.protoMatches &&
         // Returned value matches prototype
-        Object.getPrototypeOf(result.value) === prototype
+        check(result.value)
       );
     };
 
@@ -50,11 +70,14 @@ const tests = {
       'string',
       true,
       [],
+      [123, 'string', true, ['foo']],
       Symbol('foo'),
       10n,
       {},
       Promise.resolve(),
-      () => {}
+      () => {},
+      () => () => null,
+      { [Symbol('foo')]: 123 }
     ];
 
     for (const value of values) {
