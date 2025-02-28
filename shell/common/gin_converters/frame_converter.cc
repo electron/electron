@@ -104,7 +104,7 @@ bool Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::FromV8(
   auto* rfh = content::RenderFrameHost::FromID(process_id, routing_id);
 
   if (!rfh) {
-    // Lazily evaluted property accessed after RFH has been destroyed.
+    // Lazily evaluated property accessed after RFH has been destroyed.
     // Continue to return nullptr, but emit warning to inform developers
     // what occurred.
     electron::util::EmitWarning(
