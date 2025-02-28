@@ -108,7 +108,7 @@ index cf7b52c8aed277219483b6a6f6a17cc9b28c9456..c03482cbfa0b1924be93c0a9076c338c
    // Efficiently copy elements within a single array. The regions
    // [src_index, src_index + length) and [dst_index, dst_index + length)
 diff --git a/src/runtime/runtime-test.cc b/src/runtime/runtime-test.cc
-index c67550f82ef881cdabfc1837d4234a360fff929b..648e11809ee03719df7afeff4261ef9b96ec89c3 100644
+index c67550f82ef881cdabfc1837d4234a360fff929b..f0d1d6f5f0457da8b7e41b64b1e6bf6b04ba9061 100644
 --- a/src/runtime/runtime-test.cc
 +++ b/src/runtime/runtime-test.cc
 @@ -2120,5 +2120,26 @@ RUNTIME_FUNCTION(Runtime_IsolateCountForTesting) {
@@ -129,7 +129,7 @@ index c67550f82ef881cdabfc1837d4234a360fff929b..648e11809ee03719df7afeff4261ef9b
 +  if (InReadOnlySpace(*heap_object)) {
 +    return ReadOnlyRoots(isolate).true_value();
 +  }
-+  if (WriteBarrier::GetWriteBarrierModeForObject(*heap_object, no_gc) !=
++  if (GetWriteBarrierModeForObject(*heap_object, &no_gc) !=
 +      WriteBarrierMode::SKIP_WRITE_BARRIER) {
 +    return ReadOnlyRoots(isolate).false_value();
 +  }
