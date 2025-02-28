@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 856af923d58b66f06f85cfb167e06b54b1090059..8bb78dc0bc7cd6aea37b3b3d839dc7d99ccb5ef1 100644
+index 23d2ac7768ec651a6542b14eb1b9d3636f90b192..c5d33465dba18c7fd1258e8a0e78f870d5be441c 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -658,6 +658,7 @@ static_library("test_support") {
@@ -811,7 +811,7 @@ index 856af923d58b66f06f85cfb167e06b54b1090059..8bb78dc0bc7cd6aea37b3b3d839dc7d9
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1945,6 +1947,7 @@ test("content_browsertests") {
+@@ -1946,6 +1948,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -819,7 +819,7 @@ index 856af923d58b66f06f85cfb167e06b54b1090059..8bb78dc0bc7cd6aea37b3b3d839dc7d9
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3250,6 +3253,7 @@ test("content_unittests") {
+@@ -3251,6 +3254,7 @@ test("content_unittests") {
      "//ui/latency:test_support",
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
@@ -1843,7 +1843,7 @@ index 29ae2da6a8a2c2a612dfb92f7f9c03ca5fa306b1..440c139a32a0c205e77b657d4aab6468
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index ce11b87ffe8824cbe190c1cde30f05723006141f..a9eb639710a11122d2c1200a4a69f45562b5ae40 100644
+index cb507971bef962e91cd8fca696692194696d1142..d2aee3962e3377980940e6d3538487a566a609b4 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -334,6 +334,12 @@ component("gfx") {
