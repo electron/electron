@@ -233,7 +233,7 @@ index 2991489fae8a4eecad97b1ecb2271f096d9a9229..93b7aa620ad1da250ac06e3383ca6897
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index 34254abe5fd7c5d9bcca420d965581a839a63721..f764bb5f67867c4be5598c15a6444ea78a6456aa 100644
+index b55390ed12152c1d5ab01415ac2b64422b59ad8b..51d76c126025f422def2a46ebb5d6c427f5ae3cb 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
 @@ -262,6 +262,14 @@ BASE_FEATURE(kIOSurfaceCapturer,
