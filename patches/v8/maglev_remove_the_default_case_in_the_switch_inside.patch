@@ -1,0 +1,214 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Wed, 6 Nov 2024 10:35:04 +0100
+Subject: [maglev] Remove the "default" case in the switch inside
+ StaticTypeForNode
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This way, it's harder to forget to add a type for a newly added node.
+
+Several ValueNodes were falling under the default case. Sorting out the
+correct type for each of them will be done as a follow up.
+
+Bug: v8:7700
+Change-Id: I4f59d1fb614e0e75aa6be90bb25a0096908c7fdb
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/5998612
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#97009}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 9e1be7ad47b7c6cbabc97ef8eb95b1357d8926ce..3d4e754c5fc3def565ac006ef3ffd934f437ebc4 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -3559,7 +3559,162 @@ NodeType StaticTypeForNode(compiler::JSHeapBroker* broker,
+     case Opcode::kToBoolean:
+     case Opcode::kToBooleanLogicalNot:
+       return NodeType::kBoolean;
+-    default:
++      // Not value nodes:
++#define GENERATE_CASE(Name) case Opcode::k##Name:
++      CONTROL_NODE_LIST(GENERATE_CASE)
++      NON_VALUE_NODE_LIST(GENERATE_CASE)
++#undef GENERATE_CASE
++      UNREACHABLE();
++    // Unsorted value nodes. TODO(maglev): See which of these should return
++    // something else than kUnknown.
++    case Opcode::kIdentity:
++    case Opcode::kArgumentsElements:
++    case Opcode::kArgumentsLength:
++    case Opcode::kRestLength:
++    case Opcode::kCall:
++    case Opcode::kCallBuiltin:
++    case Opcode::kCallCPPBuiltin:
++    case Opcode::kCallForwardVarargs:
++    case Opcode::kCallRuntime:
++    case Opcode::kCallWithArrayLike:
++    case Opcode::kCallWithSpread:
++    case Opcode::kCallKnownApiFunction:
++    case Opcode::kCallKnownJSFunction:
++    case Opcode::kCallSelf:
++    case Opcode::kConstruct:
++    case Opcode::kCheckConstructResult:
++    case Opcode::kCheckDerivedConstructResult:
++    case Opcode::kConstructWithSpread:
++    case Opcode::kConvertReceiver:
++    case Opcode::kConvertHoleToUndefined:
++    case Opcode::kCreateFunctionContext:
++    case Opcode::kCreateRegExpLiteral:
++    case Opcode::kDeleteProperty:
++    case Opcode::kEnsureWritableFastElements:
++    case Opcode::kExtendPropertiesBackingStore:
++    case Opcode::kForInPrepare:
++    case Opcode::kForInNext:
++    case Opcode::kGeneratorRestoreRegister:
++    case Opcode::kGetIterator:
++    case Opcode::kGetSecondReturnedValue:
++    case Opcode::kGetTemplateObject:
++    case Opcode::kHasInPrototypeChain:
++    case Opcode::kInitialValue:
++    case Opcode::kLoadTaggedField:
++    case Opcode::kLoadDoubleField:
++    case Opcode::kLoadTaggedFieldByFieldIndex:
++    case Opcode::kLoadFixedArrayElement:
++    case Opcode::kLoadFixedDoubleArrayElement:
++    case Opcode::kLoadHoleyFixedDoubleArrayElement:
++    case Opcode::kLoadHoleyFixedDoubleArrayElementCheckedNotHole:
++    case Opcode::kLoadSignedIntDataViewElement:
++    case Opcode::kLoadDoubleDataViewElement:
++    case Opcode::kLoadTypedArrayLength:
++    case Opcode::kLoadSignedIntTypedArrayElement:
++    case Opcode::kLoadUnsignedIntTypedArrayElement:
++    case Opcode::kLoadDoubleTypedArrayElement:
++    case Opcode::kLoadEnumCacheLength:
++    case Opcode::kLoadGlobal:
++    case Opcode::kLoadNamedGeneric:
++    case Opcode::kLoadNamedFromSuperGeneric:
++    case Opcode::kMaybeGrowFastElements:
++    case Opcode::kMigrateMapIfNeeded:
++    case Opcode::kSetNamedGeneric:
++    case Opcode::kDefineNamedOwnGeneric:
++    case Opcode::kStoreInArrayLiteralGeneric:
++    case Opcode::kStoreGlobal:
++    case Opcode::kGetKeyedGeneric:
++    case Opcode::kSetKeyedGeneric:
++    case Opcode::kDefineKeyedOwnGeneric:
++    case Opcode::kRegisterInput:
++    case Opcode::kCheckedSmiSizedInt32:
++    case Opcode::kCheckedSmiUntag:
++    case Opcode::kUnsafeSmiUntag:
++    case Opcode::kCheckedObjectToIndex:
++    case Opcode::kCheckedTruncateNumberOrOddballToInt32:
++    case Opcode::kCheckedInt32ToUint32:
++    case Opcode::kUnsafeInt32ToUint32:
++    case Opcode::kCheckedUint32ToInt32:
++    case Opcode::kChangeInt32ToFloat64:
++    case Opcode::kChangeUint32ToFloat64:
++    case Opcode::kCheckedTruncateFloat64ToInt32:
++    case Opcode::kCheckedTruncateFloat64ToUint32:
++    case Opcode::kTruncateNumberOrOddballToInt32:
++    case Opcode::kTruncateUint32ToInt32:
++    case Opcode::kTruncateFloat64ToInt32:
++    case Opcode::kUnsafeTruncateUint32ToInt32:
++    case Opcode::kUnsafeTruncateFloat64ToInt32:
++    case Opcode::kInt32ToUint8Clamped:
++    case Opcode::kUint32ToUint8Clamped:
++    case Opcode::kFloat64ToUint8Clamped:
++    case Opcode::kCheckedNumberToUint8Clamped:
++    case Opcode::kFloat64ToHeapNumberForField:
++    case Opcode::kCheckedNumberOrOddballToFloat64:
++    case Opcode::kUncheckedNumberOrOddballToFloat64:
++    case Opcode::kCheckedHoleyFloat64ToFloat64:
++    case Opcode::kHoleyFloat64ToMaybeNanFloat64:
++    case Opcode::kHoleyFloat64IsHole:
++    case Opcode::kSetPendingMessage:
++    case Opcode::kStringAt:
++    case Opcode::kStringLength:
++    case Opcode::kAllocateElementsArray:
++    case Opcode::kUpdateJSArrayLength:
++    case Opcode::kVirtualObject:
++    case Opcode::kGetContinuationPreservedEmbedderData:
++    case Opcode::kExternalConstant:
++    case Opcode::kFloat64Constant:
++    case Opcode::kInt32Constant:
++    case Opcode::kUint32Constant:
++    case Opcode::kTaggedIndexConstant:
++    case Opcode::kTrustedConstant:
++    case Opcode::kInt32AbsWithOverflow:
++    case Opcode::kInt32AddWithOverflow:
++    case Opcode::kInt32SubtractWithOverflow:
++    case Opcode::kInt32MultiplyWithOverflow:
++    case Opcode::kInt32DivideWithOverflow:
++    case Opcode::kInt32ModulusWithOverflow:
++    case Opcode::kInt32BitwiseAnd:
++    case Opcode::kInt32BitwiseOr:
++    case Opcode::kInt32BitwiseXor:
++    case Opcode::kInt32ShiftLeft:
++    case Opcode::kInt32ShiftRight:
++    case Opcode::kInt32ShiftRightLogical:
++    case Opcode::kInt32BitwiseNot:
++    case Opcode::kInt32NegateWithOverflow:
++    case Opcode::kInt32IncrementWithOverflow:
++    case Opcode::kInt32DecrementWithOverflow:
++    case Opcode::kInt32ToBoolean:
++    case Opcode::kFloat64Abs:
++    case Opcode::kFloat64Add:
++    case Opcode::kFloat64Subtract:
++    case Opcode::kFloat64Multiply:
++    case Opcode::kFloat64Divide:
++    case Opcode::kFloat64Exponentiate:
++    case Opcode::kFloat64Modulus:
++    case Opcode::kFloat64Negate:
++    case Opcode::kFloat64Round:
++    case Opcode::kFloat64ToBoolean:
++    case Opcode::kFloat64Ieee754Unary:
++    case Opcode::kCheckedSmiIncrement:
++    case Opcode::kCheckedSmiDecrement:
++    case Opcode::kGenericAdd:
++    case Opcode::kGenericSubtract:
++    case Opcode::kGenericMultiply:
++    case Opcode::kGenericDivide:
++    case Opcode::kGenericModulus:
++    case Opcode::kGenericExponentiate:
++    case Opcode::kGenericBitwiseAnd:
++    case Opcode::kGenericBitwiseOr:
++    case Opcode::kGenericBitwiseXor:
++    case Opcode::kGenericShiftLeft:
++    case Opcode::kGenericShiftRight:
++    case Opcode::kGenericShiftRightLogical:
++    case Opcode::kGenericBitwiseNot:
++    case Opcode::kGenericNegate:
++    case Opcode::kGenericIncrement:
++    case Opcode::kGenericDecrement:
++    case Opcode::kBuiltinStringFromCharCode:
++    case Opcode::kBuiltinStringPrototypeCharCodeOrCodePointAt:
+       return NodeType::kUnknown;
+   }
+ }
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index 1d6005c3c371dd44cbed256a8bdb2fc853a12777..7bd84aa198d668655e3fa6e3fd43f94a71b9e317 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -287,7 +287,7 @@ class ExceptionHandlerInfo;
+   V(ConstantGapMove)          \
+   V(GapMove)
+ 
+-#define NODE_LIST(V)                          \
++#define NON_VALUE_NODE_LIST(V)                \
+   V(AssertInt32)                              \
+   V(CheckConstTrackingLetCell)                \
+   V(CheckConstTrackingLetCellTagged)          \
+@@ -343,7 +343,10 @@ class ExceptionHandlerInfo;
+   V(TransitionElementsKind)                   \
+   V(TransitionElementsKindOrCheckMap)         \
+   V(SetContinuationPreservedEmbedderData)     \
+-  GAP_MOVE_NODE_LIST(V)                       \
++  GAP_MOVE_NODE_LIST(V)
++
++#define NODE_LIST(V)     \
++  NON_VALUE_NODE_LIST(V) \
+   VALUE_NODE_LIST(V)
+ 
+ #define BRANCH_CONTROL_NODE_LIST(V) \
