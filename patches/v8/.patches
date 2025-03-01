@@ -22,3 +22,5 @@ merged_maglev_fix_phi_untagging_bug_with_checknumber_holeyfloat64.patch
 cherry-pick-9209292e7898.patch
 cherry-pick-97e828af5cbc.patch
 cherry-pick-ca504d096c39.patch
+cherry-pick-1c7ff4d5477f.patch
+cherry-pick-8834c16acfcc.patch

@@ -1,0 +1,57 @@
+From 1c7ff4d5477f0e2bc7e20ce3b0f4f8eef71e6d13 Mon Sep 17 00:00:00 2001
+From: Olivier Flückiger <olivf@chromium.org>
+Date: Mon, 27 Jan 2025 14:50:34 +0100
+Subject: [PATCH] Merged: [turbofan] LoadField's type with recorded FieldType depends on stability
+
+Bug: 390465670
+(cherry picked from commit f920b6b2c2b1132cd1fbe1198500ceeaedcaa146)
+
+Change-Id: I0b430909275e583e5c0ecf2840e143fef461cbad
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6218882
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Auto-Submit: Olivier Flückiger <olivf@chromium.org>
+Commit-Queue: Olivier Flückiger <olivf@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.2@{#72}
+Cr-Branched-From: 24068c59cedad9ee976ddc05431f5f497b1ebd71-refs/heads/13.2.152@{#1}
+Cr-Branched-From: 6054ba94db0969220be4f94dc1677fc4696bdc4f-refs/heads/main@{#97085}
+---
+
+diff --git a/src/compiler/access-info.cc b/src/compiler/access-info.cc
+index 7247c49..53e55a6 100644
+--- a/src/compiler/access-info.cc
++++ b/src/compiler/access-info.cc
+@@ -484,8 +484,9 @@
+       OptionalMapRef maybe_field_map =
+           TryMakeRef(broker(), FieldType::AsClass(*descriptors_field_type));
+       if (!maybe_field_map.has_value()) return Invalid();
+-      field_type = Type::For(maybe_field_map.value(), broker());
+       field_map = maybe_field_map;
++      // field_type can only be inferred from field_map if it is stable and we
++      // add a stability dependency. This happens on use in the access builder.
+     }
+   } else {
+     CHECK(details_representation.IsTagged());
+@@ -1186,8 +1187,9 @@
+       OptionalMapRef maybe_field_map =
+           TryMakeRef(broker(), FieldType::AsClass(*descriptors_field_type));
+       if (!maybe_field_map.has_value()) return Invalid();
+-      field_type = Type::For(maybe_field_map.value(), broker());
+       field_map = maybe_field_map;
++      // field_type can only be inferred from field_map if it is stable and we
++      // add a stability dependency. This happens on use in the access builder.
+     }
+   }
+ 
+diff --git a/src/compiler/property-access-builder.cc b/src/compiler/property-access-builder.cc
+index 32c0ccf..bcaf221 100644
+--- a/src/compiler/property-access-builder.cc
++++ b/src/compiler/property-access-builder.cc
+@@ -337,6 +337,7 @@
+       if (field_map->is_stable()) {
+         dependencies()->DependOnStableMap(field_map.value());
+         field_access.map = field_map;
++        field_access.type = Type::For(*field_map, broker());
+       }
+     }
+   }
