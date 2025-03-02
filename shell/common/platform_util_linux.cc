@@ -15,6 +15,7 @@
 
 #include "base/cancelable_callback.h"
 #include "base/containers/contains.h"
+#include "base/containers/map_util.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/files/scoped_file.h"
@@ -287,11 +288,9 @@ bool XDGUtil(const std::vector<std::string>& argv,
            base::LaunchOptions options) {
           // Correct the XDG_CURRENT_DESKTOP environment variable before calling
           // XDG, in case it was changed for compatibility.
-          if (options.environment.find(kOriginalXdgCurrentDesktopEnvVar) !=
-              options.environment.end()) {
-            options.environment[kXdgCurrentDesktopEnvVar] =
-                options.environment[kOriginalXdgCurrentDesktopEnvVar];
-          }
+          if (const auto* orig = base::FindOrNull(
+                  options.environment, kOriginalXdgCurrentDesktopEnvVar))
+            options.environment.emplace(kXdgCurrentDesktopEnvVar, *orig);
           *options_out = std::move(options);
           std::move(quit_loop).Run();
         },
