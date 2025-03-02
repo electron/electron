@@ -14,6 +14,11 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (36.0)
 
+### Removed:`isDefault` and `status` properties on `PrinterInfo`
+
+These properties have been removed from the PrinterInfo Object
+because they have been removed from upstream Chromium.
+
 ### Deprecated: Extension methods and events on `session`
 
 `session.loadExtension`, `session.removeExtension`, `session.getExtension`,
@@ -30,10 +35,15 @@ https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw#disabling-dw
 
 ## Planned Breaking API Changes (35.0)
 
-### Removed:`isDefault` and `status` properties on `PrinterInfo`
+### Behavior Changed: Dialog API's `defaultPath` option on Linux
 
-These properties have been removed from the PrinterInfo Object
-because they have been removed from upstream Chromium.
+On Linux, the required portal version for file dialogs has been reverted
+to 3 from 4. Using the `defaultPath` option of the Dialog API is not
+supported when using portal file chooser dialogs unless the portal
+backend is version 4 or higher. The `--xdg-portal-required-version`
+[command-line switch](/api/command-line-switches.md#--xdg-portal-required-versionversion)
+can be used to force a required version for your application.
+See [#44426](https://github.com/electron/electron/pull/44426) for more details.
 
 ### Deprecated: `getFromVersionID` on `session.serviceWorkers`
 

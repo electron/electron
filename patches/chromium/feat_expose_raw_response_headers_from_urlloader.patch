@@ -155,10 +155,10 @@ index 4a55e0381a239294a868b5aece518bed26985e83..7daf3e28f12084a3ba8ca132d846dcf3
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 4ce74976a4902914e6f59ea943ef3b5b92d090f6..783e4bd84074530e8ded3af8a1869274bb5ebe0c 100644
+index 5e7d17112b41157117839c65cc13dbc56311d5f0..b40bafde39101124368dd5e5e221240a6eb7fece 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -714,6 +714,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -710,6 +710,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

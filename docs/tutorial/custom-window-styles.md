@@ -19,7 +19,7 @@ To create a frameless window, set the [`BaseWindowContructorOptions`][] `frame`
 
 To create a fully transparent window, set the [`BaseWindowContructorOptions`][] `transparent` param in the `BrowserWindow` constructor to `true`.
 
-The following fiddle takes advantage of a tranparent window and CSS styling to create
+The following fiddle takes advantage of a transparent window and CSS styling to create
 the illusion of a circular window.
 
 ```fiddle docs/fiddles/features/window-customization/custom-window-styles/transparent-windows

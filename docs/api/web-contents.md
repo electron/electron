@@ -898,6 +898,8 @@ copying data between CPU and GPU memory, with Chromium's hardware acceleration s
 Only a limited number of textures can exist at the same time, so it's important that you call `texture.release()` as soon as you're done with the texture.
 By managing the texture lifecycle by yourself, you can safely pass the `texture.textureInfo` to other processes through IPC.
 
+More details can be found in the [offscreen rendering tutorial](../tutorial/offscreen-rendering.md). To learn about how to handle the texture in native code, refer to [offscreen rendering's code documentation.](https://github.com/electron/electron/blob/main/shell/browser/osr/README.md).
+
 ```js
 const { BrowserWindow } = require('electron')
 
@@ -909,7 +911,7 @@ win.webContents.on('paint', async (e, dirty, image) => {
     await new Promise(resolve => setTimeout(resolve, 50))
 
     // You can send the native texture handle to native code for importing into your rendering pipeline.
-    // For example: https://github.com/electron/electron/tree/main/spec/fixtures/native-addon/osr-gpu
+    // Read more at https://github.com/electron/electron/blob/main/shell/browser/osr/README.md
     // importTextureHandle(dirty, e.texture.textureInfo)
 
     // You must call `e.texture.release()` as soon as possible, before the underlying frame pool is drained.

@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Fri, 28 Feb 2025 11:17:01 -0500
+Subject: chore remove deprecated FunctionCallbackInfo Holder
+
+v8 version 13.5.191 removed the deprecated FunctionCallbackInfo::Holder().
+
+Callers are supposed to use FunctionCallbackInfo::This() instead.
+
+See https://chromium-review.googlesource.com/c/v8/v8/+/6309166
+
+diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
+index 1af2459efcf54fa97ff24aaa221892eede6eb0d3..e8505247a5070dba572954ba63bc193c9fd51eb6 100644
+--- a/nan_callbacks_12_inl.h
++++ b/nan_callbacks_12_inl.h
+@@ -109,7 +109,14 @@ class FunctionCallbackInfo {
+   inline v8::Local<v8::Function> Callee() const { return info_.Callee(); }
+ #endif
+   inline v8::Local<v8::Value> Data() const { return data_; }
++#if defined(V8_MAJOR_VERSION) && (V8_MAJOR_VERSION < 13 ||                     \
++(V8_MAJOR_VERSION == 13 && defined(V8_MINOR_VERSION) &&                        \
++(V8_MINOR_VERSION < 5 || (V8_MINOR_VERSION == 5 &&                             \
++defined(V8_BUILD_NUMBER) && V8_BUILD_NUMBER < 191))))
+   inline v8::Local<v8::Object> Holder() const { return info_.Holder(); }
++#else
++  inline v8::Local<v8::Object> Holder() const { return info_.This(); }
++#endif
+   inline bool IsConstructCall() const { return info_.IsConstructCall(); }
+   inline int Length() const { return info_.Length(); }
+   inline v8::Local<v8::Value> operator[](int i) const { return info_[i]; }

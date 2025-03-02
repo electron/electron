@@ -23,7 +23,7 @@ SubmenuButton::SubmenuButton(PressedCallback callback,
     : views::MenuButton(std::move(callback), gfx::RemoveAccelerator(title)),
       background_color_(background_color) {
 #if BUILDFLAG(IS_LINUX)
-  // Dont' use native style border.
+  // Don't use native style border.
   SetBorder(CreateDefaultBorder());
 #endif
   SetAccessibleRole(ax::mojom::Role::kPopUpButton);

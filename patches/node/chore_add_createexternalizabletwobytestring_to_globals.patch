@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Fri, 28 Feb 2025 11:24:53 -0500
+Subject: chore: add createExternalizableTwoByteString to globals
+
+https://chromium-review.googlesource.com/c/v8/v8/+/6304942 added
+createExternalizableTwoByteString, so make sure it is handled
+as a global in the parallel/test-fs-write test.
+
+diff --git a/test/parallel/test-fs-write.js b/test/parallel/test-fs-write.js
+index 82f3425de2aa162aa97047098806a08d0f8be4bd..31ab5b833db94fec6f2e976f53f650bc6318e794 100644
+--- a/test/parallel/test-fs-write.js
++++ b/test/parallel/test-fs-write.js
+@@ -48,6 +48,7 @@ assert.notStrictEqual(isOneByteString, undefined);
+ // Account for extra globals exposed by --expose_externalize_string.
+ common.allowGlobals(
+   createExternalizableString,
++  createExternalizableTwoByteString,
+   externalizeString,
+   isOneByteString,
+   globalThis.x,

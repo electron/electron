@@ -388,6 +388,13 @@ describe('ServiceWorkerMain module', () => {
       const result = await runTest(serviceWorker, { name: 'testEvaluate', args: ['evalConstructorName'] });
       expect(result).to.equal('ServiceWorkerGlobalScope');
     });
+
+    it('does not leak prototypes', async () => {
+      loadWorkerScript();
+      const serviceWorker = await waitForServiceWorker('running');
+      const result = await runTest(serviceWorker, { name: 'testPrototypeLeak', args: [] });
+      expect(result).to.be.true();
+    });
   });
 
   describe('extensions', () => {

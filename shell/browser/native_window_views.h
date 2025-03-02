@@ -151,7 +151,7 @@ class NativeWindowViews : public NativeWindow,
 
 #if BUILDFLAG(IS_WIN)
   // Catch-all message handling and filtering. Called before
-  // HWNDMessageHandler's built-in handling, which may pre-empt some
+  // HWNDMessageHandler's built-in handling, which may preempt some
   // expectations in Views/Aura if messages are consumed. Returns true if the
   // message was consumed by the delegate and should not be processed further
   // by the HWNDMessageHandler. In this case, |result| is returned. |result| is
