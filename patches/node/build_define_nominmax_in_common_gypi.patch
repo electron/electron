@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 3 Mar 2025 12:05:55 +0100
+Subject: build: define NOMINMAX in common.gypi
+
+V8 and Node.js had defined NOMINMAX on Windows for a long time. In
+recent changes, V8 added std::numeric_limits::min usages in its
+header files which caused addons without NOMINMAX defines failed
+to compile.
+
+Define NOMINMAX in common.gypi so that addons can be compiled with
+the latest V8 header files.
+
+NAN includes uv.h before node.h, which makes
+these defines effectiveless. Nevertheless, the include order should not be
+significant.
+
+PR-URL: https://github.com/nodejs/node/pull/52794
+
+diff --git a/common.gypi b/common.gypi
+index 9bbf1b277eb17d78ca385643c3177638fd75866a..959ee74af88b44d31f2e6fa65c6f260820bd8c46 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -480,6 +480,10 @@
+           '_HAS_EXCEPTIONS=0',
+           'BUILDING_V8_SHARED=1',
+           'BUILDING_UV_SHARED=1',
++          # Stop <windows.h> from defining macros that conflict with
++          # std::min() and std::max().  We don't use <windows.h> (much)
++          # but we still inherit it from uv.h.
++          'NOMINMAX',
+         ],
+       }],
+       [ 'OS in "linux freebsd openbsd solaris aix os400"', {
+diff --git a/node.gypi b/node.gypi
+index 46c7c7e353f29b8b3e5937ec80a5924020548980..212750978fb5c24fffe410cbdfe8dbdfe2ea8b42 100644
+--- a/node.gypi
++++ b/node.gypi
+@@ -63,10 +63,6 @@
+         'FD_SETSIZE=1024',
+         # we need to use node's preferred "win32" rather than gyp's preferred "win"
+         'NODE_PLATFORM="win32"',
+-        # Stop <windows.h> from defining macros that conflict with
+-        # std::min() and std::max().  We don't use <windows.h> (much)
+-        # but we still inherit it from uv.h.
+-        'NOMINMAX',
+         '_UNICODE=1',
+       ],
+       'msvs_precompiled_header': 'tools/msvs/pch/node_pch.h',
