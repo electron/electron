@@ -40,7 +40,7 @@ index 0f0cde7be431dcb80c5314b1a9da49886c436d1c..f6d2bd439cad8b9f91c9d9a6cdb302e6
    }
    HistogramBase* histogram;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 1d22e19f16d5ad82466b0724971b2e4a685682f7..7531664c37833da9804d24c642a38a60c336c2c7 100644
+index 9619d10710ffbbdc73fa7d59d1b797c8d0b3a956..f2a5c0939b60c582dbbecc07add1e903a9183b95 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -1061,13 +1061,8 @@ static int32_t FastInternalModuleStat(
