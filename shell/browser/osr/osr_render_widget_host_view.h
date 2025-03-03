@@ -162,8 +162,7 @@ class OffScreenRenderWidgetHostView
   CreateSyntheticGestureTarget() override;
   void ImeCompositionRangeChanged(
       const gfx::Range&,
-      const std::optional<std::vector<gfx::Rect>>& character_bounds,
-      const std::optional<std::vector<gfx::Rect>>& line_bounds) override {}
+      const std::optional<std::vector<gfx::Rect>>& character_bounds) override {}
   gfx::Size GetCompositorViewportPixelSize() override;
   ui::Compositor* GetCompositor() override;
 
