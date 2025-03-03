@@ -16,13 +16,13 @@ Returns `string` - The file system path that this `File` object points to. In th
 
 This method superseded the previous augmentation to the `File` object with the `path` property.  An example is included below.
 
-```js
+```js @ts-nocheck
 // Before (renderer)
 const file = document.querySelector('input[type=file]').files[0]
 alert(`Uploaded file path was: ${file.path}`)
 ```
 
-```js
+```js @ts-nocheck
 // After (renderer)
 const file = document.querySelector('input[type=file]').files[0]
 electron.showFilePath(file)
