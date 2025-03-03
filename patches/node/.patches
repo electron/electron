@@ -53,3 +53,4 @@ cli_remove_deprecated_v8_flag.patch
 build_restore_clang_as_default_compiler_on_macos.patch
 esm_drop_support_for_import_assertions.patch
 build_remove_explicit_linker_call_to_libm_on_macos.patch
+build_define_nominmax_in_common_gypi.patch
