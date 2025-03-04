@@ -1,23 +1,25 @@
 name: 'Restore Cache AZCopy'
 description: 'Restores Electron src cache via AZCopy'
+inputs:
+  target-platform:
+    description: 'Target platform, should be linux, win, macos'
 runs:
   using: "composite"
   steps:
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57
+    uses: actions/cache/restore@d4323d4df104b026a6aa633fdb11d772146be0bf
     with:
-      path: |
-        sas-token
-      key: sas-key-${{ github.run_number }}-1
+      path: sas-token
+      key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-1
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57
+    uses: actions/cache/restore@d4323d4df104b026a6aa633fdb11d772146be0bf
     with:
-      path: |
-        sas-token
-      key: sas-key-${{ github.run_number }}-${{ github.run_attempt }}
-  - name: Download Src Cache from AKS
+      path: sas-token
+      key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-${{ github.run_attempt }}
+  - name: Download Src Cache from AKS (macos)
+    if: ${{ inputs.target-platform == 'macos' }}
     # The cache will always exist here as a result of the checkout job
     # Either it was uploaded to Azure in the checkout job for this commit
     # or it was uploaded in the checkout job for a previous commit.
@@ -37,10 +39,37 @@ runs:
     env:
       AZURE_AKS_CACHE_STORAGE_ACCOUNT: f723719aa87a34622b5f7f3
       AZURE_AKS_CACHE_SHARE_NAME: pvc-f6a4089f-b082-4bee-a3f9-c3e1c0c02d8f
-  - name: Clean SAS Key
+  - name: Download Src Cache from AKS (win)
+    if: ${{ inputs.target-platform == 'win' }}
+    # The cache will always exist here as a result of the checkout job
+    # Either it was uploaded to Azure in the checkout job for this commit
+    # or it was uploaded in the checkout job for a previous commit.
+    uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
+    with:
+      timeout_minutes: 30
+      max_attempts: 3
+      retry_on: error
+      command: |
+        $sas_token = Get-Content sas-token
+        if ([string]::IsNullOrEmpty($sas_token)) {
+          Write-Host "SAS Token not found; exiting src cache download early..."
+          exit 1
+        }
+        azcopy copy --log-level=ERROR `
+          "https://${{ env.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}.file.core.windows.net/${{ env.AZURE_AKS_CACHE_SHARE_NAME }}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
+    env:
+      AZURE_AKS_CACHE_STORAGE_ACCOUNT: f723719aa87a34622b5f7f3
+      AZURE_AKS_CACHE_SHARE_NAME: pvc-f6a4089f-b082-4bee-a3f9-c3e1c0c02d8f      
+  - name: Clean SAS Key (macos)
+    if: ${{ inputs.target-platform == 'macos' }}
     shell: bash
     run: rm -f sas-token
+  - name: Clean SAS Key (win)
+    if: ${{ inputs.target-platform == 'win' }}
+    shell: powershell
+    run: Remove-Item -Path sas-token -Force
   - name: Unzip and Ensure Src Cache
+    if: ${{ inputs.target-platform == 'macos' }}
     shell: bash
     run: |
       echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
@@ -69,3 +98,34 @@ runs:
 
       echo "Wiping Electron Directory"
       rm -rf src/electron
+
+  - name: Unzip and Ensure Src Cache
+    if: ${{ inputs.target-platform == 'win' }}
+    shell: powershell
+    run: |
+      Write-Host "Downloaded cache is $(Get-Item $DEPSHASH.tar).length"
+      if ((Get-Item $DEPSHASH.tar).length -eq 0) {
+        Write-Host "Cache is empty - exiting"
+        exit 1
+      }
+
+      New-Item -ItemType Directory -Path temp-cache
+      C:\ProgramData\Chocolatey\bin\7z.exe -aoa x -oD:temp-cache $DEPSHASH.tar
+      Write-Host "Unzipped cache is $(Get-ChildItem -Recurse temp-cache/src | Measure-Object -Property length -Sum).Sum"
+
+      if (Test-Path "temp-cache/src") {
+        Write-Host "Relocating Cache"
+        Remove-Item -Recurse -Force src
+        Move-Item temp-cache/src src
+
+        Write-Host "Deleting zip file"
+        Remove-Item -Force $DEPSHASH.tar
+      }
+
+      if (-Not (Test-Path "src/third_party/blink")) {
+        Write-Host "Cache was not correctly restored - exiting"
+        exit 1
+      }
+
+      Write-Host "Wiping Electron Directory"
+      Remove-Item -Recurse -Force src/electron
