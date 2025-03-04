@@ -36,1310 +36,6 @@ Auto-Submit: Joshua Pawlicki <waffles@chromium.org>
 Cr-Commit-Position: refs/branch-heads/6943@{#392}
 Cr-Branched-From: 72dd0b377c099e1e0230cc7345d5a5125b46ae7d-refs/heads/main@{#1402768}
 
-diff --git a/third_party/lzma_sdk/Asm/arm64/7zAsm.S b/third_party/lzma_sdk/Asm/arm64/7zAsm.S
-deleted file mode 100644
-index aa30a9ef8bf34ca51917983bcff7d873747d238c..0000000000000000000000000000000000000000
---- a/third_party/lzma_sdk/Asm/arm64/7zAsm.S
-+++ /dev/null
-@@ -1,194 +0,0 @@
--// 7zAsm.S -- ASM macros for arm64
--// 2021-04-25 : Igor Pavlov : Public domain
--
--#define  r0 x0
--#define  r1 x1
--#define  r2 x2
--#define  r3 x3
--#define  r4 x4
--#define  r5 x5
--#define  r6 x6
--#define  r7 x7
--#define  r8 x8
--#define  r9 x9
--#define  r10 x10
--#define  r11 x11
--#define  r12 x12
--#define  r13 x13
--#define  r14 x14
--#define  r15 x15
--#define  r16 x16
--#define  r17 x17
--#define  r18 x18
--#define  r19 x19
--#define  r20 x20
--#define  r21 x21
--#define  r22 x22
--#define  r23 x23
--#define  r24 x24
--#define  r25 x25
--#define  r26 x26
--#define  r27 x27
--#define  r28 x28
--#define  r29 x29
--#define  r30 x30
--
--#define  REG_ABI_PARAM_0 r0
--#define  REG_ABI_PARAM_1 r1
--#define  REG_ABI_PARAM_2 r2
--
--// The .note.gnu.property section is required because Chromium Android builds
--// utilize the linker flag force-bti.
--.pushsection .note.gnu.property, "a"
--.balign 8
--.long 4
--.long 0x10
--.long 0x5
--.asciz "GNU"
--.long 0xc0000000
--.long 4
--.long ((1 << 0 ) | (1 << 1))
--.long 0
--.popsection
--
--.macro p2_add reg:req, param:req
--        add     \reg, \reg, \param
--.endm
--
--.macro p2_sub reg:req, param:req
--        sub     \reg, \reg, \param
--.endm
--
--.macro p2_sub_s reg:req, param:req
--        subs    \reg, \reg, \param
--.endm
--
--.macro p2_and reg:req, param:req
--        and     \reg, \reg, \param
--.endm
--
--.macro xor reg:req, param:req
--        eor     \reg, \reg, \param
--.endm
--
--.macro or reg:req, param:req
--        orr     \reg, \reg, \param
--.endm
--
--.macro shl reg:req, param:req
--        lsl     \reg, \reg, \param
--.endm
--
--.macro shr reg:req, param:req
--        lsr     \reg, \reg, \param
--.endm
--
--.macro sar reg:req, param:req
--        asr     \reg, \reg, \param
--.endm
--
--.macro p1_neg reg:req
--        neg     \reg, \reg
--.endm
--
--.macro dec reg:req
--        sub     \reg, \reg, 1
--.endm
--
--.macro dec_s reg:req
--        subs    \reg, \reg, 1
--.endm
--
--.macro inc reg:req
--        add     \reg, \reg, 1
--.endm
--
--.macro inc_s reg:req
--        adds    \reg, \reg, 1
--.endm
--
--
--.macro imul reg:req, param:req
--        mul     \reg, \reg, \param
--.endm
--
--/*
--arm64 and arm use reverted c flag after subs/cmp instructions:
--  arm64-arm   :     x86
-- b.lo / b.cc  :  jb  / jc
-- b.hs / b.cs  :  jae / jnc
--*/ 
--
--.macro jmp lab:req
--        b       \lab
--.endm
--
--.macro je lab:req
--        b.eq    \lab
--.endm
--
--.macro jz lab:req
--        b.eq    \lab
--.endm
--
--.macro jnz lab:req
--        b.ne    \lab
--.endm
--
--.macro jne lab:req
--        b.ne    \lab
--.endm
--
--.macro jb lab:req
--        b.lo    \lab
--.endm
--
--.macro jbe lab:req
--        b.ls    \lab
--.endm
--
--.macro ja lab:req
--        b.hi    \lab
--.endm
--
--.macro jae lab:req
--        b.hs    \lab
--.endm
--
--
--.macro cmove dest:req, srcTrue:req
--        csel    \dest, \srcTrue, \dest, eq
--.endm
--
--.macro cmovne dest:req, srcTrue:req
--        csel    \dest, \srcTrue, \dest, ne
--.endm
--
--.macro cmovs dest:req, srcTrue:req
--        csel    \dest, \srcTrue, \dest, mi
--.endm
--
--.macro cmovns dest:req, srcTrue:req
--        csel    \dest, \srcTrue, \dest, pl
--.endm
--
--.macro cmovb dest:req, srcTrue:req
--        csel    \dest, \srcTrue, \dest, lo
--.endm
--
--.macro cmovae dest:req, srcTrue:req
--        csel    \dest, \srcTrue, \dest, hs
--.endm
--
--
--.macro MY_ALIGN_16 macro
--	.p2align 4,, (1 << 4) - 1
--.endm
--
--.macro MY_ALIGN_32 macro
--        .p2align 5,, (1 << 5) - 1
--.endm
--
--.macro MY_ALIGN_64 macro
--        .p2align 6,, (1 << 6) - 1
--.endm
-diff --git a/third_party/lzma_sdk/Asm/x86/7zAsm.asm b/third_party/lzma_sdk/Asm/x86/7zAsm.asm
-index a77edf25311d1a61ac627771d4d899041527cbfc..8b994a5e1f3c667c2e977d369b10bc7da5bd80fd 100644
---- a/third_party/lzma_sdk/Asm/x86/7zAsm.asm
-+++ b/third_party/lzma_sdk/Asm/x86/7zAsm.asm
-@@ -1,5 +1,5 @@
- ; 7zAsm.asm -- ASM macros
--; 2022-05-16 : Igor Pavlov : Public domain
-+; 2023-12-08 : Igor Pavlov : Public domain
- 
- 
- ; UASM can require these changes
-@@ -43,7 +43,7 @@ else
- endif
- endif
- 
--OPTION PROLOGUE:NONE 
-+OPTION PROLOGUE:NONE
- OPTION EPILOGUE:NONE
- 
- MY_ASM_START macro
-@@ -52,7 +52,7 @@ MY_ASM_START macro
-   else
-     .386
-     .model flat
--    SEVENZ SEGMENT PARA PUBLIC 'CODE'
-+    _TEXT$00 SEGMENT PARA PUBLIC 'CODE'
-   endif
- endm
- 
-@@ -121,10 +121,29 @@ endif
-   x2_H equ DH
-   x3_H equ BH
- 
-+;  r0_L equ AL
-+;  r1_L equ CL
-+;  r2_L equ DL
-+;  r3_L equ BL
-+
-+;  r0_H equ AH
-+;  r1_H equ CH
-+;  r2_H equ DH
-+;  r3_H equ BH
-+
-+
- ifdef x64
-   x5_L equ BPL
-   x6_L equ SIL
-   x7_L equ DIL
-+  x8_L equ r8b
-+  x9_L equ r9b
-+  x10_L equ r10b
-+  x11_L equ r11b
-+  x12_L equ r12b
-+  x13_L equ r13b
-+  x14_L equ r14b
-+  x15_L equ r15b
- 
-   r0 equ RAX
-   r1 equ RCX
-@@ -153,6 +172,22 @@ else
-   r7 equ x7
- endif
- 
-+  x0_R equ r0
-+  x1_R equ r1
-+  x2_R equ r2
-+  x3_R equ r3
-+  x4_R equ r4
-+  x5_R equ r5
-+  x6_R equ r6
-+  x7_R equ r7
-+  x8_R equ r8
-+  x9_R equ r9
-+  x10_R equ r10
-+  x11_R equ r11
-+  x12_R equ r12
-+  x13_R equ r13
-+  x14_R equ r14
-+  x15_R equ r15
- 
- ifdef x64
- ifdef ABI_LINUX
-@@ -200,6 +235,14 @@ REG_ABI_PARAM_0   equ REG_PARAM_0
- REG_ABI_PARAM_1_x equ REG_PARAM_1_x
- REG_ABI_PARAM_1   equ REG_PARAM_1
- 
-+MY_PUSH_PRESERVED_ABI_REGS_UP_TO_INCLUDING_R11 macro
-+        MY_PUSH_4_REGS
-+endm
-+
-+MY_POP_PRESERVED_ABI_REGS_UP_TO_INCLUDING_R11 macro
-+        MY_POP_4_REGS
-+endm
-+
- else
- ; x64
- 
-@@ -261,12 +304,25 @@ endm
- endif ; IS_LINUX
- 
- 
--MY_PUSH_PRESERVED_ABI_REGS macro
-+MY_PUSH_PRESERVED_ABI_REGS_UP_TO_INCLUDING_R11 macro
-     if  (IS_LINUX gt 0)
-         MY_PUSH_2_REGS
-     else
-         MY_PUSH_4_REGS
-     endif
-+endm
-+
-+MY_POP_PRESERVED_ABI_REGS_UP_TO_INCLUDING_R11 macro
-+    if  (IS_LINUX gt 0)
-+        MY_POP_2_REGS
-+    else
-+        MY_POP_4_REGS
-+    endif
-+endm
-+
-+
-+MY_PUSH_PRESERVED_ABI_REGS macro
-+    MY_PUSH_PRESERVED_ABI_REGS_UP_TO_INCLUDING_R11
-         push    r12
-         push    r13
-         push    r14
-@@ -279,11 +335,7 @@ MY_POP_PRESERVED_ABI_REGS macro
-         pop     r14
-         pop     r13
-         pop     r12
--    if  (IS_LINUX gt 0)
--        MY_POP_2_REGS
--    else
--        MY_POP_4_REGS
--    endif
-+    MY_POP_PRESERVED_ABI_REGS_UP_TO_INCLUDING_R11
- endm
- 
- endif ; x64
-diff --git a/third_party/lzma_sdk/Asm/x86/7zCrcOpt.asm b/third_party/lzma_sdk/Asm/x86/7zCrcOpt.asm
-deleted file mode 100644
-index 97a6b9aa80dd25742439c17426026472733209b1..0000000000000000000000000000000000000000
---- a/third_party/lzma_sdk/Asm/x86/7zCrcOpt.asm
-+++ /dev/null
-@@ -1,180 +0,0 @@
--; 7zCrcOpt.asm -- CRC32 calculation : optimized version
--; 2021-02-07 : Igor Pavlov : Public domain
--
--include 7zAsm.asm
--
--MY_ASM_START
--
--rD   equ  r2
--rN   equ  r7
--rT   equ  r5
--
--ifdef x64
--    num_VAR     equ r8
--    table_VAR   equ r9
--else
--  if (IS_CDECL gt 0)
--    crc_OFFS    equ (REG_SIZE * 5)
--    data_OFFS   equ (REG_SIZE + crc_OFFS)
--    size_OFFS   equ (REG_SIZE + data_OFFS)
--  else
--    size_OFFS   equ (REG_SIZE * 5)
--  endif
--    table_OFFS  equ (REG_SIZE + size_OFFS)
--    num_VAR     equ [r4 + size_OFFS]
--    table_VAR   equ [r4 + table_OFFS]
--endif
--
--SRCDAT  equ  rD + rN * 1 + 4 *
--
--CRC macro op:req, dest:req, src:req, t:req
--    op      dest, DWORD PTR [rT + src * 4 + 0400h * t]
--endm
--
--CRC_XOR macro dest:req, src:req, t:req
--    CRC xor, dest, src, t
--endm
--
--CRC_MOV macro dest:req, src:req, t:req
--    CRC mov, dest, src, t
--endm
--
--CRC1b macro
--    movzx   x6, BYTE PTR [rD]
--    inc     rD
--    movzx   x3, x0_L
--    xor     x6, x3
--    shr     x0, 8
--    CRC     xor, x0, r6, 0
--    dec     rN
--endm
--
--MY_PROLOG macro crc_end:req
--
--    ifdef x64
--      if  (IS_LINUX gt 0)
--        MY_PUSH_2_REGS
--        mov     x0, REG_ABI_PARAM_0_x   ; x0 = x7
--        mov     rT, REG_ABI_PARAM_3     ; r5 = r1
--        mov     rN, REG_ABI_PARAM_2     ; r7 = r2
--        mov     rD, REG_ABI_PARAM_1     ; r2 = r6
--      else
--        MY_PUSH_4_REGS
--        mov     x0, REG_ABI_PARAM_0_x   ; x0 = x1
--        mov     rT, REG_ABI_PARAM_3     ; r5 = r9
--        mov     rN, REG_ABI_PARAM_2     ; r7 = r8
--        ; mov     rD, REG_ABI_PARAM_1     ; r2 = r2
--      endif
--    else
--        MY_PUSH_4_REGS
--      if  (IS_CDECL gt 0)
--        mov     x0, [r4 + crc_OFFS]
--        mov     rD, [r4 + data_OFFS]
--      else
--        mov     x0, REG_ABI_PARAM_0_x
--      endif
--        mov     rN, num_VAR
--        mov     rT, table_VAR
--    endif
--    
--    test    rN, rN
--    jz      crc_end
--  @@:
--    test    rD, 7
--    jz      @F
--    CRC1b
--    jnz     @B
--  @@:
--    cmp     rN, 16
--    jb      crc_end
--    add     rN, rD
--    mov     num_VAR, rN
--    sub     rN, 8
--    and     rN, NOT 7
--    sub     rD, rN
--    xor     x0, [SRCDAT 0]
--endm
--
--MY_EPILOG macro crc_end:req
--    xor     x0, [SRCDAT 0]
--    mov     rD, rN
--    mov     rN, num_VAR
--    sub     rN, rD
--  crc_end:
--    test    rN, rN
--    jz      @F
--    CRC1b
--    jmp     crc_end
--  @@:
--      if (IS_X64 gt 0) and (IS_LINUX gt 0)
--        MY_POP_2_REGS
--      else
--        MY_POP_4_REGS
--      endif
--endm
--
--MY_PROC CrcUpdateT8, 4
--    MY_PROLOG crc_end_8
--    mov     x1, [SRCDAT 1]
--    align 16
--  main_loop_8:
--    mov     x6, [SRCDAT 2]
--    movzx   x3, x1_L
--    CRC_XOR x6, r3, 3
--    movzx   x3, x1_H
--    CRC_XOR x6, r3, 2
--    shr     x1, 16
--    movzx   x3, x1_L
--    movzx   x1, x1_H
--    CRC_XOR x6, r3, 1
--    movzx   x3, x0_L
--    CRC_XOR x6, r1, 0
--
--    mov     x1, [SRCDAT 3]
--    CRC_XOR x6, r3, 7
--    movzx   x3, x0_H
--    shr     x0, 16
--    CRC_XOR x6, r3, 6
--    movzx   x3, x0_L
--    CRC_XOR x6, r3, 5
--    movzx   x3, x0_H
--    CRC_MOV x0, r3, 4
--    xor     x0, x6
--    add     rD, 8
--    jnz     main_loop_8
--
--    MY_EPILOG crc_end_8
--MY_ENDP
--
--MY_PROC CrcUpdateT4, 4
--    MY_PROLOG crc_end_4
--    align 16
--  main_loop_4:
--    movzx   x1, x0_L
--    movzx   x3, x0_H
--    shr     x0, 16
--    movzx   x6, x0_H
--    and     x0, 0FFh
--    CRC_MOV x1, r1, 3
--    xor     x1, [SRCDAT 1]
--    CRC_XOR x1, r3, 2
--    CRC_XOR x1, r6, 0
--    CRC_XOR x1, r0, 1
-- 
--    movzx   x0, x1_L
--    movzx   x3, x1_H
--    shr     x1, 16
--    movzx   x6, x1_H
--    and     x1, 0FFh
--    CRC_MOV x0, r0, 3
--    xor     x0, [SRCDAT 2]
--    CRC_XOR x0, r3, 2
--    CRC_XOR x0, r6, 0
--    CRC_XOR x0, r1, 1
--    add     rD, 8
--    jnz     main_loop_4
--
--    MY_EPILOG crc_end_4
--MY_ENDP
--
--end
-diff --git a/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm b/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm
-index ddbd88ffc2e955419128fb105c00bb9f442dfddb..f2dcceb12a846f3034e1395c1b2c5ac0a65ccd92 100644
---- a/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm
-+++ b/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm
-@@ -1,5 +1,5 @@
- ; LzmaDecOpt.asm -- ASM version of LzmaDec_DecodeReal_3() function
--; 2021-02-23: Igor Pavlov : Public domain
-+; 2024-06-18: Igor Pavlov : Public domain
- ;
- ; 3 - is the code compatibility version of LzmaDec_DecodeReal_*()
- ; function for check at link time.
-@@ -17,11 +17,43 @@ include 7zAsm.asm
- 
- MY_ASM_START
- 
--LZMADEC SEGMENT ALIGN(64) 'CODE'
-+; if Z7_LZMA_DEC_OPT_ASM_USE_SEGMENT is     defined, we use additional SEGMENT with 64-byte alignment.
-+; if Z7_LZMA_DEC_OPT_ASM_USE_SEGMENT is not defined, we use default SEGMENT (where default 16-byte alignment of segment is expected).
-+; The performance is almost identical in our tests.
-+; But the performance can depend from position of lzmadec code inside instruction cache
-+; or micro-op cache line (depending from low address bits in 32-byte/64-byte cache lines).
-+; And 64-byte alignment provides a more consistent speed regardless
-+; of the code's position in the executable.
-+; But also it's possible that code without Z7_LZMA_DEC_OPT_ASM_USE_SEGMENT can be
-+; slightly faster than 64-bytes aligned code in some cases, if offset of lzmadec
-+; code in 64-byte block after compilation provides better speed by some reason.
-+; Note that Z7_LZMA_DEC_OPT_ASM_USE_SEGMENT adds an extra section to the ELF file.
-+; If you don't want to get that extra section, do not define Z7_LZMA_DEC_OPT_ASM_USE_SEGMENT.
-+
-+ifndef Z7_LZMA_DEC_OPT_ASM_USE_SEGMENT
-+if (IS_LINUX gt 0)
-+  Z7_LZMA_DEC_OPT_ASM_USE_SEGMENT equ 1
-+else
-+  Z7_LZMA_DEC_OPT_ASM_USE_SEGMENT equ 1
-+endif
-+endif
- 
-+ifdef Z7_LZMA_DEC_OPT_ASM_USE_SEGMENT
-+; Make this deterministic
-+; _TEXT$LZMADECOPT SEGMENT ALIGN(64) 'CODE'
-+LZMADEC SEGMENT ALIGN(64) 'CODE'
- MY_ALIGN macro num:req
-         align  num
-+        ; align  16
- endm
-+else
-+MY_ALIGN macro num:req
-+        ; We expect that ".text" is aligned for 16-bytes.
-+        ; So we don't need large alignment inside out function.
-+        align  16
-+endm
-+endif
-+
- 
- MY_ALIGN_16 macro
-         MY_ALIGN 16
-@@ -610,7 +642,11 @@ PARAM_lzma      equ REG_ABI_PARAM_0
- PARAM_limit     equ REG_ABI_PARAM_1
- PARAM_bufLimit  equ REG_ABI_PARAM_2
- 
-+ifdef Z7_LZMA_DEC_OPT_ASM_USE_SEGMENT
- ; MY_ALIGN_64
-+else
-+  MY_ALIGN_16
-+endif
- MY_PROC LzmaDec_DecodeReal_3, 3
- MY_PUSH_PRESERVED_ABI_REGS
- 
-@@ -1298,6 +1334,8 @@ fin:
- MY_POP_PRESERVED_ABI_REGS
- MY_ENDP
- 
-+ifdef Z7_LZMA_DEC_OPT_ASM_USE_SEGMENT
- LZMADEC ENDS
-+endif
- 
- end
-diff --git a/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm b/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm
-index 116153b69e56f519fad9a117ecc1402e8d3ef64f..a07930287a6d3612badf2a6db2fd12cc2a49d034 100644
---- a/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm
-+++ b/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm
-@@ -1,5 +1,5 @@
- ; Sha256Opt.asm -- SHA-256 optimized code for SHA-256 x86 hardware instructions
--; 2022-04-17 : Igor Pavlov : Public domain
-+; 2024-06-16 : Igor Pavlov : Public domain
- 
- include 7zAsm.asm
- 
-@@ -20,7 +20,7 @@ endif
- EXTRN   K_CONST:xmmword
- @
- 
--CONST   SEGMENT
-+CONST   SEGMENT READONLY
- 
- align 16
- Reverse_Endian_Mask db 3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12
-diff --git a/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm b/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
-index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326a07c40d8 100644
---- a/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
-+++ b/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
-@@ -1,113 +1,231 @@
- ; XzCrc64Opt.asm -- CRC64 calculation : optimized version
--; 2021-02-06 : Igor Pavlov : Public domain
-+; 2023-12-08 : Igor Pavlov : Public domain
- 
- include 7zAsm.asm
- 
- MY_ASM_START
- 
-+NUM_WORDS       equ     3
-+
-+if (NUM_WORDS lt 1) or (NUM_WORDS gt 64)
-+.err <num_words_IS_INCORRECT>
-+endif
-+
-+NUM_SKIP_BYTES  equ     ((NUM_WORDS - 2) * 4)
-+
-+
-+MOVZXLO macro dest:req, src:req
-+        movzx   dest, @CatStr(src, _L)
-+endm
-+
-+MOVZXHI macro dest:req, src:req
-+        movzx   dest, @CatStr(src, _H)
-+endm
-+
-+
- ifdef x64
- 
--rD      equ  r9
-+rD      equ  r11
- rN      equ  r10
--rT      equ  r5
--num_VAR equ  r8
--
--SRCDAT4 equ  dword ptr [rD + rN * 1]
-+rT      equ  r9
-+
-+CRC_OP macro op:req, dest:req, src:req, t:req
-+        op      dest, QWORD PTR [rT + @CatStr(src, _R) * 8 + 0800h * (t)]
-+endm
-     
- CRC_XOR macro dest:req, src:req, t:req
--    xor     dest, QWORD PTR [rT + src * 8 + 0800h * t]
-+        CRC_OP  xor, dest, src, t
-+endm
-+
-+CRC_MOV macro dest:req, src:req, t:req
-+        CRC_OP  mov, dest, src, t
- endm
- 
- CRC1b macro
--    movzx   x6, BYTE PTR [rD]
--    inc     rD
--    movzx   x3, x0_L
--    xor     x6, x3
--    shr     r0, 8
--    CRC_XOR r0, r6, 0
--    dec     rN
--endm
--
--MY_PROLOG macro crc_end:req
--  ifdef ABI_LINUX
--    MY_PUSH_2_REGS
--  else
--    MY_PUSH_4_REGS
--  endif
--    mov     r0, REG_ABI_PARAM_0
--    mov     rN, REG_ABI_PARAM_2
--    mov     rT, REG_ABI_PARAM_3
--    mov     rD, REG_ABI_PARAM_1
--    test    rN, rN
--    jz      crc_end
--  @@:
--    test    rD, 3
--    jz      @F
--    CRC1b
--    jnz     @B
--  @@:
--    cmp     rN, 8
--    jb      crc_end
--    add     rN, rD
--    mov     num_VAR, rN
--    sub     rN, 4
--    and     rN, NOT 3
--    sub     rD, rN
--    mov     x1, SRCDAT4
--    xor     r0, r1
--    add     rN, 4
--endm
--
--MY_EPILOG macro crc_end:req
--    sub     rN, 4
--    mov     x1, SRCDAT4
--    xor     r0, r1
--    mov     rD, rN
--    mov     rN, num_VAR
--    sub     rN, rD
--  crc_end:
--    test    rN, rN
--    jz      @F
--    CRC1b
--    jmp     crc_end
--  @@:
--  ifdef ABI_LINUX
--    MY_POP_2_REGS
--  else
--    MY_POP_4_REGS
--  endif
-+        movzx   x6, BYTE PTR [rD]
-+        inc     rD
-+        MOVZXLO x3, x0
-+        xor     x6, x3
-+        shr     r0, 8
-+        CRC_XOR r0, x6, 0
-+        dec     rN
- endm
- 
--MY_PROC XzCrc64UpdateT4, 4
--    MY_PROLOG crc_end_4
--    align 16
--  main_loop_4:
--    mov     x1, SRCDAT4
--    movzx   x2, x0_L
--    movzx   x3, x0_H
--    shr     r0, 16
--    movzx   x6, x0_L
--    movzx   x7, x0_H
--    shr     r0, 16
--    CRC_XOR r1, r2, 3
--    CRC_XOR r0, r3, 2
--    CRC_XOR r1, r6, 1
--    CRC_XOR r0, r7, 0
--    xor     r0, r1
--
--    add     rD, 4
--    jnz     main_loop_4
--
--    MY_EPILOG crc_end_4
-+
-+; ALIGN_MASK is 3 or 7 bytes alignment:
-+ALIGN_MASK      equ  (7 - (NUM_WORDS and 1) * 4)
-+
-+if NUM_WORDS eq 1
-+
-+src_rN_offset   equ  4
-+; + 4 for prefetching next 4-bytes after current iteration
-+NUM_BYTES_LIMIT equ  (NUM_WORDS * 4 + 4)
-+SRCDAT4         equ  DWORD PTR [rN + rD * 1]
-+
-+XOR_NEXT macro
-+        mov     x1, [rD]
-+        xor     r0, r1
-+endm
-+
-+else ; NUM_WORDS > 1
-+
-+src_rN_offset   equ 8
-+; + 8 for prefetching next 8-bytes after current iteration
-+NUM_BYTES_LIMIT equ (NUM_WORDS * 4 + 8)
-+
-+XOR_NEXT macro
-+        xor     r0, QWORD PTR [rD] ; 64-bit read, can be unaligned
-+endm
-+
-+; 32-bit or 64-bit
-+LOAD_SRC_MULT4 macro dest:req, word_index:req
-+        mov     dest, [rN + rD * 1 + 4 * (word_index) - src_rN_offset];
-+endm
-+
-+endif
-+
-+
-+
-+MY_PROC @CatStr(XzCrc64UpdateT, %(NUM_WORDS * 4)), 4
-+        MY_PUSH_PRESERVED_ABI_REGS_UP_TO_INCLUDING_R11
-+
-+        mov     r0, REG_ABI_PARAM_0   ; r0  <- r1 / r7
-+        mov     rD, REG_ABI_PARAM_1   ; r11 <- r2 / r6
-+        mov     rN, REG_ABI_PARAM_2   ; r10 <- r8 / r2
-+if  (IS_LINUX gt 0)
-+        mov     rT, REG_ABI_PARAM_3   ; r9  <- r9 / r1
-+endif
-+
-+        cmp     rN, NUM_BYTES_LIMIT + ALIGN_MASK
-+        jb      crc_end
-+@@:
-+        test    rD, ALIGN_MASK
-+        jz      @F
-+        CRC1b
-+        jmp     @B
-+@@:
-+        XOR_NEXT
-+        lea     rN, [rD + rN * 1 - (NUM_BYTES_LIMIT - 1)]
-+        sub     rD, rN
-+        add     rN, src_rN_offset
-+
-+align 16
-+@@:
-+
-+if NUM_WORDS eq 1
-+
-+        mov     x1, x0
-+        shr     x1, 8
-+        MOVZXLO x3, x1
-+        MOVZXLO x2, x0
-+        shr     x1, 8
-+        shr     r0, 32
-+        xor     x0, SRCDAT4
-+        CRC_XOR r0, x2, 3
-+        CRC_XOR r0, x3, 2
-+        MOVZXLO x2, x1
-+        shr     x1, 8
-+        CRC_XOR r0, x2, 1
-+        CRC_XOR r0, x1, 0
-+
-+else ; NUM_WORDS > 1
-+
-+if NUM_WORDS ne 2
-+  k = 2
-+  while k lt NUM_WORDS
-+
-+        LOAD_SRC_MULT4  x1, k
-+    crc_op1  textequ <xor>
-+
-+    if k eq 2
-+      if (NUM_WORDS and 1)
-+        LOAD_SRC_MULT4  x7, NUM_WORDS       ; aligned 32-bit
-+        LOAD_SRC_MULT4  x6, NUM_WORDS + 1   ; aligned 32-bit
-+        shl     r6, 32
-+      else
-+        LOAD_SRC_MULT4  r6, NUM_WORDS       ; aligned 64-bit
-+        crc_op1  textequ <mov>
-+      endif
-+    endif
-+        table = 4 * (NUM_WORDS - 1 - k)
-+        MOVZXLO x3, x1
-+        CRC_OP crc_op1, r7, x3, 3 + table
-+        MOVZXHI x3, x1
-+        shr     x1, 16
-+        CRC_XOR r6, x3, 2 + table
-+        MOVZXLO x3, x1
-+        shr     x1, 8
-+        CRC_XOR r7, x3, 1 + table
-+        CRC_XOR r6, x1, 0 + table
-+        k = k + 1
-+  endm
-+        crc_op2  textequ <xor>
-+
-+else ; NUM_WORDS == 2
-+        LOAD_SRC_MULT4  r6, NUM_WORDS       ; aligned 64-bit
-+        crc_op2  textequ <mov>
-+endif ; NUM_WORDS == 2
-+
-+        MOVZXHI x3, x0
-+        MOVZXLO x2, x0
-+        mov     r1, r0
-+        shr     r1, 32
-+        shr     x0, 16
-+        CRC_XOR r6, x2, NUM_SKIP_BYTES + 7
-+        CRC_OP  crc_op2, r7, x3, NUM_SKIP_BYTES + 6
-+        MOVZXLO x2, x0
-+        MOVZXHI x5, x1
-+        MOVZXLO x3, x1
-+        shr     x0, 8
-+        shr     x1, 16
-+        CRC_XOR r7, x2, NUM_SKIP_BYTES + 5
-+        CRC_XOR r6, x3, NUM_SKIP_BYTES + 3
-+        CRC_XOR r7, x0, NUM_SKIP_BYTES + 4
-+        CRC_XOR r6, x5, NUM_SKIP_BYTES + 2
-+        MOVZXLO x2, x1
-+        shr     x1, 8
-+        CRC_XOR r7, x2, NUM_SKIP_BYTES + 1
-+        CRC_MOV r0, x1, NUM_SKIP_BYTES + 0
-+        xor     r0, r6
-+        xor     r0, r7
-+
-+endif ; NUM_WORDS > 1
-+        add     rD, NUM_WORDS * 4
-+        jnc     @B
-+
-+        sub     rN, src_rN_offset
-+        add     rD, rN
-+        XOR_NEXT
-+        add     rN, NUM_BYTES_LIMIT - 1
-+        sub     rN, rD
-+
-+crc_end:
-+        test    rN, rN
-+        jz      func_end
-+@@:
-+        CRC1b
-+        jnz      @B
-+func_end:
-+        MY_POP_PRESERVED_ABI_REGS_UP_TO_INCLUDING_R11
- MY_ENDP
- 
-+
-+
- else
-+; ==================================================================
- ; x86 (32-bit)
- 
--rD      equ  r1
--rN      equ  r7
-+rD      equ  r7
-+rN      equ  r1
- rT      equ  r5
- 
-+xA      equ  x6
-+xA_R    equ  r6
-+
-+ifdef x64
-+    num_VAR     equ  r8
-+else
-+
- crc_OFFS  equ  (REG_SIZE * 5)
- 
- if (IS_CDECL gt 0) or (IS_LINUX gt 0)
-@@ -133,107 +251,273 @@ else
-     table_VAR   equ  [r4 + table_OFFS]
-     num_VAR     equ  table_VAR
- endif
-+endif ; x64
-+
-+SRCDAT4         equ     DWORD PTR [rN + rD * 1]
- 
--SRCDAT4 equ  dword ptr [rD + rN * 1]
-+CRC_1 macro op:req, dest:req, src:req, t:req, word_index:req
-+        op      dest, DWORD PTR [rT + @CatStr(src, _R) * 8 + 0800h * (t) + (word_index) * 4]
-+endm
- 
- CRC macro op0:req, op1:req, dest0:req, dest1:req, src:req, t:req
--    op0     dest0, DWORD PTR [rT + src * 8 + 0800h * t]
--    op1     dest1, DWORD PTR [rT + src * 8 + 0800h * t + 4]
-+        CRC_1   op0, dest0, src, t, 0
-+        CRC_1   op1, dest1, src, t, 1
- endm
- 
- CRC_XOR macro dest0:req, dest1:req, src:req, t:req
--    CRC xor, xor, dest0, dest1, src, t
-+        CRC xor, xor, dest0, dest1, src, t
- endm
- 
- 
- CRC1b macro
--    movzx   x6, BYTE PTR [rD]
--    inc     rD
--    movzx   x3, x0_L
--    xor     x6, x3
--    shrd    r0, r2, 8
--    shr     r2, 8
--    CRC_XOR r0, r2, r6, 0
--    dec     rN
--endm
--
--MY_PROLOG macro crc_end:req
--    MY_PUSH_4_REGS
--
--  if (IS_CDECL gt 0) or (IS_LINUX gt 0)
--    proc_numParams = proc_numParams + 2 ; for ABI_LINUX
--    mov     rN, [r4 + size_OFFS]
--    mov     rD, [r4 + data_OFFS]
-+        movzx   xA, BYTE PTR [rD]
-+        inc     rD
-+        MOVZXLO x3, x0
-+        xor     xA, x3
-+        shrd    x0, x2, 8
-+        shr     x2, 8
-+        CRC_XOR x0, x2, xA, 0
-+        dec     rN
-+endm
-+
-+
-+MY_PROLOG_BASE macro
-+        MY_PUSH_4_REGS
-+ifdef x64
-+        mov     r0, REG_ABI_PARAM_0     ; r0 <- r1 / r7
-+        mov     rT, REG_ABI_PARAM_3     ; r5 <- r9 / r1
-+        mov     rN, REG_ABI_PARAM_2     ; r1 <- r8 / r2
-+        mov     rD, REG_ABI_PARAM_1     ; r7 <- r2 / r6
-+        mov     r2, r0
-+        shr     r2, 32
-+        mov     x0, x0
-+else
-+    if (IS_CDECL gt 0) or (IS_LINUX gt 0)
-+        proc_numParams = proc_numParams + 2 ; for ABI_LINUX
-+        mov     rN, [r4 + size_OFFS]
-+        mov     rD, [r4 + data_OFFS]
-+    else
-+        mov     rD, REG_ABI_PARAM_0     ; r7 <- r1 : (data)
-+        mov     rN, REG_ABI_PARAM_1     ; r1 <- r2 : (size)
-+    endif
-+        mov     x0, [r4 + crc_OFFS]
-+        mov     x2, [r4 + crc_OFFS + 4]
-+        mov     rT, table_VAR
-+endif
-+endm
-+
-+
-+MY_EPILOG_BASE macro crc_end:req, func_end:req
-+crc_end:
-+        test    rN, rN
-+        jz      func_end
-+@@:
-+        CRC1b
-+        jnz      @B
-+func_end:
-+ifdef x64
-+        shl     r2, 32
-+        xor     r0, r2
-+endif
-+        MY_POP_4_REGS
-+endm
-+
-+
-+; ALIGN_MASK is 3 or 7 bytes alignment:
-+ALIGN_MASK  equ     (7 - (NUM_WORDS and 1) * 4)
-+
-+if (NUM_WORDS eq 1)
-+
-+NUM_BYTES_LIMIT_T4 equ (NUM_WORDS * 4 + 4)
-+
-+MY_PROC @CatStr(XzCrc64UpdateT, %(NUM_WORDS * 4)), 5
-+        MY_PROLOG_BASE
-+
-+        cmp     rN, NUM_BYTES_LIMIT_T4 + ALIGN_MASK
-+        jb      crc_end_4
-+@@:
-+        test    rD, ALIGN_MASK
-+        jz      @F
-+        CRC1b
-+        jmp     @B
-+@@:
-+        xor     x0, [rD]
-+        lea     rN, [rD + rN * 1 - (NUM_BYTES_LIMIT_T4 - 1)]
-+        sub     rD, rN
-+        add     rN, 4
-+
-+        MOVZXLO xA, x0
-+align 16
-+@@:
-+        mov     x3, SRCDAT4
-+        xor     x3, x2
-+        shr     x0, 8
-+        CRC xor, mov, x3, x2, xA, 3
-+        MOVZXLO xA, x0
-+        shr     x0, 8
-+        ; MOVZXHI  xA, x0
-+        ; shr     x0, 16
-+        CRC_XOR x3, x2, xA, 2
-+
-+        MOVZXLO xA, x0
-+        shr     x0, 8
-+        CRC_XOR x3, x2, xA, 1
-+        CRC_XOR x3, x2, x0, 0
-+        MOVZXLO xA, x3
-+        mov     x0, x3
-+
-+        add     rD, 4
-+        jnc     @B
-+
-+        sub     rN, 4
-+        add     rD, rN
-+        xor     x0, [rD]
-+        add     rN, NUM_BYTES_LIMIT_T4 - 1
-+        sub     rN, rD
-+        MY_EPILOG_BASE crc_end_4, func_end_4
-+MY_ENDP
-+
-+else ; NUM_WORDS > 1
-+
-+SHR_X macro x, imm
-+        shr x, imm
-+endm
-+
-+
-+ITER_1 macro v0, v1, a, off
-+        MOVZXLO xA, a
-+        SHR_X   a, 8
-+        CRC_XOR v0, v1, xA, off
-+endm
-+
-+
-+ITER_4 macro v0, v1, a, off
-+if 0 eq 0
-+        ITER_1  v0, v1, a, off + 3
-+        ITER_1  v0, v1, a, off + 2
-+        ITER_1  v0, v1, a, off + 1
-+        CRC_XOR v0, v1, a, off
-+elseif 0 eq 0
-+        MOVZXLO xA, a
-+        CRC_XOR v0, v1, xA, off + 3
-+        mov     xA, a
-+        ror     a, 16   ; 32-bit ror
-+        shr     xA, 24
-+        CRC_XOR v0, v1, xA, off
-+        MOVZXLO xA, a
-+        SHR_X   a, 24
-+        CRC_XOR v0, v1, xA, off + 1
-+        CRC_XOR v0, v1, a, off + 2
-+else
-+        ; MOVZXHI provides smaller code, but MOVZX_HI_BYTE is not fast instruction
-+        MOVZXLO xA, a
-+        CRC_XOR v0, v1, xA, off + 3
-+        MOVZXHI xA, a
-+        SHR_X   a, 16
-+        CRC_XOR v0, v1, xA, off + 2
-+        MOVZXLO xA, a
-+        SHR_X   a, 8
-+        CRC_XOR v0, v1, xA, off + 1
-+        CRC_XOR v0, v1, a, off
-+endif
-+endm
-+
-+
-+
-+ITER_1_PAIR macro v0, v1, a0, a1, off
-+        ITER_1 v0, v1, a0, off + 4
-+        ITER_1 v0, v1, a1, off
-+endm
-+
-+src_rD_offset equ 8
-+STEP_SIZE       equ     (NUM_WORDS * 4)
-+
-+ITER_12_NEXT macro op, index, v0, v1
-+        op     v0, DWORD PTR [rD + (index + 1) * STEP_SIZE     - src_rD_offset]
-+        op     v1, DWORD PTR [rD + (index + 1) * STEP_SIZE + 4 - src_rD_offset]
-+endm
-+
-+ITER_12 macro index, a0, a1, v0, v1
-+
-+  if NUM_SKIP_BYTES  eq 0
-+        ITER_12_NEXT mov, index, v0, v1
-   else
--    mov     rN, r2
-+    k = 0
-+    while k lt NUM_SKIP_BYTES
-+        movzx   xA, BYTE PTR [rD + (index) * STEP_SIZE + k + 8 - src_rD_offset]
-+      if k eq 0
-+        CRC mov, mov,   v0, v1, xA, NUM_SKIP_BYTES - 1 - k
-+      else
-+        CRC_XOR         v0, v1, xA, NUM_SKIP_BYTES - 1 - k
-+      endif
-+      k = k + 1
-+    endm
-+        ITER_12_NEXT xor, index, v0, v1
-   endif
- 
--    mov     x0, [r4 + crc_OFFS]
--    mov     x2, [r4 + crc_OFFS + 4]
--    mov     rT, table_VAR
--    test    rN, rN
--    jz      crc_end
--  @@:
--    test    rD, 3
--    jz      @F
--    CRC1b
--    jnz     @B
--  @@:
--    cmp     rN, 8
--    jb      crc_end
--    add     rN, rD
--
--    mov     num_VAR, rN
--
--    sub     rN, 4
--    and     rN, NOT 3
--    sub     rD, rN
--    xor     r0, SRCDAT4
--    add     rN, 4
--endm
--
--MY_EPILOG macro crc_end:req
--    sub     rN, 4
--    xor     r0, SRCDAT4
--
--    mov     rD, rN
--    mov     rN, num_VAR
--    sub     rN, rD
--  crc_end:
--    test    rN, rN
--    jz      @F
--    CRC1b
--    jmp     crc_end
--  @@:
--    MY_POP_4_REGS
--endm
--
--MY_PROC XzCrc64UpdateT4, 5
--    MY_PROLOG crc_end_4
--    movzx   x6, x0_L
--    align 16
--  main_loop_4:
--    mov     r3, SRCDAT4
--    xor     r3, r2
--
--    CRC xor, mov, r3, r2, r6, 3
--    movzx   x6, x0_H
--    shr     r0, 16
--    CRC_XOR r3, r2, r6, 2
--
--    movzx   x6, x0_L
--    movzx   x0, x0_H
--    CRC_XOR r3, r2, r6, 1
--    CRC_XOR r3, r2, r0, 0
--    movzx   x6, x3_L
--    mov     r0, r3
--
--    add     rD, 4
--    jnz     main_loop_4
--
--    MY_EPILOG crc_end_4
-+if 0 eq 0
-+        ITER_4  v0, v1, a0, NUM_SKIP_BYTES + 4
-+        ITER_4  v0, v1, a1, NUM_SKIP_BYTES
-+else ; interleave version is faster/slower for different processors
-+        ITER_1_PAIR v0, v1, a0, a1, NUM_SKIP_BYTES + 3
-+        ITER_1_PAIR v0, v1, a0, a1, NUM_SKIP_BYTES + 2
-+        ITER_1_PAIR v0, v1, a0, a1, NUM_SKIP_BYTES + 1
-+        CRC_XOR     v0, v1, a0,     NUM_SKIP_BYTES + 4
-+        CRC_XOR     v0, v1, a1,     NUM_SKIP_BYTES
-+endif
-+endm
-+
-+; we use (UNROLL_CNT > 1) to reduce read ports pressure (num_VAR reads)
-+UNROLL_CNT      equ     (2 * 1)
-+NUM_BYTES_LIMIT equ     (STEP_SIZE * UNROLL_CNT + 8)
-+
-+MY_PROC @CatStr(XzCrc64UpdateT, %(NUM_WORDS * 4)), 5
-+        MY_PROLOG_BASE
-+
-+        cmp     rN, NUM_BYTES_LIMIT + ALIGN_MASK
-+        jb      crc_end_12
-+@@:
-+        test    rD, ALIGN_MASK
-+        jz      @F
-+        CRC1b
-+        jmp     @B
-+@@:
-+        xor     x0, [rD]
-+        xor     x2, [rD + 4]
-+        add     rD, src_rD_offset
-+        lea     rN, [rD + rN * 1 - (NUM_BYTES_LIMIT - 1)]
-+        mov     num_VAR, rN
-+
-+align 16
-+@@:
-+    i = 0
-+    rept UNROLL_CNT
-+      if (i and 1) eq 0
-+        ITER_12     i, x0, x2,  x1, x3
-+      else
-+        ITER_12     i, x1, x3,  x0, x2
-+      endif
-+      i = i + 1
-+    endm
-+
-+    if (UNROLL_CNT and 1)
-+        mov     x0, x1
-+        mov     x2, x3
-+    endif
-+        add     rD, STEP_SIZE * UNROLL_CNT
-+        cmp     rD, num_VAR
-+        jb      @B
-+
-+        mov     rN, num_VAR
-+        add     rN, NUM_BYTES_LIMIT - 1
-+        sub     rN, rD
-+        sub     rD, src_rD_offset
-+        xor     x0, [rD]
-+        xor     x2, [rD + 4]
-+
-+        MY_EPILOG_BASE crc_end_12, func_end_12
- MY_ENDP
- 
-+endif ; (NUM_WORDS > 1)
- endif ; ! x64
--
- end
 diff --git a/third_party/lzma_sdk/BUILD.gn b/third_party/lzma_sdk/BUILD.gn
 index 57923a6b9e6cf6f73e7b2706fcbc0dcd367ebe89..39d8dc0a33ce95f7c293bab9d2de5f8639925f13 100644
 --- a/third_party/lzma_sdk/BUILD.gn
@@ -3847,7 +2543,7 @@ index 69fad9ca2b476ed8589f6bee8a08de37be47297e..9408017ed4fc1cda88c7e5e4ce6b7a61
 +#undef Z7_CRC_NUM_TABLES_USE
  #endif
 diff --git a/third_party/lzma_sdk/C/7zDec.c b/third_party/lzma_sdk/C/7zDec.c
-index fbfd016e1e6a11bd976f39fe90de619166910e0e..520cbfd833be22e29a248eb05aca7e81d55d2ac4 100644
+index fbfd016e1e6a11bd976f39fe90de619166910e0e..341fbce3c3cf923305a47120ef41f752fbf0e5c7 100644
 --- a/third_party/lzma_sdk/C/7zDec.c
 +++ b/third_party/lzma_sdk/C/7zDec.c
 @@ -1,11 +1,11 @@
@@ -5129,67 +3825,6 @@ index 49ea81dd3beaf4d5af32e25dab0360856ee99c4a..00000000000000000000000000000000
 -
 -#define MY_COPYRIGHT_DATE MY_COPYRIGHT " : " MY_DATE
 -#define MY_VERSION_COPYRIGHT_DATE MY_VERSION_CPU " : " MY_COPYRIGHT " : " MY_DATE
-diff --git a/third_party/lzma_sdk/C/7zVersion.rc b/third_party/lzma_sdk/C/7zVersion.rc
-deleted file mode 100644
-index 6ed26de74452e5f8cd98cded9642ed1ddb7a74b7..0000000000000000000000000000000000000000
---- a/third_party/lzma_sdk/C/7zVersion.rc
-+++ /dev/null
-@@ -1,55 +0,0 @@
--#define MY_VS_FFI_FILEFLAGSMASK  0x0000003FL
--#define MY_VOS_NT_WINDOWS32  0x00040004L
--#define MY_VOS_CE_WINDOWS32  0x00050004L
--
--#define MY_VFT_APP  0x00000001L
--#define MY_VFT_DLL  0x00000002L
--
--// #include <WinVer.h>
--
--#ifndef MY_VERSION
--#include "7zVersion.h"
--#endif
--
--#define MY_VER MY_VER_MAJOR,MY_VER_MINOR,MY_VER_BUILD,0
--
--#ifdef DEBUG
--#define DBG_FL VS_FF_DEBUG
--#else
--#define DBG_FL 0
--#endif
--
--#define MY_VERSION_INFO(fileType, descr, intName, origName)  \
--LANGUAGE 9, 1 \
--1 VERSIONINFO \
--  FILEVERSION MY_VER \
--  PRODUCTVERSION MY_VER \
--  FILEFLAGSMASK MY_VS_FFI_FILEFLAGSMASK \
--  FILEFLAGS DBG_FL \
--  FILEOS MY_VOS_NT_WINDOWS32 \
--  FILETYPE fileType \
--  FILESUBTYPE 0x0L \
--BEGIN \
--    BLOCK "StringFileInfo" \
--    BEGIN  \
--        BLOCK "040904b0" \
--        BEGIN \
--            VALUE "CompanyName", "Igor Pavlov" \
--            VALUE "FileDescription", descr \
--            VALUE "FileVersion", MY_VERSION  \
--            VALUE "InternalName", intName \
--            VALUE "LegalCopyright", MY_COPYRIGHT \
--            VALUE "OriginalFilename", origName \
--            VALUE "ProductName", "7-Zip" \
--            VALUE "ProductVersion", MY_VERSION \
--        END \
--    END \
--    BLOCK "VarFileInfo" \
--    BEGIN \
--        VALUE "Translation", 0x409, 1200 \
--    END \
--END
--
--#define MY_VERSION_INFO_APP(descr, intName) MY_VERSION_INFO(MY_VFT_APP, descr, intName, intName ".exe")
--
--#define MY_VERSION_INFO_DLL(descr, intName) MY_VERSION_INFO(MY_VFT_DLL, descr, intName, intName ".dll")
 diff --git a/third_party/lzma_sdk/C/7zWindows.h b/third_party/lzma_sdk/C/7zWindows.h
 new file mode 100644
 index 0000000000000000000000000000000000000000..42c6db8bfc2765f7232d46de65c8333ac3d9f664
@@ -5932,7 +4567,7 @@ index 3be2041eb75502c36faf8064e0edd6679d7abdbb..01bf6b7dd6b1c7fabbd8c2797738b6f5
  #endif
  
 diff --git a/third_party/lzma_sdk/C/Bcj2.c b/third_party/lzma_sdk/C/Bcj2.c
-index c7b956708f6e82641623bcaa9e9abcecf1635750..7cb57ad62dcf0aef9f5cb77078897d17400266be 100644
+index c7b956708f6e82641623bcaa9e9abcecf1635750..4ec5ea924598db2167887abd3483cd9c1f002882 100644
 --- a/third_party/lzma_sdk/C/Bcj2.c
 +++ b/third_party/lzma_sdk/C/Bcj2.c
 @@ -1,29 +1,24 @@
@@ -6367,7 +5002,7 @@ index c7b956708f6e82641623bcaa9e9abcecf1635750..7cb57ad62dcf0aef9f5cb77078897d17
 +#undef kBitModelTotal
 +#undef kNumMoveBits
 diff --git a/third_party/lzma_sdk/C/Bcj2.h b/third_party/lzma_sdk/C/Bcj2.h
-index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a39685aa10 100644
+index 8824080acfbcf767ee4aa127fd56354723f20bb6..4e9ec45e30b7665905a70dd28102c4fc6015c2db 100644
 --- a/third_party/lzma_sdk/C/Bcj2.h
 +++ b/third_party/lzma_sdk/C/Bcj2.h
 @@ -1,8 +1,8 @@
@@ -6504,13 +5139,13 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
 +   following condition is met for stream sizes:
 +     ( size(ORIG) == size(MAIN) + size(CALL) + size(JUMP) )
 +*/
- 
++
 +/* (state == BCJ2_STREAM_MAIN) means that decoder is ready for
 +      additional input data in BCJ2_STREAM_MAIN stream.
 +   Note that (state == BCJ2_STREAM_MAIN) is allowed for non-finished decoding.
 +*/
 +#define Bcj2Dec_IsMaybeFinished_state_MAIN(_p_) ((_p_)->state == BCJ2_STREAM_MAIN)
- 
++
 +/* if the stream decoding was finished correctly, then range decoder
 +   part of CBcj2Dec also was finished, and then (CBcj2Dec::code == 0).
 +   Note that (CBcj2Dec::code == 0) is allowed for non-finished decoding.
@@ -6526,8 +5161,8 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
 +        Bcj2Dec_IsMaybeFinished_state_MAIN(_p_) && \
 +        Bcj2Dec_IsMaybeFinished_code(_p_))
 +
-+
-+
+ 
+ 
 +/* ---------- BCJ2 Encoder ---------- */
  
  typedef enum
@@ -6637,11 +5272,10 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
    UInt32 range;
    UInt64 low;
    UInt64 cacheSize;
-+
-+  // UInt32 context;  // for marker version, it can include marker flag.
  
 -  UInt32 ip;
--
++  // UInt32 context;  // for marker version, it can include marker flag.
+ 
 -  /* 32-bit ralative offset in JUMP/CALL commands is
 -       - (mod 4 GB)   in 32-bit mode
 -       - signed Int32 in 64-bit mode
@@ -6687,9 +5321,7 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
 +  p->State == BCJ2_ENC_STATE_FINISHED : after fully encoded stream
 +*/
 +void Bcj2Enc_Encode(CBcj2Enc *p);
- 
--#define BCJ2_RELAT_LIMIT_NUM_BITS 26
--#define BCJ2_RELAT_LIMIT ((UInt32)1 << BCJ2_RELAT_LIMIT_NUM_BITS)
++
 +/* Bcj2Enc encoder can look ahead for up 4 bytes of source stream.
 +   CBcj2Enc::tempPos : is the number of bytes that were copied from input stream to temp[] buffer.
 +   (CBcj2Enc::src) after Bcj2Enc_Encode() is starting position after
@@ -6704,10 +5336,12 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
 +/* get the size of input data that was stored in temp[] buffer: */
 +#define Bcj2Enc_Get_AvailInputSize_in_Temp(p) ((p)->tempPos)
  
+-#define BCJ2_RELAT_LIMIT_NUM_BITS 26
+-#define BCJ2_RELAT_LIMIT ((UInt32)1 << BCJ2_RELAT_LIMIT_NUM_BITS)
++#define Bcj2Enc_IsFinished(p) ((p)->flushRem == 0)
+ 
 -/* limit for CBcj2Enc::fileSize variable */
 -#define BCJ2_FileSize_MAX ((UInt32)1 << 31)
-+#define Bcj2Enc_IsFinished(p) ((p)->flushRem == 0)
-+
 +/* Note : the decoder supports overlapping of marker (0f 80).
 +   But we can eliminate such overlapping cases by setting
 +   the limit for relative offset conversion as
@@ -6721,7 +5355,7 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
  EXTERN_C_END
  
 diff --git a/third_party/lzma_sdk/C/Bra.c b/third_party/lzma_sdk/C/Bra.c
-index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5ded259280f 100644
+index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..49156bafce30b351d386c53af0723282b33dba5a 100644
 --- a/third_party/lzma_sdk/C/Bra.c
 +++ b/third_party/lzma_sdk/C/Bra.c
 @@ -1,230 +1,709 @@
@@ -6819,7 +5453,8 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +  lim = p + size;
 +  BR_PC_INIT
 +  pc -= 4;  // because (p) will point to next instruction
-+
+ 
+-  if (encoding)
 +  BR_EXTERNAL_FOR
 +  {
 +    // Z7_PRAGMA_OPT_DISABLE_LOOP_UNROLL_VECTORIZE
@@ -6858,9 +5493,8 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +  }
 +}
 +Z7_BRANCH_FUNCS_IMP(BranchConv_ARM64)
- 
--  if (encoding)
- 
++
++
 +Z7_BRANCH_FUNC_MAIN(BranchConv_ARM)
 +{
 +  // Byte *p = data;
@@ -6871,7 +5505,7 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +  /* in ARM: branch offset is relative to the +2 instructions from current instruction.
 +     (p) will point to next instruction */
 +  pc += 8 - 4;
-+
+ 
    for (;;)
    {
      for (;;)
@@ -6902,7 +5536,7 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
    }
 +}
 +Z7_BRANCH_FUNCS_IMP(BranchConv_ARM)
- 
++
 +
 +Z7_BRANCH_FUNC_MAIN(BranchConv_PPC)
 +{
@@ -6912,7 +5546,7 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +  lim = p + size;
 +  BR_PC_INIT
 +  pc -= 4;  // because (p) will point to next instruction
-+
+ 
    for (;;)
    {
 +    UInt32 v;
@@ -6953,13 +5587,13 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
    }
  }
 +Z7_BRANCH_FUNCS_IMP(BranchConv_PPC)
-+
  
+ 
+-SizeT ARMT_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
 +#ifdef Z7_CPU_FAST_ROTATE_SUPPORTED
 +#define BR_SPARC_USE_ROTATE
 +#endif
- 
--SizeT ARMT_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
++
 +Z7_BRANCH_FUNC_MAIN(BranchConv_SPARC)
  {
 -  Byte *p;
@@ -7104,12 +5738,12 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
      {
 +      /* we can adjust pc for (0xf800) to rid of (& 0x7FF) operation.
 +         But gcc/clang for arm64 can use bfi instruction for full code here */
-       UInt32 v =
--             ((UInt32)b1 << 19)
++      UInt32 v =
 +          ((UInt32)GetUi16a(p - 2) << 11) |
 +          ((UInt32)GetUi16a(p) & 0x7FF);
 +      /*
-+      UInt32 v =
+       UInt32 v =
+-             ((UInt32)b1 << 19)
 +            ((UInt32)p[1 - 2] << 19)
            + (((UInt32)p[1] & 0x7) << 8)
            + (((UInt32)p[-2] << 11))
@@ -7149,11 +5783,11 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +  // return (Byte *)(lim + 2 - (((((unsigned)lim[1] ^ 8) + 8) >> 7) & 2));
  }
 +Z7_BRANCH_FUNCS_IMP(BranchConv_ARMT)
++
  
++// #define BR_IA64_NO_INLINE
  
 -SizeT PPC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
-+// #define BR_IA64_NO_INLINE
-+
 +Z7_BRANCH_FUNC_MAIN(BranchConv_IA64)
  {
 -  Byte *p;
@@ -7163,13 +5797,12 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 -  ip -= 4;
 -  p = data;
 -  lim = data + size;
--
 +  size &= ~(SizeT)15;
 +  lim = p + size;
 +  pc -= 1 << 4;
 +  pc >>= 4 - 1;
 +  // pc -= 1 << 1;
-+
+ 
    for (;;)
    {
 +    unsigned m;
@@ -7255,12 +5888,11 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +
 +#define BR_CONVERT_VAL_ENC(v)  v += BR_PC_GET;
 +#define BR_CONVERT_VAL_DEC(v)  v -= BR_PC_GET;
- 
++
 +#if 1 && defined(MY_CPU_LE_UNALIGN)
 +  #define RISCV_USE_UNALIGNED_LOAD
 +#endif
  
--SizeT SPARC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
 +#ifdef RISCV_USE_UNALIGNED_LOAD
 +  #define RISCV_GET_UI32(p)      GetUi32(p)
 +  #define RISCV_SET_UI32(p, v)   { SetUi32(p, v) }
@@ -7272,7 +5904,8 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +    SetUi16a(p, (UInt16)(v)) \
 +    SetUi16a((p) + 2, (UInt16)(v >> 16)) }
 +#endif
-+
+ 
+-SizeT SPARC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
 +#if 1 && defined(MY_CPU_LE)
 +  #define RISCV_USE_16BIT_LOAD
 +#endif
@@ -7728,7 +6361,7 @@ index 855e37a6b5018e07b5e049b014401069d2158747..b47112cedc3dbe14079af262dd17aa59
  
  #endif
 diff --git a/third_party/lzma_sdk/C/Bra86.c b/third_party/lzma_sdk/C/Bra86.c
-index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c5677b03aae 100644
+index 10a0fbd161cb78f8778c4fee5df1461310df337e..6bb1e49329d38d05d2dc8ee4efa5b2bbc07a1e2a 100644
 --- a/third_party/lzma_sdk/C/Bra86.c
 +++ b/third_party/lzma_sdk/C/Bra86.c
 @@ -1,82 +1,187 @@
@@ -7847,8 +6480,7 @@ index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c56
 +      if (BR86_IS_BCJ_BYTE(3))  { goto a3; }
      }
 +    goto main_loop;
- 
--    if (Test86MSByte(p[4]))
++
 +  m0: p--;
 +  m1: p--;
 +  m2: p--;
@@ -7856,7 +6488,8 @@ index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c56
 +      goto a3;
 +    if (p > lim)
 +      goto fin_p;
-+
+ 
+-    if (Test86MSByte(p[4]))
 +    // if (((0x17u >> mask) & 1) == 0)
 +    if (mask > 4 || mask == 3)
 +    {
@@ -7910,16 +6543,13 @@ index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c56
 +      SetUi32(p, v)
 +      p += 4;
 +      goto main_loop;
-     }
--    else
++    }
 +
 +  main_loop:
 +    if (p >= lim)
 +      goto fin;
 +    for (;;)
-     {
--      mask = (mask >> 1) | 4;
--      pos++;
++    {
 +      BR86_PREPARE_BCJ_SCAN
 +      p += 4;
 +      if (BR86_IS_BCJ_BYTE(0))  { goto a0; }
@@ -7928,7 +6558,8 @@ index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c56
 +      if (BR86_IS_BCJ_BYTE(3))  { goto a3; }
 +      if (p >= lim)
 +        goto fin;
-+    }
+     }
+-    else
 +
 +  a0: p--;
 +  a1: p--;
@@ -7937,7 +6568,9 @@ index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c56
 +    if (p > lim)
 +      goto fin_p;
 +    // if (!BR86_NEED_CONV_FOR_MS_BYTE(p[3])) continue; // goto cont;
-+    {
+     {
+-      mask = (mask >> 1) | 4;
+-      pos++;
 +      UInt32 v = GetUi32(p);
 +      UInt32 c;
 +      v += (1 << 24);  if (v & 0xfe000000) continue; // goto cont;
@@ -8045,7 +6678,7 @@ index d1dbc62c55bebd5ff5d4d53b51f28aabecab6179..9dfe3e289589d6288227ee819835941b
 +#pragma GCC diagnostic ignored "-Wempty-translation-unit"
 +#endif
 diff --git a/third_party/lzma_sdk/C/Compiler.h b/third_party/lzma_sdk/C/Compiler.h
-index a9816fa5ad014863211aa19723f8a87b312e4bfa..2a9c2b7a0896c847d65b9aae4b5c1f2cbf29297b 100644
+index a9816fa5ad014863211aa19723f8a87b312e4bfa..e83e37d11981bd9f54e63a32c546497a914a1906 100644
 --- a/third_party/lzma_sdk/C/Compiler.h
 +++ b/third_party/lzma_sdk/C/Compiler.h
 @@ -1,12 +1,105 @@
@@ -8302,7 +6935,7 @@ index a9816fa5ad014863211aa19723f8a87b312e4bfa..2a9c2b7a0896c847d65b9aae4b5c1f2c
  
  #define UNUSED_VAR(x) (void)x;
 diff --git a/third_party/lzma_sdk/C/CpuArch.c b/third_party/lzma_sdk/C/CpuArch.c
-index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f9ce6fc95 100644
+index 30451fba9b97b34669186865dcf72d8792334423..8ba93446e854ddfca2b252c241aca1e91673acd6 100644
 --- a/third_party/lzma_sdk/C/CpuArch.c
 +++ b/third_party/lzma_sdk/C/CpuArch.c
 @@ -1,187 +1,357 @@
@@ -8518,8 +7151,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +// for gcc/clang and other: we can try to use __cpuid macro:
 +#include <cpuid.h>
 +void Z7_FASTCALL z7_x86_cpuid(UInt32 p[4], UInt32 func)
- {
--  #ifdef USE_ASM
++{
 +  __cpuid(func, p[0], p[1], p[2], p[3]);
 +}
 +UInt32 Z7_FASTCALL z7_x86_cpuid_GetMaxFunc(void)
@@ -8534,7 +7166,8 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +  p[0] = p[1] = p[2] = p[3] = 0;
 +}
 +UInt32 Z7_FASTCALL z7_x86_cpuid_GetMaxFunc(void)
-+{
+ {
+-  #ifdef USE_ASM
 +  return 0;
 +}
  
@@ -8686,7 +7319,8 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 + where ECX value is first parameter for FASTCALL / NO_INLINE func.
 + So the caller of MY_cpuidex_HACK() sets ECX as subFunction, and
 + old MSVC for __cpuid() doesn't change ECX and cpuid instruction gets (subFunction) value.
-+
+ 
+-  #endif
 +DON'T remove Z7_NO_INLINE and Z7_FASTCALL for MY_cpuidex_HACK(): !!!
 +*/
 +static
@@ -8694,7 +7328,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +{
 +  UNUSED_VAR(subFunction)
 +  __cpuid(CPUInfo, func);
-+}
+ }
 +      #define MY_cpuidex(info, func, func2)  MY_cpuidex_HACK(func2, func, info)
 +      #pragma message("======== MY_cpuidex_HACK WAS USED ========")
 +static
@@ -8703,8 +7337,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +  MY_cpuidex_HACK(subFunc, func, (Int32 *)p);
 +}
 +    #endif // _MSC_VER >= 1600
- 
--  #endif
++
 +#if !defined(MY_CPU_AMD64)
 +/* inlining for __cpuid() in MSVC x86 (32-bit) produces big ineffective code,
 +   so we disable inlining here */
@@ -8713,9 +7346,8 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +void Z7_FASTCALL z7_x86_cpuid(UInt32 p[4], UInt32 func)
 +{
 +  MY_cpuidex((Int32 *)p, (Int32)func, 0);
- }
- 
--BoolInt x86cpuid_CheckAndRead(Cx86cpuid *p)
++}
++
 +Z7_NO_INLINE
 +UInt32 Z7_FASTCALL z7_x86_cpuid_GetMaxFunc(void)
 +{
@@ -8734,7 +7366,8 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +#endif
 +#undef NEED_CHECK_FOR_CPUID
 +
-+
+ 
+-BoolInt x86cpuid_CheckAndRead(Cx86cpuid *p)
 +static
 +BoolInt x86cpuid_Func_1(UInt32 *p)
  {
@@ -8895,27 +7528,29 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
    CHECK_SYS_SSE_SUPPORT
 -  if (!x86cpuid_CheckAndRead(&p))
 +  if (!x86cpuid_Func_1(&a[0]))
-+    return 0;
-+  return (BoolInt)(a[3] >> 25) & 1;
-+}
-+
-+BoolInt CPU_IsSupported_SSE2(void)
-+{
-+  UInt32 a[4];
-+  CHECK_SYS_SSE_SUPPORT
-+  if (!x86cpuid_Func_1(&a[0]))
      return 0;
 -  return p.c;
-+  return (BoolInt)(a[3] >> 26) & 1;
++  return (BoolInt)(a[3] >> 25) & 1;
  }
  
 -BoolInt CPU_IsSupported_AES()
++BoolInt CPU_IsSupported_SSE2(void)
+ {
+-  return (X86_CPUID_ECX_Get_Flags() >> 25) & 1;
++  UInt32 a[4];
++  CHECK_SYS_SSE_SUPPORT
++  if (!x86cpuid_Func_1(&a[0]))
++    return 0;
++  return (BoolInt)(a[3] >> 26) & 1;
+ }
+ 
+-BoolInt CPU_IsSupported_SSSE3()
 +#endif
 +
 +
 +static UInt32 x86cpuid_Func_1_ECX(void)
  {
--  return (X86_CPUID_ECX_Get_Flags() >> 25) & 1;
+-  return (X86_CPUID_ECX_Get_Flags() >> 9) & 1;
 +  UInt32 a[4];
 +  CHECK_SYS_SSE_SUPPORT
 +  if (!x86cpuid_Func_1(&a[0]))
@@ -8923,21 +7558,19 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +  return a[2];
  }
  
--BoolInt CPU_IsSupported_SSSE3()
+-BoolInt CPU_IsSupported_SSE41()
 +BoolInt CPU_IsSupported_AES(void)
  {
--  return (X86_CPUID_ECX_Get_Flags() >> 9) & 1;
+-  return (X86_CPUID_ECX_Get_Flags() >> 19) & 1;
 +  return (BoolInt)(x86cpuid_Func_1_ECX() >> 25) & 1;
  }
  
--BoolInt CPU_IsSupported_SSE41()
-+BoolInt CPU_IsSupported_SSSE3(void)
- {
--  return (X86_CPUID_ECX_Get_Flags() >> 19) & 1;
-+  return (BoolInt)(x86cpuid_Func_1_ECX() >> 9) & 1;
- }
- 
 -BoolInt CPU_IsSupported_SHA()
++BoolInt CPU_IsSupported_SSSE3(void)
++{
++  return (BoolInt)(x86cpuid_Func_1_ECX() >> 9) & 1;
++}
++
 +BoolInt CPU_IsSupported_SSE41(void)
 +{
 +  return (BoolInt)(x86cpuid_Func_1_ECX() >> 19) & 1;
@@ -8957,9 +7590,9 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +    return (BoolInt)(d[1] >> 29) & 1;
 +  }
 +}
-+
  
 -  if (p.maxFunc < 7)
++
 +BoolInt CPU_IsSupported_SHA512(void)
 +{
 +  if (!CPU_IsSupported_AVX2()) return False; // maybe CPU_IsSupported_AVX() is enough here
@@ -9018,15 +7651,15 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +// #define ATTRIB_XGETBV __attribute__((__target__("xsave")))
 +#else
 +#define ATTRIB_XGETBV
- #endif
 +#endif
-+
+ #endif
+ 
+-BoolInt CPU_IsSupported_AVX2()
 +#if defined(ATTRIB_XGETBV)
 +#include <immintrin.h>
 +#endif
 +
- 
--BoolInt CPU_IsSupported_AVX2()
++
 +// XFEATURE_ENABLED_MASK/XCR0
 +#define MY_XCR_XFEATURE_ENABLED_MASK 0
 +
@@ -9105,7 +7738,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +
 +#endif
 +}
- 
++
 +#ifdef _WIN32
 +/*
 +  Windows versions do not know about new ISA extensions that
@@ -9126,7 +7759,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +// #define MY_PF_AVX2_INSTRUCTIONS_AVAILABLE              40
 +// #define MY_PF_AVX512F_INSTRUCTIONS_AVAILABLE           41
 +#endif
-+
+ 
 +BoolInt CPU_IsSupported_AVX(void)
 +{
    #ifdef _WIN32
@@ -9309,7 +7942,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
  
  #else
  
-@@ -378,29 +809,40 @@ static void Print_sysctlbyname(const char *name)
+@@ -378,30 +809,41 @@ static void Print_sysctlbyname(const char *name)
    }
  }
  */
@@ -9343,8 +7976,8 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
  {
 -  return My_sysctlbyname_Get_BoolInt("hw.optional.neon");
 +  return z7_sysctlbyname_Get_BoolInt("hw.optional.neon");
-+}
-+
+ }
+ 
 +BoolInt CPU_IsSupported_SHA512(void)
 +{
 +  return z7_sysctlbyname_Get_BoolInt("hw.optional.armv8_2_sha512");
@@ -9354,11 +7987,12 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +BoolInt CPU_IsSupported_SHA3(void)
 +{
 +  return z7_sysctlbyname_Get_BoolInt("hw.optional.armv8_2_sha3");
- }
++}
 +*/
- 
++
  #ifdef MY_CPU_ARM64
  #define APPLE_CRYPTO_SUPPORT_VAL 1
+ #else
 @@ -415,35 +857,70 @@ BoolInt CPU_IsSupported_AES (void) { return APPLE_CRYPTO_SUPPORT_VAL; }
  
  #else // __APPLE__
@@ -9476,7 +8110,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
      return EFAULT;
    return res;
 diff --git a/third_party/lzma_sdk/C/CpuArch.h b/third_party/lzma_sdk/C/CpuArch.h
-index 8cd55bea48dc6ffa4d7b8be52e7baf3fd47e7ad9..2843b4562c2bd9b06aabfc5c13300d14639bedc9 100644
+index 8cd55bea48dc6ffa4d7b8be52e7baf3fd47e7ad9..483a4d797f9014309cd2baca1549e8d7d450443e 100644
 --- a/third_party/lzma_sdk/C/CpuArch.h
 +++ b/third_party/lzma_sdk/C/CpuArch.h
 @@ -1,8 +1,8 @@
@@ -10242,7 +8876,7 @@ index 64ff26cd93aa741a39a2c11300e85e2a02eac19a..9fa41538265ac26c09123747b7806dab
  #include "7zTypes.h"
  
 diff --git a/third_party/lzma_sdk/C/LzFind.c b/third_party/lzma_sdk/C/LzFind.c
-index 36f7330911435779e4d213f340c33c93c9df20cb..5941582e7977685a981afa0a0b2589479d2a9f7b 100644
+index 36f7330911435779e4d213f340c33c93c9df20cb..8c30c2039c149f77211626443ef7eb7787959058 100644
 --- a/third_party/lzma_sdk/C/LzFind.c
 +++ b/third_party/lzma_sdk/C/LzFind.c
 @@ -1,5 +1,5 @@
@@ -11498,7 +10132,7 @@ index 36f7330911435779e4d213f340c33c93c9df20cb..5941582e7977685a981afa0a0b258947
 +#undef MOVE_POS_RET
 +#undef PRF
 diff --git a/third_party/lzma_sdk/C/LzFind.h b/third_party/lzma_sdk/C/LzFind.h
-index eea873ff61ede1bee4c75f85e451c51333d76d56..67e8a6e0286ee0877043601039c5fbdae8588148 100644
+index eea873ff61ede1bee4c75f85e451c51333d76d56..7e1be1d68479f597f410974da499b477858b5ca5 100644
 --- a/third_party/lzma_sdk/C/LzFind.h
 +++ b/third_party/lzma_sdk/C/LzFind.h
 @@ -1,8 +1,8 @@
@@ -11636,7 +10270,7 @@ index 77b898cfab57c7df241b767b21390e26cc23ec57..2b6290b64c08f7eb44568a67e90abcf4
  /*
    (kHash2Size >= (1 <<  8)) : Required
 diff --git a/third_party/lzma_sdk/C/Lzma2Dec.c b/third_party/lzma_sdk/C/Lzma2Dec.c
-index ac970a843d9fabcd6337577648524b0b8e990791..8bf54e499edf73a88df3a89ac04377201e5127f3 100644
+index ac970a843d9fabcd6337577648524b0b8e990791..31581afd5941461967696d27d5b737f4cb80a56d 100644
 --- a/third_party/lzma_sdk/C/Lzma2Dec.c
 +++ b/third_party/lzma_sdk/C/Lzma2Dec.c
 @@ -1,5 +1,5 @@
@@ -14393,7 +13027,7 @@ index aa38501e57948196761aec76c9475fcbe67fc677..75329cdf02267d32eb0a20358608fc08
  /*
  call Sha256Prepare() once at program start.
 diff --git a/third_party/lzma_sdk/C/Sha256Opt.c b/third_party/lzma_sdk/C/Sha256Opt.c
-index decc1382cd6ee9c7cb6e6ac27e3ee6e2cdb46b88..1c6b50f8d336e63be89462f15d48c7ed3ca625e9 100644
+index decc1382cd6ee9c7cb6e6ac27e3ee6e2cdb46b88..42dfac837dc6de8e09bf1725f9824ac89c8e845c 100644
 --- a/third_party/lzma_sdk/C/Sha256Opt.c
 +++ b/third_party/lzma_sdk/C/Sha256Opt.c
 @@ -1,71 +1,53 @@
@@ -14622,11 +13256,10 @@ index decc1382cd6ee9c7cb6e6ac27e3ee6e2cdb46b88..1c6b50f8d336e63be89462f15d48c7ed
  #endif // USE_HW_SHA
  
 -#elif defined(MY_CPU_ARM_OR_ARM64)
--
++#elif defined(MY_CPU_ARM_OR_ARM64) && defined(MY_CPU_LE)
+ 
 -  #if defined(__clang__)
 -    #if (__clang_major__ >= 8) // fix that check
-+#elif defined(MY_CPU_ARM_OR_ARM64) && defined(MY_CPU_LE)
-+
 +  #if   defined(__ARM_FEATURE_SHA2) \
 +     || defined(__ARM_FEATURE_CRYPTO)
 +    #define USE_HW_SHA
@@ -15940,7 +14573,7 @@ index 93a9ffff5f8113b885ef2963725e620d6eede939..0c1fc2ffecb89ebe834823eeda226a9a
 +#undef Z7_CRC64_NUM_TABLES_USE
  #endif
 diff --git a/third_party/lzma_sdk/C/XzDec.c b/third_party/lzma_sdk/C/XzDec.c
-index 3f96a37f94fc751ed98c31e5d2e731b6526d1957..3d1c98e63194f088ce7907d61f376b5416be341b 100644
+index 3f96a37f94fc751ed98c31e5d2e731b6526d1957..4b6b8c2887249bd18879ff65a94947b28107c710 100644
 --- a/third_party/lzma_sdk/C/XzDec.c
 +++ b/third_party/lzma_sdk/C/XzDec.c
 @@ -1,5 +1,5 @@
@@ -17203,7 +15836,7 @@ index 7458450739601b3a8236e421241bb9ed73f3a014..a07824208330eec265a88310e42c3803
 +4. Remove files irrelevant to Chromium use.
 +5. Remove AVX and SSE41 code in LzFind.
 diff --git a/third_party/lzma_sdk/chromium.patch b/third_party/lzma_sdk/chromium.patch
-index 85b8089a6a0d31113f1570483fe07fb905f5b825..168ca263574d83a27d4afebc8857545254ebe79a 100644
+index 85b8089a6a0d31113f1570483fe07fb905f5b825..a0f1becb15595430595ceef2aee603ed5c4327a9 100644
 --- a/third_party/lzma_sdk/chromium.patch
 +++ b/third_party/lzma_sdk/chromium.patch
 @@ -1,138 +1,46 @@
