@@ -38,7 +38,7 @@ Cr-Branched-From: 72dd0b377c099e1e0230cc7345d5a5125b46ae7d-refs/heads/main@{#140
 
 diff --git a/third_party/lzma_sdk/Asm/arm64/7zAsm.S b/third_party/lzma_sdk/Asm/arm64/7zAsm.S
 deleted file mode 100644
-index aa30a9ef8bf34ca51917983bcff7d873747d238c..0000000000000000000000000000000000000000
+index e1b653eab906e1ca1c2c791b7a2a2b81b9f4bf5c..0000000000000000000000000000000000000000
 --- a/third_party/lzma_sdk/Asm/arm64/7zAsm.S
 +++ /dev/null
 @@ -1,194 +0,0 @@
@@ -237,7 +237,7 @@ index aa30a9ef8bf34ca51917983bcff7d873747d238c..00000000000000000000000000000000
 -        .p2align 6,, (1 << 6) - 1
 -.endm
 diff --git a/third_party/lzma_sdk/Asm/x86/7zAsm.asm b/third_party/lzma_sdk/Asm/x86/7zAsm.asm
-index a77edf25311d1a61ac627771d4d899041527cbfc..8b994a5e1f3c667c2e977d369b10bc7da5bd80fd 100644
+index 37700c5b4903b3fbad484f27416bb4af0c8c81d0..8910d16c6057d70cb52684b63c30aea9df496f9b 100644
 --- a/third_party/lzma_sdk/Asm/x86/7zAsm.asm
 +++ b/third_party/lzma_sdk/Asm/x86/7zAsm.asm
 @@ -1,5 +1,5 @@
@@ -375,7 +375,7 @@ index a77edf25311d1a61ac627771d4d899041527cbfc..8b994a5e1f3c667c2e977d369b10bc7d
  endif ; x64
 diff --git a/third_party/lzma_sdk/Asm/x86/7zCrcOpt.asm b/third_party/lzma_sdk/Asm/x86/7zCrcOpt.asm
 deleted file mode 100644
-index 97a6b9aa80dd25742439c17426026472733209b1..0000000000000000000000000000000000000000
+index 0fee2064e1f4e47bdca9e8cd4447173a4932b5c1..0000000000000000000000000000000000000000
 --- a/third_party/lzma_sdk/Asm/x86/7zCrcOpt.asm
 +++ /dev/null
 @@ -1,180 +0,0 @@
@@ -560,7 +560,7 @@ index 97a6b9aa80dd25742439c17426026472733209b1..00000000000000000000000000000000
 -
 -end
 diff --git a/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm b/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm
-index ddbd88ffc2e955419128fb105c00bb9f442dfddb..f2dcceb12a846f3034e1395c1b2c5ac0a65ccd92 100644
+index 629954d709b461e9eccf4eecb96fce815c193f56..56d9e71f47c3f335db9597d3b3db01f7f7704409 100644
 --- a/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm
 +++ b/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm
 @@ -1,5 +1,5 @@
@@ -637,7 +637,7 @@ index ddbd88ffc2e955419128fb105c00bb9f442dfddb..f2dcceb12a846f3034e1395c1b2c5ac0
  
  end
 diff --git a/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm b/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm
-index 116153b69e56f519fad9a117ecc1402e8d3ef64f..a07930287a6d3612badf2a6db2fd12cc2a49d034 100644
+index 3e9f6eda3e7e907bc5bf3e1657231c6c7f27f9df..bc2f9da243fc1013288b9062ec1b880fe36ee45d 100644
 --- a/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm
 +++ b/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm
 @@ -1,5 +1,5 @@
@@ -657,61 +657,31 @@ index 116153b69e56f519fad9a117ecc1402e8d3ef64f..a07930287a6d3612badf2a6db2fd12cc
  align 16
  Reverse_Endian_Mask db 3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12
 diff --git a/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm b/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
-index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326a07c40d8 100644
+index ad22cc2fce07ce0c5a56c7b10c30ebcd38351e3d..de023f9f490bafbf8637e4fc116b8326a07c40d8 100644
 --- a/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
 +++ b/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
-@@ -1,113 +1,231 @@
- ; XzCrc64Opt.asm -- CRC64 calculation : optimized version
+@@ -1,239 +1,523 @@
+-; XzCrc64Opt.asm -- CRC64 calculation : optimized version
 -; 2021-02-06 : Igor Pavlov : Public domain
-+; 2023-12-08 : Igor Pavlov : Public domain
- 
- include 7zAsm.asm
- 
- MY_ASM_START
- 
-+NUM_WORDS       equ     3
-+
-+if (NUM_WORDS lt 1) or (NUM_WORDS gt 64)
-+.err <num_words_IS_INCORRECT>
-+endif
-+
-+NUM_SKIP_BYTES  equ     ((NUM_WORDS - 2) * 4)
-+
-+
-+MOVZXLO macro dest:req, src:req
-+        movzx   dest, @CatStr(src, _L)
-+endm
-+
-+MOVZXHI macro dest:req, src:req
-+        movzx   dest, @CatStr(src, _H)
-+endm
-+
-+
- ifdef x64
- 
+-
+-include 7zAsm.asm
+-
+-MY_ASM_START
+-
+-ifdef x64
+-
 -rD      equ  r9
-+rD      equ  r11
- rN      equ  r10
+-rN      equ  r10
 -rT      equ  r5
 -num_VAR equ  r8
 -
 -SRCDAT4 equ  dword ptr [rD + rN * 1]
-+rT      equ  r9
-+
-+CRC_OP macro op:req, dest:req, src:req, t:req
-+        op      dest, QWORD PTR [rT + @CatStr(src, _R) * 8 + 0800h * (t)]
-+endm
-     
- CRC_XOR macro dest:req, src:req, t:req
+-    
+-CRC_XOR macro dest:req, src:req, t:req
 -    xor     dest, QWORD PTR [rT + src * 8 + 0800h * t]
-+        CRC_OP  xor, dest, src, t
-+endm
-+
-+CRC_MOV macro dest:req, src:req, t:req
-+        CRC_OP  mov, dest, src, t
- endm
- 
- CRC1b macro
+-endm
+-
+-CRC1b macro
 -    movzx   x6, BYTE PTR [rD]
 -    inc     rD
 -    movzx   x3, x0_L
@@ -769,15 +739,8 @@ index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326
 -  else
 -    MY_POP_4_REGS
 -  endif
-+        movzx   x6, BYTE PTR [rD]
-+        inc     rD
-+        MOVZXLO x3, x0
-+        xor     x6, x3
-+        shr     r0, 8
-+        CRC_XOR r0, x6, 0
-+        dec     rN
- endm
- 
+-endm
+-
 -MY_PROC XzCrc64UpdateT4, 4
 -    MY_PROLOG crc_end_4
 -    align 16
@@ -799,6 +762,197 @@ index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326
 -    jnz     main_loop_4
 -
 -    MY_EPILOG crc_end_4
+-MY_ENDP
+-
+-else
+-; x86 (32-bit)
+-
+-rD      equ  r1
+-rN      equ  r7
+-rT      equ  r5
+-
+-crc_OFFS  equ  (REG_SIZE * 5)
+-
+-if (IS_CDECL gt 0) or (IS_LINUX gt 0)
+-    ; cdecl or (GNU fastcall) stack:
+-    ;   (UInt32 *) table
+-    ;   size_t     size
+-    ;   void *     data
+-    ;   (UInt64)   crc
+-    ;   ret-ip <-(r4)
+-    data_OFFS   equ  (8 + crc_OFFS)
+-    size_OFFS   equ  (REG_SIZE + data_OFFS)
+-    table_OFFS  equ  (REG_SIZE + size_OFFS)
+-    num_VAR     equ  [r4 + size_OFFS]
+-    table_VAR   equ  [r4 + table_OFFS]
+-else
+-    ; Windows fastcall:
+-    ;   r1 = data, r2 = size
+-    ; stack:
+-    ;   (UInt32 *) table
+-    ;   (UInt64)   crc
+-    ;   ret-ip <-(r4)
+-    table_OFFS  equ  (8 + crc_OFFS)
+-    table_VAR   equ  [r4 + table_OFFS]
+-    num_VAR     equ  table_VAR
+-endif
+-
+-SRCDAT4 equ  dword ptr [rD + rN * 1]
+-
+-CRC macro op0:req, op1:req, dest0:req, dest1:req, src:req, t:req
+-    op0     dest0, DWORD PTR [rT + src * 8 + 0800h * t]
+-    op1     dest1, DWORD PTR [rT + src * 8 + 0800h * t + 4]
+-endm
+-
+-CRC_XOR macro dest0:req, dest1:req, src:req, t:req
+-    CRC xor, xor, dest0, dest1, src, t
+-endm
+-
+-
+-CRC1b macro
+-    movzx   x6, BYTE PTR [rD]
+-    inc     rD
+-    movzx   x3, x0_L
+-    xor     x6, x3
+-    shrd    r0, r2, 8
+-    shr     r2, 8
+-    CRC_XOR r0, r2, r6, 0
+-    dec     rN
+-endm
+-
+-MY_PROLOG macro crc_end:req
+-    MY_PUSH_4_REGS
+-
+-  if (IS_CDECL gt 0) or (IS_LINUX gt 0)
+-    proc_numParams = proc_numParams + 2 ; for ABI_LINUX
+-    mov     rN, [r4 + size_OFFS]
+-    mov     rD, [r4 + data_OFFS]
+-  else
+-    mov     rN, r2
+-  endif
+-
+-    mov     x0, [r4 + crc_OFFS]
+-    mov     x2, [r4 + crc_OFFS + 4]
+-    mov     rT, table_VAR
+-    test    rN, rN
+-    jz      crc_end
+-  @@:
+-    test    rD, 3
+-    jz      @F
+-    CRC1b
+-    jnz     @B
+-  @@:
+-    cmp     rN, 8
+-    jb      crc_end
+-    add     rN, rD
+-
+-    mov     num_VAR, rN
+-
+-    sub     rN, 4
+-    and     rN, NOT 3
+-    sub     rD, rN
+-    xor     r0, SRCDAT4
+-    add     rN, 4
+-endm
+-
+-MY_EPILOG macro crc_end:req
+-    sub     rN, 4
+-    xor     r0, SRCDAT4
+-
+-    mov     rD, rN
+-    mov     rN, num_VAR
+-    sub     rN, rD
+-  crc_end:
+-    test    rN, rN
+-    jz      @F
+-    CRC1b
+-    jmp     crc_end
+-  @@:
+-    MY_POP_4_REGS
+-endm
+-
+-MY_PROC XzCrc64UpdateT4, 5
+-    MY_PROLOG crc_end_4
+-    movzx   x6, x0_L
+-    align 16
+-  main_loop_4:
+-    mov     r3, SRCDAT4
+-    xor     r3, r2
+-
+-    CRC xor, mov, r3, r2, r6, 3
+-    movzx   x6, x0_H
+-    shr     r0, 16
+-    CRC_XOR r3, r2, r6, 2
+-
+-    movzx   x6, x0_L
+-    movzx   x0, x0_H
+-    CRC_XOR r3, r2, r6, 1
+-    CRC_XOR r3, r2, r0, 0
+-    movzx   x6, x3_L
+-    mov     r0, r3
+-
+-    add     rD, 4
+-    jnz     main_loop_4
+-
+-    MY_EPILOG crc_end_4
+-MY_ENDP
+-
+-endif ; ! x64
+-
+-end
++; XzCrc64Opt.asm -- CRC64 calculation : optimized version
++; 2023-12-08 : Igor Pavlov : Public domain
++
++include 7zAsm.asm
++
++MY_ASM_START
++
++NUM_WORDS       equ     3
++
++if (NUM_WORDS lt 1) or (NUM_WORDS gt 64)
++.err <num_words_IS_INCORRECT>
++endif
++
++NUM_SKIP_BYTES  equ     ((NUM_WORDS - 2) * 4)
++
++
++MOVZXLO macro dest:req, src:req
++        movzx   dest, @CatStr(src, _L)
++endm
++
++MOVZXHI macro dest:req, src:req
++        movzx   dest, @CatStr(src, _H)
++endm
++
++
++ifdef x64
++
++rD      equ  r11
++rN      equ  r10
++rT      equ  r9
++
++CRC_OP macro op:req, dest:req, src:req, t:req
++        op      dest, QWORD PTR [rT + @CatStr(src, _R) * 8 + 0800h * (t)]
++endm
++
++CRC_XOR macro dest:req, src:req, t:req
++        CRC_OP  xor, dest, src, t
++endm
++
++CRC_MOV macro dest:req, src:req, t:req
++        CRC_OP  mov, dest, src, t
++endm
++
++CRC1b macro
++        movzx   x6, BYTE PTR [rD]
++        inc     rD
++        MOVZXLO x3, x0
++        xor     x6, x3
++        shr     r0, 8
++        CRC_XOR r0, x6, 0
++        dec     rN
++endm
++
 +
 +; ALIGN_MASK is 3 or 7 bytes alignment:
 +ALIGN_MASK      equ  (7 - (NUM_WORDS and 1) * 4)
@@ -955,20 +1109,18 @@ index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326
 +        jnz      @B
 +func_end:
 +        MY_POP_PRESERVED_ABI_REGS_UP_TO_INCLUDING_R11
- MY_ENDP
- 
++MY_ENDP
 +
 +
- else
++
++else
 +; ==================================================================
- ; x86 (32-bit)
- 
--rD      equ  r1
--rN      equ  r7
++; x86 (32-bit)
++
 +rD      equ  r7
 +rN      equ  r1
- rT      equ  r5
- 
++rT      equ  r5
++
 +xA      equ  x6
 +xA_R    equ  r6
 +
@@ -976,53 +1128,50 @@ index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326
 +    num_VAR     equ  r8
 +else
 +
- crc_OFFS  equ  (REG_SIZE * 5)
- 
- if (IS_CDECL gt 0) or (IS_LINUX gt 0)
-@@ -133,107 +251,273 @@ else
-     table_VAR   equ  [r4 + table_OFFS]
-     num_VAR     equ  table_VAR
- endif
++crc_OFFS  equ  (REG_SIZE * 5)
++
++if (IS_CDECL gt 0) or (IS_LINUX gt 0)
++    ; cdecl or (GNU fastcall) stack:
++    ;   (UInt32 *) table
++    ;   size_t     size
++    ;   void *     data
++    ;   (UInt64)   crc
++    ;   ret-ip <-(r4)
++    data_OFFS   equ  (8 + crc_OFFS)
++    size_OFFS   equ  (REG_SIZE + data_OFFS)
++    table_OFFS  equ  (REG_SIZE + size_OFFS)
++    num_VAR     equ  [r4 + size_OFFS]
++    table_VAR   equ  [r4 + table_OFFS]
++else
++    ; Windows fastcall:
++    ;   r1 = data, r2 = size
++    ; stack:
++    ;   (UInt32 *) table
++    ;   (UInt64)   crc
++    ;   ret-ip <-(r4)
++    table_OFFS  equ  (8 + crc_OFFS)
++    table_VAR   equ  [r4 + table_OFFS]
++    num_VAR     equ  table_VAR
++endif
 +endif ; x64
 +
 +SRCDAT4         equ     DWORD PTR [rN + rD * 1]
- 
--SRCDAT4 equ  dword ptr [rD + rN * 1]
++
 +CRC_1 macro op:req, dest:req, src:req, t:req, word_index:req
 +        op      dest, DWORD PTR [rT + @CatStr(src, _R) * 8 + 0800h * (t) + (word_index) * 4]
 +endm
- 
- CRC macro op0:req, op1:req, dest0:req, dest1:req, src:req, t:req
--    op0     dest0, DWORD PTR [rT + src * 8 + 0800h * t]
--    op1     dest1, DWORD PTR [rT + src * 8 + 0800h * t + 4]
++
++CRC macro op0:req, op1:req, dest0:req, dest1:req, src:req, t:req
 +        CRC_1   op0, dest0, src, t, 0
 +        CRC_1   op1, dest1, src, t, 1
- endm
- 
- CRC_XOR macro dest0:req, dest1:req, src:req, t:req
--    CRC xor, xor, dest0, dest1, src, t
++endm
++
++CRC_XOR macro dest0:req, dest1:req, src:req, t:req
 +        CRC xor, xor, dest0, dest1, src, t
- endm
- 
- 
- CRC1b macro
--    movzx   x6, BYTE PTR [rD]
--    inc     rD
--    movzx   x3, x0_L
--    xor     x6, x3
--    shrd    r0, r2, 8
--    shr     r2, 8
--    CRC_XOR r0, r2, r6, 0
--    dec     rN
--endm
--
--MY_PROLOG macro crc_end:req
--    MY_PUSH_4_REGS
--
--  if (IS_CDECL gt 0) or (IS_LINUX gt 0)
--    proc_numParams = proc_numParams + 2 ; for ABI_LINUX
--    mov     rN, [r4 + size_OFFS]
--    mov     rD, [r4 + data_OFFS]
++endm
++
++
++CRC1b macro
 +        movzx   xA, BYTE PTR [rD]
 +        inc     rD
 +        MOVZXLO x3, x0
@@ -1194,8 +1343,7 @@ index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326
 +
 +  if NUM_SKIP_BYTES  eq 0
 +        ITER_12_NEXT mov, index, v0, v1
-   else
--    mov     rN, r2
++  else
 +    k = 0
 +    while k lt NUM_SKIP_BYTES
 +        movzx   xA, BYTE PTR [rD + (index) * STEP_SIZE + k + 8 - src_rD_offset]
@@ -1207,72 +1355,8 @@ index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326
 +      k = k + 1
 +    endm
 +        ITER_12_NEXT xor, index, v0, v1
-   endif
- 
--    mov     x0, [r4 + crc_OFFS]
--    mov     x2, [r4 + crc_OFFS + 4]
--    mov     rT, table_VAR
--    test    rN, rN
--    jz      crc_end
--  @@:
--    test    rD, 3
--    jz      @F
--    CRC1b
--    jnz     @B
--  @@:
--    cmp     rN, 8
--    jb      crc_end
--    add     rN, rD
--
--    mov     num_VAR, rN
--
--    sub     rN, 4
--    and     rN, NOT 3
--    sub     rD, rN
--    xor     r0, SRCDAT4
--    add     rN, 4
--endm
--
--MY_EPILOG macro crc_end:req
--    sub     rN, 4
--    xor     r0, SRCDAT4
--
--    mov     rD, rN
--    mov     rN, num_VAR
--    sub     rN, rD
--  crc_end:
--    test    rN, rN
--    jz      @F
--    CRC1b
--    jmp     crc_end
--  @@:
--    MY_POP_4_REGS
--endm
--
--MY_PROC XzCrc64UpdateT4, 5
--    MY_PROLOG crc_end_4
--    movzx   x6, x0_L
--    align 16
--  main_loop_4:
--    mov     r3, SRCDAT4
--    xor     r3, r2
--
--    CRC xor, mov, r3, r2, r6, 3
--    movzx   x6, x0_H
--    shr     r0, 16
--    CRC_XOR r3, r2, r6, 2
--
--    movzx   x6, x0_L
--    movzx   x0, x0_H
--    CRC_XOR r3, r2, r6, 1
--    CRC_XOR r3, r2, r0, 0
--    movzx   x6, x3_L
--    mov     r0, r3
--
--    add     rD, 4
--    jnz     main_loop_4
--
--    MY_EPILOG crc_end_4
++  endif
++
 +if 0 eq 0
 +        ITER_4  v0, v1, a0, NUM_SKIP_BYTES + 4
 +        ITER_4  v0, v1, a1, NUM_SKIP_BYTES
@@ -1334,12 +1418,11 @@ index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326
 +        xor     x2, [rD + 4]
 +
 +        MY_EPILOG_BASE crc_end_12, func_end_12
- MY_ENDP
- 
++MY_ENDP
++
 +endif ; (NUM_WORDS > 1)
- endif ; ! x64
--
- end
++endif ; ! x64
++end
 diff --git a/third_party/lzma_sdk/BUILD.gn b/third_party/lzma_sdk/BUILD.gn
 index 57923a6b9e6cf6f73e7b2706fcbc0dcd367ebe89..39d8dc0a33ce95f7c293bab9d2de5f8639925f13 100644
 --- a/third_party/lzma_sdk/BUILD.gn
@@ -5131,7 +5214,7 @@ index 49ea81dd3beaf4d5af32e25dab0360856ee99c4a..00000000000000000000000000000000
 -#define MY_VERSION_COPYRIGHT_DATE MY_VERSION_CPU " : " MY_COPYRIGHT " : " MY_DATE
 diff --git a/third_party/lzma_sdk/C/7zVersion.rc b/third_party/lzma_sdk/C/7zVersion.rc
 deleted file mode 100644
-index 6ed26de74452e5f8cd98cded9642ed1ddb7a74b7..0000000000000000000000000000000000000000
+index e520995ddc9032014d2b0505eefe860c39a24d58..0000000000000000000000000000000000000000
 --- a/third_party/lzma_sdk/C/7zVersion.rc
 +++ /dev/null
 @@ -1,55 +0,0 @@

@@ -1,0 +1,5332 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Pedro Pontes <pepontes@microsoft.com>
+Date: Wed, 5 Mar 2025 10:24:26 +0000
+Subject: lzma_sdk: uniform line endings.
+
+Make all files have LF line endings to allow the fix to CR bugs 383772517 and 40849176 to be backported.
+
+diff --git a/third_party/lzma_sdk/Asm/arm/7zCrcOpt.asm b/third_party/lzma_sdk/Asm/arm/7zCrcOpt.asm
+index f008d658c37234911c452ad756a3b1f8a80a6c3f..6001d8e36e3df971a8d10cb828760a597bdc92d5 100644
+--- a/third_party/lzma_sdk/Asm/arm/7zCrcOpt.asm
++++ b/third_party/lzma_sdk/Asm/arm/7zCrcOpt.asm
+@@ -1,100 +1,100 @@
+-	CODE32
+-
+-	EXPORT	|CrcUpdateT4@16|
+-
+-	AREA	|.text|, CODE, ARM
+-
+-	MACRO
+-	CRC32_STEP_1
+-
+-	ldrb    r4, [r1], #1
+-	subs    r2, r2, #1
+-	eor     r4, r4, r0
+-	and     r4, r4, #0xFF
+-	ldr     r4, [r3, +r4, lsl #2]
+-	eor     r0, r4, r0, lsr #8
+-
+-	MEND
+-
+-
+-	MACRO
+-	CRC32_STEP_4 $STREAM_WORD
+-	
+-	eor     r7, r7, r8
+-	eor     r7, r7, r9
+-	eor     r0, r0, r7
+-	eor     r0, r0, $STREAM_WORD
+-	ldr     $STREAM_WORD, [r1], #4
+-	
+-	and     r7, r0, #0xFF
+-	and     r8, r0, #0xFF00
+-	and     r9, r0, #0xFF0000
+-	and     r0, r0, #0xFF000000
+-
+-	ldr     r7, [r6, +r7, lsl #2]
+-	ldr     r8, [r5, +r8, lsr #6]
+-	ldr     r9, [r4, +r9, lsr #14]
+-	ldr     r0, [r3, +r0, lsr #22]
+-	
+-	MEND
+-
+-
+-|CrcUpdateT4@16| PROC
+-
+-	stmdb   sp!, {r4-r11, lr}
+-	cmp     r2, #0
+-	beq     |$fin|
+-
+-|$v1|
+-	tst     r1, #7
+-	beq     |$v2|
+-	CRC32_STEP_1
+-	bne     |$v1|
+-
+-|$v2|
+-	cmp     r2, #16
+-	blo     |$v3|
+-
+-	ldr     r10, [r1], #4
+-	ldr     r11, [r1], #4
+-
+-	add     r4, r3, #0x400 
+-	add     r5, r3, #0x800
+-	add     r6, r3, #0xC00
+-
+-	mov     r7, #0
+-	mov     r8, #0
+-	mov     r9, #0
+-
+-	sub     r2, r2, #16
+-
+-|$loop|
+-	; pld     [r1, #0x40]
+-
+-	CRC32_STEP_4 r10
+-	CRC32_STEP_4 r11
+-
+-	subs    r2, r2, #8
+-	bhs     |$loop|
+-
+-	sub     r1, r1, #8
+-	add     r2, r2, #16
+-
+-	eor     r7, r7, r8
+-	eor     r7, r7, r9
+-	eor     r0, r0, r7
+-
+-|$v3|
+-	cmp     r2, #0
+-	beq     |$fin|
+-
+-|$v4|
+-	CRC32_STEP_1
+-	bne     |$v4|
+-
+-|$fin|
+-	ldmia   sp!, {r4-r11, pc}
+-
+-|CrcUpdateT4@16| ENDP
+-
+-	END
++	CODE32
++
++	EXPORT	|CrcUpdateT4@16|
++
++	AREA	|.text|, CODE, ARM
++
++	MACRO
++	CRC32_STEP_1
++
++	ldrb    r4, [r1], #1
++	subs    r2, r2, #1
++	eor     r4, r4, r0
++	and     r4, r4, #0xFF
++	ldr     r4, [r3, +r4, lsl #2]
++	eor     r0, r4, r0, lsr #8
++
++	MEND
++
++
++	MACRO
++	CRC32_STEP_4 $STREAM_WORD
++
++	eor     r7, r7, r8
++	eor     r7, r7, r9
++	eor     r0, r0, r7
++	eor     r0, r0, $STREAM_WORD
++	ldr     $STREAM_WORD, [r1], #4
++
++	and     r7, r0, #0xFF
++	and     r8, r0, #0xFF00
++	and     r9, r0, #0xFF0000
++	and     r0, r0, #0xFF000000
++
++	ldr     r7, [r6, +r7, lsl #2]
++	ldr     r8, [r5, +r8, lsr #6]
++	ldr     r9, [r4, +r9, lsr #14]
++	ldr     r0, [r3, +r0, lsr #22]
++
++	MEND
++
++
++|CrcUpdateT4@16| PROC
++
++	stmdb   sp!, {r4-r11, lr}
++	cmp     r2, #0
++	beq     |$fin|
++
++|$v1|
++	tst     r1, #7
++	beq     |$v2|
++	CRC32_STEP_1
++	bne     |$v1|
++
++|$v2|
++	cmp     r2, #16
++	blo     |$v3|
++
++	ldr     r10, [r1], #4
++	ldr     r11, [r1], #4
++
++	add     r4, r3, #0x400
++	add     r5, r3, #0x800
++	add     r6, r3, #0xC00
++
++	mov     r7, #0
++	mov     r8, #0
++	mov     r9, #0
++
++	sub     r2, r2, #16
++
++|$loop|
++	; pld     [r1, #0x40]
++
++	CRC32_STEP_4 r10
++	CRC32_STEP_4 r11
++
++	subs    r2, r2, #8
++	bhs     |$loop|
++
++	sub     r1, r1, #8
++	add     r2, r2, #16
++
++	eor     r7, r7, r8
++	eor     r7, r7, r9
++	eor     r0, r0, r7
++
++|$v3|
++	cmp     r2, #0
++	beq     |$fin|
++
++|$v4|
++	CRC32_STEP_1
++	bne     |$v4|
++
++|$fin|
++	ldmia   sp!, {r4-r11, pc}
++
++|CrcUpdateT4@16| ENDP
++
++	END
+diff --git a/third_party/lzma_sdk/Asm/arm64/7zAsm.S b/third_party/lzma_sdk/Asm/arm64/7zAsm.S
+index aa30a9ef8bf34ca51917983bcff7d873747d238c..e1b653eab906e1ca1c2c791b7a2a2b81b9f4bf5c 100644
+--- a/third_party/lzma_sdk/Asm/arm64/7zAsm.S
++++ b/third_party/lzma_sdk/Asm/arm64/7zAsm.S
+@@ -1,194 +1,194 @@
+-// 7zAsm.S -- ASM macros for arm64
+-// 2021-04-25 : Igor Pavlov : Public domain
+-
+-#define  r0 x0
+-#define  r1 x1
+-#define  r2 x2
+-#define  r3 x3
+-#define  r4 x4
+-#define  r5 x5
+-#define  r6 x6
+-#define  r7 x7
+-#define  r8 x8
+-#define  r9 x9
+-#define  r10 x10
+-#define  r11 x11
+-#define  r12 x12
+-#define  r13 x13
+-#define  r14 x14
+-#define  r15 x15
+-#define  r16 x16
+-#define  r17 x17
+-#define  r18 x18
+-#define  r19 x19
+-#define  r20 x20
+-#define  r21 x21
+-#define  r22 x22
+-#define  r23 x23
+-#define  r24 x24
+-#define  r25 x25
+-#define  r26 x26
+-#define  r27 x27
+-#define  r28 x28
+-#define  r29 x29
+-#define  r30 x30
+-
+-#define  REG_ABI_PARAM_0 r0
+-#define  REG_ABI_PARAM_1 r1
+-#define  REG_ABI_PARAM_2 r2
+-
+-// The .note.gnu.property section is required because Chromium Android builds
+-// utilize the linker flag force-bti.
+-.pushsection .note.gnu.property, "a"
+-.balign 8
+-.long 4
+-.long 0x10
+-.long 0x5
+-.asciz "GNU"
+-.long 0xc0000000
+-.long 4
+-.long ((1 << 0 ) | (1 << 1))
+-.long 0
+-.popsection
+-
+-.macro p2_add reg:req, param:req
+-        add     \reg, \reg, \param
+-.endm
+-
+-.macro p2_sub reg:req, param:req
+-        sub     \reg, \reg, \param
+-.endm
+-
+-.macro p2_sub_s reg:req, param:req
+-        subs    \reg, \reg, \param
+-.endm
+-
+-.macro p2_and reg:req, param:req
+-        and     \reg, \reg, \param
+-.endm
+-
+-.macro xor reg:req, param:req
+-        eor     \reg, \reg, \param
+-.endm
+-
+-.macro or reg:req, param:req
+-        orr     \reg, \reg, \param
+-.endm
+-
+-.macro shl reg:req, param:req
+-        lsl     \reg, \reg, \param
+-.endm
+-
+-.macro shr reg:req, param:req
+-        lsr     \reg, \reg, \param
+-.endm
+-
+-.macro sar reg:req, param:req
+-        asr     \reg, \reg, \param
+-.endm
+-
+-.macro p1_neg reg:req
+-        neg     \reg, \reg
+-.endm
+-
+-.macro dec reg:req
+-        sub     \reg, \reg, 1
+-.endm
+-
+-.macro dec_s reg:req
+-        subs    \reg, \reg, 1
+-.endm
+-
+-.macro inc reg:req
+-        add     \reg, \reg, 1
+-.endm
+-
+-.macro inc_s reg:req
+-        adds    \reg, \reg, 1
+-.endm
+-
+-
+-.macro imul reg:req, param:req
+-        mul     \reg, \reg, \param
+-.endm
+-
+-/*
+-arm64 and arm use reverted c flag after subs/cmp instructions:
+-  arm64-arm   :     x86
+- b.lo / b.cc  :  jb  / jc
+- b.hs / b.cs  :  jae / jnc
+-*/ 
+-
+-.macro jmp lab:req
+-        b       \lab
+-.endm
+-
+-.macro je lab:req
+-        b.eq    \lab
+-.endm
+-
+-.macro jz lab:req
+-        b.eq    \lab
+-.endm
+-
+-.macro jnz lab:req
+-        b.ne    \lab
+-.endm
+-
+-.macro jne lab:req
+-        b.ne    \lab
+-.endm
+-
+-.macro jb lab:req
+-        b.lo    \lab
+-.endm
+-
+-.macro jbe lab:req
+-        b.ls    \lab
+-.endm
+-
+-.macro ja lab:req
+-        b.hi    \lab
+-.endm
+-
+-.macro jae lab:req
+-        b.hs    \lab
+-.endm
+-
+-
+-.macro cmove dest:req, srcTrue:req
+-        csel    \dest, \srcTrue, \dest, eq
+-.endm
+-
+-.macro cmovne dest:req, srcTrue:req
+-        csel    \dest, \srcTrue, \dest, ne
+-.endm
+-
+-.macro cmovs dest:req, srcTrue:req
+-        csel    \dest, \srcTrue, \dest, mi
+-.endm
+-
+-.macro cmovns dest:req, srcTrue:req
+-        csel    \dest, \srcTrue, \dest, pl
+-.endm
+-
+-.macro cmovb dest:req, srcTrue:req
+-        csel    \dest, \srcTrue, \dest, lo
+-.endm
+-
+-.macro cmovae dest:req, srcTrue:req
+-        csel    \dest, \srcTrue, \dest, hs
+-.endm
+-
+-
+-.macro MY_ALIGN_16 macro
+-	.p2align 4,, (1 << 4) - 1
+-.endm
+-
+-.macro MY_ALIGN_32 macro
+-        .p2align 5,, (1 << 5) - 1
+-.endm
+-
+-.macro MY_ALIGN_64 macro
+-        .p2align 6,, (1 << 6) - 1
+-.endm
++// 7zAsm.S -- ASM macros for arm64
++// 2021-04-25 : Igor Pavlov : Public domain
++
++#define  r0 x0
++#define  r1 x1
++#define  r2 x2
++#define  r3 x3
++#define  r4 x4
++#define  r5 x5
++#define  r6 x6
++#define  r7 x7
++#define  r8 x8
++#define  r9 x9
++#define  r10 x10
++#define  r11 x11
++#define  r12 x12
++#define  r13 x13
++#define  r14 x14
++#define  r15 x15
++#define  r16 x16
++#define  r17 x17
++#define  r18 x18
++#define  r19 x19
++#define  r20 x20
++#define  r21 x21
++#define  r22 x22
++#define  r23 x23
++#define  r24 x24
++#define  r25 x25
++#define  r26 x26
++#define  r27 x27
++#define  r28 x28
++#define  r29 x29
++#define  r30 x30
++
++#define  REG_ABI_PARAM_0 r0
++#define  REG_ABI_PARAM_1 r1
++#define  REG_ABI_PARAM_2 r2
++
++// The .note.gnu.property section is required because Chromium Android builds
++// utilize the linker flag force-bti.
++.pushsection .note.gnu.property, "a"
++.balign 8
++.long 4
++.long 0x10
++.long 0x5
++.asciz "GNU"
++.long 0xc0000000
++.long 4
++.long ((1 << 0 ) | (1 << 1))
++.long 0
++.popsection
++
++.macro p2_add reg:req, param:req
++        add     \reg, \reg, \param
++.endm
++
++.macro p2_sub reg:req, param:req
++        sub     \reg, \reg, \param
++.endm
++
++.macro p2_sub_s reg:req, param:req
++        subs    \reg, \reg, \param
++.endm
++
++.macro p2_and reg:req, param:req
++        and     \reg, \reg, \param
++.endm
++
++.macro xor reg:req, param:req
++        eor     \reg, \reg, \param
++.endm
++
++.macro or reg:req, param:req
++        orr     \reg, \reg, \param
++.endm
++
++.macro shl reg:req, param:req
++        lsl     \reg, \reg, \param
++.endm
++
++.macro shr reg:req, param:req
++        lsr     \reg, \reg, \param
++.endm
++
++.macro sar reg:req, param:req
++        asr     \reg, \reg, \param
++.endm
++
++.macro p1_neg reg:req
++        neg     \reg, \reg
++.endm
++
++.macro dec reg:req
++        sub     \reg, \reg, 1
++.endm
++
++.macro dec_s reg:req
++        subs    \reg, \reg, 1
++.endm
++
++.macro inc reg:req
++        add     \reg, \reg, 1
++.endm
++
++.macro inc_s reg:req
++        adds    \reg, \reg, 1
++.endm
++
++
++.macro imul reg:req, param:req
++        mul     \reg, \reg, \param
++.endm
++
++/*
++arm64 and arm use reverted c flag after subs/cmp instructions:
++  arm64-arm   :     x86
++ b.lo / b.cc  :  jb  / jc
++ b.hs / b.cs  :  jae / jnc
++*/
++
++.macro jmp lab:req
++        b       \lab
++.endm
++
++.macro je lab:req
++        b.eq    \lab
++.endm
++
++.macro jz lab:req
++        b.eq    \lab
++.endm
++
++.macro jnz lab:req
++        b.ne    \lab
++.endm
++
++.macro jne lab:req
++        b.ne    \lab
++.endm
++
++.macro jb lab:req
++        b.lo    \lab
++.endm
++
++.macro jbe lab:req
++        b.ls    \lab
++.endm
++
++.macro ja lab:req
++        b.hi    \lab
++.endm
++
++.macro jae lab:req
++        b.hs    \lab
++.endm
++
++
++.macro cmove dest:req, srcTrue:req
++        csel    \dest, \srcTrue, \dest, eq
++.endm
++
++.macro cmovne dest:req, srcTrue:req
++        csel    \dest, \srcTrue, \dest, ne
++.endm
++
++.macro cmovs dest:req, srcTrue:req
++        csel    \dest, \srcTrue, \dest, mi
++.endm
++
++.macro cmovns dest:req, srcTrue:req
++        csel    \dest, \srcTrue, \dest, pl
++.endm
++
++.macro cmovb dest:req, srcTrue:req
++        csel    \dest, \srcTrue, \dest, lo
++.endm
++
++.macro cmovae dest:req, srcTrue:req
++        csel    \dest, \srcTrue, \dest, hs
++.endm
++
++
++.macro MY_ALIGN_16 macro
++	.p2align 4,, (1 << 4) - 1
++.endm
++
++.macro MY_ALIGN_32 macro
++        .p2align 5,, (1 << 5) - 1
++.endm
++
++.macro MY_ALIGN_64 macro
++        .p2align 6,, (1 << 6) - 1
++.endm
+diff --git a/third_party/lzma_sdk/Asm/x86/7zAsm.asm b/third_party/lzma_sdk/Asm/x86/7zAsm.asm
+index a77edf25311d1a61ac627771d4d899041527cbfc..37700c5b4903b3fbad484f27416bb4af0c8c81d0 100644
+--- a/third_party/lzma_sdk/Asm/x86/7zAsm.asm
++++ b/third_party/lzma_sdk/Asm/x86/7zAsm.asm
+@@ -1,289 +1,289 @@
+-; 7zAsm.asm -- ASM macros
+-; 2022-05-16 : Igor Pavlov : Public domain
+-
+-
+-; UASM can require these changes
+-; OPTION FRAMEPRESERVEFLAGS:ON
+-; OPTION PROLOGUE:NONE
+-; OPTION EPILOGUE:NONE
+-
+-ifdef @wordsize
+-; @wordsize is defined only in JWASM and ASMC and is not defined in MASM
+-; @wordsize eq 8 for 64-bit x64
+-; @wordsize eq 2 for 32-bit x86
+-if @wordsize eq 8
+-  x64 equ 1
+-endif
+-else
+-ifdef RAX
+-  x64 equ 1
+-endif
+-endif
+-
+-
+-ifdef x64
+-  IS_X64 equ 1
+-else
+-  IS_X64 equ 0
+-endif
+-
+-ifdef ABI_LINUX
+-  IS_LINUX equ 1
+-else
+-  IS_LINUX equ 0
+-endif
+-
+-ifndef x64
+-; Use ABI_CDECL for x86 (32-bit) only
+-; if ABI_CDECL is not defined, we use fastcall abi
+-ifdef ABI_CDECL
+-  IS_CDECL equ 1
+-else
+-  IS_CDECL equ 0
+-endif
+-endif
+-
+-OPTION PROLOGUE:NONE 
+-OPTION EPILOGUE:NONE
+-
+-MY_ASM_START macro
+-  ifdef x64
+-    .code
+-  else
+-    .386
+-    .model flat
+-    SEVENZ SEGMENT PARA PUBLIC 'CODE'
+-  endif
+-endm
+-
+-MY_PROC macro name:req, numParams:req
+-  align 16
+-  proc_numParams = numParams
+-  if (IS_X64 gt 0)
+-    proc_name equ name
+-  elseif (IS_LINUX gt 0)
+-    proc_name equ name
+-  elseif (IS_CDECL gt 0)
+-    proc_name equ @CatStr(_,name)
+-  else
+-    proc_name equ @CatStr(@,name,@, %numParams * 4)
+-  endif
+-  proc_name PROC
+-endm
+-
+-MY_ENDP macro
+-    if (IS_X64 gt 0)
+-        ret
+-    elseif (IS_CDECL gt 0)
+-        ret
+-    elseif (proc_numParams LT 3)
+-        ret
+-    else
+-        ret (proc_numParams - 2) * 4
+-    endif
+-  proc_name ENDP
+-endm
+-
+-
+-ifdef x64
+-  REG_SIZE equ 8
+-  REG_LOGAR_SIZE equ 3
+-else
+-  REG_SIZE equ 4
+-  REG_LOGAR_SIZE equ 2
+-endif
+-
+-  x0 equ EAX
+-  x1 equ ECX
+-  x2 equ EDX
+-  x3 equ EBX
+-  x4 equ ESP
+-  x5 equ EBP
+-  x6 equ ESI
+-  x7 equ EDI
+-
+-  x0_W equ AX
+-  x1_W equ CX
+-  x2_W equ DX
+-  x3_W equ BX
+-
+-  x5_W equ BP
+-  x6_W equ SI
+-  x7_W equ DI
+-
+-  x0_L equ AL
+-  x1_L equ CL
+-  x2_L equ DL
+-  x3_L equ BL
+-
+-  x0_H equ AH
+-  x1_H equ CH
+-  x2_H equ DH
+-  x3_H equ BH
+-
+-ifdef x64
+-  x5_L equ BPL
+-  x6_L equ SIL
+-  x7_L equ DIL
+-
+-  r0 equ RAX
+-  r1 equ RCX
+-  r2 equ RDX
+-  r3 equ RBX
+-  r4 equ RSP
+-  r5 equ RBP
+-  r6 equ RSI
+-  r7 equ RDI
+-  x8 equ r8d
+-  x9 equ r9d
+-  x10 equ r10d
+-  x11 equ r11d
+-  x12 equ r12d
+-  x13 equ r13d
+-  x14 equ r14d
+-  x15 equ r15d
+-else
+-  r0 equ x0
+-  r1 equ x1
+-  r2 equ x2
+-  r3 equ x3
+-  r4 equ x4
+-  r5 equ x5
+-  r6 equ x6
+-  r7 equ x7
+-endif
+-
+-
+-ifdef x64
+-ifdef ABI_LINUX
+-
+-MY_PUSH_2_REGS macro
+-    push    r3
+-    push    r5
+-endm
+-
+-MY_POP_2_REGS macro
+-    pop     r5
+-    pop     r3
+-endm
+-
+-endif
+-endif
+-
+-
+-MY_PUSH_4_REGS macro
+-    push    r3
+-    push    r5
+-    push    r6
+-    push    r7
+-endm
+-
+-MY_POP_4_REGS macro
+-    pop     r7
+-    pop     r6
+-    pop     r5
+-    pop     r3
+-endm
+-
+-
+-; for fastcall and for WIN-x64
+-REG_PARAM_0_x   equ x1
+-REG_PARAM_0     equ r1
+-REG_PARAM_1_x   equ x2
+-REG_PARAM_1     equ r2
+-
+-ifndef x64
+-; for x86-fastcall
+-
+-REG_ABI_PARAM_0_x equ REG_PARAM_0_x
+-REG_ABI_PARAM_0   equ REG_PARAM_0
+-REG_ABI_PARAM_1_x equ REG_PARAM_1_x
+-REG_ABI_PARAM_1   equ REG_PARAM_1
+-
+-else
+-; x64
+-
+-if  (IS_LINUX eq 0)
+-
+-; for WIN-x64:
+-REG_PARAM_2_x   equ x8
+-REG_PARAM_2     equ r8
+-REG_PARAM_3     equ r9
+-
+-REG_ABI_PARAM_0_x equ REG_PARAM_0_x
+-REG_ABI_PARAM_0   equ REG_PARAM_0
+-REG_ABI_PARAM_1_x equ REG_PARAM_1_x
+-REG_ABI_PARAM_1   equ REG_PARAM_1
+-REG_ABI_PARAM_2_x equ REG_PARAM_2_x
+-REG_ABI_PARAM_2   equ REG_PARAM_2
+-REG_ABI_PARAM_3   equ REG_PARAM_3
+-
+-else
+-; for LINUX-x64:
+-REG_LINUX_PARAM_0_x equ x7
+-REG_LINUX_PARAM_0   equ r7
+-REG_LINUX_PARAM_1_x equ x6
+-REG_LINUX_PARAM_1   equ r6
+-REG_LINUX_PARAM_2   equ r2
+-REG_LINUX_PARAM_3   equ r1
+-REG_LINUX_PARAM_4_x equ x8
+-REG_LINUX_PARAM_4   equ r8
+-REG_LINUX_PARAM_5   equ r9
+-
+-REG_ABI_PARAM_0_x equ REG_LINUX_PARAM_0_x
+-REG_ABI_PARAM_0   equ REG_LINUX_PARAM_0
+-REG_ABI_PARAM_1_x equ REG_LINUX_PARAM_1_x
+-REG_ABI_PARAM_1   equ REG_LINUX_PARAM_1
+-REG_ABI_PARAM_2   equ REG_LINUX_PARAM_2
+-REG_ABI_PARAM_3   equ REG_LINUX_PARAM_3
+-REG_ABI_PARAM_4_x equ REG_LINUX_PARAM_4_x
+-REG_ABI_PARAM_4   equ REG_LINUX_PARAM_4
+-REG_ABI_PARAM_5   equ REG_LINUX_PARAM_5
+-
+-MY_ABI_LINUX_TO_WIN_2 macro
+-        mov     r2, r6
+-        mov     r1, r7
+-endm
+-
+-MY_ABI_LINUX_TO_WIN_3 macro
+-        mov     r8, r2
+-        mov     r2, r6
+-        mov     r1, r7
+-endm
+-
+-MY_ABI_LINUX_TO_WIN_4 macro
+-        mov     r9, r1
+-        mov     r8, r2
+-        mov     r2, r6
+-        mov     r1, r7
+-endm
+-
+-endif ; IS_LINUX
+-
+-
+-MY_PUSH_PRESERVED_ABI_REGS macro
+-    if  (IS_LINUX gt 0)
+-        MY_PUSH_2_REGS
+-    else
+-        MY_PUSH_4_REGS
+-    endif
+-        push    r12
+-        push    r13
+-        push    r14
+-        push    r15
+-endm
+-
+-
+-MY_POP_PRESERVED_ABI_REGS macro
+-        pop     r15
+-        pop     r14
+-        pop     r13
+-        pop     r12
+-    if  (IS_LINUX gt 0)
+-        MY_POP_2_REGS
+-    else
+-        MY_POP_4_REGS
+-    endif
+-endm
+-
+-endif ; x64
++; 7zAsm.asm -- ASM macros
++; 2022-05-16 : Igor Pavlov : Public domain
++
++
++; UASM can require these changes
++; OPTION FRAMEPRESERVEFLAGS:ON
++; OPTION PROLOGUE:NONE
++; OPTION EPILOGUE:NONE
++
++ifdef @wordsize
++; @wordsize is defined only in JWASM and ASMC and is not defined in MASM
++; @wordsize eq 8 for 64-bit x64
++; @wordsize eq 2 for 32-bit x86
++if @wordsize eq 8
++  x64 equ 1
++endif
++else
++ifdef RAX
++  x64 equ 1
++endif
++endif
++
++
++ifdef x64
++  IS_X64 equ 1
++else
++  IS_X64 equ 0
++endif
++
++ifdef ABI_LINUX
++  IS_LINUX equ 1
++else
++  IS_LINUX equ 0
++endif
++
++ifndef x64
++; Use ABI_CDECL for x86 (32-bit) only
++; if ABI_CDECL is not defined, we use fastcall abi
++ifdef ABI_CDECL
++  IS_CDECL equ 1
++else
++  IS_CDECL equ 0
++endif
++endif
++
++OPTION PROLOGUE:NONE
++OPTION EPILOGUE:NONE
++
++MY_ASM_START macro
++  ifdef x64
++    .code
++  else
++    .386
++    .model flat
++    SEVENZ SEGMENT PARA PUBLIC 'CODE'
++  endif
++endm
++
++MY_PROC macro name:req, numParams:req
++  align 16
++  proc_numParams = numParams
++  if (IS_X64 gt 0)
++    proc_name equ name
++  elseif (IS_LINUX gt 0)
++    proc_name equ name
++  elseif (IS_CDECL gt 0)
++    proc_name equ @CatStr(_,name)
++  else
++    proc_name equ @CatStr(@,name,@, %numParams * 4)
++  endif
++  proc_name PROC
++endm
++
++MY_ENDP macro
++    if (IS_X64 gt 0)
++        ret
++    elseif (IS_CDECL gt 0)
++        ret
++    elseif (proc_numParams LT 3)
++        ret
++    else
++        ret (proc_numParams - 2) * 4
++    endif
++  proc_name ENDP
++endm
++
++
++ifdef x64
++  REG_SIZE equ 8
++  REG_LOGAR_SIZE equ 3
++else
++  REG_SIZE equ 4
++  REG_LOGAR_SIZE equ 2
++endif
++
++  x0 equ EAX
++  x1 equ ECX
++  x2 equ EDX
++  x3 equ EBX
++  x4 equ ESP
++  x5 equ EBP
++  x6 equ ESI
++  x7 equ EDI
++
++  x0_W equ AX
++  x1_W equ CX
++  x2_W equ DX
++  x3_W equ BX
++
++  x5_W equ BP
++  x6_W equ SI
++  x7_W equ DI
++
++  x0_L equ AL
++  x1_L equ CL
++  x2_L equ DL
++  x3_L equ BL
++
++  x0_H equ AH
++  x1_H equ CH
++  x2_H equ DH
++  x3_H equ BH
++
++ifdef x64
++  x5_L equ BPL
++  x6_L equ SIL
++  x7_L equ DIL
++
++  r0 equ RAX
++  r1 equ RCX
++  r2 equ RDX
++  r3 equ RBX
++  r4 equ RSP
++  r5 equ RBP
++  r6 equ RSI
++  r7 equ RDI
++  x8 equ r8d
++  x9 equ r9d
++  x10 equ r10d
++  x11 equ r11d
++  x12 equ r12d
++  x13 equ r13d
++  x14 equ r14d
++  x15 equ r15d
++else
++  r0 equ x0
++  r1 equ x1
++  r2 equ x2
++  r3 equ x3
++  r4 equ x4
++  r5 equ x5
++  r6 equ x6
++  r7 equ x7
++endif
++
++
++ifdef x64
++ifdef ABI_LINUX
++
++MY_PUSH_2_REGS macro
++    push    r3
++    push    r5
++endm
++
++MY_POP_2_REGS macro
++    pop     r5
++    pop     r3
++endm
++
++endif
++endif
++
++
++MY_PUSH_4_REGS macro
++    push    r3
++    push    r5
++    push    r6
++    push    r7
++endm
++
++MY_POP_4_REGS macro
++    pop     r7
++    pop     r6
++    pop     r5
++    pop     r3
++endm
++
++
++; for fastcall and for WIN-x64
++REG_PARAM_0_x   equ x1
++REG_PARAM_0     equ r1
++REG_PARAM_1_x   equ x2
++REG_PARAM_1     equ r2
++
++ifndef x64
++; for x86-fastcall
++
++REG_ABI_PARAM_0_x equ REG_PARAM_0_x
++REG_ABI_PARAM_0   equ REG_PARAM_0
++REG_ABI_PARAM_1_x equ REG_PARAM_1_x
++REG_ABI_PARAM_1   equ REG_PARAM_1
++
++else
++; x64
++
++if  (IS_LINUX eq 0)
++
++; for WIN-x64:
++REG_PARAM_2_x   equ x8
++REG_PARAM_2     equ r8
++REG_PARAM_3     equ r9
++
++REG_ABI_PARAM_0_x equ REG_PARAM_0_x
++REG_ABI_PARAM_0   equ REG_PARAM_0
++REG_ABI_PARAM_1_x equ REG_PARAM_1_x
++REG_ABI_PARAM_1   equ REG_PARAM_1
++REG_ABI_PARAM_2_x equ REG_PARAM_2_x
++REG_ABI_PARAM_2   equ REG_PARAM_2
++REG_ABI_PARAM_3   equ REG_PARAM_3
++
++else
++; for LINUX-x64:
++REG_LINUX_PARAM_0_x equ x7
++REG_LINUX_PARAM_0   equ r7
++REG_LINUX_PARAM_1_x equ x6
++REG_LINUX_PARAM_1   equ r6
++REG_LINUX_PARAM_2   equ r2
++REG_LINUX_PARAM_3   equ r1
++REG_LINUX_PARAM_4_x equ x8
++REG_LINUX_PARAM_4   equ r8
++REG_LINUX_PARAM_5   equ r9
++
++REG_ABI_PARAM_0_x equ REG_LINUX_PARAM_0_x
++REG_ABI_PARAM_0   equ REG_LINUX_PARAM_0
++REG_ABI_PARAM_1_x equ REG_LINUX_PARAM_1_x
++REG_ABI_PARAM_1   equ REG_LINUX_PARAM_1
++REG_ABI_PARAM_2   equ REG_LINUX_PARAM_2
++REG_ABI_PARAM_3   equ REG_LINUX_PARAM_3
++REG_ABI_PARAM_4_x equ REG_LINUX_PARAM_4_x
++REG_ABI_PARAM_4   equ REG_LINUX_PARAM_4
++REG_ABI_PARAM_5   equ REG_LINUX_PARAM_5
++
++MY_ABI_LINUX_TO_WIN_2 macro
++        mov     r2, r6
++        mov     r1, r7
++endm
++
++MY_ABI_LINUX_TO_WIN_3 macro
++        mov     r8, r2
++        mov     r2, r6
++        mov     r1, r7
++endm
++
++MY_ABI_LINUX_TO_WIN_4 macro
++        mov     r9, r1
++        mov     r8, r2
++        mov     r2, r6
++        mov     r1, r7
++endm
++
++endif ; IS_LINUX
++
++
++MY_PUSH_PRESERVED_ABI_REGS macro
++    if  (IS_LINUX gt 0)
++        MY_PUSH_2_REGS
++    else
++        MY_PUSH_4_REGS
++    endif
++        push    r12
++        push    r13
++        push    r14
++        push    r15
++endm
++
++
++MY_POP_PRESERVED_ABI_REGS macro
++        pop     r15
++        pop     r14
++        pop     r13
++        pop     r12
++    if  (IS_LINUX gt 0)
++        MY_POP_2_REGS
++    else
++        MY_POP_4_REGS
++    endif
++endm
++
++endif ; x64
+diff --git a/third_party/lzma_sdk/Asm/x86/7zCrcOpt.asm b/third_party/lzma_sdk/Asm/x86/7zCrcOpt.asm
+index 97a6b9aa80dd25742439c17426026472733209b1..0fee2064e1f4e47bdca9e8cd4447173a4932b5c1 100644
+--- a/third_party/lzma_sdk/Asm/x86/7zCrcOpt.asm
++++ b/third_party/lzma_sdk/Asm/x86/7zCrcOpt.asm
+@@ -1,180 +1,180 @@
+-; 7zCrcOpt.asm -- CRC32 calculation : optimized version
+-; 2021-02-07 : Igor Pavlov : Public domain
+-
+-include 7zAsm.asm
+-
+-MY_ASM_START
+-
+-rD   equ  r2
+-rN   equ  r7
+-rT   equ  r5
+-
+-ifdef x64
+-    num_VAR     equ r8
+-    table_VAR   equ r9
+-else
+-  if (IS_CDECL gt 0)
+-    crc_OFFS    equ (REG_SIZE * 5)
+-    data_OFFS   equ (REG_SIZE + crc_OFFS)
+-    size_OFFS   equ (REG_SIZE + data_OFFS)
+-  else
+-    size_OFFS   equ (REG_SIZE * 5)
+-  endif
+-    table_OFFS  equ (REG_SIZE + size_OFFS)
+-    num_VAR     equ [r4 + size_OFFS]
+-    table_VAR   equ [r4 + table_OFFS]
+-endif
+-
+-SRCDAT  equ  rD + rN * 1 + 4 *
+-
+-CRC macro op:req, dest:req, src:req, t:req
+-    op      dest, DWORD PTR [rT + src * 4 + 0400h * t]
+-endm
+-
+-CRC_XOR macro dest:req, src:req, t:req
+-    CRC xor, dest, src, t
+-endm
+-
+-CRC_MOV macro dest:req, src:req, t:req
+-    CRC mov, dest, src, t
+-endm
+-
+-CRC1b macro
+-    movzx   x6, BYTE PTR [rD]
+-    inc     rD
+-    movzx   x3, x0_L
+-    xor     x6, x3
+-    shr     x0, 8
+-    CRC     xor, x0, r6, 0
+-    dec     rN
+-endm
+-
+-MY_PROLOG macro crc_end:req
+-
+-    ifdef x64
+-      if  (IS_LINUX gt 0)
+-        MY_PUSH_2_REGS
+-        mov     x0, REG_ABI_PARAM_0_x   ; x0 = x7
+-        mov     rT, REG_ABI_PARAM_3     ; r5 = r1
+-        mov     rN, REG_ABI_PARAM_2     ; r7 = r2
+-        mov     rD, REG_ABI_PARAM_1     ; r2 = r6
+-      else
+-        MY_PUSH_4_REGS
+-        mov     x0, REG_ABI_PARAM_0_x   ; x0 = x1
+-        mov     rT, REG_ABI_PARAM_3     ; r5 = r9
+-        mov     rN, REG_ABI_PARAM_2     ; r7 = r8
+-        ; mov     rD, REG_ABI_PARAM_1     ; r2 = r2
+-      endif
+-    else
+-        MY_PUSH_4_REGS
+-      if  (IS_CDECL gt 0)
+-        mov     x0, [r4 + crc_OFFS]
+-        mov     rD, [r4 + data_OFFS]
+-      else
+-        mov     x0, REG_ABI_PARAM_0_x
+-      endif
+-        mov     rN, num_VAR
+-        mov     rT, table_VAR
+-    endif
+-    
+-    test    rN, rN
+-    jz      crc_end
+-  @@:
+-    test    rD, 7
+-    jz      @F
+-    CRC1b
+-    jnz     @B
+-  @@:
+-    cmp     rN, 16
+-    jb      crc_end
+-    add     rN, rD
+-    mov     num_VAR, rN
+-    sub     rN, 8
+-    and     rN, NOT 7
+-    sub     rD, rN
+-    xor     x0, [SRCDAT 0]
+-endm
+-
+-MY_EPILOG macro crc_end:req
+-    xor     x0, [SRCDAT 0]
+-    mov     rD, rN
+-    mov     rN, num_VAR
+-    sub     rN, rD
+-  crc_end:
+-    test    rN, rN
+-    jz      @F
+-    CRC1b
+-    jmp     crc_end
+-  @@:
+-      if (IS_X64 gt 0) and (IS_LINUX gt 0)
+-        MY_POP_2_REGS
+-      else
+-        MY_POP_4_REGS
+-      endif
+-endm
+-
+-MY_PROC CrcUpdateT8, 4
+-    MY_PROLOG crc_end_8
+-    mov     x1, [SRCDAT 1]
+-    align 16
+-  main_loop_8:
+-    mov     x6, [SRCDAT 2]
+-    movzx   x3, x1_L
+-    CRC_XOR x6, r3, 3
+-    movzx   x3, x1_H
+-    CRC_XOR x6, r3, 2
+-    shr     x1, 16
+-    movzx   x3, x1_L
+-    movzx   x1, x1_H
+-    CRC_XOR x6, r3, 1
+-    movzx   x3, x0_L
+-    CRC_XOR x6, r1, 0
+-
+-    mov     x1, [SRCDAT 3]
+-    CRC_XOR x6, r3, 7
+-    movzx   x3, x0_H
+-    shr     x0, 16
+-    CRC_XOR x6, r3, 6
+-    movzx   x3, x0_L
+-    CRC_XOR x6, r3, 5
+-    movzx   x3, x0_H
+-    CRC_MOV x0, r3, 4
+-    xor     x0, x6
+-    add     rD, 8
+-    jnz     main_loop_8
+-
+-    MY_EPILOG crc_end_8
+-MY_ENDP
+-
+-MY_PROC CrcUpdateT4, 4
+-    MY_PROLOG crc_end_4
+-    align 16
+-  main_loop_4:
+-    movzx   x1, x0_L
+-    movzx   x3, x0_H
+-    shr     x0, 16
+-    movzx   x6, x0_H
+-    and     x0, 0FFh
+-    CRC_MOV x1, r1, 3
+-    xor     x1, [SRCDAT 1]
+-    CRC_XOR x1, r3, 2
+-    CRC_XOR x1, r6, 0
+-    CRC_XOR x1, r0, 1
+- 
+-    movzx   x0, x1_L
+-    movzx   x3, x1_H
+-    shr     x1, 16
+-    movzx   x6, x1_H
+-    and     x1, 0FFh
+-    CRC_MOV x0, r0, 3
+-    xor     x0, [SRCDAT 2]
+-    CRC_XOR x0, r3, 2
+-    CRC_XOR x0, r6, 0
+-    CRC_XOR x0, r1, 1
+-    add     rD, 8
+-    jnz     main_loop_4
+-
+-    MY_EPILOG crc_end_4
+-MY_ENDP
+-
+-end
++; 7zCrcOpt.asm -- CRC32 calculation : optimized version
++; 2021-02-07 : Igor Pavlov : Public domain
++
++include 7zAsm.asm
++
++MY_ASM_START
++
++rD   equ  r2
++rN   equ  r7
++rT   equ  r5
++
++ifdef x64
++    num_VAR     equ r8
++    table_VAR   equ r9
++else
++  if (IS_CDECL gt 0)
++    crc_OFFS    equ (REG_SIZE * 5)
++    data_OFFS   equ (REG_SIZE + crc_OFFS)
++    size_OFFS   equ (REG_SIZE + data_OFFS)
++  else
++    size_OFFS   equ (REG_SIZE * 5)
++  endif
++    table_OFFS  equ (REG_SIZE + size_OFFS)
++    num_VAR     equ [r4 + size_OFFS]
++    table_VAR   equ [r4 + table_OFFS]
++endif
++
++SRCDAT  equ  rD + rN * 1 + 4 *
++
++CRC macro op:req, dest:req, src:req, t:req
++    op      dest, DWORD PTR [rT + src * 4 + 0400h * t]
++endm
++
++CRC_XOR macro dest:req, src:req, t:req
++    CRC xor, dest, src, t
++endm
++
++CRC_MOV macro dest:req, src:req, t:req
++    CRC mov, dest, src, t
++endm
++
++CRC1b macro
++    movzx   x6, BYTE PTR [rD]
++    inc     rD
++    movzx   x3, x0_L
++    xor     x6, x3
++    shr     x0, 8
++    CRC     xor, x0, r6, 0
++    dec     rN
++endm
++
++MY_PROLOG macro crc_end:req
++
++    ifdef x64
++      if  (IS_LINUX gt 0)
++        MY_PUSH_2_REGS
++        mov     x0, REG_ABI_PARAM_0_x   ; x0 = x7
++        mov     rT, REG_ABI_PARAM_3     ; r5 = r1
++        mov     rN, REG_ABI_PARAM_2     ; r7 = r2
++        mov     rD, REG_ABI_PARAM_1     ; r2 = r6
++      else
++        MY_PUSH_4_REGS
++        mov     x0, REG_ABI_PARAM_0_x   ; x0 = x1
++        mov     rT, REG_ABI_PARAM_3     ; r5 = r9
++        mov     rN, REG_ABI_PARAM_2     ; r7 = r8
++        ; mov     rD, REG_ABI_PARAM_1     ; r2 = r2
++      endif
++    else
++        MY_PUSH_4_REGS
++      if  (IS_CDECL gt 0)
++        mov     x0, [r4 + crc_OFFS]
++        mov     rD, [r4 + data_OFFS]
++      else
++        mov     x0, REG_ABI_PARAM_0_x
++      endif
++        mov     rN, num_VAR
++        mov     rT, table_VAR
++    endif
++
++    test    rN, rN
++    jz      crc_end
++  @@:
++    test    rD, 7
++    jz      @F
++    CRC1b
++    jnz     @B
++  @@:
++    cmp     rN, 16
++    jb      crc_end
++    add     rN, rD
++    mov     num_VAR, rN
++    sub     rN, 8
++    and     rN, NOT 7
++    sub     rD, rN
++    xor     x0, [SRCDAT 0]
++endm
++
++MY_EPILOG macro crc_end:req
++    xor     x0, [SRCDAT 0]
++    mov     rD, rN
++    mov     rN, num_VAR
++    sub     rN, rD
++  crc_end:
++    test    rN, rN
++    jz      @F
++    CRC1b
++    jmp     crc_end
++  @@:
++      if (IS_X64 gt 0) and (IS_LINUX gt 0)
++        MY_POP_2_REGS
++      else
++        MY_POP_4_REGS
++      endif
++endm
++
++MY_PROC CrcUpdateT8, 4
++    MY_PROLOG crc_end_8
++    mov     x1, [SRCDAT 1]
++    align 16
++  main_loop_8:
++    mov     x6, [SRCDAT 2]
++    movzx   x3, x1_L
++    CRC_XOR x6, r3, 3
++    movzx   x3, x1_H
++    CRC_XOR x6, r3, 2
++    shr     x1, 16
++    movzx   x3, x1_L
++    movzx   x1, x1_H
++    CRC_XOR x6, r3, 1
++    movzx   x3, x0_L
++    CRC_XOR x6, r1, 0
++
++    mov     x1, [SRCDAT 3]
++    CRC_XOR x6, r3, 7
++    movzx   x3, x0_H
++    shr     x0, 16
++    CRC_XOR x6, r3, 6
++    movzx   x3, x0_L
++    CRC_XOR x6, r3, 5
++    movzx   x3, x0_H
++    CRC_MOV x0, r3, 4
++    xor     x0, x6
++    add     rD, 8
++    jnz     main_loop_8
++
++    MY_EPILOG crc_end_8
++MY_ENDP
++
++MY_PROC CrcUpdateT4, 4
++    MY_PROLOG crc_end_4
++    align 16
++  main_loop_4:
++    movzx   x1, x0_L
++    movzx   x3, x0_H
++    shr     x0, 16
++    movzx   x6, x0_H
++    and     x0, 0FFh
++    CRC_MOV x1, r1, 3
++    xor     x1, [SRCDAT 1]
++    CRC_XOR x1, r3, 2
++    CRC_XOR x1, r6, 0
++    CRC_XOR x1, r0, 1
++
++    movzx   x0, x1_L
++    movzx   x3, x1_H
++    shr     x1, 16
++    movzx   x6, x1_H
++    and     x1, 0FFh
++    CRC_MOV x0, r0, 3
++    xor     x0, [SRCDAT 2]
++    CRC_XOR x0, r3, 2
++    CRC_XOR x0, r6, 0
++    CRC_XOR x0, r1, 1
++    add     rD, 8
++    jnz     main_loop_4
++
++    MY_EPILOG crc_end_4
++MY_ENDP
++
++end
+diff --git a/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm b/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm
+index ddbd88ffc2e955419128fb105c00bb9f442dfddb..629954d709b461e9eccf4eecb96fce815c193f56 100644
+--- a/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm
++++ b/third_party/lzma_sdk/Asm/x86/LzmaDecOpt.asm
+@@ -1,1303 +1,1303 @@
+-; LzmaDecOpt.asm -- ASM version of LzmaDec_DecodeReal_3() function
+-; 2021-02-23: Igor Pavlov : Public domain
+-;
+-; 3 - is the code compatibility version of LzmaDec_DecodeReal_*()
+-; function for check at link time.
+-; That code is tightly coupled with LzmaDec_TryDummy()
+-; and with another functions in LzmaDec.c file.
+-; CLzmaDec structure, (probs) array layout, input and output of
+-; LzmaDec_DecodeReal_*() must be equal in both versions (C / ASM).
+-
+-ifndef x64
+-; x64=1
+-; .err <x64_IS_REQUIRED>
+-endif
+-
+-include 7zAsm.asm
+-
+-MY_ASM_START
+-
+-LZMADEC SEGMENT ALIGN(64) 'CODE'
+-
+-MY_ALIGN macro num:req
+-        align  num
+-endm
+-
+-MY_ALIGN_16 macro
+-        MY_ALIGN 16
+-endm
+-
+-MY_ALIGN_32 macro
+-        MY_ALIGN 32
+-endm
+-
+-MY_ALIGN_64 macro
+-        MY_ALIGN 64
+-endm
+-
+-
+-; _LZMA_SIZE_OPT  equ 1
+-
+-; _LZMA_PROB32 equ 1
+-
+-ifdef _LZMA_PROB32
+-        PSHIFT  equ 2
+-        PLOAD macro dest, mem
+-                mov     dest, dword ptr [mem]
+-        endm
+-        PSTORE  macro src, mem
+-                mov     dword ptr [mem], src
+-        endm
+-else
+-        PSHIFT  equ 1
+-        PLOAD macro dest, mem
+-                movzx   dest, word ptr [mem]
+-        endm
+-        PSTORE macro src, mem
+-                mov     word ptr [mem], @CatStr(src, _W)
+-        endm
+-endif
+-
+-PMULT           equ (1 SHL PSHIFT)
+-PMULT_HALF      equ (1 SHL (PSHIFT - 1))
+-PMULT_2         equ (1 SHL (PSHIFT + 1))
+-
+-kMatchSpecLen_Error_Data equ (1 SHL 9)
+-
+-;       x0      range
+-;       x1      pbPos / (prob) TREE
+-;       x2      probBranch / prm (MATCHED) / pbPos / cnt
+-;       x3      sym
+-;====== r4 ===  RSP
+-;       x5      cod
+-;       x6      t1 NORM_CALC / probs_state / dist
+-;       x7      t0 NORM_CALC / prob2 IF_BIT_1
+-;       x8      state
+-;       x9      match (MATCHED) / sym2 / dist2 / lpMask_reg
+-;       x10     kBitModelTotal_reg
+-;       r11     probs
+-;       x12     offs (MATCHED) / dic / len_temp
+-;       x13     processedPos
+-;       x14     bit (MATCHED) / dicPos
+-;       r15     buf
+-
+-
+-cod     equ x5
+-cod_L   equ x5_L
+-range   equ x0
+-state   equ x8
+-state_R equ r8
+-buf     equ r15
+-processedPos equ x13
+-kBitModelTotal_reg equ x10
+-
+-probBranch   equ x2
+-probBranch_R equ r2
+-probBranch_W equ x2_W
+-
+-pbPos   equ x1
+-pbPos_R equ r1
+-
+-cnt     equ x2
+-cnt_R   equ r2
+-
+-lpMask_reg equ x9
+-dicPos  equ r14
+-
+-sym     equ x3
+-sym_R   equ r3
+-sym_L   equ x3_L
+-
+-probs   equ r11
+-dic     equ r12
+-
+-t0      equ x7
+-t0_W    equ x7_W
+-t0_R    equ r7
+-
+-prob2   equ t0
+-prob2_W equ t0_W
+-
+-t1      equ x6
+-t1_R    equ r6
+-
+-probs_state     equ t1
+-probs_state_R   equ t1_R
+-
+-prm     equ r2
+-match   equ x9
+-match_R equ r9
+-offs    equ x12
+-offs_R  equ r12
+-bit     equ x14
+-bit_R   equ r14
+-
+-sym2    equ x9
+-sym2_R  equ r9
+-
+-len_temp equ x12
+-
+-dist    equ sym
+-dist2   equ x9
+-
+-
+-
+-kNumBitModelTotalBits   equ 11
+-kBitModelTotal          equ (1 SHL kNumBitModelTotalBits)
+-kNumMoveBits            equ 5
+-kBitModelOffset         equ ((1 SHL kNumMoveBits) - 1)
+-kTopValue               equ (1 SHL 24)
+-
+-NORM_2 macro
+-        ; movzx   t0, BYTE PTR [buf]
+-        shl     cod, 8
+-        mov     cod_L, BYTE PTR [buf]
+-        shl     range, 8
+-        ; or      cod, t0
+-        inc     buf
+-endm
+-
+-
+-NORM macro
+-        cmp     range, kTopValue
+-        jae     SHORT @F
+-        NORM_2
+-@@:
+-endm
+-
+-
+-; ---------- Branch MACROS ----------
+-
+-UPDATE_0 macro probsArray:req, probOffset:req, probDisp:req
+-        mov     prob2, kBitModelTotal_reg
+-        sub     prob2, probBranch
+-        shr     prob2, kNumMoveBits
+-        add     probBranch, prob2
+-        PSTORE  probBranch, probOffset * 1 + probsArray + probDisp * PMULT
+-endm
+-
+-
+-UPDATE_1 macro probsArray:req, probOffset:req, probDisp:req
+-        sub     prob2, range
+-        sub     cod, range
+-        mov     range, prob2
+-        mov     prob2, probBranch
+-        shr     probBranch, kNumMoveBits
+-        sub     prob2, probBranch
+-        PSTORE  prob2, probOffset * 1 + probsArray + probDisp * PMULT
+-endm
+-
+-
+-CMP_COD macro probsArray:req, probOffset:req, probDisp:req
+-        PLOAD   probBranch, probOffset * 1 + probsArray + probDisp * PMULT
+-        NORM
+-        mov     prob2, range
+-        shr     range, kNumBitModelTotalBits
+-        imul    range, probBranch
+-        cmp     cod, range
+-endm
+-
+-
+-IF_BIT_1_NOUP macro probsArray:req, probOffset:req, probDisp:req, toLabel:req
+-        CMP_COD probsArray, probOffset, probDisp
+-        jae     toLabel
+-endm
+-
+-
+-IF_BIT_1 macro probsArray:req, probOffset:req, probDisp:req, toLabel:req
+-        IF_BIT_1_NOUP probsArray, probOffset, probDisp, toLabel
+-        UPDATE_0 probsArray, probOffset, probDisp
+-endm
+-
+-
+-IF_BIT_0_NOUP macro probsArray:req, probOffset:req, probDisp:req, toLabel:req
+-        CMP_COD probsArray, probOffset, probDisp
+-        jb      toLabel
+-endm
+-
+-
+-; ---------- CMOV MACROS ----------
+-
+-NORM_CALC macro prob:req
+-        NORM
+-        mov     t0, range
+-        shr     range, kNumBitModelTotalBits
+-        imul    range, prob
+-        sub     t0, range
+-        mov     t1, cod
+-        sub     cod, range
+-endm
+-
+-
+-PUP macro prob:req, probPtr:req
+-        sub     t0, prob
+-       ; only sar works for both 16/32 bit prob modes
+-        sar     t0, kNumMoveBits
+-        add     t0, prob
+-        PSTORE  t0, probPtr
+-endm
+-
+-
+-PUP_SUB macro prob:req, probPtr:req, symSub:req
+-        sbb     sym, symSub
+-        PUP prob, probPtr
+-endm
+-
+-
+-PUP_COD macro prob:req, probPtr:req, symSub:req
+-        mov     t0, kBitModelOffset
+-        cmovb   cod, t1
+-        mov     t1, sym
+-        cmovb   t0, kBitModelTotal_reg
+-        PUP_SUB prob, probPtr, symSub
+-endm
+-
+-
+-BIT_0 macro prob:req, probNext:req
+-        PLOAD   prob, probs + 1 * PMULT
+-        PLOAD   probNext, probs + 1 * PMULT_2
+-
+-        NORM_CALC prob
+-        
+-        cmovae  range, t0
+-        PLOAD   t0, probs + 1 * PMULT_2 + PMULT
+-        cmovae  probNext, t0
+-        mov     t0, kBitModelOffset
+-        cmovb   cod, t1
+-        cmovb   t0, kBitModelTotal_reg
+-        mov     sym, 2
+-        PUP_SUB prob, probs + 1 * PMULT, 0 - 1
+-endm
+-
+-
+-BIT_1 macro prob:req, probNext:req
+-        PLOAD   probNext, probs + sym_R * PMULT_2
+-        add     sym, sym
+-        
+-        NORM_CALC prob
+-        
+-        cmovae  range, t0
+-        PLOAD   t0, probs + sym_R * PMULT + PMULT
+-        cmovae  probNext, t0
+-        PUP_COD prob, probs + t1_R * PMULT_HALF, 0 - 1
+-endm
+-
+-
+-BIT_2 macro prob:req, symSub:req
+-        add     sym, sym
+-
+-        NORM_CALC prob
+-        
+-        cmovae  range, t0
+-        PUP_COD prob, probs + t1_R * PMULT_HALF, symSub
+-endm
+-
+-
+-; ---------- MATCHED LITERAL ----------
+-
+-LITM_0 macro
+-        mov     offs, 256 * PMULT
+-        shl     match, (PSHIFT + 1)
+-        mov     bit, offs
+-        and     bit, match
+-        PLOAD   x1, probs + 256 * PMULT + bit_R * 1 + 1 * PMULT
+-        lea     prm, [probs + 256 * PMULT + bit_R * 1 + 1 * PMULT]
+-        ; lea     prm, [probs + 256 * PMULT + 1 * PMULT]
+-        ; add     prm, bit_R
+-        xor     offs, bit
+-        add     match, match
+-
+-        NORM_CALC x1
+-
+-        cmovae  offs, bit
+-        mov     bit, match
+-        cmovae  range, t0
+-        mov     t0, kBitModelOffset
+-        cmovb   cod, t1
+-        cmovb   t0, kBitModelTotal_reg
+-        mov     sym, 0
+-        PUP_SUB x1, prm, -2-1
+-endm
+-
+-
+-LITM macro
+-        and     bit, offs
+-        lea     prm, [probs + offs_R * 1]
+-        add     prm, bit_R
+-        PLOAD   x1, prm + sym_R * PMULT
+-        xor     offs, bit
+-        add     sym, sym
+-        add     match, match
+-
+-        NORM_CALC x1
+-
+-        cmovae  offs, bit
+-        mov     bit, match
+-        cmovae  range, t0
+-        PUP_COD x1, prm + t1_R * PMULT_HALF, - 1
+-endm
+-
+-
+-LITM_2 macro
+-        and     bit, offs
+-        lea     prm, [probs + offs_R * 1]
+-        add     prm, bit_R
+-        PLOAD   x1, prm + sym_R * PMULT
+-        add     sym, sym
+-
+-        NORM_CALC x1
+-
+-        cmovae  range, t0
+-        PUP_COD x1, prm + t1_R * PMULT_HALF, 256 - 1
+-endm
+-
+-
+-; ---------- REVERSE BITS ----------
+-
+-REV_0 macro prob:req, probNext:req
+-        ; PLOAD   prob, probs + 1 * PMULT
+-        ; lea     sym2_R, [probs + 2 * PMULT]
+-        ; PLOAD   probNext, probs + 2 * PMULT
+-        PLOAD   probNext, sym2_R
+-
+-        NORM_CALC prob
+-
+-        cmovae  range, t0
+-        PLOAD   t0, probs + 3 * PMULT
+-        cmovae  probNext, t0
+-        cmovb   cod, t1
+-        mov     t0, kBitModelOffset
+-        cmovb   t0, kBitModelTotal_reg
+-        lea     t1_R, [probs + 3 * PMULT]
+-        cmovae  sym2_R, t1_R
+-        PUP prob, probs + 1 * PMULT
+-endm
+-
+-
+-REV_1 macro prob:req, probNext:req, step:req
+-        add     sym2_R, step * PMULT
+-        PLOAD   probNext, sym2_R
+-
+-        NORM_CALC prob
+-
+-        cmovae  range, t0
+-        PLOAD   t0, sym2_R + step * PMULT
+-        cmovae  probNext, t0
+-        cmovb   cod, t1
+-        mov     t0, kBitModelOffset
+-        cmovb   t0, kBitModelTotal_reg
+-        lea     t1_R, [sym2_R + step * PMULT]
+-        cmovae  sym2_R, t1_R
+-        PUP prob, t1_R - step * PMULT_2
+-endm
+-
+-
+-REV_2 macro prob:req, step:req
+-        sub     sym2_R, probs
+-        shr     sym2, PSHIFT
+-        or      sym, sym2
+-
+-        NORM_CALC prob
+-
+-        cmovae  range, t0
+-        lea     t0, [sym - step]
+-        cmovb   sym, t0
+-        cmovb   cod, t1
+-        mov     t0, kBitModelOffset
+-        cmovb   t0, kBitModelTotal_reg
+-        PUP prob, probs + sym2_R * PMULT
+-endm
+-
+-
+-REV_1_VAR macro prob:req
+-        PLOAD   prob, sym_R
+-        mov     probs, sym_R
+-        add     sym_R, sym2_R
+-
+-        NORM_CALC prob
+-
+-        cmovae  range, t0
+-        lea     t0_R, [sym_R + 1 * sym2_R]
+-        cmovae  sym_R, t0_R
+-        mov     t0, kBitModelOffset
+-        cmovb   cod, t1
+-        ; mov     t1, kBitModelTotal
+-        ; cmovb   t0, t1
+-        cmovb   t0, kBitModelTotal_reg
+-        add     sym2, sym2
+-        PUP prob, probs
+-endm
+-
+-
+-
+-
+-LIT_PROBS macro lpMaskParam:req
+-        ; prob += (UInt32)3 * ((((processedPos << 8) + dic[(dicPos == 0 ? dicBufSize : dicPos) - 1]) & lpMask) << lc);
+-        mov     t0, processedPos
+-        shl     t0, 8
+-        add     sym, t0
+-        and     sym, lpMaskParam
+-        add     probs_state_R, pbPos_R
+-        mov     x1, LOC lc2
+-        lea     sym, dword ptr[sym_R + 2 * sym_R]
+-        add     probs, Literal * PMULT
+-        shl     sym, x1_L
+-        add     probs, sym_R
+-        UPDATE_0 probs_state_R, 0, IsMatch
+-        inc     processedPos
+-endm
+-
+-
+-
+-kNumPosBitsMax          equ 4
+-kNumPosStatesMax        equ (1 SHL kNumPosBitsMax)
+-
+-kLenNumLowBits          equ 3
+-kLenNumLowSymbols       equ (1 SHL kLenNumLowBits)
+-kLenNumHighBits         equ 8
+-kLenNumHighSymbols      equ (1 SHL kLenNumHighBits)
+-kNumLenProbs            equ (2 * kLenNumLowSymbols * kNumPosStatesMax + kLenNumHighSymbols)
+-
+-LenLow                  equ 0
+-LenChoice               equ LenLow
+-LenChoice2              equ (LenLow + kLenNumLowSymbols)
+-LenHigh                 equ (LenLow + 2 * kLenNumLowSymbols * kNumPosStatesMax)
+-
+-kNumStates              equ 12
+-kNumStates2             equ 16
+-kNumLitStates           equ 7
+-
+-kStartPosModelIndex     equ 4
+-kEndPosModelIndex       equ 14
+-kNumFullDistances       equ (1 SHL (kEndPosModelIndex SHR 1))
+-
+-kNumPosSlotBits         equ 6
+-kNumLenToPosStates      equ 4
+-
+-kNumAlignBits           equ 4
+-kAlignTableSize         equ (1 SHL kNumAlignBits)
+-
+-kMatchMinLen            equ 2
+-kMatchSpecLenStart      equ (kMatchMinLen + kLenNumLowSymbols * 2 + kLenNumHighSymbols)
+-
+-kStartOffset    equ 1664
+-SpecPos         equ (-kStartOffset)
+-IsRep0Long      equ (SpecPos + kNumFullDistances)
+-RepLenCoder     equ (IsRep0Long + (kNumStates2 SHL kNumPosBitsMax))
+-LenCoder        equ (RepLenCoder + kNumLenProbs)
+-IsMatch         equ (LenCoder + kNumLenProbs)
+-kAlign          equ (IsMatch + (kNumStates2 SHL kNumPosBitsMax))
+-IsRep           equ (kAlign + kAlignTableSize)
+-IsRepG0         equ (IsRep + kNumStates)
+-IsRepG1         equ (IsRepG0 + kNumStates)
+-IsRepG2         equ (IsRepG1 + kNumStates)
+-PosSlot         equ (IsRepG2 + kNumStates)
+-Literal         equ (PosSlot + (kNumLenToPosStates SHL kNumPosSlotBits))
+-NUM_BASE_PROBS  equ (Literal + kStartOffset)
+-
+-if kAlign ne 0
+-  .err <Stop_Compiling_Bad_LZMA_kAlign>
+-endif
+-
+-if NUM_BASE_PROBS ne 1984
+-  .err <Stop_Compiling_Bad_LZMA_PROBS>
+-endif
+-
+-
+-PTR_FIELD equ dq ?
+-
+-CLzmaDec_Asm struct
+-        lc      db ?
+-        lp      db ?
+-        pb      db ?
+-        _pad_   db ?
+-        dicSize dd ?
+-
+-        probs_Spec      PTR_FIELD
+-        probs_1664      PTR_FIELD
+-        dic_Spec        PTR_FIELD
+-        dicBufSize      PTR_FIELD
+-        dicPos_Spec     PTR_FIELD
+-        buf_Spec        PTR_FIELD
+-
+-        range_Spec      dd ?
+-        code_Spec       dd ?
+-        processedPos_Spec  dd ?
+-        checkDicSize    dd ?
+-        rep0    dd ?
+-        rep1    dd ?
+-        rep2    dd ?
+-        rep3    dd ?
+-        state_Spec      dd ?
+-        remainLen dd ?
+-CLzmaDec_Asm ends
+-
+-
+-CLzmaDec_Asm_Loc struct
+-        OLD_RSP    PTR_FIELD
+-        lzmaPtr    PTR_FIELD
+-        _pad0_     PTR_FIELD
+-        _pad1_     PTR_FIELD
+-        _pad2_     PTR_FIELD
+-        dicBufSize PTR_FIELD
+-        probs_Spec PTR_FIELD
+-        dic_Spec   PTR_FIELD
+-        
+-        limit      PTR_FIELD
+-        bufLimit   PTR_FIELD
+-        lc2       dd ?
+-        lpMask    dd ?
+-        pbMask    dd ?
+-        checkDicSize   dd ?
+-
+-        _pad_     dd ?
+-        remainLen dd ?
+-        dicPos_Spec     PTR_FIELD
+-        rep0      dd ?
+-        rep1      dd ?
+-        rep2      dd ?
+-        rep3      dd ?
+-CLzmaDec_Asm_Loc ends
+-
+-
+-GLOB_2  equ [sym_R].CLzmaDec_Asm.
+-GLOB    equ [r1].CLzmaDec_Asm.
+-LOC_0   equ [r0].CLzmaDec_Asm_Loc.
+-LOC     equ [RSP].CLzmaDec_Asm_Loc.
+-
+-
+-COPY_VAR macro name
+-        mov     t0, GLOB_2 name
+-        mov     LOC_0 name, t0
+-endm
+-
+-
+-RESTORE_VAR macro name
+-        mov     t0, LOC name
+-        mov     GLOB name, t0
+-endm
+-
+-
+-
+-IsMatchBranch_Pre macro reg
+-        ; prob = probs + IsMatch + (state << kNumPosBitsMax) + posState;
+-        mov     pbPos, LOC pbMask
+-        and     pbPos, processedPos
+-        shl     pbPos, (kLenNumLowBits + 1 + PSHIFT)
+-        lea     probs_state_R, [probs + 1 * state_R]
+-endm
+-
+-
+-IsMatchBranch macro reg
+-        IsMatchBranch_Pre
+-        IF_BIT_1 probs_state_R, pbPos_R, IsMatch, IsMatch_label
+-endm
+-        
+-
+-CheckLimits macro reg
+-        cmp     buf, LOC bufLimit
+-        jae     fin_OK
+-        cmp     dicPos, LOC limit
+-        jae     fin_OK
+-endm
+-
+-
+-
+-; RSP is (16x + 8) bytes aligned in WIN64-x64
+-; LocalSize equ ((((SIZEOF CLzmaDec_Asm_Loc) + 7) / 16 * 16) + 8)
+-
+-PARAM_lzma      equ REG_ABI_PARAM_0
+-PARAM_limit     equ REG_ABI_PARAM_1
+-PARAM_bufLimit  equ REG_ABI_PARAM_2
+-
+-; MY_ALIGN_64
+-MY_PROC LzmaDec_DecodeReal_3, 3
+-MY_PUSH_PRESERVED_ABI_REGS
+-
+-        lea     r0, [RSP - (SIZEOF CLzmaDec_Asm_Loc)]
+-        and     r0, -128
+-        mov     r5, RSP
+-        mov     RSP, r0
+-        mov     LOC_0 Old_RSP, r5
+-        mov     LOC_0 lzmaPtr, PARAM_lzma
+-        
+-        mov     LOC_0 remainLen, 0  ; remainLen must be ZERO
+-
+-        mov     LOC_0 bufLimit, PARAM_bufLimit
+-        mov     sym_R, PARAM_lzma  ;  CLzmaDec_Asm_Loc pointer for GLOB_2
+-        mov     dic, GLOB_2 dic_Spec
+-        add     PARAM_limit, dic
+-        mov     LOC_0 limit, PARAM_limit
+-
+-        COPY_VAR(rep0)
+-        COPY_VAR(rep1)
+-        COPY_VAR(rep2)
+-        COPY_VAR(rep3)
+-        
+-        mov     dicPos, GLOB_2 dicPos_Spec
+-        add     dicPos, dic
+-        mov     LOC_0 dicPos_Spec, dicPos
+-        mov     LOC_0 dic_Spec, dic
+-        
+-        mov     x1_L, GLOB_2 pb
+-        mov     t0, 1
+-        shl     t0, x1_L
+-        dec     t0
+-        mov     LOC_0 pbMask, t0
+-
+-        ; unsigned pbMask = ((unsigned)1 << (p->prop.pb)) - 1;
+-        ; unsigned lc = p->prop.lc;
+-        ; unsigned lpMask = ((unsigned)0x100 << p->prop.lp) - ((unsigned)0x100 >> lc);
+-
+-        mov     x1_L, GLOB_2 lc
+-        mov     x2, 100h
+-        mov     t0, x2
+-        shr     x2, x1_L
+-        ; inc     x1
+-        add     x1_L, PSHIFT
+-        mov     LOC_0 lc2, x1
+-        mov     x1_L, GLOB_2 lp
+-        shl     t0, x1_L
+-        sub     t0, x2
+-        mov     LOC_0 lpMask, t0
+-        mov     lpMask_reg, t0
+-        
+-        ; mov     probs, GLOB_2 probs_Spec
+-        ; add     probs, kStartOffset SHL PSHIFT
+-        mov     probs, GLOB_2 probs_1664
+-        mov     LOC_0 probs_Spec, probs
+-
+-        mov     t0_R, GLOB_2 dicBufSize
+-        mov     LOC_0 dicBufSize, t0_R
+-       
+-        mov     x1, GLOB_2 checkDicSize
+-        mov     LOC_0 checkDicSize, x1
+-
+-        mov     processedPos, GLOB_2 processedPos_Spec
+-
+-        mov     state, GLOB_2 state_Spec
+-        shl     state, PSHIFT
+-
+-        mov     buf,   GLOB_2 buf_Spec
+-        mov     range, GLOB_2 range_Spec
+-        mov     cod,   GLOB_2 code_Spec
+-        mov     kBitModelTotal_reg, kBitModelTotal
+-        xor     sym, sym
+-
+-        ; if (processedPos != 0 || checkDicSize != 0)
+-        or      x1, processedPos
+-        jz      @f
+-        
+-        add     t0_R, dic
+-        cmp     dicPos, dic
+-        cmovnz  t0_R, dicPos
+-        movzx   sym, byte ptr[t0_R - 1]
+-
+-@@:
+-        IsMatchBranch_Pre
+-        cmp     state, 4 * PMULT
+-        jb      lit_end
+-        cmp     state, kNumLitStates * PMULT
+-        jb      lit_matched_end
+-        jmp     lz_end
+-        
+-
+-        
+-
+-; ---------- LITERAL ----------
+-MY_ALIGN_64
+-lit_start:
+-        xor     state, state
+-lit_start_2:
+-        LIT_PROBS lpMask_reg
+-
+-    ifdef _LZMA_SIZE_OPT
+-
+-        PLOAD   x1, probs + 1 * PMULT
+-        mov     sym, 1
+-MY_ALIGN_16
+-lit_loop:
+-        BIT_1   x1, x2
+-        mov     x1, x2
+-        cmp     sym, 127
+-        jbe     lit_loop
+-        
+-    else
+-        
+-        BIT_0   x1, x2
+-        BIT_1   x2, x1
+-        BIT_1   x1, x2
+-        BIT_1   x2, x1
+-        BIT_1   x1, x2
+-        BIT_1   x2, x1
+-        BIT_1   x1, x2
+-        
+-    endif
+-
+-        BIT_2   x2, 256 - 1
+-        
+-        ; mov     dic, LOC dic_Spec
+-        mov     probs, LOC probs_Spec
+-        IsMatchBranch_Pre
+-        mov     byte ptr[dicPos], sym_L
+-        inc     dicPos
+-                
+-        CheckLimits
+-lit_end:
+-        IF_BIT_0_NOUP probs_state_R, pbPos_R, IsMatch, lit_start
+-
+-        ; jmp     IsMatch_label
+-        
+-; ---------- MATCHES ----------
+-; MY_ALIGN_32
+-IsMatch_label:
+-        UPDATE_1 probs_state_R, pbPos_R, IsMatch
+-        IF_BIT_1 probs_state_R, 0, IsRep, IsRep_label
+-
+-        add     probs, LenCoder * PMULT
+-        add     state, kNumStates * PMULT
+-
+-; ---------- LEN DECODE ----------
+-len_decode:
+-        mov     len_temp, 8 - 1 - kMatchMinLen
+-        IF_BIT_0_NOUP probs, 0, 0, len_mid_0
+-        UPDATE_1 probs, 0, 0
+-        add     probs, (1 SHL (kLenNumLowBits + PSHIFT))
+-        mov     len_temp, -1 - kMatchMinLen
+-        IF_BIT_0_NOUP probs, 0, 0, len_mid_0
+-        UPDATE_1 probs, 0, 0
+-        add     probs, LenHigh * PMULT - (1 SHL (kLenNumLowBits + PSHIFT))
+-        mov     sym, 1
+-        PLOAD   x1, probs + 1 * PMULT
+-
+-MY_ALIGN_32
+-len8_loop:
+-        BIT_1   x1, x2
+-        mov     x1, x2
+-        cmp     sym, 64
+-        jb      len8_loop
+-        
+-        mov     len_temp, (kLenNumHighSymbols - kLenNumLowSymbols * 2) - 1 - kMatchMinLen
+-        jmp     short len_mid_2 ; we use short here for MASM that doesn't optimize that code as another assembler programs
+-        
+-MY_ALIGN_32
+-len_mid_0:
+-        UPDATE_0 probs, 0, 0
+-        add     probs, pbPos_R
+-        BIT_0   x2, x1
+-len_mid_2:
+-        BIT_1   x1, x2
+-        BIT_2   x2, len_temp
+-        mov     probs, LOC probs_Spec
+-        cmp     state, kNumStates * PMULT
+-        jb      copy_match
+-        
+-
+-; ---------- DECODE DISTANCE ----------
+-        ; probs + PosSlot + ((len < kNumLenToPosStates ? len : kNumLenToPosStates - 1) << kNumPosSlotBits);
+-
+-        mov     t0, 3 + kMatchMinLen
+-        cmp     sym, 3 + kMatchMinLen
+-        cmovb   t0, sym
+-        add     probs, PosSlot * PMULT - (kMatchMinLen SHL (kNumPosSlotBits + PSHIFT))
+-        shl     t0, (kNumPosSlotBits + PSHIFT)
+-        add     probs, t0_R
+-        
+-        ; sym = Len
+-        ; mov     LOC remainLen, sym
+-        mov     len_temp, sym
+-
+-    ifdef _LZMA_SIZE_OPT
+-
+-        PLOAD   x1, probs + 1 * PMULT
+-        mov     sym, 1
+-MY_ALIGN_16
+-slot_loop:
+-        BIT_1   x1, x2
+-        mov     x1, x2
+-        cmp     sym, 32
+-        jb      slot_loop
+-        
+-    else
+-        
+-        BIT_0   x1, x2
+-        BIT_1   x2, x1
+-        BIT_1   x1, x2
+-        BIT_1   x2, x1
+-        BIT_1   x1, x2
+-        
+-    endif
+-        
+-        mov     x1, sym
+-        BIT_2   x2, 64-1
+-
+-        and     sym, 3
+-        mov     probs, LOC probs_Spec
+-        cmp     x1, 32 + kEndPosModelIndex / 2
+-        jb      short_dist
+-
+-        ;  unsigned numDirectBits = (unsigned)(((distance >> 1) - 1));
+-        sub     x1, (32 + 1 + kNumAlignBits)
+-        ;  distance = (2 | (distance & 1));
+-        or      sym, 2
+-        PLOAD   x2, probs + 1 * PMULT
+-        shl     sym, kNumAlignBits + 1
+-        lea     sym2_R, [probs + 2 * PMULT]
+-        
+-        jmp     direct_norm
+-        ; lea     t1, [sym_R + (1 SHL kNumAlignBits)]
+-        ; cmp     range, kTopValue
+-        ; jb      direct_norm
+-        
+-; ---------- DIRECT DISTANCE ----------
+-MY_ALIGN_32
+-direct_loop:
+-        shr     range, 1
+-        mov     t0, cod
+-        sub     cod, range
+-        cmovs   cod, t0
+-        cmovns  sym, t1
+-        
+-        comment ~
+-        sub     cod, range
+-        mov     x2, cod
+-        sar     x2, 31
+-        lea     sym, dword ptr [r2 + sym_R * 2 + 1]
+-        and     x2, range
+-        add     cod, x2
+-        ~
+-        dec     x1
+-        je      direct_end
+-
+-        add     sym, sym
+-direct_norm:
+-        lea     t1, [sym_R + (1 SHL kNumAlignBits)]
+-        cmp     range, kTopValue
+-        jae     near ptr direct_loop
+-        ; we align for 32 here with "near ptr" command above
+-        NORM_2
+-        jmp     direct_loop
+-
+-MY_ALIGN_32
+-direct_end:
+-        ;  prob =  + kAlign;
+-        ;  distance <<= kNumAlignBits;
+-        REV_0   x2, x1
+-        REV_1   x1, x2, 2
+-        REV_1   x2, x1, 4
+-        REV_2   x1, 8
+-
+-decode_dist_end:
+-
+-        ; if (distance >= (checkDicSize == 0 ? processedPos: checkDicSize))
+-
+-        mov     t1, LOC rep0
+-        mov     x1, LOC rep1
+-        mov     x2, LOC rep2
+-        
+-        mov     t0, LOC checkDicSize
+-        test    t0, t0
+-        cmove   t0, processedPos
+-        cmp     sym, t0
+-        jae     end_of_payload
+-        ; jmp     end_of_payload ; for debug
+-        
+-        ; rep3 = rep2;
+-        ; rep2 = rep1;
+-        ; rep1 = rep0;
+-        ; rep0 = distance + 1;
+-
+-        inc     sym
+-        mov     LOC rep0, sym
+-        ; mov     sym, LOC remainLen
+-        mov     sym, len_temp
+-        mov     LOC rep1, t1
+-        mov     LOC rep2, x1
+-        mov     LOC rep3, x2
+-        
+-        ; state = (state < kNumStates + kNumLitStates) ? kNumLitStates : kNumLitStates + 3;
+-        cmp     state, (kNumStates + kNumLitStates) * PMULT
+-        mov     state, kNumLitStates * PMULT
+-        mov     t0, (kNumLitStates + 3) * PMULT
+-        cmovae  state, t0
+-
+-        
+-; ---------- COPY MATCH ----------
+-copy_match:
+-
+-        ; len += kMatchMinLen;
+-        ; add     sym, kMatchMinLen
+-
+-        ; if ((rem = limit - dicPos) == 0)
+-        ; {
+-        ;   p->dicPos = dicPos;
+-        ;   return SZ_ERROR_DATA;
+-        ; }
+-        mov     cnt_R, LOC limit
+-        sub     cnt_R, dicPos
+-        jz      fin_dicPos_LIMIT
+-
+-        ; curLen = ((rem < len) ? (unsigned)rem : len);
+-        cmp     cnt_R, sym_R
+-        ; cmovae  cnt_R, sym_R ; 64-bit
+-        cmovae  cnt, sym ; 32-bit
+-
+-        mov     dic, LOC dic_Spec
+-        mov     x1, LOC rep0
+-
+-        mov     t0_R, dicPos
+-        add     dicPos, cnt_R
+-        ; processedPos += curLen;
+-        add     processedPos, cnt
+-        ; len -= curLen;
+-        sub     sym, cnt
+-        mov     LOC remainLen, sym
+-
+-        sub     t0_R, dic
+-        
+-        ; pos = dicPos - rep0 + (dicPos < rep0 ? dicBufSize : 0);
+-        sub     t0_R, r1
+-        jae     @f
+-
+-        mov     r1, LOC dicBufSize
+-        add     t0_R, r1
+-        sub     r1, t0_R
+-        cmp     cnt_R, r1
+-        ja      copy_match_cross
+-@@:
+-        ; if (curLen <= dicBufSize - pos)
+-
+-; ---------- COPY MATCH FAST ----------
+-        ; Byte *dest = dic + dicPos;
+-        ; mov     r1, dic
+-        ; ptrdiff_t src = (ptrdiff_t)pos - (ptrdiff_t)dicPos;
+-        ; sub   t0_R, dicPos
+-        ; dicPos += curLen;
+-
+-        ; const Byte *lim = dest + curLen;
+-        add     t0_R, dic
+-        movzx   sym, byte ptr[t0_R]
+-        add     t0_R, cnt_R
+-        neg     cnt_R
+-        ; lea     r1, [dicPos - 1]
+-copy_common:
+-        dec     dicPos
+-        ; cmp   LOC rep0, 1
+-        ; je    rep0Label
+-
+-        ; t0_R - src_lim
+-        ; r1 - dest_lim - 1
+-        ; cnt_R - (-cnt)
+-
+-        IsMatchBranch_Pre
+-        inc     cnt_R
+-        jz      copy_end
+-MY_ALIGN_16
+-@@:
+-        mov     byte ptr[cnt_R * 1 + dicPos], sym_L
+-        movzx   sym, byte ptr[cnt_R * 1 + t0_R]
+-        inc     cnt_R
+-        jnz     @b
+-
+-copy_end:
+-lz_end_match:
+-        mov     byte ptr[dicPos], sym_L
+-        inc     dicPos
+-  
+-        ; IsMatchBranch_Pre
+-        CheckLimits
+-lz_end:
+-        IF_BIT_1_NOUP probs_state_R, pbPos_R, IsMatch, IsMatch_label
+-
+-
+-
+-; ---------- LITERAL MATCHED ----------
+-                
+-        LIT_PROBS LOC lpMask
+-        
+-        ; matchByte = dic[dicPos - rep0 + (dicPos < rep0 ? dicBufSize : 0)];
+-        mov     x1, LOC rep0
+-        ; mov     dic, LOC dic_Spec
+-        mov     LOC dicPos_Spec, dicPos
+-        
+-        ; state -= (state < 10) ? 3 : 6;
+-        lea     t0, [state_R - 6 * PMULT]
+-        sub     state, 3 * PMULT
+-        cmp     state, 7 * PMULT
+-        cmovae  state, t0
+-        
+-        sub     dicPos, dic
+-        sub     dicPos, r1
+-        jae     @f
+-        add     dicPos, LOC dicBufSize
+-@@:
+-        comment ~
+-        xor     t0, t0
+-        sub     dicPos, r1
+-        cmovb   t0_R, LOC dicBufSize
+-        ~
+-        
+-        movzx   match, byte ptr[dic + dicPos * 1]
+-
+-    ifdef _LZMA_SIZE_OPT
+-
+-        mov     offs, 256 * PMULT
+-        shl     match, (PSHIFT + 1)
+-        mov     bit, match
+-        mov     sym, 1
+-MY_ALIGN_16
+-litm_loop:
+-        LITM
+-        cmp     sym, 256
+-        jb      litm_loop
+-        sub     sym, 256
+-        
+-    else
+-        
+-        LITM_0
+-        LITM
+-        LITM
+-        LITM
+-        LITM
+-        LITM
+-        LITM
+-        LITM_2
+-        
+-    endif
+-        
+-        mov     probs, LOC probs_Spec
+-        IsMatchBranch_Pre
+-        ; mov     dic, LOC dic_Spec
+-        mov     dicPos, LOC dicPos_Spec
+-        mov     byte ptr[dicPos], sym_L
+-        inc     dicPos
+-        
+-        CheckLimits
+-lit_matched_end:
+-        IF_BIT_1_NOUP probs_state_R, pbPos_R, IsMatch, IsMatch_label
+-        ; IsMatchBranch
+-        mov     lpMask_reg, LOC lpMask
+-        sub     state, 3 * PMULT
+-        jmp     lit_start_2
+-        
+-
+-
+-; ---------- REP 0 LITERAL ----------
+-MY_ALIGN_32
+-IsRep0Short_label:
+-        UPDATE_0 probs_state_R, pbPos_R, IsRep0Long
+-
+-        ; dic[dicPos] = dic[dicPos - rep0 + (dicPos < rep0 ? dicBufSize : 0)];
+-        mov     dic, LOC dic_Spec
+-        mov     t0_R, dicPos
+-        mov     probBranch, LOC rep0
+-        sub     t0_R, dic
+-        
+-        sub     probs, RepLenCoder * PMULT
+-        
+-        ; state = state < kNumLitStates ? 9 : 11;
+-        or      state, 1 * PMULT
+-        
+-        ; the caller doesn't allow (dicPos >= limit) case for REP_SHORT
+-        ; so we don't need the following (dicPos == limit) check here:
+-        ; cmp     dicPos, LOC limit
+-        ; jae     fin_dicPos_LIMIT_REP_SHORT
+-
+-        inc     processedPos
+-
+-        IsMatchBranch_Pre
+-       
+-;        xor     sym, sym
+-;        sub     t0_R, probBranch_R
+-;        cmovb   sym_R, LOC dicBufSize
+-;        add     t0_R, sym_R
+-        sub     t0_R, probBranch_R
+-        jae     @f
+-        add     t0_R, LOC dicBufSize
+-@@:
+-        movzx   sym, byte ptr[dic + t0_R * 1]
+-        jmp     lz_end_match
+-  
+-        
+-MY_ALIGN_32
+-IsRep_label:
+-        UPDATE_1 probs_state_R, 0, IsRep
+-
+-        ; The (checkDicSize == 0 && processedPos == 0) case was checked before in LzmaDec.c with kBadRepCode.
+-        ; So we don't check it here.
+-        
+-        ; mov     t0, processedPos
+-        ; or      t0, LOC checkDicSize
+-        ; jz      fin_ERROR_2
+-
+-        ; state = state < kNumLitStates ? 8 : 11;
+-        cmp     state, kNumLitStates * PMULT
+-        mov     state, 8 * PMULT
+-        mov     probBranch, 11 * PMULT
+-        cmovae  state, probBranch
+-
+-        ; prob = probs + RepLenCoder;
+-        add     probs, RepLenCoder * PMULT
+-        
+-        IF_BIT_1 probs_state_R, 0, IsRepG0, IsRepG0_label
+-        IF_BIT_0_NOUP probs_state_R, pbPos_R, IsRep0Long, IsRep0Short_label
+-        UPDATE_1 probs_state_R, pbPos_R, IsRep0Long
+-        jmp     len_decode
+-
+-MY_ALIGN_32
+-IsRepG0_label:
+-        UPDATE_1 probs_state_R, 0, IsRepG0
+-        mov     dist2, LOC rep0
+-        mov     dist, LOC rep1
+-        mov     LOC rep1, dist2
+-        
+-        IF_BIT_1 probs_state_R, 0, IsRepG1, IsRepG1_label
+-        mov     LOC rep0, dist
+-        jmp     len_decode
+-        
+-; MY_ALIGN_32
+-IsRepG1_label:
+-        UPDATE_1 probs_state_R, 0, IsRepG1
+-        mov     dist2, LOC rep2
+-        mov     LOC rep2, dist
+-        
+-        IF_BIT_1 probs_state_R, 0, IsRepG2, IsRepG2_label
+-        mov     LOC rep0, dist2
+-        jmp     len_decode
+-
+-; MY_ALIGN_32
+-IsRepG2_label:
+-        UPDATE_1 probs_state_R, 0, IsRepG2
+-        mov     dist, LOC rep3
+-        mov     LOC rep3, dist2
+-        mov     LOC rep0, dist
+-        jmp     len_decode
+-
+-        
+-
+-; ---------- SPEC SHORT DISTANCE ----------
+-
+-MY_ALIGN_32
+-short_dist:
+-        sub     x1, 32 + 1
+-        jbe     decode_dist_end
+-        or      sym, 2
+-        shl     sym, x1_L
+-        lea     sym_R, [probs + sym_R * PMULT + SpecPos * PMULT + 1 * PMULT]
+-        mov     sym2, PMULT ; step
+-MY_ALIGN_32
+-spec_loop:
+-        REV_1_VAR x2
+-        dec     x1
+-        jnz     spec_loop
+-
+-        mov     probs, LOC probs_Spec
+-        sub     sym, sym2
+-        sub     sym, SpecPos * PMULT
+-        sub     sym_R, probs
+-        shr     sym, PSHIFT
+-        
+-        jmp     decode_dist_end
+-
+-
+-; ---------- COPY MATCH CROSS ----------
+-copy_match_cross:
+-        ; t0_R - src pos
+-        ; r1 - len to dicBufSize
+-        ; cnt_R - total copy len
+-
+-        mov     t1_R, t0_R         ; srcPos
+-        mov     t0_R, dic
+-        mov     r1, LOC dicBufSize   ;
+-        neg     cnt_R
+-@@:
+-        movzx   sym, byte ptr[t1_R * 1 + t0_R]
+-        inc     t1_R
+-        mov     byte ptr[cnt_R * 1 + dicPos], sym_L
+-        inc     cnt_R
+-        cmp     t1_R, r1
+-        jne     @b
+-        
+-        movzx   sym, byte ptr[t0_R]
+-        sub     t0_R, cnt_R
+-        jmp     copy_common
+-
+-
+-
+-
+-; fin_dicPos_LIMIT_REP_SHORT:
+-        ; mov     sym, 1
+-
+-fin_dicPos_LIMIT:
+-        mov     LOC remainLen, sym
+-        jmp     fin_OK
+-        ; For more strict mode we can stop decoding with error
+-        ; mov     sym, 1
+-        ; jmp     fin
+-
+-
+-fin_ERROR_MATCH_DIST:
+-
+-        ; rep3 = rep2;
+-        ; rep2 = rep1;
+-        ; rep1 = rep0;
+-        ; rep0 = distance + 1;
+-        
+-        add     len_temp, kMatchSpecLen_Error_Data
+-        mov     LOC remainLen, len_temp
+-
+-        mov     LOC rep0, sym
+-        mov     LOC rep1, t1
+-        mov     LOC rep2, x1
+-        mov     LOC rep3, x2
+-        
+-        ; state = (state < kNumStates + kNumLitStates) ? kNumLitStates : kNumLitStates + 3;
+-        cmp     state, (kNumStates + kNumLitStates) * PMULT
+-        mov     state, kNumLitStates * PMULT
+-        mov     t0, (kNumLitStates + 3) * PMULT
+-        cmovae  state, t0
+-
+-        ; jmp     fin_OK
+-        mov     sym, 1
+-        jmp     fin
+-
+-end_of_payload:
+-        inc     sym
+-        jnz     fin_ERROR_MATCH_DIST
+-
+-        mov     LOC remainLen, kMatchSpecLenStart
+-        sub     state, kNumStates * PMULT
+-
+-fin_OK:
+-        xor     sym, sym
+-
+-fin:
+-        NORM
+-
+-        mov     r1, LOC lzmaPtr
+-
+-        sub     dicPos, LOC dic_Spec
+-        mov     GLOB dicPos_Spec, dicPos
+-        mov     GLOB buf_Spec, buf
+-        mov     GLOB range_Spec, range
+-        mov     GLOB code_Spec, cod
+-        shr     state, PSHIFT
+-        mov     GLOB state_Spec, state
+-        mov     GLOB processedPos_Spec, processedPos
+-
+-        RESTORE_VAR(remainLen)
+-        RESTORE_VAR(rep0)
+-        RESTORE_VAR(rep1)
+-        RESTORE_VAR(rep2)
+-        RESTORE_VAR(rep3)
+-
+-        mov     x0, sym
+-        
+-        mov     RSP, LOC Old_RSP
+-
+-MY_POP_PRESERVED_ABI_REGS
+-MY_ENDP
+-
+-LZMADEC ENDS
+-
+-end
++; LzmaDecOpt.asm -- ASM version of LzmaDec_DecodeReal_3() function
++; 2021-02-23: Igor Pavlov : Public domain
++;
++; 3 - is the code compatibility version of LzmaDec_DecodeReal_*()
++; function for check at link time.
++; That code is tightly coupled with LzmaDec_TryDummy()
++; and with another functions in LzmaDec.c file.
++; CLzmaDec structure, (probs) array layout, input and output of
++; LzmaDec_DecodeReal_*() must be equal in both versions (C / ASM).
++
++ifndef x64
++; x64=1
++; .err <x64_IS_REQUIRED>
++endif
++
++include 7zAsm.asm
++
++MY_ASM_START
++
++LZMADEC SEGMENT ALIGN(64) 'CODE'
++
++MY_ALIGN macro num:req
++        align  num
++endm
++
++MY_ALIGN_16 macro
++        MY_ALIGN 16
++endm
++
++MY_ALIGN_32 macro
++        MY_ALIGN 32
++endm
++
++MY_ALIGN_64 macro
++        MY_ALIGN 64
++endm
++
++
++; _LZMA_SIZE_OPT  equ 1
++
++; _LZMA_PROB32 equ 1
++
++ifdef _LZMA_PROB32
++        PSHIFT  equ 2
++        PLOAD macro dest, mem
++                mov     dest, dword ptr [mem]
++        endm
++        PSTORE  macro src, mem
++                mov     dword ptr [mem], src
++        endm
++else
++        PSHIFT  equ 1
++        PLOAD macro dest, mem
++                movzx   dest, word ptr [mem]
++        endm
++        PSTORE macro src, mem
++                mov     word ptr [mem], @CatStr(src, _W)
++        endm
++endif
++
++PMULT           equ (1 SHL PSHIFT)
++PMULT_HALF      equ (1 SHL (PSHIFT - 1))
++PMULT_2         equ (1 SHL (PSHIFT + 1))
++
++kMatchSpecLen_Error_Data equ (1 SHL 9)
++
++;       x0      range
++;       x1      pbPos / (prob) TREE
++;       x2      probBranch / prm (MATCHED) / pbPos / cnt
++;       x3      sym
++;====== r4 ===  RSP
++;       x5      cod
++;       x6      t1 NORM_CALC / probs_state / dist
++;       x7      t0 NORM_CALC / prob2 IF_BIT_1
++;       x8      state
++;       x9      match (MATCHED) / sym2 / dist2 / lpMask_reg
++;       x10     kBitModelTotal_reg
++;       r11     probs
++;       x12     offs (MATCHED) / dic / len_temp
++;       x13     processedPos
++;       x14     bit (MATCHED) / dicPos
++;       r15     buf
++
++
++cod     equ x5
++cod_L   equ x5_L
++range   equ x0
++state   equ x8
++state_R equ r8
++buf     equ r15
++processedPos equ x13
++kBitModelTotal_reg equ x10
++
++probBranch   equ x2
++probBranch_R equ r2
++probBranch_W equ x2_W
++
++pbPos   equ x1
++pbPos_R equ r1
++
++cnt     equ x2
++cnt_R   equ r2
++
++lpMask_reg equ x9
++dicPos  equ r14
++
++sym     equ x3
++sym_R   equ r3
++sym_L   equ x3_L
++
++probs   equ r11
++dic     equ r12
++
++t0      equ x7
++t0_W    equ x7_W
++t0_R    equ r7
++
++prob2   equ t0
++prob2_W equ t0_W
++
++t1      equ x6
++t1_R    equ r6
++
++probs_state     equ t1
++probs_state_R   equ t1_R
++
++prm     equ r2
++match   equ x9
++match_R equ r9
++offs    equ x12
++offs_R  equ r12
++bit     equ x14
++bit_R   equ r14
++
++sym2    equ x9
++sym2_R  equ r9
++
++len_temp equ x12
++
++dist    equ sym
++dist2   equ x9
++
++
++
++kNumBitModelTotalBits   equ 11
++kBitModelTotal          equ (1 SHL kNumBitModelTotalBits)
++kNumMoveBits            equ 5
++kBitModelOffset         equ ((1 SHL kNumMoveBits) - 1)
++kTopValue               equ (1 SHL 24)
++
++NORM_2 macro
++        ; movzx   t0, BYTE PTR [buf]
++        shl     cod, 8
++        mov     cod_L, BYTE PTR [buf]
++        shl     range, 8
++        ; or      cod, t0
++        inc     buf
++endm
++
++
++NORM macro
++        cmp     range, kTopValue
++        jae     SHORT @F
++        NORM_2
++@@:
++endm
++
++
++; ---------- Branch MACROS ----------
++
++UPDATE_0 macro probsArray:req, probOffset:req, probDisp:req
++        mov     prob2, kBitModelTotal_reg
++        sub     prob2, probBranch
++        shr     prob2, kNumMoveBits
++        add     probBranch, prob2
++        PSTORE  probBranch, probOffset * 1 + probsArray + probDisp * PMULT
++endm
++
++
++UPDATE_1 macro probsArray:req, probOffset:req, probDisp:req
++        sub     prob2, range
++        sub     cod, range
++        mov     range, prob2
++        mov     prob2, probBranch
++        shr     probBranch, kNumMoveBits
++        sub     prob2, probBranch
++        PSTORE  prob2, probOffset * 1 + probsArray + probDisp * PMULT
++endm
++
++
++CMP_COD macro probsArray:req, probOffset:req, probDisp:req
++        PLOAD   probBranch, probOffset * 1 + probsArray + probDisp * PMULT
++        NORM
++        mov     prob2, range
++        shr     range, kNumBitModelTotalBits
++        imul    range, probBranch
++        cmp     cod, range
++endm
++
++
++IF_BIT_1_NOUP macro probsArray:req, probOffset:req, probDisp:req, toLabel:req
++        CMP_COD probsArray, probOffset, probDisp
++        jae     toLabel
++endm
++
++
++IF_BIT_1 macro probsArray:req, probOffset:req, probDisp:req, toLabel:req
++        IF_BIT_1_NOUP probsArray, probOffset, probDisp, toLabel
++        UPDATE_0 probsArray, probOffset, probDisp
++endm
++
++
++IF_BIT_0_NOUP macro probsArray:req, probOffset:req, probDisp:req, toLabel:req
++        CMP_COD probsArray, probOffset, probDisp
++        jb      toLabel
++endm
++
++
++; ---------- CMOV MACROS ----------
++
++NORM_CALC macro prob:req
++        NORM
++        mov     t0, range
++        shr     range, kNumBitModelTotalBits
++        imul    range, prob
++        sub     t0, range
++        mov     t1, cod
++        sub     cod, range
++endm
++
++
++PUP macro prob:req, probPtr:req
++        sub     t0, prob
++       ; only sar works for both 16/32 bit prob modes
++        sar     t0, kNumMoveBits
++        add     t0, prob
++        PSTORE  t0, probPtr
++endm
++
++
++PUP_SUB macro prob:req, probPtr:req, symSub:req
++        sbb     sym, symSub
++        PUP prob, probPtr
++endm
++
++
++PUP_COD macro prob:req, probPtr:req, symSub:req
++        mov     t0, kBitModelOffset
++        cmovb   cod, t1
++        mov     t1, sym
++        cmovb   t0, kBitModelTotal_reg
++        PUP_SUB prob, probPtr, symSub
++endm
++
++
++BIT_0 macro prob:req, probNext:req
++        PLOAD   prob, probs + 1 * PMULT
++        PLOAD   probNext, probs + 1 * PMULT_2
++
++        NORM_CALC prob
++
++        cmovae  range, t0
++        PLOAD   t0, probs + 1 * PMULT_2 + PMULT
++        cmovae  probNext, t0
++        mov     t0, kBitModelOffset
++        cmovb   cod, t1
++        cmovb   t0, kBitModelTotal_reg
++        mov     sym, 2
++        PUP_SUB prob, probs + 1 * PMULT, 0 - 1
++endm
++
++
++BIT_1 macro prob:req, probNext:req
++        PLOAD   probNext, probs + sym_R * PMULT_2
++        add     sym, sym
++
++        NORM_CALC prob
++
++        cmovae  range, t0
++        PLOAD   t0, probs + sym_R * PMULT + PMULT
++        cmovae  probNext, t0
++        PUP_COD prob, probs + t1_R * PMULT_HALF, 0 - 1
++endm
++
++
++BIT_2 macro prob:req, symSub:req
++        add     sym, sym
++
++        NORM_CALC prob
++
++        cmovae  range, t0
++        PUP_COD prob, probs + t1_R * PMULT_HALF, symSub
++endm
++
++
++; ---------- MATCHED LITERAL ----------
++
++LITM_0 macro
++        mov     offs, 256 * PMULT
++        shl     match, (PSHIFT + 1)
++        mov     bit, offs
++        and     bit, match
++        PLOAD   x1, probs + 256 * PMULT + bit_R * 1 + 1 * PMULT
++        lea     prm, [probs + 256 * PMULT + bit_R * 1 + 1 * PMULT]
++        ; lea     prm, [probs + 256 * PMULT + 1 * PMULT]
++        ; add     prm, bit_R
++        xor     offs, bit
++        add     match, match
++
++        NORM_CALC x1
++
++        cmovae  offs, bit
++        mov     bit, match
++        cmovae  range, t0
++        mov     t0, kBitModelOffset
++        cmovb   cod, t1
++        cmovb   t0, kBitModelTotal_reg
++        mov     sym, 0
++        PUP_SUB x1, prm, -2-1
++endm
++
++
++LITM macro
++        and     bit, offs
++        lea     prm, [probs + offs_R * 1]
++        add     prm, bit_R
++        PLOAD   x1, prm + sym_R * PMULT
++        xor     offs, bit
++        add     sym, sym
++        add     match, match
++
++        NORM_CALC x1
++
++        cmovae  offs, bit
++        mov     bit, match
++        cmovae  range, t0
++        PUP_COD x1, prm + t1_R * PMULT_HALF, - 1
++endm
++
++
++LITM_2 macro
++        and     bit, offs
++        lea     prm, [probs + offs_R * 1]
++        add     prm, bit_R
++        PLOAD   x1, prm + sym_R * PMULT
++        add     sym, sym
++
++        NORM_CALC x1
++
++        cmovae  range, t0
++        PUP_COD x1, prm + t1_R * PMULT_HALF, 256 - 1
++endm
++
++
++; ---------- REVERSE BITS ----------
++
++REV_0 macro prob:req, probNext:req
++        ; PLOAD   prob, probs + 1 * PMULT
++        ; lea     sym2_R, [probs + 2 * PMULT]
++        ; PLOAD   probNext, probs + 2 * PMULT
++        PLOAD   probNext, sym2_R
++
++        NORM_CALC prob
++
++        cmovae  range, t0
++        PLOAD   t0, probs + 3 * PMULT
++        cmovae  probNext, t0
++        cmovb   cod, t1
++        mov     t0, kBitModelOffset
++        cmovb   t0, kBitModelTotal_reg
++        lea     t1_R, [probs + 3 * PMULT]
++        cmovae  sym2_R, t1_R
++        PUP prob, probs + 1 * PMULT
++endm
++
++
++REV_1 macro prob:req, probNext:req, step:req
++        add     sym2_R, step * PMULT
++        PLOAD   probNext, sym2_R
++
++        NORM_CALC prob
++
++        cmovae  range, t0
++        PLOAD   t0, sym2_R + step * PMULT
++        cmovae  probNext, t0
++        cmovb   cod, t1
++        mov     t0, kBitModelOffset
++        cmovb   t0, kBitModelTotal_reg
++        lea     t1_R, [sym2_R + step * PMULT]
++        cmovae  sym2_R, t1_R
++        PUP prob, t1_R - step * PMULT_2
++endm
++
++
++REV_2 macro prob:req, step:req
++        sub     sym2_R, probs
++        shr     sym2, PSHIFT
++        or      sym, sym2
++
++        NORM_CALC prob
++
++        cmovae  range, t0
++        lea     t0, [sym - step]
++        cmovb   sym, t0
++        cmovb   cod, t1
++        mov     t0, kBitModelOffset
++        cmovb   t0, kBitModelTotal_reg
++        PUP prob, probs + sym2_R * PMULT
++endm
++
++
++REV_1_VAR macro prob:req
++        PLOAD   prob, sym_R
++        mov     probs, sym_R
++        add     sym_R, sym2_R
++
++        NORM_CALC prob
++
++        cmovae  range, t0
++        lea     t0_R, [sym_R + 1 * sym2_R]
++        cmovae  sym_R, t0_R
++        mov     t0, kBitModelOffset
++        cmovb   cod, t1
++        ; mov     t1, kBitModelTotal
++        ; cmovb   t0, t1
++        cmovb   t0, kBitModelTotal_reg
++        add     sym2, sym2
++        PUP prob, probs
++endm
++
++
++
++
++LIT_PROBS macro lpMaskParam:req
++        ; prob += (UInt32)3 * ((((processedPos << 8) + dic[(dicPos == 0 ? dicBufSize : dicPos) - 1]) & lpMask) << lc);
++        mov     t0, processedPos
++        shl     t0, 8
++        add     sym, t0
++        and     sym, lpMaskParam
++        add     probs_state_R, pbPos_R
++        mov     x1, LOC lc2
++        lea     sym, dword ptr[sym_R + 2 * sym_R]
++        add     probs, Literal * PMULT
++        shl     sym, x1_L
++        add     probs, sym_R
++        UPDATE_0 probs_state_R, 0, IsMatch
++        inc     processedPos
++endm
++
++
++
++kNumPosBitsMax          equ 4
++kNumPosStatesMax        equ (1 SHL kNumPosBitsMax)
++
++kLenNumLowBits          equ 3
++kLenNumLowSymbols       equ (1 SHL kLenNumLowBits)
++kLenNumHighBits         equ 8
++kLenNumHighSymbols      equ (1 SHL kLenNumHighBits)
++kNumLenProbs            equ (2 * kLenNumLowSymbols * kNumPosStatesMax + kLenNumHighSymbols)
++
++LenLow                  equ 0
++LenChoice               equ LenLow
++LenChoice2              equ (LenLow + kLenNumLowSymbols)
++LenHigh                 equ (LenLow + 2 * kLenNumLowSymbols * kNumPosStatesMax)
++
++kNumStates              equ 12
++kNumStates2             equ 16
++kNumLitStates           equ 7
++
++kStartPosModelIndex     equ 4
++kEndPosModelIndex       equ 14
++kNumFullDistances       equ (1 SHL (kEndPosModelIndex SHR 1))
++
++kNumPosSlotBits         equ 6
++kNumLenToPosStates      equ 4
++
++kNumAlignBits           equ 4
++kAlignTableSize         equ (1 SHL kNumAlignBits)
++
++kMatchMinLen            equ 2
++kMatchSpecLenStart      equ (kMatchMinLen + kLenNumLowSymbols * 2 + kLenNumHighSymbols)
++
++kStartOffset    equ 1664
++SpecPos         equ (-kStartOffset)
++IsRep0Long      equ (SpecPos + kNumFullDistances)
++RepLenCoder     equ (IsRep0Long + (kNumStates2 SHL kNumPosBitsMax))
++LenCoder        equ (RepLenCoder + kNumLenProbs)
++IsMatch         equ (LenCoder + kNumLenProbs)
++kAlign          equ (IsMatch + (kNumStates2 SHL kNumPosBitsMax))
++IsRep           equ (kAlign + kAlignTableSize)
++IsRepG0         equ (IsRep + kNumStates)
++IsRepG1         equ (IsRepG0 + kNumStates)
++IsRepG2         equ (IsRepG1 + kNumStates)
++PosSlot         equ (IsRepG2 + kNumStates)
++Literal         equ (PosSlot + (kNumLenToPosStates SHL kNumPosSlotBits))
++NUM_BASE_PROBS  equ (Literal + kStartOffset)
++
++if kAlign ne 0
++  .err <Stop_Compiling_Bad_LZMA_kAlign>
++endif
++
++if NUM_BASE_PROBS ne 1984
++  .err <Stop_Compiling_Bad_LZMA_PROBS>
++endif
++
++
++PTR_FIELD equ dq ?
++
++CLzmaDec_Asm struct
++        lc      db ?
++        lp      db ?
++        pb      db ?
++        _pad_   db ?
++        dicSize dd ?
++
++        probs_Spec      PTR_FIELD
++        probs_1664      PTR_FIELD
++        dic_Spec        PTR_FIELD
++        dicBufSize      PTR_FIELD
++        dicPos_Spec     PTR_FIELD
++        buf_Spec        PTR_FIELD
++
++        range_Spec      dd ?
++        code_Spec       dd ?
++        processedPos_Spec  dd ?
++        checkDicSize    dd ?
++        rep0    dd ?
++        rep1    dd ?
++        rep2    dd ?
++        rep3    dd ?
++        state_Spec      dd ?
++        remainLen dd ?
++CLzmaDec_Asm ends
++
++
++CLzmaDec_Asm_Loc struct
++        OLD_RSP    PTR_FIELD
++        lzmaPtr    PTR_FIELD
++        _pad0_     PTR_FIELD
++        _pad1_     PTR_FIELD
++        _pad2_     PTR_FIELD
++        dicBufSize PTR_FIELD
++        probs_Spec PTR_FIELD
++        dic_Spec   PTR_FIELD
++
++        limit      PTR_FIELD
++        bufLimit   PTR_FIELD
++        lc2       dd ?
++        lpMask    dd ?
++        pbMask    dd ?
++        checkDicSize   dd ?
++
++        _pad_     dd ?
++        remainLen dd ?
++        dicPos_Spec     PTR_FIELD
++        rep0      dd ?
++        rep1      dd ?
++        rep2      dd ?
++        rep3      dd ?
++CLzmaDec_Asm_Loc ends
++
++
++GLOB_2  equ [sym_R].CLzmaDec_Asm.
++GLOB    equ [r1].CLzmaDec_Asm.
++LOC_0   equ [r0].CLzmaDec_Asm_Loc.
++LOC     equ [RSP].CLzmaDec_Asm_Loc.
++
++
++COPY_VAR macro name
++        mov     t0, GLOB_2 name
++        mov     LOC_0 name, t0
++endm
++
++
++RESTORE_VAR macro name
++        mov     t0, LOC name
++        mov     GLOB name, t0
++endm
++
++
++
++IsMatchBranch_Pre macro reg
++        ; prob = probs + IsMatch + (state << kNumPosBitsMax) + posState;
++        mov     pbPos, LOC pbMask
++        and     pbPos, processedPos
++        shl     pbPos, (kLenNumLowBits + 1 + PSHIFT)
++        lea     probs_state_R, [probs + 1 * state_R]
++endm
++
++
++IsMatchBranch macro reg
++        IsMatchBranch_Pre
++        IF_BIT_1 probs_state_R, pbPos_R, IsMatch, IsMatch_label
++endm
++
++
++CheckLimits macro reg
++        cmp     buf, LOC bufLimit
++        jae     fin_OK
++        cmp     dicPos, LOC limit
++        jae     fin_OK
++endm
++
++
++
++; RSP is (16x + 8) bytes aligned in WIN64-x64
++; LocalSize equ ((((SIZEOF CLzmaDec_Asm_Loc) + 7) / 16 * 16) + 8)
++
++PARAM_lzma      equ REG_ABI_PARAM_0
++PARAM_limit     equ REG_ABI_PARAM_1
++PARAM_bufLimit  equ REG_ABI_PARAM_2
++
++; MY_ALIGN_64
++MY_PROC LzmaDec_DecodeReal_3, 3
++MY_PUSH_PRESERVED_ABI_REGS
++
++        lea     r0, [RSP - (SIZEOF CLzmaDec_Asm_Loc)]
++        and     r0, -128
++        mov     r5, RSP
++        mov     RSP, r0
++        mov     LOC_0 Old_RSP, r5
++        mov     LOC_0 lzmaPtr, PARAM_lzma
++
++        mov     LOC_0 remainLen, 0  ; remainLen must be ZERO
++
++        mov     LOC_0 bufLimit, PARAM_bufLimit
++        mov     sym_R, PARAM_lzma  ;  CLzmaDec_Asm_Loc pointer for GLOB_2
++        mov     dic, GLOB_2 dic_Spec
++        add     PARAM_limit, dic
++        mov     LOC_0 limit, PARAM_limit
++
++        COPY_VAR(rep0)
++        COPY_VAR(rep1)
++        COPY_VAR(rep2)
++        COPY_VAR(rep3)
++
++        mov     dicPos, GLOB_2 dicPos_Spec
++        add     dicPos, dic
++        mov     LOC_0 dicPos_Spec, dicPos
++        mov     LOC_0 dic_Spec, dic
++
++        mov     x1_L, GLOB_2 pb
++        mov     t0, 1
++        shl     t0, x1_L
++        dec     t0
++        mov     LOC_0 pbMask, t0
++
++        ; unsigned pbMask = ((unsigned)1 << (p->prop.pb)) - 1;
++        ; unsigned lc = p->prop.lc;
++        ; unsigned lpMask = ((unsigned)0x100 << p->prop.lp) - ((unsigned)0x100 >> lc);
++
++        mov     x1_L, GLOB_2 lc
++        mov     x2, 100h
++        mov     t0, x2
++        shr     x2, x1_L
++        ; inc     x1
++        add     x1_L, PSHIFT
++        mov     LOC_0 lc2, x1
++        mov     x1_L, GLOB_2 lp
++        shl     t0, x1_L
++        sub     t0, x2
++        mov     LOC_0 lpMask, t0
++        mov     lpMask_reg, t0
++
++        ; mov     probs, GLOB_2 probs_Spec
++        ; add     probs, kStartOffset SHL PSHIFT
++        mov     probs, GLOB_2 probs_1664
++        mov     LOC_0 probs_Spec, probs
++
++        mov     t0_R, GLOB_2 dicBufSize
++        mov     LOC_0 dicBufSize, t0_R
++
++        mov     x1, GLOB_2 checkDicSize
++        mov     LOC_0 checkDicSize, x1
++
++        mov     processedPos, GLOB_2 processedPos_Spec
++
++        mov     state, GLOB_2 state_Spec
++        shl     state, PSHIFT
++
++        mov     buf,   GLOB_2 buf_Spec
++        mov     range, GLOB_2 range_Spec
++        mov     cod,   GLOB_2 code_Spec
++        mov     kBitModelTotal_reg, kBitModelTotal
++        xor     sym, sym
++
++        ; if (processedPos != 0 || checkDicSize != 0)
++        or      x1, processedPos
++        jz      @f
++
++        add     t0_R, dic
++        cmp     dicPos, dic
++        cmovnz  t0_R, dicPos
++        movzx   sym, byte ptr[t0_R - 1]
++
++@@:
++        IsMatchBranch_Pre
++        cmp     state, 4 * PMULT
++        jb      lit_end
++        cmp     state, kNumLitStates * PMULT
++        jb      lit_matched_end
++        jmp     lz_end
++
++
++
++
++; ---------- LITERAL ----------
++MY_ALIGN_64
++lit_start:
++        xor     state, state
++lit_start_2:
++        LIT_PROBS lpMask_reg
++
++    ifdef _LZMA_SIZE_OPT
++
++        PLOAD   x1, probs + 1 * PMULT
++        mov     sym, 1
++MY_ALIGN_16
++lit_loop:
++        BIT_1   x1, x2
++        mov     x1, x2
++        cmp     sym, 127
++        jbe     lit_loop
++
++    else
++
++        BIT_0   x1, x2
++        BIT_1   x2, x1
++        BIT_1   x1, x2
++        BIT_1   x2, x1
++        BIT_1   x1, x2
++        BIT_1   x2, x1
++        BIT_1   x1, x2
++
++    endif
++
++        BIT_2   x2, 256 - 1
++
++        ; mov     dic, LOC dic_Spec
++        mov     probs, LOC probs_Spec
++        IsMatchBranch_Pre
++        mov     byte ptr[dicPos], sym_L
++        inc     dicPos
++
++        CheckLimits
++lit_end:
++        IF_BIT_0_NOUP probs_state_R, pbPos_R, IsMatch, lit_start
++
++        ; jmp     IsMatch_label
++
++; ---------- MATCHES ----------
++; MY_ALIGN_32
++IsMatch_label:
++        UPDATE_1 probs_state_R, pbPos_R, IsMatch
++        IF_BIT_1 probs_state_R, 0, IsRep, IsRep_label
++
++        add     probs, LenCoder * PMULT
++        add     state, kNumStates * PMULT
++
++; ---------- LEN DECODE ----------
++len_decode:
++        mov     len_temp, 8 - 1 - kMatchMinLen
++        IF_BIT_0_NOUP probs, 0, 0, len_mid_0
++        UPDATE_1 probs, 0, 0
++        add     probs, (1 SHL (kLenNumLowBits + PSHIFT))
++        mov     len_temp, -1 - kMatchMinLen
++        IF_BIT_0_NOUP probs, 0, 0, len_mid_0
++        UPDATE_1 probs, 0, 0
++        add     probs, LenHigh * PMULT - (1 SHL (kLenNumLowBits + PSHIFT))
++        mov     sym, 1
++        PLOAD   x1, probs + 1 * PMULT
++
++MY_ALIGN_32
++len8_loop:
++        BIT_1   x1, x2
++        mov     x1, x2
++        cmp     sym, 64
++        jb      len8_loop
++
++        mov     len_temp, (kLenNumHighSymbols - kLenNumLowSymbols * 2) - 1 - kMatchMinLen
++        jmp     short len_mid_2 ; we use short here for MASM that doesn't optimize that code as another assembler programs
++
++MY_ALIGN_32
++len_mid_0:
++        UPDATE_0 probs, 0, 0
++        add     probs, pbPos_R
++        BIT_0   x2, x1
++len_mid_2:
++        BIT_1   x1, x2
++        BIT_2   x2, len_temp
++        mov     probs, LOC probs_Spec
++        cmp     state, kNumStates * PMULT
++        jb      copy_match
++
++
++; ---------- DECODE DISTANCE ----------
++        ; probs + PosSlot + ((len < kNumLenToPosStates ? len : kNumLenToPosStates - 1) << kNumPosSlotBits);
++
++        mov     t0, 3 + kMatchMinLen
++        cmp     sym, 3 + kMatchMinLen
++        cmovb   t0, sym
++        add     probs, PosSlot * PMULT - (kMatchMinLen SHL (kNumPosSlotBits + PSHIFT))
++        shl     t0, (kNumPosSlotBits + PSHIFT)
++        add     probs, t0_R
++
++        ; sym = Len
++        ; mov     LOC remainLen, sym
++        mov     len_temp, sym
++
++    ifdef _LZMA_SIZE_OPT
++
++        PLOAD   x1, probs + 1 * PMULT
++        mov     sym, 1
++MY_ALIGN_16
++slot_loop:
++        BIT_1   x1, x2
++        mov     x1, x2
++        cmp     sym, 32
++        jb      slot_loop
++
++    else
++
++        BIT_0   x1, x2
++        BIT_1   x2, x1
++        BIT_1   x1, x2
++        BIT_1   x2, x1
++        BIT_1   x1, x2
++
++    endif
++
++        mov     x1, sym
++        BIT_2   x2, 64-1
++
++        and     sym, 3
++        mov     probs, LOC probs_Spec
++        cmp     x1, 32 + kEndPosModelIndex / 2
++        jb      short_dist
++
++        ;  unsigned numDirectBits = (unsigned)(((distance >> 1) - 1));
++        sub     x1, (32 + 1 + kNumAlignBits)
++        ;  distance = (2 | (distance & 1));
++        or      sym, 2
++        PLOAD   x2, probs + 1 * PMULT
++        shl     sym, kNumAlignBits + 1
++        lea     sym2_R, [probs + 2 * PMULT]
++
++        jmp     direct_norm
++        ; lea     t1, [sym_R + (1 SHL kNumAlignBits)]
++        ; cmp     range, kTopValue
++        ; jb      direct_norm
++
++; ---------- DIRECT DISTANCE ----------
++MY_ALIGN_32
++direct_loop:
++        shr     range, 1
++        mov     t0, cod
++        sub     cod, range
++        cmovs   cod, t0
++        cmovns  sym, t1
++
++        comment ~
++        sub     cod, range
++        mov     x2, cod
++        sar     x2, 31
++        lea     sym, dword ptr [r2 + sym_R * 2 + 1]
++        and     x2, range
++        add     cod, x2
++        ~
++        dec     x1
++        je      direct_end
++
++        add     sym, sym
++direct_norm:
++        lea     t1, [sym_R + (1 SHL kNumAlignBits)]
++        cmp     range, kTopValue
++        jae     near ptr direct_loop
++        ; we align for 32 here with "near ptr" command above
++        NORM_2
++        jmp     direct_loop
++
++MY_ALIGN_32
++direct_end:
++        ;  prob =  + kAlign;
++        ;  distance <<= kNumAlignBits;
++        REV_0   x2, x1
++        REV_1   x1, x2, 2
++        REV_1   x2, x1, 4
++        REV_2   x1, 8
++
++decode_dist_end:
++
++        ; if (distance >= (checkDicSize == 0 ? processedPos: checkDicSize))
++
++        mov     t1, LOC rep0
++        mov     x1, LOC rep1
++        mov     x2, LOC rep2
++
++        mov     t0, LOC checkDicSize
++        test    t0, t0
++        cmove   t0, processedPos
++        cmp     sym, t0
++        jae     end_of_payload
++        ; jmp     end_of_payload ; for debug
++
++        ; rep3 = rep2;
++        ; rep2 = rep1;
++        ; rep1 = rep0;
++        ; rep0 = distance + 1;
++
++        inc     sym
++        mov     LOC rep0, sym
++        ; mov     sym, LOC remainLen
++        mov     sym, len_temp
++        mov     LOC rep1, t1
++        mov     LOC rep2, x1
++        mov     LOC rep3, x2
++
++        ; state = (state < kNumStates + kNumLitStates) ? kNumLitStates : kNumLitStates + 3;
++        cmp     state, (kNumStates + kNumLitStates) * PMULT
++        mov     state, kNumLitStates * PMULT
++        mov     t0, (kNumLitStates + 3) * PMULT
++        cmovae  state, t0
++
++
++; ---------- COPY MATCH ----------
++copy_match:
++
++        ; len += kMatchMinLen;
++        ; add     sym, kMatchMinLen
++
++        ; if ((rem = limit - dicPos) == 0)
++        ; {
++        ;   p->dicPos = dicPos;
++        ;   return SZ_ERROR_DATA;
++        ; }
++        mov     cnt_R, LOC limit
++        sub     cnt_R, dicPos
++        jz      fin_dicPos_LIMIT
++
++        ; curLen = ((rem < len) ? (unsigned)rem : len);
++        cmp     cnt_R, sym_R
++        ; cmovae  cnt_R, sym_R ; 64-bit
++        cmovae  cnt, sym ; 32-bit
++
++        mov     dic, LOC dic_Spec
++        mov     x1, LOC rep0
++
++        mov     t0_R, dicPos
++        add     dicPos, cnt_R
++        ; processedPos += curLen;
++        add     processedPos, cnt
++        ; len -= curLen;
++        sub     sym, cnt
++        mov     LOC remainLen, sym
++
++        sub     t0_R, dic
++
++        ; pos = dicPos - rep0 + (dicPos < rep0 ? dicBufSize : 0);
++        sub     t0_R, r1
++        jae     @f
++
++        mov     r1, LOC dicBufSize
++        add     t0_R, r1
++        sub     r1, t0_R
++        cmp     cnt_R, r1
++        ja      copy_match_cross
++@@:
++        ; if (curLen <= dicBufSize - pos)
++
++; ---------- COPY MATCH FAST ----------
++        ; Byte *dest = dic + dicPos;
++        ; mov     r1, dic
++        ; ptrdiff_t src = (ptrdiff_t)pos - (ptrdiff_t)dicPos;
++        ; sub   t0_R, dicPos
++        ; dicPos += curLen;
++
++        ; const Byte *lim = dest + curLen;
++        add     t0_R, dic
++        movzx   sym, byte ptr[t0_R]
++        add     t0_R, cnt_R
++        neg     cnt_R
++        ; lea     r1, [dicPos - 1]
++copy_common:
++        dec     dicPos
++        ; cmp   LOC rep0, 1
++        ; je    rep0Label
++
++        ; t0_R - src_lim
++        ; r1 - dest_lim - 1
++        ; cnt_R - (-cnt)
++
++        IsMatchBranch_Pre
++        inc     cnt_R
++        jz      copy_end
++MY_ALIGN_16
++@@:
++        mov     byte ptr[cnt_R * 1 + dicPos], sym_L
++        movzx   sym, byte ptr[cnt_R * 1 + t0_R]
++        inc     cnt_R
++        jnz     @b
++
++copy_end:
++lz_end_match:
++        mov     byte ptr[dicPos], sym_L
++        inc     dicPos
++
++        ; IsMatchBranch_Pre
++        CheckLimits
++lz_end:
++        IF_BIT_1_NOUP probs_state_R, pbPos_R, IsMatch, IsMatch_label
++
++
++
++; ---------- LITERAL MATCHED ----------
++
++        LIT_PROBS LOC lpMask
++
++        ; matchByte = dic[dicPos - rep0 + (dicPos < rep0 ? dicBufSize : 0)];
++        mov     x1, LOC rep0
++        ; mov     dic, LOC dic_Spec
++        mov     LOC dicPos_Spec, dicPos
++
++        ; state -= (state < 10) ? 3 : 6;
++        lea     t0, [state_R - 6 * PMULT]
++        sub     state, 3 * PMULT
++        cmp     state, 7 * PMULT
++        cmovae  state, t0
++
++        sub     dicPos, dic
++        sub     dicPos, r1
++        jae     @f
++        add     dicPos, LOC dicBufSize
++@@:
++        comment ~
++        xor     t0, t0
++        sub     dicPos, r1
++        cmovb   t0_R, LOC dicBufSize
++        ~
++
++        movzx   match, byte ptr[dic + dicPos * 1]
++
++    ifdef _LZMA_SIZE_OPT
++
++        mov     offs, 256 * PMULT
++        shl     match, (PSHIFT + 1)
++        mov     bit, match
++        mov     sym, 1
++MY_ALIGN_16
++litm_loop:
++        LITM
++        cmp     sym, 256
++        jb      litm_loop
++        sub     sym, 256
++
++    else
++
++        LITM_0
++        LITM
++        LITM
++        LITM
++        LITM
++        LITM
++        LITM
++        LITM_2
++
++    endif
++
++        mov     probs, LOC probs_Spec
++        IsMatchBranch_Pre
++        ; mov     dic, LOC dic_Spec
++        mov     dicPos, LOC dicPos_Spec
++        mov     byte ptr[dicPos], sym_L
++        inc     dicPos
++
++        CheckLimits
++lit_matched_end:
++        IF_BIT_1_NOUP probs_state_R, pbPos_R, IsMatch, IsMatch_label
++        ; IsMatchBranch
++        mov     lpMask_reg, LOC lpMask
++        sub     state, 3 * PMULT
++        jmp     lit_start_2
++
++
++
++; ---------- REP 0 LITERAL ----------
++MY_ALIGN_32
++IsRep0Short_label:
++        UPDATE_0 probs_state_R, pbPos_R, IsRep0Long
++
++        ; dic[dicPos] = dic[dicPos - rep0 + (dicPos < rep0 ? dicBufSize : 0)];
++        mov     dic, LOC dic_Spec
++        mov     t0_R, dicPos
++        mov     probBranch, LOC rep0
++        sub     t0_R, dic
++
++        sub     probs, RepLenCoder * PMULT
++
++        ; state = state < kNumLitStates ? 9 : 11;
++        or      state, 1 * PMULT
++
++        ; the caller doesn't allow (dicPos >= limit) case for REP_SHORT
++        ; so we don't need the following (dicPos == limit) check here:
++        ; cmp     dicPos, LOC limit
++        ; jae     fin_dicPos_LIMIT_REP_SHORT
++
++        inc     processedPos
++
++        IsMatchBranch_Pre
++
++;        xor     sym, sym
++;        sub     t0_R, probBranch_R
++;        cmovb   sym_R, LOC dicBufSize
++;        add     t0_R, sym_R
++        sub     t0_R, probBranch_R
++        jae     @f
++        add     t0_R, LOC dicBufSize
++@@:
++        movzx   sym, byte ptr[dic + t0_R * 1]
++        jmp     lz_end_match
++
++
++MY_ALIGN_32
++IsRep_label:
++        UPDATE_1 probs_state_R, 0, IsRep
++
++        ; The (checkDicSize == 0 && processedPos == 0) case was checked before in LzmaDec.c with kBadRepCode.
++        ; So we don't check it here.
++
++        ; mov     t0, processedPos
++        ; or      t0, LOC checkDicSize
++        ; jz      fin_ERROR_2
++
++        ; state = state < kNumLitStates ? 8 : 11;
++        cmp     state, kNumLitStates * PMULT
++        mov     state, 8 * PMULT
++        mov     probBranch, 11 * PMULT
++        cmovae  state, probBranch
++
++        ; prob = probs + RepLenCoder;
++        add     probs, RepLenCoder * PMULT
++
++        IF_BIT_1 probs_state_R, 0, IsRepG0, IsRepG0_label
++        IF_BIT_0_NOUP probs_state_R, pbPos_R, IsRep0Long, IsRep0Short_label
++        UPDATE_1 probs_state_R, pbPos_R, IsRep0Long
++        jmp     len_decode
++
++MY_ALIGN_32
++IsRepG0_label:
++        UPDATE_1 probs_state_R, 0, IsRepG0
++        mov     dist2, LOC rep0
++        mov     dist, LOC rep1
++        mov     LOC rep1, dist2
++
++        IF_BIT_1 probs_state_R, 0, IsRepG1, IsRepG1_label
++        mov     LOC rep0, dist
++        jmp     len_decode
++
++; MY_ALIGN_32
++IsRepG1_label:
++        UPDATE_1 probs_state_R, 0, IsRepG1
++        mov     dist2, LOC rep2
++        mov     LOC rep2, dist
++
++        IF_BIT_1 probs_state_R, 0, IsRepG2, IsRepG2_label
++        mov     LOC rep0, dist2
++        jmp     len_decode
++
++; MY_ALIGN_32
++IsRepG2_label:
++        UPDATE_1 probs_state_R, 0, IsRepG2
++        mov     dist, LOC rep3
++        mov     LOC rep3, dist2
++        mov     LOC rep0, dist
++        jmp     len_decode
++
++
++
++; ---------- SPEC SHORT DISTANCE ----------
++
++MY_ALIGN_32
++short_dist:
++        sub     x1, 32 + 1
++        jbe     decode_dist_end
++        or      sym, 2
++        shl     sym, x1_L
++        lea     sym_R, [probs + sym_R * PMULT + SpecPos * PMULT + 1 * PMULT]
++        mov     sym2, PMULT ; step
++MY_ALIGN_32
++spec_loop:
++        REV_1_VAR x2
++        dec     x1
++        jnz     spec_loop
++
++        mov     probs, LOC probs_Spec
++        sub     sym, sym2
++        sub     sym, SpecPos * PMULT
++        sub     sym_R, probs
++        shr     sym, PSHIFT
++
++        jmp     decode_dist_end
++
++
++; ---------- COPY MATCH CROSS ----------
++copy_match_cross:
++        ; t0_R - src pos
++        ; r1 - len to dicBufSize
++        ; cnt_R - total copy len
++
++        mov     t1_R, t0_R         ; srcPos
++        mov     t0_R, dic
++        mov     r1, LOC dicBufSize   ;
++        neg     cnt_R
++@@:
++        movzx   sym, byte ptr[t1_R * 1 + t0_R]
++        inc     t1_R
++        mov     byte ptr[cnt_R * 1 + dicPos], sym_L
++        inc     cnt_R
++        cmp     t1_R, r1
++        jne     @b
++
++        movzx   sym, byte ptr[t0_R]
++        sub     t0_R, cnt_R
++        jmp     copy_common
++
++
++
++
++; fin_dicPos_LIMIT_REP_SHORT:
++        ; mov     sym, 1
++
++fin_dicPos_LIMIT:
++        mov     LOC remainLen, sym
++        jmp     fin_OK
++        ; For more strict mode we can stop decoding with error
++        ; mov     sym, 1
++        ; jmp     fin
++
++
++fin_ERROR_MATCH_DIST:
++
++        ; rep3 = rep2;
++        ; rep2 = rep1;
++        ; rep1 = rep0;
++        ; rep0 = distance + 1;
++
++        add     len_temp, kMatchSpecLen_Error_Data
++        mov     LOC remainLen, len_temp
++
++        mov     LOC rep0, sym
++        mov     LOC rep1, t1
++        mov     LOC rep2, x1
++        mov     LOC rep3, x2
++
++        ; state = (state < kNumStates + kNumLitStates) ? kNumLitStates : kNumLitStates + 3;
++        cmp     state, (kNumStates + kNumLitStates) * PMULT
++        mov     state, kNumLitStates * PMULT
++        mov     t0, (kNumLitStates + 3) * PMULT
++        cmovae  state, t0
++
++        ; jmp     fin_OK
++        mov     sym, 1
++        jmp     fin
++
++end_of_payload:
++        inc     sym
++        jnz     fin_ERROR_MATCH_DIST
++
++        mov     LOC remainLen, kMatchSpecLenStart
++        sub     state, kNumStates * PMULT
++
++fin_OK:
++        xor     sym, sym
++
++fin:
++        NORM
++
++        mov     r1, LOC lzmaPtr
++
++        sub     dicPos, LOC dic_Spec
++        mov     GLOB dicPos_Spec, dicPos
++        mov     GLOB buf_Spec, buf
++        mov     GLOB range_Spec, range
++        mov     GLOB code_Spec, cod
++        shr     state, PSHIFT
++        mov     GLOB state_Spec, state
++        mov     GLOB processedPos_Spec, processedPos
++
++        RESTORE_VAR(remainLen)
++        RESTORE_VAR(rep0)
++        RESTORE_VAR(rep1)
++        RESTORE_VAR(rep2)
++        RESTORE_VAR(rep3)
++
++        mov     x0, sym
++
++        mov     RSP, LOC Old_RSP
++
++MY_POP_PRESERVED_ABI_REGS
++MY_ENDP
++
++LZMADEC ENDS
++
++end
+diff --git a/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm b/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm
+index 116153b69e56f519fad9a117ecc1402e8d3ef64f..3e9f6eda3e7e907bc5bf3e1657231c6c7f27f9df 100644
+--- a/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm
++++ b/third_party/lzma_sdk/Asm/x86/Sha256Opt.asm
+@@ -1,275 +1,275 @@
+-; Sha256Opt.asm -- SHA-256 optimized code for SHA-256 x86 hardware instructions
+-; 2022-04-17 : Igor Pavlov : Public domain
+-
+-include 7zAsm.asm
+-
+-MY_ASM_START
+-
+-; .data
+-; public K
+-
+-; we can use external SHA256_K_ARRAY defined in Sha256.c
+-; but we must guarantee that SHA256_K_ARRAY is aligned for 16-bytes
+-
+-COMMENT @
+-ifdef x64
+-K_CONST equ SHA256_K_ARRAY
+-else
+-K_CONST equ _SHA256_K_ARRAY
+-endif
+-EXTRN   K_CONST:xmmword
+-@
+-
+-CONST   SEGMENT
+-
+-align 16
+-Reverse_Endian_Mask db 3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12
+-
+-; COMMENT @
+-align 16
+-K_CONST \
+-DD 0428a2f98H, 071374491H, 0b5c0fbcfH, 0e9b5dba5H
+-DD 03956c25bH, 059f111f1H, 0923f82a4H, 0ab1c5ed5H
+-DD 0d807aa98H, 012835b01H, 0243185beH, 0550c7dc3H
+-DD 072be5d74H, 080deb1feH, 09bdc06a7H, 0c19bf174H
+-DD 0e49b69c1H, 0efbe4786H, 00fc19dc6H, 0240ca1ccH
+-DD 02de92c6fH, 04a7484aaH, 05cb0a9dcH, 076f988daH
+-DD 0983e5152H, 0a831c66dH, 0b00327c8H, 0bf597fc7H
+-DD 0c6e00bf3H, 0d5a79147H, 006ca6351H, 014292967H
+-DD 027b70a85H, 02e1b2138H, 04d2c6dfcH, 053380d13H
+-DD 0650a7354H, 0766a0abbH, 081c2c92eH, 092722c85H
+-DD 0a2bfe8a1H, 0a81a664bH, 0c24b8b70H, 0c76c51a3H
+-DD 0d192e819H, 0d6990624H, 0f40e3585H, 0106aa070H
+-DD 019a4c116H, 01e376c08H, 02748774cH, 034b0bcb5H
+-DD 0391c0cb3H, 04ed8aa4aH, 05b9cca4fH, 0682e6ff3H
+-DD 0748f82eeH, 078a5636fH, 084c87814H, 08cc70208H
+-DD 090befffaH, 0a4506cebH, 0bef9a3f7H, 0c67178f2H
+-; @
+-
+-CONST   ENDS
+-
+-; _TEXT$SHA256OPT SEGMENT 'CODE'
+-
+-ifndef x64
+-    .686
+-    .xmm
+-endif
+-        
+-; jwasm-based assemblers for linux and linker from new versions of binutils
+-; can generate incorrect code for load [ARRAY + offset] instructions.
+-; 22.00: we load K_CONST offset to (rTable) register to avoid jwasm+binutils problem 
+-        rTable  equ r0
+-        ; rTable  equ K_CONST
+-        
+-ifdef x64
+-        rNum    equ REG_ABI_PARAM_2
+-    if (IS_LINUX eq 0)
+-        LOCAL_SIZE equ (16 * 2)
+-    endif
+-else
+-        rNum    equ r3
+-        LOCAL_SIZE equ (16 * 1)
+-endif
+-
+-rState equ REG_ABI_PARAM_0
+-rData  equ REG_ABI_PARAM_1
+-
+-
+-
+-
+-
+-
+-MY_SHA_INSTR macro cmd, a1, a2
+-        db 0fH, 038H, cmd, (0c0H + a1 * 8 + a2)
+-endm
+-
+-cmd_sha256rnds2 equ 0cbH
+-cmd_sha256msg1  equ 0ccH
+-cmd_sha256msg2  equ 0cdH
+-
+-MY_sha256rnds2 macro a1, a2
+-        MY_SHA_INSTR  cmd_sha256rnds2, a1, a2
+-endm
+-
+-MY_sha256msg1 macro a1, a2
+-        MY_SHA_INSTR  cmd_sha256msg1, a1, a2
+-endm
+-
+-MY_sha256msg2 macro a1, a2
+-        MY_SHA_INSTR  cmd_sha256msg2, a1, a2
+-endm
+-
+-MY_PROLOG macro
+-    ifdef x64
+-      if (IS_LINUX eq 0)
+-        movdqa  [r4 + 8], xmm6
+-        movdqa  [r4 + 8 + 16], xmm7
+-        sub     r4, LOCAL_SIZE + 8
+-        movdqa  [r4     ], xmm8
+-        movdqa  [r4 + 16], xmm9
+-      endif
+-    else ; x86
+-        push    r3
+-        push    r5
+-        mov     r5, r4
+-        NUM_PUSH_REGS   equ 2
+-        PARAM_OFFSET    equ (REG_SIZE * (1 + NUM_PUSH_REGS))
+-      if (IS_CDECL gt 0)
+-        mov     rState, [r4 + PARAM_OFFSET]
+-        mov     rData,  [r4 + PARAM_OFFSET + REG_SIZE * 1]
+-        mov     rNum,   [r4 + PARAM_OFFSET + REG_SIZE * 2]
+-      else ; fastcall
+-        mov     rNum,   [r4 + PARAM_OFFSET]
+-      endif
+-        and     r4, -16
+-        sub     r4, LOCAL_SIZE
+-    endif
+-endm
+-
+-MY_EPILOG macro
+-    ifdef x64
+-      if (IS_LINUX eq 0)
+-        movdqa  xmm8, [r4]
+-        movdqa  xmm9, [r4 + 16]
+-        add     r4, LOCAL_SIZE + 8
+-        movdqa  xmm6, [r4 + 8]
+-        movdqa  xmm7, [r4 + 8 + 16]
+-      endif
+-    else ; x86
+-        mov     r4, r5
+-        pop     r5
+-        pop     r3
+-    endif
+-    MY_ENDP
+-endm
+-
+-
+-msg        equ xmm0
+-tmp        equ xmm0
+-state0_N   equ 2
+-state1_N   equ 3
+-w_regs     equ 4
+-
+-
+-state1_save equ xmm1
+-state0  equ @CatStr(xmm, %state0_N)
+-state1  equ @CatStr(xmm, %state1_N)
+-
+-
+-ifdef x64
+-        state0_save  equ  xmm8
+-        mask2        equ  xmm9
+-else
+-        state0_save  equ  [r4]
+-        mask2        equ  xmm0
+-endif
+-
+-LOAD_MASK macro
+-        movdqa  mask2, XMMWORD PTR Reverse_Endian_Mask
+-endm
+-
+-LOAD_W macro k:req
+-        movdqu  @CatStr(xmm, %(w_regs + k)), [rData + (16 * (k))]
+-        pshufb  @CatStr(xmm, %(w_regs + k)), mask2
+-endm
+-
+-
+-; pre1 <= 4 && pre2 >= 1 && pre1 > pre2 && (pre1 - pre2) <= 1
+-pre1 equ 3
+-pre2 equ 2
+-   
+-
+-
+-RND4 macro k
+-        movdqa  msg, xmmword ptr [rTable + (k) * 16]
+-        paddd   msg, @CatStr(xmm, %(w_regs + ((k + 0) mod 4)))
+-        MY_sha256rnds2 state0_N, state1_N
+-        pshufd   msg, msg, 0eH
+-        
+-    if (k GE (4 - pre1)) AND (k LT (16 - pre1))
+-        ; w4[0] = msg1(w4[-4], w4[-3])
+-        MY_sha256msg1 (w_regs + ((k + pre1) mod 4)), (w_regs + ((k + pre1 - 3) mod 4))
+-    endif
+-        
+-        MY_sha256rnds2 state1_N, state0_N
+-
+-    if (k GE (4 - pre2)) AND (k LT (16 - pre2))
+-        movdqa  tmp, @CatStr(xmm, %(w_regs + ((k + pre2 - 1) mod 4)))
+-        palignr tmp, @CatStr(xmm, %(w_regs + ((k + pre2 - 2) mod 4))), 4
+-        paddd   @CatStr(xmm, %(w_regs + ((k + pre2) mod 4))), tmp
+-        ; w4[0] = msg2(w4[0], w4[-1])
+-        MY_sha256msg2 %(w_regs + ((k + pre2) mod 4)), %(w_regs + ((k + pre2 - 1) mod 4))
+-    endif
+-endm
+-
+-
+-
+-
+-
+-REVERSE_STATE macro
+-                               ; state0 ; dcba
+-                               ; state1 ; hgfe
+-        pshufd      tmp, state0, 01bH   ; abcd
+-        pshufd   state0, state1, 01bH   ; efgh
+-        movdqa   state1, state0         ; efgh
+-        punpcklqdq  state0, tmp         ; cdgh
+-        punpckhqdq  state1, tmp         ; abef
+-endm
+-
+-
+-MY_PROC Sha256_UpdateBlocks_HW, 3
+-    MY_PROLOG
+-
+-        lea     rTable, [K_CONST]
+-
+-        cmp     rNum, 0
+-        je      end_c
+-
+-        movdqu   state0, [rState]       ; dcba
+-        movdqu   state1, [rState + 16]  ; hgfe
+-
+-        REVERSE_STATE
+-       
+-        ifdef x64
+-        LOAD_MASK
+-        endif
+-
+-    align 16
+-    nextBlock:
+-        movdqa  state0_save, state0
+-        movdqa  state1_save, state1
+-        
+-        ifndef x64
+-        LOAD_MASK
+-        endif
+-        
+-        LOAD_W 0
+-        LOAD_W 1
+-        LOAD_W 2
+-        LOAD_W 3
+-
+-        
+-        k = 0
+-        rept 16
+-          RND4 k
+-          k = k + 1
+-        endm
+-
+-        paddd   state0, state0_save
+-        paddd   state1, state1_save
+-
+-        add     rData, 64
+-        sub     rNum, 1
+-        jnz     nextBlock
+-        
+-        REVERSE_STATE
+-
+-        movdqu  [rState], state0
+-        movdqu  [rState + 16], state1
+-       
+-  end_c:
+-MY_EPILOG
+-
+-; _TEXT$SHA256OPT ENDS
+-
+-end
++; Sha256Opt.asm -- SHA-256 optimized code for SHA-256 x86 hardware instructions
++; 2022-04-17 : Igor Pavlov : Public domain
++
++include 7zAsm.asm
++
++MY_ASM_START
++
++; .data
++; public K
++
++; we can use external SHA256_K_ARRAY defined in Sha256.c
++; but we must guarantee that SHA256_K_ARRAY is aligned for 16-bytes
++
++COMMENT @
++ifdef x64
++K_CONST equ SHA256_K_ARRAY
++else
++K_CONST equ _SHA256_K_ARRAY
++endif
++EXTRN   K_CONST:xmmword
++@
++
++CONST   SEGMENT
++
++align 16
++Reverse_Endian_Mask db 3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12
++
++; COMMENT @
++align 16
++K_CONST \
++DD 0428a2f98H, 071374491H, 0b5c0fbcfH, 0e9b5dba5H
++DD 03956c25bH, 059f111f1H, 0923f82a4H, 0ab1c5ed5H
++DD 0d807aa98H, 012835b01H, 0243185beH, 0550c7dc3H
++DD 072be5d74H, 080deb1feH, 09bdc06a7H, 0c19bf174H
++DD 0e49b69c1H, 0efbe4786H, 00fc19dc6H, 0240ca1ccH
++DD 02de92c6fH, 04a7484aaH, 05cb0a9dcH, 076f988daH
++DD 0983e5152H, 0a831c66dH, 0b00327c8H, 0bf597fc7H
++DD 0c6e00bf3H, 0d5a79147H, 006ca6351H, 014292967H
++DD 027b70a85H, 02e1b2138H, 04d2c6dfcH, 053380d13H
++DD 0650a7354H, 0766a0abbH, 081c2c92eH, 092722c85H
++DD 0a2bfe8a1H, 0a81a664bH, 0c24b8b70H, 0c76c51a3H
++DD 0d192e819H, 0d6990624H, 0f40e3585H, 0106aa070H
++DD 019a4c116H, 01e376c08H, 02748774cH, 034b0bcb5H
++DD 0391c0cb3H, 04ed8aa4aH, 05b9cca4fH, 0682e6ff3H
++DD 0748f82eeH, 078a5636fH, 084c87814H, 08cc70208H
++DD 090befffaH, 0a4506cebH, 0bef9a3f7H, 0c67178f2H
++; @
++
++CONST   ENDS
++
++; _TEXT$SHA256OPT SEGMENT 'CODE'
++
++ifndef x64
++    .686
++    .xmm
++endif
++
++; jwasm-based assemblers for linux and linker from new versions of binutils
++; can generate incorrect code for load [ARRAY + offset] instructions.
++; 22.00: we load K_CONST offset to (rTable) register to avoid jwasm+binutils problem
++        rTable  equ r0
++        ; rTable  equ K_CONST
++
++ifdef x64
++        rNum    equ REG_ABI_PARAM_2
++    if (IS_LINUX eq 0)
++        LOCAL_SIZE equ (16 * 2)
++    endif
++else
++        rNum    equ r3
++        LOCAL_SIZE equ (16 * 1)
++endif
++
++rState equ REG_ABI_PARAM_0
++rData  equ REG_ABI_PARAM_1
++
++
++
++
++
++
++MY_SHA_INSTR macro cmd, a1, a2
++        db 0fH, 038H, cmd, (0c0H + a1 * 8 + a2)
++endm
++
++cmd_sha256rnds2 equ 0cbH
++cmd_sha256msg1  equ 0ccH
++cmd_sha256msg2  equ 0cdH
++
++MY_sha256rnds2 macro a1, a2
++        MY_SHA_INSTR  cmd_sha256rnds2, a1, a2
++endm
++
++MY_sha256msg1 macro a1, a2
++        MY_SHA_INSTR  cmd_sha256msg1, a1, a2
++endm
++
++MY_sha256msg2 macro a1, a2
++        MY_SHA_INSTR  cmd_sha256msg2, a1, a2
++endm
++
++MY_PROLOG macro
++    ifdef x64
++      if (IS_LINUX eq 0)
++        movdqa  [r4 + 8], xmm6
++        movdqa  [r4 + 8 + 16], xmm7
++        sub     r4, LOCAL_SIZE + 8
++        movdqa  [r4     ], xmm8
++        movdqa  [r4 + 16], xmm9
++      endif
++    else ; x86
++        push    r3
++        push    r5
++        mov     r5, r4
++        NUM_PUSH_REGS   equ 2
++        PARAM_OFFSET    equ (REG_SIZE * (1 + NUM_PUSH_REGS))
++      if (IS_CDECL gt 0)
++        mov     rState, [r4 + PARAM_OFFSET]
++        mov     rData,  [r4 + PARAM_OFFSET + REG_SIZE * 1]
++        mov     rNum,   [r4 + PARAM_OFFSET + REG_SIZE * 2]
++      else ; fastcall
++        mov     rNum,   [r4 + PARAM_OFFSET]
++      endif
++        and     r4, -16
++        sub     r4, LOCAL_SIZE
++    endif
++endm
++
++MY_EPILOG macro
++    ifdef x64
++      if (IS_LINUX eq 0)
++        movdqa  xmm8, [r4]
++        movdqa  xmm9, [r4 + 16]
++        add     r4, LOCAL_SIZE + 8
++        movdqa  xmm6, [r4 + 8]
++        movdqa  xmm7, [r4 + 8 + 16]
++      endif
++    else ; x86
++        mov     r4, r5
++        pop     r5
++        pop     r3
++    endif
++    MY_ENDP
++endm
++
++
++msg        equ xmm0
++tmp        equ xmm0
++state0_N   equ 2
++state1_N   equ 3
++w_regs     equ 4
++
++
++state1_save equ xmm1
++state0  equ @CatStr(xmm, %state0_N)
++state1  equ @CatStr(xmm, %state1_N)
++
++
++ifdef x64
++        state0_save  equ  xmm8
++        mask2        equ  xmm9
++else
++        state0_save  equ  [r4]
++        mask2        equ  xmm0
++endif
++
++LOAD_MASK macro
++        movdqa  mask2, XMMWORD PTR Reverse_Endian_Mask
++endm
++
++LOAD_W macro k:req
++        movdqu  @CatStr(xmm, %(w_regs + k)), [rData + (16 * (k))]
++        pshufb  @CatStr(xmm, %(w_regs + k)), mask2
++endm
++
++
++; pre1 <= 4 && pre2 >= 1 && pre1 > pre2 && (pre1 - pre2) <= 1
++pre1 equ 3
++pre2 equ 2
++
++
++
++RND4 macro k
++        movdqa  msg, xmmword ptr [rTable + (k) * 16]
++        paddd   msg, @CatStr(xmm, %(w_regs + ((k + 0) mod 4)))
++        MY_sha256rnds2 state0_N, state1_N
++        pshufd   msg, msg, 0eH
++
++    if (k GE (4 - pre1)) AND (k LT (16 - pre1))
++        ; w4[0] = msg1(w4[-4], w4[-3])
++        MY_sha256msg1 (w_regs + ((k + pre1) mod 4)), (w_regs + ((k + pre1 - 3) mod 4))
++    endif
++
++        MY_sha256rnds2 state1_N, state0_N
++
++    if (k GE (4 - pre2)) AND (k LT (16 - pre2))
++        movdqa  tmp, @CatStr(xmm, %(w_regs + ((k + pre2 - 1) mod 4)))
++        palignr tmp, @CatStr(xmm, %(w_regs + ((k + pre2 - 2) mod 4))), 4
++        paddd   @CatStr(xmm, %(w_regs + ((k + pre2) mod 4))), tmp
++        ; w4[0] = msg2(w4[0], w4[-1])
++        MY_sha256msg2 %(w_regs + ((k + pre2) mod 4)), %(w_regs + ((k + pre2 - 1) mod 4))
++    endif
++endm
++
++
++
++
++
++REVERSE_STATE macro
++                               ; state0 ; dcba
++                               ; state1 ; hgfe
++        pshufd      tmp, state0, 01bH   ; abcd
++        pshufd   state0, state1, 01bH   ; efgh
++        movdqa   state1, state0         ; efgh
++        punpcklqdq  state0, tmp         ; cdgh
++        punpckhqdq  state1, tmp         ; abef
++endm
++
++
++MY_PROC Sha256_UpdateBlocks_HW, 3
++    MY_PROLOG
++
++        lea     rTable, [K_CONST]
++
++        cmp     rNum, 0
++        je      end_c
++
++        movdqu   state0, [rState]       ; dcba
++        movdqu   state1, [rState + 16]  ; hgfe
++
++        REVERSE_STATE
++
++        ifdef x64
++        LOAD_MASK
++        endif
++
++    align 16
++    nextBlock:
++        movdqa  state0_save, state0
++        movdqa  state1_save, state1
++
++        ifndef x64
++        LOAD_MASK
++        endif
++
++        LOAD_W 0
++        LOAD_W 1
++        LOAD_W 2
++        LOAD_W 3
++
++
++        k = 0
++        rept 16
++          RND4 k
++          k = k + 1
++        endm
++
++        paddd   state0, state0_save
++        paddd   state1, state1_save
++
++        add     rData, 64
++        sub     rNum, 1
++        jnz     nextBlock
++
++        REVERSE_STATE
++
++        movdqu  [rState], state0
++        movdqu  [rState + 16], state1
++
++  end_c:
++MY_EPILOG
++
++; _TEXT$SHA256OPT ENDS
++
++end
+diff --git a/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm b/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
+index 1c67037ba8a20bdb30f6521a841e7b72c6394282..ad22cc2fce07ce0c5a56c7b10c30ebcd38351e3d 100644
+--- a/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
++++ b/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
+@@ -1,239 +1,239 @@
+-; XzCrc64Opt.asm -- CRC64 calculation : optimized version
+-; 2021-02-06 : Igor Pavlov : Public domain
+-
+-include 7zAsm.asm
+-
+-MY_ASM_START
+-
+-ifdef x64
+-
+-rD      equ  r9
+-rN      equ  r10
+-rT      equ  r5
+-num_VAR equ  r8
+-
+-SRCDAT4 equ  dword ptr [rD + rN * 1]
+-    
+-CRC_XOR macro dest:req, src:req, t:req
+-    xor     dest, QWORD PTR [rT + src * 8 + 0800h * t]
+-endm
+-
+-CRC1b macro
+-    movzx   x6, BYTE PTR [rD]
+-    inc     rD
+-    movzx   x3, x0_L
+-    xor     x6, x3
+-    shr     r0, 8
+-    CRC_XOR r0, r6, 0
+-    dec     rN
+-endm
+-
+-MY_PROLOG macro crc_end:req
+-  ifdef ABI_LINUX
+-    MY_PUSH_2_REGS
+-  else
+-    MY_PUSH_4_REGS
+-  endif
+-    mov     r0, REG_ABI_PARAM_0
+-    mov     rN, REG_ABI_PARAM_2
+-    mov     rT, REG_ABI_PARAM_3
+-    mov     rD, REG_ABI_PARAM_1
+-    test    rN, rN
+-    jz      crc_end
+-  @@:
+-    test    rD, 3
+-    jz      @F
+-    CRC1b
+-    jnz     @B
+-  @@:
+-    cmp     rN, 8
+-    jb      crc_end
+-    add     rN, rD
+-    mov     num_VAR, rN
+-    sub     rN, 4
+-    and     rN, NOT 3
+-    sub     rD, rN
+-    mov     x1, SRCDAT4
+-    xor     r0, r1
+-    add     rN, 4
+-endm
+-
+-MY_EPILOG macro crc_end:req
+-    sub     rN, 4
+-    mov     x1, SRCDAT4
+-    xor     r0, r1
+-    mov     rD, rN
+-    mov     rN, num_VAR
+-    sub     rN, rD
+-  crc_end:
+-    test    rN, rN
+-    jz      @F
+-    CRC1b
+-    jmp     crc_end
+-  @@:
+-  ifdef ABI_LINUX
+-    MY_POP_2_REGS
+-  else
+-    MY_POP_4_REGS
+-  endif
+-endm
+-
+-MY_PROC XzCrc64UpdateT4, 4
+-    MY_PROLOG crc_end_4
+-    align 16
+-  main_loop_4:
+-    mov     x1, SRCDAT4
+-    movzx   x2, x0_L
+-    movzx   x3, x0_H
+-    shr     r0, 16
+-    movzx   x6, x0_L
+-    movzx   x7, x0_H
+-    shr     r0, 16
+-    CRC_XOR r1, r2, 3
+-    CRC_XOR r0, r3, 2
+-    CRC_XOR r1, r6, 1
+-    CRC_XOR r0, r7, 0
+-    xor     r0, r1
+-
+-    add     rD, 4
+-    jnz     main_loop_4
+-
+-    MY_EPILOG crc_end_4
+-MY_ENDP
+-
+-else
+-; x86 (32-bit)
+-
+-rD      equ  r1
+-rN      equ  r7
+-rT      equ  r5
+-
+-crc_OFFS  equ  (REG_SIZE * 5)
+-
+-if (IS_CDECL gt 0) or (IS_LINUX gt 0)
+-    ; cdecl or (GNU fastcall) stack:
+-    ;   (UInt32 *) table
+-    ;   size_t     size
+-    ;   void *     data
+-    ;   (UInt64)   crc
+-    ;   ret-ip <-(r4)
+-    data_OFFS   equ  (8 + crc_OFFS)
+-    size_OFFS   equ  (REG_SIZE + data_OFFS)
+-    table_OFFS  equ  (REG_SIZE + size_OFFS)
+-    num_VAR     equ  [r4 + size_OFFS]
+-    table_VAR   equ  [r4 + table_OFFS]
+-else
+-    ; Windows fastcall:
+-    ;   r1 = data, r2 = size
+-    ; stack:
+-    ;   (UInt32 *) table
+-    ;   (UInt64)   crc
+-    ;   ret-ip <-(r4)
+-    table_OFFS  equ  (8 + crc_OFFS)
+-    table_VAR   equ  [r4 + table_OFFS]
+-    num_VAR     equ  table_VAR
+-endif
+-
+-SRCDAT4 equ  dword ptr [rD + rN * 1]
+-
+-CRC macro op0:req, op1:req, dest0:req, dest1:req, src:req, t:req
+-    op0     dest0, DWORD PTR [rT + src * 8 + 0800h * t]
+-    op1     dest1, DWORD PTR [rT + src * 8 + 0800h * t + 4]
+-endm
+-
+-CRC_XOR macro dest0:req, dest1:req, src:req, t:req
+-    CRC xor, xor, dest0, dest1, src, t
+-endm
+-
+-
+-CRC1b macro
+-    movzx   x6, BYTE PTR [rD]
+-    inc     rD
+-    movzx   x3, x0_L
+-    xor     x6, x3
+-    shrd    r0, r2, 8
+-    shr     r2, 8
+-    CRC_XOR r0, r2, r6, 0
+-    dec     rN
+-endm
+-
+-MY_PROLOG macro crc_end:req
+-    MY_PUSH_4_REGS
+-
+-  if (IS_CDECL gt 0) or (IS_LINUX gt 0)
+-    proc_numParams = proc_numParams + 2 ; for ABI_LINUX
+-    mov     rN, [r4 + size_OFFS]
+-    mov     rD, [r4 + data_OFFS]
+-  else
+-    mov     rN, r2
+-  endif
+-
+-    mov     x0, [r4 + crc_OFFS]
+-    mov     x2, [r4 + crc_OFFS + 4]
+-    mov     rT, table_VAR
+-    test    rN, rN
+-    jz      crc_end
+-  @@:
+-    test    rD, 3
+-    jz      @F
+-    CRC1b
+-    jnz     @B
+-  @@:
+-    cmp     rN, 8
+-    jb      crc_end
+-    add     rN, rD
+-
+-    mov     num_VAR, rN
+-
+-    sub     rN, 4
+-    and     rN, NOT 3
+-    sub     rD, rN
+-    xor     r0, SRCDAT4
+-    add     rN, 4
+-endm
+-
+-MY_EPILOG macro crc_end:req
+-    sub     rN, 4
+-    xor     r0, SRCDAT4
+-
+-    mov     rD, rN
+-    mov     rN, num_VAR
+-    sub     rN, rD
+-  crc_end:
+-    test    rN, rN
+-    jz      @F
+-    CRC1b
+-    jmp     crc_end
+-  @@:
+-    MY_POP_4_REGS
+-endm
+-
+-MY_PROC XzCrc64UpdateT4, 5
+-    MY_PROLOG crc_end_4
+-    movzx   x6, x0_L
+-    align 16
+-  main_loop_4:
+-    mov     r3, SRCDAT4
+-    xor     r3, r2
+-
+-    CRC xor, mov, r3, r2, r6, 3
+-    movzx   x6, x0_H
+-    shr     r0, 16
+-    CRC_XOR r3, r2, r6, 2
+-
+-    movzx   x6, x0_L
+-    movzx   x0, x0_H
+-    CRC_XOR r3, r2, r6, 1
+-    CRC_XOR r3, r2, r0, 0
+-    movzx   x6, x3_L
+-    mov     r0, r3
+-
+-    add     rD, 4
+-    jnz     main_loop_4
+-
+-    MY_EPILOG crc_end_4
+-MY_ENDP
+-
+-endif ; ! x64
+-
+-end
++; XzCrc64Opt.asm -- CRC64 calculation : optimized version
++; 2021-02-06 : Igor Pavlov : Public domain
++
++include 7zAsm.asm
++
++MY_ASM_START
++
++ifdef x64
++
++rD      equ  r9
++rN      equ  r10
++rT      equ  r5
++num_VAR equ  r8
++
++SRCDAT4 equ  dword ptr [rD + rN * 1]
++
++CRC_XOR macro dest:req, src:req, t:req
++    xor     dest, QWORD PTR [rT + src * 8 + 0800h * t]
++endm
++
++CRC1b macro
++    movzx   x6, BYTE PTR [rD]
++    inc     rD
++    movzx   x3, x0_L
++    xor     x6, x3
++    shr     r0, 8
++    CRC_XOR r0, r6, 0
++    dec     rN
++endm
++
++MY_PROLOG macro crc_end:req
++  ifdef ABI_LINUX
++    MY_PUSH_2_REGS
++  else
++    MY_PUSH_4_REGS
++  endif
++    mov     r0, REG_ABI_PARAM_0
++    mov     rN, REG_ABI_PARAM_2
++    mov     rT, REG_ABI_PARAM_3
++    mov     rD, REG_ABI_PARAM_1
++    test    rN, rN
++    jz      crc_end
++  @@:
++    test    rD, 3
++    jz      @F
++    CRC1b
++    jnz     @B
++  @@:
++    cmp     rN, 8
++    jb      crc_end
++    add     rN, rD
++    mov     num_VAR, rN
++    sub     rN, 4
++    and     rN, NOT 3
++    sub     rD, rN
++    mov     x1, SRCDAT4
++    xor     r0, r1
++    add     rN, 4
++endm
++
++MY_EPILOG macro crc_end:req
++    sub     rN, 4
++    mov     x1, SRCDAT4
++    xor     r0, r1
++    mov     rD, rN
++    mov     rN, num_VAR
++    sub     rN, rD
++  crc_end:
++    test    rN, rN
++    jz      @F
++    CRC1b
++    jmp     crc_end
++  @@:
++  ifdef ABI_LINUX
++    MY_POP_2_REGS
++  else
++    MY_POP_4_REGS
++  endif
++endm
++
++MY_PROC XzCrc64UpdateT4, 4
++    MY_PROLOG crc_end_4
++    align 16
++  main_loop_4:
++    mov     x1, SRCDAT4
++    movzx   x2, x0_L
++    movzx   x3, x0_H
++    shr     r0, 16
++    movzx   x6, x0_L
++    movzx   x7, x0_H
++    shr     r0, 16
++    CRC_XOR r1, r2, 3
++    CRC_XOR r0, r3, 2
++    CRC_XOR r1, r6, 1
++    CRC_XOR r0, r7, 0
++    xor     r0, r1
++
++    add     rD, 4
++    jnz     main_loop_4
++
++    MY_EPILOG crc_end_4
++MY_ENDP
++
++else
++; x86 (32-bit)
++
++rD      equ  r1
++rN      equ  r7
++rT      equ  r5
++
++crc_OFFS  equ  (REG_SIZE * 5)
++
++if (IS_CDECL gt 0) or (IS_LINUX gt 0)
++    ; cdecl or (GNU fastcall) stack:
++    ;   (UInt32 *) table
++    ;   size_t     size
++    ;   void *     data
++    ;   (UInt64)   crc
++    ;   ret-ip <-(r4)
++    data_OFFS   equ  (8 + crc_OFFS)
++    size_OFFS   equ  (REG_SIZE + data_OFFS)
++    table_OFFS  equ  (REG_SIZE + size_OFFS)
++    num_VAR     equ  [r4 + size_OFFS]
++    table_VAR   equ  [r4 + table_OFFS]
++else
++    ; Windows fastcall:
++    ;   r1 = data, r2 = size
++    ; stack:
++    ;   (UInt32 *) table
++    ;   (UInt64)   crc
++    ;   ret-ip <-(r4)
++    table_OFFS  equ  (8 + crc_OFFS)
++    table_VAR   equ  [r4 + table_OFFS]
++    num_VAR     equ  table_VAR
++endif
++
++SRCDAT4 equ  dword ptr [rD + rN * 1]
++
++CRC macro op0:req, op1:req, dest0:req, dest1:req, src:req, t:req
++    op0     dest0, DWORD PTR [rT + src * 8 + 0800h * t]
++    op1     dest1, DWORD PTR [rT + src * 8 + 0800h * t + 4]
++endm
++
++CRC_XOR macro dest0:req, dest1:req, src:req, t:req
++    CRC xor, xor, dest0, dest1, src, t
++endm
++
++
++CRC1b macro
++    movzx   x6, BYTE PTR [rD]
++    inc     rD
++    movzx   x3, x0_L
++    xor     x6, x3
++    shrd    r0, r2, 8
++    shr     r2, 8
++    CRC_XOR r0, r2, r6, 0
++    dec     rN
++endm
++
++MY_PROLOG macro crc_end:req
++    MY_PUSH_4_REGS
++
++  if (IS_CDECL gt 0) or (IS_LINUX gt 0)
++    proc_numParams = proc_numParams + 2 ; for ABI_LINUX
++    mov     rN, [r4 + size_OFFS]
++    mov     rD, [r4 + data_OFFS]
++  else
++    mov     rN, r2
++  endif
++
++    mov     x0, [r4 + crc_OFFS]
++    mov     x2, [r4 + crc_OFFS + 4]
++    mov     rT, table_VAR
++    test    rN, rN
++    jz      crc_end
++  @@:
++    test    rD, 3
++    jz      @F
++    CRC1b
++    jnz     @B
++  @@:
++    cmp     rN, 8
++    jb      crc_end
++    add     rN, rD
++
++    mov     num_VAR, rN
++
++    sub     rN, 4
++    and     rN, NOT 3
++    sub     rD, rN
++    xor     r0, SRCDAT4
++    add     rN, 4
++endm
++
++MY_EPILOG macro crc_end:req
++    sub     rN, 4
++    xor     r0, SRCDAT4
++
++    mov     rD, rN
++    mov     rN, num_VAR
++    sub     rN, rD
++  crc_end:
++    test    rN, rN
++    jz      @F
++    CRC1b
++    jmp     crc_end
++  @@:
++    MY_POP_4_REGS
++endm
++
++MY_PROC XzCrc64UpdateT4, 5
++    MY_PROLOG crc_end_4
++    movzx   x6, x0_L
++    align 16
++  main_loop_4:
++    mov     r3, SRCDAT4
++    xor     r3, r2
++
++    CRC xor, mov, r3, r2, r6, 3
++    movzx   x6, x0_H
++    shr     r0, 16
++    CRC_XOR r3, r2, r6, 2
++
++    movzx   x6, x0_L
++    movzx   x0, x0_H
++    CRC_XOR r3, r2, r6, 1
++    CRC_XOR r3, r2, r0, 0
++    movzx   x6, x3_L
++    mov     r0, r3
++
++    add     rD, 4
++    jnz     main_loop_4
++
++    MY_EPILOG crc_end_4
++MY_ENDP
++
++endif ; ! x64
++
++end
+diff --git a/third_party/lzma_sdk/C/7zVersion.rc b/third_party/lzma_sdk/C/7zVersion.rc
+index 6ed26de74452e5f8cd98cded9642ed1ddb7a74b7..e520995ddc9032014d2b0505eefe860c39a24d58 100644
+--- a/third_party/lzma_sdk/C/7zVersion.rc
++++ b/third_party/lzma_sdk/C/7zVersion.rc
+@@ -1,55 +1,55 @@
+-#define MY_VS_FFI_FILEFLAGSMASK  0x0000003FL
+-#define MY_VOS_NT_WINDOWS32  0x00040004L
+-#define MY_VOS_CE_WINDOWS32  0x00050004L
+-
+-#define MY_VFT_APP  0x00000001L
+-#define MY_VFT_DLL  0x00000002L
+-
+-// #include <WinVer.h>
+-
+-#ifndef MY_VERSION
+-#include "7zVersion.h"
+-#endif
+-
+-#define MY_VER MY_VER_MAJOR,MY_VER_MINOR,MY_VER_BUILD,0
+-
+-#ifdef DEBUG
+-#define DBG_FL VS_FF_DEBUG
+-#else
+-#define DBG_FL 0
+-#endif
+-
+-#define MY_VERSION_INFO(fileType, descr, intName, origName)  \
+-LANGUAGE 9, 1 \
+-1 VERSIONINFO \
+-  FILEVERSION MY_VER \
+-  PRODUCTVERSION MY_VER \
+-  FILEFLAGSMASK MY_VS_FFI_FILEFLAGSMASK \
+-  FILEFLAGS DBG_FL \
+-  FILEOS MY_VOS_NT_WINDOWS32 \
+-  FILETYPE fileType \
+-  FILESUBTYPE 0x0L \
+-BEGIN \
+-    BLOCK "StringFileInfo" \
+-    BEGIN  \
+-        BLOCK "040904b0" \
+-        BEGIN \
+-            VALUE "CompanyName", "Igor Pavlov" \
+-            VALUE "FileDescription", descr \
+-            VALUE "FileVersion", MY_VERSION  \
+-            VALUE "InternalName", intName \
+-            VALUE "LegalCopyright", MY_COPYRIGHT \
+-            VALUE "OriginalFilename", origName \
+-            VALUE "ProductName", "7-Zip" \
+-            VALUE "ProductVersion", MY_VERSION \
+-        END \
+-    END \
+-    BLOCK "VarFileInfo" \
+-    BEGIN \
+-        VALUE "Translation", 0x409, 1200 \
+-    END \
+-END
+-
+-#define MY_VERSION_INFO_APP(descr, intName) MY_VERSION_INFO(MY_VFT_APP, descr, intName, intName ".exe")
+-
+-#define MY_VERSION_INFO_DLL(descr, intName) MY_VERSION_INFO(MY_VFT_DLL, descr, intName, intName ".dll")
++#define MY_VS_FFI_FILEFLAGSMASK  0x0000003FL
++#define MY_VOS_NT_WINDOWS32  0x00040004L
++#define MY_VOS_CE_WINDOWS32  0x00050004L
++
++#define MY_VFT_APP  0x00000001L
++#define MY_VFT_DLL  0x00000002L
++
++// #include <WinVer.h>
++
++#ifndef MY_VERSION
++#include "7zVersion.h"
++#endif
++
++#define MY_VER MY_VER_MAJOR,MY_VER_MINOR,MY_VER_BUILD,0
++
++#ifdef DEBUG
++#define DBG_FL VS_FF_DEBUG
++#else
++#define DBG_FL 0
++#endif
++
++#define MY_VERSION_INFO(fileType, descr, intName, origName)  \
++LANGUAGE 9, 1 \
++1 VERSIONINFO \
++  FILEVERSION MY_VER \
++  PRODUCTVERSION MY_VER \
++  FILEFLAGSMASK MY_VS_FFI_FILEFLAGSMASK \
++  FILEFLAGS DBG_FL \
++  FILEOS MY_VOS_NT_WINDOWS32 \
++  FILETYPE fileType \
++  FILESUBTYPE 0x0L \
++BEGIN \
++    BLOCK "StringFileInfo" \
++    BEGIN  \
++        BLOCK "040904b0" \
++        BEGIN \
++            VALUE "CompanyName", "Igor Pavlov" \
++            VALUE "FileDescription", descr \
++            VALUE "FileVersion", MY_VERSION  \
++            VALUE "InternalName", intName \
++            VALUE "LegalCopyright", MY_COPYRIGHT \
++            VALUE "OriginalFilename", origName \
++            VALUE "ProductName", "7-Zip" \
++            VALUE "ProductVersion", MY_VERSION \
++        END \
++    END \
++    BLOCK "VarFileInfo" \
++    BEGIN \
++        VALUE "Translation", 0x409, 1200 \
++    END \
++END
++
++#define MY_VERSION_INFO_APP(descr, intName) MY_VERSION_INFO(MY_VFT_APP, descr, intName, intName ".exe")
++
++#define MY_VERSION_INFO_DLL(descr, intName) MY_VERSION_INFO(MY_VFT_DLL, descr, intName, intName ".dll")
+diff --git a/third_party/lzma_sdk/C/Util/SfxSetup/resource.rc b/third_party/lzma_sdk/C/Util/SfxSetup/resource.rc
+index 64f4e2ce7a0f52d4f2bdda31d39a55d910c167c3..0c1637f23f345180ea77c76a126226ceca7c29e7 100644
+--- a/third_party/lzma_sdk/C/Util/SfxSetup/resource.rc
++++ b/third_party/lzma_sdk/C/Util/SfxSetup/resource.rc
+@@ -1,5 +1,5 @@
+-#include "../../7zVersion.rc"
+-
+-MY_VERSION_INFO_APP("7z Setup SFX small", "7zS2.sfx")
+-
+-1  ICON "setup.ico"
++#include "../../7zVersion.rc"
++
++MY_VERSION_INFO_APP("7z Setup SFX small", "7zS2.sfx")
++
++1  ICON "setup.ico"
