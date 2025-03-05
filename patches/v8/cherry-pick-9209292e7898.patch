@@ -1,7 +1,8 @@
-From 9209292e7898a05a98d271c3c597a09d66819292 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Darius Mercadier <dmercadier@chromium.org>
-Date: Wed, 08 Jan 2025 14:37:24 +0100
-Subject: [PATCH] Merged: [turbofan] Fix CallWithSpread bug when array prototype has changed
+Date: Wed, 8 Jan 2025 14:37:24 +0100
+Subject: Merged: [turbofan] Fix CallWithSpread bug when array prototype has
+ changed
 
 Bug: chromium:385386138
 (cherry picked from commit 1be46f0e2e71159a74d8614f9ac108d334797729)
@@ -14,13 +15,12 @@ Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
 Cr-Commit-Position: refs/branch-heads/13.2@{#58}
 Cr-Branched-From: 24068c59cedad9ee976ddc05431f5f497b1ebd71-refs/heads/13.2.152@{#1}
 Cr-Branched-From: 6054ba94db0969220be4f94dc1677fc4696bdc4f-refs/heads/main@{#97085}
----
 
 diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
-index a29bd4a..08fd278 100644
+index cc9ec63ce09cbd09e8484b9ab075545e351de7eb..7c248c80a519708eaa2a25e9289fd6094ed52424 100644
 --- a/src/compiler/js-call-reducer.cc
 +++ b/src/compiler/js-call-reducer.cc
-@@ -5226,6 +5226,18 @@
+@@ -5223,6 +5223,18 @@ TNode<Object> JSCallReducerAssembler::ReduceJSCallWithArrayLikeOrSpreadOfEmpty(
    DCHECK_EQ(static_cast<Node*>(arguments_list)->opcode(),
              IrOpcode::kJSCreateEmptyLiteralArray);
  
@@ -41,7 +41,7 @@ index a29bd4a..08fd278 100644
    //      "arguments_list array is still empty?"
 diff --git a/test/mjsunit/compiler/regress-385386138.js b/test/mjsunit/compiler/regress-385386138.js
 new file mode 100644
-index 0000000..72dadea
+index 0000000000000000000000000000000000000000..72dadea5ff5b0732822e6a15a34bd3357d5ff7c2
 --- /dev/null
 +++ b/test/mjsunit/compiler/regress-385386138.js
 @@ -0,0 +1,27 @@
