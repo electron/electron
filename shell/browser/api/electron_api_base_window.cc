@@ -695,6 +695,10 @@ void BaseWindow::SetContentProtection(bool enable) {
   return window_->SetContentProtection(enable);
 }
 
+bool BaseWindow::IsContentProtected() const {
+  return window_->IsContentProtected();
+}
+
 void BaseWindow::SetFocusable(bool focusable) {
   return window_->SetFocusable(focusable);
 }
@@ -1223,6 +1227,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isDocumentEdited", &BaseWindow::IsDocumentEdited)
       .SetMethod("setIgnoreMouseEvents", &BaseWindow::SetIgnoreMouseEvents)
       .SetMethod("setContentProtection", &BaseWindow::SetContentProtection)
+      .SetMethod("_isContentProtected", &BaseWindow::IsContentProtected)
       .SetMethod("setFocusable", &BaseWindow::SetFocusable)
       .SetMethod("isFocusable", &BaseWindow::IsFocusable)
       .SetMethod("setMenu", &BaseWindow::SetMenu)
