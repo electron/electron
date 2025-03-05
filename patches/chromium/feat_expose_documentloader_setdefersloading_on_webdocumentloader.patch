@@ -28,12 +28,12 @@ index 23b29fe25bc463ff1d36aa502a27c4222595e7c5..c1ac6172c4cee72f64f42ca64d2db9c0
  
    // Returns the http referrer of original request which initited this load.
 diff --git a/third_party/blink/renderer/core/loader/document_loader.h b/third_party/blink/renderer/core/loader/document_loader.h
-index 92ab7845b6e3f060de76fa023ec472c056e69d4b..aafd123ccd8faf630dffa304ec7825088155a15b 100644
+index 1c6da71f9526f1567fe18d40524818f48e62584a..63b9bdae7f6552e047023be3b503bf05154e7ca9 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.h
 +++ b/third_party/blink/renderer/core/loader/document_loader.h
-@@ -326,7 +326,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
-       std::optional<scheduler::TaskAttributionId>
-           soft_navigation_heuristics_task_id);
+@@ -327,7 +327,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
+           soft_navigation_heuristics_task_id,
+       bool should_skip_screenshot);
  
 -  void SetDefersLoading(LoaderFreezeMode);
 +  void SetDefersLoading(LoaderFreezeMode) override;

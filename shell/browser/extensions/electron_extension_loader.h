@@ -53,7 +53,7 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   void UnloadExtension(const ExtensionId& extension_id,
                        extensions::UnloadedExtensionReason reason);
 
-  ExtensionRegistrar* registrar() { return &extension_registrar_; }
+  raw_ptr<ExtensionRegistrar> registrar() { return extension_registrar_; }
 
  private:
   // If the extension loaded successfully, enables it. If it's an app, launches
@@ -72,18 +72,28 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   void PostActivateExtension(scoped_refptr<const Extension> extension) override;
   void PostDeactivateExtension(
       scoped_refptr<const Extension> extension) override;
+  void PreUninstallExtension(scoped_refptr<const Extension> extension) override;
+  void PostUninstallExtension(scoped_refptr<const Extension> extension,
+                              base::OnceClosure done_callback) override;
+  void PostNotifyUninstallExtension(
+      scoped_refptr<const Extension> extension) override;
   void LoadExtensionForReload(
       const ExtensionId& extension_id,
       const base::FilePath& path,
       ExtensionRegistrar::LoadErrorBehavior load_error_behavior) override;
+  void ShowExtensionDisabledError(const Extension* extension,
+                                  bool is_remote_install) override;
+  void FinishDelayedInstallationsIfAny() override;
+  bool CanAddExtension(const Extension* extension) override;
   bool CanEnableExtension(const Extension* extension) override;
   bool CanDisableExtension(const Extension* extension) override;
   bool ShouldBlockExtension(const Extension* extension) override;
+  void GrantActivePermissions(const Extension* extension) override;
 
   raw_ptr<content::BrowserContext> browser_context_;  // Not owned.
 
   // Registers and unregisters extensions.
-  ExtensionRegistrar extension_registrar_;
+  raw_ptr<ExtensionRegistrar> extension_registrar_;
 
   // Holds keep-alives for relaunching apps.
   //   ShellKeepAliveRequester keep_alive_requester_;

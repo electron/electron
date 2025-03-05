@@ -933,6 +933,7 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
+    * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
@@ -1330,17 +1331,42 @@ the initial state will be `interrupted`. The download will start only when the
 
 Returns `Promise<void>` - resolves when the session’s HTTP authentication cache has been cleared.
 
-#### `ses.setPreloads(preloads)`
+#### `ses.setPreloads(preloads)` _Deprecated_
 
 * `preloads` string[] - An array of absolute path to preload scripts
 
 Adds scripts that will be executed on ALL web contents that are associated with
 this session just before normal `preload` scripts run.
 
-#### `ses.getPreloads()`
+**Deprecated:** Use the new `ses.registerPreloadScript` API.
+
+#### `ses.getPreloads()` _Deprecated_
 
 Returns `string[]` an array of paths to preload scripts that have been
 registered.
+
+**Deprecated:** Use the new `ses.getPreloadScripts` API. This will only return preload script paths
+for `frame` context types.
+
+#### `ses.registerPreloadScript(script)`
+
+* `script` [PreloadScriptRegistration](structures/preload-script-registration.md) - Preload script
+
+Registers preload script that will be executed in its associated context type in this session. For
+`frame` contexts, this will run prior to any preload defined in the web preferences of a
+WebContents.
+
+Returns `string` - The ID of the registered preload script.
+
+#### `ses.unregisterPreloadScript(id)`
+
+* `id` string - Preload script ID
+
+Unregisters script.
+
+#### `ses.getPreloadScripts()`
+
+Returns [`PreloadScript[]`](structures/preload-script.md): An array of paths to preload scripts that have been registered.
 
 #### `ses.setCodeCachePath(path)`
 
@@ -1459,7 +1485,7 @@ will not work on non-persistent (in-memory) sessions.
 
 **Note:** On macOS and Windows 10 this word will be removed from the OS custom dictionary as well
 
-#### `ses.loadExtension(path[, options])`
+#### `ses.loadExtension(path[, options])` _Deprecated_
 
 * `path` string - Path to a directory containing an unpacked Chrome extension
 * `options` Object (optional)
@@ -1506,7 +1532,9 @@ is emitted.
 **Note:** Loading extensions into in-memory (non-persistent) sessions is not
 supported and will throw an error.
 
-#### `ses.removeExtension(extensionId)`
+**Deprecated:** Use the new `ses.extensions.loadExtension` API.
+
+#### `ses.removeExtension(extensionId)` _Deprecated_
 
 * `extensionId` string - ID of extension to remove
 
@@ -1515,7 +1543,9 @@ Unloads an extension.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `ses.getExtension(extensionId)`
+**Deprecated:** Use the new `ses.extensions.removeExtension` API.
+
+#### `ses.getExtension(extensionId)` _Deprecated_
 
 * `extensionId` string - ID of extension to query
 
@@ -1524,12 +1554,16 @@ Returns `Extension | null` - The loaded extension with the given ID.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `ses.getAllExtensions()`
+**Deprecated:** Use the new `ses.extensions.getExtension` API.
+
+#### `ses.getAllExtensions()` _Deprecated_
 
 Returns `Extension[]` - A list of all loaded extensions.
 
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
+
+**Deprecated:** Use the new `ses.extensions.getAllExtensions` API.
 
 #### `ses.getStoragePath()`
 
@@ -1592,6 +1626,10 @@ session is persisted on disk.  For in memory sessions this returns `null`.
 #### `ses.cookies` _Readonly_
 
 A [`Cookies`](cookies.md) object for this session.
+
+#### `ses.extensions` _Readonly_
+
+A [`Extensions`](extensions-api.md) object for this session.
 
 #### `ses.serviceWorkers` _Readonly_
 

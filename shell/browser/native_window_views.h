@@ -116,6 +116,7 @@ class NativeWindowViews : public NativeWindow,
   double GetOpacity() const override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
   void SetContentProtection(bool enable) override;
+  bool IsContentProtected() const override;
   void SetFocusable(bool focusable) override;
   bool IsFocusable() const override;
   void SetMenu(ElectronMenuModel* menu_model) override;
@@ -151,7 +152,7 @@ class NativeWindowViews : public NativeWindow,
 
 #if BUILDFLAG(IS_WIN)
   // Catch-all message handling and filtering. Called before
-  // HWNDMessageHandler's built-in handling, which may pre-empt some
+  // HWNDMessageHandler's built-in handling, which may preempt some
   // expectations in Views/Aura if messages are consumed. Returns true if the
   // message was consumed by the delegate and should not be processed further
   // by the HWNDMessageHandler. In this case, |result| is returned. |result| is
@@ -202,11 +203,9 @@ class NativeWindowViews : public NativeWindow,
   void OnWidgetMove() override;
 #if BUILDFLAG(IS_WIN)
   bool ExecuteWindowsCommand(int command_id) override;
-#endif
-
-#if BUILDFLAG(IS_WIN)
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
   void ResetWindowControls();
+  void SetRoundedCorners(bool rounded);
   void SetForwardMouseMessages(bool forward);
   static LRESULT CALLBACK SubclassProc(HWND hwnd,
                                        UINT msg,
@@ -279,8 +278,8 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect restore_bounds_;
 
   // The icons of window and taskbar.
-  base::win::ScopedHICON window_icon_;
-  base::win::ScopedHICON app_icon_;
+  base::win::ScopedGDIObject<HICON> window_icon_;
+  base::win::ScopedGDIObject<HICON> app_icon_;
 
   // The set of windows currently forwarding mouse messages.
   static std::set<NativeWindowViews*> forwarding_windows_;

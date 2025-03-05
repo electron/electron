@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 12 Feb 2025 15:31:07 +0100
+Subject: build: change crdtp::ProtocolTypeTraits signatures to avoid conflict
+
+After https://github.com/nodejs/node/pull/56649 we see conflicts with the
+version in //third_party/inspector_protocol/crdtp/chromium/protocol_traits.cc
+
+error: duplicate symbol: crdtp::ProtocolTypeTraits<std::__Cr::basic_string<char, std::__Cr::char_traits<char>, std::__Cr::allocator<char>>, void>::Serialize(std::__Cr::basic_string<char, std::__Cr::char_traits<char>, std::__Cr::allocator<char>> const&, std::__Cr::vector<unsigned char, std::__Cr::allocator<unsigned char>>*)
+>>> defined in node_string.cc:28 (../../third_party/electron_node/src/inspector/node_string.cc:28)
+>>>            obj/third_party/electron_node/libnode/node_string.o
+>>> defined in protocol_traits.cc:20 (../../third_party/inspector_protocol/crdtp/chromium/protocol_traits.cc:20)
+
+Some distinguishing change should be upstreamed to Node.js.
+
+diff --git a/src/inspector/node_string.cc b/src/inspector/node_string.cc
+index d83c53c81ca7745a31b200d5af3656af59f4f530..b2f6d412415e2988ead3c1e25b9557e1f0c91de3 100644
+--- a/src/inspector/node_string.cc
++++ b/src/inspector/node_string.cc
+@@ -7,7 +7,8 @@
+ namespace crdtp {
+ 
+ bool ProtocolTypeTraits<std::string>::Deserialize(DeserializerState* state,
+-                                                  std::string* value) {
++                                                  std::string* value,
++                                                  void* extra) {
+   if (state->tokenizer()->TokenTag() == cbor::CBORTokenTag::STRING8) {
+     span<uint8_t> cbor_span = state->tokenizer()->GetString8();
+     value->assign(reinterpret_cast<const char*>(cbor_span.data()),
+@@ -24,12 +25,13 @@ bool ProtocolTypeTraits<std::string>::Deserialize(DeserializerState* state,
+ }
+ 
+ void ProtocolTypeTraits<std::string>::Serialize(const std::string& value,
+-                                                std::vector<uint8_t>* bytes) {
++                                                std::vector<uint8_t>* bytes,
++                                                void* extra) {
+   cbor::EncodeString8(SpanFrom(value), bytes);
+ }
+-
+ }  // namespace crdtp
+ 
++
+ namespace node {
+ namespace inspector {
+ namespace protocol {
+diff --git a/src/inspector/node_string.h b/src/inspector/node_string.h
+index d529d1337be0e2292202920446e841701d16b0b7..08e00f9b94918e3385aed18de80eec5c7ad81095 100644
+--- a/src/inspector/node_string.h
++++ b/src/inspector/node_string.h
+@@ -15,8 +15,8 @@ namespace crdtp {
+ 
+ template <>
+ struct ProtocolTypeTraits<std::string> {
+-  static bool Deserialize(DeserializerState* state, std::string* value);
+-  static void Serialize(const std::string& value, std::vector<uint8_t>* bytes);
++  static bool Deserialize(DeserializerState* state, std::string* value, void* extra = nullptr);
++  static void Serialize(const std::string& value, std::vector<uint8_t>* bytes, void* extra = nullptr);
+ };
+ 
+ }  // namespace crdtp

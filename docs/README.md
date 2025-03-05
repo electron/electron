@@ -21,7 +21,6 @@ an issue:
 ### Getting started
 
 * [Introduction](tutorial/introduction.md)
-* [Quick Start](tutorial/quick-start.md)
 * [Process Model](tutorial/process-model.md)
 
 ### Learning the basics
@@ -128,6 +127,7 @@ These individual tutorials expand on topics discussed in the guide above.
 * [pushNotifications](api/push-notifications.md)
 * [safeStorage](api/safe-storage.md)
 * [screen](api/screen.md)
+* [ServiceWorkerMain](api/service-worker-main.md)
 * [session](api/session.md)
 * [ShareMenu](api/share-menu.md)
 * [systemPreferences](api/system-preferences.md)

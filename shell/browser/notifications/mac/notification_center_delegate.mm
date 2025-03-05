@@ -39,7 +39,7 @@
        didActivateNotification:(NSUserNotification*)notif {
   auto* notification = presenter_->GetNotification(notif);
 
-  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
+  if (electron::debug_notifications) {
     LOG(INFO) << "Notification activated (" << [notif.identifier UTF8String]
               << ")";
   }

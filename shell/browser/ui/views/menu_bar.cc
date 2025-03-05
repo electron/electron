@@ -43,6 +43,9 @@ MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
   SetLayoutManager(std::make_unique<views::BoxLayout>(
       views::BoxLayout::Orientation::kHorizontal));
   window_->AddObserver(this);
+  SetAccessibleName(std::u16string(),
+                    ax::mojom::NameFrom::kAttributeExplicitlyEmpty);
+  SetAccessibleRole(ax::mojom::Role::kMenuBar);
 }
 
 MenuBar::~MenuBar() {
@@ -121,11 +124,6 @@ void MenuBar::OnWindowBlur() {
 void MenuBar::OnWindowFocus() {
   UpdateViewColors();
   SetAcceleratorVisibility(pane_has_focus());
-}
-
-void MenuBar::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->SetNameExplicitlyEmpty();
-  node_data->role = ax::mojom::Role::kMenuBar;
 }
 
 bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {

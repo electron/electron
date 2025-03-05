@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "base/base64.h"
+#include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
@@ -297,11 +298,6 @@ class InspectableWebContents::NetworkResourceLoader
   base::TimeDelta retry_delay_;
 };
 
-// Implemented separately on each platform.
-InspectableWebContentsView* CreateInspectableContentsView(
-    InspectableWebContents* inspectable_web_contents);
-
-// static
 // static
 void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
@@ -317,7 +313,7 @@ InspectableWebContents::InspectableWebContents(
     : pref_service_(pref_service),
       web_contents_(std::move(web_contents)),
       is_guest_(is_guest),
-      view_(CreateInspectableContentsView(this)) {
+      view_(new InspectableWebContentsView(this)) {
   const base::Value* bounds_dict =
       &pref_service_->GetValue(kDevToolsBoundsPref);
   if (bounds_dict->is_dict()) {
@@ -603,7 +599,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
     // process. Grant the devtools process the ability to request URLs from the
     // extension.
     content::ChildProcessSecurityPolicy::GetInstance()->GrantRequestOrigin(
-        web_contents_->GetPrimaryMainFrame()->GetProcess()->GetID(),
+        web_contents_->GetPrimaryMainFrame()->GetProcess()->GetDeprecatedID(),
         url::Origin::Create(extension->url()));
 
     base::Value::Dict extension_info;
@@ -908,8 +904,7 @@ void InspectableWebContents::DispatchProtocolMessage(
   if (!frontend_loaded_)
     return;
 
-  const std::string_view str_message{
-      reinterpret_cast<const char*>(message.data()), message.size()};
+  const std::string_view str_message = base::as_string_view(message);
   if (str_message.length() < kMaxMessageChunkSize) {
     CallClientFunction("DevToolsAPI", "dispatchMessage",
                        base::Value(std::string(str_message)));

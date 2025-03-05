@@ -164,6 +164,9 @@ async function asyncSpawn (exe, runnerArgs) {
     const child = childProcess.spawn(exe, runnerArgs, {
       cwd: path.resolve(__dirname, '../..')
     });
+    if (process.env.ELECTRON_TEST_PID_DUMP_PATH && child.pid) {
+      fs.writeFileSync(process.env.ELECTRON_TEST_PID_DUMP_PATH, child.pid.toString());
+    }
     child.stdout.pipe(process.stdout);
     child.stderr.pipe(process.stderr);
     if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {

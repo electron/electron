@@ -9,8 +9,11 @@ on:
         type: string
 
 concurrency:
-  group: electron-lint-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
+  group: electron-lint-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
+
+env:
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}  
 
 jobs:
   lint:
@@ -27,6 +30,8 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Setup third_party Depot Tools
       shell: bash
       run: |

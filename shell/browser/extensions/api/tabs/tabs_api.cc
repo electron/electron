@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/containers/contains.h"
 #include "base/strings/pattern.h"
 #include "base/types/expected_macros.h"
 #include "chrome/common/url_constants.h"
@@ -651,7 +652,16 @@ bool TabsUpdateFunction::UpdateURL(const std::string& url_string,
   // will stay in the omnibox - see https://crbug.com/1085779.
   load_params.transition_type = ui::PAGE_TRANSITION_FROM_API;
 
-  web_contents_->GetController().LoadURLWithParams(load_params);
+  base::WeakPtr<content::NavigationHandle> navigation_handle =
+      web_contents_->GetController().LoadURLWithParams(load_params);
+  // Navigation can fail for any number of reasons at the content layer.
+  // Unfortunately, we can't provide a detailed error message here, because
+  // there are too many possible triggers. At least notify the extension that
+  // the update failed.
+  if (!navigation_handle) {
+    *error = "Navigation rejected.";
+    return false;
+  }
 
   DCHECK_EQ(url,
             web_contents_->GetController().GetPendingEntry()->GetVirtualURL());

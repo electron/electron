@@ -52,6 +52,7 @@ class URLLoaderNetworkObserver
       const url::Origin& request_origin,
       std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
           methods,
+      const std::optional<std::string>& with_lock,
       OnSharedStorageHeaderReceivedCallback callback) override;
   void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
                        int64_t recv_bytes,
@@ -69,6 +70,11 @@ class URLLoaderNetworkObserver
       const std::optional<std::string>& private_network_device_id,
       const std::optional<std::string>& private_network_device_name,
       OnPrivateNetworkAccessPermissionRequiredCallback callback) override {}
+  void OnUrlLoaderConnectedToPrivateNetwork(
+      const GURL& request_url,
+      network::mojom::IPAddressSpace response_address_space,
+      network::mojom::IPAddressSpace client_address_space,
+      network::mojom::IPAddressSpace target_address_space) override {}
   void Clone(
       mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
           observer) override;

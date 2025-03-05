@@ -2,9 +2,9 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '133.0.6887.0',
+    '135.0.7049.5',
   'node_version':
-    'v22.9.0',
+    'v22.14.0',
   'nan_version':
     'e14bdcd1f72d62bca1d541b66da43130384ec213',
   'squirrel.mac_version':
@@ -62,10 +62,6 @@ vars = {
 
   'checkout_nacl':
     False,
-  'checkout_libaom':
-    True,
-  'checkout_oculus_sdk':
-    False,
   'checkout_openxr':
     False,
   'build_with_chromium':
@@ -73,8 +69,6 @@ vars = {
   'checkout_android':
     False,
   'checkout_android_native_support':
-    False,
-  'checkout_google_benchmark':
     False,
   'checkout_clang_tidy':
     True,

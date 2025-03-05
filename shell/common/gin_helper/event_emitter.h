@@ -23,37 +23,30 @@ namespace gin_helper {
 template <typename T>
 class EventEmitter : public gin_helper::Wrappable<T> {
  public:
-  using Base = gin_helper::Wrappable<T>;
-
-  // Make the convenient methods visible:
-  // https://isocpp.org/wiki/faq/templates#nondependent-name-lookup-members
-  v8::Isolate* isolate() const { return Base::isolate(); }
-  v8::Local<v8::Object> GetWrapper() const { return Base::GetWrapper(); }
-  v8::MaybeLocal<v8::Object> GetWrapper(v8::Isolate* isolate) const {
-    return Base::GetWrapper(isolate);
-  }
-
   // this.emit(name, new Event(), args...);
   template <typename... Args>
   bool Emit(const std::string_view name, Args&&... args) {
-    v8::HandleScope handle_scope(isolate());
-    v8::Local<v8::Object> wrapper = GetWrapper();
+    v8::Isolate* const isolate = this->isolate();
+    v8::HandleScope handle_scope{isolate};
+    v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
       return false;
-    gin::Handle<gin_helper::internal::Event> event =
-        internal::Event::New(isolate());
-    return EmitWithEvent(name, event, std::forward<Args>(args)...);
+    gin::Handle<internal::Event> event = internal::Event::New(isolate);
+    // It's possible that |this| will be deleted by EmitEvent, so save anything
+    // we need from |this| before calling EmitEvent.
+    EmitEvent(isolate, wrapper, name, event, std::forward<Args>(args)...);
+    return event->GetDefaultPrevented();
   }
 
   // this.emit(name, args...);
   template <typename... Args>
   void EmitWithoutEvent(const std::string_view name, Args&&... args) {
-    v8::HandleScope handle_scope(isolate());
-    v8::Local<v8::Object> wrapper = GetWrapper();
+    v8::Isolate* const isolate = this->isolate();
+    v8::HandleScope handle_scope{isolate};
+    v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
       return;
-    gin_helper::EmitEvent(isolate(), GetWrapper(), name,
-                          std::forward<Args>(args)...);
+    EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
   }
 
   // disable copy
@@ -62,20 +55,6 @@ class EventEmitter : public gin_helper::Wrappable<T> {
 
  protected:
   EventEmitter() = default;
-
- private:
-  // this.emit(name, event, args...);
-  template <typename... Args>
-  bool EmitWithEvent(const std::string_view name,
-                     gin::Handle<gin_helper::internal::Event> event,
-                     Args&&... args) {
-    // It's possible that |this| will be deleted by EmitEvent, so save anything
-    // we need from |this| before calling EmitEvent.
-    auto* isolate = this->isolate();
-    gin_helper::EmitEvent(isolate, GetWrapper(), name, event,
-                          std::forward<Args>(args)...);
-    return event->GetDefaultPrevented();
-  }
 };
 
 }  // namespace gin_helper

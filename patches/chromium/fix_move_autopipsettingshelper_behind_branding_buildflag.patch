@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 50f1b8711f7e9bd0aa31ba29f7e7be45eed2647c..869f36e70c48e80a0606d156f33fe05ce2ed5464 100644
+index ea4646388c4747438ddd7a9164a9e61091679c28..5aded14b616e70ac98e0daa7ff94ec4294409950 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -39,7 +39,7 @@ index 50f1b8711f7e9bd0aa31ba29f7e7be45eed2647c..869f36e70c48e80a0606d156f33fe05c
  // Returns true if a document picture-in-picture window should be focused upon
  // opening it.
  bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -190,7 +193,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -196,7 +199,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -48,7 +48,7 @@ index 50f1b8711f7e9bd0aa31ba29f7e7be45eed2647c..869f36e70c48e80a0606d156f33fe05c
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -386,7 +389,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -401,7 +404,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -57,7 +57,7 @@ index 50f1b8711f7e9bd0aa31ba29f7e7be45eed2647c..869f36e70c48e80a0606d156f33fe05c
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action = ShouldFocusPictureInPictureWindow(params)
-@@ -474,6 +477,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -493,6 +496,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -65,7 +65,7 @@ index 50f1b8711f7e9bd0aa31ba29f7e7be45eed2647c..869f36e70c48e80a0606d156f33fe05c
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -512,6 +516,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -531,6 +535,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -75,10 +75,10 @@ index 50f1b8711f7e9bd0aa31ba29f7e7be45eed2647c..869f36e70c48e80a0606d156f33fe05c
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 1b0ea294197c6ceb4f260041aa7e5ca818bff84a..97d3431199911b2e9ac09295700959dfe8b29571 100644
+index f9e29227fe9396747bed8b1ec970cfdfcf72c03c..d96f85145d1ad2843cf2659f68e2fd1d93c4c1c4 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -428,11 +428,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -430,11 +430,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
  
  #endif  // BUILDFLAG(IS_WIN)
  

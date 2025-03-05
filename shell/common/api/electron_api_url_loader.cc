@@ -438,7 +438,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
             net::AuthCredentials(username_str, password_str));
       },
       std::move(auth_responder));
-  Emit("login", auth_info, base::AdaptCallbackForRepeating(std::move(cb)));
+  Emit("login", auth_info, std::move(cb));
 }
 
 void SimpleURLLoaderWrapper::OnSSLCertificateError(
@@ -469,6 +469,7 @@ void SimpleURLLoaderWrapper::OnSharedStorageHeaderReceived(
     const url::Origin& request_origin,
     std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
         methods,
+    const std::optional<std::string>& with_lock,
     OnSharedStorageHeaderReceivedCallback callback) {
   std::move(callback).Run();
 }
@@ -715,8 +716,7 @@ void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
   v8::HandleScope handle_scope(isolate);
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_view.size());
   memcpy(array_buffer->Data(), string_view.data(), string_view.size());
-  Emit("data", array_buffer,
-       base::AdaptCallbackForRepeating(std::move(resume)));
+  Emit("data", array_buffer, std::move(resume));
 }
 
 void SimpleURLLoaderWrapper::OnComplete(bool success) {
@@ -816,6 +816,10 @@ gin::ObjectTemplateBuilder SimpleURLLoaderWrapper::GetObjectTemplateBuilder(
 
 const char* SimpleURLLoaderWrapper::GetTypeName() {
   return "SimpleURLLoaderWrapper";
+}
+
+void SimpleURLLoaderWrapper::WillBeDestroyed() {
+  ClearWeak();
 }
 
 }  // namespace electron::api

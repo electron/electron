@@ -68,13 +68,7 @@ constexpr std::string_view kSupportedApiTypesField = "supportedApiTypes";
 constexpr std::string_view kTreeField = "tree";
 constexpr std::string_view kTypeField = "type";
 constexpr std::string_view kUrlField = "url";
-constexpr std::string_view kWidgetsField = "widgets";
 constexpr std::string_view kApiTypeField = "apiType";
-
-#if defined(USE_AURA)
-constexpr std::string_view kWidgetIdField = "widgetId";
-constexpr std::string_view kWidget = "widget";
-#endif
 
 // Global flags
 constexpr std::string_view kBrowser = "browser";
@@ -87,7 +81,6 @@ constexpr std::string_view kPDFPrinting = "pdfPrinting";
 constexpr std::string_view kScreenReader = "screenreader";
 constexpr std::string_view kShowOrRefreshTree = "showOrRefreshTree";
 constexpr std::string_view kText = "text";
-constexpr std::string_view kViewsAccessibility = "viewsAccessibility";
 constexpr std::string_view kWeb = "web";
 
 // Possible global flag values
@@ -140,8 +133,8 @@ base::Value::Dict BuildTargetDescriptor(content::RenderViewHost* rvh) {
   }
 
   return BuildTargetDescriptor(url, title, favicon_url,
-                               rvh->GetProcess()->GetID(), rvh->GetRoutingID(),
-                               accessibility_mode);
+                               rvh->GetProcess()->GetDeprecatedID(),
+                               rvh->GetRoutingID(), accessibility_mode);
 }
 
 base::Value::Dict BuildTargetDescriptor(electron::NativeWindow* window) {
@@ -151,19 +144,6 @@ base::Value::Dict BuildTargetDescriptor(electron::NativeWindow* window) {
   target_data.Set(kTypeField, kBrowser);
   return target_data;
 }
-
-#if defined(USE_AURA)
-base::Value::Dict BuildTargetDescriptor(views::Widget* widget) {
-  base::Value::Dict widget_data;
-  widget_data.Set(kNameField, widget->widget_delegate()->GetWindowTitle());
-  widget_data.Set(kTypeField, kWidget);
-
-  // Use the Widget's root view ViewAccessibility's unique ID for lookup.
-  int32_t id = widget->GetRootView()->GetViewAccessibility().GetUniqueId();
-  widget_data.Set(kWidgetIdField, id);
-  return widget_data;
-}
-#endif  // defined(USE_AURA)
 
 bool ShouldHandleAccessibilityRequestCallback(const std::string& path) {
   return path == kTargetsDataFile;
@@ -204,10 +184,6 @@ void HandleAccessibilityRequestCallback(
 
   // The "pdfPrinting" flag is independent of the others.
   data.Set(kPDFPrinting, pdf_printing ? kOn : kOff);
-
-  // The "Top Level Widgets" section is only relevant if views accessibility is
-  // enabled.
-  data.Set(kViewsAccessibility, features::IsAccessibilityTreeForViewsEnabled());
 
   std::string pref_api_type =
       std::string(pref->GetString(prefs::kShownAccessibilityApiType));
@@ -281,19 +257,6 @@ void HandleAccessibilityRequestCallback(
     window_list.Append(BuildTargetDescriptor(window));
   }
   data.Set(kBrowsersField, std::move(window_list));
-
-  base::Value::List widgets_list;
-#if defined(USE_AURA)
-  if (features::IsAccessibilityTreeForViewsEnabled()) {
-    views::WidgetAXTreeIDMap& manager_map =
-        views::WidgetAXTreeIDMap::GetInstance();
-    const std::vector<views::Widget*> widgets = manager_map.GetWidgets();
-    for (views::Widget* widget : widgets) {
-      widgets_list.Append(BuildTargetDescriptor(widget));
-    }
-  }
-#endif  // defined(USE_AURA)
-  data.Set(kWidgetsField, std::move(widgets_list));
 
   std::move(callback).Run(base::MakeRefCounted<base::RefCountedString>(
       base::WriteJson(data).value_or("")));

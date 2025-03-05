@@ -10,6 +10,7 @@
 #include <string>
 
 #include "components/keyed_service/core/keyed_service.h"
+#include "content/public/browser/child_process_id.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom.h"
 #include "url/gurl.h"
@@ -59,30 +60,31 @@ class BadgeManager : public KeyedService, public blink::mojom::BadgeService {
   // The BindingContext for Window execution contexts.
   class FrameBindingContext final : public BindingContext {
    public:
-    FrameBindingContext(int process_id, int frame_id)
+    FrameBindingContext(content::ChildProcessId process_id, int frame_id)
         : process_id_(process_id), frame_id_(frame_id) {}
     ~FrameBindingContext() override = default;
 
-    int GetProcessId() { return process_id_; }
+    content::ChildProcessId GetProcessId() { return process_id_; }
     int GetFrameId() { return frame_id_; }
 
    private:
-    int process_id_;
+    content::ChildProcessId process_id_;
     int frame_id_;
   };
 
   // The BindingContext for ServiceWorkerGlobalScope execution contexts.
   class ServiceWorkerBindingContext final : public BindingContext {
    public:
-    ServiceWorkerBindingContext(int process_id, const GURL& scope)
+    ServiceWorkerBindingContext(content::ChildProcessId process_id,
+                                const GURL& scope)
         : process_id_(process_id), scope_(scope) {}
     ~ServiceWorkerBindingContext() override = default;
 
-    int GetProcessId() { return process_id_; }
+    content::ChildProcessId GetProcessId() { return process_id_; }
     GURL GetScope() { return scope_; }
 
    private:
-    int process_id_;
+    content::ChildProcessId process_id_;
     GURL scope_;
   };
 

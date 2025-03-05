@@ -1,0 +1,276 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Sun, 29 Dec 2024 04:01:32 +0900
+Subject: fix: remove FastApiTypedArray usage
+
+Refs https://github.com/electron/electron/pull/45055#issuecomment-2559095439
+Can be removed when upstream adopts relevant V8 version.
+
+diff --git a/src/crypto/crypto_timing.cc b/src/crypto/crypto_timing.cc
+index 867a1c4aca54b9d41490d23a5eb55088b7e941cc..09f4c65a18efea262b1f854f993c6f18273f48f5 100644
+--- a/src/crypto/crypto_timing.cc
++++ b/src/crypto/crypto_timing.cc
+@@ -11,7 +11,6 @@
+ namespace node {
+ 
+ using v8::FastApiCallbackOptions;
+-using v8::FastApiTypedArray;
+ using v8::FunctionCallbackInfo;
+ using v8::Local;
+ using v8::Object;
+@@ -50,14 +49,13 @@ void TimingSafeEqual(const FunctionCallbackInfo<Value>& args) {
+ }
+ 
+ bool FastTimingSafeEqual(Local<Value> receiver,
+-                         const FastApiTypedArray<uint8_t>& a,
+-                         const FastApiTypedArray<uint8_t>& b,
++                         Local<Value> a,
++                         Local<Value> b,
+                          // NOLINTNEXTLINE(runtime/references)
+                          FastApiCallbackOptions& options) {
+-  uint8_t* data_a;
+-  uint8_t* data_b;
+-  if (a.length() != b.length() || !a.getStorageIfAligned(&data_a) ||
+-      !b.getStorageIfAligned(&data_b)) {
++  FAST_SPREAD_BUFFER_ARG(a, a_buffer);
++  FAST_SPREAD_BUFFER_ARG(b, b_buffer);
++  if (a_buffer_length != b_buffer_length) {
+     TRACK_V8_FAST_API_CALL("crypto.timingSafeEqual.error");
+     v8::HandleScope scope(options.isolate);
+     THROW_ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH(options.isolate);
+@@ -65,7 +63,7 @@ bool FastTimingSafeEqual(Local<Value> receiver,
+   }
+ 
+   TRACK_V8_FAST_API_CALL("crypto.timingSafeEqual.ok");
+-  return CRYPTO_memcmp(data_a, data_b, a.length()) == 0;
++  return CRYPTO_memcmp(a_buffer_data, b_buffer_data, a_buffer_length) == 0;
+ }
+ 
+ static v8::CFunction fast_equal(v8::CFunction::Make(FastTimingSafeEqual));
+diff --git a/src/node_buffer.cc b/src/node_buffer.cc
+index cd51d9acf9540d506ec35812b9d2c530fce24912..07068344262f7b73a83073d4da75bffe8b747a61 100644
+--- a/src/node_buffer.cc
++++ b/src/node_buffer.cc
+@@ -44,6 +44,14 @@
+ #define THROW_AND_RETURN_UNLESS_BUFFER(env, obj)                            \
+   THROW_AND_RETURN_IF_NOT_BUFFER(env, obj, "argument")                      \
+ 
++#define THROW_AND_RETURN_VAL_UNLESS_BUFFER(isolate, val, prefix, retval)       \
++  do {                                                                         \
++    if (!Buffer::HasInstance(val)) {                                           \
++      node::THROW_ERR_INVALID_ARG_TYPE(isolate, prefix " must be a buffer");   \
++      return retval;                                                           \
++    }                                                                          \
++  } while (0)
++
+ #define THROW_AND_RETURN_IF_OOB(r)                                          \
+   do {                                                                      \
+     Maybe<bool> m = (r);                                                    \
+@@ -60,7 +68,6 @@ using v8::ArrayBufferView;
+ using v8::BackingStore;
+ using v8::Context;
+ using v8::EscapableHandleScope;
+-using v8::FastApiTypedArray;
+ using v8::FunctionCallbackInfo;
+ using v8::Global;
+ using v8::HandleScope;
+@@ -582,19 +589,24 @@ void SlowCopy(const FunctionCallbackInfo<Value>& args) {
+ 
+ // Assume caller has properly validated args.
+ uint32_t FastCopy(Local<Value> receiver,
+-                  const v8::FastApiTypedArray<uint8_t>& source,
+-                  const v8::FastApiTypedArray<uint8_t>& target,
++                  Local<Value> source_obj,
++                  Local<Value> target_obj,
+                   uint32_t target_start,
+                   uint32_t source_start,
+-                  uint32_t to_copy) {
+-  uint8_t* source_data;
+-  CHECK(source.getStorageIfAligned(&source_data));
+-
++                  uint32_t to_copy,
++                  v8::FastApiCallbackOptions& options) {
++  FAST_SPREAD_BUFFER_ARG(source_obj, source);
+   uint8_t* target_data;
+-  CHECK(target.getStorageIfAligned(&target_data));
++  FAST_SPREAD_BUFFER_ARG(target_obj, target_buffer);
++  if (target_buffer_length <= kMaxSizeInHeap) {
++    HandleScope handle_scope(options.isolate);
++    SPREAD_BUFFER_ARG(target_obj, target_buffer);
++    target_data = reinterpret_cast<uint8_t*>(target_buffer_data);
++  } else {
++    target_data = target_buffer_data;
++  }
+ 
+   memmove(target_data + target_start, source_data + source_start, to_copy);
+-
+   return to_copy;
+ }
+ 
+@@ -858,19 +870,17 @@ void Compare(const FunctionCallbackInfo<Value> &args) {
+ }
+ 
+ int32_t FastCompare(v8::Local<v8::Value>,
+-                    const FastApiTypedArray<uint8_t>& a,
+-                    const FastApiTypedArray<uint8_t>& b) {
+-  uint8_t* data_a;
+-  uint8_t* data_b;
+-  CHECK(a.getStorageIfAligned(&data_a));
+-  CHECK(b.getStorageIfAligned(&data_b));
++                    v8::Local<v8::Value> a,
++                    v8::Local<v8::Value> b) {
++  FAST_SPREAD_BUFFER_ARG(a, a_buffer);
++  FAST_SPREAD_BUFFER_ARG(b, b_buffer);
+ 
+-  size_t cmp_length = std::min(a.length(), b.length());
++  size_t cmp_length = std::min(a_buffer_length, b_buffer_length);
+ 
+   return normalizeCompareVal(
+-      cmp_length > 0 ? memcmp(data_a, data_b, cmp_length) : 0,
+-      a.length(),
+-      b.length());
++      cmp_length > 0 ? memcmp(a_buffer_data, b_buffer_data, cmp_length) : 0,
++      a_buffer_length,
++      b_buffer_length);
+ }
+ 
+ static v8::CFunction fast_compare(v8::CFunction::Make(FastCompare));
+@@ -1141,14 +1151,13 @@ void SlowIndexOfNumber(const FunctionCallbackInfo<Value>& args) {
+ }
+ 
+ int32_t FastIndexOfNumber(v8::Local<v8::Value>,
+-                          const FastApiTypedArray<uint8_t>& buffer,
++                          v8::Local<v8::Value> source_obj,
+                           uint32_t needle,
+                           int64_t offset_i64,
+                           bool is_forward) {
+-  uint8_t* buffer_data;
+-  CHECK(buffer.getStorageIfAligned(&buffer_data));
++  FAST_SPREAD_BUFFER_ARG(source_obj, buffer);
+   return IndexOfNumber(
+-      buffer_data, buffer.length(), needle, offset_i64, is_forward);
++      buffer_data, buffer_length, needle, offset_i64, is_forward);
+ }
+ 
+ static v8::CFunction fast_index_of_number(
+@@ -1501,21 +1510,31 @@ void SlowWriteString(const FunctionCallbackInfo<Value>& args) {
+ 
+ template <encoding encoding>
+ uint32_t FastWriteString(Local<Value> receiver,
+-                         const v8::FastApiTypedArray<uint8_t>& dst,
++                         Local<v8::Value> dst,
+                          const v8::FastOneByteString& src,
+                          uint32_t offset,
+-                         uint32_t max_length) {
+-  uint8_t* dst_data;
+-  CHECK(dst.getStorageIfAligned(&dst_data));
+-  CHECK(offset <= dst.length());
+-  CHECK(dst.length() - offset <= std::numeric_limits<uint32_t>::max());
++                         uint32_t max_length,
++                         v8::FastApiCallbackOptions& options) {
++  THROW_AND_RETURN_VAL_UNLESS_BUFFER(options.isolate, dst, "dst", 0);
++  uint8_t* dst_buffer_data;
++  FAST_SPREAD_BUFFER_ARG(dst, dst_fast_buffer);
++  if (dst_fast_buffer_length <= kMaxSizeInHeap) {
++    HandleScope handle_scope(options.isolate);
++    SPREAD_BUFFER_ARG(dst, dst_slow_buffer);
++    dst_buffer_data = reinterpret_cast<uint8_t*>(dst_slow_buffer_data);
++  } else {
++    dst_buffer_data = dst_fast_buffer_data;
++  };
++
++  CHECK(dst_fast_buffer_length <= std::numeric_limits<uint32_t>::max());
++  uint32_t dst_size = static_cast<uint32_t>(dst_fast_buffer_length);
+   TRACK_V8_FAST_API_CALL("buffer.writeString");
+ 
+   return WriteOneByteString<encoding>(
+       src.data,
+       src.length,
+-      reinterpret_cast<char*>(dst_data + offset),
+-      std::min<uint32_t>(dst.length() - offset, max_length));
++      reinterpret_cast<char*>(dst_buffer_data + offset),
++      std::min<uint32_t>(dst_size - offset, max_length));
+ }
+ 
+ static v8::CFunction fast_write_string_ascii(
+diff --git a/src/node_external_reference.h b/src/node_external_reference.h
+index 8d49a119c218323674e29a522ecf71bd22cdaf1b..d39693f2f45f39e45960453112b0f6460a1b3a4d 100644
+--- a/src/node_external_reference.h
++++ b/src/node_external_reference.h
+@@ -40,16 +40,16 @@ using CFunctionCallbackWithStrings =
+              const v8::FastOneByteString& base);
+ using CFunctionCallbackWithTwoUint8Arrays =
+     int32_t (*)(v8::Local<v8::Value>,
+-                const v8::FastApiTypedArray<uint8_t>&,
+-                const v8::FastApiTypedArray<uint8_t>&);
++                v8::Local<v8::Value>,
++                v8::Local<v8::Value>);
+ using CFunctionCallbackWithTwoUint8ArraysFallback =
+     bool (*)(v8::Local<v8::Value>,
+-             const v8::FastApiTypedArray<uint8_t>&,
+-             const v8::FastApiTypedArray<uint8_t>&,
++             v8::Local<v8::Value>,
++             v8::Local<v8::Value>,
+              v8::FastApiCallbackOptions&);
+ using CFunctionCallbackWithUint8ArrayUint32Int64Bool =
+     int32_t (*)(v8::Local<v8::Value>,
+-                const v8::FastApiTypedArray<uint8_t>&,
++                v8::Local<v8::Value>,
+                 uint32_t,
+                 int64_t,
+                 bool);
+@@ -68,18 +68,20 @@ using CFunctionWithBool = void (*)(v8::Local<v8::Value>,
+ 
+ using CFunctionWriteString =
+     uint32_t (*)(v8::Local<v8::Value> receiver,
+-                 const v8::FastApiTypedArray<uint8_t>& dst,
++                 v8::Local<v8::Value> dst,
+                  const v8::FastOneByteString& src,
+                  uint32_t offset,
+-                 uint32_t max_length);
++                 uint32_t max_length,
++                 v8::FastApiCallbackOptions&);
+ 
+ using CFunctionBufferCopy =
+     uint32_t (*)(v8::Local<v8::Value> receiver,
+-                 const v8::FastApiTypedArray<uint8_t>& source,
+-                 const v8::FastApiTypedArray<uint8_t>& target,
++                 v8::Local<v8::Value> source,
++                 v8::Local<v8::Value> target,
+                  uint32_t target_start,
+                  uint32_t source_start,
+-                 uint32_t to_copy);
++                 uint32_t to_copy,
++                 v8::FastApiCallbackOptions&);
+ 
+ // This class manages the external references from the V8 heap
+ // to the C++ addresses in Node.js.
+diff --git a/src/util.h b/src/util.h
+index 0d4676ddade8d91d101b6aeb8763886a234f0bae..7af9ed01a919927ae3897d4989206ec23cfe50d3 100644
+--- a/src/util.h
++++ b/src/util.h
+@@ -59,6 +59,7 @@
+ namespace node {
+ 
+ constexpr char kPathSeparator = std::filesystem::path::preferred_separator;
++static constexpr size_t kMaxSizeInHeap = 64;
+ 
+ #ifdef _WIN32
+ /* MAX_PATH is in characters, not bytes. Make sure we have enough headroom. */
+@@ -579,6 +580,16 @@ class BufferValue : public MaybeStackBuffer<char> {
+       static_cast<char*>(name->Buffer()->Data()) + name##_offset;              \
+   if (name##_length > 0) CHECK_NE(name##_data, nullptr);
+ 
++#define FAST_SPREAD_BUFFER_ARG(val, name)                                      \
++  CHECK((val)->IsArrayBufferView());                                           \
++  v8::Local<v8::ArrayBufferView> name = (val).As<v8::ArrayBufferView>();       \
++  uint8_t name##_buffer[kMaxSizeInHeap];                                       \
++  v8::MemorySpan<uint8_t> name##_storage(name##_buffer);                       \
++  name##_storage = name->GetContents(name##_storage);                          \
++  const size_t name##_length = name##_storage.size();                          \
++  uint8_t* name##_data = name##_storage.data();                                \
++  if (name##_length > 0) CHECK_NE(name##_data, nullptr);
++
+ // Use this when a variable or parameter is unused in order to explicitly
+ // silence a compiler warning about that.
+ template <typename T> inline void USE(T&&) {}

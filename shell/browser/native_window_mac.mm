@@ -194,6 +194,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
+  // Allow painting before shown, to be later disabled in ElectronNSWindow.
+  params.headless_mode = true;
   params.native_widget =
       new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
@@ -427,7 +429,13 @@ void NativeWindowMac::ShowInactive() {
   if (parent())
     InternalSetParentWindow(parent(), true);
 
+  // Triggers `NativeWidgetMacNSWindowHost::OnVisibilityChanged`.
+  widget()->ShowInactive();
+  // `Widget::ShowInactive` is not sufficient to bring window to front.
   [window_ orderFrontRegardless];
+  // Above calls do not trigger `orderWindow: relativeTo:` in which headless
+  // mode is being disabled.
+  [window_ disableHeadlessMode];
 }
 
 void NativeWindowMac::Hide() {
@@ -1162,6 +1170,10 @@ void NativeWindowMac::SetContentProtection(bool enable) {
       setSharingType:enable ? NSWindowSharingNone : NSWindowSharingReadOnly];
 }
 
+bool NativeWindowMac::IsContentProtected() const {
+  return [window_ sharingType] == NSWindowSharingNone;
+}
+
 void NativeWindowMac::SetFocusable(bool focusable) {
   // No known way to unfocus the window if it had the focus. Here we do not
   // want to call Focus(false) because it moves the window to the back, i.e.
@@ -1588,8 +1600,11 @@ void NativeWindowMac::PreviewFile(const std::string& path,
 }
 
 void NativeWindowMac::CloseFilePreview() {
-  if ([QLPreviewPanel sharedPreviewPanelExists]) {
+  // Need to be careful about checking [QLPreviewPanel sharedPreviewPanel] as
+  // simply accessing it will cause it to reinitialize and reappear.
+  if ([QLPreviewPanel sharedPreviewPanelExists] && preview_item_) {
     [[QLPreviewPanel sharedPreviewPanel] close];
+    preview_item_ = nil;
   }
 }
 
@@ -1674,6 +1689,7 @@ void NativeWindowMac::Cleanup() {
   DCHECK(!IsClosed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
   display::Screen::GetScreen()->RemoveObserver(this);
+  [window_ cleanup];
 }
 
 class NativeAppWindowFrameViewMac : public views::NativeFrameViewMac {

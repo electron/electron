@@ -8,8 +8,6 @@
 #include "electron/mas.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_mac.h"
-#include "shell/browser/ui/cocoa/delayed_native_view_host.h"
-#include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
@@ -113,6 +111,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
                            method_getImplementation(new_swipe_with_event));
 }
 #endif
+
 }  // namespace
 
 @implementation ElectronNSWindow
@@ -166,6 +165,10 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     shell_ = shell;
   }
   return self;
+}
+
+- (void)cleanup {
+  shell_ = nullptr;
 }
 
 - (electron::NativeWindowMac*)shell {
@@ -255,6 +258,11 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     [super setFrame:windowFrame display:displayViews];
 }
 
+- (void)orderWindow:(NSWindowOrderingMode)place relativeTo:(NSInteger)otherWin {
+  [self disableHeadlessMode];
+  [super orderWindow:place relativeTo:otherWin];
+}
+
 - (id)accessibilityAttributeValue:(NSString*)attribute {
   if ([attribute isEqual:NSAccessibilityEnabledAttribute])
     return [NSNumber numberWithBool:YES];
@@ -311,6 +319,16 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     return [self cornerMask];
   } else {
     return [super _cornerMask];
+  }
+}
+
+- (void)disableHeadlessMode {
+  if (shell_) {
+    // We initialize the window in headless mode to allow painting before it is
+    // shown, but we don't want the headless behavior of allowing the window to
+    // be placed unconstrained.
+    self.isHeadless = false;
+    shell_->widget()->DisableHeadlessMode();
   }
 }
 

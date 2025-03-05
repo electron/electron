@@ -12,7 +12,72 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
-## Planned Breaking API Changes (34.0)
+## Planned Breaking API Changes (36.0)
+
+### Removed:`isDefault` and `status` properties on `PrinterInfo`
+
+These properties have been removed from the PrinterInfo Object
+because they have been removed from upstream Chromium.
+
+### Deprecated: Extension methods and events on `session`
+
+`session.loadExtension`, `session.removeExtension`, `session.getExtension`,
+`session.getAllExtensions`, 'extension-loaded' event, 'extension-unloaded'
+event, and 'extension-ready' events have all moved to the new
+`session.extensions` class.
+
+### Removed: `systemPreferences.isAeroGlassEnabled()`
+
+The `systemPreferences.isAeroGlassEnabled()` function has been removed without replacement.
+It has been always returning `true` since Electron 23, which only supports Windows 10+, where DWM composition can no longer be disabled.
+
+https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw#disabling-dwm-composition-windows7-and-earlier
+
+## Planned Breaking API Changes (35.0)
+
+### Behavior Changed: Dialog API's `defaultPath` option on Linux
+
+On Linux, the required portal version for file dialogs has been reverted
+to 3 from 4. Using the `defaultPath` option of the Dialog API is not
+supported when using portal file chooser dialogs unless the portal
+backend is version 4 or higher. The `--xdg-portal-required-version`
+[command-line switch](/api/command-line-switches.md#--xdg-portal-required-versionversion)
+can be used to force a required version for your application.
+See [#44426](https://github.com/electron/electron/pull/44426) for more details.
+
+### Deprecated: `getFromVersionID` on `session.serviceWorkers`
+
+The `session.serviceWorkers.fromVersionID(versionId)` API has been deprecated
+in favor of `session.serviceWorkers.getInfoFromVersionID(versionId)`. This was
+changed to make it more clear which object is returned with the introduction
+of the `session.serviceWorkers.getWorkerFromVersionID(versionId)` API.
+
+```js
+// Deprecated
+session.serviceWorkers.fromVersionID(versionId)
+
+// Replace with
+session.serviceWorkers.getInfoFromVersionID(versionId)
+```
+
+### Deprecated: `setPreloads`, `getPreloads` on `Session`
+
+`registerPreloadScript`, `unregisterPreloadScript`, and `getPreloadScripts` are introduced as a
+replacement for the deprecated methods. These new APIs allow third-party libraries to register
+preload scripts without replacing existing scripts. Also, the new `type` option allows for
+additional preload targets beyond `frame`.
+
+```js
+// Deprecated
+session.setPreloads([path.join(__dirname, 'preload.js')])
+
+// Replace with:
+session.registerPreloadScript({
+  type: 'frame',
+  id: 'app-preload',
+  filePath: path.join(__dirname, 'preload.js')
+})
+```
 
 ### Deprecated: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
 
@@ -29,7 +94,47 @@ webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame
 
 Additionally, `level` is now a string with possible values of `info`, `warning`, `error`, and `debug`.
 
+### Behavior Changed: `urls` property of `WebRequestFilter`.
+
+Previously, an empty urls array was interpreted as including all URLs. To explicitly include all URLs, developers should now use the `<all_urls>` pattern, which is a [designated URL pattern](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns#all_urls) that matches every possible URL. This change clarifies the intent and ensures more predictable behavior.
+
+```js
+// Deprecated
+const deprecatedFilter = {
+  urls: []
+}
+
+// Replace with
+const newFilter = {
+  urls: ['<all_urls>']
+}
+```
+
+### Deprecated: `systemPreferences.isAeroGlassEnabled()`
+
+The `systemPreferences.isAeroGlassEnabled()` function has been deprecated without replacement.
+It has been always returning `true` since Electron 23, which only supports Windows 10+, where DWM composition can no longer be disabled.
+
+https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw#disabling-dwm-composition-windows7-and-earlier
+
+## Planned Breaking API Changes (34.0)
+
+### Behavior Changed: menu bar will be hidden during fullscreen on Windows
+
+This brings the behavior to parity with Linux. Prior behavior: Menu bar is still visible during fullscreen on Windows. New behavior: Menu bar is hidden during fullscreen on Windows.
+
+**Correction**: This was previously listed as a breaking change in Electron 33, but was first released in Electron 34.
+
 ## Planned Breaking API Changes (33.0)
+
+### Deprecated: `document.execCommand("paste")`
+
+The synchronous clipboard read API [document.execCommand("paste")](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Interact_with_the_clipboard) has been
+deprecated in favor of [async clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API). This is to align with the browser defaults.
+
+The `enableDeprecatedPaste` option on `WebPreferences` that triggers the permission
+checks for this API and the associated permission type `deprecated-sync-clipboard-read`
+are also deprecated.
 
 ### Behavior Changed: frame properties may retrieve detached WebFrameMain instances or none at all
 
@@ -48,15 +153,15 @@ immediately upon being received. Otherwise, it's not guaranteed to point to the
 same webpage as when received. To avoid misaligned expectations, Electron will
 return `null` in the case of late access where the webpage has changed.
 
-```ts
+```js
 ipcMain.on('unload-event', (event) => {
-  event.senderFrame; // ✅ accessed immediately
-});
+  event.senderFrame // ✅ accessed immediately
+})
 
 ipcMain.on('unload-event', async (event) => {
-  await crossOriginNavigationPromise;
-  event.senderFrame; // ❌ returns `null` due to late access
-});
+  await crossOriginNavigationPromise
+  event.senderFrame // ❌ returns `null` due to late access
+})
 ```
 
 ### Behavior Changed: custom protocol URL handling on Windows
@@ -86,10 +191,6 @@ mainWindow.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script
 mainWindow.loadURL('other://index.html')
 ```
 
-### Behavior Changed: menu bar will be hidden during fullscreen on Windows
-
-This brings the behavior to parity with Linux. Prior behavior: Menu bar is still visible during fullscreen on Windows. New behavior: Menu bar is hidden during fullscreen on Windows.
-
 ### Behavior Changed: `webContents` property on `login` on `app`
 
 The `webContents` property in the `login` event from `app` will be `null`
@@ -106,6 +207,16 @@ macOS 10.15 (Catalina) is no longer supported by [Chromium](https://chromium-rev
 
 Older versions of Electron will continue to run on Catalina, but macOS 11 (Big Sur)
 or later will be required to run Electron v33.0.0 and higher.
+
+### Behavior Changed: Native modules now require C++20
+
+Due to changes made upstream, both
+[V8](https://chromium-review.googlesource.com/c/v8/v8/+/5587859) and
+[Node.js](https://github.com/nodejs/node/pull/45427) now require C++20 as a
+minimum version. Developers using native node modules should build their
+modules with `--std=c++20` rather than `--std=c++17`. Images using gcc9 or
+lower may need to update to gcc10 in order to compile. See
+[#43555](https://github.com/electron/electron/pull/43555) for more details.
 
 ### Deprecated: `systemPreferences.accessibilityDisplayShouldReduceTransparency`
 
@@ -177,6 +288,14 @@ win.webContents.navigationHistory.goForward()
 win.webContents.navigationHistory.canGoToOffset()
 win.webContents.navigationHistory.goToOffset(index)
 ```
+
+### Behavior changed: Directory `databases` in `userData` will be deleted
+
+If you have a directory called `databases` in the directory returned by
+`app.getPath('userData')`, it will be deleted when Electron 32 is first run.
+The `databases` directory was used by WebSQL, which was removed in Electron 31.
+Chromium now performs a cleanup that deletes this directory. See
+[issue #45396](https://github.com/electron/electron/issues/45396).
 
 ## Planned Breaking API Changes (31.0)
 

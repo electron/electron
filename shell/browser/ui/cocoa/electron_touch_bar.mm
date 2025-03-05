@@ -334,7 +334,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (bool)hasItemWithID:(const std::string&)item_id {
-  return settings_.find(item_id) != settings_.end();
+  return settings_.contains(item_id);
 }
 
 - (NSColor*)colorFromHexColorString:(const std::string&)colorString {

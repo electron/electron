@@ -21,12 +21,17 @@ declare namespace NodeJS {
     isComponentBuild(): boolean;
   }
 
-  interface IpcRendererBinding {
+  interface IpcRendererImpl {
     send(internal: boolean, channel: string, args: any[]): void;
     sendSync(internal: boolean, channel: string, args: any[]): any;
     sendToHost(channel: string, args: any[]): void;
     invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string, result: T }>;
     postMessage(channel: string, message: any, transferables: MessagePort[]): void;
+  }
+
+  interface IpcRendererBinding {
+    createForRenderFrame(): IpcRendererImpl;
+    createForServiceWorker(): IpcRendererImpl;
   }
 
   interface V8UtilBinding {
@@ -109,6 +114,10 @@ declare namespace NodeJS {
   interface PowerMonitorBinding extends Electron.PowerMonitor {
     createPowerMonitor(): PowerMonitorBinding;
     setListeningForShutdown(listening: boolean): void;
+  }
+
+  interface ServiceWorkerMainBinding {
+    ServiceWorkerMain: typeof Electron.ServiceWorkerMain;
   }
 
   interface SessionBinding {
@@ -228,6 +237,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_safe_storage'): { safeStorage: Electron.SafeStorage };
     _linkedBinding(name: 'electron_browser_session'): SessionBinding;
     _linkedBinding(name: 'electron_browser_screen'): { createScreen(): Electron.Screen };
+    _linkedBinding(name: 'electron_browser_service_worker_main'): ServiceWorkerMainBinding;
     _linkedBinding(name: 'electron_browser_system_preferences'): { systemPreferences: Electron.SystemPreferences };
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };
     _linkedBinding(name: 'electron_browser_view'): { View: Electron.View };
@@ -235,7 +245,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
     _linkedBinding(name: 'electron_browser_web_frame_main'): WebFrameMainBinding;
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
-    _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
+    _linkedBinding(name: 'electron_renderer_ipc'): IpcRendererBinding;
     _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;

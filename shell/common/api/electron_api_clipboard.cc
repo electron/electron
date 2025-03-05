@@ -6,7 +6,6 @@
 
 #include <map>
 
-#include "base/containers/contains.h"
 #include "base/containers/to_vector.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
@@ -76,7 +75,7 @@ std::string Clipboard::Read(const std::string& format_string) {
       clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kCopyPaste,
                                             /* data_dst = */ nullptr);
 #if BUILDFLAG(IS_LINUX)
-  if (!base::Contains(custom_format_names, format_string)) {
+  if (!custom_format_names.contains(format_string)) {
     custom_format_names =
         clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kSelection,
                                               /* data_dst = */ nullptr);
@@ -84,7 +83,7 @@ std::string Clipboard::Read(const std::string& format_string) {
 #endif
 
   ui::ClipboardFormatType format;
-  if (base::Contains(custom_format_names, format_string)) {
+  if (custom_format_names.contains(format_string)) {
     format =
         ui::ClipboardFormatType(ui::ClipboardFormatType::CustomPlatformType(
             custom_format_names[format_string]));

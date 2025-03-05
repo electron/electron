@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/hash/md5.h"
 #include "base/logging.h"
@@ -26,10 +25,6 @@
 namespace electron {
 
 namespace {
-
-bool IsDebuggingNotifications() {
-  return base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
-}
 
 bool SaveIconToPath(const SkBitmap& bitmap, const base::FilePath& path) {
   std::optional<std::vector<uint8_t>> png_data =
@@ -50,7 +45,7 @@ std::unique_ptr<NotificationPresenter> NotificationPresenter::Create() {
   if (!presenter->Init())
     return {};
 
-  if (IsDebuggingNotifications())
+  if (electron::debug_notifications)
     LOG(INFO) << "Successfully created Windows notifications presenter";
 
   return presenter;

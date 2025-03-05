@@ -7,7 +7,6 @@
 #include <string>
 #include <utility>
 
-#include "base/containers/contains.h"
 #include "base/path_service.h"
 #include "base/values.h"
 #include "chrome/common/chrome_paths.h"
@@ -89,7 +88,7 @@ void ElectronComponentExtensionResourceManager::AddComponentResourceEntries(
     resource_path = resource_path.NormalizePathSeparators();
 
     if (!gen_folder_path.IsParent(resource_path)) {
-      DCHECK(!base::Contains(path_to_resource_id_, resource_path));
+      DCHECK(!path_to_resource_id_.contains(resource_path));
       path_to_resource_id_[resource_path] = entry.id;
     } else {
       // If the resource is a generated file, strip the generated folder's path,
@@ -98,7 +97,7 @@ void ElectronComponentExtensionResourceManager::AddComponentResourceEntries(
       base::FilePath effective_path =
           base::FilePath().AppendASCII(resource_path.AsUTF8Unsafe().substr(
               gen_folder_path.value().length()));
-      DCHECK(!base::Contains(path_to_resource_id_, effective_path));
+      DCHECK(!path_to_resource_id_.contains(effective_path));
       path_to_resource_id_[effective_path] = entry.id;
     }
   }

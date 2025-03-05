@@ -56,7 +56,7 @@ Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::ToV8(
   if (!rfh)
     return v8::Null(isolate);
 
-  const int process_id = rfh->GetProcess()->GetID();
+  const int32_t process_id = rfh->GetProcess()->GetID().GetUnsafeValue();
   const int routing_id = rfh->GetRoutingID();
 
   if (rfh_templ.IsEmpty()) {
@@ -104,7 +104,7 @@ bool Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::FromV8(
   auto* rfh = content::RenderFrameHost::FromID(process_id, routing_id);
 
   if (!rfh) {
-    // Lazily evaluted property accessed after RFH has been destroyed.
+    // Lazily evaluated property accessed after RFH has been destroyed.
     // Continue to return nullptr, but emit warning to inform developers
     // what occurred.
     electron::util::EmitWarning(

@@ -458,6 +458,10 @@ void ElectronBrowserContext::InitPrefs() {
     }
   }
 #endif
+
+  // Unique uuid for global shortcuts.
+  registry->RegisterStringPref(electron::kElectronGlobalShortcutsUuid,
+                               std::string());
 }
 
 void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {
@@ -689,8 +693,8 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
       blink::MediaStreamDevice video_device(
           request.video_type,
-          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
-                                             rfh->GetRoutingID())
+          content::WebContentsMediaCaptureId(
+              rfh->GetProcess()->GetDeprecatedID(), rfh->GetRoutingID())
               .ToString(),
           base::UTF16ToUTF8(web_contents->GetTitle()));
       video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
@@ -730,9 +734,9 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
       blink::MediaStreamDevice audio_device(
           request.audio_type,
-          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
-                                             rfh->GetRoutingID(),
-                                             disable_local_echo)
+          content::WebContentsMediaCaptureId(
+              rfh->GetProcess()->GetDeprecatedID(), rfh->GetRoutingID(),
+              disable_local_echo)
               .ToString(),
           "Tab audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(

@@ -7,7 +7,6 @@
 #include <string_view>
 #include <utility>
 
-#include "base/containers/contains.h"
 #include "base/observer_list.h"
 #include "base/scoped_observation.h"
 #include "content/public/browser/render_frame_host.h"
@@ -72,7 +71,7 @@ bool IsDevicePermissionAutoGranted(
   // Note: The `DeviceHasInterfaceWithClass()` call is made after checking the
   // origin, since that method call is expensive.
   if (origin.scheme() == extensions::kExtensionScheme &&
-      base::Contains(kSmartCardPrivilegedExtensionIds, origin.host()) &&
+      kSmartCardPrivilegedExtensionIds.contains(origin.host()) &&
       DeviceHasInterfaceWithClass(device_info,
                                   device::mojom::kUsbSmartCardClass)) {
     return true;
@@ -269,7 +268,7 @@ ElectronUsbDelegate::ContextObservation*
 ElectronUsbDelegate::GetContextObserver(
     content::BrowserContext* browser_context) {
   CHECK(browser_context);
-  if (!base::Contains(observations_, browser_context)) {
+  if (!observations_.contains(browser_context)) {
     observations_.emplace(browser_context, std::make_unique<ContextObservation>(
                                                this, browser_context));
   }
@@ -280,9 +279,7 @@ bool ElectronUsbDelegate::IsServiceWorkerAllowedForOrigin(
     const url::Origin& origin) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebUSB is only available on extension service workers for now.
-  if (base::FeatureList::IsEnabled(
-          features::kEnableWebUsbOnExtensionServiceWorker) &&
-      origin.scheme() == extensions::kExtensionScheme) {
+  if (origin.scheme() == extensions::kExtensionScheme) {
     return true;
   }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

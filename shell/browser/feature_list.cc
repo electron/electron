@@ -11,6 +11,7 @@
 #include "base/feature_list.h"
 #include "base/metrics/field_trial.h"
 #include "components/spellcheck/common/spellcheck_features.h"
+#include "content/common/features.h"
 #include "content/public/common/content_features.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
@@ -19,8 +20,11 @@
 #include "third_party/blink/public/common/features.h"
 
 #if BUILDFLAG(IS_MAC)
-#include "content/common/features.h"  // nogncheck
-#include "device/base/features.h"     // nogncheck
+#include "device/base/features.h"  // nogncheck
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "pdf/pdf_features.h"
 #endif
 
 namespace electron {
@@ -40,19 +44,25 @@ void InitializeFeatureList() {
 
 #if BUILDFLAG(IS_WIN)
   disable_features +=
-      // Disable async spellchecker suggestions for Windows, which causes
-      // an empty suggestions list to be returned
-      std::string(",") + spellcheck::kWinRetrieveSuggestionsOnlyOnDemand.name +
       // Delayed spellcheck initialization is causing the
       // 'custom dictionary word list API' spec to crash.
       std::string(",") + spellcheck::kWinDelaySpellcheckServiceInit.name;
 #endif
 
 #if BUILDFLAG(IS_MAC)
-  // Disable window occlusion checker.
   disable_features +=
+      // MacWebContentsOcclusion is causing some odd visibility
+      // issues with multiple web contents
       std::string(",") + features::kMacWebContentsOcclusion.name;
 #endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  // Enable window.showSaveFilePicker api for saving pdf files.
+  // Refs https://issues.chromium.org/issues/373852607
+  enable_features +=
+      std::string(",") + chrome_pdf::features::kPdfUseShowSaveFilePicker.name;
+#endif
+
   std::string platform_specific_enable_features =
       EnablePlatformSpecificFeatures();
   if (platform_specific_enable_features.size() > 0) {
