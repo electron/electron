@@ -80,7 +80,7 @@ index 4fd8dff1089cd6afa6a66dc185734d7671657281..0a1f4268ea771a3d5d4a2668928c6e5d
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index fafd84d08e33622aee01f1792c043180a13dd48d..4490915e0b5c8e93255c6d526d5f37eb6f6b362d 100644
+index 16efc690ba53a771abfcc73d1e55e7db72866607..c734ff098a3885d9e1c6f9109301916ed6165491 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -2222,12 +2222,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -99,7 +99,7 @@ index fafd84d08e33622aee01f1792c043180a13dd48d..4490915e0b5c8e93255c6d526d5f37eb
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 8fda0dfbe8e10a3830bd03a994e7d39817584d36..baf24bbeb9f57fe2609a1af51a6ee4f5abd86ce2 100644
+index a1ad664c266849eb8b4b0cdab460b6cb663ead1b..d9b42f9e7437cfc69caedfcd19cf4671b6337d26 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -980,8 +980,7 @@ class Browser : public TabStripModelObserver,
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9f18308873306e841bbc15d9ba36c93ba5603a15..9d6ad368980202f74d36785623d27354beef3f03 100644
+index e069c6e05803ecdca4b2ee39311b92c6eed8c3f8..c8584558087a55b5b098f729d208bfc859a8c5d2 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4914,8 +4914,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4943,8 +4943,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // TODO(crbug.com/40202416): Support a way for MPArch guests to support this.
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
