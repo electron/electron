@@ -148,9 +148,6 @@ class InspectableWebContents
                             int min,
                             int exclusive_max,
                             int buckets) override {}
-  void SendJsonRequest(DispatchCallback callback,
-                       const std::string& browser_id,
-                       const std::string& url) override;
   void RegisterPreference(const std::string& name,
                           const RegisterOptions& options) override {}
   void GetPreferences(DispatchCallback callback) override;

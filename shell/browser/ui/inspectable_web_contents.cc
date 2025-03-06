@@ -816,12 +816,6 @@ void InspectableWebContents::DispatchProtocolMessageFromDevToolsFrontend(
     agent_host_->DispatchProtocolMessage(this, base::as_byte_span(message));
 }
 
-void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
-                                             const std::string& browser_id,
-                                             const std::string& url) {
-  std::move(callback).Run(nullptr);
-}
-
 void InspectableWebContents::GetPreferences(DispatchCallback callback) {
   const base::Value& prefs = pref_service_->GetValue(kDevToolsPreferences);
   std::move(callback).Run(&prefs);
