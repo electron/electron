@@ -180,6 +180,7 @@ class InspectableWebContents
   void RecordDrag(const DragEvent& event) override {}
   void RecordChange(const ChangeEvent& event) override {}
   void RecordKeyDown(const KeyDownEvent& event) override {}
+  void RecordSettingAccess(const SettingAccessEvent& event) override {}
   void ShowSurvey(DispatchCallback callback,
                   const std::string& trigger) override {}
   void CanShowSurvey(DispatchCallback callback,
