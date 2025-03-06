@@ -112,10 +112,10 @@ index 5c4b8a05034f8defacbc13671fe9bc92f76ade5a..e7390e01f113755613f42d592b36108b
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 4e8781ad6a3787464d8d13afc0c555446bbe9477..0b05f77af5589effb824d8e4ac3b60a433a54a8f 100644
+index cb7b66f1e4cf6d0c44b6e45e5a978a128b9bd0a0..6bced9b3fa92efdd6d6cdcb4cd0423ee7d73b697 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -666,6 +666,9 @@ URLLoader::URLLoader(
+@@ -667,6 +667,9 @@ URLLoader::URLLoader(
            mojo::SimpleWatcher::ArmingPolicy::MANUAL,
            base::SequencedTaskRunner::GetCurrentDefault()),
        per_factory_orb_state_(context.GetMutableOrbState()),
@@ -134,7 +134,7 @@ index 4e8781ad6a3787464d8d13afc0c555446bbe9477..0b05f77af5589effb824d8e4ac3b60a4
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -2052,6 +2055,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -2050,6 +2053,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

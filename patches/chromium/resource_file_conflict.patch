@@ -52,10 +52,10 @@ Some alternatives to this patch:
 None of these options seems like a substantial maintainability win over this patch to me (@nornagon).
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 7bad6d2fe242bc71014d3fbd6be4481280297366..bdf6d5865fb0069f4df368613167069d2fb50c86 100644
+index 9e0dca945ef9a9a0209c84ab6cf5e1cda352257e..b38442f018b218944c7b85c9f8bd8b8eb6137b9e 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -1546,7 +1546,7 @@ if (is_chrome_branded && !is_android) {
+@@ -1549,7 +1549,7 @@ if (is_chrome_branded && !is_android) {
    }
  }
  
@@ -64,7 +64,7 @@ index 7bad6d2fe242bc71014d3fbd6be4481280297366..bdf6d5865fb0069f4df368613167069d
    chrome_paks("packed_resources") {
      if (is_mac) {
        output_dir = "$root_gen_dir/repack"
-@@ -1592,6 +1592,12 @@ repack("browser_tests_pak") {
+@@ -1595,6 +1595,12 @@ repack("browser_tests_pak") {
    deps = [ "//chrome/test/data/webui:resources" ]
  }
  
