@@ -30,9 +30,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
-#if BUILDFLAG(IS_MAC)
-#include "shell/browser/mac/geo_utils.h"
-#endif
 
 namespace electron {
 
@@ -75,9 +72,6 @@ class ElectronPermissionManager::PendingRequest {
         content::ChildProcessSecurityPolicy::GetInstance()
             ->GrantSendMidiSysExMessage(render_frame_host_id_.child_id);
       } else if (permission == blink::PermissionType::GEOLOCATION) {
-#if BUILDFLAG(IS_MAC)
-        InitializeGeolocation();
-#endif
         ElectronBrowserMainParts::Get()
             ->GetGeolocationControl()
             ->UserDidOptIntoLocationServices();
@@ -201,9 +195,6 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
             ->GrantSendMidiSysExMessage(
                 render_frame_host->GetProcess()->GetDeprecatedID());
       } else if (permission == blink::PermissionType::GEOLOCATION) {
-#if BUILDFLAG(IS_MAC)
-        InitializeGeolocation();
-#endif
         ElectronBrowserMainParts::Get()
             ->GetGeolocationControl()
             ->UserDidOptIntoLocationServices();

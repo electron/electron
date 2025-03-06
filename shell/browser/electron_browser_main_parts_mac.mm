@@ -31,6 +31,36 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
   [[NSUserDefaults standardUserDefaults]
       setObject:@"NO"
          forKey:@"NSTreatUnknownArgumentsAsOpen"];
+
+  bool hasLocationPermissionKeys = false;
+
+  NSDictionary* infoPlist = [[NSBundle mainBundle] infoDictionary];
+
+  // Added keys I thought were relevant from the docs
+  // https://developer.apple.com/documentation/bundleresources/choosing-the-location-services-authorization-to-request
+  NSArray* locationKeys = @[
+    @"NSLocationWhenInUseUsageDescription",
+    @"NSLocationAlwaysAndWhenInUseUsageDescription",
+    @"NSLocationUsageDescription",
+    @"NSLocationTemporaryUsageDescriptionDictionary",
+    @"NSWidgetWantsLocation",
+  ];
+
+  for (NSString* key in locationKeys) {
+    if (infoPlist[key]) {
+      hasLocationPermissionKeys = true;
+      break;
+    }
+  }
+
+  // Should I log that geolocation is enabled/disabled?
+  if (hasLocationPermissionKeys) {
+    if (!device::GeolocationSystemPermissionManager::GetInstance()) {
+      device::GeolocationSystemPermissionManager::SetInstance(
+          device::SystemGeolocationSourceApple::
+              CreateGeolocationSystemPermissionManager());
+    }
+  }
 }
 
 void ElectronBrowserMainParts::FreeAppDelegate() {
