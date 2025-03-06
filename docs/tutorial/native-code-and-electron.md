@@ -365,7 +365,7 @@ console.log(myAddon.helloWorld('Electron'))
 
 ## 4) References and Further Learning
 
-Native addon development can be written in several languages beyond C++. Rust can be used with crates like [`neon`](https://neon-rs.dev/) or [`node-bindgen`](https://github.com/infinyon/node-bindgen). Objective-C/Swift can be used through Objective-C++ on macOS.
+Native addon development can be written in several languages beyond C++. Rust can be used with crates like [`napi-rs`](https://github.com/napi-rs/napi-rs), [`neon`](https://neon-rs.dev/), or [`node-bindgen`](https://github.com/infinyon/node-bindgen). Objective-C/Swift can be used through Objective-C++ on macOS.
 
 The specific implementation details differ significantly by platform, especially when accessing platform-specific APIs or UI frameworks, like Windows' Win32 API, COM components, UWP/WinRT - or macOS's Cocoa, AppKit, or ObjectiveC runtime.
 
