@@ -228,7 +228,7 @@ The `filters` specifies an array of file types that can be displayed, see
 **Note:** On macOS, using the asynchronous version is recommended to avoid issues when
 expanding and collapsing the dialog.
 
-### `dialog.showMessageBoxSync([wndow, ]options)`
+### `dialog.showMessageBoxSync([window, ]options)`
 
 * `window` [BaseWindow](base-window.md) (optional)
 * `options` Object

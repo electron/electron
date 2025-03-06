@@ -345,10 +345,10 @@ index 9d45ec49a4fb5e12407b65b83c1ba0c13cd0dfd8..400cce91b020ecd5e48566f125515d2c
 +
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea0396a49e 100644
+index b23d357d4e21f10be82f0ea37b1ec3e959fc2c0b..d29de35ac813cc68b1faa11e803ace9a78df74ba 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -7,6 +7,7 @@
+@@ -12,6 +12,7 @@
  #include <string_view>
  
  #include "base/check.h"
@@ -356,7 +356,7 @@ index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea
  #include "base/files/file_util.h"
  #include "base/functional/bind.h"
  #include "base/logging.h"
-@@ -40,6 +41,8 @@ namespace {
+@@ -45,6 +46,8 @@ namespace {
  constexpr char kXdgPortalService[] = "org.freedesktop.portal.Desktop";
  constexpr char kXdgPortalObject[] = "/org/freedesktop/portal/desktop";
  
@@ -365,7 +365,7 @@ index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea
  constexpr int kXdgPortalRequiredVersion = 3;
  
  constexpr char kFileChooserInterfaceName[] =
-@@ -61,6 +64,8 @@ constexpr uint32_t kFileChooserFilterKindGlob = 0;
+@@ -66,6 +69,8 @@ constexpr uint32_t kFileChooserFilterKindGlob = 0;
  
  constexpr char kFileUriPrefix[] = "file://";
  
@@ -374,7 +374,7 @@ index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea
  enum class ServiceAvailability {
    kNotStarted,
    kInProgress,
-@@ -70,6 +75,9 @@ enum class ServiceAvailability {
+@@ -75,6 +80,9 @@ enum class ServiceAvailability {
  
  ServiceAvailability g_service_availability = ServiceAvailability::kNotStarted;
  
@@ -384,7 +384,7 @@ index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea
  scoped_refptr<base::SequencedTaskRunner>& GetMainTaskRunner() {
    static base::NoDestructor<scoped_refptr<base::SequencedTaskRunner>>
        main_task_runner;
-@@ -89,9 +97,10 @@ void OnGetPropertyReply(dbus::Response* response) {
+@@ -94,9 +102,10 @@ void OnGetPropertyReply(dbus::Response* response) {
      return;
    }
  
@@ -396,7 +396,7 @@ index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea
  }
  
  void OnServiceStarted(std::optional<bool> service_started) {
-@@ -159,6 +168,12 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
+@@ -164,6 +173,12 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
    }
    g_service_availability = ServiceAvailability::kInProgress;
  
@@ -409,7 +409,7 @@ index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea
    GetMainTaskRunner() = base::SequencedTaskRunner::GetCurrentDefault();
  
    dbus_utils::CheckForServiceAndStart(dbus_thread_linux::GetSharedSessionBus(),
-@@ -175,6 +190,11 @@ bool SelectFileDialogLinuxPortal::IsPortalAvailable() {
+@@ -180,6 +195,11 @@ bool SelectFileDialogLinuxPortal::IsPortalAvailable() {
    return g_service_availability == ServiceAvailability::kAvailable;
  }
  
@@ -421,7 +421,7 @@ index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea
  bool SelectFileDialogLinuxPortal::IsRunning(
      gfx::NativeWindow parent_window) const {
    return parent_window && host_ && host_.get() == parent_window->GetHost();
-@@ -377,11 +397,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -382,11 +402,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
    DbusDictionary dict;
  
@@ -439,7 +439,7 @@ index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -394,6 +417,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -399,6 +422,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  

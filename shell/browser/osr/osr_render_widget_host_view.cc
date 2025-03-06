@@ -208,8 +208,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_->SetRootLayer(root_layer_.get());
 
   ResizeRootLayer(false);
+
   render_widget_host_->SetView(this);
-  render_widget_host_->render_frame_metadata_provider()->AddObserver(this);
 
   if (content::GpuDataManager::GetInstance()->HardwareAccelerationEnabled()) {
     video_consumer_ = std::make_unique<OffScreenVideoConsumer>(
@@ -233,17 +233,32 @@ void OffScreenRenderWidgetHostView::OnLocalSurfaceIdChanged(
 }
 
 OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
-  render_widget_host_->render_frame_metadata_provider()->RemoveObserver(this);
+  ReleaseCompositor();
+  root_layer_.reset();
+
+  DCHECK(!parent_host_view_);
+  DCHECK(!popup_host_view_);
+  DCHECK(!child_host_view_);
+  DCHECK(guest_host_views_.empty());
+}
+
+void OffScreenRenderWidgetHostView::ReleaseCompositor() {
+  if (!compositor_) {
+    return;  // already released
+  }
 
   // Marking the DelegatedFrameHost as removed from the window hierarchy is
   // necessary to remove all connections to its old ui::Compositor.
-  if (is_showing_)
-    delegated_frame_host_->WasHidden(
+  if (is_showing_) {
+    delegated_frame_host()->WasHidden(
         content::DelegatedFrameHost::HiddenCause::kOther);
-  delegated_frame_host_->DetachFromCompositor();
+  }
 
+  delegated_frame_host()->DetachFromCompositor();
+  delegated_frame_host_.reset();
+
+  host_display_client_ = nullptr;
   compositor_.reset();
-  root_layer_.reset();
 }
 
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
@@ -301,21 +316,36 @@ void OffScreenRenderWidgetHostView::ShowWithVisibility(
   delegated_frame_host_->WasShown(GetLocalSurfaceId(),
                                   root_layer()->bounds().size(), {});
 
-  if (render_widget_host_)
-    render_widget_host_->WasShown({});
+  if (render_widget_host_) {
+    render_widget_host_->WasShown(
+        /*record_tab_switch_time_request=*/{});
+
+    // Call OnRenderFrameMetadataChangedAfterActivation for every frame.
+    auto* provider = content::RenderWidgetHostImpl::From(render_widget_host_)
+                         ->render_frame_metadata_provider();
+    provider->AddObserver(this);
+  }
 }
 
 void OffScreenRenderWidgetHostView::Hide() {
   if (!is_showing_)
     return;
 
-  if (render_widget_host_)
-    render_widget_host_->WasHidden();
+  if (render_widget_host_) {
+    // TODO(codebytere) - remove when CL:6250383 is released.
+    if (render_widget_host_->delegate())
+      render_widget_host_->WasHidden();
 
-  // TODO(deermichel): correct or kOther?
-  delegated_frame_host()->WasHidden(
-      content::DelegatedFrameHost::HiddenCause::kOccluded);
-  delegated_frame_host()->DetachFromCompositor();
+    auto* provider = content::RenderWidgetHostImpl::From(render_widget_host_)
+                         ->render_frame_metadata_provider();
+    provider->RemoveObserver(this);
+  }
+
+  if (delegated_frame_host()) {
+    delegated_frame_host()->WasHidden(
+        content::DelegatedFrameHost::HiddenCause::kOther);
+    delegated_frame_host()->DetachFromCompositor();
+  }
 
   is_showing_ = false;
 }
@@ -531,8 +561,8 @@ const viz::FrameSinkId& OffScreenRenderWidgetHostView::GetFrameSinkId() const {
 
 void OffScreenRenderWidgetHostView::DidNavigate() {
   ResizeRootLayer(true);
-  if (delegated_frame_host_)
-    delegated_frame_host_->DidNavigate();
+  if (delegated_frame_host())
+    delegated_frame_host()->DidNavigate();
 }
 
 bool OffScreenRenderWidgetHostView::TransformPointToCoordSpaceForView(
@@ -888,7 +918,7 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
   } else {
     if (frame_rate <= 0)
       frame_rate = 1;
-    if (frame_rate > 240)
+    if (!offscreen_use_shared_texture_ && frame_rate > 240)
       frame_rate = 240;
 
     frame_rate_ = frame_rate;

@@ -75,8 +75,7 @@ struct DeleteOnUIThread {
   static void Destruct(const T* x) {
     if (electron::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
-                                         x);
+      content::GetUIThreadTaskRunner({})->DeleteSoon(FROM_HERE, x);
     } else {
       delete x;
     }

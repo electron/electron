@@ -7,7 +7,6 @@
 #include <algorithm>
 
 #include "base/check.h"
-#include "base/containers/contains.h"
 #include "base/json/json_writer.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -947,13 +946,13 @@ ScriptingGetRegisteredContentScriptsFunction::Run() {
       continue;
     }
 
-    if (!id_filter.empty() && !base::Contains(id_filter, script->id())) {
+    if (!id_filter.empty() && !id_filter.contains(script->id())) {
       continue;
     }
 
     auto registered_script = CreateRegisteredContentScriptInfo(*script);
     registered_script.persist_across_sessions =
-        base::Contains(persistent_script_ids, script->id());
+        persistent_script_ids.contains(script->id());
 
     // Remove the internally used prefix from the `script`'s ID before
     // returning.
@@ -1123,7 +1122,7 @@ std::unique_ptr<UserScript> ScriptingUpdateContentScriptsFunction::ApplyUpdate(
   // original script is persisted and the flag is not specified.
   if (new_script.persist_across_sessions.value_or(false) ||
       (!new_script.persist_across_sessions &&
-       base::Contains(*script_ids_to_persist, new_script.id))) {
+       script_ids_to_persist->contains(new_script.id))) {
     script_ids_to_persist->insert(new_script.id);
   }
 

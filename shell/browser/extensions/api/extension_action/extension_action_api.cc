@@ -101,6 +101,13 @@ ExtensionActionSetIconFunction::RunExtensionAction() {
 }
 
 ExtensionFunction::ResponseAction
+ExtensionActionOpenPopupFunction::RunExtensionAction() {
+  LOG(INFO) << "chrome.action.openPopup is not supported in Electron";
+
+  return RespondNow(WithArguments(""));
+}
+
+ExtensionFunction::ResponseAction
 ExtensionActionSetTitleFunction::RunExtensionAction() {
   LOG(INFO) << "chrome.action.setTitle is not supported in Electron";
 

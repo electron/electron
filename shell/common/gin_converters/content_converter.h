@@ -26,9 +26,7 @@ struct NativeWebKeyboardEvent;
 }
 
 using ContextMenuParamsWithRenderFrameHost =
-    std::tuple<content::ContextMenuParams,
-               content::RenderFrameHost*,
-               std::optional<std::vector<std::u16string>>>;
+    std::pair<content::ContextMenuParams, content::RenderFrameHost*>;
 
 namespace gin {
 

@@ -5,7 +5,16 @@
 Process: [Main](../glossary.md#main-process)<br />
 _This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
-Each navigation entry corresponds to a specific page. The indexing system follows a sequential order, where the first available navigation entry is at index 0, representing the earliest visited page, and the latest navigation entry is at index N, representing the most recent page. Maintaining this ordered list of navigation entries enables seamless navigation both backward and forward through the user's browsing history.
+Each [NavigationEntry](./structures/navigation-entry.md) corresponds to a specific visited page.
+The indexing system follows a sequential order, where the entry for the earliest visited
+page is at index 0 and the entry for the most recent visited page is at index N.
+
+Some APIs in this class also accept an _offset_, which is an integer representing the relative
+position of an index from the current entry according to the above indexing system (i.e. an offset
+value of `1` would represent going forward in history by one page).
+
+Maintaining this ordered list of navigation entries enables seamless navigation both backward and
+forward through the user's browsing history.
 
 ### Instance Methods
 
@@ -21,7 +30,7 @@ Returns `boolean` - Whether the browser can go forward to next web page.
 
 * `offset` Integer
 
-Returns `boolean` - Whether the web page can go to the specified `offset` from the current entry.
+Returns `boolean` - Whether the web page can go to the specified relative `offset` from the current entry.
 
 #### `navigationHistory.clear()`
 
@@ -57,7 +66,7 @@ Navigates browser to the specified absolute web page index.
 
 * `offset` Integer
 
-Navigates to the specified offset from the current entry.
+Navigates to the specified relative offset from the current entry.
 
 #### `navigationHistory.length()`
 

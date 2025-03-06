@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/containers/contains.h"
 #include "base/strings/pattern.h"
 #include "base/types/expected_macros.h"
 #include "chrome/common/url_constants.h"

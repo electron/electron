@@ -12,7 +12,38 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (36.0)
+
+### Removed:`isDefault` and `status` properties on `PrinterInfo`
+
+These properties have been removed from the PrinterInfo Object
+because they have been removed from upstream Chromium.
+
+### Deprecated: Extension methods and events on `session`
+
+`session.loadExtension`, `session.removeExtension`, `session.getExtension`,
+`session.getAllExtensions`, 'extension-loaded' event, 'extension-unloaded'
+event, and 'extension-ready' events have all moved to the new
+`session.extensions` class.
+
+### Removed: `systemPreferences.isAeroGlassEnabled()`
+
+The `systemPreferences.isAeroGlassEnabled()` function has been removed without replacement.
+It has been always returning `true` since Electron 23, which only supports Windows 10+, where DWM composition can no longer be disabled.
+
+https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw#disabling-dwm-composition-windows7-and-earlier
+
 ## Planned Breaking API Changes (35.0)
+
+### Behavior Changed: Dialog API's `defaultPath` option on Linux
+
+On Linux, the required portal version for file dialogs has been reverted
+to 3 from 4. Using the `defaultPath` option of the Dialog API is not
+supported when using portal file chooser dialogs unless the portal
+backend is version 4 or higher. The `--xdg-portal-required-version`
+[command-line switch](/api/command-line-switches.md#--xdg-portal-required-versionversion)
+can be used to force a required version for your application.
+See [#44426](https://github.com/electron/electron/pull/44426) for more details.
 
 ### Deprecated: `getFromVersionID` on `session.serviceWorkers`
 
@@ -62,6 +93,22 @@ webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame
 ```
 
 Additionally, `level` is now a string with possible values of `info`, `warning`, `error`, and `debug`.
+
+### Behavior Changed: `urls` property of `WebRequestFilter`.
+
+Previously, an empty urls array was interpreted as including all URLs. To explicitly include all URLs, developers should now use the `<all_urls>` pattern, which is a [designated URL pattern](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns#all_urls) that matches every possible URL. This change clarifies the intent and ensures more predictable behavior.
+
+```js
+// Deprecated
+const deprecatedFilter = {
+  urls: []
+}
+
+// Replace with
+const newFilter = {
+  urls: ['<all_urls>']
+}
+```
 
 ### Deprecated: `systemPreferences.isAeroGlassEnabled()`
 

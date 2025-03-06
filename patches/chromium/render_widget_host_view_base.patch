@@ -6,10 +6,10 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 51f836176bf924de5fc26081d8b968f918181947..641a9c7fa68328e868167cf2fcdfec01643fea18 100644
+index 5a91c313ed757c04810f03bdc2be0e455913921e..0cf7de41a9958fe9c7b9b60e3edc7402f3a74c67 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -639,6 +639,13 @@ void RenderWidgetHostViewBase::OnFrameTokenChangedForView(
+@@ -654,6 +654,13 @@ void RenderWidgetHostViewBase::OnFrameTokenChangedForView(
      host()->DidProcessFrame(frame_token, activation_time);
  }
  
@@ -24,10 +24,10 @@ index 51f836176bf924de5fc26081d8b968f918181947..641a9c7fa68328e868167cf2fcdfec01
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 2a2edc6063b49a313fb359e99b39cf608c6233d1..96e6777899154e73661fb17184b9727cce2eb0a3 100644
+index e1fb0dc61160a402b7748aac7d048e0ffc9c1b32..c2222c345ca01af92b4f42142a6e0c9851129e85 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
-@@ -29,8 +29,11 @@
+@@ -30,6 +30,8 @@
  #include "components/viz/common/surfaces/scoped_surface_id_allocator.h"
  #include "components/viz/common/surfaces/surface_id.h"
  #include "content/browser/renderer_host/display_feature.h"
@@ -35,11 +35,8 @@ index 2a2edc6063b49a313fb359e99b39cf608c6233d1..96e6777899154e73661fb17184b9727c
 +#include "content/browser/web_contents/web_contents_view.h"
  #include "content/common/content_export.h"
  #include "content/public/browser/render_frame_metadata_provider.h"
-+#include "content/public/browser/render_widget_host.h"
- #include "content/public/browser/render_widget_host_view.h"
- #include "content/public/common/page_visibility_state.h"
- #include "content/public/common/widget_type.h"
-@@ -70,11 +73,13 @@ namespace content {
+ #include "content/public/browser/render_widget_host.h"
+@@ -72,11 +74,13 @@ namespace content {
  class DevicePosturePlatformProvider;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
@@ -53,7 +50,7 @@ index 2a2edc6063b49a313fb359e99b39cf608c6233d1..96e6777899154e73661fb17184b9727c
  class DelegatedFrameHost;
  class SyntheticGestureTarget;
  
-@@ -145,6 +150,10 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -150,6 +154,10 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    void ProcessGestureEvent(const blink::WebGestureEvent& event,
                             const ui::LatencyInfo& latency) override;
    RenderWidgetHostViewBase* GetRootView() override;
@@ -64,7 +61,7 @@ index 2a2edc6063b49a313fb359e99b39cf608c6233d1..96e6777899154e73661fb17184b9727c
    void OnAutoscrollStart() override;
    const viz::DisplayHitTestQueryMap& GetDisplayHitTestQuery() const override;
  
-@@ -182,6 +191,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -195,6 +203,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
        const gfx::Rect& keyboard_rect) override {}
    bool IsHTMLFormPopup() const override;
  

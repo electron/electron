@@ -195,7 +195,7 @@ void ThemeDataSource::SendColorsCss(
     css_selector = ":host";
   } else {
     // This selector requires more specificity than other existing CSS
-    // selectors that define variables. We increase the specifity by adding
+    // selectors that define variables. We increase the specificity by adding
     // a pseudoselector.
     css_selector = "html:not(#z)";
   }

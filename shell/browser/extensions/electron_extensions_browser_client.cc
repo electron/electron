@@ -393,10 +393,6 @@ std::string ElectronExtensionsBrowserClient::GetApplicationLocale() {
   return ElectronBrowserClient::Get()->GetApplicationLocale();
 }
 
-std::string ElectronExtensionsBrowserClient::GetUserAgent() const {
-  return ElectronBrowserClient::Get()->GetUserAgent();
-}
-
 void ElectronExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(
     mojo::BinderMapWithContext<content::RenderFrameHost*>* map,
     content::RenderFrameHost* render_frame_host,

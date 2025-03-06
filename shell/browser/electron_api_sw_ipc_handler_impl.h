@@ -70,8 +70,12 @@ class ElectronApiSWIPCHandlerImpl : public mojom::ElectronApiIPC,
   ElectronBrowserContext* GetBrowserContext();
   api::Session* GetSession();
 
-  gin::Handle<gin_helper::internal::Event> MakeIPCEvent(v8::Isolate* isolate,
-                                                        bool internal);
+  gin::Handle<gin_helper::internal::Event> MakeIPCEvent(
+      v8::Isolate* isolate,
+      api::Session* session,
+      bool internal,
+      electron::mojom::ElectronApiIPC::InvokeCallback callback =
+          electron::mojom::ElectronApiIPC::InvokeCallback());
 
   // content::RenderProcessHostObserver
   void RenderProcessExited(

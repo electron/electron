@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "base/task/single_thread_task_runner.h"
 #include "content/public/common/color_parser.h"
 #include "electron/buildflags/buildflags.h"
@@ -725,6 +724,10 @@ void BaseWindow::SetContentProtection(bool enable) {
   return window_->SetContentProtection(enable);
 }
 
+bool BaseWindow::IsContentProtected() const {
+  return window_->IsContentProtected();
+}
+
 void BaseWindow::SetFocusable(bool focusable) {
   return window_->SetFocusable(focusable);
 }
@@ -1052,7 +1055,7 @@ void BaseWindow::UnhookWindowMessage(UINT message) {
 }
 
 bool BaseWindow::IsWindowMessageHooked(UINT message) {
-  return base::Contains(messages_callback_map_, message);
+  return messages_callback_map_.contains(message);
 }
 
 void BaseWindow::UnhookAllWindowMessages() {
@@ -1142,7 +1145,7 @@ void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
   if (!updated)
     return;
 
-    // If anything was updated, ensure the overlay is repainted.
+  // If anything was updated, ensure the overlay is repainted.
 #if BUILDFLAG(IS_WIN)
   auto* frame_view = static_cast<WinFrameView*>(
       window->widget()->non_client_view()->frame_view());
@@ -1262,6 +1265,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isDocumentEdited", &BaseWindow::IsDocumentEdited)
       .SetMethod("setIgnoreMouseEvents", &BaseWindow::SetIgnoreMouseEvents)
       .SetMethod("setContentProtection", &BaseWindow::SetContentProtection)
+      .SetMethod("_isContentProtected", &BaseWindow::IsContentProtected)
       .SetMethod("setFocusable", &BaseWindow::SetFocusable)
       .SetMethod("isFocusable", &BaseWindow::IsFocusable)
       .SetMethod("setMenu", &BaseWindow::SetMenu)

@@ -388,6 +388,13 @@ describe('ServiceWorkerMain module', () => {
       const result = await runTest(serviceWorker, { name: 'testEvaluate', args: ['evalConstructorName'] });
       expect(result).to.equal('ServiceWorkerGlobalScope');
     });
+
+    it('does not leak prototypes', async () => {
+      loadWorkerScript();
+      const serviceWorker = await waitForServiceWorker('running');
+      const result = await runTest(serviceWorker, { name: 'testPrototypeLeak', args: [] });
+      expect(result).to.be.true();
+    });
   });
 
   describe('extensions', () => {
@@ -401,7 +408,7 @@ describe('ServiceWorkerMain module', () => {
 
     it('can observe extension service workers', async () => {
       const serviceWorkerPromise = waitForServiceWorker();
-      const extension = await ses.loadExtension(testExtensionFixture);
+      const extension = await ses.extensions.loadExtension(testExtensionFixture);
       const serviceWorker = await serviceWorkerPromise;
       expect(serviceWorker.scope).to.equal(extension.url);
     });
@@ -409,7 +416,7 @@ describe('ServiceWorkerMain module', () => {
     it('has extension state available when preload runs', async () => {
       registerPreload('preload-send-extension.js');
       const serviceWorkerPromise = waitForServiceWorker();
-      const extensionPromise = ses.loadExtension(testExtensionFixture);
+      const extensionPromise = ses.extensions.loadExtension(testExtensionFixture);
       const serviceWorker = await serviceWorkerPromise;
       const result = await new Promise<any>((resolve) => {
         serviceWorker.ipc.handleOnce('preload-extension-result', (_event, result) => {

@@ -65,6 +65,14 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
   void OnConnectionError();
 
   content::RenderFrameHost* GetRenderFrameHost();
+  api::Session* GetSession();
+
+  gin::Handle<gin_helper::internal::Event> MakeIPCEvent(
+      v8::Isolate* isolate,
+      api::Session* session,
+      bool internal,
+      electron::mojom::ElectronApiIPC::InvokeCallback callback =
+          electron::mojom::ElectronApiIPC::InvokeCallback());
 
   content::GlobalRenderFrameHostId render_frame_host_id_;
 

@@ -23,7 +23,22 @@ systemPickerVideoSource.name = '';
 Object.freeze(systemPickerVideoSource);
 
 Session.prototype._init = function () {
-  addIpcDispatchListeners(this, this.serviceWorkers);
+  addIpcDispatchListeners(this);
+
+  if (this.extensions) {
+    const rerouteExtensionEvent = (eventName: string) => {
+      const warn = deprecate.warnOnce(`${eventName} event`, `session.extensions ${eventName} event`);
+      this.extensions.on(eventName as any, (...args: any[]) => {
+        if (this.listenerCount(eventName) !== 0) {
+          warn();
+          this.emit(eventName, ...args);
+        }
+      });
+    };
+    rerouteExtensionEvent('extension-loaded');
+    rerouteExtensionEvent('extension-unloaded');
+    rerouteExtensionEvent('extension-ready');
+  }
 };
 
 Session.prototype.fetch = function (input: RequestInfo, init?: RequestInit) {
@@ -66,6 +81,35 @@ Session.prototype.setPreloads = function (preloads) {
     this.registerPreloadScript(script);
   });
 };
+
+Session.prototype.getAllExtensions = deprecate.moveAPI(
+  function (this: Electron.Session) {
+    return this.extensions.getAllExtensions();
+  },
+  'session.getAllExtensions',
+  'session.extensions.getAllExtensions'
+);
+Session.prototype.getExtension = deprecate.moveAPI(
+  function (this: Electron.Session, extensionId) {
+    return this.extensions.getExtension(extensionId);
+  },
+  'session.getExtension',
+  'session.extensions.getExtension'
+);
+Session.prototype.loadExtension = deprecate.moveAPI(
+  function (this: Electron.Session, path, options) {
+    return this.extensions.loadExtension(path, options);
+  },
+  'session.loadExtension',
+  'session.extensions.loadExtension'
+);
+Session.prototype.removeExtension = deprecate.moveAPI(
+  function (this: Electron.Session, extensionId) {
+    return this.extensions.removeExtension(extensionId);
+  },
+  'session.removeExtension',
+  'session.extensions.removeExtension'
+);
 
 export default {
   fromPartition,

@@ -8,7 +8,6 @@
 #include <unordered_set>
 #include <utility>
 
-#include "base/containers/contains.h"
 #include "base/containers/to_vector.h"
 #include "base/task/single_thread_task_runner.h"
 #include "gin/arguments.h"
@@ -233,7 +232,7 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
   // or cloned ports, throw an error (per section 8.3.3 of the HTML5 spec).
   for (unsigned i = 0; i < ports.size(); ++i) {
     auto* port = ports[i].get();
-    if (!port || port->IsNeutered() || base::Contains(visited, port)) {
+    if (!port || port->IsNeutered() || visited.contains(port)) {
       std::string type;
       if (!port)
         type = "null";

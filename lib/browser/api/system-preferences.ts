@@ -20,12 +20,4 @@ if ('accessibilityDisplayShouldReduceTransparency' in systemPreferences) {
   });
 }
 
-if (process.platform === 'win32') {
-  const isAeroGlassEnabledDeprecated = deprecate.warnOnce('systemPreferences.isAeroGlassEnabled');
-  systemPreferences.isAeroGlassEnabled = () => {
-    isAeroGlassEnabledDeprecated();
-    return true;
-  };
-}
-
 export default systemPreferences;

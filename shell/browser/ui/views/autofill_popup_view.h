@@ -43,6 +43,8 @@ class AutofillPopupChildView : public views::View {
   explicit AutofillPopupChildView(const std::u16string& suggestion)
       : suggestion_(suggestion) {
     SetFocusBehavior(FocusBehavior::ALWAYS);
+    SetAccessibleRole(ax::mojom::Role::kMenuItem);
+    SetAccessibleName(suggestion);
   }
 
   // disable copy
@@ -51,9 +53,6 @@ class AutofillPopupChildView : public views::View {
 
  private:
   ~AutofillPopupChildView() override = default;
-
-  // views::Views implementation
-  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
   std::u16string suggestion_;
 };
@@ -103,7 +102,6 @@ class AutofillPopupView : public views::WidgetDelegateView,
 
   // views::Views implementation.
   void OnPaint(gfx::Canvas* canvas) override;
-  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
   void OnMouseCaptureLost() override;
   bool OnMouseDragged(const ui::MouseEvent& event) override;
   void OnMouseExited(const ui::MouseEvent& event) override;

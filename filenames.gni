@@ -741,6 +741,8 @@ filenames = {
   ]
 
   lib_sources_extensions = [
+    "shell/browser/api/electron_api_extensions.cc",
+    "shell/browser/api/electron_api_extensions.h",
     "shell/browser/extensions/api/extension_action/extension_action_api.cc",
     "shell/browser/extensions/api/extension_action/extension_action_api.h",
     "shell/browser/extensions/api/management/electron_management_api_delegate.cc",
@@ -759,8 +761,6 @@ filenames = {
     "shell/browser/extensions/electron_browser_context_keyed_service_factories.h",
     "shell/browser/extensions/electron_component_extension_resource_manager.cc",
     "shell/browser/extensions/electron_component_extension_resource_manager.h",
-    "shell/browser/extensions/electron_display_info_provider.cc",
-    "shell/browser/extensions/electron_display_info_provider.h",
     "shell/browser/extensions/electron_extension_host_delegate.cc",
     "shell/browser/extensions/electron_extension_host_delegate.h",
     "shell/browser/extensions/electron_extension_loader.cc",

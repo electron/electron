@@ -27,11 +27,6 @@
 
 namespace electron {
 
-void AutofillPopupChildView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->role = ax::mojom::Role::kMenuItem;
-  node_data->SetName(suggestion_);
-}
-
 BEGIN_METADATA(AutofillPopupChildView)
 END_METADATA
 
@@ -41,6 +36,8 @@ AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
   CreateChildViews();
   SetFocusBehavior(FocusBehavior::ALWAYS);
   set_drag_controller(this);
+  SetAccessibleRole(ax::mojom::Role::kMenu);
+  SetAccessibleName(u"Autofill Menu");
 }
 
 AutofillPopupView::~AutofillPopupView() {
@@ -103,7 +100,7 @@ void AutofillPopupView::Show() {
   auto* host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
   host->AddKeyPressEventCallback(keypress_callback_);
 
-  NotifyAccessibilityEvent(ax::mojom::Event::kMenuStart, true);
+  NotifyAccessibilityEventDeprecated(ax::mojom::Event::kMenuStart, true);
 }
 
 void AutofillPopupView::Hide() {
@@ -114,7 +111,7 @@ void AutofillPopupView::Hide() {
   }
 
   RemoveObserver();
-  NotifyAccessibilityEvent(ax::mojom::Event::kMenuEnd, true);
+  NotifyAccessibilityEventDeprecated(ax::mojom::Event::kMenuEnd, true);
 
   if (GetWidget()) {
     GetWidget()->Close();
@@ -157,7 +154,7 @@ void AutofillPopupView::OnSelectedRowChanged(
     int selected = current_row_selection.value_or(-1);
     if (selected == -1 || static_cast<size_t>(selected) >= children().size())
       return;
-    children().at(selected)->NotifyAccessibilityEvent(
+    children().at(selected)->NotifyAccessibilityEventDeprecated(
         ax::mojom::Event::kSelection, true);
   }
 }
@@ -263,11 +260,6 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
     view_proxy_->SetBounds(popup_->popup_bounds_in_view());
     view_proxy_->SetBitmap(bitmap);
   }
-}
-
-void AutofillPopupView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->role = ax::mojom::Role::kMenu;
-  node_data->SetName("Autofill Menu");
 }
 
 void AutofillPopupView::OnMouseCaptureLost() {

@@ -438,7 +438,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
             net::AuthCredentials(username_str, password_str));
       },
       std::move(auth_responder));
-  Emit("login", auth_info, base::AdaptCallbackForRepeating(std::move(cb)));
+  Emit("login", auth_info, std::move(cb));
 }
 
 void SimpleURLLoaderWrapper::OnSSLCertificateError(
@@ -568,7 +568,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
             {"no-cors", Val::kNoCors},
             {"same-origin", Val::kSameOrigin},
         });
-    if (auto* iter = Lookup.find(mode); iter != Lookup.end())
+    if (auto iter = Lookup.find(mode); iter != Lookup.end())
       request->mode = iter->second;
   }
 
@@ -597,7 +597,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
             {"worker", Val::kWorker},
             {"xslt", Val::kXslt},
         });
-    if (auto* iter = Lookup.find(destination); iter != Lookup.end())
+    if (auto iter = Lookup.find(destination); iter != Lookup.end())
       request->destination = iter->second;
   }
 
@@ -716,8 +716,7 @@ void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
   v8::HandleScope handle_scope(isolate);
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_view.size());
   memcpy(array_buffer->Data(), string_view.data(), string_view.size());
-  Emit("data", array_buffer,
-       base::AdaptCallbackForRepeating(std::move(resume)));
+  Emit("data", array_buffer, std::move(resume));
 }
 
 void SimpleURLLoaderWrapper::OnComplete(bool success) {

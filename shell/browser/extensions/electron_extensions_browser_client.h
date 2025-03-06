@@ -140,7 +140,6 @@ class ElectronExtensionsBrowserClient
       content::WebContents* web_contents) override;
   extensions::KioskDelegate* GetKioskDelegate() override;
   std::string GetApplicationLocale() override;
-  std::string GetUserAgent() const override;
   void RegisterBrowserInterfaceBindersForFrame(
       mojo::BinderMapWithContext<content::RenderFrameHost*>* map,
       content::RenderFrameHost* render_frame_host,
