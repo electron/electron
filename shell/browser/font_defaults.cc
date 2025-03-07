@@ -9,6 +9,7 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/map_util.h"
+#include "base/strings/cstring_view.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/browser_process.h"
@@ -52,13 +53,13 @@ bool ShouldUseAlternateDefaultFixedFont(const std::string& script) {
 // |pref_name| is "webkit.webprefs.fonts.serif.Hant".  Since the script code for
 // the script name "Hant" is USCRIPT_TRADITIONAL_HAN, the function returns
 // USCRIPT_TRADITIONAL_HAN.  |pref_name| must be a valid font pref name.
-UScriptCode GetScriptOfFontPref(const char* pref_name) {
+UScriptCode GetScriptOfFontPref(const base::cstring_view pref_name) {
   // ICU script names are four letters.
   static const size_t kScriptNameLength = 4;
 
-  size_t len = strlen(pref_name);
+  size_t len = pref_name.size();
   DCHECK_GT(len, kScriptNameLength);
-  const char* scriptName = &pref_name[len - kScriptNameLength];
+  const char* scriptName = pref_name.substr(len - kScriptNameLength).data();
   int32_t code = u_getPropertyValueEnum(UCHAR_SCRIPT, scriptName);
   DCHECK(code >= 0 && code < USCRIPT_CODE_LIMIT);
   return static_cast<UScriptCode>(code);
@@ -227,7 +228,8 @@ auto MakeDefaultFontCopier() {
       }
     }
 #endif
-    UScriptCode pref_script = GetScriptOfFontPref(pref_name);
+    UScriptCode pref_script =
+        GetScriptOfFontPref(UNSAFE_BUFFERS(base::cstring_view(pref_name)));
     // Suppress this default font pref value if it is for the primary script of
     // the browser's UI locale.  For example, if the pref is for the sans-serif
     // font for the Cyrillic script, and the browser locale is "ru" (Russian),
