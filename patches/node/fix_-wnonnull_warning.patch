@@ -26,6 +26,8 @@ clang version bump.
 
 We should remove this patch after upstreaming it.
 
+Upstream PR: https://github.com/nodejs/node/pull/57354
+
 diff --git a/src/debug_utils.cc b/src/debug_utils.cc
 index c8b3b11ee34d7ac98163aa563fd7f6f1fb0a3b79..8a85e066fd9e6f3d6131eca89d52495f904cd5a6 100644
 --- a/src/debug_utils.cc
