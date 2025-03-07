@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a8684cc2bf48a7df896847ad1b8f34308db3c28f..de55a37e5acaa72dbe8c898b6c909fc3b4b53dbc 100644
+index da6b76717d7b7b7b0d13f89f1785281dd4d915a6..8c64be32f13a6ff1b54dd0bcdf59b22bb9b17b6c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1031,6 +1031,7 @@ component("base") {
@@ -579,10 +579,10 @@ index 08186f30eaa97caf18ac2fe47655526e7733d9df..e4cd1f436ad1734f357429cb3ad6c854
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 32ec2d854847d28b8c9ad665a1b8a50a6bad3100..885d487afbaae02c0401b322dd59273116c91ad0 100644
+index 1bc1315a26668fa3550fafa22f44ae783620612b..9a69890cc50dd1cd39ec2372aa9012e5476712d9 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -333,6 +333,7 @@ source_set("browser") {
+@@ -337,6 +337,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -591,7 +591,7 @@ index 32ec2d854847d28b8c9ad665a1b8a50a6bad3100..885d487afbaae02c0401b322dd592731
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index b58722615ebd4012816ed3246145cb1a088bfe17..1fde1a7ae8a8885bc3210fe0298476acbb2c915d 100644
+index d73737088c819274c854db491a7d4d26f9367eb2..b72427517b88e5cb4179dbc551f3f4f321fd8b4e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -24,6 +24,7 @@
@@ -612,7 +612,7 @@ index b58722615ebd4012816ed3246145cb1a088bfe17..1fde1a7ae8a8885bc3210fe0298476ac
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -693,9 +696,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -691,9 +694,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -625,7 +625,7 @@ index b58722615ebd4012816ed3246145cb1a088bfe17..1fde1a7ae8a8885bc3210fe0298476ac
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 9924e2e37dc04b12cc08b3451769734267b600bf..943e3b8875c68178e84ae79c241c7a31e9305c6c 100644
+index e8c48002df717501128b9a135d5662dfca044e9c..71db145609652dbbe733dbc96d2630b686f6c8c9 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -49,6 +49,7 @@
@@ -647,7 +647,7 @@ index 9924e2e37dc04b12cc08b3451769734267b600bf..943e3b8875c68178e84ae79c241c7a31
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1627,8 +1630,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1626,8 +1629,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -658,7 +658,7 @@ index 9924e2e37dc04b12cc08b3451769734267b600bf..943e3b8875c68178e84ae79c241c7a31
    return [GetInProcessNSView() window];
  }
  
-@@ -1677,9 +1682,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1676,9 +1681,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -670,7 +670,7 @@ index 9924e2e37dc04b12cc08b3451769734267b600bf..943e3b8875c68178e84ae79c241c7a31
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2206,20 +2213,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2205,20 +2212,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 23d2ac7768ec651a6542b14eb1b9d3636f90b192..c5d33465dba18c7fd1258e8a0e78f870d5be441c 100644
+index 0cd3e6c55a7b3bc0b461ba403e1db432d2a51b5c..8dc81cdf86b49549de856c649cc648fd61d20b4b 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -658,6 +658,7 @@ static_library("test_support") {
@@ -1431,10 +1431,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index cffd2db61ae3e2e7fdd2e0faeb18b742249197f5..c4ceda3eb634ac5e35219196105e59f4a35ca3fd 100644
+index 98bfc93f0a6ea39a810afb49ff7e899962320557..af1fc205c221e96e58dafb5c95c31daee200c831 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -414,6 +414,7 @@ component("core") {
+@@ -413,6 +413,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",

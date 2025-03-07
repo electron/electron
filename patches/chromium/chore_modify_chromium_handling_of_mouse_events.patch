@@ -1,0 +1,161 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 29 Jul 2022 00:29:35 +0900
+Subject: chore: modify chromium handling of mouse events
+
+This patch does the following:
+
+1. When Windows Control Overlay is enabled, it allows chromium to handle synthetic mouse events generated for touch
+actions in the non-client caption area.
+2. It calls HandleMouseEvent on the delegate earlier in HandleMouseEventInternal, so that Electron can selectively disable
+draggable regions to allow events to propagate to the underlying renderer.
+
+diff --git a/ui/events/event.h b/ui/events/event.h
+index 39b5a8fdd165efd74b00256552b51b5413107958..bfc4ef4f50efff4a77f2aef64335bb7e34c69f34 100644
+--- a/ui/events/event.h
++++ b/ui/events/event.h
+@@ -587,6 +587,9 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
+ 
+   const PointerDetails& pointer_details() const { return pointer_details_; }
+ 
++  bool is_system_menu() const { return is_system_menu_; }
++  void set_is_system_menu(bool is_menu) { is_system_menu_ = is_menu; }
++
+   // Event:
+   std::string ToString() const override;
+   std::unique_ptr<Event> Clone() const override;
+@@ -619,6 +622,8 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
+ 
+   // Structure for holding pointer details for implementing PointerEvents API.
+   PointerDetails pointer_details_;
++
++  bool is_system_menu_ = false;
+ };
+ 
+ class ScrollEvent;
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index 2d05856687cd9669f72553d33c8033fd9083b4f8..645b7dd2cc20ce64ffa541c74930f541f083f931 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -1357,6 +1357,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
+   window()->SetProperty(aura::client::kHeadlessBoundsKey, bounds);
+ }
+ 
++bool DesktopWindowTreeHostWin::HandleMouseEventForCaption(UINT message) const {
++  return false;
++}
++
+ DesktopNativeCursorManager*
+ DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
+   return new DesktopNativeCursorManagerWin();
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+index 932351e288f37fd09ae1a43f44e8b51fb0caa4b8..4a0616bc210d234e51e564daabdd2ebd5ac9fc16 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+@@ -267,6 +267,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin : public DesktopWindowTreeHost,
+   void HandleWindowSizeUnchanged() override;
+   void HandleWindowScaleFactorChanged(float window_scale_factor) override;
+   void HandleHeadlessWindowBoundsChanged(const gfx::Rect& bounds) override;
++  bool HandleMouseEventForCaption(UINT message) const override;
+ 
+   // Overridden from WidgetObserver.
+   void OnWidgetThemeChanged(Widget* widget) override;
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 7f29d902ae0a2f980a56e77e6e25935dab3c0685..8b1e6ac7673b1b6e510e84bde19e1f8f0edfd0e3 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -3146,15 +3146,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+     }
+     // We must let Windows handle the caption buttons if it's drawing them, or
+     // they won't work.
++    bool simulate_mouse_event_for_caption = false;
+     if (delegate_->GetFrameMode() == FrameMode::SYSTEM_DRAWN &&
+         (hittest == HTCLOSE || hittest == HTMINBUTTON ||
+          hittest == HTMAXBUTTON)) {
+-      SetMsgHandled(FALSE);
++      simulate_mouse_event_for_caption =
++          delegate_->HandleMouseEventForCaption(message);
++      if (!simulate_mouse_event_for_caption)
++        SetMsgHandled(FALSE);
+     }
+     // Let resize events fall through. Ignore everything else, as we're either
+     // letting Windows handle it above or we've already handled the equivalent
+     // touch message.
+-    if (!IsHitTestOnResizeHandle(hittest)) {
++    if (!IsHitTestOnResizeHandle(hittest) && !simulate_mouse_event_for_caption) {
+       return 0;
+     }
+   }
+@@ -3172,11 +3176,21 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+     message = WM_MOUSEHWHEEL;
+   }
+ 
++  LONG message_time = GetMessageTime();
++  CHROME_MSG msg = {hwnd(),
++                    message,
++                    w_param,
++                    l_param,
++                    static_cast<DWORD>(message_time),
++                    {CR_GET_X_LPARAM(l_param), CR_GET_Y_LPARAM(l_param)}};
++  ui::MouseEvent event(msg);
++  bool sys_menu_handled = false;
+   if (message == WM_RBUTTONUP && is_right_mouse_pressed_on_caption_) {
+     // TODO(pkasting): Maybe handle this in DesktopWindowTreeHostWin, where we
+     // handle alt-space, or in the frame itself.
+     is_right_mouse_pressed_on_caption_ = false;
+     ReleaseCapture();
++
+     // |point| is in window coordinates, but WM_NCHITTEST and TrackPopupMenu()
+     // expect screen coordinates.
+     POINT screen_point = CR_POINT_INITIALIZER_FROM_LPARAM(l_param);
+@@ -3184,7 +3198,10 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+     w_param = static_cast<WPARAM>(SendMessage(
+         hwnd(), WM_NCHITTEST, 0, MAKELPARAM(screen_point.x, screen_point.y)));
+     if (w_param == HTCAPTION || w_param == HTSYSMENU) {
+-      ShowSystemMenuAtScreenPixelLocation(hwnd(), gfx::Point(screen_point));
++      event.set_is_system_menu(true);
++      right_click_handled = delegate_->HandleMouseEvent(&event);
++      if (!right_click_handled)
++        ShowSystemMenuAtScreenPixelLocation(hwnd(), gfx::Point(screen_point));
+       return 0;
+     }
+   } else if (message == WM_NCLBUTTONDOWN &&
+@@ -3219,14 +3236,6 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+     SetCapture();
+   }
+ 
+-  LONG message_time = GetMessageTime();
+-  CHROME_MSG msg = {hwnd(),
+-                    message,
+-                    w_param,
+-                    l_param,
+-                    static_cast<DWORD>(message_time),
+-                    {CR_GET_X_LPARAM(l_param), CR_GET_Y_LPARAM(l_param)}};
+-  ui::MouseEvent event(msg);
+   if (IsSynthesizedMouseMessage(message, message_time, l_param)) {
+     event.SetFlags(event.flags() | ui::EF_FROM_TOUCH);
+   }
+@@ -3301,7 +3310,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+   // command menu. This prevents left clicking in the upper left hand corner of
+   // an app window and then right clicking from sending the right click to the
+   // renderer and bringing up a web contents context menu.
+-  if (!handling_mouse_menu_ || message != WM_RBUTTONUP) {
++  if (!right_click_handled && (!handling_mouse_menu_ || message != WM_RBUTTONUP)) {
+     handled = delegate_->HandleMouseEvent(&event);
+   }
+ 
+diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
+index 04dea68d74ea4f559db60f716c919e555db9ec80..2f8bd1a3c156bb6c04663c74b7279bb59926fc3d 100644
+--- a/ui/views/win/hwnd_message_handler_delegate.h
++++ b/ui/views/win/hwnd_message_handler_delegate.h
+@@ -255,6 +255,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
+   // Called when the headless window bounds has changed.
+   virtual void HandleHeadlessWindowBoundsChanged(const gfx::Rect& bounds) = 0;
+ 
++  // Called when synthetic mouse event is generated for touch event on
++  // caption buttons.
++  virtual bool HandleMouseEventForCaption(UINT message) const = 0;
++
+  protected:
+   virtual ~HWNDMessageHandlerDelegate() = default;
+ };
