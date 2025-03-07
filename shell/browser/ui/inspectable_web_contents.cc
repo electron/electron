@@ -22,6 +22,7 @@
 #include "base/uuid.h"
 #include "base/values.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
+#include "components/embedder_support/user_agent_utils.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -35,7 +36,6 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
-#include "content/public/common/user_agent.h"
 #include "ipc/ipc_channel.h"
 #include "net/http/http_response_headers.h"
 #include "net/http/http_status_code.h"
@@ -139,9 +139,10 @@ double GetNextZoomLevel(double level, bool out) {
 }
 
 GURL GetRemoteBaseURL() {
-  return GURL(absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
-                              kChromeUIDevToolsRemoteFrontendPath,
-                              content::GetChromiumGitRevision().c_str()));
+  return GURL(
+      absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
+                      kChromeUIDevToolsRemoteFrontendPath,
+                      embedder_support::GetChromiumGitRevision().c_str()));
 }
 
 GURL GetDevToolsURL(bool can_dock) {
@@ -814,12 +815,6 @@ void InspectableWebContents::DispatchProtocolMessageFromDevToolsFrontend(
 
   if (agent_host_)
     agent_host_->DispatchProtocolMessage(this, base::as_byte_span(message));
-}
-
-void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
-                                             const std::string& browser_id,
-                                             const std::string& url) {
-  std::move(callback).Run(nullptr);
 }
 
 void InspectableWebContents::GetPreferences(DispatchCallback callback) {

@@ -346,7 +346,8 @@ std::vector<v8::Local<v8::Value>> View::GetChildren() {
 void View::SetBackgroundColor(std::optional<WrappedSkColor> color) {
   if (!view_)
     return;
-  view_->SetBackground(color ? views::CreateSolidBackground(*color) : nullptr);
+  view_->SetBackground(color ? views::CreateSolidBackground({*color})
+                             : nullptr);
 }
 
 void View::SetBorderRadius(int radius) {

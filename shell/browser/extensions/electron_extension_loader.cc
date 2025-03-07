@@ -178,16 +178,8 @@ void ElectronExtensionLoader::PreAddExtension(const Extension* extension,
   // The extension might be disabled if a previous reload attempt failed. In
   // that case, we want to remove that disable reason.
   ExtensionPrefs* extension_prefs = ExtensionPrefs::Get(browser_context_);
-  if (extension_prefs->IsExtensionDisabled(extension->id()) &&
-      extension_prefs->HasDisableReason(extension->id(),
-                                        disable_reason::DISABLE_RELOAD)) {
-    extension_prefs->RemoveDisableReason(extension->id(),
-                                         disable_reason::DISABLE_RELOAD);
-    // Only re-enable the extension if there are no other disable reasons.
-    if (extension_prefs->GetDisableReasons(extension->id()).empty()) {
-      extension_prefs->SetExtensionEnabled(extension->id());
-    }
-  }
+  extension_prefs->RemoveDisableReason(extension->id(),
+                                       disable_reason::DISABLE_RELOAD);
 }
 
 void ElectronExtensionLoader::PostActivateExtension(
