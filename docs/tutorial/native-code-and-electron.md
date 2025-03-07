@@ -14,6 +14,7 @@ Native Node.js addons are dynamically-linked shared objects (on Unix-like system
 # Tutorial: Creating a Native Node.js Addon for Electron
 
 This tutorial will walk you through building a basic Node.js native addon that can be used in Electron applications. We'll focus on concepts common to all platforms, using C++ as the implementation language. Once you complete this tutorial common to all native Node.js addons, you can move on to one of our platform-specific tutorials.
+
 ## Requirements
 
 This tutorial assumes you have Node.js and npm installed, as well as the basic tools necessary for compiling code on your platform (like Visual Studio on Windows, Xcode on macOS, or GCC/Clang on Linux). You can find detailed instructions in the [`node-gyp` readme](https://github.com/nodejs/node-gyp?tab=readme-ov-file).
@@ -49,7 +50,7 @@ npm init -y
 This creates a basic `package.json` file. Next, we'll install the necessary dependencies:
 
 ```sh
-npm install --save node-addon-api bindings
+npm install node-addon-api bindings
 ```
 
 * `node-addon-api`: This is a C++ wrapper for the low-level Node.js API that makes it easier to build addons. It provides a C++ object-oriented API that's more convenient and safer to use than the raw C-style API.
@@ -327,7 +328,7 @@ npm run build
 This will run `node-gyp configure` and `node-gyp build` to compile our C++ code into a `.node` file.
 Let's create a simple test script to verify everything works. Create `test.js` in the project root:
 
-```js title='test.js'
+```js title='test.js' @ts-expect-error=[2]
 // Load our addon
 const myAddon = require('./js')
 
