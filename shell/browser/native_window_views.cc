@@ -1488,6 +1488,22 @@ bool NativeWindowViews::IsMenuBarVisible() const {
   return root_view_.is_menu_bar_visible();
 }
 
+bool NativeWindowViews::IsSnapped() const {
+#if BUILDFLAG(IS_WIN)
+  // IsWindowArranged() is not a part of any header file.
+  // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-iswindowarranged
+  using IsWindowArrangedFuncType = BOOL(WINAPI*)(HWND);
+  static const auto is_window_arranged_func =
+      reinterpret_cast<IsWindowArrangedFuncType>(
+          base::win::GetUser32FunctionPointer("IsWindowArranged"));
+  return is_window_arranged_func
+             ? is_window_arranged_func(GetAcceleratedWidget())
+             : false;
+#else
+  return false;
+#endif
+}
+
 void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
   NativeWindow::SetBackgroundMaterial(material);
 
