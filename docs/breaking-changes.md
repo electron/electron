@@ -19,6 +19,13 @@ This document uses the following convention to categorize breaking changes:
 These properties have been removed from the PrinterInfo Object
 because they have been removed from upstream Chromium.
 
+### Removed: `quota` type `syncable` in `Session.clearStorageData(options)`
+
+When calling `Session.clearStorageData(options)`, the `options.quota` type
+`syncable` is no longer supported because it has been
+[removed](https://chromium-review.googlesource.com/c/chromium/src/+/6309405)
+from upstream Chromium.
+
 ### Deprecated: Extension methods and events on `session`
 
 `session.loadExtension`, `session.removeExtension`, `session.getExtension`,
