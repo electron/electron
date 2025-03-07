@@ -395,14 +395,14 @@ void SetNodeOptions(base::Environment* env) {
     if (electron::fuses::IsNodeOptionsEnabled()) {
       std::string options;
       env->GetVar("NODE_OPTIONS", &options);
-      std::vector<std::string> parts = base::SplitString(
+      const std::vector<std::string_view> parts = base::SplitStringPiece(
           options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
       bool is_packaged_app = electron::api::App::IsPackaged();
 
-      for (const auto& part : parts) {
+      for (const std::string_view part : parts) {
         // Strip off values passed to individual NODE_OPTIONs
-        std::string option = part.substr(0, part.find('='));
+        const std::string_view option = part.substr(0, part.find('='));
 
         if (is_packaged_app && !pkg_opts.contains(option)) {
           // Explicitly disallow majority of NODE_OPTIONS in packaged apps
