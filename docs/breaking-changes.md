@@ -14,6 +14,14 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (36.0)
 
+### Web Workers and Utility Process unhandled rejection behavior change
+
+Web Workers and Utility Processes will now warn with an error message when an unhandled
+rejection occurs instead of crashing the proces
+
+We are making this change to align with Web Worker behavior in browsers and prevent
+utility processes from crashing on any unhandled rejections.
+
 ### Removed:`isDefault` and `status` properties on `PrinterInfo`
 
 These properties have been removed from the PrinterInfo Object
