@@ -34,10 +34,10 @@ index 932351e288f37fd09ae1a43f44e8b51fb0caa4b8..4a0616bc210d234e51e564daabdd2ebd
    // Overridden from WidgetObserver.
    void OnWidgetThemeChanged(Widget* widget) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 2bd015be3178ab8dea012d6b1f71d13dd0548c14..759f00dd4e674d1dfca690b82e6e1820900ebf0c 100644
+index 7f29d902ae0a2f980a56e77e6e25935dab3c0685..679efe5af4954d9ddca7bc5ccee6b8d6fac966a3 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3144,15 +3144,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3146,15 +3146,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      }
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.

@@ -6,13 +6,13 @@ Subject: fix: remove profiles from spellcheck_service
 Electron doesn't support profiles.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 979630ba7ffe84d78804a02b832ce7787aecf2d9..3b1cdaab5d3229c802c8da53a4fa17a464978391 100644
+index 910534aac947890b16b176b10ac8eae9857bd2d7..1bb22b89b6ec4d620354bb7747c37cae9dd3a57e 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -21,8 +21,10 @@
+@@ -20,8 +20,10 @@
+ #include "base/synchronization/waitable_event.h"
  #include "base/values.h"
  #include "build/build_config.h"
- #include "build/chromeos_buildflags.h"
 +#if 0
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/profiles/profiles_state.h"
@@ -20,7 +20,7 @@ index 979630ba7ffe84d78804a02b832ce7787aecf2d9..3b1cdaab5d3229c802c8da53a4fa17a4
  #include "chrome/browser/spellchecker/spellcheck_factory.h"
  #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
  #include "components/language/core/browser/pref_names.h"
-@@ -67,7 +69,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
+@@ -66,7 +68,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
  // Only record spelling-configuration metrics for profiles in which the user
  // can configure spelling.
  bool RecordSpellingConfigurationMetrics(content::BrowserContext* context) {
