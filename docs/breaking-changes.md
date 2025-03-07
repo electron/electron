@@ -26,6 +26,12 @@ When calling `Session.clearStorageData(options)`, the `options.quota` type
 [removed](https://chromium-review.googlesource.com/c/chromium/src/+/6309405)
 from upstream Chromium.
 
+### Deprecated: `quota` property in `Session.clearStorageData(options)`
+
+When calling `Session.clearStorageData(options)`, the `options.quota`
+property is deprecated. Since the `syncable` type was removed, there
+is only type left -- `'temporary'` -- so specifying it is unnecessary.
+
 ### Deprecated: Extension methods and events on `session`
 
 `session.loadExtension`, `session.removeExtension`, `session.getExtension`,
