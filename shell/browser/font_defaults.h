@@ -13,6 +13,12 @@ struct WebPreferences;
 
 namespace electron {
 
+// Set the default font preferences. The functionality is copied from
+// chrome/browser/prefs_tab_helper.cc with modifications to work
+// without a preference service and cache chrome/browser/font_family_cache.cc
+// that persists across app sessions.
+// Keep the core logic in sync to avoid performance regressions
+// Refs https://issues.chromium.org/issues/400473071
 void SetFontDefaults(blink::web_pref::WebPreferences* prefs);
 
 }  // namespace electron
