@@ -1400,7 +1400,7 @@ bool WebContents::IsFullscreen() const {
   return owner_window()->IsFullscreen() || is_html_fullscreen();
 }
 
-void WebContents::EnterFullscreen(const GURL& url,
+void WebContents::EnterFullscreen(const url::Origin& origin,
                                   ExclusiveAccessBubbleType bubble_type,
                                   const int64_t display_id) {}
 
