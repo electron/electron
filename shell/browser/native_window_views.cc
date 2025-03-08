@@ -788,10 +788,9 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   if (!IsFullScreenable())
     return;
 
+  bool leaving_fullscreen = IsFullscreen() && !fullscreen;
 #if BUILDFLAG(IS_WIN)
   // There is no native fullscreen state on Windows.
-  bool leaving_fullscreen = IsFullscreen() && !fullscreen;
-
   if (fullscreen) {
     last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
     NotifyWindowEnterFullScreen();
@@ -830,7 +829,13 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   // Note: the following must be after "widget()->SetFullscreen(fullscreen);"
   if (leaving_fullscreen && !IsVisible())
     FlipWindowStyle(GetAcceleratedWidget(), true, WS_VISIBLE);
-
+#else
+  if (IsVisible())
+    widget()->SetFullscreen(fullscreen);
+  else if (fullscreen)
+    widget()->native_widget_private()->Show(
+        ui::mojom::WindowShowState::kFullscreen, gfx::Rect());
+#endif
   // Auto-hide menubar when in fullscreen.
   if (fullscreen) {
     menu_bar_visible_before_fullscreen_ = IsMenuBarVisible();
@@ -841,6 +846,9 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     // `menu_bar_visible_before_fullscreen_` is always false on the
     //  second call which results in `SetMenuBarVisibility(false)` no
     // matter what. We check `leaving_fullscreen` to avoid this.
+    //
+    // Additionally, simply calling `win.setFullscreen(false)`
+    // when not in fullscreen should do nothing.
     if (!leaving_fullscreen)
       return;
 
@@ -848,23 +856,6 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
                          menu_bar_visible_before_fullscreen_);
     menu_bar_visible_before_fullscreen_ = false;
   }
-#else
-  if (IsVisible())
-    widget()->SetFullscreen(fullscreen);
-  else if (fullscreen)
-    widget()->native_widget_private()->Show(
-        ui::mojom::WindowShowState::kFullscreen, gfx::Rect());
-
-  // Auto-hide menubar when in fullscreen.
-  if (fullscreen) {
-    menu_bar_visible_before_fullscreen_ = IsMenuBarVisible();
-    SetMenuBarVisibility(false);
-  } else {
-    SetMenuBarVisibility(!IsMenuBarAutoHide() &&
-                         menu_bar_visible_before_fullscreen_);
-    menu_bar_visible_before_fullscreen_ = false;
-  }
-#endif
 }
 
 bool NativeWindowViews::IsFullscreen() const {
