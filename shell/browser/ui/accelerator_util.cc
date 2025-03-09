@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/logging.h"
@@ -16,7 +17,7 @@
 
 namespace accelerator_util {
 
-bool StringToAccelerator(const std::string& shortcut,
+bool StringToAccelerator(const std::string_view shortcut,
                          ui::Accelerator* accelerator) {
   if (!base::IsStringASCII(shortcut)) {
     LOG(ERROR) << "The accelerator string can only contain ASCII characters, "
