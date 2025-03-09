@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 458029244ad9db7beace040778117d82d90f4bea..66202201b11de10bf2d781a52640a81f25d04780 100644
+index 91db1bbd912807833243c101e126e42ad5579d2b..7c624e0babddbca7c0deef1d805ccbfc21e6e9a9 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -20,12 +20,16 @@
@@ -50,7 +50,7 @@ index 458029244ad9db7beace040778117d82d90f4bea..66202201b11de10bf2d781a52640a81f
  
    // Keep the current state. |SetTabWithExclusiveAccess| may change the return
    // value of |IsWindowFullscreenForTabOrPending|.
-@@ -389,12 +395,14 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
+@@ -388,12 +394,14 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
  void FullscreenController::FullscreenTabOpeningPopup(
      content::WebContents* opener,
      content::WebContents* popup) {
@@ -65,7 +65,7 @@ index 458029244ad9db7beace040778117d82d90f4bea..66202201b11de10bf2d781a52640a81f
  }
  
  void FullscreenController::OnTabDeactivated(
-@@ -484,10 +492,12 @@ void FullscreenController::FullscreenTransitionCompleted() {
+@@ -483,10 +491,12 @@ void FullscreenController::FullscreenTransitionCompleted() {
  #endif  // DCHECK_IS_ON()
    tab_fullscreen_target_display_id_ = display::kInvalidDisplayId;
    started_fullscreen_transition_ = false;
@@ -78,7 +78,7 @@ index 458029244ad9db7beace040778117d82d90f4bea..66202201b11de10bf2d781a52640a81f
  }
  
  void FullscreenController::RunOrDeferUntilTransitionIsComplete(
-@@ -612,18 +622,17 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -616,18 +626,17 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -97,20 +97,20 @@ index 458029244ad9db7beace040778117d82d90f4bea..66202201b11de10bf2d781a52640a81f
 +#if 0
    bool entering_tab_fullscreen = option == TAB && !tab_fullscreen_;
 +#endif
-   GURL url;
+   url::Origin origin;
 +#if 0
    if (option == TAB) {
-     url = GetRequestingOrigin();
+     origin = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -658,6 +667,7 @@ void FullscreenController::EnterFullscreenModeInternal(
-       url = extension_caused_fullscreen_;
+@@ -662,6 +671,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+       origin = url::Origin::Create(extension_url_.value());
      }
    }
 +#endif
  
    fullscreen_start_time_ = base::TimeTicks::Now();
    if (option == BROWSER) {
-@@ -679,6 +689,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -683,6 +693,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
      return;
    }
  
@@ -118,7 +118,7 @@ index 458029244ad9db7beace040778117d82d90f4bea..66202201b11de10bf2d781a52640a81f
    // `fullscreen_start_time_` is null if a fullscreen tab moves to a new window.
    if (fullscreen_start_time_ && exclusive_access_tab()) {
      ukm::SourceId source_id =
-@@ -690,15 +701,16 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -694,15 +705,16 @@ void FullscreenController::ExitFullscreenModeInternal() {
          .Record(ukm::UkmRecorder::Get());
      fullscreen_start_time_.reset();
    }
@@ -136,9 +136,9 @@ index 458029244ad9db7beace040778117d82d90f4bea..66202201b11de10bf2d781a52640a81f
 -#endif
 +
    exclusive_access_manager()->context()->ExitFullscreen();
-   extension_caused_fullscreen_ = GURL();
+   extension_url_.reset();
    exclusive_access_manager()->UpdateBubble(base::NullCallback());
-@@ -762,8 +774,12 @@ GURL FullscreenController::GetEmbeddingOrigin() const {
+@@ -766,8 +778,12 @@ url::Origin FullscreenController::GetEmbeddingOrigin() const {
  void FullscreenController::RecordMetricsOnFullscreenApiRequested(
      content::RenderFrameHost* requesting_frame) {
    history::HistoryService* service =
@@ -152,7 +152,7 @@ index 458029244ad9db7beace040778117d82d90f4bea..66202201b11de10bf2d781a52640a81f
      // Check if the origin has been visited more than a day ago and whether it's
      // on an allowlist, then record those bits of information in a metric.
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-index 7fdf883310b13e3334ba007580a1a4287d49d592..d7c2bdaa08cae1645bf52f1d9b9d84b1cdb78c66 100644
+index 5854fd8401f3934cabd6abfe48da332d7a670af3..d714c44a6fd2206f9192dbfe82787a4b06042ed0 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 @@ -250,10 +250,12 @@ class FullscreenController : public ExclusiveAccessControllerBase {

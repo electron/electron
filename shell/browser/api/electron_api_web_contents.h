@@ -684,7 +684,7 @@ class WebContents final : public ExclusiveAccessContext,
   // ExclusiveAccessContext:
   Profile* GetProfile() override;
   bool IsFullscreen() const override;
-  void EnterFullscreen(const GURL& url,
+  void EnterFullscreen(const url::Origin& origin,
                        ExclusiveAccessBubbleType bubble_type,
                        const int64_t display_id) override;
   void ExitFullscreen() override {}
