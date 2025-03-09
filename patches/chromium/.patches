@@ -143,3 +143,4 @@ fix_win32_synchronous_spellcheck.patch
 fix_enable_wrap_iter_in_string_view_and_array.patch
 fix_linter_error.patch
 cherry-pick-9dacf5694dfd.patch
+cherry-pick-521faebc8a7c.patch
