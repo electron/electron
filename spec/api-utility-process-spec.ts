@@ -228,7 +228,6 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(fixtureFile, [], {
         stdio: 'pipe'
       });
-      await once(child, 'spawn');
       expect(child.stdout).to.not.be.null();
       let log = '';
       child.stdout!.on('data', (chunk) => {
@@ -293,7 +292,6 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
         stdio: 'pipe'
       });
-      await once(child, 'spawn');
       expect(child.stdout).to.not.be.null();
       let log = '';
       child.stdout!.on('data', (chunk) => {
@@ -326,7 +324,6 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
         stdio: ['ignore', 'pipe', 'pipe']
       });
-      await once(child, 'spawn');
       expect(child.stderr).to.not.be.null();
       let log = '';
       child.stderr!.on('data', (chunk) => {
