@@ -1,0 +1,95 @@
+From 9dacf5694dfdb735c335805783840584a50bface Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Thu, 06 Mar 2025 16:02:41 -0800
+Subject: [PATCH] Move WebGL primitive restart state setting to the GPU process.
+
+ANGLE will validate and initialize this state and errors are generated
+when the WebGL client also initializes it on startup.
+
+Initialize it even in the passthrough command decoder temporarily so
+that ANGLE can roll without breaking WebGL tests.
+
+Bug: 401059730
+Change-Id: I0bfee710673bbcea6f915ffc4fc9be20438a2654
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6330188
+Auto-Submit: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1429228}
+---
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index d835b1f..0eedac0 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -3272,6 +3272,13 @@
+     }
+   }
+ 
++  if (feature_info_->context_type() == CONTEXT_TYPE_WEBGL2) {
++    // If WebGL 2, the PRIMITIVE_RESTART_FIXED_INDEX should be always enabled.
++    // See the section <Primitive Restart is Always Enabled> in WebGL 2 spec:
++    // https://www.khronos.org/registry/webgl/specs/latest/2.0/#4.1.4
++    DoEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
++  }
++
+   if (group_->gpu_preferences().enable_gpu_driver_debug_logging &&
+       feature_info_->feature_flags().khr_debug) {
+     InitializeGLDebugLogging(true, GLDebugMessageCallback, &logger_);
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
+index 3ccdebc1..ad23480 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
+@@ -1064,6 +1064,17 @@
+     api()->glDisableFn(GL_TEXTURE_RECTANGLE_ANGLE);
+ #endif
+ 
++  // TEMPORARY: Set primitive restart to enabled by default for WebGL2. Clear
++  // errors afterwards so that when this state is initialized and validated in
++  // ANGLE, it will not generate errors during command buffer initialization.
++  if (feature_info_->context_type() == CONTEXT_TYPE_WEBGL2) {
++    // If WebGL 2, the PRIMITIVE_RESTART_FIXED_INDEX should be always enabled.
++    // See the section <Primitive Restart is Always Enabled> in WebGL 2 spec:
++    // https://www.khronos.org/registry/webgl/specs/latest/2.0/#4.1.4
++    api()->glEnableFn(GL_PRIMITIVE_RESTART_FIXED_INDEX);
++    CheckErrorCallbackState();
++  }
++
+   // Register this object as a GPU switching observer.
+   if (feature_info_->IsWebGLContext()) {
+     ui::GpuSwitchingManager::GetInstance()->AddObserver(this);
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc
+index 8e898bd..6030000 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc
+@@ -439,6 +439,13 @@
+   }
+ #endif
+ 
++  if (init.context_type == CONTEXT_TYPE_WEBGL2 &&
++      group_->feature_info()->gl_version_info().is_es3) {
++    EXPECT_CALL(*gl_, Enable(GL_PRIMITIVE_RESTART_FIXED_INDEX))
++        .Times(1)
++        .RetiresOnSaturation();
++  }
++
+   if (context_->HasRobustness()) {
+     EXPECT_CALL(*gl_, GetGraphicsResetStatusARB())
+         .WillOnce(Return(init.lose_context_on_init ? GL_GUILTY_CONTEXT_RESET_ARB
+diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+index 79597c8..7c42b98 100644
+--- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
++++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+@@ -1433,12 +1433,6 @@
+       WTF::BindRepeating(&WebGLRenderingContextBase::OnErrorMessage,
+                          WrapWeakPersistent(this)));
+ 
+-  // If WebGL 2, the PRIMITIVE_RESTART_FIXED_INDEX should be always enabled.
+-  // See the section <Primitive Restart is Always Enabled> in WebGL 2 spec:
+-  // https://www.khronos.org/registry/webgl/specs/latest/2.0/#4.1.4
+-  if (IsWebGL2())
+-    ContextGL()->Enable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+-
+   // This ensures that the context has a valid "lastFlushID" and won't be
+   // mistakenly identified as the "least recently used" context.
+   ContextGL()->Flush();
