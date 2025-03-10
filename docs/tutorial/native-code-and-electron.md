@@ -143,7 +143,7 @@ Now, create the directory structure for our project:
 ```sh
 mkdir src
 mkdir include
-mkir js
+mkdir js
 ```
 
 This creates:
