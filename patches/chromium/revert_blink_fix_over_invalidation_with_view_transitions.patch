@@ -3,6 +3,8 @@ From: Xianzhu Wang <wangxianzhu@chromium.org>
 Date: Fri, 14 Feb 2025 08:58:16 -0800
 Subject: Revert "blink: Fix over invalidation with view transitions"
 
+This patch can be removed when we bump Chromium to 135.0.7019.0
+
 This reverts commit bde2842dd31e89215d395470964797c92773819f.
 
 Reason for revert: The CL caused crbug.com/391907157.
