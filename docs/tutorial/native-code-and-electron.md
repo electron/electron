@@ -15,7 +15,25 @@ Native Node.js addons are dynamically-linked shared objects (on Unix-like system
 
 This tutorial will walk you through building a basic Node.js native addon that can be used in Electron applications. We'll focus on concepts common to all platforms, using C++ as the implementation language. Once you complete this tutorial common to all native Node.js addons, you can move on to one of our platform-specific tutorials.
 
-This tutorial assumes you have Node.js and npm installed, as well as the basic tools necessary for compiling code on your platform (like Visual Studio on Windows, Xcode on macOS, or GCC/Clang on Linux).
+This tutorial assumes you have Node.js and npm installed, as well as the basic tools necessary for compiling code on your platform (like Visual Studio on Windows, Xcode on macOS, or GCC/Clang on Linux). You can find detailed instructions in the [`node-gyp` readme](https://github.com/nodejs/node-gyp?tab=readme-ov-file).
+
+### Requirements: macOS
+
+To build native Node.js addons on macOS, you'll need the Xcode Command Line Tools. These provide the necessary compilers and build tools (namely, `clang`, `clang++`, and `make`). The following command will prompt you to install the Command Line Tools if they aren't already installed.
+
+```sh
+xcode-select --install
+```
+
+### Requirements: Windows
+
+The official Node.js installer offers the optional installation of "Tools for Native Modules", which installs everything required for the basic compilation of C++ modules - specifically, Python 3 and the "Visual Studio Desktop development with C++" workload. Alternatively, you can use `chocolatey`, `winget`, or the Windows Store.
+
+### Requirements: Linux
+
+* [A supported version of Python](https://devguide.python.org/versions/)
+* `make`
+* A proper C/C++ compiler toolchain, like [GCC](https://gcc.gnu.org)
 
 ## 1) Creating a package
 
