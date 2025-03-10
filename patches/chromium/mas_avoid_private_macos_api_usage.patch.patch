@@ -269,11 +269,11 @@ index e9f4e5131238b9fb5f1b4b3e90a0cb84a7fc15b4..8b5f4cae3123ac5480ad73f0c873fca0
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 19fff43c3daaef5451b6b60b84a610a21311448e..240b954661d34fcc4329d39490be33c485fa8b6e 100644
+index 92646b4978457724d46eb526d6f34cd308562f0b..c3e669ed8fb0682f7f973bb1c69d069bd6a3aa0c 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,7 +9,9 @@
- #include "components/remote_cocoa/app_shim/features.h"
+ #include "base/mac/mac_util.h"
  #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
  #include "components/remote_cocoa/common/native_widget_ns_window_host.mojom.h"
 +#include "electron/mas.h"
@@ -298,7 +298,7 @@ index 19fff43c3daaef5451b6b60b84a610a21311448e..240b954661d34fcc4329d39490be33c4
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -165,6 +170,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -164,6 +169,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -307,7 +307,7 @@ index 19fff43c3daaef5451b6b60b84a610a21311448e..240b954661d34fcc4329d39490be33c4
  // Handle "Move focus to the window toolbar" configured in System Preferences ->
  // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
  // tends to just be nil.
-@@ -175,8 +182,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
+@@ -174,8 +181,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
  }
  
  - (void)setAlwaysShowTrafficLights:(BOOL)alwaysShow {
@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 2c5c9ae4e2ba0d20c432d5cf3ec1b816cda0117b..ddcbfff7dffa23bd09843df90b7bdb8e8d9e0f10 100644
+index 482a1721cb2157f0221c901423423aab37efdaf0..b736432543ab619af6483070895f8968248fd71f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -658,6 +658,7 @@ static_library("test_support") {
@@ -819,7 +819,7 @@ index 2c5c9ae4e2ba0d20c432d5cf3ec1b816cda0117b..ddcbfff7dffa23bd09843df90b7bdb8e
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3262,6 +3265,7 @@ test("content_unittests") {
+@@ -3263,6 +3266,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
