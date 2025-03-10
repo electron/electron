@@ -14,6 +14,7 @@ Native Node.js addons are dynamically-linked shared objects (on Unix-like system
 # Tutorial: Creating a Native Node.js Addon for Electron
 
 This tutorial will walk you through building a basic Node.js native addon that can be used in Electron applications. We'll focus on concepts common to all platforms, using C++ as the implementation language. Once you complete this tutorial common to all native Node.js addons, you can move on to one of our platform-specific tutorials.
+## Requirements
 
 This tutorial assumes you have Node.js and npm installed, as well as the basic tools necessary for compiling code on your platform (like Visual Studio on Windows, Xcode on macOS, or GCC/Clang on Linux). You can find detailed instructions in the [`node-gyp` readme](https://github.com/nodejs/node-gyp?tab=readme-ov-file).
 
@@ -52,11 +53,11 @@ npm install --save node-addon-api bindings
 ```
 
 * `node-addon-api`: This is a C++ wrapper for the low-level Node.js API that makes it easier to build addons. It provides a C++ object-oriented API that's more convenient and safer to use than the raw C-style API.
-* `bindings`: A helper module that simplifies the process of loading your compiled native addon. It handles finding your compiled .node file automatically.
+* `bindings`: A helper module that simplifies the process of loading your compiled native addon. It handles finding your compiled `.node` file automatically.
 
-Now, let's update our package.json to include the appropriate build scripts. We will explain what these specifically do further below.
+Now, let's update our `package.json` to include the appropriate build scripts. We will explain what these specifically do further below.
 
-```json
+```json title='package.json'
 {
   "name": "my-native-addon",
   "version": "1.0.0",
@@ -91,9 +92,9 @@ Node.js addons use a build system called `node-gyp`, which is a cross-platform c
 
 ### Configuring `node-gyp`
 
-The binding.gyp file is a JSON-like configuration file that tells node-gyp how to build your native addon. It's similar to a make file or a project file but in a platform-independent format. Let's create a basic binding.gyp file:
+The `binding.gyp` file is a JSON-like configuration file that tells node-gyp how to build your native addon. It's similar to a make file or a project file but in a platform-independent format. Let's create a basic `binding.gyp` file:
 
-```json
+```json title='binding.gyp'
 {
   "targets": [
     {
@@ -173,7 +174,7 @@ The `#pragma once` directive is a header guard that prevents the file from being
 
 Next, let's implement the function in `src/cpp_code.cc`:
 
-```cpp
+```cpp title='src/cpp_code.cc'
 #include <string>
 #include "../include/cpp_code.h"
 
@@ -189,7 +190,7 @@ This is a simple implementation that just adds some text to the input string and
 
 Now, let's create the addon code that bridges our C++ code with the Node.js/JavaScript world. Create `src/my_addon.cc`:
 
-```cpp
+```cpp title='src/my_addon.cc'
 #include <napi.h>
 #include <string>
 #include "../include/cpp_code.h"
@@ -267,7 +268,7 @@ Let's break down this code:
 
 Now, let's create a JavaScript wrapper to make the addon easier to use. Create `js/index.js`:
 
-```js @ts-expect-error=[5]
+```js title='js/index.js' @ts-expect-error=[5]
 const EventEmitter = require('events')
 
 // Load the native addon using the 'bindings' module
@@ -309,11 +310,11 @@ if (process.platform === 'win32' || process.platform === 'darwin' || process.pla
 This JavaScript wrapper:
 
 1. Uses `bindings` to load our compiled native addon
-2. Creates a class that extends EventEmitter (useful for future extensions that might emit events)
-3. Instantiates our C++ class and provides a simpler API
-4. Adds some input validation on the JavaScript side
-5. Exports a singleton instance of our wrapper
-6. Handles unsupported platforms gracefully
+1. Creates a class that extends EventEmitter (useful for future extensions that might emit events)
+1. Instantiates our C++ class and provides a simpler API
+1. Adds some input validation on the JavaScript side
+1. Exports a singleton instance of our wrapper
+1. Handles unsupported platforms gracefully
 
 ### Building and Testing the Addon
 
@@ -326,7 +327,7 @@ npm run build
 This will run `node-gyp configure` and `node-gyp build` to compile our C++ code into a `.node` file.
 Let's create a simple test script to verify everything works. Create `test.js` in the project root:
 
-```sh
+```js title='test.js'
 // Load our addon
 const myAddon = require('./js')
 
@@ -354,8 +355,8 @@ Hello from C++! You said: This is a test
 To use this addon in an Electron application, you would:
 
 1. Include it as a dependency in your Electron project
-2. Build it targeting your specific Electron version. `electron-forge` handles this step automatically for you - for more details, see [Native Node Modules](./using-native-node-modules.md).
-3. Import and use it just like any other module in a process that has Node.js enabled.
+1. Build it targeting your specific Electron version. `electron-forge` handles this step automatically for you - for more details, see [Native Node Modules](./using-native-node-modules.md).
+1. Import and use it just like any other module in a process that has Node.js enabled.
 
 ```js @ts-expect-error=[2]
 // In your main process
