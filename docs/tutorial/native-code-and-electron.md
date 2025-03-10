@@ -317,7 +317,7 @@ This JavaScript wrapper:
 1. Exports a singleton instance of our wrapper
 1. Handles unsupported platforms gracefully
 
-### Building and Testing the Addon
+### Building and testing the addon
 
 Now we can build our native addon:
 
@@ -351,7 +351,7 @@ If everything works correctly, you should see:
 Hello from C++! You said: This is a test
 ```
 
-### Using the Addon in Electron
+### Using the addon in Electron
 
 To use this addon in an Electron application, you would:
 
@@ -365,7 +365,7 @@ const myAddon = require('my-native-addon')
 console.log(myAddon.helloWorld('Electron'))
 ```
 
-## 4) References and Further Learning
+## References and further learning
 
 Native addon development can be written in several languages beyond C++. Rust can be used with crates like [`napi-rs`](https://github.com/napi-rs/napi-rs), [`neon`](https://neon-rs.dev/), or [`node-bindgen`](https://github.com/infinyon/node-bindgen). Objective-C/Swift can be used through Objective-C++ on macOS.
 
