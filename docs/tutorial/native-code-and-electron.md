@@ -63,12 +63,15 @@ Now, let's update our package.json to include the appropriate build scripts. We 
   "description": "A native addon for Electron",
   "main": "js/index.js",
   "scripts": {
-    "clean": "rm -rf build",
+    "clean": "node -e \"require('fs').rmSync('build', { recursive: true, force: true })\"",
     "build": "node-gyp configure && node-gyp build"
   },
   "dependencies": {
     "bindings": "^1.5.0",
     "node-addon-api": "^8.3.0"
+  },
+  "devDependencies": {
+    "node-gyp": "^11.1.0"
   }
 }
 ```
@@ -148,7 +151,7 @@ mkdir js
 
 This creates:
 
-* `src/`: Where our C++ source files will go
+* `src/`: Where our source files will go
 * `include/`: For header files
 * `js/`: For our JavaScript wrapper
 
