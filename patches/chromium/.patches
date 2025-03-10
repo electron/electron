@@ -145,3 +145,4 @@ fix_osr_stutter_in_both_cpu_and_gpu_capture_when_page_has_animation.patch
 reland_lzma_sdk_update_to_24_09.patch
 fix_drag_and_drop_icons_on_windows.patch
 cherry-pick-521faebc8a7c.patch
+cherry-pick-9dacf5694dfd.patch
