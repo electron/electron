@@ -73,7 +73,9 @@ void AutofillPopupView::Show() {
     // a weak pointer to hold the reference and don't have to worry about
     // deletion.
     auto* widget = new views::Widget;
-    views::Widget::InitParams params(views::Widget::InitParams::TYPE_POPUP);
+    views::Widget::InitParams params{
+        views::Widget::InitParams::NATIVE_WIDGET_OWNS_WIDGET,
+        views::Widget::InitParams::TYPE_POPUP};
     params.delegate = this;
     params.parent = parent_widget_->GetNativeView();
     params.z_order = ui::ZOrderLevel::kFloatingUIElement;
