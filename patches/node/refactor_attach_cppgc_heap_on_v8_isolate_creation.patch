@@ -7,6 +7,7 @@ Refs https://issues.chromium.org/issues/42203693
 
 v8/Node Commits by V8 Team:
 
+* https://github.com/v8/node/pull/208
 * https://github.com/v8/node/pull/209
 * https://github.com/v8/node/pull/210
 * https://github.com/v8/node/pull/211
@@ -140,7 +141,7 @@ index 98ad0ea649eaef43d1f5231f7bc4044e100e08d7..c295cce8f5c7965cce4d2e4c0614dbe0
      std::shared_ptr<ArrayBufferAllocator> allocator,
      struct uv_loop_s* event_loop,
 diff --git a/src/node_main_instance.cc b/src/node_main_instance.cc
-index 4119ac1b002681d39711eac810ca2fcc2702ffc7..0fa30ca1a01083e83e6725d4ca562e2476c9b5a9 100644
+index 4119ac1b002681d39711eac810ca2fcc2702ffc7..790347056cde949ffe6cf8498a7eca0c4864c997 100644
 --- a/src/node_main_instance.cc
 +++ b/src/node_main_instance.cc
 @@ -44,6 +44,8 @@ NodeMainInstance::NodeMainInstance(const SnapshotData* snapshot_data,
@@ -152,8 +153,66 @@ index 4119ac1b002681d39711eac810ca2fcc2702ffc7..0fa30ca1a01083e83e6725d4ca562e24
  
    isolate_ =
        NewIsolate(isolate_params_.get(), event_loop, platform, snapshot_data);
+@@ -81,9 +83,9 @@ NodeMainInstance::~NodeMainInstance() {
+     // This should only be done on a main instance that owns its isolate.
+     // IsolateData must be freed before UnregisterIsolate() is called.
+     isolate_data_.reset();
+-    platform_->UnregisterIsolate(isolate_);
+   }
+   isolate_->Dispose();
++  platform_->UnregisterIsolate(isolate_);
+ }
+ 
+ ExitCode NodeMainInstance::Run() {
+diff --git a/src/node_worker.cc b/src/node_worker.cc
+index 1fc3774948dae3c0aae7d2aef563e18ecd4243a3..a610ee24ff18bddc3849aec3a43c2037b9ab5d53 100644
+--- a/src/node_worker.cc
++++ b/src/node_worker.cc
+@@ -230,13 +230,8 @@ class WorkerThreadData {
+         *static_cast<bool*>(data) = true;
+       }, &platform_finished);
+ 
+-      // The order of these calls is important; if the Isolate is first disposed
+-      // and then unregistered, there is a race condition window in which no
+-      // new Isolate at the same address can successfully be registered with
+-      // the platform.
+-      // (Refs: https://github.com/nodejs/node/issues/30846)
+-      w_->platform_->UnregisterIsolate(isolate);
+       isolate->Dispose();
++      w_->platform_->UnregisterIsolate(isolate);
+ 
+       // Wait until the platform has cleaned up all relevant resources.
+       while (!platform_finished) {
+diff --git a/src/util.cc b/src/util.cc
+index 3e9dfb4392fb3e3deaab5506771f01be65bc5dda..416e0479ddf740c6d3e2d4ea9466ac060b038294 100644
+--- a/src/util.cc
++++ b/src/util.cc
+@@ -726,8 +726,8 @@ RAIIIsolateWithoutEntering::RAIIIsolateWithoutEntering(const SnapshotData* data)
+ }
+ 
+ RAIIIsolateWithoutEntering::~RAIIIsolateWithoutEntering() {
+-  per_process::v8_platform.Platform()->UnregisterIsolate(isolate_);
+   isolate_->Dispose();
++  per_process::v8_platform.Platform()->UnregisterIsolate(isolate_);
+ }
+ 
+ RAIIIsolate::RAIIIsolate(const SnapshotData* data)
+diff --git a/test/cctest/node_test_fixture.h b/test/cctest/node_test_fixture.h
+index 3414c0be8ad777f0b9836323150071b688831a38..82013ffe7667d53248bd616efb79b294e4ae47dd 100644
+--- a/test/cctest/node_test_fixture.h
++++ b/test/cctest/node_test_fixture.h
+@@ -123,8 +123,8 @@ class NodeTestFixture : public NodeZeroIsolateTestFixture {
+   void TearDown() override {
+     platform->DrainTasks(isolate_);
+     isolate_->Exit();
+-    platform->UnregisterIsolate(isolate_);
+     isolate_->Dispose();
++    platform->UnregisterIsolate(isolate_);
+     isolate_ = nullptr;
+     NodeZeroIsolateTestFixture::TearDown();
+   }
 diff --git a/test/cctest/test_cppgc.cc b/test/cctest/test_cppgc.cc
-index edd413ae9b956b2e59e8166785adef6a8ff06d51..8043aab29a4b119b4b00b3243e2d6dddac114ffe 100644
+index edd413ae9b956b2e59e8166785adef6a8ff06d51..d1c1549efcb0320bc0f7d354db2101acc0930005 100644
 --- a/test/cctest/test_cppgc.cc
 +++ b/test/cctest/test_cppgc.cc
 @@ -46,18 +46,15 @@ int CppGCed::kDestructCount = 0;
@@ -178,7 +237,7 @@ index edd413ae9b956b2e59e8166785adef6a8ff06d51..8043aab29a4b119b4b00b3243e2d6ddd
  
    // Try creating Context + IsolateData + Environment.
    {
-@@ -102,8 +99,6 @@ TEST_F(NodeZeroIsolateTestFixture, ExistingCppHeapTest) {
+@@ -102,13 +99,11 @@ TEST_F(NodeZeroIsolateTestFixture, ExistingCppHeapTest) {
      platform->DrainTasks(isolate);
  
      // Cleanup.
@@ -187,8 +246,14 @@ index edd413ae9b956b2e59e8166785adef6a8ff06d51..8043aab29a4b119b4b00b3243e2d6ddd
      platform->DrainTasks(isolate);
    }
  
+-  platform->UnregisterIsolate(isolate);
+   isolate->Dispose();
++  platform->UnregisterIsolate(isolate);
+ 
+   // Check that all the objects are created and destroyed properly.
+   EXPECT_EQ(CppGCed::kConstructCount, 100);
 diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
-index 14e82cc80ff73084fb43b2ef07febfd2667a0abc..68606d728644e0cb11d02fd46f8b6fc136df5114 100644
+index 14e82cc80ff73084fb43b2ef07febfd2667a0abc..b6a92f1685d1083c8f0c0b3ed110509f6d76b59f 100644
 --- a/test/cctest/test_environment.cc
 +++ b/test/cctest/test_environment.cc
 @@ -623,6 +623,9 @@ TEST_F(NodeZeroIsolateTestFixture, CtrlCWithOnlySafeTerminationTest) {
@@ -201,3 +266,55 @@ index 14e82cc80ff73084fb43b2ef07febfd2667a0abc..68606d728644e0cb11d02fd46f8b6fc1
    v8::Isolate* isolate = v8::Isolate::Allocate();
    CHECK_NOT_NULL(isolate);
    platform->RegisterIsolate(isolate, &current_loop);
+@@ -672,8 +675,8 @@ TEST_F(NodeZeroIsolateTestFixture, CtrlCWithOnlySafeTerminationTest) {
+   }
+ 
+   // Cleanup.
+-  platform->UnregisterIsolate(isolate);
+   isolate->Dispose();
++  platform->UnregisterIsolate(isolate);
+ }
+ #endif  // _WIN32
+ 
+diff --git a/test/cctest/test_platform.cc b/test/cctest/test_platform.cc
+index c2d7893813000601502d050f21ad5c740c6a3b8f..3042f63201bd0df3ad316e09f0f54e210cea8831 100644
+--- a/test/cctest/test_platform.cc
++++ b/test/cctest/test_platform.cc
+@@ -101,8 +101,8 @@ TEST_F(NodeZeroIsolateTestFixture, IsolatePlatformDelegateTest) {
+ 
+   // Graceful shutdown
+   delegate->Shutdown();
+-  platform->UnregisterIsolate(isolate);
+   isolate->Dispose();
++  platform->UnregisterIsolate(isolate);
+ }
+ 
+ TEST_F(PlatformTest, TracingControllerNullptr) {
+diff --git a/test/fuzzers/fuzz_env.cc b/test/fuzzers/fuzz_env.cc
+index bace3051f8cecd5050d4707f2431973752a22188..5ca295848a974c70ff1a9094eb288ef7e658d8e5 100644
+--- a/test/fuzzers/fuzz_env.cc
++++ b/test/fuzzers/fuzz_env.cc
+@@ -65,8 +65,8 @@ public:
+   void Teardown() {
+     platform->DrainTasks(isolate_);
+     isolate_->Exit();
+-    platform->UnregisterIsolate(isolate_);
+     isolate_->Dispose();
++    platform->UnregisterIsolate(isolate_);
+     isolate_ = nullptr;
+   }
+ };
+diff --git a/test/fuzzers/fuzz_strings.cc b/test/fuzzers/fuzz_strings.cc
+index 8f5e1a473e3148e0bcdcc3c2fd582685665ce461..936876cdae20d29618d3789a5ab46a1b3101a79d 100644
+--- a/test/fuzzers/fuzz_strings.cc
++++ b/test/fuzzers/fuzz_strings.cc
+@@ -72,8 +72,8 @@ public:
+   void Teardown() {
+     platform->DrainTasks(isolate_);
+     isolate_->Exit();
+-    platform->UnregisterIsolate(isolate_);
+     isolate_->Dispose();
++    platform->UnregisterIsolate(isolate_);
+     isolate_ = nullptr;
+   }
+ };
