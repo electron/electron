@@ -14,13 +14,18 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (36.0)
 
-### Web Workers and Utility Process unhandled rejection behavior change
+### Utility Process unhandled rejection behavior change
 
-Web Workers and Utility Processes will now warn with an error message when an unhandled
-rejection occurs instead of crashing the proces
+Utility Processes will now warn with an error message when an unhandled
+rejection occurs instead of crashing the process.
 
-We are making this change to align with Web Worker behavior in browsers and prevent
-utility processes from crashing on any unhandled rejections.
+To restore the previous behavior, you can use:
+
+```js
+process.on('uncaughtException', () => {
+  process.exit(1)
+})
+```
 
 ### Removed:`isDefault` and `status` properties on `PrinterInfo`
 
