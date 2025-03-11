@@ -502,3 +502,21 @@ index 96a1f38db9f42e8d47d70b82b6e1ee8034b96b47..08bc720fe0337f947461d74e29f7ce6f
    path_.moveTo(gfx::PointFToSkPoint(rect.TopLeftCorner().top_right()));
  
    path_.lineTo(gfx::PointFToSkPoint((rect.TopRightCorner().origin())));
+diff --git a/third_party/blink/renderer/platform/graphics/graphics_context.cc b/third_party/blink/renderer/platform/graphics/graphics_context.cc
+index 5d7887ae589af529a9f4c3e29b9fa314903e26bb..0d2f753a3b189bae69729b4da3cc2af72a98453a 100644
+--- a/third_party/blink/renderer/platform/graphics/graphics_context.cc
++++ b/third_party/blink/renderer/platform/graphics/graphics_context.cc
+@@ -819,6 +819,13 @@ void GraphicsContext::FillRoundedRect(const FloatRoundedRect& rrect,
+     return;
+   }
+ 
++  if (!rrect.HasSimpleRoundedCurvature()) {
++    Path path;
++    path.AddRoundedRect(rrect);
++    FillPath(path, auto_dark_mode);
++    return;
++  }
++
+   const cc::PaintFlags& fill_flags = ImmutableState()->FillFlags();
+   const SkColor4f sk_color = color.toSkColor4f();
+   if (sk_color == fill_flags.getColor4f()) {
