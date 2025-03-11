@@ -157,9 +157,9 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 
   [popup_controllers_[window_id] setCloseCallback:std::move(close_callback)];
 
-  if (frame) {
+  if (frame && frame->render_frame_host()) {
     auto* rfh = frame->render_frame_host()->GetOutermostMainFrameOrEmbedder();
-    if (rfh->IsRenderFrameLive()) {
+    if (rfh && rfh->IsRenderFrameLive()) {
       auto* rwhvm =
           static_cast<content::RenderWidgetHostViewMac*>(rfh->GetView());
       RenderWidgetHostViewCocoa* cocoa_view = rwhvm->GetInProcessNSView();
