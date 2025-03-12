@@ -449,7 +449,7 @@ index 2b50e3c3750c9ac6dd84a514663062a5d754b43e..49ced9aa87d3bcb00cd3d76ac32d4eec
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index bcd3ea598687c5a85cddc862cdb16eab2d8dbd5d..2ed210685453409a2aa330bf718694f70a3d862d 100644
+index 9145261d8c3350e3df8844bf4109d9fda7b6ed46..b83c0faf8a6d4898e382d989348c8035086d0510 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -41,6 +41,7 @@
@@ -474,10 +474,10 @@ index bcd3ea598687c5a85cddc862cdb16eab2d8dbd5d..2ed210685453409a2aa330bf718694f7
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 64c24ac24ace18bece4e4e5e870ff2bc5fc3058d..f99f39d7629682e90cd8b49e6bbf5480cd7de67e 100644
+index 3c4ab01a87d5011925e08ca296722d99ac7f33d4..41c3a5128b9936f48587d6fc6ddd2050bffc9c36 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -386,6 +386,7 @@ viz_component("service") {
+@@ -384,6 +384,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -485,7 +485,7 @@ index 64c24ac24ace18bece4e4e5e870ff2bc5fc3058d..f99f39d7629682e90cd8b49e6bbf5480
    }
  
    if (is_android || use_ozone) {
-@@ -686,6 +687,7 @@ viz_source_set("unit_tests") {
+@@ -684,6 +685,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]

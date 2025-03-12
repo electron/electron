@@ -87,10 +87,10 @@ index e033791ca1cdeba4a304e69b922d4169a22f9caa..706f81f7bbc1b5a7a1b73afe018b0b2c
  }
  
 diff --git a/src/heap/heap.cc b/src/heap/heap.cc
-index da9d8810b307e94f01238e56532a0ff93f1ff325..252a1b354110764c6351119d41a4adddca0c2913 100644
+index cedf308a6042cc45241d4ee2731d2ee240ee8d9f..794c6380db4a669e7a83f6cce1db1dbe4fcde972 100644
 --- a/src/heap/heap.cc
 +++ b/src/heap/heap.cc
-@@ -6056,6 +6056,21 @@ void Heap::AttachCppHeap(v8::CppHeap* cpp_heap) {
+@@ -6065,6 +6065,21 @@ void Heap::AttachCppHeap(v8::CppHeap* cpp_heap) {
    cpp_heap_ = cpp_heap;
  }
  
@@ -113,10 +113,10 @@ index da9d8810b307e94f01238e56532a0ff93f1ff325..252a1b354110764c6351119d41a4addd
    if (!embedder_stack_state_origin_) return {};
    return embedder_stack_state_;
 diff --git a/src/heap/heap.h b/src/heap/heap.h
-index 570cb682903cbead5f8f80573290b13ab1d81183..bccdb6c1bdb8fbbc6cc5aee0e54105f210ca2ab9 100644
+index 200a3bdcd563a54b9fbd6c7ca007fb940b1a9451..0946601a9c25a03a830fb6a8fb5389057bfe5d33 100644
 --- a/src/heap/heap.h
 +++ b/src/heap/heap.h
-@@ -1104,6 +1104,9 @@ class Heap final {
+@@ -1108,6 +1108,9 @@ class Heap final {
    // Unified heap (C++) support. ===============================================
    // ===========================================================================
  
@@ -126,7 +126,7 @@ index 570cb682903cbead5f8f80573290b13ab1d81183..bccdb6c1bdb8fbbc6cc5aee0e54105f2
    v8::CppHeap* cpp_heap() const { return cpp_heap_; }
  
    std::optional<StackState> overridden_stack_state() const;
-@@ -1645,8 +1648,6 @@ class Heap final {
+@@ -1649,8 +1652,6 @@ class Heap final {
   private:
    class AllocationTrackerForDebugging;
  

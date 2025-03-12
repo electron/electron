@@ -7,10 +7,10 @@ With WCO, allow chromium to handle synthetic mouse events generated for touch
 actions in the non-client caption area.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 2d05856687cd9669f72553d33c8033fd9083b4f8..645b7dd2cc20ce64ffa541c74930f541f083f931 100644
+index 55c426aee12da4d4d1f62dc7d489133e8d21dc49..40c88bf14d2d4fe841e29b32414361688ae438e5 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1357,6 +1357,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
+@@ -1362,6 +1362,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
    window()->SetProperty(aura::client::kHeadlessBoundsKey, bounds);
  }
  
@@ -22,7 +22,7 @@ index 2d05856687cd9669f72553d33c8033fd9083b4f8..645b7dd2cc20ce64ffa541c74930f541
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 932351e288f37fd09ae1a43f44e8b51fb0caa4b8..4a0616bc210d234e51e564daabdd2ebd5ac9fc16 100644
+index 4865d79c95c34d8cead96d3bb8063a0e2bd6076b..ebfa09ed15dca98b75a013e3dcbb566ce84d7cb7 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 @@ -267,6 +267,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin : public DesktopWindowTreeHost,
@@ -60,7 +60,7 @@ index 7f29d902ae0a2f980a56e77e6e25935dab3c0685..679efe5af4954d9ddca7bc5ccee6b8d6
      }
    }
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 04dea68d74ea4f559db60f716c919e555db9ec80..2f8bd1a3c156bb6c04663c74b7279bb59926fc3d 100644
+index de8fd5657e6885f74a5970bdd49647a6f1616387..4af87792edc7a147468077b834582510550e35e6 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
 @@ -255,6 +255,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
