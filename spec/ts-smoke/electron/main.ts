@@ -1177,7 +1177,7 @@ session.defaultSession.clearStorageData({ storages: ['shadercache', 'cachestorag
 // @ts-expect-error Invalid type value
 session.defaultSession.clearStorageData({ storages: ['wrong_path'] });
 
-session.defaultSession.clearStorageData({ quotas: ['syncable', 'temporary'] });
+session.defaultSession.clearStorageData({ quotas: ['temporary'] });
 // @ts-expect-error Invalid type value
 session.defaultSession.clearStorageData({ quotas: ['bad_type'] });
 
