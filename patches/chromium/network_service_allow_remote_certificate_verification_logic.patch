@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 8529c98678d7a671cea947a864d0c13e031a153a..771fee7092bb25e4f7546941a04647d060e966c2 100644
+index b9a14ef983f6c985fefeee342eddfdf3f0a24a84..b1df0a09a9bfd226ffe7b37144e6599b099e619e 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -159,6 +159,11 @@
@@ -136,7 +136,7 @@ index 8529c98678d7a671cea947a864d0c13e031a153a..771fee7092bb25e4f7546941a04647d0
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2617,6 +2722,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2618,6 +2723,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
@@ -178,7 +178,7 @@ index f2dcec57a22d95892a08f1fa43696d6eea46a820..930e0bd987c48d111b2c8d71147c09e4
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 5cfbf71f644b391009d533132621a4ece224bfd3..773049b72e7784d396bb9cd1ebd29c3a523e7454 100644
+index 0f053267c23795be6bb0e75d10a92e1777532484..cf4d2dcf86b6536c37d46875f74517e478b34928 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -308,6 +308,17 @@ struct SocketBrokerRemotes {
@@ -199,7 +199,7 @@ index 5cfbf71f644b391009d533132621a4ece224bfd3..773049b72e7784d396bb9cd1ebd29c3a
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -939,6 +950,9 @@ interface NetworkContext {
+@@ -945,6 +956,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 998d8906b6bd33f48199dc5a67bbd149742eb561..90015e0be79e850a9225263e90b662fa3fbe005f 100644
+index 6bf37c804ddb77a28e788af02bb215970ba343c8..4bf9d4050c44dd155b3455082c8b87afa30e9ac7 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1031,6 +1031,7 @@ component("base") {
@@ -449,10 +449,10 @@ index 2b50e3c3750c9ac6dd84a514663062a5d754b43e..49ced9aa87d3bcb00cd3d76ac32d4eec
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index bcd3ea598687c5a85cddc862cdb16eab2d8dbd5d..2ed210685453409a2aa330bf718694f70a3d862d 100644
+index aa59dfc5c689c6347a4a34fbce46ea549f46dc9d..29fa39513d0273d0a23fb45e627dda14b91c62d4 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -41,6 +41,7 @@
+@@ -42,6 +42,7 @@
  #import "components/remote_cocoa/app_shim/views_nswindow_delegate.h"
  #import "components/remote_cocoa/app_shim/window_move_loop.h"
  #include "components/remote_cocoa/common/native_widget_ns_window_host.mojom.h"
@@ -460,7 +460,7 @@ index bcd3ea598687c5a85cddc862cdb16eab2d8dbd5d..2ed210685453409a2aa330bf718694f7
  #include "mojo/public/cpp/bindings/self_owned_receiver.h"
  #include "net/cert/x509_util_apple.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
-@@ -676,10 +677,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -677,10 +678,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -474,10 +474,10 @@ index bcd3ea598687c5a85cddc862cdb16eab2d8dbd5d..2ed210685453409a2aa330bf718694f7
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 64c24ac24ace18bece4e4e5e870ff2bc5fc3058d..f99f39d7629682e90cd8b49e6bbf5480cd7de67e 100644
+index 3c4ab01a87d5011925e08ca296722d99ac7f33d4..41c3a5128b9936f48587d6fc6ddd2050bffc9c36 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -386,6 +386,7 @@ viz_component("service") {
+@@ -384,6 +384,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -485,7 +485,7 @@ index 64c24ac24ace18bece4e4e5e870ff2bc5fc3058d..f99f39d7629682e90cd8b49e6bbf5480
    }
  
    if (is_android || use_ozone) {
-@@ -686,6 +687,7 @@ viz_source_set("unit_tests") {
+@@ -684,6 +685,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
