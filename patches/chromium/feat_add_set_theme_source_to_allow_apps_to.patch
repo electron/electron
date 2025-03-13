@@ -62,10 +62,10 @@ index 2e657f24bb625c7a7af14686553aebdc06ad8eda..6f2384338ac4a48a78bc8aac8b4bb9d3
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index b5ed5d33890bf4f98237c92bbe642063d27d0092..82c1705ae0dbc7ac33eb90e7978d48c7de7f1c8f 100644
+index ff43747a45b5f508f45afb1e6304bda22ae46fbc..955c3734591f608f32b40927e53db1bf453ce907 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -688,6 +688,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -695,6 +695,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    if (InForcedColorsMode() && !IsForcedDarkMode()) {
      return false;
    }

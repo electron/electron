@@ -50,10 +50,10 @@ index 97f1030dd2ca47ca4b58ac64e2e11e615bc46130..24ef6b5e0af63179e557b9896134838e
      /**
       * Stop this `Atomics.wait()` call and call the |AtomicsWaitCallback|
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 64044e9cf44d401c249787feafb651688ee0d9f9..1677e54b188b6a1699370d8cff37d2acf2933f38 100644
+index f4ed96bf45183c8a7453ebac994904c2ea7d9707..59327d4619661a138c407b468794e6a0f60a91e3 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -9876,6 +9876,16 @@ void Isolate::SetEmbedderRootsHandler(EmbedderRootsHandler* handler) {
+@@ -9878,6 +9878,16 @@ void Isolate::SetEmbedderRootsHandler(EmbedderRootsHandler* handler) {
    i_isolate->heap()->SetEmbedderRootsHandler(handler);
  }
  
@@ -71,7 +71,7 @@ index 64044e9cf44d401c249787feafb651688ee0d9f9..1677e54b188b6a1699370d8cff37d2ac
    const i::Isolate* i_isolate = reinterpret_cast<const i::Isolate*>(this);
    return i_isolate->heap()->cpp_heap();
 diff --git a/src/heap/cppgc-js/cpp-heap.cc b/src/heap/cppgc-js/cpp-heap.cc
-index e033791ca1cdeba4a304e69b922d4169a22f9caa..706f81f7bbc1b5a7a1b73afe018b0b2c0184d9ef 100644
+index a03e4d6fdb8acb2623434f08b1f63ff86cb1e77a..756e5f89a3b947761c01fc3cc59c654eb99836d7 100644
 --- a/src/heap/cppgc-js/cpp-heap.cc
 +++ b/src/heap/cppgc-js/cpp-heap.cc
 @@ -513,6 +513,11 @@ CppHeap::CppHeap(
@@ -87,7 +87,7 @@ index e033791ca1cdeba4a304e69b922d4169a22f9caa..706f81f7bbc1b5a7a1b73afe018b0b2c
  }
  
 diff --git a/src/heap/heap.cc b/src/heap/heap.cc
-index cedf308a6042cc45241d4ee2731d2ee240ee8d9f..794c6380db4a669e7a83f6cce1db1dbe4fcde972 100644
+index 978530ac50d8471e1bff86397aad37de770df4fa..98c01ab5ea7b3a3d8357173c41250e5e62b3f1a7 100644
 --- a/src/heap/heap.cc
 +++ b/src/heap/heap.cc
 @@ -6065,6 +6065,21 @@ void Heap::AttachCppHeap(v8::CppHeap* cpp_heap) {
@@ -113,7 +113,7 @@ index cedf308a6042cc45241d4ee2731d2ee240ee8d9f..794c6380db4a669e7a83f6cce1db1dbe
    if (!embedder_stack_state_origin_) return {};
    return embedder_stack_state_;
 diff --git a/src/heap/heap.h b/src/heap/heap.h
-index 200a3bdcd563a54b9fbd6c7ca007fb940b1a9451..0946601a9c25a03a830fb6a8fb5389057bfe5d33 100644
+index 86833e18aeacbbaa49912bb9802f1b0a9e0716a7..8fc2324d9a555a9939297d0a2528c6ec7b0f723e 100644
 --- a/src/heap/heap.h
 +++ b/src/heap/heap.h
 @@ -1108,6 +1108,9 @@ class Heap final {

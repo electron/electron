@@ -564,10 +564,10 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index d0ea177f54b8db8837840e22f5cdb6b64a0c9605..94e4a27fefff406e1d09e7867c0e84e43e6027cf 100644
+index 6e35e3a2e1cc10d62a487111d1e185bf900d9cfa..fe0dbc425746ec97372cade1365a5654b22881f3 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -441,8 +441,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -436,8 +436,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();

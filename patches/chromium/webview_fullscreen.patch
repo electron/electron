@@ -37,7 +37,7 @@ index 37af686964489bd77d84be95d5f3aba9cd0a7a0c..4ffe6251a941cb51b60a5d19fd6307b0
    if (had_fullscreen_token && !GetView()->HasFocus())
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b139a13c80eb9d356c78c587f823a4cb8452abe9..6f323c5863f4bb869a66d265fac1d372c5243187 100644
+index 97512399db631236afd1aeafb1ecee97cb754f60..c3b563b0b727bc35f6d4499c589110644ebe9cd1 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4157,21 +4157,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
@@ -88,7 +88,7 @@ index b139a13c80eb9d356c78c587f823a4cb8452abe9..6f323c5863f4bb869a66d265fac1d372
            features::kAutomaticFullscreenContentSetting)) {
      // Ensure the window is made active to take input focus. The user may have
 diff --git a/third_party/blink/renderer/core/fullscreen/fullscreen.cc b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
-index 983f8a795725a097adf4e13f7d9c24b7c16d3467..75f1b9b60460713da6d832a803cfc03d7c90c9ca 100644
+index 0a37c1f1eb49023a4a209e9664e0fadadb97e297..76c52a0528a100787b83ccd76f552f98216a5aaa 100644
 --- a/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 +++ b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 @@ -110,7 +110,7 @@ void FullscreenElementChanged(Document& document,
