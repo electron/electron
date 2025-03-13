@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Wilson <mjwilson@chromium.org>
+Date: Thu, 30 Jan 2025 14:09:57 -0800
+Subject: Remove DenormalEnabler from ScriptProcessorNode
+
+This is a follow-up to https://crrev.com/c/6077677
+
+After experimenting, ScriptProcessorNode JavaScript is already running
+in a complaint mode so the DenormalEnabler is not necessary.
+
+Bug: 382005099
+Change-Id: If9774e60640446c567270a8f065500beecc8a40b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6219685
+Commit-Queue: Michael Wilson <mjwilson@chromium.org>
+Reviewed-by: Alvin Ji <alvinji@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1413754}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/script_processor_handler.cc b/third_party/blink/renderer/modules/webaudio/script_processor_handler.cc
+index 8f9641bebb1a97d2963f8858e58a61cf2434770b..fd6ead021f9f656331d838fb6733cb0fb5220b12 100644
+--- a/third_party/blink/renderer/modules/webaudio/script_processor_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/script_processor_handler.cc
+@@ -26,7 +26,6 @@
+ #include "third_party/blink/renderer/modules/webaudio/base_audio_context.h"
+ #include "third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.h"
+ #include "third_party/blink/renderer/modules/webaudio/script_processor_node.h"
+-#include "third_party/blink/renderer/platform/audio/denormal_disabler.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h"
+@@ -49,9 +48,7 @@ ScriptProcessorHandler::ScriptProcessorHandler(
+       internal_input_bus_(AudioBus::Create(
+           number_of_input_channels,
+           node.context()->GetDeferredTaskHandler().RenderQuantumFrames(),
+-          false)),
+-      allow_denormal_in_processing_(base::FeatureList::IsEnabled(
+-          features::kWebAudioAllowDenormalInProcessing)) {
++          false)) {
+   DCHECK_GE(buffer_size_,
+             node.context()->GetDeferredTaskHandler().RenderQuantumFrames());
+   DCHECK_LE(number_of_input_channels, BaseAudioContext::MaxNumberOfChannels());
+@@ -112,7 +109,7 @@ void ScriptProcessorHandler::Initialize() {
+   AudioHandler::Initialize();
+ }
+ 
+-void ScriptProcessorHandler::ProcessInternal(uint32_t frames_to_process) {
++void ScriptProcessorHandler::Process(uint32_t frames_to_process) {
+   TRACE_EVENT_BEGIN0(TRACE_DISABLED_BY_DEFAULT("webaudio.audionode"),
+                      "ScriptProcessorHandler::Process");
+ 
+@@ -241,15 +238,6 @@ void ScriptProcessorHandler::ProcessInternal(uint32_t frames_to_process) {
+                    "ScriptProcessorHandler::Process");
+ }
+ 
+-void ScriptProcessorHandler::Process(uint32_t frames_to_process) {
+-  if (allow_denormal_in_processing_) {
+-    DenormalEnabler denormal_enabler;
+-    ProcessInternal(frames_to_process);
+-  } else {
+-    ProcessInternal(frames_to_process);
+-  }
+-}
+-
+ void ScriptProcessorHandler::FireProcessEvent(uint32_t double_buffer_index) {
+   DCHECK(IsMainThread());
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/script_processor_handler.h b/third_party/blink/renderer/modules/webaudio/script_processor_handler.h
+index a960426678a5da72071f6defa046a4517fcb1cf7..308a9ba845ab3413462540a70564ad85091cf180 100644
+--- a/third_party/blink/renderer/modules/webaudio/script_processor_handler.h
++++ b/third_party/blink/renderer/modules/webaudio/script_processor_handler.h
+@@ -66,10 +66,6 @@ class ScriptProcessorHandler final : public AudioHandler {
+                          const HeapVector<Member<AudioBuffer>>& input_buffers,
+                          const HeapVector<Member<AudioBuffer>>& output_buffers);
+ 
+-  // Used to avoid code duplication when using scoped objects that affect
+-  // `Process`.
+-  void ProcessInternal(uint32_t frames_to_process);
+-
+   double TailTime() const override;
+   double LatencyTime() const override;
+   bool RequiresTailProcessing() const final;
+@@ -97,9 +93,6 @@ class ScriptProcessorHandler final : public AudioHandler {
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+ 
+-  // Cached feature flag value
+-  const bool allow_denormal_in_processing_;
+-
+   base::WeakPtrFactory<ScriptProcessorHandler> weak_ptr_factory_{this};
+ 
+   FRIEND_TEST_ALL_PREFIXES(ScriptProcessorNodeTest, BufferLifetime);
