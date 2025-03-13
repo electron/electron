@@ -15,10 +15,10 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index d1c86dcadcbd134ce4585e02c9e2d63d6c9ca3f7..d452146f7bb489a7f41efe2dd8fa6ff5d692bef3 100644
+index 37af686964489bd77d84be95d5f3aba9cd0a7a0c..4ffe6251a941cb51b60a5d19fd6307b011a49f39 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8737,6 +8737,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -8739,6 +8739,17 @@ void RenderFrameHostImpl::EnterFullscreen(
      }
    }
  
@@ -37,7 +37,7 @@ index d1c86dcadcbd134ce4585e02c9e2d63d6c9ca3f7..d452146f7bb489a7f41efe2dd8fa6ff5
    if (had_fullscreen_token && !GetView()->HasFocus())
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2f7d9e60679d690d48ed7285c1c704192e3e3b67..1582fba4b9776f405a08150f4783526b79491d60 100644
+index 97512399db631236afd1aeafb1ecee97cb754f60..c3b563b0b727bc35f6d4499c589110644ebe9cd1 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4157,21 +4157,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
@@ -88,7 +88,7 @@ index 2f7d9e60679d690d48ed7285c1c704192e3e3b67..1582fba4b9776f405a08150f4783526b
            features::kAutomaticFullscreenContentSetting)) {
      // Ensure the window is made active to take input focus. The user may have
 diff --git a/third_party/blink/renderer/core/fullscreen/fullscreen.cc b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
-index 983f8a795725a097adf4e13f7d9c24b7c16d3467..75f1b9b60460713da6d832a803cfc03d7c90c9ca 100644
+index 0a37c1f1eb49023a4a209e9664e0fadadb97e297..76c52a0528a100787b83ccd76f552f98216a5aaa 100644
 --- a/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 +++ b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 @@ -110,7 +110,7 @@ void FullscreenElementChanged(Document& document,

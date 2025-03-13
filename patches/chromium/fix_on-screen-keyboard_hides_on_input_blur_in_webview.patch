@@ -9,10 +9,10 @@ focus node change via TextInputManager.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index fec1cdc083d1cb365188a7635a6c062b275d1f64..6098209b367f6b0f0995bd569c895813c6396340 100644
+index 7e9f2e71f08c1324a805462064d4fa485041c19f..2b4543ca40eac0f56c6408e27aac523827093724 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -3226,6 +3226,12 @@ void RenderWidgetHostViewAura::OnTextSelectionChanged(
+@@ -3220,6 +3220,12 @@ void RenderWidgetHostViewAura::OnTextSelectionChanged(
    }
  }
  
@@ -87,10 +87,10 @@ index 75df43e3cd2721a92c90c18154d53d5c203e2465..ce42c75c8face36d21f53f44c0201ac4
    // The view with active text input state, i.e., a focused <input> element.
    // It will be nullptr if no such view exists. Note that the active view
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1582fba4b9776f405a08150f4783526b79491d60..e806b0d2e59764b6cac2872659de1a10479acdc0 100644
+index c3b563b0b727bc35f6d4499c589110644ebe9cd1..6010d9f9fc9bfeffb3e5a64de7352b52a202cbf7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -9768,7 +9768,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -9772,7 +9772,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
                          "WebContentsImpl::OnFocusedElementChangedInFrame",
                          "render_frame_host", frame);
    RenderWidgetHostViewBase* root_view =
