@@ -13,4 +13,5 @@ cherry-pick-8131c09bc129.patch
 wasm_fix_freeing_of_identical_shared_wrappers.patch
 merged_wasm_replace_dead_code_set_with_is_dying_bit.patch
 merged_fix_out_of_bound_string_access.patch
+cherry-pick-91343bb45c78.patch
 cherry-pick-2b4812d502b2.patch

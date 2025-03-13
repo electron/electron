@@ -1,0 +1,62 @@
+From 0adceb6159fb6cf8c7e66062964b07d522f32fd7 Mon Sep 17 00:00:00 2001
+From: Alexander Cooper <alcooper@chromium.org>
+Date: Wed, 19 Feb 2025 14:50:50 -0800
+Subject: [PATCH] Speculative fix for cancelling current xr animation frame
+
+When cancelling an XrAnimationFrame we don't actually need to clear the
+list of async tasks, and in fact attempting to clear the current async
+task can cause errors. This list is only populated while callbacks are
+being executed, and is cleared once those callbacks are finished
+executing. Removing the callback id from
+`current_callback_frame_requests`, which is populated for the same
+life span as the async_tasks, is sufficient to ensure the cancelled
+callback does not run.
+
+Note: This is a speculative fix because even when
+external/wpt/webxr/xrSession_cancelAnimationFrame.https.html
+was modified to cancel the current frame, Issue 396481096 did not
+repro; however, from code analysis this should fix the issue.
+
+(cherry picked from commit 263f1bf5a386c1de1dfea09ca2d5e6abab287476)
+
+Fixed: 396481096
+Change-Id: Ic53895c4ab9cb39b8f9d2263749f5914f484a9f5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6266810
+Commit-Queue: Alexander Cooper <alcooper@chromium.org>
+Auto-Submit: Alexander Cooper <alcooper@chromium.org>
+Reviewed-by: Brandon Jones <bajones@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1420734}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6282799
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/6834@{#5493}
+Cr-Branched-From: 47a3549fac11ee8cb7be6606001ede605b302b9f-refs/heads/main@{#1381561}
+---
+
+diff --git a/third_party/blink/renderer/modules/xr/xr_frame_request_callback_collection.cc b/third_party/blink/renderer/modules/xr/xr_frame_request_callback_collection.cc
+index af51506..9a071c6 100644
+--- a/third_party/blink/renderer/modules/xr/xr_frame_request_callback_collection.cc
++++ b/third_party/blink/renderer/modules/xr/xr_frame_request_callback_collection.cc
+@@ -41,7 +41,13 @@
+     callback_frame_requests_.erase(id);
+     callback_async_tasks_.erase(id);
+     current_callback_frame_requests_.erase(id);
+-    current_callback_async_tasks_.erase(id);
++    // We intentionally do not erase from `current_callback_async_tasks_` here.
++    // If we are not actively processing a set of callbacks these will be empty.
++    // If we *are* actively processing callbacks, we cannot erase the task of
++    // the current callback, and these tasks will get cleaned up once the
++    // callbacks are finished processing. Removing the id from
++    // `current_callback_frame_requests_` is enough to ensure that the callback
++    // is not run.
+   }
+ }
+ 
+@@ -70,7 +76,6 @@
+     auto it_frame_request = current_callback_frame_requests_.find(id);
+     auto it_async_task = current_callback_async_tasks_.find(id);
+     if (it_frame_request == current_callback_frame_requests_.end()) {
+-      DCHECK_EQ(current_callback_async_tasks_.end(), it_async_task);
+       continue;
+     }
+     CHECK_NE(current_callback_async_tasks_.end(), it_async_task,
