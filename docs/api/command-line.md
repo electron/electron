@@ -72,6 +72,10 @@ console.log(hasPort) // true
 
 Returns `string` - The command-line switch value.
 
+This function is meant to obtain Chromium command line switches. It is not
+meant to be used for application-specific command line arguments. For the
+latter, please use `process.argv`.
+
 ```js
 const { app } = require('electron')
 
