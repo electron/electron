@@ -1,0 +1,333 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Wilson <mjwilson@chromium.org>
+Date: Thu, 12 Dec 2024 08:45:53 -0800
+Subject: Add a flag to enable strict JS compliance in AudioWorklet
+
+AudioWorklet and ScriptProcessorNode are not strictly JavaScript spec
+compliant because we disable denormal numbers for performance reasons.
+
+This CL adds a flag to allow experimenting with enabling denormal
+numbers in AudioWorklet and ScriptProcessorNode, so that we can
+quantify the actual performance impact.
+
+The flag can also be used as a server-side switch.
+
+Bug: 382005099
+Change-Id: Ib41253cc42dd2f16c262036817cf3db4697f986f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6077677
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Commit-Queue: Michael Wilson <mjwilson@chromium.org>
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1395444}
+
+diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
+index e7224e03e80f8351556b3d2d43650dad7e29edef..1b2b6128e69953be7f9f96853d76c5c0e16552fe 100644
+--- a/third_party/blink/common/features.cc
++++ b/third_party/blink/common/features.cc
+@@ -2754,6 +2754,12 @@ BASE_FEATURE(kWebAppManifestLockScreen,
+              "WebAppManifestLockScreen",
+              base::FEATURE_DISABLED_BY_DEFAULT);
+ 
++// Allow denormals in AudioWorklet and ScriptProcessorNode, to enable strict
++// JavaScript denormal compliance.  See https://crbug.com/382005099.
++BASE_FEATURE(kWebAudioAllowDenormalInProcessing,
++             "WebAudioAllowDenormalInProcessing",
++             base::FEATURE_DISABLED_BY_DEFAULT);
++
+ // Parameters can be used to control to which latency hints the feature is
+ // applied.
+ BASE_FEATURE_PARAM(bool,
+diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
+index e8f79c39e03f5777c1accd4446c97f18fb3e34de..0bc9302cd8f3f291949be328aba5df88e2ab0d03 100644
+--- a/third_party/blink/public/common/features.h
++++ b/third_party/blink/public/common/features.h
+@@ -1791,6 +1791,7 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebAppEnableScopeExtensions);
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebAppEnableUrlHandlers);
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebAppManifestLockScreen);
+ 
++BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebAudioAllowDenormalInProcessing);
+ // Parameters are used to control to which latency hints the feature is applied
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE_PARAM(
+     bool,
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
+index 0382f578a4f98cbac422d5f927c73a6b922c01b8..9a662e7730d3e01dcf8e69f66c4eafa9dd7dd031 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.cc
+@@ -29,6 +29,7 @@
+ #include "third_party/blink/renderer/modules/webaudio/cross_thread_audio_worklet_processor_info.h"
+ #include "third_party/blink/renderer/platform/audio/audio_bus.h"
+ #include "third_party/blink/renderer/platform/audio/audio_utilities.h"
++#include "third_party/blink/renderer/platform/audio/denormal_disabler.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_messages.h"
+ #include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/instrumentation/tracing/trace_event.h"
+@@ -52,7 +53,9 @@ AudioWorkletHandler::AudioWorkletHandler(
+     const AudioWorkletNodeOptions* options)
+     : AudioHandler(kNodeTypeAudioWorklet, node, sample_rate),
+       name_(name),
+-      param_handler_map_(param_handler_map) {
++      param_handler_map_(param_handler_map),
++      allow_denormal_in_processing_(base::FeatureList::IsEnabled(
++          features::kWebAudioAllowDenormalInProcessing)) {
+   DCHECK(IsMainThread());
+ 
+   for (const auto& param_name : param_handler_map_.Keys()) {
+@@ -112,7 +115,7 @@ scoped_refptr<AudioWorkletHandler> AudioWorkletHandler::Create(
+                                                 param_handler_map, options));
+ }
+ 
+-void AudioWorkletHandler::Process(uint32_t frames_to_process) {
++void AudioWorkletHandler::ProcessInternal(uint32_t frames_to_process) {
+   DCHECK(Context()->IsAudioThread());
+ 
+   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("webaudio.audionode"),
+@@ -175,6 +178,15 @@ void AudioWorkletHandler::Process(uint32_t frames_to_process) {
+   }
+ }
+ 
++void AudioWorkletHandler::Process(uint32_t frames_to_process) {
++  if (allow_denormal_in_processing_) {
++    DenormalEnabler denormal_enabler;
++    ProcessInternal(frames_to_process);
++  } else {
++    ProcessInternal(frames_to_process);
++  }
++}
++
+ void AudioWorkletHandler::CheckNumberOfChannelsForInput(AudioNodeInput* input) {
+   DCHECK(Context()->IsAudioThread());
+   Context()->AssertGraphOwner();
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.h b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.h
+index e6291f5e9e25433281646965f048a7f2abfc8c01..3ec80cd49a87a76ac03df105b37f1ae17437a328 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.h
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.h
+@@ -68,6 +68,10 @@ class AudioWorkletHandler final : public AudioHandler {
+       HashMap<String, scoped_refptr<AudioParamHandler>> param_handler_map,
+       const AudioWorkletNodeOptions*);
+ 
++  // Used to avoid code duplication when using scoped objects that affect
++  // `Process`.
++  void ProcessInternal(uint32_t frames_to_process);
++
+   String name_;
+ 
+   double tail_time_ = std::numeric_limits<double>::infinity();
+@@ -102,6 +106,9 @@ class AudioWorkletHandler final : public AudioHandler {
+   // when a processor stops invoking the user-defined `process()` callback.
+   bool is_processor_active_ = true;
+ 
++  // Cached feature flag value
++  const bool allow_denormal_in_processing_;
++
+   base::WeakPtrFactory<AudioWorkletHandler> weak_ptr_factory_{this};
+ };
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/script_processor_handler.cc b/third_party/blink/renderer/modules/webaudio/script_processor_handler.cc
+index d3d44d2a4c87bf5d4191807ec31d87c7e597fef9..ea04e2cd2bfb553a58ba6fb9c63c70c5a2690442 100644
+--- a/third_party/blink/renderer/modules/webaudio/script_processor_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/script_processor_handler.cc
+@@ -26,6 +26,7 @@
+ #include "third_party/blink/renderer/modules/webaudio/base_audio_context.h"
+ #include "third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.h"
+ #include "third_party/blink/renderer/modules/webaudio/script_processor_node.h"
++#include "third_party/blink/renderer/platform/audio/denormal_disabler.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h"
+@@ -48,7 +49,9 @@ ScriptProcessorHandler::ScriptProcessorHandler(
+       internal_input_bus_(AudioBus::Create(
+           number_of_input_channels,
+           node.context()->GetDeferredTaskHandler().RenderQuantumFrames(),
+-          false)) {
++          false)),
++      allow_denormal_in_processing_(base::FeatureList::IsEnabled(
++          features::kWebAudioAllowDenormalInProcessing)) {
+   DCHECK_GE(buffer_size_,
+             node.context()->GetDeferredTaskHandler().RenderQuantumFrames());
+   DCHECK_LE(number_of_input_channels, BaseAudioContext::MaxNumberOfChannels());
+@@ -109,7 +112,7 @@ void ScriptProcessorHandler::Initialize() {
+   AudioHandler::Initialize();
+ }
+ 
+-void ScriptProcessorHandler::Process(uint32_t frames_to_process) {
++void ScriptProcessorHandler::ProcessInternal(uint32_t frames_to_process) {
+   TRACE_EVENT_BEGIN0(TRACE_DISABLED_BY_DEFAULT("webaudio.audionode"),
+                      "ScriptProcessorHandler::Process");
+ 
+@@ -238,6 +241,15 @@ void ScriptProcessorHandler::Process(uint32_t frames_to_process) {
+                    "ScriptProcessorHandler::Process");
+ }
+ 
++void ScriptProcessorHandler::Process(uint32_t frames_to_process) {
++  if (allow_denormal_in_processing_) {
++    DenormalEnabler denormal_enabler;
++    ProcessInternal(frames_to_process);
++  } else {
++    ProcessInternal(frames_to_process);
++  }
++}
++
+ void ScriptProcessorHandler::FireProcessEvent(uint32_t double_buffer_index) {
+   DCHECK(IsMainThread());
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/script_processor_handler.h b/third_party/blink/renderer/modules/webaudio/script_processor_handler.h
+index 82ac7cebaefb515a04442e7a24896177d66fcb01..99103e947ade50f07a16a61bc8702d6097266296 100644
+--- a/third_party/blink/renderer/modules/webaudio/script_processor_handler.h
++++ b/third_party/blink/renderer/modules/webaudio/script_processor_handler.h
+@@ -65,6 +65,11 @@ class ScriptProcessorHandler final : public AudioHandler {
+                          uint32_t number_of_output_channels,
+                          const HeapVector<Member<AudioBuffer>>& input_buffers,
+                          const HeapVector<Member<AudioBuffer>>& output_buffers);
++
++  // Used to avoid code duplication when using scoped objects that affect
++  // `Process`.
++  void ProcessInternal(uint32_t frames_to_process);
++
+   double TailTime() const override;
+   double LatencyTime() const override;
+   bool RequiresTailProcessing() const final;
+@@ -92,6 +97,9 @@ class ScriptProcessorHandler final : public AudioHandler {
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+ 
++  // Cached feature flag value
++  const bool allow_denormal_in_processing_;
++
+   base::WeakPtrFactory<ScriptProcessorHandler> weak_ptr_factory_{this};
+ 
+   FRIEND_TEST_ALL_PREFIXES(ScriptProcessorNodeTest, BufferLifetime);
+diff --git a/third_party/blink/renderer/platform/audio/denormal_disabler.h b/third_party/blink/renderer/platform/audio/denormal_disabler.h
+index e8fadf60eea81b017dc29b39c2d1cfe8c102999b..ac1cdfa026aa1f845a892e96200fd9de46a45c92 100644
+--- a/third_party/blink/renderer/platform/audio/denormal_disabler.h
++++ b/third_party/blink/renderer/platform/audio/denormal_disabler.h
+@@ -52,28 +52,28 @@ namespace blink {
+ #endif
+ 
+ #if defined(HAVE_DENORMAL)
+-class DenormalDisabler {
+-  DISALLOW_NEW();
+-
++class DenormalModifier {
+  public:
+-  DenormalDisabler() { DisableDenormals(); }
+-
+-  ~DenormalDisabler() { RestoreState(); }
+-
+-  // This is a nop if we can flush denormals to zero in hardware.
+-  static inline float FlushDenormalFloatToZero(float f) { return f; }
++  virtual ~DenormalModifier() = default;
+ 
+  private:
+   unsigned saved_csr_ = 0;
+ 
+ #if defined(COMPILER_GCC) && defined(ARCH_CPU_X86_FAMILY)
++ protected:
+   inline void DisableDenormals() {
+     saved_csr_ = GetCSR();
+     SetCSR(saved_csr_ | 0x8040);
+   }
+ 
++  inline void EnableDenormals() {
++    saved_csr_ = GetCSR();
++    SetCSR(saved_csr_ & (~0x8040));
++  }
++
+   inline void RestoreState() { SetCSR(saved_csr_); }
+ 
++ private:
+   inline int GetCSR() {
+     int result;
+     asm volatile("stmxcsr %0" : "=m"(result));
+@@ -86,6 +86,7 @@ class DenormalDisabler {
+   }
+ 
+ #elif BUILDFLAG(IS_WIN) && defined(COMPILER_MSVC)
++ protected:
+   inline void DisableDenormals() {
+     // Save the current state, and set mode to flush denormals.
+     //
+@@ -95,11 +96,18 @@ class DenormalDisabler {
+     _controlfp_s(&unused, _DN_FLUSH, _MCW_DN);
+   }
+ 
++  inline void EnableDenormals() {
++    _controlfp_s(&saved_csr_, 0, 0);
++    unsigned unused;
++    _controlfp_s(&unused, _DN_SAVE, _MCW_DN);
++  }
++
+   inline void RestoreState() {
+     unsigned unused;
+     _controlfp_s(&unused, saved_csr_, _MCW_DN);
+   }
+ #elif defined(ARCH_CPU_ARM_FAMILY)
++ protected:
+   inline void DisableDenormals() {
+     saved_csr_ = GetStatusWord();
+     // Bit 24 is the flush-to-zero mode control bit. Setting it to 1 flushes
+@@ -107,8 +115,14 @@ class DenormalDisabler {
+     SetStatusWord(saved_csr_ | (1 << 24));
+   }
+ 
++  inline void EnableDenormals() {
++    saved_csr_ = GetStatusWord();
++    SetStatusWord(saved_csr_ & (~(1 << 24)));
++  }
++
+   inline void RestoreState() { SetStatusWord(saved_csr_); }
+ 
++ private:
+   inline int GetStatusWord() {
+     int result;
+ #if defined(ARCH_CPU_ARM64)
+@@ -130,13 +144,33 @@ class DenormalDisabler {
+ #endif
+ };
+ 
++class DenormalDisabler final : public DenormalModifier {
++  DISALLOW_NEW();
++
++ public:
++  DenormalDisabler() { DisableDenormals(); }
++  ~DenormalDisabler() final { RestoreState(); }
++
++  // This is a nop if we can flush denormals to zero in hardware.
++  static inline float FlushDenormalFloatToZero(float f) { return f; }
++};
++
++class DenormalEnabler final : public DenormalModifier {
++  DISALLOW_NEW();
++
++ public:
++  DenormalEnabler() { EnableDenormals(); }
++  ~DenormalEnabler() final { RestoreState(); }
++};
++
+ #else
+ // FIXME: add implementations for other architectures and compilers
+ class DenormalDisabler {
+   STACK_ALLOCATED();
+ 
+  public:
+-  DenormalDisabler() {}
++  DenormalDisabler() = default;
++  ~DenormalDisabler() = default;
+ 
+   // Assume the worst case that other architectures and compilers
+   // need to flush denormals to zero manually.
+@@ -145,6 +179,14 @@ class DenormalDisabler {
+   }
+ };
+ 
++class DenormalEnabler {
++  STACK_ALLOCATED();
++
++ public:
++  DenormalEnabler() = default;
++  ~DenormalEnabler() = default;
++};
++
+ #endif
+ 
+ }  // namespace blink
