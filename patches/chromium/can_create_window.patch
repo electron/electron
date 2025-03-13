@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 6708ec005561fb174ed9557ad92a85f5c33666ee..37af686964489bd77d84be95d5f3aba9cd0a7a0c 100644
+index 66318b9089b3f4c64ff34753eb7385d844a73f98..e9812e555347f1561382cb03c22c32567110b85a 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -9629,6 +9629,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -51,13 +51,13 @@ index c53ab4b96a16b7326dfde14452b20d2170aecf04..e500fe77f55836b3e5832536f98cf958
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 91dcf6c9c4a2d840fb50cb329fe3ef1bba9103c3..cbc887a3034605a93468e73a310e9ca6838b32d8 100644
+index 22d0edd5f027544886c4924a1da280b884948e56..8a8d1da58bc8a9167b445a5535f4adadaac095c1 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -621,6 +621,10 @@ struct CreateNewWindowParams {
-   // The navigation initiator's user activation and ad status.
-   blink.mojom.NavigationInitiatorActivationAndAdStatus
-       initiator_activation_and_ad_status;
+@@ -636,6 +636,10 @@ struct CreateNewWindowParams {
+   // `RenderFrameHostImpl`.
+   pending_associated_receiver<blink.mojom.AssociatedInterfaceProvider>
+       associated_interface_provider;
 +
 +  // Extra fields added by Electron.
 +  string raw_features;
@@ -148,10 +148,10 @@ index ac2e7cdceb13ce07966a908fab3ff8feff969484..96cb58b1a88499cf8f78d748dc5a1cc1
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 602bea4189f0d23c19cbc7afd56583927cbb7e0c..3afbd7c4e88d97f1a5c744e82eba2da19cd9e53f 100644
+index 76443619aa0c49cf488899deec304ce7a7467153..095077f2dbc8df20ed7a6d9930dada347c8f1520 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6916,6 +6916,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6924,6 +6924,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
