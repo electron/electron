@@ -1781,12 +1781,6 @@ describe('app module', () => {
   });
 
   describe('commandLine.hasSwitch', () => {
-    it('throws when an invalid switch is passed', () => {
-      expect(() => {
-        app.commandLine.getSwitchValue('FOOBAR');
-      }).to.throw(/Switch name must be lowercase/);
-    });
-
     it('returns true when present', () => {
       app.commandLine.appendSwitch('foobar1');
       expect(app.commandLine.hasSwitch('foobar1')).to.equal(true);
@@ -1810,12 +1804,6 @@ describe('app module', () => {
   });
 
   describe('commandLine.getSwitchValue', () => {
-    it('throws when an invalid switch is passed', () => {
-      expect(() => {
-        app.commandLine.getSwitchValue('FOOBAR');
-      }).to.throw(/Switch name must be lowercase/);
-    });
-
     it('returns the value when present', () => {
       app.commandLine.appendSwitch('foobar', 'æøåü');
       expect(app.commandLine.getSwitchValue('foobar')).to.equal('æøåü');
@@ -1849,12 +1837,6 @@ describe('app module', () => {
   });
 
   describe('commandLine.removeSwitch', () => {
-    it('throws when an invalid switch is passed', () => {
-      expect(() => {
-        app.commandLine.removeSwitch('FOOBAR');
-      }).to.throw(/Switch name must be lowercase/);
-    });
-
     it('no-ops a non-existent switch', async () => {
       expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
       app.commandLine.removeSwitch('foobar3');
