@@ -1,0 +1,293 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Wilson <mjwilson@chromium.org>
+Date: Fri, 7 Feb 2025 13:33:40 -0800
+Subject: Allow denormal flushing to outlive scoped object
+
+After this refactor we can disable or enable denormals for longer than
+a scoped object.
+
+Use this new functionality in audio_worklet_global_scope.cc.
+
+(cherry picked from commit 93c4f6fb0a0f10562ef9a637449605caae9200e6)
+
+Bug: 382005099
+Change-Id: I54f4810a4ec035f639d50275e14dae03b726b876
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6226252
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Commit-Queue: Michael Wilson <mjwilson@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1415886}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6242822
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6998@{#221}
+Cr-Branched-From: de9c6fafd8ae5c6ea0438764076ca7d04a0b165d-refs/heads/main@{#1415337}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_global_scope.cc b/third_party/blink/renderer/modules/webaudio/audio_worklet_global_scope.cc
+index c9bd1e8934d7058cb4c8044aa5618033ec975cec..09de112b96b6062f702d57e6181dd39e681e99a1 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_global_scope.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_global_scope.cc
+@@ -23,6 +23,7 @@
+ #include "third_party/blink/renderer/modules/webaudio/audio_worklet_processor.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_worklet_processor_definition.h"
+ #include "third_party/blink/renderer/modules/webaudio/cross_thread_audio_worklet_processor_info.h"
++#include "third_party/blink/renderer/platform/audio/denormal_disabler.h"
+ #include "third_party/blink/renderer/platform/bindings/callback_method_retriever.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ 
+@@ -34,6 +35,9 @@ AudioWorkletGlobalScope::AudioWorkletGlobalScope(
+     : WorkletGlobalScope(std::move(creation_params),
+                          thread->GetWorkerReportingProxy(),
+                          thread) {
++  // Disable denormals for performance.
++  DenormalModifier::DisableDenormals();
++
+   // Audio is prone to jank introduced by e.g. the garbage collector. Workers
+   // are generally put in a background mode (as they are non-visible). Audio is
+   // an exception here, requiring low-latency behavior similar to any visible
+diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
+index 12da20fba1cceefd7f0960dd6411aef328f70832..73caf67339ad22cc3033c2869c91402dac460609 100644
+--- a/third_party/blink/renderer/platform/BUILD.gn
++++ b/third_party/blink/renderer/platform/BUILD.gn
+@@ -2129,6 +2129,7 @@ source_set("blink_platform_unittests_sources") {
+     "animation/timing_function_test.cc",
+     "audio/audio_destination_test.cc",
+     "audio/audio_frame_stats_accumulator_test.cc",
++    "audio/denormal_disabler_test.cc",
+     "audio/push_pull_fifo_multithread_test.cc",
+     "audio/push_pull_fifo_test.cc",
+     "audio/vector_math_test.cc",
+diff --git a/third_party/blink/renderer/platform/audio/denormal_disabler.h b/third_party/blink/renderer/platform/audio/denormal_disabler.h
+index ac1cdfa026aa1f845a892e96200fd9de46a45c92..a50d7b884e8fdc65f4c1fbe6b5cab7a7801a3b62 100644
+--- a/third_party/blink/renderer/platform/audio/denormal_disabler.h
++++ b/third_party/blink/renderer/platform/audio/denormal_disabler.h
+@@ -56,74 +56,65 @@ class DenormalModifier {
+  public:
+   virtual ~DenormalModifier() = default;
+ 
+- private:
+-  unsigned saved_csr_ = 0;
+-
+ #if defined(COMPILER_GCC) && defined(ARCH_CPU_X86_FAMILY)
+- protected:
+-  inline void DisableDenormals() {
+-    saved_csr_ = GetCSR();
+-    SetCSR(saved_csr_ | 0x8040);
++ public:
++  static void DisableDenormals() {
++    unsigned old_csr = GetCsr();
++    SetCsr(old_csr | 0x8040);
+   }
+ 
+-  inline void EnableDenormals() {
+-    saved_csr_ = GetCSR();
+-    SetCSR(saved_csr_ & (~0x8040));
++  static void EnableDenormals() {
++    unsigned old_csr = GetCsr();
++    SetCsr(old_csr & (~0x8040));
+   }
+ 
+-  inline void RestoreState() { SetCSR(saved_csr_); }
+-
+- private:
+-  inline int GetCSR() {
++ protected:
++  static inline unsigned GetCsr() {
+     int result;
+     asm volatile("stmxcsr %0" : "=m"(result));
+     return result;
+   }
+ 
+-  inline void SetCSR(int a) {
++  static inline void SetCsr(int a) {
+     int temp = a;
+     asm volatile("ldmxcsr %0" : : "m"(temp));
+   }
+ 
+ #elif BUILDFLAG(IS_WIN) && defined(COMPILER_MSVC)
++ public:
++  static void DisableDenormals() { SetCsr(_DN_FLUSH); }
++
++  static void EnableDenormals() { SetCsr(_DN_SAVE); }
++
+  protected:
+-  inline void DisableDenormals() {
+-    // Save the current state, and set mode to flush denormals.
+-    //
+-    // http://stackoverflow.com/questions/637175/possible-bug-in-controlfp-s-may-not-restore-control-word-correctly
+-    _controlfp_s(&saved_csr_, 0, 0);
+-    unsigned unused;
+-    _controlfp_s(&unused, _DN_FLUSH, _MCW_DN);
++  static inline unsigned GetCsr() {
++    unsigned result;
++    _controlfp_s(&result, 0, 0);
++    return result;
+   }
+ 
+-  inline void EnableDenormals() {
+-    _controlfp_s(&saved_csr_, 0, 0);
++  static inline void SetCsr(unsigned a) {
++    // http://stackoverflow.com/questions/637175/possible-bug-in-controlfp-s-may-not-restore-control-word-correctly
+     unsigned unused;
+-    _controlfp_s(&unused, _DN_SAVE, _MCW_DN);
++    _controlfp_s(&unused, a, _MCW_DN);
+   }
+ 
+-  inline void RestoreState() {
+-    unsigned unused;
+-    _controlfp_s(&unused, saved_csr_, _MCW_DN);
+-  }
+ #elif defined(ARCH_CPU_ARM_FAMILY)
+- protected:
+-  inline void DisableDenormals() {
+-    saved_csr_ = GetStatusWord();
++ public:
++  static void DisableDenormals() {
++    unsigned old_csr = GetCsr();
+     // Bit 24 is the flush-to-zero mode control bit. Setting it to 1 flushes
+     // denormals to 0.
+-    SetStatusWord(saved_csr_ | (1 << 24));
++    SetCsr(old_csr | (1 << 24));
+   }
+ 
+-  inline void EnableDenormals() {
+-    saved_csr_ = GetStatusWord();
+-    SetStatusWord(saved_csr_ & (~(1 << 24)));
++  static void EnableDenormals() {
++    unsigned old_csr = GetCsr();
++    SetCsr(old_csr & (~(1 << 24)));
+   }
+ 
+-  inline void RestoreState() { SetStatusWord(saved_csr_); }
+-
+- private:
+-  inline int GetStatusWord() {
++ protected:
++  static inline unsigned GetCsr() {
+     int result;
+ #if defined(ARCH_CPU_ARM64)
+     asm volatile("mrs %x[result], FPCR" : [result] "=r"(result));
+@@ -133,7 +124,7 @@ class DenormalModifier {
+     return result;
+   }
+ 
+-  inline void SetStatusWord(int a) {
++  static inline void SetCsr(int a) {
+ #if defined(ARCH_CPU_ARM64)
+     asm volatile("msr FPCR, %x[src]" : : [src] "r"(a));
+ #else
+@@ -148,24 +139,44 @@ class DenormalDisabler final : public DenormalModifier {
+   DISALLOW_NEW();
+ 
+  public:
+-  DenormalDisabler() { DisableDenormals(); }
+-  ~DenormalDisabler() final { RestoreState(); }
++  DenormalDisabler() {
++    // Save the current state, and set mode to flush denormals.
++    saved_csr_ = GetCsr();
++    DisableDenormals();
++  }
++  ~DenormalDisabler() final { SetCsr(saved_csr_); }
+ 
+   // This is a nop if we can flush denormals to zero in hardware.
+   static inline float FlushDenormalFloatToZero(float f) { return f; }
++
++ private:
++  unsigned saved_csr_ = 0;
+ };
+ 
+ class DenormalEnabler final : public DenormalModifier {
+   DISALLOW_NEW();
+ 
+  public:
+-  DenormalEnabler() { EnableDenormals(); }
+-  ~DenormalEnabler() final { RestoreState(); }
++  DenormalEnabler() {
++    saved_csr_ = GetCsr();
++    EnableDenormals();
++  }
++  ~DenormalEnabler() final { SetCsr(saved_csr_); }
++
++ private:
++  unsigned saved_csr_ = 0;
+ };
+ 
+ #else
+ // FIXME: add implementations for other architectures and compilers
+-class DenormalDisabler {
++class DenormalModifier final {
++ public:
++  virtual ~DenormalModifier() = default;
++  static void DisableDenormals() {}
++  static void EnableDenormals() {}
++};
++
++class DenormalDisabler final {
+   STACK_ALLOCATED();
+ 
+  public:
+@@ -179,7 +190,7 @@ class DenormalDisabler {
+   }
+ };
+ 
+-class DenormalEnabler {
++class DenormalEnabler final {
+   STACK_ALLOCATED();
+ 
+  public:
+diff --git a/third_party/blink/renderer/platform/audio/denormal_disabler_test.cc b/third_party/blink/renderer/platform/audio/denormal_disabler_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..5083bbf2da9d4e0e12f1a4608d5e14e4ca910297
+--- /dev/null
++++ b/third_party/blink/renderer/platform/audio/denormal_disabler_test.cc
+@@ -0,0 +1,51 @@
++// Copyright 2025 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/platform/audio/denormal_disabler.h"
++
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace blink {
++
++namespace {
++
++bool DenormalsAreFlushedToZero() {
++  volatile double denorm = 2.225e-308;
++  return !((denorm / 2.0) > 0.0);
++}
++
++TEST(DenormalDisablerTest, DisableScoped) {
++  const bool already_flushed = DenormalsAreFlushedToZero();
++  if (!already_flushed) {
++    DenormalDisabler scoped_disabler;
++    EXPECT_TRUE(DenormalsAreFlushedToZero());
++  }
++}
++
++TEST(DenormalDisablerTest, EnableScoped) {
++  const bool already_flushed = DenormalsAreFlushedToZero();
++  if (!already_flushed) {
++    DenormalDisabler scoped_disabler;
++    EXPECT_TRUE(DenormalsAreFlushedToZero());
++    {
++      DenormalEnabler scoped_enabler;
++      EXPECT_FALSE(DenormalsAreFlushedToZero());
++    }
++    EXPECT_TRUE(DenormalsAreFlushedToZero());
++  }
++}
++
++TEST(DenormalDisablerTest, ModifyUnscoped) {
++  const bool already_flushed = DenormalsAreFlushedToZero();
++  if (!already_flushed) {
++    DenormalModifier::DisableDenormals();
++    EXPECT_TRUE(DenormalsAreFlushedToZero());
++    DenormalModifier::EnableDenormals();
++    EXPECT_FALSE(DenormalsAreFlushedToZero());
++  }
++}
++
++}  // namespace
++
++}  // namespace blink
