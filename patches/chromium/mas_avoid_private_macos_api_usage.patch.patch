@@ -579,7 +579,7 @@ index b712b8af0e770aa3acbeb1167b1a20bc1547c98a..fdb476a7e470c4b32649d4b3b7e4e445
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 2413228f605776322caff19098c6b60183005df5..b392e1ee627c982c4c0b099a6b6ea8a9e698b601 100644
+index 4424636d013725023c2bf35529c034adecf823b1..62151d9e640771580ae85231762dfef260b0e4ff 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -339,6 +339,7 @@ source_set("browser") {
@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 482a1721cb2157f0221c901423423aab37efdaf0..b736432543ab619af6483070895f8968248fd71f 100644
+index 1163dd9e0d25b74fbdc584f742392a4452008724..246c50d5f05ecbf4f57dfc8f3bd68db03fe131f7 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -658,6 +658,7 @@ static_library("test_support") {
@@ -819,7 +819,7 @@ index 482a1721cb2157f0221c901423423aab37efdaf0..b736432543ab619af6483070895f8968
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3263,6 +3266,7 @@ test("content_unittests") {
+@@ -3264,6 +3267,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -910,7 +910,7 @@ index 973cd337f2781271b4ca3e29db07939ec6917327..90658a336138e4e50f93c38f1c1f465c
    if (is_ios) {
      sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 93665e7ec19efa8d94fe0bb4f195642f43432c24..23c25ce53e4e630e173777943770a09ee736cc3d 100644
+index ae040bbac8755b677dc6e19383a2390df407e5a6..e95ca30f49506c66a37d6d5269929f437005f863 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -8,6 +8,7 @@
@@ -932,7 +932,7 @@ index 93665e7ec19efa8d94fe0bb4f195642f43432c24..23c25ce53e4e630e173777943770a09e
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 87126a36725849cbaf478e2dc24dc3a628a30846..a3a88b07af91b86191d9e5727a1d021ebbbb22ce 100644
+index 7122165cf5ddb39056369e32fc29107f29e9f425..f11417e459e067f4976f59f1c58d4a5197520902 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -196,6 +196,7 @@ source_set("audio") {
@@ -1463,10 +1463,10 @@ index d38e951cdbf1ab9b367273ad0fb8f962155a7f3b..e39ee0414cb54004096dbfffc4f768e8
    blink_core_sources_editing += [ "kill_ring_none.cc" ]
  }
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index 47e88da13d22b60e27b458f2fd33f10829b31fc0..b32ad8cd5af69c835ecfdbf50329347fb700f9b3 100644
+index ce3dc22f38b9d3f2f12e469b23f5dfe06ecbb98a..a69af46e05365028379dbf6abafaacd9b19e4569 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
-@@ -68,6 +68,7 @@ component("accelerated_widget_mac") {
+@@ -77,6 +77,7 @@ component("accelerated_widget_mac") {
      "//ui/gfx",
      "//ui/gfx/geometry",
      "//ui/gl",
@@ -1591,7 +1591,7 @@ index 8b25953be73da43fa2e0b5957569ae481dc6a082..7f9175e7eb67ef27fe110ee72f5e9c88
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index 444f315852deabbac971165a7de9751a1bb367e3..7aba9f251f869c64d7722558084f209bd5d27075 100644
+index c642b2ce1e19a48bc00822c429d833d5d45c4f98..ebe0b80b142a997aaf928fa72a2ca71492d1a54e 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 @@ -13,6 +13,7 @@
