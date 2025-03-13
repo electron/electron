@@ -31,7 +31,7 @@ namespace electron {
 // for the lifetime of a Utility Process which
 // also means that GC lifecycle is ignored by this class.
 class ParentPort final : public gin::Wrappable<ParentPort>,
-                         public mojo::MessageReceiver {
+                         private mojo::MessageReceiver {
  public:
   static ParentPort* GetInstance();
   static gin::Handle<ParentPort> Create(v8::Isolate* isolate);
