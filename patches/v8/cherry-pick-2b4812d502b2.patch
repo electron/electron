@@ -1,0 +1,38 @@
+From 2b4812d502b2bbd2eeace4d383dd1bb3252702ba Mon Sep 17 00:00:00 2001
+From: Olivier Flückiger <olivf@chromium.org>
+Date: Thu, 27 Feb 2025 09:19:22 +0100
+Subject: [PATCH] merged: [maglev] Add missing ClearAllocationBlock
+
+Fixed: 398065918
+(cherry picked from commit eb9b25970b0ad4a3f8ce23d8de3583c62e5d6b87)
+
+Change-Id: I20f3979984c1df11509f1630cf4c4c4460d6a83a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6304712
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Auto-Submit: Olivier Flückiger <olivf@chromium.org>
+Commit-Queue: Olivier Flückiger <olivf@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/branch-heads/13.4@{#29}
+Cr-Branched-From: 0f87a54dade4353b6ece1d7591ca8c66f90c1c93-refs/heads/13.4.114@{#1}
+Cr-Branched-From: 27af2e9363b2701abc5f3feb701b1dad7d1a9fe8-refs/heads/main@{#98459}
+---
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index bf6a86f..1535afc 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -12487,7 +12487,13 @@
+           CreateHeapNumber(node->Cast<Float64Constant>()->value()),
+           allocation_type);
+     } else {
+-      node = GetTaggedValue(node);
++      ValueNode* new_node = GetTaggedValue(node);
++      if (new_node != node && new_node->properties().can_allocate()) {
++        // TODO(olivf): Remove this and instead always clear when we
++        // emit an allocating instruction.
++        ClearCurrentAllocationBlock();
++      }
++      node = new_node;
+     }
+     values[i] = node;
+   }
