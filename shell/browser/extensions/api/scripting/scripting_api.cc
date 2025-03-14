@@ -498,7 +498,7 @@ ExtensionFunction::ResponseAction ScriptingExecuteScriptFunction::Run() {
   }
 
   std::string code_to_execute = absl::StrFormat(
-      "(%s)(%s)", injection_.func->c_str(), args_expression.c_str());
+      "(%s)(%s)", injection_.func.value_or(""), args_expression);
 
   std::vector<mojom::JSSourcePtr> sources;
   sources.push_back(mojom::JSSource::New(std::move(code_to_execute), GURL()));
