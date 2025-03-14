@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_CONSTRUCTOR_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_CONSTRUCTOR_H_
 
+#include <tuple>
+
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/wrappable_base.h"
 
@@ -12,131 +14,40 @@ namespace gin_helper {
 
 namespace internal {
 
-// This set of templates invokes a base::RepeatingCallback by converting the
-// Arguments into native types. It relies on the function_template.h to provide
-// helper templates.
-inline WrappableBase* InvokeFactory(
-    gin::Arguments* args,
-    const base::RepeatingCallback<WrappableBase*()>& callback) {
-  return callback.Run();
-}
+// Convert a `gin::Argument`'s arguments into a tuple of native types
+// by iteratively calling gin_helper::GetNextArgument().
+template <typename... Types>
+class GinArgumentsToTuple {
+ public:
+  [[nodiscard]] static std::pair<bool /*ok*/, std::tuple<Types...>> GetArgs(
+      gin::Arguments* args) {
+    bool ok = true;
+    InvokerOptions opts{.holder_is_first_argument = true};
+    auto tup = std::make_tuple(GetNextArg<Types>(args, opts, ok)...);
+    return {ok, std::move(tup)};
+  }
 
-template <typename P1>
-inline WrappableBase* InvokeFactory(
-    gin::Arguments* args,
-    const base::RepeatingCallback<WrappableBase*(P1)>& callback) {
-  typename CallbackParamTraits<P1>::LocalType a1;
-  if (!gin_helper::GetNextArgument(args, {.holder_is_first_argument = true}, 0,
-                                   &a1))
-    return nullptr;
-  return callback.Run(a1);
-}
+ private:
+  template <typename T>
+  static T GetNextArg(gin::Arguments* args, InvokerOptions& opts, bool& ok) {
+    auto val = T{};
+    ok = ok && gin_helper::GetNextArgument(args, opts, 0, &val);
+    opts.holder_is_first_argument = false;
+    return val;
+  }
+};
 
-template <typename P1, typename P2>
-inline WrappableBase* InvokeFactory(
+// Invoke a callback with arguments extracted from `args`.
+template <typename... Types>
+WrappableBase* InvokeFactory(
     gin::Arguments* args,
-    const base::RepeatingCallback<WrappableBase*(P1, P2)>& callback) {
-  typename CallbackParamTraits<P1>::LocalType a1;
-  typename CallbackParamTraits<P2>::LocalType a2;
-  if (!gin_helper::GetNextArgument(args, {.holder_is_first_argument = true}, 0,
-                                   &a1) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a2))
-    return nullptr;
-  return callback.Run(a1, a2);
-}
-
-template <typename P1, typename P2, typename P3>
-inline WrappableBase* InvokeFactory(
-    gin::Arguments* args,
-    const base::RepeatingCallback<WrappableBase*(P1, P2, P3)>& callback) {
-  typename CallbackParamTraits<P1>::LocalType a1;
-  typename CallbackParamTraits<P2>::LocalType a2;
-  typename CallbackParamTraits<P3>::LocalType a3;
-  if (!gin_helper::GetNextArgument(args, {.holder_is_first_argument = true}, 0,
-                                   &a1) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a2) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a3))
-    return nullptr;
-  return callback.Run(a1, a2, a3);
-}
-
-template <typename P1, typename P2, typename P3, typename P4>
-inline WrappableBase* InvokeFactory(
-    gin::Arguments* args,
-    const base::RepeatingCallback<WrappableBase*(P1, P2, P3, P4)>& callback) {
-  typename CallbackParamTraits<P1>::LocalType a1;
-  typename CallbackParamTraits<P2>::LocalType a2;
-  typename CallbackParamTraits<P3>::LocalType a3;
-  typename CallbackParamTraits<P4>::LocalType a4;
-  if (!gin_helper::GetNextArgument(args, {.holder_is_first_argument = true}, 0,
-                                   &a1) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a2) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a3) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a4))
-    return nullptr;
-  return callback.Run(a1, a2, a3, a4);
-}
-
-template <typename P1, typename P2, typename P3, typename P4, typename P5>
-inline WrappableBase* InvokeFactory(
-    gin::Arguments* args,
-    const base::RepeatingCallback<WrappableBase*(P1, P2, P3, P4, P5)>&
-        callback) {
-  typename CallbackParamTraits<P1>::LocalType a1;
-  typename CallbackParamTraits<P2>::LocalType a2;
-  typename CallbackParamTraits<P3>::LocalType a3;
-  typename CallbackParamTraits<P4>::LocalType a4;
-  typename CallbackParamTraits<P5>::LocalType a5;
-  if (!gin_helper::GetNextArgument(args, {.holder_is_first_argument = true}, 0,
-                                   &a1) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a2) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a3) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a4) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a5))
-    return nullptr;
-  return callback.Run(a1, a2, a3, a4, a5);
-}
-
-template <typename P1,
-          typename P2,
-          typename P3,
-          typename P4,
-          typename P5,
-          typename P6>
-inline WrappableBase* InvokeFactory(
-    gin::Arguments* args,
-    const base::RepeatingCallback<WrappableBase*(P1, P2, P3, P4, P5, P6)>&
-        callback) {
-  typename CallbackParamTraits<P1>::LocalType a1;
-  typename CallbackParamTraits<P2>::LocalType a2;
-  typename CallbackParamTraits<P3>::LocalType a3;
-  typename CallbackParamTraits<P4>::LocalType a4;
-  typename CallbackParamTraits<P5>::LocalType a5;
-  typename CallbackParamTraits<P6>::LocalType a6;
-  if (!gin_helper::GetNextArgument(args, {.holder_is_first_argument = true}, 0,
-                                   &a1) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a2) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a3) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a4) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a5) ||
-      !gin_helper::GetNextArgument(args, {.holder_is_first_argument = false}, 0,
-                                   &a6))
-    return nullptr;
-  return callback.Run(a1, a2, a3, a4, a5, a6);
+    const base::RepeatingCallback<WrappableBase*(Types...)>& callback) {
+  auto [ok, tup] = GinArgumentsToTuple<Types...>::GetArgs(args);
+  if (!ok)
+    return {};
+  return std::apply(
+      [&callback](Types... args) { return callback.Run(std::move(args)...); },
+      std::move(tup));
 }
 
 template <typename Sig>
@@ -151,7 +62,7 @@ void InvokeNew(const base::RepeatingCallback<Sig>& factory,
   WrappableBase* object;
   {
     // Don't continue if the constructor throws an exception.
-    v8::TryCatch try_catch(isolate);
+    v8::TryCatch try_catch{isolate};
     object = internal::InvokeFactory(args, factory);
     if (try_catch.HasCaught()) {
       try_catch.ReThrow();
