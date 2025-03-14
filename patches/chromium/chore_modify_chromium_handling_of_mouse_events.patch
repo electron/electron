@@ -1,11 +1,38 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Fri, 29 Jul 2022 00:29:35 +0900
-Subject: chore: allow chromium to handle synthetic mouse events for touch
+Subject: chore: modify chromium handling of mouse events
+￼
+This patch does the following:
 
-With WCO, allow chromium to handle synthetic mouse events generated for touch
+1. When Windows Control Overlay is enabled, it allows chromium to handle synthetic mouse events generated for touch
 actions in the non-client caption area.
+2. It calls HandleMouseEvent on the delegate earlier in HandleMouseEventInternal, so that Electron can selectively disable
+draggable regions to allow events to propagate to the underlying renderer.￼
 
+diff --git a/ui/events/event.h b/ui/events/event.h
+index e002d4011ddd1dd26f7c412a337221d57e9e9bd4..7ac7313f3af5145bc7513f22c02a8e099e7abdea 100644
+--- a/ui/events/event.h
++++ b/ui/events/event.h
+@@ -583,6 +583,9 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
+ 
+   const PointerDetails& pointer_details() const { return pointer_details_; }
+ 
++  bool is_system_menu() const { return is_system_menu_; }
++  void set_is_system_menu(bool is_menu) { is_system_menu_ = is_menu; }
++
+   // Event:
+   std::string ToString() const override;
+   std::unique_ptr<Event> Clone() const override;
+@@ -615,6 +618,8 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
+ 
+   // Structure for holding pointer details for implementing PointerEvents API.
+   PointerDetails pointer_details_;
++
++  bool is_system_menu_ = false;
+ };
+ 
+ class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 index 94366475b7f9d128d8208de44d4d8a11096b146b..5867a8ae7e416ddc29a8a251dc6271009f3409db 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
@@ -34,7 +61,7 @@ index 286fcdf651131d231b07a52a53a1945c144c79ea..73d0729784e339b9abc20f7f22bccee1
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index d29cdda6208576f1be3f5a6857fc068bb1397b23..24212831633eb3190db9a344f0fcbd5f25a959b4 100644
+index d29cdda6208576f1be3f5a6857fc068bb1397b23..93961374b6ecaf9a169dd8a02c235387e8cad609 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -3123,15 +3123,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
@@ -59,6 +86,33 @@ index d29cdda6208576f1be3f5a6857fc068bb1397b23..24212831633eb3190db9a344f0fcbd5f
        return 0;
    }
  
+@@ -3152,6 +3156,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+     // handle alt-space, or in the frame itself.
+     is_right_mouse_pressed_on_caption_ = false;
+     ReleaseCapture();
++
+     // |point| is in window coordinates, but WM_NCHITTEST and TrackPopupMenu()
+     // expect screen coordinates.
+     POINT screen_point = CR_POINT_INITIALIZER_FROM_LPARAM(l_param);
+@@ -3159,7 +3164,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+     w_param = static_cast<WPARAM>(SendMessage(
+         hwnd(), WM_NCHITTEST, 0, MAKELPARAM(screen_point.x, screen_point.y)));
+     if (w_param == HTCAPTION || w_param == HTSYSMENU) {
+-      ShowSystemMenuAtScreenPixelLocation(hwnd(), gfx::Point(screen_point));
++      LONG message_time = GetMessageTime();
++      CHROME_MSG msg = {hwnd(),
++                        message,
++                        w_param,
++                        l_param,
++                        static_cast<DWORD>(message_time),
++                        {CR_GET_X_LPARAM(l_param), CR_GET_Y_LPARAM(l_param)}};
++      ui::MouseEvent event(msg);
++      event.set_is_system_menu(true);
++      if (!delegate_->HandleMouseEvent(&event))
++        ShowSystemMenuAtScreenPixelLocation(hwnd(), gfx::Point(screen_point));
+       return 0;
+     }
+   } else if (message == WM_NCLBUTTONDOWN &&
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
 index fde18715e33ee67f64740ebda7c641954360483c..cf1ea75f8e9dd1d95045736959c4f3ca1a27a1ab 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
