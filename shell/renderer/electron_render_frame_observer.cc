@@ -4,8 +4,6 @@
 
 #include "shell/renderer/electron_render_frame_observer.h"
 
-#include <utility>
-
 #include "base/memory/ref_counted_memory.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
