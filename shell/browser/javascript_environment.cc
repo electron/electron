@@ -6,7 +6,6 @@
 
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include <utility>
 
 #include "base/allocator/partition_alloc_features.h"
