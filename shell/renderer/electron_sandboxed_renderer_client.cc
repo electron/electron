@@ -5,7 +5,6 @@
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 
 #include <iterator>
-#include <tuple>
 #include <vector>
 
 #include "base/base_paths.h"
