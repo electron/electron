@@ -14,7 +14,6 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "base/at_exit.h"
 #include "base/debug/alias.h"
