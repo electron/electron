@@ -2185,7 +2185,7 @@ void WebContents::DidFinishNavigation(
       content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
 
       // This check is needed due to an issue in Chromium
-      // Check the Chromium issue to keep updated:
+      // Upstream is open to patching:
       // https://bugs.chromium.org/p/chromium/issues/detail?id=1178663
       // If a history entry has been made and the forward/back call has been
       // made, proceed with setting the new title
