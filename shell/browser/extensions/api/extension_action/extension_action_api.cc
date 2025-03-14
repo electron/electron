@@ -6,7 +6,6 @@
 
 #include <stddef.h>
 
-#include <memory>
 #include <utility>
 
 #include "base/no_destructor.h"
