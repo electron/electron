@@ -14,6 +14,19 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (36.0)
 
+### Utility Process unhandled rejection behavior change
+
+Utility Processes will now warn with an error message when an unhandled
+rejection occurs instead of crashing the process.
+
+To restore the previous behavior, you can use:
+
+```js
+process.on('uncaughtException', () => {
+  process.exit(1)
+})
+```
+
 ### Removed:`isDefault` and `status` properties on `PrinterInfo`
 
 These properties have been removed from the PrinterInfo Object
