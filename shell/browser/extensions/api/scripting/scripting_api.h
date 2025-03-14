@@ -8,7 +8,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "chrome/common/extensions/api/scripting.h"
