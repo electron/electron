@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_COMMON_PROCESS_UTIL_H_
 
 #include <string>
-#include <string_view>
 
 namespace electron {
 
