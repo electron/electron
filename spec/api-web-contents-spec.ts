@@ -631,6 +631,17 @@ describe('webContents module', () => {
         w.webContents.navigationHistory.goBack();
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
       });
+
+      it('should have the same window title if navigating back within the page', async () => {
+        const title = 'Test';
+        w.webContents.on('did-finish-load', () => {
+          w.setTitle(title);
+          w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html#next`);
+        });
+        await w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html`);
+        w.webContents.navigationHistory.goBack();
+        expect(w.getTitle()).to.equal(title);
+      });
     });
 
     describe('navigationHistory.canGoForward and navigationHistory.goForward API', () => {
@@ -652,6 +663,16 @@ describe('webContents module', () => {
         expect(w.webContents.navigationHistory.canGoForward()).to.be.true();
         w.webContents.navigationHistory.goForward();
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(1);
+      });
+
+      it('should have the same window title if navigating forward within the page', async () => {
+        const title = 'Test';
+        w.webContents.on('did-finish-load', () => {
+          w.setTitle(title);
+          w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html#next`);
+        });
+        await w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html`);
+        expect(w.getTitle()).to.equal(title);
       });
     });
 
