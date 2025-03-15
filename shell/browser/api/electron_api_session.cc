@@ -1681,7 +1681,7 @@ gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
   ElectronBrowserContext* browser_context;
   if (partition.empty()) {
     browser_context =
-        ElectronBrowserContext::From("", false, std::move(options));
+        ElectronBrowserContext::GetDefaultBrowserContext(std::move(options));
   } else if (partition.starts_with(kPersistPrefix)) {
     std::string name = partition.substr(8);
     browser_context =

@@ -112,7 +112,7 @@ BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
     BrowserContext* context) {
   DCHECK(context);
   if (context->IsOffTheRecord()) {
-    return ElectronBrowserContext::From("", false);
+    return ElectronBrowserContext::GetDefaultBrowserContext();
   } else {
     return context;
   }
