@@ -365,10 +365,10 @@ ElectronBrowserContext::ElectronBrowserContext(
     BrowserContextDependencyManager::GetInstance()
         ->CreateBrowserContextServices(this);
 
-    extension_system_ = static_cast<extensions::ElectronExtensionSystem*>(
+    auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
         extensions::ExtensionSystem::Get(this));
-    extension_system_->InitForRegularProfile(true /* extensions_enabled */);
-    extension_system_->FinishInitialization();
+    extension_system->InitForRegularProfile(true /* extensions_enabled */);
+    extension_system->FinishInitialization();
   }
 #endif
 }
@@ -376,11 +376,6 @@ ElectronBrowserContext::ElectronBrowserContext(
 ElectronBrowserContext::~ElectronBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   NotifyWillBeDestroyed();
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // the DestroyBrowserContextServices() call below frees this.
-  extension_system_ = nullptr;
-#endif
 
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
