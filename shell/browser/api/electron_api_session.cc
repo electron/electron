@@ -1067,9 +1067,9 @@ std::string Session::RegisterPreloadScript(
                          });
 
   if (it != preload_scripts.end()) {
-    thrower.ThrowError(base::StringPrintf(
-        "Cannot register preload script with existing ID '%s'",
-        new_preload_script.id.c_str()));
+    thrower.ThrowError(
+        absl::StrFormat("Cannot register preload script with existing ID '%s'",
+                        new_preload_script.id));
     return "";
   }
 
@@ -1080,8 +1080,8 @@ std::string Session::RegisterPreloadScript(
                  << new_preload_script.file_path;
     } else {
       thrower.ThrowError(
-          base::StringPrintf("Preload script must have absolute path: %s",
-                             new_preload_script.file_path.value().c_str()));
+          absl::StrFormat("Preload script must have absolute path: %s",
+                          new_preload_script.file_path.value()));
       return "";
     }
   }
@@ -1110,9 +1110,8 @@ void Session::UnregisterPreloadScript(gin_helper::ErrorThrower thrower,
   }
 
   // If the script is not found, throw an error
-  thrower.ThrowError(base::StringPrintf(
-      "Cannot unregister preload script with non-existing ID '%s'",
-      script_id.c_str()));
+  thrower.ThrowError(absl::StrFormat(
+      "Cannot unregister preload script with non-existing ID '%s'", script_id));
 }
 
 std::vector<PreloadScript> Session::GetPreloadScripts() const {
