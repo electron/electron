@@ -2573,7 +2573,14 @@ describe('webContents module', () => {
         A3: { width: 11.7, height: 16.54 },
         A4: { width: 8.27, height: 11.7 },
         A5: { width: 5.83, height: 8.27 },
-        A6: { width: 4.13, height: 5.83 }
+        A6: { width: 4.13, height: 5.83 },
+        B0: { width: 39.37, height: 55.67 },
+        B1: { width: 27.83, height: 39.37 },
+        B2: { width: 19.69, height: 27.83 },
+        B3: { width: 13.9, height: 19.69 },
+        B4: { width: 9.84, height: 13.9 },
+        B5: { width: 6.93, height: 9.84 },
+        B6: { width: 4.92, height: 6.93 }
       };
 
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
