@@ -80,7 +80,7 @@ index 99ae1320be10ac19d204edfe1c1cf4f52c62eb76..e6a3957848f760809deb0080ee5b87c8
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index 80006535d1b7a7bfff69ebc46a1d9f70ee8c609d..842aa5f37e5f09235969b8510d4aa914e385d1ad 100644
+index 5cdeaa531babca965bed7e1e18ee993f1ba0d847..651e64c0ea39ec28db117aa3a61ea87d3f24117d 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
 @@ -815,6 +815,7 @@ class CORE_EXPORT LocalFrame final
@@ -203,7 +203,7 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index 2e2aa78d308157642cf27941fc22a211f6396a0d..c5bcbe1f933f2e79003f7eb9f6368174426a6f0a 100644
+index b71f1318b186d33fdedd051b0afd04cc60d4d430..5c9fb1e773d9550d2b6b248c66c97ad07e84674e 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
 @@ -298,6 +298,7 @@ void ExecuteScriptsInMainWorld(
