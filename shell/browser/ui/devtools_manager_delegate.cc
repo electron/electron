@@ -138,7 +138,7 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
 }
 
 content::BrowserContext* DevToolsManagerDelegate::GetDefaultBrowserContext() {
-  return ElectronBrowserContext::From("", false);
+  return ElectronBrowserContext::GetDefaultBrowserContext();
 }
 
 }  // namespace electron
