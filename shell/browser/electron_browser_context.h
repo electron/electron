@@ -13,12 +13,10 @@
 #include <variant>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/resource_context.h"
-#include "electron/buildflags/buildflags.h"
 #include "electron/shell/browser/media/media_device_id_salt.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/ssl_config.mojom.h"
@@ -42,12 +40,6 @@ class PreconnectManager;
 namespace storage {
 class SpecialStoragePolicy;
 }
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-namespace extensions {
-class ElectronExtensionSystem;
-}
-#endif
 
 namespace electron {
 
@@ -154,15 +146,6 @@ class ElectronBrowserContext : public content::BrowserContext {
     return weak_factory_.GetWeakPtr();
   }
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::ElectronExtensionSystem* extension_system() {
-    // Guard usages of extension_system() with !IsOffTheRecord()
-    // There is no extension system for in-memory sessions
-    DCHECK(!IsOffTheRecord());
-    return extension_system_;
-  }
-#endif
-
   ProtocolRegistry* protocol_registry() const {
     return protocol_registry_.get();
   }
@@ -236,11 +219,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   bool in_memory_ = false;
   bool use_cache_ = true;
   int max_cache_size_ = 0;
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // Owned by the KeyedService system.
-  raw_ptr<extensions::ElectronExtensionSystem> extension_system_;
-#endif
 
   // Shared URLLoaderFactory.
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
