@@ -701,14 +701,13 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
   ClearStorageDataOptions options;
   args->GetNext(&options);
 
-  auto* storage_partition = browser_context()->GetStoragePartition(nullptr);
   if (options.storage_types & StoragePartition::REMOVE_DATA_MASK_COOKIES) {
     // Reset media device id salt when cookies are cleared.
     // https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-deviceid
     MediaDeviceIDSalt::Reset(browser_context()->prefs());
   }
 
-  storage_partition->ClearData(
+  browser_context()->GetDefaultStoragePartition()->ClearData(
       options.storage_types, options.quota_types, options.storage_key,
       base::Time(), base::Time::Max(),
       base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
@@ -717,8 +716,7 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
 }
 
 void Session::FlushStorageData() {
-  auto* storage_partition = browser_context()->GetStoragePartition(nullptr);
-  storage_partition->Flush();
+  browser_context()->GetDefaultStoragePartition()->Flush();
 }
 
 v8::Local<v8::Promise> Session::SetProxy(gin::Arguments* args) {
