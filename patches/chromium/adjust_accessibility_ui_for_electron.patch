@@ -10,7 +10,7 @@ usage of BrowserList and Browser as we subclass related methods and use our
 WindowList.
 
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-index ff25e6eb48deb339ab92152eb09ad856068fd589..4a1f81429f0857e129e31103b026079de13fd826 100644
+index 230c9cb619498f315fc0913da54837b725fc9024..0fa1120ab952864e53085e7746608bb491ec14b2 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 @@ -48,6 +48,7 @@

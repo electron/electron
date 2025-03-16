@@ -631,6 +631,17 @@ describe('webContents module', () => {
         w.webContents.navigationHistory.goBack();
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
       });
+
+      it('should have the same window title if navigating back within the page', async () => {
+        const title = 'Test';
+        w.webContents.on('did-finish-load', () => {
+          w.setTitle(title);
+          w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html#next`);
+        });
+        await w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html`);
+        w.webContents.navigationHistory.goBack();
+        expect(w.getTitle()).to.equal(title);
+      });
     });
 
     describe('navigationHistory.canGoForward and navigationHistory.goForward API', () => {
@@ -652,6 +663,16 @@ describe('webContents module', () => {
         expect(w.webContents.navigationHistory.canGoForward()).to.be.true();
         w.webContents.navigationHistory.goForward();
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(1);
+      });
+
+      it('should have the same window title if navigating forward within the page', async () => {
+        const title = 'Test';
+        w.webContents.on('did-finish-load', () => {
+          w.setTitle(title);
+          w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html#next`);
+        });
+        await w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html`);
+        expect(w.getTitle()).to.equal(title);
       });
     });
 
@@ -1825,6 +1846,38 @@ describe('webContents module', () => {
     });
   });
 
+  describe('focusedFrame api', () => {
+    const focusFrame = (frame: Electron.WebFrameMain) => {
+      // There has to be a better way to do this...
+      return frame.executeJavaScript(`(${() => {
+        const input = document.createElement('input');
+        document.body.appendChild(input);
+        input.onfocus = () => input.remove();
+        input.focus();
+      }})()`, true);
+    };
+
+    it('is null before a url is committed', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.webContents.focusedFrame).to.be.null();
+    });
+
+    it('is set when main frame is focused', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      w.webContents.focus();
+      await waitUntil(() => w.webContents.focusedFrame === w.webContents.mainFrame);
+    });
+
+    it('is set to child frame when focused', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadFile(path.join(fixturesPath, 'sub-frames', 'frame-with-frame-container.html'));
+      const childFrame = w.webContents.mainFrame.frames[0];
+      await focusFrame(childFrame);
+      await waitUntil(() => w.webContents.focusedFrame === childFrame);
+    });
+  });
+
   describe('render view deleted events', () => {
     let server: http.Server;
     let serverUrl: string;
@@ -2864,8 +2917,13 @@ describe('webContents module', () => {
       expect(contextMenuEmitCount).to.equal(1);
     });
 
-    ifit(process.platform !== 'win32')('emits when right-clicked in page in a draggable region', async () => {
+    it('emits when right-clicked in page in a draggable region', async () => {
       const w = new BrowserWindow({ show: false });
+
+      if (process.platform === 'win32') {
+        w.on('system-context-menu', (event) => { event.preventDefault(); });
+      }
+
       await w.loadFile(path.join(fixturesPath, 'pages', 'draggable-page.html'));
 
       const promise = once(w.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;

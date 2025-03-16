@@ -9,8 +9,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <string_view>
-#include <utility>
 #include <vector>
 
 #include "base/functional/callback_forward.h"
@@ -374,6 +372,7 @@ class WebContents final : public ExclusiveAccessContext,
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
   content::RenderFrameHost* MainFrame();
   content::RenderFrameHost* Opener();
+  content::RenderFrameHost* FocusedFrame();
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
 
@@ -683,7 +682,7 @@ class WebContents final : public ExclusiveAccessContext,
   // ExclusiveAccessContext:
   Profile* GetProfile() override;
   bool IsFullscreen() const override;
-  void EnterFullscreen(const GURL& url,
+  void EnterFullscreen(const url::Origin& origin,
                        ExclusiveAccessBubbleType bubble_type,
                        const int64_t display_id) override;
   void ExitFullscreen() override {}

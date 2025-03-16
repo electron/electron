@@ -148,9 +148,6 @@ class InspectableWebContents
                             int min,
                             int exclusive_max,
                             int buckets) override {}
-  void SendJsonRequest(DispatchCallback callback,
-                       const std::string& browser_id,
-                       const std::string& url) override;
   void RegisterPreference(const std::string& name,
                           const RegisterOptions& options) override {}
   void GetPreferences(DispatchCallback callback) override;
@@ -183,6 +180,7 @@ class InspectableWebContents
   void RecordDrag(const DragEvent& event) override {}
   void RecordChange(const ChangeEvent& event) override {}
   void RecordKeyDown(const KeyDownEvent& event) override {}
+  void RecordSettingAccess(const SettingAccessEvent& event) override {}
   void ShowSurvey(DispatchCallback callback,
                   const std::string& trigger) override {}
   void CanShowSurvey(DispatchCallback callback,

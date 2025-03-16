@@ -7,7 +7,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -25,6 +24,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/world_ids.h"
 #include "shell/renderer/preload_realm_context.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/web/web_blob.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -945,7 +945,7 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
   if (!maybe_target_context.ToLocal(&target_context)) {
     isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
         isolate,
-        base::StringPrintf("Failed to get context for world %d", world_id))));
+        absl::StrFormat("Failed to get context for world %d", world_id))));
     return v8::Undefined(isolate);
   }
 
@@ -957,8 +957,7 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
     v8::MaybeLocal<v8::Script> maybe_compiled_script;
     {
       v8::TryCatch try_catch(isolate);
-      std::string return_func_code =
-          base::StringPrintf("(%s)", function_str.c_str());
+      std::string return_func_code = absl::StrFormat("(%s)", function_str);
       maybe_compiled_script = v8::Script::Compile(
           target_context, gin::StringToV8(isolate, return_func_code));
       if (try_catch.HasCaught()) {
@@ -1022,7 +1021,7 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
       v8::Local<v8::Value> arg;
       if (!args_array->Get(source_context, i).ToLocal(&arg)) {
         gin_helper::ErrorThrower(isolate).ThrowError(
-            base::StringPrintf("Failed to get argument at index %d", i));
+            absl::StrFormat("Failed to get argument at index %d", i));
         return v8::Undefined(isolate);
       }
 
@@ -1032,7 +1031,7 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
           &object_cache);
       if (proxied_arg.IsEmpty()) {
         gin_helper::ErrorThrower(isolate).ThrowError(
-            base::StringPrintf("Failed to proxy argument at index %d", i));
+            absl::StrFormat("Failed to proxy argument at index %d", i));
         return v8::Undefined(isolate);
       }
       proxied_args.push_back(proxied_arg.ToLocalChecked());

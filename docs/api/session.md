@@ -651,7 +651,7 @@ Clears the session’s HTTP cache.
     `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
     specified, clear all storage types.
   * `quotas` string[] (optional) - The types of quotas to clear, can be
-    `temporary`, `syncable`. If not specified, clear all quotas.
+    `temporary`. If not specified, clear all quotas.
 
 Returns `Promise<void>` - resolves when the storage data has been cleared.
 

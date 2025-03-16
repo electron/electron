@@ -1400,7 +1400,7 @@ bool WebContents::IsFullscreen() const {
   return owner_window()->IsFullscreen() || is_html_fullscreen();
 }
 
-void WebContents::EnterFullscreen(const GURL& url,
+void WebContents::EnterFullscreen(const url::Origin& origin,
                                   ExclusiveAccessBubbleType bubble_type,
                                   const int64_t display_id) {}
 
@@ -2057,6 +2057,17 @@ void WebContents::DidFinishNavigation(
       if (is_main_frame) {
         Emit("did-navigate", url, http_response_code, http_status_text);
       }
+
+      content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
+
+      // This check is needed due to an issue in Chromium
+      // Upstream is open to patching:
+      // https://bugs.chromium.org/p/chromium/issues/detail?id=1178663
+      // If a history entry has been made and the forward/back call has been
+      // made, proceed with setting the new title
+      if (entry &&
+          (entry->GetTransitionType() & ui::PAGE_TRANSITION_FORWARD_BACK))
+        WebContents::TitleWasSet(entry);
     }
     if (is_guest())
       Emit("load-commit", url, is_main_frame);
@@ -2077,15 +2088,6 @@ void WebContents::DidFinishNavigation(
            frame_process_id, frame_routing_id);
     }
   }
-  content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
-
-  // This check is needed due to an issue in Chromium
-  // Check the Chromium issue to keep updated:
-  // https://bugs.chromium.org/p/chromium/issues/detail?id=1178663
-  // If a history entry has been made and the forward/back call has been made,
-  // proceed with setting the new title
-  if (entry && (entry->GetTransitionType() & ui::PAGE_TRANSITION_FORWARD_BACK))
-    WebContents::TitleWasSet(entry);
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry) {
@@ -3751,6 +3753,10 @@ content::RenderFrameHost* WebContents::Opener() {
   return web_contents()->GetOpener();
 }
 
+content::RenderFrameHost* WebContents::FocusedFrame() {
+  return web_contents()->GetFocusedFrame();
+}
+
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetPrimaryMainFrame();
   if (frame)
@@ -4462,6 +4468,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("debugger", &WebContents::Debugger)
       .SetProperty("mainFrame", &WebContents::MainFrame)
       .SetProperty("opener", &WebContents::Opener)
+      .SetProperty("focusedFrame", &WebContents::FocusedFrame)
       .SetMethod("_setOwnerWindow", &WebContents::SetOwnerBaseWindow)
       .Build();
 }

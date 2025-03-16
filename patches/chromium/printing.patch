@@ -881,10 +881,10 @@ index 97cb6458bc9eec767db89b56abfc5f4b4136ff7b..d9a0b343158b8464b5c9aa8e0e655c0b
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 885d487afbaae02c0401b322dd59273116c91ad0..d8bb1152a1f713e58da0f29324a1eb877a693bfd 100644
+index b392e1ee627c982c4c0b099a6b6ea8a9e698b601..a2e944cb987f739d75428649793e622400ed0213 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3109,8 +3109,9 @@ source_set("browser") {
+@@ -3123,8 +3123,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

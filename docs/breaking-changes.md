@@ -14,10 +14,36 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (36.0)
 
+### Utility Process unhandled rejection behavior change
+
+Utility Processes will now warn with an error message when an unhandled
+rejection occurs instead of crashing the process.
+
+To restore the previous behavior, you can use:
+
+```js
+process.on('uncaughtException', () => {
+  process.exit(1)
+})
+```
+
 ### Removed:`isDefault` and `status` properties on `PrinterInfo`
 
 These properties have been removed from the PrinterInfo Object
 because they have been removed from upstream Chromium.
+
+### Removed: `quota` type `syncable` in `Session.clearStorageData(options)`
+
+When calling `Session.clearStorageData(options)`, the `options.quota` type
+`syncable` is no longer supported because it has been
+[removed](https://chromium-review.googlesource.com/c/chromium/src/+/6309405)
+from upstream Chromium.
+
+### Deprecated: `quota` property in `Session.clearStorageData(options)`
+
+When calling `Session.clearStorageData(options)`, the `options.quota`
+property is deprecated. Since the `syncable` type was removed, there
+is only type left -- `'temporary'` -- so specifying it is unnecessary.
 
 ### Deprecated: Extension methods and events on `session`
 

@@ -5,9 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SERVICE_WORKER_MAIN_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SERVICE_WORKER_MAIN_H_
 
-#include <optional>
 #include <string>
-#include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
@@ -149,6 +147,7 @@ class ServiceWorkerMain final
 
   int64_t VersionID() const;
   GURL ScopeURL() const;
+  GURL ScriptURL() const;
 
   // Version ID unique only to the StoragePartition.
   int64_t version_id_;

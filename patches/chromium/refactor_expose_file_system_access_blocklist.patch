@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 7d5813ad07169f2f779846c4541101eac376aa4c..21e17ef542a89a9829ca4583da760fb6b1c59836 100644
+index f08ff195ede9980cd0f491053510ed09c1b6c58a..2bdfcc05ef92c1983a9517deea98ed589ac0a065 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -45,7 +45,6 @@

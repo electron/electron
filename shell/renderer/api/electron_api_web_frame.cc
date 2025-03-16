@@ -11,6 +11,7 @@
 
 #include "base/containers/span.h"
 #include "base/memory/memory_pressure_listener.h"
+#include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
 #include "components/spellcheck/renderer/spellcheck.h"
 #include "content/public/renderer/render_frame.h"
@@ -410,8 +411,8 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
                            content::RenderFrame** render_frame_ptr) {
     auto* frame = render_frame();
     if (!frame) {
-      *error_msg = base::ToString("Render frame was torn down before webFrame.",
-                                  method_name, " could be executed");
+      *error_msg = base::StrCat({"Render frame was torn down before webFrame.",
+                                 method_name, " could be executed"});
       return false;
     }
     *render_frame_ptr = frame;
