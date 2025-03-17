@@ -119,7 +119,7 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
   }
 
   if (instance->IsRegistrationHandledExternally()) {
-    auto* context = ElectronBrowserContext::From("", false);
+    auto* context = ElectronBrowserContext::GetDefaultBrowserContext();
     PrefService* prefs = context->prefs();
 
     // Need a unique profile id. Set one if not generated yet, otherwise re-use
