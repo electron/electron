@@ -18,10 +18,10 @@ runs:
       echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
   - name: Install Dependencies
     uses: ./src/electron/.github/actions/install-dependencies
-  - name: Install Build Tools
-    uses: ./src/electron/.github/actions/install-build-tools
   - name: Set Chromium Git Cookie
     uses: ./src/electron/.github/actions/set-chromium-cookie
+  - name: Install Build Tools
+    uses: ./src/electron/.github/actions/install-build-tools
   - name: Get Depot Tools
     shell: bash
     run: |
