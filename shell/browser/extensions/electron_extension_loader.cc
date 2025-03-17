@@ -98,7 +98,8 @@ ElectronExtensionLoader::ElectronExtensionLoader(
     : browser_context_(browser_context),
       extension_registrar_(ExtensionRegistrar::Get(browser_context)) {
   extension_registrar_->Init(
-      this, browser_context_->GetPath().AppendASCII(kInstallDirectoryName),
+      this, /*extensions_enabled=*/true,
+      browser_context_->GetPath().AppendASCII(kInstallDirectoryName),
       browser_context_->GetPath().AppendASCII(kUnpackedInstallDirectoryName));
 }
 
