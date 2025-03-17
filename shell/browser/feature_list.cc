@@ -27,6 +27,10 @@
 #include "pdf/pdf_features.h"
 #endif
 
+#if BUILDFLAG(IS_LINUX)
+#include "printing/printing_features.h"
+#endif
+
 namespace electron {
 
 void InitializeFeatureList() {
@@ -54,6 +58,14 @@ void InitializeFeatureList() {
       // MacWebContentsOcclusion is causing some odd visibility
       // issues with multiple web contents
       std::string(",") + features::kMacWebContentsOcclusion.name;
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+  disable_features +=
+      // EnableOopPrintDrivers is still a bit half-baked on Linux and
+      // causes crashes when trying to show dialogs.
+      // TODO(codebytere): figure out how to re-enable this with our patches.
+      std::string(",") + printing::features::kEnableOopPrintDrivers.name;
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
