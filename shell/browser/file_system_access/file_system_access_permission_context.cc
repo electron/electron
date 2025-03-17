@@ -825,13 +825,7 @@ std::u16string FileSystemAccessPermissionContext::GetPickerTitle(
               ? IDS_FILE_SYSTEM_ACCESS_CHOOSER_OPEN_WRITABLE_DIRECTORY_TITLE
               : IDS_FILE_SYSTEM_ACCESS_CHOOSER_OPEN_READABLE_DIRECTORY_TITLE);
       break;
-    case blink::mojom::TypeSpecificFilePickerOptionsUnion::Tag::
-        kSaveFilePickerOptions:
-      title = l10n_util::GetStringUTF16(
-          IDS_FILE_SYSTEM_ACCESS_CHOOSER_OPEN_SAVE_FILE_TITLE);
-      break;
-    case blink::mojom::TypeSpecificFilePickerOptionsUnion::Tag::
-        kOpenFilePickerOptions:
+    default:
       break;
   }
   return title;
