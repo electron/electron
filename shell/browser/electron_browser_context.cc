@@ -359,6 +359,14 @@ void ElectronBrowserContext::DestroyAllContexts() {
   map.clear();
 }
 
+// static
+void ElectronBrowserContext::DestroyAllContexts() {
+  auto& map = browser_context_map();
+  // Avoid UAF by destroying the default context last. See ba629e3 for info.
+  const auto extracted = map.extract(PartitionKey{"", false});
+  map.clear();
+}
+
 ElectronBrowserContext::ElectronBrowserContext(
     const PartitionOrPath partition_location,
     bool in_memory,
