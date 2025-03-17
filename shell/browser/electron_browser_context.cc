@@ -344,6 +344,12 @@ std::vector<ElectronBrowserContext*> ElectronBrowserContext::BrowserContexts() {
                         [](auto& iter) { return iter.second.get(); });
 }
 
+bool ElectronBrowserContext::IsValidContext(const void* context) {
+  return std::ranges::any_of(ContextMap(), [context](const auto& iter) {
+    return iter.second.get() == context;
+  });
+}
+
 // static
 void ElectronBrowserContext::DestroyAllContexts() {
   auto& map = ContextMap();
