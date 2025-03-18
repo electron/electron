@@ -230,11 +230,12 @@ const dockMenu = Menu.buildFromTemplate([
     ]
   }
 ]);
-app.dock.setMenu(dockMenu);
-app.dock.setBadge('foo');
-const dockid = app.dock.bounce('informational');
-app.dock.cancelBounce(dockid);
-app.dock.setIcon('/path/to/icon.png');
+
+app.dock?.setMenu(dockMenu);
+app.dock?.setBadge('foo');
+const dockid = app.dock?.bounce('informational');
+app.dock?.cancelBounce(dockid);
+app.dock?.setIcon('/path/to/icon.png');
 
 app.setBadgeCount(app.getBadgeCount() + 1);
 
