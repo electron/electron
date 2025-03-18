@@ -979,8 +979,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return files;
   };
 
-  const modBinding = internalBinding('modules');
-  const { readPackageJSON } = modBinding;
+  const moduleBinding = internalBinding('modules');
+  const { readPackageJSON } = moduleBinding;
   internalBinding('modules').readPackageJSON = (
     jsonPath: string,
     isESM: boolean,
@@ -998,6 +998,36 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     if (!realPath) return undefined;
 
     return readPackageJSON(realPath, isESM, base, specifier);
+  };
+
+  const { getNearestParentPackageJSON } = moduleBinding;
+  internalBinding('modules').getNearestParentPackageJSON = (checkPath: string) => {
+    const pathInfo = splitPath(checkPath);
+    if (!pathInfo.isAsar) return getNearestParentPackageJSON(checkPath);
+    const { asarPath, filePath } = pathInfo;
+
+    const archive = getOrCreateArchive(asarPath);
+    if (!archive) return undefined;
+
+    const realPath = archive.copyFileOut(filePath);
+    if (!realPath) return undefined;
+
+    return getNearestParentPackageJSON(realPath);
+  };
+
+  const { getNearestParentPackageJSONType } = moduleBinding;
+  internalBinding('modules').getNearestParentPackageJSONType = (checkPath: string) => {
+    const pathInfo = splitPath(checkPath);
+    if (!pathInfo.isAsar) return getNearestParentPackageJSON(checkPath);
+    const { asarPath, filePath } = pathInfo;
+
+    const archive = getOrCreateArchive(asarPath);
+    if (!archive) return undefined;
+
+    const realPath = archive.copyFileOut(filePath);
+    if (!realPath) return undefined;
+
+    return getNearestParentPackageJSONType(realPath);
   };
 
   const { internalModuleStat } = binding;
