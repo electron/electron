@@ -9,6 +9,10 @@ inputs:
     description: 'Whether to persist the cache to the shared drive'
     required: false
     default: 'true'
+  fetch-tools:
+    description: 'Whether to depot tools and build tools need to be fetched'
+    required: false
+    default: 'true'
 runs:
   using: "composite"
   steps:
@@ -20,9 +24,8 @@ runs:
     uses: ./src/electron/.github/actions/install-dependencies
   - name: Set Chromium Git Cookie
     uses: ./src/electron/.github/actions/set-chromium-cookie
-  - name: Install Build Tools
-    uses: ./src/electron/.github/actions/install-build-tools
   - name: Get Depot Tools
+    if: ${{ inputs.fetch-tools == 'true' }}
     shell: bash
     run: |
       if [[ ! -d depot_tools ]]; then
@@ -33,8 +36,14 @@ runs:
         touch .disable_auto_update
       fi
   - name: Add Depot Tools to PATH
+    if: ${{ inputs.fetch-tools == 'true' }}
     shell: bash
-    run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    run: |
+      echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+      echo "DEPOT_TOOLS_DIR=$(pwd)/depot_tools" >> $GITHUB_ENV
+  - name: Install Build Tools
+    if: ${{ inputs.fetch-tools == 'true' }}
+    uses: ./src/electron/.github/actions/install-build-tools
   - name: Generate DEPS Hash
     shell: bash
     run: |

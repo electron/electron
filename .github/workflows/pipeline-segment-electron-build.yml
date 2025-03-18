@@ -146,7 +146,11 @@ jobs:
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
-      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+      run: |
+        echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+        echo "DEPOT_TOOLS_DIR=$(pwd)/depot_tools" >> $GITHUB_ENV
+    - name: Install Build Tools
+      uses: ./src/electron/.github/actions/install-build-tools        
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
@@ -164,14 +168,13 @@ jobs:
       uses: ./src/electron/.github/actions/checkout
       with:
         use-cache: 'false'
+        fetch-tools: 'false'
     - name: Checkout Electron
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
-    - name: Install Build Tools
-      uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
       run: |
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}

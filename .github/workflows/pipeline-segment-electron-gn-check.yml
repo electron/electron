@@ -65,7 +65,9 @@ jobs:
         sudo rm -rf $TMPDIR/del-target
     - name: Check disk space after freeing up space
       if: ${{ inputs.target-platform == 'macos' }}
-      run: df -h        
+      run: df -h
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Enable windows toolchain
