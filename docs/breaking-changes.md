@@ -22,7 +22,7 @@ rejection occurs instead of crashing the process.
 To restore the previous behavior, you can use:
 
 ```js
-process.on('uncaughtException', () => {
+process.on('unhandledRejection', () => {
   process.exit(1)
 })
 ```
