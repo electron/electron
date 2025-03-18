@@ -1018,7 +1018,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const { getNearestParentPackageJSONType } = moduleBinding;
   internalBinding('modules').getNearestParentPackageJSONType = (checkPath: string) => {
     const pathInfo = splitPath(checkPath);
-    if (!pathInfo.isAsar) return getNearestParentPackageJSON(checkPath);
+    if (!pathInfo.isAsar) return getNearestParentPackageJSONType(checkPath);
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
