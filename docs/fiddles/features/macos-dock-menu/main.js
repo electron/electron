@@ -24,9 +24,7 @@ const dockMenu = Menu.buildFromTemplate([
 ])
 
 app.whenReady().then(() => {
-  if (process.platform === 'darwin') {
-    app.dock.setMenu(dockMenu)
-  }
+  app.dock?.setMenu(dockMenu)
 }).then(createWindow)
 
 app.on('window-all-closed', () => {
