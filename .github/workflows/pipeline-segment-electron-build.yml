@@ -146,9 +146,16 @@ jobs:
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
     - name: Add Depot Tools to PATH
+      if: ${{ inputs.target-platform != 'win' }}
       run: |
         echo "$(pwd)/depot_tools" >> $GITHUB_PATH
         echo "DEPOT_TOOLS_DIR=$(pwd)/depot_tools" >> $GITHUB_ENV
+    - name: Add Depot Tools to PATH (Windows)
+      shell: powershell
+      if: ${{ inputs.target-platform == 'win' }}      
+      run: |
+          Add-Content -Path $env:GITHUB_ENV -Value "DEPOT_TOOLS_DIR=$(pwd)\depot_tools"
+          Add-Content -Path $env:GITHUB_PATH -Value "$(pwd)\depot_tools"
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools        
     - name: Generate DEPS Hash
