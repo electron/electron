@@ -27,7 +27,7 @@ process.on('unhandledRejection', () => {
 })
 ```
 
-### Removed:`isDefault` and `status` properties on `PrinterInfo`
+### Removed: `isDefault` and `status` properties on `PrinterInfo`
 
 These properties have been removed from the PrinterInfo Object
 because they have been removed from upstream Chromium.
@@ -38,6 +38,16 @@ When calling `Session.clearStorageData(options)`, the `options.quota` type
 `syncable` is no longer supported because it has been
 [removed](https://chromium-review.googlesource.com/c/chromium/src/+/6309405)
 from upstream Chromium.
+
+### Removed: `null` value for `session` property in `ProtocolResponse`
+
+Previously, setting the ProtocolResponse.session property to `null`
+Would create a random independent session. This is no longer supported.
+
+Using single-purpose sessions here is discouraged due to overhead costs;
+however, old code that needs to preserve this behavior can emulate it by
+creating a random session with `session.fromPartition(some_random_string)`
+and then using it in `ProtocolResponse.session`.
 
 ### Deprecated: `quota` property in `Session.clearStorageData(options)`
 
