@@ -17,6 +17,7 @@ runs:
   using: "composite"
   steps:
   - name: Set GIT_CACHE_PATH to make gclient to use the cache
+    if: ${{ inputs.fetch-tools == 'true' }}
     shell: bash
     run: |
       echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
