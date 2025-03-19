@@ -80,10 +80,10 @@ index 4fd8dff1089cd6afa6a66dc185734d7671657281..0a1f4268ea771a3d5d4a2668928c6e5d
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 8232c0081baaeb3df9f2f6224f8fe31a2dcb1d5b..081c01bc00dfdef66c23a9ef640ed159f4f7557b 100644
+index 71382674f5d2a93c9bc676d32d28481433b85ea7..bfa3545bdfc45d36dc880a9504ce412bfb9ddd70 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2264,12 +2264,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2267,12 +2267,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index 8232c0081baaeb3df9f2f6224f8fe31a2dcb1d5b..081c01bc00dfdef66c23a9ef640ed159
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 7a61c64db93db7f3b31b8d39897257a6315383c2..7db684020fbaf7061ed61a8b1cefba8c757f2fe5 100644
+index 288d4f6d7dfdcf7e518f78990f061f4215f1b975..3d8899e313906a0d3a273d43cab872243fa6faea 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -981,8 +981,7 @@ class Browser : public TabStripModelObserver,
+@@ -983,8 +983,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 952fd20f71560acd89c74f08e9d8cdbf34fb5a1a..59b05937ceb1b81b69d913f587150021b9031106 100644
+index d96cd5a2fe6e56e612a4b9c89108bff2dca2ff3d..145834856dd4873b95810421b633f11330a7cf96 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4943,8 +4943,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4951,8 +4951,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // TODO(crbug.com/40202416): Support a way for MPArch guests to support this.
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -232,7 +232,7 @@ index 952fd20f71560acd89c74f08e9d8cdbf34fb5a1a..59b05937ceb1b81b69d913f587150021
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index f688e6d1e6c11f0dd80f498e6361fa822e8c2eb8..dc47ebfd61f16901b7f8e0e4c30c79eaf5d0710e 100644
+index 97a3ea6f292563a41fd41f812ac72526a96d8471..b299dd5659100d317a3574e902bf2c29c5defd2c 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -159,8 +159,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -246,10 +246,10 @@ index f688e6d1e6c11f0dd80f498e6361fa822e8c2eb8..dc47ebfd61f16901b7f8e0e4c30c79ea
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 96cb58b1a88499cf8f78d748dc5a1cc1c6b6a128..8ff56b56da764c8af14c40babc529ee4cb089c7e 100644
+index 8a18958035cc1dd26be558349f64f7727570c4ba..7d9c9b06bcc57ef5eb0a2ca74ee20632a1393f9e 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -354,8 +354,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -355,8 +355,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
