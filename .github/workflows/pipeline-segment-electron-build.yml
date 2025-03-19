@@ -129,33 +129,33 @@ jobs:
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
-    - name: Get Depot Tools
-      timeout-minutes: 5
-      run: |
-        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+    # - name: Get Depot Tools
+    #   timeout-minutes: 5
+    #   run: |
+    #     git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
-        SEDOPTION="-i"
-        if [ "`uname`" = "Darwin" ]; then
-          SEDOPTION="-i ''"
-        fi
+    #     SEDOPTION="-i"
+    #     if [ "`uname`" = "Darwin" ]; then
+    #       SEDOPTION="-i ''"
+    #     fi
 
-        # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-        sed $SEDOPTION '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+    #     # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
+    #     sed $SEDOPTION '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
 
-        # Ensure depot_tools does not update.
-        test -d depot_tools && cd depot_tools
-        touch .disable_auto_update
-    - name: Add Depot Tools to PATH
-      if: ${{ inputs.target-platform != 'win' }}
-      run: |
-        echo "$(pwd)/depot_tools" >> $GITHUB_PATH
-        echo "DEPOT_TOOLS_DIR=$(pwd)/depot_tools" >> $GITHUB_ENV
-    - name: Add Depot Tools to PATH (Windows)
-      shell: powershell
-      if: ${{ inputs.target-platform == 'win' }}      
-      run: |
-          Add-Content -Path $env:GITHUB_ENV -Value "DEPOT_TOOLS_DIR=$(pwd)\depot_tools"
-          Add-Content -Path $env:GITHUB_PATH -Value "$(pwd)\depot_tools"
+    #     # Ensure depot_tools does not update.
+    #     test -d depot_tools && cd depot_tools
+    #     touch .disable_auto_update
+    # - name: Add Depot Tools to PATH
+    #   if: ${{ inputs.target-platform != 'win' }}
+    #   run: |
+    #     echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    #     echo "DEPOT_TOOLS_DIR=$(pwd)/depot_tools" >> $GITHUB_ENV
+    # - name: Add Depot Tools to PATH (Windows)
+    #   shell: powershell
+    #   if: ${{ inputs.target-platform == 'win' }}      
+    #   run: |
+    #       Add-Content -Path $env:GITHUB_ENV -Value "DEPOT_TOOLS_DIR=$(pwd)\depot_tools"
+    #       Add-Content -Path $env:GITHUB_PATH -Value "$(pwd)\depot_tools"
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools        
     - name: Generate DEPS Hash
