@@ -66,7 +66,7 @@ class Protocol final : public gin::Wrappable<Protocol>,
   using CompletionCallback =
       base::RepeatingCallback<void(v8::Local<v8::Value>)>;
 
-  Protocol(v8::Isolate* isolate, ProtocolRegistry* protocol_registry);
+  explicit Protocol(ProtocolRegistry* protocol_registry);
   ~Protocol() override;
 
   [[nodiscard]] static std::string_view ErrorCodeToString(Error error);
