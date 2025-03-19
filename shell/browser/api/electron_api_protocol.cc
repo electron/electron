@@ -14,7 +14,6 @@
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
-#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -213,7 +212,7 @@ constexpr std::string_view ErrorCodeToString(ProtocolError error) {
 }  // namespace
 
 Protocol::Protocol(v8::Isolate* isolate, ProtocolRegistry* protocol_registry)
-    : protocol_registry_(protocol_registry) {}
+    : protocol_registry_{protocol_registry} {}
 
 Protocol::~Protocol() = default;
 
@@ -292,11 +291,9 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args,
 }
 
 // static
-gin::Handle<Protocol> Protocol::Create(
-    v8::Isolate* isolate,
-    ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(
-      isolate, new Protocol(isolate, browser_context->protocol_registry()));
+gin::Handle<Protocol> Protocol::Create(v8::Isolate* isolate,
+                                       ProtocolRegistry* protocol_registry) {
+  return gin::CreateHandle(isolate, new Protocol{isolate, protocol_registry});
 }
 
 // static
