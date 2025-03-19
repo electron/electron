@@ -20,6 +20,9 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
+#include "ui/gfx/geometry/point_conversions.h"
+#include "ui/gfx/geometry/point_f.h"
+#include "ui/gfx/geometry/rect.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "ui/display/win/screen_win.h"
@@ -27,6 +30,11 @@
 
 #if defined(USE_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+#include "shell/browser/native_window.h"
+#include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 #endif
 
 namespace electron::api {
@@ -88,21 +96,41 @@ gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
   return screen_->GetCursorScreenPoint();
 }
 
-#if BUILDFLAG(IS_WIN)
-
 static gfx::Rect ScreenToDIPRect(electron::NativeWindow* window,
-                                 const gfx::Rect& rect) {
+                                 const gfx::Rect& pixel_bounds) {
+#if BUILDFLAG(IS_WIN)
   HWND hwnd = window ? window->GetAcceleratedWidget() : nullptr;
-  return display::win::ScreenWin::ScreenToDIPRect(hwnd, rect);
+  return display::win::ScreenWin::ScreenToDIPRect(hwnd, pixel_bounds);
+#else
+  auto* host = views::DesktopWindowTreeHostLinux::GetHostForWidget(
+      window->GetAcceleratedWidget());
+  gfx::Point dip_point = pixel_bounds.origin();
+  host->ConvertScreenInPixelsToDIP(&dip_point);
+  const float scale_factor =
+      display::Screen::GetScreen()
+          ->GetPreferredScaleFactorForWindow(window->GetNativeWindow())
+          .value_or(1.0f);
+  return {dip_point, ScaleToEnclosingRect(pixel_bounds, scale_factor).size()};
+#endif
 }
 
 static gfx::Rect DIPToScreenRect(electron::NativeWindow* window,
-                                 const gfx::Rect& rect) {
+                                 const gfx::Rect& dip_bounds) {
+#if BUILDFLAG(IS_WIN)
   HWND hwnd = window ? window->GetAcceleratedWidget() : nullptr;
-  return display::win::ScreenWin::DIPToScreenRect(hwnd, rect);
-}
-
+  return display::win::ScreenWin::DIPToScreenRect(hwnd, dip_bounds);
+#else
+  const float scale_factor =
+      display::Screen::GetScreen()
+          ->GetPreferredScaleFactorForWindow(window->GetNativeWindow())
+          .value_or(1.0f);
+  auto* host = views::DesktopWindowTreeHostLinux::GetHostForWidget(
+      window->GetAcceleratedWidget());
+  gfx::Point px_point = dip_bounds.origin();
+  host->ConvertDIPToScreenInPixels(&px_point);
+  return {px_point, ScaleToEnclosingRect(dip_bounds, scale_factor).size()};
 #endif
+}
 
 void Screen::OnDisplayAdded(const display::Display& new_display) {
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
@@ -156,9 +184,9 @@ gin::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
 #if BUILDFLAG(IS_WIN)
       .SetMethod("screenToDipPoint", &display::win::ScreenWin::ScreenToDIPPoint)
       .SetMethod("dipToScreenPoint", &display::win::ScreenWin::DIPToScreenPoint)
+#endif
       .SetMethod("screenToDipRect", &ScreenToDIPRect)
       .SetMethod("dipToScreenRect", &DIPToScreenRect)
-#endif
       .SetMethod("getDisplayMatching", &Screen::GetDisplayMatching);
 }
 
