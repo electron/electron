@@ -99,7 +99,7 @@ runs:
       fi
 
       ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags -vv
-      if [[ "${{ inputs.is-release }}" != "true" && -n "${{ env.PATCH_UP_APP_CREDS }}" ]]; then
+      if [[ "${{ inputs.is-release }}" != "true" ]]; then
         # Re-export all the patches to check if there were changes.
         python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
         cd src/electron
