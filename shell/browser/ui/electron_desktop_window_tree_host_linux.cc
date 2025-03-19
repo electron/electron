@@ -62,7 +62,7 @@ gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
   auto* view = static_cast<ClientFrameViewLinux*>(
       native_window_view_->widget()->non_client_view()->frame_view());
 
-  gfx::Insets insets = view->GetBorderDecorationInsets();
+  gfx::Insets insets = view->RestoredMirroredFrameBorderInsets();
   if (base::i18n::IsRTL())
     insets.set_left_right(insets.right(), insets.left());
   return insets;
@@ -99,9 +99,14 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
   // of view.
   if (native_window_view_->has_frame() &&
       native_window_view_->has_client_frame()) {
-    static_cast<ClientFrameViewLinux*>(
-        native_window_view_->widget()->non_client_view()->frame_view())
-        ->set_tiled_edges(new_tiled_edges);
+    ClientFrameViewLinux* frame = static_cast<ClientFrameViewLinux*>(
+        native_window_view_->widget()->non_client_view()->frame_view());
+
+    bool maximized = new_tiled_edges.top && new_tiled_edges.left &&
+                     new_tiled_edges.bottom && new_tiled_edges.right;
+    bool tiled = new_tiled_edges.top || new_tiled_edges.left ||
+                 new_tiled_edges.bottom || new_tiled_edges.right;
+    frame->set_tiled(tiled && !maximized);
   }
   UpdateFrameHints();
 }
