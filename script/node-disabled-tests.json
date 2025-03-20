@@ -153,6 +153,7 @@
   "parallel/test-webcrypto-wrap-unwrap",
   "parallel/test-worker-no-atomics",
   "parallel/test-worker-no-sab",
+  "parallel/test-worker-resource-limits",
   "parallel/test-zlib-unused-weak",
   "report/test-report-fatalerror-oomerror-compact",
   "report/test-report-fatalerror-oomerror-directory",
