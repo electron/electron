@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <utility>
 
-#include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "base/memory/ptr_util.h"
 #include "base/path_service.h"
@@ -86,7 +85,7 @@ bool ElectronExtensionsBrowserClient::AreExtensionsDisabled(
 }
 
 bool ElectronExtensionsBrowserClient::IsValidContext(void* context) {
-  return base::Contains(ElectronBrowserContext::BrowserContexts(), context);
+  return ElectronBrowserContext::IsValidContext(context);
 }
 
 bool ElectronExtensionsBrowserClient::IsSameContext(BrowserContext* first,
