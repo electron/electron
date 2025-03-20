@@ -161,7 +161,7 @@ void HandleAccessibilityRequestCallback(
   ui::AXMode mode =
       content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
   bool is_native_enabled = content::BrowserAccessibilityState::GetInstance()
-                               ->IsRendererAccessibilityEnabled();
+                               ->IsAccessibilityAllowed();
   bool native = mode.has_mode(ui::AXMode::kNativeAPIs);
   bool web = mode.has_mode(ui::AXMode::kWebContents);
   bool text = mode.has_mode(ui::AXMode::kInlineTextBoxes);
