@@ -7,6 +7,7 @@
 
 #include "shell/browser/file_system_access/file_system_access_permission_context.h"
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
