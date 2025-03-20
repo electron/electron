@@ -39,7 +39,7 @@ When calling `Session.clearStorageData(options)`, the `options.quota` type
 [removed](https://chromium-review.googlesource.com/c/chromium/src/+/6309405)
 from upstream Chromium.
 
-### Removed: `null` value for `session` property in `ProtocolResponse`
+### Deprecated: `null` value for `session` property in `ProtocolResponse`
 
 Previously, setting the ProtocolResponse.session property to `null`
 Would create a random independent session. This is no longer supported.
