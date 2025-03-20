@@ -12,6 +12,7 @@
 #include "base/barrier_closure.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
+#include "base/containers/to_vector.h"
 #include "base/files/file_path.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
@@ -309,6 +310,12 @@ bool DoesDeviceMatch(const base::Value& device,
 }
 
 }  // namespace
+
+// static
+std::vector<ElectronBrowserContext*> ElectronBrowserContext::BrowserContexts() {
+  return base::ToVector(browser_context_map(),
+                        [](auto& iter) { return iter.second.get(); });
+}
 
 // static
 ElectronBrowserContext::BrowserContextMap&
