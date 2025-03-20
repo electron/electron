@@ -33,7 +33,7 @@ class ExtensionActionAPI : public BrowserContextKeyedAPI {
     virtual void OnExtensionActionAPIShuttingDown();
 
    protected:
-    virtual ~Observer();
+    virtual ~Observer() = default;
   };
 
   explicit ExtensionActionAPI(content::BrowserContext* context);
@@ -41,7 +41,7 @@ class ExtensionActionAPI : public BrowserContextKeyedAPI {
   ExtensionActionAPI(const ExtensionActionAPI&) = delete;
   ExtensionActionAPI& operator=(const ExtensionActionAPI&) = delete;
 
-  ~ExtensionActionAPI() override;
+  ~ExtensionActionAPI() override = default;
 
   // Convenience method to get the instance for a profile.
   static ExtensionActionAPI* Get(content::BrowserContext* context);
@@ -86,7 +86,7 @@ class ExtensionActionAPI : public BrowserContextKeyedAPI {
 class ExtensionActionFunction : public ExtensionFunction {
  protected:
   ExtensionActionFunction();
-  ~ExtensionActionFunction() override;
+  ~ExtensionActionFunction() override = default;
 
   // ExtensionFunction
   ResponseAction Run() override;
