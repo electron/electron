@@ -180,8 +180,10 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
     didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken {
   // Resolve outstanding APNS promises created during registration attempts
   if (auto* push_notifications = electron::api::PushNotifications::Get()) {
+    std::string encoded =
+        base::HexEncode(electron::util::as_byte_span(deviceToken));
     push_notifications->ResolveAPNSPromiseSetWithToken(
-        base::HexEncode(electron::util::as_byte_span(deviceToken)));
+        base::ToLowerASCII(encoded));
   }
 }
 
