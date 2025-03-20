@@ -156,7 +156,9 @@ gfx::Insets ClientFrameViewLinux::RestoredFrameBorderInsets() const {
 }
 
 gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
-  return gfx::Insets(host_supports_client_frame_shadow_ ? kResizeBorder : 0);
+  bool showing_shadow = host_supports_client_frame_shadow_ &&
+                        !frame_->IsMaximized() && !frame_->IsFullscreen();
+  return gfx::Insets(showing_shadow ? kResizeBorder : 0);
 }
 
 gfx::Rect ClientFrameViewLinux::GetWindowContentBounds() const {
