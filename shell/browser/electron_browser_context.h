@@ -63,6 +63,8 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   [[nodiscard]] static std::vector<ElectronBrowserContext*> BrowserContexts();
 
+  [[nodiscard]] static bool IsValidContext(const void* context);
+
   // Get or create the default BrowserContext.
   static ElectronBrowserContext* GetDefaultBrowserContext(
       base::Value::Dict options = {});
