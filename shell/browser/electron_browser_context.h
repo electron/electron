@@ -61,30 +61,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   ElectronBrowserContext(const ElectronBrowserContext&) = delete;
   ElectronBrowserContext& operator=(const ElectronBrowserContext&) = delete;
 
-  // partition_id => browser_context
-  struct PartitionKey {
-    PartitionKey(const std::string_view partition, bool in_memory)
-        : type_{Type::Partition}, location_{partition}, in_memory_{in_memory} {}
-
-    explicit PartitionKey(const base::FilePath& file_path)
-        : type_{Type::Path},
-          location_{file_path.AsUTF8Unsafe()},
-          in_memory_{false} {}
-
-    friend auto operator<=>(const PartitionKey&, const PartitionKey&) = default;
-
-   private:
-    enum class Type { Partition, Path };
-
-    Type type_;
-    std::string location_;
-    bool in_memory_;
-  };
-
   [[nodiscard]] static std::vector<ElectronBrowserContext*> BrowserContexts();
-
-  using BrowserContextMap =
-      std::map<PartitionKey, std::unique_ptr<ElectronBrowserContext>>;
 
   // Get or create the default BrowserContext.
   static ElectronBrowserContext* GetDefaultBrowserContext(
@@ -102,8 +79,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   // existing BrowserContext.
   static ElectronBrowserContext* FromPath(const base::FilePath& path,
                                           base::Value::Dict options = {});
-
-  static BrowserContextMap& browser_context_map();
 
   static void DestroyAllContexts();
 
