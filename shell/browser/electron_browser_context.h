@@ -81,6 +81,8 @@ class ElectronBrowserContext : public content::BrowserContext {
     bool in_memory_;
   };
 
+  [[nodiscard]] static std::vector<ElectronBrowserContext*> BrowserContexts();
+
   using BrowserContextMap =
       std::map<PartitionKey, std::unique_ptr<ElectronBrowserContext>>;
 
