@@ -554,11 +554,9 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
   // Shutdown the DownloadManager before destroying Node to prevent
   // DownloadItem callbacks from crashing.
-  for (auto& iter : ElectronBrowserContext::browser_context_map()) {
-    auto* download_manager = iter.second.get()->GetDownloadManager();
-    if (download_manager) {
+  for (auto* browser_context : ElectronBrowserContext::BrowserContexts()) {
+    if (auto* download_manager = browser_context->GetDownloadManager())
       download_manager->Shutdown();
-    }
   }
 
   // Shutdown utility process created with Electron API before
