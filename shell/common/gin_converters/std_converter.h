@@ -62,15 +62,6 @@ struct Converter<char[N]> {
 };
 
 template <>
-struct Converter<const char*> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const char* val) {
-    return v8::String::NewFromUtf8(isolate, val ? val : "",
-                                   v8::NewStringType::kNormal)
-        .ToLocalChecked();
-  }
-};
-
-template <>
 struct Converter<v8::Local<v8::Array>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    v8::Local<v8::Array> val) {

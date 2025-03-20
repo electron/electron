@@ -459,11 +459,14 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   return frame_hosts;
 }
 
-const char* WebFrameMain::LifecycleStateForTesting() const {
+std::string_view WebFrameMain::LifecycleStateForTesting() const {
   if (!HasRenderFrame())
     return {};
-  return content::RenderFrameHostImpl::LifecycleStateImplToString(
-      GetLifecycleState(render_frame_host()));
+  if (const char* str =
+          content::RenderFrameHostImpl::LifecycleStateImplToString(
+              GetLifecycleState(render_frame_host())))
+    return str;
+  return {};
 }
 
 v8::Local<v8::Promise> WebFrameMain::CollectDocumentJSCallStack(
