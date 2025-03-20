@@ -611,7 +611,7 @@ A `string` property that defines an alternative title provided only to
 accessibility tools such as screen readers. This string is not directly
 visible to users.
 
-#### `win.snapped` _Windows_
+#### `win.snapped` _Windows_ _Readonly_
 
 A `boolean` property that indicates whether the window is arranged via [Snap.](https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241)
 
