@@ -577,10 +577,10 @@ index 1917f8b94962d7a4c83f139623a5f5d352011627..47ef610c43c4dcfee0cf528eb2e6075b
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 402be34ab888cdf834d0fb65de0832e9a8021ced..82ddc92a35d824926c30279e660cc4e86e6f0b09 100644
+index 4f2e70c243550b471d0a6b2be743a29004c75599..9a3580d7c2a01290e7aaff1200e7f17c9add2c70 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
-@@ -355,17 +355,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
+@@ -356,17 +356,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
  #endif  // BUILDFLAG(IS_LINUX) && BUILDFLAG(USE_CUPS)
    }
  
@@ -881,10 +881,10 @@ index 97cb6458bc9eec767db89b56abfc5f4b4136ff7b..d9a0b343158b8464b5c9aa8e0e655c0b
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 5106f93fa6d0a3a53f5dcca25f9cf151a75b3f44..7ecbb83a564070b702e5e9b0a25ee50283381b22 100644
+index 36934435fcd381a21c54ee5527437419735cd376..fb3c9e53231064c3b94b75a2751fad4d618c0b5a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3128,8 +3128,9 @@ source_set("browser") {
+@@ -3130,8 +3130,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
