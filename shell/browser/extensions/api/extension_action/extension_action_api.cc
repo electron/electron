@@ -22,11 +22,6 @@ namespace extensions {
 // ExtensionActionAPI::Observer
 //
 
-void ExtensionActionAPI::Observer::OnExtensionActionUpdated(
-    ExtensionAction* extension_action,
-    content::WebContents* web_contents,
-    content::BrowserContext* browser_context) {}
-
 ExtensionActionAPI::Observer::~Observer() {}
 
 //

@@ -28,7 +28,7 @@ class ExtensionActionAPI : public BrowserContextKeyedAPI {
     virtual void OnExtensionActionUpdated(
         ExtensionAction* extension_action,
         content::WebContents* web_contents,
-        content::BrowserContext* browser_context);
+        content::BrowserContext* browser_context) {}
 
     virtual void OnExtensionActionAPIShuttingDown() {}
 
