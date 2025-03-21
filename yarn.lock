@@ -285,7 +285,7 @@
     vscode-uri "^3.0.7"
     yaml "^2.4.5"
 
-"@electron/typescript-definitions@^9.1.1":
+"@electron/typescript-definitions@^9.1.2":
   version "9.1.2"
   resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-9.1.2.tgz#a9b7bfaed60a528cf1f0ce4a30f01360a27839f2"
   integrity sha512-BLxuLnvGqKUdesLXh9jB6Ll5Q4Vnb0NqJxuNY+GBz5Q8icxpW2EcHO7gIBpgX+t6sHdfRn9r6Wpwh/CKXoaJng==
