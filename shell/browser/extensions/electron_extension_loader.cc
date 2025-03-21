@@ -224,8 +224,6 @@ void ElectronExtensionLoader::ShowExtensionDisabledError(
     const Extension* extension,
     bool is_remote_install) {}
 
-void ElectronExtensionLoader::FinishDelayedInstallationsIfAny() {}
-
 bool ElectronExtensionLoader::CanAddExtension(const Extension* extension) {
   return true;
 }
