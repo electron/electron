@@ -14,10 +14,10 @@ This patch likely can't be upstreamed as-is, as Chromium doesn't have
 this use case in mind currently.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 290c8c85a6a0a1cd4aab1c4b04aeb372af670244..500acc3077b024974ab0c72eec5523e9f26ca033 100644
+index 8b26d67e51277e4e6dddd226f3100d0e9f7bf986..8d1252b7636a2b0264bab57228047db9b7fa9653 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -945,13 +945,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
+@@ -946,13 +946,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
  
  void HWNDMessageHandler::PaintAsActiveChanged() {
    if (!delegate_->HasNonClientView() || !delegate_->CanActivate() ||

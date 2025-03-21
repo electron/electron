@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 9b2e062cfe53907f95bdcf39faec31d604862e09..0f4bca25f3f2b42f9e8727f42fd4f9b3081d99d9 100644
+index 05c85402eee94f5c15ce6cee2b237db8e457318f..2621a17f130313a7dade56419a45e9a366ac2518 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9636,6 +9636,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9637,6 +9637,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index 9b2e062cfe53907f95bdcf39faec31d604862e09..0f4bca25f3f2b42f9e8727f42fd4f9b3
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4276a7585ce295f5b398665836ff92e28e935a0c..7a5f1b4a5d8b9b5cfbd6b6e296ec6db8f48b4e81 100644
+index 8087d017dfae9632f367143a14a598bd51a72ec7..337977600c1f16b3994c2e6082728c54264d8419 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5069,6 +5069,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -51,10 +51,10 @@ index 4276a7585ce295f5b398665836ff92e28e935a0c..7a5f1b4a5d8b9b5cfbd6b6e296ec6db8
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 8f8f79733c956fed2469e51993bad29689c11d8a..17e953f46d479f431fa06d28857901cb844ff4ea 100644
+index 55bb4ae3bab4cdf20b3e1dde9450a5c0e4e62b37..fe444c7fa140166a1b65c7a8a2676e2de7c4e0fc 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -642,6 +642,10 @@ struct CreateNewWindowParams {
+@@ -646,6 +646,10 @@ struct CreateNewWindowParams {
    pending_associated_remote<blink.mojom.Widget> widget;
    pending_associated_receiver<blink.mojom.FrameWidgetHost> frame_widget_host;
    pending_associated_remote<blink.mojom.FrameWidget> frame_widget;
@@ -148,10 +148,10 @@ index da319cb20733150366d85bee95609f0f2d9def7f..8a18958035cc1dd26be558349f64f772
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 0e2524de1159d7e2628c66d188002c6a417bfa52..0fb92081a1bbfb14c0ddd74dfe91f94bb2be1d2a 100644
+index 0755a49ee7558ee0c5e76f602c514bb8a7c3a019..4185aa3e07df8f2a3061d18e87f39cd5d79baead 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6924,6 +6924,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6927,6 +6927,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
@@ -210,10 +210,10 @@ index 82e9d3dfb5f7da76d89fe15ae61d379fa46e177d..fd035512099a54dff6cc951a2226c23a
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 70d107d7c99056e790d75755855b804ed1961a90..a0ed0e7cd27532dcf2c327874ae4573c70290ecd 100644
+index 6fe961fdc8961b491d609f75a773e061739c0157..c0bb58a585d3ef6da27118b00ccb1b58964ab80e 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2270,6 +2270,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2272,6 +2272,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  
