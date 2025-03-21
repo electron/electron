@@ -1246,7 +1246,7 @@ if (is_mac) {
         "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
-      ldflags = []
+      ldflags = [ "/DELAYLOAD:ffmpeg.dll" ]
 
       libs = [
         "comctl32.lib",
