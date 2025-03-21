@@ -16,7 +16,7 @@ Returns `string` - The file system path that this `File` object points to. In th
 
 This method superseded the previous augmentation to the `File` object with the `path` property.  An example is included below.
 
-```js
+```js @ts-nocheck
 // Before
 const oldPath = document.querySelector('input').files[0].path
 
