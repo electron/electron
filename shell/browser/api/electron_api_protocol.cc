@@ -195,7 +195,7 @@ const char* const kBuiltinSchemes[] = {
 
 }  // namespace
 
-Protocol::Protocol(v8::Isolate* isolate, ProtocolRegistry* protocol_registry)
+Protocol::Protocol(ProtocolRegistry* protocol_registry)
     : protocol_registry_{protocol_registry} {}
 
 Protocol::~Protocol() = default;
@@ -291,7 +291,7 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args, Error error) {
 // static
 gin::Handle<Protocol> Protocol::Create(v8::Isolate* isolate,
                                        ProtocolRegistry* protocol_registry) {
-  return gin::CreateHandle(isolate, new Protocol{isolate, protocol_registry});
+  return gin::CreateHandle(isolate, new Protocol{protocol_registry});
 }
 
 // static
