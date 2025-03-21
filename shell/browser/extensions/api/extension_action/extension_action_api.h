@@ -30,7 +30,7 @@ class ExtensionActionAPI : public BrowserContextKeyedAPI {
         content::WebContents* web_contents,
         content::BrowserContext* browser_context);
 
-    virtual void OnExtensionActionAPIShuttingDown();
+    virtual void OnExtensionActionAPIShuttingDown() {}
 
    protected:
     virtual ~Observer();

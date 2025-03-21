@@ -27,8 +27,6 @@ void ExtensionActionAPI::Observer::OnExtensionActionUpdated(
     content::WebContents* web_contents,
     content::BrowserContext* browser_context) {}
 
-void ExtensionActionAPI::Observer::OnExtensionActionAPIShuttingDown() {}
-
 ExtensionActionAPI::Observer::~Observer() {}
 
 //
