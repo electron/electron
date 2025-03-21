@@ -280,8 +280,6 @@ bool ElectronExtensionsBrowserClient::DidVersionUpdate(
   return false;
 }
 
-void ElectronExtensionsBrowserClient::PermitExternalProtocolHandler() {}
-
 bool ElectronExtensionsBrowserClient::IsInDemoMode() {
   return false;
 }

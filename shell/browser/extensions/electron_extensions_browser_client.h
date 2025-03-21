@@ -114,7 +114,7 @@ class ElectronExtensionsBrowserClient
   std::unique_ptr<extensions::ExtensionHostDelegate>
   CreateExtensionHostDelegate() override;
   bool DidVersionUpdate(content::BrowserContext* context) override;
-  void PermitExternalProtocolHandler() override;
+  void PermitExternalProtocolHandler() override {}
   bool IsInDemoMode() override;
   bool IsScreensaverInDemoMode(const std::string& app_id) override;
   bool IsRunningInForcedAppMode() override;
