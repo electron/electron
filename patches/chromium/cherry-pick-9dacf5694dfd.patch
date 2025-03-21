@@ -36,7 +36,7 @@ index 03a26a5f81dee1cd1bba28621c1ecd30ea709df8..60447a8e71e056db01515db8bc6c5604
        feature_info_->feature_flags().khr_debug) {
      InitializeGLDebugLogging(true, GLDebugMessageCallback, &logger_);
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
-index 54310b8878fa7aeca45e6001cb884a794272138c..e7abe4cb8542aa767ca150db3163f860f9a04b59 100644
+index 2cb2a3b4913a54373b84cebf9326ee09a98f6bcc..ee9ad4fa2838a22bc8b24185267a29687129f721 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
 @@ -1065,6 +1065,17 @@ gpu::ContextResult GLES2DecoderPassthroughImpl::Initialize(
