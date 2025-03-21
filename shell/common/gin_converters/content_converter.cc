@@ -223,6 +223,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "speaker-selection");
     case blink::PermissionType::WEB_APP_INSTALLATION:
       return StringToV8(isolate, "web-app-installation");
+    case blink::PermissionType::LOCAL_NETWORK_ACCESS:
+      return StringToV8(isolate, "local-network-access");
     case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
       return StringToV8(isolate, "deprecated-sync-clipboard-read");
     case blink::PermissionType::NUM:
