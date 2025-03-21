@@ -2,23 +2,31 @@ const { appCredentialsFromString, getTokenForRepo } = require('@electron/github-
 
 const cp = require('node:child_process');
 
+const { PATCH_UP_APP_CREDS } = process.env;
+
 async function main () {
+  if (!PATCH_UP_APP_CREDS) {
+    throw new Error('PATCH_UP_APP_CREDS environment variable not set');
+  }
+
   const token = await getTokenForRepo(
     {
       name: 'electron',
       owner: 'electron'
     },
-    appCredentialsFromString(process.env.PATCH_UP_APP_CREDS)
+    appCredentialsFromString(PATCH_UP_APP_CREDS)
   );
+
   const remoteURL = `https://x-access-token:${token}@github.com/electron/electron.git`;
+
   // NEVER LOG THE OUTPUT OF THIS COMMAND
   // GIT LEAKS THE ACCESS CREDENTIALS IN CONSOLE LOGS
   const { status } = cp.spawnSync('git', ['push', '--set-upstream', remoteURL], {
     stdio: 'ignore'
   });
+
   if (status !== 0) {
-    console.error('Failed to push to target branch');
-    process.exit(1);
+    throw new Error('Failed to push to target branch');
   }
 }
 

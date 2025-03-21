@@ -657,7 +657,7 @@ index 116153b69e56f519fad9a117ecc1402e8d3ef64f..a07930287a6d3612badf2a6db2fd12cc
  align 16
  Reverse_Endian_Mask db 3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12
 diff --git a/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm b/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
-index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326a07c40d8 100644
+index 1c67037ba8a20bdb30f6521a841e7b72c6394282..f9e95746d3ab6b7e556a6a427ba1fabf917106e5 100644
 --- a/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
 +++ b/third_party/lzma_sdk/Asm/x86/XzCrc64Opt.asm
 @@ -1,113 +1,231 @@
@@ -694,10 +694,9 @@ index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326
  rN      equ  r10
 -rT      equ  r5
 -num_VAR equ  r8
--
--SRCDAT4 equ  dword ptr [rD + rN * 1]
 +rT      equ  r9
-+
+ 
+-SRCDAT4 equ  dword ptr [rD + rN * 1]
 +CRC_OP macro op:req, dest:req, src:req, t:req
 +        op      dest, QWORD PTR [rT + @CatStr(src, _R) * 8 + 0800h * (t)]
 +endm
@@ -776,6 +775,22 @@ index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326
 +        shr     r0, 8
 +        CRC_XOR r0, x6, 0
 +        dec     rN
++endm
++
++
++; ALIGN_MASK is 3 or 7 bytes alignment:
++ALIGN_MASK      equ  (7 - (NUM_WORDS and 1) * 4)
++
++if NUM_WORDS eq 1
++
++src_rN_offset   equ  4
++; + 4 for prefetching next 4-bytes after current iteration
++NUM_BYTES_LIMIT equ  (NUM_WORDS * 4 + 4)
++SRCDAT4         equ  DWORD PTR [rN + rD * 1]
++
++XOR_NEXT macro
++        mov     x1, [rD]
++        xor     r0, r1
  endm
  
 -MY_PROC XzCrc64UpdateT4, 4
@@ -799,22 +814,6 @@ index 1c67037ba8a20bdb30f6521a841e7b72c6394282..de023f9f490bafbf8637e4fc116b8326
 -    jnz     main_loop_4
 -
 -    MY_EPILOG crc_end_4
-+
-+; ALIGN_MASK is 3 or 7 bytes alignment:
-+ALIGN_MASK      equ  (7 - (NUM_WORDS and 1) * 4)
-+
-+if NUM_WORDS eq 1
-+
-+src_rN_offset   equ  4
-+; + 4 for prefetching next 4-bytes after current iteration
-+NUM_BYTES_LIMIT equ  (NUM_WORDS * 4 + 4)
-+SRCDAT4         equ  DWORD PTR [rN + rD * 1]
-+
-+XOR_NEXT macro
-+        mov     x1, [rD]
-+        xor     r0, r1
-+endm
-+
 +else ; NUM_WORDS > 1
 +
 +src_rN_offset   equ 8
@@ -3847,7 +3846,7 @@ index 69fad9ca2b476ed8589f6bee8a08de37be47297e..9408017ed4fc1cda88c7e5e4ce6b7a61
 +#undef Z7_CRC_NUM_TABLES_USE
  #endif
 diff --git a/third_party/lzma_sdk/C/7zDec.c b/third_party/lzma_sdk/C/7zDec.c
-index fbfd016e1e6a11bd976f39fe90de619166910e0e..520cbfd833be22e29a248eb05aca7e81d55d2ac4 100644
+index fbfd016e1e6a11bd976f39fe90de619166910e0e..341fbce3c3cf923305a47120ef41f752fbf0e5c7 100644
 --- a/third_party/lzma_sdk/C/7zDec.c
 +++ b/third_party/lzma_sdk/C/7zDec.c
 @@ -1,11 +1,11 @@
@@ -5932,7 +5931,7 @@ index 3be2041eb75502c36faf8064e0edd6679d7abdbb..01bf6b7dd6b1c7fabbd8c2797738b6f5
  #endif
  
 diff --git a/third_party/lzma_sdk/C/Bcj2.c b/third_party/lzma_sdk/C/Bcj2.c
-index c7b956708f6e82641623bcaa9e9abcecf1635750..7cb57ad62dcf0aef9f5cb77078897d17400266be 100644
+index c7b956708f6e82641623bcaa9e9abcecf1635750..4ec5ea924598db2167887abd3483cd9c1f002882 100644
 --- a/third_party/lzma_sdk/C/Bcj2.c
 +++ b/third_party/lzma_sdk/C/Bcj2.c
 @@ -1,29 +1,24 @@
@@ -6367,7 +6366,7 @@ index c7b956708f6e82641623bcaa9e9abcecf1635750..7cb57ad62dcf0aef9f5cb77078897d17
 +#undef kBitModelTotal
 +#undef kNumMoveBits
 diff --git a/third_party/lzma_sdk/C/Bcj2.h b/third_party/lzma_sdk/C/Bcj2.h
-index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a39685aa10 100644
+index 8824080acfbcf767ee4aa127fd56354723f20bb6..4e9ec45e30b7665905a70dd28102c4fc6015c2db 100644
 --- a/third_party/lzma_sdk/C/Bcj2.h
 +++ b/third_party/lzma_sdk/C/Bcj2.h
 @@ -1,8 +1,8 @@
@@ -6504,13 +6503,13 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
 +   following condition is met for stream sizes:
 +     ( size(ORIG) == size(MAIN) + size(CALL) + size(JUMP) )
 +*/
- 
++
 +/* (state == BCJ2_STREAM_MAIN) means that decoder is ready for
 +      additional input data in BCJ2_STREAM_MAIN stream.
 +   Note that (state == BCJ2_STREAM_MAIN) is allowed for non-finished decoding.
 +*/
 +#define Bcj2Dec_IsMaybeFinished_state_MAIN(_p_) ((_p_)->state == BCJ2_STREAM_MAIN)
- 
++
 +/* if the stream decoding was finished correctly, then range decoder
 +   part of CBcj2Dec also was finished, and then (CBcj2Dec::code == 0).
 +   Note that (CBcj2Dec::code == 0) is allowed for non-finished decoding.
@@ -6526,8 +6525,8 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
 +        Bcj2Dec_IsMaybeFinished_state_MAIN(_p_) && \
 +        Bcj2Dec_IsMaybeFinished_code(_p_))
 +
-+
-+
+ 
+ 
 +/* ---------- BCJ2 Encoder ---------- */
  
  typedef enum
@@ -6637,11 +6636,10 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
    UInt32 range;
    UInt64 low;
    UInt64 cacheSize;
-+
-+  // UInt32 context;  // for marker version, it can include marker flag.
  
 -  UInt32 ip;
--
++  // UInt32 context;  // for marker version, it can include marker flag.
+ 
 -  /* 32-bit ralative offset in JUMP/CALL commands is
 -       - (mod 4 GB)   in 32-bit mode
 -       - signed Int32 in 64-bit mode
@@ -6687,9 +6685,7 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
 +  p->State == BCJ2_ENC_STATE_FINISHED : after fully encoded stream
 +*/
 +void Bcj2Enc_Encode(CBcj2Enc *p);
- 
--#define BCJ2_RELAT_LIMIT_NUM_BITS 26
--#define BCJ2_RELAT_LIMIT ((UInt32)1 << BCJ2_RELAT_LIMIT_NUM_BITS)
++
 +/* Bcj2Enc encoder can look ahead for up 4 bytes of source stream.
 +   CBcj2Enc::tempPos : is the number of bytes that were copied from input stream to temp[] buffer.
 +   (CBcj2Enc::src) after Bcj2Enc_Encode() is starting position after
@@ -6704,10 +6700,12 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
 +/* get the size of input data that was stored in temp[] buffer: */
 +#define Bcj2Enc_Get_AvailInputSize_in_Temp(p) ((p)->tempPos)
  
+-#define BCJ2_RELAT_LIMIT_NUM_BITS 26
+-#define BCJ2_RELAT_LIMIT ((UInt32)1 << BCJ2_RELAT_LIMIT_NUM_BITS)
++#define Bcj2Enc_IsFinished(p) ((p)->flushRem == 0)
+ 
 -/* limit for CBcj2Enc::fileSize variable */
 -#define BCJ2_FileSize_MAX ((UInt32)1 << 31)
-+#define Bcj2Enc_IsFinished(p) ((p)->flushRem == 0)
-+
 +/* Note : the decoder supports overlapping of marker (0f 80).
 +   But we can eliminate such overlapping cases by setting
 +   the limit for relative offset conversion as
@@ -6721,7 +6719,7 @@ index 8824080acfbcf767ee4aa127fd56354723f20bb6..4575545b62c06dd4a26646104e26a5a3
  EXTERN_C_END
  
 diff --git a/third_party/lzma_sdk/C/Bra.c b/third_party/lzma_sdk/C/Bra.c
-index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5ded259280f 100644
+index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..49156bafce30b351d386c53af0723282b33dba5a 100644
 --- a/third_party/lzma_sdk/C/Bra.c
 +++ b/third_party/lzma_sdk/C/Bra.c
 @@ -1,230 +1,709 @@
@@ -6819,7 +6817,8 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +  lim = p + size;
 +  BR_PC_INIT
 +  pc -= 4;  // because (p) will point to next instruction
-+
+ 
+-  if (encoding)
 +  BR_EXTERNAL_FOR
 +  {
 +    // Z7_PRAGMA_OPT_DISABLE_LOOP_UNROLL_VECTORIZE
@@ -6858,9 +6857,8 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +  }
 +}
 +Z7_BRANCH_FUNCS_IMP(BranchConv_ARM64)
- 
--  if (encoding)
- 
++
++
 +Z7_BRANCH_FUNC_MAIN(BranchConv_ARM)
 +{
 +  // Byte *p = data;
@@ -6871,7 +6869,7 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +  /* in ARM: branch offset is relative to the +2 instructions from current instruction.
 +     (p) will point to next instruction */
 +  pc += 8 - 4;
-+
+ 
    for (;;)
    {
      for (;;)
@@ -6902,7 +6900,7 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
    }
 +}
 +Z7_BRANCH_FUNCS_IMP(BranchConv_ARM)
- 
++
 +
 +Z7_BRANCH_FUNC_MAIN(BranchConv_PPC)
 +{
@@ -6912,7 +6910,7 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +  lim = p + size;
 +  BR_PC_INIT
 +  pc -= 4;  // because (p) will point to next instruction
-+
+ 
    for (;;)
    {
 +    UInt32 v;
@@ -6953,13 +6951,13 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
    }
  }
 +Z7_BRANCH_FUNCS_IMP(BranchConv_PPC)
-+
  
+ 
+-SizeT ARMT_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
 +#ifdef Z7_CPU_FAST_ROTATE_SUPPORTED
 +#define BR_SPARC_USE_ROTATE
 +#endif
- 
--SizeT ARMT_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
++
 +Z7_BRANCH_FUNC_MAIN(BranchConv_SPARC)
  {
 -  Byte *p;
@@ -7104,12 +7102,12 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
      {
 +      /* we can adjust pc for (0xf800) to rid of (& 0x7FF) operation.
 +         But gcc/clang for arm64 can use bfi instruction for full code here */
-       UInt32 v =
--             ((UInt32)b1 << 19)
++      UInt32 v =
 +          ((UInt32)GetUi16a(p - 2) << 11) |
 +          ((UInt32)GetUi16a(p) & 0x7FF);
 +      /*
-+      UInt32 v =
+       UInt32 v =
+-             ((UInt32)b1 << 19)
 +            ((UInt32)p[1 - 2] << 19)
            + (((UInt32)p[1] & 0x7) << 8)
            + (((UInt32)p[-2] << 11))
@@ -7149,11 +7147,11 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +  // return (Byte *)(lim + 2 - (((((unsigned)lim[1] ^ 8) + 8) >> 7) & 2));
  }
 +Z7_BRANCH_FUNCS_IMP(BranchConv_ARMT)
++
  
++// #define BR_IA64_NO_INLINE
  
 -SizeT PPC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
-+// #define BR_IA64_NO_INLINE
-+
 +Z7_BRANCH_FUNC_MAIN(BranchConv_IA64)
  {
 -  Byte *p;
@@ -7163,13 +7161,12 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 -  ip -= 4;
 -  p = data;
 -  lim = data + size;
--
 +  size &= ~(SizeT)15;
 +  lim = p + size;
 +  pc -= 1 << 4;
 +  pc >>= 4 - 1;
 +  // pc -= 1 << 1;
-+
+ 
    for (;;)
    {
 +    unsigned m;
@@ -7255,12 +7252,11 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +
 +#define BR_CONVERT_VAL_ENC(v)  v += BR_PC_GET;
 +#define BR_CONVERT_VAL_DEC(v)  v -= BR_PC_GET;
- 
++
 +#if 1 && defined(MY_CPU_LE_UNALIGN)
 +  #define RISCV_USE_UNALIGNED_LOAD
 +#endif
  
--SizeT SPARC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
 +#ifdef RISCV_USE_UNALIGNED_LOAD
 +  #define RISCV_GET_UI32(p)      GetUi32(p)
 +  #define RISCV_SET_UI32(p, v)   { SetUi32(p, v) }
@@ -7272,7 +7268,8 @@ index 3b854d9cad7fba3cd7986cde50d17b23f5d7d24f..e61edf8f12e1a7710d1e108923bdc5de
 +    SetUi16a(p, (UInt16)(v)) \
 +    SetUi16a((p) + 2, (UInt16)(v >> 16)) }
 +#endif
-+
+ 
+-SizeT SPARC_Convert(Byte *data, SizeT size, UInt32 ip, int encoding)
 +#if 1 && defined(MY_CPU_LE)
 +  #define RISCV_USE_16BIT_LOAD
 +#endif
@@ -7728,7 +7725,7 @@ index 855e37a6b5018e07b5e049b014401069d2158747..b47112cedc3dbe14079af262dd17aa59
  
  #endif
 diff --git a/third_party/lzma_sdk/C/Bra86.c b/third_party/lzma_sdk/C/Bra86.c
-index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c5677b03aae 100644
+index 10a0fbd161cb78f8778c4fee5df1461310df337e..6bb1e49329d38d05d2dc8ee4efa5b2bbc07a1e2a 100644
 --- a/third_party/lzma_sdk/C/Bra86.c
 +++ b/third_party/lzma_sdk/C/Bra86.c
 @@ -1,82 +1,187 @@
@@ -7847,8 +7844,7 @@ index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c56
 +      if (BR86_IS_BCJ_BYTE(3))  { goto a3; }
      }
 +    goto main_loop;
- 
--    if (Test86MSByte(p[4]))
++
 +  m0: p--;
 +  m1: p--;
 +  m2: p--;
@@ -7856,7 +7852,8 @@ index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c56
 +      goto a3;
 +    if (p > lim)
 +      goto fin_p;
-+
+ 
+-    if (Test86MSByte(p[4]))
 +    // if (((0x17u >> mask) & 1) == 0)
 +    if (mask > 4 || mask == 3)
 +    {
@@ -7910,16 +7907,13 @@ index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c56
 +      SetUi32(p, v)
 +      p += 4;
 +      goto main_loop;
-     }
--    else
++    }
 +
 +  main_loop:
 +    if (p >= lim)
 +      goto fin;
 +    for (;;)
-     {
--      mask = (mask >> 1) | 4;
--      pos++;
++    {
 +      BR86_PREPARE_BCJ_SCAN
 +      p += 4;
 +      if (BR86_IS_BCJ_BYTE(0))  { goto a0; }
@@ -7928,7 +7922,8 @@ index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c56
 +      if (BR86_IS_BCJ_BYTE(3))  { goto a3; }
 +      if (p >= lim)
 +        goto fin;
-+    }
+     }
+-    else
 +
 +  a0: p--;
 +  a1: p--;
@@ -7937,7 +7932,9 @@ index 10a0fbd161cb78f8778c4fee5df1461310df337e..d81f392ae040469faf1a3514d1f88c56
 +    if (p > lim)
 +      goto fin_p;
 +    // if (!BR86_NEED_CONV_FOR_MS_BYTE(p[3])) continue; // goto cont;
-+    {
+     {
+-      mask = (mask >> 1) | 4;
+-      pos++;
 +      UInt32 v = GetUi32(p);
 +      UInt32 c;
 +      v += (1 << 24);  if (v & 0xfe000000) continue; // goto cont;
@@ -8045,7 +8042,7 @@ index d1dbc62c55bebd5ff5d4d53b51f28aabecab6179..9dfe3e289589d6288227ee819835941b
 +#pragma GCC diagnostic ignored "-Wempty-translation-unit"
 +#endif
 diff --git a/third_party/lzma_sdk/C/Compiler.h b/third_party/lzma_sdk/C/Compiler.h
-index a9816fa5ad014863211aa19723f8a87b312e4bfa..2a9c2b7a0896c847d65b9aae4b5c1f2cbf29297b 100644
+index a9816fa5ad014863211aa19723f8a87b312e4bfa..e83e37d11981bd9f54e63a32c546497a914a1906 100644
 --- a/third_party/lzma_sdk/C/Compiler.h
 +++ b/third_party/lzma_sdk/C/Compiler.h
 @@ -1,12 +1,105 @@
@@ -8302,7 +8299,7 @@ index a9816fa5ad014863211aa19723f8a87b312e4bfa..2a9c2b7a0896c847d65b9aae4b5c1f2c
  
  #define UNUSED_VAR(x) (void)x;
 diff --git a/third_party/lzma_sdk/C/CpuArch.c b/third_party/lzma_sdk/C/CpuArch.c
-index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f9ce6fc95 100644
+index 30451fba9b97b34669186865dcf72d8792334423..8ba93446e854ddfca2b252c241aca1e91673acd6 100644
 --- a/third_party/lzma_sdk/C/CpuArch.c
 +++ b/third_party/lzma_sdk/C/CpuArch.c
 @@ -1,187 +1,357 @@
@@ -8518,8 +8515,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +// for gcc/clang and other: we can try to use __cpuid macro:
 +#include <cpuid.h>
 +void Z7_FASTCALL z7_x86_cpuid(UInt32 p[4], UInt32 func)
- {
--  #ifdef USE_ASM
++{
 +  __cpuid(func, p[0], p[1], p[2], p[3]);
 +}
 +UInt32 Z7_FASTCALL z7_x86_cpuid_GetMaxFunc(void)
@@ -8534,7 +8530,8 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +  p[0] = p[1] = p[2] = p[3] = 0;
 +}
 +UInt32 Z7_FASTCALL z7_x86_cpuid_GetMaxFunc(void)
-+{
+ {
+-  #ifdef USE_ASM
 +  return 0;
 +}
  
@@ -8686,7 +8683,8 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 + where ECX value is first parameter for FASTCALL / NO_INLINE func.
 + So the caller of MY_cpuidex_HACK() sets ECX as subFunction, and
 + old MSVC for __cpuid() doesn't change ECX and cpuid instruction gets (subFunction) value.
-+
+ 
+-  #endif
 +DON'T remove Z7_NO_INLINE and Z7_FASTCALL for MY_cpuidex_HACK(): !!!
 +*/
 +static
@@ -8694,7 +8692,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +{
 +  UNUSED_VAR(subFunction)
 +  __cpuid(CPUInfo, func);
-+}
+ }
 +      #define MY_cpuidex(info, func, func2)  MY_cpuidex_HACK(func2, func, info)
 +      #pragma message("======== MY_cpuidex_HACK WAS USED ========")
 +static
@@ -8703,8 +8701,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +  MY_cpuidex_HACK(subFunc, func, (Int32 *)p);
 +}
 +    #endif // _MSC_VER >= 1600
- 
--  #endif
++
 +#if !defined(MY_CPU_AMD64)
 +/* inlining for __cpuid() in MSVC x86 (32-bit) produces big ineffective code,
 +   so we disable inlining here */
@@ -8713,9 +8710,8 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +void Z7_FASTCALL z7_x86_cpuid(UInt32 p[4], UInt32 func)
 +{
 +  MY_cpuidex((Int32 *)p, (Int32)func, 0);
- }
- 
--BoolInt x86cpuid_CheckAndRead(Cx86cpuid *p)
++}
++
 +Z7_NO_INLINE
 +UInt32 Z7_FASTCALL z7_x86_cpuid_GetMaxFunc(void)
 +{
@@ -8734,7 +8730,8 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +#endif
 +#undef NEED_CHECK_FOR_CPUID
 +
-+
+ 
+-BoolInt x86cpuid_CheckAndRead(Cx86cpuid *p)
 +static
 +BoolInt x86cpuid_Func_1(UInt32 *p)
  {
@@ -8895,27 +8892,29 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
    CHECK_SYS_SSE_SUPPORT
 -  if (!x86cpuid_CheckAndRead(&p))
 +  if (!x86cpuid_Func_1(&a[0]))
-+    return 0;
-+  return (BoolInt)(a[3] >> 25) & 1;
-+}
-+
-+BoolInt CPU_IsSupported_SSE2(void)
-+{
-+  UInt32 a[4];
-+  CHECK_SYS_SSE_SUPPORT
-+  if (!x86cpuid_Func_1(&a[0]))
      return 0;
 -  return p.c;
-+  return (BoolInt)(a[3] >> 26) & 1;
++  return (BoolInt)(a[3] >> 25) & 1;
  }
  
 -BoolInt CPU_IsSupported_AES()
++BoolInt CPU_IsSupported_SSE2(void)
+ {
+-  return (X86_CPUID_ECX_Get_Flags() >> 25) & 1;
++  UInt32 a[4];
++  CHECK_SYS_SSE_SUPPORT
++  if (!x86cpuid_Func_1(&a[0]))
++    return 0;
++  return (BoolInt)(a[3] >> 26) & 1;
+ }
+ 
+-BoolInt CPU_IsSupported_SSSE3()
 +#endif
 +
 +
 +static UInt32 x86cpuid_Func_1_ECX(void)
  {
--  return (X86_CPUID_ECX_Get_Flags() >> 25) & 1;
+-  return (X86_CPUID_ECX_Get_Flags() >> 9) & 1;
 +  UInt32 a[4];
 +  CHECK_SYS_SSE_SUPPORT
 +  if (!x86cpuid_Func_1(&a[0]))
@@ -8923,21 +8922,19 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +  return a[2];
  }
  
--BoolInt CPU_IsSupported_SSSE3()
+-BoolInt CPU_IsSupported_SSE41()
 +BoolInt CPU_IsSupported_AES(void)
  {
--  return (X86_CPUID_ECX_Get_Flags() >> 9) & 1;
+-  return (X86_CPUID_ECX_Get_Flags() >> 19) & 1;
 +  return (BoolInt)(x86cpuid_Func_1_ECX() >> 25) & 1;
  }
  
--BoolInt CPU_IsSupported_SSE41()
-+BoolInt CPU_IsSupported_SSSE3(void)
- {
--  return (X86_CPUID_ECX_Get_Flags() >> 19) & 1;
-+  return (BoolInt)(x86cpuid_Func_1_ECX() >> 9) & 1;
- }
- 
 -BoolInt CPU_IsSupported_SHA()
++BoolInt CPU_IsSupported_SSSE3(void)
++{
++  return (BoolInt)(x86cpuid_Func_1_ECX() >> 9) & 1;
++}
++
 +BoolInt CPU_IsSupported_SSE41(void)
 +{
 +  return (BoolInt)(x86cpuid_Func_1_ECX() >> 19) & 1;
@@ -8957,9 +8954,9 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +    return (BoolInt)(d[1] >> 29) & 1;
 +  }
 +}
-+
  
 -  if (p.maxFunc < 7)
++
 +BoolInt CPU_IsSupported_SHA512(void)
 +{
 +  if (!CPU_IsSupported_AVX2()) return False; // maybe CPU_IsSupported_AVX() is enough here
@@ -9018,15 +9015,15 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +// #define ATTRIB_XGETBV __attribute__((__target__("xsave")))
 +#else
 +#define ATTRIB_XGETBV
- #endif
 +#endif
-+
+ #endif
+ 
+-BoolInt CPU_IsSupported_AVX2()
 +#if defined(ATTRIB_XGETBV)
 +#include <immintrin.h>
 +#endif
 +
- 
--BoolInt CPU_IsSupported_AVX2()
++
 +// XFEATURE_ENABLED_MASK/XCR0
 +#define MY_XCR_XFEATURE_ENABLED_MASK 0
 +
@@ -9105,7 +9102,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +
 +#endif
 +}
- 
++
 +#ifdef _WIN32
 +/*
 +  Windows versions do not know about new ISA extensions that
@@ -9126,7 +9123,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +// #define MY_PF_AVX2_INSTRUCTIONS_AVAILABLE              40
 +// #define MY_PF_AVX512F_INSTRUCTIONS_AVAILABLE           41
 +#endif
-+
+ 
 +BoolInt CPU_IsSupported_AVX(void)
 +{
    #ifdef _WIN32
@@ -9309,7 +9306,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
  
  #else
  
-@@ -378,29 +809,40 @@ static void Print_sysctlbyname(const char *name)
+@@ -378,30 +809,41 @@ static void Print_sysctlbyname(const char *name)
    }
  }
  */
@@ -9343,8 +9340,8 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
  {
 -  return My_sysctlbyname_Get_BoolInt("hw.optional.neon");
 +  return z7_sysctlbyname_Get_BoolInt("hw.optional.neon");
-+}
-+
+ }
+ 
 +BoolInt CPU_IsSupported_SHA512(void)
 +{
 +  return z7_sysctlbyname_Get_BoolInt("hw.optional.armv8_2_sha512");
@@ -9354,11 +9351,12 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
 +BoolInt CPU_IsSupported_SHA3(void)
 +{
 +  return z7_sysctlbyname_Get_BoolInt("hw.optional.armv8_2_sha3");
- }
++}
 +*/
- 
++
  #ifdef MY_CPU_ARM64
  #define APPLE_CRYPTO_SUPPORT_VAL 1
+ #else
 @@ -415,35 +857,70 @@ BoolInt CPU_IsSupported_AES (void) { return APPLE_CRYPTO_SUPPORT_VAL; }
  
  #else // __APPLE__
@@ -9476,7 +9474,7 @@ index 30451fba9b97b34669186865dcf72d8792334423..6e02551e2dca2d98db76fa4a31f23a1f
      return EFAULT;
    return res;
 diff --git a/third_party/lzma_sdk/C/CpuArch.h b/third_party/lzma_sdk/C/CpuArch.h
-index 8cd55bea48dc6ffa4d7b8be52e7baf3fd47e7ad9..2843b4562c2bd9b06aabfc5c13300d14639bedc9 100644
+index 8cd55bea48dc6ffa4d7b8be52e7baf3fd47e7ad9..483a4d797f9014309cd2baca1549e8d7d450443e 100644
 --- a/third_party/lzma_sdk/C/CpuArch.h
 +++ b/third_party/lzma_sdk/C/CpuArch.h
 @@ -1,8 +1,8 @@
@@ -10242,7 +10240,7 @@ index 64ff26cd93aa741a39a2c11300e85e2a02eac19a..9fa41538265ac26c09123747b7806dab
  #include "7zTypes.h"
  
 diff --git a/third_party/lzma_sdk/C/LzFind.c b/third_party/lzma_sdk/C/LzFind.c
-index 36f7330911435779e4d213f340c33c93c9df20cb..5941582e7977685a981afa0a0b2589479d2a9f7b 100644
+index 36f7330911435779e4d213f340c33c93c9df20cb..8c30c2039c149f77211626443ef7eb7787959058 100644
 --- a/third_party/lzma_sdk/C/LzFind.c
 +++ b/third_party/lzma_sdk/C/LzFind.c
 @@ -1,5 +1,5 @@
@@ -11498,7 +11496,7 @@ index 36f7330911435779e4d213f340c33c93c9df20cb..5941582e7977685a981afa0a0b258947
 +#undef MOVE_POS_RET
 +#undef PRF
 diff --git a/third_party/lzma_sdk/C/LzFind.h b/third_party/lzma_sdk/C/LzFind.h
-index eea873ff61ede1bee4c75f85e451c51333d76d56..67e8a6e0286ee0877043601039c5fbdae8588148 100644
+index eea873ff61ede1bee4c75f85e451c51333d76d56..7e1be1d68479f597f410974da499b477858b5ca5 100644
 --- a/third_party/lzma_sdk/C/LzFind.h
 +++ b/third_party/lzma_sdk/C/LzFind.h
 @@ -1,8 +1,8 @@
@@ -11636,7 +11634,7 @@ index 77b898cfab57c7df241b767b21390e26cc23ec57..2b6290b64c08f7eb44568a67e90abcf4
  /*
    (kHash2Size >= (1 <<  8)) : Required
 diff --git a/third_party/lzma_sdk/C/Lzma2Dec.c b/third_party/lzma_sdk/C/Lzma2Dec.c
-index ac970a843d9fabcd6337577648524b0b8e990791..8bf54e499edf73a88df3a89ac04377201e5127f3 100644
+index ac970a843d9fabcd6337577648524b0b8e990791..31581afd5941461967696d27d5b737f4cb80a56d 100644
 --- a/third_party/lzma_sdk/C/Lzma2Dec.c
 +++ b/third_party/lzma_sdk/C/Lzma2Dec.c
 @@ -1,5 +1,5 @@
@@ -14393,7 +14391,7 @@ index aa38501e57948196761aec76c9475fcbe67fc677..75329cdf02267d32eb0a20358608fc08
  /*
  call Sha256Prepare() once at program start.
 diff --git a/third_party/lzma_sdk/C/Sha256Opt.c b/third_party/lzma_sdk/C/Sha256Opt.c
-index decc1382cd6ee9c7cb6e6ac27e3ee6e2cdb46b88..1c6b50f8d336e63be89462f15d48c7ed3ca625e9 100644
+index decc1382cd6ee9c7cb6e6ac27e3ee6e2cdb46b88..42dfac837dc6de8e09bf1725f9824ac89c8e845c 100644
 --- a/third_party/lzma_sdk/C/Sha256Opt.c
 +++ b/third_party/lzma_sdk/C/Sha256Opt.c
 @@ -1,71 +1,53 @@
@@ -14622,11 +14620,10 @@ index decc1382cd6ee9c7cb6e6ac27e3ee6e2cdb46b88..1c6b50f8d336e63be89462f15d48c7ed
  #endif // USE_HW_SHA
  
 -#elif defined(MY_CPU_ARM_OR_ARM64)
--
++#elif defined(MY_CPU_ARM_OR_ARM64) && defined(MY_CPU_LE)
+ 
 -  #if defined(__clang__)
 -    #if (__clang_major__ >= 8) // fix that check
-+#elif defined(MY_CPU_ARM_OR_ARM64) && defined(MY_CPU_LE)
-+
 +  #if   defined(__ARM_FEATURE_SHA2) \
 +     || defined(__ARM_FEATURE_CRYPTO)
 +    #define USE_HW_SHA
@@ -15940,7 +15937,7 @@ index 93a9ffff5f8113b885ef2963725e620d6eede939..0c1fc2ffecb89ebe834823eeda226a9a
 +#undef Z7_CRC64_NUM_TABLES_USE
  #endif
 diff --git a/third_party/lzma_sdk/C/XzDec.c b/third_party/lzma_sdk/C/XzDec.c
-index 3f96a37f94fc751ed98c31e5d2e731b6526d1957..3d1c98e63194f088ce7907d61f376b5416be341b 100644
+index 3f96a37f94fc751ed98c31e5d2e731b6526d1957..4b6b8c2887249bd18879ff65a94947b28107c710 100644
 --- a/third_party/lzma_sdk/C/XzDec.c
 +++ b/third_party/lzma_sdk/C/XzDec.c
 @@ -1,5 +1,5 @@
@@ -17203,7 +17200,7 @@ index 7458450739601b3a8236e421241bb9ed73f3a014..a07824208330eec265a88310e42c3803
 +4. Remove files irrelevant to Chromium use.
 +5. Remove AVX and SSE41 code in LzFind.
 diff --git a/third_party/lzma_sdk/chromium.patch b/third_party/lzma_sdk/chromium.patch
-index 85b8089a6a0d31113f1570483fe07fb905f5b825..168ca263574d83a27d4afebc8857545254ebe79a 100644
+index 85b8089a6a0d31113f1570483fe07fb905f5b825..c712da067c0a88941e31e3f6de6c06208d1a83ea 100644
 --- a/third_party/lzma_sdk/chromium.patch
 +++ b/third_party/lzma_sdk/chromium.patch
 @@ -1,138 +1,46 @@

@@ -1,7 +1,10 @@
-From 2b4812d502b2bbd2eeace4d383dd1bb3252702ba Mon Sep 17 00:00:00 2001
-From: Olivier Flückiger <olivf@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Olivier=20Fl=C3=BCckiger?= <olivf@chromium.org>
 Date: Thu, 27 Feb 2025 09:19:22 +0100
-Subject: [PATCH] merged: [maglev] Add missing ClearAllocationBlock
+Subject: merged: [maglev] Add missing ClearAllocationBlock
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Fixed: 398065918
 (cherry picked from commit eb9b25970b0ad4a3f8ce23d8de3583c62e5d6b87)
@@ -15,13 +18,12 @@ Commit-Queue: Victor Gomes <victorgomes@chromium.org>
 Cr-Commit-Position: refs/branch-heads/13.4@{#29}
 Cr-Branched-From: 0f87a54dade4353b6ece1d7591ca8c66f90c1c93-refs/heads/13.4.114@{#1}
 Cr-Branched-From: 27af2e9363b2701abc5f3feb701b1dad7d1a9fe8-refs/heads/main@{#98459}
----
 
 diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
-index bf6a86f..1535afc 100644
+index 28032bb9d9202e0649adaf8d8120e76a5ac10f68..f0ea889c4ce81846ac4f44cb0f50cb65749f0fe8 100644
 --- a/src/maglev/maglev-graph-builder.cc
 +++ b/src/maglev/maglev-graph-builder.cc
-@@ -12487,7 +12487,13 @@
+@@ -12171,7 +12171,13 @@ ValueNode* MaglevGraphBuilder::BuildInlinedAllocation(
            CreateHeapNumber(node->Cast<Float64Constant>()->value()),
            allocation_type);
      } else {
