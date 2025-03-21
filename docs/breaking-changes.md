@@ -12,6 +12,13 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (37.0)
+
+### Behavior Changed: `BrowserWindow.IsVisibleOnAllWorkspaces()` on Linux
+
+`BrowserWindow.IsVisibleOnAllWorkspaces()` will now return false on Linux if the
+window is not currently visible.
+
 ## Planned Breaking API Changes (36.0)
 
 ### Utility Process unhandled rejection behavior change
