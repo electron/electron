@@ -156,8 +156,6 @@ void Notification::NotificationFailed(const std::string& error) {
   Emit("failed", error);
 }
 
-void Notification::NotificationDestroyed() {}
-
 void Notification::NotificationClosed() {
   Emit("close");
 }

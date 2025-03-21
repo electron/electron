@@ -49,7 +49,7 @@ class Notification final : public gin::Wrappable<Notification>,
   void NotificationClick() override;
   void NotificationReplied(const std::string& reply) override;
   void NotificationDisplayed() override;
-  void NotificationDestroyed() override;
+  void NotificationDestroyed() override {}
   void NotificationClosed() override;
   void NotificationFailed(const std::string& error) override;
 
