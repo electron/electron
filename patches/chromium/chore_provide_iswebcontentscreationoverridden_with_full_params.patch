@@ -218,7 +218,7 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d96cd5a2fe6e56e612a4b9c89108bff2dca2ff3d..145834856dd4873b95810421b633f11330a7cf96 100644
+index fe98190cee2cd163dc9169214f3bd96c4257386c..e5201ea103376f317acfc60bc214fb08053c38fc 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4951,8 +4951,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -324,7 +324,7 @@ index e39031afd8fff7cb6e278555cc58a48d86407d65..f67f6a5603c1fa9e66ccdde9b601df9a
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 16babdc7affdaef1af24850cf35494b8b4fe1479..1e77b091d94457c892788f7a441a83e7a96a49cc 100644
+index 60de0d74ee40fedcbae96e5049e21dc238bf33bf..c568d4d08f772e1d381820bed826a0b64a631449 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -452,8 +452,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
@@ -380,7 +380,7 @@ index 1012a909ef1fcae51c218ae519fe7e0db65ab087..127b1ae940bc9313aecb635e2b01bb6f
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 62be493c74423875af45a92c98b2ffceb928189f..ec82d8e47bf0a33f832b8ca242f395fe59a1bbee 100644
+index 7ca1e83ba1fd2dc5ea7c7ce644c3b7c54b9999f9..c1639653714d6973bcb5a0b37cb7028db8406742 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -206,8 +206,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {

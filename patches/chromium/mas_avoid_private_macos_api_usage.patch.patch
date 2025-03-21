@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b18dbdca23240e2093b1a8461f720bbb83e5e865..159d48749fc9613a750fd08b9ac9d78e3a065594 100644
+index fa9c332733a66a200548152862e39548e1550134..ba9302f679827ce186fde82c29858e7b0098c8ee 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1035,6 +1035,7 @@ component("base") {
@@ -545,7 +545,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index b712b8af0e770aa3acbeb1167b1a20bc1547c98a..fdb476a7e470c4b32649d4b3b7e4e44559b5b1c1 100644
+index 61ac7ebd32b94f39c3d840b3ee27054b53269386..36707a8c59096c41ea837c7054b29f10a0c34641 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -35,6 +35,7 @@
@@ -579,7 +579,7 @@ index b712b8af0e770aa3acbeb1167b1a20bc1547c98a..fdb476a7e470c4b32649d4b3b7e4e445
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 98bdf4bfbe7f7d0c09547adc4ca10d3ff136c58c..a91a86cd191f9805210f9c068547e456e878888e 100644
+index 940eb0c588b2e2c847a460293a2fb9658fb837d0..5106f93fa6d0a3a53f5dcca25f9cf151a75b3f44 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -339,6 +339,7 @@ source_set("browser") {
@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 7fd6a22545f15aa76742ebd5b594e5ab0ea984de..ee570328006fcec47e86f29cc58474ba518db02c 100644
+index 0a1992bc2927a543c031578a78cb862617a75558..27e5527c68df8dc4bb4ddd3608da9ca0befce245 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -660,6 +660,7 @@ static_library("test_support") {
@@ -819,7 +819,7 @@ index 7fd6a22545f15aa76742ebd5b594e5ab0ea984de..ee570328006fcec47e86f29cc58474ba
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3268,6 +3271,7 @@ test("content_unittests") {
+@@ -3267,6 +3270,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1673,10 +1673,10 @@ index c8171f0527fe5194f0ea73b57c4444d4c630fbc4..c2ac4da580e3e7f749a0a4de1e859af6
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 4b91bad93384b435bed2e8da5e185603fb0a66a3..d68202e3fe92d01b148bf494a3599e2a8d8ced91 100644
+index a89628087cf9e38a95314972a4d2c38e39176005..2e05b5a472f36d3bff8769cde514820a3e622f4b 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -363,6 +363,13 @@ component("base") {
+@@ -365,6 +365,13 @@ component("base") {
      ]
    }
  
@@ -1690,7 +1690,7 @@ index 4b91bad93384b435bed2e8da5e185603fb0a66a3..d68202e3fe92d01b148bf494a3599e2a
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -516,6 +523,12 @@ component("base") {
+@@ -518,6 +525,12 @@ component("base") {
      "//url",
    ]
  
@@ -1898,7 +1898,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 449b1b877255f3b7efab8b8c4754baca0890be69..d09b980048e677fd3290beb99cd312537d13cd0e 100644
+index a92ee0c2b2009687b5f1fd65fd8d7e49b6bb0155..5461a07583d83aee4d294797a8be1ea65eb134bd 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -721,6 +721,8 @@ component("views") {
@@ -1910,7 +1910,7 @@ index 449b1b877255f3b7efab8b8c4754baca0890be69..d09b980048e677fd3290beb99cd31253
    }
  
    if (is_win) {
-@@ -1143,6 +1145,8 @@ source_set("test_support") {
+@@ -1145,6 +1147,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
