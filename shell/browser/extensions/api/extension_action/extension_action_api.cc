@@ -50,8 +50,6 @@ ExtensionPrefs* ExtensionActionAPI::GetExtensionPrefs() {
   return nullptr;
 }
 
-void ExtensionActionAPI::Shutdown() {}
-
 //
 // ExtensionActionFunction
 //

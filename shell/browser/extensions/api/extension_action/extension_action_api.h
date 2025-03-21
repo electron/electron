@@ -73,7 +73,7 @@ class ExtensionActionAPI : public BrowserContextKeyedAPI {
   ExtensionPrefs* GetExtensionPrefs();
 
   // BrowserContextKeyedAPI implementation.
-  void Shutdown() override;
+  void Shutdown() override {}
   static const char* service_name() { return "ExtensionActionAPI"; }
   static const bool kServiceRedirectedInIncognito = true;
 
