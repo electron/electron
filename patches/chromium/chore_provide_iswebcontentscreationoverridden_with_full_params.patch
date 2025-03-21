@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index fe98190cee2cd163dc9169214f3bd96c4257386c..e5201ea103376f317acfc60bc214fb08053c38fc 100644
+index 247cdaf86a1baf478a9c28ba57fbe46346b41d01..563cf7b39d5732e7d48117f49171b744bcf1b7f2 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4951,8 +4951,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4957,8 +4957,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // TODO(crbug.com/40202416): Support a way for MPArch guests to support this.
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
