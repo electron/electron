@@ -193,22 +193,6 @@ const char* const kBuiltinSchemes[] = {
     "about", "file", "http", "https", "data", "filesystem",
 };
 
-// Convert error code to string.
-constexpr std::string_view ErrorCodeToString(ProtocolError error) {
-  switch (error) {
-    case ProtocolError::kRegistered:
-      return "The scheme has been registered";
-    case ProtocolError::kNotRegistered:
-      return "The scheme has not been registered";
-    case ProtocolError::kIntercepted:
-      return "The scheme has been intercepted";
-    case ProtocolError::kNotIntercepted:
-      return "The scheme has not been intercepted";
-    default:
-      return "Unexpected error";
-  }
-}
-
 }  // namespace
 
 Protocol::Protocol(v8::Isolate* isolate, ProtocolRegistry* protocol_registry)
@@ -216,18 +200,34 @@ Protocol::Protocol(v8::Isolate* isolate, ProtocolRegistry* protocol_registry)
 
 Protocol::~Protocol() = default;
 
-ProtocolError Protocol::RegisterProtocol(ProtocolType type,
-                                         const std::string& scheme,
-                                         const ProtocolHandler& handler) {
+// Convert error code to string.
+// static
+std::string_view Protocol::ErrorCodeToString(Error error) {
+  switch (error) {
+    case Error::kRegistered:
+      return "The scheme has been registered";
+    case Error::kNotRegistered:
+      return "The scheme has not been registered";
+    case Error::kIntercepted:
+      return "The scheme has been intercepted";
+    case Error::kNotIntercepted:
+      return "The scheme has not been intercepted";
+    default:
+      return "Unexpected error";
+  }
+}
+
+Protocol::Error Protocol::RegisterProtocol(ProtocolType type,
+                                           const std::string& scheme,
+                                           const ProtocolHandler& handler) {
   bool added = protocol_registry_->RegisterProtocol(type, scheme, handler);
-  return added ? ProtocolError::kOK : ProtocolError::kRegistered;
+  return added ? Error::kOK : Error::kRegistered;
 }
 
 bool Protocol::UnregisterProtocol(const std::string& scheme,
                                   gin::Arguments* args) {
   bool removed = protocol_registry_->UnregisterProtocol(scheme);
-  HandleOptionalCallback(
-      args, removed ? ProtocolError::kOK : ProtocolError::kNotRegistered);
+  HandleOptionalCallback(args, removed ? Error::kOK : Error::kNotRegistered);
   return removed;
 }
 
@@ -235,18 +235,17 @@ bool Protocol::IsProtocolRegistered(const std::string& scheme) {
   return protocol_registry_->FindRegistered(scheme) != nullptr;
 }
 
-ProtocolError Protocol::InterceptProtocol(ProtocolType type,
-                                          const std::string& scheme,
-                                          const ProtocolHandler& handler) {
+Protocol::Error Protocol::InterceptProtocol(ProtocolType type,
+                                            const std::string& scheme,
+                                            const ProtocolHandler& handler) {
   bool added = protocol_registry_->InterceptProtocol(type, scheme, handler);
-  return added ? ProtocolError::kOK : ProtocolError::kIntercepted;
+  return added ? Error::kOK : Error::kIntercepted;
 }
 
 bool Protocol::UninterceptProtocol(const std::string& scheme,
                                    gin::Arguments* args) {
   bool removed = protocol_registry_->UninterceptProtocol(scheme);
-  HandleOptionalCallback(
-      args, removed ? ProtocolError::kOK : ProtocolError::kNotIntercepted);
+  HandleOptionalCallback(args, removed ? Error::kOK : Error::kNotIntercepted);
   return removed;
 }
 
@@ -274,15 +273,14 @@ v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme,
           base::Contains(kBuiltinSchemes, scheme));
 }
 
-void Protocol::HandleOptionalCallback(gin::Arguments* args,
-                                      ProtocolError error) {
+void Protocol::HandleOptionalCallback(gin::Arguments* args, Error error) {
   base::RepeatingCallback<void(v8::Local<v8::Value>)> callback;
   if (args->GetNext(&callback)) {
     util::EmitWarning(
         args->isolate(),
         "The callback argument of protocol module APIs is no longer needed.",
         "ProtocolDeprecateCallback");
-    if (error == ProtocolError::kOK)
+    if (error == Error::kOK)
       callback.Run(v8::Null(args->isolate()));
     else
       callback.Run(v8::Exception::Error(

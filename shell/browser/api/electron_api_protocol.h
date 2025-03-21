@@ -34,15 +34,6 @@ void AddServiceWorkerScheme(const std::string& scheme);
 void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                                  v8::Local<v8::Value> val);
 
-// Possible errors.
-enum class ProtocolError {
-  kOK,  // no error
-  kRegistered,
-  kNotRegistered,
-  kIntercepted,
-  kNotIntercepted,
-};
-
 // Protocol implementation based on network services.
 class Protocol final : public gin::Wrappable<Protocol>,
                        public gin_helper::Constructible<Protocol> {
@@ -62,23 +53,34 @@ class Protocol final : public gin::Wrappable<Protocol>,
   const char* GetTypeName() override;
 
  private:
-  Protocol(v8::Isolate* isolate, ProtocolRegistry* protocol_registry);
-  ~Protocol() override;
+  // Possible errors.
+  enum class Error {
+    kOK,  // no error
+    kRegistered,
+    kNotRegistered,
+    kIntercepted,
+    kNotIntercepted,
+  };
 
   // Callback types.
   using CompletionCallback =
       base::RepeatingCallback<void(v8::Local<v8::Value>)>;
 
+  Protocol(v8::Isolate* isolate, ProtocolRegistry* protocol_registry);
+  ~Protocol() override;
+
+  [[nodiscard]] static std::string_view ErrorCodeToString(Error error);
+
   // JS APIs.
-  ProtocolError RegisterProtocol(ProtocolType type,
-                                 const std::string& scheme,
-                                 const ProtocolHandler& handler);
+  Error RegisterProtocol(ProtocolType type,
+                         const std::string& scheme,
+                         const ProtocolHandler& handler);
   bool UnregisterProtocol(const std::string& scheme, gin::Arguments* args);
   bool IsProtocolRegistered(const std::string& scheme);
 
-  ProtocolError InterceptProtocol(ProtocolType type,
-                                  const std::string& scheme,
-                                  const ProtocolHandler& handler);
+  Error InterceptProtocol(ProtocolType type,
+                          const std::string& scheme,
+                          const ProtocolHandler& handler);
   bool UninterceptProtocol(const std::string& scheme, gin::Arguments* args);
   bool IsProtocolIntercepted(const std::string& scheme);
 
@@ -91,21 +93,21 @@ class Protocol final : public gin::Wrappable<Protocol>,
   bool RegisterProtocolFor(const std::string& scheme,
                            const ProtocolHandler& handler,
                            gin::Arguments* args) {
-    auto result = RegisterProtocol(type, scheme, handler);
+    const auto result = RegisterProtocol(type, scheme, handler);
     HandleOptionalCallback(args, result);
-    return result == ProtocolError::kOK;
+    return result == Error::kOK;
   }
   template <ProtocolType type>
   bool InterceptProtocolFor(const std::string& scheme,
                             const ProtocolHandler& handler,
                             gin::Arguments* args) {
-    auto result = InterceptProtocol(type, scheme, handler);
+    const auto result = InterceptProtocol(type, scheme, handler);
     HandleOptionalCallback(args, result);
-    return result == ProtocolError::kOK;
+    return result == Error::kOK;
   }
 
   // Be compatible with old interface, which accepts optional callback.
-  void HandleOptionalCallback(gin::Arguments* args, ProtocolError error);
+  void HandleOptionalCallback(gin::Arguments* args, Error error);
 
   // Weak pointer; the lifetime of the ProtocolRegistry is guaranteed to be
   // longer than the lifetime of this JS interface.
