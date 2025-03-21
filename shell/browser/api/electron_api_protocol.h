@@ -22,7 +22,6 @@ class Handle;
 
 namespace electron {
 
-class ElectronBrowserContext;
 class ProtocolRegistry;
 
 namespace api {
@@ -49,7 +48,7 @@ class Protocol final : public gin::Wrappable<Protocol>,
                        public gin_helper::Constructible<Protocol> {
  public:
   static gin::Handle<Protocol> Create(v8::Isolate* isolate,
-                                      ElectronBrowserContext* browser_context);
+                                      ProtocolRegistry* protocol_registry);
 
   // gin_helper::Constructible
   static gin::Handle<Protocol> New(gin_helper::ErrorThrower thrower);

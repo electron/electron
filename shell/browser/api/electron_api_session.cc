@@ -557,7 +557,9 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
   SessionPreferences::CreateForBrowserContext(browser_context);
 
-  protocol_.Reset(isolate, Protocol::Create(isolate, browser_context).ToV8());
+  protocol_.Reset(
+      isolate,
+      Protocol::Create(isolate, browser_context->protocol_registry()).ToV8());
 
   browser_context->SetUserData(
       kElectronApiSessionKey,
