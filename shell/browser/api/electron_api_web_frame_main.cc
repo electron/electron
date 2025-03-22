@@ -5,7 +5,6 @@
 #include "shell/browser/api/electron_api_web_frame_main.h"
 
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -36,6 +35,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
 namespace {
 
@@ -99,7 +99,7 @@ namespace electron::api {
 // Using FrameTreeNode allows us to track frame across navigations. This
 // is most similar to how <iframe> works.
 using FrameTreeNodeIdMap =
-    std::unordered_map<content::FrameTreeNodeId, WebFrameMain*>;
+    absl::flat_hash_map<content::FrameTreeNodeId, WebFrameMain*>;
 
 // Token -> WebFrameMain*
 // Maps exact RFH to a WebFrameMain instance.
