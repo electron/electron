@@ -583,8 +583,8 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
     * `vertical` number (optional) - The vertical dpi.
   * `header` string (optional) - string to be printed as page header.
   * `footer` string (optional) - string to be printed as page footer.
-  * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A3`,
-  `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` in microns.
+  * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A0`, `A1`, `A2`, `A3`,
+  `A4`, `A5`, `A6`, `B0`, `B1`, `B2`, `B3`, `B4`, `B5`, `B6`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` in microns.
 
 Returns `Promise<void>`
 
@@ -598,7 +598,8 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
   * `printBackground` boolean (optional) - Whether to print background graphics. Defaults to false.
   * `scale` number(optional)  - Scale of the webpage rendering. Defaults to 1.
   * `pageSize` string | Size (optional) - Specify page size of the generated PDF. Can be `A0`, `A1`, `A2`, `A3`,
-  `A4`, `A5`, `A6`, `Legal`, `Letter`, `Tabloid`, `Ledger`, or an Object containing `height` and `width` in inches. Defaults to `Letter`.
+  `A4`, `A5`, `A6`, `B0`, `B1`, `B2`, `B3`, `B4`, `B5`, `B6`, `Legal`, `Letter`, `Tabloid`, `Ledger`, or an Object containing `height` and `width` in inches. Defaults to `Letter`.
+
   * `margins` Object (optional)
     * `top` number (optional) - Top margin in inches. Defaults to 1cm (~0.4 inches).
     * `bottom` number (optional) - Bottom margin in inches. Defaults to 1cm (~0.4 inches).
