@@ -17,7 +17,6 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/resource_context.h"
-#include "electron/shell/browser/media/media_device_id_salt.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/ssl_config.mojom.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
@@ -43,12 +42,13 @@ class SpecialStoragePolicy;
 
 namespace electron {
 
+class CookieChangeNotifier;
 class ElectronDownloadManagerDelegate;
 class ElectronPermissionManager;
-class CookieChangeNotifier;
+class MediaDeviceIDSalt;
+class ProtocolRegistry;
 class ResolveProxyHelper;
 class WebViewManager;
-class ProtocolRegistry;
 
 using DisplayMediaResponseCallbackJs =
     base::OnceCallback<void(gin::Arguments* args)>;
