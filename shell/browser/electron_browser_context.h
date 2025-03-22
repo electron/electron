@@ -16,7 +16,6 @@
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
-#include "content/public/browser/resource_context.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/ssl_config.mojom.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
