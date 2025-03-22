@@ -28,6 +28,8 @@
 * `session` Session (optional) - The session used for requesting URL, by default
   the HTTP request will reuse the current session. Setting `session` to `null`
   would use a random independent session. This is only used for URL responses.
+  **Deprecated:** Using `null` to create a random independent session is
+  deprecated and will be removed soon.
 * `uploadData` [ProtocolResponseUploadData](protocol-response-upload-data.md) (optional) - The data used as upload data. This is only
   used for URL responses when `method` is `"POST"`.
 
