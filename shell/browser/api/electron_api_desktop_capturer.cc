@@ -15,6 +15,7 @@
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "chrome/browser/media/webrtc/thumbnail_capturer_mac.h"
 #include "chrome/browser/media/webrtc/window_icon_util.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_capture.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
@@ -252,7 +253,8 @@ void DesktopCapturer::DesktopListListener::OnSourceThumbnailChanged(int index) {
 }
 
 void DesktopCapturer::DesktopListListener::OnDelegatedSourceListDismissed() {
-  std::move(failure_callback_).Run();
+  content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                               std::move(failure_callback_));
 }
 
 void DesktopCapturer::StartHandling(bool capture_window,
