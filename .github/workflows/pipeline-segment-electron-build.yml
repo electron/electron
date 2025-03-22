@@ -129,24 +129,8 @@ jobs:
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
-    - name: Get Depot Tools
-      timeout-minutes: 5
-      run: |
-        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-
-        SEDOPTION="-i"
-        if [ "`uname`" = "Darwin" ]; then
-          SEDOPTION="-i ''"
-        fi
-
-        # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-        sed $SEDOPTION '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-
-        # Ensure depot_tools does not update.
-        test -d depot_tools && cd depot_tools
-        touch .disable_auto_update
-    - name: Add Depot Tools to PATH
-      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    - name: Install Build Tools
+      uses: ./src/electron/.github/actions/install-build-tools      
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
@@ -154,24 +138,26 @@ jobs:
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Restore src cache via AZCopy
-      if: ${{ inputs.target-platform == 'macos' }}
+      if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
+      with:
+        target-platform: ${{ inputs.target-platform }}
     - name: Restore src cache via AKS
       if: ${{ inputs.target-platform == 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
-    - name: Checkout src via gclient sync
-      if: ${{ inputs.target-platform == 'win' }}
-      uses: ./src/electron/.github/actions/checkout
-      with:
-        use-cache: 'false'
     - name: Checkout Electron
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
-    - name: Install Build Tools
-      uses: ./src/electron/.github/actions/install-build-tools
+    - name: Fix Sync
+      if: ${{ inputs.target-platform != 'linux' }}
+      uses: ./src/electron/.github/actions/fix-sync
+      with:
+        target-platform: ${{ inputs.target-platform }}
+      env:
+        ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
     - name: Init Build Tools
       run: |
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
@@ -184,9 +170,6 @@ jobs:
         echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
-    - name: Fix Sync (macOS)
-      if: ${{ inputs.target-platform == 'macos' }}
-      uses: ./src/electron/.github/actions/fix-sync-macos
     - name: Setup Number of Ninja Processes
       run: |
         echo "NUMBER_OF_NINJA_PROCESSES=${{ inputs.target-platform != 'macos' && '300' || '200' }}" >> $GITHUB_ENV
