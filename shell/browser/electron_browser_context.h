@@ -13,7 +13,6 @@
 #include <variant>
 #include <vector>
 
-#include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -122,9 +121,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   ValueMapPrefStore* in_memory_pref_store() const {
     return in_memory_pref_store_.get();
   }
-  base::WeakPtr<ElectronBrowserContext> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  }
 
   ProtocolRegistry* protocol_registry() const {
     return protocol_registry_.get();
@@ -210,8 +206,6 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // In-memory cache that holds objects that have been granted permissions.
   DevicePermissionMap granted_devices_;
-
-  base::WeakPtrFactory<ElectronBrowserContext> weak_factory_{this};
 };
 
 }  // namespace electron
