@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
-#include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/service_worker_context.h"
@@ -168,8 +167,6 @@ class ServiceWorkerMain final
   mojo::AssociatedRemote<mojom::ElectronRenderer> remote_;
 
   std::unique_ptr<gin_helper::Promise<void>> start_worker_promise_;
-
-  base::WeakPtrFactory<ServiceWorkerMain> weak_factory_{this};
 };
 
 }  // namespace electron::api
