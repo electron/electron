@@ -44,10 +44,6 @@ class ManagementSetEnabledFunctionInstallPromptDelegate
       const ManagementSetEnabledFunctionInstallPromptDelegate&) = delete;
   ManagementSetEnabledFunctionInstallPromptDelegate& operator=(
       const ManagementSetEnabledFunctionInstallPromptDelegate&) = delete;
-
- private:
-  base::WeakPtrFactory<ManagementSetEnabledFunctionInstallPromptDelegate>
-      weak_factory_{this};
 };
 
 class ManagementUninstallFunctionUninstallDialogDelegate
