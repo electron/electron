@@ -65,6 +65,8 @@ class ElectronDesktopWindowTreeHostLinux
  private:
   void UpdateWindowState(ui::PlatformWindowState new_state);
 
+  bool IsShowingFrame() const;
+
   raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
 
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
