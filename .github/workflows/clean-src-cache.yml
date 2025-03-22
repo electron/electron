@@ -16,6 +16,7 @@ jobs:
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /mnt/win-cache:/mnt/win-cache
     steps:
     - name: Cleanup Source Cache
       shell: bash
@@ -23,3 +24,6 @@ jobs:
         df -h /mnt/cross-instance-cache
         find /mnt/cross-instance-cache -type f -mtime +15 -delete
         df -h /mnt/cross-instance-cache
+        df -h /mnt/win-cache
+        find /mnt/win-cache -type f -mtime +15 -delete
+        df -h /mnt/win-cache
