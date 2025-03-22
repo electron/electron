@@ -267,6 +267,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetMenuBarVisibility(bool visible) {}
   virtual bool IsMenuBarVisible() const;
 
+  virtual bool IsSnapped() const;
+
   // Set the aspect ratio when resizing window.
   [[nodiscard]] double aspect_ratio() const { return aspect_ratio_; }
   [[nodiscard]] gfx::Size aspect_ratio_extra_size() const {

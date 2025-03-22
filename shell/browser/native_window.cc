@@ -489,6 +489,10 @@ void NativeWindow::SetAspectRatio(double aspect_ratio,
   aspect_ratio_extraSize_ = extra_size;
 }
 
+bool NativeWindow::IsSnapped() const {
+  return false;
+}
+
 std::optional<gfx::Rect> NativeWindow::GetWindowControlsOverlayRect() {
   return overlay_rect_;
 }
