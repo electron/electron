@@ -165,10 +165,20 @@ index 4119ac1b002681d39711eac810ca2fcc2702ffc7..790347056cde949ffe6cf8498a7eca0c
  
  ExitCode NodeMainInstance::Run() {
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 1fc3774948dae3c0aae7d2aef563e18ecd4243a3..a610ee24ff18bddc3849aec3a43c2037b9ab5d53 100644
+index 1fc3774948dae3c0aae7d2aef563e18ecd4243a3..9d35cbf3dff538f38e8d5b8660d40c1fbaa56474 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
-@@ -230,13 +230,8 @@ class WorkerThreadData {
+@@ -162,6 +162,9 @@ class WorkerThreadData {
+     SetIsolateCreateParamsForNode(&params);
+     w->UpdateResourceConstraints(&params.constraints);
+     params.array_buffer_allocator_shared = allocator;
++    params.cpp_heap =
++        v8::CppHeap::Create(w->platform_, v8::CppHeapCreateParams{{}})
++            .release();
+     Isolate* isolate =
+         NewIsolate(&params, &loop_, w->platform_, w->snapshot_data());
+     if (isolate == nullptr) {
+@@ -230,13 +233,8 @@ class WorkerThreadData {
          *static_cast<bool*>(data) = true;
        }, &platform_finished);
  
