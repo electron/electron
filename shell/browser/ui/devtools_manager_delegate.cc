@@ -124,7 +124,8 @@ void DevToolsManagerDelegate::HandleCommand(
 
 scoped_refptr<content::DevToolsAgentHost>
 DevToolsManagerDelegate::CreateNewTarget(const GURL& url,
-                                         TargetType target_type) {
+                                         TargetType target_type,
+                                         bool new_window) {
   return nullptr;
 }
 

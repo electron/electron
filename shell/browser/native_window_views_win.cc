@@ -283,7 +283,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
 
       auto* const axState = content::BrowserAccessibilityState::GetInstance();
       if (axState && !axState->IsAccessibleBrowser()) {
-        axState->OnScreenReaderDetected();
+        axState->EnableProcessAccessibility();
         Browser::Get()->OnAccessibilitySupportChanged();
       }
 

@@ -12,10 +12,10 @@ ui problems (like dissapearing popup during typing in html's
 input list.
 
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index bfea25523fd1df85d9393fce80259a8654b8a7c2..e3cd3083bc8c19fdc29729d7ff6db7d0fc562ce6 100644
+index 1f253ce92dfe1461a79f9c05825b03c8da553c6d..53f23ba21a00f48e3916e9af301f110542ad1bbb 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
-@@ -1209,6 +1209,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1203,6 +1203,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // True if widget was created in headless mode.
    bool is_headless() const { return is_headless_; }
  

@@ -10,7 +10,7 @@ usage of BrowserList and Browser as we subclass related methods and use our
 WindowList.
 
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-index 230c9cb619498f315fc0913da54837b725fc9024..0fa1120ab952864e53085e7746608bb491ec14b2 100644
+index 628fe5557f963c52cbe0c5b24c6e06aaa81f9677..868f5eb60c35dfaa0a4e33e7f175743848e0cc2e 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 @@ -48,6 +48,7 @@
@@ -38,7 +38,7 @@ index 230c9cb619498f315fc0913da54837b725fc9024..0fa1120ab952864e53085e7746608bb4
 +  PrefService* pref = static_cast<electron::ElectronBrowserContext*>(current_context)->prefs();
    ui::AXMode mode =
        content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
-   bool is_native_enabled = content::BrowserAccessibilityState::GetInstance()
+   bool is_a11y_allowed = content::BrowserAccessibilityState::GetInstance()
 @@ -221,7 +222,7 @@ void HandleAccessibilityRequestCallback(
    data.Set(kPDFPrinting, pdf_printing ? kOn : kOff);
  

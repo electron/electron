@@ -1151,9 +1151,9 @@ void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
 
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
   if (enabled) {
-    ax_state->OnScreenReaderDetected();
+    ax_state->EnableProcessAccessibility();
   } else {
-    ax_state->DisableAccessibility();
+    ax_state->DisableProcessAccessibility();
   }
   Browser::Get()->OnAccessibilitySupportChanged();
 }

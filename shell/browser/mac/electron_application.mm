@@ -209,9 +209,9 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   if ([attribute isEqualToString:@"AXEnhancedUserInterface"] || is_manual_ax) {
     auto* ax_state = content::BrowserAccessibilityState::GetInstance();
     if ([value boolValue]) {
-      ax_state->OnScreenReaderDetected();
+      ax_state->EnableProcessAccessibility();
     } else {
-      ax_state->DisableAccessibility();
+      ax_state->DisableProcessAccessibility();
     }
 
     electron::Browser::Get()->OnAccessibilitySupportChanged();
