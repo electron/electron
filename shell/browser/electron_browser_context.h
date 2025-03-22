@@ -65,6 +65,10 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   [[nodiscard]] static bool IsValidContext(const void* context);
 
+  // Get or create the default BrowserContext.
+  static ElectronBrowserContext* GetDefaultBrowserContext(
+      base::Value::Dict options = {});
+
   // Get or create the BrowserContext according to its |partition| and
   // |in_memory|. The |options| will be passed to constructor when there is no
   // existing BrowserContext.
@@ -77,6 +81,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   // existing BrowserContext.
   static ElectronBrowserContext* FromPath(const base::FilePath& path,
                                           base::Value::Dict options = {});
+
+  static void DestroyAllContexts();
 
   static void DestroyAllContexts();
 

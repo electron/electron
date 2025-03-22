@@ -671,8 +671,7 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
       request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);
 
-  ElectronBrowserContext* browser_context =
-      ElectronBrowserContext::From("", false);
+  auto* browser_context = ElectronBrowserContext::GetDefaultBrowserContext();
   v8::Local<v8::Value> value;
   if (dict.Get("session", &value)) {
     if (value->IsNull()) {
