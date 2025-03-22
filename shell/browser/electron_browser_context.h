@@ -13,11 +13,8 @@
 #include <variant>
 #include <vector>
 
-#include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
-#include "content/public/browser/resource_context.h"
-#include "electron/shell/browser/media/media_device_id_salt.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/ssl_config.mojom.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
@@ -43,12 +40,13 @@ class SpecialStoragePolicy;
 
 namespace electron {
 
+class CookieChangeNotifier;
 class ElectronDownloadManagerDelegate;
 class ElectronPermissionManager;
-class CookieChangeNotifier;
+class MediaDeviceIDSalt;
+class ProtocolRegistry;
 class ResolveProxyHelper;
 class WebViewManager;
-class ProtocolRegistry;
 
 using DisplayMediaResponseCallbackJs =
     base::OnceCallback<void(gin::Arguments* args)>;
@@ -122,9 +120,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   PrefService* prefs() const { return prefs_.get(); }
   ValueMapPrefStore* in_memory_pref_store() const {
     return in_memory_pref_store_.get();
-  }
-  base::WeakPtr<ElectronBrowserContext> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
   }
 
   ProtocolRegistry* protocol_registry() const {
@@ -211,8 +206,6 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // In-memory cache that holds objects that have been granted permissions.
   DevicePermissionMap granted_devices_;
-
-  base::WeakPtrFactory<ElectronBrowserContext> weak_factory_{this};
 };
 
 }  // namespace electron
