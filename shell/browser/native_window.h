@@ -58,7 +58,7 @@ class BrowserView;
 }
 
 #if BUILDFLAG(IS_MAC)
-typedef NSView* NativeWindowHandle;
+typedef gfx::NativeView NativeWindowHandle;
 #else
 typedef gfx::AcceleratedWidget NativeWindowHandle;
 #endif

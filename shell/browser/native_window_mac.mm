@@ -1190,11 +1190,11 @@ void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
 }
 
 gfx::NativeView NativeWindowMac::GetNativeView() const {
-  return [window_ contentView];
+  return gfx::NativeView([window_ contentView]);
 }
 
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() const {
-  return window_;
+  return gfx::NativeWindow(window_);
 }
 
 gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() const {
@@ -1217,7 +1217,7 @@ content::DesktopMediaID NativeWindowMac::GetDesktopMediaID() const {
 }
 
 NativeWindowHandle NativeWindowMac::GetNativeWindowHandle() const {
-  return [window_ contentView];
+  return GetNativeView();
 }
 
 void NativeWindowMac::SetProgressBar(double progress,
@@ -1448,7 +1448,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type, int duration) {
       // other views.
       vibrant_native_view_host_ = rootView->AddChildViewAt(
           std::make_unique<views::NativeViewHost>(), 0);
-      vibrant_native_view_host_->Attach(vibrantView);
+      vibrant_native_view_host_->Attach(gfx::NativeView(vibrantView));
 
       rootView->DeprecatedLayoutImmediately();
 
