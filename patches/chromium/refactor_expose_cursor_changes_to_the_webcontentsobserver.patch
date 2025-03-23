@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 8ad5a5042355ce918ab13784fbc0d633b6f0efa9..7f7b86abf3e18501025a854000f0d9adc9ec9abc 100644
+index a54a0dedf8ef1cfffa4e80a4707debed0e83d277..e66e71fdbabb40a5307b12cd8965e773e76c04fd 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -28,6 +28,7 @@
@@ -44,10 +44,10 @@ index 20fcda4eb20459b69247003c51c2a3ed37c7b1e8..9bcab4e1e8a0fa429488555f4f7bd1c5
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ea3752a8bb071cc9f042c85ec009a19a9bbba518..247cdaf86a1baf478a9c28ba57fbe46346b41d01 100644
+index bd987178a8fa5755c727cefb90f6b6a89f984bcd..a7e8f334baa7e8b80c07ad232e149c034c756a8b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5827,6 +5827,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -5828,6 +5828,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,7 +60,7 @@ index ea3752a8bb071cc9f042c85ec009a19a9bbba518..247cdaf86a1baf478a9c28ba57fbe463
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index fba621e63bb665e650bf3e7b27ee997ab602e97d..ea3a206103b8b422bc4d6ea3c8f1a65faccfa708 100644
+index a35dc028fbcf202a7ba1aa7213f8c815e9a31e3f..fe3b8cf40ea7c26aade59c7224416594509f6308 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1178,6 +1178,7 @@ class CONTENT_EXPORT WebContentsImpl

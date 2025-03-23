@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 521cb942f526a8cb0873f9ae3d72053caf14faa9..3dd33e4077e97ce92b0778e5673f9b208e484130 100644
+index 72bed5c3bbc9fba3f18ba2e30d36712319dade51..bc340d5e530382368e71352fc1a2cb699b76cda1 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1035,6 +1035,7 @@ component("base") {
@@ -545,7 +545,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 52540cf2b036eb78afca28b5e3bed142a82614db..a1a0da04b09cfc6edcea09c9150a958e0ef434bb 100644
+index 4017ee032569466f5311e5c9612c82c086eab935..f2499bc084312a09b2324567d270fc1b899e7617 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -35,6 +35,7 @@
@@ -556,7 +556,7 @@ index 52540cf2b036eb78afca28b5e3bed142a82614db..a1a0da04b09cfc6edcea09c9150a958e
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2143,15 +2144,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2136,15 +2137,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -579,7 +579,7 @@ index 52540cf2b036eb78afca28b5e3bed142a82614db..a1a0da04b09cfc6edcea09c9150a958e
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 5d96364e36f9a4cf63b9e15c0b27c36faf58b8a8..36934435fcd381a21c54ee5527437419735cd376 100644
+index e6de287742244dd50796b6d6a1954fd8ec4705b8..3ecb18c3b975d1cf00b482d2eab30aca11646073 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -339,6 +339,7 @@ source_set("browser") {
@@ -840,10 +840,10 @@ index 8779cf7cbbe2a583fda51867eaebc627f00bd4cd..98da1587fdc8cc8358a69db2b51d3982
  
    # TODO(crbug.com/40139469): Blink test plugin must be migrated from PPAPI.
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index d27d7140cc55a35e6ffb65028265bcb2ae5932d1..1ea92b29c730aba1c667de83bb98ca85f2046470 100644
+index 16407ea4758addb6f6b56dc044d58cde0922897a..98cf8359b412a61b48aa87b607740bbeda4ca159 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -253,6 +253,7 @@ component("bluetooth") {
+@@ -257,6 +257,7 @@ component("bluetooth") {
        "IOKit.framework",
        "Foundation.framework",
      ]
