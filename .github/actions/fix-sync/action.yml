@@ -112,7 +112,8 @@ runs:
       shell: powershell
       run: |
         $nodedeps = e d gclient getdep --deps-file=src/DEPS -r src/third_party/node/win | ConvertFrom-JSON
-        python3 src\third_party\depot_tools\download_from_google_storage.py --no_resume --no_auth --bucket chromium-nodejs -o src\third_party\node\win\node.exe $nodedeps.object_name
+        $sha1 = $nodedeps.object_name.split('/')[1]
+        python3 src\third_party\depot_tools\download_from_google_storage.py --no_resume --no_auth --bucket chromium-nodejs -o src\third_party\node\win\node.exe $sha1
     - name: Install rc
       if: ${{ inputs.target-platform == 'win' }}
       shell: bash
