@@ -1221,7 +1221,7 @@ SkColor NativeWindowViews::GetBackgroundColor() const {
   auto* background = root_view_.background();
   if (!background)
     return SK_ColorTRANSPARENT;
-  return background->get_color();
+  return background->color().ConvertToSkColor(root_view_.GetColorProvider());
 }
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
@@ -1488,6 +1488,22 @@ bool NativeWindowViews::IsMenuBarVisible() const {
   return root_view_.is_menu_bar_visible();
 }
 
+bool NativeWindowViews::IsSnapped() const {
+#if BUILDFLAG(IS_WIN)
+  // IsWindowArranged() is not a part of any header file.
+  // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-iswindowarranged
+  using IsWindowArrangedFuncType = BOOL(WINAPI*)(HWND);
+  static const auto is_window_arranged_func =
+      reinterpret_cast<IsWindowArrangedFuncType>(
+          base::win::GetUser32FunctionPointer("IsWindowArranged"));
+  return is_window_arranged_func
+             ? is_window_arranged_func(GetAcceleratedWidget())
+             : false;
+#else
+  return false;
+#endif
+}
+
 void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
   NativeWindow::SetBackgroundMaterial(material);
 
@@ -1527,20 +1543,8 @@ void NativeWindowViews::SetVisibleOnAllWorkspaces(
 }
 
 bool NativeWindowViews::IsVisibleOnAllWorkspaces() const {
-#if BUILDFLAG(IS_LINUX)
-  if (IsX11()) {
-    // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
-    // determine whether the current window is visible on all workspaces.
-    x11::Atom sticky_atom = x11::GetAtom("_NET_WM_STATE_STICKY");
-    std::vector<x11::Atom> wm_states;
-    auto* connection = x11::Connection::Get();
-    connection->GetArrayProperty(
-        static_cast<x11::Window>(GetAcceleratedWidget()),
-        x11::GetAtom("_NET_WM_STATE"), &wm_states);
-    return base::Contains(wm_states, sticky_atom);
-  }
-#endif
-  return false;
+  // On Windows this always returns false.
+  return widget()->IsVisibleOnAllWorkspaces();
 }
 
 content::DesktopMediaID NativeWindowViews::GetDesktopMediaID() const {

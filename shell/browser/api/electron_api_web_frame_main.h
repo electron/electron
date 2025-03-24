@@ -136,7 +136,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
-  const char* LifecycleStateForTesting() const;
+  std::string_view LifecycleStateForTesting() const;
 
   v8::Local<v8::Promise> CollectDocumentJSCallStack(gin::Arguments* args);
   void CollectedJavaScriptCallStack(

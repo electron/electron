@@ -69,6 +69,7 @@ class KeyWeakMap {
   }
 
   // Map of stored objects.
+  // TODO(ckerr): can absl::flat_hash_map be used safely here?
   std::unordered_map<K, Mapped> map_;
 };
 

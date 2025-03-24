@@ -43,16 +43,16 @@ class ClientFrameViewLinux : public FramelessView,
   void Init(NativeWindowViews* window, views::Widget* frame) override;
 
   // These are here for ElectronDesktopWindowTreeHostLinux to use.
-  gfx::Insets GetBorderDecorationInsets() const;
+  gfx::Insets RestoredMirroredFrameBorderInsets() const;
+  gfx::Insets RestoredFrameBorderInsets() const;
   gfx::Insets GetInputInsets() const;
   gfx::Rect GetWindowContentBounds() const;
   SkRRect GetRoundedWindowContentBounds() const;
   int GetTranslucentTopAreaHeight() const;
-  // Returns which edges of the frame are tiled.
-  const ui::WindowTiledEdges& tiled_edges() const { return tiled_edges_; }
-  void set_tiled_edges(ui::WindowTiledEdges tiled_edges) {
-    tiled_edges_ = tiled_edges;
-  }
+
+  // Returns whether the frame is in a tiled state.
+  bool tiled() const { return tiled_; }
+  void set_tiled(bool tiled) { tiled_ = tiled; }
 
  protected:
   // ui::NativeThemeObserver:
@@ -149,7 +149,7 @@ class ClientFrameViewLinux : public FramelessView,
 
   base::CallbackListSubscription paint_as_active_changed_subscription_;
 
-  ui::WindowTiledEdges tiled_edges_;
+  bool tiled_ = false;
 };
 
 }  // namespace electron

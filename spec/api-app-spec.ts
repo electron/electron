@@ -1668,19 +1668,19 @@ describe('app module', () => {
 
   ifdescribe(process.platform === 'darwin')('dock APIs', () => {
     after(async () => {
-      await app.dock.show();
+      await app.dock?.show();
     });
 
     describe('dock.setMenu', () => {
       it('can be retrieved via dock.getMenu', () => {
-        expect(app.dock.getMenu()).to.equal(null);
+        expect(app.dock?.getMenu()).to.equal(null);
         const menu = new Menu();
-        app.dock.setMenu(menu);
-        expect(app.dock.getMenu()).to.equal(menu);
+        app.dock?.setMenu(menu);
+        expect(app.dock?.getMenu()).to.equal(menu);
       });
 
       it('keeps references to the menu', () => {
-        app.dock.setMenu(new Menu());
+        app.dock?.setMenu(new Menu());
         const v8Util = process._linkedBinding('electron_common_v8_util');
         v8Util.requestGarbageCollectionForTesting();
       });
@@ -1690,56 +1690,56 @@ describe('app module', () => {
       it('throws a descriptive error for a bad icon path', () => {
         const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
         expect(() => {
-          app.dock.setIcon(badPath);
+          app.dock?.setIcon(badPath);
         }).to.throw(/Failed to load image from path (.+)/);
       });
     });
 
     describe('dock.bounce', () => {
       it('should return -1 for unknown bounce type', () => {
-        expect(app.dock.bounce('bad type' as any)).to.equal(-1);
+        expect(app.dock?.bounce('bad type' as any)).to.equal(-1);
       });
 
       it('should return a positive number for informational type', () => {
         const appHasFocus = !!BrowserWindow.getFocusedWindow();
         if (!appHasFocus) {
-          expect(app.dock.bounce('informational')).to.be.at.least(0);
+          expect(app.dock?.bounce('informational')).to.be.at.least(0);
         }
       });
 
       it('should return a positive number for critical type', () => {
         const appHasFocus = !!BrowserWindow.getFocusedWindow();
         if (!appHasFocus) {
-          expect(app.dock.bounce('critical')).to.be.at.least(0);
+          expect(app.dock?.bounce('critical')).to.be.at.least(0);
         }
       });
     });
 
     describe('dock.cancelBounce', () => {
       it('should not throw', () => {
-        app.dock.cancelBounce(app.dock.bounce('critical'));
+        app.dock?.cancelBounce(app.dock?.bounce('critical'));
       });
     });
 
     describe('dock.setBadge', () => {
       after(() => {
-        app.dock.setBadge('');
+        app.dock?.setBadge('');
       });
 
       it('should not throw', () => {
-        app.dock.setBadge('1');
+        app.dock?.setBadge('1');
       });
 
       it('should be retrievable via getBadge', () => {
-        app.dock.setBadge('test');
-        expect(app.dock.getBadge()).to.equal('test');
+        app.dock?.setBadge('test');
+        expect(app.dock?.getBadge()).to.equal('test');
       });
     });
 
     describe('dock.hide', () => {
       it('should not throw', () => {
-        app.dock.hide();
-        expect(app.dock.isVisible()).to.equal(false);
+        app.dock?.hide();
+        expect(app.dock?.isVisible()).to.equal(false);
       });
     });
 
@@ -1748,17 +1748,17 @@ describe('app module', () => {
     // See https://github.com/electron/electron/pull/25269 for more.
     describe('dock.show', () => {
       it('should not throw', () => {
-        return app.dock.show().then(() => {
-          expect(app.dock.isVisible()).to.equal(true);
+        return app.dock?.show().then(() => {
+          expect(app.dock?.isVisible()).to.equal(true);
         });
       });
 
       it('returns a Promise', () => {
-        expect(app.dock.show()).to.be.a('promise');
+        expect(app.dock?.show()).to.be.a('promise');
       });
 
       it('eventually fulfills', async () => {
-        await expect(app.dock.show()).to.eventually.be.fulfilled.equal(undefined);
+        await expect(app.dock?.show()).to.eventually.be.fulfilled.equal(undefined);
       });
     });
   });

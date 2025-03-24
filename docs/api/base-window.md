@@ -511,6 +511,10 @@ A `string` property that defines an alternative title provided only to
 accessibility tools such as screen readers. This string is not directly
 visible to users.
 
+#### `win.snapped` _Windows_ _Readonly_
+
+A `boolean` property that indicates whether the window is arranged via [Snap.](https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241)
+
 ### Instance Methods
 
 Objects created with `new BaseWindow` have the following instance methods:
@@ -1263,6 +1267,13 @@ Sets whether the menu bar should be visible. If the menu bar is auto-hide, users
 #### `win.isMenuBarVisible()` _Windows_ _Linux_
 
 Returns `boolean` - Whether the menu bar is visible.
+
+#### `win.isSnapped()` _Windows_
+
+Returns `boolean` - whether the window is arranged via [Snap.](https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241)
+
+The window is snapped via buttons shown when the mouse is hovered over window
+maximize button, or by dragging it to the edges of the screen.
 
 #### `win.setVisibleOnAllWorkspaces(visible[, options])` _macOS_ _Linux_
 

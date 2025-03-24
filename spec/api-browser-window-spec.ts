@@ -2499,12 +2499,12 @@ describe('BrowserWindow module', () => {
     it('sets the progress', () => {
       expect(() => {
         if (process.platform === 'darwin') {
-          app.dock.setIcon(path.join(fixtures, 'assets', 'logo.png'));
+          app.dock?.setIcon(path.join(fixtures, 'assets', 'logo.png'));
         }
         w.setProgressBar(0.5);
 
         if (process.platform === 'darwin') {
-          app.dock.setIcon(null as any);
+          app.dock?.setIcon(null as any);
         }
         w.setProgressBar(-1);
       }).to.not.throw();
