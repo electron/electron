@@ -39,7 +39,7 @@ namespace electron {
 namespace {
 
 // These values should be the same as Chromium uses.
-constexpr int kResizeOutsideBorderSize = 10;
+constexpr int kResizeBorder = 10;
 constexpr int kResizeInsideBoundsSize = 5;
 
 ui::NavButtonProvider::ButtonState ButtonStateToNavButtonProviderState(
@@ -142,25 +142,28 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
   UpdateThemeValues();
 }
 
-gfx::Insets ClientFrameViewLinux::GetBorderDecorationInsets() const {
-  const auto insets = GetFrameProvider()->GetFrameThicknessDip();
+gfx::Insets ClientFrameViewLinux::RestoredMirroredFrameBorderInsets() const {
+  auto border = RestoredFrameBorderInsets();
+  return base::i18n::IsRTL() ? gfx::Insets::TLBR(border.top(), border.right(),
+                                                 border.bottom(), border.left())
+                             : border;
+}
 
-  // We shouldn't draw frame decorations for the tiled edges.
-  // See https://wayland.app/protocols/xdg-shell#xdg_toplevel:enum:state
-  const auto& edges = tiled_edges();
-  return gfx::Insets::TLBR(
-      edges.top ? 0 : insets.top(), edges.left ? 0 : insets.left(),
-      edges.bottom ? 0 : insets.bottom(), edges.right ? 0 : insets.right());
+gfx::Insets ClientFrameViewLinux::RestoredFrameBorderInsets() const {
+  gfx::Insets insets = GetFrameProvider()->GetFrameThicknessDip();
+  insets.SetToMax(GetInputInsets());
+  return insets;
 }
 
 gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
-  return gfx::Insets{
-      host_supports_client_frame_shadow_ ? -kResizeOutsideBorderSize : 0};
+  bool showing_shadow = host_supports_client_frame_shadow_ &&
+                        !frame_->IsMaximized() && !frame_->IsFullscreen();
+  return gfx::Insets(showing_shadow ? kResizeBorder : 0);
 }
 
 gfx::Rect ClientFrameViewLinux::GetWindowContentBounds() const {
   gfx::Rect content_bounds = bounds();
-  content_bounds.Inset(GetBorderDecorationInsets());
+  content_bounds.Inset(RestoredMirroredFrameBorderInsets());
   return content_bounds;
 }
 
@@ -194,15 +197,15 @@ void ClientFrameViewLinux::OnWindowButtonOrderingChange() {
 }
 
 int ClientFrameViewLinux::ResizingBorderHitTest(const gfx::Point& point) {
-  return ResizingBorderHitTestImpl(
-      point,
-      GetBorderDecorationInsets() + gfx::Insets(kResizeInsideBoundsSize));
+  return ResizingBorderHitTestImpl(point,
+                                   RestoredMirroredFrameBorderInsets() +
+                                       gfx::Insets(kResizeInsideBoundsSize));
 }
 
 gfx::Rect ClientFrameViewLinux::GetBoundsForClientView() const {
   gfx::Rect client_bounds = bounds();
   if (!frame_->IsFullscreen()) {
-    client_bounds.Inset(GetBorderDecorationInsets());
+    client_bounds.Inset(RestoredMirroredFrameBorderInsets());
     client_bounds.Inset(
         gfx::Insets::TLBR(GetTitlebarBounds().height(), 0, 0, 0));
   }
@@ -239,10 +242,8 @@ int ClientFrameViewLinux::NonClientHitTest(const gfx::Point& point) {
 }
 
 ui::WindowFrameProvider* ClientFrameViewLinux::GetFrameProvider() const {
-  const bool tiled = tiled_edges().top || tiled_edges().left ||
-                     tiled_edges().bottom || tiled_edges().right;
   return ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
-      !host_supports_client_frame_shadow_, tiled, frame_->IsMaximized());
+      !host_supports_client_frame_shadow_, tiled(), frame_->IsMaximized());
 }
 
 void ClientFrameViewLinux::GetWindowMask(const gfx::Size& size,
@@ -465,7 +466,7 @@ gfx::Rect ClientFrameViewLinux::GetTitlebarBounds() const {
       std::max(font_height, theme_values_.titlebar_min_height) +
       GetTitlebarContentInsets().height();
 
-  gfx::Insets decoration_insets = GetBorderDecorationInsets();
+  gfx::Insets decoration_insets = RestoredMirroredFrameBorderInsets();
 
   // We add the inset height here, so the .Inset() that follows won't reduce it
   // to be too small.
@@ -486,7 +487,7 @@ gfx::Rect ClientFrameViewLinux::GetTitlebarContentBounds() const {
 }
 
 gfx::Size ClientFrameViewLinux::SizeWithDecorations(gfx::Size size) const {
-  gfx::Insets decoration_insets = GetBorderDecorationInsets();
+  gfx::Insets decoration_insets = RestoredMirroredFrameBorderInsets();
 
   size.Enlarge(0, GetTitlebarBounds().height());
   size.Enlarge(decoration_insets.width(), decoration_insets.height());
