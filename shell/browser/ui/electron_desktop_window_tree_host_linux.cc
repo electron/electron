@@ -47,16 +47,22 @@ void ElectronDesktopWindowTreeHostLinux::OnWidgetInitDone() {
   UpdateFrameHints();
 }
 
+bool ElectronDesktopWindowTreeHostLinux::IsShowingFrame() const {
+  return !native_window_view_->IsFullscreen() &&
+         !native_window_view_->IsMaximized() &&
+         !native_window_view_->IsMinimized();
+}
+
 gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
     ui::PlatformWindowState window_state) const {
   // If we are not showing frame, the insets should be zero.
-  if (native_window_view_->IsFullscreen()) {
-    return {};
+  if (!IsShowingFrame()) {
+    return gfx::Insets();
   }
 
   if (!native_window_view_->has_frame() ||
       !native_window_view_->has_client_frame()) {
-    return {};
+    return gfx::Insets();
   }
 
   auto* view = static_cast<ClientFrameViewLinux*>(
@@ -198,7 +204,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
     if (ui::OzonePlatform::GetInstance()->IsWindowCompositingSupported()) {
       // Set the opaque region.
       std::vector<gfx::Rect> opaque_region;
-      if (!native_window_view_->IsFullscreen()) {
+      if (!IsShowingFrame()) {
         // The opaque region is a list of rectangles that contain only fully
         // opaque pixels of the window.  We need to convert the clipping
         // rounded-rect into this format.
