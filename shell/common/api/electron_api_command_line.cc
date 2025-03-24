@@ -13,11 +13,11 @@
 #include "third_party/abseil-cpp/absl/strings/ascii.h"
 
 namespace {
-bool HasSwitch(const std::string& switch) {
-  auto switch_string = base::ToLowerASCII(switch_string);
+bool HasSwitch(const std::string& switch_string) {
+  auto switch_str = base::ToLowerASCII(switch_string);
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  return command_line->HasSwitch(switch_string);
+  return command_line->HasSwitch(switch_str);
 }
 
 base::CommandLine::StringType GetSwitchValue(gin_helper::ErrorThrower thrower,
