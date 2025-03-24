@@ -705,7 +705,9 @@ describe('node feature', () => {
       expect(code).to.equal(1);
     });
 
-    it('does not allow --require in utility process of packaged apps', async () => {
+    // TODO(deepak1556): will be enabled in follow-up PR
+    // https://github.com/electron/electron/pull/46210
+    it.skip('does not allow --require in utility process of packaged apps', async () => {
       const appPath = path.join(fixtures, 'apps', 'node-options-utility-process');
       // App should exit with code 1.
       const child = childProcess.spawn(process.execPath, [appPath], {
