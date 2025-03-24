@@ -12,12 +12,14 @@
 #include "base/mac/mac_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
+#include "electron/mas.h"
 #include "shell/browser/api/electron_api_push_notifications.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/mac/dict_util.h"
 #import "shell/browser/mac/electron_application.h"
 #include "shell/common/mac_util.h"
 
+#import <Security/Security.h>
 #import <UserNotifications/UserNotifications.h>
 
 static NSDictionary* UNNotificationResponseToNSDictionary(
@@ -41,6 +43,23 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 
   return result;
 }
+
+#if IS_MAS_BUILD()
+static NSArray<NSString*>* GetAppGroups() {
+  SecCodeRef code = NULL;
+  if (SecCodeCopySelf(kSecCSDefaultFlags, &code) != errSecSuccess)
+    return nil;
+  CFDictionaryRef signingInfo = NULL;
+  OSStatus status = SecCodeCopySigningInformation(
+      code, kSecCSSigningInformation, &signingInfo);
+  CFRelease(code);
+  if (status != errSecSuccess || !signingInfo)
+    return nil;
+  NSDictionary* info = CFBridgingRelease(signingInfo);
+  return info[(__bridge NSString*)kSecCodeInfoEntitlementsDict]
+             [@"com.apple.security.application-groups"];
+}
+#endif
 
 @implementation ElectronApplicationDelegate {
   ElectronMenuController* __strong menu_controller_;
@@ -89,14 +108,29 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
           static_cast<UNNotificationResponse*>(user_notification));
     }
   }
-
+  BOOL launched_as_login_helper = NO;
+#if IS_MAS_BUILD()
+  if (!@available(macOS 13, *)) {
+    NSArray<NSString*>* appGroups = GetAppGroups();
+    if (appGroups && appGroups.count != 0) {
+      NSString* groupsId = [appGroups firstObject];
+      NSUserDefaults* sharedDefaults =
+          [[NSUserDefaults alloc] initWithSuiteName:groupsId];
+      // the key of "wasOpendAtLogin" will be set if app launched by electron
+      // login helper
+      launched_as_login_helper = [sharedDefaults boolForKey:@"wasOpendAtLogin"];
+      [sharedDefaults removeObjectForKey:@"wasOpendAtLogin"];
+    }
+  }
+#endif
   NSAppleEventDescriptor* event =
       NSAppleEventManager.sharedAppleEventManager.currentAppleEvent;
   BOOL launched_as_login_item =
       (event.eventID == kAEOpenApplication &&
        [event paramDescriptorForKeyword:keyAEPropData].enumCodeValue ==
            keyAELaunchedAsLogInItem);
-  electron::Browser::Get()->SetLaunchedAtLogin(launched_as_login_item);
+  electron::Browser::Get()->SetLaunchedAtLogin(launched_as_login_item ||
+                                               launched_as_login_helper);
 
   electron::Browser::Get()->DidFinishLaunching(
       electron::NSDictionaryToValue(notification_info));

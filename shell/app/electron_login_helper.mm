@@ -3,9 +3,33 @@
 // found in the LICENSE file.
 
 #import <Cocoa/Cocoa.h>
+#import <Security/Security.h>
+
+NSArray<NSString*>* GetAppGroups() {
+  SecCodeRef code = NULL;
+  if (SecCodeCopySelf(kSecCSDefaultFlags, &code) != errSecSuccess)
+    return nil;
+  CFDictionaryRef signingInfo = NULL;
+  OSStatus status = SecCodeCopySigningInformation(
+      code, kSecCSSigningInformation, &signingInfo);
+  CFRelease(code);
+  if (status != errSecSuccess || !signingInfo)
+    return nil;
+  NSDictionary* info = CFBridgingRelease(signingInfo);
+  return info[(__bridge NSString*)kSecCodeInfoEntitlementsDict]
+             [@"com.apple.security.application-groups"];
+}
 
 int main(int argc, char* argv[]) {
   @autoreleasepool {
+    NSArray<NSString*>* appGroups = GetAppGroups();
+    if (appGroups && appGroups.count != 0) {
+      NSString* groupsId = [appGroups firstObject];
+      NSUserDefaults* sharedDefaults =
+          [[NSUserDefaults alloc] initWithSuiteName:groupsId];
+      [sharedDefaults setBool:YES forKey:@"wasOpendAtLogin"];
+    }
+
     NSArray* pathComponents =
         [[[NSBundle mainBundle] bundlePath] pathComponents];
     pathComponents = [pathComponents
