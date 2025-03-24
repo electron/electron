@@ -1843,7 +1843,7 @@ index 874ac9d572931fe175ccab8beb7738fe0a7b3c1b..b70e2a8a7be9e00a379f47c77589dde6
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index cb507971bef962e91cd8fca696692194696d1142..d2aee3962e3377980940e6d3538487a566a609b4 100644
+index 33406d7cf309281e9c1374e4cc427c99be73fb1b..fb75c0b824494ffdb247d149f69709e08f188237 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -334,6 +334,12 @@ component("gfx") {
