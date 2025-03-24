@@ -40,6 +40,9 @@ jobs:
         fetch-depth: 0
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
+      with:
+        generate-sas-token: 'true'
+        target-platform: win
 
   publish-x64-win:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
