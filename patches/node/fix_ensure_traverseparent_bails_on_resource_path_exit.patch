@@ -8,10 +8,10 @@ resource path. This commit ensures that the TraverseParent function
 bails out if the parent path is outside of the resource path.
 
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 210a01d24e11764dc9fc37a77b354f11383693f8..8257f8eb057a374defd19b19d6056e01c5b9b30b 100644
+index 210a01d24e11764dc9fc37a77b354f11383693f8..4e9f70a1c41b44d2a1863b778d4f1e37279178d9 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
-@@ -290,8 +290,40 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
+@@ -290,8 +290,41 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
      Realm* realm, const std::filesystem::path& check_path) {
    std::filesystem::path current_path = check_path;
    auto env = realm->env();
@@ -23,42 +23,43 @@ index 210a01d24e11764dc9fc37a77b354f11383693f8..8257f8eb057a374defd19b19d6056e01
 +  {
 +    HandleScope handle_scope(isolate);
 +    Local<Value> resources_path_value;
-+    Local<Value> process_type_value;
-+    bool is_browser_process = false;
 +    Local<Object> process_object = env->process_object();
 +
-+    Local<String> type_path_key =
-+        String::NewFromUtf8(isolate, "type").ToLocalChecked();
-+    if (process_object->Get(env->context(), type_path_key)
-+            .ToLocal(&process_type_value) &&
-+        process_type_value->IsString()) {
-+      String::Utf8Value type_str(isolate, process_type_value);
-+      is_browser_process = (strcmp(*type_str, "browser") == 0);
-+    }
-+
 +    Local<String> resources_path_key =
-+        String::NewFromUtf8(isolate, "resourcesPath").ToLocalChecked();
-+    if (is_browser_process &&
-+        process_object->Get(env->context(), resources_path_key)
++        String::NewFromUtf8Literal(isolate, "resourcesPath");
++    if (process_object->Get(env->context(), resources_path_key)
 +            .ToLocal(&resources_path_value) &&
 +        resources_path_value->IsString()) {
 +      resources_path = *String::Utf8Value(isolate, resources_path_value);
-+      if (!resources_path.empty() && resources_path.back() != kPathSeparator) {
++      if (!resources_path.empty() && !resources_path.ends_with(kPathSeparator)) {
 +        resources_path += kPathSeparator;
 +      }
 +    }
 +  }
 +
++  auto starts_with = [](const std::string& str, const std::string& prefix) -> bool {
++    if (prefix.size() > str.size()) return false;
++    return std::equal(
++        prefix.begin(), prefix.end(), str.begin(),
++        [](char a, char b) {
++          return std::tolower(static_cast<unsigned char>(a)) ==
++                std::tolower(static_cast<unsigned char>(b));
++        });
++  };
++
++  bool did_original_path_start_with_resources_path = starts_with(check_path.
++      generic_string(), resources_path);
++
    do {
      current_path = current_path.parent_path();
  
-@@ -310,6 +342,12 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
+@@ -310,6 +343,12 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
        return nullptr;
      }
  
 +    // If current path is outside the resources path, bail.
-+    if (!resources_path.empty() &&
-+        !current_path.generic_string().starts_with(resources_path)) {
++    if (did_original_path_start_with_resources_path &&
++        !starts_with(current_path.generic_string(), resources_path)) {
 +      return nullptr;
 +    }
 +
