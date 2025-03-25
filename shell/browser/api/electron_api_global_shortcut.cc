@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "base/containers/map_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/uuid.h"
 #include "components/prefs/pref_service.h"
@@ -57,22 +58,24 @@ GlobalShortcut::~GlobalShortcut() {
 }
 
 void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
-  if (!accelerator_callback_map_.contains(accelerator)) {
+  if (auto* cb = base::FindOrNull(accelerator_callback_map_, accelerator)) {
+    cb->Run();
+  } else {
     // This should never occur, because if it does,
     // ui::GlobalAcceleratorListener notifies us with wrong accelerator.
     NOTREACHED();
   }
-  accelerator_callback_map_[accelerator].Run();
 }
 
 void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
                                     const std::string& command_id) {
-  if (!command_callback_map_.contains(command_id)) {
+  if (auto* cb = base::FindOrNull(command_callback_map_, command_id)) {
+    cb->Run();
+  } else {
     // This should never occur, because if it does, GlobalAcceleratorListener
     // notifies us with wrong command.
     NOTREACHED();
   }
-  command_callback_map_[command_id].Run();
 }
 
 bool GlobalShortcut::RegisterAll(
