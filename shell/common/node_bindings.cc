@@ -358,6 +358,9 @@ bool IsAllowedOption(const std::string_view option) {
       "--throw-deprecation",
       "--trace-deprecation",
       "--trace-warnings",
+      "--enable-source-maps",
+      "--async-stack-traces",
+      "--experimental-specifier-resolution",
   });
 
   if (debug_options.contains(option))
@@ -382,6 +385,9 @@ void SetNodeOptions(base::Environment* env) {
   static constexpr auto pkg_opts = base::MakeFixedFlatSet<std::string_view>({
       "--http-parser",
       "--max-http-header-size",
+      "--enable-source-maps",
+      "--async-stack-traces",
+      "--experimental-specifier-resolution",
   });
 
   if (env->HasVar("NODE_EXTRA_CA_CERTS")) {
@@ -398,7 +404,7 @@ void SetNodeOptions(base::Environment* env) {
       env->GetVar("NODE_OPTIONS", &options);
       const std::vector<std::string_view> parts = base::SplitStringPiece(
           options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-
+      
       bool is_packaged_app = electron::api::App::IsPackaged();
 
       for (const std::string_view part : parts) {
