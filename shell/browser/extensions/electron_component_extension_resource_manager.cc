@@ -89,7 +89,8 @@ void ElectronComponentExtensionResourceManager::AddComponentResourceEntries(
     resource_path = resource_path.NormalizePathSeparators();
 
     if (!gen_folder_path.IsParent(resource_path)) {
-      auto [_, inserted] = path_to_resource_id_.try_emplace(resource_path, id);
+      const auto [_, inserted] =
+          path_to_resource_id_.try_emplace(std::move(resource_path), id);
       DCHECK(inserted);
     } else {
       // If the resource is a generated file, strip the generated folder's path,
@@ -98,7 +99,8 @@ void ElectronComponentExtensionResourceManager::AddComponentResourceEntries(
       base::FilePath effective_path =
           base::FilePath().AppendASCII(resource_path.AsUTF8Unsafe().substr(
               gen_folder_path.value().length()));
-      auto [_, inserted] = path_to_resource_id_.try_emplace(effective_path, id);
+      const auto [_, inserted] =
+          path_to_resource_id_.try_emplace(std::move(effective_path), id);
       DCHECK(inserted);
     }
   }
