@@ -48,6 +48,14 @@ struct Converter<std::span<T>> {
   }
 };
 
+template <typename T, size_t N>
+struct Converter<std::array<T, N>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const std::array<T, N>& array) {
+    return Converter<std::span<T>>::ToV8(isolate, std::span{array});
+  }
+};
+
 #if !BUILDFLAG(IS_LINUX)
 template <>
 struct Converter<unsigned long> {  // NOLINT(runtime/int)
