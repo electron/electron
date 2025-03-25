@@ -176,6 +176,7 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_base.h"
+#include "components/printing/browser/print_composite_client.h"
 #include "components/printing/browser/print_manager_utils.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_result.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
@@ -1023,6 +1024,7 @@ void WebContents::InitWithWebContents(
 
 #if BUILDFLAG(ENABLE_PRINTING)
   PrintViewManagerElectron::CreateForWebContents(web_contents.get());
+  printing::CreateCompositeClientIfNeeded(web_contents.get(), GetUserAgent());
 #endif
 
   // Determine whether the WebContents is offscreen.
@@ -2072,6 +2074,17 @@ void WebContents::DraggableRegionsChanged(
   }
 
   draggable_region_ = DraggableRegionsToSkRegion(regions);
+}
+
+void WebContents::PrintCrossProcessSubframe(
+    content::WebContents* web_contents,
+    const gfx::Rect& rect,
+    int document_cookie,
+    content::RenderFrameHost* subframe_host) const {
+  if (auto* client =
+          printing::PrintCompositeClient::FromWebContents(web_contents)) {
+    client->PrintCrossProcessSubframe(rect, document_cookie, subframe_host);
+  }
 }
 
 SkRegion* WebContents::draggable_region() {
