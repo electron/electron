@@ -2440,6 +2440,7 @@ describe('webContents module', () => {
   });
 
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
+    let server: http.Server | null;
     const readPDF = async (data: any) => {
       const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'e-spec-printtopdf-'));
       const pdfPath = path.resolve(tmpDir, 'test.pdf');
@@ -2483,7 +2484,12 @@ describe('webContents module', () => {
       });
     });
 
-    afterEach(closeAllWindows);
+    afterEach(() => {
+      closeAllWindows();
+      if (server) {
+        server.close();
+      }
+    });
 
     it('rejects on incorrectly typed parameters', async () => {
       const badTypes = {
@@ -2642,6 +2648,32 @@ describe('webContents module', () => {
       const data = await w.webContents.printToPDF({});
       const pdfInfo = await readPDF(data);
       expect(pdfInfo.markInfo).to.be.null();
+    });
+
+    it('can print same-origin iframes', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-same-origin.html'));
+
+      const data = await w.webContents.printToPDF({});
+      const pdfInfo = await readPDF(data);
+      expect(containsText(pdfInfo.textContent, /Virtual member functions/)).to.be.true();
+    });
+
+    // TODO(codebytere): OOPIF printing is disabled on Linux at the moment due to crashes.
+    ifit(process.platform !== 'linux')('can print cross-origin iframes', async () => {
+      server = http.createServer((_, res) => {
+        res.writeHead(200);
+        res.end(`
+          <title>cross-origin iframe</title>
+          <p>This page is displayed in an iframe.</p>
+        `);
+      });
+      const { port } = await listen(server);
+
+      await w.loadURL(`data:text/html,<iframe src="http://localhost:${port}"></iframe>`);
+
+      const data = await w.webContents.printToPDF({});
+      const pdfInfo = await readPDF(data);
+      expect(containsText(pdfInfo.textContent, /This page is displayed in an iframe./)).to.be.true();
     });
 
     it('can generate tag data for PDFs', async () => {
