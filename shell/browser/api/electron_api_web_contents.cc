@@ -694,8 +694,8 @@ std::map<std::string, std::string> GetAddedFileSystemPaths(
 }
 
 bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
-                               const std::string& file_system_path) {
-  return GetAddedFileSystemPaths(web_contents).contains(file_system_path);
+                               const std::string_view file_system_path) {
+  return GetAddedFileSystems(web_contents).contains(file_system_path);
 }
 
 content::RenderFrameHost* GetRenderFrameHost(
