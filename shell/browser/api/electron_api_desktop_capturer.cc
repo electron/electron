@@ -328,8 +328,9 @@ void DesktopCapturer::StartHandling(bool capture_window,
         window_capturer_->SetThumbnailSize(thumbnail_size);
 #if BUILDFLAG(IS_MAC)
         window_capturer_->skip_next_refresh_ =
-            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow) ? 2
-                                                                           : 0;
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow)
+                ? thumbnail_size.IsEmpty() ? 1 : 2
+                : 0;
 #endif
 
         OnceCallback update_callback = base::BindOnce(
@@ -358,8 +359,9 @@ void DesktopCapturer::StartHandling(bool capture_window,
         screen_capturer_->SetThumbnailSize(thumbnail_size);
 #if BUILDFLAG(IS_MAC)
         screen_capturer_->skip_next_refresh_ =
-            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen) ? 2
-                                                                           : 0;
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen)
+                ? thumbnail_size.IsEmpty() ? 1 : 2
+                : 0;
 #endif
 
         OnceCallback update_callback = base::BindOnce(
