@@ -185,9 +185,7 @@ runs:
       if: ${{ inputs.is-release == 'true' }}
       run: |
         cd src
-        mkdir -p out/ffmpeg
-        echo "import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS" > out/ffmpeg/args.gn
-        e d gn gen out/ffmpeg
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
         e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
       shell: bash
