@@ -69,12 +69,13 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 
 void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
                                     const std::string& command_id) {
-  if (!command_callback_map_.contains(command_id)) {
+  if (auto* cb = base::FindOrNull(command_callback_map_, command_id)) {
+    cb->Run();
+  } else {
     // This should never occur, because if it does, GlobalAcceleratorListener
     // notifies us with wrong command.
     NOTREACHED();
   }
-  command_callback_map_[command_id].Run();
 }
 
 bool GlobalShortcut::RegisterAll(
