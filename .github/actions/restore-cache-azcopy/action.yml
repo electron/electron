@@ -97,18 +97,28 @@ runs:
       $TEMP_DIR=New-Item -ItemType Directory -Path temp-cache
       $TEMP_DIR_PATH = $TEMP_DIR.FullName
       C:\ProgramData\Chocolatey\bin\7z.exe -y x $src_cache -o"$TEMP_DIR_PATH"
-      if (Test-Path "temp-cache\src") {
-        Write-Host "Relocating Cache"
-        Remove-Item -Recurse -Force src
-        Move-Item temp-cache\src src
 
-        Write-Host "Deleting zip file"
-        Remove-Item -Force $src_cache
-      }
-      if (-Not (Test-Path "src\third_party\blink")) {
-        Write-Host "Cache was not correctly restored - exiting"
-        exit 1
-      }
+  - name: Move Src Cache (Windows)
+    if: ${{ inputs.target-platform == 'win' }}
+    uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
+    with:
+      timeout_minutes: 30
+      max_attempts: 3
+      retry_on: error
+      shell: powershell  
+      command: |
+        if (Test-Path "temp-cache\src") {
+          Write-Host "Relocating Cache"
+          Remove-Item -Recurse -Force src
+          Move-Item temp-cache\src src
 
-      Write-Host "Wiping Electron Directory"
-      Remove-Item -Recurse -Force src\electron
+          Write-Host "Deleting zip file"
+          Remove-Item -Force $src_cache
+        }
+        if (-Not (Test-Path "src\third_party\blink")) {
+          Write-Host "Cache was not correctly restored - exiting"
+          exit 1
+        }
+
+        Write-Host "Wiping Electron Directory"
+        Remove-Item -Recurse -Force src\electron
