@@ -19,7 +19,7 @@ would be removed from its snapped state when re-shown. This fixes that.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/6330848.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index a949e73dabad71d2550e38b09dbcf45160b3a853..c188a0bc20f2adff2c2e85879c790e3ebae33a39 100644
+index 98a3365ce2b5ef4e34eb9edf66ef3f620af9ab1d..b5d8f82255764a42df816e58bfcbd588534de2e4 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -656,7 +656,8 @@ void HWNDMessageHandler::Show(ui::mojom::WindowShowState show_state,
