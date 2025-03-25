@@ -192,7 +192,6 @@ class NativeWindowViews : public NativeWindow,
   // views::WidgetDelegate:
   views::View* GetInitiallyFocusedView() override;
   bool CanMaximize() const override;
-  bool CanMinimize() const override;
   std::u16string GetWindowTitle() const override;
   views::View* GetContentsView() override;
   bool ShouldDescendIntoChildForEventHandling(

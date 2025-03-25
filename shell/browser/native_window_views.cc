@@ -1745,14 +1745,6 @@ bool NativeWindowViews::CanMaximize() const {
   return resizable_ && maximizable_;
 }
 
-bool NativeWindowViews::CanMinimize() const {
-#if BUILDFLAG(IS_WIN)
-  return minimizable_;
-#elif BUILDFLAG(IS_LINUX)
-  return true;
-#endif
-}
-
 std::u16string NativeWindowViews::GetWindowTitle() const {
   return base::UTF8ToUTF16(title_);
 }
