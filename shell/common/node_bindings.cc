@@ -394,6 +394,7 @@ void SetNodeOptions(base::Environment* env) {
   if (env->HasVar("NODE_OPTIONS")) {
     if (electron::fuses::IsNodeOptionsEnabled()) {
       std::string options;
+      std::string result_options;
       env->GetVar("NODE_OPTIONS", &options);
       const std::vector<std::string_view> parts = base::SplitStringPiece(
           options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
@@ -408,18 +409,20 @@ void SetNodeOptions(base::Environment* env) {
           // Explicitly disallow majority of NODE_OPTIONS in packaged apps
           LOG(ERROR) << "Most NODE_OPTIONs are not supported in packaged apps."
                      << " See documentation for more details.";
-          options.erase(options.find(option), part.length());
+          continue;
         } else if (disallowed.contains(option)) {
           // Remove NODE_OPTIONS specifically disallowed for use in Node.js
           // through Electron owing to constraints like BoringSSL.
           LOG(ERROR) << "The NODE_OPTION " << option
                      << " is not supported in Electron";
-          options.erase(options.find(option), part.length());
+          continue;
         }
+        result_options.append(part);
+        result_options.append(" ");
       }
 
       // overwrite new NODE_OPTIONS without unsupported variables
-      env->SetVar("NODE_OPTIONS", options);
+      env->SetVar("NODE_OPTIONS", result_options);
     } else {
       LOG(WARNING) << "NODE_OPTIONS ignored due to disabled nodeOptions fuse.";
       env->UnSetVar("NODE_OPTIONS");
