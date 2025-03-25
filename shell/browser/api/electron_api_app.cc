@@ -90,6 +90,7 @@
 
 #if BUILDFLAG(IS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
+#include "base/no_destructor.h"
 #include "content/browser/mac_helpers.h"
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
 #include "shell/common/process_util.h"
@@ -904,12 +905,12 @@ bool App::IsPackaged() {
 #if BUILDFLAG(IS_WIN)
   return base_name != FILE_PATH_LITERAL("electron.exe");
 #elif BUILDFLAG(IS_MAC)
-  static const base::FilePath::StringType default_helper =
+  static const base::NoDestructor<std::string> default_helper =
       "electron helper" + base::ToLowerASCII(content::kMacHelperSuffix_default);
-  static const base::FilePath::StringType renderer_helper =
+  static const base::NoDestructor<std::string> renderer_helper =
       "electron helper" +
       base::ToLowerASCII(content::kMacHelperSuffix_renderer);
-  static const base::FilePath::StringType plugin_helper =
+  static const base::NoDestructor<std::string> plugin_helper =
       "electron helper" + base::ToLowerASCII(content::kMacHelperSuffix_plugin);
   if (IsRendererProcess()) {
     return base_name != renderer_helper;
