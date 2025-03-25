@@ -902,17 +902,18 @@ bool App::IsPackaged() {
 #if BUILDFLAG(IS_WIN)
   return base_name != FILE_PATH_LITERAL("electron.exe");
 #elif BUILDFLAG(IS_MAC)
-  static const base::NoDestructor<std::string> default_helper =
-      "electron helper" + base::ToLowerASCII(content::kMacHelperSuffix_default);
-  static const base::NoDestructor<std::string> renderer_helper =
+  static const base::NoDestructor<std::string> default_helper(
       "electron helper" +
-      base::ToLowerASCII(content::kMacHelperSuffix_renderer);
-  static const base::NoDestructor<std::string> plugin_helper =
-      "electron helper" + base::ToLowerASCII(content::kMacHelperSuffix_plugin);
+      base::ToLowerASCII(content::kMacHelperSuffix_default));
+  static const base::NoDestructor<std::string> renderer_helper(
+      "electron helper" +
+      base::ToLowerASCII(content::kMacHelperSuffix_renderer));
+  static const base::NoDestructor<std::string> plugin_helper(
+      "electron helper" + base::ToLowerASCII(content::kMacHelperSuffix_plugin));
   if (IsRendererProcess()) {
-    return base_name != renderer_helper;
+    return base_name != *renderer_helper;
   } else if (IsUtilityProcess()) {
-    return base_name != default_helper && base_name != plugin_helper;
+    return base_name != *default_helper && base_name != *plugin_helper;
   }
   return base_name != FILE_PATH_LITERAL("electron");
 #else
