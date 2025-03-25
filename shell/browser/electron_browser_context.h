@@ -82,8 +82,6 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   static void DestroyAllContexts();
 
-  static void DestroyAllContexts();
-
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent() const;
   bool can_use_http_cache() const { return use_cache_; }
