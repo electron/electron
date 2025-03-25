@@ -4,6 +4,8 @@
 
 Process: [Renderer](../glossary.md#renderer-process)
 
+`webUtils` is only available in preload scripts.
+
 ## Methods
 
 The `webUtils` module has the following methods:
@@ -27,7 +29,7 @@ alert(`Uploaded file path was: ${file.path}`)
 const file = document.querySelector('input[type=file]').files[0]
 electron.showFilePath(file)
 
-// (preload)
+// (preload script)
 const { contextBridge, webUtils } = require('electron')
 
 contextBridge.exposeInMainWorld('electron', {
