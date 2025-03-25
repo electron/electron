@@ -10,9 +10,14 @@ const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
 
 let children: cp.ChildProcessWithoutNullStreams[] = [];
 
-const runFixtureAndEnsureCleanExit = async (args: string[], env: NodeJS.ProcessEnv) => {
+const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.ProcessEnv) => {
   let out = '';
-  const child = cp.spawn(process.execPath, args, { env });
+  const child = cp.spawn(process.execPath, args, {
+    env: {
+      ...process.env,
+      ...customEnv
+    }
+  });
   children.push(child);
   child.stdout.on('data', (chunk: Buffer) => {
     out += chunk.toString();
