@@ -67,6 +67,22 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     }
   });
 
+  it('enabling thumbnail should return non-empty images', async () => {
+    const w2 = new BrowserWindow({ show: false, width: 200, height: 200, webPreferences: { contextIsolation: false } });
+    const wShown = once(w2, 'show');
+    w2.show();
+    await wShown;
+
+    const isNonEmpties: boolean[] = (await desktopCapturer.getSources({
+      types: ['window', 'screen'],
+      thumbnailSize: { width: 100, height: 100 }
+    })).map(s => s.thumbnail.constructor.name === 'NativeImage' && !s.thumbnail.isEmpty());
+
+    w2.destroy();
+    expect(isNonEmpties).to.be.an('array').that.is.not.empty();
+    expect(isNonEmpties.every(e => e === true)).to.be.true();
+  });
+
   it('disabling thumbnail should return empty images', async () => {
     const w2 = new BrowserWindow({ show: false, width: 200, height: 200, webPreferences: { contextIsolation: false } });
     const wShown = once(w2, 'show');
