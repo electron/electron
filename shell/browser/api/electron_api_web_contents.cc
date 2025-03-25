@@ -675,13 +675,16 @@ PrefService* GetPrefService(content::WebContents* web_contents) {
   return static_cast<electron::ElectronBrowserContext*>(context)->prefs();
 }
 
+// returns a Dict of filesystem_path -> type
+[[nodiscard]] const base::Value::Dict& GetAddedFileSystems(
+    content::WebContents* web_contents) {
+  return GetPrefService(web_contents)->GetDict(prefs::kDevToolsFileSystemPaths);
+}
+
 std::map<std::string, std::string> GetAddedFileSystemPaths(
     content::WebContents* web_contents) {
-  auto* pref_service = GetPrefService(web_contents);
-  const base::Value::Dict& file_system_paths =
-      pref_service->GetDict(prefs::kDevToolsFileSystemPaths);
   std::map<std::string, std::string> result;
-  for (auto it : file_system_paths) {
+  for (auto it : GetAddedFileSystems(web_contents)) {
     std::string type =
         it.second.is_string() ? it.second.GetString() : std::string();
     result[it.first] = type;
@@ -690,8 +693,8 @@ std::map<std::string, std::string> GetAddedFileSystemPaths(
 }
 
 bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
-                               const std::string& file_system_path) {
-  return GetAddedFileSystemPaths(web_contents).contains(file_system_path);
+                               const std::string_view file_system_path) {
+  return GetAddedFileSystems(web_contents).contains(file_system_path);
 }
 
 content::RenderFrameHost* GetRenderFrameHost(
