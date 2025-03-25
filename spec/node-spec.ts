@@ -697,6 +697,29 @@ describe('node feature', () => {
       expect(code).to.equal(1);
     });
 
+    it('does allow --require in utility process of non-packaged apps', async () => {
+      const appPath = path.join(fixtures, 'apps', 'node-options-utility-process');
+      // App should exit with code 1.
+      const child = childProcess.spawn(process.execPath, [appPath]);
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
+    });
+
+    // TODO(deepak1556): will be enabled in follow-up PR
+    // https://github.com/electron/electron/pull/46210
+    it.skip('does not allow --require in utility process of packaged apps', async () => {
+      const appPath = path.join(fixtures, 'apps', 'node-options-utility-process');
+      // App should exit with code 1.
+      const child = childProcess.spawn(process.execPath, [appPath], {
+        env: {
+          ...process.env,
+          ELECTRON_FORCE_IS_PACKAGED: 'true'
+        }
+      });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
     it('does not allow --require in packaged apps', async () => {
       const appPath = path.join(fixtures, 'module', 'noop.js');
       const env = {
