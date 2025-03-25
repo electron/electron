@@ -4053,21 +4053,22 @@ void WebContents::DevToolsAppendToFile(const std::string& url,
 void WebContents::DevToolsRequestFileSystems() {
   auto* const dtwc = GetDevToolsWebContents();
 
-  auto file_system_paths = GetAddedFileSystemPaths(dtwc);
-  if (file_system_paths.empty()) {
+  const base::Value::Dict& added_paths = GetAddedFileSystems(dtwc);
+  if (added_paths.empty()) {
     inspectable_web_contents_->CallClientFunction(
         "DevToolsAPI", "fileSystemsLoaded", base::Value(base::Value::List()));
     return;
   }
 
   std::vector<FileSystem> file_systems;
-  for (const auto& file_system_path : file_system_paths) {
-    base::FilePath path =
-        base::FilePath::FromUTF8Unsafe(file_system_path.first);
-    std::string file_system_id = RegisterFileSystem(dtwc, path);
-    FileSystem file_system = CreateFileSystemStruct(
-        dtwc, file_system_id, file_system_path.first, file_system_path.second);
-    file_systems.push_back(file_system);
+  const std::string empty_str;
+  for (const auto path_and_type : added_paths) {
+    const auto& [path, type_val] = path_and_type;
+    const auto& type = type_val.is_string() ? type_val.GetString() : empty_str;
+    const std::string file_system_id =
+        RegisterFileSystem(dtwc, base::FilePath::FromUTF8Unsafe(path));
+    file_systems.emplace_back(
+        CreateFileSystemStruct(dtwc, file_system_id, path, type));
   }
 
   base::Value::List file_system_value;
