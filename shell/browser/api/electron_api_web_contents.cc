@@ -2112,6 +2112,7 @@ void WebContents::DraggableRegionsChanged(
   draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
+#if BUILDFLAG(ENABLE_PRINTING)
 void WebContents::PrintCrossProcessSubframe(
     content::WebContents* web_contents,
     const gfx::Rect& rect,
@@ -2122,6 +2123,7 @@ void WebContents::PrintCrossProcessSubframe(
     client->PrintCrossProcessSubframe(rect, document_cookie, subframe_host);
   }
 }
+#endif
 
 SkRegion* WebContents::draggable_region() {
   return g_disable_draggable_regions ? nullptr : draggable_region_.get();
