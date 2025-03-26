@@ -79,6 +79,14 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
     return buffer.ToLocalChecked();
 }
 
+[[nodiscard]] constexpr std::array<int, 2U> ToArray(const gfx::Size size) {
+  return {size.width(), size.height()};
+}
+
+[[nodiscard]] constexpr std::array<int, 2U> ToArray(const gfx::Point point) {
+  return {point.x(), point.y()};
+}
+
 }  // namespace
 
 BaseWindow::BaseWindow(v8::Isolate* isolate,
@@ -468,8 +476,7 @@ void BaseWindow::SetSize(int width, int height, gin_helper::Arguments* args) {
 }
 
 std::array<int, 2U> BaseWindow::GetSize() const {
-  const gfx::Size size = window_->GetSize();
-  return {size.width(), size.height()};
+  return ToArray(window_->GetSize());
 }
 
 void BaseWindow::SetContentSize(int width,
@@ -481,8 +488,7 @@ void BaseWindow::SetContentSize(int width,
 }
 
 std::array<int, 2U> BaseWindow::GetContentSize() const {
-  const gfx::Size size = window_->GetContentSize();
-  return {size.width(), size.height()};
+  return ToArray(window_->GetContentSize());
 }
 
 void BaseWindow::SetMinimumSize(int width, int height) {
@@ -490,8 +496,7 @@ void BaseWindow::SetMinimumSize(int width, int height) {
 }
 
 std::array<int, 2U> BaseWindow::GetMinimumSize() const {
-  const gfx::Size size = window_->GetMinimumSize();
-  return {size.width(), size.height()};
+  return ToArray(window_->GetMinimumSize());
 }
 
 void BaseWindow::SetMaximumSize(int width, int height) {
@@ -499,8 +504,7 @@ void BaseWindow::SetMaximumSize(int width, int height) {
 }
 
 std::array<int, 2U> BaseWindow::GetMaximumSize() const {
-  const gfx::Size size = window_->GetMaximumSize();
-  return {size.width(), size.height()};
+  return ToArray(window_->GetMaximumSize());
 }
 
 void BaseWindow::SetSheetOffset(double offsetY, gin_helper::Arguments* args) {
@@ -583,8 +587,7 @@ void BaseWindow::SetPosition(int x, int y, gin_helper::Arguments* args) {
 }
 
 std::array<int, 2U> BaseWindow::GetPosition() const {
-  const gfx::Point pos = window_->GetPosition();
-  return {pos.x(), pos.y()};
+  return ToArray(window_->GetPosition());
 }
 void BaseWindow::MoveAbove(const std::string& sourceId,
                            gin_helper::Arguments* args) {
