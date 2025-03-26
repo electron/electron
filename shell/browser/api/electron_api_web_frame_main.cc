@@ -155,8 +155,8 @@ WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
   if (!render_frame_detached_)
     GetFrameTreeNodeIdMap().emplace(frame_tree_node_id_, this);
 
-  DCHECK(!GetFrameTokenMap().contains(frame_token_));
-  GetFrameTokenMap().emplace(frame_token_, this);
+  const auto [_, inserted] = GetFrameTokenMap().emplace(frame_token_, this);
+  DCHECK(inserted);
 
   // WebFrameMain should only be created for active or unloading frames.
   DCHECK(GetLifecycleState(rfh) == LifecycleState::kActive ||
