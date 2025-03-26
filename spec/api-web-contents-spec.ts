@@ -887,6 +887,31 @@ describe('webContents module', () => {
         });
       });
     });
+
+    it('should restore an overridden user agent', async () => {
+      const partition = 'persist:wcvtest';
+      const testUA = 'MyCustomUA';
+
+      const ses = session.fromPartition(partition);
+      ses.setUserAgent(testUA);
+
+      const wcv = new WebContentsView({
+        webPreferences: { partition }
+      });
+
+      wcv.webContents.navigationHistory.restore({
+        entries: [{
+          url: urlPage1,
+          title: 'url1'
+        }],
+        index: 0
+      });
+
+      const ua = wcv.webContents.getUserAgent();
+      const wcvua = await wcv.webContents.executeJavaScript('navigator.userAgent');
+
+      expect(ua).to.equal(wcvua);
+    });
   });
 
   describe('getFocusedWebContents() API', () => {
