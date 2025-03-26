@@ -233,10 +233,6 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
 
   for (size_t i = 0; i < permissions.size(); ++i) {
     auto permission = permissions[i];
-    if (permission == blink::PermissionType::GEOLOCATION &&
-        IsGeolocationDisabledViaCommandLine())
-      continue;
-
     const auto callback =
         base::BindRepeating(&ElectronPermissionManager::OnPermissionResponse,
                             base::Unretained(this), request_id, i);
