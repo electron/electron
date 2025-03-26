@@ -687,17 +687,21 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
           continue;
         }
       }
-      v8::Local<v8::Value> value;
-      if (!api.Get(key, &value))
-        continue;
 
-      auto passed_value = PassValueToOtherContextInner(
-          source_context, source_execution_context, destination_context, value,
-          api.GetHandle(), object_cache, support_dynamic_properties,
-          recursion_depth + 1, error_target);
-      if (passed_value.IsEmpty())
-        return {};
-      proxy.Set(key, passed_value.ToLocalChecked());
+      {
+        v8::Context::Scope source_context_scope(source_context);
+        v8::Local<v8::Value> value;
+        if (!api.Get(key, &value))
+          continue;
+
+        auto passed_value = PassValueToOtherContextInner(
+            source_context, source_execution_context, destination_context,
+            value, api.GetHandle(), object_cache, support_dynamic_properties,
+            recursion_depth + 1, error_target);
+        if (passed_value.IsEmpty())
+          return {};
+        proxy.Set(key, passed_value.ToLocalChecked());
+      }
     }
 
     return proxy.GetHandle();
