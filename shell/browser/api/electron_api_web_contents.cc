@@ -4053,7 +4053,9 @@ void WebContents::DevToolsAppendToFile(const std::string& url,
 }
 
 void WebContents::DevToolsRequestFileSystems() {
-  auto file_system_paths = GetAddedFileSystemPaths(GetDevToolsWebContents());
+  auto* const dtwc = GetDevToolsWebContents();
+
+  auto file_system_paths = GetAddedFileSystemPaths(dtwc);
   if (file_system_paths.empty()) {
     inspectable_web_contents_->CallClientFunction(
         "DevToolsAPI", "fileSystemsLoaded", base::Value(base::Value::List()));
@@ -4064,11 +4066,9 @@ void WebContents::DevToolsRequestFileSystems() {
   for (const auto& file_system_path : file_system_paths) {
     base::FilePath path =
         base::FilePath::FromUTF8Unsafe(file_system_path.first);
-    std::string file_system_id =
-        RegisterFileSystem(GetDevToolsWebContents(), path);
-    FileSystem file_system =
-        CreateFileSystemStruct(GetDevToolsWebContents(), file_system_id,
-                               file_system_path.first, file_system_path.second);
+    std::string file_system_id = RegisterFileSystem(dtwc, path);
+    FileSystem file_system = CreateFileSystemStruct(
+        dtwc, file_system_id, file_system_path.first, file_system_path.second);
     file_systems.push_back(file_system);
   }
 
