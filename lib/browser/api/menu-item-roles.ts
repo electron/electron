@@ -265,9 +265,9 @@ export const roleList: Record<RoleId, Role> = {
           {
             label: 'Spelling and Grammar',
             submenu: [
-              { role: 'togglespellingandgrammar' },
+              { role: 'toggleSpellingAndGrammar' },
               { type: 'separator' },
-              { role: 'togglespellchecker' }
+              { role: 'toggleSpellChecker' }
             ]
           },
           {
