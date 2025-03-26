@@ -882,6 +882,12 @@ ElectronBrowserContext* ElectronBrowserContext::From(
   return context.get();
 }
 
+// static
+ElectronBrowserContext* ElectronBrowserContext::GetDefaultBrowserContext(
+    base::Value::Dict options) {
+  return ElectronBrowserContext::From("", false, std::move(options));
+}
+
 ElectronBrowserContext* ElectronBrowserContext::FromPath(
     const base::FilePath& path,
     base::Value::Dict options) {
