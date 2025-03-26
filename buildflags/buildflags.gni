@@ -25,7 +25,7 @@ declare_args() {
   # Use the operating system's spellchecker rather than hunspell. This does
   # not affect the "red underline" spellchecker which can consult Google's
   # server-based spellcheck service.
-  use_browser_spellchecker = is_mac
+  use_browser_spellchecker = is_android || is_mac || is_win
 
   # Whether the enhanced spellcheck service is available on the platform. This is
   # effectively equal to all desktop platforms.
