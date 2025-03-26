@@ -588,12 +588,9 @@ void BaseWindow::SetPosition(int x, int y, gin_helper::Arguments* args) {
   window_->SetPosition(gfx::Point(x, y), animate);
 }
 
-std::vector<int> BaseWindow::GetPosition() const {
-  std::vector<int> result(2);
-  gfx::Point pos = window_->GetPosition();
-  result[0] = pos.x();
-  result[1] = pos.y();
-  return result;
+std::array<int, 2U> BaseWindow::GetPosition() const {
+  const gfx::Point pos = window_->GetPosition();
+  return {pos.x(), pos.y()};
 }
 void BaseWindow::MoveAbove(const std::string& sourceId,
                            gin_helper::Arguments* args) {
