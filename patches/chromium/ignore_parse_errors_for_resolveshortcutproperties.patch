@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?David=20L=C3=B6nnhager?= <dv.lnh.d@gmail.com>
+Date: Fri, 17 Jan 2025 14:30:48 +0100
+Subject: Ignore parse errors in ResolveShortcutProperties
+
+Some shortcuts store this as a string UUID as opposed to VT_CLSID,
+hitting NOTREACHED() and sometimes breaking parsing in Electron.
+Ignore this error instead.
+
+diff --git a/base/win/shortcut.cc b/base/win/shortcut.cc
+index 967e130e823f41c402411dfadb53b805e8a8c92b..c1cc95fa8993cc5bdab422710934fb6217272b96 100644
+--- a/base/win/shortcut.cc
++++ b/base/win/shortcut.cc
+@@ -317,7 +317,8 @@ bool ResolveShortcutProperties(const FilePath& shortcut_path,
+           break;
+         }
+         default: {
+-          NOTREACHED() << "Unexpected variant type: " << pv_app_id.get().vt;
++          LOG(WARNING) << "Unexpected variant type: " << pv_app_id.get().vt;
++          break;
+         }
+       }
+     }
+@@ -336,7 +337,8 @@ bool ResolveShortcutProperties(const FilePath& shortcut_path,
+           properties->set_dual_mode(pv_dual_mode.get().boolVal == VARIANT_TRUE);
+           break;
+         default:
+-          NOTREACHED() << "Unexpected variant type: " << pv_dual_mode.get().vt;
++          LOG(WARNING) << "Unexpected variant type: " << pv_dual_mode.get().vt;
++          break;
+       }
+     }
+ 
+@@ -356,8 +358,9 @@ bool ResolveShortcutProperties(const FilePath& shortcut_path,
+               *(pv_toast_activator_clsid.get().puuid));
+           break;
+         default:
+-          NOTREACHED() << "Unexpected variant type: "
+-                       << pv_toast_activator_clsid.get().vt;
++          LOG(INFO) << "Unexpected variant type: "
++                    << pv_toast_activator_clsid.get().vt;
++          break;
+       }
+     }
+   }
