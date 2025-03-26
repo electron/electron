@@ -1,0 +1,174 @@
+From b8f80176b1636154c6bfc85a607b05cc3aec50cb Mon Sep 17 00:00:00 2001
+From: Alex Gough <ajgo@chromium.org>
+Date: Mon, 24 Mar 2025 09:04:37 -0700
+Subject: [PATCH] Avoid receiving or sending sentinel handle values
+
+These values can be misinterpreted by OS functions, so
+avoid sending or receiving them over IPCZ.
+
+(cherry picked from commit 36dbbf38697dd1e23ef8944bb9e57f6e0b3d41ec)
+
+Bug: 405143032
+Change-Id: Ib578fb4727e78e2697c60c42005daa97e08695e9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6380193
+Reviewed-by: Will Harris <wfh@chromium.org>
+Commit-Queue: Alex Gough <ajgo@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1436135}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6383569
+Owners-Override: Srinivas Sista <srinivassista@chromium.org>
+Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/6998@{#2315}
+Cr-Branched-From: de9c6fafd8ae5c6ea0438764076ca7d04a0b165d-refs/heads/main@{#1415337}
+---
+
+diff --git a/base/win/win_util.h b/base/win/win_util.h
+index c10538d..0bc93a25 100644
+--- a/base/win/win_util.h
++++ b/base/win/win_util.h
+@@ -49,6 +49,25 @@
+ 
+ namespace win {
+ 
++inline bool IsPseudoHandle(HANDLE h) {
++  // Note that there appears to be no official documentation covering the
++  // existence of specific pseudo handle values. In practice it's clear that
++  // e.g. -1 is the current process, -2 is the current thread, etc. The largest
++  // negative value known to be an issue with DuplicateHandle in fuzzers is
++  // -12.
++  //
++  // Note that there is virtually no risk of a real handle value falling within
++  // this range and being misclassified as a pseudo handle.
++  //
++  // Cast through uintptr_t and then unsigned int to make the truncation to
++  // 32 bits explicit. Handles are size of-pointer but are always 32-bit values.
++  // https://msdn.microsoft.com/en-us/library/aa384203(VS.85).aspx says:
++  // 64-bit versions of Windows use 32-bit handles for interoperability.
++  constexpr int kMinimumKnownPseudoHandleValue = -12;
++  const auto value = static_cast<int32_t>(reinterpret_cast<uintptr_t>(h));
++  return value < 0 && value >= kMinimumKnownPseudoHandleValue;
++}
++
+ inline uint32_t HandleToUint32(HANDLE h) {
+   // Cast through uintptr_t and then unsigned int to make the truncation to
+   // 32 bits explicit. Handles are size of-pointer but are always 32-bit values.
+diff --git a/base/win/win_util_unittest.cc b/base/win/win_util_unittest.cc
+index 70eedf10..f8bbc0b 100644
+--- a/base/win/win_util_unittest.cc
++++ b/base/win/win_util_unittest.cc
+@@ -91,6 +91,12 @@
+   EXPECT_EQ(INVALID_HANDLE_VALUE, Uint32ToHandle(invalid_handle));
+ }
+ 
++TEST(BaseWinUtilTest, PseudoHandles) {
++  EXPECT_TRUE(IsPseudoHandle(::GetCurrentProcess()));
++  EXPECT_TRUE(IsPseudoHandle(::GetCurrentThread()));
++  EXPECT_FALSE(IsPseudoHandle(nullptr));
++}
++
+ TEST(BaseWinUtilTest, WStringFromGUID) {
+   const GUID kGuid = {0x7698f759,
+                       0xf5b0,
+diff --git a/mojo/core/ipcz_driver/transport.cc b/mojo/core/ipcz_driver/transport.cc
+index 96918f8..d1e3286 100644
+--- a/mojo/core/ipcz_driver/transport.cc
++++ b/mojo/core/ipcz_driver/transport.cc
+@@ -34,6 +34,7 @@
+ #include "third_party/ipcz/include/ipcz/ipcz.h"
+ 
+ #if BUILDFLAG(IS_WIN)
++#include "base/win/win_util.h"
+ #include "mojo/public/cpp/platform/platform_handle_security_util_win.h"
+ #endif
+ 
+@@ -135,10 +136,12 @@
+                   HandleOwner handle_owner,
+                   HandleData& out_handle_data,
+                   bool is_remote_process_untrusted) {
++  CHECK(handle.is_valid());
+   // Duplicating INVALID_HANDLE_VALUE passes a process handle. If you intend to
+   // do this, you must open a valid process handle, not pass the result of
+-  // GetCurrentProcess(). e.g. https://crbug.com/243339.
+-  CHECK(handle.is_valid());
++  // GetCurrentProcess() or GetCurrentThread(). e.g. https://crbug.com/243339.
++  CHECK(!handle.is_pseudo_handle());
++
+   if (handle_owner == HandleOwner::kSender) {
+     // Nothing to do when sending handles that belong to us. The recipient must
+     // be sufficiently privileged and equipped to duplicate such handles to
+@@ -178,6 +181,10 @@
+                             HandleOwner handle_owner,
+                             Transport& from_transport) {
+   const HANDLE handle = DataToHandle(data);
++  // Do not decode sentinel values used by Windows (INVALID_HANDLE_VALUE &
++  // GetCurrentThread()).
++  CHECK(!base::win::IsPseudoHandle(handle));
++
+   if (handle_owner == HandleOwner::kRecipient) {
+     if (from_transport.destination_type() != Transport::kBroker &&
+         !from_transport.is_peer_trusted() && !remote_process.is_current()) {
+diff --git a/mojo/core/platform_handle_in_transit.cc b/mojo/core/platform_handle_in_transit.cc
+index 44330d2..670dca4 100644
+--- a/mojo/core/platform_handle_in_transit.cc
++++ b/mojo/core/platform_handle_in_transit.cc
+@@ -18,6 +18,7 @@
+ 
+ #include "base/win/nt_status.h"
+ #include "base/win/scoped_handle.h"
++#include "base/win/win_util.h"
+ #include "mojo/public/cpp/platform/platform_handle_security_util_win.h"
+ #endif
+ 
+@@ -37,8 +38,8 @@
+ 
+   // Duplicating INVALID_HANDLE_VALUE passes a process handle. If you intend to
+   // do this, you must open a valid process handle, not pass the result of
+-  // GetCurrentProcess(). e.g. https://crbug.com/243339.
+-  CHECK(handle != INVALID_HANDLE_VALUE);
++  // GetCurrentProcess() or GetCurrentThread(). e.g. https://crbug.com/243339.
++  CHECK(!base::win::IsPseudoHandle(handle));
+ 
+   HANDLE out_handle;
+   BOOL result =
+@@ -164,17 +165,7 @@
+ #if BUILDFLAG(IS_WIN)
+ // static
+ bool PlatformHandleInTransit::IsPseudoHandle(HANDLE handle) {
+-  // Note that there appears to be no official documentation covering the
+-  // existence of specific pseudo handle values. In practice it's clear that
+-  // e.g. -1 is the current process, -2 is the current thread, etc. The largest
+-  // negative value known to be an issue with DuplicateHandle in the fuzzer is
+-  // -12.
+-  //
+-  // Note that there is virtually no risk of a real handle value falling within
+-  // this range and being misclassified as a pseudo handle.
+-  constexpr int kMinimumKnownPseudoHandleValue = -12;
+-  const auto value = static_cast<int32_t>(reinterpret_cast<uintptr_t>(handle));
+-  return value < 0 && value >= kMinimumKnownPseudoHandleValue;
++  return base::win::IsPseudoHandle(handle);
+ }
+ 
+ // static
+diff --git a/mojo/public/cpp/platform/platform_handle.h b/mojo/public/cpp/platform/platform_handle.h
+index 7154aeb..3390540d 100644
+--- a/mojo/public/cpp/platform/platform_handle.h
++++ b/mojo/public/cpp/platform/platform_handle.h
+@@ -13,6 +13,7 @@
+ 
+ #if BUILDFLAG(IS_WIN)
+ #include "base/win/scoped_handle.h"
++#include "base/win/win_util.h"
+ #elif BUILDFLAG(IS_FUCHSIA)
+ #include <lib/zx/handle.h>
+ #elif BUILDFLAG(IS_APPLE)
+@@ -117,6 +118,9 @@
+   bool is_valid() const { return is_valid_handle(); }
+   bool is_valid_handle() const { return handle_.IsValid(); }
+   bool is_handle() const { return type_ == Type::kHandle; }
++  bool is_pseudo_handle() const {
++    return base::win::IsPseudoHandle(handle_.get());
++  }
+   const base::win::ScopedHandle& GetHandle() const { return handle_; }
+   base::win::ScopedHandle TakeHandle() {
+     DCHECK_EQ(type_, Type::kHandle);
