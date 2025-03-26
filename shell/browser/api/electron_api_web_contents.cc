@@ -4226,8 +4226,11 @@ void WebContents::DevToolsIndexPath(
     OnDevToolsIndexingDone(request_id, file_system_path);
     return;
   }
-  if (devtools_indexing_jobs_.contains(request_id))
+
+  auto& indexing_job = devtools_indexing_jobs_[request_id];
+  if (indexing_job)
     return;
+
   std::vector<std::string> excluded_folders;
   std::optional<base::Value> parsed_excluded_folders =
       base::JSONReader::Read(excluded_folders_message);
@@ -4237,19 +4240,18 @@ void WebContents::DevToolsIndexPath(
         excluded_folders.push_back(folder_path.GetString());
     }
   }
-  devtools_indexing_jobs_[request_id] =
-      scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>(
-          devtools_file_system_indexer_->IndexPath(
-              file_system_path, excluded_folders,
-              base::BindRepeating(
-                  &WebContents::OnDevToolsIndexingWorkCalculated,
-                  weak_factory_.GetWeakPtr(), request_id, file_system_path),
-              base::BindRepeating(&WebContents::OnDevToolsIndexingWorked,
-                                  weak_factory_.GetWeakPtr(), request_id,
-                                  file_system_path),
-              base::BindRepeating(&WebContents::OnDevToolsIndexingDone,
-                                  weak_factory_.GetWeakPtr(), request_id,
-                                  file_system_path)));
+
+  indexing_job = devtools_file_system_indexer_->IndexPath(
+      file_system_path, excluded_folders,
+      base::BindRepeating(&WebContents::OnDevToolsIndexingWorkCalculated,
+                          weak_factory_.GetWeakPtr(), request_id,
+                          file_system_path),
+      base::BindRepeating(&WebContents::OnDevToolsIndexingWorked,
+                          weak_factory_.GetWeakPtr(), request_id,
+                          file_system_path),
+      base::BindRepeating(&WebContents::OnDevToolsIndexingDone,
+                          weak_factory_.GetWeakPtr(), request_id,
+                          file_system_path));
 }
 
 void WebContents::DevToolsStopIndexing(int request_id) {
