@@ -33,7 +33,7 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
          forKey:@"NSTreatUnknownArgumentsAsOpen"];
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  bool disable_geolocation = command_line->HasSwitch("disable-geolocation-mac");
+  bool disable_geolocation = command_line->HasSwitch("disable-geolocation");
 
   if (!disable_geolocation) {
     if (!device::GeolocationSystemPermissionManager::GetInstance()) {

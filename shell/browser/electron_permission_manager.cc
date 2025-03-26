@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/command_line.h"
 #include "base/containers/to_vector.h"
 #include "base/values.h"
 #include "content/browser/permissions/permission_util.h"  // nogncheck
@@ -48,6 +49,16 @@ void PermissionRequestResponseCallbackWrapper(
     ElectronPermissionManager::StatusCallback callback,
     const std::vector<blink::mojom::PermissionStatus>& vector) {
   std::move(callback).Run(vector[0]);
+}
+
+bool IsGeolocationDisabledViaCommandLine() {
+// Remove platform check once flag is extended to other platforms
+#if BUILDFLAG(IS_MAC)
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  return command_line->HasSwitch("disable-geolocation");
+#else
+  return false;
+#endif
 }
 
 }  // namespace
@@ -203,10 +214,16 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
             ->GrantSendMidiSysExMessage(
                 render_frame_host->GetProcess()->GetDeprecatedID());
       } else if (permission_type == blink::PermissionType::GEOLOCATION) {
-        ElectronBrowserMainParts::Get()
-            ->GetGeolocationControl()
-            ->UserDidOptIntoLocationServices();
+        if (IsGeolocationDisabledViaCommandLine()) {
+          statuses.push_back(blink::mojom::PermissionStatus::DENIED);
+          continue;
+        } else {
+          ElectronBrowserMainParts::Get()
+              ->GetGeolocationControl()
+              ->UserDidOptIntoLocationServices();
+        }
       }
+
       statuses.push_back(blink::mojom::PermissionStatus::GRANTED);
     }
     std::move(response_callback).Run(statuses);
@@ -225,6 +242,10 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
   for (size_t i = 0; i < request_description.permissions.size(); ++i) {
     const auto permission = blink::PermissionDescriptorToPermissionType(
         request_description.permissions[i]);
+    if (permission == blink::PermissionType::GEOLOCATION &&
+        IsGeolocationDisabledViaCommandLine())
+      continue;
+
     const auto callback =
         base::BindRepeating(&ElectronPermissionManager::OnPermissionResponse,
                             base::Unretained(this), request_id, i);
@@ -310,6 +331,10 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     base::Value::Dict details) const {
+  if (permission == blink::PermissionType::GEOLOCATION &&
+      IsGeolocationDisabledViaCommandLine())
+    return false;
+
   if (check_handler_.is_null()) {
     if (permission == blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ) {
       return false;
@@ -347,6 +372,10 @@ bool ElectronPermissionManager::CheckDevicePermission(
     const url::Origin& origin,
     const base::Value& device,
     ElectronBrowserContext* browser_context) const {
+  if (permission == blink::PermissionType::GEOLOCATION &&
+      IsGeolocationDisabledViaCommandLine())
+    return false;
+
   if (device_permission_handler_.is_null())
     return browser_context->CheckDevicePermission(origin, device, permission);
 
