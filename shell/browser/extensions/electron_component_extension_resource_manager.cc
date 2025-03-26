@@ -84,12 +84,13 @@ void ElectronComponentExtensionResourceManager::AddComponentResourceEntries(
   gen_folder_path = gen_folder_path.NormalizePathSeparators();
 
   for (const auto& entry : entries) {
+    const int id = entry.id;
     base::FilePath resource_path = base::FilePath().AppendASCII(entry.path);
     resource_path = resource_path.NormalizePathSeparators();
 
     if (!gen_folder_path.IsParent(resource_path)) {
-      DCHECK(!path_to_resource_id_.contains(resource_path));
-      path_to_resource_id_[resource_path] = entry.id;
+      auto [_, inserted] = path_to_resource_id_.try_emplace(resource_path, id);
+      DCHECK(inserted);
     } else {
       // If the resource is a generated file, strip the generated folder's path,
       // so that it can be served from a normal URL (as if it were not
@@ -97,8 +98,8 @@ void ElectronComponentExtensionResourceManager::AddComponentResourceEntries(
       base::FilePath effective_path =
           base::FilePath().AppendASCII(resource_path.AsUTF8Unsafe().substr(
               gen_folder_path.value().length()));
-      DCHECK(!path_to_resource_id_.contains(effective_path));
-      path_to_resource_id_[effective_path] = entry.id;
+      auto [_, inserted] = path_to_resource_id_.try_emplace(effective_path, id);
+      DCHECK(inserted);
     }
   }
 }
