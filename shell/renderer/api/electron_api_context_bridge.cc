@@ -700,7 +700,12 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
             recursion_depth + 1, error_target);
         if (passed_value.IsEmpty())
           return {};
-        proxy.Set(key, passed_value.ToLocalChecked());
+
+        {
+          v8::Context::Scope inner_destination_context_scope(
+              destination_context);
+          proxy.Set(key, passed_value.ToLocalChecked());
+        }
       }
     }
 
