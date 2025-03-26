@@ -19,6 +19,14 @@ This document uses the following convention to categorize breaking changes:
 `BrowserWindow.IsVisibleOnAllWorkspaces()` will now return false on Linux if the
 window is not currently visible.
 
+### Behavior Changes: `app.commandLine`
+
+`app.commandLine` will convert upper-cases switches and arguments to lowercase.
+
+`app.commandLine` was only meant to handle chromium switches (which aren't case-sensitive) and switches passed via `app.commandLine` will not be passed down to any of the child processes.
+
+If you were using `app.commandLine` to control the behavior of the  main process, you should do this via `process.argv`.
+
 ## Planned Breaking API Changes (36.0)
 
 ### Utility Process unhandled rejection behavior change
