@@ -680,17 +680,6 @@ PrefService* GetPrefService(content::WebContents* web_contents) {
   return GetPrefService(web_contents)->GetDict(prefs::kDevToolsFileSystemPaths);
 }
 
-std::map<std::string, std::string> GetAddedFileSystemPaths(
-    content::WebContents* web_contents) {
-  std::map<std::string, std::string> result;
-  for (auto it : GetAddedFileSystems(web_contents)) {
-    std::string type =
-        it.second.is_string() ? it.second.GetString() : std::string();
-    result[it.first] = type;
-  }
-  return result;
-}
-
 bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
                                const std::string_view file_system_path) {
   return GetAddedFileSystems(web_contents).contains(file_system_path);
