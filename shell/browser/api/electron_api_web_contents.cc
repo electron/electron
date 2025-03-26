@@ -2624,6 +2624,9 @@ void WebContents::RestoreHistory(
   auto navigation_entries = std::make_unique<
       std::vector<std::unique_ptr<content::NavigationEntry>>>();
 
+  blink::UserAgentOverride ua_override;
+  ua_override.ua_string_override = GetUserAgent();
+
   for (const auto& entry : entries) {
     content::NavigationEntry* nav_entry = nullptr;
     if (!gin::Converter<content::NavigationEntry*>::FromV8(isolate, entry,
@@ -2636,11 +2639,15 @@ void WebContents::RestoreHistory(
           std::to_string(index) + ".");
       return;
     }
+
+    nav_entry->SetIsOverridingUserAgent(
+        !ua_override.ua_string_override.empty());
     navigation_entries->push_back(
         std::unique_ptr<content::NavigationEntry>(nav_entry));
   }
 
   if (!navigation_entries->empty()) {
+    web_contents()->SetUserAgentOverride(ua_override, false);
     web_contents()->GetController().Restore(
         index, content::RestoreType::kRestored, navigation_entries.get());
     web_contents()->GetController().LoadIfNecessary();
