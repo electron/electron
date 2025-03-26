@@ -50,7 +50,7 @@ Disable HTTP/2 and SPDY/3.1 protocols.
 
 ### --disable-geolocation _macOS_
 
-Disables the Geolocation API on macOS and denies requests internally. Has no effect on other platforms.
+Disables the Geolocation API on macOS. Has no effect on other platforms.
 
 ### --disable-renderer-backgrounding
 

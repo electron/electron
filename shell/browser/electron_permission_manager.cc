@@ -239,6 +239,7 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
   details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
   base::Value dict_value(std::move(details));
 
+<<<<<<< HEAD
   for (size_t i = 0; i < request_description.permissions.size(); ++i) {
     const auto permission = blink::PermissionDescriptorToPermissionType(
         request_description.permissions[i]);
@@ -246,6 +247,10 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
         IsGeolocationDisabledViaCommandLine())
       continue;
 
+=======
+  for (size_t i = 0; i < permissions.size(); ++i) {
+    auto permission = permissions[i];
+>>>>>>> 48555984f8 (wrap PermissionRequestHandler instead)
     const auto callback =
         base::BindRepeating(&ElectronPermissionManager::OnPermissionResponse,
                             base::Unretained(this), request_id, i);
