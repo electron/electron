@@ -27,9 +27,9 @@ diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_threa
 index cfd1d1b6f18e2943e155cf021b566a4673f71ab0..8d1a184ad1936c0d8493d6c54c32bebcf0021d8b 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
-@@ -113,7 +113,7 @@ port.on('message', (message) => {
- 
+@@ -117,7 +117,7 @@ port.on('message', (message) => {
      require('internal/worker').assignEnvironmentData(environmentData);
+     setupMainThreadPort(mainThreadPort);
  
 -    if (SharedArrayBuffer !== undefined && Atomics !== undefined) {
 +    if (SharedArrayBuffer !== undefined) {
