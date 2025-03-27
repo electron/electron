@@ -1,7 +1,7 @@
-From 91343bb45c78ac5cf3d214f68161d8150d81fa8c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Darius Mercadier <dmercadier@chromium.org>
 Date: Tue, 18 Feb 2025 09:32:04 +0100
-Subject: [PATCH] [M132-LTS][turbofan] Disable escape analysis for TrustedHeapConstant
+Subject: Disable escape analysis for TrustedHeapConstant
 
 More precisely: prevent eliding objects that contain
 TrustedHeapConstant, because it can lead to this constant flowing into
@@ -23,13 +23,12 @@ Commit-Queue: Gyuyoung Kim (xWF) <qkim@google.com>
 Cr-Commit-Position: refs/branch-heads/13.2@{#82}
 Cr-Branched-From: 24068c59cedad9ee976ddc05431f5f497b1ebd71-refs/heads/13.2.152@{#1}
 Cr-Branched-From: 6054ba94db0969220be4f94dc1677fc4696bdc4f-refs/heads/main@{#97085}
----
 
 diff --git a/src/compiler/escape-analysis.cc b/src/compiler/escape-analysis.cc
-index eb223bc..c9a7bc9 100644
+index eb223bc9113b0af22a61c81c879c1ef5a9ec9ba8..c9a7bc999a7163d4b034c9a3b9ab610766f39ea6 100644
 --- a/src/compiler/escape-analysis.cc
 +++ b/src/compiler/escape-analysis.cc
-@@ -622,6 +622,16 @@
+@@ -622,6 +622,16 @@ void ReduceNode(const Operator* op, EscapeAnalysisTracker::Scope* current,
        Node* value = current->ValueInput(1);
        const VirtualObject* vobject = current->GetVirtualObject(object);
        Variable var;

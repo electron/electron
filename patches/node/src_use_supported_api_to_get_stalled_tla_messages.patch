@@ -6,10 +6,10 @@ Subject: src: use supported API to get stalled TLA messages
 Refs: https://github.com/v8/v8/commit/23e3b6f650162ed2b332e55aa802adb8f41b50f2
 
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 9bbb8ab908d8d992abb43254860d51f57f56387b..92edfc6fc6401edd3685a0137eac25d9e37566f6 100644
+index 094d12ffe99500af700a591f5cb33e7d7b247ed1..0b88c84601a32181deb3245edb9c4a93e47e8222 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -587,11 +587,10 @@ void ModuleWrap::EvaluateSync(const FunctionCallbackInfo<Value>& args) {
+@@ -635,11 +635,10 @@ void ModuleWrap::EvaluateSync(const FunctionCallbackInfo<Value>& args) {
  
    if (module->IsGraphAsync()) {
      CHECK(env->options()->print_required_tla);

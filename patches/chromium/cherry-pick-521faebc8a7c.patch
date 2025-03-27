@@ -1,7 +1,7 @@
-From 521faebc8a7cffe23177c6600bfcfb3c0b9ab1dc Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Geoff Lang <geofflang@chromium.org>
-Date: Thu, 06 Mar 2025 19:39:37 -0800
-Subject: [PATCH] Disable setting primtive restart for WebGL in the cmd decoder.
+Date: Thu, 6 Mar 2025 19:39:37 -0800
+Subject: Disable setting primtive restart for WebGL in the cmd decoder.
 
 Until it's blocked in ANGLE for WebGL contexts, disable it in the
 command decoder on the service side.
@@ -13,13 +13,12 @@ Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 Reviewed-by: Kenneth Russell <kbr@chromium.org>
 Commit-Queue: Kenneth Russell <kbr@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1429307}
----
 
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
-index ad23480..733c553 100644
+index 54310b8878fa7aeca45e6001cb884a794272138c..2cb2a3b4913a54373b84cebf9326ee09a98f6bcc 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
-@@ -2170,6 +2170,11 @@
+@@ -2160,6 +2160,11 @@ bool GLES2DecoderPassthroughImpl::IsIgnoredCap(GLenum cap) const {
      case GL_DEBUG_OUTPUT:
        return true;
  
