@@ -90,15 +90,15 @@ diff --git a/src/module_wrap.h b/src/module_wrap.h
 index 45a338b38e01c824f69ea59ee286130c67e9eddf..99bb079df11696fc3ba5e6bcca7e7a42818fe3d1 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
-@@ -7,6 +7,7 @@
- #include <string>
+@@ -8,6 +8,7 @@
+ #include <unordered_map>
  #include <vector>
  #include "base_object.h"
 +#include "node.h"
+ #include "v8-script.h"
  
  namespace node {
- 
-@@ -31,7 +32,14 @@ enum HostDefinedOptions : int {
+@@ -33,7 +34,14 @@ enum HostDefinedOptions : int {
    kLength = 9,
  };
  
@@ -114,20 +114,20 @@ index 45a338b38e01c824f69ea59ee286130c67e9eddf..99bb079df11696fc3ba5e6bcca7e7a42
   public:
    enum InternalFields {
      kModuleSlot = BaseObject::kInternalFieldCount,
-@@ -68,6 +76,8 @@ class ModuleWrap : public BaseObject {
-     return true;
-   }
+@@ -90,6 +98,8 @@ class ModuleWrap : public BaseObject {
+   static void CreateRequiredModuleFacade(
+       const v8::FunctionCallbackInfo<v8::Value>& args);
  
 +  static ModuleWrap* GetFromModule(node::Environment*, v8::Local<v8::Module>);
 +
   private:
    ModuleWrap(Realm* realm,
               v8::Local<v8::Object> object,
-@@ -110,7 +120,6 @@ class ModuleWrap : public BaseObject {
+@@ -128,7 +138,6 @@ class ModuleWrap : public BaseObject {
        v8::Local<v8::String> specifier,
        v8::Local<v8::FixedArray> import_attributes,
        v8::Local<v8::Module> referrer);
 -  static ModuleWrap* GetFromModule(node::Environment*, v8::Local<v8::Module>);
  
    v8::Global<v8::Module> module_;
-   std::unordered_map<std::string, v8::Global<v8::Promise>> resolve_cache_;
+   std::unordered_map<std::string, v8::Global<v8::Object>> resolve_cache_;
