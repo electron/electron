@@ -73,10 +73,10 @@ index 93c7a040fd47f050b10b949e4f619d85660110c8..77b85490b1a65b594bb140deb07b33f3
      parsePackageName(specifier, base);
  
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 044d820161a5f9809dd042be7e53b717de8678ab..5281d7c220c8adee0f3d7269a0116d082726ec91 100644
+index 23c14e2ec6..0be9253a00 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -272,7 +272,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -226,7 +226,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
  
    const { exportNames, module } = cjsPreparseModuleExports(filename, source);
    cjsCache.set(url, module);
@@ -85,7 +85,7 @@ index 044d820161a5f9809dd042be7e53b717de8678ab..5281d7c220c8adee0f3d7269a0116d08
      [...exportNames] : ['default', ...exportNames];
  
    if (isMain) {
-@@ -294,8 +294,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -248,8 +248,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
        ({ exports } = module);
      }
      for (const exportName of exportNames) {
@@ -96,7 +96,7 @@ index 044d820161a5f9809dd042be7e53b717de8678ab..5281d7c220c8adee0f3d7269a0116d08
          continue;
        }
        // We might trigger a getter -> dont fail.
-@@ -329,6 +329,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
+@@ -283,6 +283,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
    return createCJSModuleWrap(url, source);
  });
  
@@ -106,7 +106,7 @@ index 044d820161a5f9809dd042be7e53b717de8678ab..5281d7c220c8adee0f3d7269a0116d08
 +
  // Handle CommonJS modules referenced by `import` statements or expressions,
  // or as the initial entry point when the ESM loader handles a CommonJS entry.
- translators.set('commonjs', async function commonjsStrategy(url, source,
+ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
 diff --git a/lib/internal/url.js b/lib/internal/url.js
 index 42debfc20005b0d293e5507546dcd8caec2b6a4e..4b6d07b14bd92ac527b7f4bd55ff7005967cee7d 100644
 --- a/lib/internal/url.js
