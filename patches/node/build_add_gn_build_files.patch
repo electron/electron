@@ -11,7 +11,7 @@ really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 1ed186b597eece7c34cb69c8e1e20870555a040d..2ce1e8a7dcca2ba153d387d11970c72b5f43c167 100644
+index 1ed186b597eece7c34cb69c8e1e20870555a040d..226fe430f4e62577c53778389cabe7c3864a0db1 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -1,14 +1,405 @@

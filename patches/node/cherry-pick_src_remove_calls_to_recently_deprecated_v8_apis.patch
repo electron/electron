@@ -15,7 +15,7 @@ This patch is expected to be deleted once we catch up with a Node.js
 upgrade that includes the original Node.js commit above.
 
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 0f0b16fcdd..094d12ffe9 100644
+index 0f0b16fcdd8a97bba60faeff09300dd8102cf02c..094d12ffe99500af700a591f5cb33e7d7b247ed1 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
 @@ -304,8 +304,7 @@ MaybeLocal<Module> ModuleWrap::CompileSourceTextModule(
@@ -60,7 +60,7 @@ index 4bf80aa6cc6385dc376fd0a3538efc27fe5bd0a2..3e37aa8b0c9696cceb3f3cfab9721f38
    BuiltinCodeCacheData cached_data{};
    {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 6456d87d4202c013aafe071adbac06852b3ae2c1..28ba7dbe66a44a43c39e3d75edf0be9513bcf732 100644
+index c8ccf38eaaeaccf3715b742e7e64cf7803dbb392..a3f70f6cba773d0a7a00aca96a1687c1e2ae38e6 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -878,8 +878,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {

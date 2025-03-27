@@ -18,7 +18,7 @@ significant.
 PR-URL: https://github.com/nodejs/node/pull/52794
 
 diff --git a/common.gypi b/common.gypi
-index 9bbf1b277eb17d78ca385643c3177638fd75866a..959ee74af88b44d31f2e6fa65c6f260820bd8c46 100644
+index 2f0dab65717ac59a32bd91dbac6a0b9ded5c93e6..cd3700f5290e69ec60fc22bd5fa32b54565aa049 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -480,6 +480,10 @@

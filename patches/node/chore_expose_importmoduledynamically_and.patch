@@ -11,7 +11,7 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index 150816057129c147c13ce044474f341581679f34..dd8627653265e22f55e67ec4a47641b20fba6c9d 100644
+index 38b5eaf1d7e0f2c006ceae9e6ac3edaa87d22838..d71b19f986653b37aed520584ab84e8003de972f 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
 @@ -30,7 +30,7 @@ const {
@@ -23,7 +23,7 @@ index 150816057129c147c13ce044474f341581679f34..dd8627653265e22f55e67ec4a47641b2
  const {
    loadPreloadModules,
    initializeFrozenIntrinsics,
-@@ -273,12 +273,13 @@ let _forceDefaultLoader = false;
+@@ -274,12 +274,13 @@ let _forceDefaultLoader = false;
   * @param {boolean} [forceDefaultLoader=false] - A boolean indicating disabling custom loaders.
   */
  function initializeESM(forceDefaultLoader = false) {
@@ -40,10 +40,10 @@ index 150816057129c147c13ce044474f341581679f34..dd8627653265e22f55e67ec4a47641b2
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index eea74bed4bb8a980f99a9a1404c9a2df203ca09c..e862b51293135995c527c32aa3c3579780d7831c 100644
+index c0776ffbbf0497d4675ae052b06682061e3aa27d..9a9b219352aa134cffa2b179b77dd948563c842b 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -752,7 +752,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+@@ -770,7 +770,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
    return module->module_.Get(isolate);
  }
  
@@ -52,7 +52,7 @@ index eea74bed4bb8a980f99a9a1404c9a2df203ca09c..e862b51293135995c527c32aa3c35797
      Local<Context> context,
      Local<v8::Data> host_defined_options,
      Local<Value> resource_name,
-@@ -817,12 +817,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -835,12 +835,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Realm* realm = Realm::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -68,7 +68,7 @@ index eea74bed4bb8a980f99a9a1404c9a2df203ca09c..e862b51293135995c527c32aa3c35797
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -864,13 +865,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+@@ -882,13 +883,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Realm* realm = Realm::GetCurrent(args);
    Isolate* isolate = realm->isolate();
  
@@ -87,7 +87,7 @@ index eea74bed4bb8a980f99a9a1404c9a2df203ca09c..e862b51293135995c527c32aa3c35797
  
  MaybeLocal<Value> ModuleWrap::SyntheticModuleEvaluationStepsCallback(
 diff --git a/src/module_wrap.h b/src/module_wrap.h
-index 45a338b38e01c824f69ea59ee286130c67e9eddf..99bb079df11696fc3ba5e6bcca7e7a42818fe3d1 100644
+index 51b127209af695e9e4682f959b263e2c613d6243..78b2dd399a5c5eace5fba4713a5eacd2d636ab66 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
 @@ -8,6 +8,7 @@

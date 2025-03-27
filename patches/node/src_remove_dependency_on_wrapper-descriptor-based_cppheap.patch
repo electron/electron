@@ -146,7 +146,7 @@ index ca75e0360bbf6a20ea18e67dda167d5ec523b075..158b96a9b1ea5553fa74d2429152a5c9
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/env.h b/src/env.h
-index a30c25a3a61dfe73944731760404c555f2782d72..6137551bb8168d8fa9a3e6bc79c3d1e79b306931 100644
+index d5eb12ebaeaf95c57e91261151aeb382c7620afd..aea955e490ede3cba37eb1b484b1f3323aa4a1f6 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -174,10 +174,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {

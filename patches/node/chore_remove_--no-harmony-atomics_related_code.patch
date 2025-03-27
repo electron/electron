@@ -24,7 +24,7 @@ index c028204481d44cb5f35ad98413022e7b07ce04b2..230c2378996c5d1ec18a9183ef138bbf
        message: Use `const { Blob } = require('buffer');` instead of the global.
      - name: BroadcastChannel
 diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index cfd1d1b6f18e2943e155cf021b566a4673f71ab0..8d1a184ad1936c0d8493d6c54c32bebcf0021d8b 100644
+index 54f92797323ef914f23b9cc9174de8bc46ffa7e5..1944fdbf5c7e81bff5a0818c9cac95ed5287a2e7 100644
 --- a/lib/internal/main/worker_thread.js
 +++ b/lib/internal/main/worker_thread.js
 @@ -117,7 +117,7 @@ port.on('message', (message) => {
@@ -37,10 +37,10 @@ index cfd1d1b6f18e2943e155cf021b566a4673f71ab0..8d1a184ad1936c0d8493d6c54c32bebc
        // not to workers created by other workers.
        let cachedCwd = '';
 diff --git a/lib/internal/worker.js b/lib/internal/worker.js
-index 401bc43550ea7f19847dfd588e3fba0507243905..560f69c6c2de2bd976bcd62cd7ac9c770b838446 100644
+index 519faa4ff765f63beda02f6081a4fbf181440053..a0d819bcbabdceba9b521d79c555c8314c10e303 100644
 --- a/lib/internal/worker.js
 +++ b/lib/internal/worker.js
-@@ -101,8 +101,7 @@ let cwdCounter;
+@@ -102,8 +102,7 @@ let cwdCounter;
  const environmentData = new SafeMap();
  
  // SharedArrayBuffers can be disabled with --no-harmony-sharedarraybuffer.
