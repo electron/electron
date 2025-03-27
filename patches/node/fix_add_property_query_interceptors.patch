@@ -331,8 +331,8 @@ diff --git a/src/node_contextify.h b/src/node_contextify.h
 index 10715c7eb07715cc11e49734bd54747dad95f6a4..49b9fabb399aed962e0d29e784a25ca4e9780a8f 100644
 --- a/src/node_contextify.h
 +++ b/src/node_contextify.h
-@@ -111,42 +111,39 @@ class ContextifyContext : public BaseObject {
-       const v8::FunctionCallbackInfo<v8::Value>& args);
+@@ -100,42 +100,39 @@ class ContextifyContext : public BaseObject {
+       const errors::TryCatchScope& try_catch);
    static void WeakCallback(
        const v8::WeakCallbackInfo<ContextifyContext>& data);
 -  static void PropertyGetterCallback(
@@ -343,9 +343,8 @@ index 10715c7eb07715cc11e49734bd54747dad95f6a4..49b9fabb399aed962e0d29e784a25ca4
 +  static v8::Intercepted PropertySetterCallback(
        v8::Local<v8::Name> property,
        v8::Local<v8::Value> value,
--      const v8::PropertyCallbackInfo<v8::Value>& args);
+       const v8::PropertyCallbackInfo<v8::Value>& args);
 -  static void PropertyDescriptorCallback(
-+      const v8::PropertyCallbackInfo<void>& args);
 +  static v8::Intercepted PropertyDescriptorCallback(
        v8::Local<v8::Name> property,
        const v8::PropertyCallbackInfo<v8::Value>& args);
@@ -353,9 +352,8 @@ index 10715c7eb07715cc11e49734bd54747dad95f6a4..49b9fabb399aed962e0d29e784a25ca4
 +  static v8::Intercepted PropertyDefinerCallback(
        v8::Local<v8::Name> property,
        const v8::PropertyDescriptor& desc,
--      const v8::PropertyCallbackInfo<v8::Value>& args);
+       const v8::PropertyCallbackInfo<v8::Value>& args);
 -  static void PropertyDeleterCallback(
-+      const v8::PropertyCallbackInfo<void>& args);
 +  static v8::Intercepted PropertyDeleterCallback(
        v8::Local<v8::Name> property,
        const v8::PropertyCallbackInfo<v8::Boolean>& args);
@@ -370,22 +368,20 @@ index 10715c7eb07715cc11e49734bd54747dad95f6a4..49b9fabb399aed962e0d29e784a25ca4
 +  static v8::Intercepted IndexedPropertySetterCallback(
        uint32_t index,
        v8::Local<v8::Value> value,
--      const v8::PropertyCallbackInfo<v8::Value>& args);
+       const v8::PropertyCallbackInfo<v8::Value>& args);
 -  static void IndexedPropertyDescriptorCallback(
 -      uint32_t index,
 -      const v8::PropertyCallbackInfo<v8::Value>& args);
 -  static void IndexedPropertyDefinerCallback(
-+      const v8::PropertyCallbackInfo<void>& args);
 +  static v8::Intercepted IndexedPropertyDescriptorCallback(
 +      uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& args);
 +  static v8::Intercepted IndexedPropertyDefinerCallback(
        uint32_t index,
        const v8::PropertyDescriptor& desc,
--      const v8::PropertyCallbackInfo<v8::Value>& args);
+       const v8::PropertyCallbackInfo<v8::Value>& args);
 -  static void IndexedPropertyDeleterCallback(
 -      uint32_t index,
 -      const v8::PropertyCallbackInfo<v8::Boolean>& args);
-+      const v8::PropertyCallbackInfo<void>& args);
 +  static v8::Intercepted IndexedPropertyDeleterCallback(
 +      uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean>& args);
  
