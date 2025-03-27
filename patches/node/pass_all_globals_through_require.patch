@@ -23,18 +23,18 @@ index c284b39b1ac13eaea8776b7b4f457c084dce5fb8..c794751ecd4448119ce33d661e694f83
  const {
    isProxy,
  } = require('internal/util/types');
-@@ -1464,10 +1471,12 @@ Module.prototype._compile = function(content, filename, loadAsESM = false) {
-   this[kIsExecuting] = true;
-   if (inspectorWrapper) {
-     result = inspectorWrapper(compiledWrapper, thisValue, exports,
--                              require, module, filename, dirname);
-+                              require, module, filename, dirname,
-+                              process, localGlobal, localBuffer);
+@@ -1524,10 +1524,12 @@ Module.prototype._compile = function(content, filename, format) {
+   if (this[kIsMainSymbol] && getOptionValue('--inspect-brk')) {
+     const { callAndPauseOnStart } = internalBinding('inspector');
+     result = callAndPauseOnStart(compiledWrapper, thisValue, exports,
+-                                 require, module, filename, dirname);
++                                 require, module, filename, dirname,
++                                 process, localGlobal, localBuffer);
    } else {
      result = ReflectApply(compiledWrapper, thisValue,
 -                          [exports, require, module, filename, dirname]);
-+                          [exports, require, module, filename,
-+                           dirname, process, localGlobal, localBuffer]);
++                          [exports, require, module, filename, dirname,
++                            process, localGlobal, localBuffer]);
    }
    this[kIsExecuting] = false;
    if (requireDepth === 0) { statCache = null; }
