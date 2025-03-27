@@ -82,8 +82,6 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   }
   isolate_->Exit();
   g_isolate = nullptr;
-
-  platform_->UnregisterIsolate(isolate_);
 }
 
 v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
