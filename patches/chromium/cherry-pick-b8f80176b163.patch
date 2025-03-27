@@ -1,7 +1,7 @@
-From b8f80176b1636154c6bfc85a607b05cc3aec50cb Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Alex Gough <ajgo@chromium.org>
 Date: Mon, 24 Mar 2025 09:04:37 -0700
-Subject: [PATCH] Avoid receiving or sending sentinel handle values
+Subject: Avoid receiving or sending sentinel handle values
 
 These values can be misinterpreted by OS functions, so
 avoid sending or receiving them over IPCZ.
@@ -21,13 +21,12 @@ Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/6998@{#2315}
 Cr-Branched-From: de9c6fafd8ae5c6ea0438764076ca7d04a0b165d-refs/heads/main@{#1415337}
----
 
 diff --git a/base/win/win_util.h b/base/win/win_util.h
-index c10538d..0bc93a25 100644
+index 2c23658cdc25339cdf36b8d5cf951b85cb1c74da..73442a61a323394282876a453ec437aff5c6393c 100644
 --- a/base/win/win_util.h
 +++ b/base/win/win_util.h
-@@ -49,6 +49,25 @@
+@@ -46,6 +46,25 @@ struct NativeLibraryLoadError;
  
  namespace win {
  
@@ -54,10 +53,10 @@ index c10538d..0bc93a25 100644
    // Cast through uintptr_t and then unsigned int to make the truncation to
    // 32 bits explicit. Handles are size of-pointer but are always 32-bit values.
 diff --git a/base/win/win_util_unittest.cc b/base/win/win_util_unittest.cc
-index 70eedf10..f8bbc0b 100644
+index a2e0c6da978e5013e5027c8d11a9fb2c63fd0593..39b03eec238b21d91ae60d741e9dce2fe0f8edc0 100644
 --- a/base/win/win_util_unittest.cc
 +++ b/base/win/win_util_unittest.cc
-@@ -91,6 +91,12 @@
+@@ -84,6 +84,12 @@ TEST(BaseWinUtilTest, TestUint32ToInvalidHandle) {
    EXPECT_EQ(INVALID_HANDLE_VALUE, Uint32ToHandle(invalid_handle));
  }
  
@@ -71,7 +70,7 @@ index 70eedf10..f8bbc0b 100644
    const GUID kGuid = {0x7698f759,
                        0xf5b0,
 diff --git a/mojo/core/ipcz_driver/transport.cc b/mojo/core/ipcz_driver/transport.cc
-index 96918f8..d1e3286 100644
+index 4e15366a756c3491de814cbdf0ae744a2c7061ee..d13778473bb88d71f1d9452f61de0aee81f53d41 100644
 --- a/mojo/core/ipcz_driver/transport.cc
 +++ b/mojo/core/ipcz_driver/transport.cc
 @@ -34,6 +34,7 @@
@@ -82,7 +81,7 @@ index 96918f8..d1e3286 100644
  #include "mojo/public/cpp/platform/platform_handle_security_util_win.h"
  #endif
  
-@@ -135,10 +136,12 @@
+@@ -135,10 +136,12 @@ bool EncodeHandle(PlatformHandle& handle,
                    HandleOwner handle_owner,
                    HandleData& out_handle_data,
                    bool is_remote_process_untrusted) {
@@ -97,7 +96,7 @@ index 96918f8..d1e3286 100644
    if (handle_owner == HandleOwner::kSender) {
      // Nothing to do when sending handles that belong to us. The recipient must
      // be sufficiently privileged and equipped to duplicate such handles to
-@@ -178,6 +181,10 @@
+@@ -178,6 +181,10 @@ PlatformHandle DecodeHandle(HandleData data,
                              HandleOwner handle_owner,
                              Transport& from_transport) {
    const HANDLE handle = DataToHandle(data);
@@ -109,7 +108,7 @@ index 96918f8..d1e3286 100644
      if (from_transport.destination_type() != Transport::kBroker &&
          !from_transport.is_peer_trusted() && !remote_process.is_current()) {
 diff --git a/mojo/core/platform_handle_in_transit.cc b/mojo/core/platform_handle_in_transit.cc
-index 44330d2..670dca4 100644
+index 44330d2563da0c22dccb193f1c4dc57f7112cdd3..670dca4889dc566896aec029218e911d6c2d83af 100644
 --- a/mojo/core/platform_handle_in_transit.cc
 +++ b/mojo/core/platform_handle_in_transit.cc
 @@ -18,6 +18,7 @@
@@ -120,7 +119,7 @@ index 44330d2..670dca4 100644
  #include "mojo/public/cpp/platform/platform_handle_security_util_win.h"
  #endif
  
-@@ -37,8 +38,8 @@
+@@ -37,8 +38,8 @@ HANDLE TransferHandle(HANDLE handle,
  
    // Duplicating INVALID_HANDLE_VALUE passes a process handle. If you intend to
    // do this, you must open a valid process handle, not pass the result of
@@ -131,7 +130,7 @@ index 44330d2..670dca4 100644
  
    HANDLE out_handle;
    BOOL result =
-@@ -164,17 +165,7 @@
+@@ -164,17 +165,7 @@ bool PlatformHandleInTransit::TransferToProcess(
  #if BUILDFLAG(IS_WIN)
  // static
  bool PlatformHandleInTransit::IsPseudoHandle(HANDLE handle) {
@@ -151,7 +150,7 @@ index 44330d2..670dca4 100644
  
  // static
 diff --git a/mojo/public/cpp/platform/platform_handle.h b/mojo/public/cpp/platform/platform_handle.h
-index 7154aeb..3390540d 100644
+index 7154aebfbf95c2e970b5c6c60612c9f1f12a202d..3390540d8a172d3110cc80ef3f2d2e60466ee7d1 100644
 --- a/mojo/public/cpp/platform/platform_handle.h
 +++ b/mojo/public/cpp/platform/platform_handle.h
 @@ -13,6 +13,7 @@
@@ -162,7 +161,7 @@ index 7154aeb..3390540d 100644
  #elif BUILDFLAG(IS_FUCHSIA)
  #include <lib/zx/handle.h>
  #elif BUILDFLAG(IS_APPLE)
-@@ -117,6 +118,9 @@
+@@ -117,6 +118,9 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) PlatformHandle {
    bool is_valid() const { return is_valid_handle(); }
    bool is_valid_handle() const { return handle_.IsValid(); }
    bool is_handle() const { return type_ == Type::kHandle; }
