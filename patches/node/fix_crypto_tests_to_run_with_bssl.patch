@@ -456,15 +456,15 @@ diff --git a/test/parallel/test-crypto-hash.js b/test/parallel/test-crypto-hash.
 index af2146982c7a3bf7bd7527f44e4b17a3b605026e..f6b91f675cfea367c608892dee078b565814f2dd 100644
 --- a/test/parallel/test-crypto-hash.js
 +++ b/test/parallel/test-crypto-hash.js
-@@ -182,6 +182,7 @@ assert.throws(
+@@ -183,6 +183,7 @@ assert.throws(
  
  // Test XOF hash functions and the outputLength option.
  {
 +  /*
-   // Default outputLengths.
-   assert.strictEqual(crypto.createHash('shake128').digest('hex'),
-                      '7f9c2ba4e88f827d616045507605853e');
-@@ -236,6 +237,7 @@ assert.throws(
+   // Default outputLengths. Since OpenSSL 3.4 an outputLength is mandatory
+   if (!hasOpenSSL(3, 4)) {
+     assert.strictEqual(crypto.createHash('shake128').digest('hex'),
+@@ -239,6 +240,7 @@ assert.throws(
    assert.strictEqual(superLongHash.length, 2 * 1024 * 1024);
    assert.ok(superLongHash.endsWith('193414035ddba77bf7bba97981e656ec'));
    assert.ok(superLongHash.startsWith('a2a28dbc49cfd6e5d6ceea3d03e77748'));
