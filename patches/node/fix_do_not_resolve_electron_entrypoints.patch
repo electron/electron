@@ -43,7 +43,7 @@ index 4ad694debfc72f56dd98a4e56dd0bbc63711242e..73f0e00ad34132e7d2fd37ec32111088
 +  StringPrototypeStartsWith,
  } = primordials;
  
- const { containsModuleSyntax } = internalBinding('contextify');
+ const { getOptionValue } = require('internal/options');
 @@ -22,6 +23,13 @@ const {
   * @param {string} main - Entry point path
   */
