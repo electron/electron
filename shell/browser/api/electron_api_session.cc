@@ -13,6 +13,7 @@
 
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
+#include "base/containers/map_util.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -139,9 +140,8 @@ uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
 
   uint32_t storage_mask = 0;
   for (const auto& it : storage_types) {
-    auto type = base::ToLowerASCII(it);
-    if (Lookup.contains(type))
-      storage_mask |= Lookup.at(type);
+    if (const uint32_t* val = base::FindOrNull(Lookup, base::ToLowerASCII(it)))
+      storage_mask |= *val;
   }
   return storage_mask;
 }
@@ -179,9 +179,8 @@ BrowsingDataRemover::DataType GetDataTypeMask(
     const std::vector<std::string>& data_types) {
   BrowsingDataRemover::DataType mask = 0u;
   for (const auto& type : data_types) {
-    if (kDataTypeLookup.contains(type)) {
-      mask |= kDataTypeLookup.at(type);
-    }
+    if (const auto* val = base::FindOrNull(kDataTypeLookup, type))
+      mask |= *val;
   }
   return mask;
 }
