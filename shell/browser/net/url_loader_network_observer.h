@@ -70,6 +70,8 @@ class URLLoaderNetworkObserver
       const std::optional<std::string>& private_network_device_id,
       const std::optional<std::string>& private_network_device_name,
       OnPrivateNetworkAccessPermissionRequiredCallback callback) override {}
+  void OnLocalNetworkAccessPermissionRequired(
+      OnLocalNetworkAccessPermissionRequiredCallback callback) override {}
   void OnUrlLoaderConnectedToPrivateNetwork(
       const GURL& request_url,
       network::mojom::IPAddressSpace response_address_space,
