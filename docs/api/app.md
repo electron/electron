@@ -1110,6 +1110,11 @@ indicates success while any other value indicates failure according to Chromium 
     resolver will attempt to use the system's DNS settings to do DNS lookups
     itself. Enabled by default on macOS, disabled by default on Windows and
     Linux.
+  * `enableHappyEyeballs` boolean (optional) - Whether the
+    [Happy Eyeballs V3][happy-eyeballs-v3] algorithm should be used in creating
+    network connections. When enabled, hostnames resolving to multiple IP
+    addresses will be attempted in parallel to have a chance at establishing a
+    connection more quickly.
   * `secureDnsMode` string (optional) - Can be 'off', 'automatic' or 'secure'.
     Configures the DNS-over-HTTP mode. When 'off', no DoH lookups will be
     performed. When 'automatic', DoH lookups will be performed first if DoH is
@@ -1579,6 +1584,7 @@ A `boolean` property that returns  `true` if the app is packaged, `false` otherw
 [Squirrel-Windows]: https://github.com/Squirrel/Squirrel.Windows
 [JumpListBeginListMSDN]: https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-icustomdestinationlist-beginlist
 [about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc
+[happy-eyeballs-v3]: https://datatracker.ietf.org/doc/draft-pauly-happy-happyeyeballs-v3/
 
 ### `app.name`
 
