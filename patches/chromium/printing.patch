@@ -881,10 +881,10 @@ index 97cb6458bc9eec767db89b56abfc5f4b4136ff7b..d9a0b343158b8464b5c9aa8e0e655c0b
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3ecb18c3b975d1cf00b482d2eab30aca11646073..abce33fa5a332a924f91d74b7f604ae9465ce00c 100644
+index 5b8ea681dfee77a08bb451ec19f6e5d7ddf5b6d8..15ad186308981ddfbbe32f47ef9127ab051132e3 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3132,8 +3132,9 @@ source_set("browser") {
+@@ -3134,8 +3134,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -897,10 +897,10 @@ index 3ecb18c3b975d1cf00b482d2eab30aca11646073..abce33fa5a332a924f91d74b7f604ae9
      if (is_chromeos) {
        sources += [
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 0bb34c4715224a0cef10465778db946f299ac513..c70803a5737676eec498dd18074a47ffabac62c0 100644
+index b959c1428784388f514d33bf54550908f60f3ff1..c37bc40570b1e2b29af6e677684705556b15560e 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -154,7 +154,6 @@ void PrintingContext::UsePdfSettings() {
+@@ -156,7 +156,6 @@ void PrintingContext::UsePdfSettings() {
  
  mojom::ResultCode PrintingContext::UpdatePrintSettings(
      base::Value::Dict job_settings) {

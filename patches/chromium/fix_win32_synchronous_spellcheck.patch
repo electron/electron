@@ -12,10 +12,10 @@ This patch can be removed when an asynchronous spellcheck API
 option is added to Electron.
 
 diff --git a/components/spellcheck/browser/windows_spell_checker.cc b/components/spellcheck/browser/windows_spell_checker.cc
-index f5a7411037758427eddc088b5426554b4a500d33..04b3edd4d8c58d38e260cc54beb0dab86368fc25 100644
+index 7b78720e8d25a3dee4821c816bd9629b1526e50a..be89b74fd85983e63c983aec0d10036ce1ca63df 100644
 --- a/components/spellcheck/browser/windows_spell_checker.cc
 +++ b/components/spellcheck/browser/windows_spell_checker.cc
-@@ -239,6 +239,11 @@ std::vector<SpellCheckResult> BackgroundHelper::RequestTextCheckForAllLanguages(
+@@ -240,6 +240,11 @@ std::vector<SpellCheckResult> BackgroundHelper::RequestTextCheckForAllLanguages(
              (action == CORRECTIVE_ACTION_GET_SUGGESTIONS ||
               action == CORRECTIVE_ACTION_REPLACE)) {
            std::vector<std::u16string> suggestions;
