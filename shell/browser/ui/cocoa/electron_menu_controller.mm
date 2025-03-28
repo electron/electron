@@ -493,11 +493,6 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 
 - (NSMenu*)menu {
   if (menu_) {
-    // By default, items are automatically enabled. Due to this, when
-    // an item is disabled, this can be overriden when the UI
-    // refreshes.
-    //
-    // By setting this to false, an item can be disabled OR enabled.
     [menu_ setAutoenablesItems:NO];
     return menu_;
   }
