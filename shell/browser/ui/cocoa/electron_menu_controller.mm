@@ -324,7 +324,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     [item setEnabled:YES];
   else
     [item setEnabled:NO];
-  
+
   // If the menu item has an icon, set it.
   ui::ImageModel icon = model->GetIconAt(index);
   if (icon.IsImage())
@@ -353,7 +353,6 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     [item setSubmenu:[self createShareMenuForItem:sharing_item]];
   } else if (type == electron::ElectronMenuModel::TYPE_SUBMENU &&
              model->IsVisibleAt(index)) {
-
     // Recursively build a submenu from the sub-model at this index.
     [item setTarget:nil];
     [item setAction:nil];
@@ -499,7 +498,6 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     // refreshes.
     //
     // By setting this to false, an item can be disabled OR enabled.
-    // More info:
     [menu_ setAutoenablesItems:NO];
     return menu_;
   }
@@ -512,7 +510,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     if (model_)
       [self populateWithModel:model_.get()];
   }
-  
+
   [menu_ setAutoenablesItems:NO];
   [menu_ setDelegate:self];
   return menu_;
