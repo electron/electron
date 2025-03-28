@@ -309,8 +309,6 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   // validation. This code path is used by the "roundedCorners" option.
   if ([item action] == @selector(performClose:))
     return shell_->IsClosable();
-  if ([item action] == @selector(performMiniaturize:))
-    return shell_->IsMinimizable();
   return [super validateUserInterfaceItem:item];
 }
 
