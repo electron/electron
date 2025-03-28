@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 async function getPDFDoc () {
   try {
