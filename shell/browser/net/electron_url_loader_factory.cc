@@ -13,7 +13,6 @@
 #include "base/containers/fixed_flat_map.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/sequenced_task_runner.h"
-#include "base/uuid.h"
 #include "base/values.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
@@ -671,20 +670,11 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
       request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);
 
-  auto* browser_context = ElectronBrowserContext::GetDefaultBrowserContext();
-  v8::Local<v8::Value> value;
-  if (dict.Get("session", &value)) {
-    if (value->IsNull()) {
-      browser_context = ElectronBrowserContext::From(
-          base::Uuid::GenerateRandomV4().AsLowercaseString(), true);
-    } else {
-      gin::Handle<api::Session> session;
-      if (gin::ConvertFromV8(dict.isolate(), value, &session) &&
-          !session.IsEmpty()) {
-        browser_context = session->browser_context();
-      }
-    }
-  }
+  gin::Handle<api::Session> session;
+  auto* browser_context =
+      dict.Get("session", &session) && !session.IsEmpty()
+          ? session->browser_context()
+          : ElectronBrowserContext::GetDefaultBrowserContext();
 
   new URLPipeLoader(
       browser_context->GetURLLoaderFactory(), std::move(request),
