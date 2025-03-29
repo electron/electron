@@ -52,6 +52,7 @@ Role kRolesMap[] = {
     {@selector(delete:), "delete"},
     {@selector(pasteAndMatchStyle:), "pasteandmatchstyle"},
     {@selector(selectAll:), "selectall"},
+    {@selector(showGuessPanel:), "togglespellingandgrammar"},
     {@selector(orderFrontSubstitutionsPanel:), "showsubstitutions"},
     {@selector(toggleAutomaticQuoteSubstitution:), "togglesmartquotes"},
     {@selector(toggleAutomaticDashSubstitution:), "togglesmartdashes"},

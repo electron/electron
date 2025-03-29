@@ -145,6 +145,14 @@
 #include "components/spellcheck/common/spellcheck.mojom.h"  // nogncheck
 #endif
 
+#if BUILDFLAG(ENABLE_SPELLCHECK)
+#include "chrome/browser/spellchecker/spell_check_initialization_host_impl.h"
+#include "components/spellcheck/common/spellcheck.mojom.h"
+#if BUILDFLAG(HAS_SPELLCHECK_PANEL)
+#include "chrome/browser/spellchecker/spell_check_panel_host_impl.h"
+#endif
+#endif
+
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 #include "shell/browser/fake_location_provider.h"
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
@@ -1562,11 +1570,19 @@ bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {
 void ElectronBrowserClient::BindHostReceiverForRenderer(
     content::RenderProcessHost* render_process_host,
     mojo::GenericPendingReceiver receiver) {
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#if BUILDFLAG(ENABLE_SPELLCHECK) || BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   if (auto host_receiver =
           receiver.As<spellcheck::mojom::SpellCheckInitializationHost>()) {
     SpellCheckInitializationHostImpl::Create(
         render_process_host->GetDeprecatedID(), std::move(host_receiver));
+    return;
+  }
+#endif
+#if BUILDFLAG(HAS_SPELLCHECK_PANEL)
+  if (auto host_receiver =
+          receiver.As<spellcheck::mojom::SpellCheckPanelHost>()) {
+    SpellCheckPanelHostImpl::Create(render_process_host->GetDeprecatedID(),
+                                    std::move(host_receiver));
     return;
   }
 #endif

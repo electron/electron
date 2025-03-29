@@ -79,8 +79,11 @@ class RendererClientBase : public content::ContentRendererClient
   bool IsWebViewFrame(v8::Local<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  SpellCheck* GetSpellCheck() { return spellcheck_.get(); }
+#if BUILDFLAG(ENABLE_SPELLCHECK)
+  void InitSpellCheck();
+#endif
+#if BUILDFLAG(ENABLE_SPELLCHECK) || BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  SpellCheck* GetSpellCheck();
 #endif
 
  protected:
@@ -147,7 +150,7 @@ class RendererClientBase : public content::ContentRendererClient
   // An increasing ID used for identifying an V8 context in this process.
   int64_t next_context_id_ = 0;
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER) || BUILDFLAG(ENABLE_SPELLCHECK)
   std::unique_ptr<SpellCheck> spellcheck_;
 #endif
 };
