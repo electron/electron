@@ -78,7 +78,9 @@ export const roleList: Record<RoleId, Role> = {
   minimize: {
     label: 'Minimize',
     accelerator: 'CommandOrControl+M',
-    windowMethod: w => w.minimize()
+    windowMethod: w => {
+      if (w.minimizable) w.minimize();
+    }
   },
   paste: {
     label: 'Paste',
