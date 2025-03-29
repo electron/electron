@@ -17,19 +17,19 @@ import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
+import("build/electron_paks.gni")
 import("build/extract_symbols.gni")
+import("build/js2c_toolchain.gni")
 import("build/npm.gni")
 import("build/templated_file.gni")
 import("build/tsc.gni")
 import("build/webpack/webpack.gni")
 import("buildflags/buildflags.gni")
-import("electron_paks.gni")
 import("filenames.auto.gni")
 import("filenames.gni")
 import("filenames.hunspell.gni")
 import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
-import("js2c_toolchain.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -314,7 +314,7 @@ asar("default_app_asar") {
 }
 
 grit("resources") {
-  source = "electron_resources.grd"
+  source = "build/electron_resources.grd"
 
   outputs = [
     "grit/electron_resources.h",
