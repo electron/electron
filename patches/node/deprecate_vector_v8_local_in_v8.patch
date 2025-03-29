@@ -9,17 +9,16 @@ This patch can be removed when Electron upgrades to a version of Node.js that
 contains the above CL.
 
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index e862b51293135995c527c32aa3c3579780d7831c..ff658ec88e5161cd66536ee6e95dba675b16eccc 100644
+index 9a9b219352aa134cffa2b179b77dd948563c842b..0f0b16fcdd8a97bba60faeff09300dd8102cf02c 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -186,7 +186,9 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
+@@ -197,7 +197,8 @@ void ModuleWrap::New(const FunctionCallbackInfo<Value>& args) {
          export_names[i] = export_name_val.As<String>();
        }
  
 -      module = Module::CreateSyntheticModule(isolate, url, export_names,
-+
 +      module = Module::CreateSyntheticModule(isolate, url,
 +        v8::MemorySpan<const Local<String>>(export_names.begin(), export_names.end()),
          SyntheticModuleEvaluationStepsCallback);
      } else {
-       ScriptCompiler::CachedData* cached_data = nullptr;
+       // When we are compiling for the default loader, this will be

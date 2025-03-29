@@ -35,10 +35,10 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 (cherry picked from commit 8fd90938f923ef2a04bb3ebb08b89568fe6fd4ee)
 
 diff --git a/src/node.cc b/src/node.cc
-index 1fc236d88e53ebe2fd388b9799c0e857d8b4e88e..751d818308ee499a1201e5972ec80f12ed998114 100644
+index 4ad2c8b80493aa3e74dc247701dfb36542fac72a..a60c3504029d4e1566fd1905991719700260997a 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -782,12 +782,6 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
+@@ -790,12 +790,6 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
      return ExitCode::kInvalidCommandLineArgument2;
    }
  

@@ -21,7 +21,7 @@ index 606a6f5caa3b11b6d2a9068ed2fd65800530a5eb..080dcce21da05ccea398d8a856deb397
  typedef void (*FreeCallback)(char* data, void* hint);
  
 diff --git a/src/node_errors.h b/src/node_errors.h
-index ac07b96b5cad0f3502468c86745e2b341d338e1f..f51c4309ceec3f0dc5e07982fb789ff6663076ba 100644
+index d5e2f86f516bbb49fc2ed64076dcd436ea6433ac..c027da4fcf0aa31864fe75c567b2e1cec2a97136 100644
 --- a/src/node_errors.h
 +++ b/src/node_errors.h
 @@ -235,7 +235,7 @@ inline v8::Local<v8::Object> ERR_BUFFER_TOO_LARGE(v8::Isolate* isolate) {

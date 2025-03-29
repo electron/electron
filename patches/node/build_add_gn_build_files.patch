@@ -11,7 +11,7 @@ really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 1ed186b597eece7c34cb69c8e1e20870555a040d..2ce1e8a7dcca2ba153d387d11970c72b5f43c167 100644
+index 1ed186b597eece7c34cb69c8e1e20870555a040d..4171613ba865bb3ba82a2e3a219def63bb7abdc1 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -1,14 +1,406 @@
@@ -284,7 +284,6 @@ index 1ed186b597eece7c34cb69c8e1e20870555a040d..2ce1e8a7dcca2ba153d387d11970c72b
 +    ":node_js2c_exec",
 +    "deps/googletest:gtest",
 +    "deps/ada",
-+    "deps/base64",
 +    "deps/simdutf",
 +    "deps/uvwasi",
 +    "//third_party/zlib",
@@ -333,6 +332,7 @@ index 1ed186b597eece7c34cb69c8e1e20870555a040d..2ce1e8a7dcca2ba153d387d11970c72b
 +    "-Wno-sometimes-uninitialized",
 +    "-Wno-string-plus-int",
 +    "-Wno-unused-function",
++    "-Wno-unreachable-code-return",
 +    "-Wno-unused-label",
 +    "-Wno-unused-private-field",
 +    "-Wno-unused-variable",
@@ -458,84 +458,6 @@ index e92ac3a3beac143dced2efb05304ed8ba832b067..1ce69e9deba1a9b191e8d95f4c82e0ec
 -ada_gn_build("ada") {
 +  public_configs = [ ":ada_config" ]
  }
-diff --git a/deps/base64/unofficial.gni b/deps/base64/unofficial.gni
-index 0e69d7383762f6b81c5b57698aa9d121d5a9c401..35bbeb37acc7ccb14b4b8a644ec3d4c76ca5c61c 100644
---- a/deps/base64/unofficial.gni
-+++ b/deps/base64/unofficial.gni
-@@ -12,6 +12,10 @@ template("base64_gn_build") {
-     }
-   }
- 
-+  # FIXME(zcbenz): ASM on win/x86 compiles perfectly in upstream Node, figure
-+  # out why it does not work in Electron's build configs.
-+  support_x86_asm = current_cpu == "x64" || (current_cpu == "x86" && !is_win)
-+
-   config("base64_internal_config") {
-     include_dirs = [ "base64/lib" ]
-     if (is_component_build) {
-@@ -19,7 +23,7 @@ template("base64_gn_build") {
-     } else {
-       defines = []
-     }
--    if (current_cpu == "x86" || current_cpu == "x64") {
-+    if (support_x86_asm) {
-       defines += [
-         "HAVE_SSSE3=1",
-         "HAVE_SSE41=1",
-@@ -69,7 +73,7 @@ template("base64_gn_build") {
-   source_set("base64_ssse3") {
-     configs += [ ":base64_internal_config" ]
-     sources = [ "base64/lib/arch/ssse3/codec.c" ]
--    if (current_cpu == "x86" || current_cpu == "x64") {
-+    if (support_x86_asm) {
-       if (is_clang || !is_win) {
-         cflags_c = [ "-mssse3" ]
-       }
-@@ -79,7 +83,7 @@ template("base64_gn_build") {
-   source_set("base64_sse41") {
-     configs += [ ":base64_internal_config" ]
-     sources = [ "base64/lib/arch/sse41/codec.c" ]
--    if (current_cpu == "x86" || current_cpu == "x64") {
-+    if (support_x86_asm) {
-       if (is_clang || !is_win) {
-         cflags_c = [ "-msse4.1" ]
-       }
-@@ -89,7 +93,7 @@ template("base64_gn_build") {
-   source_set("base64_sse42") {
-     configs += [ ":base64_internal_config" ]
-     sources = [ "base64/lib/arch/sse42/codec.c" ]
--    if (current_cpu == "x86" || current_cpu == "x64") {
-+    if (support_x86_asm) {
-       if (is_clang || !is_win) {
-         cflags_c = [ "-msse4.2" ]
-       }
-@@ -99,7 +103,7 @@ template("base64_gn_build") {
-   source_set("base64_avx") {
-     configs += [ ":base64_internal_config" ]
-     sources = [ "base64/lib/arch/avx/codec.c" ]
--    if (current_cpu == "x86" || current_cpu == "x64") {
-+    if (support_x86_asm) {
-       if (is_clang || !is_win) {
-         cflags_c = [ "-mavx" ]
-       } else if (is_win) {
-@@ -111,7 +115,7 @@ template("base64_gn_build") {
-   source_set("base64_avx2") {
-     configs += [ ":base64_internal_config" ]
-     sources = [ "base64/lib/arch/avx2/codec.c" ]
--    if (current_cpu == "x86" || current_cpu == "x64") {
-+    if (support_x86_asm) {
-       if (is_clang || !is_win) {
-         cflags_c = [ "-mavx2" ]
-       } else if (is_win) {
-@@ -123,7 +127,7 @@ template("base64_gn_build") {
-   source_set("base64_avx512") {
-     configs += [ ":base64_internal_config" ]
-     sources = [ "base64/lib/arch/avx512/codec.c" ]
--    if (current_cpu == "x86" || current_cpu == "x64") {
-+    if (support_x86_asm) {
-       if (is_clang || !is_win) {
-         cflags_c = [
-           "-mavx512vl",
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 index ac19ac73ed1e24c61cb679f3851685b79cfc8b39..ef745c19f2b1cd433cc43c834a18db7eaa8e5162 100644
 --- a/deps/cares/BUILD.gn
@@ -1281,7 +1203,7 @@ index 0000000000000000000000000000000000000000..af9cbada10203b387fb9732b346583b1
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..c429d4cbfff605ff78c7c8ee3c5ad046594163f3
+index 0000000000000000000000000000000000000000..72ddbe405908109ab7563e0c8f2e61c75cac88fc
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,740 @@
@@ -1649,6 +1571,7 @@ index 0000000000000000000000000000000000000000..c429d4cbfff605ff78c7c8ee3c5ad046
 +    "lib/internal/source_map/prepare_stack_trace.js",
 +    "lib/internal/source_map/source_map.js",
 +    "lib/internal/source_map/source_map_cache.js",
++    "lib/internal/source_map/source_map_cache_map.js",
 +    "lib/internal/stream_base_commons.js",
 +    "lib/internal/streams/add-abort-signal.js",
 +    "lib/internal/streams/compose.js",
@@ -1696,10 +1619,8 @@ index 0000000000000000000000000000000000000000..c429d4cbfff605ff78c7c8ee3c5ad046
 +    "lib/internal/util/colors.js",
 +    "lib/internal/util/comparisons.js",
 +    "lib/internal/util/debuglog.js",
-+    "lib/internal/util/embedding.js",
 +    "lib/internal/util/inspect.js",
 +    "lib/internal/util/inspector.js",
-+    "lib/internal/util/iterable_weak_map.js",
 +    "lib/internal/util/parse_args/parse_args.js",
 +    "lib/internal/util/parse_args/utils.js",
 +    "lib/internal/util/types.js",
@@ -1725,6 +1646,7 @@ index 0000000000000000000000000000000000000000..c429d4cbfff605ff78c7c8ee3c5ad046
 +    "lib/internal/worker.js",
 +    "lib/internal/worker/io.js",
 +    "lib/internal/worker/js_transferable.js",
++    "lib/internal/worker/messaging.js",
 +    "lib/module.js",
 +    "lib/net.js",
 +    "lib/os.js",
