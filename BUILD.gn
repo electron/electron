@@ -1021,7 +1021,10 @@ if (is_mac) {
     output_name = electron_login_helper_name
     sources = filenames.login_helper_sources
     include_dirs = [ "." ]
-    frameworks = [ "AppKit.framework" ]
+    frameworks = [
+      "AppKit.framework",
+      "Security.framework",
+    ]
     info_plist = "shell/app/resources/mac/loginhelper-Info.plist"
     extra_substitutions =
         [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.loginhelper" ]
