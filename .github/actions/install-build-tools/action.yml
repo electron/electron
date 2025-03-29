@@ -20,3 +20,4 @@ runs:
         cp "C:\Python311\python.exe" "C:\Python311\python3.exe"
       fi
       echo "$HOME/.electron_build_tools/third_party/depot_tools" >> $GITHUB_PATH
+      echo "$HOME/.electron_build_tools/third_party/depot_tools/python-bin" >> $GITHUB_PATH

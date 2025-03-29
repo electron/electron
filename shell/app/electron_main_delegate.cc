@@ -455,8 +455,7 @@ ElectronMainDelegate::CreateContentUtilityClient() {
   return utility_client_.get();
 }
 
-absl::variant<int, content::MainFunctionParams>
-ElectronMainDelegate::RunProcess(
+std::variant<int, content::MainFunctionParams> ElectronMainDelegate::RunProcess(
     const std::string& process_type,
     content::MainFunctionParams main_function_params) {
   if (process_type == kRelauncherProcess)
@@ -466,7 +465,7 @@ ElectronMainDelegate::RunProcess(
 }
 
 bool ElectronMainDelegate::ShouldCreateFeatureList(InvokedIn invoked_in) {
-  return absl::holds_alternative<InvokedInChildProcess>(invoked_in);
+  return std::holds_alternative<InvokedInChildProcess>(invoked_in);
 }
 
 bool ElectronMainDelegate::ShouldInitializeMojo(InvokedIn invoked_in) {

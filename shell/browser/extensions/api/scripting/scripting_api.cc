@@ -470,7 +470,9 @@ ExtensionFunction::ResponseAction ScriptingExecuteScriptFunction::Run() {
     constexpr bool kRequiresLocalization = false;
     std::string error;
     if (!CheckAndLoadFiles(
-            std::move(*injection_.files), *extension(), kRequiresLocalization,
+            std::move(*injection_.files),
+            script_parsing::ContentScriptType::kJs, *extension(),
+            kRequiresLocalization,
             base::BindOnce(&ScriptingExecuteScriptFunction::DidLoadResources,
                            this),
             &error)) {
@@ -609,7 +611,9 @@ ExtensionFunction::ResponseAction ScriptingInsertCSSFunction::Run() {
     constexpr bool kRequiresLocalization = true;
     std::string error;
     if (!CheckAndLoadFiles(
-            std::move(*injection_.files), *extension(), kRequiresLocalization,
+            std::move(*injection_.files),
+            script_parsing::ContentScriptType::kCss, *extension(),
+            kRequiresLocalization,
             base::BindOnce(&ScriptingInsertCSSFunction::DidLoadResources, this),
             &error)) {
       return RespondNow(Error(std::move(error)));
@@ -723,8 +727,9 @@ ExtensionFunction::ResponseAction ScriptingRemoveCSSFunction::Run() {
 
   if (injection.files) {
     std::vector<ExtensionResource> resources;
-    if (!scripting::GetFileResources(*injection.files, *extension(), &resources,
-                                     &error)) {
+    if (!scripting::GetFileResources(*injection.files,
+                                     script_parsing::ContentScriptType::kCss,
+                                     *extension(), &resources, &error)) {
       return RespondNow(Error(std::move(error)));
     }
 

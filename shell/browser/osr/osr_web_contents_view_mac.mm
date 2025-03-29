@@ -31,15 +31,15 @@
 namespace electron {
 
 gfx::NativeView OffScreenWebContentsView::GetNativeView() const {
-  return offScreenView_;
+  return gfx::NativeView(offScreenView_);
 }
 
 gfx::NativeView OffScreenWebContentsView::GetContentNativeView() const {
-  return offScreenView_;
+  return gfx::NativeView(offScreenView_);
 }
 
 gfx::NativeWindow OffScreenWebContentsView::GetTopLevelNativeWindow() const {
-  return [offScreenView_ window];
+  return gfx::NativeWindow([offScreenView_ window]);
 }
 
 void OffScreenWebContentsView::PlatformCreate() {
