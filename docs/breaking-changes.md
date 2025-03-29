@@ -32,6 +32,16 @@ When calling `Session.clearStorageData(options)`, the `options.quota`
 property is deprecated. Since the `syncable` type was removed, there
 is only type left -- `'temporary'` -- so specifying it is unnecessary.
 
+### Deprecated: `null` value for `session` property in `ProtocolResponse`
+
+Previously, setting the ProtocolResponse.session property to `null`
+Would create a random independent session. This is no longer supported.
+
+Using single-purpose sessions here is discouraged due to overhead costs;
+however, old code that needs to preserve this behavior can emulate it by
+creating a random session with `session.fromPartition(some_random_string)`
+and then using it in `ProtocolResponse.session`.
+
 ### Deprecated: Extension methods and events on `session`
 
 `session.loadExtension`, `session.removeExtension`, `session.getExtension`,
