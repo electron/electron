@@ -54,6 +54,7 @@
 #include "base/strings/string_util.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/linux/unity_service.h"
+#include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "shell/browser/ui/views/native_frame_view.h"
@@ -162,12 +163,6 @@ gfx::Size WindowSizeToContentSizeBuggy(HWND hwnd, const gfx::Size& size) {
 }
 
 #endif
-
-[[maybe_unused]] bool IsX11() {
-  return ui::OzonePlatform::GetInstance()
-      ->GetPlatformProperties()
-      .electron_can_call_x11;
-}
 
 class NativeWindowClientView : public views::ClientView {
  public:
@@ -330,7 +325,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (parent)
     SetParentWindow(parent);
 
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     // Before the window is mapped the SetWMSpecState can not work, so we have
     // to manually set the _NET_WM_STATE.
     std::vector<x11::Atom> state_atom_list;
@@ -464,7 +459,7 @@ NativeWindowViews::~NativeWindowViews() {
 
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 #if BUILDFLAG(IS_LINUX)
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     const std::string color = use_dark_theme ? "dark" : "light";
     auto* connection = x11::Connection::Get();
     connection->SetStringProperty(
@@ -531,7 +526,7 @@ void NativeWindowViews::Show() {
 
   // On X11, setting Z order before showing the window doesn't take effect,
   // so we have to call it again.
-  if (IsX11())
+  if (x11_util::IsX11())
     widget()->SetZOrderLevel(widget()->GetZOrderLevel());
 #endif
 }
@@ -547,7 +542,7 @@ void NativeWindowViews::ShowInactive() {
 
   // On X11, setting Z order before showing the window doesn't take effect,
   // so we have to call it again.
-  if (IsX11())
+  if (x11_util::IsX11())
     widget()->SetZOrderLevel(widget()->GetZOrderLevel());
 #endif
 }
@@ -592,7 +587,7 @@ bool NativeWindowViews::IsEnabled() const {
 #if BUILDFLAG(IS_WIN)
   return ::IsWindowEnabled(GetAcceleratedWidget());
 #elif BUILDFLAG(IS_LINUX)
-  if (IsX11())
+  if (x11_util::IsX11())
     return !event_disabler_.get();
   NOTIMPLEMENTED();
   return true;
@@ -632,7 +627,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 #if BUILDFLAG(IS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), enable);
 #else
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     views::DesktopWindowTreeHostPlatform* tree_host =
         views::DesktopWindowTreeHostLinux::GetHostForWidget(
             GetAcceleratedWidget());
@@ -954,7 +949,7 @@ bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
                  0, 0, 0,
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 #else
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     if (!IsWindowValid(static_cast<x11::Window>(id.id)))
       return false;
 
@@ -976,7 +971,7 @@ void NativeWindowViews::MoveTop() {
                  size.width(), size.height(),
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 #else
-  if (IsX11())
+  if (x11_util::IsX11())
     electron::MoveWindowToForeground(
         static_cast<x11::Window>(GetAcceleratedWidget()));
 #endif
@@ -1290,7 +1285,7 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
     SetForwardMouseMessages(forward);
   }
 #else
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     auto* connection = x11::Connection::Get();
     if (ignore) {
       x11::Rectangle r{0, 0, 1, 1};
@@ -1411,7 +1406,7 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
 #if BUILDFLAG(IS_LINUX)
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     auto* connection = x11::Connection::Get();
     connection->SetProperty(
         static_cast<x11::Window>(GetAcceleratedWidget()),
