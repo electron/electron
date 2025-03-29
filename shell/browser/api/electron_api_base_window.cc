@@ -79,6 +79,14 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
     return buffer.ToLocalChecked();
 }
 
+[[nodiscard]] constexpr std::array<int, 2U> ToArray(const gfx::Size size) {
+  return {size.width(), size.height()};
+}
+
+[[nodiscard]] constexpr std::array<int, 2U> ToArray(const gfx::Point point) {
+  return {point.x(), point.y()};
+}
+
 }  // namespace
 
 BaseWindow::BaseWindow(v8::Isolate* isolate,
@@ -467,12 +475,8 @@ void BaseWindow::SetSize(int width, int height, gin_helper::Arguments* args) {
   window_->SetSize(size, animate);
 }
 
-std::vector<int> BaseWindow::GetSize() const {
-  std::vector<int> result(2);
-  gfx::Size size = window_->GetSize();
-  result[0] = size.width();
-  result[1] = size.height();
-  return result;
+std::array<int, 2U> BaseWindow::GetSize() const {
+  return ToArray(window_->GetSize());
 }
 
 void BaseWindow::SetContentSize(int width,
@@ -483,36 +487,24 @@ void BaseWindow::SetContentSize(int width,
   window_->SetContentSize(gfx::Size(width, height), animate);
 }
 
-std::vector<int> BaseWindow::GetContentSize() const {
-  std::vector<int> result(2);
-  gfx::Size size = window_->GetContentSize();
-  result[0] = size.width();
-  result[1] = size.height();
-  return result;
+std::array<int, 2U> BaseWindow::GetContentSize() const {
+  return ToArray(window_->GetContentSize());
 }
 
 void BaseWindow::SetMinimumSize(int width, int height) {
   window_->SetMinimumSize(gfx::Size(width, height));
 }
 
-std::vector<int> BaseWindow::GetMinimumSize() const {
-  std::vector<int> result(2);
-  gfx::Size size = window_->GetMinimumSize();
-  result[0] = size.width();
-  result[1] = size.height();
-  return result;
+std::array<int, 2U> BaseWindow::GetMinimumSize() const {
+  return ToArray(window_->GetMinimumSize());
 }
 
 void BaseWindow::SetMaximumSize(int width, int height) {
   window_->SetMaximumSize(gfx::Size(width, height));
 }
 
-std::vector<int> BaseWindow::GetMaximumSize() const {
-  std::vector<int> result(2);
-  gfx::Size size = window_->GetMaximumSize();
-  result[0] = size.width();
-  result[1] = size.height();
-  return result;
+std::array<int, 2U> BaseWindow::GetMaximumSize() const {
+  return ToArray(window_->GetMaximumSize());
 }
 
 void BaseWindow::SetSheetOffset(double offsetY, gin_helper::Arguments* args) {
@@ -594,12 +586,8 @@ void BaseWindow::SetPosition(int x, int y, gin_helper::Arguments* args) {
   window_->SetPosition(gfx::Point(x, y), animate);
 }
 
-std::vector<int> BaseWindow::GetPosition() const {
-  std::vector<int> result(2);
-  gfx::Point pos = window_->GetPosition();
-  result[0] = pos.x();
-  result[1] = pos.y();
-  return result;
+std::array<int, 2U> BaseWindow::GetPosition() const {
+  return ToArray(window_->GetPosition());
 }
 void BaseWindow::MoveAbove(const std::string& sourceId,
                            gin_helper::Arguments* args) {
