@@ -8,7 +8,6 @@
 #include <memory>
 #include <set>
 #include <string_view>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -20,6 +19,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/blink/public/web/web_text_checking_completion.h"
 #include "third_party/blink/public/web/web_text_checking_result.h"
 #include "third_party/icu/source/common/unicode/uscript.h"
@@ -182,9 +182,9 @@ void SpellCheckClient::SpellCheckText() {
 
 void SpellCheckClient::OnSpellCheckDone(
     const std::vector<std::u16string>& misspelled_words) {
+  const absl::flat_hash_set<std::u16string> misspelled{misspelled_words.begin(),
+                                                       misspelled_words.end()};
   std::vector<blink::WebTextCheckingResult> results;
-  std::unordered_set<std::u16string> misspelled(misspelled_words.begin(),
-                                                misspelled_words.end());
 
   auto& word_list = pending_request_param_->wordlist();
 

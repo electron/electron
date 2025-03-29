@@ -5,7 +5,6 @@
 #include "shell/browser/api/message_port.h"
 
 #include <string>
-#include <unordered_set>
 #include <utility>
 
 #include "base/containers/to_vector.h"
@@ -20,6 +19,7 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/blink/public/common/messaging/transferable_message.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
@@ -226,7 +226,8 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
   if (ports.empty())
     return {};
 
-  std::unordered_set<MessagePort*> visited;
+  absl::flat_hash_set<MessagePort*> visited;
+  visited.reserve(ports.size());
 
   // Walk the incoming array - if there are any duplicate ports, or null ports
   // or cloned ports, throw an error (per section 8.3.3 of the HTML5 spec).
