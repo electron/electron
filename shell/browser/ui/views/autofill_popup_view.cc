@@ -5,6 +5,7 @@
 #include "shell/browser/ui/views/autofill_popup_view.h"
 
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include "base/functional/bind.h"
@@ -240,12 +241,13 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   gfx::Canvas* draw_canvas = canvas;
   SkBitmap bitmap;
 
-  std::unique_ptr<cc::SkiaPaintCanvas> paint_canvas;
+  std::optional<cc::SkiaPaintCanvas> offscreen_paint_canvas;
+
   if (view_proxy_.get()) {
     const auto bounds = popup_->popup_bounds_in_view();
     bitmap.allocN32Pixels(bounds.width(), bounds.height(), true);
-    paint_canvas = std::make_unique<cc::SkiaPaintCanvas>(bitmap);
-    draw_canvas = new gfx::Canvas(paint_canvas.get(), 1.0);
+    offscreen_paint_canvas.emplace(bitmap);
+    draw_canvas = new gfx::Canvas(&offscreen_paint_canvas.value(), 1.0);
   }
 
   draw_canvas->DrawColor(
