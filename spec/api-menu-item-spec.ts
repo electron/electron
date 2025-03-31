@@ -205,6 +205,22 @@ describe('MenuItems', () => {
       const canExecute = execute(item.role as any, win, win.webContents);
       expect(canExecute).to.be.true('can execute');
     });
+
+    it('does not execute minimize role when minimizable false', () => {
+      const win = new BrowserWindow({ minimizable: false });
+      const menu = Menu.buildFromTemplate([{
+        label: 'text',
+        role: 'minimize'
+      }]);
+
+      Menu.setApplicationMenu(menu);
+      menu._executeCommand({}, menu.items[0].commandId);
+      expect(win.isMinimized()).to.equal(false);
+
+      win.setMinimizable(true);
+      menu._executeCommand({}, menu.items[0].commandId);
+      expect(win.isMinimized()).to.equal(true);
+    });
   });
 
   describe('MenuItem command id', () => {
