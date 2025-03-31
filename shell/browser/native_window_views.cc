@@ -163,10 +163,11 @@ gfx::Size WindowSizeToContentSizeBuggy(HWND hwnd, const gfx::Size& size) {
 
 #endif
 
-[[maybe_unused]] bool IsX11() {
-  return ui::OzonePlatform::GetInstance()
-      ->GetPlatformProperties()
-      .electron_can_call_x11;
+[[nodiscard]] bool IsX11() {
+  static const bool is_x11 = ui::OzonePlatform::GetInstance()
+                                 ->GetPlatformProperties()
+                                 .electron_can_call_x11;
+  return is_x11;
 }
 
 class NativeWindowClientView : public views::ClientView {
