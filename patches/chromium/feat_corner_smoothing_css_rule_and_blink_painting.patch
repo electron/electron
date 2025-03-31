@@ -98,6 +98,19 @@ index a53b4901dde0dc83dce6c9b56616eef0d02d94a5..b419672af985f673f375fbb63b4d2b2c
  
   protected:
    ~WebSettings() = default;
+diff --git a/third_party/blink/renderer/build/scripts/core/css/css_properties.py b/third_party/blink/renderer/build/scripts/core/css/css_properties.py
+index aa3a6b93cceae8c8bfbefdd7a043ae576f921979..17544d7ed4757fb51e2f82fd1b90638131ba05cc 100755
+--- a/third_party/blink/renderer/build/scripts/core/css/css_properties.py
++++ b/third_party/blink/renderer/build/scripts/core/css/css_properties.py
+@@ -313,7 +313,7 @@ class CSSProperties(object):
+             if name_without_leading_dash.startswith('-'):
+                 name_without_leading_dash = name_without_leading_dash[1:]
+             internal_visited_order = 1
+-            if name_without_leading_dash.startswith('internal-visited-'):
++            if name_without_leading_dash.startswith('internal-'):
+                 internal_visited_order = 0
+             property_.sorting_key = (-property_.priority,
+                                      internal_visited_order,
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
 index b44da8add10fdeadd24653441115df035a93dd50..ce7c7bd32f3a8ea262f01c408474ff4ffe7fe0aa 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
