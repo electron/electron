@@ -242,8 +242,8 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
 
   std::unique_ptr<cc::SkiaPaintCanvas> paint_canvas;
   if (view_proxy_.get()) {
-    bitmap.allocN32Pixels(popup_->popup_bounds_in_view().width(),
-                          popup_->popup_bounds_in_view().height(), true);
+    const auto bounds = popup_->popup_bounds_in_view();
+    bitmap.allocN32Pixels(bounds.width(), bounds.height(), true);
     paint_canvas = std::make_unique<cc::SkiaPaintCanvas>(bitmap);
     draw_canvas = new gfx::Canvas(paint_canvas.get(), 1.0);
   }
