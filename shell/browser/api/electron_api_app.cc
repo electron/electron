@@ -164,7 +164,7 @@ struct Converter<JumpListItem::Type> {
       if (item_val == val)
         return gin::ConvertToV8(isolate, name);
 
-    return gin::ConvertToV8(isolate, "");
+    return v8::String::Empty(isolate);
   }
 
  private:
@@ -255,7 +255,7 @@ struct Converter<JumpListCategory::Type> {
       if (type_val == val)
         return gin::ConvertToV8(isolate, name);
 
-    return gin::ConvertToV8(isolate, "");
+    return v8::String::Empty(isolate);
   }
 
  private:
