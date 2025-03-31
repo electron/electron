@@ -1,5 +1,5 @@
 import { nativeImage } from 'electron';
-import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
+import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, Menu, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -1177,6 +1177,24 @@ describe('BrowserWindow module', () => {
 
         expect(w.isMinimized()).to.equal(true);
         expect(w.isVisible()).to.equal(false);
+      });
+
+      it('should not execute Menu role when minimizable false', async () => {
+        const win = new BrowserWindow({ minimizable: false });
+        const menu = Menu.buildFromTemplate([{
+          label: 'text',
+          role: 'minimize'
+        }]);
+        const minimize = once(win, 'minimize');
+
+        Menu.setApplicationMenu(menu);
+        menu._executeCommand({}, menu.items[0].commandId);
+        expect(win.isMinimized()).to.equal(false);
+
+        win.setMinimizable(true);
+        menu._executeCommand({}, menu.items[0].commandId);
+        await minimize;
+        expect(win.isMinimized()).to.equal(true);
       });
     });
 
