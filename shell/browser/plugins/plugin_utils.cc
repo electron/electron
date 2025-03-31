@@ -55,8 +55,10 @@ PluginUtils::GetMimeTypeToExtensionIdMap(
 
     if (MimeTypesHandler* handler = MimeTypesHandler::GetHandler(extension)) {
       for (const auto& supported_mime_type : handler->mime_type_set()) {
-        DCHECK(!mime_type_to_extension_id_map.contains(supported_mime_type));
-        mime_type_to_extension_id_map[supported_mime_type] = extension_id;
+        const auto [_, inserted] =
+            mime_type_to_extension_id_map.insert_or_assign(supported_mime_type,
+                                                           extension_id);
+        DCHECK(inserted);
       }
     }
   }
