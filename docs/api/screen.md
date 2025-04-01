@@ -124,7 +124,7 @@ Returns [`Display`](structures/display.md) - The display nearest the specified p
 Returns [`Display`](structures/display.md) - The display that most closely
 intersects the provided bounds.
 
-### `screen.screenToDipPoint(point)` _Windows_
+### `screen.screenToDipPoint(point)` _Windows_ _Linux_
 
 * `point` [Point](structures/point.md)
 
@@ -133,7 +133,9 @@ Returns [`Point`](structures/point.md)
 Converts a screen physical point to a screen DIP point.
 The DPI scale is performed relative to the display containing the physical point.
 
-### `screen.dipToScreenPoint(point)` _Windows_
+Not currently supported on Wayland.
+
+### `screen.dipToScreenPoint(point)` _Windows_ _Linux_
 
 * `point` [Point](structures/point.md)
 
@@ -141,6 +143,8 @@ Returns [`Point`](structures/point.md)
 
 Converts a screen DIP point to a screen physical point.
 The DPI scale is performed relative to the display containing the DIP point.
+
+Not currently supported on Wayland.
 
 ### `screen.screenToDipRect(window, rect)` _Windows_
 
