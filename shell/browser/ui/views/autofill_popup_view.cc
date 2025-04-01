@@ -239,12 +239,14 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   if (!popup_ || static_cast<size_t>(popup_->line_count()) != children().size())
     return;
 
+  gfx::Rect offscreen_bounds;
   SkBitmap offscreen_bitmap;
   std::optional<cc::SkiaPaintCanvas> offscreen_paint_canvas;
   std::optional<gfx::Canvas> offscreen_draw_canvas;
   if (view_proxy_) {
-    const auto bounds = popup_->popup_bounds_in_view();
-    offscreen_bitmap.allocN32Pixels(bounds.width(), bounds.height(), true);
+    offscreen_bounds = popup_->popup_bounds_in_view();
+    offscreen_bitmap.allocN32Pixels(offscreen_bounds.width(),
+                                    offscreen_bounds.height(), true);
     offscreen_paint_canvas.emplace(offscreen_bitmap);
     offscreen_draw_canvas.emplace(&offscreen_paint_canvas.value(), 1.0);
     canvas = &offscreen_draw_canvas.value();
@@ -261,7 +263,7 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   }
 
   if (view_proxy_) {
-    view_proxy_->SetBounds(popup_->popup_bounds_in_view());
+    view_proxy_->SetBounds(offscreen_bounds);
     view_proxy_->SetBitmap(offscreen_bitmap);
   }
 }
