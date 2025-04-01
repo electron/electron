@@ -243,12 +243,14 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   SkBitmap bitmap;
 
   std::optional<cc::SkiaPaintCanvas> offscreen_paint_canvas;
+  std::optional<gfx::Canvas> offscreen_draw_canvas;
 
   if (view_proxy_.get()) {
     const auto bounds = popup_->popup_bounds_in_view();
     bitmap.allocN32Pixels(bounds.width(), bounds.height(), true);
     offscreen_paint_canvas.emplace(bitmap);
-    draw_canvas = new gfx::Canvas(&offscreen_paint_canvas.value(), 1.0);
+    offscreen_draw_canvas.emplace(&offscreen_paint_canvas.value(), 1.0);
+    draw_canvas = &offscreen_draw_canvas.value();
   }
 
   draw_canvas->DrawColor(
