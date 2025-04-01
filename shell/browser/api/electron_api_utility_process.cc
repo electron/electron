@@ -21,11 +21,13 @@
 #include "gin/object_template_builder.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "shell/browser/api/message_port.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
@@ -412,6 +414,13 @@ raw_ptr<UtilityProcessWrapper> UtilityProcessWrapper::FromProcessId(
 // static
 gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
     gin::Arguments* args) {
+  if (!Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowTypeError(
+            "utilityProcess cannot be created before app is ready.");
+    return {};
+  }
+
   gin_helper::Dictionary dict;
   if (!args->GetNext(&dict)) {
     args->ThrowTypeError("Options must be an object.");
