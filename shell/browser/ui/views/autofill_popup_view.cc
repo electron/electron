@@ -238,7 +238,6 @@ void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
 void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   if (!popup_ || static_cast<size_t>(popup_->line_count()) != children().size())
     return;
-  gfx::Canvas* draw_canvas = canvas;
   SkBitmap bitmap;
 
   std::optional<cc::SkiaPaintCanvas> offscreen_paint_canvas;
@@ -248,17 +247,17 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
     bitmap.allocN32Pixels(bounds.width(), bounds.height(), true);
     offscreen_paint_canvas.emplace(bitmap);
     offscreen_draw_canvas.emplace(&offscreen_paint_canvas.value(), 1.0);
-    draw_canvas = &offscreen_draw_canvas.value();
+    canvas = &offscreen_draw_canvas.value();
   }
 
-  draw_canvas->DrawColor(
+  canvas->DrawColor(
       GetColorProvider()->GetColor(ui::kColorResultsTableNormalBackground));
-  OnPaintBorder(draw_canvas);
+  OnPaintBorder(canvas);
 
   for (int i = 0; i < popup_->line_count(); ++i) {
     gfx::Rect line_rect = popup_->GetRowBounds(i);
 
-    DrawAutofillEntry(draw_canvas, i, line_rect);
+    DrawAutofillEntry(canvas, i, line_rect);
   }
 
   if (view_proxy_) {
