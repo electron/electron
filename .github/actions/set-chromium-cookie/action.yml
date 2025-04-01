@@ -4,9 +4,14 @@ runs:
   using: "composite"
   steps:
   - name: Set the git cookie from chromium.googlesource.com (Unix)
-    if: ${{ runner.os != 'Windows' && env.CHROMIUM_GIT_COOKIE }}
+    if: ${{ runner.os != 'Windows' }}
     shell: bash
     run: |
+      if [[ -z "${{ env.CHROMIUM_GIT_COOKIE }}" ]]; then
+        echo "CHROMIUM_GIT_COOKIE is not set - cannot authenticate."
+        exit 0
+      fi
+
       eval 'set +o history' 2>/dev/null || setopt HIST_IGNORE_SPACE 2>/dev/null
       touch ~/.gitcookies
       chmod 0600 ~/.gitcookies
@@ -28,9 +33,14 @@ runs:
         echo $RESPONSE
       fi
   - name: Set the git cookie from chromium.googlesource.com (Windows)
-    if: ${{ runner.os == 'Windows' && env.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+    if: ${{ runner.os == 'Windows' }}
     shell: cmd
     run: |
+      if "%CHROMIUM_GIT_COOKIE_WINDOWS_STRING%"=="" (
+        echo CHROMIUM_GIT_COOKIE_WINDOWS_STRING is not set - cannot authenticate.
+        exit /b 0
+      )
+
       git config --global http.cookiefile "%USERPROFILE%\.gitcookies"
       powershell -noprofile -nologo -command Write-Output "${{ env.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}" >>"%USERPROFILE%\.gitcookies"
 
