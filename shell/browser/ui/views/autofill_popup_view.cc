@@ -244,8 +244,7 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
 
   std::optional<cc::SkiaPaintCanvas> offscreen_paint_canvas;
   std::optional<gfx::Canvas> offscreen_draw_canvas;
-
-  if (view_proxy_.get()) {
+  if (view_proxy_) {
     const auto bounds = popup_->popup_bounds_in_view();
     bitmap.allocN32Pixels(bounds.width(), bounds.height(), true);
     offscreen_paint_canvas.emplace(bitmap);
@@ -263,7 +262,7 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
     DrawAutofillEntry(draw_canvas, i, line_rect);
   }
 
-  if (view_proxy_.get()) {
+  if (view_proxy_) {
     view_proxy_->SetBounds(popup_->popup_bounds_in_view());
     view_proxy_->SetBitmap(bitmap);
   }
