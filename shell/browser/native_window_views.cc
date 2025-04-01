@@ -162,7 +162,7 @@ gfx::Size WindowSizeToContentSizeBuggy(HWND hwnd, const gfx::Size& size) {
 
 #endif
 
-[[nodiscard]] bool IsX11() {
+[[maybe_unused, nodiscard]] bool IsX11() {
   static const bool is_x11 = ui::OzonePlatform::GetInstance()
                                  ->GetPlatformProperties()
                                  .electron_can_call_x11;
