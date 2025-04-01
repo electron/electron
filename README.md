@@ -19,6 +19,36 @@ This project adheres to the Contributor Covenant
 By participating, you are expected to uphold this code. Please report unacceptable
 behavior to [coc@electronjs.org](mailto:coc@electronjs.org).
 
+## System Prerequisites (Windows)
+
+Before you begin building Electron on Windows, ensure that you have the following software and tools installed:
+Operating System: Windows 10 / Server 2012 R2 or higher.
+
+Visual Studio:
+
+Visual Studio 2019 (version 16.0.0 or higher) is required.
+
+Visual Studio 2022 (version 17.0.0 or higher) is preferred.
+You can download Visual Studio 2022 Community Edition for free from ([Visual Studio Downloads](https://visualstudio.microsoft.com/downloads/)).
+
+Note: If you installed Visual Studio in a non-default directory, you’ll need to set a few environment variables to point to the toolchains. For example:
+
+```sh
+vs2022_install = DRIVE:\path\to\Microsoft Visual Studio\2022\Community
+WINDOWSSDKDIR = DRIVE:\path\to\Windows Kits\10
+```
+Node.js: Make sure Node.js is installed. Refer to ([Node.js](https://nodejs.org/en)) official site for the latest version.
+
+Git: Git must be installed to manage repository changes. Install it from ([Git Downloads](https://git-scm.com/)).
+
+Windows SDK and Debugging Tools:
+
+You will need Windows SDK (version 10.0.15063.468 or higher) to build Electron.
+
+To install the SDK, go to Visual Studio Installer, select Modify → Individual Components, scroll down, and select the appropriate SDK version. Alternatively, download the standalone SDK from ([Windows SDK and Emulator Archive](https://developer.microsoft.com/en-us/windows/downloads/sdk-archive/)).
+
+Ensure that Debugging Tools for Windows are installed. This is required to create a symbol store from ".pdb" files, used in distribution builds. You can install it via the Visual Studio Installer or download the standalone installer.
+
 ## Installation
 
 To install prebuilt Electron binaries, use [`npm`](https://docs.npmjs.com/).
