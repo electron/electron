@@ -302,8 +302,8 @@ void UsbChooserContext::OnDeviceRemoved(
   }
 
   // Update the device list.
-  DCHECK(devices_.contains(device_info->guid));
-  devices_.erase(device_info->guid);
+  const size_t n_erased = devices_.erase(device_info->guid);
+  DCHECK_EQ(n_erased, 1U);
 
   // Notify all device observers.
   for (auto& observer : device_observer_list_)
