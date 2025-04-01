@@ -10,7 +10,7 @@ V8 requires C++20 support as of https://chromium-review.googlesource.com/c/v8/v8
 This can be removed when Electron upgrades to a version of Node.js containing the required V8 version.
 
 diff --git a/common.gypi b/common.gypi
-index 690068f093f12b6831f8ccce41289d02d7047a7a..5a3df388773ad288553bf036be42dc1a0ba75c09 100644
+index 3b26f0e9c8a16135d6c614374cfb943ebc07f992..4a79378a6633b33f86f6576c27659df18193ed46 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -305,7 +305,7 @@

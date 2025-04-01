@@ -7,7 +7,7 @@ We use this to allow node's 'fs' module to read from ASAR files as if they were
 a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index 12262f40ce123440a9a0f974386cfbe8511f4459..f3c15b61d33bdae44de528e106fcc6f930f1c388 100644
+index 2b12f9fb2966de350432ae63e411c88774a026a4..deb3decfe03925762228d689be20dbd6ebdb975b 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
 @@ -134,6 +134,10 @@ process.domain = null;
@@ -22,10 +22,10 @@ index 12262f40ce123440a9a0f974386cfbe8511f4459..f3c15b61d33bdae44de528e106fcc6f9
  const binding = internalBinding('builtins');
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index c794751ecd4448119ce33d661e694f83b3323f03..364469160af5e348f8890417de16a63c0d1dca67 100644
+index 7b5958ef2c32101629d800991ff0ad32fe5c5695..82a3b80f6ffe8bf484d00f7898572dbf27918461 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -138,7 +138,7 @@ const {
+@@ -141,7 +141,7 @@ const {
  const assert = require('internal/assert');
  const fs = require('fs');
  const path = require('path');
@@ -34,7 +34,7 @@ index c794751ecd4448119ce33d661e694f83b3323f03..364469160af5e348f8890417de16a63c
  const { safeGetenv } = internalBinding('credentials');
  const {
    privateSymbols: {
-@@ -233,7 +233,7 @@ function stat(filename) {
+@@ -236,7 +236,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) { return result; }
    }

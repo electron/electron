@@ -6,10 +6,10 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index ac24cf305bd5995ad13b37ee36f9e1fe3589c5d7..22248b753c14960122f1d6b9bfe6b89fdb8d2010 100644
+index 7beac5f7b3ec96577e4fd3056e3a72456167a11d..41daab801d67689b50cc5e10a0e167701da301f8 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
-@@ -10,7 +10,7 @@ const { kEmptyObject } = require('internal/util');
+@@ -12,7 +12,7 @@ const {
  const { defaultGetFormat } = require('internal/modules/esm/get_format');
  const { validateAttributes, emitImportAssertionWarning } = require('internal/modules/esm/assert');
  const { getOptionValue } = require('internal/options');
@@ -18,7 +18,7 @@ index ac24cf305bd5995ad13b37ee36f9e1fe3589c5d7..22248b753c14960122f1d6b9bfe6b89f
  
  // Do not eagerly grab .manifest, it may be in TDZ
  const policy = getOptionValue('--experimental-policy') ?
-@@ -42,8 +42,7 @@ async function getSource(url, context) {
+@@ -44,8 +44,7 @@ async function getSource(url, context) {
    let responseURL = href;
    let source;
    if (protocol === 'file:') {
@@ -28,7 +28,7 @@ index ac24cf305bd5995ad13b37ee36f9e1fe3589c5d7..22248b753c14960122f1d6b9bfe6b89f
    } else if (protocol === 'data:') {
      const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
      if (!match) {
-@@ -82,7 +81,7 @@ function getSourceSync(url, context) {
+@@ -84,7 +83,7 @@ function getSourceSync(url, context) {
    const responseURL = href;
    let source;
    if (protocol === 'file:') {
@@ -78,10 +78,10 @@ index 77b85490b1a65b594bb140deb07b33f3accc9736..da99cc2d4ca930222ca018ddf42ee2e5
      // Check for !stat.isDirectory()
      if (stat !== 1) {
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 5281d7c220c8adee0f3d7269a0116d082726ec91..9c9b403774e51e2f7e1201ad53e60e98fc3b26e8 100644
+index 0be9253a005790d9b106d456638a11a8499f9664..27cf7d0ae4a9e07897f8b1faef2884aec29d3975 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -36,7 +36,7 @@ const {
+@@ -33,7 +33,7 @@ const {
  
  const { BuiltinModule } = require('internal/bootstrap/realm');
  const assert = require('internal/assert');
@@ -90,7 +90,7 @@ index 5281d7c220c8adee0f3d7269a0116d082726ec91..9c9b403774e51e2f7e1201ad53e60e98
  const { dirname, extname, isAbsolute } = require('path');
  const {
    loadBuiltinModule,
-@@ -356,7 +356,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+@@ -304,7 +304,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
  
    try {
      // We still need to read the FS to detect the exports.
@@ -99,7 +99,7 @@ index 5281d7c220c8adee0f3d7269a0116d082726ec91..9c9b403774e51e2f7e1201ad53e60e98
    } catch {
      // Continue regardless of error.
    }
-@@ -424,7 +424,7 @@ function cjsPreparseModuleExports(filename, source) {
+@@ -371,7 +371,7 @@ function cjsPreparseModuleExports(filename, source) {
        isAbsolute(resolved)) {
          // TODO: this should be calling the `load` hook chain to get the source
          // (and fallback to reading the FS only if the source is nullish).

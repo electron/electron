@@ -109,7 +109,7 @@ index 85d48dfd2c15c453707bf6eb94e22f89b4f856b2..fe31a9a7f465a03d2de365cef392dfbb
    crypto::EVPKeyPointer key(raw_key);
  
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index cef0c877c67643d47da787eddb95ed5a410a941b..1b8af49a48f1a34a92d4f0b502d435f3a4ab5d8e 100644
+index dab6cf87a0809fe10db3a7c9664815d8dc091c2d..ad0652fa775373142301e1564c33fa52c3be7ad6 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -63,7 +63,7 @@ inline X509_STORE* GetOrCreateRootCertStore() {
@@ -121,7 +121,7 @@ index cef0c877c67643d47da787eddb95ed5a410a941b..1b8af49a48f1a34a92d4f0b502d435f3
      if (!bio) return nullptr;
      ByteSource bsrc = ByteSource::FromStringOrBuffer(env, v);
      if (bsrc.size() > INT_MAX) return nullptr;
-@@ -882,10 +882,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -883,10 +883,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -353,7 +353,7 @@ index 990638ec3993bde40ad3dd40d373d816ebc66a6a..63d971e1fe6b861e29c12f04563701b0
  }  // namespace
  
 diff --git a/src/env.h b/src/env.h
-index 2ec0a56e05ff879df8c55bf140677e571a56fafa..a30c25a3a61dfe73944731760404c555f2782d72 100644
+index 598082f68aefe29fc31beeb70167225e8b3cf25e..d5eb12ebaeaf95c57e91261151aeb382c7620afd 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -49,7 +49,7 @@
@@ -375,7 +375,7 @@ index 2ec0a56e05ff879df8c55bf140677e571a56fafa..a30c25a3a61dfe73944731760404c555
    // We declare another alias here to avoid having to include crypto_util.h
    using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index cf051585e779e2b03bd7b95fe5008b89cc7f8162..9de49c6828468fdf846dcd4ad445390f14446099 100644
+index 3628a9d04aa65f637cda27763d39dc4b16a939a3..b53f24c74d9c5de9bd716c441941aaac0bd703b6 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -6,7 +6,7 @@
@@ -388,7 +388,7 @@ index cf051585e779e2b03bd7b95fe5008b89cc7f8162..9de49c6828468fdf846dcd4ad445390f
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index f6ff810953b224b7e343d91e1065d95bc3e78d39..b7ef44b018c7aec59d8311642a811d1280247689 100644
+index 9d5accc3ebc4165f23f8cd0373c061df24ce49a6..7a937d4b6559fe9d616f9540591f69610fa5d9d7 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -401,7 +401,7 @@ index f6ff810953b224b7e343d91e1065d95bc3e78d39..b7ef44b018c7aec59d8311642a811d12
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 10c220f66122336215f25b9674acfdfe6df82a8e..e8b2243d24fe95ff31254071133fb646e186c07e 100644
+index f7a5654a5cfcaa053a2f0e46a1dfc346e998f0b3..9bb0375cede24811b2190a775f49a56ecbe29933 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

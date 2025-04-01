@@ -6,10 +6,10 @@ Subject: fix: do not resolve electron entrypoints
 This wastes fs cycles and can result in strange behavior if this path actually exists on disk
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 22248b753c14960122f1d6b9bfe6b89fdb8d2010..9d245a04fbcb98dcd1c61e60f7cfe528bd1c8af0 100644
+index 41daab801d67689b50cc5e10a0e167701da301f8..227d31d19317ec94348c67029b407b3e534ab1b6 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
-@@ -132,7 +132,7 @@ async function defaultLoad(url, context = kEmptyObject) {
+@@ -134,7 +134,7 @@ async function defaultLoad(url, context = kEmptyObject) {
      source = null;
      format ??= 'builtin';
    } else if (format !== 'commonjs' || defaultType === 'module') {
@@ -19,10 +19,10 @@ index 22248b753c14960122f1d6b9bfe6b89fdb8d2010..9d245a04fbcb98dcd1c61e60f7cfe528
        context = { __proto__: context, source };
      }
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 9c9b403774e51e2f7e1201ad53e60e98fc3b26e8..477a3b2cf61fcaa154f01ac77c8047ef548ac1f8 100644
+index 27cf7d0ae4a9e07897f8b1faef2884aec29d3975..6943c7973b4ae5246f4b019331c45aa9619eb017 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -375,6 +375,9 @@ function cjsPreparseModuleExports(filename, source) {
+@@ -322,6 +322,9 @@ function cjsPreparseModuleExports(filename, source) {
    if (module && module[kModuleExportNames] !== undefined) {
      return { module, exportNames: module[kModuleExportNames] };
    }
@@ -33,7 +33,7 @@ index 9c9b403774e51e2f7e1201ad53e60e98fc3b26e8..477a3b2cf61fcaa154f01ac77c8047ef
    if (!loaded) {
      module = new CJSModule(filename);
 diff --git a/lib/internal/modules/run_main.js b/lib/internal/modules/run_main.js
-index 4ad694debfc72f56dd98a4e56dd0bbc63711242e..73f0e00ad34132e7d2fd37ec321110881e89617f 100644
+index a22bddf635f5e6270554ac87f11f4e12f540a84c..b0543b4ca1ddcf289d9c4162e6641f0b4af8b7bd 100644
 --- a/lib/internal/modules/run_main.js
 +++ b/lib/internal/modules/run_main.js
 @@ -2,6 +2,7 @@
@@ -43,8 +43,8 @@ index 4ad694debfc72f56dd98a4e56dd0bbc63711242e..73f0e00ad34132e7d2fd37ec32111088
 +  StringPrototypeStartsWith,
  } = primordials;
  
- const { containsModuleSyntax } = internalBinding('contextify');
-@@ -22,6 +23,13 @@ const {
+ const { getOptionValue } = require('internal/options');
+@@ -21,6 +22,13 @@ const {
   * @param {string} main - Entry point path
   */
  function resolveMainPath(main) {
@@ -58,7 +58,7 @@ index 4ad694debfc72f56dd98a4e56dd0bbc63711242e..73f0e00ad34132e7d2fd37ec32111088
    const defaultType = getOptionValue('--experimental-default-type');
    /** @type {string} */
    let mainPath;
-@@ -58,6 +66,13 @@ function resolveMainPath(main) {
+@@ -57,6 +65,13 @@ function resolveMainPath(main) {
   * @param {string} mainPath - Absolute path to the main entry point
   */
  function shouldUseESMLoader(mainPath) {

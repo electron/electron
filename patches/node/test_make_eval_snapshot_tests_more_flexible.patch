@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 1 Apr 2025 09:16:56 +0000
+Subject: test: make eval snapshot tests more flexible
+
+Upstreamed in https://github.com/nodejs/node/pull/57020
+
+diff --git a/test/fixtures/eval/eval_messages.snapshot b/test/fixtures/eval/eval_messages.snapshot
+index 6a37ad2263461796c2c6a55f21b35b49302021b4..d844c4a4dacf73259a864f4fd8dc9df072046452 100644
+--- a/test/fixtures/eval/eval_messages.snapshot
++++ b/test/fixtures/eval/eval_messages.snapshot
+@@ -62,7 +62,7 @@ Node.js *
+ var ______________________________________________; throw 10
+                                                     ^
+ 10
+-(Use `node --trace-uncaught ...` to show where the exception was thrown)
++(Use `* --trace-uncaught ...` to show where the exception was thrown)
+ 
+ Node.js *
+ 
+@@ -70,7 +70,7 @@ Node.js *
+ var ______________________________________________; throw 10
+                                                     ^
+ 10
+-(Use `node --trace-uncaught ...` to show where the exception was thrown)
++(Use `* --trace-uncaught ...` to show where the exception was thrown)
+ 
+ Node.js *
+ done
+diff --git a/test/fixtures/eval/stdin_messages.snapshot b/test/fixtures/eval/stdin_messages.snapshot
+index 3c03bd64072061bd78b0424becc0f2ce960ca34b..89f2cd87b31b16d698e06cc5da18b17f7fd153e9 100644
+--- a/test/fixtures/eval/stdin_messages.snapshot
++++ b/test/fixtures/eval/stdin_messages.snapshot
+@@ -75,7 +75,7 @@ Node.js *
+ let ______________________________________________; throw 10
+                                                     ^
+ 10
+-(Use `node --trace-uncaught ...` to show where the exception was thrown)
++(Use `* --trace-uncaught ...` to show where the exception was thrown)
+ 
+ Node.js *
+ 
+@@ -83,7 +83,7 @@ Node.js *
+ let ______________________________________________; throw 10
+                                                     ^
+ 10
+-(Use `node --trace-uncaught ...` to show where the exception was thrown)
++(Use `* --trace-uncaught ...` to show where the exception was thrown)
+ 
+ Node.js *
+ done
+diff --git a/test/parallel/test-node-output-eval.mjs b/test/parallel/test-node-output-eval.mjs
+index 2fa60206e1ea1c1ba14ea2b6822e06e36bb856f9..2be134747842da25795cab50adb5d1956abda1eb 100644
+--- a/test/parallel/test-node-output-eval.mjs
++++ b/test/parallel/test-node-output-eval.mjs
+@@ -1,6 +1,7 @@
+ import '../common/index.mjs';
+ import * as fixtures from '../common/fixtures.mjs';
+ import * as snapshot from '../common/assertSnapshot.js';
++import { basename } from 'node:path';
+ import { describe, it } from 'node:test';
+ 
+ describe('eval output', { concurrency: true }, () => {
+@@ -14,13 +15,19 @@ describe('eval output', { concurrency: true }, () => {
+     normalize,
+     snapshot.replaceWindowsLineEndings,
+     snapshot.replaceWindowsPaths,
+-    snapshot.replaceNodeVersion
++    snapshot.replaceNodeVersion,
++    generalizeProcessName,
+   );
+ 
+   function removeStackTraces(output) {
+     return output.replaceAll(/^ *at .+$/gm, '');
+   }
+ 
++  function generalizeProcessName(output) {
++    const baseName = basename(process.argv0 || 'node', '.exe');
++    return output.replaceAll(`${baseName} --`, '* --');
++  }
++
+   const tests = [
+     { name: 'eval/eval_messages.js' },
+     { name: 'eval/stdin_messages.js' },
