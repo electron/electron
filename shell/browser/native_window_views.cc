@@ -381,8 +381,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
     bool rounded_corner = true;
     options.Get(options::kRoundedCorners, &rounded_corner);
-    if (!rounded_corner)
-      SetRoundedCorners(false);
+    SetRoundedCorners(rounded_corner);
   }
 
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
