@@ -9,7 +9,8 @@ Specifically, we'll be integrating with two commonly used native Windows librari
 
 This tutorial will be most useful to those who already have some familiarity with native C++ GUI development on Windows. You should have experience with basic window classes and procedures, like `WNDCLASSEXW` and `WindowProc` functions. You should also be familiar with the Windows message loop, which is the heart of any native application - our code will be using `GetMessage`, `TranslateMessage`, and `DispatchMessage` to handle messages. Lastly, we'll be using (but not explaining) standard Win32 controls like `WC_EDITW` or `WC_BUTTONW`.
 
-If you're not familiar with C++ GUI development on Windows, we recommend Microsoft's excellent documentation and guides, particular for beginners. "[Get Started with Win32 and C++](https://learn.microsoft.com/en-us/windows/win32/learnwin32/learn-to-program-for-windows)" is a great introduction.
+> [!NOTE]
+> If you're not familiar with C++ GUI development on Windows, we recommend Microsoft's excellent documentation and guides, particular for beginners. "[Get Started with Win32 and C++](https://learn.microsoft.com/en-us/windows/win32/learnwin32/learn-to-program-for-windows)" is a great introduction.
 
 ## Requirements
 
