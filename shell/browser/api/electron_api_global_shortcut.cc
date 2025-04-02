@@ -6,6 +6,7 @@
 
 #include <vector>
 
+#include "base/containers/map_util.h"
 #include "extensions/common/command.h"
 #include "gin/dictionary.h"
 #include "gin/handle.h"
@@ -52,12 +53,13 @@ GlobalShortcut::~GlobalShortcut() {
 }
 
 void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
-  if (!accelerator_callback_map_.contains(accelerator)) {
+  if (auto* cb = base::FindOrNull(accelerator_callback_map_, accelerator)) {
+    cb->Run();
+  } else {
     // This should never occur, because if it does, GlobalShortcutListener
     // notifies us with wrong accelerator.
     NOTREACHED();
   }
-  accelerator_callback_map_[accelerator].Run();
 }
 
 bool GlobalShortcut::RegisterAll(
