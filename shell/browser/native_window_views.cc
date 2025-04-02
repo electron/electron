@@ -163,10 +163,11 @@ gfx::Size WindowSizeToContentSizeBuggy(HWND hwnd, const gfx::Size& size) {
 
 #endif
 
-[[maybe_unused]] bool IsX11() {
-  return ui::OzonePlatform::GetInstance()
-      ->GetPlatformProperties()
-      .electron_can_call_x11;
+[[maybe_unused, nodiscard]] bool IsX11() {
+  static const bool is_x11 = ui::OzonePlatform::GetInstance()
+                                 ->GetPlatformProperties()
+                                 .electron_can_call_x11;
+  return is_x11;
 }
 
 class NativeWindowClientView : public views::ClientView {
@@ -381,8 +382,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
     bool rounded_corner = true;
     options.Get(options::kRoundedCorners, &rounded_corner);
-    if (!rounded_corner)
-      SetRoundedCorners(false);
+    SetRoundedCorners(rounded_corner);
   }
 
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);

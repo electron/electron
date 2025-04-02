@@ -14,8 +14,8 @@ namespace gin_helper {
 
 class ErrorThrower {
  public:
-  explicit ErrorThrower(v8::Isolate* isolate);
-  ErrorThrower();
+  constexpr explicit ErrorThrower(v8::Isolate* isolate) : isolate_{isolate} {}
+  constexpr ErrorThrower() = default;
   ~ErrorThrower() = default;
 
   void ThrowError(std::string_view err_msg) const;
@@ -24,14 +24,14 @@ class ErrorThrower {
   void ThrowReferenceError(std::string_view err_msg) const;
   void ThrowSyntaxError(std::string_view err_msg) const;
 
-  v8::Isolate* isolate() const { return isolate_; }
+  v8::Isolate* isolate() const;
 
  private:
   using ErrorGenerator = v8::Local<v8::Value> (*)(v8::Local<v8::String> err_msg,
                                                   v8::Local<v8::Value> options);
   void Throw(ErrorGenerator gen, std::string_view err_msg) const;
 
-  raw_ptr<v8::Isolate> isolate_;
+  raw_ptr<v8::Isolate> isolate_ = {};
 };
 
 }  // namespace gin_helper
