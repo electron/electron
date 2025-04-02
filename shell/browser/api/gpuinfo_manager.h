@@ -34,6 +34,8 @@ class GPUInfoManager : private content::GpuDataManagerObserver {
   void FetchCompleteInfo(gin_helper::Promise<base::Value> promise);
   void FetchBasicInfo(gin_helper::Promise<base::Value> promise);
 
+  void Shutdown() { complete_info_promise_set_.clear(); }
+
  private:
   // content::GpuDataManagerObserver
   void OnGpuInfoUpdate() override;

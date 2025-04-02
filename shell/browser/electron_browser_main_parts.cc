@@ -47,6 +47,7 @@
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_main_delegate.h"
 #include "shell/browser/api/electron_api_utility_process.h"
+#include "shell/browser/api/gpuinfo_manager.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
@@ -587,6 +588,9 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
         utility_process_wrapper->Shutdown(0 /* exit_code */);
     }
   }
+
+  // Destroy all promises in GPUInfoManager before destroying Node/V8.
+  GPUInfoManager::GetInstance()->Shutdown();
 
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
