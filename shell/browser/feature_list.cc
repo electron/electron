@@ -11,6 +11,7 @@
 #include "base/feature_list.h"
 #include "base/metrics/field_trial.h"
 #include "components/spellcheck/common/spellcheck_features.h"
+#include "components/viz/common/features.h"
 #include "content/common/features.h"
 #include "content/public/common/content_features.h"
 #include "electron/buildflags/buildflags.h"
@@ -52,6 +53,9 @@ void InitializeFeatureList() {
       // Delayed spellcheck initialization is causing the
       // 'custom dictionary word list API' spec to crash.
       std::string(",") + spellcheck::kWinDelaySpellcheckServiceInit.name;
+  enable_features +=
+      // Fixes background material not rendering on first paint.
+      std::string(",") + features::kRemoveRedirectionBitmap.name;
 #endif
 
 #if BUILDFLAG(IS_MAC)
