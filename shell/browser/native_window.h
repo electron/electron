@@ -9,7 +9,6 @@
 #include <memory>
 #include <optional>
 #include <queue>
-#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -23,6 +22,7 @@
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;
@@ -513,7 +513,8 @@ class NativeWindow : public base::SupportsUserData,
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;
 
-  std::set<BackgroundThrottlingSource*> background_throttling_sources_;
+  absl::flat_hash_set<BackgroundThrottlingSource*>
+      background_throttling_sources_;
 
   // Accessible title.
   std::u16string accessible_title_;
