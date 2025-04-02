@@ -133,7 +133,7 @@ If you're curious about the details about this config, you can read on - otherwi
 
 #### `VCLinkerTool` Settings
 
-``````json title='binding.gyp'
+```json title='binding.gyp'
 "VCLinkerTool": {
   "GenerateDebugInformation": "true"
 }
