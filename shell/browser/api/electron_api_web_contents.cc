@@ -2520,6 +2520,7 @@ void WebContents::RestoreHistory(
 
   auto navigation_entries =
       std::vector<std::unique_ptr<content::NavigationEntry>>{};
+  navigation_entries.reserve(entries.size());
 
   blink::UserAgentOverride ua_override;
   ua_override.ua_string_override = GetUserAgent();
