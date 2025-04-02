@@ -14,6 +14,8 @@ body:
         required: true
       - label: I have searched the [issue tracker](https://www.github.com/electron/electron/issues) for a bug report that matches the one I want to file, without success.
         required: true
+      - label: I am an app developer, not an end user. (End users, please report issues to the app developer.)
+        required: true
 - type: input
   attributes:
     label: Electron Version
