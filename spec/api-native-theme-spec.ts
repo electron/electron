@@ -102,6 +102,12 @@ describe('nativeTheme module', () => {
     });
   });
 
+  describe('nativeTheme.shouldUseDarkColorsForSystemIntegratedUI', () => {
+    it('returns a boolean', () => {
+      expect(nativeTheme.shouldUseDarkColorsForSystemIntegratedUI).to.be.a('boolean');
+    });
+  });
+
   describe('nativeTheme.inForcedColorsMode', () => {
     it('returns a boolean', () => {
       expect(nativeTheme.inForcedColorsMode).to.be.a('boolean');
