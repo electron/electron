@@ -118,6 +118,12 @@ jobs:
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server
+    - name: Reenable graphics effects on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        # These options to reduce graphics effects were enabled upstream in https://github.com/actions/runner-images/pull/11877
+        defaults write com.apple.universalaccess reduceMotion -bool false
+        defaults write com.apple.universalaccess reduceTransparency -bool false
     - name: Checkout Electron
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
