@@ -224,7 +224,6 @@ bool IsScreenReaderActive() {
 
 }  // namespace
 
-std::set<NativeWindowViews*> NativeWindowViews::forwarding_windows_;
 HHOOK NativeWindowViews::mouse_hook_ = nullptr;
 
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
