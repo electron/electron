@@ -51,7 +51,6 @@ class AutofillPopupChildView : public views::View {
   AutofillPopupChildView(const AutofillPopupChildView&) = delete;
   AutofillPopupChildView& operator=(const AutofillPopupChildView&) = delete;
 
- private:
   ~AutofillPopupChildView() override = default;
 
   std::u16string suggestion_;
