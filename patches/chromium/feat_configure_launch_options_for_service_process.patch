@@ -19,7 +19,7 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index 6a3645f020d7348f758ebcc93c49ddcbee709937..55994606517a4f52475610db2da26b5560865fab 100644
+index 32b0b480d2195e5b166a473c2b58c960a0b5d052..cbf593e5405b384dbbdf763ebc4319cf25fc5c4a 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
 @@ -33,6 +33,7 @@
@@ -43,7 +43,7 @@ index 6a3645f020d7348f758ebcc93c49ddcbee709937..55994606517a4f52475610db2da26b55
    // in the child process. If a FilePath is provided, the file will be opened
    // and the descriptor cached for future process launches. If a ScopedFD is
 @@ -211,6 +215,15 @@ struct ChildProcessLauncherFileData {
-   std::map<std::string, absl::variant<base::FilePath, base::ScopedFD>>
+   std::map<std::string, std::variant<base::FilePath, base::ScopedFD>>
        files_to_preload;
  #endif
 +
@@ -187,10 +187,10 @@ index 96c9563aac5847e742de5d9c9236f78bcb6cfd9c..73c9d585579ad5bdc407687b8becd0b7
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 26966d77a2ca88ce62afa16fd0f33cd5815b8c95..b7dfacb25a09b105e982c013119271b8f137e7b9 100644
+index 8bb497717298886bc6db04ebcba9be1f3b29ab73..60c4a301c32a46cdc332cccd1cd4ae78802ee8b9 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -189,11 +189,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
+@@ -190,11 +190,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
    return process_->GetData();
  }
  
@@ -206,7 +206,7 @@ index 26966d77a2ca88ce62afa16fd0f33cd5815b8c95..b7dfacb25a09b105e982c013119271b8
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -240,6 +242,30 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+@@ -241,6 +243,30 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -237,7 +237,7 @@ index 26966d77a2ca88ce62afa16fd0f33cd5815b8c95..b7dfacb25a09b105e982c013119271b8
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -454,9 +480,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -455,9 +481,26 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
@@ -266,7 +266,7 @@ index 26966d77a2ca88ce62afa16fd0f33cd5815b8c95..b7dfacb25a09b105e982c013119271b8
  #if BUILDFLAG(IS_WIN)
      if (!preload_libraries_.empty()) {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index 066939fcbb7bc05e27a6bb4ed122750732629454..ab6b64737245a840a3e2b06d2ab501ef4aaed7a2 100644
+index d13e6db4857242480591bff040709532d16f513d..1164da12ee71a8575c17bf1b84a505e8a32b96b3 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
 @@ -30,6 +30,10 @@

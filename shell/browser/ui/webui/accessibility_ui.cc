@@ -160,8 +160,8 @@ void HandleAccessibilityRequestCallback(
       static_cast<electron::ElectronBrowserContext*>(current_context)->prefs();
   ui::AXMode mode =
       content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
-  bool is_native_enabled = content::BrowserAccessibilityState::GetInstance()
-                               ->IsRendererAccessibilityEnabled();
+  bool is_a11y_allowed = content::BrowserAccessibilityState::GetInstance()
+                             ->IsAccessibilityAllowed();
   bool native = mode.has_mode(ui::AXMode::kNativeAPIs);
   bool web = mode.has_mode(ui::AXMode::kWebContents);
   bool text = mode.has_mode(ui::AXMode::kInlineTextBoxes);
@@ -171,12 +171,12 @@ void HandleAccessibilityRequestCallback(
 
   // The "native" and "web" flags are disabled if
   // --disable-renderer-accessibility is set.
-  data.Set(kNative, is_native_enabled ? (native ? kOn : kOff) : kDisabled);
-  data.Set(kWeb, is_native_enabled ? (web ? kOn : kOff) : kDisabled);
+  data.Set(kNative, is_a11y_allowed ? (native ? kOn : kOff) : kDisabled);
+  data.Set(kWeb, is_a11y_allowed ? (web ? kOn : kOff) : kDisabled);
 
   // The "text", "extendedProperties" and "html" flags are only
   // meaningful if "web" is enabled.
-  bool is_web_enabled = is_native_enabled && web;
+  bool is_web_enabled = is_a11y_allowed && web;
   data.Set(kText, is_web_enabled ? (text ? kOn : kOff) : kDisabled);
   data.Set(kExtendedProperties,
            is_web_enabled ? (extendedProperties ? kOn : kOff) : kDisabled);
@@ -245,7 +245,7 @@ void HandleAccessibilityRequestCallback(
     }
 
     base::Value::Dict descriptor = BuildTargetDescriptor(rvh);
-    descriptor.Set(kNative, is_native_enabled);
+    descriptor.Set(kNative, is_a11y_allowed);
     descriptor.Set(kExtendedProperties, is_web_enabled && extendedProperties);
     descriptor.Set(kWeb, is_web_enabled);
     page_list.Append(std::move(descriptor));
