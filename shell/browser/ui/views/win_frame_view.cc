@@ -265,8 +265,8 @@ void WinFrameView::LayoutCaptionButtons() {
 }
 
 void WinFrameView::LayoutWindowControlsOverlay() {
-  FramelessView::LayoutWindowControlsOverlay(IsMaximized(),
-                                             caption_button_container_->size());
+  FramelessView::LayoutWindowControlsOverlay(caption_button_container_->size(),
+                                             IsMaximized());
 }
 
 BEGIN_METADATA(WinFrameView)
