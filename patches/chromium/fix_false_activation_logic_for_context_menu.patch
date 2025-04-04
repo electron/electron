@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eric Sum <esum@google.com>
+Date: Thu, 28 Nov 2024 01:34:06 +0000
+Subject: Fix false activation logic for context menu.
+
+See these comments for context on the bug:
+https://b.corp.google.com/issues/378757755#comment6
+https://b.corp.google.com/issues/378757755#comment7
+
+In local testing on a dedede device with a small screen, the issue
+had a ~25-50% repro rate in a problematic area of the screen. After
+this change, it hasn't reproduced once in over 50 attempts.
+
+Bug: b:378757755
+Change-Id: I1c354b62e473d884406824286b092ae8412f891d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6039992
+Reviewed-by: Xiyuan Xia <xiyuan@chromium.org>
+Commit-Queue: Eric Sum <esum@google.com>
+Reviewed-by: Peter Kasting <pkasting@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1389153}
+
+diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
+index fab337cdefe9bb5288c63db71a5fe1ff3ef08a1d..b38e99d21b715d62baefb962f55b75912654231a 100644
+--- a/ui/views/controls/menu/menu_controller.cc
++++ b/ui/views/controls/menu/menu_controller.cc
+@@ -585,7 +585,13 @@ void MenuController::Run(Widget* parent,
+   drag_in_progress_ = false;
+   closing_event_time_ = base::TimeTicks();
+   menu_start_time_ = base::TimeTicks::Now();
+-  menu_start_mouse_press_loc_ = gfx::Point();
++  // In some cases, the context menu is asynchronously created after the "mouse
++  // pressed event" is dispatched, so `RootView::current_event()` below is null.
++  // The mouse press location must be taken from the `anchor_bounds` for these
++  // cases.
++  menu_start_mouse_press_loc_ = source_type == ui::mojom::MenuSourceType::kMouse
++                                    ? anchor_bounds.origin()
++                                    : gfx::Point();
+ 
+   ui::Event* event = nullptr;
+   if (parent) {
