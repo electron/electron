@@ -131,7 +131,6 @@ If you're curious about the details about this config, you can read on - otherwi
 * `DebugInformationFormat: "OldStyle"`: This specifies the format of debugging information, using the older, more compatible PDB (Program Database) format. This supports compatibility with various debugging tools and works better with incremental builds.
 * `AdditionalOptions: ["/FS"]`: This adds the File Serialization flag, forcing serialized access to PDB files during compilation. It prevents build errors in parallel builds where multiple compiler processes try to access the same PDB file.
 
-
 #### `VCLinkerTool` Settings
 
 ```json title='binding.gyp'
@@ -234,6 +233,7 @@ namespace cpp_code
 ```
 
 In this section:
+
 * We include necessary Win32 headers
 * We set up pragma comments to link against required libraries
 * We define callback variables for Todo operations
@@ -526,7 +526,6 @@ Then, we'll need to implement the window procedure to handle Windows messages. L
 
 We now have successfully implemented the Win32 C++ code. Most of this should look and feel to you like code you'd write with or without Electron. In the next step, we'll be building the bridge between C++ and JavaScript. Here's the complete implementation:
 
-
 ```cpp title='src/cpp_code.cc'
 #include <windows.h>
 #include <windowsx.h>
@@ -812,7 +811,6 @@ namespace cpp_code
 } // namespace cpp_code
 ```
 
-
 ## 5) Creating the Node.js Addon Bridge
 
 Now let's implement the bridge between our C++ code and Node.js in `src/cpp_addon.cc`. Let's start by creating a basic skeleton for our addon:
@@ -871,7 +869,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
 NODE_API_MODULE(cpp_addon, Init)
 ```
-
 
 This creates a class that inherits from `Napi::ObjectWrap`, which allows us to wrap our C++ object for use in JavaScript. The `Init` function sets up the class and exports it to JavaScript.
 
@@ -1335,7 +1332,6 @@ npm run build
 ```
 
 ## Conclusion
-
 
 You've now built a complete native Node.js addon for Windows using C++ and the Win32 API. Some of things we've done here are:
 
