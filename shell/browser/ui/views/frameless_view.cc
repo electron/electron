@@ -118,6 +118,26 @@ gfx::Size FramelessView::GetMaximumSize() const {
   return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
 }
 
+void FramelessView::LayoutWindowControlsOverlay(
+    const gfx::Size caption_button_container_size,
+    const bool is_maximized) {
+  NativeWindowViews* const window = this->window();
+
+  int overlay_height = window->titlebar_overlay_height();
+  if (overlay_height == 0) {
+    // Accounting for the 1 pixel margin at the top of the button container
+    overlay_height = is_maximized ? caption_button_container_size.height()
+                                  : caption_button_container_size.height() + 1;
+  }
+  int overlay_width = caption_button_container_size.width();
+  int bounding_rect_width = width() - overlay_width;
+  auto bounding_rect =
+      GetMirroredRect(gfx::Rect{0, 0, bounding_rect_width, overlay_height});
+
+  window->SetWindowControlsOverlayRect(bounding_rect);
+  window->NotifyLayoutWindowControlsOverlay();
+}
+
 BEGIN_METADATA(FramelessView)
 END_METADATA
 

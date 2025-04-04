@@ -273,21 +273,8 @@ void OpaqueFrameView::LayoutWindowControls() {
 }
 
 void OpaqueFrameView::LayoutWindowControlsOverlay() {
-  int overlay_height = window()->titlebar_overlay_height();
-  if (overlay_height == 0) {
-    // Accounting for the 1 pixel margin at the top of the button container
-    overlay_height =
-        window()->IsMaximized()
-            ? caption_button_placeholder_container_->size().height()
-            : caption_button_placeholder_container_->size().height() + 1;
-  }
-  int overlay_width = caption_button_placeholder_container_->size().width();
-  int bounding_rect_width = width() - overlay_width;
-  auto bounding_rect =
-      GetMirroredRect(gfx::Rect(0, 0, bounding_rect_width, overlay_height));
-
-  window()->SetWindowControlsOverlayRect(bounding_rect);
-  window()->NotifyLayoutWindowControlsOverlay();
+  FramelessView::LayoutWindowControlsOverlay(
+      caption_button_placeholder_container_->size(), window()->IsMaximized());
 }
 
 views::Button* OpaqueFrameView::CreateButton(

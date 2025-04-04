@@ -66,6 +66,9 @@ class FramelessView : public views::NonClientFrameView {
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
 
+  void LayoutWindowControlsOverlay(gfx::Size caption_button_container_size,
+                                   bool is_maximized);
+
   // Not owned.
   raw_ptr<NativeWindowViews> window_ = nullptr;
   raw_ptr<views::Widget> frame_ = nullptr;
