@@ -91,6 +91,12 @@ void ElectronWebContentsUtilityHandlerImpl::CanAccessClipboardDeprecated(
   }
 }
 
+void ElectronWebContentsUtilityHandlerImpl::HandlePasteAction(
+    content::RenderFrameHost* frame_host) {
+  // Ensure that the context menu's paste action does not select the entire input content
+  // Implement the logic to paste the text at the cursor position without selecting the entire input content.
+}
+
 content::RenderFrameHost*
 ElectronWebContentsUtilityHandlerImpl::GetRenderFrameHost() {
   return content::RenderFrameHost::FromFrameToken(render_frame_host_token_);
