@@ -250,7 +250,10 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
            {Reason::EXCLUDE_THIRD_PARTY_PHASEOUT,
             "The cookie is blocked for third-party cookie phaseout."},
            {Reason::EXCLUDE_NO_COOKIE_CONTENT,
-            "The cookie contains no content or only whitespace."}});
+            "The cookie contains no content or only whitespace."},
+           {Reason::EXCLUDE_ANONYMOUS_CONTEXT,
+            "The cookie is unpartitioned and being accessed from an anonymous "
+            "context."}});
   static_assert(
       Reasons.size() ==
           net::CookieInclusionStatus::ExclusionReasonBitset::kValueCount,

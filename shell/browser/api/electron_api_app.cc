@@ -1155,7 +1155,7 @@ void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
 
 bool App::IsAccessibilitySupportEnabled() {
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-  return ax_state->IsAccessibleBrowser();
+  return ax_state->GetAccessibilityMode() == ui::kAXModeComplete;
 }
 
 void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
@@ -1169,9 +1169,9 @@ void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
 
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
   if (enabled) {
-    ax_state->OnScreenReaderDetected();
+    ax_state->EnableProcessAccessibility();
   } else {
-    ax_state->DisableAccessibility();
+    ax_state->DisableProcessAccessibility();
   }
   Browser::Get()->OnAccessibilitySupportChanged();
 }
@@ -1629,11 +1629,19 @@ void ConfigureHostResolver(v8::Isolate* isolate,
 
   bool enable_built_in_resolver =
       base::FeatureList::IsEnabled(net::features::kAsyncDns);
+  bool enable_happy_eyeballs_v3 =
+      base::FeatureList::IsEnabled(net::features::kHappyEyeballsV3);
   bool additional_dns_query_types_enabled = true;
 
   if (opts.Has("enableBuiltInResolver") &&
       !opts.Get("enableBuiltInResolver", &enable_built_in_resolver)) {
     thrower.ThrowTypeError("enableBuiltInResolver must be a boolean");
+    return;
+  }
+
+  if (opts.Has("enableHappyEyeballs") &&
+      !opts.Get("enableHappyEyeballs", &enable_happy_eyeballs_v3)) {
+    thrower.ThrowTypeError("enableHappyEyeballs must be a boolean");
     return;
   }
 
@@ -1677,8 +1685,8 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   // Configure the stub resolver. This must be done after the system
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
-      enable_built_in_resolver, secure_dns_mode, doh_config,
-      additional_dns_query_types_enabled);
+      enable_built_in_resolver, enable_happy_eyeballs_v3, secure_dns_mode,
+      doh_config, additional_dns_query_types_enabled);
 }
 
 // static
