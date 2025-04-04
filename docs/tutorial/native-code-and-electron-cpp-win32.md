@@ -62,7 +62,7 @@ For a Windows-specific addon, we need to modify our `binding.gyp` file to includ
 2. We need to include the Windows-specific libraries. In our tutorial, we'll be targeting `comctl32.lib` and `shcore.lib`.
 3. We need to configure the compiler and define C++ macros.
 
-``````json title='binding.gyp'
+```json title='binding.gyp'
 {
   "targets": [
     {
