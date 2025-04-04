@@ -2540,8 +2540,7 @@ void WebContents::RestoreHistory(
 
     nav_entry->SetIsOverridingUserAgent(
         !ua_override.ua_string_override.empty());
-    navigation_entries.push_back(
-        std::unique_ptr<content::NavigationEntry>(nav_entry));
+    navigation_entries.emplace_back(nav_entry);
   }
 
   if (!navigation_entries.empty()) {
