@@ -51,9 +51,10 @@ class ParentPort final : public gin::Wrappable<ParentPort>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  void Close();
+
  private:
   void PostMessage(v8::Local<v8::Value> message_value);
-  void Close();
   void Start();
   void Pause();
 
