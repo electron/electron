@@ -45,6 +45,9 @@ class ElectronWebContentsUtilityHandlerImpl
       const blink::LocalFrameToken& frame_token,
       CanAccessClipboardDeprecatedCallback callback) override;
 
+  // Add the function declaration
+  void HandlePasteAction(content::RenderFrameHost* frame_host);
+
   base::WeakPtr<ElectronWebContentsUtilityHandlerImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
