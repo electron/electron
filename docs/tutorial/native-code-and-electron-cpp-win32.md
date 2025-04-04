@@ -116,7 +116,7 @@ If you're curious about the details about this config, you can read on - otherwi
 
 #### `VCCLCompilerTool` Settings
 
-``````json title='binding.gyp'
+```json title='binding.gyp'
 "VCCLCompilerTool": {
   "ExceptionHandling": 1,
   "DebugInformationFormat": "OldStyle",
