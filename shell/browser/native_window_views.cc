@@ -1851,7 +1851,7 @@ ui::mojom::WindowShowState NativeWindowViews::GetRestoredState() {
       return ui::mojom::WindowShowState::kMaximized;
     }
 #else
-    return ui::mojom::WindowShowState::kMinimized;
+    return ui::mojom::WindowShowState::kMaximized;
 #endif
   }
 

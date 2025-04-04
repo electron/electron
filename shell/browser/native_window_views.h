@@ -9,11 +9,11 @@
 
 #include <memory>
 #include <optional>
-#include <set>
 #include <string>
 
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/ui/views/root_view.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "ui/base/ozone_buildflags.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/widget/widget_observer.h"
@@ -283,7 +283,7 @@ class NativeWindowViews : public NativeWindow,
   base::win::ScopedGDIObject<HICON> app_icon_;
 
   // The set of windows currently forwarding mouse messages.
-  static std::set<NativeWindowViews*> forwarding_windows_;
+  static inline absl::flat_hash_set<NativeWindowViews*> forwarding_windows_;
   static HHOOK mouse_hook_;
   bool forwarding_mouse_messages_ = false;
   HWND legacy_window_ = nullptr;
