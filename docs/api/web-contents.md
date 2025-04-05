@@ -1709,7 +1709,8 @@ Returns `Promise<PrinterInfo[]>` - Resolves with a [`PrinterInfo[]`](structures/
   * `header` string (optional) - string to be printed as page header.
   * `footer` string (optional) - string to be printed as page footer.
   * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A0`, `A1`, `A2`, `A3`,
-  `A4`, `A5`, `A6`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` and `width`.
+  `A4`, `A5`, `A6`, `B0`, `B1`, `B2`, `B3`, `B4`, `B5`, `B6`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` and `width`.
+
 * `callback` Function (optional)
   * `success` boolean - Indicates success of the print call.
   * `failureReason` string - Error description called back if the print fails.
@@ -1746,7 +1747,7 @@ win.webContents.print(options, (success, errorType) => {
   * `printBackground` boolean (optional) - Whether to print background graphics. Defaults to false.
   * `scale` number(optional)  - Scale of the webpage rendering. Defaults to 1.
   * `pageSize` string | Size (optional) - Specify page size of the generated PDF. Can be `A0`, `A1`, `A2`, `A3`,
-  `A4`, `A5`, `A6`, `Legal`, `Letter`, `Tabloid`, `Ledger`, or an Object containing `height` and `width` in inches. Defaults to `Letter`.
+  `A4`, `A5`, `A6`, `B0`, `B1`, `B2`, `B3`, `B4`, `B5`, `B6`, `Legal`, `Letter`, `Tabloid`, `Ledger`, or an Object containing `height` and `width` in inches. Defaults to `Letter`.
   * `margins` Object (optional)
     * `top` number (optional) - Top margin in inches. Defaults to 1cm (~0.4 inches).
     * `bottom` number (optional) - Bottom margin in inches. Defaults to 1cm (~0.4 inches).
