@@ -4,6 +4,8 @@
 
 Process: [Renderer](../glossary.md#renderer-process)
 
+`webUtils` is only available in preload scripts.
+
 ## Methods
 
 The `webUtils` module has the following methods:
@@ -17,10 +19,24 @@ Returns `string` - The file system path that this `File` object points to. In th
 This method superseded the previous augmentation to the `File` object with the `path` property.  An example is included below.
 
 ```js @ts-nocheck
-// Before
-const oldPath = document.querySelector('input').files[0].path
-
-// After
-const { webUtils } = require('electron')
-const newPath = webUtils.getPathForFile(document.querySelector('input').files[0])
+// Before (renderer)
+const file = document.querySelector('input[type=file]').files[0]
+alert(`Uploaded file path was: ${file.path}`)
 ```
+
+```js @ts-nocheck
+// After (renderer)
+const file = document.querySelector('input[type=file]').files[0]
+electron.showFilePath(file)
+
+// (preload script)
+const { contextBridge, webUtils } = require('electron')
+
+contextBridge.exposeInMainWorld('electron', {
+  showFilePath (file) {
+    // It's best not to expose the full file path to the web content if
+    // possible.
+    const path = webUtils.getPathForFile(file)
+    alert(`Uploaded file path was: ${path}`)
+  }
+})
