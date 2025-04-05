@@ -34,10 +34,6 @@ namespace base {
 class FilePath;
 }
 
-namespace gfx {
-class Image;
-}
-
 namespace gin {
 template <typename T>
 class Handle;
@@ -65,9 +61,6 @@ class App final : public ElectronBrowserClient::Delegate,
                   private content::GpuDataManagerObserver,
                   private content::BrowserChildProcessObserver {
  public:
-  using FileIconCallback =
-      base::RepeatingCallback<void(v8::Local<v8::Value>, const gfx::Image&)>;
-
   static gin::Handle<App> Create(v8::Isolate* isolate);
   static App* Get();
 
