@@ -229,11 +229,11 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
 void MenuBar::RebuildChildren() {
   RemoveAllChildViews();
   for (size_t i = 0, n = GetItemCount(); i < n; ++i) {
-    auto* button = new SubmenuButton(
+    auto button = std::make_unique<SubmenuButton>(
         base::BindRepeating(&MenuBar::ButtonPressed, base::Unretained(this), i),
         menu_model_->GetLabelAt(i), background_color_);
     button->SetID(i);
-    AddChildView(button);
+    AddChildView(std::move(button));
   }
   UpdateViewColors();
 }
