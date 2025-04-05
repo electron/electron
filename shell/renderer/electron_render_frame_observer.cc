@@ -68,6 +68,8 @@ ElectronRenderFrameObserver::ElectronRenderFrameObserver(
   render_frame_->GetWebView()->SetSupportsDraggableRegions(true);
 }
 
+ElectronRenderFrameObserver::~ElectronRenderFrameObserver() {}
+
 void ElectronRenderFrameObserver::DidClearWindowObject() {
   // Do a delayed Node.js initialization for child window.
   // Check DidInstallConditionalFeatures below for the background.
