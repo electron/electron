@@ -73,7 +73,7 @@ body:
 - type: input
   attributes:
     label: Testcase Gist URL
-    description: If you can reproduce the issue in a standalone test case, please use [Electron Fiddle](https://github.com/electron/fiddle) to create one and to publish it as a [GitHub gist](https://gist.github.com) and put the gist URL here. This is **the best way** to ensure this issue is triaged quickly.
+    description: Electron maintainers need a standalone test case to reproduce and fix your issue. Please use [Electron Fiddle](https://github.com/electron/fiddle) to create one and to publish it as a [GitHub gist](https://gist.github.com). Then put the gist URL here. Issues without testcase gists receive less attention and might be closed without a maintainer taking a closer look. To maximize how much attention your issue receives, please include a testcase gist right from the start.
     placeholder: https://gist.github.com/...
 - type: textarea
   attributes:
