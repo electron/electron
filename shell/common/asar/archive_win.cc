@@ -17,6 +17,7 @@
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/common/asar/asar_util.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
 namespace asar {
 
@@ -39,7 +40,7 @@ std::optional<base::FilePath> Archive::RelativePath() const {
 
 const auto& LoadIntegrityConfigCache() {
   static base::NoDestructor<
-      std::optional<std::unordered_map<std::string, IntegrityPayload>>>
+      std::optional<absl::flat_hash_map<std::string, IntegrityPayload>>>
       integrity_config_cache;
 
   // Skip loading if cache is already loaded
@@ -48,7 +49,8 @@ const auto& LoadIntegrityConfigCache() {
   }
 
   // Init cache
-  *integrity_config_cache = std::unordered_map<std::string, IntegrityPayload>();
+  *integrity_config_cache =
+      absl::flat_hash_map<std::string, IntegrityPayload>{};
 
   // Load integrity config from exe resource
   HMODULE module_handle = ::GetModuleHandle(NULL);
