@@ -93,6 +93,7 @@ const auto& LoadIntegrityConfigCache() {
   }
 
   // Parse each individual file integrity config
+  integrity_config_cache->reserve(file_configs->size());
   for (size_t i = 0; i < file_configs->size(); i++) {
     // Skip invalid file configs
     const base::Value::Dict* ele_dict = (*file_configs)[i].GetIfDict();
