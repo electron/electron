@@ -2609,8 +2609,9 @@ void WebContents::RestoreHistory(
     return;
   }
 
-  auto navigation_entries = std::make_unique<
-      std::vector<std::unique_ptr<content::NavigationEntry>>>();
+  auto navigation_entries =
+      std::vector<std::unique_ptr<content::NavigationEntry>>{};
+  navigation_entries.reserve(entries.size());
 
   blink::UserAgentOverride ua_override;
   ua_override.ua_string_override = GetUserAgent();
@@ -2630,14 +2631,13 @@ void WebContents::RestoreHistory(
 
     nav_entry->SetIsOverridingUserAgent(
         !ua_override.ua_string_override.empty());
-    navigation_entries->push_back(
-        std::unique_ptr<content::NavigationEntry>(nav_entry));
+    navigation_entries.emplace_back(nav_entry);
   }
 
-  if (!navigation_entries->empty()) {
+  if (!navigation_entries.empty()) {
     web_contents()->SetUserAgentOverride(ua_override, false);
     web_contents()->GetController().Restore(
-        index, content::RestoreType::kRestored, navigation_entries.get());
+        index, content::RestoreType::kRestored, &navigation_entries);
     web_contents()->GetController().LoadIfNecessary();
   }
 }
