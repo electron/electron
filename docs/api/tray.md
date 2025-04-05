@@ -238,7 +238,7 @@ Sets the `image` associated with this tray icon when pressed on macOS.
 
 * `toolTip` string
 
-Sets the hover text for this tray icon.
+Sets the hover text for this tray icon. Setting the text to an empty string will remove the tooltip.
 
 #### `tray.setTitle(title[, options])` _macOS_
 
