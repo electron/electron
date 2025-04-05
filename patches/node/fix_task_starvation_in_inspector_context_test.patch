@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <cwatford@slack-corp.com>
+Date: Thu, 3 Apr 2025 10:59:30 -0600
+Subject: Fix task starvation in inspector context test
+
+A V8 change makes these contexts get collected in a task that is posted
+and run asynchronously. The tests were synchronously GC'ing in an
+infinite loop, preventing the task loop from running the task that would
+GC these contexts.
+
+This change should be upstreamed in some way.
+
+Ref: https://chromium-review.googlesource.com/c/v8/v8/+/4733273
+
+diff --git a/test/parallel/test-inspector-contexts.js b/test/parallel/test-inspector-contexts.js
+index e7bdc53f8cd5763572798cbd9ef07c902e3fc335..8b7a1f1aaf648efe10761af205ac561952a06980 100644
+--- a/test/parallel/test-inspector-contexts.js
++++ b/test/parallel/test-inspector-contexts.js
+@@ -17,6 +17,13 @@ function notificationPromise(method) {
+   return new Promise((resolve) => session.once(method, resolve));
+ }
+ 
++function gcImmediate() {
++  return new Promise((resolve) => {
++    global.gc();
++    setImmediate(resolve);
++  });
++}
++
+ async function testContextCreatedAndDestroyed() {
+   console.log('Testing context created/destroyed notifications');
+   {
+@@ -68,7 +75,7 @@ async function testContextCreatedAndDestroyed() {
+     // GC is unpredictable...
+     console.log('Checking/waiting for GC.');
+     while (!contextDestroyed)
+-      global.gc();
++      await gcImmediate();
+     console.log('Context destroyed.');
+ 
+     assert.strictEqual(contextDestroyed.params.executionContextId, id,
+@@ -100,7 +107,7 @@ async function testContextCreatedAndDestroyed() {
+     // GC is unpredictable...
+     console.log('Checking/waiting for GC again.');
+     while (!contextDestroyed)
+-      global.gc();
++      await gcImmediate();
+     console.log('Other context destroyed.');
+   }
+ 
+@@ -126,7 +133,7 @@ async function testContextCreatedAndDestroyed() {
+     // GC is unpredictable...
+     console.log('Checking/waiting for GC a third time.');
+     while (!contextDestroyed)
+-      global.gc();
++      await gcImmediate();
+     console.log('Context destroyed once again.');
+   }
+ 
+@@ -150,7 +157,7 @@ async function testContextCreatedAndDestroyed() {
+     // GC is unpredictable...
+     console.log('Checking/waiting for GC a fourth time.');
+     while (!contextDestroyed)
+-      global.gc();
++      await gcImmediate();
+     console.log('Context destroyed a fourth time.');
+   }
+ }

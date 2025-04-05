@@ -140,10 +140,18 @@ index a73de23a1debfdac66873e0baccf882e383bfc36..7ac5291be093773ee7efd39e77e01bf5
  // Handles compilation and caching of built-in JavaScript modules and
  // bootstrap scripts, whose source are bundled into the binary as static data.
 diff --git a/tools/install.py b/tools/install.py
-index 17515720ba9c85d533465365188021074a8d30f4..7232be863d517c8445059a57c5938c2cbdeaf81b 100755
+index 17515720ba9c85d533465365188021074a8d30f4..92f83a83be67aafc9ead6923b868dbb0de39db34 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -291,6 +291,7 @@ def headers(options, action):
+@@ -212,6 +212,7 @@ def headers(options, action):
+       'include/cppgc/internal/caged-heap-local-data.h',
+       'include/cppgc/internal/caged-heap.h',
+       'include/cppgc/internal/compiler-specific.h',
++      'include/cppgc/internal/conditional-stack-allocated.h',
+       'include/cppgc/internal/finalizer-trait.h',
+       'include/cppgc/internal/gc-info.h',
+       'include/cppgc/internal/logging.h',
+@@ -291,6 +292,7 @@ def headers(options, action):
        'include/v8-promise.h',
        'include/v8-proxy.h',
        'include/v8-regexp.h',

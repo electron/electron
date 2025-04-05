@@ -13,7 +13,7 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 1ebd8809abb3208d402b6bd728114f7fea3ac52c..a564078fd9fe0c605a0dcb9eb21beabda389771f 100644
+index 3f8801c6042ef2b20635838e4d4c572d89b94601..055b15ff72844cd54c60cc92042a5465ce2870ad 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
 @@ -210,6 +210,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
@@ -26,7 +26,7 @@ index 1ebd8809abb3208d402b6bd728114f7fea3ac52c..a564078fd9fe0c605a0dcb9eb21beabd
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 2e657f24bb625c7a7af14686553aebdc06ad8eda..6f2384338ac4a48a78bc8aac8b4bb9d330d686b3 100644
+index 97cceb20da0fccf0603cf2d4b1c8985314b1e850..0632d7fdc975dfdc3cc24bd8e641a2680fabc45d 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -458,6 +458,23 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
@@ -62,10 +62,10 @@ index 2e657f24bb625c7a7af14686553aebdc06ad8eda..6f2384338ac4a48a78bc8aac8b4bb9d3
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index ff43747a45b5f508f45afb1e6304bda22ae46fbc..955c3734591f608f32b40927e53db1bf453ce907 100644
+index dcf2d14d92f8b5a5dd7bf22f8ce00f030824c989..04d0f5d9416eaba569f49a25e7e8c1a89e50ecfe 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -695,6 +695,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -696,6 +696,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    if (InForcedColorsMode() && !IsForcedDarkMode()) {
      return false;
    }

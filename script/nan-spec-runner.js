@@ -131,7 +131,10 @@ async function main () {
     'nannew-test.js',
     'buffer-test.js',
     // we can't patch this test because it uses CRLF line endings
-    'methodswithdata-test.js'
+    'methodswithdata-test.js',
+    // these two are incompatible with crrev.com/c/4733273
+    'weak-test.js',
+    'weak2-test.js'
   ]);
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
     .filter(test => !DISABLED_TESTS.has(test))
