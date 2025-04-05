@@ -16,6 +16,7 @@
 
 #include "base/base64.h"
 #include "base/containers/fixed_flat_map.h"
+#include "base/containers/flat_set.h"
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
@@ -2119,13 +2120,12 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
 void WebContents::DidUpdateFaviconURL(
     content::RenderFrameHost* render_frame_host,
     const std::vector<blink::mojom::FaviconURLPtr>& urls) {
-  std::set<GURL> unique_urls;
+  base::flat_set<GURL> unique_urls;
+  unique_urls.reserve(std::size(urls));
   for (const auto& iter : urls) {
-    if (iter->icon_type != blink::mojom::FaviconIconType::kFavicon)
-      continue;
-    const GURL& url = iter->icon_url;
-    if (url.is_valid())
-      unique_urls.insert(url);
+    if (iter->icon_type == blink::mojom::FaviconIconType::kFavicon &&
+        iter->icon_url.is_valid())
+      unique_urls.insert(iter->icon_url);
   }
   Emit("page-favicon-updated", unique_urls);
 }
