@@ -87,22 +87,45 @@ if (!gotTheLock) {
   app.whenReady().then(() => {
     createWindow()
   })
+
+  // Handle cold start case for Windows and Linux
+  // The URL is available in process.argv when app is launched via protocol handler
+  const deepLinkingUrl = process.argv.find(arg => arg.startsWith('electron-fiddle://'));
+  if (deepLinkingUrl) {
+    // Wait until app is ready before displaying dialog
+    app.whenReady().then(() => {
+      dialog.showErrorBox('Deep Link', `App was launched with URL: ${deepLinkingUrl}`)
+    })
+  }
 }
 ```
 
 #### MacOS code:
 
 ```js @ts-type={createWindow:()=>void}
+// IMPORTANT: The open-url event handler must be set up SYNCHRONOUSLY 
+// at the very beginning of your app's startup to correctly handle deep links
+// when the app is started by clicking a URL
+app.on('open-url', (event, url) => {
+  // Prevent the default behavior
+  event.preventDefault()
+  
+  // If app is already ready, show the dialog immediately
+  if (app.isReady()) {
+    dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
+  } else {
+    // If app is not ready yet, wait until it is ready to show the dialog
+    app.on('ready', () => {
+      dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
+    })
+  }
+})
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow()
-})
-
-// Handle the protocol. In this case, we choose to show an Error Box.
-app.on('open-url', (event, url) => {
-  dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
 })
 ```
 
@@ -188,6 +211,28 @@ example:
 ```shell
 npx electron-packager . --protocol=electron-fiddle --protocol-name="Electron Fiddle"
 ```
+
+### Protocol Registration Explanation
+
+The code used for registering the protocol handler has different paths for development and production:
+
+```js
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('electron-fiddle', process.execPath, [path.resolve(process.argv[1])])
+  }
+} else {
+  app.setAsDefaultProtocolClient('electron-fiddle')
+}
+```
+
+This approach is necessary because:
+
+- `process.defaultApp` is `true` when the app is running in development mode (not packaged)
+- In development mode on Windows, we need to specify the correct executable path and arguments
+- When packaged (production mode), the simple `app.setAsDefaultProtocolClient('electron-fiddle')` call is sufficient
+
+On macOS and Linux, custom protocol handlers only work reliably with packaged apps. In development mode, protocol handling might not work as expected.
 
 ## Conclusion
 
