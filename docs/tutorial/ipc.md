@@ -74,6 +74,10 @@ function createWindow () {
 app.whenReady().then(() => {
   ipcMain.on('set-title', handleSetTitle)
   createWindow()
+
+  app.on('activate', function () {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
 })
 // ...
 ```
