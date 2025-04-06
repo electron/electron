@@ -13,7 +13,7 @@ To fix this issue, provide the interface oom_error_callback to enable a
 custom oom error callback set from Electron.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 32fc075e97eebca6c47e796ac5308915746ffa2a..e72bee385865c7d34e9eea6b90c6d911d592f8af 100644
+index fc9b056d2f7e25109100fbde5f3ab0aebc8c619a..9b155213ce301df7e396a4a113992499fc7e9910 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -241,7 +241,10 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
