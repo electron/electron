@@ -265,38 +265,41 @@ const menu = Menu.buildFromTemplate(template)
 Menu.setApplicationMenu(menu)
 ```
 
-### Render process
+### Creating context menu
+The following example demonstrates how to create and display a context menu when the user right-clicks on the page. The renderer process sends the required information to the main process using IPC and have the main process display the menu on behalf of the renderer:
 
-To create menus initiated by the renderer process, send the required
-information to the main process using IPC and have the main process display the
-menu on behalf of the renderer.
+```js
+//Main process
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 
-Below is an example of showing a menu when the user right clicks the page:
+app.whenReady().then(() => {
+  const win = new BrowserWindow({
+    webPreferences: { preload: __dirname + '/preload.js' }
+  });
 
-```js @ts-expect-error=[21]
-// renderer
-window.addEventListener('contextmenu', (e) => {
-  e.preventDefault()
-  ipcRenderer.send('show-context-menu')
-})
-
-ipcRenderer.on('context-menu-command', (e, command) => {
-  // ...
-})
-
-// main
-ipcMain.on('show-context-menu', (event) => {
-  const template = [
-    {
-      label: 'Menu Item 1',
-      click: () => { event.sender.send('context-menu-command', 'menu-item-1') }
-    },
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Cut', role: 'cut' },
+    { label: 'Copy', role: 'copy' },
+    { label: 'Paste', role: 'paste' },
     { type: 'separator' },
-    { label: 'Menu Item 2', type: 'checkbox', checked: true }
-  ]
-  const menu = Menu.buildFromTemplate(template)
-  menu.popup({ window: BrowserWindow.fromWebContents(event.sender) })
-})
+    { label: 'Inspect', click: () => win.webContents.openDevTools() }
+  ]);
+
+  ipcMain.on('show-context-menu', (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    contextMenu.popup({ window });
+  });
+
+  win.loadURL('https://example.com'); // Load your HTML file or URL here
+});
+
+//Renderer process
+const { ipcRenderer } = require('electron');
+
+window.addEventListener('contextmenu', (event) => {
+  event.preventDefault();
+  ipcRenderer.send('show-context-menu');
+});
 ```
 
 ## Notes on macOS Application Menu
