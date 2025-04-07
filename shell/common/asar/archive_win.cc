@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <string_view>
 
 #include "base/base_paths.h"
 #include "base/json/json_reader.h"
@@ -78,7 +79,7 @@ const auto& LoadIntegrityConfigCache() {
   }
 
   // Parse integrity config payload
-  std::string integrity_config_payload = std::string(res_data, res_size);
+  const auto integrity_config_payload = std::string_view{res_data, res_size};
   std::optional<base::Value> root =
       base::JSONReader::Read(integrity_config_payload);
 
