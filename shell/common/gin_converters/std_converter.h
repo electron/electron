@@ -9,6 +9,7 @@
 #include <functional>
 #include <map>
 #include <set>
+#include <span>
 #include <type_traits>
 #include <utility>
 
@@ -27,6 +28,25 @@ v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
   return Converter<typename std::remove_reference<T>::type>::ToV8(
       isolate, std::forward<T>(input));
 }
+
+template <typename T>
+struct Converter<std::span<T>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const std::span<const T>& span) {
+    int idx = 0;
+    auto context = isolate->GetCurrentContext();
+    auto result = v8::Array::New(isolate, static_cast<int>(span.size()));
+    for (const auto& val : span) {
+      v8::MaybeLocal<v8::Value> maybe = Converter<T>::ToV8(isolate, val);
+      v8::Local<v8::Value> element;
+      if (!maybe.ToLocal(&element))
+        return {};
+      if (!result->Set(context, idx++, element).FromMaybe(false))
+        NOTREACHED() << "CreateDataProperty should always succeed here.";
+    }
+    return result;
+  }
+};
 
 #if !BUILDFLAG(IS_LINUX)
 template <>
