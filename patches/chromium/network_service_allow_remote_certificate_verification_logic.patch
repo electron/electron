@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 8014bb16d8108115f901346fa4ed4d84220d86c5..ee56aab6831be256390b88e65a2a949c591bbd31 100644
+index 0dcfedd730a106e34d2125eb7a5d81f3d5d68ef0..378cd2f6af33cabb296229743097708e16f56c36 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -159,6 +159,11 @@
+@@ -160,6 +160,11 @@
  #include "services/network/web_transport.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index 8014bb16d8108115f901346fa4ed4d84220d86c5..ee56aab6831be256390b88e65a2a949c
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -598,6 +603,99 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
+@@ -599,6 +604,99 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
  
  }  // namespace
  
@@ -122,7 +122,7 @@ index 8014bb16d8108115f901346fa4ed4d84220d86c5..ee56aab6831be256390b88e65a2a949c
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -994,6 +1092,13 @@ void NetworkContext::SetClient(
+@@ -995,6 +1093,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index 8014bb16d8108115f901346fa4ed4d84220d86c5..ee56aab6831be256390b88e65a2a949c
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2618,6 +2723,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2571,6 +2676,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
@@ -148,7 +148,7 @@ index 8014bb16d8108115f901346fa4ed4d84220d86c5..ee56aab6831be256390b88e65a2a949c
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index f2dcec57a22d95892a08f1fa43696d6eea46a820..930e0bd987c48d111b2c8d71147c09e4418bda6c 100644
+index 895ce27d2933039f0f6ef3c7df74cf2cd4d029cc..7d5188b571460bd6fd7cbfcf93e87dd8576e1904 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -113,6 +113,7 @@ class URLMatcher;
@@ -168,7 +168,7 @@ index f2dcec57a22d95892a08f1fa43696d6eea46a820..930e0bd987c48d111b2c8d71147c09e4
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -962,6 +965,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -948,6 +951,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -178,7 +178,7 @@ index f2dcec57a22d95892a08f1fa43696d6eea46a820..930e0bd987c48d111b2c8d71147c09e4
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index a9c82bcf9a4ebf946791eccc35a0dcfff0c18288..6d79f4a4cb1a40be907ef52e35f0e5a0acab31fb 100644
+index feed273c8c77d6c1e21cd82547860f945b651ae9..399d0363749e9b79749185bcc1dcd746b026231e 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -308,6 +308,17 @@ struct SocketBrokerRemotes {

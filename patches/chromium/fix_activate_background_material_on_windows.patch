@@ -17,7 +17,7 @@ diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_ha
 index 29829e282edfa8821bd366a9e9a3755d7f3f8643..661864ab6aad78a721ac921ae778c40085cdc23e 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -952,13 +952,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
+@@ -954,13 +954,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
  
  void HWNDMessageHandler::PaintAsActiveChanged() {
    if (!delegate_->HasNonClientView() || !delegate_->CanActivate() ||

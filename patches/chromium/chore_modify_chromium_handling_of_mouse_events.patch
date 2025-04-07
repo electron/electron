@@ -34,10 +34,10 @@ index 39b5a8fdd165efd74b00256552b51b5413107958..bfc4ef4f50efff4a77f2aef64335bb7e
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 19826b92b39c812a3170bfa470a08192b2a712bc..d97262cc28622de335bfe5a82c26779e9dccd586 100644
+index 0b04c5828df656688d88ca29dcc03a1b3969a4a6..465f17bf99ee68d4ea8ab43cd02f33f8801de998 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1387,6 +1387,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
+@@ -1389,6 +1389,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
    window()->SetProperty(aura::client::kHeadlessBoundsKey, bounds);
  }
  
@@ -61,10 +61,10 @@ index 2ee5e4b4673f4f18880dddecc48118c89823fd3f..37109b8d3d439073b5c9e2ea3597c36f
    // Overridden from WidgetObserver.
    void OnWidgetThemeChanged(Widget* widget) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 1cf98eadc8cbc1ada481c709a873dc1dd443de66..cec234006cbcacff953ce9ff4175006b057aa341 100644
+index 701f89b053674be1bad0a1a3612340a65c1ccfe7..ac7e189f26da75f6f8b40e69cf4bfee94acddd38 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3177,15 +3177,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3186,15 +3186,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      }
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.
@@ -86,7 +86,7 @@ index 1cf98eadc8cbc1ada481c709a873dc1dd443de66..cec234006cbcacff953ce9ff4175006b
        return 0;
      }
    }
-@@ -3208,6 +3212,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3217,6 +3221,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      // handle alt-space, or in the frame itself.
      is_right_mouse_pressed_on_caption_ = false;
      ReleaseCapture();
@@ -94,7 +94,7 @@ index 1cf98eadc8cbc1ada481c709a873dc1dd443de66..cec234006cbcacff953ce9ff4175006b
      // |point| is in window coordinates, but WM_NCHITTEST and TrackPopupMenu()
      // expect screen coordinates.
      POINT screen_point = CR_POINT_INITIALIZER_FROM_LPARAM(l_param);
-@@ -3215,7 +3220,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3224,7 +3229,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      w_param = static_cast<WPARAM>(SendMessage(
          hwnd(), WM_NCHITTEST, 0, MAKELPARAM(screen_point.x, screen_point.y)));
      if (w_param == HTCAPTION || w_param == HTSYSMENU) {
