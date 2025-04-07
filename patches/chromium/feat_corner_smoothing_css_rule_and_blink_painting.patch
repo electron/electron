@@ -154,10 +154,10 @@ index 10ab8a458fb3348476a6e904f684af77c55b103a..37339df2a5601b59abc50fe75fb844e1
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 663ce4469a595e2c5a7b8ed992bdc0e22ab101a9..acdbd7ab75b12630356777a475be794091be25ad 100644
+index 3fb84db022f14819239cd55da79f43cb9b0bcbc7..c4b7ff8ea240054d9394a0691e978e9b10eecc50 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12035,5 +12035,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12047,5 +12047,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -239,10 +239,10 @@ index 5e8d2bfbccd0625c2598544a9cba3d71373eded2..e68a97ee75754fc7196f11cf5c731550
    bool RenderVSyncNotificationEnabled() const {
      return render_v_sync_notification_enabled_;
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index cf80d64963a2a25afbaa6060b4dfda425638858b..5f3a6dba6fe4f93698a8e18afa07efdac73eabee 100644
+index 524928729e34cc6b2ae427181e2ac4f8c1128688..9ce184f279b11a90c7d6f9b9ab7b20da09122a40 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3575,6 +3575,9 @@ void WebViewImpl::UpdateRendererPreferences(
+@@ -3576,6 +3576,9 @@ void WebViewImpl::UpdateRendererPreferences(
    CanvasNoiseToken::Set(renderer_preferences_.canvas_noise_token);
  
    MaybePreloadSystemFonts(GetPage());

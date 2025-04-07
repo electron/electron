@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 70444961a612c3340e8a689f2cf002918be75366..aa055d6e5f9b8a72587cd8c9fbc7203a15352553 100644
+index 50893c5653a42160c25f3f92aeb2164b292c8364..36928057b408d76fa6fc8d0131bf47f860fabe1a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1040,6 +1040,7 @@ component("base") {
@@ -382,7 +382,7 @@ index 127a2829fafa04bfbab0b883304dfb815d7e1c22..61d7946e52862f3586b1e098d7d44a12
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 2b50e3c3750c9ac6dd84a514663062a5d754b43e..49ced9aa87d3bcb00cd3d76ac32d4eec89873549 100644
+index dcaa590375f7cc42996a95ceb0804733d382f60b..e80557dfa4992823ffca81e77aaeef1afcabae09 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -26,6 +26,7 @@
@@ -412,7 +412,7 @@ index 2b50e3c3750c9ac6dd84a514663062a5d754b43e..49ced9aa87d3bcb00cd3d76ac32d4eec
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -159,6 +164,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -169,6 +174,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
  }
  @end
  
@@ -421,7 +421,7 @@ index 2b50e3c3750c9ac6dd84a514663062a5d754b43e..49ced9aa87d3bcb00cd3d76ac32d4eec
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -186,6 +193,8 @@ - (BOOL)usesCustomDrawing {
+@@ -196,6 +203,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -430,7 +430,7 @@ index 2b50e3c3750c9ac6dd84a514663062a5d754b43e..49ced9aa87d3bcb00cd3d76ac32d4eec
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -383,6 +392,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -393,6 +402,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -439,7 +439,7 @@ index 2b50e3c3750c9ac6dd84a514663062a5d754b43e..49ced9aa87d3bcb00cd3d76ac32d4eec
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -394,6 +405,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -404,6 +415,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -474,18 +474,18 @@ index 5c0a53152095c2f799251f78b3c3464504104bfc..2c81ecef35d40036111cbd3dbdb44f70
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 3c4ab01a87d5011925e08ca296722d99ac7f33d4..41c3a5128b9936f48587d6fc6ddd2050bffc9c36 100644
+index 2abb9b96124ad7867204dc5f6c678080472f28d7..067b3cc0d6a8b5990dc4bad0f15e47bd4922a26a 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -384,6 +384,7 @@ viz_component("service") {
+@@ -383,6 +383,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
 +    deps += ["//electron/build/config:generate_mas_config"]
    }
  
-   if (is_android || use_ozone) {
-@@ -684,6 +685,7 @@ viz_source_set("unit_tests") {
+   if (is_ios) {
+@@ -695,6 +696,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -579,10 +579,10 @@ index 4017ee032569466f5311e5c9612c82c086eab935..f2499bc084312a09b2324567d270fc1b
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e0c49c4984509685acbcb3718bbf04b2909e3f16..5b8ea681dfee77a08bb451ec19f6e5d7ddf5b6d8 100644
+index 6655d0e6c01afc6e27045a288c65cd4cd4358094..dbebdc2cc87d7ebca0ea0388fea496108359d2c9 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -339,6 +339,7 @@ source_set("browser") {
+@@ -340,6 +340,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -792,7 +792,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 2e308872830d0e4105d381dc5bd702942b11de9a..201258c8995de5e8d9f2beadba0f7b34c86bcb6f 100644
+index 34297736b07e3f76d1768131f4f0e1db5e68c7fd..2686d23798d4d0dff2608a0c411d154aa91c12be 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -660,6 +660,7 @@ static_library("test_support") {
@@ -811,7 +811,7 @@ index 2e308872830d0e4105d381dc5bd702942b11de9a..201258c8995de5e8d9f2beadba0f7b34
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1950,6 +1952,7 @@ test("content_browsertests") {
+@@ -1953,6 +1955,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -819,7 +819,7 @@ index 2e308872830d0e4105d381dc5bd702942b11de9a..201258c8995de5e8d9f2beadba0f7b34
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3268,6 +3271,7 @@ test("content_unittests") {
+@@ -3273,6 +3276,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -932,10 +932,10 @@ index ae040bbac8755b677dc6e19383a2390df407e5a6..e95ca30f49506c66a37d6d5269929f43
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 7122165cf5ddb39056369e32fc29107f29e9f425..f11417e459e067f4976f59f1c58d4a5197520902 100644
+index 8bcbb663710445e977a3080209cd518d3fc2c6e0..0680d3af1f219235e20c0e83b80c0ea9cbf7b3a1 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -196,6 +196,7 @@ source_set("audio") {
+@@ -198,6 +198,7 @@ source_set("audio") {
        "CoreMedia.framework",
      ]
      weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0
