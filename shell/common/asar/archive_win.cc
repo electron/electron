@@ -68,9 +68,8 @@ auto LoadIntegrityConfig() {
   }
 
   // Parse integrity config payload
-  const auto integrity_config_payload = std::string_view{res_data, res_size};
   std::optional<base::Value> root =
-      base::JSONReader::Read(integrity_config_payload);
+      base::JSONReader::Read(std::string_view{res_data, res_size});
 
   if (!root.has_value()) {
     LOG(FATAL) << "Invalid integrity config: NOT a valid JSON.";
@@ -127,13 +126,14 @@ const auto& GetIntegrityConfigCache() {
 }
 
 std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
-  const auto relative_path = RelativePath();
+  const std::optional<base::FilePath> relative_path = RelativePath();
   CHECK(relative_path);
 
-  const auto key = base::ToLowerASCII(base::WideToUTF8(relative_path->value()));
-
-  if (const auto* payload = base::FindOrNull(GetIntegrityConfigCache(), key))
+  if (const IntegrityPayload* payload = base::FindOrNull(
+          GetIntegrityConfigCache(),
+          base::ToLowerASCII(base::WideToUTF8(relative_path->value())))) {
     return *payload;
+  }
 
   LOG(FATAL) << "Failed to find file integrity info for " << rel_path_utf8;
   return {};
