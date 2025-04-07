@@ -95,7 +95,7 @@ class ClientFrameViewLinux : public FramelessView,
     void (views::Widget::*callback)();
     int accessibility_id;
     int hit_test_id;
-    RAW_PTR_EXCLUSION views::ImageButton* button{nullptr};
+    raw_ptr<views::ImageButton> button = {};
   };
 
   struct ThemeValues {
@@ -132,7 +132,7 @@ class ClientFrameViewLinux : public FramelessView,
   raw_ptr<ui::NativeTheme> theme_;
   ThemeValues theme_values_;
 
-  RAW_PTR_EXCLUSION views::Label* title_;
+  raw_ptr<views::Label> title_;
 
   std::unique_ptr<ui::NavButtonProvider> nav_button_provider_;
   std::array<NavButton, kNavButtonCount> nav_buttons_;
