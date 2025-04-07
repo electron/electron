@@ -10,6 +10,7 @@
 #include <string_view>
 
 #include "base/base_paths.h"
+#include "base/containers/map_util.h"
 #include "base/json/json_reader.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
@@ -127,24 +128,15 @@ const auto& GetIntegrityConfigCache() {
 }
 
 std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
-  std::optional<base::FilePath> relative_path = RelativePath();
-  // Callers should have already asserted this
-  CHECK(relative_path.has_value());
+  const auto relative_path = RelativePath();
+  CHECK(relative_path);
 
-  // Load integrity config from exe resource
-  const auto& integrity_config = GetIntegrityConfigCache();
+  const auto key = base::ToLowerASCII(base::WideToUTF8(relative_path->value()));
+  if (const auto* payload = base::FindOrNull(GetIntegrityConfigCache(), key))
+    return *payload;
 
-  // Convert Window rel path to UTF8 lower case
-  std::string rel_path_utf8 = base::WideToUTF8(relative_path.value().value());
-  rel_path_utf8 = base::ToLowerASCII(rel_path_utf8);
-
-  // Find file integrity config
-  auto iter = integrity_config.find(rel_path_utf8);
-  if (iter == integrity_config.end()) {
-    LOG(FATAL) << "Failed to find file integrity info for " << rel_path_utf8;
-  }
-
-  return iter->second;
+  LOG(FATAL) << "Failed to find file integrity info for " << rel_path_utf8;
+  return {};
 }
 
 }  // namespace asar
