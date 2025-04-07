@@ -320,10 +320,6 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:label
                                                 action:@selector(itemSelected:)
                                          keyEquivalent:@""];
-  if (model->IsEnabledAt(index))
-    [item setEnabled:YES];
-  else
-    [item setEnabled:NO];
 
   // If the menu item has an icon, set it.
   ui::ImageModel icon = model->GetIconAt(index);
@@ -353,6 +349,11 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     [item setSubmenu:[self createShareMenuForItem:sharing_item]];
   } else if (type == electron::ElectronMenuModel::TYPE_SUBMENU &&
              model->IsVisibleAt(index)) {
+    // We need to specifically check that the submenu top-level item has been
+    // enabled as it's not validated by validateUserInterfaceItem
+    if (!model->IsEnabledAt(index))
+      [item setEnabled:NO];
+
     // Recursively build a submenu from the sub-model at this index.
     [item setTarget:nil];
     [item setAction:nil];
@@ -492,10 +493,8 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 }
 
 - (NSMenu*)menu {
-  if (menu_) {
-    [menu_ setAutoenablesItems:NO];
+  if (menu_)
     return menu_;
-  }
 
   if (model_ && model_->sharing_item()) {
     NSMenu* menu = [self createShareMenuForItem:*model_->sharing_item()];
@@ -505,8 +504,6 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     if (model_)
       [self populateWithModel:model_.get()];
   }
-
-  [menu_ setAutoenablesItems:NO];
   [menu_ setDelegate:self];
   return menu_;
 }
