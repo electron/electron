@@ -21,8 +21,6 @@ class Handle;
 
 namespace electron::api {
 
-using ChildPair = std::pair<raw_ptr<views::View>, v8::Global<v8::Object>>;
-
 class View : public gin_helper::EventEmitter<View>,
              private views::ViewObserver {
  public:
@@ -63,6 +61,8 @@ class View : public gin_helper::EventEmitter<View>,
   void set_delete_view(bool should) { delete_view_ = should; }
 
  private:
+  using ChildPair = std::pair<raw_ptr<views::View>, v8::Global<v8::Object>>;
+
   // views::ViewObserver
   void OnViewBoundsChanged(views::View* observed_view) override;
   void OnViewIsDeleting(views::View* observed_view) override;
