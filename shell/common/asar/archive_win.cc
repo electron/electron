@@ -56,8 +56,8 @@ auto LoadIntegrityConfig() {
     PLOG(FATAL) << "LoadResource failed.";
   }
 
-  auto* res_data = static_cast<const char*>(::LockResource(rcData));
-  int res_size = SizeofResource(module_handle, resource);
+  const auto* res_data = static_cast<const char*>(::LockResource(rcData));
+  const auto res_size = SizeofResource(module_handle, resource);
 
   if (!res_data) {
     PLOG(FATAL) << "Failed to integrity config from exe resource.";
