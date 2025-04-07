@@ -133,13 +133,12 @@ std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   const std::optional<base::FilePath> relative_path = RelativePath();
   CHECK(relative_path);
 
-  if (const IntegrityPayload* payload = base::FindOrNull(
-          GetIntegrityConfigCache(),
-          base::ToLowerASCII(base::WideToUTF8(relative_path->value())))) {
-    return *payload;
-  }
+  const auto key = base::ToLowerASCII(base::WideToUTF8(relative_path->value()));
 
-  LOG(FATAL) << "Failed to find file integrity info for " << rel_path_utf8;
+  if (const auto* payload = base::FindOrNull(GetIntegrityConfigCache(), key))
+    return *payload;
+
+  LOG(FATAL) << "Failed to find file integrity info for " << key;
   return {};
 }
 
