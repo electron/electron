@@ -39,6 +39,8 @@ std::optional<base::FilePath> Archive::RelativePath() const {
   return relative_path;
 }
 
+namespace {
+
 auto LoadIntegrityConfig() {
   absl::flat_hash_map<std::string, IntegrityPayload> cache;
 
@@ -124,6 +126,8 @@ const auto& GetIntegrityConfigCache() {
   static const auto cache = base::NoDestructor(LoadIntegrityConfig());
   return *cache;
 }
+
+}  // namespace
 
 std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   const std::optional<base::FilePath> relative_path = RelativePath();
