@@ -84,11 +84,11 @@ ClientFrameViewLinux::ClientFrameViewLinux()
                               views::FrameButton::kMaximize,
                               views::FrameButton::kClose} {
   for (auto& button : nav_buttons_) {
-    button.button = new views::ImageButton();
-    button.button->SetImageVerticalAlignment(views::ImageButton::ALIGN_MIDDLE);
-    button.button->SetAccessibleName(
+    auto image_button = std::make_unique<views::ImageButton>();
+    image_button->SetImageVerticalAlignment(views::ImageButton::ALIGN_MIDDLE);
+    image_button->SetAccessibleName(
         l10n_util::GetStringUTF16(button.accessibility_id));
-    AddChildView(button.button);
+    button.button = AddChildView(std::move(image_button));
   }
 
   auto title = std::make_unique<views::Label>();

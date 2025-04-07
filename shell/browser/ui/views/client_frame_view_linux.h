@@ -95,7 +95,7 @@ class ClientFrameViewLinux : public FramelessView,
     void (views::Widget::*callback)();
     int accessibility_id;
     int hit_test_id;
-    RAW_PTR_EXCLUSION views::ImageButton* button{nullptr};
+    raw_ptr<views::ImageButton> button = {};
   };
 
   struct ThemeValues {
