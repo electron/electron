@@ -139,7 +139,6 @@ std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
     return *payload;
 
   LOG(FATAL) << "Failed to find file integrity info for " << key;
-  return {};
 }
 
 }  // namespace asar
