@@ -352,6 +352,42 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   return YES;
 }
 
+- (void)changeSpelling:(id)sender {
+  NSString* selectedWord = [[sender selectedCell] stringValue];
+  
+  // Find the focused web frame from the list of web contents
+  auto webContents = electron::api::WebContents::GetWebContentsList();
+  for (auto webContent : webContents) {
+    if (webContent->FocusedFrame() != nullptr) { // found focused frame
+      webContent->ReplaceMisspelling(base::SysNSStringToUTF16(selectedWord));
+      break;
+    }
+  }
+}
+
+- (void)checkSpelling:(id)sender {
+  auto webContents = electron::api::WebContents::GetWebContentsList();
+  content::RenderFrameHost* focusedFrame = nullptr;
+  
+  // Find the focused web frame from the list of web contents
+  for (auto webContent : webContents) {
+    focusedFrame = webContent->FocusedFrame();
+    if (focusedFrame != nullptr) { // Found the focused frame
+      break;
+    }
+  }
+  
+  // If the focused frame is never found
+  if (focusedFrame == nullptr) {
+    return;
+  }
+  
+  mojo::Remote<spellcheck::mojom::SpellCheckPanel> spell_check_panel;
+  mojo::PendingReceiver<spellcheck::mojom::SpellCheckPanel> receiver = spell_check_panel.BindNewPipeAndPassReceiver();
+  focusedFrame->GetRemoteInterfaces()->GetInterface(std::move(receiver));
+  spell_check_panel->AdvanceToNextMisspelling();
+}
+
 - (void)performClose:(id)sender {
   if (shell_->title_bar_style() ==
       electron::NativeWindowMac::TitleBarStyle::kCustomButtonsOnHover) {
