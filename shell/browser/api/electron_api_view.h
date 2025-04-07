@@ -47,12 +47,6 @@ class View : public gin_helper::EventEmitter<View>,
   void SetVisible(bool visible);
   bool GetVisible() const;
 
-  // views::ViewObserver
-  void OnViewBoundsChanged(views::View* observed_view) override;
-  void OnViewIsDeleting(views::View* observed_view) override;
-  void OnChildViewRemoved(views::View* observed_view,
-                          views::View* child) override;
-
   views::View* view() const { return view_; }
   std::optional<int> border_radius() const { return border_radius_; }
 
@@ -69,6 +63,12 @@ class View : public gin_helper::EventEmitter<View>,
   void set_delete_view(bool should) { delete_view_ = should; }
 
  private:
+  // views::ViewObserver
+  void OnViewBoundsChanged(views::View* observed_view) override;
+  void OnViewIsDeleting(views::View* observed_view) override;
+  void OnChildViewRemoved(views::View* observed_view,
+                          views::View* child) override;
+
   void ApplyBorderRadius();
   void ReorderChildView(gin::Handle<View> child, size_t index);
 
