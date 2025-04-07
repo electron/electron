@@ -1081,8 +1081,7 @@ void NativeWindowViews::SetClosable(bool closable) {
 bool NativeWindowViews::IsClosable() const {
 #if BUILDFLAG(IS_WIN)
   HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
-  MENUITEMINFO info;
-  memset(&info, 0, sizeof(info));
+  MENUITEMINFO info = {};
   info.cbSize = sizeof(info);
   info.fMask = MIIM_STATE;
   if (!GetMenuItemInfo(menu, SC_CLOSE, false, &info)) {
