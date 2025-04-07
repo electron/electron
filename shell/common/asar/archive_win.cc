@@ -6,7 +6,6 @@
 #include "shell/common/asar/archive.h"
 
 #include <algorithm>
-#include <sstream>
 #include <string_view>
 
 #include "base/base_paths.h"
@@ -132,6 +131,7 @@ std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   CHECK(relative_path);
 
   const auto key = base::ToLowerASCII(base::WideToUTF8(relative_path->value()));
+
   if (const auto* payload = base::FindOrNull(GetIntegrityConfigCache(), key))
     return *payload;
 
