@@ -37,8 +37,7 @@ std::optional<base::FilePath> Archive::RelativePath() const {
   return relative_path;
 }
 
-std::optional<std::unordered_map<std::string, IntegrityPayload>>
-LoadIntegrityConfigCache() {
+const auto& LoadIntegrityConfigCache() {
   static base::NoDestructor<
       std::optional<std::unordered_map<std::string, IntegrityPayload>>>
       integrity_config_cache;
@@ -135,8 +134,7 @@ std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   CHECK(relative_path.has_value());
 
   // Load integrity config from exe resource
-  std::optional<std::unordered_map<std::string, IntegrityPayload>>
-      integrity_config = LoadIntegrityConfigCache();
+  const auto& integrity_config = LoadIntegrityConfigCache();
   if (!integrity_config.has_value()) {
     LOG(WARNING) << "Failed to integrity config from exe resource.";
     return std::nullopt;
