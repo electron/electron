@@ -125,8 +125,8 @@ const auto& LoadIntegrityConfigCache() {
     header_integrity.algorithm = HashAlgorithm::kSHA256;
     header_integrity.hash = base::ToLowerASCII(*value);
 
-    integrity_config_cache->value()[base::ToLowerASCII(*file)] =
-        std::move(header_integrity);
+    integrity_config_cache->insert_or_assign(base::ToLowerASCII(*file),
+                                             std::move(header_integrity));
   }
 
   return *integrity_config_cache;
