@@ -242,8 +242,7 @@ void NotifyIcon::SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) {
 }
 
 gfx::Rect NotifyIcon::GetBounds() {
-  NOTIFYICONIDENTIFIER icon_id;
-  memset(&icon_id, 0, sizeof(NOTIFYICONIDENTIFIER));
+  NOTIFYICONIDENTIFIER icon_id = {};
   icon_id.uID = icon_id_;
   icon_id.hWnd = window_;
   icon_id.cbSize = sizeof(NOTIFYICONIDENTIFIER);

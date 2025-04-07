@@ -31,8 +31,7 @@ void RelauncherSynchronizeWithParent() {
   }
 
   // set up a signum handler
-  struct sigaction action;
-  memset(&action, 0, sizeof(action));
+  struct sigaction action = {};
   action.sa_handler = [](int /*signum*/) { parentWaiter.Signal(); };
   if (sigaction(signum, &action, nullptr) != 0) {
     PLOG(ERROR) << "sigaction";
