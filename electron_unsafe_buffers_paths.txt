@@ -21,6 +21,7 @@
 -base/
 -chrome/
 -components/
+-content/browser/indexed_db
 -device/
 -extensions/
 -google_apis/

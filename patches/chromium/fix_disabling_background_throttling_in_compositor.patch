@@ -53,10 +53,10 @@ index 008df596834faccfa19525dcae0239ffed7b2c3f..aecfa059c6ac53a3377e1f60b3c66bbb
  void Compositor::SetSeamlessRefreshRates(
      const std::vector<float>& seamless_refresh_rates) {
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index cabb39363b30c97f63d323d7a8156774b67f6b32..54e012fa4b0253d8c8f88cc2021be0dcf77cbdee 100644
+index 3f52b93eab20108e40131472d8abdf9ff60bd191..ee19a847cf6d446a927734b9fdd3f1547a9f2d14 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -519,6 +519,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -512,6 +512,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    const cc::LayerTreeSettings& GetLayerTreeSettings() const;
  
@@ -67,7 +67,7 @@ index cabb39363b30c97f63d323d7a8156774b67f6b32..54e012fa4b0253d8c8f88cc2021be0dc
    size_t saved_events_metrics_count_for_testing() const {
      return host_->saved_events_metrics_count_for_testing();
    }
-@@ -710,6 +714,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -703,6 +707,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  

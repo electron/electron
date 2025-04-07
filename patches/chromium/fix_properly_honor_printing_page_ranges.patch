@@ -62,7 +62,7 @@ index f39f8b2dd3aa2b89498ed5331aa9b9ba6a02abf5..c0e155c14b2b4e81cde35cea1db284bc
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_ PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index 858e1bb00390b6097a27ffe20997672914e8f28f..953f203d21b4da559791efe228f27b56c2f85263 100644
+index d5eec01f35bd182d5bb49138fc66446fcd5f8cdf..3c289d7cdf7fdf7717fc2397e3344cbe614e0b70 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
 @@ -73,14 +73,30 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
@@ -70,7 +70,7 @@ index 858e1bb00390b6097a27ffe20997672914e8f28f..953f203d21b4da559791efe228f27b56
    dialog_options.nStartPage = START_PAGE_GENERAL;
    if (max_pages) {
 -    // Default initialize to print all the pages.
-     memset(ranges, 0, sizeof(ranges));
+     UNSAFE_TODO(memset(ranges, 0, sizeof(ranges)));
 -    ranges[0].nFromPage = 1;
 -    ranges[0].nToPage = max_pages;
 -    dialog_options.nPageRanges = 1;

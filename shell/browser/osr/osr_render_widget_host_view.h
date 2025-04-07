@@ -150,7 +150,8 @@ class OffScreenRenderWidgetHostView
   void TransformPointToRootSurface(gfx::PointF* point) override {}
   gfx::Rect GetBoundsInRootWindow() override;
   std::optional<content::DisplayFeature> GetDisplayFeature() override;
-  void SetDisplayFeatureForTesting(
+  void DisableDisplayFeatureOverrideForEmulation() override {}
+  void OverrideDisplayFeatureForEmulation(
       const content::DisplayFeature* display_feature) override {}
   void NotifyHostAndDelegateOnWasShown(
       blink::mojom::RecordContentToVisibleTimeRequestPtr) final;
