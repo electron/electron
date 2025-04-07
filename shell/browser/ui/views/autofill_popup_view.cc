@@ -215,9 +215,10 @@ void AutofillPopupView::CreateChildViews() {
   RemoveAllChildViews();
 
   for (int i = 0; i < popup_->line_count(); ++i) {
-    auto* child_view = new AutofillPopupChildView(popup_->value_at(i));
+    auto child_view =
+        std::make_unique<AutofillPopupChildView>(popup_->value_at(i));
     child_view->set_drag_controller(this);
-    AddChildView(child_view);
+    AddChildView(std::move(child_view));
   }
 }
 
