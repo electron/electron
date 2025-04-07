@@ -39,19 +39,8 @@ std::optional<base::FilePath> Archive::RelativePath() const {
   return relative_path;
 }
 
-const auto& LoadIntegrityConfigCache() {
-  static base::NoDestructor<
-      std::optional<absl::flat_hash_map<std::string, IntegrityPayload>>>
-      integrity_config_cache;
-
-  // Skip loading if cache is already loaded
-  if (integrity_config_cache->has_value()) {
-    return *integrity_config_cache;
-  }
-
-  // Init cache
-  *integrity_config_cache =
-      absl::flat_hash_map<std::string, IntegrityPayload>{};
+auto LoadIntegrityConfig() {
+  absl::flat_hash_map<std::string, IntegrityPayload> cache;
 
   // Load integrity config from exe resource
   HMODULE module_handle = ::GetModuleHandle(NULL);
@@ -93,7 +82,7 @@ const auto& LoadIntegrityConfigCache() {
   }
 
   // Parse each individual file integrity config
-  integrity_config_cache->reserve(file_configs->size());
+  cache.reserve(file_configs->size());
   for (size_t i = 0; i < file_configs->size(); i++) {
     // Skip invalid file configs
     const base::Value::Dict* ele_dict = (*file_configs)[i].GetIfDict();
@@ -125,11 +114,16 @@ const auto& LoadIntegrityConfigCache() {
     header_integrity.algorithm = HashAlgorithm::kSHA256;
     header_integrity.hash = base::ToLowerASCII(*value);
 
-    integrity_config_cache->insert_or_assign(base::ToLowerASCII(*file),
-                                             std::move(header_integrity));
+    cache.insert_or_assign(base::ToLowerASCII(*file),
+                           std::move(header_integrity));
   }
 
-  return *integrity_config_cache;
+  return cache;
+}
+
+const auto& GetIntegrityConfigCache() {
+  static const auto cache = base::NoDestructor(LoadIntegrityConfig());
+  return *cache;
 }
 
 std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
@@ -138,19 +132,15 @@ std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   CHECK(relative_path.has_value());
 
   // Load integrity config from exe resource
-  const auto& integrity_config = LoadIntegrityConfigCache();
-  if (!integrity_config.has_value()) {
-    LOG(WARNING) << "Failed to integrity config from exe resource.";
-    return std::nullopt;
-  }
+  const auto& integrity_config = GetIntegrityConfigCache();
 
   // Convert Window rel path to UTF8 lower case
   std::string rel_path_utf8 = base::WideToUTF8(relative_path.value().value());
   rel_path_utf8 = base::ToLowerASCII(rel_path_utf8);
 
   // Find file integrity config
-  auto iter = integrity_config.value().find(rel_path_utf8);
-  if (iter == integrity_config.value().end()) {
+  auto iter = integrity_config.find(rel_path_utf8);
+  if (iter == integrity_config.end()) {
     LOG(FATAL) << "Failed to find file integrity info for " << rel_path_utf8;
   }
 
