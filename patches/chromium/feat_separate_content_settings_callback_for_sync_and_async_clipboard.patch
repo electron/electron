@@ -44,7 +44,7 @@ index 0c6b537ddc2afbc4cd22f1c08f1bbae3c3bbffe3..333f557c89bc03ae5b25060359b9af09
    }
  }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index aad897dbc32caa3469a2f04b4f004355888c84d8..875260fc2a884ab5b1e62cd45fc91c2e4dc162ee 100644
+index 16ac4fcc02c6a5435d4204e2ded98ea1fa96290b..eeaa99f2e9cee2480464f43fbe0d4b8a4e9614b3 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
 @@ -101,6 +101,8 @@ std::string GetPermissionString(PermissionType permission) {
