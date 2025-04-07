@@ -84,20 +84,20 @@ ClientFrameViewLinux::ClientFrameViewLinux()
                               views::FrameButton::kMaximize,
                               views::FrameButton::kClose} {
   for (auto& button : nav_buttons_) {
-    button.button = new views::ImageButton();
-    button.button->SetImageVerticalAlignment(views::ImageButton::ALIGN_MIDDLE);
-    button.button->SetAccessibleName(
+    auto image_button = std::make_unique<views::ImageButton>();
+    image_button->SetImageVerticalAlignment(views::ImageButton::ALIGN_MIDDLE);
+    image_button->SetAccessibleName(
         l10n_util::GetStringUTF16(button.accessibility_id));
-    AddChildView(button.button);
+    button.button = AddChildView(std::move(image_button));
   }
 
-  title_ = new views::Label();
-  title_->SetSubpixelRenderingEnabled(false);
-  title_->SetAutoColorReadabilityEnabled(false);
-  title_->SetHorizontalAlignment(gfx::ALIGN_CENTER);
-  title_->SetVerticalAlignment(gfx::ALIGN_MIDDLE);
-  title_->SetTextStyle(views::style::STYLE_TAB_ACTIVE);
-  AddChildView(title_);
+  auto title = std::make_unique<views::Label>();
+  title->SetSubpixelRenderingEnabled(false);
+  title->SetAutoColorReadabilityEnabled(false);
+  title->SetHorizontalAlignment(gfx::ALIGN_CENTER);
+  title->SetVerticalAlignment(gfx::ALIGN_MIDDLE);
+  title->SetTextStyle(views::style::STYLE_TAB_ACTIVE);
+  title_ = AddChildView(std::move(title));
 
   native_theme_observer_.Observe(theme_);
 
@@ -293,8 +293,7 @@ void ClientFrameViewLinux::Layout(PassKey) {
   title_bounds.Inset(theme_values_.title_padding);
 
   title_->SetVisible(true);
-  title_->SetBounds(title_bounds.x(), title_bounds.y(), title_bounds.width(),
-                    title_bounds.height());
+  title_->SetBoundsRect(title_bounds);
 }
 
 void ClientFrameViewLinux::OnPaint(gfx::Canvas* canvas) {
