@@ -49,11 +49,10 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
     : host_(host), icon_id_(id), window_(window), message_id_(message) {
   guid_ = guid;
   is_using_guid_ = guid != GUID_DEFAULT;
-  NOTIFYICONDATA icon_data;
-  InitIconData(&icon_data);
+  NOTIFYICONDATA icon_data = InitIconData();
   icon_data.uFlags |= NIF_MESSAGE;
   icon_data.uCallbackMessage = message_id_;
-  BOOL result = Shell_NotifyIcon(NIM_ADD, &icon_data);
+  const BOOL result = Shell_NotifyIcon(NIM_ADD, &icon_data);
   // This can happen if the explorer process isn't running when we try to
   // create the icon for some reason (for example, at startup).
   if (!result)
@@ -63,8 +62,7 @@ NotifyIcon::NotifyIcon(NotifyIconHost* host,
 NotifyIcon::~NotifyIcon() {
   // Remove our icon.
   host_->Remove(this);
-  NOTIFYICONDATA icon_data;
-  InitIconData(&icon_data);
+  NOTIFYICONDATA icon_data = InitIconData();
   Shell_NotifyIcon(NIM_DELETE, &icon_data);
 }
 
@@ -110,11 +108,12 @@ void NotifyIcon::HandleMouseExited(int modifiers) {
 }
 
 void NotifyIcon::ResetIcon() {
-  NOTIFYICONDATA icon_data;
-  InitIconData(&icon_data);
   // Delete any previously existing icon.
+  NOTIFYICONDATA icon_data = InitIconData();
   Shell_NotifyIcon(NIM_DELETE, &icon_data);
-  InitIconData(&icon_data);
+
+  // Update the icon.
+  icon_data = InitIconData();
   icon_data.uFlags |= NIF_MESSAGE;
   icon_data.uCallbackMessage = message_id_;
   icon_data.hIcon = icon_.get();
@@ -132,8 +131,7 @@ void NotifyIcon::SetImage(HICON image) {
   icon_ = base::win::ScopedGDIObject<HICON>(CopyIcon(image));
 
   // Create the icon.
-  NOTIFYICONDATA icon_data;
-  InitIconData(&icon_data);
+  NOTIFYICONDATA icon_data = InitIconData();
   icon_data.uFlags |= NIF_ICON;
   icon_data.hIcon = image;
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
@@ -148,8 +146,7 @@ void NotifyIcon::SetPressedImage(HICON image) {
 
 void NotifyIcon::SetToolTip(const std::string& tool_tip) {
   // Create the icon.
-  NOTIFYICONDATA icon_data;
-  InitIconData(&icon_data);
+  NOTIFYICONDATA icon_data = InitIconData();
   icon_data.uFlags |= NIF_TIP;
   wcsncpy_s(icon_data.szTip, base::UTF8ToWide(tool_tip).c_str(), _TRUNCATE);
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
@@ -158,8 +155,7 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
 }
 
 void NotifyIcon::DisplayBalloon(const BalloonOptions& options) {
-  NOTIFYICONDATA icon_data;
-  InitIconData(&icon_data);
+  NOTIFYICONDATA icon_data = InitIconData();
   icon_data.uFlags |= NIF_INFO;
   wcsncpy_s(icon_data.szInfoTitle, base::as_wcstr(options.title), _TRUNCATE);
   wcsncpy_s(icon_data.szInfo, base::as_wcstr(options.content), _TRUNCATE);
@@ -182,8 +178,7 @@ void NotifyIcon::DisplayBalloon(const BalloonOptions& options) {
 }
 
 void NotifyIcon::RemoveBalloon() {
-  NOTIFYICONDATA icon_data;
-  InitIconData(&icon_data);
+  NOTIFYICONDATA icon_data = InitIconData();
   icon_data.uFlags |= NIF_INFO;
 
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
@@ -192,8 +187,7 @@ void NotifyIcon::RemoveBalloon() {
 }
 
 void NotifyIcon::Focus() {
-  NOTIFYICONDATA icon_data;
-  InitIconData(&icon_data);
+  NOTIFYICONDATA icon_data = InitIconData();
 
   BOOL result = Shell_NotifyIcon(NIM_SETFOCUS, &icon_data);
   if (!result)
@@ -255,15 +249,16 @@ gfx::Rect NotifyIcon::GetBounds() {
   return display::win::ScreenWin::ScreenToDIPRect(window_, gfx::Rect(rect));
 }
 
-void NotifyIcon::InitIconData(NOTIFYICONDATA* icon_data) {
-  memset(icon_data, 0, sizeof(NOTIFYICONDATA));
-  icon_data->cbSize = sizeof(NOTIFYICONDATA);
-  icon_data->hWnd = window_;
-  icon_data->uID = icon_id_;
+NOTIFYICONDATA NotifyIcon::InitIconData() const {
+  NOTIFYICONDATA icon_data = {};
+  icon_data.cbSize = sizeof(NOTIFYICONDATA);
+  icon_data.hWnd = window_;
+  icon_data.uID = icon_id_;
   if (is_using_guid_) {
-    icon_data->uFlags = NIF_GUID;
-    icon_data->guidItem = guid_;
+    icon_data.uFlags = NIF_GUID;
+    icon_data.guidItem = guid_;
   }
+  return icon_data;
 }
 
 }  // namespace electron
