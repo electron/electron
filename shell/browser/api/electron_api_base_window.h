@@ -125,7 +125,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsNormal() const;
   gfx::Rect GetNormalBounds() const;
   void SetMinimumSize(int width, int height);
-  std::vector<int> GetMinimumSize() const;
+  std::array<int, 2U> GetMinimumSize() const;
   void SetMaximumSize(int width, int height);
   std::array<int, 2U> GetMaximumSize() const;
   void SetSheetOffset(double offsetY, gin_helper::Arguments* args);
