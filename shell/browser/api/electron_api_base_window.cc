@@ -451,12 +451,9 @@ void BaseWindow::SetContentSize(int width,
   window_->SetContentSize(gfx::Size(width, height), animate);
 }
 
-std::vector<int> BaseWindow::GetContentSize() const {
-  std::vector<int> result(2);
-  gfx::Size size = window_->GetContentSize();
-  result[0] = size.width();
-  result[1] = size.height();
-  return result;
+std::array<int, 2U> BaseWindow::GetContentSize() const {
+  const gfx::Size size = window_->GetContentSize();
+  return {size.width(), size.height()};
 }
 
 void BaseWindow::SetMinimumSize(int width, int height) {
