@@ -32,7 +32,7 @@ index 7d5d0106a3675b3fa21b0e00a755f5c0ed11c87b..d26c645d70b54b31815c8140954ee6d0
  //   (netwerk/cookie/src/nsCookieService.cpp)
  /* ***** BEGIN LICENSE BLOCK *****
 diff --git a/net/http/http_response_headers.cc b/net/http/http_response_headers.cc
-index 2235a264ff87ef400734a7308c2735886c63c92c..2310a951c5b4d34447a39c7585bdf1027a9953cc 100644
+index 11572f927d97da20627dec498b92e445b5db4589..9b02d35a19d8610ade71b96c11551a1050847b49 100644
 --- a/net/http/http_response_headers.cc
 +++ b/net/http/http_response_headers.cc
 @@ -2,11 +2,6 @@
