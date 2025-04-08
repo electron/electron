@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 
+#include <array>
 #include <map>
 #include <memory>
 #include <optional>
