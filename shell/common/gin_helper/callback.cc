@@ -54,8 +54,7 @@ void CallTranslator(v8::Local<v8::External> external,
       args->ThrowTypeError("One-time callback was called more than once");
       return;
     } else {
-      state->Set(context, called_symbol, v8::Boolean::New(isolate, true))
-          .ToChecked();
+      state->Set(context, called_symbol, v8::True(isolate)).ToChecked();
     }
   }
 
