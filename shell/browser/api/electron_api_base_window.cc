@@ -438,12 +438,9 @@ void BaseWindow::SetSize(int width, int height, gin_helper::Arguments* args) {
   window_->SetSize(size, animate);
 }
 
-std::vector<int> BaseWindow::GetSize() const {
-  std::vector<int> result(2);
-  gfx::Size size = window_->GetSize();
-  result[0] = size.width();
-  result[1] = size.height();
-  return result;
+std::array<int, 2U> BaseWindow::GetSize() const {
+  const gfx::Size size = window_->GetSize();
+  return {size.width(), size.height()};
 }
 
 void BaseWindow::SetContentSize(int width,
