@@ -129,7 +129,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetMinimumSize(int width, int height);
   std::vector<int> GetMinimumSize() const;
   void SetMaximumSize(int width, int height);
-  std::vector<int> GetMaximumSize() const;
+  std::array<int, 2U> GetMaximumSize() const;
   void SetSheetOffset(double offsetY, gin_helper::Arguments* args);
   void SetResizable(bool resizable);
   bool IsResizable() const;

@@ -507,12 +507,9 @@ void BaseWindow::SetMaximumSize(int width, int height) {
   window_->SetMaximumSize(gfx::Size(width, height));
 }
 
-std::vector<int> BaseWindow::GetMaximumSize() const {
-  std::vector<int> result(2);
-  gfx::Size size = window_->GetMaximumSize();
-  result[0] = size.width();
-  result[1] = size.height();
-  return result;
+std::array<int, 2U> BaseWindow::GetMaximumSize() const {
+  const gfx::Size size = window_->GetMaximumSize();
+  return {size.width(), size.height()};
 }
 
 void BaseWindow::SetSheetOffset(double offsetY, gin_helper::Arguments* args) {
