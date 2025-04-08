@@ -152,22 +152,12 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
  private:
   // mojo::DataPipeProducer::DataSource:
   [[nodiscard]] uint64_t GetLength() const override { return buffer_.size(); }
-  ReadResult Read(uint64_t offset, base::span<char> buffer) override {
-    ReadResult result;
-    if (offset <= buffer_.size()) {
-      size_t readable_size = buffer_.size() - offset;
-      size_t writable_size = buffer.size();
-      size_t copyable_size = std::min(readable_size, writable_size);
-      if (copyable_size > 0) {
-        base::span<const char> full_span(buffer_);
-        buffer.first(copyable_size)
-            .copy_from(full_span.subspan(offset, copyable_size));
-      }
-      result.bytes_read = copyable_size;
-    } else {
-      NOTREACHED();
-    }
-    return result;
+  ReadResult Read(uint64_t offset, base::span<char> tgt) override {
+    const auto src = base::span<const char>{buffer_}.subspan(offset);
+    DCHECK_NE(src.size(), 0U);
+    const auto n_copied = std::min(src.size(), tgt.size());
+    tgt.first(n_copied).copy_from(src.first(n_copied));
+    return ReadResult{.bytes_read = n_copied};
   }
 
   std::vector<char> buffer_;
@@ -718,10 +708,9 @@ void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_view.size());
-  base::span<const char> src(string_view);
-  auto src_bytes = base::as_bytes(src);
-  std::copy(src_bytes.begin(), src_bytes.end(),
-            static_cast<uint8_t*>(array_buffer->Data()));
+  // TODO SAFETY: migrate this to shell/common/v8_util.h
+  UNSAFE_BUFFERS(
+      std::ranges::copy(string_view, static_cast<char*>(array_buffer->Data())));
   Emit("data", array_buffer, std::move(resume));
 }
 
