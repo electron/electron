@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
 
+#include <array>
 #include <cstddef>
 #include <functional>
 #include <map>
