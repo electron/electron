@@ -43,20 +43,6 @@ index 59b5a16f1309a5e4055bccfdb7a529045ad30402..bfdaf6211466a01b64b7942f7b16c480
  
    let filename = call.getFileName();
    const line = call.getLineNumber() - 1;
-diff --git a/src/api/environment.cc b/src/api/environment.cc
-index fc9b056d2f7e25109100fbde5f3ab0aebc8c619a..32fc075e97eebca6c47e796ac5308915746ffa2a 100644
---- a/src/api/environment.cc
-+++ b/src/api/environment.cc
-@@ -247,6 +247,9 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
-     auto* prepare_stack_trace_cb = s.prepare_stack_trace_callback ?
-         s.prepare_stack_trace_callback : PrepareStackTraceCallback;
-     isolate->SetPrepareStackTraceCallback(prepare_stack_trace_cb);
-+  } else {
-+    auto env = Environment::GetCurrent(isolate);
-+    env->set_prepare_stack_trace_callback(Local<Function>());
-   }
- }
- 
 diff --git a/src/node_options.cc b/src/node_options.cc
 index 3608ab2b4aeb09e985ca98e23f2dff23567ade71..620776c06d835eb1bfeed060751c570e8d435b29 100644
 --- a/src/node_options.cc
