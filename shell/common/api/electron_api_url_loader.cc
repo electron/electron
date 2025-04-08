@@ -13,6 +13,7 @@
 
 #include "base/check_op.h"
 #include "base/containers/fixed_flat_map.h"
+#include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
 #include "base/notreached.h"
 #include "base/sequence_checker.h"
@@ -158,7 +159,9 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
       size_t writable_size = buffer.size();
       size_t copyable_size = std::min(readable_size, writable_size);
       if (copyable_size > 0) {
-        memcpy(buffer.data(), &buffer_[offset], copyable_size);
+        base::span<const char> full_span(buffer_);
+        buffer.first(copyable_size)
+            .copy_from(full_span.subspan(offset, copyable_size));
       }
       result.bytes_read = copyable_size;
     } else {
@@ -715,7 +718,10 @@ void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_view.size());
-  memcpy(array_buffer->Data(), string_view.data(), string_view.size());
+  base::span<const char> src(string_view);
+  auto src_bytes = base::as_bytes(src);
+  std::copy(src_bytes.begin(), src_bytes.end(),
+            static_cast<uint8_t*>(array_buffer->Data()));
   Emit("data", array_buffer, std::move(resume));
 }
 
