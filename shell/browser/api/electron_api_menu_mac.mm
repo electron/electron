@@ -164,17 +164,23 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
           static_cast<content::RenderWidgetHostViewMac*>(rfh->GetView());
       RenderWidgetHostViewCocoa* cocoa_view = rwhvm->GetInProcessNSView();
       view = cocoa_view;
+
+      // TODO: ui::ShowContextMenu does not dispatch the event correctly
+      // if no frame is found. Fix this to remove if/else condition.
+      NSEvent* dummy_event =
+          [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
+                             location:position
+                        modifierFlags:0
+                            timestamp:0
+                         windowNumber:nswindow.windowNumber
+                              context:nil
+                          eventNumber:0
+                           clickCount:1
+                             pressure:0];
+      ui::ShowContextMenu(menu, dummy_event, view, true);
     }
-    NSEvent* dummy_event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
-                                              location:position
-                                         modifierFlags:0
-                                             timestamp:0
-                                          windowNumber:nswindow.windowNumber
-                                               context:nil
-                                           eventNumber:0
-                                            clickCount:1
-                                              pressure:0];
-    ui::ShowContextMenu(menu, dummy_event, view, true);
+    // If no render frame host was found, return early.
+    return;
   } else {
     // Make sure events can be pumped while the menu is up.
     base::CurrentThread::ScopedAllowApplicationTasksInNativeNestedLoop allow;
