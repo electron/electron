@@ -79,7 +79,7 @@ index f7e0144c74f879e9b29871d7c372b99e127966bb..c3cd7b77ed282f212a56d151dc3fbec3
    if (World().IsMainWorld()) {
      probe::DidCreateMainWorldContext(GetFrame());
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client.h b/third_party/blink/renderer/core/frame/local_frame_client.h
-index 4af73e443d1268049e3859caf42162330071ad1f..be884318189b66fb5bc3ad73e4cb5bf1fcf5ac60 100644
+index 3e041fb162ebdf8b0a04aff930b8161a37d6c4ed..8019c126e5a3132e236f169576738deffc2e31c2 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client.h
 @@ -300,6 +300,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
