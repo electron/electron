@@ -218,7 +218,7 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d585d96d93304829ae1f74116ab58b78839035a4..9c8c6bc8b9d78dab0bbb30658f7b7f04c47fbab5 100644
+index 7918fb5eaf9f9db3d203db1da8a2330a7ec539af..bb96dd6e259b9a96b10a3834f13062d8871a1e58 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4979,8 +4979,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -352,10 +352,10 @@ index 2dcf51f335f5dac39f431c3e0f56f8789f33d40b..2b433624d0604e0b9da5117b9e83cc15
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 635050eedc20fb89608677bcebeb5f8187bd4b59..1220f377169f8209db39654b7ddbf1da52c017b7 100644
+index 16c40268e1b0489883b8dae42381301163706f59..569ada98d9e350b0568990daf924fc0784f93eaf 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
-@@ -575,8 +575,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -576,8 +576,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,

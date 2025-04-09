@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 44100cd724d7ea755c2dd2e7ac1acbc21a87c452..f2e8e5cb7b91051071984221f17c96c84916f7d3 100644
+index 975b97922dfb9db6b7d31b6b05e93a04dd793739..df9af763c984b5d693270afb79d137350f44c9b6 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1045,6 +1045,7 @@ component("base") {
@@ -477,10 +477,10 @@ index 0b964e176e59e77a0743e2d347aa185bc7c80bc5..49a60b9aa0597c3397906303b73a4c16
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 2abb9b96124ad7867204dc5f6c678080472f28d7..067b3cc0d6a8b5990dc4bad0f15e47bd4922a26a 100644
+index 4b21d9c45a63e833410c885fa438410e32ea02a8..6d5fa94d5a1ee6d7454ae4712d27f1f3ac649a99 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -383,6 +383,7 @@ viz_component("service") {
+@@ -384,6 +384,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -488,7 +488,7 @@ index 2abb9b96124ad7867204dc5f6c678080472f28d7..067b3cc0d6a8b5990dc4bad0f15e47bd
    }
  
    if (is_ios) {
-@@ -695,6 +696,7 @@ viz_source_set("unit_tests") {
+@@ -696,6 +697,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -582,7 +582,7 @@ index 4017ee032569466f5311e5c9612c82c086eab935..f2499bc084312a09b2324567d270fc1b
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c807cd670496195662edd1e13a6304f0727825e0..116398646e3ef45657d6d7e36ef8bda510ae8d69 100644
+index 20b991b675d6767c4d9903b9d70575b12700a2cd..13ee3bbfcabbf69314713dfc28f766e72e7b123b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -341,6 +341,7 @@ source_set("browser") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 146122f8b122cafed99ac76c90afa00e4c1f2b64..7852f8183a2836afdf3b6f725218af604936a62c 100644
+index b9a093b044a5ed42b593ef662c7a6c346e5248e1..e299ee88e5313e989aa5d13a5b41c0b21d2022bf 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -662,6 +662,7 @@ static_library("test_support") {
@@ -845,11 +845,11 @@ index 8779cf7cbbe2a583fda51867eaebc627f00bd4cd..98da1587fdc8cc8358a69db2b51d3982
  
    # TODO(crbug.com/40139469): Blink test plugin must be migrated from PPAPI.
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 16407ea4758addb6f6b56dc044d58cde0922897a..98cf8359b412a61b48aa87b607740bbeda4ca159 100644
+index f4dd57ad76eea85cc2aef1cdd196e840922d13c7..b78e4f9a3745e04779a6cdc1b72239c1bd5dff07 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -257,6 +257,7 @@ component("bluetooth") {
-       "IOKit.framework",
+@@ -256,6 +256,7 @@ component("bluetooth") {
+       "CoreBluetooth.framework",
        "Foundation.framework",
      ]
 +    deps += ["//electron/build/config:generate_mas_config"]
@@ -1848,10 +1848,10 @@ index 874ac9d572931fe175ccab8beb7738fe0a7b3c1b..b70e2a8a7be9e00a379f47c77589dde6
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 428ba0136f09ace2652e96b0928f84b59048e4ba..9ab318c4f56728eb675d8faa3a17a29f7079905c 100644
+index e531cb42cde9863ff1c4a13150f35877b564226c..0c0ec308be02297b090d08b52cc713c22652da36 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -335,6 +335,12 @@ component("gfx") {
+@@ -337,6 +337,12 @@ component("gfx") {
      "//ui/base:ui_data_pack",
    ]
  
