@@ -480,8 +480,10 @@ void NativeWindowViews::SetContentView(views::View* view) {
   }
   set_content_view(view);
   SetInitiallyFocusedView(view);
-  root_view_.GetMainView()->AddChildViewRaw(content_view());
-  root_view_.GetMainView()->DeprecatedLayoutImmediately();
+
+  views::View* const main_view = root_view_.GetMainView();
+  main_view->AddChildViewRaw(view);
+  main_view->DeprecatedLayoutImmediately();
 }
 
 void NativeWindowViews::Close() {
