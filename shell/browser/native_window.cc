@@ -96,8 +96,6 @@ const char kElectronNativeWindowKey[] = "__ELECTRON_NATIVE_WINDOW__";
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
     : widget_(std::make_unique<views::Widget>()), parent_(parent) {
-  ++next_id_;
-
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
@@ -808,9 +806,6 @@ void NativeWindow::HandlePendingFullscreenTransitions() {
   pending_transitions_.pop();
   SetFullScreen(next_transition);
 }
-
-// static
-int32_t NativeWindow::next_id_ = 0;
 
 bool NativeWindow::IsTranslucent() const {
   // Transparent windows are translucent
