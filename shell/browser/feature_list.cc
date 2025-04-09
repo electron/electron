@@ -61,14 +61,6 @@ void InitializeFeatureList() {
       std::string(",") + features::kMacWebContentsOcclusion.name;
 #endif
 
-#if BUILDFLAG(IS_LINUX) && BUILDFLAG(ENABLE_PRINTING)
-  disable_features +=
-      // EnableOopPrintDrivers is still a bit half-baked on Linux and
-      // causes crashes when trying to show dialogs.
-      // TODO(codebytere): figure out how to re-enable this with our patches.
-      std::string(",") + printing::features::kEnableOopPrintDrivers.name;
-#endif
-
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Enable window.showSaveFilePicker api for saving pdf files.
   // Refs https://issues.chromium.org/issues/373852607

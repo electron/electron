@@ -932,3 +932,19 @@ index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890f
    // Does bookkeeping when an error occurs.
    virtual mojom::ResultCode OnError();
  
+diff --git a/printing/printing_context_linux.cc b/printing/printing_context_linux.cc
+index fa55d2a1c5f4207cb8eda9305e8bf2af29352c91..13ca65c2c7c3c24882061d8e224bf93899d9a7ab 100644
+--- a/printing/printing_context_linux.cc
++++ b/printing/printing_context_linux.cc
+@@ -52,9 +52,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
+                                               bool is_scripted,
+                                               PrintSettingsCallback callback) {
+   if (!print_dialog_) {
+-    // Can only get here if the renderer is sending bad messages.
+-    // http://crbug.com/341777
+-    NOTREACHED();
++    print_dialog_ = ui::LinuxUi::instance()->CreatePrintDialog(this);
++    print_dialog_->UseDefaultSettings();
+   }
+ 
+   print_dialog_->ShowDialog(delegate_->GetParentView(), has_selection,
