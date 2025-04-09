@@ -2,6 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#ifdef UNSAFE_BUFFERS_BUILD
+// TODO(crbug.com/351564777): Remove FD_ZERO and convert code to safer
+// constructs.
+#pragma allow_unsafe_buffers
+#endif
+
 #include "shell/common/node_bindings_mac.h"
 
 #include <errno.h>
