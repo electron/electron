@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 975b97922dfb9db6b7d31b6b05e93a04dd793739..df9af763c984b5d693270afb79d137350f44c9b6 100644
+index 6253aef7afa9f7a5b720f90ad5ce708ce4156892..2f014585c996b002b00be264eaabc556ed69e523 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1045,6 +1045,7 @@ component("base") {
