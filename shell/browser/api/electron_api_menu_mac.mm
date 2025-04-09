@@ -165,18 +165,30 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
       RenderWidgetHostViewCocoa* cocoa_view = rwhvm->GetInProcessNSView();
       view = cocoa_view;
     }
-  }
+    NSEvent* dummy_event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
+                                              location:position
+                                         modifierFlags:0
+                                             timestamp:0
+                                          windowNumber:nswindow.windowNumber
+                                               context:nil
+                                           eventNumber:0
+                                            clickCount:1
+                                              pressure:0];
+    ui::ShowContextMenu(menu, dummy_event, view, true);
+  } else {
+    // Make sure events can be pumped while the menu is up.
+    base::CurrentThread::ScopedAllowApplicationTasksInNativeNestedLoop allow;
 
-  NSEvent* dummy_event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
-                                            location:position
-                                       modifierFlags:0
-                                           timestamp:0
-                                        windowNumber:nswindow.windowNumber
-                                             context:nil
-                                         eventNumber:0
-                                          clickCount:1
-                                            pressure:0];
-  ui::ShowContextMenu(menu, dummy_event, view, true);
+    // One of the events that could be pumped is |window.close()|.
+    // User-initiated event-tracking loops protect against this by
+    // setting flags in -[CrApplication sendEvent:], but since
+    // web-content menus are initiated by IPC message the setup has to
+    // be done manually.
+    base::mac::ScopedSendingEvent sendingEventScoper;
+
+    // Don't emit unresponsive event when showing menu.
+    [menu popUpMenuPositioningItem:item atLocation:position inView:view];
+  }
 }
 
 void MenuMac::ClosePopupAt(int32_t window_id) {
