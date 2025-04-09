@@ -4929,6 +4929,18 @@ describe('BrowserWindow module', () => {
         expect(w.getChildWindows().length).to.equal(0);
       });
 
+      it('can handle parent window close with focus or blur events', (done) => {
+        const w = new BrowserWindow({ show: false });
+        const c = new BrowserWindow({ show: false, parent: w });
+
+        c.on('closed', () => {
+          w.focus();
+          done();
+        });
+
+        w.close();
+      });
+
       ifit(process.platform === 'darwin')('only shows the intended window when a child with siblings is shown', async () => {
         const w = new BrowserWindow({ show: false });
         const childOne = new BrowserWindow({ show: false, parent: w });
