@@ -43,6 +43,19 @@ index 421baefce4a2a47e0971d03407c305a54c62b70b..15aa763ec62334b5c79a0346d4845a89
        return std::nullopt;
    }
  }
+diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
+index 02f33dc506a8e262b31d1fcf7435084480c588c1..b1826369edf599463170417937af31f3f24e3e69 100644
+--- a/content/browser/permissions/permission_descriptor_util.cc
++++ b/content/browser/permissions/permission_descriptor_util.cc
+@@ -169,6 +169,8 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
+     case blink::PermissionType::LOCAL_NETWORK_ACCESS:
+       return CreatePermissionDescriptor(
+           blink::mojom::PermissionName::LOCAL_NETWORK_ACCESS);
++    case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
++      NOTREACHED();
+     case blink::PermissionType::NUM:
+       NOTREACHED();
+   }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
 index 8abbc34ec283562685a46e10142901110b5c0b55..1c436c62cac1bc4b21255bdcbb2c18b882c4058b 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
