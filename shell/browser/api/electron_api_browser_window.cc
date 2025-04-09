@@ -219,14 +219,14 @@ void BrowserWindow::CloseImmediately() {
 }
 
 void BrowserWindow::Focus() {
-  if (api_web_contents_->IsOffScreen())
+  if (api_web_contents_ && api_web_contents_->IsOffScreen())
     FocusOnWebView();
   else
     BaseWindow::Focus();
 }
 
 void BrowserWindow::Blur() {
-  if (api_web_contents_->IsOffScreen())
+  if (api_web_contents_ && api_web_contents_->IsOffScreen())
     BlurWebView();
   else
     BaseWindow::Blur();
