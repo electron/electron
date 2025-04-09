@@ -32,10 +32,10 @@ index 6f4d9651862e90abaa22b93e1dcf97ac07592c5c..d91d81297e7cdb79ee7b7a3979dcedf9
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 0c6b537ddc2afbc4cd22f1c08f1bbae3c3bbffe3..333f557c89bc03ae5b25060359b9af096b188726 100644
+index 421baefce4a2a47e0971d03407c305a54c62b70b..15aa763ec62334b5c79a0346d4845a897929a8aa 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -87,6 +87,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -86,6 +86,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::AUTOMATIC_FULLSCREEN:
      case PermissionType::WEB_APP_INSTALLATION:
      case PermissionType::LOCAL_NETWORK_ACCESS:
@@ -44,7 +44,7 @@ index 0c6b537ddc2afbc4cd22f1c08f1bbae3c3bbffe3..333f557c89bc03ae5b25060359b9af09
    }
  }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 16ac4fcc02c6a5435d4204e2ded98ea1fa96290b..eeaa99f2e9cee2480464f43fbe0d4b8a4e9614b3 100644
+index 8abbc34ec283562685a46e10142901110b5c0b55..1c436c62cac1bc4b21255bdcbb2c18b882c4058b 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
 @@ -101,6 +101,8 @@ std::string GetPermissionString(PermissionType permission) {
@@ -65,7 +65,7 @@ index 16ac4fcc02c6a5435d4204e2ded98ea1fa96290b..eeaa99f2e9cee2480464f43fbe0d4b8a
  
      case PermissionType::NUM:
 diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
-index 947bd8125bf300a3a82c811810e31996e6147c7c..caeeaf6cecf7da47c39b140dfcc295fba12f6f84 100644
+index 5c82a641538802bc459782ea422a1186045b054a..c286d87043ec4cb2e51ec9d82d08e4c84f5a270c 100644
 --- a/third_party/blink/public/common/permissions/permission_utils.h
 +++ b/third_party/blink/public/common/permissions/permission_utils.h
 @@ -65,6 +65,7 @@ enum class PermissionType {

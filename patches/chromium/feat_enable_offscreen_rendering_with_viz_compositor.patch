@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 067b3cc0d6a8b5990dc4bad0f15e47bd4922a26a..4aaf506c9fadb3f4c5a79560bf4558462d2c8705 100644
+index 6d5fa94d5a1ee6d7454ae4712d27f1f3ac649a99..9b2a56cbb10e73acfdf27290f8dc4cb38acb30d9 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -178,6 +178,8 @@ viz_component("service") {
@@ -204,10 +204,10 @@ index e4b46a79560e7698a6400b2ab8a57f38205a8718..3cb2518c6644cf0618f625d981befd46
    const raw_ptr<GpuServiceImpl> gpu_service_impl_;
  
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
-index 446229f7dea794a0148543d112c63b8c38183262..15d097a5761a07cfbc763d6fc739ca35cf3c8660 100644
+index 80b4d99c08b622b080cf6d725ebc3cdfbcad7d32..d9c56e04dfd771368a82b852daae297a47fde80e 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
 +++ b/components/viz/service/display_embedder/software_output_device_mac.cc
-@@ -111,6 +111,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
+@@ -112,6 +112,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
  
  SkCanvas* SoftwareOutputDeviceMac::BeginPaint(
      const gfx::Rect& new_damage_rect) {
@@ -216,7 +216,7 @@ index 446229f7dea794a0148543d112c63b8c38183262..15d097a5761a07cfbc763d6fc739ca35
    // Record the previous paint buffer.
    Buffer* previous_paint_buffer =
        buffer_queue_.empty() ? nullptr : buffer_queue_.back().get();
-@@ -199,6 +201,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
+@@ -202,6 +204,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
      ca_layer_params.is_empty = false;
      ca_layer_params.scale_factor = scale_factor_;
      ca_layer_params.pixel_size = pixel_size_;

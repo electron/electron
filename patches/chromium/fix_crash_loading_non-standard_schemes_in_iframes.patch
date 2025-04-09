@@ -28,10 +28,10 @@ The patch should be removed in favor of either:
 Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 875ee5d8c1b48c46fc2bd26797b6932377d37063..a1e1ec9f5a3d84f7968ca065b8db8ba51fb8e215 100644
+index fbbd83a2f85642b55524d0387f058a6fceb1fc18..3a5d76719b26c1a7ea2c7b3a13a3a99a6a259b6d 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -11108,6 +11108,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
+@@ -11110,6 +11110,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
          "blob");
    }
  
