@@ -255,7 +255,6 @@ declare namespace NodeJS {
     once(event: 'document-end', listener: () => any): this;
 
     // Additional properties
-    _firstFileName?: string;
     _serviceStartupScript: string;
     _getOrCreateArchive?: (path: string) => NodeJS.AsarArchive | null;
 
