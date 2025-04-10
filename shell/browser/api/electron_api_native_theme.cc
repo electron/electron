@@ -63,6 +63,10 @@ bool NativeTheme::ShouldUseHighContrastColors() {
   return ui_theme_->UserHasContrastPreference();
 }
 
+bool NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI() {
+  return ui_theme_->ShouldUseDarkColorsForSystemIntegratedUI();
+}
+
 bool NativeTheme::InForcedColorsMode() {
   return ui_theme_->InForcedColorsMode();
 }
@@ -109,6 +113,8 @@ gin::ObjectTemplateBuilder NativeTheme::GetObjectTemplateBuilder(
                    &NativeTheme::SetThemeSource)
       .SetProperty("shouldUseHighContrastColors",
                    &NativeTheme::ShouldUseHighContrastColors)
+      .SetProperty("shouldUseDarkColorsForSystemIntegratedUI",
+                   &NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI)
       .SetProperty("shouldUseInvertedColorScheme",
                    &NativeTheme::ShouldUseInvertedColorScheme)
       .SetProperty("inForcedColorsMode", &NativeTheme::InForcedColorsMode)
