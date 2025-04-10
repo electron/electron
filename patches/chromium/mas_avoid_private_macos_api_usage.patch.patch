@@ -477,10 +477,10 @@ index 0b964e176e59e77a0743e2d347aa185bc7c80bc5..49a60b9aa0597c3397906303b73a4c16
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 4b21d9c45a63e833410c885fa438410e32ea02a8..6d5fa94d5a1ee6d7454ae4712d27f1f3ac649a99 100644
+index 4704b26c54e7bd449a6e57de43b7c4b0875732c9..e3b4148376f5a93f053b88e179f51cb642d896ed 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -384,6 +384,7 @@ viz_component("service") {
+@@ -385,6 +385,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -488,7 +488,7 @@ index 4b21d9c45a63e833410c885fa438410e32ea02a8..6d5fa94d5a1ee6d7454ae4712d27f1f3
    }
  
    if (is_ios) {
-@@ -696,6 +697,7 @@ viz_source_set("unit_tests") {
+@@ -697,6 +698,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -845,7 +845,7 @@ index 8779cf7cbbe2a583fda51867eaebc627f00bd4cd..98da1587fdc8cc8358a69db2b51d3982
  
    # TODO(crbug.com/40139469): Blink test plugin must be migrated from PPAPI.
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index f4dd57ad76eea85cc2aef1cdd196e840922d13c7..b78e4f9a3745e04779a6cdc1b72239c1bd5dff07 100644
+index e69ef178a08ef322764809e6afeffa20ffc0cd13..d2e182ed0dad5aeecb48e5a39771880bd8fb408b 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -256,6 +256,7 @@ component("bluetooth") {
