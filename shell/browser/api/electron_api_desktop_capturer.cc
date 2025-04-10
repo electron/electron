@@ -149,10 +149,11 @@ base::flat_map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
 std::unique_ptr<ThumbnailCapturer> MakeScreenAndWindowCapturer() {
 #if BUILDFLAG(IS_MAC)
   if (ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kNone)) {
+    LOG(ERROR) << "creating thumbnail capturer, knone *****";
     return CreateThumbnailCapturerMac(DesktopMediaList::Type::kNone);
   }
 #endif  // BUILDFLAG(IS_MAC)
-
+  LOG(ERROR) << "should not hit this *****";
   std::unique_ptr<webrtc::DesktopCapturer> window_capturer =
       content::desktop_capture::CreateWindowCapturer();
   return window_capturer ? std::make_unique<DesktopCapturerWrapper>(
@@ -290,11 +291,11 @@ void DesktopCapturer::StartHandling(bool capture_window,
 
   // clear any existing captured sources.
   captured_sources_.clear();
-
+  LOG(ERROR) << "capture_window: " << capture_window << " capture_screen: " << capture_screen;
   if (capture_window && capture_screen) {
     if (IsDisplayMediaSystemPickerAvailable()) {
       auto capturer = MakeScreenAndWindowCapturer();
-      capture_screen_ = false;
+      capture_screen_ = capture_screen;
       capture_window_ = capture_window;
       // TODO(review): Maybe just call this a capturer
       screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
@@ -304,8 +305,10 @@ void DesktopCapturer::StartHandling(bool capture_window,
 #if BUILDFLAG(IS_MAC)
       screen_capturer_->skip_next_refresh_ =
           ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kNone) ? 2 : 0;
+      LOG(ERROR) << "SET SKIP NEXT REFRESH TO 2";
 #endif
 
+LOG(ERROR) << "screen_capturer_->skip_next_refresh_ " << screen_capturer_->skip_next_refresh_;
       OnceCallback update_callback = base::BindOnce(
           &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
           screen_capturer_.get());
@@ -376,6 +379,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
     // Initialize the source list.
     // Apply the new thumbnail size and restart capture.
     if (capture_window) {
+      LOG(ERROR) << "WE SHOULDNT BE HERE *****";
       auto capturer = MakeWindowCapturer();
       if (capturer) {
         window_capturer_ = std::make_unique<NativeDesktopMediaList>(

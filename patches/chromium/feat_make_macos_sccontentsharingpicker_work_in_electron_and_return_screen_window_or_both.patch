@@ -24,7 +24,7 @@ index 36797f37627d534bd446e0d8270618722ed9a2fa..32222cb526dc047a02cd9382814edd71
            // at least SameOrigin is allowed, these entries should stay.
            // They should be filtered later by the caller.
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d83487885d566336d72bc5c4232d50a6a13ec3c2 100644
+index 08400be4d1bae18502d19beed6b2d9057e55dd4f..4df1a9f44959db1f73d6a8a535d297343f7f0c00 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
 @@ -12,9 +12,11 @@
@@ -39,8 +39,17 @@ index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d83487885d566336d72bc5c4232d50a6
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "third_party/skia/include/core/SkBitmap.h"
-@@ -67,8 +69,9 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
+@@ -60,24 +62,34 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
+   // If there is a delegated source list, it may not have been started yet.
+   if (IsSourceListDelegated())
+     StartDelegatedCapturer();
++    LOG(ERROR) << "start delegated capturer";
+ 
+   // Process sources previously discovered by a call to Update().
+   if (observer_) {
+     for (size_t i = 0; i < sources_.size(); i++) {
        observer_->OnSourceAdded(i);
++      LOG(ERROR) << "OnSourceAdded, i: " << i;
      }
    }
 -
@@ -50,8 +59,10 @@ index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d83487885d566336d72bc5c4232d50a6
    refresh_callback_ = base::BindOnce(&DesktopMediaListBase::ScheduleNextRefresh,
                                       weak_factory_.GetWeakPtr());
    Refresh(true);
-@@ -77,7 +80,13 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
+ }
+ 
  void DesktopMediaListBase::Update(UpdateCallback callback, bool refresh_thumbnails) {
++  LOG(ERROR) << "Update";
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    DCHECK(sources_.empty());
 -  DCHECK(!refresh_callback_);
@@ -66,7 +77,7 @@ index 08400be4d1bae18502d19beed6b2d9057e55dd4f..d83487885d566336d72bc5c4232d50a6
    Refresh(refresh_thumbnails);
  }
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 312882d656f9f6b3d3fd98128131cea63f818e0d..be28789ccbd3cb8b28fa5ae4017305177a914e22 100644
+index 312882d656f9f6b3d3fd98128131cea63f818e0d..f61697e1717fcfa0500974e8523438389fbab5ae 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -45,6 +45,7 @@
@@ -99,7 +110,7 @@ index 312882d656f9f6b3d3fd98128131cea63f818e0d..be28789ccbd3cb8b28fa5ae401730517
           !add_current_process_windows_);
  }
  
-@@ -505,11 +508,24 @@ NativeDesktopMediaList::Worker::FormatSources(
+@@ -505,11 +508,27 @@ NativeDesktopMediaList::Worker::FormatSources(
          break;
  
        case DesktopMediaID::Type::TYPE_WINDOW:
@@ -109,6 +120,9 @@ index 312882d656f9f6b3d3fd98128131cea63f818e0d..be28789ccbd3cb8b28fa5ae401730517
 +              // skipping the picker will skip the first window selection.
 +              if (ShouldUseSCContentSharingPicker()) {
 +                title = base::UTF8ToUTF16(sources[i].title);
++                LOG(ERROR) << "formatting native picker source, id: " << sources[i].id << " title: " << title;
++                LOG(ERROR) << "sources size: " << sources.size();
++                LOG(ERROR) << "excluded window id: " << excluded_window_id;
 +              } else if (sources[i].id == excluded_window_id) {
 +              // Skip the picker dialog window.
 +                continue;
@@ -124,7 +138,7 @@ index 312882d656f9f6b3d3fd98128131cea63f818e0d..be28789ccbd3cb8b28fa5ae401730517
          break;
  
        default:
-@@ -775,14 +791,10 @@ NativeDesktopMediaList::NativeDesktopMediaList(
+@@ -775,14 +794,10 @@ NativeDesktopMediaList::NativeDesktopMediaList(
        is_source_list_delegated_(capturer->GetDelegatedSourceListController() !=
                                  nullptr) {
    type_ = type;
@@ -140,7 +154,7 @@ index 312882d656f9f6b3d3fd98128131cea63f818e0d..be28789ccbd3cb8b28fa5ae401730517
    base::MessagePumpType thread_type = base::MessagePumpType::UI;
  #else
    base::MessagePumpType thread_type = base::MessagePumpType::DEFAULT;
-@@ -794,8 +806,9 @@ NativeDesktopMediaList::NativeDesktopMediaList(
+@@ -794,8 +809,9 @@ NativeDesktopMediaList::NativeDesktopMediaList(
        std::move(capturer), add_current_process_windows_,
        auto_show_delegated_source_list);
  
@@ -151,6 +165,15 @@ index 312882d656f9f6b3d3fd98128131cea63f818e0d..be28789ccbd3cb8b28fa5ae401730517
  }
  
  NativeDesktopMediaList::~NativeDesktopMediaList() {
+@@ -903,7 +919,7 @@ void NativeDesktopMediaList::ShowDelegatedList() {
+ }
+ 
+ void NativeDesktopMediaList::Refresh(bool update_thumbnails) {
+-  DCHECK(can_refresh());
++   DCHECK(can_refresh());
+ 
+ #if defined(USE_AURA)
+   DCHECK_EQ(pending_aura_capture_requests_, 0);
 diff --git a/chrome/browser/media/webrtc/thumbnail_capturer_mac.h b/chrome/browser/media/webrtc/thumbnail_capturer_mac.h
 index 12a74f8f32cc00a7f3d7802865ae4b309961341d..acbcfb08ae8c44e24a04b326096289428bc6ff60 100644
 --- a/chrome/browser/media/webrtc/thumbnail_capturer_mac.h
@@ -166,7 +189,7 @@ index 12a74f8f32cc00a7f3d7802865ae4b309961341d..acbcfb08ae8c44e24a04b32609628942
  bool ShouldUseThumbnailCapturerMac(DesktopMediaList::Type type);
  
 diff --git a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
-index 744f2447dc2d43c4f6be695bf561474993468705..1eb7465481e3a2a70a99c173cae3e18f420a6681 100644
+index 744f2447dc2d43c4f6be695bf561474993468705..bb5781b0f0df11422f8355dcc59f5f0f46ebcf89 100644
 --- a/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
 +++ b/chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
 @@ -13,6 +13,7 @@
@@ -200,7 +223,7 @@ index 744f2447dc2d43c4f6be695bf561474993468705..1eb7465481e3a2a70a99c173cae3e18f
  }
  
  ThumbnailCapturerMac::~ThumbnailCapturerMac() {
-@@ -680,17 +681,18 @@ void OnCapturedFrame(base::apple::ScopedCFTypeRef<CGImageRef> image,
+@@ -680,17 +681,15 @@ void OnCapturedFrame(base::apple::ScopedCFTypeRef<CGImageRef> image,
                                        source_id);
  }
  
@@ -208,10 +231,10 @@ index 744f2447dc2d43c4f6be695bf561474993468705..1eb7465481e3a2a70a99c173cae3e18f
 +
  bool ShouldUseSCContentSharingPicker() {
    if (@available(macOS 15.0, *)) {
-     if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
-       return true;
-     }
-+    return false;
+-    if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
+-      return true;
+-    }
++    return base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker);
    }
    return false;
  }
@@ -221,7 +244,7 @@ index 744f2447dc2d43c4f6be695bf561474993468705..1eb7465481e3a2a70a99c173cae3e18f
  bool ShouldUseThumbnailCapturerMac(DesktopMediaList::Type type) {
    // There was a bug in ScreenCaptureKit that was fixed in 14.4,
    // see b/40076027.
-@@ -704,6 +706,9 @@ bool ShouldUseThumbnailCapturerMac(DesktopMediaList::Type type) {
+@@ -704,6 +703,9 @@ bool ShouldUseThumbnailCapturerMac(DesktopMediaList::Type type) {
          return ShouldUseSCContentSharingPicker() ||
                 base::FeatureList::IsEnabled(kScreenCaptureKitPickerScreen);
        case DesktopMediaList::Type::kNone:
@@ -265,13 +288,14 @@ index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..d57df80dff9c6867cddf669efe3f90c4
  
  namespace content {
 diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-index 0dbc7ebc4ba6066eb6b20f8e66f50a1dff4d94f3..f36948241260f39665375a105c40d7725561d776 100644
+index 0dbc7ebc4ba6066eb6b20f8e66f50a1dff4d94f3..17d658ee011b81208b77ee1e65925ae9ad1e68f7 100644
 --- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
 +++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-@@ -206,8 +206,11 @@ void Open(DesktopMediaID::Type type,
+@@ -206,8 +206,12 @@ void Open(DesktopMediaID::Type type,
      base::OnceClosure cancel_callback,
      base::OnceClosure error_callback) {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  LOG(ERROR) << "Open";
 +  // Chrome doesn't allow both screens & windows in their picker,
 +  // but Electron does - add a check for TYPE_NONE.
    CHECK(type == DesktopMediaID::Type::TYPE_SCREEN ||
@@ -281,7 +305,7 @@ index 0dbc7ebc4ba6066eb6b20f8e66f50a1dff4d94f3..f36948241260f39665375a105c40d772
    if (@available(macOS 14.0, *)) {
      NSNumber* source_id = @(next_id_);
      PickerObserver* picker_observer = [[PickerObserver alloc]
-@@ -226,25 +229,32 @@ void Open(DesktopMediaID::Type type,
+@@ -226,25 +230,32 @@ void Open(DesktopMediaID::Type type,
      // TODO(https://crbug.com/360781940): Add support for changing selected
      // content. The problem to solve is how this should interact with stream
      // restart.
@@ -353,10 +377,10 @@ index 0e4a68f2fd8179640f877cb258b4049610fd49da..0fb8d036b7696e5303fbcd463114114a
        // It will not stitch desktops together. If
        // kScreenCaptureKitFullDesktopFallback is enabled, we will fallback to
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index f0f08a834f06c7669da6030640434308a5cbd056..819c295157cc8240ea2f9034491fb998f67dc643 100644
+index f0f08a834f06c7669da6030640434308a5cbd056..a34dcdbad1c3d32de59a1574de485bd831599aa1 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -177,19 +177,21 @@ DesktopCaptureImplementation CreatePlatformDependentVideoCaptureDevice(
+@@ -177,19 +177,20 @@ DesktopCaptureImplementation CreatePlatformDependentVideoCaptureDevice(
  #if BUILDFLAG(IS_MAC)
    // Use ScreenCaptureKit with picker if specified. `desktop_id` for the picker
    // is not compatible with the other implementations.
@@ -381,12 +405,11 @@ index f0f08a834f06c7669da6030640434308a5cbd056..819c295157cc8240ea2f9034491fb998
        (desktop_id.type == DesktopMediaID::TYPE_SCREEN &&
 -       base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen))) {
 +       base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen)) ||
-+      (desktop_id.type == DesktopMediaID::TYPE_NONE &&
-+       (base::FeatureList::IsEnabled(kScreenCaptureKitMacWindow) || base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen)))) {
++      (desktop_id.type == DesktopMediaID::TYPE_NONE && base::FeatureList::IsEnabled(kScreenCaptureKitMacScreen))) {
      device_out = CreateScreenCaptureKitDeviceMac(desktop_id);
      if (device_out) {
        return kScreenCaptureKitDeviceMac;
-@@ -237,6 +239,9 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -237,6 +238,9 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
    DCHECK(state_ == State::READY_TO_LAUNCH);
  
    if (receiver_on_io_thread) {
@@ -396,13 +419,22 @@ index f0f08a834f06c7669da6030640434308a5cbd056..819c295157cc8240ea2f9034491fb998
      std::ostringstream string_stream;
      string_stream
          << "InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync: Posting "
-@@ -257,12 +262,14 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -244,7 +248,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+         << device_id;
+     receiver_on_io_thread->OnLog(string_stream.str());
+   }
+-
++  LOG(ERROR) << "receiver_on_io_thread: ";
+   // Wrap the receiver, to trampoline all its method calls from the device
+   // to the IO thread.
+   auto receiver = std::make_unique<media::VideoFrameReceiverOnTaskRunner>(
+@@ -257,12 +261,14 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        base::BindPostTaskToCurrentDefault(base::BindOnce(
            &InProcessVideoCaptureDeviceLauncher::OnDeviceStarted,
            base::Unretained(this), callbacks, std::move(done_cb)));
 -
-+  LOG(INFO) << "stream type: " << stream_type;
-+  LOG(INFO) << "gum tab video capture: " << blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE;
++  LOG(ERROR) << "stream type: " << stream_type;
++  LOG(ERROR) << "gum tab video capture: " << blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE;
    switch (stream_type) {
 -    case blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE:
 -      // Only the Service-based device launcher is supported for device capture
@@ -416,7 +448,7 @@ index f0f08a834f06c7669da6030640434308a5cbd056..819c295157cc8240ea2f9034491fb998
  #if BUILDFLAG(ENABLE_SCREEN_CAPTURE)
      case blink::mojom::MediaStreamType::GUM_TAB_VIDEO_CAPTURE:
        start_capture_closure = base::BindOnce(
-@@ -274,10 +281,10 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -274,10 +280,14 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
      case blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE:
      case blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE:
      case blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE_THIS_TAB:
@@ -425,28 +457,100 @@ index f0f08a834f06c7669da6030640434308a5cbd056..819c295157cc8240ea2f9034491fb998
        const DesktopMediaID desktop_id = DesktopMediaID::Parse(device_id);
 -      if (desktop_id.is_null()) {
 -        DLOG(ERROR) << "Desktop media ID is null";
++        LOG(ERROR) << "desktop_id.is_null(): " << desktop_id.is_null();
++        LOG(ERROR) << "desktop_id.id: " << desktop_id.id;
++        LOG(ERROR) << "DesktopMediaID::kMacOsNativePickerId: " << DesktopMediaID::kMacOsNativePickerId;
 +      if (desktop_id.is_null() && desktop_id.id != DesktopMediaID::kMacOsNativePickerId) {
++        LOG(ERROR) << "in null case";
          start_capture_closure =
              base::BindOnce(std::move(after_start_capture_callback), nullptr);
          break;
-@@ -319,6 +326,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -319,13 +329,18 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
  #if defined(USE_AURA)
        bool allow_window_id = false;
  #elif BUILDFLAG(IS_MAC)
 +
        bool allow_window_id =
          desktop_id.id == DesktopMediaID::kMacOsNativePickerId;
++
++      LOG(ERROR) << "allow_window_id: " << allow_window_id << " desktop_id.id: " << desktop_id.id;
  #endif
-@@ -505,7 +513,8 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
+ 
+ #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
++      LOG(ERROR) << "in if block";
+       if (!allow_window_id &&
+           desktop_id.window_id != DesktopMediaID::kNullId) {
++        LOG(ERROR) << "allow_window_id: " << allow_window_id << " desktop_id.window_id: " << desktop_id.window_id;  
+         // For the other capturers, when a bug reports the type of capture it's
+         // easy enough to determine which capturer was used, but it's a little
+         // fuzzier with window capture.
+@@ -354,6 +369,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+                              kMaxNumberOfBuffers, std::move(receiver),
+                              std::move(receiver_on_io_thread)),
+           std::move(after_start_capture_callback));
++      LOG(ERROR) << "capture closure";
+       break;
+     }
+ #endif  // BUILDFLAG(ENABLE_SCREEN_CAPTURE)
+@@ -368,6 +384,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+ // above are NOTREACHED() then.
+ #if BUILDFLAG(ENABLE_SCREEN_CAPTURE)
+   state_ = State::DEVICE_START_IN_PROGRESS;
++  LOG(ERROR) << "start capture closure";
+   device_task_runner_->PostTask(FROM_HERE, std::move(start_capture_closure));
+ #endif
+ }
+@@ -418,9 +435,11 @@ void InProcessVideoCaptureDeviceLauncher::OnDeviceStarted(
+     base::OnceClosure done_cb,
+     std::unique_ptr<media::VideoCaptureDevice> device) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
++  LOG(ERROR) << "on device started";
+   State state_copy = state_;
+   state_ = State::READY_TO_LAUNCH;
+   if (!device) {
++    LOG(ERROR) << "device is null";
+     switch (state_copy) {
+       case State::DEVICE_START_IN_PROGRESS:
+         callbacks->OnDeviceLaunchFailed(
+@@ -439,13 +458,15 @@ void InProcessVideoCaptureDeviceLauncher::OnDeviceStarted(
+ 
+   auto launched_device = std::make_unique<InProcessLaunchedVideoCaptureDevice>(
+       std::move(device), device_task_runner_);
+-
++  LOG(ERROR) << "launched device";
+   switch (state_copy) {
+     case State::DEVICE_START_IN_PROGRESS:
++      LOG(ERROR) << "on device started, case 1";
+       callbacks->OnDeviceLaunched(std::move(launched_device));
+       std::move(done_cb).Run();
+       return;
+     case State::DEVICE_START_ABORTING:
++      LOG(ERROR) << "on device started, case 2";
+       launched_device.reset();
+       callbacks->OnDeviceLaunchAborted();
+       std::move(done_cb).Run();
+@@ -505,7 +526,8 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
      std::unique_ptr<media::VideoCaptureDeviceClient> device_client,
      ReceiveDeviceCallback result_callback) {
    DCHECK(device_task_runner_->BelongsToCurrentThread());
 -  DCHECK(!desktop_id.is_null());
-+  LOG(INFO) << "desktop id: " << desktop_id.id;
-+  // DCHECK(!desktop_id.is_null());
++  LOG(INFO) << "DO START DESKTOP CAPTURE ON DEVICE THREAD " << desktop_id.id;
++  DCHECK(!desktop_id.is_null() || desktop_id.id == DesktopMediaID::kMacOsNativePickerId);
  
    std::unique_ptr<media::VideoCaptureDevice> video_capture_device;
    DesktopCaptureImplementation implementation =
+@@ -514,8 +536,10 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
+   DVLOG(1) << __func__ << " implementation " << implementation << " type "
+            << desktop_id.type;
+   ReportDesktopCaptureImplementationAndType(implementation, desktop_id.type);
+-  if (video_capture_device)
++  if (video_capture_device) {
++    LOG(ERROR) << "allocate and start capture device";
+     video_capture_device->AllocateAndStart(params, std::move(device_client));
++  }
+   std::move(result_callback).Run(std::move(video_capture_device));
+ }
+ 
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_provider.cc b/content/browser/renderer_host/media/in_process_video_capture_provider.cc
 index 4462efa154a2be9cc25f82688fdbc7edf71a7bb1..4207dd1a79c16df5cc972943da32699f414f81fa 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_provider.cc
@@ -459,6 +563,111 @@ index 4462efa154a2be9cc25f82688fdbc7edf71a7bb1..4207dd1a79c16df5cc972943da32699f
  
  namespace content {
  
+diff --git a/content/browser/renderer_host/media/video_capture_manager.cc b/content/browser/renderer_host/media/video_capture_manager.cc
+index 2949c2abd5f97e66719ec0f77cb23813865bb701..bd11a0fcdc084da00407c80e4ee229a130fdedc8 100644
+--- a/content/browser/renderer_host/media/video_capture_manager.cc
++++ b/content/browser/renderer_host/media/video_capture_manager.cc
+@@ -283,6 +283,7 @@ void VideoCaptureManager::QueueStartDevice(
+     mojo::PendingRemote<media::mojom::ReadonlyVideoEffectsManager>
+         readonly_video_effects_manager) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
++  LOG(ERROR) << "QueueStartDevice";
+   DCHECK(lock_time_.is_null());
+   device_start_request_queue_.push_back(
+       CaptureDeviceStartRequest(std::move(controller), session_id, params,
+@@ -297,6 +298,7 @@ void VideoCaptureManager::DoStopDevice(VideoCaptureController* controller) {
+   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
+                "VideoCaptureManager::DoStopDevice");
+   DCHECK(base::Contains(controllers_, controller));
++  LOG(ERROR) << "DoStopDevice called for stream type: " << controller->stream_type();
+ 
+   // If start request has not yet started processing, i.e. if it is not at the
+   // beginning of the queue, remove it from the queue.
+@@ -327,6 +329,7 @@ void VideoCaptureManager::DoStopDevice(VideoCaptureController* controller) {
+ 
+ void VideoCaptureManager::ProcessDeviceStartRequestQueue() {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
++  LOG(ERROR) << "ProcessDeviceStartRequestQueue";
+   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
+                "VideoCaptureManager::ProcessDeviceStartRequestQueue");
+   auto request = device_start_request_queue_.begin();
+@@ -335,7 +338,7 @@ void VideoCaptureManager::ProcessDeviceStartRequestQueue() {
+ 
+   scoped_refptr<VideoCaptureController> const controller =
+       request->controller();
+-
++  LOG(ERROR) << "ProcessDeviceStartRequestQueue, controller: " << controller->device_id();
+   EmitLogMessage("VideoCaptureManager::ProcessDeviceStartRequestQueue", 3);
+   // The unit test VideoCaptureManagerTest.OpenNotExisting requires us to fail
+   // synchronously if the stream_type is MEDIA_DEVICE_VIDEO_CAPTURE and no
+@@ -351,6 +354,7 @@ void VideoCaptureManager::ProcessDeviceStartRequestQueue() {
+     const media::VideoCaptureDeviceInfo* device_info =
+         GetDeviceInfoById(controller->device_id());
+     if (!device_info) {
++      LOG(ERROR) << "ProcessDeviceStartRequestQueue, device_info not found";
+       OnDeviceLaunchFailed(
+           controller.get(),
+           media::VideoCaptureError::
+@@ -381,6 +385,7 @@ void VideoCaptureManager::ProcessDeviceStartRequestQueue() {
+ void VideoCaptureManager::OnDeviceLaunched(VideoCaptureController* controller) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+   std::ostringstream string_stream;
++  LOG(ERROR) << "OnDeviceLaunched";
+   string_stream << "Launching device has succeeded. device_id = "
+                 << controller->device_id();
+   EmitLogMessage(string_stream.str(), 1);
+@@ -391,7 +396,9 @@ void VideoCaptureManager::OnDeviceLaunched(VideoCaptureController* controller) {
+   if (blink::IsVideoDesktopCaptureMediaType(controller->stream_type())) {
+     const media::VideoCaptureSessionId session_id =
+         device_start_request_queue_.front().session_id();
++    LOG(ERROR) << "isvideodesktopcapturemediatype";
+     DCHECK_NE(session_id, FakeSessionId());
++    LOG(ERROR) << "maybe post desktop capture window id";
+     MaybePostDesktopCaptureWindowId(session_id);
+   }
+ 
+@@ -407,7 +414,9 @@ void VideoCaptureManager::OnDeviceLaunched(VideoCaptureController* controller) {
+     }
+   }
+ 
++  LOG(ERROR) << "OnDeviceLaunched, device_start_request_queue_.pop_front";
+   device_start_request_queue_.pop_front();
++  LOG(ERROR) << "OnDeviceLaunched, ProcessDeviceStartRequestQueue";
+   ProcessDeviceStartRequestQueue();
+ }
+ 
+@@ -467,6 +476,7 @@ void VideoCaptureManager::ConnectClient(
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+   TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
+                "VideoCaptureManager::ConnectClient");
++  LOG(ERROR) << "ConnectClient";
+   {
+     std::ostringstream string_stream;
+     string_stream << "ConnectClient: session_id = " << session_id
+@@ -479,6 +489,7 @@ void VideoCaptureManager::ConnectClient(
+   scoped_refptr<VideoCaptureController> controller =
+       GetOrCreateController(session_id, params);
+   if (!controller) {
++    LOG(ERROR) << "ConnectClient, controller not found";
+     std::move(done_cb).Run(nullptr);
+     return;
+   }
+@@ -502,6 +513,7 @@ void VideoCaptureManager::ConnectClient(
+     string_stream
+         << "VideoCaptureManager queueing device start for device_id = "
+         << controller->device_id();
++    LOG(ERROR) << "ConnectClient, videocapturemanager queueing device start for device_id = " << controller->device_id();
+     EmitLogMessage(string_stream.str(), 1);
+     mojo::PendingRemote<video_effects::mojom::VideoEffectsProcessor>
+         video_effects_processor;
+@@ -524,6 +536,7 @@ void VideoCaptureManager::ConnectClient(
+           readonly_video_effects_manager.InitWithNewPipeAndPassReceiver());
+     }
+ #endif  // BUILDFLAG(ENABLE_VIDEO_EFFECTS)
++    LOG(ERROR) << "ConnectClient, videocapturemanager queueing device start for device_id = " << controller->device_id();
+     QueueStartDevice(session_id, controller, params,
+                      std::move(video_effects_processor),
+                      std::move(readonly_video_effects_manager));
 diff --git a/content/public/browser/desktop_media_id.cc b/content/public/browser/desktop_media_id.cc
 index b39b684ff84baaf292eef1a23b7f9fb4585023c5..55507f7a782a9472800221f1e908618a5bad2914 100644
 --- a/content/public/browser/desktop_media_id.cc
@@ -489,3 +698,36 @@ index b39b684ff84baaf292eef1a23b7f9fb4585023c5..55507f7a782a9472800221f1e908618a
        NOTREACHED();
      case TYPE_SCREEN:
        prefix = kScreenPrefix;
+diff --git a/media/base/media_switches.cc b/media/base/media_switches.cc
+index c458c1e87dc46cf4f92d5c4423ab837f29067aa0..1749fb96bbd0c69ad5c6377eabb4bbab12e3f7c3 100644
+--- a/media/base/media_switches.cc
++++ b/media/base/media_switches.cc
+@@ -356,7 +356,7 @@ BASE_FEATURE(kMacLoopbackAudioForScreenShare,
+ // is required to avoid recurring permission dialogs.
+ BASE_FEATURE(kUseSCContentSharingPicker,
+              "UseSCContentSharingPicker",
+-             base::FEATURE_DISABLED_BY_DEFAULT);
++             base::FEATURE_ENABLED_BY_DEFAULT);
+ #endif  // BUILDFLAG(IS_MAC)
+ 
+ #if BUILDFLAG(IS_LINUX)
+diff --git a/media/capture/video/file_video_capture_device.cc b/media/capture/video/file_video_capture_device.cc
+index 5090aae198e4e0e52212eb502bb4de0475c79b04..c74887a14bcc4249e433d2afd545029d36f744bf 100644
+--- a/media/capture/video/file_video_capture_device.cc
++++ b/media/capture/video/file_video_capture_device.cc
+@@ -482,6 +482,7 @@ void FileVideoCaptureDevice::AllocateAndStart(
+   CHECK(!capture_thread_.IsRunning());
+ 
+   capture_thread_.Start();
++  LOG(ERROR) << "allocate and start file video capture device";
+   capture_thread_.task_runner()->PostTask(
+       FROM_HERE,
+       base::BindOnce(&FileVideoCaptureDevice::OnAllocateAndStart,
+@@ -604,6 +605,7 @@ void FileVideoCaptureDevice::TakePhoto(TakePhotoCallback callback) {
+ void FileVideoCaptureDevice::OnAllocateAndStart(
+     const VideoCaptureParams& params,
+     std::unique_ptr<VideoCaptureDevice::Client> client) {
++  LOG(ERROR) << "on allocate and start file video capture device";
+   DCHECK(capture_thread_.task_runner()->BelongsToCurrentThread());
+ 
+   client_ = std::move(client);
