@@ -433,7 +433,6 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   SetBounds(gfx::Rect(GetPosition(), bounds.size()), false);
 #endif
 
-  SetOwnedByWidget(false);
   RegisterDeleteDelegateCallback(base::BindOnce(
       [](NativeWindowViews* window) {
         if (window->is_modal() && window->parent()) {

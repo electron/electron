@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Mon, 14 Apr 2025 12:06:06 -0500
+Subject: chore: "grandfather in" electron view delegates
+
+Block further usage of WidgetDelegateView | https://chromium-review.googlesource.com/c/chromium/src/+/6441736
+
+diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
+index 7c2463cb91d00de2b0fa4f10221ea960be860d9a..3284a8d60b1b6e0ca82fff6e8c2d175ed8c1fcee 100644
+--- a/ui/views/widget/widget_delegate.h
++++ b/ui/views/widget/widget_delegate.h
+@@ -169,6 +169,10 @@ namespace data_controls {
+ class DesktopDataControlsDialog;
+ }
+ 
++namespace electron {
++class DevToolsWindowDelegate;
++}
++
+ namespace enterprise_connectors {
+ class ContentAnalysisDialog;
+ class ContentAnalysisDialogBehaviorBrowserTest;
+@@ -371,6 +375,7 @@ class VIEWS_EXPORT WidgetDelegate {
+ 
+   class OwnedByWidgetPassKey {
+    private:
++    friend class electron::DevToolsWindowDelegate;
+     // DO NOT ADD TO THIS LIST!
+     // These existing cases are "grandfathered in", but there shouldn't be more.
+     // See comments atop `SetOwnedByWidget()`.

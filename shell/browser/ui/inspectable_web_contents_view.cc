@@ -35,7 +35,7 @@ class DevToolsWindowDelegate : public views::ClientView,
         shell_(shell),
         view_(view),
         widget_(widget) {
-    SetOwnedByWidget(true);
+    SetOwnedByWidget(OwnedByWidgetPassKey{});
     set_owned_by_client();
 
     if (shell->GetDelegate())
