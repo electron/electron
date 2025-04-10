@@ -15,7 +15,7 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 0f720a2d79f499d8443dcd3746e1b3fc2c02f4db..fb7f8dbde8725ff0609bca4f121482541558eabd 100644
+index 0f720a2d79f499d8443dcd3746e1b3fc2c02f4db..bdd8e029fa431a81cae0c2f99db2b36a5930f863 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
 @@ -57,7 +57,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
@@ -63,7 +63,7 @@ index 0f720a2d79f499d8443dcd3746e1b3fc2c02f4db..fb7f8dbde8725ff0609bca4f12148254
 +        ->GetPermissionController()
 +        ->RequestPermissionsFromCurrentDocument(
 +            rfh,
-+            content::PermissionRequestDescription(permission_types,
++            content::PermissionRequestDescription(std::move(permission_types),
 +                                                  request.user_gesture),
 +            base::BindOnce(
 +                &MediaStreamDevicesController::PromptAnsweredGroupedRequest,
