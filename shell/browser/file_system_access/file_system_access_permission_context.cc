@@ -163,7 +163,7 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
 
   // Add the hard-coded rules to the dynamic rules.
   for (auto const& [key, rule_path, type] :
-       ChromeFileSystemAccessPermissionContext::kBlockedPaths) {
+       ChromeFileSystemAccessPermissionContext::GenerateBlockedPath()) {
     if (key == ChromeFileSystemAccessPermissionContext::kNoBasePathKey) {
       rules.emplace_back(base::FilePath{rule_path}, type);
     } else if (base::FilePath block_path;
