@@ -36,6 +36,9 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   ElectronExtensionLoader(const ElectronExtensionLoader&) = delete;
   ElectronExtensionLoader& operator=(const ElectronExtensionLoader&) = delete;
 
+  void OnAddNewOrUpdatedExtension(const Extension* extension) override {}
+  void UpdateExternalExtensionAlert() override {}
+
   // Loads an unpacked extension from a directory synchronously. Returns the
   // extension on success, or nullptr otherwise.
   void LoadExtension(const base::FilePath& extension_dir,
