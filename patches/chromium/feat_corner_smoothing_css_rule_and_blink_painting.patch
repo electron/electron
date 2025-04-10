@@ -154,7 +154,7 @@ index 10ab8a458fb3348476a6e904f684af77c55b103a..37339df2a5601b59abc50fe75fb844e1
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index ae725ec8107879ab8daada14d3485f4cf05a119a..2e41b29fba1912e17dee2b0e92973627f32d1143 100644
+index 4b9be7ff4ddaf7116be114b548ab640f231f4ee4..ba9dafd1dec2a83093678538b2beecc41f84781a 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 @@ -12045,5 +12045,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
@@ -268,28 +268,28 @@ index f4cdee12ea4352067f5de3e074e43d51ef56d2e5..6377e4b1ea8aa46b0bf69f8420b6c439
    ],
  }
 diff --git a/third_party/blink/renderer/core/paint/box_painter_base.cc b/third_party/blink/renderer/core/paint/box_painter_base.cc
-index 503dd1a0248099c86cd4e3d5a3d0d66158831e34..ccf69f328100ce038fc8e49f17e3099a6e0305a5 100644
+index 71e68a3bfc83869d44da560e3eb151a8baced676..bdef42d23531d5c0dbcc1f7ba18e4d621eab790f 100644
 --- a/third_party/blink/renderer/core/paint/box_painter_base.cc
 +++ b/third_party/blink/renderer/core/paint/box_painter_base.cc
-@@ -416,16 +416,20 @@ void BoxPainterBase::PaintInsetBoxShadow(const PaintInfo& info,
-     ContouredRect inner_rounded_rect(
-         FloatRoundedRect(inner_rect, bounds.GetRadii()));
-     ApplySpreadToShadowShape(inner_rounded_rect, -shadow.Spread());
+@@ -412,16 +412,20 @@ void BoxPainterBase::PaintInsetBoxShadow(const PaintInfo& info,
+     ContouredRect inner_contoured_rect(
+         FloatRoundedRect(inner_rect, bounds.GetRadii()),
+         bounds.GetCornerCurvature());
 +    ContouredRect contoured_bounds(
 +        bounds, ContouredBorderGeometry::ContouredBorder(
 +                    style, PhysicalRect::EnclosingRect(bounds.Rect()))
 +                    .GetCornerCurvature());
-     if (inner_rounded_rect.IsEmpty()) {
+     ApplySpreadToShadowShape(inner_contoured_rect, -shadow.Spread());
+     if (inner_contoured_rect.IsEmpty()) {
        // |AutoDarkMode::Disabled()| is used because |shadow_color| has already
        // been adjusted for dark mode.
--      context.FillRoundedRect(bounds, shadow_color, AutoDarkMode::Disabled());
+-      context.FillContouredRect(bounds, shadow_color, AutoDarkMode::Disabled());
 +      context.FillContouredRect(contoured_bounds, shadow_color, AutoDarkMode::Disabled());
        continue;
      }
      GraphicsContextStateSaver state_saver(context);
      if (bounds.IsRounded()) {
-       // TODO(crbug.com/397459628) render corner-shape with box-shadow
--      context.ClipContouredRect(ContouredRect(bounds));
+-      context.ClipContouredRect(bounds);
 +      context.ClipContouredRect(contoured_bounds);
      } else {
        context.Clip(bounds.Rect());
