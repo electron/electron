@@ -37,7 +37,6 @@ the illusion of a circular window.
   open on the user's system).
 * The window will not be transparent when DevTools is opened.
 * On _Windows_:
-  * Transparent windows will not work when DWM is disabled.
   * Transparent windows can not be maximized using the Windows system menu or by double
   clicking the title bar. The reasoning behind this can be seen on
   PR [#28207](https://github.com/electron/electron/pull/28207).
