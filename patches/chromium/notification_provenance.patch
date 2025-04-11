@@ -31,10 +31,10 @@ index 178afda936a25643320b6e36a0497cbfbc370770..1a795c5059b3e41539c1f34a8d2ad23a
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index 776c9b4bad591bb0174457caadf5bcab5ffc490b..b5475b328299d823c2cee8cae2fc9111ebc033cb 100644
+index 1b3d77e66432b1f7b8c6f87634644776cd9ccb5b..147da7ad0c830c2c8e0f62f9df0e365a14764280 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
-@@ -84,12 +84,14 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
+@@ -85,12 +85,14 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
      BrowserContext* browser_context,
      scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
      RenderProcessHost* render_process_host,
@@ -49,7 +49,7 @@ index 776c9b4bad591bb0174457caadf5bcab5ffc490b..b5475b328299d823c2cee8cae2fc9111
        browser_context_(browser_context),
        service_worker_context_(std::move(service_worker_context)),
        render_process_host_id_(render_process_host->GetDeprecatedID()),
-@@ -181,7 +183,7 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
+@@ -182,7 +184,7 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
        creator_type_);
  
    browser_context_->GetPlatformNotificationService()->DisplayNotification(
@@ -92,10 +92,10 @@ index 07e06ac6a3f14081f61f44620b537e5442419660..f2b8a977277c1f1ab014edd007d5df76
          contents_.get()->GetPrimaryMainFrame()->GetWeakDocumentPtr(),
          RenderProcessHost::NotificationServiceCreatorType::kDocument,
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 09ddcfdcf1bbdc35f8e2ad9c89e05f76a6231f68..e3e87a7d08cb2f55706d7d4f06245817811bc83b 100644
+index d840a16e3abfc81b1c45b12827462fbda8dfac43..d18b0fff1ecdde0aece2a57dace5330c6b3f37f5 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
-@@ -280,6 +280,7 @@ void PlatformNotificationContextImpl::Shutdown() {
+@@ -281,6 +281,7 @@ void PlatformNotificationContextImpl::Shutdown() {
  
  void PlatformNotificationContextImpl::CreateService(
      RenderProcessHost* render_process_host,
@@ -103,7 +103,7 @@ index 09ddcfdcf1bbdc35f8e2ad9c89e05f76a6231f68..e3e87a7d08cb2f55706d7d4f06245817
      const blink::StorageKey& storage_key,
      const GURL& document_url,
      const WeakDocumentPtr& weak_document_ptr,
-@@ -288,7 +289,7 @@ void PlatformNotificationContextImpl::CreateService(
+@@ -289,7 +290,7 @@ void PlatformNotificationContextImpl::CreateService(
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    services_.push_back(std::make_unique<BlinkNotificationServiceImpl>(
        this, browser_context_, service_worker_context_, render_process_host,
@@ -113,7 +113,7 @@ index 09ddcfdcf1bbdc35f8e2ad9c89e05f76a6231f68..e3e87a7d08cb2f55706d7d4f06245817
  }
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 05d3a12dd84c7005d46cc73b312f97ef418d96f5..4765de982802541b3efc7211d106acc72518fd0a 100644
+index 5be62a3fb27e37f3c1db6b811172f6dfebe18f61..34349f9832fe4b9a3d48db613a789afb87cb2a68 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -47,6 +47,7 @@ class PlatformNotificationServiceProxy;

@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 6253aef7afa9f7a5b720f90ad5ce708ce4156892..2f014585c996b002b00be264eaabc556ed69e523 100644
+index 74dcb279e10b4197741d5af1913485a668e0d10c..a4a9af0ae02f06d71cebe95281960dd01e046307 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1045,6 +1045,7 @@ component("base") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index b9a093b044a5ed42b593ef662c7a6c346e5248e1..e299ee88e5313e989aa5d13a5b41c0b21d2022bf 100644
+index 478e42621e0c773bcc2ebcfa9feb7803fbcc7e96..bc16ddc4565ba2815177a9816ea1be3c65350d66 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -662,6 +662,7 @@ static_library("test_support") {
@@ -824,7 +824,7 @@ index b9a093b044a5ed42b593ef662c7a6c346e5248e1..e299ee88e5313e989aa5d13a5b41c0b2
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3278,6 +3281,7 @@ test("content_unittests") {
+@@ -3279,6 +3282,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1584,7 +1584,7 @@ index dcf493d62990018040a3f84b6f875af737bd2214..3d1c4dcc9ee0bbfdac15f40d9c74e9f3
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 6207f4941839fdc5a44dc5fe61f50281503623d4..d2d635c1bd2e0497b7fbab331b48e753fae1013e 100644
+index 30440d1b5ba071c8cf2076e7e7acb24681f78a2f..ca18e61ff2eb743fabeb10af06c208f84b526dd8 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
 @@ -295,6 +295,7 @@ component("platform") {
@@ -1678,7 +1678,7 @@ index 6846060ef9622d8fc8d1d6c8da16e2f1b785e6bd..05c22db87e882b246bd7034e027cf149
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 59481482a9c8b0cbda92c590ec7f538cf0caeb4e..0d36bc7be067c8e9b2f2c20679bc8172b593a5f4 100644
+index 8abb389faddb435980c1c06c3d69e33d5bf13881..62bb9b60b54252a44590616142a0beabbf6b55bf 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -365,6 +365,13 @@ component("base") {
