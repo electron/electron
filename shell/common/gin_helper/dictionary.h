@@ -183,6 +183,16 @@ class Dictionary : public gin::Dictionary {
 
   bool IsEmpty() const { return isolate() == nullptr || GetHandle().IsEmpty(); }
 
+  bool IsEmptyObject() const {
+    if (IsEmpty())
+      return true;
+
+    v8::Local<v8::Context> context = isolate()->GetCurrentContext();
+    v8::Local<v8::Array> props =
+        GetHandle()->GetOwnPropertyNames(context).ToLocalChecked();
+    return props->Length() == 0;
+  }
+
   v8::Local<v8::Object> GetHandle() const {
     return gin::ConvertToV8(isolate(),
                             *static_cast<const gin::Dictionary*>(this))
