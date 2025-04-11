@@ -2944,9 +2944,8 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
     return;
   }
 
-  // If the user has passed a deviceName use it, otherwise use default printer.
+  // Use user-passed deviceName, otherwise default printer.
   print_settings.Set(printing::kSettingDeviceName, info.second);
-
   if (!print_settings.FindInt(printing::kSettingDpiHorizontal)) {
     gfx::Size dpi = GetDefaultPrinterDPI(info.second);
     print_settings.Set(printing::kSettingDpiHorizontal, dpi.width());
@@ -3002,6 +3001,17 @@ void WebContents::Print(gin::Arguments* args) {
   if (args->Length() == 2 && !args->GetNext(&callback)) {
     gin_helper::ErrorThrower(args->isolate())
         .ThrowError("webContents.print(): Invalid optional callback provided.");
+    return;
+  }
+
+  if (options.IsEmptyObject()) {
+    auto* print_view_manager =
+        PrintViewManagerElectron::FromWebContents(web_contents());
+    if (!print_view_manager)
+      return;
+
+    content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
+    print_view_manager->PrintNow(rfh, std::move(settings), std::move(callback));
     return;
   }
 
