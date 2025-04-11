@@ -187,7 +187,7 @@ index 96c9563aac5847e742de5d9c9236f78bcb6cfd9c..73c9d585579ad5bdc407687b8becd0b7
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 8bb497717298886bc6db04ebcba9be1f3b29ab73..60c4a301c32a46cdc332cccd1cd4ae78802ee8b9 100644
+index 9e01e61bf1fce448a93eaa3d5f363fc835b78538..d210af6fb317c922a8415a67a7ccd1d8a4a88ea1 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
 @@ -190,11 +190,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -237,7 +237,7 @@ index 8bb497717298886bc6db04ebcba9be1f3b29ab73..60c4a301c32a46cdc332cccd1cd4ae78
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -455,9 +481,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -456,9 +482,26 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
