@@ -47,7 +47,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   // Copy the show setting to webContents, but only if we don't want to paint
   // when initially hidden
   bool paint_when_initially_hidden = true;
-  options.Get("paintWhenInitiallyHidden", &paint_when_initially_hidden);
+  options.Get(options::kPaintWhenInitiallyHidden, &paint_when_initially_hidden);
   if (!paint_when_initially_hidden) {
     bool show = true;
     options.Get(options::kShow, &show);
