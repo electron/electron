@@ -83,6 +83,48 @@ const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
     height_microns: 148000,
     name: 'ISO_A6',
     width_microns: 105000
+  },
+  B0: {
+    custom_display_name: 'B0',
+    height_microns: 1414000,
+    name: 'ISO_B0',
+    width_microns: 1000000
+  },
+  B1: {
+    custom_display_name: 'B1',
+    height_microns: 1000000,
+    name: 'ISO_B1',
+    width_microns: 707000
+  },
+  B2: {
+    custom_display_name: 'B2',
+    height_microns: 707000,
+    name: 'ISO_B2',
+    width_microns: 500000
+  },
+  B3: {
+    custom_display_name: 'B3',
+    height_microns: 500000,
+    name: 'ISO_B3',
+    width_microns: 353000
+  },
+  B4: {
+    custom_display_name: 'B4',
+    height_microns: 353000,
+    name: 'ISO_B4',
+    width_microns: 250000
+  },
+  B5: {
+    custom_display_name: 'B5',
+    height_microns: 250000,
+    name: 'ISO_B5',
+    width_microns: 176000
+  },
+  B6: {
+    custom_display_name: 'B6',
+    height_microns: 176000,
+    name: 'ISO_B6',
+    width_microns: 125000
   }
 } as const;
 
@@ -97,7 +139,14 @@ const paperFormats: Record<string, ElectronInternal.PageSize> = {
   a3: { width: 11.7, height: 16.54 },
   a4: { width: 8.27, height: 11.7 },
   a5: { width: 5.83, height: 8.27 },
-  a6: { width: 4.13, height: 5.83 }
+  a6: { width: 4.13, height: 5.83 },
+  b0: { width: 39.37, height: 55.67 },
+  b1: { width: 27.83, height: 39.37 },
+  b2: { width: 19.69, height: 27.83 },
+  b3: { width: 13.9, height: 19.69 },
+  b4: { width: 9.84, height: 13.9 },
+  b5: { width: 6.93, height: 9.84 },
+  b6: { width: 4.92, height: 6.93 }
 } as const;
 
 // The minimum micron size Chromium accepts is that where:
