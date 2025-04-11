@@ -14,6 +14,10 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (37.0)
 
+### Removed: `ImageView` browser module
+
+This undocumented module has been removed.
+
 ### Removed: `null` value for `session` property in `ProtocolResponse`
 
 This deprecated feature has been removed.
