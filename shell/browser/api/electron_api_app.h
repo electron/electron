@@ -20,6 +20,7 @@
 #include "electron/mas.h"
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
+#include "net/base/features.h"
 #include "net/ssl/client_cert_identity.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"

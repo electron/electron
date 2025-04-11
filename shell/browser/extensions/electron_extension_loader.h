@@ -36,6 +36,9 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   ElectronExtensionLoader(const ElectronExtensionLoader&) = delete;
   ElectronExtensionLoader& operator=(const ElectronExtensionLoader&) = delete;
 
+  void OnAddNewOrUpdatedExtension(const Extension* extension) override;
+  void UpdateExternalExtensionAlert() override;
+
   // Loads an unpacked extension from a directory synchronously. Returns the
   // extension on success, or nullptr otherwise.
   void LoadExtension(const base::FilePath& extension_dir,
@@ -84,10 +87,8 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   void ShowExtensionDisabledError(const Extension* extension,
                                   bool is_remote_install) override;
   void FinishDelayedInstallationsIfAny() override;
-  bool CanAddExtension(const Extension* extension) override;
   bool CanEnableExtension(const Extension* extension) override;
   bool CanDisableExtension(const Extension* extension) override;
-  bool ShouldBlockExtension(const Extension* extension) override;
   void GrantActivePermissions(const Extension* extension) override;
 
   raw_ptr<content::BrowserContext> browser_context_;  // Not owned.

@@ -99,3 +99,34 @@ index a179c9bc02158130f4b15bf8022721f4b53a8303..8fd3f42725e6618737110459b1b1021e
    if (error == errSecItemNotFound) {
      std::string password = AddRandomPasswordToKeychain(
          *keychain_, GetServiceName(), GetAccountName());
+diff --git a/crypto/apple_keychain.h b/crypto/apple_keychain.h
+index 59371dc86e02a361971a4abeb2de0c607d5babd6..e148359453a22e8301c0665dd994fc5bbb29f1dc 100644
+--- a/crypto/apple_keychain.h
++++ b/crypto/apple_keychain.h
+@@ -59,6 +59,10 @@ class CRYPTO_EXPORT AppleKeychain {
+                                       UInt32 password_length,
+                                       const void* password_data,
+                                       AppleSecKeychainItemRef* item) const;
++
++#if BUILDFLAG(IS_MAC)
++  virtual OSStatus ItemDelete(AppleSecKeychainItemRef item) const;
++#endif  // !BUILDFLAG(IS_MAC)
+ };
+ 
+ #if BUILDFLAG(IS_MAC)
+diff --git a/crypto/apple_keychain_mac.cc b/crypto/apple_keychain_mac.cc
+index 1e390075331da8405d1295ca633da25092e8f86d..a2c91d433e84c781df9b3f794c4957b4f6a596bf 100644
+--- a/crypto/apple_keychain_mac.cc
++++ b/crypto/apple_keychain_mac.cc
+@@ -86,6 +86,11 @@ OSStatus AppleKeychain::AddGenericPassword(
+       account_name, password_length, password_data, item);
+ }
+ 
++OSStatus AppleKeychain::ItemDelete(AppleSecKeychainItemRef item) const {
++  base::AutoLock lock(GetMacSecurityServicesLock());
++  return SecKeychainItemDelete(item);
++}
++
+ ScopedKeychainUserInteractionAllowed::ScopedKeychainUserInteractionAllowed(
+     Boolean allowed,
+     OSStatus* status) {

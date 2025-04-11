@@ -67,12 +67,13 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   using BluetoothPairingHandler =
       base::RepeatingCallback<void(gin_helper::Dictionary, PairCallback)>;
 
-  void RequestPermissionWithDetails(blink::PermissionType permission,
-                                    content::RenderFrameHost* render_frame_host,
-                                    const GURL& requesting_origin,
-                                    bool user_gesture,
-                                    base::Value::Dict details,
-                                    StatusCallback response_callback);
+  void RequestPermissionWithDetails(
+      blink::mojom::PermissionDescriptorPtr permission,
+      content::RenderFrameHost* render_frame_host,
+      const GURL& requesting_origin,
+      bool user_gesture,
+      base::Value::Dict details,
+      StatusCallback response_callback);
 
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);

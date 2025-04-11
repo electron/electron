@@ -9,7 +9,7 @@ at rutime. It would be best if eventually all usages of this property were
 replaced with clean ozone native implementations.
 
 diff --git a/ui/ozone/platform/x11/ozone_platform_x11.cc b/ui/ozone/platform/x11/ozone_platform_x11.cc
-index 35023e37a34bbcdcfa09cbdad55648f8e0419b37..9a10db499bd0a48feb1c96f87e71af4ffb114d75 100644
+index dcca94fc47fb95a431cfc7c7c9765288f35d3440..c8ae2c0b4b26e1547c0bdfd81ac3ae0d51bab76b 100644
 --- a/ui/ozone/platform/x11/ozone_platform_x11.cc
 +++ b/ui/ozone/platform/x11/ozone_platform_x11.cc
 @@ -194,6 +194,7 @@ class OzonePlatformX11 : public OzonePlatform,
@@ -18,10 +18,10 @@ index 35023e37a34bbcdcfa09cbdad55648f8e0419b37..9a10db499bd0a48feb1c96f87e71af4f
        properties->skia_can_fall_back_to_x11 = true;
 +      properties->electron_can_call_x11 = true;
        properties->platform_shows_drag_image = false;
-       properties->supports_global_application_menus = true;
        properties->app_modal_dialogs_use_event_blocker = true;
+       properties->fetch_buffer_formats_for_gmb_on_gpu = true;
 diff --git a/ui/ozone/public/ozone_platform.h b/ui/ozone/public/ozone_platform.h
-index e35bd769c53a544b8a1387f6c25e1ae376643b3d..be7d09d9003011ef4f609f66b8c51a12aa410d80 100644
+index 1384e1620dc07874e2103d12cd6f31da5ca7a821..7c8639f6f57fd3b8977bbb3d811edf466b4ccc64 100644
 --- a/ui/ozone/public/ozone_platform.h
 +++ b/ui/ozone/public/ozone_platform.h
 @@ -129,6 +129,10 @@ class COMPONENT_EXPORT(OZONE) OzonePlatform {

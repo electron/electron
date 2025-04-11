@@ -10,6 +10,7 @@
 #include "components/content_settings/core/common/content_settings.h"
 #include "components/webrtc/media_stream_devices_controller.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/permission_descriptor_util.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/electron_browser_context.h"
@@ -220,7 +221,9 @@ void WebContentsPermissionHelper::RequestPermission(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermissionWithDetails(
-      permission, requesting_frame, origin, false, std::move(details),
+      content::PermissionDescriptorUtil::
+          CreatePermissionDescriptorForPermissionType(permission),
+      requesting_frame, origin, false, std::move(details),
       base::BindOnce(&OnPermissionResponse, std::move(callback)));
 }
 
