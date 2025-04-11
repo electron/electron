@@ -112,7 +112,7 @@ index 72188dae668f2bd91b8b7f181448f459600a82c2..b3dae05e160160cc8f2decee5af78c21
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index f8a2ecd45628472c510526344ad332e4df1172d6..9547560b97021c3b3162b986245c9b507b737bd5 100644
+index c02bcd477c1dffb445120bf22c35904065f41b48..9c6781c683a9d9b7f4ce71057124a272db947e27 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -380,6 +380,9 @@ URLLoader::URLLoader(
@@ -134,7 +134,7 @@ index f8a2ecd45628472c510526344ad332e4df1172d6..9547560b97021c3b3162b986245c9b50
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1452,6 +1455,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1373,6 +1376,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -155,10 +155,10 @@ index f8a2ecd45628472c510526344ad332e4df1172d6..9547560b97021c3b3162b986245c9b50
  
    ad_auction_event_record_request_helper_.HandleResponse(*url_request_);
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index ec337dde5f949db02593e078d7703de57d127353..5b19991ac0bd54d4463d67129a16d65492f00bc3 100644
+index 57b3f155d59af8ec354871a194a8093cba0de195..388324c89f710d6a54ba584b88066f5860563c26 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -648,6 +648,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -640,6 +640,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  
