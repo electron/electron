@@ -14,6 +14,12 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (37.0)
 
+### Behavior Changed: WebUSB and WebSerial Blocklist Support
+
+[WebUSB](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API) and [Web Serial](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API) now support the [WebUSB Blocklist](https://wicg.github.io/webusb/#blocklist) and [Web Serial Blocklist](https://wicg.github.io/serial/#blocklist) used by Chromium and outlined in their respective specifications.
+
+To disable these, users can pass `disable-usb-blocklist` and `disable-serial-blocklist` as command line flags.
+
 ### Removed: `null` value for `session` property in `ProtocolResponse`
 
 This deprecated feature has been removed.
