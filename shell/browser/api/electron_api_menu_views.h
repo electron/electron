@@ -22,7 +22,6 @@ class MenuViews : public Menu {
  protected:
   // Menu
   void PopupAt(BaseWindow* window,
-               std::optional<WebFrameMain*> frame,
                int x,
                int y,
                int positioning_item,

@@ -22,7 +22,6 @@ class Arguments;
 namespace electron::api {
 
 class BaseWindow;
-class WebFrameMain;
 
 class Menu : public gin::Wrappable<Menu>,
              public gin_helper::EventEmitterMixin<Menu>,
@@ -82,7 +81,6 @@ class Menu : public gin::Wrappable<Menu>,
   void OnMenuWillShow(ui::SimpleMenuModel* source) override;
 
   virtual void PopupAt(BaseWindow* window,
-                       std::optional<WebFrameMain*> frame,
                        int x,
                        int y,
                        int positioning_item,
