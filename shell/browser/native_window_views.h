@@ -190,7 +190,6 @@ class NativeWindowViews : public NativeWindow,
   void OnWidgetDestroyed(views::Widget* widget) override;
 
   // views::WidgetDelegate:
-  views::View* GetInitiallyFocusedView() override;
   bool CanMaximize() const override;
   bool CanMinimize() const override;
   std::u16string GetWindowTitle() const override;
@@ -237,9 +236,6 @@ class NativeWindowViews : public NativeWindow,
   void MoveBehindTaskBarIfNeeded();
 
   RootView root_view_{this};
-
-  // The view should be focused by default.
-  raw_ptr<views::View> focused_view_ = nullptr;
 
   // The "resizable" flag on Linux is implemented by setting size constraints,
   // we need to make sure size constraints are restored when window becomes
