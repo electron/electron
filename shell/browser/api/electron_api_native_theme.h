@@ -48,6 +48,7 @@ class NativeTheme final : public gin::Wrappable<NativeTheme>,
   ui::NativeTheme::ThemeSource GetThemeSource() const;
   bool ShouldUseDarkColors();
   bool ShouldUseHighContrastColors();
+  bool ShouldUseDarkColorsForSystemIntegratedUI();
   bool ShouldUseInvertedColorScheme();
   bool InForcedColorsMode();
   bool GetPrefersReducedTransparency();
