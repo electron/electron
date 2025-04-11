@@ -20,6 +20,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/color_util.h"
@@ -35,6 +36,7 @@
 #include "shell/renderer/content_settings_observer.h"
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_autofill_agent.h"
+#include "shell/renderer/electron_render_frame_observer.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
@@ -68,6 +70,15 @@
 #include "components/spellcheck/renderer/spellcheck.h"
 #include "components/spellcheck/renderer/spellcheck_provider.h"
 #endif
+
+#if BUILDFLAG(ENABLE_SPELLCHECK)
+#include "components/spellcheck/renderer/spellcheck.h"
+#include "components/spellcheck/renderer/spellcheck_provider.h"
+
+#if BUILDFLAG(HAS_SPELLCHECK_PANEL)
+#include "components/spellcheck/renderer/spellcheck_panel.h"
+#endif  // BUILDFLAG(HAS_SPELLCHECK_PANEL)
+#endif  // BUILDFLAG(ENABLE_SPELLCHECK)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/common/constants.h"  // nogncheck
@@ -244,7 +255,10 @@ void RendererClientBase::RenderThreadStarted() {
       extension_scheme);
 #endif
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#if BUILDFLAG(ENABLE_SPELLCHECK)
+  if (!spellcheck_)
+    InitSpellCheck();
+#elif BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   spellcheck_ = std::make_unique<SpellCheck>(this);
 #endif
 
@@ -332,14 +346,23 @@ void RendererClientBase::RenderFrameCreated(
               base::Unretained(render_frame)));
 #endif
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#if BUILDFLAG(ENABLE_SPELLCHECK)
+  new SpellCheckProvider(render_frame, spellcheck_.get());
+#if BUILDFLAG(HAS_SPELLCHECK_PANEL)
+  ElectronRenderFrameObserver* render_frame_observer =
+      new ElectronRenderFrameObserver(render_frame, this);
+
+  service_manager::BinderRegistry* registry = render_frame_observer->registry();
+  new SpellCheckPanel(render_frame, registry, this);
+#endif
+#elif BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   if (render_frame->GetBlinkPreferences().enable_spellcheck) {
     new SpellCheckProvider(render_frame, spellcheck_.get());
   }
 #endif
 }
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#if BUILDFLAG(ENABLE_SPELLCHECK) || BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 void RendererClientBase::GetInterface(
     const std::string& interface_name,
     mojo::ScopedMessagePipeHandle interface_pipe) {
@@ -352,6 +375,18 @@ void RendererClientBase::GetInterface(
       mojo::GenericPendingReceiver(interface_name, std::move(interface_pipe)));
 }
 #endif
+
+#if BUILDFLAG(ENABLE_SPELLCHECK)
+void RendererClientBase::InitSpellCheck() {
+  spellcheck_ = std::make_unique<SpellCheck>(this);
+}
+#endif
+
+#if BUILDFLAG(ENABLE_SPELLCHECK)
+SpellCheck* RendererClientBase::GetSpellCheck() {
+  return spellcheck_.get();
+}
+#endif  // BUILDFLAG(ENABLE_SPELLCHECK)
 
 void RendererClientBase::DidClearWindowObject(
     content::RenderFrame* render_frame) {

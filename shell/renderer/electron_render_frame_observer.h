@@ -9,6 +9,7 @@
 
 #include "content/public/renderer/render_frame_observer.h"
 #include "ipc/ipc_platform_file.h"
+#include "services/service_manager/public/cpp/binder_registry.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
@@ -20,11 +21,14 @@ class ElectronRenderFrameObserver : private content::RenderFrameObserver {
  public:
   ElectronRenderFrameObserver(content::RenderFrame* frame,
                               RendererClientBase* renderer_client);
+  ~ElectronRenderFrameObserver() override;
 
   // disable copy
   ElectronRenderFrameObserver(const ElectronRenderFrameObserver&) = delete;
   ElectronRenderFrameObserver& operator=(const ElectronRenderFrameObserver&) =
       delete;
+
+  service_manager::BinderRegistry* registry() { return &registry_; }
 
  private:
   // content::RenderFrameObserver:
@@ -45,6 +49,7 @@ class ElectronRenderFrameObserver : private content::RenderFrameObserver {
   bool has_delayed_node_initialization_ = false;
   raw_ptr<content::RenderFrame> render_frame_;
   raw_ptr<RendererClientBase> renderer_client_;
+  service_manager::BinderRegistry registry_;
 };
 
 }  // namespace electron
