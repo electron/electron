@@ -7,7 +7,7 @@ Allows embedders to get a handle to the gdk_pixbuf
 library already loaded in the process.
 
 diff --git a/ui/gtk/gtk_compat.cc b/ui/gtk/gtk_compat.cc
-index d6ac3233de3165d2be3e5d4fb3e221dca8b8d415..4f15069af07b7adc3e3c45e67e23ec8525668c21 100644
+index f28cf275db0205186fe6143b7e1550b6c30a4435..346992e202c507eeac454d657507e1bd336175fc 100644
 --- a/ui/gtk/gtk_compat.cc
 +++ b/ui/gtk/gtk_compat.cc
 @@ -69,11 +69,6 @@ void* GetLibGio() {

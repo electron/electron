@@ -112,10 +112,10 @@ index aa3a6b93cceae8c8bfbefdd7a043ae576f921979..17544d7ed4757fb51e2f82fd1b906381
              property_.sorting_key = (-property_.priority,
                                       internal_visited_order,
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index b44da8add10fdeadd24653441115df035a93dd50..ce7c7bd32f3a8ea262f01c408474ff4ffe7fe0aa 100644
+index 15ed205144fbb058bcc88953acb8380574cb7044..1795bceb2e7548c6e072c1bd2ce6abd0b3bd8188 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8795,6 +8795,24 @@
+@@ -8796,6 +8796,24 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
