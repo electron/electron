@@ -47,9 +47,9 @@ class ElectronNativeWindowObserver;
 - (electron::NativeWindowMac*)shell;
 - (id)accessibilityFocusedUIElement;
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect;
+- (BOOL)toggleFullScreenMode:(id)sender;
 - (void)changeSpelling:(id)sender;
 - (void)checkSpelling:(id)sender;
-- (BOOL)toggleFullScreenMode:(id)sender;
 - (NSImage*)_cornerMask;
 - (void)disableHeadlessMode;
 @end

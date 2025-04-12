@@ -12,9 +12,27 @@
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "ui/base/cocoa/window_size_constants.h"
+#include "content/public/browser/render_frame_host.h"
+#include "content/public/renderer/render_frame.h"
+#include "content/public/renderer/render_frame_observer.h"
+
+#include "content/public/renderer/render_thread.h"
+#include "components/spellcheck/browser/pref_names.h"
+#include "components/spellcheck/browser/spellcheck_platform.h"
+#include "components/spellcheck/common/spellcheck_panel.mojom.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
+#include "third_party/blink/renderer/core/editing/markers/spell_check_marker.h"
+#include "third_party/blink/renderer/core/editing/selection_template.h"
+#include "third_party/blink/renderer/core/editing/spellcheck/cold_mode_spell_check_requester.h"
+#include "third_party/blink/renderer/core/editing/spellcheck/idle_spell_check_controller.h"
+#include "third_party/blink/renderer/core/editing/spellcheck/spell_check_requester.h"
 
 #import <objc/message.h>
 #import <objc/runtime.h>
+
+namespace content {
+class RenderFrameHost;
+}
 
 namespace electron {
 
@@ -373,19 +391,15 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   for (auto webContent : webContents) {
     focusedFrame = webContent->FocusedFrame();
     if (focusedFrame != nullptr) { // Found the focused frame
+      
+      mojo::Remote<spellcheck::mojom::SpellCheckPanel> spell_check_panel;
+      mojo::PendingReceiver<spellcheck::mojom::SpellCheckPanel> receiver = spell_check_panel.BindNewPipeAndPassReceiver();
+      focusedFrame->GetRemoteInterfaces()->GetInterface(std::move(receiver));
+      
+      spell_check_panel->AdvanceToNextMisspelling();
       break;
     }
   }
-  
-  // If the focused frame is never found
-  if (focusedFrame == nullptr) {
-    return;
-  }
-  
-  mojo::Remote<spellcheck::mojom::SpellCheckPanel> spell_check_panel;
-  mojo::PendingReceiver<spellcheck::mojom::SpellCheckPanel> receiver = spell_check_panel.BindNewPipeAndPassReceiver();
-  focusedFrame->GetRemoteInterfaces()->GetInterface(std::move(receiver));
-  spell_check_panel->AdvanceToNextMisspelling();
 }
 
 - (void)performClose:(id)sender {
