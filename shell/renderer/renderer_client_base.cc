@@ -330,7 +330,7 @@ void RendererClientBase::RenderFrameCreated(
 
   // Note: ElectronApiServiceImpl has to be created now to capture the
   // DidCreateDocumentElement event.
-  new ElectronApiServiceImpl(render_frame, this);
+  ElectronApiServiceImpl* electronAPIService = new ElectronApiServiceImpl(render_frame, this);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* dispatcher = extensions_renderer_client_->dispatcher();
@@ -349,10 +349,7 @@ void RendererClientBase::RenderFrameCreated(
 #if BUILDFLAG(ENABLE_SPELLCHECK)
   new SpellCheckProvider(render_frame, spellcheck_.get());
 #if BUILDFLAG(HAS_SPELLCHECK_PANEL)
-  ElectronRenderFrameObserver* render_frame_observer =
-      new ElectronRenderFrameObserver(render_frame, this);
-
-  service_manager::BinderRegistry* registry = render_frame_observer->registry();
+  service_manager::BinderRegistry* registry = electronAPIService->registry();
   new SpellCheckPanel(render_frame, registry, this);
 #endif
 #elif BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)

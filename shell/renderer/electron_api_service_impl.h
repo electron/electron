@@ -44,6 +44,8 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
   base::WeakPtr<ElectronApiServiceImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
+                                 
+  service_manager::BinderRegistry* registry() { return &registry_; }
 
   void OnInterfaceRequestForFrame(
       const std::string& interface_name,
