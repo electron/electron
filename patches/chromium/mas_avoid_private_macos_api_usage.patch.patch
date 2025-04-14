@@ -949,7 +949,7 @@ index 8bcbb663710445e977a3080209cd518d3fc2c6e0..0680d3af1f219235e20c0e83b80c0ea9
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index da17e30384033a795e35d9cd27f16aa1a2b1ad24..f98dc86b19569290d81e7d2a172c1f217a72d00e 100644
+index 098f383475c5958adf02fa3e30c2ba0dcf0a4252..59c958af92ef85bcc329bf0aa69095ca8d2f1d6a 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
 @@ -29,6 +29,7 @@

@@ -76,10 +76,10 @@ index fc1700900ebd5a05f9d9a611366caf341bf4228c..eb7d1eeea3817e03afb4799cb92e6570
    cookie_observer(
        const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index 78fa9126457ee380b12e39e3bf35ea4c2ccaa36c..4f39fa5d3bd665e3343882d11f1ab5747c80610e 100644
+index bd5f2a3c64d1f57f987909bede992dc10a0a121f..a8898c4e5c11821568c6236198f59c422c90187f 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
-@@ -74,6 +74,9 @@ struct TrustedUrlRequestParams {
+@@ -86,6 +86,9 @@ struct TrustedUrlRequestParams {
    // client which should not be able to see them.
    bool include_request_cookies_with_response = false;
  
@@ -112,10 +112,10 @@ index 72188dae668f2bd91b8b7f181448f459600a82c2..b3dae05e160160cc8f2decee5af78c21
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index c02bcd477c1dffb445120bf22c35904065f41b48..9c6781c683a9d9b7f4ce71057124a272db947e27 100644
+index 9a7c8a8426a040f2424098b9374a25d7359cf74b..5dd7061c4a886e2eb1c5949c511fc753f5ce36c3 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -380,6 +380,9 @@ URLLoader::URLLoader(
+@@ -385,6 +385,9 @@ URLLoader::URLLoader(
            mojo::SimpleWatcher::ArmingPolicy::MANUAL,
            base::SequencedTaskRunner::GetCurrentDefault()),
        per_factory_orb_state_(context.GetMutableOrbState()),
@@ -125,7 +125,7 @@ index c02bcd477c1dffb445120bf22c35904065f41b48..9c6781c683a9d9b7f4ce71057124a272
        devtools_request_id_(request.devtools_request_id),
        options_(PopulateOptions(options,
                                 factory_params_->is_orb_enabled,
-@@ -538,7 +541,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
+@@ -542,7 +545,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -134,7 +134,7 @@ index c02bcd477c1dffb445120bf22c35904065f41b48..9c6781c683a9d9b7f4ce71057124a272
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1373,6 +1376,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1377,6 +1380,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -155,10 +155,10 @@ index c02bcd477c1dffb445120bf22c35904065f41b48..9c6781c683a9d9b7f4ce71057124a272
  
    ad_auction_event_record_request_helper_.HandleResponse(*url_request_);
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 57b3f155d59af8ec354871a194a8093cba0de195..388324c89f710d6a54ba584b88066f5860563c26 100644
+index 3f7a006bfee3bf68fdd3c5fc3a7396a746aaf6f0..7432e7d0ef5694bee7c778a02d309da2d01fd5d1 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -640,6 +640,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -649,6 +649,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

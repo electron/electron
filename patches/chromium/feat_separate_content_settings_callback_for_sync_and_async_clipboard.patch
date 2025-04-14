@@ -44,10 +44,10 @@ index 1afe0fe1c169bd9224314f50918ccfe3b1800c8f..a0fdb5003382d94aeb676a4224aa40f1
    }
  }
 diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
-index 02f33dc506a8e262b31d1fcf7435084480c588c1..b1826369edf599463170417937af31f3f24e3e69 100644
+index 6c36ada80f6f225b84a8f3832405128f8ba83224..846cd30a4c7abb2c512cdd73c3c09673c4ce0334 100644
 --- a/content/browser/permissions/permission_descriptor_util.cc
 +++ b/content/browser/permissions/permission_descriptor_util.cc
-@@ -169,6 +169,8 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
+@@ -171,6 +171,8 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
      case blink::PermissionType::LOCAL_NETWORK_ACCESS:
        return CreatePermissionDescriptor(
            blink::mojom::PermissionName::LOCAL_NETWORK_ACCESS);
