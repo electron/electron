@@ -66,10 +66,6 @@ void LoginHandler::EmitEvent(
   auto details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("url", url);
   details.Set("pid", process_id);
-
-  // These parameters aren't documented, and I'm not sure that they're useful,
-  // but we might as well stick 'em on the details object. If it turns out they
-  // are useful, we can add them to the docs :)
   details.Set("isMainFrame", is_request_for_primary_main_frame);
   details.Set("isRequestForNavigation", is_request_for_navigation);
   details.Set("firstAuthAttempt", first_auth_attempt);
