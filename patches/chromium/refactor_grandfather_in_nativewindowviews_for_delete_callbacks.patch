@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Mon, 14 Apr 2025 15:57:35 -0500
+Subject: refactor: grandfather in NativeWindowViews for delete callbacks
+
+6433203: Add a PassKey to RegisterDeleteDelegateCallback(). | https://chromium-review.googlesource.com/c/chromium/src/+/6433203
+
+diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
+index d07db44429855fdb99a5a0315ba0ba80d5a7dc13..78b3dc6fa4702e9021a10b60a5e3808114c71364 100644
+--- a/ui/views/widget/widget_delegate.h
++++ b/ui/views/widget/widget_delegate.h
+@@ -172,6 +172,7 @@ class DesktopDataControlsDialog;
+ namespace electron {
+ class AutofillPopupView;
+ class DevToolsWindowDelegate;
++class NativeWindowViews;
+ }
+ 
+ namespace enterprise_connectors {
+@@ -474,6 +475,7 @@ class VIEWS_EXPORT WidgetDelegate {
+   };
+   class RegisterDeleteCallbackPassKey {
+    private:
++    friend class electron::NativeWindowViews;
+     // DO NOT ADD TO THIS LIST!
+     // These existing cases are "grandfathered in", but there shouldn't be more.
+     // See comments atop `RegisterDeleteDelegateCallback()`.

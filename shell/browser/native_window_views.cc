@@ -433,19 +433,21 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   SetBounds(gfx::Rect(GetPosition(), bounds.size()), false);
 #endif
 
-  RegisterDeleteDelegateCallback(base::BindOnce(
-      [](NativeWindowViews* window) {
-        if (window->is_modal() && window->parent()) {
-          auto* parent = window->parent();
-          // Enable parent window after current window gets closed.
-          static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
-          // Focus on parent window.
-          parent->Focus(true);
-        }
+  RegisterDeleteDelegateCallback(
+      RegisterDeleteCallbackPassKey(),
+      base::BindOnce(
+          [](NativeWindowViews* window) {
+            if (window->is_modal() && window->parent()) {
+              auto* parent = window->parent();
+              // Enable parent window after current window gets closed.
+              static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
+              // Focus on parent window.
+              parent->Focus(true);
+            }
 
-        window->NotifyWindowClosed();
-      },
-      this));
+            window->NotifyWindowClosed();
+          },
+          this));
 }
 
 NativeWindowViews::~NativeWindowViews() {
