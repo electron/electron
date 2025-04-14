@@ -1359,9 +1359,9 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   }
 
   // Use global application menu bar when possible.
-  bool can_use_global_menus = ui::OzonePlatform::GetInstance()
-                                  ->GetPlatformProperties()
-                                  .supports_global_application_menus;
+  const bool can_use_global_menus = ui::OzonePlatform::GetInstance()
+                                        ->GetPlatformRuntimeProperties()
+                                        .supports_global_application_menus;
   if (can_use_global_menus && ShouldUseGlobalMenuBar()) {
     if (!global_menu_bar_)
       global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
