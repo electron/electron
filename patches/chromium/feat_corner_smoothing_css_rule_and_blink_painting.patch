@@ -268,7 +268,7 @@ index f4cdee12ea4352067f5de3e074e43d51ef56d2e5..6377e4b1ea8aa46b0bf69f8420b6c439
    ],
  }
 diff --git a/third_party/blink/renderer/core/paint/box_painter_base.cc b/third_party/blink/renderer/core/paint/box_painter_base.cc
-index 71e68a3bfc83869d44da560e3eb151a8baced676..bdef42d23531d5c0dbcc1f7ba18e4d621eab790f 100644
+index 71e68a3bfc83869d44da560e3eb151a8baced676..c9e88fa2178c4cafb61cd7c75272455f5396a872 100644
 --- a/third_party/blink/renderer/core/paint/box_painter_base.cc
 +++ b/third_party/blink/renderer/core/paint/box_painter_base.cc
 @@ -412,16 +412,20 @@ void BoxPainterBase::PaintInsetBoxShadow(const PaintInfo& info,
@@ -276,7 +276,7 @@ index 71e68a3bfc83869d44da560e3eb151a8baced676..bdef42d23531d5c0dbcc1f7ba18e4d62
          FloatRoundedRect(inner_rect, bounds.GetRadii()),
          bounds.GetCornerCurvature());
 +    ContouredRect contoured_bounds(
-+        bounds, ContouredBorderGeometry::ContouredBorder(
++        bounds.AsRoundedRect(), ContouredBorderGeometry::ContouredBorder(
 +                    style, PhysicalRect::EnclosingRect(bounds.Rect()))
 +                    .GetCornerCurvature());
      ApplySpreadToShadowShape(inner_contoured_rect, -shadow.Spread());
