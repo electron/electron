@@ -210,10 +210,12 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   bool is_manual_ax = [attribute isEqualToString:@"AXManualAccessibility"];
   if ([attribute isEqualToString:@"AXEnhancedUserInterface"] || is_manual_ax) {
     auto* ax_state = content::BrowserAccessibilityState::GetInstance();
+    // TODO(wg-upgrades): crbug.com/1470199 remove use of deprecated
+    // AddAccessibilityModeFlags() and RemoveAccessibilityModeFlags()
     if ([value boolValue]) {
-      ax_state->EnableProcessAccessibility();
+      ax_state->AddAccessibilityModeFlags(ui::kAXModeComplete);
     } else {
-      ax_state->DisableProcessAccessibility();
+      ax_state->RemoveAccessibilityModeFlags(ui::kAXModeComplete);
     }
 
     electron::Browser::Get()->OnAccessibilitySupportChanged();
