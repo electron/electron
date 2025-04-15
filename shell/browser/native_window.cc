@@ -78,8 +78,8 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
   if (!window->transparent())
     return size;
 
-  gfx::Size min_size = display::win::ScreenWin::ScreenToDIPSize(
-      window->GetAcceleratedWidget(), gfx::Size(64, 64));
+  gfx::Size min_size = display::win::GetScreenWin()->ScreenToDIPSize(
+      window->GetAcceleratedWidget(), gfx::Size{64, 64});
 
   // Some AMD drivers can't display windows that are less than 64x64 pixels,
   // so expand them to be at least that size. http://crbug.com/286609

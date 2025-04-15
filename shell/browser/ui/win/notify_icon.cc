@@ -246,7 +246,8 @@ gfx::Rect NotifyIcon::GetBounds() {
 
   RECT rect = {0};
   Shell_NotifyIconGetRect(&icon_id, &rect);
-  return display::win::ScreenWin::ScreenToDIPRect(window_, gfx::Rect(rect));
+  return display::win::GetScreenWin()->ScreenToDIPRect(window_,
+                                                       gfx::Rect{rect});
 }
 
 NOTIFYICONDATA NotifyIcon::InitIconData() const {

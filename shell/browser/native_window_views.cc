@@ -106,10 +106,10 @@ DWM_SYSTEMBACKDROP_TYPE GetBackdropFromString(const std::string& material) {
 // original ceil()-ed values can cause calculation errors, since converting
 // both ways goes through a ceil() call. Related issue: #15816
 gfx::Rect ScreenToDIPRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
-  float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(hwnd);
+  const auto* const screen_win = display::win::GetScreenWin();
+  const float scale_factor = screen_win->GetScaleFactorForHWND(hwnd);
   gfx::Rect dip_rect = ScaleToRoundedRect(pixel_bounds, 1.0f / scale_factor);
-  dip_rect.set_origin(
-      display::win::ScreenWin::ScreenToDIPRect(hwnd, pixel_bounds).origin());
+  dip_rect.set_origin(screen_win->ScreenToDIPRect(hwnd, pixel_bounds).origin());
   return dip_rect;
 }
 
@@ -135,10 +135,11 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
 }
 
 gfx::Rect DIPToScreenRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
-  float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(hwnd);
+  const auto* const screen_win = display::win::GetScreenWin();
+  const float scale_factor = screen_win->GetScaleFactorForHWND(hwnd);
   gfx::Rect screen_rect = ScaleToRoundedRect(pixel_bounds, scale_factor);
   screen_rect.set_origin(
-      display::win::ScreenWin::DIPToScreenRect(hwnd, pixel_bounds).origin());
+      screen_win->DIPToScreenRect(hwnd, pixel_bounds).origin());
   return screen_rect;
 }
 
@@ -1137,7 +1138,8 @@ void NativeWindowViews::Center() {
   widget()->SetBounds(window_bounds_in_screen);
 #else
   HWND hwnd = GetAcceleratedWidget();
-  gfx::Size size = display::win::ScreenWin::DIPToScreenSize(hwnd, GetSize());
+  gfx::Size size =
+      display::win::GetScreenWin()->DIPToScreenSize(hwnd, GetSize());
   gfx::CenterAndSizeWindow(nullptr, hwnd, size);
 #endif
 }
