@@ -44,15 +44,16 @@ index 1afe0fe1c169bd9224314f50918ccfe3b1800c8f..a0fdb5003382d94aeb676a4224aa40f1
    }
  }
 diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
-index 6c36ada80f6f225b84a8f3832405128f8ba83224..846cd30a4c7abb2c512cdd73c3c09673c4ce0334 100644
+index 6c36ada80f6f225b84a8f3832405128f8ba83224..714d582d1060873765b24770b18eddcbbdcf5506 100644
 --- a/content/browser/permissions/permission_descriptor_util.cc
 +++ b/content/browser/permissions/permission_descriptor_util.cc
-@@ -171,6 +171,8 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
+@@ -171,6 +171,9 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
      case blink::PermissionType::LOCAL_NETWORK_ACCESS:
        return CreatePermissionDescriptor(
            blink::mojom::PermissionName::LOCAL_NETWORK_ACCESS);
 +    case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
-+      NOTREACHED();
++      return CreatePermissionDescriptor(
++          blink::mojom::PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ);
      case blink::PermissionType::NUM:
        NOTREACHED();
    }
@@ -89,6 +90,20 @@ index 5c82a641538802bc459782ea422a1186045b054a..c286d87043ec4cb2e51ec9d82d08e4c8
  
    // Always keep this at the end.
    NUM,
+diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
+index 02e1941c37173a1e84e5190eb396f1007a8bbc2c..e47f2089a6a187b26c981afa1ef4135ec5e6a9e7 100644
+--- a/third_party/blink/public/mojom/permissions/permission.mojom
++++ b/third_party/blink/public/mojom/permissions/permission.mojom
+@@ -43,7 +43,8 @@ enum PermissionName {
+   AR,
+   HAND_TRACKING,
+   WEB_PRINTING,
+-  SMART_CARD
++  SMART_CARD,
++  DEPRECATED_SYNC_CLIPBOARD_READ
+ };
+ 
+ struct MidiPermissionDescriptor {
 diff --git a/third_party/blink/public/platform/web_content_settings_client.h b/third_party/blink/public/platform/web_content_settings_client.h
 index 28f616f21f998c7cd1c794e58efaccf9e6c11e6e..c64896642209124e500db2ed6fe2357e426cd10b 100644
 --- a/third_party/blink/public/platform/web_content_settings_client.h
@@ -125,3 +140,16 @@ index c269698764bb8ae7f85c5d476436f5ae5209576d..65d7fd94128a755609192784722074c6
  }
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
+diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
+index 843a4f27807071eabfdbffce589a31ddac75aacb..8d189eae97caa48a5796c540a74aaafa2fa676ff 100644
+--- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
++++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
+@@ -145,6 +145,8 @@ String PermissionNameToString(PermissionName name) {
+       return "web-printing";
+     case PermissionName::SMART_CARD:
+       return "smart-card";
++    case PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ:
++      return "deprecated-sync-clipboard-read";
+   }
+ }
+ 
