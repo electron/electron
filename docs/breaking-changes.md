@@ -14,6 +14,14 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (35.0)
 
+### Behavior Changes: `app.commandLine`
+
+`app.commandLine` will convert upper-cases switches and arguments to lowercase.
+
+`app.commandLine` was only meant to handle chromium switches (which aren't case-sensitive) and switches passed via `app.commandLine` will not be passed down to any of the child processes.
+
+If you were using `app.commandLine` to control the behavior of the  main process, you should do this via `process.argv`.
+
 ### Behavior Changed: Dialog API's `defaultPath` option on Linux
 
 On Linux, the required portal version for file dialogs has been reverted
