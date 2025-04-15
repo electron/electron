@@ -983,6 +983,17 @@ describe('node feature', () => {
     });
   });
 
+  itremote('handles assert module assertions as expected', () => {
+    const assert = require('node:assert');
+    try {
+      assert.ok(false);
+      expect.fail('assert.ok(false) should throw');
+    } catch (err) {
+      console.log(err);
+      expect(err).to.be.instanceOf(assert.AssertionError);
+    }
+  });
+
   it('Can find a module using a package.json main field', () => {
     const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')], { stdio: 'inherit' });
     expect(result.status).to.equal(0);
