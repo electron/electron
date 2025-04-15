@@ -154,6 +154,9 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   bool hiddenInMissionControl = false;
   options.Get(options::kHiddenInMissionControl, &hiddenInMissionControl);
 
+  bool paint_when_initially_hidden = true;
+  options.Get(options::kPaintWhenInitiallyHidden, &paint_when_initially_hidden);
+
   // The window without titlebar is treated the same with frameless window.
   if (title_bar_style_ != TitleBarStyle::kNormal)
     set_has_frame(false);
@@ -194,8 +197,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
-  // Allow painting before shown, to be later disabled in ElectronNSWindow.
-  params.headless_mode = true;
+  // Possibly allow painting before shown - later disabled in ElectronNSWindow.
+  params.headless_mode = paint_when_initially_hidden;
   if (IsTranslucent()) {
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
   }

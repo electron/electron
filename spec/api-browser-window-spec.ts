@@ -6474,6 +6474,31 @@ describe('BrowserWindow module', () => {
     w.loadFile(path.join(fixtures, 'pages', 'send-after-node.html'));
   });
 
+  // TODO(codebytere): fix on Windows and Linux too
+  ifdescribe(process.platform === 'darwin')('window.webContents initial paint', () => {
+    afterEach(closeAllWindows);
+    it('paints when a window is initially hidden', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+      const entries = await w.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          const observer = new PerformanceObserver((performance) => {
+            observer.disconnect();
+            resolve(performance.getEntries());
+          });
+          observer.observe({ entryTypes: ['paint'] });
+        });
+
+        const header = document.createElement('h1');
+        header.innerText = 'Paint me!!';
+        document.getElementById('div').appendChild(header);
+      `);
+
+      expect(JSON.stringify(entries)).to.eq('{}');
+    });
+  });
+
   describe('window.webContents.focus()', () => {
     afterEach(closeAllWindows);
     it('focuses window', async () => {
