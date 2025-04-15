@@ -6,6 +6,7 @@
 
 #include <objbase.h>
 
+#include "base/containers/span.h"
 #include "base/logging.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
@@ -144,11 +145,24 @@ void NotifyIcon::SetPressedImage(HICON image) {
   // pressed status icons.
 }
 
+template <typename CharT, size_t N>
+static void CopyStringToBuf(CharT (&tgt_buf)[N],
+                            const std::basic_string<CharT> src_str) {
+  if constexpr (N < 1U)
+    return;
+
+  const auto src = base::span{src_str};
+  const auto n_chars = std::min(src.size(), N - 1U);
+  auto tgt = base::span{tgt_buf};
+  tgt.first(n_chars).copy_from(src.first(n_chars));
+  tgt[n_chars] = CharT{};  // zero-terminate the string
+}
+
 void NotifyIcon::SetToolTip(const std::string& tool_tip) {
   // Create the icon.
   NOTIFYICONDATA icon_data = InitIconData();
   icon_data.uFlags |= NIF_TIP;
-  wcsncpy_s(icon_data.szTip, base::UTF8ToWide(tool_tip).c_str(), _TRUNCATE);
+  CopyStringToBuf(icon_data.szTip, base::UTF8ToWide(tool_tip));
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Unable to set tooltip for status tray icon";
@@ -157,8 +171,8 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
 void NotifyIcon::DisplayBalloon(const BalloonOptions& options) {
   NOTIFYICONDATA icon_data = InitIconData();
   icon_data.uFlags |= NIF_INFO;
-  wcsncpy_s(icon_data.szInfoTitle, base::as_wcstr(options.title), _TRUNCATE);
-  wcsncpy_s(icon_data.szInfo, base::as_wcstr(options.content), _TRUNCATE);
+  CopyStringToBuf(icon_data.szInfoTitle, base::AsWString(options.title));
+  CopyStringToBuf(icon_data.szInfo, base::AsWString(options.content));
   icon_data.uTimeout = 0;
   icon_data.hBalloonIcon = options.icon;
   icon_data.dwInfoFlags = ConvertIconType(options.icon_type);
