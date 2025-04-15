@@ -4,6 +4,7 @@
 
 #include "shell/app/node_main.h"
 
+#include <iostream>
 #include <map>
 #include <memory>
 #include <string>
@@ -190,7 +191,7 @@ int NodeMain() {
              node::ProcessInitializationFlags::kNoInitializeNodeV8Platform});
 
     for (const std::string& error : result->errors())
-      fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
+      std::cerr << args[0] << ": " << error << '\n';
 
     if (result->early_return() != 0) {
       return result->exit_code();
