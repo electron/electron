@@ -153,8 +153,9 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
   // mojo::DataPipeProducer::DataSource:
   [[nodiscard]] uint64_t GetLength() const override { return buffer_.size(); }
   ReadResult Read(uint64_t offset, base::span<char> tgt) override {
-    const auto src = base::span<const char>{buffer_}.subspan(offset);
-    CHECK_LE(offset, src.size());
+    CHECK_LE(offset, buffer_.size());
+    const auto src =
+        base::span<const char>{buffer_}.subspan(static_cast<size_t>(offset));
     const auto n_copied = std::min(src.size(), tgt.size());
     tgt.first(n_copied).copy_from(src.first(n_copied));
     return ReadResult{.bytes_read = n_copied};
