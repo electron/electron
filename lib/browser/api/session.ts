@@ -12,8 +12,8 @@ async function getNativePickerSource (preferredDisplaySurface: string) {
   // Fake video window that activates the native system picker
   // This is used to get around the need for a screen/window
   // id in Chrome's desktopCapturer.
-  let fakeVideoWindowId = -1;
-  const kMacOsNativePickerId = -4;
+  // let fakeVideoWindowId = -1;
+  // const kMacOsNativePickerId = -4;
 
   if (process.platform !== 'darwin') {
     throw new Error('Native system picker option is currently only supported on MacOS');
@@ -53,7 +53,7 @@ async function getNativePickerSource (preferredDisplaySurface: string) {
     throw new Error('No media streams found');
   }
 
-  mediaStreams[0].id = `none:${kMacOsNativePickerId}:${fakeVideoWindowId--}`;
+  // mediaStreams[0].id = `none:${kMacOsNativePickerId}:${fakeVideoWindowId--}`;
   console.log('SESSION.TS mediaStreams', mediaStreams);
   return mediaStreams[0];
 }
@@ -89,7 +89,7 @@ Session.prototype.setDisplayMediaRequestHandler = function (handler, opts) {
       return callback({ video: await getNativePickerSource(request.preferredDisplaySurface) });
     }
 
-    return handler(request, callback);
+    // return handler(request, callback);
   }, opts);
 };
 

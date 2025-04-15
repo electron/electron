@@ -357,10 +357,10 @@ index 0dbc7ebc4ba6066eb6b20f8e66f50a1dff4d94f3..17d658ee011b81208b77ee1e65925ae9
      NOTREACHED();
    }
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 0e4a68f2fd8179640f877cb258b4049610fd49da..0fb8d036b7696e5303fbcd463114114aa3227a08 100644
+index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..fef50841f472bf3e76c171d9e106c689157adaae 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -364,6 +364,7 @@ void OnShareableContentCreated(SCShareableContent* content) {
+@@ -281,6 +281,7 @@ void OnShareableContentCreated(SCShareableContent* content) {
              if (!fullscreen_module_) {
                fullscreen_module_ = MaybeCreateScreenCaptureKitFullscreenModule(
                    device_task_runner_, *this, window);
@@ -368,7 +368,7 @@ index 0e4a68f2fd8179640f877cb258b4049610fd49da..0fb8d036b7696e5303fbcd463114114a
              }
            }
          }
-@@ -728,6 +729,7 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -616,6 +617,7 @@ void ResetStreamTo(SCWindow* window) override {
      SCContentFilter* filter) {
    switch (source.type) {
      case DesktopMediaID::TYPE_SCREEN:
@@ -377,7 +377,7 @@ index 0e4a68f2fd8179640f877cb258b4049610fd49da..0fb8d036b7696e5303fbcd463114114a
        // It will not stitch desktops together. If
        // kScreenCaptureKitFullDesktopFallback is enabled, we will fallback to
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index f0f08a834f06c7669da6030640434308a5cbd056..a34dcdbad1c3d32de59a1574de485bd831599aa1 100644
+index 0ab684dc8e792359abb90b91917eddae42e6123d..2351919905fbec6c1bfe9ce59d799192a9e2e0e6 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 @@ -177,19 +177,20 @@ DesktopCaptureImplementation CreatePlatformDependentVideoCaptureDevice(
@@ -465,26 +465,30 @@ index f0f08a834f06c7669da6030640434308a5cbd056..a34dcdbad1c3d32de59a1574de485bd8
          start_capture_closure =
              base::BindOnce(std::move(after_start_capture_callback), nullptr);
          break;
-@@ -319,13 +329,18 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
- #if defined(USE_AURA)
-       bool allow_window_id = false;
- #elif BUILDFLAG(IS_MAC)
+@@ -316,8 +326,21 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+         break;
+       }
+ 
++#if defined(USE_AURA)
++      bool allow_window_id = false;
++#elif BUILDFLAG(IS_MAC)
 +
-       bool allow_window_id =
-         desktop_id.id == DesktopMediaID::kMacOsNativePickerId;
++      bool allow_window_id =
++        desktop_id.id == DesktopMediaID::kMacOsNativePickerId;
 +
 +      LOG(ERROR) << "allow_window_id: " << allow_window_id << " desktop_id.id: " << desktop_id.id;
- #endif
- 
++#endif
++
  #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
+-      if (desktop_id.window_id != DesktopMediaID::kNullId) {
 +      LOG(ERROR) << "in if block";
-       if (!allow_window_id &&
-           desktop_id.window_id != DesktopMediaID::kNullId) {
++      if (!allow_window_id &&
++          desktop_id.window_id != DesktopMediaID::kNullId) {
 +        LOG(ERROR) << "allow_window_id: " << allow_window_id << " desktop_id.window_id: " << desktop_id.window_id;  
          // For the other capturers, when a bug reports the type of capture it's
          // easy enough to determine which capturer was used, but it's a little
          // fuzzier with window capture.
-@@ -354,6 +369,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -344,6 +367,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
                               kMaxNumberOfBuffers, std::move(receiver),
                               std::move(receiver_on_io_thread)),
            std::move(after_start_capture_callback));
@@ -492,7 +496,7 @@ index f0f08a834f06c7669da6030640434308a5cbd056..a34dcdbad1c3d32de59a1574de485bd8
        break;
      }
  #endif  // BUILDFLAG(ENABLE_SCREEN_CAPTURE)
-@@ -368,6 +384,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -358,6 +382,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
  // above are NOTREACHED() then.
  #if BUILDFLAG(ENABLE_SCREEN_CAPTURE)
    state_ = State::DEVICE_START_IN_PROGRESS;
@@ -500,7 +504,7 @@ index f0f08a834f06c7669da6030640434308a5cbd056..a34dcdbad1c3d32de59a1574de485bd8
    device_task_runner_->PostTask(FROM_HERE, std::move(start_capture_closure));
  #endif
  }
-@@ -418,9 +435,11 @@ void InProcessVideoCaptureDeviceLauncher::OnDeviceStarted(
+@@ -408,9 +433,11 @@ void InProcessVideoCaptureDeviceLauncher::OnDeviceStarted(
      base::OnceClosure done_cb,
      std::unique_ptr<media::VideoCaptureDevice> device) {
    DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -512,7 +516,7 @@ index f0f08a834f06c7669da6030640434308a5cbd056..a34dcdbad1c3d32de59a1574de485bd8
      switch (state_copy) {
        case State::DEVICE_START_IN_PROGRESS:
          callbacks->OnDeviceLaunchFailed(
-@@ -439,13 +458,15 @@ void InProcessVideoCaptureDeviceLauncher::OnDeviceStarted(
+@@ -429,13 +456,15 @@ void InProcessVideoCaptureDeviceLauncher::OnDeviceStarted(
  
    auto launched_device = std::make_unique<InProcessLaunchedVideoCaptureDevice>(
        std::move(device), device_task_runner_);
@@ -529,7 +533,7 @@ index f0f08a834f06c7669da6030640434308a5cbd056..a34dcdbad1c3d32de59a1574de485bd8
        launched_device.reset();
        callbacks->OnDeviceLaunchAborted();
        std::move(done_cb).Run();
-@@ -505,7 +526,8 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
+@@ -495,7 +524,8 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
      std::unique_ptr<media::VideoCaptureDeviceClient> device_client,
      ReceiveDeviceCallback result_callback) {
    DCHECK(device_task_runner_->BelongsToCurrentThread());
@@ -539,7 +543,7 @@ index f0f08a834f06c7669da6030640434308a5cbd056..a34dcdbad1c3d32de59a1574de485bd8
  
    std::unique_ptr<media::VideoCaptureDevice> video_capture_device;
    DesktopCaptureImplementation implementation =
-@@ -514,8 +536,10 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
+@@ -504,8 +534,10 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
    DVLOG(1) << __func__ << " implementation " << implementation << " type "
             << desktop_id.type;
    ReportDesktopCaptureImplementationAndType(implementation, desktop_id.type);

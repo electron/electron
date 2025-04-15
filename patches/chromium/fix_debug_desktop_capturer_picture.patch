@@ -1,0 +1,130 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Tue, 15 Apr 2025 16:34:52 -0700
+Subject: fix: debug desktop capturer picture
+
+
+diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+index fef50841f472bf3e76c171d9e106c689157adaae..1e9ffc1e097439eea731e2cff6193c5f50c984d8 100644
+--- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
++++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+@@ -286,6 +286,25 @@ void OnShareableContentCreated(SCShareableContent* content) {
+           }
+         }
+         break;
++      case DesktopMediaID::TYPE_NONE:
++        for (SCWindow* window in content.windows) {
++          LOG(ERROR) << "Inside TYPE_NONE for loop";
++            LOG(ERROR) << "source_.id: " << source_.id;
++            LOG(ERROR) << "window.windowID: " << window.windowID;
++          if (source_.id == window.windowID) {
++            LOG(ERROR) << "window.windowID: " << window.windowID;
++            filter = [[SCContentFilter alloc]
++                initWithDesktopIndependentWindow:window];
++            CGRect frame = window.frame;
++            stream_config_content_size_ = gfx::Size(frame.size);
++            if (!fullscreen_module_) {
++              fullscreen_module_ = MaybeCreateScreenCaptureKitFullscreenModule(
++                  device_task_runner_, *this, window);
++            break;
++            }
++          }
++        }
++        break;
+       default:
+         NOTREACHED();
+     }
+diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
+index 2351919905fbec6c1bfe9ce59d799192a9e2e0e6..aa97cad0ca0fecc8dfc1ee44760ab1d36086785c 100644
+--- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
++++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
+@@ -104,6 +104,7 @@ void IncrementDesktopCaptureCounters(const DesktopMediaID& device_id) {
+                                 : SCREEN_CAPTURER_CREATED_WITHOUT_AUDIO);
+       break;
+     case DesktopMediaID::TYPE_WINDOW:
++    case DesktopMediaID::TYPE_NONE:
+       IncrementDesktopCaptureCounter(WINDOW_CAPTURER_CREATED);
+       break;
+     case DesktopMediaID::TYPE_WEB_CONTENTS:
+@@ -112,8 +113,8 @@ void IncrementDesktopCaptureCounters(const DesktopMediaID& device_id) {
+           device_id.audio_share ? TAB_VIDEO_CAPTURER_CREATED_WITH_AUDIO
+                                 : TAB_VIDEO_CAPTURER_CREATED_WITHOUT_AUDIO);
+       break;
+-    case DesktopMediaID::TYPE_NONE:
+-      NOTREACHED();
++    // case DesktopMediaID::TYPE_NONE:
++    //   NOTREACHED();
+   }
+ }
+ 
+@@ -285,13 +286,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+       const DesktopMediaID desktop_id = DesktopMediaID::Parse(device_id);
+         LOG(ERROR) << "desktop_id.is_null(): " << desktop_id.is_null();
+         LOG(ERROR) << "desktop_id.id: " << desktop_id.id;
+-        LOG(ERROR) << "DesktopMediaID::kMacOsNativePickerId: " << DesktopMediaID::kMacOsNativePickerId;
+-      if (desktop_id.is_null() && desktop_id.id != DesktopMediaID::kMacOsNativePickerId) {
+-        LOG(ERROR) << "in null case";
+-        start_capture_closure =
+-            base::BindOnce(std::move(after_start_capture_callback), nullptr);
+-        break;
+-      }
++        // TODO(Keeley): kMacOsNativePickerId seems to have been removed upstream.
++        // Reconcile this with the upstream changes.
++        // LOG(ERROR) << "DesktopMediaID::kMacOsNativePickerId: " << DesktopMediaID::kMacOsNativePickerId;
++        // if (desktop_id.is_null() && desktop_id.id != DesktopMediaID::kMacOsNativePickerId) {
++        //   LOG(ERROR) << "in null case";
++        //   start_capture_closure =
++        //       base::BindOnce(std::move(after_start_capture_callback), nullptr);
++        //   break;
++        // }
+ 
+       if (desktop_id.id == DesktopMediaID::kFakeId) {
+         start_capture_closure = base::BindOnce(
+@@ -329,18 +332,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+ #if defined(USE_AURA)
+       bool allow_window_id = false;
+ #elif BUILDFLAG(IS_MAC)
+-
+-      bool allow_window_id =
+-        desktop_id.id == DesktopMediaID::kMacOsNativePickerId;
+-
+-      LOG(ERROR) << "allow_window_id: " << allow_window_id << " desktop_id.id: " << desktop_id.id;
++      // bool allow_window_id =
++      //   desktop_id.id == DesktopMediaID::kMacOsNativePickerId;
++      // LOG(ERROR) << "allow_window_id: " << allow_window_id << " desktop_id.id: " << desktop_id.id;
+ #endif
+ 
+ #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
+-      LOG(ERROR) << "in if block";
+-      if (!allow_window_id &&
+-          desktop_id.window_id != DesktopMediaID::kNullId) {
+-        LOG(ERROR) << "allow_window_id: " << allow_window_id << " desktop_id.window_id: " << desktop_id.window_id;  
++      // if (!allow_window_id &&
++      //     desktop_id.window_id != DesktopMediaID::kNullId) {
++      if (desktop_id.window_id != DesktopMediaID::kNullId) {
++        // LOG(ERROR) << "allow_window_id: " << allow_window_id << " desktop_id.window_id: " << desktop_id.window_id;  
+         // For the other capturers, when a bug reports the type of capture it's
+         // easy enough to determine which capturer was used, but it's a little
+         // fuzzier with window capture.
+@@ -525,7 +526,7 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
+     ReceiveDeviceCallback result_callback) {
+   DCHECK(device_task_runner_->BelongsToCurrentThread());
+   LOG(INFO) << "DO START DESKTOP CAPTURE ON DEVICE THREAD " << desktop_id.id;
+-  DCHECK(!desktop_id.is_null() || desktop_id.id == DesktopMediaID::kMacOsNativePickerId);
++  // DCHECK(!desktop_id.is_null() || desktop_id.id == DesktopMediaID::kMacOsNativePickerId);
+ 
+   std::unique_ptr<media::VideoCaptureDevice> video_capture_device;
+   DesktopCaptureImplementation implementation =
+diff --git a/content/browser/renderer_host/media/video_capture_manager.cc b/content/browser/renderer_host/media/video_capture_manager.cc
+index bd11a0fcdc084da00407c80e4ee229a130fdedc8..74d9ce9facea9cda90073ca6b70e8c4be3b62f6f 100644
+--- a/content/browser/renderer_host/media/video_capture_manager.cc
++++ b/content/browser/renderer_host/media/video_capture_manager.cc
+@@ -920,6 +920,8 @@ void VideoCaptureManager::DestroyControllerIfNoClients(
+     // closed.
+     CloseNativeScreenCapturePicker(
+         DesktopMediaID::Parse(controller->device_id()));
++    LOG(ERROR) << "Closing native screen capture picker";
++    LOG(ERROR) << "VideoCaptureManager: " << string_stream.str();
+ 
+     // The VideoCaptureController is removed from |controllers_| immediately.
+     // The controller is deleted immediately, and the device is freed
