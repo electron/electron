@@ -255,7 +255,7 @@ bool SerialChooserController::DisplayDevice(
       AddMessageToConsole(
           blink::mojom::ConsoleMessageLevel::kInfo,
           base::StringPrintf(
-              "Chooser dialog is not displaying a port blocked by "
+              "Skipping a port blocked by "
               "the Serial blocklist: vendorId=%d, "
               "productId=%d, name='%s', serial='%s'",
               port.vendor_id, port.product_id,
@@ -265,7 +265,7 @@ bool SerialChooserController::DisplayDevice(
       AddMessageToConsole(
           blink::mojom::ConsoleMessageLevel::kInfo,
           base::StringPrintf(
-              "Chooser dialog is not displaying a port blocked by "
+              "Skipping a port blocked by "
               "the Serial blocklist: bluetoothServiceClassId=%s, "
               "name='%s'",
               port.bluetooth_service_class_id->value().c_str(),
