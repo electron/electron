@@ -1,173 +1,196 @@
-# Native Node Modules
+import React, { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import html2canvas from 'html2canvas';
 
-Native Node.js modules are supported by Electron, but since Electron has a different
-[application binary interface (ABI)][abi] from a given Node.js binary (due to
-differences such as using Chromium's BoringSSL instead of OpenSSL), the native
-modules you use will need to be recompiled for Electron. Otherwise,
-you will get the following class of error when you try to run your app:
+const TradingPlanWizard = () => {
+  const [step, setStep] = useState(1);
+  const [risk, setRisk] = useState(1);
+  const [lossLimit, setLossLimit] = useState(3);
+  const [profitLimit, setProfitLimit] = useState(8);
+  const [rr, setRr] = useState('1:2');
 
-```sh
-Error: The module '/path/to/native/module.node'
-was compiled against a different Node.js version using
-NODE_MODULE_VERSION $XYZ. This version of Node.js requires
-NODE_MODULE_VERSION $ABC. Please try re-compiling or re-installing
-the module (for instance, using `npm rebuild` or `npm install`).
-```
+  const [analysis, setAnalysis] = useState({
+    Diario: { direccion: '', estructura: '', tipoMovimiento: '', zona: false, fvg: false, ob: '', observaciones: '' },
+    H1: { fvg: false, ob: '', zona: false, direccion: '', estructura: '', tipoMovimiento: '', observaciones: '' },
+    M5: { fvg: false, ob: '', zona: false, direccion: '', estructura: '', tipoMovimiento: '', observaciones: '' },
+    M1: { fvg: false, ob: '', zona: false, direccion: '', estructura: '', tipoMovimiento: '', observaciones: '' }
+  });
 
-## How to install native modules
+  const nextStep = () => setStep(step + 1);
+  const prevStep = () => setStep(step - 1);
 
-There are several different ways to install native modules:
+  const exportAsImage = async () => {
+    const element = document.getElementById('resumen');
+    if (!element) return;
+    const canvas = await html2canvas(element);
+    const image = canvas.toDataURL('image/jpeg', 1.0);
+    const link = document.createElement('a');
+    link.href = image;
+    link.download = 'trading-plan.jpg';
+    link.click();
+  };
 
-### Installing modules and rebuilding for Electron
+  const handleCheckbox = (tf, field) => {
+    setAnalysis(prev => ({
+      ...prev,
+      [tf]: {
+        ...prev[tf],
+        [field]: !prev[tf][field]
+      }
+    }));
+  };
 
-You can install modules like other Node projects, and then rebuild the modules
-for Electron with the [`@electron/rebuild`][@electron/rebuild] package. This
-module can automatically determine the version of Electron and handle the
-manual steps of downloading headers and rebuilding native modules for your app.
-If you are using [Electron Forge][electron-forge], this tool is used automatically
-in both development mode and when making distributables.
+  const handleSelect = (tf, field, value) => {
+    setAnalysis(prev => ({
+      ...prev,
+      [tf]: {
+        ...prev[tf],
+        [field]: value
+      }
+    }));
+  };
 
-For example, to install the standalone `@electron/rebuild` tool and then rebuild
-modules with it via the command line:
+  const isSafeEntry = Object.values(analysis).every(
+    item => item.direccion === analysis.Diario.direccion && item.fvg && item.ob !== '' && item.zona
+  );
 
-```sh
-npm install --save-dev @electron/rebuild
+  const calculateViability = (data) => {
+    let count = 0;
+    if (data.fvg) count++;
+    if (data.ob !== '') count++;
+    if (data.zona) count++;
+    if (data.direccion !== '') count++;
+    if (data.tipoMovimiento !== '') count++;
+    return (count / 5) * 100;
+  };
 
-# Every time you run "npm install", run this:
-./node_modules/.bin/electron-rebuild
+  const getColor = (percentage) => {
+    if (percentage < 50) return 'text-red-500';
+    if (percentage >= 50 && percentage < 80) return 'text-yellow-500';
+    return 'text-green-500';
+  };
 
-# If you have trouble on Windows, try:
-.\node_modules\.bin\electron-rebuild.cmd
-```
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl p-4">
+        <CardContent>
+          {step === 1 && (
+            <div className="space-y-4 text-center">
+              <h2 className="text-2xl font-bold">Gestión de Riesgo</h2>
+              <div className="space-y-2">
+                <label className="block">Por operación (%):
+                  <input type="number" value={risk} onChange={e => setRisk(e.target.value)} className="w-full border p-2 rounded mt-1" />
+                </label>
+                <label className="block">Límite de pérdidas:
+                  <input type="number" value={lossLimit} onChange={e => setLossLimit(e.target.value)} className="w-full border p-2 rounded mt-1" />
+                </label>
+                <label className="block">Límite de ganancias mensual (%):
+                  <input type="number" value={profitLimit} onChange={e => setProfitLimit(e.target.value)} className="w-full border p-2 rounded mt-1" />
+                </label>
+                <label className="block">RR mínimo:
+                  <input type="text" value={rr} onChange={e => setRr(e.target.value)} className="w-full border p-2 rounded mt-1" />
+                </label>
+              </div>
+              <Button onClick={nextStep} className="w-full">Siguiente</Button>
+            </div>
+          )}
 
-For more information on usage and integration with other tools such as
-[Electron Packager][electron-packager], consult the project's README.
+          {step === 2 && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-center">Proceso de Análisis por Timeframe</h2>
+              {Object.keys(analysis).map(tf => (
+                <div key={tf} className="p-4 border rounded mb-4 space-y-2">
+                  <h3 className="font-semibold text-lg text-center">{tf}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <label><input type="checkbox" checked={analysis[tf].fvg} onChange={() => handleCheckbox(tf, 'fvg')} /> FVG</label>
+                    <label>OB:
+                      <select value={analysis[tf].ob} onChange={e => handleSelect(tf, 'ob', e.target.value)} className="border p-1 rounded ml-2">
+                        <option value="">Seleccione</option>
+                        <option value="Original">Original</option>
+                        <option value="Decisional">Decisional</option>
+                      </select>
+                    </label>
+                    <label><input type="checkbox" checked={analysis[tf].zona} onChange={() => handleCheckbox(tf, 'zona')} /> Zona de Descuento</label>
+                    <label>Dirección:
+                      <select value={analysis[tf].direccion} onChange={e => handleSelect(tf, 'direccion', e.target.value)} className="border p-1 rounded ml-2">
+                        <option value="">Seleccione</option>
+                        <option value="Alcista">Alcista</option>
+                        <option value="Bajista">Bajista</option>
+                      </select>
+                    </label>
+                    <label>Estructura Anterior:
+                      <select value={analysis[tf].estructura} onChange={e => handleSelect(tf, 'estructura', e.target.value)} className="border p-1 rounded ml-2">
+                        <option value="">Seleccione</option>
+                        <option value="BOS">BOS</option>
+                        <option value="CHOCH">CHOCH</option>
+                      </select>
+                    </label>
+                    <label>Tipo de Movimiento:
+                      <select value={analysis[tf].tipoMovimiento} onChange={e => handleSelect(tf, 'tipoMovimiento', e.target.value)} className="border p-1 rounded ml-2">
+                        <option value="">Seleccione</option>
+                        <option value="Impulso">Impulso</option>
+                        <option value="Retroceso">Retroceso</option>
+                      </select>
+                    </label>
+                    <label>Observaciones:
+                      <textarea value={analysis[tf].observaciones} onChange={e => handleSelect(tf, 'observaciones', e.target.value)} className="border p-1 rounded w-full mt-1" rows="2" placeholder="Escribe tus observaciones..." />
+                    </label>
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-between">
+                <Button onClick={prevStep}>Atrás</Button>
+                <Button onClick={nextStep}>Siguiente</Button>
+              </div>
+            </div>
+          )}
 
-### Using `npm`
+          {step === 3 && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-center">Resumen</h2>
+              <div id="resumen" className="p-4 bg-white rounded shadow space-y-2">
+                <ul className="space-y-2">
+                  <li>📊 Riesgo por operación: {risk}%</li>
+                  <li>❌ Límite de pérdidas: {lossLimit}</li>
+                  <li>💰 Límite de ganancias mensual: {profitLimit}%</li>
+                  <li>⚖️ RR mínimo: {rr}</li>
+                </ul>
+                <h3 className="font-semibold mt-4">Análisis por Timeframe</h3>
+                {Object.entries(analysis).map(([tf, data]) => {
+                  const viability = calculateViability(data);
+                  return (
+                    <div key={tf}>
+                      <strong>{tf}</strong>: 
+                      FVG: {data.fvg ? '✅' : '❌'}, 
+                      OB: {data.ob || 'N/A'}, 
+                      Zona: {data.zona ? '✅' : '❌'}, 
+                      Dirección: {data.direccion || 'N/A'}, 
+                      Estructura: {data.estructura || 'N/A'}, 
+                      Tipo: {data.tipoMovimiento || 'N/A'}
+                      <span className={`ml-2 font-bold ${getColor(viability)}`}>{viability.toFixed(0)}%</span>
+                      {data.observaciones && (
+                        <div className="mt-1 text-sm text-gray-600">📝 {data.observaciones}</div>
+                      )}
+                    </div>
+                  );
+                })}
+                <p className="mt-4 text-lg font-bold text-center">
+                  {isSafeEntry ? '✔️ Entrada a favor de tendencia' : '⚠️ Entrada en contra o dudosa'}
+                </p>
+              </div>
+              <div className="flex justify-between">
+                <Button onClick={prevStep}>Atrás</Button>
+                <Button onClick={exportAsImage}>Guardar como JPG</Button>
+              </div>
+            </div>
+          )}
 
-By setting a few environment variables, you can use `npm` to install modules
-directly.
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
-For example, to install all dependencies for Electron:
+export default TradingPlanWizard;
 
-```sh
-# Electron's version.
-export npm_config_target=1.2.3
-# The architecture of your machine
-export npm_config_arch=x64
-export npm_config_target_arch=x64
-# Download headers for Electron.
-export npm_config_disturl=https://electronjs.org/headers
-# Tell node-pre-gyp that we are building for Electron.
-export npm_config_runtime=electron
-# Tell node-pre-gyp to build module from source code.
-export npm_config_build_from_source=true
-# Install all dependencies, and store cache to ~/.electron-gyp.
-HOME=~/.electron-gyp npm install
-```
-
-### Manually building for Electron
-
-If you are a developer developing a native module and want to test it against
-Electron, you might want to rebuild the module for Electron manually. You can
-use `node-gyp` directly to build for Electron:
-
-```sh
-cd /path-to-module/
-HOME=~/.electron-gyp node-gyp rebuild --target=1.2.3 --arch=x64 --dist-url=https://electronjs.org/headers
-```
-
-* `HOME=~/.electron-gyp` changes where to find development headers.
-* `--target=1.2.3` is the version of Electron.
-* `--dist-url=...` specifies where to download the headers.
-* `--arch=x64` says the module is built for a 64-bit system.
-
-### Manually building for a custom build of Electron
-
-To compile native Node modules against a custom build of Electron that doesn't
-match a public release, instruct `npm` to use the version of Node you have bundled
-with your custom build.
-
-```sh
-npm rebuild --nodedir=/path/to/src/out/Default/gen/node_headers
-```
-
-## Troubleshooting
-
-If you installed a native module and found it was not working, you need to check
-the following things:
-
-* When in doubt, run `@electron/rebuild` first.
-* Make sure the native module is compatible with the target platform and
-  architecture for your Electron app.
-* Make sure `win_delay_load_hook` is not set to `false` in the module's `binding.gyp`.
-* After you upgrade Electron, you usually need to rebuild the modules.
-
-### A note about `win_delay_load_hook`
-
-On Windows, by default, `node-gyp` links native modules against `node.dll`.
-However, in Electron 4.x and higher, the symbols needed by native modules are
-exported by `electron.exe`, and there is no `node.dll`. In order to load native
-modules on Windows, `node-gyp` installs a
-[delay-load hook](https://learn.microsoft.com/en-us/cpp/build/reference/error-handling-and-notification?view=msvc-170#notification-hooks) that triggers
-when the native module is loaded, and redirects the `node.dll` reference to use
-the loading executable instead of looking for `node.dll` in the library search
-path (which would turn up nothing). As such, on Electron 4.x and higher,
-`'win_delay_load_hook': 'true'` is required to load native modules.
-
-If you get an error like `Module did not self-register`, or `The specified
-procedure could not be found`, it may mean that the module you're trying to use
-did not correctly include the delay-load hook.  If the module is built with
-node-gyp, ensure that the `win_delay_load_hook` variable is set to `true` in
-the `binding.gyp` file, and isn't getting overridden anywhere.  If the module
-is built with another system, you'll need to ensure that you build with a
-delay-load hook installed in the main `.node` file. Your `link.exe` invocation
-should look like this:
-
-```plaintext
- link.exe /OUT:"foo.node" "...\node.lib" delayimp.lib /DELAYLOAD:node.exe /DLL
-     "my_addon.obj" "win_delay_load_hook.obj"
-```
-
-In particular, it's important that:
-
-* you link against `node.lib` from _Electron_ and not Node. If you link against
-  the wrong `node.lib` you will get load-time errors when you require the
-  module in Electron.
-* you include the flag `/DELAYLOAD:node.exe`. If the `node.exe` link is not
-  delayed, then the delay-load hook won't get a chance to fire and the node
-  symbols won't be correctly resolved.
-* `win_delay_load_hook.obj` is linked directly into the final DLL. If the hook
-  is set up in a dependent DLL, it won't fire at the right time.
-
-See [`node-gyp`](https://github.com/nodejs/node-gyp/blob/e2401e1395bef1d3c8acec268b42dc5fb71c4a38/src/win_delay_load_hook.cc)
-for an example delay-load hook if you're implementing your own.
-
-## Modules that rely on `prebuild`
-
-[`prebuild`](https://github.com/prebuild/prebuild) provides a way to publish
-native Node modules with prebuilt binaries for multiple versions of Node
-and Electron.
-
-If the `prebuild`-powered module provide binaries for the usage in Electron,
-make sure to omit `--build-from-source` and the `npm_config_build_from_source`
-environment variable in order to take full advantage of the prebuilt binaries.
-
-## Modules that rely on `node-pre-gyp`
-
-The [`node-pre-gyp` tool][node-pre-gyp] provides a way to deploy native Node
-modules with prebuilt binaries, and many popular modules are using it.
-
-Sometimes those modules work fine under Electron, but when there are no
-Electron-specific binaries available, you'll need to build from source.
-Because of this, it is recommended to use `@electron/rebuild` for these modules.
-
-If you are following the `npm` way of installing modules, you'll need to pass
-`--build-from-source` to `npm`, or set the `npm_config_build_from_source`
-environment variable.
-
-[abi]: https://en.wikipedia.org/wiki/Application_binary_interface
-[@electron/rebuild]: https://github.com/electron/rebuild
-[electron-forge]: https://electronforge.io/
-[electron-packager]: https://github.com/electron/packager
-[node-pre-gyp]: https://github.com/mapbox/node-pre-gyp
