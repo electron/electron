@@ -7,6 +7,7 @@ The animated_content_sampler is used to detect the animation frame rate
 and adjust the capture frame rate accordingly. However, the detection
 algorithm is buggy and can cause output to stutter. This patch is a
 upstream patch to allow opt-out the animated_content_sampler.
+https://crrev.org/c/6438681
 
 diff --git a/components/viz/host/client_frame_sink_video_capturer.cc b/components/viz/host/client_frame_sink_video_capturer.cc
 index 67aeb7222ae490cc62717bd7eb8aace022553e9c..11fe61903855b3ef52733aecc3288946bf572de3 100644
