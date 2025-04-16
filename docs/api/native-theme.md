@@ -63,6 +63,14 @@ Your application should then always use `shouldUseDarkColors` to determine what 
 A `boolean` for if the OS / Chromium currently has high-contrast mode enabled
 or is being instructed to show a high-contrast UI.
 
+### `nativeTheme.shouldUseDarkColorsForSystemIntegratedUI` _macOS_ _Windows_ _Readonly_
+
+A `boolean` property indicating whether or not the system theme has been set to dark or light.
+
+On Windows this property distinguishes between system and app light/dark theme, returning
+`true` if the system theme is set to dark theme and `false` otherwise. On macOS the return
+value will be the same as `nativeTheme.shouldUseDarkColors`.
+
 ### `nativeTheme.shouldUseInvertedColorScheme` _macOS_ _Windows_ _Readonly_
 
 A `boolean` for if the OS / Chromium currently has an inverted color scheme
