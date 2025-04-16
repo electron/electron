@@ -15,7 +15,7 @@ We also need to ensure that an initial paint is scheduled when
 the compositor is unsuspended in headles mode.
 
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index e001c58b6de8ef4481a73f6c2ea7087aed643b29..89c74e1a6967edddc2bdad2348aab65df80ae67d 100644
+index 235899693e2f2d340cc63df1ded3dfe3c9775cee..014c00d487bd11e1466e2398243442c8ef68f276 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -662,9 +662,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
