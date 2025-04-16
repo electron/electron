@@ -14,7 +14,7 @@ This patch likely can't be upstreamed as-is, as Chromium doesn't have
 this use case in mind currently.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 29829e282edfa8821bd366a9e9a3755d7f3f8643..c2f46c5960ef914a21e6df6e56298b3cc8bc36e9 100644
+index 29829e282edfa8821bd366a9e9a3755d7f3f8643..661864ab6aad78a721ac921ae778c40085cdc23e 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -952,13 +952,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
@@ -38,7 +38,7 @@ index 29829e282edfa8821bd366a9e9a3755d7f3f8643..c2f46c5960ef914a21e6df6e56298b3c
        thread_id != GetCurrentThreadId()) {
      // Update the native frame if it is rendering the non-client area.
 -    if (HasSystemFrame()) {
-+    if (HasSystemFrame() || is_translucent_) {
++    if (is_translucent_ || HasSystemFrame()) {
        DefWindowProcWithRedrawLock(WM_NCACTIVATE, FALSE, 0);
      }
    }
