@@ -12,7 +12,7 @@
 namespace gin_helper {
 
 bool IsValidWrappable(const v8::Local<v8::Value>& obj,
-                      gin::WrapperInfo* wrapper_info);
+                      const gin::WrapperInfo* wrapper_info);
 
 namespace internal {
 

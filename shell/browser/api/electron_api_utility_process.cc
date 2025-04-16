@@ -352,11 +352,12 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
       return;
     }
 
-    for (unsigned i = 0; i < wrapped_port_values.size(); ++i) {
+    for (size_t i = 0; i < wrapped_port_values.size(); ++i) {
       if (!gin_helper::IsValidWrappable(wrapped_port_values[i],
                                         &MessagePort::kWrapperInfo)) {
-        thrower.ThrowTypeError("Port at index " + base::NumberToString(i) +
-                               " is not a valid port");
+        thrower.ThrowTypeError(
+            base::StrCat({"Port at index ", base::NumberToString(i),
+                          " is not a valid port"}));
         return;
       }
     }
