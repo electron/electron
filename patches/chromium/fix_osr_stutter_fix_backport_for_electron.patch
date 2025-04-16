@@ -1,0 +1,289 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: reito <cnschwarzer@qq.com>
+Date: Wed, 16 Apr 2025 14:09:50 +0800
+Subject: fix: osr stutter fix backport for electron.
+
+The animated_content_sampler is used to detect the animation frame rate
+and adjust the capture frame rate accordingly. However, the detection
+algorithm is buggy and can cause output to stutter. This patch is a
+upstream patch to allow opt-out the animated_content_sampler.
+
+diff --git a/components/viz/host/client_frame_sink_video_capturer.cc b/components/viz/host/client_frame_sink_video_capturer.cc
+index 67aeb7222ae490cc62717bd7eb8aace022553e9c..11fe61903855b3ef52733aecc3288946bf572de3 100644
+--- a/components/viz/host/client_frame_sink_video_capturer.cc
++++ b/components/viz/host/client_frame_sink_video_capturer.cc
+@@ -39,6 +39,17 @@ void ClientFrameSinkVideoCapturer::SetFormat(media::VideoPixelFormat format) {
+   capturer_remote_->SetFormat(format);
+ }
+ 
++void ClientFrameSinkVideoCapturer::SetAnimationFpsLockIn(
++    bool enabled,
++    float majority_damaged_pixel_min_ratio) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
++  animated_content_sampler_enabled_ = enabled;
++  majority_damaged_pixel_min_ratio_ = majority_damaged_pixel_min_ratio;
++  capturer_remote_->SetAnimationFpsLockIn(enabled,
++                                          majority_damaged_pixel_min_ratio);
++}
++
+ void ClientFrameSinkVideoCapturer::SetMinCapturePeriod(
+     base::TimeDelta min_capture_period) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+@@ -206,6 +217,10 @@ void ClientFrameSinkVideoCapturer::EstablishConnection() {
+     capturer_remote_->SetMinCapturePeriod(*min_capture_period_);
+   if (min_size_change_period_)
+     capturer_remote_->SetMinSizeChangePeriod(*min_size_change_period_);
++  if (animated_content_sampler_enabled_ && majority_damaged_pixel_min_ratio_) {
++    capturer_remote_->SetAnimationFpsLockIn(*animated_content_sampler_enabled_,
++                                            *majority_damaged_pixel_min_ratio_);
++  }
+   if (resolution_constraints_) {
+     capturer_remote_->SetResolutionConstraints(
+         resolution_constraints_->min_size, resolution_constraints_->max_size,
+diff --git a/components/viz/host/client_frame_sink_video_capturer.h b/components/viz/host/client_frame_sink_video_capturer.h
+index 8f0693b37dd0aa931a7fd77ddbdb515f0be5d64a..c0613570552072b3da219a920f902ad39a9f1cbc 100644
+--- a/components/viz/host/client_frame_sink_video_capturer.h
++++ b/components/viz/host/client_frame_sink_video_capturer.h
+@@ -88,6 +88,8 @@ class VIZ_HOST_EXPORT ClientFrameSinkVideoCapturer
+                                 const gfx::Size& max_size,
+                                 bool use_fixed_aspect_ratio);
+   void SetAutoThrottlingEnabled(bool enabled);
++  void SetAnimationFpsLockIn(bool enabled,
++                             float majority_damaged_pixel_min_ratio);
+   void ChangeTarget(const std::optional<VideoCaptureTarget>& target);
+   void ChangeTarget(const std::optional<VideoCaptureTarget>& target,
+                     uint32_t sub_capture_target_version);
+@@ -158,6 +160,8 @@ class VIZ_HOST_EXPORT ClientFrameSinkVideoCapturer
+   std::optional<ResolutionConstraints> resolution_constraints_;
+   std::optional<bool> auto_throttling_enabled_;
+   std::optional<VideoCaptureTarget> target_;
++  std::optional<bool> animated_content_sampler_enabled_;
++  std::optional<float> majority_damaged_pixel_min_ratio_;
+   uint32_t sub_capture_target_version_ = 0;
+   // Overlays are owned by the callers of CreateOverlay().
+   std::vector<raw_ptr<Overlay, VectorExperimental>> overlays_;
+diff --git a/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.cc b/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.cc
+index db02d9ad523dd1471b5c88cf6b1eade0b592e24f..e8a329f013f39c49056c7eebc7412e84a1b2e98c 100644
+--- a/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.cc
++++ b/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.cc
+@@ -364,6 +364,18 @@ void FrameSinkVideoCapturerImpl::SetMinSizeChangePeriod(
+   oracle_->SetMinSizeChangePeriod(min_period);
+ }
+ 
++void FrameSinkVideoCapturerImpl::SetAnimationFpsLockIn(
++    bool enabled,
++    float majority_damaged_pixel_min_ratio) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
++  TRACE_EVENT_INSTANT("gpu.capture", "SetAnimationFpsLockIn", "enabled",
++                      enabled, "majority_damaged_pixel_min_ratio",
++                      majority_damaged_pixel_min_ratio);
++
++  oracle_->SetAnimationFpsLockIn(enabled, majority_damaged_pixel_min_ratio);
++}
++
+ void FrameSinkVideoCapturerImpl::SetResolutionConstraints(
+     const gfx::Size& min_size,
+     const gfx::Size& max_size,
+diff --git a/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.h b/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.h
+index 8d9036f835c5ced90872b66c8545c65097fd23cc..b387d22c31ab171cde19ceb4a4b5f2a4ce334d9e 100644
+--- a/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.h
++++ b/components/viz/service/frame_sinks/video_capture/frame_sink_video_capturer_impl.h
+@@ -119,6 +119,8 @@ class VIZ_SERVICE_EXPORT FrameSinkVideoCapturerImpl final
+                                 const gfx::Size& max_size,
+                                 bool use_fixed_aspect_ratio) final;
+   void SetAutoThrottlingEnabled(bool enabled) final;
++  void SetAnimationFpsLockIn(bool enabled,
++                             float majority_damaged_pixel_min_ratio) final;
+   void ChangeTarget(const std::optional<VideoCaptureTarget>& target,
+                     uint32_t sub_capture_target_version) final;
+   void Start(mojo::PendingRemote<mojom::FrameSinkVideoConsumer> consumer,
+diff --git a/content/browser/devtools/devtools_video_consumer_unittest.cc b/content/browser/devtools/devtools_video_consumer_unittest.cc
+index 3420c52fc9bb85057242d25429b00a7a8ec620cd..83ce6ecf31f1bb38de98ff81960aa1948bb5a4e3 100644
+--- a/content/browser/devtools/devtools_video_consumer_unittest.cc
++++ b/content/browser/devtools/devtools_video_consumer_unittest.cc
+@@ -70,6 +70,8 @@ class MockFrameSinkVideoCapturer : public viz::mojom::FrameSinkVideoCapturer {
+     min_period_ = min_period;
+     MockSetMinSizeChangePeriod(min_period_);
+   }
++  MOCK_METHOD2(SetAnimationFpsLockIn,
++               void(bool enabled, float majority_damaged_pixel_min_ratio));
+   MOCK_METHOD1(MockSetMinSizeChangePeriod, void(base::TimeDelta min_period));
+   void SetResolutionConstraints(const gfx::Size& min_frame_size,
+                                 const gfx::Size& max_frame_size,
+diff --git a/content/browser/media/capture/frame_sink_video_capture_device_unittest.cc b/content/browser/media/capture/frame_sink_video_capture_device_unittest.cc
+index b236a38f7f108f823598ae2bf8dc07e53a190141..46a8e24a3ec9ad2ec42fc50c2ac7ab326508a873 100644
+--- a/content/browser/media/capture/frame_sink_video_capture_device_unittest.cc
++++ b/content/browser/media/capture/frame_sink_video_capture_device_unittest.cc
+@@ -105,6 +105,8 @@ class MockFrameSinkVideoCapturer : public viz::mojom::FrameSinkVideoCapturer {
+   MOCK_METHOD1(SetFormat, void(media::VideoPixelFormat format));
+   MOCK_METHOD1(SetMinCapturePeriod, void(base::TimeDelta min_period));
+   MOCK_METHOD1(SetMinSizeChangePeriod, void(base::TimeDelta));
++  MOCK_METHOD2(SetAnimationFpsLockIn,
++               void(bool enabled, float majority_damaged_pixel_min_ratio));
+   MOCK_METHOD3(SetResolutionConstraints,
+                void(const gfx::Size& min_size,
+                     const gfx::Size& max_size,
+diff --git a/media/capture/content/animated_content_sampler.cc b/media/capture/content/animated_content_sampler.cc
+index 6fe67268c1dcb23188200e49c100e985406a9feb..0fadaa2b768a42d3bad511224ad9d6e3ce337e70 100644
+--- a/media/capture/content/animated_content_sampler.cc
++++ b/media/capture/content/animated_content_sampler.cc
+@@ -46,7 +46,10 @@ constexpr auto kDriftCorrection = base::Seconds(2);
+ 
+ AnimatedContentSampler::AnimatedContentSampler(
+     base::TimeDelta min_capture_period)
+-    : min_capture_period_(min_capture_period), sampling_state_(NOT_SAMPLING) {
++    : min_capture_period_(min_capture_period),
++      sampling_state_(NOT_SAMPLING),
++      enabled_(true),
++      majority_damaged_pixel_min_ratio_(2.0f / 3) {
+   DCHECK_GT(min_capture_period_, base::TimeDelta());
+ }
+ 
+@@ -64,6 +67,10 @@ void AnimatedContentSampler::SetTargetSamplingPeriod(base::TimeDelta period) {
+ void AnimatedContentSampler::ConsiderPresentationEvent(
+     const gfx::Rect& damage_rect,
+     base::TimeTicks event_time) {
++  if (!enabled_) {
++    return;  // The sampler is disabled.
++  }
++
+   // Analyze the current event and recent history to determine whether animating
+   // content is detected.
+   AddObservation(damage_rect, event_time);
+@@ -132,6 +139,10 @@ void AnimatedContentSampler::ConsiderPresentationEvent(
+ }
+ 
+ bool AnimatedContentSampler::HasProposal() const {
++  if (!enabled_) {
++    return false;
++  }
++
+   return sampling_state_ != NOT_SAMPLING;
+ }
+ 
+@@ -230,8 +241,10 @@ bool AnimatedContentSampler::AnalyzeObservations(
+   if ((last_event_time - first_event_time) < kMinObservationWindow) {
+     return false;  // Content has not animated for long enough for accuracy.
+   }
+-  if (num_pixels_damaged_in_chosen <= (num_pixels_damaged_in_all * 2 / 3))
++  if (num_pixels_damaged_in_chosen <=
++      (num_pixels_damaged_in_all * majority_damaged_pixel_min_ratio_)) {
+     return false;  // Animation is not damaging a supermajority of pixels.
++  }
+ 
+   *rect = elected_rect;
+   DCHECK_GT(count_frame_durations, 0u);
+diff --git a/media/capture/content/animated_content_sampler.h b/media/capture/content/animated_content_sampler.h
+index 89d11829ac038ffeaafa3d4f0b811c6b2bd5665c..b5a325383813210956be7bcd59d8d41fa8c28d9b 100644
+--- a/media/capture/content/animated_content_sampler.h
++++ b/media/capture/content/animated_content_sampler.h
+@@ -26,6 +26,15 @@ class CAPTURE_EXPORT AnimatedContentSampler {
+   explicit AnimatedContentSampler(base::TimeDelta min_capture_period);
+   ~AnimatedContentSampler();
+ 
++  // Set whether the animated content sampler would have proposal.
++  void SetEnabled(bool enabled) { enabled_ = enabled; }
++
++  // Sets the minimum ratio of pixels in the majority-damaged region to all
++  // damaged region's area.
++  void SetMajorityDamagedRectMinRatio(float ratio) {
++    majority_damaged_pixel_min_ratio_ = ratio;
++  }
++
+   // Sets a new minimum capture period.
+   void SetMinCapturePeriod(base::TimeDelta period);
+ 
+@@ -34,6 +43,7 @@ class CAPTURE_EXPORT AnimatedContentSampler {
+   base::TimeDelta target_sampling_period() const {
+     return target_sampling_period_;
+   }
++
+   void SetTargetSamplingPeriod(base::TimeDelta period);
+ 
+   // Examines the given presentation event metadata, along with recent history,
+@@ -152,6 +162,13 @@ class CAPTURE_EXPORT AnimatedContentSampler {
+ 
+   // The rewritten frame timestamp for the latest event.
+   base::TimeTicks frame_timestamp_;
++
++  // Whether the animated content sampler is enabled
++  bool enabled_;
++
++  // The minimum ratio of the majority damaged rect area among all damaged
++  // area's pixels
++  float majority_damaged_pixel_min_ratio_;
+ };
+ 
+ }  // namespace media
+diff --git a/media/capture/content/video_capture_oracle.h b/media/capture/content/video_capture_oracle.h
+index 3bb10527f7850e795cb6608dd7e881dc90920eee..b7ac2d4404ae1fdc8a9983da16dcb2ad921b76bc 100644
+--- a/media/capture/content/video_capture_oracle.h
++++ b/media/capture/content/video_capture_oracle.h
+@@ -54,6 +54,7 @@ class CAPTURE_EXPORT VideoCaptureOracle {
+   base::TimeDelta min_capture_period() const {
+     return smoothing_sampler_.min_capture_period();
+   }
++
+   void SetMinCapturePeriod(base::TimeDelta period);
+ 
+   // Sets the range of acceptable capture sizes and whether a fixed aspect ratio
+@@ -70,6 +71,19 @@ class CAPTURE_EXPORT VideoCaptureOracle {
+   // See: SetMinSizeChangePeriod().
+   void SetAutoThrottlingEnabled(bool enabled);
+ 
++  // Specifies whether the oracle should detect animation and try to target
++  // the animation frame rate. If |enabled|, the oracle will try to detect a
++  // majority damaged rect and its animation frame rate, and will respect the
++  // minimum damaged pixel ratio of the majority rect's area among all damaged
++  // rect areas set by |majority_damaged_pixel_min_ratio|. If the threshold not
++  // met, it will not use the animated content frame rate.
++  void SetAnimationFpsLockIn(bool enabled,
++                             float majority_damaged_pixel_min_ratio) {
++    content_sampler_.SetEnabled(enabled);
++    content_sampler_.SetMajorityDamagedRectMinRatio(
++        majority_damaged_pixel_min_ratio);
++  }
++
+   // Get/Update the source content size.  Changes may not have an immediate
+   // effect on the proposed capture size, as the oracle will prevent too-
+   // frequent changes from occurring.
+diff --git a/remoting/host/chromeos/frame_sink_desktop_capturer_unittest.cc b/remoting/host/chromeos/frame_sink_desktop_capturer_unittest.cc
+index eeb4454bfd9500e4bae7544409ff4413fd0874aa..abe0cfb065a7e313b0ca3babd744fce75074ef45 100644
+--- a/remoting/host/chromeos/frame_sink_desktop_capturer_unittest.cc
++++ b/remoting/host/chromeos/frame_sink_desktop_capturer_unittest.cc
+@@ -195,6 +195,10 @@ class MockFrameSinkVideoCapturer : public viz::mojom::FrameSinkVideoCapturer {
+ 
+   MOCK_METHOD(void, SetAutoThrottlingEnabled, (bool enabled));
+ 
++  MOCK_METHOD(void,
++              SetAnimationFpsLockIn,
++              (bool enabled, float majority_damaged_pixel_min_ratio));
++
+   MOCK_METHOD(void,
+               SetResolutionConstraints,
+               (const Size& min_size,
+diff --git a/services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom b/services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom
+index f0ca9014a0e6b42f99becb7f1fdb9e214c81a16b..fbb002941ca1d36dc2bb12e9391b1faa799d771e 100644
+--- a/services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom
++++ b/services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom
+@@ -156,6 +156,18 @@ interface FrameSinkVideoCapturer {
+   // Default, if never called: true.
+   SetAutoThrottlingEnabled(bool enabled);
+ 
++  // Determines whether the capturer should detect animations and aim to match
++  // their frame rate. If |enabled| is true, the capturer will attempt to
++  // identify the majority damaged rect and its animation frame rate,
++  // while adhering to the |majority_damaged_pixel_min_ratio| threshold.
++  // This ratio is calculated as the area of the majority damaged rect
++  // divided by the total area of all damaged rects. An animation will only
++  // be considered valid if the ratio meets or exceeds the specified threshold.
++  //
++  // By default, this feature is enabled, with the ratio threshold set to 2/3.
++  SetAnimationFpsLockIn(bool enabled,
++                        float majority_damaged_pixel_min_ratio);
++
+   // Targets a different compositor frame sink. This may be called anytime,
+   // before or after Start().
+   //
