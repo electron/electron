@@ -31,7 +31,7 @@ index 7bda1853d47034c80a4e416b9839e8d18c5a8e2c..e5df49253103c44f01195fa93988753f
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 4d1c7d95c338b247f7c63315d536fcc7a7e4b637..55bb9b36f8d0894c972c05ba162fd5b41048013d 100644
+index 44c9248daecd67ccbc32f9afdbb8e7449d435b6c..e7d43ffc134e76f54aa5a71c668ce725a3f9bf6a 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -1223,6 +1223,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
