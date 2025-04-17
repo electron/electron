@@ -59,7 +59,6 @@ const char kFreedesktopPortalName[] = "org.freedesktop.portal.Desktop";
 const char kFreedesktopPortalPath[] = "/org/freedesktop/portal/desktop";
 const char kFreedesktopPortalOpenURI[] = "org.freedesktop.portal.OpenURI";
 
-const char kXdgCurrentDesktopEnvVar[] = "XDG_CURRENT_DESKTOP";
 const char kOriginalXdgCurrentDesktopEnvVar[] = "ORIGINAL_XDG_CURRENT_DESKTOP";
 
 const char kMethodOpenDirectory[] = "OpenDirectory";
@@ -290,7 +289,8 @@ bool XDGUtil(const std::vector<std::string>& argv,
           // XDG, in case it was changed for compatibility.
           if (const auto* orig = base::FindOrNull(
                   options.environment, kOriginalXdgCurrentDesktopEnvVar))
-            options.environment.emplace(kXdgCurrentDesktopEnvVar, *orig);
+            options.environment.emplace(base::nix::kXdgCurrentDesktopEnvVar,
+                                        *orig);
           *options_out = std::move(options);
           std::move(quit_loop).Run();
         },
