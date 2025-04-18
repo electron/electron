@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 50893c5653a42160c25f3f92aeb2164b292c8364..36928057b408d76fa6fc8d0131bf47f860fabe1a 100644
+index 57a6af006161508474e0647d22580e872168ef4e..08205acb929894d87fecaee2c155aef5715cf180 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1040,6 +1040,7 @@ component("base") {
+@@ -1041,6 +1041,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -449,7 +449,7 @@ index dcaa590375f7cc42996a95ceb0804733d382f60b..e80557dfa4992823ffca81e77aaeef1a
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 5c0a53152095c2f799251f78b3c3464504104bfc..2c81ecef35d40036111cbd3dbdb44f7086d8946e 100644
+index 0b964e176e59e77a0743e2d347aa185bc7c80bc5..49a60b9aa0597c3397906303b73a4c1650cc60ce 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -460,7 +460,7 @@ index 5c0a53152095c2f799251f78b3c3464504104bfc..2c81ecef35d40036111cbd3dbdb44f70
  #include "mojo/public/cpp/bindings/self_owned_receiver.h"
  #include "net/cert/x509_util_apple.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
-@@ -679,10 +680,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -681,10 +682,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
