@@ -163,10 +163,11 @@ gfx::Size WindowSizeToContentSizeBuggy(HWND hwnd, const gfx::Size& size) {
 
 #endif
 
-[[maybe_unused]] bool IsX11() {
-  return ui::OzonePlatform::GetInstance()
-      ->GetPlatformProperties()
-      .electron_can_call_x11;
+[[maybe_unused, nodiscard]] bool IsX11() {
+  static const bool is_x11 = ui::OzonePlatform::GetInstance()
+                                 ->GetPlatformProperties()
+                                 .electron_can_call_x11;
+  return is_x11;
 }
 
 class NativeWindowClientView : public views::ClientView {
@@ -381,8 +382,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
     bool rounded_corner = true;
     options.Get(options::kRoundedCorners, &rounded_corner);
-    if (!rounded_corner)
-      SetRoundedCorners(false);
+    SetRoundedCorners(rounded_corner);
   }
 
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
@@ -480,7 +480,7 @@ void NativeWindowViews::SetContentView(views::View* view) {
   }
   set_content_view(view);
   focused_view_ = view;
-  root_view_.GetMainView()->AddChildView(content_view());
+  root_view_.GetMainView()->AddChildViewRaw(content_view());
   root_view_.GetMainView()->DeprecatedLayoutImmediately();
 }
 
@@ -623,11 +623,8 @@ bool NativeWindowViews::ShouldBeEnabled() const {
 }
 
 void NativeWindowViews::SetEnabledInternal(bool enable) {
-  if (enable && IsEnabled()) {
+  if (enable == IsEnabled())
     return;
-  } else if (!enable && !IsEnabled()) {
-    return;
-  }
 
 #if BUILDFLAG(IS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), enable);
@@ -1839,7 +1836,7 @@ ui::mojom::WindowShowState NativeWindowViews::GetRestoredState() {
       return ui::mojom::WindowShowState::kMaximized;
     }
 #else
-    return ui::mojom::WindowShowState::kMinimized;
+    return ui::mojom::WindowShowState::kMaximized;
 #endif
   }
 

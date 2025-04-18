@@ -33,6 +33,10 @@ inline constexpr std::string_view kMaximizable = "maximizable";
 inline constexpr std::string_view kFullScreenable = "fullscreenable";
 inline constexpr std::string_view kClosable = "closable";
 
+// Whether to paint when the window is initially hidden.
+inline constexpr std::string_view kPaintWhenInitiallyHidden =
+    "paintWhenInitiallyHidden";
+
 // whether to keep the window out of mission control
 inline constexpr std::string_view kHiddenInMissionControl =
     "hiddenInMissionControl";
@@ -210,6 +214,10 @@ inline constexpr std::string_view kSpellcheck = "spellcheck";
 // document.execCommand("paste").
 inline constexpr std::string_view kEnableDeprecatedPaste =
     "enableDeprecatedPaste";
+
+// Whether the -electron-corner-smoothing CSS rule is enabled.
+inline constexpr std::string_view kEnableCornerSmoothingCSS =
+    "enableCornerSmoothingCSS";
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.

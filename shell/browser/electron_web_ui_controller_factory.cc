@@ -28,7 +28,7 @@ content::WebUI::TypeID ElectronWebUIControllerFactory::GetWebUIType(
   if (const std::string_view host = url.host_piece();
       host == chrome::kChromeUIDevToolsHost ||
       host == chrome::kChromeUIAccessibilityHost) {
-    return const_cast<ElectronWebUIControllerFactory*>(this);
+    return this;
   }
 
   return content::WebUI::kNoWebUI;

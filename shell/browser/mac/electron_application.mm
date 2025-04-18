@@ -193,7 +193,9 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 - (id)accessibilityAttributeValue:(NSString*)attribute {
   if ([attribute isEqualToString:@"AXManualAccessibility"]) {
     auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-    return [NSNumber numberWithBool:ax_state->IsAccessibleBrowser()];
+    bool is_accessible_browser =
+        ax_state->GetAccessibilityMode() == ui::kAXModeComplete;
+    return [NSNumber numberWithBool:is_accessible_browser];
   }
 
   return [super accessibilityAttributeValue:attribute];
@@ -209,9 +211,9 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   if ([attribute isEqualToString:@"AXEnhancedUserInterface"] || is_manual_ax) {
     auto* ax_state = content::BrowserAccessibilityState::GetInstance();
     if ([value boolValue]) {
-      ax_state->OnScreenReaderDetected();
+      ax_state->EnableProcessAccessibility();
     } else {
-      ax_state->DisableAccessibility();
+      ax_state->DisableProcessAccessibility();
     }
 
     electron::Browser::Get()->OnAccessibilitySupportChanged();

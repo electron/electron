@@ -13,7 +13,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Node.js/npm
-        uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 20.11.x
       - name: Setting Up Dig Site
@@ -41,7 +41,7 @@ jobs:
           sha-file: .dig-old
           filename: electron.old.d.ts
       - name: Upload artifacts
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 #v4.6.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: artifacts
           path: electron/artifacts

@@ -79,7 +79,7 @@ jobs:
         cp "C:\Python311\python.exe" "C:\Python311\python3.exe"
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
-      uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
       with:
         node-version: 20.11.x
     - name: Add TCC permissions on macOS
@@ -134,6 +134,8 @@ jobs:
         git config --global core.filemode false
         git config --global core.autocrlf false
         git config --global branch.autosetuprebase always
+        git config --global core.fscache true
+        git config --global core.preloadindex true
         git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
@@ -147,12 +149,12 @@ jobs:
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_ASAN=true" >> $GITHUB_ENV
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806
+      uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./generated_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806
+      uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
@@ -247,7 +249,7 @@ jobs:
       if: always() && !cancelled()
     - name: Upload Test Artifacts
       if: always() && !cancelled()
-      uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: test_artifacts_${{ env.ARTIFACT_KEY }}_${{ matrix.shard }}
         path: src/electron/spec/artifacts

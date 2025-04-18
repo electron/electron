@@ -577,10 +577,10 @@ index 1917f8b94962d7a4c83f139623a5f5d352011627..47ef610c43c4dcfee0cf528eb2e6075b
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 402be34ab888cdf834d0fb65de0832e9a8021ced..82ddc92a35d824926c30279e660cc4e86e6f0b09 100644
+index 4f2e70c243550b471d0a6b2be743a29004c75599..9a3580d7c2a01290e7aaff1200e7f17c9add2c70 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
-@@ -355,17 +355,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
+@@ -356,17 +356,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
  #endif  // BUILDFLAG(IS_LINUX) && BUILDFLAG(USE_CUPS)
    }
  
@@ -881,10 +881,10 @@ index 97cb6458bc9eec767db89b56abfc5f4b4136ff7b..d9a0b343158b8464b5c9aa8e0e655c0b
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 62151d9e640771580ae85231762dfef260b0e4ff..52555181f779772dff8a471c4389af8128fd7a6a 100644
+index 5b8ea681dfee77a08bb451ec19f6e5d7ddf5b6d8..15ad186308981ddfbbe32f47ef9127ab051132e3 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3129,8 +3129,9 @@ source_set("browser") {
+@@ -3134,8 +3134,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -897,10 +897,10 @@ index 62151d9e640771580ae85231762dfef260b0e4ff..52555181f779772dff8a471c4389af81
      if (is_chromeos) {
        sources += [
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 0bb34c4715224a0cef10465778db946f299ac513..c70803a5737676eec498dd18074a47ffabac62c0 100644
+index b959c1428784388f514d33bf54550908f60f3ff1..c37bc40570b1e2b29af6e677684705556b15560e 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -154,7 +154,6 @@ void PrintingContext::UsePdfSettings() {
+@@ -156,7 +156,6 @@ void PrintingContext::UsePdfSettings() {
  
  mojom::ResultCode PrintingContext::UpdatePrintSettings(
      base::Value::Dict job_settings) {
@@ -932,3 +932,19 @@ index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890f
    // Does bookkeeping when an error occurs.
    virtual mojom::ResultCode OnError();
  
+diff --git a/printing/printing_context_linux.cc b/printing/printing_context_linux.cc
+index fa55d2a1c5f4207cb8eda9305e8bf2af29352c91..13ca65c2c7c3c24882061d8e224bf93899d9a7ab 100644
+--- a/printing/printing_context_linux.cc
++++ b/printing/printing_context_linux.cc
+@@ -52,9 +52,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
+                                               bool is_scripted,
+                                               PrintSettingsCallback callback) {
+   if (!print_dialog_) {
+-    // Can only get here if the renderer is sending bad messages.
+-    // http://crbug.com/341777
+-    NOTREACHED();
++    print_dialog_ = ui::LinuxUi::instance()->CreatePrintDialog(this);
++    print_dialog_->UseDefaultSettings();
+   }
+ 
+   print_dialog_->ShowDialog(delegate_->GetParentView(), has_selection,

@@ -16,6 +16,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
+#include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/features.h"
 #include "third_party/blink/public/common/features.h"
 
@@ -58,14 +59,6 @@ void InitializeFeatureList() {
       // MacWebContentsOcclusion is causing some odd visibility
       // issues with multiple web contents
       std::string(",") + features::kMacWebContentsOcclusion.name;
-#endif
-
-#if BUILDFLAG(IS_LINUX)
-  disable_features +=
-      // EnableOopPrintDrivers is still a bit half-baked on Linux and
-      // causes crashes when trying to show dialogs.
-      // TODO(codebytere): figure out how to re-enable this with our patches.
-      std::string(",") + printing::features::kEnableOopPrintDrivers.name;
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)

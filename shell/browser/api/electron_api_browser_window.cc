@@ -47,7 +47,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   // Copy the show setting to webContents, but only if we don't want to paint
   // when initially hidden
   bool paint_when_initially_hidden = true;
-  options.Get("paintWhenInitiallyHidden", &paint_when_initially_hidden);
+  options.Get(options::kPaintWhenInitiallyHidden, &paint_when_initially_hidden);
   if (!paint_when_initially_hidden) {
     bool show = true;
     options.Get(options::kShow, &show);
@@ -219,14 +219,14 @@ void BrowserWindow::CloseImmediately() {
 }
 
 void BrowserWindow::Focus() {
-  if (api_web_contents_->IsOffScreen())
+  if (api_web_contents_ && api_web_contents_->IsOffScreen())
     FocusOnWebView();
   else
     BaseWindow::Focus();
 }
 
 void BrowserWindow::Blur() {
-  if (api_web_contents_->IsOffScreen())
+  if (api_web_contents_ && api_web_contents_->IsOffScreen())
     BlurWebView();
   else
     BaseWindow::Blur();

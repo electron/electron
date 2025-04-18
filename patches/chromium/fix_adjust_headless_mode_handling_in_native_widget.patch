@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cezary Kulakowski <cezary@openfin.co>
+Date: Mon, 22 Jul 2024 16:23:13 +0200
+Subject: fix: adjust headless mode handling in native widget
+
+We need this method as we create window in headless mode and we
+switch it back to normal mode only after inital paint is done in
+order to get some events like WebContents.beginFrameSubscription.
+If we don't set `is_headless_` to false then some child windows
+e.g. autofill popups will be created in headless mode leading to
+ui problems (like dissapearing popup during typing in html's
+input list).
+
+We also need to ensure that an initial paint is scheduled when
+the compositor is unsuspended in headles mode.
+
+diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
+index 7bda1853d47034c80a4e416b9839e8d18c5a8e2c..e5df49253103c44f01195fa93988753fb163d13e 100644
+--- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
++++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
+@@ -659,9 +659,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+   // case it will never become visible but we want its compositor to produce
+   // frames for screenshooting and screencasting.
+   UpdateCompositorProperties();
+-  layer()->SetVisible(is_visible_);
++  layer()->SetVisible(is_visible_ || is_headless_mode_window_);
+   if (is_visible_ || is_headless_mode_window_) {
+     compositor_->Unsuspend();
++    layer()->SchedulePaint(layer()->bounds());
+   }
+ 
+   // Register the CGWindowID (used to identify this window for video capture)
+diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
+index 00113c5a91e4285a102afd37c6c08736d056faf6..f6a719ba09ed9aedc1bdc8322e9bee8d2014fc39 100644
+--- a/ui/views/widget/widget.h
++++ b/ui/views/widget/widget.h
+@@ -1211,6 +1211,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+   // True if widget was created in headless mode.
+   bool is_headless() const { return is_headless_; }
+ 
++  void DisableHeadlessMode() { is_headless_ = false; }
++
+   // True if the window size will follow the content preferred size.
+   bool is_autosized() const { return is_autosized_; }
+ 

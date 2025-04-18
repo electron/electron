@@ -68,8 +68,6 @@ class Extensions final : public gin::Wrappable<Extensions>,
   }
 
   raw_ptr<content::BrowserContext> browser_context_;
-
-  base::WeakPtrFactory<Extensions> weak_ptr_factory_{this};
 };
 
 }  // namespace api

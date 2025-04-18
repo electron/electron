@@ -7,9 +7,12 @@
 #include <algorithm>
 #include <utility>
 
+#include "base/command_line.h"
 #include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "base/strings/string_number_conversions.h"
+#include "chrome/browser/serial/serial_blocklist.h"
+#include "content/public/browser/console_message.h"
 #include "content/public/browser/web_contents.h"
 #include "device/bluetooth/bluetooth_adapter.h"
 #include "device/bluetooth/bluetooth_adapter_factory.h"
@@ -120,8 +123,7 @@ SerialChooserController::SerialChooserController(
       allowed_bluetooth_service_class_ids_(
           std::move(allowed_bluetooth_service_class_ids)),
       callback_(std::move(callback)),
-      serial_delegate_(serial_delegate),
-      render_frame_host_id_(render_frame_host->GetGlobalId()) {
+      initiator_document_(render_frame_host->GetWeakDocumentPtr()) {
   origin_ = web_contents_->GetPrimaryMainFrame()->GetLastCommittedOrigin();
 
   chooser_context_ = SerialChooserContextFactory::GetForBrowserContext(
@@ -210,7 +212,7 @@ void SerialChooserController::OnDeviceChosen(const std::string& port_id) {
       return ptr->token.ToString() == port_id;
     });
     if (it != ports_.end()) {
-      auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
+      auto* rfh = initiator_document_.AsRenderFrameHostIfValid();
       chooser_context_->GrantPortPermission(origin_, *it->get(), rfh);
       RunCallback(it->Clone());
     } else {
@@ -246,6 +248,34 @@ void SerialChooserController::OnGetDevices(
 
 bool SerialChooserController::DisplayDevice(
     const device::mojom::SerialPortInfo& port) const {
+  bool blocklist_disabled = base::CommandLine::ForCurrentProcess()->HasSwitch(
+      kDisableSerialBlocklist);
+  if (!blocklist_disabled && SerialBlocklist::Get().IsExcluded(port)) {
+    if (port.has_vendor_id && port.has_product_id) {
+      AddMessageToConsole(
+          blink::mojom::ConsoleMessageLevel::kInfo,
+          base::StringPrintf(
+              "Skipping a port blocked by "
+              "the Serial blocklist: vendorId=%d, "
+              "productId=%d, name='%s', serial='%s'",
+              port.vendor_id, port.product_id,
+              port.display_name ? port.display_name.value().c_str() : "",
+              port.serial_number ? port.serial_number.value().c_str() : ""));
+    } else if (port.bluetooth_service_class_id) {
+      AddMessageToConsole(
+          blink::mojom::ConsoleMessageLevel::kInfo,
+          base::StringPrintf(
+              "Skipping a port blocked by "
+              "the Serial blocklist: bluetoothServiceClassId=%s, "
+              "name='%s'",
+              port.bluetooth_service_class_id->value().c_str(),
+              port.display_name ? port.display_name.value().c_str() : ""));
+    } else {
+      NOTREACHED();
+    }
+    return false;
+  }
+
   if (filters_.empty()) {
     return BluetoothPortIsAllowed(allowed_bluetooth_service_class_ids_, port);
   }
@@ -258,6 +288,15 @@ bool SerialChooserController::DisplayDevice(
   }
 
   return false;
+}
+
+void SerialChooserController::AddMessageToConsole(
+    blink::mojom::ConsoleMessageLevel level,
+    const std::string& message) const {
+  if (content::RenderFrameHost* rfh =
+          initiator_document_.AsRenderFrameHostIfValid()) {
+    rfh->AddMessageToConsole(level, message);
+  }
 }
 
 void SerialChooserController::RunCallback(

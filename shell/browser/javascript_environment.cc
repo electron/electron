@@ -32,8 +32,9 @@ namespace electron {
 
 namespace {
 
-gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate,
-                                       size_t* max_young_generation_size) {
+std::unique_ptr<gin::IsolateHolder> CreateIsolateHolder(
+    v8::Isolate* isolate,
+    size_t* max_young_generation_size) {
   std::unique_ptr<v8::Isolate::CreateParams> create_params =
       gin::IsolateHolder::getDefaultIsolateParams();
   // The value is needed to adjust heap limit when capturing
@@ -45,14 +46,12 @@ gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate,
   // This is necessary for important aspects of Node.js
   // including heap and cpu profilers to function properly.
 
-  return {base::SingleThreadTaskRunner::GetCurrentDefault(),
-          gin::IsolateHolder::kSingleThread,
-          gin::IsolateHolder::IsolateType::kUtility,
-          std::move(create_params),
-          gin::IsolateHolder::IsolateCreationMode::kNormal,
-          nullptr,
-          nullptr,
-          isolate};
+  return std::make_unique<gin::IsolateHolder>(
+      base::SingleThreadTaskRunner::GetCurrentDefault(),
+      gin::IsolateHolder::kSingleThread,
+      gin::IsolateHolder::IsolateType::kUtility, std::move(create_params),
+      gin::IsolateHolder::IsolateCreationMode::kNormal, nullptr, nullptr,
+      isolate);
 }
 
 }  // namespace
@@ -62,8 +61,8 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
     : isolate_holder_{CreateIsolateHolder(
           Initialize(event_loop, setup_wasm_streaming),
           &max_young_generation_size_)},
-      isolate_{isolate_holder_.isolate()},
-      locker_{isolate_} {
+      isolate_{isolate_holder_->isolate()},
+      locker_{std::make_unique<v8::Locker>(isolate_)} {
   isolate_->Enter();
 
   v8::HandleScope scope(isolate_);
@@ -82,6 +81,12 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   }
   isolate_->Exit();
   g_isolate = nullptr;
+
+  // Deinit gin::IsolateHolder prior to calling NodePlatform::UnregisterIsolate.
+  // Otherwise cppgc::internal::Sweeper::Start will try to request a task runner
+  // from the NodePlatform with an already unregistered isolate.
+  locker_.reset();
+  isolate_holder_.reset();
 
   platform_->UnregisterIsolate(isolate_);
 }
@@ -139,7 +144,7 @@ v8::Isolate* JavascriptEnvironment::GetIsolate() {
 void JavascriptEnvironment::CreateMicrotasksRunner() {
   DCHECK(!microtasks_runner_);
   microtasks_runner_ = std::make_unique<MicrotasksRunner>(isolate());
-  isolate_holder_.WillCreateMicrotasksRunner();
+  isolate_holder_->WillCreateMicrotasksRunner();
   base::CurrentThread::Get()->AddTaskObserver(microtasks_runner_.get());
 }
 
@@ -148,7 +153,7 @@ void JavascriptEnvironment::DestroyMicrotasksRunner() {
   // Should be called before running gin_helper::CleanedUpAtExit::DoCleanup.
   // This helps to signal wrappable finalizer callbacks to not act on freed
   // parameters.
-  isolate_holder_.WillDestroyMicrotasksRunner();
+  isolate_holder_->WillDestroyMicrotasksRunner();
   {
     v8::HandleScope scope(isolate_);
     gin_helper::CleanedUpAtExit::DoCleanup();

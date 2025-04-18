@@ -70,7 +70,7 @@ struct Converter<UUID> {
 #if BUILDFLAG(IS_WIN)
     const GUID GUID_NULL = {};
     if (val == GUID_NULL) {
-      return StringToV8(isolate, "");
+      return v8::String::Empty(isolate);
     } else {
       std::wstring uid = base::win::WStringFromGUID(val);
       return StringToV8(isolate, base::SysWideToUTF8(uid));

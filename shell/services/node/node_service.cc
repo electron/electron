@@ -96,6 +96,7 @@ NodeService::NodeService(
 NodeService::~NodeService() {
   if (!node_env_stopped_) {
     node_env_->set_trace_sync_io(false);
+    ParentPort::GetInstance()->Close();
     js_env_->DestroyMicrotasksRunner();
     node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
   }
@@ -147,6 +148,7 @@ void NodeService::Initialize(
       node_env_.get(), [this](node::Environment* env, int exit_code) {
         // Destroy node platform.
         env->set_trace_sync_io(false);
+        ParentPort::GetInstance()->Close();
         js_env_->DestroyMicrotasksRunner();
         node::Stop(env, node::StopFlags::kDoNotTerminateIsolate);
         node_env_stopped_ = true;

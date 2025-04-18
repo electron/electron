@@ -4930,6 +4930,18 @@ describe('BrowserWindow module', () => {
         expect(w.getChildWindows().length).to.equal(0);
       });
 
+      it('can handle parent window close with focus or blur events', (done) => {
+        const w = new BrowserWindow({ show: false });
+        const c = new BrowserWindow({ show: false, parent: w });
+
+        c.on('closed', () => {
+          w.focus();
+          done();
+        });
+
+        w.close();
+      });
+
       ifit(process.platform === 'darwin')('only shows the intended window when a child with siblings is shown', async () => {
         const w = new BrowserWindow({ show: false });
         const childOne = new BrowserWindow({ show: false, parent: w });
@@ -6461,6 +6473,31 @@ describe('BrowserWindow module', () => {
     });
 
     w.loadFile(path.join(fixtures, 'pages', 'send-after-node.html'));
+  });
+
+  // TODO(codebytere): fix on Windows and Linux too
+  ifdescribe(process.platform === 'darwin')('window.webContents initial paint', () => {
+    afterEach(closeAllWindows);
+    it('paints when a window is initially hidden', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+      const entries = await w.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          const observer = new PerformanceObserver((performance) => {
+            observer.disconnect();
+            resolve(performance.getEntries());
+          });
+          observer.observe({ entryTypes: ['paint'] });
+        });
+
+        const header = document.createElement('h1');
+        header.innerText = 'Paint me!!';
+        document.getElementById('div').appendChild(header);
+      `);
+
+      expect(JSON.stringify(entries)).to.eq('{}');
+    });
   });
 
   describe('window.webContents.focus()', () => {

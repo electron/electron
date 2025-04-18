@@ -54,7 +54,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
   });
   this.on('close', (event) => {
     queueMicrotask(() => {
-      if (!unresponsiveEvent && !event.defaultPrevented) {
+      if (!unresponsiveEvent && !event?.defaultPrevented) {
         unresponsiveEvent = setTimeout(emitUnresponsiveEvent, 5000);
       }
     });

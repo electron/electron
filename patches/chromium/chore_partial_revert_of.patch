@@ -14,10 +14,10 @@ track down the source of this problem & figure out if we can fix it
 by changing something in Electron.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6010d9f9fc9bfeffb3e5a64de7352b52a202cbf7..4325cdfd256ae7a1008e073d42da995b82df5bba 100644
+index 51355738262d80afaf1f319b5d90c8a74d435ffd..2a17aa6a3f687d60a7ca0e839e59f637819a9376 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4980,7 +4980,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5006,7 +5006,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
            : IsGuest();
    // While some guest types do not have a guest SiteInstance, the ones that
    // don't all override WebContents creation above.

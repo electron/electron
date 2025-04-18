@@ -90,6 +90,7 @@ void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
     content::WebContents* web_contents) const {
 #if BUILDFLAG(ENABLE_PRINTING)
   electron::PrintViewManagerElectron::CreateForWebContents(web_contents);
+  printing::CreateCompositeClientIfNeeded(web_contents, std::string());
 #endif
 
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(

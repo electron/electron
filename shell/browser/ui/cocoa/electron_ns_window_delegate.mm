@@ -221,6 +221,12 @@ using FullScreenTransitionState =
   [super windowDidResize:notification];
   shell_->NotifyWindowResize();
   shell_->RedrawTrafficLights();
+  // When reduce motion is enabled windowDidResize is only called once after
+  // a resize and windowDidEndLiveResize is not called. So we need to call
+  // handleZoomEnd here as well.
+  if (NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion) {
+    [self handleZoomEnd];
+  }
 }
 
 - (void)windowWillMove:(NSNotification*)notification {
@@ -276,9 +282,7 @@ using FullScreenTransitionState =
   return YES;
 }
 
-- (void)windowDidEndLiveResize:(NSNotification*)notification {
-  resizingHorizontally_.reset();
-  shell_->NotifyWindowResized();
+- (void)handleZoomEnd {
   if (is_zooming_) {
     if (shell_->IsMaximized())
       shell_->NotifyWindowMaximize();
@@ -286,6 +290,12 @@ using FullScreenTransitionState =
       shell_->NotifyWindowUnmaximize();
     is_zooming_ = false;
   }
+}
+
+- (void)windowDidEndLiveResize:(NSNotification*)notification {
+  resizingHorizontally_.reset();
+  shell_->NotifyWindowResized();
+  [self handleZoomEnd];
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {

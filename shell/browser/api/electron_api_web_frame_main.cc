@@ -155,8 +155,8 @@ WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
   if (!render_frame_detached_)
     GetFrameTreeNodeIdMap().emplace(frame_tree_node_id_, this);
 
-  DCHECK(!GetFrameTokenMap().contains(frame_token_));
-  GetFrameTokenMap().emplace(frame_token_, this);
+  const auto [_, inserted] = GetFrameTokenMap().emplace(frame_token_, this);
+  DCHECK(inserted);
 
   // WebFrameMain should only be created for active or unloading frames.
   DCHECK(GetLifecycleState(rfh) == LifecycleState::kActive ||
@@ -193,8 +193,8 @@ void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   // Ensure that RFH being swapped in doesn't already exist as its own
   // WebFrameMain instance.
   frame_token_ = rfh->GetGlobalFrameToken();
-  DCHECK(!GetFrameTokenMap().contains(frame_token_));
-  GetFrameTokenMap().emplace(frame_token_, this);
+  const auto [_, inserted] = GetFrameTokenMap().emplace(frame_token_, this);
+  DCHECK(inserted);
 
   render_frame_disposed_ = false;
   TeardownMojoConnection();

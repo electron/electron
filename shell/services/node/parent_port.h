@@ -10,6 +10,7 @@
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 
 namespace v8 {
@@ -31,6 +32,7 @@ namespace electron {
 // for the lifetime of a Utility Process which
 // also means that GC lifecycle is ignored by this class.
 class ParentPort final : public gin::Wrappable<ParentPort>,
+                         public gin_helper::CleanedUpAtExit,
                          private mojo::MessageReceiver {
  public:
   static ParentPort* GetInstance();
@@ -49,9 +51,10 @@ class ParentPort final : public gin::Wrappable<ParentPort>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  void Close();
+
  private:
   void PostMessage(v8::Local<v8::Value> message_value);
-  void Close();
   void Start();
   void Pause();
 

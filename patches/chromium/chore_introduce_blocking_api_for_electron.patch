@@ -7,7 +7,7 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index 075e8173bcf1cfe420b87afe216bb06459a0d8bc..a300ed1e8c226f43fbfe6d82f72f9fb741fa342e 100644
+index d97240a7b0dcf63737808850b6ef83852155b794..4a58b1f3e8c2bee32084be82977239e911598077 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
 @@ -132,6 +132,7 @@ class KeyStorageLinux;
@@ -28,7 +28,7 @@ index 075e8173bcf1cfe420b87afe216bb06459a0d8bc..a300ed1e8c226f43fbfe6d82f72f9fb7
  namespace enterprise_connectors {
  class LinuxKeyRotationCommand;
  }  // namespace enterprise_connectors
-@@ -574,6 +578,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+@@ -575,6 +579,7 @@ class BASE_EXPORT ScopedAllowBlocking {
    friend class ::DesktopNotificationBalloon;
    friend class ::FirefoxProfileLock;
    friend class ::GaiaConfig;
@@ -36,7 +36,7 @@ index 075e8173bcf1cfe420b87afe216bb06459a0d8bc..a300ed1e8c226f43fbfe6d82f72f9fb7
    friend class ::ProfileImpl;
    friend class ::ScopedAllowBlockingForProfile;
    friend class ::StartupTabProviderImpl;
-@@ -613,6 +618,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+@@ -614,6 +619,7 @@ class BASE_EXPORT ScopedAllowBlocking {
    friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
    friend class drive::FakeDriveService;
    friend class extensions::DesktopAndroidExtensionSystem;

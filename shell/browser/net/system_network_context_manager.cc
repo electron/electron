@@ -271,6 +271,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
       base::FeatureList::IsEnabled(net::features::kAsyncDns),
+      base::FeatureList::IsEnabled(net::features::kHappyEyeballsV3),
       default_secure_dns_mode, doh_config, additional_dns_query_types_enabled);
 
   // The OSCrypt keys are process bound, so if network service is out of

@@ -667,10 +667,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return p(pathArgument, options);
   };
 
-  const { readFileSync } = fs;
-  fs.readFileSync = function (pathArgument: string, options: any) {
-    const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return readFileSync.apply(this, arguments);
+  function readFileFromArchiveSync (
+    pathInfo: { asarPath: string; filePath: string },
+    options: any
+  ): ReturnType<typeof readFileSync> {
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
@@ -704,6 +704,14 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     fs.readSync(fd, buffer, 0, info.size, info.offset);
     validateBufferIntegrity(buffer, info.integrity);
     return (encoding) ? buffer.toString(encoding) : buffer;
+  }
+
+  const { readFileSync } = fs;
+  fs.readFileSync = function (pathArgument: string, options: any) {
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return readFileSync.apply(this, arguments);
+
+    return readFileFromArchiveSync(pathInfo, options);
   };
 
   type ReaddirOptions = { encoding: BufferEncoding | null; withFileTypes?: false, recursive?: false } | undefined | null;
@@ -980,25 +988,19 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   const modBinding = internalBinding('modules');
-  const { readPackageJSON } = modBinding;
-  internalBinding('modules').readPackageJSON = (
-    jsonPath: string,
-    isESM: boolean,
-    base: undefined | string,
-    specifier: undefined | string
-  ) => {
+  modBinding.overrideReadFileSync((jsonPath: string): Buffer | false | undefined => {
     const pathInfo = splitPath(jsonPath);
-    if (!pathInfo.isAsar) return readPackageJSON(jsonPath, isESM, base, specifier);
-    const { asarPath, filePath } = pathInfo;
 
-    const archive = getOrCreateArchive(asarPath);
-    if (!archive) return undefined;
+    // Fallback to Node.js internal implementation
+    if (!pathInfo.isAsar) return undefined;
 
-    const realPath = archive.copyFileOut(filePath);
-    if (!realPath) return undefined;
-
-    return readPackageJSON(realPath, isESM, base, specifier);
-  };
+    try {
+      return readFileFromArchiveSync(pathInfo, undefined);
+    } catch {
+      // Not found
+      return false;
+    }
+  });
 
   const { internalModuleStat } = binding;
   internalBinding('fs').internalModuleStat = (receiver: unknown, pathArgument: string) => {

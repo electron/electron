@@ -8,9 +8,11 @@
 #include <utility>
 #include <vector>
 
+#include "base/command_line.h"
 #include "base/functional/bind.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
+#include "chrome/browser/usb/usb_blocklist.h"
 #include "components/content_settings/core/common/content_settings.h"
 #include "content/public/browser/device_service.h"
 #include "services/device/public/cpp/usb/usb_ids.h"
@@ -215,6 +217,12 @@ void UsbChooserContext::GrantDevicePermission(
 bool UsbChooserContext::HasDevicePermission(
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device_info) {
+  bool blocklist_disabled =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(kDisableUSBBlocklist);
+  if (!blocklist_disabled && UsbBlocklist::Get().IsExcluded(device_info)) {
+    return false;
+  }
+
   auto it = ephemeral_devices_.find(origin);
   if (it != ephemeral_devices_.end() && it->second.contains(device_info.guid)) {
     return true;
@@ -302,8 +310,8 @@ void UsbChooserContext::OnDeviceRemoved(
   }
 
   // Update the device list.
-  DCHECK(devices_.contains(device_info->guid));
-  devices_.erase(device_info->guid);
+  const size_t n_erased = devices_.erase(device_info->guid);
+  DCHECK_EQ(n_erased, 1U);
 
   // Notify all device observers.
   for (auto& observer : device_observer_list_)

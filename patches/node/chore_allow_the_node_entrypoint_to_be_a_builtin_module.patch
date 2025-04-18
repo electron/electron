@@ -7,24 +7,6 @@ This allows embedders to tell Node.js what the first "real" file is  when
 they use themselves as the entry point. We should try to upstream some form
 of this.
 
-diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 9b5772fe9b8babbb892c7a5ec79258472da55a76..3568fd6ea0816f62d97d46f5d497bb1b23bf4e25 100644
---- a/lib/internal/modules/cjs/loader.js
-+++ b/lib/internal/modules/cjs/loader.js
-@@ -1555,6 +1555,13 @@ Module.prototype._compile = function(content, filename, format) {
-   this[kIsExecuting] = true;
-   if (this[kIsMainSymbol] && getOptionValue('--inspect-brk')) {
-     const { callAndPauseOnStart } = internalBinding('inspector');
-+    // process._firstFileName is used by Embedders to tell node what
-+    // the first "real" file is when they use themselves as the entry
-+    // point
-+    if (process._firstFileName) {
-+      resolvedArgv = process._firstFileName;
-+      delete process._firstFileName;
-+    }
-     result = callAndPauseOnStart(compiledWrapper, thisValue, exports,
-                                  require, module, filename, dirname,
-                                  process, localGlobal, localBuffer);
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
 index d1c05d1717cdc825c4e48885c963c9ed65bcf51c..278665921c5160ff10b3178db27d4df319fab6b3 100644
 --- a/lib/internal/process/pre_execution.js

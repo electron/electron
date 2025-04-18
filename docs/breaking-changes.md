@@ -14,10 +14,36 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (37.0)
 
+### Behavior Changed: WebUSB and WebSerial Blocklist Support
+
+[WebUSB](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API) and [Web Serial](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API) now support the [WebUSB Blocklist](https://wicg.github.io/webusb/#blocklist) and [Web Serial Blocklist](https://wicg.github.io/serial/#blocklist) used by Chromium and outlined in their respective specifications.
+
+To disable these, users can pass `disable-usb-blocklist` and `disable-serial-blocklist` as command line flags.
+
+### Removed: `null` value for `session` property in `ProtocolResponse`
+
+This deprecated feature has been removed.
+
+Previously, setting the `ProtocolResponse.session` property to `null`
+would create a random independent session. This is no longer supported.
+
+Using single-purpose sessions here is discouraged due to overhead costs;
+however, old code that needs to preserve this behavior can emulate it by
+creating a random session with `session.fromPartition(some_random_string)`
+and then using it in `ProtocolResponse.session`.
+
 ### Behavior Changed: `BrowserWindow.IsVisibleOnAllWorkspaces()` on Linux
 
 `BrowserWindow.IsVisibleOnAllWorkspaces()` will now return false on Linux if the
 window is not currently visible.
+
+### Behavior Changes: `app.commandLine`
+
+`app.commandLine` will convert upper-cases switches and arguments to lowercase.
+
+`app.commandLine` was only meant to handle chromium switches (which aren't case-sensitive) and switches passed via `app.commandLine` will not be passed down to any of the child processes.
+
+If you were using `app.commandLine` to control the behavior of the  main process, you should do this via `process.argv`.
 
 ## Planned Breaking API Changes (36.0)
 
@@ -34,7 +60,7 @@ process.on('unhandledRejection', () => {
 })
 ```
 
-### Removed:`isDefault` and `status` properties on `PrinterInfo`
+### Removed: `isDefault` and `status` properties on `PrinterInfo`
 
 These properties have been removed from the PrinterInfo Object
 because they have been removed from upstream Chromium.
@@ -45,6 +71,16 @@ When calling `Session.clearStorageData(options)`, the `options.quota` type
 `syncable` is no longer supported because it has been
 [removed](https://chromium-review.googlesource.com/c/chromium/src/+/6309405)
 from upstream Chromium.
+
+### Deprecated: `null` value for `session` property in `ProtocolResponse`
+
+Previously, setting the ProtocolResponse.session property to `null`
+Would create a random independent session. This is no longer supported.
+
+Using single-purpose sessions here is discouraged due to overhead costs;
+however, old code that needs to preserve this behavior can emulate it by
+creating a random session with `session.fromPartition(some_random_string)`
+and then using it in `ProtocolResponse.session`.
 
 ### Deprecated: `quota` property in `Session.clearStorageData(options)`
 

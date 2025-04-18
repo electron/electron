@@ -278,7 +278,7 @@ const LINTERS = [{
 }, {
   key: 'md',
   roots: ['.'],
-  ignoreRoots: ['node_modules', 'spec/node_modules'],
+  ignoreRoots: ['.git', 'node_modules', 'spec/node_modules'],
   test: filename => filename.endsWith('.md'),
   run: async (opts, filenames) => {
     let errors = false;

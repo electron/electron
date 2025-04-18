@@ -6,7 +6,7 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'bc2f48b2415a670de18d13605b1cf0eb5fdbaae1'
+        default: '424eedbf277ad9749ffa9219068aa72ed4a5e373'
         required: true
       upload-to-storage:
         description: 'Uploads to Azure storage'
@@ -25,8 +25,10 @@ jobs:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
       options: --user root --device /dev/fuse --cap-add SYS_ADMIN
       volumes:
-        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /mnt/win-cache:/mnt/win-cache
+        - /var/run/sas:/var/run/sas
     env:
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
       TARGET_OS: 'win'
       ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'

@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index ea4646388c4747438ddd7a9164a9e61091679c28..5aded14b616e70ac98e0daa7ff94ec4294409950 100644
+index 9f82c7f92f735ed9f9569a8d299d23c7cb83e596..9b7598a26781da8b1e1c7364606574024000921f 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -30,7 +30,7 @@ index ea4646388c4747438ddd7a9164a9e61091679c28..5aded14b616e70ac98e0daa7ff94ec42
  #include "media/base/media_switches.h"
  #include "net/base/url_util.h"
  #include "third_party/blink/public/common/features.h"
-@@ -49,7 +52,7 @@ constexpr gfx::Size kMinWindowSize(240, 52);
+@@ -53,7 +56,7 @@ constexpr gfx::Size kMinWindowSize(240, 52);
  // not apply to video Picture-in-Picture windows.
  constexpr double kMaxWindowSizeRatio = 0.8;
  
@@ -39,7 +39,7 @@ index ea4646388c4747438ddd7a9164a9e61091679c28..5aded14b616e70ac98e0daa7ff94ec42
  // Returns true if a document picture-in-picture window should be focused upon
  // opening it.
  bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -196,7 +199,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -200,7 +203,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -48,7 +48,7 @@ index ea4646388c4747438ddd7a9164a9e61091679c28..5aded14b616e70ac98e0daa7ff94ec42
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -401,7 +404,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -415,7 +418,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -57,7 +57,7 @@ index ea4646388c4747438ddd7a9164a9e61091679c28..5aded14b616e70ac98e0daa7ff94ec42
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action = ShouldFocusPictureInPictureWindow(params)
-@@ -493,6 +496,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -507,6 +510,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -65,7 +65,7 @@ index ea4646388c4747438ddd7a9164a9e61091679c28..5aded14b616e70ac98e0daa7ff94ec42
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -531,6 +535,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -545,6 +549,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -75,7 +75,7 @@ index ea4646388c4747438ddd7a9164a9e61091679c28..5aded14b616e70ac98e0daa7ff94ec42
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index f9e29227fe9396747bed8b1ec970cfdfcf72c03c..d96f85145d1ad2843cf2659f68e2fd1d93c4c1c4 100644
+index e8524bb6706ae06a0feabccbe44250580098e937..87b28c59d5a3abc49c7f5ed084ad78dcae02b39a 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -430,11 +430,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(

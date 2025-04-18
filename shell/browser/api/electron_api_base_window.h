@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 
+#include <array>
 #include <map>
 #include <memory>
 #include <optional>
@@ -119,17 +120,17 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetBounds(const gfx::Rect& bounds, gin_helper::Arguments* args);
   gfx::Rect GetBounds() const;
   void SetSize(int width, int height, gin_helper::Arguments* args);
-  std::vector<int> GetSize() const;
+  std::array<int, 2U> GetSize() const;
   void SetContentSize(int width, int height, gin_helper::Arguments* args);
-  std::vector<int> GetContentSize() const;
+  std::array<int, 2U> GetContentSize() const;
   void SetContentBounds(const gfx::Rect& bounds, gin_helper::Arguments* args);
   gfx::Rect GetContentBounds() const;
   bool IsNormal() const;
   gfx::Rect GetNormalBounds() const;
   void SetMinimumSize(int width, int height);
-  std::vector<int> GetMinimumSize() const;
+  std::array<int, 2U> GetMinimumSize() const;
   void SetMaximumSize(int width, int height);
-  std::vector<int> GetMaximumSize() const;
+  std::array<int, 2U> GetMaximumSize() const;
   void SetSheetOffset(double offsetY, gin_helper::Arguments* args);
   void SetResizable(bool resizable);
   bool IsResizable() const;
@@ -149,7 +150,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsAlwaysOnTop() const;
   void Center();
   void SetPosition(int x, int y, gin_helper::Arguments* args);
-  std::vector<int> GetPosition() const;
+  std::array<int, 2U> GetPosition() const;
   void SetTitle(const std::string& title);
   std::string GetTitle() const;
   void SetAccessibleTitle(const std::string& title);

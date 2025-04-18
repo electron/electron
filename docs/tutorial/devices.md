@@ -57,7 +57,7 @@ the WebHID API:
 
 ### Blocklist
 
-By default Electron employs the same [blocklist](https://github.com/WICG/webhid/blob/main/blocklist.txt)
+By default Electron employs the same [blocklist](https://wicg.github.io/webhid/#blocklist)
 used by Chromium.  If you wish to override this behavior, you can do so by
 setting the `disable-hid-blocklist` flag:
 
@@ -104,6 +104,16 @@ There are several additional APIs for working with the Web Serial API:
 * [`ses.setPermissionCheckHandler(handler)`](../api/session.md#sessetpermissioncheckhandlerhandler)
   can be used to disable serial access for specific origins.
 
+### Blocklist
+
+By default Electron employs the same [blocklist](https://wicg.github.io/serial/#blocklist)
+used by Chromium.  If you wish to override this behavior, you can do so by
+setting the `disable-serial-blocklist` flag:
+
+```js
+app.commandLine.appendSwitch('disable-serial-blocklist')
+```
+
 ### Example
 
 This example demonstrates an Electron application that automatically selects
@@ -144,6 +154,16 @@ Electron provides several APIs for working with the WebUSB API:
   can be used to disable USB access for specific origins.
 * [`ses.setUSBProtectedClassesHandler](../api/session.md#sessetusbprotectedclasseshandlerhandler)
   can be used to allow usage of [protected USB classes](https://wicg.github.io/webusb/#usbinterface-interface) that are not available by default.
+
+### Blocklist
+
+By default Electron employs the same [blocklist](https://wicg.github.io/webusb/#blocklist)
+used by Chromium.  If you wish to override this behavior, you can do so by
+setting the `disable-usb-blocklist` flag:
+
+```js
+app.commandLine.appendSwitch('disable-usb-blocklist')
+```
 
 ### Example
 

@@ -90,7 +90,10 @@
 
 #if BUILDFLAG(IS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
+#include "base/no_destructor.h"
+#include "content/browser/mac_helpers.h"
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
+#include "shell/common/process_util.h"
 #endif
 
 #if BUILDFLAG(IS_LINUX)
@@ -161,7 +164,7 @@ struct Converter<JumpListItem::Type> {
       if (item_val == val)
         return gin::ConvertToV8(isolate, name);
 
-    return gin::ConvertToV8(isolate, "");
+    return v8::String::Empty(isolate);
   }
 
  private:
@@ -252,7 +255,7 @@ struct Converter<JumpListCategory::Type> {
       if (type_val == val)
         return gin::ConvertToV8(isolate, name);
 
-    return gin::ConvertToV8(isolate, "");
+    return v8::String::Empty(isolate);
   }
 
  private:
@@ -901,6 +904,21 @@ bool App::IsPackaged() {
 
 #if BUILDFLAG(IS_WIN)
   return base_name != FILE_PATH_LITERAL("electron.exe");
+#elif BUILDFLAG(IS_MAC)
+  static const base::NoDestructor<std::string> default_helper(
+      "electron helper" +
+      base::ToLowerASCII(content::kMacHelperSuffix_default));
+  static const base::NoDestructor<std::string> renderer_helper(
+      "electron helper" +
+      base::ToLowerASCII(content::kMacHelperSuffix_renderer));
+  static const base::NoDestructor<std::string> plugin_helper(
+      "electron helper" + base::ToLowerASCII(content::kMacHelperSuffix_plugin));
+  if (IsRendererProcess()) {
+    return base_name != *renderer_helper;
+  } else if (IsUtilityProcess()) {
+    return base_name != *default_helper && base_name != *plugin_helper;
+  }
+  return base_name != FILE_PATH_LITERAL("electron");
 #else
   return base_name != FILE_PATH_LITERAL("electron");
 #endif
@@ -1137,7 +1155,7 @@ void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
 
 bool App::IsAccessibilitySupportEnabled() {
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-  return ax_state->IsAccessibleBrowser();
+  return ax_state->GetAccessibilityMode() == ui::kAXModeComplete;
 }
 
 void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
@@ -1151,9 +1169,9 @@ void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
 
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
   if (enabled) {
-    ax_state->OnScreenReaderDetected();
+    ax_state->EnableProcessAccessibility();
   } else {
-    ax_state->DisableAccessibility();
+    ax_state->DisableProcessAccessibility();
   }
   Browser::Get()->OnAccessibilitySupportChanged();
 }
@@ -1611,11 +1629,19 @@ void ConfigureHostResolver(v8::Isolate* isolate,
 
   bool enable_built_in_resolver =
       base::FeatureList::IsEnabled(net::features::kAsyncDns);
+  bool enable_happy_eyeballs_v3 =
+      base::FeatureList::IsEnabled(net::features::kHappyEyeballsV3);
   bool additional_dns_query_types_enabled = true;
 
   if (opts.Has("enableBuiltInResolver") &&
       !opts.Get("enableBuiltInResolver", &enable_built_in_resolver)) {
     thrower.ThrowTypeError("enableBuiltInResolver must be a boolean");
+    return;
+  }
+
+  if (opts.Has("enableHappyEyeballs") &&
+      !opts.Get("enableHappyEyeballs", &enable_happy_eyeballs_v3)) {
+    thrower.ThrowTypeError("enableHappyEyeballs must be a boolean");
     return;
   }
 
@@ -1659,8 +1685,8 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   // Configure the stub resolver. This must be done after the system
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
-      enable_built_in_resolver, secure_dns_mode, doh_config,
-      additional_dns_query_types_enabled);
+      enable_built_in_resolver, enable_happy_eyeballs_v3, secure_dns_mode,
+      doh_config, additional_dns_query_types_enabled);
 }
 
 // static

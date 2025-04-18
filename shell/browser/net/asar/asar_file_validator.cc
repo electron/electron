@@ -14,7 +14,6 @@
 #include "base/notreached.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "crypto/sha2.h"
 
 namespace asar {
 
@@ -34,7 +33,7 @@ void AsarFileValidator::EnsureBlockHashExists() {
   current_hash_byte_count_ = 0U;
   switch (integrity_.algorithm) {
     case HashAlgorithm::kSHA256:
-      current_hash_ = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
+      current_hash_.emplace(crypto::hash::kSha256);
       break;
     case HashAlgorithm::kNone:
       NOTREACHED();
@@ -86,7 +85,7 @@ bool AsarFileValidator::FinishBlock() {
   if (!current_hash_) {
     // This happens when we fail to read the resource. Compute empty content's
     // hash in this case.
-    current_hash_ = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
+    current_hash_.emplace(crypto::hash::kSha256);
   }
 
   // If the file reader is done we need to make sure we've either read up to the
@@ -108,7 +107,7 @@ bool AsarFileValidator::FinishBlock() {
     current_hash_->Update(abandoned_buffer);
   }
 
-  auto actual = std::array<uint8_t, crypto::kSHA256Length>{};
+  auto actual = std::array<uint8_t, crypto::hash::kSha256Size>{};
   current_hash_->Finish(actual);
   current_hash_.reset();
   current_hash_byte_count_ = 0;

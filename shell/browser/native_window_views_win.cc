@@ -224,7 +224,6 @@ bool IsScreenReaderActive() {
 
 }  // namespace
 
-std::set<NativeWindowViews*> NativeWindowViews::forwarding_windows_;
 HHOOK NativeWindowViews::mouse_hook_ = nullptr;
 
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
@@ -282,8 +281,8 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       checked_for_a11y_support_ = true;
 
       auto* const axState = content::BrowserAccessibilityState::GetInstance();
-      if (axState && !axState->IsAccessibleBrowser()) {
-        axState->OnScreenReaderDetected();
+      if (axState && axState->GetAccessibilityMode() != ui::kAXModeComplete) {
+        axState->EnableProcessAccessibility();
         Browser::Get()->OnAccessibilitySupportChanged();
       }
 

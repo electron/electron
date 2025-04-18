@@ -446,13 +446,13 @@ void ElectronBrowserClient::RegisterPendingSiteInstance(
     content::SiteInstance* pending_site_instance) {
   // Remember the original web contents for the pending renderer process.
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
-  auto* pending_process = pending_site_instance->GetProcess();
-  pending_processes_[pending_process->GetID()] = web_contents;
+  const auto pending_process_id = pending_site_instance->GetProcess()->GetID();
+  pending_processes_[pending_process_id] = web_contents;
 
   if (rfh->GetParent())
-    renderer_is_subframe_.insert(pending_process->GetID());
+    renderer_is_subframe_.insert(pending_process_id);
   else
-    renderer_is_subframe_.erase(pending_process->GetID());
+    renderer_is_subframe_.erase(pending_process_id);
 }
 
 void ElectronBrowserClient::AppendExtraCommandLineSwitches(

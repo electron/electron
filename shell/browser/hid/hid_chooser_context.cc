@@ -253,10 +253,10 @@ void HidChooserContext::DeviceAdded(device::mojom::HidDeviceInfoPtr device) {
 
 void HidChooserContext::DeviceRemoved(device::mojom::HidDeviceInfoPtr device) {
   DCHECK(device);
-  DCHECK(devices_.contains(device->guid));
 
   // Update the device list.
-  devices_.erase(device->guid);
+  const size_t n_erased = devices_.erase(device->guid);
+  DCHECK_EQ(n_erased, 1U);
 
   // Notify all device observers.
   for (auto& observer : device_observer_list_)
@@ -274,10 +274,11 @@ void HidChooserContext::DeviceRemoved(device::mojom::HidDeviceInfoPtr device) {
 
 void HidChooserContext::DeviceChanged(device::mojom::HidDeviceInfoPtr device) {
   DCHECK(device);
-  DCHECK(devices_.contains(device->guid));
 
   // Update the device list.
-  devices_[device->guid] = device->Clone();
+  auto& mapped = devices_[device->guid];
+  DCHECK(!mapped.is_null());
+  mapped = device->Clone();
 
   // Notify all observers.
   for (auto& observer : device_observer_list_)

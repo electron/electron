@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
 
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -28,6 +27,7 @@
 #include "shell/browser/osr/osr_host_display_client.h"
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "shell/browser/osr/osr_view_proxy.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/blink/public/mojom/widget/record_content_to_visible_time_request.mojom-forward.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
@@ -150,7 +150,8 @@ class OffScreenRenderWidgetHostView
   void TransformPointToRootSurface(gfx::PointF* point) override {}
   gfx::Rect GetBoundsInRootWindow() override;
   std::optional<content::DisplayFeature> GetDisplayFeature() override;
-  void SetDisplayFeatureForTesting(
+  void DisableDisplayFeatureOverrideForEmulation() override {}
+  void OverrideDisplayFeatureForEmulation(
       const content::DisplayFeature* display_feature) override {}
   void NotifyHostAndDelegateOnWasShown(
       blink::mojom::RecordContentToVisibleTimeRequestPtr) final;
@@ -277,8 +278,8 @@ class OffScreenRenderWidgetHostView
   raw_ptr<OffScreenRenderWidgetHostView> parent_host_view_ = nullptr;
   raw_ptr<OffScreenRenderWidgetHostView> popup_host_view_ = nullptr;
   raw_ptr<OffScreenRenderWidgetHostView> child_host_view_ = nullptr;
-  std::set<OffScreenRenderWidgetHostView*> guest_host_views_;
-  std::set<OffscreenViewProxy*> proxy_views_;
+  absl::flat_hash_set<OffScreenRenderWidgetHostView*> guest_host_views_;
+  absl::flat_hash_set<OffscreenViewProxy*> proxy_views_;
 
   const bool transparent_;
   const bool offscreen_use_shared_texture_;

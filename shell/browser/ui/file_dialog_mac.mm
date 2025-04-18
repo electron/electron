@@ -11,6 +11,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <CoreServices/CoreServices.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 #include "base/apple/foundation_util.h"
 #include "base/apple/scoped_cftyperef.h"
@@ -29,7 +30,7 @@
 @interface PopUpButtonHandler : NSObject
 
 @property(nonatomic, assign) NSSavePanel* savePanel;
-@property(nonatomic, strong) NSArray* fileTypesList;
+@property(nonatomic, strong) NSArray* contentTypesList;
 
 - (instancetype)initWithPanel:(NSSavePanel*)panel
                  andTypesList:(NSArray*)typesList;
@@ -40,14 +41,14 @@
 @implementation PopUpButtonHandler
 
 @synthesize savePanel;
-@synthesize fileTypesList;
+@synthesize contentTypesList;
 
 - (instancetype)initWithPanel:(NSSavePanel*)panel
                  andTypesList:(NSArray*)typesList {
   self = [super init];
   if (self) {
     [self setSavePanel:panel];
-    [self setFileTypesList:typesList];
+    [self setContentTypesList:typesList];
   }
   return self;
 }
@@ -55,15 +56,19 @@
 - (void)selectFormat:(id)sender {
   NSPopUpButton* button = (NSPopUpButton*)sender;
   NSInteger selectedItemIndex = [button indexOfSelectedItem];
-  NSArray* list = [self fileTypesList];
-  NSArray* fileTypes = [list objectAtIndex:selectedItemIndex];
+  NSArray* list = [self contentTypesList];
+  NSArray* content_types = [list objectAtIndex:selectedItemIndex];
 
-  // If we meet a '*' file extension, we allow all the file types and no
-  // need to set the specified file types.
-  if ([fileTypes count] == 0 || [fileTypes containsObject:@"*"])
-    [[self savePanel] setAllowedFileTypes:nil];
-  else
-    [[self savePanel] setAllowedFileTypes:fileTypes];
+  __block BOOL allowAllFiles = NO;
+  [content_types
+      enumerateObjectsUsingBlock:^(UTType* type, NSUInteger idx, BOOL* stop) {
+        if ([[type preferredFilenameExtension] isEqual:@"*"]) {
+          allowAllFiles = YES;
+          *stop = YES;
+        }
+      }];
+
+  [[self savePanel] setAllowedContentTypes:allowAllFiles ? @[] : content_types];
 }
 
 @end
@@ -100,9 +105,10 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 
   // Create array to keep file types and their name.
   for (const Filter& filter : filters) {
-    NSMutableOrderedSet* file_type_set =
+    NSMutableOrderedSet* content_types_set =
         [NSMutableOrderedSet orderedSetWithCapacity:filters.size()];
     [filter_names addObject:@(filter.first.c_str())];
+
     for (std::string ext : filter.second) {
       // macOS is incapable of understanding multiple file extensions,
       // so we need to tokenize the extension that's been passed in.
@@ -113,25 +119,34 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
         ext.erase(0, pos + 1);
       }
 
-      [file_type_set addObject:@(ext.c_str())];
+      if (ext == "*") {
+        [content_types_set addObject:[UTType typeWithFilenameExtension:@"*"]];
+        break;
+      } else {
+        if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())])
+          [content_types_set addObject:utt];
+      }
     }
-    [file_types_list addObject:[file_type_set array]];
+
+    [file_types_list addObject:content_types_set];
   }
 
-  // Passing empty array to setAllowedFileTypes will cause exception.
-  NSArray* file_types = nil;
-  NSUInteger count = [file_types_list count];
-  if (count > 0) {
-    file_types = [[file_types_list objectAtIndex:0] allObjects];
-    // If we meet a '*' file extension, we allow all the file types and no
-    // need to set the specified file types.
-    if ([file_types count] == 0 || [file_types containsObject:@"*"])
-      file_types = nil;
-  }
-  [dialog setAllowedFileTypes:file_types];
+  // Don't add file format picker.
+  if ([file_types_list count] <= 1)
+    return;
 
-  if (count <= 1)
-    return;  // don't add file format picker
+  NSArray* content_types = [file_types_list objectAtIndex:0];
+
+  __block BOOL allowAllFiles = NO;
+  [content_types
+      enumerateObjectsUsingBlock:^(UTType* type, NSUInteger idx, BOOL* stop) {
+        if ([[type preferredFilenameExtension] isEqual:@"*"]) {
+          allowAllFiles = YES;
+          *stop = YES;
+        }
+      }];
+
+  [dialog setAllowedContentTypes:allowAllFiles ? @[] : content_types];
 
   // Add file format picker.
   ElectronAccessoryView* accessoryView = [[ElectronAccessoryView alloc]

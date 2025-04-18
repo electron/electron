@@ -93,7 +93,7 @@
     **Note:** This option is currently experimental.
 * `titleBarOverlay` Object | Boolean (optional) -  When using a frameless window in conjunction with `win.setWindowButtonVisibility(true)` on macOS or using a `titleBarStyle` so that the standard window controls ("traffic lights" on macOS) are visible, this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. Specifying `true` will result in an overlay with default system colors. Default is `false`.
   * `color` String (optional) _Windows_ _Linux_ - The CSS color of the Window Controls Overlay when enabled. Default is the system color.
-  * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled. Default is the system color.
+  * `symbolColor` String (optional) _Windows_ _Linux_ - The CSS color of the symbols on the Window Controls Overlay when enabled. Default is the system color.
   * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels. Default is system height.
 * `trafficLightPosition` [Point](point.md) (optional) _macOS_ -
   Set a custom position for the traffic light buttons in frameless windows.

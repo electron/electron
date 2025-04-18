@@ -47,13 +47,13 @@ class JavascriptEnvironment {
   std::unique_ptr<node::MultiIsolatePlatform> platform_;
 
   size_t max_young_generation_size_ = 0;
-  gin::IsolateHolder isolate_holder_;
+  std::unique_ptr<gin::IsolateHolder> isolate_holder_;
 
   // owned-by: isolate_holder_
   const raw_ptr<v8::Isolate> isolate_;
 
   // depends-on: isolate_
-  const v8::Locker locker_;
+  std::unique_ptr<v8::Locker> locker_;
 
   std::unique_ptr<MicrotasksRunner> microtasks_runner_;
 };

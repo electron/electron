@@ -30,7 +30,7 @@ struct Converter<electron::BundlerMoverConflictType> {
       case electron::BundlerMoverConflictType::kExistsAndRunning:
         return gin::StringToV8(isolate, "existsAndRunning");
       default:
-        return gin::StringToV8(isolate, "");
+        return v8::String::Empty(isolate);
     }
   }
 };

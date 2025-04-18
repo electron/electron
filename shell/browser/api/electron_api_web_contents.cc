@@ -16,6 +16,7 @@
 
 #include "base/base64.h"
 #include "base/containers/fixed_flat_map.h"
+#include "base/containers/flat_set.h"
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
@@ -176,6 +177,7 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_base.h"
+#include "components/printing/browser/print_composite_client.h"
 #include "components/printing/browser/print_manager_utils.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_result.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
@@ -675,23 +677,15 @@ PrefService* GetPrefService(content::WebContents* web_contents) {
   return static_cast<electron::ElectronBrowserContext*>(context)->prefs();
 }
 
-std::map<std::string, std::string> GetAddedFileSystemPaths(
+// returns a Dict of filesystem_path -> type
+[[nodiscard]] const base::Value::Dict& GetAddedFileSystems(
     content::WebContents* web_contents) {
-  auto* pref_service = GetPrefService(web_contents);
-  const base::Value::Dict& file_system_paths =
-      pref_service->GetDict(prefs::kDevToolsFileSystemPaths);
-  std::map<std::string, std::string> result;
-  for (auto it : file_system_paths) {
-    std::string type =
-        it.second.is_string() ? it.second.GetString() : std::string();
-    result[it.first] = type;
-  }
-  return result;
+  return GetPrefService(web_contents)->GetDict(prefs::kDevToolsFileSystemPaths);
 }
 
 bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
-                               const std::string& file_system_path) {
-  return GetAddedFileSystemPaths(web_contents).contains(file_system_path);
+                               const std::string_view file_system_path) {
+  return GetAddedFileSystems(web_contents).contains(file_system_path);
 }
 
 content::RenderFrameHost* GetRenderFrameHost(
@@ -1023,6 +1017,7 @@ void WebContents::InitWithWebContents(
 
 #if BUILDFLAG(ENABLE_PRINTING)
   PrintViewManagerElectron::CreateForWebContents(web_contents.get());
+  printing::CreateCompositeClientIfNeeded(web_contents.get(), GetUserAgent());
 #endif
 
   // Determine whether the WebContents is offscreen.
@@ -1794,19 +1789,18 @@ void WebContents::FrameDeleted(content::FrameTreeNodeId frame_tree_node_id) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
+  const auto id = render_view_host->GetProcess()->GetID().GetUnsafeValue();
   // This event is necessary for tracking any states with respect to
   // intermediate render view hosts aka speculative render view hosts. Currently
   // used by object-registry.js to ref count remote objects.
-  Emit("render-view-deleted",
-       render_view_host->GetProcess()->GetID().GetUnsafeValue());
+  Emit("render-view-deleted", id);
 
   if (web_contents()->GetRenderViewHost() == render_view_host) {
     // When the RVH that has been deleted is the current RVH it means that the
     // the web contents are being closed. This is communicated by this event.
     // Currently tracked by guest-window-manager.ts to destroy the
     // BrowserWindow.
-    Emit("current-render-view-deleted",
-         render_view_host->GetProcess()->GetID().GetUnsafeValue());
+    Emit("current-render-view-deleted", id);
   }
 }
 
@@ -1983,6 +1977,19 @@ void WebContents::DraggableRegionsChanged(
   draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
+#if BUILDFLAG(ENABLE_PRINTING)
+void WebContents::PrintCrossProcessSubframe(
+    content::WebContents* web_contents,
+    const gfx::Rect& rect,
+    int document_cookie,
+    content::RenderFrameHost* subframe_host) const {
+  if (auto* client =
+          printing::PrintCompositeClient::FromWebContents(web_contents)) {
+    client->PrintCrossProcessSubframe(rect, document_cookie, subframe_host);
+  }
+}
+#endif
+
 SkRegion* WebContents::draggable_region() {
   return g_disable_draggable_regions ? nullptr : draggable_region_.get();
 }
@@ -2113,13 +2120,12 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
 void WebContents::DidUpdateFaviconURL(
     content::RenderFrameHost* render_frame_host,
     const std::vector<blink::mojom::FaviconURLPtr>& urls) {
-  std::set<GURL> unique_urls;
+  base::flat_set<GURL> unique_urls;
+  unique_urls.reserve(std::size(urls));
   for (const auto& iter : urls) {
-    if (iter->icon_type != blink::mojom::FaviconIconType::kFavicon)
-      continue;
-    const GURL& url = iter->icon_url;
-    if (url.is_valid())
-      unique_urls.insert(url);
+    if (iter->icon_type == blink::mojom::FaviconIconType::kFavicon &&
+        iter->icon_url.is_valid())
+      unique_urls.insert(iter->icon_url);
   }
   Emit("page-favicon-updated", unique_urls);
 }
@@ -2512,8 +2518,12 @@ void WebContents::RestoreHistory(
     return;
   }
 
-  auto navigation_entries = std::make_unique<
-      std::vector<std::unique_ptr<content::NavigationEntry>>>();
+  auto navigation_entries =
+      std::vector<std::unique_ptr<content::NavigationEntry>>{};
+  navigation_entries.reserve(entries.size());
+
+  blink::UserAgentOverride ua_override;
+  ua_override.ua_string_override = GetUserAgent();
 
   for (const auto& entry : entries) {
     content::NavigationEntry* nav_entry = nullptr;
@@ -2527,13 +2537,16 @@ void WebContents::RestoreHistory(
           std::to_string(index) + ".");
       return;
     }
-    navigation_entries->push_back(
-        std::unique_ptr<content::NavigationEntry>(nav_entry));
+
+    nav_entry->SetIsOverridingUserAgent(
+        !ua_override.ua_string_override.empty());
+    navigation_entries.emplace_back(nav_entry);
   }
 
-  if (!navigation_entries->empty()) {
+  if (!navigation_entries.empty()) {
+    web_contents()->SetUserAgentOverride(ua_override, false);
     web_contents()->GetController().Restore(
-        index, content::RestoreType::kRestored, navigation_entries.get());
+        index, content::RestoreType::kRestored, &navigation_entries);
     web_contents()->GetController().LoadIfNecessary();
   }
 }
@@ -2931,9 +2944,8 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
     return;
   }
 
-  // If the user has passed a deviceName use it, otherwise use default printer.
+  // Use user-passed deviceName, otherwise default printer.
   print_settings.Set(printing::kSettingDeviceName, info.second);
-
   if (!print_settings.FindInt(printing::kSettingDpiHorizontal)) {
     gfx::Size dpi = GetDefaultPrinterDPI(info.second);
     print_settings.Set(printing::kSettingDpiHorizontal, dpi.width());
@@ -2989,6 +3001,17 @@ void WebContents::Print(gin::Arguments* args) {
   if (args->Length() == 2 && !args->GetNext(&callback)) {
     gin_helper::ErrorThrower(args->isolate())
         .ThrowError("webContents.print(): Invalid optional callback provided.");
+    return;
+  }
+
+  if (options.IsEmptyObject()) {
+    auto* print_view_manager =
+        PrintViewManagerElectron::FromWebContents(web_contents());
+    if (!print_view_manager)
+      return;
+
+    content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
+    print_view_manager->PrintNow(rfh, std::move(settings), std::move(callback));
     return;
   }
 
@@ -4035,31 +4058,22 @@ void WebContents::DevToolsAppendToFile(const std::string& url,
 }
 
 void WebContents::DevToolsRequestFileSystems() {
-  auto file_system_paths = GetAddedFileSystemPaths(GetDevToolsWebContents());
-  if (file_system_paths.empty()) {
-    inspectable_web_contents_->CallClientFunction(
-        "DevToolsAPI", "fileSystemsLoaded", base::Value(base::Value::List()));
-    return;
+  const std::string empty_str;
+  content::WebContents* const dtwc = GetDevToolsWebContents();
+  const base::Value::Dict& added_paths = GetAddedFileSystems(dtwc);
+
+  auto filesystems = base::Value::List::with_capacity(added_paths.size());
+  for (const auto path_and_type : added_paths) {
+    const auto& [path, type_val] = path_and_type;
+    const auto& type = type_val.is_string() ? type_val.GetString() : empty_str;
+    const std::string file_system_id =
+        RegisterFileSystem(dtwc, base::FilePath::FromUTF8Unsafe(path));
+    filesystems.Append(CreateFileSystemValue(
+        CreateFileSystemStruct(dtwc, file_system_id, path, type)));
   }
 
-  std::vector<FileSystem> file_systems;
-  for (const auto& file_system_path : file_system_paths) {
-    base::FilePath path =
-        base::FilePath::FromUTF8Unsafe(file_system_path.first);
-    std::string file_system_id =
-        RegisterFileSystem(GetDevToolsWebContents(), path);
-    FileSystem file_system =
-        CreateFileSystemStruct(GetDevToolsWebContents(), file_system_id,
-                               file_system_path.first, file_system_path.second);
-    file_systems.push_back(file_system);
-  }
-
-  base::Value::List file_system_value;
-  for (const auto& file_system : file_systems)
-    file_system_value.Append(CreateFileSystemValue(file_system));
   inspectable_web_contents_->CallClientFunction(
-      "DevToolsAPI", "fileSystemsLoaded",
-      base::Value(std::move(file_system_value)));
+      "DevToolsAPI", "fileSystemsLoaded", base::Value{std::move(filesystems)});
 }
 
 void WebContents::DevToolsAddFileSystem(
@@ -4121,8 +4135,11 @@ void WebContents::DevToolsIndexPath(
     OnDevToolsIndexingDone(request_id, file_system_path);
     return;
   }
-  if (devtools_indexing_jobs_.contains(request_id))
+
+  auto& indexing_job = devtools_indexing_jobs_[request_id];
+  if (indexing_job)
     return;
+
   std::vector<std::string> excluded_folders;
   std::optional<base::Value> parsed_excluded_folders =
       base::JSONReader::Read(excluded_folders_message);
@@ -4132,19 +4149,18 @@ void WebContents::DevToolsIndexPath(
         excluded_folders.push_back(folder_path.GetString());
     }
   }
-  devtools_indexing_jobs_[request_id] =
-      scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>(
-          devtools_file_system_indexer_->IndexPath(
-              file_system_path, excluded_folders,
-              base::BindRepeating(
-                  &WebContents::OnDevToolsIndexingWorkCalculated,
-                  weak_factory_.GetWeakPtr(), request_id, file_system_path),
-              base::BindRepeating(&WebContents::OnDevToolsIndexingWorked,
-                                  weak_factory_.GetWeakPtr(), request_id,
-                                  file_system_path),
-              base::BindRepeating(&WebContents::OnDevToolsIndexingDone,
-                                  weak_factory_.GetWeakPtr(), request_id,
-                                  file_system_path)));
+
+  indexing_job = devtools_file_system_indexer_->IndexPath(
+      file_system_path, excluded_folders,
+      base::BindRepeating(&WebContents::OnDevToolsIndexingWorkCalculated,
+                          weak_factory_.GetWeakPtr(), request_id,
+                          file_system_path),
+      base::BindRepeating(&WebContents::OnDevToolsIndexingWorked,
+                          weak_factory_.GetWeakPtr(), request_id,
+                          file_system_path),
+      base::BindRepeating(&WebContents::OnDevToolsIndexingDone,
+                          weak_factory_.GetWeakPtr(), request_id,
+                          file_system_path));
 }
 
 void WebContents::DevToolsStopIndexing(int request_id) {

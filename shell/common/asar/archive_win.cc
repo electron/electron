@@ -6,9 +6,10 @@
 #include "shell/common/asar/archive.h"
 
 #include <algorithm>
-#include <sstream>
+#include <string_view>
 
 #include "base/base_paths.h"
+#include "base/containers/map_util.h"
 #include "base/json/json_reader.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
@@ -17,6 +18,7 @@
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/common/asar/asar_util.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
 namespace asar {
 
@@ -37,19 +39,10 @@ std::optional<base::FilePath> Archive::RelativePath() const {
   return relative_path;
 }
 
-std::optional<std::unordered_map<std::string, IntegrityPayload>>
-LoadIntegrityConfigCache() {
-  static base::NoDestructor<
-      std::optional<std::unordered_map<std::string, IntegrityPayload>>>
-      integrity_config_cache;
+namespace {
 
-  // Skip loading if cache is already loaded
-  if (integrity_config_cache->has_value()) {
-    return *integrity_config_cache;
-  }
-
-  // Init cache
-  *integrity_config_cache = std::unordered_map<std::string, IntegrityPayload>();
+auto LoadIntegrityConfig() {
+  absl::flat_hash_map<std::string, IntegrityPayload> cache;
 
   // Load integrity config from exe resource
   HMODULE module_handle = ::GetModuleHandle(NULL);
@@ -65,8 +58,8 @@ LoadIntegrityConfigCache() {
     PLOG(FATAL) << "LoadResource failed.";
   }
 
-  auto* res_data = static_cast<const char*>(::LockResource(rcData));
-  int res_size = SizeofResource(module_handle, resource);
+  const auto* res_data = static_cast<const char*>(::LockResource(rcData));
+  const auto res_size = SizeofResource(module_handle, resource);
 
   if (!res_data) {
     PLOG(FATAL) << "Failed to integrity config from exe resource.";
@@ -77,9 +70,8 @@ LoadIntegrityConfigCache() {
   }
 
   // Parse integrity config payload
-  std::string integrity_config_payload = std::string(res_data, res_size);
   std::optional<base::Value> root =
-      base::JSONReader::Read(integrity_config_payload);
+      base::JSONReader::Read(std::string_view{res_data, res_size});
 
   if (!root.has_value()) {
     LOG(FATAL) << "Invalid integrity config: NOT a valid JSON.";
@@ -91,6 +83,7 @@ LoadIntegrityConfigCache() {
   }
 
   // Parse each individual file integrity config
+  cache.reserve(file_configs->size());
   for (size_t i = 0; i < file_configs->size(); i++) {
     // Skip invalid file configs
     const base::Value::Dict* ele_dict = (*file_configs)[i].GetIfDict();
@@ -122,37 +115,30 @@ LoadIntegrityConfigCache() {
     header_integrity.algorithm = HashAlgorithm::kSHA256;
     header_integrity.hash = base::ToLowerASCII(*value);
 
-    integrity_config_cache->value()[base::ToLowerASCII(*file)] =
-        std::move(header_integrity);
+    cache.insert_or_assign(base::ToLowerASCII(*file),
+                           std::move(header_integrity));
   }
 
-  return *integrity_config_cache;
+  return cache;
 }
 
+const auto& GetIntegrityConfigCache() {
+  static const auto cache = base::NoDestructor(LoadIntegrityConfig());
+  return *cache;
+}
+
+}  // namespace
+
 std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
-  std::optional<base::FilePath> relative_path = RelativePath();
-  // Callers should have already asserted this
-  CHECK(relative_path.has_value());
+  const std::optional<base::FilePath> relative_path = RelativePath();
+  CHECK(relative_path);
 
-  // Load integrity config from exe resource
-  std::optional<std::unordered_map<std::string, IntegrityPayload>>
-      integrity_config = LoadIntegrityConfigCache();
-  if (!integrity_config.has_value()) {
-    LOG(WARNING) << "Failed to integrity config from exe resource.";
-    return std::nullopt;
-  }
+  const auto key = base::ToLowerASCII(base::WideToUTF8(relative_path->value()));
 
-  // Convert Window rel path to UTF8 lower case
-  std::string rel_path_utf8 = base::WideToUTF8(relative_path.value().value());
-  rel_path_utf8 = base::ToLowerASCII(rel_path_utf8);
+  if (const auto* payload = base::FindOrNull(GetIntegrityConfigCache(), key))
+    return *payload;
 
-  // Find file integrity config
-  auto iter = integrity_config.value().find(rel_path_utf8);
-  if (iter == integrity_config.value().end()) {
-    LOG(FATAL) << "Failed to find file integrity info for " << rel_path_utf8;
-  }
-
-  return iter->second;
+  LOG(FATAL) << "Failed to find file integrity info for " << key;
 }
 
 }  // namespace asar

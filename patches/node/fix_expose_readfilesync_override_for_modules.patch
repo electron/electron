@@ -1,0 +1,123 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fedor Indutny <indutny@signal.org>
+Date: Mon, 31 Mar 2025 11:21:29 -0700
+Subject: fix: expose ReadFileSync override for modules
+
+To avoid copying out `package.json` files out of the ASAR file we need
+an API override to replace the native `ReadFileSync` in the `modules`
+binding.
+
+diff --git a/src/env_properties.h b/src/env_properties.h
+index 9f89823170782242093bc5ee0df6a2a2ef5b919f..b9374ee1acceb3d0aab51c6c5ae6a79be1cc71a9 100644
+--- a/src/env_properties.h
++++ b/src/env_properties.h
+@@ -478,6 +478,7 @@
+   V(maybe_cache_generated_source_map, v8::Function)                            \
+   V(messaging_deserialize_create_object, v8::Function)                         \
+   V(message_port, v8::Object)                                                  \
++  V(modules_read_file_sync, v8::Function)                                      \
+   V(builtin_module_require, v8::Function)                                      \
+   V(performance_entry_callback, v8::Function)                                  \
+   V(prepare_stack_trace_callback, v8::Function)                                \
+diff --git a/src/node_modules.cc b/src/node_modules.cc
+index 4e9f70a1c41b44d2a1863b778d4f1e37279178d9..c56a32885b8debbd5b95a2c11f3838d4088e05ac 100644
+--- a/src/node_modules.cc
++++ b/src/node_modules.cc
+@@ -21,6 +21,7 @@ namespace modules {
+ 
+ using v8::Array;
+ using v8::Context;
++using v8::Function;
+ using v8::FunctionCallbackInfo;
+ using v8::HandleScope;
+ using v8::Isolate;
+@@ -88,6 +89,7 @@ Local<Array> BindingData::PackageConfig::Serialize(Realm* realm) const {
+ 
+ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+     Realm* realm, std::string_view path, ErrorContext* error_context) {
++  auto isolate = realm->isolate();
+   auto binding_data = realm->GetBindingData<BindingData>();
+ 
+   auto cache_entry = binding_data->package_configs_.find(path.data());
+@@ -97,8 +99,36 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+ 
+   PackageConfig package_config{};
+   package_config.file_path = path;
++
++  Local<Function> modules_read_file_sync = realm->modules_read_file_sync();
++
++  int read_err;
+   // No need to exclude BOM since simdjson will skip it.
+-  if (ReadFileSync(&package_config.raw_json, path.data()) < 0) {
++  if (modules_read_file_sync.IsEmpty()) {
++    read_err = ReadFileSync(&package_config.raw_json, path.data());
++  } else {
++    Local<Value> args[] = {
++        v8::String::NewFromUtf8(isolate, path.data()).ToLocalChecked(),
++    };
++    Local<Value> result = modules_read_file_sync->Call(
++        realm->context(),
++        Undefined(isolate),
++        arraysize(args),
++        args).ToLocalChecked();
++
++    if (result->IsUndefined()) {
++      // Fallback
++      read_err = ReadFileSync(&package_config.raw_json, path.data());
++    } else if (result->IsFalse()) {
++      // Not found
++      read_err = -1;
++    } else {
++      BufferValue data(isolate, result);
++      package_config.raw_json = data.ToString();
++      read_err = 0;
++    }
++  }
++  if (read_err < 0) {
+     return nullptr;
+   }
+   // In some systems, std::string is annotated to generate an
+@@ -248,6 +278,12 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+   return &cached.first->second;
+ }
+ 
++void BindingData::OverrideReadFileSync(const FunctionCallbackInfo<Value>& args) {
++  Realm* realm = Realm::GetCurrent(args);
++  CHECK(args[0]->IsFunction());
++  realm->set_modules_read_file_sync(args[0].As<Function>());
++}
++
+ void BindingData::ReadPackageJSON(const FunctionCallbackInfo<Value>& args) {
+   CHECK_GE(args.Length(), 1);  // path, [is_esm, base, specifier]
+   CHECK(args[0]->IsString());  // path
+@@ -556,6 +592,8 @@ void GetCompileCacheDir(const FunctionCallbackInfo<Value>& args) {
+ void BindingData::CreatePerIsolateProperties(IsolateData* isolate_data,
+                                              Local<ObjectTemplate> target) {
+   Isolate* isolate = isolate_data->isolate();
++  SetMethod(isolate, target, "overrideReadFileSync", OverrideReadFileSync);
++
+   SetMethod(isolate, target, "readPackageJSON", ReadPackageJSON);
+   SetMethod(isolate,
+             target,
+@@ -595,6 +633,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+ 
+ void BindingData::RegisterExternalReferences(
+     ExternalReferenceRegistry* registry) {
++  registry->Register(OverrideReadFileSync);
++
+   registry->Register(ReadPackageJSON);
+   registry->Register(GetNearestParentPackageJSONType);
+   registry->Register(GetNearestParentPackageJSON);
+diff --git a/src/node_modules.h b/src/node_modules.h
+index 17909b2270454b3275c7bf2e50d4b9b35673ecc8..3d5b0e3ac65524adfe221bfd6f85360dee1f0bee 100644
+--- a/src/node_modules.h
++++ b/src/node_modules.h
+@@ -54,6 +54,8 @@ class BindingData : public SnapshotableObject {
+   SET_SELF_SIZE(BindingData)
+   SET_MEMORY_INFO_NAME(BindingData)
+ 
++  static void OverrideReadFileSync(
++      const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void ReadPackageJSON(const v8::FunctionCallbackInfo<v8::Value>& args);
+   static void GetNearestParentPackageJSON(
+       const v8::FunctionCallbackInfo<v8::Value>& args);
