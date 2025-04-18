@@ -14,7 +14,7 @@ This patch likely can't be upstreamed as-is, as Chromium doesn't have
 this use case in mind currently.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 29829e282edfa8821bd366a9e9a3755d7f3f8643..661864ab6aad78a721ac921ae778c40085cdc23e 100644
+index 7b655deb522fb5b4d8000ad555021ef696e8f1d4..3c7e5c50b785fe28e0b57749f69b7f191a814108 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -954,13 +954,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
@@ -33,7 +33,7 @@ index 29829e282edfa8821bd366a9e9a3755d7f3f8643..661864ab6aad78a721ac921ae778c400
  }
  
  void HWNDMessageHandler::SetWindowIcons(const gfx::ImageSkia& window_icon,
-@@ -1755,7 +1755,7 @@ void HWNDMessageHandler::OnActivateApp(BOOL active, DWORD thread_id) {
+@@ -1757,7 +1757,7 @@ void HWNDMessageHandler::OnActivateApp(BOOL active, DWORD thread_id) {
    if (delegate_->HasNonClientView() && !active &&
        thread_id != GetCurrentThreadId()) {
      // Update the native frame if it is rendering the non-client area.
@@ -42,7 +42,7 @@ index 29829e282edfa8821bd366a9e9a3755d7f3f8643..661864ab6aad78a721ac921ae778c400
        DefWindowProcWithRedrawLock(WM_NCACTIVATE, FALSE, 0);
      }
    }
-@@ -2356,17 +2356,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+@@ -2365,17 +2365,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
      delegate_->SchedulePaint();
    }
  
