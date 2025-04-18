@@ -376,13 +376,16 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
       frame_style |= WS_MINIMIZEBOX;
     if (maximizable_)
       frame_style |= WS_MAXIMIZEBOX;
-    // We should not show a frame for transparent window.
-    if (!thick_frame_)
-      frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
-    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
 
-    options.Get(options::kRoundedCorners, &rounded_corner_);
-    SetRoundedCorners(rounded_corner_);
+    // We should not show a frame for transparent window.
+    if (!thick_frame_) {
+      frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
+      rounded_corner_ = false;
+    } else {
+      options.Get(options::kRoundedCorners, &rounded_corner_);
+    }
+
+    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
   }
 
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
