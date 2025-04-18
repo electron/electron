@@ -1,0 +1,226 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Thu, 17 Apr 2025 19:07:23 -0500
+Subject: refactor: patch electron PermissionTypes into blink
+
+6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
+
+diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
+index d91d81297e7cdb79ee7b7a3979dcedf977e16c92..4555f9d52b51d53bdfa43c4a746714758c54e1c2 100644
+--- a/components/permissions/permission_util.cc
++++ b/components/permissions/permission_util.cc
+@@ -389,7 +389,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+       return ContentSettingsType::WEB_APP_INSTALLATION;
+     case PermissionType::LOCAL_NETWORK_ACCESS:
+       return ContentSettingsType::LOCAL_NETWORK_ACCESS;
++
++    // Permissions added by Electron
+     case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
++    case PermissionType::ELECTRON_FULLSCREEN:
++    case PermissionType::FILE_SYSTEM:
++    case PermissionType::HID:
++    case PermissionType::OPEN_EXTERNAL:
++    case PermissionType::SERIAL:
++    case PermissionType::USB:
++      break;
++
+     case PermissionType::NUM:
+       break;
+   }
+diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
+index a0fdb5003382d94aeb676a4224aa40f16acf1573..a740f23458d7fe840824355ef6d136e360e49175 100644
+--- a/content/browser/permissions/permission_controller_impl.cc
++++ b/content/browser/permissions/permission_controller_impl.cc
+@@ -87,7 +87,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+     case PermissionType::AUTOMATIC_FULLSCREEN:
+     case PermissionType::WEB_APP_INSTALLATION:
+     case PermissionType::LOCAL_NETWORK_ACCESS:
++
++    // Permissions added by Electron
+     case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
++    case PermissionType::FILE_SYSTEM:
++    case PermissionType::ELECTRON_FULLSCREEN:
++    case PermissionType::HID:
++    case PermissionType::OPEN_EXTERNAL:
++    case PermissionType::SERIAL:
++    case PermissionType::USB:
+       return std::nullopt;
+   }
+ }
+diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
+index 714d582d1060873765b24770b18eddcbbdcf5506..3746bafd72223a65c4183a59726601e84accf66f 100644
+--- a/content/browser/permissions/permission_descriptor_util.cc
++++ b/content/browser/permissions/permission_descriptor_util.cc
+@@ -171,9 +171,27 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
+     case blink::PermissionType::LOCAL_NETWORK_ACCESS:
+       return CreatePermissionDescriptor(
+           blink::mojom::PermissionName::LOCAL_NETWORK_ACCESS);
++
++    // Permissions added by Electron
+     case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+       return CreatePermissionDescriptor(
+           blink::mojom::PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ);
++    case blink::PermissionType::FILE_SYSTEM:
++      return CreatePermissionDescriptor(
++          blink::mojom::PermissionName::FILE_SYSTEM);
++    case blink::PermissionType::ELECTRON_FULLSCREEN:
++      return CreatePermissionDescriptor(
++          blink::mojom::PermissionName::ELECTRON_FULLSCREEN);
++    case blink::PermissionType::HID:
++      return CreatePermissionDescriptor(blink::mojom::PermissionName::HID);
++    case blink::PermissionType::OPEN_EXTERNAL:
++      return CreatePermissionDescriptor(
++          blink::mojom::PermissionName::OPEN_EXTERNAL);
++    case blink::PermissionType::SERIAL:
++      return CreatePermissionDescriptor(blink::mojom::PermissionName::SERIAL);
++    case blink::PermissionType::USB:
++      return CreatePermissionDescriptor(blink::mojom::PermissionName::USB);
++
+     case blink::PermissionType::NUM:
+       NOTREACHED();
+   }
+diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
+index 1c436c62cac1bc4b21255bdcbb2c18b882c4058b..929302db8d21c0cf8c16fc167a7b2110a400abfa 100644
+--- a/third_party/blink/common/permissions/permission_utils.cc
++++ b/third_party/blink/common/permissions/permission_utils.cc
+@@ -101,8 +101,23 @@ std::string GetPermissionString(PermissionType permission) {
+       return "WebAppInstallation";
+     case PermissionType::LOCAL_NETWORK_ACCESS:
+       return "LocalNetworkAccess";
++
++    // Permissions added by Electron
+     case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+       return "DeprecatedSyncClipboardRead";
++    case PermissionType::FILE_SYSTEM:
++      return "FileSystem";
++    case PermissionType::ELECTRON_FULLSCREEN:
++      return "Fullscreen";
++    case PermissionType::HID:
++      return "HID";
++    case PermissionType::OPEN_EXTERNAL:
++      return "OpenExternal";
++    case PermissionType::SERIAL:
++      return "Serial";
++    case PermissionType::USB:
++      return "USB";
++
+     case PermissionType::NUM:
+       NOTREACHED();
+   }
+@@ -177,7 +192,16 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+     case PermissionType::POINTER_LOCK:
+     // TODO(crbug.com/394009026): Add permission policy for LNA.
+     case PermissionType::LOCAL_NETWORK_ACCESS:
++      return std::nullopt;
++
++    // Permissions added by Electron
+     case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
++    case PermissionType::ELECTRON_FULLSCREEN:
++    case PermissionType::FILE_SYSTEM:
++    case PermissionType::HID:
++    case PermissionType::OPEN_EXTERNAL:
++    case PermissionType::SERIAL:
++    case PermissionType::USB:
+       return std::nullopt;
+ 
+     case PermissionType::NUM:
+@@ -345,9 +369,26 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
+       return PermissionType::HAND_TRACKING;
+     case PermissionName::WEB_PRINTING:
+       return PermissionType::WEB_PRINTING;
+-    default:
+-      NOTREACHED();
++    case PermissionName::SMART_CARD:
++      return PermissionType::SMART_CARD;
++
++    // Permissions added by Electron
++    case PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ:
++      return PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ;
++    case PermissionName::FILE_SYSTEM:
++      return PermissionType::FILE_SYSTEM;
++    case PermissionName::ELECTRON_FULLSCREEN:
++      return PermissionType::ELECTRON_FULLSCREEN;
++    case PermissionName::HID:
++      return PermissionType::HID;
++    case PermissionName::OPEN_EXTERNAL:
++      return PermissionType::OPEN_EXTERNAL;
++    case PermissionName::SERIAL:
++      return PermissionType::SERIAL;
++    case PermissionName::USB:
++      return PermissionType::USB;
+   }
++  NOTREACHED();
+ }
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
+index c286d87043ec4cb2e51ec9d82d08e4c84f5a270c..164a2a446947dae687922363d324a6d35b7ae0b8 100644
+--- a/third_party/blink/public/common/permissions/permission_utils.h
++++ b/third_party/blink/public/common/permissions/permission_utils.h
+@@ -65,7 +65,17 @@ enum class PermissionType {
+   HAND_TRACKING = 41,
+   WEB_APP_INSTALLATION = 42,
+   LOCAL_NETWORK_ACCESS = 43,
+-  DEPRECATED_SYNC_CLIPBOARD_READ = 44,
++
++  // Permissions added by Electron
++  ELECTRON_FIRST,
++  DEPRECATED_SYNC_CLIPBOARD_READ = ELECTRON_FIRST,
++  FILE_SYSTEM,
++  ELECTRON_FULLSCREEN,
++  HID,
++  OPEN_EXTERNAL,
++  SERIAL,
++  USB,
++  ELECTRON_LAST = USB,
+ 
+   // Always keep this at the end.
+   NUM,
+diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
+index e47f2089a6a187b26c981afa1ef4135ec5e6a9e7..d66eb48c619dde34c59f33c5aaa0e38c1d772563 100644
+--- a/third_party/blink/public/mojom/permissions/permission.mojom
++++ b/third_party/blink/public/mojom/permissions/permission.mojom
+@@ -44,7 +44,15 @@ enum PermissionName {
+   HAND_TRACKING,
+   WEB_PRINTING,
+   SMART_CARD,
+-  DEPRECATED_SYNC_CLIPBOARD_READ
++
++  // Permissions added by Electron
++  DEPRECATED_SYNC_CLIPBOARD_READ,
++  FILE_SYSTEM,
++  ELECTRON_FULLSCREEN,
++  HID,
++  OPEN_EXTERNAL,
++  SERIAL,
++  USB
+ };
+ 
+ struct MidiPermissionDescriptor {
+diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
+index 8d189eae97caa48a5796c540a74aaafa2fa676ff..fd3e12b88df9c944256358129ca3df1ac3f168d6 100644
+--- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
++++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
+@@ -145,8 +145,22 @@ String PermissionNameToString(PermissionName name) {
+       return "web-printing";
+     case PermissionName::SMART_CARD:
+       return "smart-card";
++
++    // Permissions added by Electron
+     case PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ:
+       return "deprecated-sync-clipboard-read";
++    case PermissionName::FILE_SYSTEM:
++      return "file-system";
++    case PermissionName::ELECTRON_FULLSCREEN:
++      return "electron-fullscreen";
++    case PermissionName::HID:
++      return "hid";
++    case PermissionName::OPEN_EXTERNAL:
++      return "open-external";
++    case PermissionName::SERIAL:
++      return "serial";
++    case PermissionName::USB:
++      return "usb";
+   }
+ }
+ 

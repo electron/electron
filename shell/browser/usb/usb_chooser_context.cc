@@ -175,9 +175,7 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
     permission_manager->RevokeDevicePermission(
-        static_cast<blink::PermissionType>(
-            WebContentsPermissionHelper::PermissionType::USB),
-        origin, object, browser_context_);
+        blink::PermissionType::USB, origin, object, browser_context_);
   } else {
     const std::string* guid = object_dict->FindString(kDeviceIdKey);
     auto it = ephemeral_devices_.find(origin);
@@ -206,9 +204,8 @@ void UsbChooserContext::GrantDevicePermission(
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
     permission_manager->GrantDevicePermission(
-        static_cast<blink::PermissionType>(
-            WebContentsPermissionHelper::PermissionType::USB),
-        origin, DeviceInfoToValue(device_info), browser_context_);
+        blink::PermissionType::USB, origin, DeviceInfoToValue(device_info),
+        browser_context_);
   } else {
     ephemeral_devices_[origin].insert(device_info.guid);
   }
@@ -232,9 +229,8 @@ bool UsbChooserContext::HasDevicePermission(
       browser_context_->GetPermissionControllerDelegate());
 
   return permission_manager->CheckDevicePermission(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::USB),
-      origin, DeviceInfoToValue(device_info), browser_context_);
+      blink::PermissionType::USB, origin, DeviceInfoToValue(device_info),
+      browser_context_);
 }
 
 void UsbChooserContext::GetDevices(

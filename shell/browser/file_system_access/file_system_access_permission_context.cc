@@ -320,15 +320,13 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    blink::PermissionType type = static_cast<blink::PermissionType>(
-        electron::WebContentsPermissionHelper::PermissionType::FILE_SYSTEM);
-
     base::Value::Dict details;
     details.Set("filePath", base::FilePathToValue(path_info_.path));
     details.Set("isDirectory", handle_type_ == HandleType::kDirectory);
     details.Set("fileAccessType",
                 type_ == GrantType::kWrite ? "writable" : "readable");
 
+    const blink::PermissionType type = blink::PermissionType::FILE_SYSTEM;
     permission_manager->RequestPermissionWithDetails(
         content::PermissionDescriptorUtil::
             CreatePermissionDescriptorForPermissionType(type),
