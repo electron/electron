@@ -221,11 +221,10 @@ bool ElectronHidDelegate::IsServiceWorkerAllowedForOrigin(
 ElectronHidDelegate::ContextObservation*
 ElectronHidDelegate::GetContextObserver(
     content::BrowserContext* browser_context) {
-  if (!observations_.contains(browser_context)) {
-    observations_.emplace(browser_context, std::make_unique<ContextObservation>(
-                                               this, browser_context));
-  }
-  return observations_[browser_context].get();
+  auto& observation = observations_[browser_context];
+  if (!observation)
+    observation = std::make_unique<ContextObservation>(this, browser_context);
+  return observation.get();
 }
 
 HidChooserController* ElectronHidDelegate::ControllerForFrame(
