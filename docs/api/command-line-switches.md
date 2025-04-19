@@ -50,7 +50,7 @@ Disable HTTP/2 and SPDY/3.1 protocols.
 
 ### --disable-geolocation _macOS_
 
-Disables the Geolocation API. Permission requests for geolocation will be denied internally regardless of the decision made by a handler set via session.setPermissionRequestHandler. This functionality is currently implemented only for macOS. Has no effect on other platforms.
+Disables the Geolocation API. Permission requests for geolocation will be denied internally regardless of the decision made by a handler set via `session.setPermissionRequestHandler`. This functionality is currently implemented only for macOS. Has no effect on other platforms.
 
 ### --disable-renderer-backgrounding
 
