@@ -82,15 +82,12 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   void PreUninstallExtension(scoped_refptr<const Extension> extension) override;
   void PostUninstallExtension(scoped_refptr<const Extension> extension,
                               base::OnceClosure done_callback) override;
-  void PostNotifyUninstallExtension(
-      scoped_refptr<const Extension> extension) override;
   void LoadExtensionForReload(
       const ExtensionId& extension_id,
       const base::FilePath& path,
       ExtensionRegistrar::LoadErrorBehavior load_error_behavior) override;
   void ShowExtensionDisabledError(const Extension* extension,
                                   bool is_remote_install) override;
-  void FinishDelayedInstallationsIfAny() override;
   bool CanEnableExtension(const Extension* extension) override;
   bool CanDisableExtension(const Extension* extension) override;
   void GrantActivePermissions(const Extension* extension) override;
