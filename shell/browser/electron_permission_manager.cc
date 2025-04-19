@@ -51,6 +51,8 @@ void PermissionRequestResponseCallbackWrapper(
   std::move(callback).Run(vector[0]);
 }
 
+}  // namespace
+
 bool IsGeolocationDisabledViaCommandLine() {
 // Remove platform check once flag is extended to other platforms
 #if BUILDFLAG(IS_MAC)
@@ -60,8 +62,6 @@ bool IsGeolocationDisabledViaCommandLine() {
   return false;
 #endif
 }
-
-}  // namespace
 
 class ElectronPermissionManager::PendingRequest {
  public:

@@ -29,6 +29,8 @@ class Local;
 
 namespace electron {
 
+bool IsGeolocationDisabledViaCommandLine();
+
 class ElectronBrowserContext;
 
 class ElectronPermissionManager : public content::PermissionControllerDelegate {

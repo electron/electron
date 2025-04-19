@@ -852,10 +852,18 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
          const base::Value& details) {
 #if (BUILDFLAG(IS_MAC))
         if (permission_type == blink::PermissionType::GEOLOCATION) {
-          auto* command_line = base::CommandLine::ForCurrentProcess();
-          if (command_line->HasSwitch("disable-geolocation")) {
-            std::move(callback).Run(blink::mojom::PermissionStatus::DENIED);
-            return;
+          //
+          if (IsGeolocationDisabledViaCommandLine()) {
+            auto original_callback = std::move(callback);
+            callback = base::BindOnce(
+                [](ElectronPermissionManager::StatusCallback callback,
+                   blink::mojom::PermissionStatus /*ignored_status*/) {
+                  // Always deny regardless of what
+                  // blink::mojom::PermissionStatus is passed here
+                  std::move(callback).Run(
+                      blink::mojom::PermissionStatus::DENIED);
+                },
+                std::move(original_callback));
           }
         }
 #endif
