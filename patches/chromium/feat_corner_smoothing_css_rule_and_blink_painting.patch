@@ -75,7 +75,7 @@ index 65766b955e81bfc332bc2c4e0b9da48389c1bd68..a475e1bfee46f0a77d1cfbdea47e9de6
    // used for canvas noising.
    uint64 canvas_noise_token = 0;
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-index 2b97df4d7fb37dea65810cd69b3006bf77263321..5addc735dde4b50e7ae79fc48793e416087895c8 100644
+index 53f76ceb28c2d0cca7111bce77e40d1ea0830b7a..4d6b605d3b0af6a88558fe8ee202be088bc65e17 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 +++ b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 @@ -48,6 +48,7 @@ enum CSSSampleId {
@@ -112,10 +112,10 @@ index aa3a6b93cceae8c8bfbefdd7a043ae576f921979..17544d7ed4757fb51e2f82fd1b906381
              property_.sorting_key = (-property_.priority,
                                       internal_visited_order,
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index b24dbf4ea00638e06a09bbe8b71821fa60aab85a..e2b9b623e4838a7157013721966c1cba53214c82 100644
+index 99e25d56dc62a9fcfdb361a4ab2a8bb9343e3f38..f96437d4c6ee710ddc1d520c3546ee82ac52ca9c 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8803,6 +8803,24 @@
+@@ -8809,6 +8809,24 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -141,7 +141,7 @@ index b24dbf4ea00638e06a09bbe8b71821fa60aab85a..e2b9b623e4838a7157013721966c1cba
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index c2efc4a3fc56dcf04da0fa9e97661b6d34db9f83..9dde6281be095ad884fba3a2675ba3dd273fed31 100644
+index 2c86916399d8b9a14678f7996d2dfcca68b6f5e0..c6e48e15870ed54435f6e5f7dabf648ce5aeb7c7 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
 @@ -346,6 +346,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
@@ -184,10 +184,10 @@ index 39d275e2eeedbfbd9004d5e213bf335ba6edbd51..598373b895aa14ef7a3583e38562b13e
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index aa917b1482a221df3e586f850dbd090c02a37161..acbf3061a6ad59a7502b4b62a8d5061567660516 100644
+index 2c0df07241cca3aa28ce409d1af0e40594aa19bf..efe19004646138e9fcd91d138220e8802f75b335 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -3862,4 +3862,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
+@@ -3854,4 +3854,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
    return PositionArea(span[0], span[1], span[2], span[3]);
  }
  
@@ -201,10 +201,10 @@ index aa917b1482a221df3e586f850dbd090c02a37161..acbf3061a6ad59a7502b4b62a8d50615
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index 4298842cbd605ae5f1d969ee746dffc5a10e3af8..15817c382b462e33321246aacbbc3e25cfe82f83 100644
+index a33d85561b005010653c5e3a562227b1f379ec90..0c2d3b0e9b691477d46c892afc16d8b0421e7263 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -420,6 +420,8 @@ class StyleBuilderConverter {
+@@ -419,6 +419,8 @@ class StyleBuilderConverter {
                                                   const CSSValue&);
  
    static PositionArea ConvertPositionArea(StyleResolverState&, const CSSValue&);
@@ -307,10 +307,10 @@ index 2c2f4f405074e5baa4a26f255283404f86b40e21..ebeb7d6988ee9e6a4e78cb82fc01fdad
  
  ContouredRect PixelSnappedContouredBorderInternal(
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 5214f7940466f4f45fbb56a718ac6685d25b2c72..309bbb2e0dd3df42961cef05876d6216010ebce0 100644
+index c2fc2c7b4493a5ee3b47d78331cab215f02fe932..c628b27b7caf09f17ada1ad476cfc90845b7f420 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1651,6 +1651,8 @@ component("platform") {
+@@ -1652,6 +1652,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",

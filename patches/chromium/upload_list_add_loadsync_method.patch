@@ -24,7 +24,7 @@ index 176f0b70225eab7d692886c241983c43d2e93b86..02e39bf0a6ba63c0a6226ba20e08a94b
                         const base::Time& end,
                         base::OnceClosure callback) {
 diff --git a/components/upload_list/upload_list.h b/components/upload_list/upload_list.h
-index c45b3d46f505f516b84b8d1728a23a280dbdba2c..2c8c2c1b7ce6885329b3097ffb964c8cf549002b 100644
+index b4f61f6de22efacec14fa0e6bb702bc6a6eedaaa..5096b558a431969aeb97be73990fda647147bfc0 100644
 --- a/components/upload_list/upload_list.h
 +++ b/components/upload_list/upload_list.h
 @@ -82,6 +82,8 @@ class UploadList : public base::RefCountedThreadSafe<UploadList> {

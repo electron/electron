@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 74dcb279e10b4197741d5af1913485a668e0d10c..a4a9af0ae02f06d71cebe95281960dd01e046307 100644
+index d62d3c4a82579a5b308f28b941db0cc8e48d0e37..865519a1179d573b0a99ec32d9dcd81f04c0f9d6 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1045,6 +1045,7 @@ component("base") {
@@ -582,7 +582,7 @@ index 4017ee032569466f5311e5c9612c82c086eab935..f2499bc084312a09b2324567d270fc1b
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 20b991b675d6767c4d9903b9d70575b12700a2cd..13ee3bbfcabbf69314713dfc28f766e72e7b123b 100644
+index f999eb6aeb11b59c6231b8f80d9e0d586b341171..679ee6731e685a9844bb6461d664f8e5b823e258 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -341,6 +341,7 @@ source_set("browser") {
@@ -715,10 +715,10 @@ index fb23dfd8f90ad3eeb55e4db373ca67f75d8e5ce1..df902b0b01ed4d092070a92fdf77cf69
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index dcb22228bcc86d081c9d0a0a7bdeab896ed07ca7..3e863d861c22e044099e227346845bb6422e21fd 100644
+index 7424d33cc34ca44b1949260215b2f0a44a2d393e..80e284ca761069e5d544b5a056b13df32d509d00 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -331,6 +331,7 @@ target(link_target_type, "renderer") {
+@@ -327,6 +327,7 @@ target(link_target_type, "renderer") {
      "//ui/surface",
      "//url",
      "//v8",
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 478e42621e0c773bcc2ebcfa9feb7803fbcc7e96..bc16ddc4565ba2815177a9816ea1be3c65350d66 100644
+index 89e50cc56259e90a4ec955bb846c793f2d42cfd6..f64c1614bd8d9782d1c9f9bca20e2f8926893a0f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -662,6 +662,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 478e42621e0c773bcc2ebcfa9feb7803fbcc7e96..bc16ddc4565ba2815177a9816ea1be3c
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1955,6 +1957,7 @@ test("content_browsertests") {
+@@ -1956,6 +1958,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 478e42621e0c773bcc2ebcfa9feb7803fbcc7e96..bc16ddc4565ba2815177a9816ea1be3c
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3279,6 +3282,7 @@ test("content_unittests") {
+@@ -3280,6 +3283,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",

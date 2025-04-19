@@ -7,10 +7,10 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index eedafc323a9e4f736aa637d76034f4cb5239eee8..c562a59998901aaedc05be694a725150feeb4b0a 100644
+index 3627db272c082d5787f1a75618958e2a8f6f0600..e03532ea045d24ea3e7b154dd326d8531c9ab5ae 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
-@@ -244,6 +244,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
+@@ -245,6 +245,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
  
  // TODO(awdf): Rename to DisplayNonPersistentNotification (Similar for Close)
  void PlatformNotificationServiceImpl::DisplayNotification(
@@ -19,7 +19,7 @@ index eedafc323a9e4f736aa637d76034f4cb5239eee8..c562a59998901aaedc05be694a725150
      const GURL& origin,
      const GURL& document_url,
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.h b/chrome/browser/notifications/platform_notification_service_impl.h
-index 178afda936a25643320b6e36a0497cbfbc370770..1a795c5059b3e41539c1f34a8d2ad23a28247cd6 100644
+index ec5ca87810d590fc95eda2006b8653bb12711b8e..203cd9645523c4f0adf90e78fa3d8f3d0aad54dc 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.h
 +++ b/chrome/browser/notifications/platform_notification_service_impl.h
 @@ -57,6 +57,7 @@ class PlatformNotificationServiceImpl
@@ -133,7 +133,7 @@ index 5be62a3fb27e37f3c1db6b811172f6dfebe18f61..34349f9832fe4b9a3d48db613a789afb
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 0fc7894f2ab094a01c943aa31f2a234bd3b4c8d0..e0ba2ea0079d5b09765cc2c81dc61f241bd2da3b 100644
+index 68f79d9dfec6f00aa0914f4dcbfa927c7e419d22..7a1fc82866b5a28c7f14e3c8303de2d62cbbcc84 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2219,7 +2219,7 @@ void RenderProcessHostImpl::CreateNotificationService(
