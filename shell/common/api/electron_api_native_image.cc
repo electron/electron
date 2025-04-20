@@ -286,20 +286,6 @@ std::string NativeImage::ToDataURL(gin::Arguments* args) {
       image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap());
 }
 
-v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
-  float scale_factor = GetScaleFactorFromOptions(args);
-
-  const SkBitmap bitmap =
-      image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
-  SkPixelRef* ref = bitmap.pixelRef();
-  if (!ref)
-    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
-  return node::Buffer::Copy(args->isolate(),
-                            reinterpret_cast<char*>(ref->pixels()),
-                            bitmap.computeByteSize())
-      .ToLocalChecked();
-}
-
 v8::Local<v8::Value> NativeImage::GetNativeHandle(
     gin_helper::ErrorThrower thrower) {
 #if BUILDFLAG(IS_MAC)
@@ -596,7 +582,7 @@ gin::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
       .SetMethod("toPNG", &NativeImage::ToPNG)
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
       .SetMethod("toBitmap", &NativeImage::ToBitmap)
-      .SetMethod("getBitmap", &NativeImage::GetBitmap)
+      .SetMethod("getBitmap", &NativeImage::ToBitmap)
       .SetMethod("getScaleFactors", &NativeImage::GetScaleFactors)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
