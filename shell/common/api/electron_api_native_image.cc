@@ -122,6 +122,10 @@ base::win::ScopedGDIObject<HICON> ReadICOFromPath(int size,
 }
 #endif
 
+[[nodiscard]] v8::Local<v8::Object> NewEmptyBuffer(v8::Isolate* isolate) {
+  return node::Buffer::New(isolate, 0).ToLocalChecked();
+}
+
 }  // namespace
 
 NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
@@ -226,57 +230,48 @@ HICON NativeImage::GetHICON(int size) {
 #endif
 
 v8::Local<v8::Value> NativeImage::ToPNG(gin::Arguments* args) {
+  v8::Isolate* const isolate = args->isolate();
   float scale_factor = GetScaleFactorFromOptions(args);
 
   if (scale_factor == 1.0f) {
     // Use raw 1x PNG bytes when available
-    scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
-    if (png->size() > 0) {
-      const char* data = reinterpret_cast<const char*>(png->front());
-      size_t size = png->size();
-      return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
-    }
+    const scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+    const base::span<const uint8_t> png_span = *png;
+    if (!png_span.empty())
+      return electron::Buffer::Copy(isolate, png_span).ToLocalChecked();
   }
 
   const SkBitmap bitmap =
       image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
-  std::optional<std::vector<uint8_t>> encoded =
+  const std::optional<std::vector<uint8_t>> encoded =
       gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false);
   if (!encoded.has_value())
-    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
-  const char* data = reinterpret_cast<char*>(encoded->data());
-  size_t size = encoded->size();
-  return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
+    return NewEmptyBuffer(isolate);
+
+  return electron::Buffer::Copy(isolate, *encoded).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
-  float scale_factor = GetScaleFactorFromOptions(args);
+  v8::Isolate* const isolate = args->isolate();
 
-  const SkBitmap bitmap =
-      image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
+  const float scale = GetScaleFactorFromOptions(args);
+  const auto src = image_.AsImageSkia().GetRepresentation(scale).GetBitmap();
 
-  SkImageInfo info =
-      SkImageInfo::MakeN32Premul(bitmap.width(), bitmap.height());
+  const auto dst_info = SkImageInfo::MakeN32Premul(src.dimensions());
+  const size_t dst_n_bytes = dst_info.computeMinByteSize();
+  auto dst_buf = v8::ArrayBuffer::New(isolate, dst_n_bytes);
 
-  auto array_buffer =
-      v8::ArrayBuffer::New(args->isolate(), info.computeMinByteSize());
-  if (bitmap.readPixels(info, array_buffer->Data(), info.minRowBytes(), 0, 0)) {
-    return node::Buffer::New(args->isolate(), array_buffer, 0,
-                             info.computeMinByteSize())
-        .ToLocalChecked();
-  }
-  return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
+  if (!src.readPixels(dst_info, dst_buf->Data(), dst_info.minRowBytes(), 0, 0))
+    return NewEmptyBuffer(isolate);
+  return node::Buffer::New(isolate, dst_buf, 0, dst_n_bytes).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
-  std::optional<std::vector<uint8_t>> encoded_image =
+  const std::optional<std::vector<uint8_t>> encoded_image =
       gfx::JPEG1xEncodedDataFromImage(image_, quality);
-  if (!encoded_image.has_value())
-    return node::Buffer::New(isolate, 0).ToLocalChecked();
-  return node::Buffer::Copy(
-             isolate, reinterpret_cast<const char*>(&encoded_image->front()),
-             encoded_image->size())
-      .ToLocalChecked();
+  if (!encoded_image)
+    return NewEmptyBuffer(isolate);
+  return electron::Buffer::Copy(isolate, *encoded_image).ToLocalChecked();
 }
 
 std::string NativeImage::ToDataURL(gin::Arguments* args) {
@@ -301,17 +296,17 @@ v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(
     gin_helper::ErrorThrower thrower) {
+  v8::Isolate* const isolate = thrower.isolate();
 #if BUILDFLAG(IS_MAC)
   if (IsEmpty())
-    return node::Buffer::New(thrower.isolate(), 0).ToLocalChecked();
+    return NewEmptyBuffer(isolate);
 
   NSImage* ptr = image_.AsNSImage();
-  return node::Buffer::Copy(thrower.isolate(), reinterpret_cast<char*>(ptr),
-                            sizeof(void*))
+  return electron::Buffer::Copy(isolate, base::byte_span_from_ref(ptr))
       .ToLocalChecked();
 #else
   thrower.ThrowError("Not implemented");
-  return v8::Undefined(thrower.isolate());
+  return v8::Undefined(isolate);
 #endif
 }
 
