@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marco Ippolito <marcoippolito54@gmail.com>
+Date: Thu, 31 Oct 2024 08:04:25 -0500
+Subject: http: add diagnostic channel `http.client.request.created`
+
+PR-URL: https://github.com/nodejs/node/pull/55586
+Fixes: https://github.com/nodejs/node/issues/55352
+Reviewed-By: Paolo Insogna <paolo@cowtech.it>
+Reviewed-By: Jake Yuesong Li <jake.yuesong@gmail.com>
+Reviewed-By: theanarkh <theratliter@gmail.com>
+
+diff --git a/doc/api/diagnostics_channel.md b/doc/api/diagnostics_channel.md
+index fe26bd52dea535adb59cf76152feb57730a3e682..b3c32385324b93097ddb8af02da50b0cb705125e 100644
+--- a/doc/api/diagnostics_channel.md
++++ b/doc/api/diagnostics_channel.md
+@@ -1112,6 +1112,13 @@ independently.
+ 
+ #### HTTP
+ 
++`http.client.request.created`
++
++* `request` {http.ClientRequest}
++
++Emitted when client creates a request object.
++Unlike `http.client.request.start`, this event is emitted before the request has been sent.
++
+ `http.client.request.start`
+ 
+ * `request` {http.ClientRequest}
+diff --git a/lib/_http_client.js b/lib/_http_client.js
+index 89bcf06a355880f882ec4134c6a18d2a452b98ec..4a69c9c0ec1027b93a4a7a76611dd6abf3a90902 100644
+--- a/lib/_http_client.js
++++ b/lib/_http_client.js
+@@ -87,6 +87,7 @@ const {
+ const kClientRequestStatistics = Symbol('ClientRequestStatistics');
+ 
+ const dc = require('diagnostics_channel');
++const onClientRequestCreatedChannel = dc.channel('http.client.request.created');
+ const onClientRequestStartChannel = dc.channel('http.client.request.start');
+ const onClientRequestErrorChannel = dc.channel('http.client.request.error');
+ const onClientResponseFinishChannel = dc.channel('http.client.response.finish');
+@@ -371,6 +372,11 @@ function ClientRequest(input, options, cb) {
+       this.onSocket(net.createConnection(opts));
+     }
+   }
++  if (onClientRequestCreatedChannel.hasSubscribers) {
++    onClientRequestCreatedChannel.publish({
++      request: this,
++    });
++  }
+ }
+ ObjectSetPrototypeOf(ClientRequest.prototype, OutgoingMessage.prototype);
+ ObjectSetPrototypeOf(ClientRequest, OutgoingMessage);
+diff --git a/test/parallel/test-diagnostic-channel-http-request-created.js b/test/parallel/test-diagnostic-channel-http-request-created.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..bbadfabcd9704f3886298d9981cc2a76991bca1d
+--- /dev/null
++++ b/test/parallel/test-diagnostic-channel-http-request-created.js
+@@ -0,0 +1,39 @@
++'use strict';
++const common = require('../common');
++const assert = require('assert');
++const http = require('http');
++const dc = require('diagnostics_channel');
++
++const isHTTPServer = (server) => server instanceof http.Server;
++const isOutgoingMessage = (object) => object instanceof http.OutgoingMessage;
++
++dc.subscribe('http.client.request.created', common.mustCall(({ request }) => {
++  assert.strictEqual(request.getHeader('foo'), 'bar');
++  assert.strictEqual(request.getHeader('baz'), undefined);
++  assert.strictEqual(isOutgoingMessage(request), true);
++  assert.strictEqual(isHTTPServer(server), true);
++}));
++
++dc.subscribe('http.client.request.start', common.mustCall(({ request }) => {
++  assert.strictEqual(request.getHeader('foo'), 'bar');
++  assert.strictEqual(request.getHeader('baz'), 'bar');
++  assert.strictEqual(isOutgoingMessage(request), true);
++}));
++
++const server = http.createServer(common.mustCall((_, res) => {
++  res.end('done');
++}));
++
++server.listen(async () => {
++  const { port } = server.address();
++  const req = http.request({
++    port,
++    headers: {
++      'foo': 'bar',
++    }
++  }, common.mustCall(() => {
++    server.close();
++  }));
++  req.setHeader('baz', 'bar');
++  req.end();
++});
+diff --git a/test/parallel/test-diagnostics-channel-http.js b/test/parallel/test-diagnostics-channel-http.js
+index e134b9ac05a85d60d4f82c952e30c4c863261e92..cc212e3f6207f511b832d0e2eb161c6f35461bff 100644
+--- a/test/parallel/test-diagnostics-channel-http.js
++++ b/test/parallel/test-diagnostics-channel-http.js
+@@ -53,6 +53,11 @@ dc.subscribe('http.server.response.finish', common.mustCall(({
+   assert.strictEqual(isHTTPServer(server), true);
+ }));
+ 
++dc.subscribe('http.client.request.created', common.mustCall(({ request }) => {
++  assert.strictEqual(isOutgoingMessage(request), true);
++  assert.strictEqual(isHTTPServer(server), true);
++}, 2));
++
+ const server = http.createServer(common.mustCall((req, res) => {
+   res.end('done');
+ }));

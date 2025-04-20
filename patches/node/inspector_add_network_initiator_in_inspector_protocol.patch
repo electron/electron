@@ -1,0 +1,322 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chengzhong Wu <cwu631@bloomberg.net>
+Date: Wed, 5 Feb 2025 18:03:57 +0000
+Subject: inspector: add Network.Initiator in inspector protocol
+
+Add initiator stack trace in inspector network events, reflecting
+the location where the script created the request.
+
+The `http.client.request.created` event is closer to where user code
+creates the http request, and correctly reflects which script
+initiated the request.
+
+PR-URL: https://github.com/nodejs/node/pull/56805
+Refs: https://github.com/nodejs/node/issues/53946
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Kohei Ueno <kohei.ueno119@gmail.com>
+Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
+
+diff --git a/lib/internal/inspector/network_http.js b/lib/internal/inspector/network_http.js
+index 16669f308f3a8e558f889ac4097ed96cc83c8d75..00b671cc4f8e7a475436b62562743968d667fb62 100644
+--- a/lib/internal/inspector/network_http.js
++++ b/lib/internal/inspector/network_http.js
+@@ -44,11 +44,11 @@ const convertHeaderObject = (headers = {}) => {
+ };
+ 
+ /**
+- * When a client request starts, emit Network.requestWillBeSent event.
++ * When a client request is created, emit Network.requestWillBeSent event.
+  * https://chromedevtools.github.io/devtools-protocol/1-3/Network/#event-requestWillBeSent
+  * @param {{ request: import('http').ClientRequest }} event
+  */
+-function onClientRequestStart({ request }) {
++function onClientRequestCreated({ request }) {
+   request[kInspectorRequestId] = getNextRequestId();
+ 
+   const { 0: host, 1: headers } = convertHeaderObject(request.getHeaders());
+@@ -115,13 +115,13 @@ function onClientResponseFinish({ request, response }) {
+ }
+ 
+ function enable() {
+-  dc.subscribe('http.client.request.start', onClientRequestStart);
++  dc.subscribe('http.client.request.created', onClientRequestCreated);
+   dc.subscribe('http.client.request.error', onClientRequestError);
+   dc.subscribe('http.client.response.finish', onClientResponseFinish);
+ }
+ 
+ function disable() {
+-  dc.unsubscribe('http.client.request.start', onClientRequestStart);
++  dc.unsubscribe('http.client.request.created', onClientRequestCreated);
+   dc.unsubscribe('http.client.request.error', onClientRequestError);
+   dc.unsubscribe('http.client.response.finish', onClientResponseFinish);
+ }
+diff --git a/lib/internal/inspector/network_undici.js b/lib/internal/inspector/network_undici.js
+index 7afc5970117127c37416bc6c795ed3d07c9c9ada..636e2b21b45b4a42342a6979dc8487d8801b4947 100644
+--- a/lib/internal/inspector/network_undici.js
++++ b/lib/internal/inspector/network_undici.js
+@@ -129,10 +129,10 @@ function enable() {
+ }
+ 
+ function disable() {
+-  dc.subscribe('undici:request:create', onClientRequestStart);
+-  dc.subscribe('undici:request:error', onClientRequestError);
+-  dc.subscribe('undici:request:headers', onClientResponseHeaders);
+-  dc.subscribe('undici:request:trailers', onClientResponseFinish);
++  dc.unsubscribe('undici:request:create', onClientRequestStart);
++  dc.unsubscribe('undici:request:error', onClientRequestError);
++  dc.unsubscribe('undici:request:headers', onClientResponseHeaders);
++  dc.unsubscribe('undici:request:trailers', onClientResponseFinish);
+ }
+ 
+ module.exports = {
+diff --git a/src/inspector/network_agent.cc b/src/inspector/network_agent.cc
+index f8b42b29158572fca1daa70b67ac0c96ca95c009..d29a8205db1682bf1d3a0706072a38cf386ae155 100644
+--- a/src/inspector/network_agent.cc
++++ b/src/inspector/network_agent.cc
+@@ -29,8 +29,9 @@ std::unique_ptr<Network::Response> createResponse(
+       .build();
+ }
+ 
+-NetworkAgent::NetworkAgent(NetworkInspector* inspector)
+-    : inspector_(inspector) {
++NetworkAgent::NetworkAgent(NetworkInspector* inspector,
++                           v8_inspector::V8Inspector* v8_inspector)
++    : inspector_(inspector), v8_inspector_(v8_inspector) {
+   event_notifier_map_["requestWillBeSent"] = &NetworkAgent::requestWillBeSent;
+   event_notifier_map_["responseReceived"] = &NetworkAgent::responseReceived;
+   event_notifier_map_["loadingFailed"] = &NetworkAgent::loadingFailed;
+@@ -75,6 +76,13 @@ void NetworkAgent::requestWillBeSent(
+   String method;
+   request->getString("method", &method);
+ 
++  std::unique_ptr<Network::Initiator> initiator =
++      Network::Initiator::create()
++          .setType(Network::Initiator::TypeEnum::Script)
++          .setStack(
++              v8_inspector_->captureStackTrace(true)->buildInspectorObject(0))
++          .build();
++
+   ErrorSupport errors;
+   auto headers =
+       Network::Headers::fromValue(request->getObject("headers"), &errors);
+@@ -84,6 +92,7 @@ void NetworkAgent::requestWillBeSent(
+ 
+   frontend_->requestWillBeSent(request_id,
+                                createRequest(url, method, std::move(headers)),
++                               std::move(initiator),
+                                timestamp,
+                                wall_time);
+ }
+diff --git a/src/inspector/network_agent.h b/src/inspector/network_agent.h
+index 8d0e71c49b440d589347be34814c6dc03d74846a..67994e19475d6532f13c8b3d73a09bc901a7e408 100644
+--- a/src/inspector/network_agent.h
++++ b/src/inspector/network_agent.h
+@@ -14,7 +14,8 @@ namespace protocol {
+ 
+ class NetworkAgent : public Network::Backend {
+  public:
+-  explicit NetworkAgent(NetworkInspector* inspector);
++  explicit NetworkAgent(NetworkInspector* inspector,
++                        v8_inspector::V8Inspector* v8_inspector);
+ 
+   void Wire(UberDispatcher* dispatcher);
+ 
+@@ -35,6 +36,7 @@ class NetworkAgent : public Network::Backend {
+ 
+  private:
+   NetworkInspector* inspector_;
++  v8_inspector::V8Inspector* v8_inspector_;
+   std::shared_ptr<Network::Frontend> frontend_;
+   using EventNotifier =
+       void (NetworkAgent::*)(std::unique_ptr<protocol::DictionaryValue>);
+diff --git a/src/inspector/network_inspector.cc b/src/inspector/network_inspector.cc
+index a03a66d461e527ed533010e9a227abd57a109294..2a3488b8ffd8547a6e530dd5781dc26d23845c6a 100644
+--- a/src/inspector/network_inspector.cc
++++ b/src/inspector/network_inspector.cc
+@@ -3,9 +3,10 @@
+ namespace node {
+ namespace inspector {
+ 
+-NetworkInspector::NetworkInspector(Environment* env)
++NetworkInspector::NetworkInspector(Environment* env,
++                                   v8_inspector::V8Inspector* v8_inspector)
+     : enabled_(false), env_(env) {
+-  network_agent_ = std::make_unique<protocol::NetworkAgent>(this);
++  network_agent_ = std::make_unique<protocol::NetworkAgent>(this, v8_inspector);
+ }
+ NetworkInspector::~NetworkInspector() {
+   network_agent_.reset();
+diff --git a/src/inspector/network_inspector.h b/src/inspector/network_inspector.h
+index 1a30997bad98f18a8ba7fc6d373a0290a7454aba..a77260e3815a5c2d6395596ad6a7e772b8415035 100644
+--- a/src/inspector/network_inspector.h
++++ b/src/inspector/network_inspector.h
+@@ -11,7 +11,8 @@ namespace inspector {
+ 
+ class NetworkInspector {
+  public:
+-  explicit NetworkInspector(Environment* env);
++  explicit NetworkInspector(Environment* env,
++                            v8_inspector::V8Inspector* v8_inspector);
+   ~NetworkInspector();
+ 
+   void Wire(protocol::UberDispatcher* dispatcher);
+diff --git a/src/inspector/node_inspector.gypi b/src/inspector/node_inspector.gypi
+index d559004be80944c3b00d7b7fd285cb64c356aa17..d031f713eb145972cb0707820f7beb93910bcf8b 100644
+--- a/src/inspector/node_inspector.gypi
++++ b/src/inspector/node_inspector.gypi
+@@ -101,6 +101,7 @@
+       'action_name': 'node_protocol_generated_sources',
+       'inputs': [
+         'node_protocol_config.json',
++        'node_protocol.pdl',
+         '<(SHARED_INTERMEDIATE_DIR)/src/node_protocol.json',
+         '<@(node_protocol_files)',
+         '<(protocol_tool_path)/code_generator.py',
+diff --git a/src/inspector/node_protocol.pdl b/src/inspector/node_protocol.pdl
+index d5b50dc81b40f1d7324d70dabee38eb30956f8d9..2fe6634ad7e27882d62c6c421c15344139ce4e3f 100644
+--- a/src/inspector/node_protocol.pdl
++++ b/src/inspector/node_protocol.pdl
+@@ -101,6 +101,8 @@ experimental domain NodeWorker
+ # Partial support for Network domain of ChromeDevTools Protocol.
+ # https://chromedevtools.github.io/devtools-protocol/tot/Network
+ experimental domain Network
++  depends on Runtime
++
+   # Resource type as it was perceived by the rendering engine.
+   type ResourceType extends string
+     enum
+@@ -132,6 +134,31 @@ experimental domain Network
+   # Monotonically increasing time in seconds since an arbitrary point in the past.
+   type MonotonicTime extends number
+ 
++  # Information about the request initiator.
++  type Initiator extends object
++    properties
++      # Type of this initiator.
++      enum type
++        parser
++        script
++        preload
++        SignedExchange
++        preflight
++        other
++      # Initiator JavaScript stack trace, set for Script only.
++      # Requires the Debugger domain to be enabled.
++      optional Runtime.StackTrace stack
++      # Initiator URL, set for Parser type or for Script type (when script is importing module) or for SignedExchange type.
++      optional string url
++      # Initiator line number, set for Parser type or for Script type (when script is importing
++      # module) (0-based).
++      optional number lineNumber
++      # Initiator column number, set for Parser type or for Script type (when script is importing
++      # module) (0-based).
++      optional number columnNumber
++      # Set if another request triggered this request (e.g. preflight).
++      optional RequestId requestId
++
+   # HTTP request data.
+   type Request extends object
+     properties
+@@ -163,6 +190,8 @@ experimental domain Network
+       RequestId requestId
+       # Request data.
+       Request request
++      # Request initiator.
++      Initiator initiator
+       # Timestamp.
+       MonotonicTime timestamp
+       # Timestamp.
+diff --git a/src/inspector/node_protocol_config.json b/src/inspector/node_protocol_config.json
+index 4ef37856068093cd504bf8bc169b4812f4081000..bda853d7f3d83009cf75e8a8c11f379f3bfb5db0 100644
+--- a/src/inspector/node_protocol_config.json
++++ b/src/inspector/node_protocol_config.json
+@@ -5,6 +5,17 @@
+         "output": "node/inspector/protocol",
+         "namespace": ["node", "inspector", "protocol"]
+     },
++    "imported": {
++        "path": "../../deps/v8/include/js_protocol.pdl",
++        "header": "<v8-inspector-protocol.h>",
++        "namespace": ["v8_inspector", "protocol"],
++        "options": [
++            {
++                "domain": "Runtime",
++                "imported": ["StackTrace"]
++            }
++        ]
++    },
+     "exported": {
+         "package": "include/inspector",
+         "output": "../../include/inspector",
+diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
+index bb39a0cb42a7bef703c941514f9cdc9763c524ef..770ee4ee1b214057c04950c95916231c3bcb76c1 100644
+--- a/src/inspector_agent.cc
++++ b/src/inspector_agent.cc
+@@ -232,7 +232,8 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+     }
+     runtime_agent_ = std::make_unique<protocol::RuntimeAgent>();
+     runtime_agent_->Wire(node_dispatcher_.get());
+-    network_inspector_ = std::make_unique<NetworkInspector>(env);
++    network_inspector_ =
++        std::make_unique<NetworkInspector>(env, inspector.get());
+     network_inspector_->Wire(node_dispatcher_.get());
+   }
+ 
+diff --git a/test/parallel/test-inspector-network-fetch.js b/test/parallel/test-inspector-network-fetch.js
+index 26f6d52ff40694d8c9cd5b176e9df7002108eca9..88585ab72bac7521ffa947c7cfd1f28d161160ca 100644
+--- a/test/parallel/test-inspector-network-fetch.js
++++ b/test/parallel/test-inspector-network-fetch.js
+@@ -65,6 +65,13 @@ const terminate = () => {
+   inspector.close();
+ };
+ 
++function findFrameInInitiator(scriptName, initiator) {
++  const frame = initiator.stack.callFrames.find((it) => {
++    return it.url === scriptName;
++  });
++  return frame;
++}
++
+ const testHttpGet = () => new Promise((resolve, reject) => {
+   session.on('Network.requestWillBeSent', common.mustCall(({ params }) => {
+     assert.ok(params.requestId.startsWith('node-network-event-'));
+@@ -77,6 +84,10 @@ const testHttpGet = () => new Promise((resolve, reject) => {
+     assert.strictEqual(params.request.headers['x-header1'], 'value1, value2');
+     assert.strictEqual(typeof params.timestamp, 'number');
+     assert.strictEqual(typeof params.wallTime, 'number');
++
++    assert.strictEqual(typeof params.initiator, 'object');
++    assert.strictEqual(params.initiator.type, 'script');
++    assert.ok(findFrameInInitiator(__filename, params.initiator));
+   }));
+   session.on('Network.responseReceived', common.mustCall(({ params }) => {
+     assert.ok(params.requestId.startsWith('node-network-event-'));
+diff --git a/test/parallel/test-inspector-network-http.js b/test/parallel/test-inspector-network-http.js
+index e1e987cdd71e284cbbab9f9bb2bd5bdd08e738ca..a02329891e1208966a1bae89f2a3d4ac77bc7a37 100644
+--- a/test/parallel/test-inspector-network-http.js
++++ b/test/parallel/test-inspector-network-http.js
+@@ -64,6 +64,13 @@ const terminate = () => {
+   inspector.close();
+ };
+ 
++function findFrameInInitiator(scriptName, initiator) {
++  const frame = initiator.stack.callFrames.find((it) => {
++    return it.url === scriptName;
++  });
++  return frame;
++}
++
+ function verifyRequestWillBeSent({ method, params }, expect) {
+   assert.strictEqual(method, 'Network.requestWillBeSent');
+ 
+@@ -78,6 +85,10 @@ function verifyRequestWillBeSent({ method, params }, expect) {
+   assert.strictEqual(typeof params.timestamp, 'number');
+   assert.strictEqual(typeof params.wallTime, 'number');
+ 
++  assert.strictEqual(typeof params.initiator, 'object');
++  assert.strictEqual(params.initiator.type, 'script');
++  assert.ok(findFrameInInitiator(__filename, params.initiator));
++
+   return params;
+ }
+ 

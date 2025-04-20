@@ -1,0 +1,779 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chengzhong Wu <legendecas@gmail.com>
+Date: Sun, 5 Jan 2025 11:43:44 +0000
+Subject: inspector: report loadingFinished until the response data is consumed
+
+The `Network.loadingFinished` should be deferred until the response is
+complete and the data is fully consumed. Also, report correct request
+url with the specified port by retrieving the host from the request
+headers.
+
+PR-URL: https://github.com/nodejs/node/pull/56372
+Refs: https://github.com/nodejs/node/issues/53946
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Kohei Ueno <kohei.ueno119@gmail.com>
+
+diff --git a/lib/internal/inspector/network.js b/lib/internal/inspector/network.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..18424bee56930280ef3f82be17d4fbaf3c9385a0
+--- /dev/null
++++ b/lib/internal/inspector/network.js
+@@ -0,0 +1,31 @@
++'use strict';
++
++const {
++  NumberMAX_SAFE_INTEGER,
++  Symbol,
++} = primordials;
++
++const { now } = require('internal/perf/utils');
++const kInspectorRequestId = Symbol('kInspectorRequestId');
++
++/**
++ * Return a monotonically increasing time in seconds since an arbitrary point in the past.
++ * @returns {number}
++ */
++function getMonotonicTime() {
++  return now() / 1000;
++}
++
++let requestId = 0;
++function getNextRequestId() {
++  if (requestId === NumberMAX_SAFE_INTEGER) {
++    requestId = 0;
++  }
++  return `node-network-event-${++requestId}`;
++};
++
++module.exports = {
++  kInspectorRequestId,
++  getMonotonicTime,
++  getNextRequestId,
++};
+diff --git a/lib/internal/inspector/network_http.js b/lib/internal/inspector/network_http.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..87a33b419b1aedb7c84510298872517da6c7ff80
+--- /dev/null
++++ b/lib/internal/inspector/network_http.js
+@@ -0,0 +1,132 @@
++'use strict';
++
++const {
++  ArrayIsArray,
++  DateNow,
++  ObjectEntries,
++  String,
++  Symbol,
++} = primordials;
++
++const {
++  kInspectorRequestId,
++  getMonotonicTime,
++  getNextRequestId,
++} = require('internal/inspector/network');
++const dc = require('diagnostics_channel');
++const { Network } = require('inspector');
++
++const kResourceType = 'Other';
++const kRequestUrl = Symbol('kRequestUrl');
++
++// Convert a Headers object (Map<string, number | string | string[]>) to a plain object (Map<string, string>)
++const convertHeaderObject = (headers = {}) => {
++  // The 'host' header that contains the host and port of the URL.
++  let host;
++  const dict = {};
++  for (const { 0: key, 1: value } of ObjectEntries(headers)) {
++    if (key.toLowerCase() === 'host') {
++      host = value;
++    }
++    if (typeof value === 'string') {
++      dict[key] = value;
++    } else if (ArrayIsArray(value)) {
++      if (key.toLowerCase() === 'cookie') dict[key] = value.join('; ');
++      // ChromeDevTools frontend treats 'set-cookie' as a special case
++      // https://github.com/ChromeDevTools/devtools-frontend/blob/4275917f84266ef40613db3c1784a25f902ea74e/front_end/core/sdk/NetworkRequest.ts#L1368
++      else if (key.toLowerCase() === 'set-cookie') dict[key] = value.join('\n');
++      else dict[key] = value.join(', ');
++    } else {
++      dict[key] = String(value);
++    }
++  }
++  return [host, dict];
++};
++
++/**
++ * When a client request starts, emit Network.requestWillBeSent event.
++ * https://chromedevtools.github.io/devtools-protocol/1-3/Network/#event-requestWillBeSent
++ * @param {{ request: import('http').ClientRequest }} event
++ */
++function onClientRequestStart({ request }) {
++  request[kInspectorRequestId] = getNextRequestId();
++
++  const { 0: host, 1: headers } = convertHeaderObject(request.getHeaders());
++  const url = `${request.protocol}//${host}${request.path}`;
++  request[kRequestUrl] = url;
++
++  Network.requestWillBeSent({
++    requestId: request[kInspectorRequestId],
++    timestamp: getMonotonicTime(),
++    wallTime: DateNow(),
++    request: {
++      url,
++      method: request.method,
++      headers,
++    },
++  });
++}
++
++/**
++ * When a client request errors, emit Network.loadingFailed event.
++ * https://chromedevtools.github.io/devtools-protocol/1-3/Network/#event-loadingFailed
++ * @param {{ request: import('http').ClientRequest, error: any }} event
++ */
++function onClientRequestError({ request, error }) {
++  if (typeof request[kInspectorRequestId] !== 'string') {
++    return;
++  }
++  Network.loadingFailed({
++    requestId: request[kInspectorRequestId],
++    timestamp: getMonotonicTime(),
++    type: kResourceType,
++    errorText: error.message,
++  });
++}
++
++/**
++ * When response headers are received, emit Network.responseReceived event.
++ * https://chromedevtools.github.io/devtools-protocol/1-3/Network/#event-responseReceived
++ * @param {{ request: import('http').ClientRequest, error: any }} event
++ */
++function onClientResponseFinish({ request, response }) {
++  if (typeof request[kInspectorRequestId] !== 'string') {
++    return;
++  }
++  Network.responseReceived({
++    requestId: request[kInspectorRequestId],
++    timestamp: getMonotonicTime(),
++    type: kResourceType,
++    response: {
++      url: request[kRequestUrl],
++      status: response.statusCode,
++      statusText: response.statusMessage ?? '',
++      headers: convertHeaderObject(response.headers)[1],
++    },
++  });
++
++  // Wait until the response body is consumed by user code.
++  response.once('end', () => {
++    Network.loadingFinished({
++      requestId: request[kInspectorRequestId],
++      timestamp: getMonotonicTime(),
++    });
++  });
++}
++
++function enable() {
++  dc.subscribe('http.client.request.start', onClientRequestStart);
++  dc.subscribe('http.client.request.error', onClientRequestError);
++  dc.subscribe('http.client.response.finish', onClientResponseFinish);
++}
++
++function disable() {
++  dc.unsubscribe('http.client.request.start', onClientRequestStart);
++  dc.unsubscribe('http.client.request.error', onClientRequestError);
++  dc.unsubscribe('http.client.response.finish', onClientResponseFinish);
++}
++
++module.exports = {
++  enable,
++  disable,
++};
+diff --git a/lib/internal/inspector_network_tracking.js b/lib/internal/inspector_network_tracking.js
+index df3d2e5bf8e539c12c71114822007782f759bba7..9158bb48f745f86dc4f750c9e6207e24b473d5f3 100644
+--- a/lib/internal/inspector_network_tracking.js
++++ b/lib/internal/inspector_network_tracking.js
+@@ -1,106 +1,15 @@
+ 'use strict';
+ 
+-const {
+-  ArrayIsArray,
+-  DateNow,
+-  ObjectEntries,
+-  String,
+-} = primordials;
+-
+-let dc;
+-let Network;
+-
+-let requestId = 0;
+-const getNextRequestId = () => `node-network-event-${++requestId}`;
+-
+-// Convert a Headers object (Map<string, number | string | string[]>) to a plain object (Map<string, string>)
+-const headerObjectToDictionary = (headers = {}) => {
+-  const dict = {};
+-  for (const { 0: key, 1: value } of ObjectEntries(headers)) {
+-    if (typeof value === 'string') {
+-      dict[key] = value;
+-    } else if (ArrayIsArray(value)) {
+-      if (key.toLowerCase() === 'cookie') dict[key] = value.join('; ');
+-      // ChromeDevTools frontend treats 'set-cookie' as a special case
+-      // https://github.com/ChromeDevTools/devtools-frontend/blob/4275917f84266ef40613db3c1784a25f902ea74e/front_end/core/sdk/NetworkRequest.ts#L1368
+-      else if (key.toLowerCase() === 'set-cookie') dict[key] = value.join('\n');
+-      else dict[key] = value.join(', ');
+-    } else {
+-      dict[key] = String(value);
+-    }
+-  }
+-  return dict;
+-};
+-
+-function onClientRequestStart({ request }) {
+-  const url = `${request.protocol}//${request.host}${request.path}`;
+-  const wallTime = DateNow();
+-  const timestamp = wallTime / 1000;
+-  request._inspectorRequestId = getNextRequestId();
+-  Network.requestWillBeSent({
+-    requestId: request._inspectorRequestId,
+-    timestamp,
+-    wallTime,
+-    request: {
+-      url,
+-      method: request.method,
+-      headers: headerObjectToDictionary(request.getHeaders()),
+-    },
+-  });
+-}
+-
+-function onClientRequestError({ request, error }) {
+-  if (typeof request._inspectorRequestId !== 'string') {
+-    return;
+-  }
+-  const timestamp = DateNow() / 1000;
+-  Network.loadingFailed({
+-    requestId: request._inspectorRequestId,
+-    timestamp,
+-    type: 'Other',
+-    errorText: error.message,
+-  });
+-}
+-
+-function onClientResponseFinish({ request, response }) {
+-  if (typeof request._inspectorRequestId !== 'string') {
+-    return;
+-  }
+-  const url = `${request.protocol}//${request.host}${request.path}`;
+-  const timestamp = DateNow() / 1000;
+-  Network.responseReceived({
+-    requestId: request._inspectorRequestId,
+-    timestamp,
+-    type: 'Other',
+-    response: {
+-      url,
+-      status: response.statusCode,
+-      statusText: response.statusMessage ?? '',
+-      headers: headerObjectToDictionary(response.headers),
+-    },
+-  });
+-  Network.loadingFinished({
+-    requestId: request._inspectorRequestId,
+-    timestamp,
+-  });
+-}
+-
+ function enable() {
+-  if (!dc) {
+-    dc = require('diagnostics_channel');
+-  }
+-  if (!Network) {
+-    Network = require('inspector').Network;
+-  }
+-  dc.subscribe('http.client.request.start', onClientRequestStart);
+-  dc.subscribe('http.client.request.error', onClientRequestError);
+-  dc.subscribe('http.client.response.finish', onClientResponseFinish);
++  require('internal/inspector/network_http').enable();
++  // TODO: add undici request/websocket tracking.
++  // https://github.com/nodejs/node/issues/53946
+ }
+ 
+ function disable() {
+-  dc.unsubscribe('http.client.request.start', onClientRequestStart);
+-  dc.unsubscribe('http.client.request.error', onClientRequestError);
+-  dc.unsubscribe('http.client.response.finish', onClientResponseFinish);
++  require('internal/inspector/network_http').disable();
++  // TODO: add undici request/websocket tracking.
++  // https://github.com/nodejs/node/issues/53946
+ }
+ 
+ module.exports = {
+diff --git a/src/node_builtins.cc b/src/node_builtins.cc
+index 78f20de6b127961e9de7b5caaeca702ed7a36e01..885f147af7bbca7f839f9225ebd087924716856f 100644
+--- a/src/node_builtins.cc
++++ b/src/node_builtins.cc
+@@ -113,6 +113,8 @@ BuiltinLoader::BuiltinCategories BuiltinLoader::GetBuiltinCategories() const {
+   builtin_categories.cannot_be_required = std::set<std::string> {
+ #if !HAVE_INSPECTOR
+     "inspector", "inspector/promises", "internal/util/inspector",
++        "internal/inspector/network", "internal/inspector/network_http",
++        "internal/inspector_async_hook", "internal/inspector_network_tracking",
+ #endif  // !HAVE_INSPECTOR
+ 
+ #if !NODE_USE_V8_PLATFORM || !defined(NODE_HAVE_I18N_SUPPORT)
+diff --git a/test/parallel/test-inspector-network-domain.js b/test/parallel/test-inspector-network-domain.js
+deleted file mode 100644
+index d2a56dca95a4ff6a63c7918eece7889a10e99731..0000000000000000000000000000000000000000
+--- a/test/parallel/test-inspector-network-domain.js
++++ /dev/null
+@@ -1,206 +0,0 @@
+-// Flags: --inspect=0 --experimental-network-inspection
+-'use strict';
+-const common = require('../common');
+-
+-common.skipIfInspectorDisabled();
+-
+-const assert = require('node:assert');
+-const { addresses } = require('../common/internet');
+-const fixtures = require('../common/fixtures');
+-const http = require('node:http');
+-const https = require('node:https');
+-const inspector = require('node:inspector/promises');
+-
+-const session = new inspector.Session();
+-session.connect();
+-
+-const requestHeaders = {
+-  'accept-language': 'en-US',
+-  'Cookie': ['k1=v1', 'k2=v2'],
+-  'age': 1000,
+-  'x-header1': ['value1', 'value2']
+-};
+-
+-const setResponseHeaders = (res) => {
+-  res.setHeader('server', 'node');
+-  res.setHeader('etag', 12345);
+-  res.setHeader('Set-Cookie', ['key1=value1', 'key2=value2']);
+-  res.setHeader('x-header2', ['value1', 'value2']);
+-};
+-
+-const httpServer = http.createServer((req, res) => {
+-  const path = req.url;
+-  switch (path) {
+-    case '/hello-world':
+-      setResponseHeaders(res);
+-      res.writeHead(200);
+-      res.end('hello world\n');
+-      break;
+-    default:
+-      assert(false, `Unexpected path: ${path}`);
+-  }
+-});
+-
+-const httpsServer = https.createServer({
+-  key: fixtures.readKey('agent1-key.pem'),
+-  cert: fixtures.readKey('agent1-cert.pem')
+-}, (req, res) => {
+-  const path = req.url;
+-  switch (path) {
+-    case '/hello-world':
+-      setResponseHeaders(res);
+-      res.writeHead(200);
+-      res.end('hello world\n');
+-      break;
+-    default:
+-      assert(false, `Unexpected path: ${path}`);
+-  }
+-});
+-
+-const terminate = () => {
+-  session.disconnect();
+-  httpServer.close();
+-  httpsServer.close();
+-  inspector.close();
+-};
+-
+-const testHttpGet = () => new Promise((resolve, reject) => {
+-  session.on('Network.requestWillBeSent', common.mustCall(({ params }) => {
+-    assert.ok(params.requestId.startsWith('node-network-event-'));
+-    assert.strictEqual(params.request.url, 'http://127.0.0.1/hello-world');
+-    assert.strictEqual(params.request.method, 'GET');
+-    assert.strictEqual(typeof params.request.headers, 'object');
+-    assert.strictEqual(params.request.headers['accept-language'], 'en-US');
+-    assert.strictEqual(params.request.headers.cookie, 'k1=v1; k2=v2');
+-    assert.strictEqual(params.request.headers.age, '1000');
+-    assert.strictEqual(params.request.headers['x-header1'], 'value1, value2');
+-    assert.strictEqual(typeof params.timestamp, 'number');
+-    assert.strictEqual(typeof params.wallTime, 'number');
+-  }));
+-  session.on('Network.responseReceived', common.mustCall(({ params }) => {
+-    assert.ok(params.requestId.startsWith('node-network-event-'));
+-    assert.strictEqual(typeof params.timestamp, 'number');
+-    assert.strictEqual(params.type, 'Other');
+-    assert.strictEqual(params.response.status, 200);
+-    assert.strictEqual(params.response.statusText, 'OK');
+-    assert.strictEqual(params.response.url, 'http://127.0.0.1/hello-world');
+-    assert.strictEqual(typeof params.response.headers, 'object');
+-    assert.strictEqual(params.response.headers.server, 'node');
+-    assert.strictEqual(params.response.headers.etag, '12345');
+-    assert.strictEqual(params.response.headers['set-cookie'], 'key1=value1\nkey2=value2');
+-    assert.strictEqual(params.response.headers['x-header2'], 'value1, value2');
+-  }));
+-  session.on('Network.loadingFinished', common.mustCall(({ params }) => {
+-    assert.ok(params.requestId.startsWith('node-network-event-'));
+-    assert.strictEqual(typeof params.timestamp, 'number');
+-    resolve();
+-  }));
+-
+-  http.get({
+-    host: '127.0.0.1',
+-    port: httpServer.address().port,
+-    path: '/hello-world',
+-    headers: requestHeaders
+-  }, common.mustCall());
+-});
+-
+-const testHttpsGet = () => new Promise((resolve, reject) => {
+-  session.on('Network.requestWillBeSent', common.mustCall(({ params }) => {
+-    assert.ok(params.requestId.startsWith('node-network-event-'));
+-    assert.strictEqual(params.request.url, 'https://127.0.0.1/hello-world');
+-    assert.strictEqual(params.request.method, 'GET');
+-    assert.strictEqual(typeof params.request.headers, 'object');
+-    assert.strictEqual(params.request.headers['accept-language'], 'en-US');
+-    assert.strictEqual(params.request.headers.cookie, 'k1=v1; k2=v2');
+-    assert.strictEqual(params.request.headers.age, '1000');
+-    assert.strictEqual(params.request.headers['x-header1'], 'value1, value2');
+-    assert.strictEqual(typeof params.timestamp, 'number');
+-    assert.strictEqual(typeof params.wallTime, 'number');
+-  }));
+-  session.on('Network.responseReceived', common.mustCall(({ params }) => {
+-    assert.ok(params.requestId.startsWith('node-network-event-'));
+-    assert.strictEqual(typeof params.timestamp, 'number');
+-    assert.strictEqual(params.type, 'Other');
+-    assert.strictEqual(params.response.status, 200);
+-    assert.strictEqual(params.response.statusText, 'OK');
+-    assert.strictEqual(params.response.url, 'https://127.0.0.1/hello-world');
+-    assert.strictEqual(typeof params.response.headers, 'object');
+-    assert.strictEqual(params.response.headers.server, 'node');
+-    assert.strictEqual(params.response.headers.etag, '12345');
+-    assert.strictEqual(params.response.headers['set-cookie'], 'key1=value1\nkey2=value2');
+-    assert.strictEqual(params.response.headers['x-header2'], 'value1, value2');
+-  }));
+-  session.on('Network.loadingFinished', common.mustCall(({ params }) => {
+-    assert.ok(params.requestId.startsWith('node-network-event-'));
+-    assert.strictEqual(typeof params.timestamp, 'number');
+-    resolve();
+-  }));
+-
+-  https.get({
+-    host: '127.0.0.1',
+-    port: httpsServer.address().port,
+-    path: '/hello-world',
+-    rejectUnauthorized: false,
+-    headers: requestHeaders,
+-  }, common.mustCall());
+-});
+-
+-const testHttpError = () => new Promise((resolve, reject) => {
+-  session.on('Network.requestWillBeSent', common.mustCall());
+-  session.on('Network.loadingFailed', common.mustCall(({ params }) => {
+-    assert.ok(params.requestId.startsWith('node-network-event-'));
+-    assert.strictEqual(typeof params.timestamp, 'number');
+-    assert.strictEqual(params.type, 'Other');
+-    assert.strictEqual(typeof params.errorText, 'string');
+-    resolve();
+-  }));
+-  session.on('Network.responseReceived', common.mustNotCall());
+-  session.on('Network.loadingFinished', common.mustNotCall());
+-
+-  http.get({
+-    host: addresses.INVALID_HOST,
+-  }, common.mustNotCall()).on('error', common.mustCall());
+-});
+-
+-
+-const testHttpsError = () => new Promise((resolve, reject) => {
+-  session.on('Network.requestWillBeSent', common.mustCall());
+-  session.on('Network.loadingFailed', common.mustCall(({ params }) => {
+-    assert.ok(params.requestId.startsWith('node-network-event-'));
+-    assert.strictEqual(typeof params.timestamp, 'number');
+-    assert.strictEqual(params.type, 'Other');
+-    assert.strictEqual(typeof params.errorText, 'string');
+-    resolve();
+-  }));
+-  session.on('Network.responseReceived', common.mustNotCall());
+-  session.on('Network.loadingFinished', common.mustNotCall());
+-
+-  https.get({
+-    host: addresses.INVALID_HOST,
+-  }, common.mustNotCall()).on('error', common.mustCall());
+-});
+-
+-const testNetworkInspection = async () => {
+-  await testHttpGet();
+-  session.removeAllListeners();
+-  await testHttpsGet();
+-  session.removeAllListeners();
+-  await testHttpError();
+-  session.removeAllListeners();
+-  await testHttpsError();
+-  session.removeAllListeners();
+-};
+-
+-httpServer.listen(0, () => {
+-  httpsServer.listen(0, async () => {
+-    try {
+-      await session.post('Network.enable');
+-      await testNetworkInspection();
+-      await session.post('Network.disable');
+-    } catch (e) {
+-      assert.fail(e);
+-    } finally {
+-      terminate();
+-    }
+-  });
+-});
+diff --git a/test/parallel/test-inspector-network-http.js b/test/parallel/test-inspector-network-http.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e1e987cdd71e284cbbab9f9bb2bd5bdd08e738ca
+--- /dev/null
++++ b/test/parallel/test-inspector-network-http.js
+@@ -0,0 +1,241 @@
++// Flags: --inspect=0 --experimental-network-inspection
++'use strict';
++const common = require('../common');
++
++common.skipIfInspectorDisabled();
++
++const assert = require('node:assert');
++const { once } = require('node:events');
++const { addresses } = require('../common/internet');
++const fixtures = require('../common/fixtures');
++const http = require('node:http');
++const https = require('node:https');
++const inspector = require('node:inspector/promises');
++
++const session = new inspector.Session();
++session.connect();
++
++const requestHeaders = {
++  'accept-language': 'en-US',
++  'Cookie': ['k1=v1', 'k2=v2'],
++  'age': 1000,
++  'x-header1': ['value1', 'value2']
++};
++
++const setResponseHeaders = (res) => {
++  res.setHeader('server', 'node');
++  res.setHeader('etag', 12345);
++  res.setHeader('Set-Cookie', ['key1=value1', 'key2=value2']);
++  res.setHeader('x-header2', ['value1', 'value2']);
++};
++
++const kTimeout = 1000;
++const kDelta = 200;
++
++const handleRequest = (req, res) => {
++  const path = req.url;
++  switch (path) {
++    case '/hello-world':
++      setResponseHeaders(res);
++      res.writeHead(200);
++      // Ensure the header is sent.
++      res.write('\n');
++
++      setTimeout(() => {
++        res.end('hello world\n');
++      }, kTimeout);
++      break;
++    default:
++      assert(false, `Unexpected path: ${path}`);
++  }
++};
++
++const httpServer = http.createServer(handleRequest);
++
++const httpsServer = https.createServer({
++  key: fixtures.readKey('agent1-key.pem'),
++  cert: fixtures.readKey('agent1-cert.pem')
++}, handleRequest);
++
++const terminate = () => {
++  session.disconnect();
++  httpServer.close();
++  httpsServer.close();
++  inspector.close();
++};
++
++function verifyRequestWillBeSent({ method, params }, expect) {
++  assert.strictEqual(method, 'Network.requestWillBeSent');
++
++  assert.ok(params.requestId.startsWith('node-network-event-'));
++  assert.strictEqual(params.request.url, expect.url);
++  assert.strictEqual(params.request.method, 'GET');
++  assert.strictEqual(typeof params.request.headers, 'object');
++  assert.strictEqual(params.request.headers['accept-language'], 'en-US');
++  assert.strictEqual(params.request.headers.cookie, 'k1=v1; k2=v2');
++  assert.strictEqual(params.request.headers.age, '1000');
++  assert.strictEqual(params.request.headers['x-header1'], 'value1, value2');
++  assert.strictEqual(typeof params.timestamp, 'number');
++  assert.strictEqual(typeof params.wallTime, 'number');
++
++  return params;
++}
++
++function verifyResponseReceived({ method, params }, expect) {
++  assert.strictEqual(method, 'Network.responseReceived');
++
++  assert.ok(params.requestId.startsWith('node-network-event-'));
++  assert.strictEqual(typeof params.timestamp, 'number');
++  assert.strictEqual(params.type, 'Other');
++  assert.strictEqual(params.response.status, 200);
++  assert.strictEqual(params.response.statusText, 'OK');
++  assert.strictEqual(params.response.url, expect.url);
++  assert.strictEqual(typeof params.response.headers, 'object');
++  assert.strictEqual(params.response.headers.server, 'node');
++  assert.strictEqual(params.response.headers.etag, '12345');
++  assert.strictEqual(params.response.headers['set-cookie'], 'key1=value1\nkey2=value2');
++  assert.strictEqual(params.response.headers['x-header2'], 'value1, value2');
++
++  return params;
++}
++
++function verifyLoadingFinished({ method, params }) {
++  assert.strictEqual(method, 'Network.loadingFinished');
++
++  assert.ok(params.requestId.startsWith('node-network-event-'));
++  assert.strictEqual(typeof params.timestamp, 'number');
++  return params;
++}
++
++function verifyLoadingFailed({ method, params }) {
++  assert.strictEqual(method, 'Network.loadingFailed');
++
++  assert.ok(params.requestId.startsWith('node-network-event-'));
++  assert.strictEqual(typeof params.timestamp, 'number');
++  assert.strictEqual(params.type, 'Other');
++  assert.strictEqual(typeof params.errorText, 'string');
++}
++
++async function testHttpGet() {
++  const url = `http://127.0.0.1:${httpServer.address().port}/hello-world`;
++  const requestWillBeSentFuture = once(session, 'Network.requestWillBeSent')
++    .then(([event]) => verifyRequestWillBeSent(event, { url }));
++
++  const responseReceivedFuture = once(session, 'Network.responseReceived')
++    .then(([event]) => verifyResponseReceived(event, { url }));
++
++  const loadingFinishedFuture = once(session, 'Network.loadingFinished')
++    .then(([event]) => verifyLoadingFinished(event));
++
++  http.get({
++    host: '127.0.0.1',
++    port: httpServer.address().port,
++    path: '/hello-world',
++    headers: requestHeaders
++  }, common.mustCall((res) => {
++    // Dump the response.
++    res.on('data', () => {});
++    res.on('end', () => {});
++  }));
++
++  await requestWillBeSentFuture;
++  const responseReceived = await responseReceivedFuture;
++  const loadingFinished = await loadingFinishedFuture;
++
++  const delta = (loadingFinished.timestamp - responseReceived.timestamp) * 1000;
++  assert.ok(delta > kDelta);
++}
++
++async function testHttpsGet() {
++  const url = `https://127.0.0.1:${httpsServer.address().port}/hello-world`;
++  const requestWillBeSentFuture = once(session, 'Network.requestWillBeSent')
++    .then(([event]) => verifyRequestWillBeSent(event, { url }));
++
++  const responseReceivedFuture = once(session, 'Network.responseReceived')
++    .then(([event]) => verifyResponseReceived(event, { url }));
++
++  const loadingFinishedFuture = once(session, 'Network.loadingFinished')
++    .then(([event]) => verifyLoadingFinished(event));
++
++  https.get({
++    host: '127.0.0.1',
++    port: httpsServer.address().port,
++    path: '/hello-world',
++    rejectUnauthorized: false,
++    headers: requestHeaders,
++  }, common.mustCall((res) => {
++    // Dump the response.
++    res.on('data', () => {});
++    res.on('end', () => {});
++  }));
++
++  await requestWillBeSentFuture;
++  const responseReceived = await responseReceivedFuture;
++  const loadingFinished = await loadingFinishedFuture;
++
++  const delta = (loadingFinished.timestamp - responseReceived.timestamp) * 1000;
++  assert.ok(delta > kDelta);
++}
++
++async function testHttpError() {
++  const url = `http://${addresses.INVALID_HOST}/`;
++  const requestWillBeSentFuture = once(session, 'Network.requestWillBeSent')
++    .then(([event]) => verifyRequestWillBeSent(event, { url }));
++  session.on('Network.responseReceived', common.mustNotCall());
++  session.on('Network.loadingFinished', common.mustNotCall());
++
++  const loadingFailedFuture = once(session, 'Network.loadingFailed')
++    .then(([event]) => verifyLoadingFailed(event));
++
++  http.get({
++    host: addresses.INVALID_HOST,
++    headers: requestHeaders,
++  }, common.mustNotCall()).on('error', common.mustCall());
++
++  await requestWillBeSentFuture;
++  await loadingFailedFuture;
++}
++
++async function testHttpsError() {
++  const url = `https://${addresses.INVALID_HOST}/`;
++  const requestWillBeSentFuture = once(session, 'Network.requestWillBeSent')
++    .then(([event]) => verifyRequestWillBeSent(event, { url }));
++  session.on('Network.responseReceived', common.mustNotCall());
++  session.on('Network.loadingFinished', common.mustNotCall());
++
++  const loadingFailedFuture = once(session, 'Network.loadingFailed')
++    .then(([event]) => verifyLoadingFailed(event));
++
++  https.get({
++    host: addresses.INVALID_HOST,
++    headers: requestHeaders,
++  }, common.mustNotCall()).on('error', common.mustCall());
++
++  await requestWillBeSentFuture;
++  await loadingFailedFuture;
++}
++
++const testNetworkInspection = async () => {
++  await testHttpGet();
++  session.removeAllListeners();
++  await testHttpsGet();
++  session.removeAllListeners();
++  await testHttpError();
++  session.removeAllListeners();
++  await testHttpsError();
++  session.removeAllListeners();
++};
++
++httpServer.listen(0, () => {
++  httpsServer.listen(0, async () => {
++    try {
++      await session.post('Network.enable');
++      await testNetworkInspection();
++      await session.post('Network.disable');
++    } catch (e) {
++      assert.fail(e);
++    } finally {
++      terminate();
++    }
++  });
++});
