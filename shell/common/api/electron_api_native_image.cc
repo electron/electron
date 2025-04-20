@@ -402,7 +402,7 @@ void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
   GURL url;
   if (options.Get("buffer", &buffer) && node::Buffer::HasInstance(buffer)) {
     skia_rep_added = electron::util::AddImageSkiaRepFromBuffer(
-        &image_skia, electron::util::as_byte_span(buffer), width, height,
+        &image_skia, electron::Buffer::as_byte_span(buffer), width, height,
         scale_factor);
   } else if (options.Get("dataURL", &url)) {
     std::string mime_type, charset, data;
@@ -511,7 +511,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
   auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
   auto size_bytes = info.computeMinByteSize();
 
-  const auto buffer_data = electron::util::as_byte_span(buffer);
+  const auto buffer_data = electron::Buffer::as_byte_span(buffer);
   if (size_bytes != buffer_data.size()) {
     thrower.ThrowError("invalid buffer size");
     return {};
@@ -552,7 +552,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBuffer(
 
   gfx::ImageSkia image_skia;
   electron::util::AddImageSkiaRepFromBuffer(
-      &image_skia, electron::util::as_byte_span(buffer), width, height,
+      &image_skia, electron::Buffer::as_byte_span(buffer), width, height,
       scale_factor);
   return Create(args->isolate(), gfx::Image(image_skia));
 }
