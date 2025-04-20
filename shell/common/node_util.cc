@@ -136,4 +136,15 @@ base::span<uint8_t> as_byte_span(v8::Local<v8::Value> node_buffer) {
   return UNSAFE_BUFFERS(base::span{data, size});
 }
 
+v8::MaybeLocal<v8::Object> Copy(v8::Isolate* isolate,
+                                const base::span<const char> data) {
+  // SAFETY: span-friendly version of node::Buffer::Copy()
+  return UNSAFE_BUFFERS(node::Buffer::Copy(isolate, data.data(), data.size()));
+}
+
+v8::MaybeLocal<v8::Object> Copy(v8::Isolate* isolate,
+                                const base::span<const uint8_t> data) {
+  return Copy(isolate, base::as_chars(data));
+}
+
 }  // namespace electron::Buffer
