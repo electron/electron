@@ -249,16 +249,9 @@ void WinFrameView::LayoutCaptionButtons() {
   int custom_height = window()->titlebar_overlay_height();
   int height = TitlebarHeight(custom_height);
 
-  // TODO(mlaurencin): This -1 creates a 1 pixel margin between the right
-  // edge of the button container and the edge of the window, allowing for this
-  // edge portion to return the correct hit test and be manually resized
-  // properly. Alternatives can be explored, but the differences in view
-  // structures between Electron and Chromium may result in this as the best
-  // option.
-  int variable_width =
-      IsMaximized() ? preferred_size.width() : preferred_size.width() - 1;
   caption_button_container_->SetBounds(width() - preferred_size.width(),
-                                       WindowTopY(), variable_width, height);
+                                       WindowTopY(), preferred_size.width(), 
+                                       height);
 
   // Needed for heights larger than default
   caption_button_container_->SetButtonSize(gfx::Size(0, height));

@@ -31,7 +31,8 @@ void FramelessView::Init(NativeWindowViews* window, views::Widget* frame) {
 }
 
 int FramelessView::ResizingBorderHitTest(const gfx::Point& point) {
-  return ResizingBorderHitTestImpl(point, gfx::Insets(kResizeInsideBoundsSize));
+  return ResizingBorderHitTestImpl(
+      point, gfx::Insets::TLBR(kResizeInsideBoundsSize, 0, 0, 0));
 }
 
 int FramelessView::ResizingBorderHitTestImpl(const gfx::Point& point,

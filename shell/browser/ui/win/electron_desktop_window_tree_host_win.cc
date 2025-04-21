@@ -74,7 +74,7 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
   // removed, the client area would then be drew outside current workspace.
   //
   // Indenting the client area can fix this behavior.
-  if (IsMaximized() && !native_window_view_->has_frame()) {
+  if (!native_window_view_->has_frame()) {
     // The insets would be eventually passed to WM_NCCALCSIZE, which takes
     // the metrics under the DPI of _main_ monitor instead of current monitor.
     //
@@ -82,7 +82,11 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
     // monitors with different DPIs before changing this code.
     const int thickness = ::GetSystemMetrics(SM_CXSIZEFRAME) +
                           ::GetSystemMetrics(SM_CXPADDEDBORDER);
-    *insets = gfx::Insets::TLBR(thickness, thickness, thickness, thickness);
+    if (IsMaximized()) {
+      *insets = gfx::Insets::TLBR(thickness, thickness, thickness, thickness);
+    } else {
+      *insets = gfx::Insets::TLBR(0, thickness, thickness, thickness);
+    }
     return true;
   }
   return false;
