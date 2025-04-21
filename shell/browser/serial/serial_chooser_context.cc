@@ -9,7 +9,9 @@
 #include <utility>
 
 #include "base/base64.h"
+#include "base/command_line.h"
 #include "base/values.h"
+#include "chrome/browser/serial/serial_blocklist.h"
 #include "content/public/browser/device_service.h"
 #include "content/public/browser/web_contents.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -104,6 +106,12 @@ bool SerialChooserContext::HasPortPermission(
     const url::Origin& origin,
     const device::mojom::SerialPortInfo& port,
     content::RenderFrameHost* render_frame_host) {
+  bool blocklist_disabled = base::CommandLine::ForCurrentProcess()->HasSwitch(
+      kDisableSerialBlocklist);
+  if (!blocklist_disabled && SerialBlocklist::Get().IsExcluded(port)) {
+    return false;
+  }
+
   auto it = ephemeral_ports_.find(origin);
   if (it != ephemeral_ports_.end()) {
     const std::set<base::UnguessableToken>& ports = it->second;
