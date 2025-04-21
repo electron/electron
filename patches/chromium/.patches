@@ -145,3 +145,4 @@ fix_win32_synchronous_spellcheck.patch
 chore_remove_conflicting_allow_unsafe_libc_calls.patch
 fix_linter_error.patch
 revert_enable_crel_for_arm32_targets.patch
+mac_fix_check_on_ime_reconversion_due_to_invalid_replacement_range.patch
