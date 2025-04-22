@@ -1,0 +1,502 @@
+From b094accf6189985f07e7bfe576c6a11001099896 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Thu, 10 Apr 2025 19:59:52 -0700
+Subject: [PATCH] media: Spanify MediaFoundationVideoEncodeAccelerator
+
+Bug: 409619251, 40285824, 338570700
+Change-Id: Icbe9b7deb2d485f11327d1e233b5629480b40aad
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6448912
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Mustafa Emre Acer <meacer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1445651}
+---
+
+diff --git a/gpu/ipc/common/dxgi_helpers.cc b/gpu/ipc/common/dxgi_helpers.cc
+index c152b2c3..ac2c0a4 100644
+--- a/gpu/ipc/common/dxgi_helpers.cc
++++ b/gpu/ipc/common/dxgi_helpers.cc
+@@ -81,9 +81,6 @@
+     Microsoft::WRL::ComPtr<ID3D11Texture2D>* staging_texture) {
+   DCHECK(d3d11_device);
+ 
+-  uint8_t* dest_buffer = shared_memory.data();
+-  size_t dst_buffer_size = shared_memory.size_bytes();
+-
+   Microsoft::WRL::ComPtr<ID3D11Device1> device1;
+   HRESULT hr = d3d11_device->QueryInterface(IID_PPV_ARGS(&device1));
+   if (FAILED(hr)) {
+@@ -100,19 +97,18 @@
+     return false;
+   }
+ 
+-  return CopyD3D11TexToMem(texture.Get(), dest_buffer, dst_buffer_size,
+-                           d3d11_device, staging_texture);
++  return CopyD3D11TexToMem(texture.Get(), shared_memory, d3d11_device,
++                           staging_texture);
+ }
+ 
+ bool CopyD3D11TexToMem(
+     ID3D11Texture2D* src_texture,
+-    uint8_t* dst_buffer,
+-    size_t buffer_size,
++    base::span<uint8_t> dst_buffer,
+     ID3D11Device* d3d11_device,
+     Microsoft::WRL::ComPtr<ID3D11Texture2D>* staging_texture) {
+   DCHECK(d3d11_device);
+   DCHECK(staging_texture);
+-  DCHECK(dst_buffer);
++  DCHECK(!dst_buffer.empty());
+   DCHECK(src_texture);
+ 
+   D3D11_TEXTURE2D_DESC texture_desc = {};
+@@ -124,7 +120,7 @@
+     return false;
+   }
+   size_t copy_size = texture_desc.Height * texture_desc.Width * 3 / 2;
+-  if (buffer_size < copy_size) {
++  if (dst_buffer.size() < copy_size) {
+     DLOG(ERROR) << "Invalid buffer size for copy.";
+     return false;
+   }
+@@ -199,12 +195,12 @@
+   const uint32_t source_stride = mapped_resource.RowPitch;
+   const uint32_t dest_stride = texture_desc.Width;
+ 
+-  return libyuv::NV12Copy(source_buffer, source_stride,
+-                          source_buffer + texture_desc.Height * source_stride,
+-                          source_stride, dst_buffer, dest_stride,
+-                          dst_buffer + texture_desc.Height * dest_stride,
+-                          dest_stride, texture_desc.Width,
+-                          texture_desc.Height) == 0;
++  return libyuv::NV12Copy(
++             source_buffer, source_stride,
++             source_buffer + texture_desc.Height * source_stride, source_stride,
++             dst_buffer.data(), dest_stride,
++             dst_buffer.subspan(texture_desc.Height * dest_stride).data(),
++             dest_stride, texture_desc.Width, texture_desc.Height) == 0;
+ }
+ 
+ GPU_EXPORT bool CopyShMemToDXGIBuffer(base::span<uint8_t> shared_memory,
+diff --git a/gpu/ipc/common/dxgi_helpers.h b/gpu/ipc/common/dxgi_helpers.h
+index 1d580019..0e815f27 100644
+--- a/gpu/ipc/common/dxgi_helpers.h
++++ b/gpu/ipc/common/dxgi_helpers.h
+@@ -70,8 +70,7 @@
+ // input texture size or format. Returns true if succeeded.
+ GPU_EXPORT bool CopyD3D11TexToMem(
+     ID3D11Texture2D* input_texture,
+-    uint8_t* dst_buffer,
+-    size_t buffer_size,
++    base::span<uint8_t> dst_buffer,
+     ID3D11Device* d3d11_device,
+     Microsoft::WRL::ComPtr<ID3D11Texture2D>* staging_texture);
+ 
+diff --git a/media/base/video_frame.cc b/media/base/video_frame.cc
+index c50826a..31b7b3de 100644
+--- a/media/base/video_frame.cc
++++ b/media/base/video_frame.cc
+@@ -785,6 +785,8 @@
+   return frame;
+ }
+ 
++// TODO(crbug.com/338570700): This method needs to be remove in favour
++// of its span version.
+ // static
+ scoped_refptr<VideoFrame> VideoFrame::WrapExternalYuvData(
+     VideoPixelFormat format,
+@@ -796,6 +798,31 @@
+     const uint8_t* y_data,
+     const uint8_t* uv_data,
+     base::TimeDelta timestamp) {
++  auto layout = VideoFrameLayout::CreateWithStrides(format, coded_size,
++                                                    {y_stride, uv_stride});
++  if (!layout) {
++    DLOG(ERROR) << "Invalid layout.";
++    return nullptr;
++  }
++
++  return WrapExternalYuvData(
++      format, coded_size, visible_rect, natural_size, y_stride, uv_stride,
++      UNSAFE_TODO(base::span(y_data, layout->planes()[Plane::kY].size)),
++      UNSAFE_TODO(base::span(uv_data, layout->planes()[Plane::kUV].size)),
++      timestamp);
++}
++
++// static
++scoped_refptr<VideoFrame> VideoFrame::WrapExternalYuvData(
++    VideoPixelFormat format,
++    const gfx::Size& coded_size,
++    const gfx::Rect& visible_rect,
++    const gfx::Size& natural_size,
++    size_t y_stride,
++    size_t uv_stride,
++    base::span<const uint8_t> y_data,
++    base::span<const uint8_t> uv_data,
++    base::TimeDelta timestamp) {
+   const StorageType storage = STORAGE_UNOWNED_MEMORY;
+   if (!IsValidConfig(format, storage, coded_size, visible_rect, natural_size)) {
+     DLOG(ERROR) << __func__ << " Invalid config."
+@@ -819,11 +846,9 @@
+   auto frame = base::MakeRefCounted<VideoFrame>(base::PassKey<VideoFrame>(),
+                                                 *layout, storage, visible_rect,
+                                                 natural_size, timestamp);
+-  std::array<const uint8_t*, 2> data = {y_data, uv_data};
++  std::array<base::span<const uint8_t>, 2> data = {y_data, uv_data};
+   for (size_t plane = 0; plane < NumPlanes(format); ++plane) {
+-    // TODO(crbug.com/338570700): y_data, uv_data should be spans
+-    frame->data_[plane] =
+-        UNSAFE_TODO(base::span(data[plane], layout->planes()[plane].size));
++    frame->data_[plane] = data[plane];
+   }
+   return frame;
+ }
+diff --git a/media/base/video_frame.h b/media/base/video_frame.h
+index c44af122..4a7ca53 100644
+--- a/media/base/video_frame.h
++++ b/media/base/video_frame.h
+@@ -397,6 +397,17 @@
+       const uint8_t* uv_data,
+       base::TimeDelta timestamp);
+ 
++  static scoped_refptr<VideoFrame> WrapExternalYuvData(
++      VideoPixelFormat format,
++      const gfx::Size& coded_size,
++      const gfx::Rect& visible_rect,
++      const gfx::Size& natural_size,
++      size_t y_stride,
++      size_t uv_stride,
++      base::span<const uint8_t> y_data,
++      base::span<const uint8_t> uv_data,
++      base::TimeDelta timestamp);
++
+   // Wraps |gpu_memory_buffer|. This will transfer ownership of
+   // |gpu_memory_buffer| to the returned VideoFrame.
+   // For use in contexts where the GPUMemoryBuffer has no SharedImage
+diff --git a/media/base/win/mf_helpers.cc b/media/base/win/mf_helpers.cc
+index 11724a3..d1812736 100644
+--- a/media/base/win/mf_helpers.cc
++++ b/media/base/win/mf_helpers.cc
+@@ -271,16 +271,20 @@
+ }
+ 
+ MediaBufferScopedPointer::MediaBufferScopedPointer(IMFMediaBuffer* media_buffer)
+-    : media_buffer_(media_buffer),
+-      buffer_(nullptr),
+-      max_length_(0),
+-      current_length_(0) {
+-  HRESULT hr = media_buffer_->Lock(&buffer_.AsEphemeralRawAddr(), &max_length_,
+-                                   &current_length_);
++    : media_buffer_(media_buffer) {
++  uint8_t* buffer;
++  DWORD max_length;
++
++  HRESULT hr = media_buffer_->Lock(&buffer, &max_length, nullptr);
+   CHECK(SUCCEEDED(hr));
++
++  // SAFETY: `IMFMediaBuffer::Lock` docs states that `max_length` is the maximum
++  // amount of data that can be written to the buffer.
++  data_ = UNSAFE_BUFFERS(base::raw_span<uint8_t>(buffer, max_length));
+ }
+ 
+ MediaBufferScopedPointer::~MediaBufferScopedPointer() {
++  data_ = {};
+   HRESULT hr = media_buffer_->Unlock();
+   CHECK(SUCCEEDED(hr));
+ }
+@@ -898,9 +902,9 @@
+           hr, "Failed to create memory buffer for input sample", hr);
+ 
+       MediaBufferScopedPointer scoped_buffer(input_buffer.Get());
+-      bool copy_succeeded = gpu::CopyD3D11TexToMem(
+-          input_texture.Get(), scoped_buffer.get(), scoped_buffer.max_length(),
+-          d3d_device.Get(), staging_texture);
++      bool copy_succeeded =
++          gpu::CopyD3D11TexToMem(input_texture.Get(), scoped_buffer.as_span(),
++                                 d3d_device.Get(), staging_texture);
+       if (!copy_succeeded) {
+         LOG(ERROR) << "Failed to copy sample to memory.";
+         return E_FAIL;
+@@ -930,7 +934,7 @@
+           frame->format(), i, frame->visible_rect().size());
+       libyuv::CopyPlane(frame->visible_data(i),
+                         frame->layout().planes()[i].stride,
+-                        scoped_buffer.get() + buffer_offset,
++                        scoped_buffer.as_span().subspan(buffer_offset).data(),
+                         frame->layout().planes()[i].stride, plane_size.width(),
+                         plane_size.height());
+       buffer_offset +=
+diff --git a/media/base/win/mf_helpers.h b/media/base/win/mf_helpers.h
+index 4f4bb217..32c686e 100644
+--- a/media/base/win/mf_helpers.h
++++ b/media/base/win/mf_helpers.h
+@@ -83,15 +83,11 @@
+ 
+   ~MediaBufferScopedPointer();
+ 
+-  raw_ptr<uint8_t, AllowPtrArithmetic> get() { return buffer_; }
+-  DWORD current_length() const { return current_length_; }
+-  DWORD max_length() const { return max_length_; }
++  base::span<uint8_t> as_span() { return data_; }
+ 
+  private:
+   Microsoft::WRL::ComPtr<IMFMediaBuffer> media_buffer_;
+-  raw_ptr<uint8_t, AllowPtrArithmetic> buffer_;
+-  DWORD max_length_;
+-  DWORD current_length_;
++  base::raw_span<uint8_t> data_;
+ };
+ 
+ // Copies |in_string| to |out_string| that is allocated with CoTaskMemAlloc().
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+index d6f082b..6bbebe55 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+@@ -2,11 +2,6 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-#ifdef UNSAFE_BUFFERS_BUILD
+-// TODO(crbug.com/40285824): Remove this and convert code to safer constructs.
+-#pragma allow_unsafe_buffers
+-#endif
+-
+ #include "media/gpu/windows/media_foundation_video_encode_accelerator_win.h"
+ 
+ #include <objbase.h>
+@@ -24,6 +19,7 @@
+ #include <vector>
+ 
+ #include "base/containers/fixed_flat_set.h"
++#include "base/containers/heap_array.h"
+ #include "base/features.h"
+ #include "base/memory/shared_memory_mapping.h"
+ #include "base/memory/unsafe_shared_memory_region.h"
+@@ -220,18 +216,17 @@
+ class MediaFoundationVideoEncodeAccelerator::EncodeOutput {
+  public:
+   EncodeOutput(uint32_t size, const BitstreamBufferMetadata& md)
+-      : metadata(md), data_(size) {}
++      : metadata(md), data_(base::HeapArray<uint8_t>::Uninit(size)) {}
+ 
+   EncodeOutput(const EncodeOutput&) = delete;
+   EncodeOutput& operator=(const EncodeOutput&) = delete;
+ 
+-  uint8_t* memory() { return data_.data(); }
+-  int size() const { return static_cast<int>(data_.size()); }
++  base::span<uint8_t> as_span() { return data_.as_span(); }
+ 
+   BitstreamBufferMetadata metadata;
+ 
+  private:
+-  std::vector<uint8_t> data_;
++  base::HeapArray<uint8_t> data_;
+ };
+ 
+ struct MediaFoundationVideoEncodeAccelerator::BitstreamBufferRef {
+@@ -794,8 +789,16 @@
+   }
+   auto encode_output = std::move(encoder_output_queue_.front());
+   encoder_output_queue_.pop_front();
+-  memcpy(buffer_ref->mapping.memory(), encode_output->memory(),
+-         encode_output->size());
++
++  if (buffer.size() < encode_output->as_span().size()) {
++    NotifyErrorStatus(
++        {EncoderStatus::Codes::kInvalidOutputBuffer,
++         "Encoder output is too large: " + base::NumberToString(buffer.size()) +
++             " vs. " + base::NumberToString(encode_output->as_span().size())});
++    return;
++  }
++  buffer_ref->mapping.GetMemoryAsSpan<uint8_t>().copy_prefix_from(
++      encode_output->as_span());
+ 
+   client_->BitstreamBufferReady(buffer_ref->id, encode_output->metadata);
+   if (encoder_output_queue_.empty() && state_ == kPostFlushing) {
+@@ -1912,22 +1915,20 @@
+   // Establish plain pointers into the input buffer, where we will copy pixel
+   // data to.
+   MediaBufferScopedPointer scoped_buffer(input_buffer.Get());
+-  DCHECK(scoped_buffer.get());
+-  uint8_t* dst_y = scoped_buffer.get();
+   size_t dst_y_stride = VideoFrame::RowBytes(
+       VideoFrame::Plane::kY, kTargetPixelFormat, input_visible_size_.width());
+-  uint8_t* dst_uv =
+-      scoped_buffer.get() +
++  size_t dst_y_size =
+       dst_y_stride * VideoFrame::Rows(VideoFrame::Plane::kY, kTargetPixelFormat,
+                                       input_visible_size_.height());
++  auto dst_y = scoped_buffer.as_span().first(dst_y_size);
++
+   size_t dst_uv_stride = VideoFrame::RowBytes(
+       VideoFrame::Plane::kUV, kTargetPixelFormat, input_visible_size_.width());
+-  uint8_t* end =
+-      dst_uv + dst_uv_stride * VideoFrame::Rows(VideoFrame::Plane::kUV,
+-                                                kTargetPixelFormat,
+-                                                input_visible_size_.height());
+-  DCHECK_GE(static_cast<ptrdiff_t>(scoped_buffer.max_length()),
+-            end - scoped_buffer.get());
++  size_t dst_uv_size =
++      dst_uv_stride * VideoFrame::Rows(VideoFrame::Plane::kUV,
++                                       kTargetPixelFormat,
++                                       input_visible_size_.height());
++  auto dst_uv = scoped_buffer.as_span().subspan(dst_y_size, dst_uv_size);
+ 
+   // Set up a VideoFrame with the data pointing into the input buffer.
+   // We need it to ease copying and scaling by reusing ConvertAndScale()
+@@ -1966,7 +1967,7 @@
+         .CPUAccessFlags = 0,
+         .MiscFlags = 0};
+     D3D11_SUBRESOURCE_DATA init_data = {
+-        .pSysMem = scoped_buffer.get(),
++        .pSysMem = scoped_buffer.as_span().data(),
+         .SysMemPitch = static_cast<UINT>(dst_y_stride),
+         .SysMemSlicePitch = 0};
+     ComD3D11Texture2D input_texture;
+@@ -2075,9 +2076,9 @@
+                        hr);
+ 
+   MediaBufferScopedPointer scoped_buffer(input_buffer.Get());
+-  bool copy_succeeded = gpu::CopyD3D11TexToMem(
+-      sample_texture.Get(), scoped_buffer.get(), scoped_buffer.max_length(),
+-      d3d_device.Get(), &staging_texture_);
++  bool copy_succeeded =
++      gpu::CopyD3D11TexToMem(sample_texture.Get(), scoped_buffer.as_span(),
++                             d3d_device.Get(), &staging_texture_);
+   if (!copy_succeeded) {
+     LOG(ERROR) << "Failed to copy sample to memory.";
+     return E_FAIL;
+@@ -2302,12 +2303,14 @@
+ 
+   const bool keyframe = MFGetAttributeUINT32(
+       output_data_buffer.pSample, MFSampleExtension_CleanPoint, false);
+-  DWORD size = 0;
+-  hr = output_buffer->GetCurrentLength(&size);
++  DWORD output_buffer_size = 0;
++  hr = output_buffer->GetCurrentLength(&output_buffer_size);
+   RETURN_ON_HR_FAILURE(hr, "Couldn't get buffer length", );
+-  DCHECK_NE(size, 0u);
++  DCHECK_NE(output_buffer_size, 0u);
++  MediaBufferScopedPointer scoped_buffer(output_buffer.Get());
++  auto output_buffer_span = scoped_buffer.as_span().first(output_buffer_size);
+ 
+-  BitstreamBufferMetadata md(size, keyframe, timestamp);
++  BitstreamBufferMetadata md(output_buffer_span.size(), keyframe, timestamp);
+   if (frame_qp.has_value() && IsValidQp(codec_, *frame_qp)) {
+     md.qp = *frame_qp;
+   }
+@@ -2319,9 +2322,8 @@
+   if (IsTemporalScalabilityCoding()) {
+     DCHECK(svc_parser_);
+     TemporalScalabilityIdExtractor::BitstreamMetadata bits_md;
+-    MediaBufferScopedPointer scoped_buffer(output_buffer.Get());
+-    if (!svc_parser_->ParseChunk(base::span(scoped_buffer.get().get(), size),
+-                                 metadata.frame_id, bits_md)) {
++    if (!svc_parser_->ParseChunk(output_buffer_span, metadata.frame_id,
++                                 bits_md)) {
+       NotifyErrorStatus({EncoderStatus::Codes::kEncoderHardwareDriverError,
+                          "Parse bitstream failed"});
+       return;
+@@ -2409,19 +2411,18 @@
+     frame_params.temporal_layer_id = temporal_id;
+     frame_params.timestamp = timestamp.InMilliseconds();
+     // Notify SW BRC about recent encoded frame size.
+-    rate_ctrl_->PostEncodeUpdate(size, frame_params);
++    rate_ctrl_->PostEncodeUpdate(output_buffer_span.size(), frame_params);
+   }
+-  DVLOG(3) << "Encoded data with size:" << size << " keyframe " << keyframe;
++  DVLOG(3) << "Encoded data with size:" << output_buffer_span.size()
++           << " keyframe " << keyframe;
+   // If no bit stream buffer presents, queue the output first.
+   if (bitstream_buffer_queue_.empty()) {
+     DVLOG(3) << "No bitstream buffers.";
+ 
+     // We need to copy the output so that encoding can continue.
+-    auto encode_output = std::make_unique<EncodeOutput>(size, md);
+-    {
+-      MediaBufferScopedPointer scoped_buffer(output_buffer.Get());
+-      memcpy(encode_output->memory(), scoped_buffer.get(), size);
+-    }
++    auto encode_output =
++        std::make_unique<EncodeOutput>(output_buffer_span.size(), md);
++    encode_output->as_span().copy_from(output_buffer_span);
+     encoder_output_queue_.push_back(std::move(encode_output));
+     return;
+   }
+@@ -2436,16 +2437,15 @@
+   auto buffer_ref = std::move(bitstream_buffer_queue_.back());
+   bitstream_buffer_queue_.pop_back();
+ 
+-  {
+-    MediaBufferScopedPointer scoped_buffer(output_buffer.Get());
+-    if (!buffer_ref->mapping.IsValid() || !scoped_buffer.get()) {
+-      DLOG(ERROR) << "Failed to copy bitstream media buffer.";
+-      return;
+-    }
+-
+-    memcpy(buffer_ref->mapping.memory(), scoped_buffer.get(), size);
++  if (!buffer_ref->mapping.IsValid() ||
++      buffer_ref->mapping.size() < output_buffer_span.size()) {
++    NotifyErrorStatus({EncoderStatus::Codes::kInvalidOutputBuffer,
++                       "Failed to copy bitstream media buffer."});
++    return;
+   }
+ 
++  buffer_ref->mapping.GetMemoryAsSpan<uint8_t>().copy_prefix_from(
++      output_buffer_span);
+   client_->BitstreamBufferReady(buffer_ref->id, md);
+ }
+ 
+diff --git a/media/gpu/windows/mf_video_processor_accelerator_unittest.cc b/media/gpu/windows/mf_video_processor_accelerator_unittest.cc
+index d62cf58..f7c7ccc 100644
+--- a/media/gpu/windows/mf_video_processor_accelerator_unittest.cc
++++ b/media/gpu/windows/mf_video_processor_accelerator_unittest.cc
+@@ -171,8 +171,8 @@
+   template <typename F>
+   void ValidateResult(IMFMediaBuffer* buffer, UINT size, F validation_func) {
+     MediaBufferScopedPointer scoped_buffer(buffer);
+-    ASSERT_EQ(scoped_buffer.current_length(), size);
+-    validation_func(scoped_buffer.get());
++    ASSERT_EQ(scoped_buffer.as_span().size(), size);
++    validation_func(scoped_buffer.as_span().data());
+   }
+ 
+   scoped_refptr<DXGIDeviceManager> dxgi_device_man_;
+diff --git a/media/gpu/windows/video_rate_control_wrapper.h b/media/gpu/windows/video_rate_control_wrapper.h
+index 6f1b499..6470c96f 100644
+--- a/media/gpu/windows/video_rate_control_wrapper.h
++++ b/media/gpu/windows/video_rate_control_wrapper.h
+@@ -5,6 +5,7 @@
+ #ifndef MEDIA_GPU_WINDOWS_VIDEO_RATE_CONTROL_WRAPPER_H_
+ #define MEDIA_GPU_WINDOWS_VIDEO_RATE_CONTROL_WRAPPER_H_
+ 
++#include <array>
+ #include <cstdint>
+ #include <memory>
+ 
+@@ -46,19 +47,19 @@
+     VideoEncodeAccelerator::Config::ContentType content_type =
+         VideoEncodeAccelerator::Config::ContentType::kCamera;
+     // Target bitrate for svc layers.
+-    int layer_target_bitrate[kMaxLayers] = {};
++    std::array<int, kMaxLayers> layer_target_bitrate = {};
+     // Rate decimator for temporal layers.
+-    int ts_rate_decimator[kMaxTemporalLayers] = {};
++    std::array<int, kMaxTemporalLayers> ts_rate_decimator = {};
+     // Number of spatial layers.
+     int ss_number_layers = 0;
+     // Number of temporal layers.
+     int ts_number_layers = 0;
+     // Quantizer parameter for svc layers.
+-    int max_quantizers[kMaxLayers] = {};
+-    int min_quantizers[kMaxLayers] = {};
++    std::array<int, kMaxLayers> max_quantizers = {};
++    std::array<int, kMaxLayers> min_quantizers = {};
+     // Scaling factor parameters for spatial layers.
+-    int scaling_factor_num[kMaxSpatialLayers] = {};
+-    int scaling_factor_den[kMaxSpatialLayers] = {};
++    std::array<int, kMaxSpatialLayers> scaling_factor_num = {};
++    std::array<int, kMaxSpatialLayers> scaling_factor_den = {};
+     // If defined, the H.264 BRC uses fixed QP difference between layers. Should
+     // not be defined for other SW BRCs.
+     std::optional<int> fixed_delta_qp;
