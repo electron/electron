@@ -21,11 +21,6 @@
 #include "components/spellcheck/browser/spellcheck_platform.h"
 #include "components/spellcheck/common/spellcheck_panel.mojom.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
-#include "third_party/blink/renderer/core/editing/markers/spell_check_marker.h"
-#include "third_party/blink/renderer/core/editing/selection_template.h"
-#include "third_party/blink/renderer/core/editing/spellcheck/cold_mode_spell_check_requester.h"
-#include "third_party/blink/renderer/core/editing/spellcheck/idle_spell_check_controller.h"
-#include "third_party/blink/renderer/core/editing/spellcheck/spell_check_requester.h"
 
 #import <objc/message.h>
 #import <objc/runtime.h>
@@ -370,38 +365,6 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   return YES;
 }
 
-- (void)changeSpelling:(id)sender {
-  NSString* selectedWord = [[sender selectedCell] stringValue];
-  
-  // Find the focused web frame from the list of web contents
-  auto webContents = electron::api::WebContents::GetWebContentsList();
-  for (auto webContent : webContents) {
-    if (webContent->FocusedFrame() != nullptr) { // found focused frame
-      webContent->ReplaceMisspelling(base::SysNSStringToUTF16(selectedWord));
-      break;
-    }
-  }
-}
-
-- (void)checkSpelling:(id)sender {
-  auto webContents = electron::api::WebContents::GetWebContentsList();
-  content::RenderFrameHost* focusedFrame = nullptr;
-  
-  // Find the focused web frame from the list of web contents
-  for (auto webContent : webContents) {
-    focusedFrame = webContent->FocusedFrame();
-    if (focusedFrame != nullptr) { // Found the focused frame
-      
-      mojo::Remote<spellcheck::mojom::SpellCheckPanel> spell_check_panel;
-      mojo::PendingReceiver<spellcheck::mojom::SpellCheckPanel> receiver = spell_check_panel.BindNewPipeAndPassReceiver();
-      focusedFrame->GetRemoteInterfaces()->GetInterface(std::move(receiver));
-      
-      spell_check_panel->AdvanceToNextMisspelling();
-      break;
-    }
-  }
-}
-
 - (void)performClose:(id)sender {
   if (shell_->title_bar_style() ==
       electron::NativeWindowMac::TitleBarStyle::kCustomButtonsOnHover) {
@@ -425,6 +388,12 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   } else {
     [super performClose:sender];
   }
+}
+
+- (void)changeSpelling:(id)sender {
+}
+
+- (void)checkSpelling:(id)sender {
 }
 
 - (BOOL)toggleFullScreenMode:(id)sender {
