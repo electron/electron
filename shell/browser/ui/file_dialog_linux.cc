@@ -44,14 +44,14 @@ ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
   ui::SelectFileDialog::FileTypeInfo file_type_info;
 
   for (const auto& [name, extension_group] : filters) {
-    file_type_info.extension_description_overrides.push_back(
-        base::UTF8ToUTF16(name));
-
     const bool has_all_files_wildcard = std::ranges::any_of(
         extension_group, [](const auto& ext) { return ext == "*"; });
+
     if (has_all_files_wildcard) {
       file_type_info.include_all_files = true;
     } else {
+      file_type_info.extension_description_overrides.push_back(
+          base::UTF8ToUTF16(name));
       file_type_info.extensions.emplace_back(extension_group);
     }
   }
