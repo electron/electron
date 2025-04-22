@@ -1,7 +1,7 @@
-From 0333ecde91425e518cd898614c7b018209a18511 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Alvin Ji <alvinji@chromium.org>
-Date: Tue, 08 Apr 2025 10:46:18 -0700
-Subject: [PATCH] usb: Use GlobalRenderFrameHostId in UsbChooserController
+Date: Tue, 8 Apr 2025 10:46:18 -0700
+Subject: usb: Use GlobalRenderFrameHostId in UsbChooserController
 
 The UsbChooserController currently holds a raw pointer to the requesting
 RenderFrameHost. This can lead to use-after-free issues if the
@@ -16,13 +16,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6440254
 Commit-Queue: Alvin Ji <alvinji@chromium.org>
 Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1444224}
----
 
 diff --git a/chrome/browser/usb/usb_chooser_controller.cc b/chrome/browser/usb/usb_chooser_controller.cc
-index 2654ad4..4c64fc2d 100644
+index fae7decadcf5ca7b508068aa803e11a9027dde1e..112a7986523e37a8bc87f564f9d80fc3a4bdf433 100644
 --- a/chrome/browser/usb/usb_chooser_controller.cc
 +++ b/chrome/browser/usb/usb_chooser_controller.cc
-@@ -100,8 +100,8 @@
+@@ -99,8 +99,8 @@ UsbChooserController::UsbChooserController(
            CreateChooserTitle(render_frame_host, IDS_USB_DEVICE_CHOOSER_PROMPT)),
        options_(std::move(options)),
        callback_(std::move(callback)),
@@ -33,7 +32,7 @@ index 2654ad4..4c64fc2d 100644
    origin_ = main_frame->GetLastCommittedOrigin();
    Profile* profile =
        Profile::FromBrowserContext(main_frame->GetBrowserContext());
-@@ -203,7 +203,15 @@
+@@ -202,7 +202,15 @@ void UsbChooserController::Cancel() {
  void UsbChooserController::Close() {}
  
  void UsbChooserController::OpenHelpCenterUrl() const {
@@ -50,7 +49,7 @@ index 2654ad4..4c64fc2d 100644
        ->OpenURL(content::OpenURLParams(
                      GURL(chrome::kChooserUsbOverviewURL), content::Referrer(),
                      WindowOpenDisposition::NEW_FOREGROUND_TAB,
-@@ -267,6 +275,14 @@
+@@ -266,6 +274,14 @@ void UsbChooserController::GotUsbDeviceList(
  
  bool UsbChooserController::DisplayDevice(
      const device::mojom::UsbDeviceInfo& device_info) const {
@@ -65,21 +64,22 @@ index 2654ad4..4c64fc2d 100644
    if (!device::UsbDeviceFilterMatchesAny(options_->filters, device_info)) {
      return false;
    }
-@@ -281,10 +297,9 @@
+@@ -280,10 +296,9 @@ bool UsbChooserController::DisplayDevice(
    bool is_usb_unrestricted = false;
    if (base::FeatureList::IsEnabled(blink::features::kUnrestrictedUsb)) {
      is_usb_unrestricted =
 -        requesting_frame_ &&
 -        requesting_frame_->IsFeatureEnabled(
-+        render_frame_host->IsFeatureEnabled(
-             network::mojom::PermissionsPolicyFeature::kUsbUnrestricted) &&
+-            blink::mojom::PermissionsPolicyFeature::kUsbUnrestricted) &&
 -        content::HasIsolatedContextCapability(requesting_frame_);
++        render_frame_host->IsFeatureEnabled(
++            network::mojom::PermissionsPolicyFeature::kUsbUnrestricted) &&
 +        content::HasIsolatedContextCapability(render_frame_host);
    }
    // Isolated context with permission to access the policy-controlled feature
    // "usb-unrestricted" can bypass the USB blocklist.
 diff --git a/chrome/browser/usb/usb_chooser_controller.h b/chrome/browser/usb/usb_chooser_controller.h
-index de5d7fb..8e1bb06 100644
+index de5d7fb1a3be1c356f291b444175bbf375d0bf83..8e1bb06e8fcfbe3feeb4bd30452fb5d6d546074c 100644
 --- a/chrome/browser/usb/usb_chooser_controller.h
 +++ b/chrome/browser/usb/usb_chooser_controller.h
 @@ -15,6 +15,7 @@
@@ -90,7 +90,7 @@ index de5d7fb..8e1bb06 100644
  #include "services/device/public/mojom/usb_device.mojom.h"
  #include "third_party/blink/public/mojom/usb/web_usb_service.mojom.h"
  #include "url/origin.h"
-@@ -64,8 +65,9 @@
+@@ -64,8 +65,9 @@ class UsbChooserController : public permissions::ChooserController,
    blink::mojom::WebUsbService::GetPermissionCallback callback_;
    url::Origin origin_;
  
