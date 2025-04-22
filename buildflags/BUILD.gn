@@ -13,6 +13,10 @@ buildflag_header("buildflags") {
     "ENABLE_ELECTRON_EXTENSIONS=$enable_electron_extensions",
     "ENABLE_BUILTIN_SPELLCHECKER=$enable_builtin_spellchecker",
     "OVERRIDE_LOCATION_PROVIDER=$enable_fake_location_provider",
+    "ENABLE_SPELLCHECK=$enable_spellcheck",
+    "USE_BROWSER_SPELLCHECKER=$use_browser_spellchecker",
+    "ENABLE_SPELLING_SERVICE=$enable_spelling_service",
+    "HAS_SPELLCHECK_PANEL=$has_spellcheck_panel",
   ]
 
   if (electron_vendor_version != "") {

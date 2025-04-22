@@ -12,9 +12,22 @@
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "ui/base/cocoa/window_size_constants.h"
+#include "content/public/browser/render_frame_host.h"
+#include "content/public/renderer/render_frame.h"
+#include "content/public/renderer/render_frame_observer.h"
+
+#include "content/public/renderer/render_thread.h"
+#include "components/spellcheck/browser/pref_names.h"
+#include "components/spellcheck/browser/spellcheck_platform.h"
+#include "components/spellcheck/common/spellcheck_panel.mojom.h"
+#include "services/service_manager/public/cpp/interface_provider.h"
 
 #import <objc/message.h>
 #import <objc/runtime.h>
+
+namespace content {
+class RenderFrameHost;
+}
 
 namespace electron {
 
@@ -375,6 +388,12 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   } else {
     [super performClose:sender];
   }
+}
+
+- (void)changeSpelling:(id)sender {
+}
+
+- (void)checkSpelling:(id)sender {
 }
 
 - (BOOL)toggleFullScreenMode:(id)sender {

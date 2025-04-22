@@ -2,6 +2,8 @@
 # Use of this source code is governed by the MIT license that can be
 # found in the LICENSE file.
 
+import("//build/config/features.gni")
+
 declare_args() {
   enable_pdf_viewer = true
 
@@ -16,6 +18,21 @@ declare_args() {
 
   # Enable Spellchecker support
   enable_builtin_spellchecker = true
+
+  # Enable the spell checker.
+  enable_spellcheck = use_blink
+
+  # Use the operating system's spellchecker rather than hunspell. This does
+  # not affect the "red underline" spellchecker which can consult Google's
+  # server-based spellcheck service.
+  use_browser_spellchecker = is_android || is_mac || is_win
+
+  # Whether the enhanced spellcheck service is available on the platform. This is
+  # effectively equal to all desktop platforms.
+  enable_spelling_service = is_mac
+
+  # Only Mac has a spellcheck panel.
+  has_spellcheck_panel = is_mac
 
   # The version of Electron.
   # Packagers and vendor builders should set this in gn args to avoid running

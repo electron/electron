@@ -7,7 +7,7 @@ const isLinux = process.platform === 'linux';
 type RoleId = 'about' | 'close' | 'copy' | 'cut' | 'delete' | 'forcereload' | 'front' | 'help' | 'hide' | 'hideothers' | 'minimize' |
   'paste' | 'pasteandmatchstyle' | 'quit' | 'redo' | 'reload' | 'resetzoom' | 'selectall' | 'services' | 'recentdocuments' | 'clearrecentdocuments' |
   'showsubstitutions' | 'togglesmartquotes' | 'togglesmartdashes' | 'toggletextreplacement' | 'startspeaking' | 'stopspeaking' |
-  'toggledevtools' | 'togglefullscreen' | 'undo' | 'unhide' | 'window' | 'zoom' | 'zoomin' | 'zoomout' | 'togglespellchecker' |
+  'toggledevtools' | 'togglefullscreen' | 'undo' | 'unhide' | 'window' | 'zoom' | 'zoomin' | 'zoomout' | 'togglespellingandgrammar' | 'togglespellchecker' |
   'appmenu' | 'filemenu' | 'editmenu' | 'viewmenu' | 'windowmenu' | 'sharemenu'
 interface Role {
   label: string;
@@ -206,6 +206,11 @@ export const roleList: Record<RoleId, Role> = {
       webContents.zoomLevel -= 0.5;
     }
   },
+  togglespellingandgrammar: {
+    label: 'Show Spelling and Grammar',
+    accelerator: 'Command+:',
+    nonNativeMacOSRole: true
+  },
   togglespellchecker: {
     label: 'Check Spelling While Typing',
     get checked () {
@@ -259,6 +264,14 @@ export const roleList: Record<RoleId, Role> = {
           { role: 'delete' },
           { role: 'selectAll' },
           { type: 'separator' },
+          {
+            label: 'Spelling and Grammar',
+            submenu: [
+              { role: 'toggleSpellingAndGrammar' },
+              { type: 'separator' },
+              { role: 'toggleSpellChecker' }
+            ]
+          },
           {
             label: 'Substitutions',
             submenu: [
