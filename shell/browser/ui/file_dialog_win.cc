@@ -65,26 +65,15 @@ void ConvertFilters(const Filters& filters,
   }
 }
 
-static HRESULT GetFileNameFromShellItem(IShellItem* pShellItem,
-                                        SIGDN type,
-                                        LPWSTR lpstr,
-                                        size_t cchLength) {
-  assert(pShellItem != nullptr);
+auto GetFileNameFromShellItem(IShellItem* pShellItem, SIGDN type) {
+  std::optional<base::FilePath> path;
 
-  LPWSTR lpstrName = nullptr;
-  HRESULT hRet = pShellItem->GetDisplayName(type, &lpstrName);
-
-  if (SUCCEEDED(hRet)) {
-    if (wcslen(lpstrName) < cchLength) {
-      wcscpy_s(lpstr, cchLength, lpstrName);
-    } else {
-      NOTREACHED();
-    }
-
-    ::CoTaskMemFree(lpstrName);
+  if (wchar_t* name = {}; SUCCEEDED(pShellItem->GetDisplayName(type, &name))) {
+    path.emplace(name);
+    ::CoTaskMemFree(name);
   }
 
-  return hRet;
+  return path;
 }
 
 static void SetDefaultFolder(IFileDialog* dialog,
@@ -206,14 +195,11 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
     if (FAILED(hr))
       return false;
 
-    wchar_t file_name[MAX_PATH];
-    hr = GetFileNameFromShellItem(item, SIGDN_FILESYSPATH, file_name,
-                                  std::size(file_name));
-
-    if (FAILED(hr))
+    auto path = GetFileNameFromShellItem(item, SIGDN_FILESYSPATH);
+    if (!path)
       return false;
 
-    paths->push_back(base::FilePath(file_name));
+    paths->emplace_back(std::move(*path));
   }
 
   return true;

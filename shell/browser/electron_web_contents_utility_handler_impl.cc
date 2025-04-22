@@ -8,6 +8,7 @@
 
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/permission_controller.h"
+#include "content/public/browser/permission_descriptor_util.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
@@ -82,9 +83,13 @@ void ElectronWebContentsUtilityHandlerImpl::CanAccessClipboardDeprecated(
       std::move(callback).Run(blink::mojom::PermissionStatus::DENIED);
       return;
     }
+    // TODO(wg-upgrades) https://crbug.com/406755622 remove use of deprecated
+    // CreatePermissionDescriptorForPermissionType()
     blink::mojom::PermissionStatus status =
         permission_controller->GetPermissionStatusForCurrentDocument(
-            permission, render_frame_host);
+            content::PermissionDescriptorUtil::
+                CreatePermissionDescriptorForPermissionType(permission),
+            render_frame_host);
     std::move(callback).Run(status);
   } else {
     std::move(callback).Run(blink::mojom::PermissionStatus::DENIED);

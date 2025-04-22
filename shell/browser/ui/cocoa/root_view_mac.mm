@@ -12,7 +12,7 @@
 namespace electron {
 
 RootViewMac::RootViewMac(NativeWindow* window) : window_(window) {
-  set_owned_by_client();
+  set_owned_by_client(OwnedByClientPassKey{});
   SetLayoutManager(std::make_unique<views::FillLayout>());
 }
 

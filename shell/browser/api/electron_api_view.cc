@@ -170,7 +170,7 @@ class JSLayoutManager : public views::LayoutManagerBase {
 };
 
 View::View(views::View* view) : view_(view) {
-  view_->set_owned_by_client();
+  view_->set_owned_by_client(views::View::OwnedByClientPassKey{});
   view_->AddObserver(this);
 }
 

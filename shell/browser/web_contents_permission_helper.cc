@@ -10,6 +10,7 @@
 #include "components/content_settings/core/common/content_settings.h"
 #include "components/webrtc/media_stream_devices_controller.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/permission_descriptor_util.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/electron_browser_context.h"
@@ -220,7 +221,9 @@ void WebContentsPermissionHelper::RequestPermission(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermissionWithDetails(
-      permission, requesting_frame, origin, false, std::move(details),
+      content::PermissionDescriptorUtil::
+          CreatePermissionDescriptorForPermissionType(permission),
+      requesting_frame, origin, false, std::move(details),
       base::BindOnce(&OnPermissionResponse, std::move(callback)));
 }
 
@@ -238,10 +241,9 @@ bool WebContentsPermissionHelper::CheckPermission(
 void WebContentsPermissionHelper::RequestFullscreenPermission(
     content::RenderFrameHost* requesting_frame,
     base::OnceCallback<void(bool)> callback) {
-  RequestPermission(
-      requesting_frame,
-      static_cast<blink::PermissionType>(PermissionType::FULLSCREEN),
-      std::move(callback));
+  RequestPermission(requesting_frame,
+                    blink::PermissionType::ELECTRON_FULLSCREEN,
+                    std::move(callback));
 }
 
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
@@ -306,10 +308,8 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
     const GURL& url) {
   base::Value::Dict details;
   details.Set("externalURL", url.spec());
-  RequestPermission(
-      requesting_frame,
-      static_cast<blink::PermissionType>(PermissionType::OPEN_EXTERNAL),
-      std::move(callback), user_gesture, std::move(details));
+  RequestPermission(requesting_frame, blink::PermissionType::OPEN_EXTERNAL,
+                    std::move(callback), user_gesture, std::move(details));
 }
 
 bool WebContentsPermissionHelper::CheckMediaAccessPermission(
@@ -328,9 +328,7 @@ bool WebContentsPermissionHelper::CheckSerialAccessPermission(
     const url::Origin& embedding_origin) const {
   base::Value::Dict details;
   details.Set("securityOrigin", embedding_origin.GetURL().spec());
-  return CheckPermission(
-      static_cast<blink::PermissionType>(PermissionType::SERIAL),
-      std::move(details));
+  return CheckPermission(blink::PermissionType::SERIAL, std::move(details));
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper);

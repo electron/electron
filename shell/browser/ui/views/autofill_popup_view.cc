@@ -33,7 +33,9 @@ END_METADATA
 
 AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
                                      views::Widget* parent_widget)
-    : popup_(popup), parent_widget_(parent_widget) {
+    : views::WidgetDelegateView(CreatePassKey()),
+      popup_(popup),
+      parent_widget_(parent_widget) {
   CreateChildViews();
   SetFocusBehavior(FocusBehavior::ALWAYS);
   set_drag_controller(this);

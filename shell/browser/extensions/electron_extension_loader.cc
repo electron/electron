@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "base/auto_reset.h"
+#include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
@@ -98,7 +99,7 @@ ElectronExtensionLoader::ElectronExtensionLoader(
     : browser_context_(browser_context),
       extension_registrar_(ExtensionRegistrar::Get(browser_context)) {
   extension_registrar_->Init(
-      this, /*extensions_enabled=*/true,
+      this, /*extensions_enabled=*/true, base::CommandLine::ForCurrentProcess(),
       browser_context_->GetPath().AppendASCII(kInstallDirectoryName),
       browser_context_->GetPath().AppendASCII(kUnpackedInstallDirectoryName));
 }
@@ -200,9 +201,6 @@ void ElectronExtensionLoader::PostUninstallExtension(
     scoped_refptr<const Extension> extension,
     base::OnceClosure done_callback) {}
 
-void ElectronExtensionLoader::PostNotifyUninstallExtension(
-    scoped_refptr<const Extension> extension) {}
-
 void ElectronExtensionLoader::LoadExtensionForReload(
     const ExtensionId& extension_id,
     const base::FilePath& path,
@@ -224,22 +222,12 @@ void ElectronExtensionLoader::ShowExtensionDisabledError(
     const Extension* extension,
     bool is_remote_install) {}
 
-void ElectronExtensionLoader::FinishDelayedInstallationsIfAny() {}
-
-bool ElectronExtensionLoader::CanAddExtension(const Extension* extension) {
-  return true;
-}
-
 bool ElectronExtensionLoader::CanEnableExtension(const Extension* extension) {
   return true;
 }
 
 bool ElectronExtensionLoader::CanDisableExtension(const Extension* extension) {
   // Extensions cannot be disabled by the user.
-  return false;
-}
-
-bool ElectronExtensionLoader::ShouldBlockExtension(const Extension* extension) {
   return false;
 }
 

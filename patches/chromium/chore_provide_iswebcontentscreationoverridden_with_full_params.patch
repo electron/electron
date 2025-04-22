@@ -80,10 +80,10 @@ index 4fd8dff1089cd6afa6a66dc185734d7671657281..0a1f4268ea771a3d5d4a2668928c6e5d
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 9ccf763fcbc717480c4dfce735f273dfdbf5cd4a..381cda59465f34a46f55d03ef6ccd53fadec6e6e 100644
+index 9f8d54657cb605e33c59ab6faed575636fba733a..01a115e570e0f0ae28cda448f9284fae65d9dedf 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2267,12 +2267,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2298,12 +2298,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index 9ccf763fcbc717480c4dfce735f273dfdbf5cd4a..381cda59465f34a46f55d03ef6ccd53f
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 288d4f6d7dfdcf7e518f78990f061f4215f1b975..3d8899e313906a0d3a273d43cab872243fa6faea 100644
+index 36e68b4d128016b1a77edf9467d42c6d1ab729fa..837a545c9ab0cb9fe8dd28fecd71f29b7b60fafc 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -983,8 +983,7 @@ class Browser : public TabStripModelObserver,
+@@ -1011,8 +1011,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 30593ec9ecd2b135a6054ed50e95c849c09b47bd..b6870d74a761a847e9952d409b37ddb778790b08 100644
+index c7b606450604fe58ca2a19610a8c7784464536ab..84c70711d45b20c22c498c4475c5cf94567d16d2 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4969,8 +4969,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4983,8 +4983,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // TODO(crbug.com/40202416): Support a way for MPArch guests to support this.
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -352,10 +352,10 @@ index 2dcf51f335f5dac39f431c3e0f56f8789f33d40b..2b433624d0604e0b9da5117b9e83cc15
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 635050eedc20fb89608677bcebeb5f8187bd4b59..1220f377169f8209db39654b7ddbf1da52c017b7 100644
+index 7345b06ac0ac88441af6a98c00dbfbb2b3089a6d..bedbcc2aa4fd4d950615a011d40c019d64c6e473 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
-@@ -575,8 +575,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -576,8 +576,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -394,10 +394,10 @@ index 7ca1e83ba1fd2dc5ea7c7ce644c3b7c54b9999f9..c1639653714d6973bcb5a0b37cb7028d
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index bf432db4ca8463f2451dc09d5ca484da1235634f..e144be74ce2d34f50d26d08d5bf206f7aa64c5d3 100644
+index 250e7f524a9ab1cc6fda2bfefb3c78a8e971b625..55a0db02885a85e538d267402cfd0ac8ce52b921 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
-@@ -487,8 +487,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
+@@ -489,8 +489,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,

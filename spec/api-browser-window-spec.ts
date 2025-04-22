@@ -5281,7 +5281,7 @@ describe('BrowserWindow module', () => {
         expect(w.maximizable).to.be.true('maximizable');
       });
 
-      ifit(process.platform === 'win32')('works for a window smaller than 64x64', () => {
+      ifit(process.platform !== 'darwin')('works for a window smaller than 64x64', () => {
         const w = new BrowserWindow({
           show: false,
           frame: false,

@@ -1167,11 +1167,13 @@ void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
     return;
   }
 
+  // TODO(wg-upgrades): crbug.com/1470199 remove use of deprecated
+  // AddAccessibilityModeFlags() and RemoveAccessibilityModeFlags()
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
   if (enabled) {
-    ax_state->EnableProcessAccessibility();
+    ax_state->AddAccessibilityModeFlags(ui::kAXModeComplete);
   } else {
-    ax_state->DisableProcessAccessibility();
+    ax_state->RemoveAccessibilityModeFlags(ui::kAXModeComplete);
   }
   Browser::Get()->OnAccessibilitySupportChanged();
 }

@@ -5,6 +5,7 @@
 #include "shell/browser/mac/dict_util.h"
 
 #include <string>
+#include <string_view>
 
 #include "base/json/json_writer.h"
 #include "base/strings/sys_string_conversions.h"
@@ -34,12 +35,10 @@ base::Value::List NSArrayToValue(NSArray* arr) {
     if ([value isKindOfClass:[NSString class]]) {
       result.Append(base::SysNSStringToUTF8(value));
     } else if ([value isKindOfClass:[NSNumber class]]) {
-      const char* objc_type = [value objCType];
-      if (strcmp(objc_type, @encode(BOOL)) == 0 ||
-          strcmp(objc_type, @encode(char)) == 0)
+      const std::string_view objc_type = [value objCType];
+      if (objc_type == @encode(BOOL) || objc_type == @encode(char))
         result.Append([value boolValue]);
-      else if (strcmp(objc_type, @encode(double)) == 0 ||
-               strcmp(objc_type, @encode(float)) == 0)
+      else if (objc_type == @encode(double) || objc_type == @encode(float))
         result.Append([value doubleValue]);
       else
         result.Append([value intValue]);
@@ -81,12 +80,10 @@ base::Value::Dict NSDictionaryToValue(NSDictionary* dict) {
     if ([value isKindOfClass:[NSString class]]) {
       result.Set(str_key, base::Value(base::SysNSStringToUTF8(value)));
     } else if ([value isKindOfClass:[NSNumber class]]) {
-      const char* objc_type = [value objCType];
-      if (strcmp(objc_type, @encode(BOOL)) == 0 ||
-          strcmp(objc_type, @encode(char)) == 0)
+      const std::string_view objc_type = [value objCType];
+      if (objc_type == @encode(BOOL) || objc_type == @encode(char))
         result.Set(str_key, base::Value([value boolValue]));
-      else if (strcmp(objc_type, @encode(double)) == 0 ||
-               strcmp(objc_type, @encode(float)) == 0)
+      else if (objc_type == @encode(double) || objc_type == @encode(float))
         result.Set(str_key, base::Value([value doubleValue]));
       else
         result.Set(str_key, base::Value([value intValue]));

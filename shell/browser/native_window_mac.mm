@@ -210,14 +210,15 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
 
-  RegisterDeleteDelegateCallback(base::BindOnce(
-      [](NativeWindowMac* window) {
-        if (window->window_)
-          window->window_ = nil;
-        if (window->buttons_proxy_)
-          window->buttons_proxy_ = nil;
-      },
-      this));
+  RegisterDeleteDelegateCallback(RegisterDeleteCallbackPassKey(),
+                                 base::BindOnce(
+                                     [](NativeWindowMac* window) {
+                                       if (window->window_)
+                                         window->window_ = nil;
+                                       if (window->buttons_proxy_)
+                                         window->buttons_proxy_ = nil;
+                                     },
+                                     this));
 
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 

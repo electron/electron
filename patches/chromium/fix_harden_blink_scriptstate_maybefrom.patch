@@ -53,7 +53,7 @@ index 8d7c5631fd8f1499c67384286f0e3c4037673b32..2b7bdfbac06a42e6bc51eb65e023c367
  
  }  // namespace gin
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.cc b/third_party/blink/renderer/platform/bindings/script_state.cc
-index e4a27a24c83dd1a478b2ada8b6c8220076790791..c76dc818f38a62fff63852dbecbc85e304ac731d 100644
+index 58aa3d5b24355a4346c9d6992e6090d28cad513f..96c28c190f98c76c0defeaabda092ebdf6fb44c6 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.cc
 +++ b/third_party/blink/renderer/platform/bindings/script_state.cc
 @@ -13,6 +13,10 @@ namespace blink {
@@ -76,7 +76,7 @@ index e4a27a24c83dd1a478b2ada8b6c8220076790791..c76dc818f38a62fff63852dbecbc85e3
    RendererResourceCoordinator::Get()->OnScriptStateCreated(this,
                                                             execution_context);
  }
-@@ -79,6 +85,8 @@ void ScriptState::DissociateContext() {
+@@ -80,6 +86,8 @@ void ScriptState::DissociateContext() {
    // Cut the reference from V8 context to ScriptState.
    GetContext()->SetAlignedPointerInEmbedderData(kV8ContextPerContextDataIndex,
                                                  nullptr);

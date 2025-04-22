@@ -182,9 +182,7 @@ bool ElectronUsbDelegate::CanRequestDevicePermission(
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context->GetPermissionControllerDelegate());
   return permission_manager->CheckPermissionWithDetails(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::USB),
-      nullptr, origin.GetURL(), std::move(details));
+      blink::PermissionType::USB, nullptr, origin.GetURL(), std::move(details));
 }
 
 void ElectronUsbDelegate::RevokeDevicePermissionWebInitiated(
