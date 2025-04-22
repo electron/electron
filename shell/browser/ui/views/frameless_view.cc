@@ -35,8 +35,7 @@ int FramelessView::ResizingBorderHitTest(const gfx::Point& point) {
   return ResizingBorderHitTestImpl(
       point, gfx::Insets::TLBR(kResizeInsideBoundsSize, 0, 0, 0));
 #else
-  return ResizingBorderHitTestImpl(
-      point, gfx::Insets(kResizeInsideBoundsSize));
+  return ResizingBorderHitTestImpl(point, gfx::Insets(kResizeInsideBoundsSize));
 #endif
 }
 

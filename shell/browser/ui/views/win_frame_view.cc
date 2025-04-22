@@ -250,7 +250,7 @@ void WinFrameView::LayoutCaptionButtons() {
   int height = TitlebarHeight(custom_height);
 
   caption_button_container_->SetBounds(width() - preferred_size.width(),
-                                       WindowTopY(), preferred_size.width(), 
+                                       WindowTopY(), preferred_size.width(),
                                        height);
 
   // Needed for heights larger than default
