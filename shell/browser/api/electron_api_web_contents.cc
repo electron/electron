@@ -3743,18 +3743,6 @@ void WebContents::SetDevToolsWebContents(const WebContents* devtools) {
     inspectable_web_contents_->SetDevToolsWebContents(devtools->web_contents());
 }
 
-#if !BUILDFLAG(IS_MAC)
-v8::Local<v8::Value> WebContents::GetNativeView(v8::Isolate* isolate) const {
-  gfx::NativeView ptr = web_contents()->GetNativeView();
-  auto buffer =
-      node::Buffer::Copy(isolate, reinterpret_cast<char*>(&ptr), sizeof(ptr));
-  if (buffer.IsEmpty())
-    return v8::Null(isolate);
-  else
-    return buffer.ToLocalChecked();
-}
-#endif
-
 v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
   if (devtools_web_contents_.IsEmpty())
     return v8::Null(isolate);
@@ -4466,7 +4454,6 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)
-      .SetMethod("getNativeView", &WebContents::GetNativeView)
       .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)

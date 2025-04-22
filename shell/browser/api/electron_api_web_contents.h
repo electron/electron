@@ -250,7 +250,6 @@ class WebContents final : public ExclusiveAccessContext,
   bool IsCurrentlyAudible();
   void SetEmbedder(const WebContents* embedder);
   void SetDevToolsWebContents(const WebContents* devtools);
-  v8::Local<v8::Value> GetNativeView(v8::Isolate* isolate) const;
   bool IsBeingCaptured();
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
