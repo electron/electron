@@ -34,6 +34,7 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "ui/display/win/screen_win.h"
+#include "ui/views/views_features.h"
 #endif
 
 #if defined(USE_OZONE)
@@ -75,8 +76,11 @@ namespace {
 
 #if BUILDFLAG(IS_WIN)
 gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
-  if (!window->transparent())
+  if (!base::FeatureList::IsEnabled(
+          views::features::kEnableTransparentHwndEnlargement) ||
+      !window->transparent()) {
     return size;
+  }
 
   gfx::Size min_size = display::win::GetScreenWin()->ScreenToDIPSize(
       window->GetAcceleratedWidget(), gfx::Size{64, 64});
