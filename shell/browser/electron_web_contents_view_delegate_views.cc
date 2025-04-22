@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "chrome/browser/ui/views/tab_contents/chrome_web_contents_view_delegate_views.h"
-
+#include "shell/browser/electron_web_contents_view_delegate_views.h"
 #include <memory>
 #include <utility>
 
@@ -28,8 +28,3 @@ ElectronWebContentsViewDelegateViews::ElectronWebContentsViewDelegateViews(
 
 ElectronWebContentsViewDelegateViews::~ElectronWebContentsViewDelegateViews() =
     default;
-
-static std::unique_ptr<content::WebContentsViewDelegate> CreateWebContentsViewDelegate(
-    content::WebContents* web_contents) {
-  return std::make_unique<ElectronWebContentsViewDelegateViews>(web_contents);
-}

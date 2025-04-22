@@ -11,6 +11,7 @@
 #include <string_view>
 #include <vector>
 
+#include "shell/browser/electron_web_contents_view_delegate_views.h"
 #include "base/containers/flat_map.h"
 #include "base/containers/flat_set.h"
 #include "base/memory/raw_ptr.h"
@@ -23,6 +24,7 @@
 #include "net/ssl/client_cert_identity.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom-forward.h"
+
 
 namespace base {
 class FilePath;

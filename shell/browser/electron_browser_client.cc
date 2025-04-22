@@ -12,6 +12,7 @@
 #include <string_view>
 #include <utility>
 
+#include "shell/browser/electron_web_contents_view_delegate_views.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/debug/crash_logging.h"
@@ -153,9 +154,6 @@
 #endif
 #endif
 
-#if BUILDFLAG(IS_MAC)
-#include "shell/browser/electron_web_contents_view_delegate_views.h"
-#endif
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 #include "shell/browser/fake_location_provider.h"
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
@@ -1800,7 +1798,8 @@ ElectronBrowserClient::GetGeolocationSystemPermissionManager() {
 std::unique_ptr<content::WebContentsViewDelegate>
 ElectronBrowserClient::GetWebContentsViewDelegate(
     content::WebContents* web_contents) {
-    return CreateWebContentsViewDelegate(web_contents);
+      std::unique_ptr<ElectronWebContentsViewDelegateViews> delegateViews = std::make_unique<ElectronWebContentsViewDelegateViews>(web_contents);
+      return nullptr;
 }
 #endif
 

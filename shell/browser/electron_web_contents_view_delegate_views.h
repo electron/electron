@@ -20,12 +20,13 @@ class WebDragDestDelegate;
 class RenderFrameHost;
 }  // namespace content
 
+
 // A chrome specific class that extends WebContentsViewWin with features like
 // focus management, which live in chrome.
 class ElectronWebContentsViewDelegateViews
     : public content::WebContentsViewDelegate {
  public:
-  explicit ElectronWebContentsViewDelegateViews(
+  ElectronWebContentsViewDelegateViews(
       content::WebContents* web_contents);
 
   ElectronWebContentsViewDelegateViews(
@@ -34,6 +35,7 @@ class ElectronWebContentsViewDelegateViews
       const ElectronWebContentsViewDelegateViews&) = delete;
 
   ~ElectronWebContentsViewDelegateViews() override;
+
  private:
 
   raw_ptr<content::WebContents> web_contents_;
