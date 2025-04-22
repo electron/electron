@@ -154,7 +154,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
-#include "shell/browser/electron_web_contents_view_delegate.h"
+#include "shell/browser/electron_web_contents_view_delegate_views.h"
 #endif
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 #include "shell/browser/fake_location_provider.h"

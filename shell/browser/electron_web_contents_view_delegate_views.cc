@@ -29,7 +29,7 @@ ElectronWebContentsViewDelegateViews::ElectronWebContentsViewDelegateViews(
 ElectronWebContentsViewDelegateViews::~ElectronWebContentsViewDelegateViews() =
     default;
 
-std::unique_ptr<content::WebContentsViewDelegate> CreateWebContentsViewDelegate(
+static std::unique_ptr<content::WebContentsViewDelegate> CreateWebContentsViewDelegate(
     content::WebContents* web_contents) {
   return std::make_unique<ElectronWebContentsViewDelegateViews>(web_contents);
 }
