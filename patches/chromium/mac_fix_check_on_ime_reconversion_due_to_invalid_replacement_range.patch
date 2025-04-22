@@ -24,10 +24,10 @@ Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1448935}
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index f2499bc084312a09b2324567d270fc1b899e7617..12ee7e75e437426f28002c7c9f4d5f5b5016ec53 100644
+index cb65efb56849d57e2e656f90d5b1d737ba2d952d..baad4cf7479646a25967892ef267bcea90c01ad0 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -2415,9 +2415,10 @@ - (void)setMarkedText:(id)string
+@@ -2430,9 +2430,10 @@ - (void)setMarkedText:(id)string
    if ([self isHandlingKeyDown] && !_isReconversionTriggered) {
      _setMarkedTextReplacementRange = gfx::Range(replacementRange);
    } else {
