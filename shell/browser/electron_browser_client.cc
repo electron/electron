@@ -139,7 +139,7 @@
 #include "net/ssl/client_cert_store.h"
 #endif
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#if BUILDFLAG(ENABLE_SPELLCHECK) || BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spell_check_host_chrome_impl.h"  // nogncheck
 #include "chrome/browser/spellchecker/spell_check_initialization_host_impl.h"  // nogncheck
 #include "components/spellcheck/common/spellcheck.mojom.h"  // nogncheck
@@ -153,6 +153,9 @@
 #endif
 #endif
 
+#if BUILDFLAG(IS_MAC)
+#include "shell/browser/electron_web_contents_view_delegate.h"
+#endif
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 #include "shell/browser/fake_location_provider.h"
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
@@ -1792,6 +1795,12 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 device::GeolocationSystemPermissionManager*
 ElectronBrowserClient::GetGeolocationSystemPermissionManager() {
   return device::GeolocationSystemPermissionManager::GetInstance();
+}
+  
+std::unique_ptr<content::WebContentsViewDelegate>
+ElectronBrowserClient::GetWebContentsViewDelegate(
+    content::WebContents* web_contents) {
+    return CreateWebContentsViewDelegate(web_contents);
 }
 #endif
 

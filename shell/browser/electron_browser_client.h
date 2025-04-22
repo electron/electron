@@ -120,6 +120,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   device::GeolocationSystemPermissionManager*
   GetGeolocationSystemPermissionManager() override;
 #endif
+  std::unique_ptr<content::WebContentsViewDelegate> GetWebContentsViewDelegate(content::WebContents* web_contents) override;
 
   content::PlatformNotificationService* GetPlatformNotificationService();
 
