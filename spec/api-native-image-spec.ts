@@ -4,6 +4,7 @@ import { expect } from 'chai';
 
 import * as path from 'node:path';
 
+import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 
 describe('nativeImage module', () => {
@@ -78,15 +79,20 @@ describe('nativeImage module', () => {
   });
 
   describe('createEmpty()', () => {
-    it('returns an empty image', () => {
+    it('returns an empty image', async () => {
       const empty = nativeImage.createEmpty();
       expect(empty.isEmpty()).to.be.true();
       expect(empty.getAspectRatio()).to.equal(1);
       expect(empty.toDataURL()).to.equal('data:image/png;base64,');
       expect(empty.toDataURL({ scaleFactor: 2.0 })).to.equal('data:image/png;base64,');
       expect(empty.getSize()).to.deep.equal({ width: 0, height: 0 });
-      expect(empty.getBitmap()).to.be.empty();
-      expect(empty.getBitmap({ scaleFactor: 2.0 })).to.be.empty();
+      await expectDeprecationMessages(
+        () => {
+          expect(empty.getBitmap()).to.be.empty();
+          expect(empty.getBitmap({ scaleFactor: 2.0 })).to.be.empty();
+        },
+        'getBitmap() is deprecated, use toBitmap() instead.'
+      );
       expect(empty.toBitmap()).to.be.empty();
       expect(empty.toBitmap({ scaleFactor: 2.0 })).to.be.empty();
       expect(empty.toJPEG(100)).to.be.empty();

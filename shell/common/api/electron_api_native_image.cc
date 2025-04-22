@@ -286,6 +286,19 @@ std::string NativeImage::ToDataURL(gin::Arguments* args) {
       image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap());
 }
 
+v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
+  static bool deprecated_warning_issued = false;
+
+  if (!deprecated_warning_issued) {
+    deprecated_warning_issued = true;
+    util::EmitWarning(isolate_,
+                      "getBitmap() is deprecated, use toBitmap() instead.",
+                      "DeprecationWarning");
+  }
+
+  return ToBitmap(args);
+}
+
 v8::Local<v8::Value> NativeImage::GetNativeHandle(
     gin_helper::ErrorThrower thrower) {
 #if BUILDFLAG(IS_MAC)
@@ -582,7 +595,7 @@ gin::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
       .SetMethod("toPNG", &NativeImage::ToPNG)
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
       .SetMethod("toBitmap", &NativeImage::ToBitmap)
-      .SetMethod("getBitmap", &NativeImage::ToBitmap)
+      .SetMethod("getBitmap", &NativeImage::GetBitmap)
       .SetMethod("getScaleFactors", &NativeImage::GetScaleFactors)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
       .SetMethod("toDataURL", &NativeImage::ToDataURL)
