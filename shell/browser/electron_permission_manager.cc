@@ -269,9 +269,11 @@ void ElectronPermissionManager::RequestPermissionsFromCurrentDocument(
 }
 
 blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
-    blink::PermissionType permission,
+    const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
+  const auto permission =
+      blink::PermissionDescriptorToPermissionType(permission_descriptor);
   base::Value::Dict details;
   details.Set("embeddingOrigin", embedding_origin.spec());
   bool granted = CheckPermissionWithDetails(permission, {}, requesting_origin,
@@ -282,11 +284,12 @@ blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
 
 content::PermissionResult
 ElectronPermissionManager::GetPermissionResultForOriginWithoutContext(
-    blink::PermissionType permission,
+    const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
     const url::Origin& requesting_origin,
     const url::Origin& embedding_origin) {
-  blink::mojom::PermissionStatus status = GetPermissionStatus(
-      permission, requesting_origin.GetURL(), embedding_origin.GetURL());
+  blink::mojom::PermissionStatus status =
+      GetPermissionStatus(permission_descriptor, requesting_origin.GetURL(),
+                          embedding_origin.GetURL());
   return {status, content::PermissionStatusSource::UNSPECIFIED};
 }
 
@@ -390,12 +393,14 @@ ElectronPermissionManager::CheckProtectedUSBClasses(
 
 blink::mojom::PermissionStatus
 ElectronPermissionManager::GetPermissionStatusForCurrentDocument(
-    blink::PermissionType permission,
+    const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
     content::RenderFrameHost* render_frame_host,
     bool /*should_include_device_status*/) {
   if (render_frame_host->IsNestedWithinFencedFrame())
     return blink::mojom::PermissionStatus::DENIED;
 
+  const auto permission =
+      blink::PermissionDescriptorToPermissionType(permission_descriptor);
   base::Value::Dict details;
   details.Set("embeddingOrigin",
               content::PermissionUtil::GetLastCommittedOriginAsURL(
@@ -410,22 +415,23 @@ ElectronPermissionManager::GetPermissionStatusForCurrentDocument(
 
 blink::mojom::PermissionStatus
 ElectronPermissionManager::GetPermissionStatusForWorker(
-    blink::PermissionType permission,
+    const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
     content::RenderProcessHost* render_process_host,
     const GURL& worker_origin) {
-  return GetPermissionStatus(permission, worker_origin, worker_origin);
+  return GetPermissionStatus(permission_descriptor, worker_origin,
+                             worker_origin);
 }
 
 blink::mojom::PermissionStatus
 ElectronPermissionManager::GetPermissionStatusForEmbeddedRequester(
-    blink::PermissionType permission,
+    const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
     content::RenderFrameHost* render_frame_host,
     const url::Origin& overridden_origin) {
   if (render_frame_host->IsNestedWithinFencedFrame())
     return blink::mojom::PermissionStatus::DENIED;
 
   return GetPermissionStatus(
-      permission, overridden_origin.GetURL(),
+      permission_descriptor, overridden_origin.GetURL(),
       render_frame_host->GetLastCommittedOrigin().GetURL());
 }
 
