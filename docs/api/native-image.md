@@ -271,16 +271,12 @@ changes:
 
 Returns `string` - The [Data URL][data-url] of the image.
 
-#### `image.getBitmap([options])`
+#### `image.getBitmap([options])` _Deprecated_
 
 * `options` Object (optional)
   * `scaleFactor` Number (optional) - Defaults to 1.0.
 
-Returns `Buffer` - A [Buffer][buffer] that contains the image's raw bitmap pixel data.
-
-The difference between `getBitmap()` and `toBitmap()` is that `getBitmap()` does not
-copy the bitmap data, so you have to use the returned Buffer immediately in
-current event loop tick; otherwise the data might be changed or destroyed.
+Legacy alias for `image.toBitmap()`.
 
 #### `image.getNativeHandle()` _macOS_
 

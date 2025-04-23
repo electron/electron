@@ -887,7 +887,7 @@ const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ webPreferences: { offscreen: true } })
 win.webContents.on('paint', (event, dirty, image) => {
-  // updateBitmap(dirty, image.getBitmap())
+  // updateBitmap(dirty, image.toBitmap())
 })
 win.loadURL('https://github.com')
 ```

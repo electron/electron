@@ -287,17 +287,16 @@ std::string NativeImage::ToDataURL(gin::Arguments* args) {
 }
 
 v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
-  float scale_factor = GetScaleFactorFromOptions(args);
+  static bool deprecated_warning_issued = false;
 
-  const SkBitmap bitmap =
-      image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
-  SkPixelRef* ref = bitmap.pixelRef();
-  if (!ref)
-    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
-  return node::Buffer::Copy(args->isolate(),
-                            reinterpret_cast<char*>(ref->pixels()),
-                            bitmap.computeByteSize())
-      .ToLocalChecked();
+  if (!deprecated_warning_issued) {
+    deprecated_warning_issued = true;
+    util::EmitWarning(isolate_,
+                      "getBitmap() is deprecated, use toBitmap() instead.",
+                      "DeprecationWarning");
+  }
+
+  return ToBitmap(args);
 }
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(
