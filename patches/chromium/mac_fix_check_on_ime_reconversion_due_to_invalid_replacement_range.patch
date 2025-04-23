@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keren Zhu <kerenzhu@chromium.org>
+Date: Fri, 18 Apr 2025 11:02:46 -0700
+Subject: mac: fix CHECK on IME reconversion due to invalid replacement range
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+It appears that Google Japanese IME can call -setMarkedText: with an
+invalid replacement range when doing text reconversion (変換, i.e.,
+conversion between different text with same pronunciation). This range
+is a NSRange and NSRange.location is supposed to be NSNotFound (2^31-1)
+for invalid range, but the IME can pass in 2^32. Subsequently causing
+CHECK error.
+
+This CL fixes the issue by converting such invalid NSRange to
+gfx::InvalidRange using FromPossiblyInvalidNSRange(range).
+
+Fixed: 409864204
+Change-Id: I08ff426a933ef76aa81e33af59aa32e2ac0b674d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6470915
+Commit-Queue: Keren Zhu <kerenzhu@chromium.org>
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1448935}
+
+diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+index cb65efb56849d57e2e656f90d5b1d737ba2d952d..baad4cf7479646a25967892ef267bcea90c01ad0 100644
+--- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
++++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+@@ -2430,9 +2430,10 @@ - (void)setMarkedText:(id)string
+   if ([self isHandlingKeyDown] && !_isReconversionTriggered) {
+     _setMarkedTextReplacementRange = gfx::Range(replacementRange);
+   } else {
+-    _host->ImeSetComposition(_markedText, _imeTextSpans,
+-                             gfx::Range(replacementRange), newSelRange.location,
+-                             NSMaxRange(newSelRange));
++    _host->ImeSetComposition(
++        _markedText, _imeTextSpans,
++        gfx::Range::FromPossiblyInvalidNSRange(replacementRange),
++        newSelRange.location, NSMaxRange(newSelRange));
+   }
+ 
+   [[self inputContext] invalidateCharacterCoordinates];
