@@ -125,6 +125,7 @@ filenames = {
     "shell/browser/animation_util.h",
     "shell/browser/animation_util_mac.mm",
     "shell/browser/api/electron_api_app_mac.mm",
+    "shell/browser/api/electron_api_base_window_mac.mm",
     "shell/browser/api/electron_api_menu_mac.h",
     "shell/browser/api/electron_api_menu_mac.mm",
     "shell/browser/api/electron_api_native_theme_mac.mm",
