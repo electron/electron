@@ -6,7 +6,6 @@ import { AssertionError, expect } from 'chai';
 import path = require('node:path');
 
 import { createArtifact } from './lib/artifacts';
-import { ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 const FIXTURE_PATH = path.resolve(
@@ -42,7 +41,7 @@ const COMPARISON_TOLERANCE = 2.5;
 function compareImages (img1: NativeImage, img2: NativeImage): boolean {
   expect(img1.getSize()).to.deep.equal(
     img2.getSize(),
-    'Cannot compare images with different sizes'
+    'Cannot compare images with different sizes. Run tests with --force-device-scale-factor=1'
   );
 
   const bitmap1 = img1.toBitmap();
@@ -119,9 +118,7 @@ async function pageCaptureTestRecipe (
   }
 }
 
-// FIXME: these tests rely on live rendering results, which are too variable to
-// reproduce outside of CI, primarily due to display scaling.
-ifdescribe(!!process.env.CI)('-electron-corner-smoothing', () => {
+describe('-electron-corner-smoothing', () => {
   afterEach(async () => {
     await closeAllWindows();
   });

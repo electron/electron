@@ -44,7 +44,7 @@
       }
 
       .box {
-        --boxes-x: 7;
+        --boxes-x: 8;
         --boxes-y: 5;
         --box-shadow-offset: 4px;
         --box-shadow-spread: 2px;
@@ -84,6 +84,10 @@
         background-color: skyblue;
         box-shadow: var(--box-shadow-offset) var(--box-shadow-offset) var(--box-shadow-spread) var(--box-shadow-grow) cornflowerblue;
       }
+      .box.multiple-radii {
+        background-color: coral;
+        border-radius: 0 0 calc((var(--box-size) / 8) - 2px) calc((var(--box-size) / 2) - 8px);
+      }
     </style>
   </head>
   <body>
@@ -95,6 +99,7 @@
       <div class="box outline double"></div>
       <div class="box outer"><div class="inner"></div></div>
       <div class="box shadow"></div>
+      <div class="box multiple-radii"></div>
     </div>
     <div class="row rounding-30">
       <div class="box"></div>
@@ -104,6 +109,7 @@
       <div class="box outline double"></div>
       <div class="box outer"><div class="inner"></div></div>
       <div class="box shadow"></div>
+      <div class="box multiple-radii"></div>
     </div>
     <div class="row rounding-60">
       <div class="box"></div>
@@ -113,6 +119,7 @@
       <div class="box outline double"></div>
       <div class="box outer"><div class="inner"></div></div>
       <div class="box shadow"></div>
+      <div class="box multiple-radii"></div>
     </div>
     <div class="row rounding-100">
       <div class="box"></div>
@@ -122,6 +129,7 @@
       <div class="box outline double"></div>
       <div class="box outer"><div class="inner"></div></div>
       <div class="box shadow"></div>
+      <div class="box multiple-radii"></div>
     </div>
     <div class="row rounding-invalid">
       <div class="box"></div>
@@ -131,6 +139,7 @@
       <div class="box outline double"></div>
       <div class="box outer"><div class="inner"></div></div>
       <div class="box shadow"></div>
+      <div class="box multiple-radii"></div>
     </div>
   </body>
 </html>
