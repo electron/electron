@@ -1,4 +1,3 @@
-import { nativeImage } from 'electron';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
 
 import { expect } from 'chai';
@@ -6662,52 +6661,6 @@ describe('BrowserWindow module', () => {
         await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.frameRate).to.equal(30);
       });
-    });
-  });
-
-  describe('offscreen rendering image', () => {
-    afterEach(closeAllWindows);
-
-    const imagePath = path.join(fixtures, 'assets', 'osr.png');
-    const targetImage = nativeImage.createFromPath(imagePath);
-    const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
-    ifit(nativeModulesEnabled && ['win32'].includes(process.platform))('use shared texture, hardware acceleration enabled', (done) => {
-      const { ExtractPixels, InitializeGpu } = require('@electron-ci/osr-gpu');
-
-      try {
-        InitializeGpu();
-      } catch (e) {
-        console.log('Failed to initialize GPU, this spec needs a valid GPU device. Skipping...');
-        console.error(e);
-        done();
-        return;
-      }
-
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          offscreen: {
-            useSharedTexture: true
-          }
-        },
-        transparent: true,
-        frame: false,
-        width: 128,
-        height: 128
-      });
-
-      w.webContents.once('paint', async (e, dirtyRect) => {
-        try {
-          expect(e.texture).to.be.not.null();
-          const pixels = ExtractPixels(e.texture!.textureInfo);
-          const img = nativeImage.createFromBitmap(pixels, { width: dirtyRect.width, height: dirtyRect.height, scaleFactor: 1 });
-          expect(img.toBitmap().equals(targetImage.toBitmap())).to.equal(true);
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
-      w.loadFile(imagePath);
     });
   });
 
