@@ -1291,7 +1291,7 @@ const win4 = new BrowserWindow({
 });
 
 win4.webContents.on('paint', (event, dirty, _image) => {
-  console.log(dirty, _image.getBitmap());
+  console.log(dirty, _image.toBitmap());
 });
 
 win4.webContents.on('devtools-open-url', (event, url) => {

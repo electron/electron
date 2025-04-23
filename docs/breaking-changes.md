@@ -27,6 +27,19 @@ window is not currently visible.
 
 If you were using `app.commandLine` to control the behavior of the  main process, you should do this via `process.argv`.
 
+### Deprecated: `NativeImage.getBitmap()`
+
+`NativeImage.toBitmap()` returns a newly-allocated copy of the bitmap. `NativeImage.getBitmap()` was originally an alternative function that returned the original instead of a copy. This changed when sandboxing was introduced, so both return a copy and are functionally equivalent.
+
+Client code should call `NativeImage.toBitmap()` instead:
+
+```js
+// Deprecated
+bitmap = image.getBitmap()
+// Use this instead
+bitmap = image.toBitmap()
+```
+
 ## Planned Breaking API Changes (36.0)
 
 ### Removed:`isDefault` and `status` properties on `PrinterInfo`
