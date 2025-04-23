@@ -4599,7 +4599,7 @@ describe('BrowserWindow module', () => {
 
           try {
             const expectedSize = rect.width * rect.height * 4;
-            expect(image.getBitmap()).to.be.an.instanceOf(Buffer).with.lengthOf(expectedSize);
+            expect(image.toBitmap()).to.be.an.instanceOf(Buffer).with.lengthOf(expectedSize);
             done();
           } catch (e) {
             done(e);
