@@ -34,10 +34,10 @@ index 39b5a8fdd165efd74b00256552b51b5413107958..bfc4ef4f50efff4a77f2aef64335bb7e
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index a86e512dd7ecb7e30714ea2709c1704b406e561f..f55fd8343052c1d9c0a7f21af7c7d92aa2745d5a 100644
+index f6686dd07fc13c84b4b41416b6936bfdd1335d1d..84c0956fc948159362acb01d6a24064e8ba5e085 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1416,6 +1416,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
+@@ -1415,6 +1415,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
    window()->SetProperty(aura::client::kHeadlessBoundsKey, bounds);
  }
  
@@ -49,7 +49,7 @@ index a86e512dd7ecb7e30714ea2709c1704b406e561f..f55fd8343052c1d9c0a7f21af7c7d92a
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 3893534a89947a59c5a5c4e6dc3953047817a59e..5ba94748640c2c137833add6b95cfd8962e7fdb6 100644
+index 67f7bf942f3562bd52b090557e7c9bf66c594120..9bca860f05cb93380426e319cd868f84dba98657 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 @@ -271,6 +271,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
@@ -61,10 +61,10 @@ index 3893534a89947a59c5a5c4e6dc3953047817a59e..5ba94748640c2c137833add6b95cfd89
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 5a1533b01946b76de2c2aaad137e14c4d7a00a3c..0113b1bce0eb7a7e3dfb3154a4844a9943b8633e 100644
+index 5919efa661c3b1ed210f7a67f85fdd3882011bae..5b17d5bf0b32405ae9515b941a17b68a04a3b317 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3196,15 +3196,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3178,15 +3178,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      }
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.
@@ -86,7 +86,7 @@ index 5a1533b01946b76de2c2aaad137e14c4d7a00a3c..0113b1bce0eb7a7e3dfb3154a4844a99
        return 0;
      }
    }
-@@ -3227,6 +3231,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3209,6 +3213,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      // handle alt-space, or in the frame itself.
      is_right_mouse_pressed_on_caption_ = false;
      ReleaseCapture();
@@ -94,7 +94,7 @@ index 5a1533b01946b76de2c2aaad137e14c4d7a00a3c..0113b1bce0eb7a7e3dfb3154a4844a99
      // |point| is in window coordinates, but WM_NCHITTEST and TrackPopupMenu()
      // expect screen coordinates.
      POINT screen_point = CR_POINT_INITIALIZER_FROM_LPARAM(l_param);
-@@ -3234,7 +3239,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3216,7 +3221,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      w_param = static_cast<WPARAM>(SendMessage(
          hwnd(), WM_NCHITTEST, 0, MAKELPARAM(screen_point.x, screen_point.y)));
      if (w_param == HTCAPTION || w_param == HTSYSMENU) {
@@ -114,10 +114,10 @@ index 5a1533b01946b76de2c2aaad137e14c4d7a00a3c..0113b1bce0eb7a7e3dfb3154a4844a99
      }
    } else if (message == WM_NCLBUTTONDOWN &&
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 94a23d66c6a88e398178f84bfc6f0531c1efa41d..b46775a5b3aab8ec859e9fe42c925369bf9b93ed 100644
+index 252d7ce78ad49596fb030160cb69d9bf3dc0951f..5e7975cf5cb3435b844fda58d7582d54cb583a72 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
-@@ -258,6 +258,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
+@@ -255,6 +255,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
    // Called when the headless window bounds has changed.
    virtual void HandleHeadlessWindowBoundsChanged(const gfx::Rect& bounds) = 0;
  

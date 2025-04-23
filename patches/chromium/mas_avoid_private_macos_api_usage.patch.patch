@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index d62d3c4a82579a5b308f28b941db0cc8e48d0e37..865519a1179d573b0a99ec32d9dcd81f04c0f9d6 100644
+index b7ed9ee99ba49958d1463dfe1793ccd59732ae43..6ddb132ac1b842802c5a8983c58f4f6506042fdd 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1045,6 +1045,7 @@ component("base") {
@@ -208,10 +208,10 @@ index ff1e356ff696d3830d02644969c36a71fdf32ff6..b39c716c52524b95f2d3417a98e60c0c
      sources += [ "os_crypt_win.cc" ]
      deps += [ "//components/version_info" ]
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index d87682447b850e4cf9065f0d26d14077acbe467d..a179c9bc02158130f4b15bf8022721f4b53a8303 100644
+index 6b936d228cf71d33025769430afbe6fe322ed186..3d388a85aaf52acdcc2b7aaea56f5a24b2435bff 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
-@@ -14,6 +14,7 @@
+@@ -15,6 +15,7 @@
  #include "base/rand_util.h"
  #include "build/branding_buildflags.h"
  #include "crypto/apple_keychain.h"
@@ -477,7 +477,7 @@ index 0b964e176e59e77a0743e2d347aa185bc7c80bc5..49a60b9aa0597c3397906303b73a4c16
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 4704b26c54e7bd449a6e57de43b7c4b0875732c9..e3b4148376f5a93f053b88e179f51cb642d896ed 100644
+index e522423645bf313ad1504a7ec47ecf3619888e35..d29bdc038fc6934c69b10b7a694d9cbf54839b02 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -385,6 +385,7 @@ viz_component("service") {
@@ -488,7 +488,7 @@ index 4704b26c54e7bd449a6e57de43b7c4b0875732c9..e3b4148376f5a93f053b88e179f51cb6
    }
  
    if (is_ios) {
-@@ -697,6 +698,7 @@ viz_source_set("unit_tests") {
+@@ -699,6 +700,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -548,7 +548,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 4017ee032569466f5311e5c9612c82c086eab935..f2499bc084312a09b2324567d270fc1b899e7617 100644
+index eca43bf620111c27c400ae2d95880e47c34fbc59..12ee7e75e437426f28002c7c9f4d5f5b5016ec53 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -35,6 +35,7 @@
@@ -582,10 +582,10 @@ index 4017ee032569466f5311e5c9612c82c086eab935..f2499bc084312a09b2324567d270fc1b
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index f999eb6aeb11b59c6231b8f80d9e0d586b341171..679ee6731e685a9844bb6461d664f8e5b823e258 100644
+index 6d9f1c22aa9fb24e75dab02bd5c6dd2c68cfb6ea..e349f271bd3dbcc5243b3043439f443a79e331b4 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -341,6 +341,7 @@ source_set("browser") {
+@@ -342,6 +342,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -703,7 +703,7 @@ index 27f481c6a31cdd59684eb38ea8b2ffdcb5849ddf..88a6090a49da6071fded348a901c7c62
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index fb23dfd8f90ad3eeb55e4db373ca67f75d8e5ce1..df902b0b01ed4d092070a92fdf77cf69fde475e7 100644
+index da0e8c7260391805fa6950125c797565a2812521..8e8b093cd142326010445e9b2aae7c20866b9060 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -283,6 +283,7 @@ source_set("common") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 89e50cc56259e90a4ec955bb846c793f2d42cfd6..f64c1614bd8d9782d1c9f9bca20e2f8926893a0f 100644
+index b61e76a3b9136931cb6280ddfecff82889725a16..99bc0b5f06e11d67b598ec4b0d6262ae359ffc27 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -662,6 +662,7 @@ static_library("test_support") {
@@ -808,7 +808,7 @@ index 89e50cc56259e90a4ec955bb846c793f2d42cfd6..f64c1614bd8d9782d1c9f9bca20e2f89
    ]
  
    data_deps = [
-@@ -1115,6 +1116,7 @@ static_library("browsertest_support") {
+@@ -1117,6 +1118,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -816,7 +816,7 @@ index 89e50cc56259e90a4ec955bb846c793f2d42cfd6..f64c1614bd8d9782d1c9f9bca20e2f89
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1956,6 +1958,7 @@ test("content_browsertests") {
+@@ -1959,6 +1961,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 89e50cc56259e90a4ec955bb846c793f2d42cfd6..f64c1614bd8d9782d1c9f9bca20e2f89
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3280,6 +3283,7 @@ test("content_unittests") {
+@@ -3282,6 +3285,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -833,10 +833,10 @@ index 89e50cc56259e90a4ec955bb846c793f2d42cfd6..f64c1614bd8d9782d1c9f9bca20e2f89
  
    if (enable_nocompile_tests) {
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 8779cf7cbbe2a583fda51867eaebc627f00bd4cd..98da1587fdc8cc8358a69db2b51d39820a0b15f3 100644
+index c17535742efb9a229120953ecb00c73ad391c07d..8142161f2ed49d7ce4f3785b86d846bf0728a92f 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
-@@ -227,6 +227,7 @@ static_library("web_test_browser") {
+@@ -229,6 +229,7 @@ static_library("web_test_browser") {
      "//ui/gl",
      "//ui/shell_dialogs:shell_dialogs",
      "//url",
@@ -903,19 +903,19 @@ index 6431af67ab634cf23729b9102c189b2181cfd2cf..22040e1bfb96d810a2d8e62e44e4afbc
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 81d64e16df0139107bc65c7924bdc467fa392657..3098b80c3dba6e4f8150eae3c5796b1e11c5c899 100644
+index 2ef64102137f543ec8c4d88bd6718264d1c52691..7e2c450a44b4bddf7cb3e2d3482ec04c5b750e02 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -129,6 +129,7 @@ component("service") {
-       "QuartzCore.framework",
-     ]
-     defines += [ "GL_SILENCE_DEPRECATION" ]
-+    deps += ["//electron/build/config:generate_mas_config"]
-   }
-   if (is_ios) {
-     sources += [ "image_transport_surface_ios.mm" ]
+@@ -131,6 +131,7 @@ component("service") {
+         "QuartzCore.framework",
+       ]
+       defines += [ "GL_SILENCE_DEPRECATION" ]
++      deps += ["//electron/build/config:generate_mas_config"]
+     }
+     if (is_ios) {
+       sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index ae040bbac8755b677dc6e19383a2390df407e5a6..e95ca30f49506c66a37d6d5269929f437005f863 100644
+index f89dbdfb0c4e8e31d387d1ce2e5304277ac4df26..7b75bfeba59345d63f4ac8115369794144754b97 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -8,6 +8,7 @@
@@ -1448,10 +1448,10 @@ index 3ff395b3ff3b646a64c43503d2c172776bf68c84..e40030307e8d9df7e00a402e241e0066
  
    if (is_mac) {
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index d38e951cdbf1ab9b367273ad0fb8f962155a7f3b..e39ee0414cb54004096dbfffc4f768e805f3310a 100644
+index 0645e5e49137b753bbc17138c88eabc53969bed8..8dcf005f4ae7bcf996b4d868e6f4855a6148d4b1 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
-@@ -358,10 +358,14 @@ blink_core_sources_editing = [
+@@ -362,10 +362,14 @@ blink_core_sources_editing = [
  if (is_mac) {
    blink_core_sources_editing += [
      "commands/smart_replace_cf.cc",
@@ -1480,7 +1480,7 @@ index ce3dc22f38b9d3f2f12e469b23f5dfe06ecbb98a..a69af46e05365028379dbf6abafaacd9
  }
  
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
-index a615405dac100a08234b43f5ec354fb829bb5222..3cf40179700a4d5b69e18993b923f8f14919f9fa 100644
+index af13a067beb5fc0d5c6b7eb579b04d1d6dc130de..1a7ddbc3a1f7a989a3f7e0c21d4d9ad7e4b435b9 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
 @@ -7,6 +7,7 @@
@@ -1499,9 +1499,9 @@ index a615405dac100a08234b43f5ec354fb829bb5222..3cf40179700a4d5b69e18993b923f8f1
  @class CAContext;
 +#endif
  @class CALayer;
+ @protocol MTLDevice;
  
- namespace ui {
-@@ -110,7 +113,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
+@@ -112,7 +115,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
    // both the current tree and the pending trees.
    size_t presented_ca_layer_trees_max_length_ = 2;
  
@@ -1512,7 +1512,7 @@ index a615405dac100a08234b43f5ec354fb829bb5222..3cf40179700a4d5b69e18993b923f8f1
    // The root CALayer to display the current frame. This does not change
    // over the lifetime of the object.
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
-index cfb80b21ada7f04ff615b0437403ac1c6c95bb14..34341007de140aba2e6eeb9d8e8de0ea492c2466 100644
+index 9cf72ff8b8593dae415d07796f1bebeeea3e2f76..3e78af6e65085cb978133e49aa4cc164bcc94027 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 @@ -10,6 +10,7 @@
@@ -1523,15 +1523,15 @@ index cfb80b21ada7f04ff615b0437403ac1c6c95bb14..34341007de140aba2e6eeb9d8e8de0ea
  #include "ui/base/cocoa/animation_utils.h"
  #include "ui/base/cocoa/remote_layer_api.h"
  #include "ui/gfx/ca_layer_params.h"
-@@ -30,6 +31,7 @@
-       allow_av_sample_buffer_display_layer_(
+@@ -32,6 +33,7 @@
            allow_av_sample_buffer_display_layer),
-       buffer_presented_callback_(buffer_presented_callback) {
+       buffer_presented_callback_(buffer_presented_callback),
+       metal_device_(metal_device) {
 +#if !IS_MAS_BUILD()
    if (allow_remote_layers_) {
      root_ca_layer_ = [[CALayer alloc] init];
  #if BUILDFLAG(IS_MAC)
-@@ -58,6 +60,7 @@
+@@ -60,6 +62,7 @@
  #endif
      ca_context_.layer = root_ca_layer_;
    }
@@ -1539,7 +1539,7 @@ index cfb80b21ada7f04ff615b0437403ac1c6c95bb14..34341007de140aba2e6eeb9d8e8de0ea
  }
  
  CALayerTreeCoordinator::~CALayerTreeCoordinator() = default;
-@@ -161,9 +164,13 @@
+@@ -163,9 +166,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());

@@ -36,10 +36,10 @@ for desktop capturer. This change re-enables that fallback, which was
 previously default behavior.
 
 diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
-index 7fd0fc31d81bf4d5eca5f8aa7106388ea4c518e4..51dde063a78be7aade1953fbee8bb2db71b72ce5 100644
+index 45c13751aadb108325836efeca7edbbcb672c1fd..7569900495bfacaa27e6ec2a57cb4f283bbfc827 100644
 --- a/modules/desktop_capture/desktop_capturer.cc
 +++ b/modules/desktop_capture/desktop_capturer.cc
-@@ -113,7 +113,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
+@@ -117,7 +117,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
    std::unique_ptr<DesktopCapturer> capturer;
  
  #if defined(WEBRTC_USE_PIPEWIRE)
