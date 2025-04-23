@@ -782,7 +782,11 @@ v8::Local<v8::Value> BaseWindow::GetNativeWindowHandle() {
   // TODO(MarshallOfSound): Replace once
   // https://chromium-review.googlesource.com/c/chromium/src/+/1253094/ has
   // landed
+#if BUILDFLAG(IS_MAC)
+  auto* handle = window_->GetNativeWindowHandle().GetNativeNSView();
+#else
   NativeWindowHandle handle = window_->GetNativeWindowHandle();
+#endif
   return ToBuffer(isolate(), &handle, sizeof(handle));
 }
 

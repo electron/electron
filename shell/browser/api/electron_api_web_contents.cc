@@ -3744,9 +3744,13 @@ void WebContents::SetDevToolsWebContents(const WebContents* devtools) {
 }
 
 v8::Local<v8::Value> WebContents::GetNativeView(v8::Isolate* isolate) const {
+#if BUILDFLAG(IS_MAC)
+  auto* ptr = web_contents()->GetNativeView().GetNativeNSView();
+#else
   gfx::NativeView ptr = web_contents()->GetNativeView();
-  auto buffer = node::Buffer::Copy(isolate, reinterpret_cast<char*>(&ptr),
-                                   sizeof(gfx::NativeView));
+#endif
+  auto buffer =
+      node::Buffer::Copy(isolate, reinterpret_cast<char*>(&ptr), sizeof(ptr));
   if (buffer.IsEmpty())
     return v8::Null(isolate);
   else
