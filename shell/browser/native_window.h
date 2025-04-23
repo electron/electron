@@ -58,9 +58,9 @@ class BrowserView;
 }
 
 #if BUILDFLAG(IS_MAC)
-typedef gfx::NativeView NativeWindowHandle;
+using NativeWindowHandle = gfx::NativeView;
 #else
-typedef gfx::AcceleratedWidget NativeWindowHandle;
+using NativeWindowHandle = gfx::AcceleratedWidget;
 #endif
 
 class NativeWindow : public base::SupportsUserData,

@@ -6,6 +6,7 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/cocoa/event_dispatching_window.h"
 #include "shell/browser/web_contents_preferences.h"
+#include "shell/common/node_includes.h"
 #include "ui/base/cocoa/command_dispatcher.h"
 #include "ui/base/cocoa/nsmenu_additions.h"
 #include "ui/base/cocoa/nsmenuitem_additions.h"
@@ -90,6 +91,24 @@ bool WebContents::PlatformHandleKeyboardEvent(
   }
 
   return false;
+}
+
+namespace {
+
+// Converts binary data to Buffer.
+v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
+  auto buffer = node::Buffer::Copy(isolate, static_cast<char*>(val), size);
+  if (buffer.IsEmpty())
+    return v8::Null(isolate);
+  else
+    return buffer.ToLocalChecked();
+}
+
+}  // namespace
+
+v8::Local<v8::Value> WebContents::GetNativeView(v8::Isolate* isolate) const {
+  NSView* handle = web_contents()->GetNativeView().GetNativeNSView();
+  return ToBuffer(isolate, &handle, sizeof(handle));
 }
 
 }  // namespace electron::api
