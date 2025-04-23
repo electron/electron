@@ -70,6 +70,7 @@ namespace electron::api {
 
 namespace {
 
+#if !BUILDFLAG(IS_MAC)
 // Converts binary data to Buffer.
 v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
   auto buffer = node::Buffer::Copy(isolate, static_cast<char*>(val), size);
@@ -78,6 +79,7 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
   else
     return buffer.ToLocalChecked();
 }
+#endif
 
 [[nodiscard]] constexpr std::array<int, 2U> ToArray(const gfx::Size size) {
   return {size.width(), size.height()};
@@ -778,17 +780,15 @@ std::string BaseWindow::GetMediaSourceId() const {
   return window_->GetDesktopMediaID().ToString();
 }
 
+#if !BUILDFLAG(IS_MAC)
 v8::Local<v8::Value> BaseWindow::GetNativeWindowHandle() {
   // TODO(MarshallOfSound): Replace once
   // https://chromium-review.googlesource.com/c/chromium/src/+/1253094/ has
   // landed
-#if BUILDFLAG(IS_MAC)
-  auto* handle = window_->GetNativeWindowHandle().GetNativeNSView();
-#else
   NativeWindowHandle handle = window_->GetNativeWindowHandle();
-#endif
   return ToBuffer(isolate(), &handle, sizeof(handle));
 }
+#endif
 
 void BaseWindow::SetProgressBar(double progress, gin_helper::Arguments* args) {
   gin_helper::Dictionary options;
