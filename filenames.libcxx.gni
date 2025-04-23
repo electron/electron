@@ -1613,7 +1613,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/mdspan",
   "//third_party/libc++/src/include/memory",
   "//third_party/libc++/src/include/memory_resource",
-  "//third_party/libc++/src/include/module.modulemap",
+  "//third_party/libc++/src/include/module.modulemap.in",
   "//third_party/libc++/src/include/mutex",
   "//third_party/libc++/src/include/new",
   "//third_party/libc++/src/include/numbers",
