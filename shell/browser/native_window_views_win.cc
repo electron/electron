@@ -348,8 +348,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
     }
     case WM_SIZE: {
       // Handle window state change.
-      HandleSizeEvent(w_param, l_param);
-      return false;
+      return HandleSizeEvent(w_param, l_param);
     }
     case WM_EXITSIZEMOVE: {
       if (is_resizing_) {
@@ -457,7 +456,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
   }
 }
 
-void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
+bool NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   // Here we handle the WM_SIZE event in order to figure out what is the current
   // window state and notify the user accordingly.
   switch (w_param) {
@@ -468,6 +467,24 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 
       if (GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
         last_normal_placement_bounds_ = gfx::Rect(wp.rcNormalPosition);
+      }
+
+      // If a window is translucent but not transparent on Windows,
+      // that means it must have a backgroundMaterial set.
+      if (w_param == SIZE_MAXIMIZED && IsTranslucent()) {
+        if (!transparent())
+          SetRoundedCorners(false);
+        restore_bounds_ = GetBounds();
+        auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
+            GetNativeWindow());
+        SetBounds(display.work_area(), false);
+
+        if (last_window_state_ == ui::mojom::WindowShowState::kMinimized)
+          NotifyWindowRestore();
+
+        last_window_state_ = ui::mojom::WindowShowState::kMaximized;
+        NotifyWindowMaximize();
+        return true;
       }
 
       // Note that SIZE_MAXIMIZED and SIZE_MINIMIZED might be emitted for
@@ -490,6 +507,18 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       switch (last_window_state_) {
         case ui::mojom::WindowShowState::kMaximized:
           last_window_state_ = ui::mojom::WindowShowState::kNormal;
+
+          if (IsTranslucent()) {
+            SetBounds(restore_bounds_, false);
+            NotifyWindowUnmaximize();
+            if (transparent()) {
+              UpdateThickFrame();
+            } else {
+              SetRoundedCorners(true);
+            }
+            return true;
+          }
+
           NotifyWindowUnmaximize();
           break;
         case ui::mojom::WindowShowState::kMinimized:
@@ -508,6 +537,8 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       break;
     }
   }
+
+  return false;
 }
 
 void NativeWindowViews::ResetWindowControls() {
