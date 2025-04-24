@@ -13,18 +13,31 @@ when the content finishes loading.
 Note that `ImageView` is experimental and may be changed or removed in the future.
 
 ```js
-const { BaseWindow, ImageView, nativeImage } = require('electron')
+const { BaseWindow, ImageView, nativeImage, WebContentsView } = require('electron')
 const path = require('node:path')
 
-const image = nativeImage.createFromPath(path.join(__dirname, 'image.png'))
-const { width, height } = image.getSize()
+const win = new BaseWindow({ width: 800, height: 600 })
 
-const win = new BaseWindow({ width, height, useContentSize: true })
-
+// Create a "splash screen" image to display while the WebContentsView loads
 const view = new ImageView()
+const image = nativeImage.createFromPath(path.join(__dirname, 'loading.png'))
 view.setImage(image)
-view.setBounds({ x: 0, y: 0, width, height })
-win.contentView.addChildView(view)
+const updateImageViewBounds = () => {
+  const { width, height } = win.getContentBounds()
+  view.setBounds({ x: 0, y: 0, width, height })
+}
+win.on('resize', updateImageViewBounds)
+win.setContentView(view)
+
+const webContentsView = new WebContentsView()
+webContentsView.webContents.once('did-finish-load', () => {
+  // Now that the WebContentsView has loaded, swap out the "splash screen" ImageView
+  win.setContentView(webContentsView)
+
+  // Stop updating the ImageView bounds when the BaseWindow resizes
+  win.off('resize', updateImageViewBounds)
+})
+webContentsView.webContents.loadURL('https://electronjs.org')
 ```
 
 ## Class: ImageView extends `View`
