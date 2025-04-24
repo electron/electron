@@ -28,8 +28,6 @@
 
 namespace extensions {
 
-using LoadErrorBehavior = ExtensionRegistrar::LoadErrorBehavior;
-
 namespace {
 
 std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
@@ -127,8 +125,7 @@ void ElectronExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
   DCHECK_EQ(false, did_schedule_reload_);
   base::AutoReset<bool> reset_did_schedule_reload(&did_schedule_reload_, false);
 
-  extension_registrar_->ReloadExtension(extension_id,
-                                        LoadErrorBehavior::kQuiet);
+  extension_registrar_->ReloadExtensionWithQuietFailure(extension_id);
   if (did_schedule_reload_)
     return;
 }
@@ -201,10 +198,9 @@ void ElectronExtensionLoader::PostUninstallExtension(
     scoped_refptr<const Extension> extension,
     base::OnceClosure done_callback) {}
 
-void ElectronExtensionLoader::LoadExtensionForReload(
+void ElectronExtensionLoader::DoLoadExtensionForReload(
     const ExtensionId& extension_id,
-    const base::FilePath& path,
-    LoadErrorBehavior load_error_behavior) {
+    const base::FilePath& path) {
   CHECK(!path.empty());
 
   // TODO(nornagon): we should save whether file access was granted
@@ -216,6 +212,18 @@ void ElectronExtensionLoader::LoadExtensionForReload(
       base::BindOnce(&ElectronExtensionLoader::FinishExtensionReload,
                      weak_factory_.GetWeakPtr(), extension_id));
   did_schedule_reload_ = true;
+}
+
+void ElectronExtensionLoader::LoadExtensionForReload(
+    const ExtensionId& extension_id,
+    const base::FilePath& path) {
+  DoLoadExtensionForReload(extension_id, path);
+}
+
+void ElectronExtensionLoader::LoadExtensionForReloadWithQuietFailure(
+    const ExtensionId& extension_id,
+    const base::FilePath& path) {
+  DoLoadExtensionForReload(extension_id, path);
 }
 
 void ElectronExtensionLoader::ShowExtensionDisabledError(

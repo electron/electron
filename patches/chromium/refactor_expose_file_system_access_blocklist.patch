@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 258e8926bcf7e4370baaf15c5aad15da0c63a9d6..7532d92e78f19da9997001a681a63cf64e274348 100644
+index 0ef15b8fb653a0b33782bcb1c138288e1071294e..ca654ee7204af1bad8e4578982b4b2a687a444e8 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -45,7 +45,6 @@
@@ -142,7 +142,7 @@ index 258e8926bcf7e4370baaf15c5aad15da0c63a9d6..7532d92e78f19da9997001a681a63cf6
  // A wrapper around `base::NormalizeFilePath` that returns its result instead of
  // using an out parameter.
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 1722dbeb24b9f26c9a24fe1c3605861400eb2a4a..8da82018d12713933230304f09f12cf5e6e9adb1 100644
+index 46a2019587b534add3c89f464cdf7261a67e7cce..7d313934b24b32830976ce19479cf3b00d3ddca8 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -21,7 +21,7 @@

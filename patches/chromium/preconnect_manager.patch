@@ -10,7 +10,7 @@ in favor of defining PreconnectRequest in this file since we don't build
 the header.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index 5741fefef3a3a803a4e463ada1980d5d09a9ebe3..e8c4ccb63425a4097794dc33eccc64d54b384af9 100644
+index 037b624807fbf34843c450876aae70529df5f7da..a8208563f7d339d486d973caf7b29aba40c91ad0 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
 @@ -15,9 +15,11 @@
@@ -25,7 +25,7 @@ index 5741fefef3a3a803a4e463ada1980d5d09a9ebe3..e8c4ccb63425a4097794dc33eccc64d5
  #include "content/public/browser/browser_context.h"
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
-@@ -29,6 +31,20 @@ namespace predictors {
+@@ -30,6 +32,20 @@ namespace predictors {
  
  const bool kAllowCredentialsOnPreconnectByDefault = true;
  
@@ -46,7 +46,7 @@ index 5741fefef3a3a803a4e463ada1980d5d09a9ebe3..e8c4ccb63425a4097794dc33eccc64d5
  PreconnectedRequestStats::PreconnectedRequestStats(const url::Origin& origin,
                                                     bool was_preconnected)
      : origin(origin), was_preconnected(was_preconnected) {}
-@@ -95,12 +111,15 @@ PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
+@@ -103,12 +119,15 @@ PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
  PreconnectManager::~PreconnectManager() = default;
  
  bool PreconnectManager::IsEnabled() {
@@ -63,7 +63,7 @@ index 5741fefef3a3a803a4e463ada1980d5d09a9ebe3..e8c4ccb63425a4097794dc33eccc64d5
  
  void PreconnectManager::Start(const GURL& url,
 diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
-index 107c0f79ccf10eb5d16181213e12c93f1abc62d6..9babefff03899de91519474956ba1297fbd1c95d 100644
+index 7ffcb5226bed84e0ecf23d0562a0b61db9a0b835..e2314d0328c265353f7cb6fdb9bfd3b937f25444 100644
 --- a/chrome/browser/predictors/preconnect_manager.h
 +++ b/chrome/browser/predictors/preconnect_manager.h
 @@ -17,7 +17,9 @@
@@ -75,8 +75,8 @@ index 107c0f79ccf10eb5d16181213e12c93f1abc62d6..9babefff03899de91519474956ba1297
 +#endif
  #include "content/public/browser/storage_partition_config.h"
  #include "net/base/network_anonymization_key.h"
- #include "url/gurl.h"
-@@ -34,7 +36,28 @@ class NetworkContext;
+ #include "services/network/public/mojom/reconnect_event_observer.mojom.h"
+@@ -35,7 +37,28 @@ class NetworkContext;
  
  namespace predictors {
  

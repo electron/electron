@@ -79,10 +79,10 @@ index e7cc73f375ada7ee8715d331c3d372e0f59a0cdf..c0a142bea4a9a30c10dbb30c72fedce9
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index 07e06ac6a3f14081f61f44620b537e5442419660..f2b8a977277c1f1ab014edd007d5df766b70f328 100644
+index 49a60e0a0df9785410db8e9ddacaf4b42f60f9f6..8538a06785d8627a1e20e6edeadc7442676ff43a 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-@@ -129,7 +129,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
+@@ -134,7 +134,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
      notification_service_ = std::make_unique<BlinkNotificationServiceImpl>(
          notification_context_.get(), &browser_context_,
          embedded_worker_helper_->context_wrapper(), &render_process_host_,
@@ -92,7 +92,7 @@ index 07e06ac6a3f14081f61f44620b537e5442419660..f2b8a977277c1f1ab014edd007d5df76
          contents_.get()->GetPrimaryMainFrame()->GetWeakDocumentPtr(),
          RenderProcessHost::NotificationServiceCreatorType::kDocument,
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index d840a16e3abfc81b1c45b12827462fbda8dfac43..d18b0fff1ecdde0aece2a57dace5330c6b3f37f5 100644
+index b09a71544475f5810e26006d9a2f975176b28bb8..e6c77f27d6a71d1d065e292963072186a257aca6 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -281,6 +281,7 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -133,10 +133,10 @@ index 5be62a3fb27e37f3c1db6b811172f6dfebe18f61..34349f9832fe4b9a3d48db613a789afb
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 68f79d9dfec6f00aa0914f4dcbfa927c7e419d22..7a1fc82866b5a28c7f14e3c8303de2d62cbbcc84 100644
+index 6606217ec587846d995c4312f9a6ecd0a82b9ba1..63c4c7d56dd8677f37c2eed64166647c17b26d1c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2219,7 +2219,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2217,7 +2217,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      case RenderProcessHost::NotificationServiceCreatorType::kSharedWorker:
      case RenderProcessHost::NotificationServiceCreatorType::kDedicatedWorker: {
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -145,7 +145,7 @@ index 68f79d9dfec6f00aa0914f4dcbfa927c7e419d22..7a1fc82866b5a28c7f14e3c8303de2d6
            creator_type, std::move(receiver));
        break;
      }
-@@ -2227,7 +2227,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2225,7 +2225,7 @@ void RenderProcessHostImpl::CreateNotificationService(
        CHECK(rfh);
  
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

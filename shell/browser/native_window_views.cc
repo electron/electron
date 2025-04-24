@@ -1220,7 +1220,7 @@ SkColor NativeWindowViews::GetBackgroundColor() const {
   auto* background = root_view_.background();
   if (!background)
     return SK_ColorTRANSPARENT;
-  return background->color().ConvertToSkColor(root_view_.GetColorProvider());
+  return background->color().ResolveToSkColor(root_view_.GetColorProvider());
 }
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
