@@ -8,10 +8,10 @@ as its one of our supported platforms.
 https://chromium-review.googlesource.com/q/I3a62f02f564f07be63173b0773b4ecaffbe939b9
 
 diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
-index edaa614330f2c6bb4d69672b64932bf38ae6e763..4fd86ab43464d62b42f78c76526c4bc41dcb6d5d 100644
+index 6f248e837d8ebf389f0b89254702034ae89f8044..251e90f0e3d81c6144e7a6e9e5c5d2165da8738f 100644
 --- a/build/config/compiler/BUILD.gn
 +++ b/build/config/compiler/BUILD.gn
-@@ -618,7 +618,8 @@ config("compiler") {
+@@ -619,7 +619,8 @@ config("compiler") {
  
      # Enable ELF CREL (see crbug.com/357878242) for all platforms that use ELF
      # (excluding toolchains that use an older version of LLVM).

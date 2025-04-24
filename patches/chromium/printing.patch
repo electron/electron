@@ -577,7 +577,7 @@ index 1917f8b94962d7a4c83f139623a5f5d352011627..47ef610c43c4dcfee0cf528eb2e6075b
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 4f2e70c243550b471d0a6b2be743a29004c75599..9a3580d7c2a01290e7aaff1200e7f17c9add2c70 100644
+index 4b1775f4a882fbabfe65df7784baebe6d8bee788..5a3e71dc3894fa96ac7a6b93b3552a90f36fe7a2 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
 @@ -356,17 +356,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
@@ -881,10 +881,10 @@ index 97cb6458bc9eec767db89b56abfc5f4b4136ff7b..d9a0b343158b8464b5c9aa8e0e655c0b
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e349f271bd3dbcc5243b3043439f443a79e331b4..c9e280d67a0133598ce7a4c0934d1d1547c48133 100644
+index aa109c5c123613dfb7258267830eaa859c1d95d1..5efe601ba6bf950779a0de0ae15c5d820b52d8a5 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3155,8 +3155,9 @@ source_set("browser") {
+@@ -3157,8 +3157,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -897,10 +897,10 @@ index e349f271bd3dbcc5243b3043439f443a79e331b4..c9e280d67a0133598ce7a4c0934d1d15
      if (is_chromeos) {
        sources += [
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index b959c1428784388f514d33bf54550908f60f3ff1..c37bc40570b1e2b29af6e677684705556b15560e 100644
+index 746a056e1c7980803323739c51cedb930c62de25..34a9e45a3407612d6960a7cad798cf30989f065e 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -156,7 +156,6 @@ void PrintingContext::UsePdfSettings() {
+@@ -157,7 +157,6 @@ void PrintingContext::UsePdfSettings() {
  
  mojom::ResultCode PrintingContext::UpdatePrintSettings(
      base::Value::Dict job_settings) {
@@ -909,10 +909,10 @@ index b959c1428784388f514d33bf54550908f60f3ff1..c37bc40570b1e2b29af6e67768470555
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890fb82c038d 100644
+index 3a98838e27621e34ab050a0f5dce7110f0d88641..3cce0abe2a2893f1ad5ee747008b66c74e2c2434 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
-@@ -206,6 +206,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -208,6 +208,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
  
    bool PrintingAborted() const { return abort_printing_; }
  
@@ -922,9 +922,9 @@ index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890f
    int job_id() const { return job_id_; }
  
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
-@@ -224,9 +227,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -227,9 +230,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
        Delegate* delegate,
-       ProcessBehavior process_behavior);
+       OutOfProcessBehavior out_of_process_behavior);
  
 -  // Reinitializes the settings for object reuse.
 -  void ResetSettings();
@@ -933,10 +933,10 @@ index 63f170c95050416c595e62f4c460c4cd6b7dbd1c..157e3d046889f9c63fdf0fd5d503890f
    virtual mojom::ResultCode OnError();
  
 diff --git a/printing/printing_context_linux.cc b/printing/printing_context_linux.cc
-index fa55d2a1c5f4207cb8eda9305e8bf2af29352c91..13ca65c2c7c3c24882061d8e224bf93899d9a7ab 100644
+index 1bf52330b555e14cf32c356321bef36442fab3d5..ee7ab77226a2aaf8f4250188a15af63dde70bce0 100644
 --- a/printing/printing_context_linux.cc
 +++ b/printing/printing_context_linux.cc
-@@ -52,9 +52,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
+@@ -55,9 +55,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
                                                bool is_scripted,
                                                PrintSettingsCallback callback) {
    if (!print_dialog_) {
