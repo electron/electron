@@ -105,10 +105,8 @@ void UsbChooserContext::InitDeviceList(
     std::vector<device::mojom::UsbDeviceInfoPtr> devices) {
   for (auto& device_info : devices) {
     DCHECK(device_info);
-    if (ShouldExposeDevice(*device_info)) {
-      devices_.insert(
-          std::make_pair(device_info->guid, std::move(device_info)));
-    }
+    if (ShouldExposeDevice(*device_info))
+      devices_.try_emplace(device_info->guid, std::move(device_info));
   }
   is_initialized_ = true;
 
@@ -289,7 +287,7 @@ void UsbChooserContext::OnDeviceAdded(
   DCHECK(!devices_.contains(device_info->guid));
   if (!ShouldExposeDevice(*device_info))
     return;
-  devices_.insert(std::make_pair(device_info->guid, device_info->Clone()));
+  devices_.try_emplace(device_info->guid, device_info->Clone());
 
   // Notify all observers.
   for (auto& observer : device_observer_list_)

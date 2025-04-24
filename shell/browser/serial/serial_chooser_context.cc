@@ -87,7 +87,7 @@ void SerialChooserContext::GrantPortPermission(
     const url::Origin& origin,
     const device::mojom::SerialPortInfo& port,
     content::RenderFrameHost* render_frame_host) {
-  port_info_.insert({port.token, port.Clone()});
+  port_info_.try_emplace(port.token, port.Clone());
 
   if (CanStorePersistentEntry(port)) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
@@ -275,7 +275,7 @@ void SerialChooserContext::SetUpPortManagerConnection(
 void SerialChooserContext::OnGetDevices(
     std::vector<device::mojom::SerialPortInfoPtr> ports) {
   for (auto& port : ports)
-    port_info_.insert({port->token, std::move(port)});
+    port_info_.try_emplace(port->token, std::move(port));
   is_initialized_ = true;
 }
 

@@ -241,8 +241,7 @@ HidChooserController* ElectronHidDelegate::AddControllerForFrame(
   auto controller = std::make_unique<HidChooserController>(
       render_frame_host, std::move(filters), std::move(exclusion_filters),
       std::move(callback), web_contents, weak_factory_.GetWeakPtr());
-  controller_map_.insert(
-      std::make_pair(render_frame_host, std::move(controller)));
+  controller_map_.try_emplace(render_frame_host, std::move(controller));
   return ControllerForFrame(render_frame_host);
 }
 

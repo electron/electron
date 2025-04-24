@@ -307,7 +307,7 @@ void HidChooserContext::SetUpHidManagerConnection(
 void HidChooserContext::InitDeviceList(
     std::vector<device::mojom::HidDeviceInfoPtr> devices) {
   for (auto& device : devices)
-    devices_.insert({device->guid, std::move(device)});
+    devices_.try_emplace(device->guid, std::move(device));
 
   is_initialized_ = true;
 
