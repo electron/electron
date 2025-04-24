@@ -7,6 +7,9 @@ Process: [Main](../glossary.md#main-process)
 This module cannot be used until the `ready` event of the `app`
 module is emitted.
 
+Useful for showing splash screens that will be swapped for `WebContentsView`s
+when the content finishes loading.
+
 Note that `ImageView` is experimental and may be changed or removed in the future.
 
 ```js
