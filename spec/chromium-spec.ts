@@ -1459,6 +1459,33 @@ describe('chromium features', () => {
       expect(eventData).to.equal('size: 350 450');
     });
 
+    it('window opened with innerWidth option has the same innerWidth', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      const windowUrl = `file://${fixturesPath}/pages/window-open-size-inner.html`;
+      const { eventData } = await w.webContents.executeJavaScript(`(async () => {
+        const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
+        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no,innerWidth=400,height=450')
+        const e = await message
+        b.close();
+        return { eventData: e.data }
+      })()`);
+      expect(eventData).to.equal('size: 400 450');
+    });
+    it('window opened with innerHeight option has the same innerHeight', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      const windowUrl = `file://${fixturesPath}/pages/window-open-size-inner.html`;
+      const { eventData } = await w.webContents.executeJavaScript(`(async () => {
+        const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
+        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no,width=350,innerHeight=400')
+        const e = await message
+        b.close();
+        return { eventData: e.data }
+      })()`);
+      expect(eventData).to.equal('size: 350 400');
+    });
+
     it('loads preload script after setting opener to null', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.setWindowOpenHandler(() => ({

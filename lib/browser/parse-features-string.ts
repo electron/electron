@@ -26,7 +26,10 @@ const keysOfTypeNumberCompileTimeCheck: { [K in IntegerBrowserWindowOptionKeys] 
 };
 // Note `top` / `left` are special cases from the browser which we later convert
 // to y / x.
-const keysOfTypeNumber = new Set(['top', 'left', ...Object.keys(keysOfTypeNumberCompileTimeCheck)]);
+// NOTE(@mlaurencin)`innerWidth` / `innerHeight` are also special cases. They should be equivalent to
+// `width` / `height` respectively in the context of window.open(), but are currently not because
+// they equate to outerWidth/Height in the current implementation.
+const keysOfTypeNumber = new Set(['top', 'left', 'innerWidth', 'innerHeight', ...Object.keys(keysOfTypeNumberCompileTimeCheck)]);
 
 /**
  * Note that we only allow "0" and "1" boolean conversion when the type is known

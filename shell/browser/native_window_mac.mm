@@ -291,7 +291,19 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 
   // Resize to content bounds.
   bool use_content_size = false;
+  int inner_width = 0;
+  int inner_height = 0;
   options.Get(options::kUseContentSize, &use_content_size);
+  options.Get(options::kinnerWidth, &inner_width);
+  options.Get(options::kinnerHeight, &inner_height);
+  if (inner_width || inner_height) {
+    use_content_size = true;
+    if (inner_width)
+      width = (inner_width < 100) ? 100 : inner_width;
+    if (inner_height)
+      height = (inner_height < 100) ? 100 : inner_height;
+  }
+
   if (!has_frame() || use_content_size)
     SetContentSize(gfx::Size(width, height));
 
