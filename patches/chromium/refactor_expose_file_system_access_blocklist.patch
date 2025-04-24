@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index f08ff195ede9980cd0f491053510ed09c1b6c58a..2bdfcc05ef92c1983a9517deea98ed589ac0a065 100644
+index 6720c3f12d4ff86bd9c5262d3b0b5e42065ce506..c5081166876717cac04159855b690a24e2424ea8 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -45,7 +45,6 @@
@@ -153,7 +153,7 @@ index f08ff195ede9980cd0f491053510ed09c1b6c58a..2bdfcc05ef92c1983a9517deea98ed58
  // Describes a rule for blocking a directory, which can be constructed
  // dynamically (based on state) or statically (from kBlockedPaths).
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 68a712cb272224d7a75ff3f512e45ed82eab5a86..d46119d9a7a32c9dc0c4844da73c63b42af9f7a8 100644
+index ce16f32c9ec1280c1d68942dcaf392c21f9e7963..1e0f372a25b49babb33acc05ee86f475684b0441 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -21,7 +21,7 @@
