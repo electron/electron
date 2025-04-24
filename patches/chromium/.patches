@@ -145,4 +145,3 @@ fix_win32_synchronous_spellcheck.patch
 fix_enable_wrap_iter_in_string_view_and_array.patch
 fix_linter_error.patch
 revert_enable_crel_for_arm32_targets.patch
-fix_electron_handles_nswindow_background_color_and_transparency.patch
