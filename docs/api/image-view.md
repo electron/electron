@@ -19,23 +19,15 @@ const path = require('node:path')
 const win = new BaseWindow({ width: 800, height: 600 })
 
 // Create a "splash screen" image to display while the WebContentsView loads
-const view = new ImageView()
-const image = nativeImage.createFromPath(path.join(__dirname, 'loading.png'))
-view.setImage(image)
-const updateImageViewBounds = () => {
-  const { width, height } = win.getContentBounds()
-  view.setBounds({ x: 0, y: 0, width, height })
-}
-win.on('resize', updateImageViewBounds)
-win.setContentView(view)
+const splashView = new ImageView()
+const splashImage = nativeImage.createFromPath(path.join(__dirname, 'loading.png'))
+splashView.setImage(splashImage)
+win.setContentView(splashView)
 
 const webContentsView = new WebContentsView()
 webContentsView.webContents.once('did-finish-load', () => {
   // Now that the WebContentsView has loaded, swap out the "splash screen" ImageView
   win.setContentView(webContentsView)
-
-  // Stop updating the ImageView bounds when the BaseWindow resizes
-  win.off('resize', updateImageViewBounds)
 })
 webContentsView.webContents.loadURL('https://electronjs.org')
 ```
