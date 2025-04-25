@@ -14,6 +14,19 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (37.0)
 
+### Utility Process unhandled rejection behavior change
+
+Utility Processes will now warn with an error message when an unhandled
+rejection occurs instead of crashing the process.
+
+To restore the previous behavior, you can use:
+
+```js
+process.on('unhandledRejection', () => {
+  process.exit(1)
+})
+```
+
 ### Behavior Changed: WebUSB and WebSerial Blocklist Support
 
 [WebUSB](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API) and [Web Serial](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API) now support the [WebUSB Blocklist](https://wicg.github.io/webusb/#blocklist) and [Web Serial Blocklist](https://wicg.github.io/serial/#blocklist) used by Chromium and outlined in their respective specifications.
@@ -31,6 +44,8 @@ Using single-purpose sessions here is discouraged due to overhead costs;
 however, old code that needs to preserve this behavior can emulate it by
 creating a random session with `session.fromPartition(some_random_string)`
 and then using it in `ProtocolResponse.session`.
+
+## Planned Breaking API Changes (36.0)
 
 ### Behavior Changed: `BrowserWindow.IsVisibleOnAllWorkspaces()` on Linux
 
@@ -56,21 +71,6 @@ Client code should call `NativeImage.toBitmap()` instead:
 bitmap = image.getBitmap()
 // Use this instead
 bitmap = image.toBitmap()
-```
-
-## Planned Breaking API Changes (36.0)
-
-### Utility Process unhandled rejection behavior change
-
-Utility Processes will now warn with an error message when an unhandled
-rejection occurs instead of crashing the process.
-
-To restore the previous behavior, you can use:
-
-```js
-process.on('unhandledRejection', () => {
-  process.exit(1)
-})
 ```
 
 ### Removed: `isDefault` and `status` properties on `PrinterInfo`
