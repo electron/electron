@@ -112,10 +112,10 @@ index aa3a6b93cceae8c8bfbefdd7a043ae576f921979..17544d7ed4757fb51e2f82fd1b906381
              property_.sorting_key = (-property_.priority,
                                       internal_visited_order,
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index f106ab8f51a81ddcaa0d19304439432fd96d47e8..39c28b84ce461fc4e3f304166b60942ce3c99603 100644
+index c3dfa4c1f53a6ebba5735214037e0d1c6a88961d..17a08450227844dceccbaab7ff9de60d6e058b1f 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8821,6 +8821,24 @@
+@@ -8822,6 +8822,24 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -307,7 +307,7 @@ index 2c2f4f405074e5baa4a26f255283404f86b40e21..ebeb7d6988ee9e6a4e78cb82fc01fdad
  
  ContouredRect PixelSnappedContouredBorderInternal(
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 5751a08ec62bd12124d3cf502b8c4c87fbc89169..44214fd41ceaacab5a9a333b6d4fc43a80e550be 100644
+index d419aae417d76f6f2e5a477e28dbb980e28ce07e..ddf8b3bd075914c52c0275049145cda95ac4ca70 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1656,6 +1656,8 @@ component("platform") {

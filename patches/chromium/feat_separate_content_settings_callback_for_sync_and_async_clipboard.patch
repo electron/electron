@@ -105,10 +105,10 @@ index 02e1941c37173a1e84e5190eb396f1007a8bbc2c..e47f2089a6a187b26c981afa1ef4135e
  
  struct MidiPermissionDescriptor {
 diff --git a/third_party/blink/public/platform/web_content_settings_client.h b/third_party/blink/public/platform/web_content_settings_client.h
-index 28f616f21f998c7cd1c794e58efaccf9e6c11e6e..c64896642209124e500db2ed6fe2357e426cd10b 100644
+index 5c71490d17ffe3f2f57b18e58e947f20ff3f66e3..75209a69c33780a0c71d48e184cc1897f0cb8a36 100644
 --- a/third_party/blink/public/platform/web_content_settings_client.h
 +++ b/third_party/blink/public/platform/web_content_settings_client.h
-@@ -55,6 +55,9 @@ class WebContentSettingsClient {
+@@ -54,6 +54,9 @@ class WebContentSettingsClient {
    // Controls whether access to write the clipboard is allowed for this frame.
    virtual bool AllowWriteToClipboard() { return false; }
  

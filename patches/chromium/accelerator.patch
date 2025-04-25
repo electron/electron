@@ -5,12 +5,11 @@ Subject: fix: improve shortcut text of Accelerator
 
 This patch makes three changes to Accelerator::GetShortcutText to improve shortcut display text in menus:
 
-1. Ctrl-Alt-<Key> accelerators show as Ctrl-Alt-<Key> instead of as Ctrl-<Key>
-2. F2-F24 accelerators show up as such
-3. Ctrl-Shift-= and Ctrl-Plus show up as such
+1. F2-F24 accelerators show up as such
+2. Ctrl-Shift-= and Ctrl-Plus show up as such
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 5590f9d425229d87373c5b53651d2e2d17b779e4..407cbd7e7811e3053e35e26f24e3c049cdd59a46 100644
+index 7eb75d87dd3ed03fc6da738a8b397d4d52f5b5ce..8db9f17c2bdcf5378f9a3f3165956c8f1d1c8d61 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -12,6 +12,7 @@
@@ -21,51 +20,51 @@ index 5590f9d425229d87373c5b53651d2e2d17b779e4..407cbd7e7811e3053e35e26f24e3c049
  #include "base/strings/utf_string_conversions.h"
  #include "base/types/cxx23_to_underlying.h"
  #include "build/build_config.h"
-@@ -109,6 +110,11 @@ std::u16string Accelerator::GetShortcutText() const {
+@@ -160,6 +161,11 @@ std::u16string Accelerator::GetKeyCodeStringForShortcut() const {
  #endif
  
-   if (shortcut.empty()) {
+   if (key_string.empty()) {
 +    // When a shifted char is explicitly specified, for example Ctrl+Plus,
 +    // use the shifted char directly.
 +    if (shifted_char) {
-+      shortcut += *shifted_char;
++      key_string += *shifted_char;
 +    } else {
  #if BUILDFLAG(IS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -133,6 +139,10 @@ std::u16string Accelerator::GetShortcutText() const {
-       shortcut +=
+@@ -186,6 +192,10 @@ std::u16string Accelerator::GetKeyCodeStringForShortcut() const {
            static_cast<std::u16string::value_type>(base::ToUpperASCII(c));
+     }
  #endif
 +    }
 +    if (key_code_ > VKEY_F1 && key_code_ <= VKEY_F24)
-+      shortcut = base::UTF8ToUTF16(
++      key_string = base::UTF8ToUTF16(
 +          base::StringPrintf("F%d", key_code_ - VKEY_F1 + 1));
    }
  
- #if BUILDFLAG(IS_MAC)
-@@ -317,7 +327,7 @@ std::u16string Accelerator::ApplyLongFormModifiers(
-     const std::u16string& shortcut) const {
-   std::u16string result = shortcut;
+   return key_string;
+@@ -346,7 +356,7 @@ std::vector<std::u16string> Accelerator::GetLongFormModifiers() const {
+     modifiers.push_back(l10n_util::GetStringUTF16(IDS_APP_CTRL_KEY));
+   }
  
 -  if (IsShiftDown()) {
 +  if (!shifted_char && IsShiftDown()) {
-     result = ApplyModifierToAcceleratorString(result, IDS_APP_SHIFT_KEY);
+     modifiers.push_back(l10n_util::GetStringUTF16(IDS_APP_SHIFT_KEY));
    }
  
 diff --git a/ui/base/accelerators/accelerator.h b/ui/base/accelerators/accelerator.h
-index 198c7469f410d3516b8a18493c5e4588d02487c2..e4995824ae2f3bb8045a3841a6213a4b315845a8 100644
+index e7d5adfac920c97df8bab9bf4ed69a835ee314a9..9aeea7cb4c48d1ccc27304fa99238151b2811c87 100644
 --- a/ui/base/accelerators/accelerator.h
 +++ b/ui/base/accelerators/accelerator.h
 @@ -18,6 +18,7 @@
- #include <utility>
+ #include <vector>
  
  #include "base/component_export.h"
 +#include "third_party/abseil-cpp/absl/types/optional.h"
  #include "base/time/time.h"
  #include "build/blink_buildflags.h"
  #include "build/build_config.h"
-@@ -185,6 +186,8 @@ class COMPONENT_EXPORT(UI_BASE) Accelerator {
+@@ -189,6 +190,8 @@ class COMPONENT_EXPORT(UI_BASE) Accelerator {
      return interrupted_by_mouse_event_;
    }
  
@@ -73,4 +72,4 @@ index 198c7469f410d3516b8a18493c5e4588d02487c2..e4995824ae2f3bb8045a3841a6213a4b
 +
   private:
    friend class AcceleratorTestMac;
-   std::u16string ApplyLongFormModifiers(const std::u16string& shortcut) const;
+   std::vector<std::u16string> GetLongFormModifiers() const;
