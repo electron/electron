@@ -100,10 +100,23 @@ constexpr CurveGeometry::CurveGeometry(float radius, float smoothness) {
 
 void DrawCorner(SkPath& path,
                 float radius,
-                const CurveGeometry& curve1,
-                const CurveGeometry& curve2,
+                float smoothness1,
+                float smoothness2,
                 const SkPoint& corner,
                 unsigned int quarter_rotations) {
+  // If the radius is 0 then we can simply draw a line to the corner point.
+  if (radius == 0.0f) {
+    if (quarter_rotations == 0) {
+      path.moveTo(corner);
+    } else {
+      path.lineTo(corner);
+    }
+    return;
+  }
+
+  CurveGeometry curve1(radius, smoothness1);
+  CurveGeometry curve2(radius, smoothness2);
+
   // Move/Line to the edge connecting point
   {
     SkPoint edge_connecting_point =
@@ -160,6 +173,12 @@ constexpr std::pair<float, float> ConstrainSmoothness(float size,
                                                       float smoothness,
                                                       float radius1,
                                                       float radius2) {
+  // If both radii are 0 then we don't need any smoothing. This avoids a
+  // division by zero in the ratio calculation.
+  if (radius1 == 0.0f && radius2 == 0.0f) {
+    return {0.0f, 0.0f};
+  }
+
   float edge_consumed1 = LengthForCornerSmoothness(smoothness, radius1);
   float edge_consumed2 = LengthForCornerSmoothness(smoothness, radius2);
 
@@ -269,28 +288,20 @@ SkPath DrawSmoothRoundRect(float x,
   SkPath path;
 
   // Top left corner
-  DrawCorner(path, top_left_radius,
-             CurveGeometry(top_left_radius, left_top_smoothness),
-             CurveGeometry(top_left_radius, top_left_smoothness),
+  DrawCorner(path, top_left_radius, left_top_smoothness, top_left_smoothness,
              SkPoint::Make(x, y), 0);
 
   // Top right corner
-  DrawCorner(path, top_right_radius,
-             CurveGeometry(top_right_radius, top_right_smoothness),
-             CurveGeometry(top_right_radius, right_top_smoothness),
+  DrawCorner(path, top_right_radius, top_right_smoothness, right_top_smoothness,
              SkPoint::Make(x + width, y), 1);
 
   // Bottom right corner
-  DrawCorner(path, bottom_right_radius,
-             CurveGeometry(bottom_right_radius, right_bottom_smoothness),
-             CurveGeometry(bottom_right_radius, bottom_right_smoothness),
-             SkPoint::Make(x + width, y + height), 2);
+  DrawCorner(path, bottom_right_radius, right_bottom_smoothness,
+             bottom_right_smoothness, SkPoint::Make(x + width, y + height), 2);
 
   // Bottom left corner
-  DrawCorner(path, bottom_left_radius,
-             CurveGeometry(bottom_left_radius, bottom_left_smoothness),
-             CurveGeometry(bottom_left_radius, left_bottom_smoothness),
-             SkPoint::Make(x, y + height), 3);
+  DrawCorner(path, bottom_left_radius, left_bottom_smoothness,
+             bottom_left_smoothness, SkPoint::Make(x, y + height), 3);
 
   path.close();
   return path;
