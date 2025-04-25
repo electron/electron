@@ -400,7 +400,7 @@ index b147b8d321d865295007516b15d0aaccfc6f7fac..8f54a3a657c660a52fcd4c94865ca219
  
    // A Corner is a axis-aligned quad, with the points ordered (start, outer,
 diff --git a/third_party/blink/renderer/platform/geometry/path_builder.cc b/third_party/blink/renderer/platform/geometry/path_builder.cc
-index 346cfc0b13b31808fbe1381b3785150810f347bb..29a004e6b668d172534cd503f16de57d42368b2e 100644
+index 346cfc0b13b31808fbe1381b3785150810f347bb..ebb2be8cc3bb71c4df6526d743a851121e36c138 100644
 --- a/third_party/blink/renderer/platform/geometry/path_builder.cc
 +++ b/third_party/blink/renderer/platform/geometry/path_builder.cc
 @@ -4,6 +4,7 @@
@@ -411,7 +411,7 @@ index 346cfc0b13b31808fbe1381b3785150810f347bb..29a004e6b668d172534cd503f16de57d
  #include "third_party/blink/renderer/platform/geometry/contoured_rect.h"
  #include "third_party/blink/renderer/platform/geometry/infinite_int_rect.h"
  #include "third_party/blink/renderer/platform/geometry/path.h"
-@@ -231,6 +232,19 @@ PathBuilder& PathBuilder::AddContouredRect(
+@@ -231,6 +232,26 @@ PathBuilder& PathBuilder::AddContouredRect(
      AddRoundedRect(target_rect);
      return *this;
    }
@@ -419,12 +419,19 @@ index 346cfc0b13b31808fbe1381b3785150810f347bb..29a004e6b668d172534cd503f16de57d
 +  // TODO(clavin): decompose `electron::DrawSmoothRoundRect` into corners
 +  if (contoured_rect.GetCornerCurvature().IsSmooth()) {
 +    const gfx::RectF& box = contoured_rect.Rect();
-+    const FloatRoundedRect::Radii& radii = contoured_rect.GetRadii();
++
++    // Constrain the radii (on a copy) to ensure they do not exceed the box.
++    FloatRoundedRect round_rect_copy = contoured_rect.AsRoundedRect();
++    round_rect_copy.ConstrainRadii();
++    const FloatRoundedRect::Radii& radii = round_rect_copy.GetRadii();
++    float smoothness = std::clamp(
++        contoured_rect.GetCornerCurvature().Smoothness(), 0.0f, 1.0f);
++
 +    builder_.addPath(electron::DrawSmoothRoundRect(
-+        box.x(), box.y(), box.width(), box.height(),
-+        std::min(contoured_rect.GetCornerCurvature().Smoothness(), 1.0f),
++        box.x(), box.y(), box.width(), box.height(), smoothness,
 +        radii.TopLeft().width(), radii.TopRight().width(),
 +        radii.BottomRight().width(), radii.BottomLeft().width()));
++
 +    return *this;
 +  }
 +
