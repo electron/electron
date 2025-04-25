@@ -111,12 +111,10 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   dict.Set("metadata", ConvertToV8(isolate, metadata));
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
-  auto handle_buf = node::Buffer::Copy(
-      isolate,
-      reinterpret_cast<char*>(
-          const_cast<uintptr_t*>(&val.shared_texture_handle)),
-      sizeof(val.shared_texture_handle));
-  dict.Set("sharedTextureHandle", handle_buf.ToLocalChecked());
+  dict.Set("sharedTextureHandle",
+           electron::Buffer::Copy(
+               isolate, base::byte_span_from_ref(val.shared_texture_handle))
+               .ToLocalChecked());
 #elif BUILDFLAG(IS_LINUX)
   auto v8_planes = base::ToVector(val.planes, [isolate](const auto& plane) {
     gin::Dictionary v8_plane(isolate, v8::Object::New(isolate));
