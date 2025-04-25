@@ -17,6 +17,7 @@
 #include "net/base/net_errors.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/key_weak_map.h"
+#include "shell/common/node_util.h"
 
 #include "shell/common/node_includes.h"
 
@@ -114,8 +115,7 @@ class DataPipeReader {
     // inside the sandbox
     v8::HandleScope handle_scope(promise_.isolate());
     v8::Local<v8::Value> buffer =
-        node::Buffer::Copy(promise_.isolate(), &buffer_.front(), buffer_.size())
-            .ToLocalChecked();
+        electron::Buffer::Copy(promise_.isolate(), buffer_).ToLocalChecked();
     promise_.Resolve(buffer);
 
     // Destroy data pipe.
