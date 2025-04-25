@@ -1862,6 +1862,28 @@ std::optional<gfx::Rect> NativeWindowMac::GetWindowControlsOverlayRect() {
   return std::nullopt;
 }
 
+void NativeWindowMac::OnWidgetInitialized() {
+  // |window_| is not yet assigned when this function is called, so we need to
+  // get the window from the widget.
+  NSWindow* window = widget()->GetNativeWindow().GetNativeNSWindow();
+
+  // In |NativeWidgetNSWindowBridge::InitCompositorView| in Chromium,
+  // translucent windows are assigned a clear background color. This causes
+  // undesirable side effects, such as a window with vibrancy losing its natural
+  // system border highlight. We undo that behavior here.
+  //
+  // Ref:
+  // https://source.chromium.org/chromium/chromium/src/+/main:components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm;l=1341-1342;drc=e7c8be576285195257b0813326b3bab154dc7e73
+  if (!transparent()) {
+    if ([[window backgroundColor] isEqual:NSColor.clearColor]) {
+      [window setBackgroundColor:NSColor.windowBackgroundColor];
+    }
+    if (![window isOpaque]) {
+      [window setOpaque:YES];
+    }
+  }
+}
+
 // static
 std::unique_ptr<NativeWindow> NativeWindow::Create(
     const gin_helper::Dictionary& options,
