@@ -70,7 +70,7 @@ index bfd9bd3d127404de1cbb6f30c43ab0342590759d..9e7d8ef0adef3b68a3ec186e4b218f59
  
    const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index a587246e329b41f33a3fdfe5ef92910915911611..1b94d923b6d83cc7806d793497a4f9f978c5938c 100644
+index 7dcd7afe8ce3c25ceb314cdf15c330f3d66eb84f..4445bcc4c4c6c6f87ac45e693012a18a93739f9b 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -186,7 +186,7 @@ function createCJSModuleWrap(url, source, isMain, format, loadCJS = loadCJSModul
