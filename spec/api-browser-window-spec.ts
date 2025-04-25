@@ -16,6 +16,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as nodeUrl from 'node:url';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
+import { randomString } from './lib/net-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
@@ -229,6 +230,36 @@ describe('BrowserWindow module', () => {
           await destroyed;
         });
       }
+    });
+  });
+
+  describe('window.accessibleTitle', () => {
+    const title = 'Window Title';
+    let w: BrowserWindow;
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false, title, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+    });
+    afterEach(async () => {
+      await closeWindow(w);
+      w = null as unknown as BrowserWindow;
+    });
+
+    it('should default to the window title', async () => {
+      expect(w.accessibleTitle).to.equal(title);
+    });
+
+    it('should be mutable', async () => {
+      const accessibleTitle = randomString(20);
+      w.accessibleTitle = accessibleTitle;
+      expect(w.accessibleTitle).to.equal(accessibleTitle);
+    });
+
+    it('should be clearable', async () => {
+      const accessibleTitle = randomString(20);
+      w.accessibleTitle = accessibleTitle;
+      expect(w.accessibleTitle).to.equal(accessibleTitle);
+      w.accessibleTitle = '';
+      expect(w.accessibleTitle).to.equal(title);
     });
   });
 
