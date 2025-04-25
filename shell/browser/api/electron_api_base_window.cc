@@ -1163,8 +1163,10 @@ void BaseWindow::RemoveFromParentChildWindows() {
   if (parent_window_.IsEmpty())
     return;
 
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
   gin::Handle<BaseWindow> parent;
-  if (!gin::ConvertFromV8(isolate(), GetParentWindow(), &parent) ||
+  if (!gin::ConvertFromV8(isolate, GetParentWindow(), &parent) ||
       parent.IsEmpty()) {
     return;
   }
