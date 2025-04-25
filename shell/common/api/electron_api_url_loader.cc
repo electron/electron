@@ -658,8 +658,9 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     if (auto* iter = Lookup.find(priority); iter != Lookup.end())
       request->priority = iter->second;
   }
-  if (bool priorityIncremental = request->priority_incremental; opts.Get("priorityIncremental", &priorityIncremental)) {
-     request->priority_incremental = priorityIncremental;
+  if (bool priorityIncremental = request->priority_incremental;
+      opts.Get("priorityIncremental", &priorityIncremental)) {
+    request->priority_incremental = priorityIncremental;
   }
 
   bool use_session_cookies = false;
