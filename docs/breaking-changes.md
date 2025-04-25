@@ -45,12 +45,12 @@ however, old code that needs to preserve this behavior can emulate it by
 creating a random session with `session.fromPartition(some_random_string)`
 and then using it in `ProtocolResponse.session`.
 
-## Planned Breaking API Changes (36.0)
-
 ### Behavior Changed: `BrowserWindow.IsVisibleOnAllWorkspaces()` on Linux
 
 `BrowserWindow.IsVisibleOnAllWorkspaces()` will now return false on Linux if the
 window is not currently visible.
+
+## Planned Breaking API Changes (36.0)
 
 ### Behavior Changes: `app.commandLine`
 
