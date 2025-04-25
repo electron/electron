@@ -93,8 +93,8 @@ void CocoaNotification::Show(const NotificationOptions& options) {
             actionWithIdentifier:actionIdentifier
                            title:base::SysUTF16ToNSString(action.text)];
         [additionalActions addObject:notificationAction];
-        additional_action_indices_.insert(
-            std::make_pair(base::SysNSStringToUTF8(actionIdentifier), i));
+        additional_action_indices_.try_emplace(
+            base::SysNSStringToUTF8(actionIdentifier), i);
       }
     }
     i++;
