@@ -294,24 +294,6 @@ index 48cd1ed4df61aaddeee8785cb90f83bdd9628187..a18aeb2bdffcc7a7e9ef12328b849994
  });
  
  // No-pad encrypted string should return the same:
-diff --git a/test/parallel/test-crypto-prime.js b/test/parallel/test-crypto-prime.js
-index 5ffdc1394282be046150e3759f82f8787f5604f7..e1c7a7b4824a2df20a405355696022398216fa4f 100644
---- a/test/parallel/test-crypto-prime.js
-+++ b/test/parallel/test-crypto-prime.js
-@@ -259,11 +259,11 @@ for (const checks of [-(2 ** 31), -1, 2 ** 31, 2 ** 32 - 1, 2 ** 32, 2 ** 50]) {
-   bytes[0] = 0x1;
-   assert.throws(() => checkPrime(bytes, common.mustNotCall()), {
-     code: 'ERR_OSSL_BN_BIGNUM_TOO_LONG',
--    message: /bignum too long/
-+    message: /bignum[_ ]too[_ ]long/i
-   });
-   assert.throws(() => checkPrimeSync(bytes), {
-     code: 'ERR_OSSL_BN_BIGNUM_TOO_LONG',
--    message: /bignum too long/
-+    message: /bignum[_ ]too[_ ]long/i
-   });
- }
- 
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
 index dcd5045daaf58c60e27c1e2f7941033302241339..6ac75565792b92a97c622baba73f821d754b8d01 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
