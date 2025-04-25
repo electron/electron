@@ -65,12 +65,13 @@ index 1c1062a3996f2bb7de9e91f7f4385c8f8d20f490..b0156ee26c29ebe5b79c97834f3bfe8b
    {
      // GC could still be run after the IsolateData is destroyed, so we store
      // the ids in a static map to ensure pointers to them are still valid
-@@ -605,14 +597,6 @@ IsolateData::IsolateData(Isolate* isolate,
+@@ -605,14 +597,5 @@ IsolateData::IsolateData(Isolate* isolate,
    }
  }
  
 -IsolateData::~IsolateData() {
 -  if (cpp_heap_ != nullptr) {
+-    v8::Locker locker(isolate_);
 -    // The CppHeap must be detached before being terminated.
 -    isolate_->DetachCppHeap();
 -    cpp_heap_->Terminate();
