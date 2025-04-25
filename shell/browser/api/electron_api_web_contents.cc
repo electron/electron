@@ -2979,9 +2979,7 @@ void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
       v8::Local<v8::Context>::New(isolate, promise.GetContext()));
 
   v8::Local<v8::Value> buffer =
-      node::Buffer::Copy(isolate, reinterpret_cast<const char*>(data->front()),
-                         data->size())
-          .ToLocalChecked();
+      electron::Buffer::Copy(isolate, *data).ToLocalChecked();
 
   promise.Resolve(buffer);
 }
