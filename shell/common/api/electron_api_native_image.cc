@@ -122,7 +122,7 @@ base::win::ScopedGDIObject<HICON> ReadICOFromPath(int size,
 }
 #endif
 
-[[nodiscard]] v8::Local<v8::Object> NewEmptyBuffer(v8::Isolate* isolate) {
+[[nodiscard]] v8::Local<v8::Value> NewEmptyBuffer(v8::Isolate* isolate) {
   return node::Buffer::New(isolate, 0).ToLocalChecked();
 }
 
