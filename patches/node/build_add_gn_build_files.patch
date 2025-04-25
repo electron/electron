@@ -246,14 +246,14 @@ index 65d0e1be42f0a85418491ebb548278cf431aa6a0..d4a31342f1c6107b029394c6e1d00a1d
      files = SearchFiles(*sys.argv[2:])
      files = [ os.path.relpath(x, sys.argv[1]) for x in files ]
 +    files = [os.path.normpath(x).replace(os.sep, '/') for x in files]
-     print('\n'.join(files))
-   except Exception as e:
-     print(str(e))
+     # Apply the same transform in SearchFiles after relpath
+     if sys.platform == 'win32':
+       files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
 index 9e496d99d7141bf42ef7374a3c676c7b333eeeab..a2f3a769ceaa08db6d7438223884dc5aeab1340d 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -145,6 +145,7 @@ template("node_gn_build") {
+@@ -146,6 +146,7 @@ template("node_gn_build") {
      public_deps = [
        "deps/ada",
        "deps/uv",
@@ -281,7 +281,7 @@ index 9e496d99d7141bf42ef7374a3c676c7b333eeeab..a2f3a769ceaa08db6d7438223884dc5a
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -185,11 +189,12 @@ template("node_gn_build") {
+@@ -190,7 +190,7 @@ template("node_gn_build") {
      }
      if (node_use_openssl) {
        deps += [ "deps/ncrypto" ]
@@ -290,11 +290,6 @@ index 9e496d99d7141bf42ef7374a3c676c7b333eeeab..a2f3a769ceaa08db6d7438223884dc5a
        sources += gypi_values.node_crypto_sources
      }
      if (node_enable_inspector) {
-       deps += [
-+        "src/inspector:crdtp",
-         "src/inspector:node_protocol_generated_sources",
-         "src/inspector:v8_inspector_compress_protocol_json",
-       ]
 @@ -282,6 +287,7 @@ template("node_gn_build") {
    }
  
