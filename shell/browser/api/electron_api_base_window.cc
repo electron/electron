@@ -31,6 +31,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 
 #if defined(TOOLKIT_VIEWS)
@@ -72,8 +73,9 @@ namespace {
 
 #if !BUILDFLAG(IS_MAC)
 // Converts binary data to Buffer.
-v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
-  auto buffer = node::Buffer::Copy(isolate, static_cast<char*>(val), size);
+v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate,
+                              const base::span<const uint8_t> val) {
+  auto buffer = electron::Buffer::Copy(isolate, val);
   if (buffer.IsEmpty())
     return v8::Null(isolate);
   else
@@ -348,8 +350,8 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     messages_callback_map_[message].Run(
-        ToBuffer(isolate, static_cast<void*>(&w_param), sizeof(WPARAM)),
-        ToBuffer(isolate, static_cast<void*>(&l_param), sizeof(LPARAM)));
+        ToBuffer(isolate, base::byte_span_from_ref(w_param)),
+        ToBuffer(isolate, base::byte_span_from_ref(l_param)));
   }
 }
 #endif
@@ -786,7 +788,7 @@ v8::Local<v8::Value> BaseWindow::GetNativeWindowHandle() {
   // https://chromium-review.googlesource.com/c/chromium/src/+/1253094/ has
   // landed
   NativeWindowHandle handle = window_->GetNativeWindowHandle();
-  return ToBuffer(isolate(), &handle, sizeof(handle));
+  return ToBuffer(isolate(), base::byte_span_from_ref(handle));
 }
 #endif
 
