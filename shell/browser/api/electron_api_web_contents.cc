@@ -4004,6 +4004,14 @@ void WebContents::ExitPictureInPicture() {
   PictureInPictureWindowManager::GetInstance()->ExitPictureInPicture();
 }
 
+bool WebContents::ShouldFocusPageAfterCrash(content::WebContents* source) {
+  // WebView uses WebContentsViewChildFrame, which doesn't have a Focus impl
+  // and triggers a fatal NOTREACHED.
+  if (is_guest())
+    return false;
+  return true;
+}
+
 void WebContents::DevToolsSaveToFile(const std::string& url,
                                      const std::string& content,
                                      bool save_as,

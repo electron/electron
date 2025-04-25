@@ -709,6 +709,7 @@ class WebContents final : public ExclusiveAccessContext,
   content::PictureInPictureResult EnterPictureInPicture(
       content::WebContents* web_contents) override;
   void ExitPictureInPicture() override;
+  bool ShouldFocusPageAfterCrash(content::WebContents* source) override;
 
   // InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,
