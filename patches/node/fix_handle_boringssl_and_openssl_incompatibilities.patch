@@ -241,16 +241,6 @@ diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
 index c89d591c6804ab7d41199d61452d10d12cdf7398..05740c7dc599954bca0779b8c8d6bd615183288a 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -26,7 +26,9 @@ using ncrypto::BIOPointer;
- using ncrypto::ClearErrorOnReturn;
- using ncrypto::CryptoErrorList;
- using ncrypto::DHPointer;
-+#ifndef OPENSSL_NO_ENGINE
- using ncrypto::EnginePointer;
-+#endif  // !OPENSSL_NO_ENGINE
- using ncrypto::EVPKeyPointer;
- using ncrypto::MarkPopErrorOnReturn;
- using ncrypto::SSLPointer;
 @@ -105,7 +107,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
@@ -472,16 +462,6 @@ diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
 index e255288f6e013ce122f317c415d73d9c93d38580..25fa9af8153852f49d5289aa253f3c8f7268d89c 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -29,7 +29,9 @@ namespace node {
- using ncrypto::BignumPointer;
- using ncrypto::BIOPointer;
- using ncrypto::CryptoErrorList;
-+#ifndef OPENSSL_NO_ENGINE
- using ncrypto::EnginePointer;
-+#endif  // !OPENSSL_NO_ENGINE
- using ncrypto::EVPKeyCtxPointer;
- using v8::ArrayBuffer;
- using v8::BackingStore;
 @@ -502,24 +504,15 @@ Maybe<void> Decorate(Environment* env,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
@@ -600,24 +580,3 @@ index 621f5eca96b10685734a39e56cce7cee6c8a25bf..41dd04f5e2b1cd54c32df70830389d44
  #include "openssl/opensslv.h"
  #endif
  
-diff --git a/unofficial.gni b/unofficial.gni
-index a2f3a769ceaa08db6d7438223884dc5aeab1340d..08603eaef2da51fd92f9bf977647b56409eff48c 100644
---- a/unofficial.gni
-+++ b/unofficial.gni
-@@ -151,7 +151,6 @@ template("node_gn_build") {
-     ]
-     deps = [
-       ":run_node_js2c",
--      "deps/brotli",
-       "deps/cares",
-       "deps/histogram",
-       "deps/llhttp",
-@@ -161,6 +160,8 @@ template("node_gn_build") {
-       "deps/sqlite",
-       "deps/uvwasi",
-       "//third_party/zlib",
-+      "//third_party/brotli:dec",
-+      "//third_party/brotli:enc",
-       "$node_simdutf_path",
-       "$node_v8_path:v8_libplatform",
-     ]
