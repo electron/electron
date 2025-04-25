@@ -73,16 +73,16 @@ diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/
 index a587246e329b41f33a3fdfe5ef92910915911611..1b94d923b6d83cc7806d793497a4f9f978c5938c 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -182,7 +182,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -186,7 +186,7 @@ function createCJSModuleWrap(url, source, isMain, format, loadCJS = loadCJSModul
  
-   const { exportNames, module } = cjsPreparseModuleExports(filename, source);
+   const { exportNames, module } = cjsPreparseModuleExports(filename, source, isMain, format);
    cjsCache.set(url, module);
 -  const namesWithDefault = exportNames.has('default') ?
 +  const namesWithDefault = filename === 'electron' ? ['default', ...Object.keys(module.exports)] : exportNames.has('default') ?
      [...exportNames] : ['default', ...exportNames];
  
    if (isMain) {
-@@ -204,8 +204,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
+@@ -208,8 +208,8 @@ function createCJSModuleWrap(url, source, isMain, format, loadCJS = loadCJSModul
        ({ exports } = module);
      }
      for (const exportName of exportNames) {
@@ -93,8 +93,8 @@ index a587246e329b41f33a3fdfe5ef92910915911611..1b94d923b6d83cc7806d793497a4f9f9
          continue;
        }
        // We might trigger a getter -> dont fail.
-@@ -239,6 +239,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
-   return createCJSModuleWrap(url, source);
+@@ -243,6 +243,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
+   return createCJSModuleWrap(url, source, isMain, 'commonjs');
  });
  
 +translators.set('electron', () => {

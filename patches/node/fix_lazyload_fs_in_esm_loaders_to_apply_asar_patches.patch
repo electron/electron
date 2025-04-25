@@ -69,7 +69,7 @@ index 1b94d923b6d83cc7806d793497a4f9f978c5938c..0caba80bb213e0edfb1f834250f895cc
  const assert = require('internal/assert');
 -const { readFileSync } = require('fs');
 +const fs = require('fs');
- const { dirname, extname, isAbsolute } = require('path');
+ const { dirname, extname } = require('path');
  const {
    assertBufferSource,
 @@ -268,7 +268,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
@@ -81,12 +81,3 @@ index 1b94d923b6d83cc7806d793497a4f9f978c5938c..0caba80bb213e0edfb1f834250f895cc
    } catch {
      // Continue regardless of error.
    }
-@@ -335,7 +335,7 @@ function cjsPreparseModuleExports(filename, source) {
-       isAbsolute(resolved)) {
-         // TODO: this should be calling the `load` hook chain to get the source
-         // (and fallback to reading the FS only if the source is nullish).
--        const source = readFileSync(resolved, 'utf-8');
-+        const source = fs.readFileSync(resolved, 'utf-8');
-         const { exportNames: reexportNames } = cjsPreparseModuleExports(resolved, source);
-         for (const name of reexportNames) {
-           exportNames.add(name);
