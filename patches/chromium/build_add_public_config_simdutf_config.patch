@@ -11,7 +11,7 @@ To accomplish this, we need to make simdutf's config public here
 for use by third_party/electron_node.
 
 diff --git a/third_party/simdutf/BUILD.gn b/third_party/simdutf/BUILD.gn
-index d88fe7e43ac2a8129702e58bd2cd2aea094452e3..3cbeb89587f37b0ebc3622258fea0161ebf1d7b2 100644
+index 5fbce38841f04dad38f202f529ae84c609c6a8de..9f5ef9bceade8e30bbd2be616b9143e9708fefd8 100644
 --- a/third_party/simdutf/BUILD.gn
 +++ b/third_party/simdutf/BUILD.gn
 @@ -6,9 +6,14 @@ source_set("header") {
