@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/common/index.js b/test/common/index.js
-index 92c7294e6f6298f511b5a289e1e0e3a4be68cc77..63a350c5ed912a785b042a238c064c98ed423af4 100644
+index 8f5af57a83dc6b426f1b11bd2e3a8c6c0f2d9a85..f6e00c9f3f3ac4b42662eed6c8d190586f92ab99 100644
 --- a/test/common/index.js
 +++ b/test/common/index.js
 @@ -56,6 +56,8 @@ const hasCrypto = Boolean(process.versions.openssl) &&
@@ -23,7 +23,7 @@ index 92c7294e6f6298f511b5a289e1e0e3a4be68cc77..63a350c5ed912a785b042a238c064c98
  function parseTestFlags(filename = process.argv[1]) {
    // The copyright notice is relatively big and the flags could come afterwards.
    const bytesToRead = 1500;
-@@ -889,6 +891,7 @@ const common = {
+@@ -901,6 +903,7 @@ const common = {
    mustNotMutateObjectDeep,
    mustSucceed,
    nodeProcessAborted,
@@ -335,10 +335,10 @@ index dcd5045daaf58c60e27c1e2f7941033302241339..6ac75565792b92a97c622baba73f821d
  
    // DSA signatures vary across runs so there is no static string to verify
 diff --git a/test/parallel/test-crypto-scrypt.js b/test/parallel/test-crypto-scrypt.js
-index 338a19b0e88ad6f08d2f6b6a5d38b9980996ce11..a4ee215575d072450ba66c558ddca88bfb23d85f 100644
+index 03a18c7522531c7317f12705550117dc389a0245..2f0f46f2c6ddc62de89877cfa0ca80949a0f4c5e 100644
 --- a/test/parallel/test-crypto-scrypt.js
 +++ b/test/parallel/test-crypto-scrypt.js
-@@ -178,7 +178,7 @@ for (const options of bad) {
+@@ -176,7 +176,7 @@ for (const options of bad) {
  
  for (const options of toobig) {
    const expected = {
