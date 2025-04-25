@@ -18,7 +18,7 @@ This can be removed when Node.js upgrades to a version of V8 containing CLs
 from the above issue.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 9b155213ce301df7e396a4a113992499fc7e9910..8fe560014216f1fcea7f6e804816765999cebaa2 100644
+index 7f4f233b26425493a58ce71dfc0c3a92b7c0bef8..c3f422c6b212bf737a906d2a89df85b63c218617 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -312,6 +312,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
@@ -47,10 +47,10 @@ index 9b155213ce301df7e396a4a113992499fc7e9910..8fe560014216f1fcea7f6e8048167659
                      event_loop,
                      platform,
 diff --git a/src/env.cc b/src/env.cc
-index 1c1062a3996f2bb7de9e91f7f4385c8f8d20f490..b0156ee26c29ebe5b79c97834f3bfe8b56df50c6 100644
+index ddf82c8a18c29c355641e33974c1e5e67867379d..ae43803d8c2de90fb191a8e10605f6f3b18816ed 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -575,14 +575,6 @@ IsolateData::IsolateData(Isolate* isolate,
+@@ -577,14 +577,6 @@ IsolateData::IsolateData(Isolate* isolate,
    // We do not care about overflow since we just want this to be different
    // from the cppgc id.
    uint16_t non_cppgc_id = cppgc_id + 1;
@@ -65,7 +65,7 @@ index 1c1062a3996f2bb7de9e91f7f4385c8f8d20f490..b0156ee26c29ebe5b79c97834f3bfe8b
    {
      // GC could still be run after the IsolateData is destroyed, so we store
      // the ids in a static map to ensure pointers to them are still valid
-@@ -605,14 +597,5 @@ IsolateData::IsolateData(Isolate* isolate,
+@@ -607,15 +599,6 @@ IsolateData::IsolateData(Isolate* isolate,
    }
  }
  
@@ -82,7 +82,7 @@ index 1c1062a3996f2bb7de9e91f7f4385c8f8d20f490..b0156ee26c29ebe5b79c97834f3bfe8b
  void SetCppgcReference(Isolate* isolate,
                         Local<Object> object,
 diff --git a/src/env.h b/src/env.h
-index 1f8dc8f88d40ca95ba13d6517b2b5ed83184e1ce..ec3a813b3b864a0eda2e4aa0748b1447001fca9a 100644
+index 9f1c7ef45b6df10f811936a78ea6d9fcc13fef4f..c429eecd937d1df32a2ff90bc0a22a2e58df3a3d 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -155,7 +155,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
@@ -102,7 +102,7 @@ index 1f8dc8f88d40ca95ba13d6517b2b5ed83184e1ce..ec3a813b3b864a0eda2e4aa0748b1447
    worker::Worker* worker_context_ = nullptr;
    PerIsolateWrapperData* wrapper_data_;
 diff --git a/src/node.cc b/src/node.cc
-index b2b10ffb572f010992f221de752618fd56b5d50e..0ed78ab6b52906e980eebf1f625a1c7cbfc8097b 100644
+index 8da5f5344051663f92d72848fbac9d041ac4fac3..2f58a6fa69069dabb99b5ddb8011991b07fa5f02 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -1222,10 +1222,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
@@ -264,10 +264,10 @@ index edd413ae9b956b2e59e8166785adef6a8ff06d51..d1c1549efcb0320bc0f7d354db2101ac
    // Check that all the objects are created and destroyed properly.
    EXPECT_EQ(CppGCed::kConstructCount, 100);
 diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
-index 14e82cc80ff73084fb43b2ef07febfd2667a0abc..b6a92f1685d1083c8f0c0b3ed110509f6d76b59f 100644
+index 008cda77b650dc2d904ae00e7629b5ad05d297ad..103931516cea9beb7f25c53526928e67b3c90d2d 100644
 --- a/test/cctest/test_environment.cc
 +++ b/test/cctest/test_environment.cc
-@@ -623,6 +623,9 @@ TEST_F(NodeZeroIsolateTestFixture, CtrlCWithOnlySafeTerminationTest) {
+@@ -625,6 +625,9 @@ TEST_F(NodeZeroIsolateTestFixture, CtrlCWithOnlySafeTerminationTest) {
    // Allocate and initialize Isolate.
    v8::Isolate::CreateParams create_params;
    create_params.array_buffer_allocator = allocator.get();
@@ -277,7 +277,7 @@ index 14e82cc80ff73084fb43b2ef07febfd2667a0abc..b6a92f1685d1083c8f0c0b3ed110509f
    v8::Isolate* isolate = v8::Isolate::Allocate();
    CHECK_NOT_NULL(isolate);
    platform->RegisterIsolate(isolate, &current_loop);
-@@ -672,8 +675,8 @@ TEST_F(NodeZeroIsolateTestFixture, CtrlCWithOnlySafeTerminationTest) {
+@@ -675,8 +678,8 @@ TEST_F(NodeZeroIsolateTestFixture, CtrlCWithOnlySafeTerminationTest) {
    }
  
    // Cleanup.
@@ -288,10 +288,10 @@ index 14e82cc80ff73084fb43b2ef07febfd2667a0abc..b6a92f1685d1083c8f0c0b3ed110509f
  #endif  // _WIN32
  
 diff --git a/test/cctest/test_platform.cc b/test/cctest/test_platform.cc
-index c2d7893813000601502d050f21ad5c740c6a3b8f..3042f63201bd0df3ad316e09f0f54e210cea8831 100644
+index 53644accf29749bf8fc18b641ae1eaef93cd6f98..7e5b143fb4b633e18a4b2d7440cba7e077c50950 100644
 --- a/test/cctest/test_platform.cc
 +++ b/test/cctest/test_platform.cc
-@@ -101,8 +101,8 @@ TEST_F(NodeZeroIsolateTestFixture, IsolatePlatformDelegateTest) {
+@@ -102,8 +102,8 @@ TEST_F(NodeZeroIsolateTestFixture, IsolatePlatformDelegateTest) {
  
    // Graceful shutdown
    delegate->Shutdown();
