@@ -13,6 +13,7 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/process_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
@@ -99,8 +100,7 @@ std::string Clipboard::Read(const std::string& format_string) {
 v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
                                            gin_helper::Arguments* args) {
   std::string data = Read(format_string);
-  return node::Buffer::Copy(args->isolate(), data.data(), data.length())
-      .ToLocalChecked();
+  return electron::Buffer::Copy(args->isolate(), data).ToLocalChecked();
 }
 
 void Clipboard::WriteBuffer(const std::string& format,
