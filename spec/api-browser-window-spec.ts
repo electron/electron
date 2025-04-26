@@ -5416,7 +5416,7 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform !== 'win32')('visibleOnAllWorkspaces state', () => {
-      describe('with properties', () => {
+      it('with properties', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
           expect(w.visibleOnAllWorkspaces).to.be.false();
