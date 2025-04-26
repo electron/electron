@@ -52,6 +52,7 @@ auto_filenames = {
     "docs/api/service-workers.md",
     "docs/api/session.md",
     "docs/api/share-menu.md",
+    "docs/api/shared-texture.md",
     "docs/api/shell.md",
     "docs/api/structures",
     "docs/api/system-preferences.md",
@@ -82,6 +83,7 @@ auto_filenames = {
     "docs/api/structures/browser-window-options.md",
     "docs/api/structures/certificate-principal.md",
     "docs/api/structures/certificate.md",
+    "docs/api/structures/color-space.md",
     "docs/api/structures/cookie.md",
     "docs/api/structures/cpu-usage.md",
     "docs/api/structures/crash-report.md",
@@ -143,6 +145,8 @@ auto_filenames = {
     "docs/api/structures/service-worker-info.md",
     "docs/api/structures/shared-dictionary-info.md",
     "docs/api/structures/shared-dictionary-usage-info.md",
+    "docs/api/structures/shared-texture-imported.md",
+    "docs/api/structures/shared-texture-transfer.md",
     "docs/api/structures/shared-worker-info.md",
     "docs/api/structures/sharing-item.md",
     "docs/api/structures/shortcut-details.md",
@@ -166,6 +170,7 @@ auto_filenames = {
 
   sandbox_bundle_deps = [
     "lib/common/api/native-image.ts",
+    "lib/common/api/shared-texture.ts",
     "lib/common/define-properties.ts",
     "lib/common/ipc-messages.ts",
     "lib/common/web-view-methods.ts",
@@ -279,6 +284,7 @@ auto_filenames = {
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/net-client-request.ts",
+    "lib/common/api/shared-texture.ts",
     "lib/common/api/shell.ts",
     "lib/common/define-properties.ts",
     "lib/common/deprecate.ts",
@@ -296,6 +302,7 @@ auto_filenames = {
   renderer_bundle_deps = [
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
+    "lib/common/api/shared-texture.ts",
     "lib/common/api/shell.ts",
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
@@ -336,6 +343,7 @@ auto_filenames = {
   worker_bundle_deps = [
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
+    "lib/common/api/shared-texture.ts",
     "lib/common/api/shell.ts",
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
