@@ -16,6 +16,7 @@
   ],
   "rules": {
     "mocha/no-exclusive-tests": "error",
+    "mocha/no-nested-tests": "error",
     "unicorn/prefer-node-protocol": "error"
   }
 }
