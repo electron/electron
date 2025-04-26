@@ -53,11 +53,23 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
                                      node::EnvironmentFlags::Flags env_flags,
                                      std::string_view process_type = "");
 
+}  // namespace electron::util
+
+namespace electron::Buffer {
+
 // Convenience function to view a Node buffer's data as a base::span().
 // Analogous to base::as_byte_span()
 [[nodiscard]] base::span<uint8_t> as_byte_span(
     v8::Local<v8::Value> node_buffer);
 
-}  // namespace electron::util
+// span-friendly version of node::Buffer::Copy()
+[[nodiscard]] v8::MaybeLocal<v8::Object> Copy(v8::Isolate* isolate,
+                                              base::span<const char> data);
+
+// span-friendly version of node::Buffer::Copy()
+[[nodiscard]] v8::MaybeLocal<v8::Object> Copy(v8::Isolate* isolate,
+                                              base::span<const uint8_t> data);
+
+}  // namespace electron::Buffer
 
 #endif  // ELECTRON_SHELL_COMMON_NODE_UTIL_H_

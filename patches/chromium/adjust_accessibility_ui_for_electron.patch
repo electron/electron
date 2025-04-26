@@ -10,7 +10,7 @@ usage of BrowserList and Browser as we subclass related methods and use our
 WindowList.
 
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-index 628fe5557f963c52cbe0c5b24c6e06aaa81f9677..868f5eb60c35dfaa0a4e33e7f175743848e0cc2e 100644
+index 09027b5c273a209519a1c9268c604b3cf1ca0d3c..00511a4558dbc907f752b4c602cc97b4590c16b0 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 @@ -48,6 +48,7 @@
@@ -21,7 +21,7 @@ index 628fe5557f963c52cbe0c5b24c6e06aaa81f9677..868f5eb60c35dfaa0a4e33e7f1757438
  #include "ui/accessibility/accessibility_features.h"
  #include "ui/accessibility/ax_updates_and_events.h"
  #include "ui/accessibility/platform/ax_platform_node.h"
-@@ -171,7 +172,7 @@ base::Value::Dict BuildTargetDescriptor(content::RenderViewHost* rvh) {
+@@ -167,7 +168,7 @@ base::Value::Dict BuildTargetDescriptor(content::RenderViewHost* rvh) {
                                 rvh->GetRoutingID(), accessibility_mode);
  }
  
@@ -30,17 +30,17 @@ index 628fe5557f963c52cbe0c5b24c6e06aaa81f9677..868f5eb60c35dfaa0a4e33e7f1757438
  base::Value::Dict BuildTargetDescriptor(Browser* browser) {
    base::Value::Dict target_data;
    target_data.Set(kSessionIdField, browser->session_id().id());
-@@ -192,7 +193,7 @@ void HandleAccessibilityRequestCallback(
-   DCHECK(ShouldHandleAccessibilityRequestCallback(path));
- 
+@@ -190,7 +191,7 @@ void HandleAccessibilityRequestCallback(
+   auto& browser_accessibility_state =
+       *content::BrowserAccessibilityState::GetInstance();
    base::Value::Dict data;
 -  PrefService* pref = Profile::FromBrowserContext(current_context)->GetPrefs();
 +  PrefService* pref = static_cast<electron::ElectronBrowserContext*>(current_context)->prefs();
-   ui::AXMode mode =
-       content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
-   bool is_a11y_allowed = content::BrowserAccessibilityState::GetInstance()
-@@ -221,7 +222,7 @@ void HandleAccessibilityRequestCallback(
-   data.Set(kPDFPrinting, pdf_printing ? kOn : kOff);
+   ui::AXMode mode = browser_accessibility_state.GetAccessibilityMode();
+   bool native = mode.has_mode(ui::AXMode::kNativeAPIs);
+   bool web = mode.has_mode(ui::AXMode::kWebContents);
+@@ -214,7 +215,7 @@ void HandleAccessibilityRequestCallback(
+   data.Set(kPDFPrinting, pdf_printing);
  
    std::string pref_api_type =
 -      pref->GetString(prefs::kShownAccessibilityApiType);
@@ -48,7 +48,7 @@ index 628fe5557f963c52cbe0c5b24c6e06aaa81f9677..868f5eb60c35dfaa0a4e33e7f1757438
    bool pref_api_type_supported = false;
  
    std::vector<ui::AXApiType::Type> supported_api_types =
-@@ -288,11 +289,11 @@ void HandleAccessibilityRequestCallback(
+@@ -282,11 +283,11 @@ void HandleAccessibilityRequestCallback(
    data.Set(kPagesField, std::move(page_list));
  
    base::Value::List browser_list;

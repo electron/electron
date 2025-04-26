@@ -5,6 +5,7 @@
 #include "shell/common/node_bindings.h"
 
 #include <algorithm>
+#include <iostream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -605,9 +606,8 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
           args,
           static_cast<node::ProcessInitializationFlags::Flags>(process_flags));
 
-  for (const std::string& error : result->errors()) {
-    fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
-  }
+  for (const std::string& error : result->errors())
+    std::cerr << args[0] << ": " << error << '\n';
 
   if (result->early_return() != 0)
     exit(result->exit_code());

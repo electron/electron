@@ -35,7 +35,7 @@ RootView::RootView(NativeWindow* window)
     : window_{raw_ref<NativeWindow>::from_ptr(window)},
       main_view_{raw_ref<views::View>::from_ptr(
           AddChildView(std::make_unique<views::View>()))} {
-  set_owned_by_client();
+  set_owned_by_client(OwnedByClientPassKey{});
   views::BoxLayout* layout =
       SetLayoutManager(std::make_unique<views::BoxLayout>(
           views::BoxLayout::Orientation::kVertical));
@@ -63,7 +63,7 @@ void RootView::SetMenu(ElectronMenuModel* menu_model) {
 
   if (!menu_bar_) {
     menu_bar_ = std::make_unique<MenuBar>(&window_.get(), this);
-    menu_bar_->set_owned_by_client();
+    menu_bar_->set_owned_by_client(OwnedByClientPassKey{});
     if (!menu_bar_autohide_)
       SetMenuBarVisibility(true);
   }

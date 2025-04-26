@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 6f4d9651862e90abaa22b93e1dcf97ac07592c5c..d91d81297e7cdb79ee7b7a3979dcedf977e16c92 100644
+index 0aae1d3b2777d5f6db711d1ade99b4bde24e76bf..e350f6789c710826e0885ccdc19e66e2213820df 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -389,6 +389,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -502,6 +502,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -32,7 +32,7 @@ index 6f4d9651862e90abaa22b93e1dcf97ac07592c5c..d91d81297e7cdb79ee7b7a3979dcedf9
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 0c6b537ddc2afbc4cd22f1c08f1bbae3c3bbffe3..333f557c89bc03ae5b25060359b9af096b188726 100644
+index f53158596f935545afde6a175138347a752f73e7..b267734bf2273253aa921728e12c753adfade02e 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -87,6 +87,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
@@ -43,8 +43,22 @@ index 0c6b537ddc2afbc4cd22f1c08f1bbae3c3bbffe3..333f557c89bc03ae5b25060359b9af09
        return std::nullopt;
    }
  }
+diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
+index 6c36ada80f6f225b84a8f3832405128f8ba83224..714d582d1060873765b24770b18eddcbbdcf5506 100644
+--- a/content/browser/permissions/permission_descriptor_util.cc
++++ b/content/browser/permissions/permission_descriptor_util.cc
+@@ -171,6 +171,9 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
+     case blink::PermissionType::LOCAL_NETWORK_ACCESS:
+       return CreatePermissionDescriptor(
+           blink::mojom::PermissionName::LOCAL_NETWORK_ACCESS);
++    case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
++      return CreatePermissionDescriptor(
++          blink::mojom::PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ);
+     case blink::PermissionType::NUM:
+       NOTREACHED();
+   }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index aad897dbc32caa3469a2f04b4f004355888c84d8..875260fc2a884ab5b1e62cd45fc91c2e4dc162ee 100644
+index 8abbc34ec283562685a46e10142901110b5c0b55..1c436c62cac1bc4b21255bdcbb2c18b882c4058b 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
 @@ -101,6 +101,8 @@ std::string GetPermissionString(PermissionType permission) {
@@ -65,7 +79,7 @@ index aad897dbc32caa3469a2f04b4f004355888c84d8..875260fc2a884ab5b1e62cd45fc91c2e
  
      case PermissionType::NUM:
 diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
-index 947bd8125bf300a3a82c811810e31996e6147c7c..caeeaf6cecf7da47c39b140dfcc295fba12f6f84 100644
+index 5c82a641538802bc459782ea422a1186045b054a..c286d87043ec4cb2e51ec9d82d08e4c84f5a270c 100644
 --- a/third_party/blink/public/common/permissions/permission_utils.h
 +++ b/third_party/blink/public/common/permissions/permission_utils.h
 @@ -65,6 +65,7 @@ enum class PermissionType {
@@ -76,11 +90,25 @@ index 947bd8125bf300a3a82c811810e31996e6147c7c..caeeaf6cecf7da47c39b140dfcc295fb
  
    // Always keep this at the end.
    NUM,
+diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
+index 02e1941c37173a1e84e5190eb396f1007a8bbc2c..e47f2089a6a187b26c981afa1ef4135ec5e6a9e7 100644
+--- a/third_party/blink/public/mojom/permissions/permission.mojom
++++ b/third_party/blink/public/mojom/permissions/permission.mojom
+@@ -43,7 +43,8 @@ enum PermissionName {
+   AR,
+   HAND_TRACKING,
+   WEB_PRINTING,
+-  SMART_CARD
++  SMART_CARD,
++  DEPRECATED_SYNC_CLIPBOARD_READ
+ };
+ 
+ struct MidiPermissionDescriptor {
 diff --git a/third_party/blink/public/platform/web_content_settings_client.h b/third_party/blink/public/platform/web_content_settings_client.h
-index 28f616f21f998c7cd1c794e58efaccf9e6c11e6e..c64896642209124e500db2ed6fe2357e426cd10b 100644
+index 5c71490d17ffe3f2f57b18e58e947f20ff3f66e3..75209a69c33780a0c71d48e184cc1897f0cb8a36 100644
 --- a/third_party/blink/public/platform/web_content_settings_client.h
 +++ b/third_party/blink/public/platform/web_content_settings_client.h
-@@ -55,6 +55,9 @@ class WebContentSettingsClient {
+@@ -54,6 +54,9 @@ class WebContentSettingsClient {
    // Controls whether access to write the clipboard is allowed for this frame.
    virtual bool AllowWriteToClipboard() { return false; }
  
@@ -112,3 +140,16 @@ index c269698764bb8ae7f85c5d476436f5ae5209576d..65d7fd94128a755609192784722074c6
  }
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
+diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
+index 843a4f27807071eabfdbffce589a31ddac75aacb..8d189eae97caa48a5796c540a74aaafa2fa676ff 100644
+--- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
++++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
+@@ -145,6 +145,8 @@ String PermissionNameToString(PermissionName name) {
+       return "web-printing";
+     case PermissionName::SMART_CARD:
+       return "smart-card";
++    case PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ:
++      return "deprecated-sync-clipboard-read";
+   }
+ }
+ 

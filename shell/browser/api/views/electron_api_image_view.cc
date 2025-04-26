@@ -14,7 +14,7 @@
 namespace electron::api {
 
 ImageView::ImageView() : View(new views::ImageView()) {
-  view()->set_owned_by_client();
+  view()->set_owned_by_client(views::View::OwnedByClientPassKey{});
 }
 
 ImageView::~ImageView() = default;

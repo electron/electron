@@ -38,10 +38,10 @@ index 8168b4cfbafd42fa93a5aa9a3691c2552fabfb86..ba49212bd76d209f99c1cee649fc1466
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index f246f7ea6b39a881721171515049dda8d3f2ac0b..e8524bb6706ae06a0feabccbe44250580098e937 100644
+index c65308ac3bec1e6399c74f5d0bcf59364db4e997..5012789f084113a9289e8d198eed2f021953bef9 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -18,9 +18,11 @@
+@@ -19,9 +19,11 @@
  #include "build/build_config.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
@@ -53,7 +53,7 @@ index f246f7ea6b39a881721171515049dda8d3f2ac0b..e8524bb6706ae06a0feabccbe4425058
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
-@@ -71,7 +73,7 @@
+@@ -72,7 +74,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -62,7 +62,7 @@ index f246f7ea6b39a881721171515049dda8d3f2ac0b..e8524bb6706ae06a0feabccbe4425058
  #include "chrome/browser/shell_integration_win.h"
  #include "content/public/browser/render_widget_host_view.h"
  #include "ui/aura/window.h"
-@@ -395,7 +397,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -396,7 +398,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  

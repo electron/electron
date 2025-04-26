@@ -8,7 +8,7 @@ respond to the first mouse click in their window, which is desirable for some
 kinds of utility windows. Similarly for `disableAutoHideCursor`.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 22ee05153569d0db7cbc7ab520944e84b9475c8e..4017ee032569466f5311e5c9612c82c086eab935 100644
+index a6b6917ee2c02c091aa51b55449d93fa55e06ac2..eca43bf620111c27c400ae2d95880e47c34fbc59 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -170,6 +170,15 @@ void ExtractUnderlines(NSAttributedString* string,

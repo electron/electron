@@ -137,7 +137,8 @@ class SimpleURLLoaderWrapper final
       network::mojom::IPAddressSpace client_address_space,
       network::mojom::IPAddressSpace target_address_space) override {}
   void OnAdAuctionEventRecordHeaderReceived(
-      network::AdAuctionEventRecord event_record) override {}
+      network::AdAuctionEventRecord event_record,
+      const std::optional<url::Origin>& top_frame_origin) override {}
 
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactoryForURL(
       const GURL& url);

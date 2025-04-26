@@ -252,12 +252,8 @@ std::string MakePartitionName(const std::string& input) {
 bool DoesDeviceMatch(const base::Value& device,
                      const base::Value& device_to_compare,
                      const blink::PermissionType permission_type) {
-  if (permission_type ==
-          static_cast<blink::PermissionType>(
-              WebContentsPermissionHelper::PermissionType::HID) ||
-      permission_type ==
-          static_cast<blink::PermissionType>(
-              WebContentsPermissionHelper::PermissionType::USB)) {
+  if (permission_type == blink::PermissionType::HID ||
+      permission_type == blink::PermissionType::USB) {
     if (device.GetDict().FindInt(kDeviceVendorIdKey) !=
             device_to_compare.GetDict().FindInt(kDeviceVendorIdKey) ||
         device.GetDict().FindInt(kDeviceProductIdKey) !=
@@ -273,9 +269,7 @@ bool DoesDeviceMatch(const base::Value& device,
     if (serial_number && device_serial_number &&
         *device_serial_number == *serial_number)
       return true;
-  } else if (permission_type ==
-             static_cast<blink::PermissionType>(
-                 WebContentsPermissionHelper::PermissionType::SERIAL)) {
+  } else if (permission_type == blink::PermissionType::SERIAL) {
 #if BUILDFLAG(IS_WIN)
     const auto* instance_id = device.GetDict().FindString(kDeviceInstanceIdKey);
     const auto* port_instance_id =

@@ -68,7 +68,7 @@ bool ElectronDesktopWindowTreeHostWin::GetDwmFrameInsetsInPixels(
 
 bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
     gfx::Insets* insets,
-    HMONITOR monitor) const {
+    int frame_thickness) const {
   // Windows by default extends the maximized window slightly larger than
   // current workspace, for frameless window since the standard frame has been
   // removed, the client area would then be drew outside current workspace.

@@ -93,13 +93,21 @@ gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
 static gfx::Rect ScreenToDIPRect(electron::NativeWindow* window,
                                  const gfx::Rect& rect) {
   HWND hwnd = window ? window->GetAcceleratedWidget() : nullptr;
-  return display::win::ScreenWin::ScreenToDIPRect(hwnd, rect);
+  return display::win::GetScreenWin()->ScreenToDIPRect(hwnd, rect);
 }
 
 static gfx::Rect DIPToScreenRect(electron::NativeWindow* window,
                                  const gfx::Rect& rect) {
   HWND hwnd = window ? window->GetAcceleratedWidget() : nullptr;
-  return display::win::ScreenWin::DIPToScreenRect(hwnd, rect);
+  return display::win::GetScreenWin()->DIPToScreenRect(hwnd, rect);
+}
+
+static gfx::PointF ScreenToDIPPoint(const gfx::PointF& pixel_point) {
+  return display::win::GetScreenWin()->ScreenToDIPPoint(pixel_point);
+}
+
+static gfx::Point DIPToScreenPoint(const gfx::Point& dip_point) {
+  return display::win::GetScreenWin()->DIPToScreenPoint(dip_point);
 }
 
 #endif
@@ -154,8 +162,8 @@ gin::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
       .SetMethod("getAllDisplays", &Screen::GetAllDisplays)
       .SetMethod("getDisplayNearestPoint", &Screen::GetDisplayNearestPoint)
 #if BUILDFLAG(IS_WIN)
-      .SetMethod("screenToDipPoint", &display::win::ScreenWin::ScreenToDIPPoint)
-      .SetMethod("dipToScreenPoint", &display::win::ScreenWin::DIPToScreenPoint)
+      .SetMethod("screenToDipPoint", &ScreenToDIPPoint)
+      .SetMethod("dipToScreenPoint", &DIPToScreenPoint)
       .SetMethod("screenToDipRect", &ScreenToDIPRect)
       .SetMethod("dipToScreenRect", &DIPToScreenRect)
 #endif

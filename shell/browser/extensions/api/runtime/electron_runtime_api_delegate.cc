@@ -5,6 +5,7 @@
 #include "shell/browser/extensions/api/runtime/electron_runtime_api_delegate.h"
 
 #include <string>
+#include <string_view>
 
 #include "components/update_client/update_query_params.h"
 #include "extensions/common/api/runtime.h"
@@ -45,38 +46,39 @@ void ElectronRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {
 }
 
 bool ElectronRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
-  const char* os = update_client::UpdateQueryParams::GetOS();
-  if (strcmp(os, "mac") == 0) {
+  if (const std::string_view os = update_client::UpdateQueryParams::GetOS();
+      os == "mac") {
     info->os = extensions::api::runtime::PlatformOs::kMac;
-  } else if (strcmp(os, "win") == 0) {
+  } else if (os == "win") {
     info->os = extensions::api::runtime::PlatformOs::kWin;
-  } else if (strcmp(os, "linux") == 0) {
+  } else if (os == "linux") {
     info->os = extensions::api::runtime::PlatformOs::kLinux;
-  } else if (strcmp(os, "openbsd") == 0) {
+  } else if (os == "openbsd") {
     info->os = extensions::api::runtime::PlatformOs::kOpenbsd;
   } else {
     NOTREACHED();
   }
 
-  const char* arch = update_client::UpdateQueryParams::GetArch();
-  if (strcmp(arch, "arm") == 0) {
+  if (const std::string_view arch = update_client::UpdateQueryParams::GetArch();
+      arch == "arm") {
     info->arch = extensions::api::runtime::PlatformArch::kArm;
-  } else if (strcmp(arch, "arm64") == 0) {
+  } else if (arch == "arm64") {
     info->arch = extensions::api::runtime::PlatformArch::kArm64;
-  } else if (strcmp(arch, "x86") == 0) {
+  } else if (arch == "x86") {
     info->arch = extensions::api::runtime::PlatformArch::kX86_32;
-  } else if (strcmp(arch, "x64") == 0) {
+  } else if (arch == "x64") {
     info->arch = extensions::api::runtime::PlatformArch::kX86_64;
   } else {
     NOTREACHED();
   }
 
-  const char* nacl_arch = update_client::UpdateQueryParams::GetNaclArch();
-  if (strcmp(nacl_arch, "arm") == 0) {
+  if (const std::string_view nacl_arch =
+          update_client::UpdateQueryParams::GetNaclArch();
+      nacl_arch == "arm") {
     info->nacl_arch = extensions::api::runtime::PlatformNaclArch::kArm;
-  } else if (strcmp(nacl_arch, "x86-32") == 0) {
+  } else if (nacl_arch == "x86-32") {
     info->nacl_arch = extensions::api::runtime::PlatformNaclArch::kX86_32;
-  } else if (strcmp(nacl_arch, "x86-64") == 0) {
+  } else if (nacl_arch == "x86-64") {
     info->nacl_arch = extensions::api::runtime::PlatformNaclArch::kX86_64;
   } else {
     NOTREACHED();

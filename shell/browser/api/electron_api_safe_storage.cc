@@ -11,6 +11,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 
 namespace {
 
@@ -72,8 +73,7 @@ v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
     return {};
   }
 
-  return node::Buffer::Copy(isolate, ciphertext.c_str(), ciphertext.size())
-      .ToLocalChecked();
+  return electron::Buffer::Copy(isolate, ciphertext).ToLocalChecked();
 }
 
 std::string DecryptString(v8::Isolate* isolate, v8::Local<v8::Value> buffer) {

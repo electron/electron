@@ -13,12 +13,12 @@ app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 31f5b160e4cd755cfb56a62b04261ee1bee80277..4305ba61d2489c5817785077d1ace8767b41bdde 100644
+index 085b00fbb3ff95cdcde2a46760ab449808b4c1a9..22d5c994a6944ce7ea725ee045d9801126c32dd4 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -18,6 +18,8 @@
  #include "base/functional/callback.h"
- #include "base/memory/ref_counted.h"
+ #include "base/memory/scoped_refptr.h"
  #include "base/process/process.h"
 +#include "base/containers/span.h"
 +#include "base/memory/raw_span.h"

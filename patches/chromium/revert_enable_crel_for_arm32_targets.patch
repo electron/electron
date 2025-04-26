@@ -8,16 +8,16 @@ as its one of our supported platforms.
 https://chromium-review.googlesource.com/q/I3a62f02f564f07be63173b0773b4ecaffbe939b9
 
 diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
-index 6cbc6b8cfae044c36e83cc54c23dc500b445e5da..1d9798b5bffb4fb3166b72911cea5ba1282a757f 100644
+index 6f248e837d8ebf389f0b89254702034ae89f8044..251e90f0e3d81c6144e7a6e9e5c5d2165da8738f 100644
 --- a/build/config/compiler/BUILD.gn
 +++ b/build/config/compiler/BUILD.gn
-@@ -628,7 +628,8 @@ config("compiler") {
+@@ -619,7 +619,8 @@ config("compiler") {
  
      # Enable ELF CREL (see crbug.com/357878242) for all platforms that use ELF
      # (excluding toolchains that use an older version of LLVM).
--    if (is_linux && !llvm_android_mainline &&
+-    if (is_linux && use_lld && !llvm_android_mainline &&
 +    # TODO(crbug.com/376278218): This causes segfault on Linux ARM builds.
-+    if (is_linux && !llvm_android_mainline && current_cpu != "arm" &&
++    if (is_linux && use_lld && !llvm_android_mainline && current_cpu != "arm" &&
          default_toolchain != "//build/toolchain/cros:target") {
        cflags += [ "-Wa,--crel,--allow-experimental-crel" ]
      }

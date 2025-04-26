@@ -87,15 +87,14 @@ void SerialChooserContext::GrantPortPermission(
     const url::Origin& origin,
     const device::mojom::SerialPortInfo& port,
     content::RenderFrameHost* render_frame_host) {
-  port_info_.insert({port.token, port.Clone()});
+  port_info_.try_emplace(port.token, port.Clone());
 
   if (CanStorePersistentEntry(port)) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
-    permission_manager->GrantDevicePermission(
-        static_cast<blink::PermissionType>(
-            WebContentsPermissionHelper::PermissionType::SERIAL),
-        origin, PortInfoToValue(port), browser_context_);
+    permission_manager->GrantDevicePermission(blink::PermissionType::SERIAL,
+                                              origin, PortInfoToValue(port),
+                                              browser_context_);
     return;
   }
 
@@ -125,9 +124,8 @@ bool SerialChooserContext::HasPortPermission(
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
   return permission_manager->CheckDevicePermission(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::SERIAL),
-      origin, PortInfoToValue(port), browser_context_);
+      blink::PermissionType::SERIAL, origin, PortInfoToValue(port),
+      browser_context_);
 }
 
 void SerialChooserContext::RevokePortPermissionWebInitiated(
@@ -139,9 +137,8 @@ void SerialChooserContext::RevokePortPermissionWebInitiated(
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
     permission_manager->RevokeDevicePermission(
-        static_cast<blink::PermissionType>(
-            WebContentsPermissionHelper::PermissionType::SERIAL),
-        origin, PortInfoToValue(*it->second), browser_context_);
+        blink::PermissionType::SERIAL, origin, PortInfoToValue(*it->second),
+        browser_context_);
   }
 
   auto ephemeral = ephemeral_ports_.find(origin);
@@ -278,7 +275,7 @@ void SerialChooserContext::SetUpPortManagerConnection(
 void SerialChooserContext::OnGetDevices(
     std::vector<device::mojom::SerialPortInfoPtr> ports) {
   for (auto& port : ports)
-    port_info_.insert({port->token, std::move(port)});
+    port_info_.try_emplace(port->token, std::move(port));
   is_initialized_ = true;
 }
 

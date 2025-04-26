@@ -192,12 +192,6 @@ void ElectronExtensionSystem::InstallUpdate(
   NOTREACHED();
 }
 
-bool ElectronExtensionSystem::FinishDelayedInstallationIfReady(
-    const std::string& extension_id,
-    bool install_immediately) {
-  NOTREACHED();
-}
-
 void ElectronExtensionSystem::PerformActionBasedOnOmahaAttributes(
     const std::string& extension_id,
     const base::Value::Dict& attributes) {

@@ -25,6 +25,7 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/disallow_activation_reason.h"
+#include "content/public/browser/permission_descriptor_util.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
@@ -162,7 +163,7 @@ bool ShouldBlockAccessToPath(const base::FilePath& path,
 
   // Add the hard-coded rules to the dynamic rules.
   for (auto const& [key, rule_path, type] :
-       ChromeFileSystemAccessPermissionContext::kBlockedPaths) {
+       ChromeFileSystemAccessPermissionContext::GenerateBlockedPath()) {
     if (key == ChromeFileSystemAccessPermissionContext::kNoBasePathKey) {
       rules.emplace_back(base::FilePath{rule_path}, type);
     } else if (base::FilePath block_path;
@@ -319,17 +320,17 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    blink::PermissionType type = static_cast<blink::PermissionType>(
-        electron::WebContentsPermissionHelper::PermissionType::FILE_SYSTEM);
-
     base::Value::Dict details;
     details.Set("filePath", base::FilePathToValue(path_info_.path));
     details.Set("isDirectory", handle_type_ == HandleType::kDirectory);
     details.Set("fileAccessType",
                 type_ == GrantType::kWrite ? "writable" : "readable");
 
+    const blink::PermissionType type = blink::PermissionType::FILE_SYSTEM;
     permission_manager->RequestPermissionWithDetails(
-        type, rfh, origin, false, std::move(details),
+        content::PermissionDescriptorUtil::
+            CreatePermissionDescriptorForPermissionType(type),
+        rfh, origin, false, std::move(details),
         base::BindOnce(&PermissionGrantImpl::OnPermissionRequestResult, this,
                        std::move(callback)));
   }
@@ -745,7 +746,7 @@ void FileSystemAccessPermissionContext::SetLastPickedDirectory(
     base::Value::Dict dict;
     dict.Set(GenerateLastPickedDirectoryKey(id), std::move(entry));
     MaybeEvictEntries(dict);
-    id_pathinfo_map_.insert(std::make_pair(origin, std::move(dict)));
+    id_pathinfo_map_.try_emplace(origin, std::move(dict));
   }
 }
 

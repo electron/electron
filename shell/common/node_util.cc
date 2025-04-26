@@ -75,16 +75,6 @@ void EmitWarning(v8::Isolate* isolate,
   emit_warning.Run(warning_msg, warning_type, "");
 }
 
-// SAFETY: There is no node::Buffer API that passes the UNSAFE_BUFFER_USAGE
-// test, so let's isolate the unsafe API use into this function. Instead of
-// calling `Buffer::Data()` and `Buffer::Length()` directly, the rest of our
-// code should prefer to use spans returned by this function.
-base::span<uint8_t> as_byte_span(v8::Local<v8::Value> node_buffer) {
-  auto* data = reinterpret_cast<uint8_t*>(node::Buffer::Data(node_buffer));
-  const auto size = node::Buffer::Length(node_buffer);
-  return UNSAFE_BUFFERS(base::span{data, size});
-}
-
 node::Environment* CreateEnvironment(v8::Isolate* isolate,
                                      node::IsolateData* isolate_data,
                                      v8::Local<v8::Context> context,
@@ -133,3 +123,28 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
 }
 
 }  // namespace electron::util
+
+namespace electron::Buffer {
+
+// SAFETY: There is no node::Buffer API that passes the UNSAFE_BUFFER_USAGE
+// test, so let's isolate the unsafe API use into this function. Instead of
+// calling `Buffer::Data()` and `Buffer::Length()` directly, the rest of our
+// code should prefer to use spans returned by this function.
+base::span<uint8_t> as_byte_span(v8::Local<v8::Value> node_buffer) {
+  auto* data = reinterpret_cast<uint8_t*>(node::Buffer::Data(node_buffer));
+  const auto size = node::Buffer::Length(node_buffer);
+  return UNSAFE_BUFFERS(base::span{data, size});
+}
+
+v8::MaybeLocal<v8::Object> Copy(v8::Isolate* isolate,
+                                const base::span<const char> data) {
+  // SAFETY: span-friendly version of node::Buffer::Copy()
+  return UNSAFE_BUFFERS(node::Buffer::Copy(isolate, data.data(), data.size()));
+}
+
+v8::MaybeLocal<v8::Object> Copy(v8::Isolate* isolate,
+                                const base::span<const uint8_t> data) {
+  return Copy(isolate, base::as_chars(data));
+}
+
+}  // namespace electron::Buffer

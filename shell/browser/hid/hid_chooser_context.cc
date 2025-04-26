@@ -98,10 +98,9 @@ void HidChooserContext::GrantDevicePermission(
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
 
-    permission_manager->GrantDevicePermission(
-        static_cast<blink::PermissionType>(
-            WebContentsPermissionHelper::PermissionType::HID),
-        origin, DeviceInfoToValue(device), browser_context_);
+    permission_manager->GrantDevicePermission(blink::PermissionType::HID,
+                                              origin, DeviceInfoToValue(device),
+                                              browser_context_);
   } else {
     ephemeral_devices_[origin].insert(device.guid);
   }
@@ -132,10 +131,9 @@ void HidChooserContext::RevokePersistentDevicePermission(
     const device::mojom::HidDeviceInfo& device) {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
-  permission_manager->RevokeDevicePermission(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::HID),
-      origin, DeviceInfoToValue(device), browser_context_);
+  permission_manager->RevokeDevicePermission(blink::PermissionType::HID, origin,
+                                             DeviceInfoToValue(device),
+                                             browser_context_);
   RevokeEphemeralDevicePermission(origin, device);
 }
 
@@ -173,9 +171,8 @@ bool HidChooserContext::HasDevicePermission(
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
   return permission_manager->CheckDevicePermission(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::HID),
-      origin, DeviceInfoToValue(device), browser_context_);
+      blink::PermissionType::HID, origin, DeviceInfoToValue(device),
+      browser_context_);
 }
 
 bool HidChooserContext::IsFidoAllowedForOrigin(const url::Origin& origin) {
@@ -310,7 +307,7 @@ void HidChooserContext::SetUpHidManagerConnection(
 void HidChooserContext::InitDeviceList(
     std::vector<device::mojom::HidDeviceInfoPtr> devices) {
   for (auto& device : devices)
-    devices_.insert({device->guid, std::move(device)});
+    devices_.try_emplace(device->guid, std::move(device));
 
   is_initialized_ = true;
 

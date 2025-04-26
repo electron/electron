@@ -106,10 +106,10 @@ DWM_SYSTEMBACKDROP_TYPE GetBackdropFromString(const std::string& material) {
 // original ceil()-ed values can cause calculation errors, since converting
 // both ways goes through a ceil() call. Related issue: #15816
 gfx::Rect ScreenToDIPRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
-  float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(hwnd);
+  const auto* const screen_win = display::win::GetScreenWin();
+  const float scale_factor = screen_win->GetScaleFactorForHWND(hwnd);
   gfx::Rect dip_rect = ScaleToRoundedRect(pixel_bounds, 1.0f / scale_factor);
-  dip_rect.set_origin(
-      display::win::ScreenWin::ScreenToDIPRect(hwnd, pixel_bounds).origin());
+  dip_rect.set_origin(screen_win->ScreenToDIPRect(hwnd, pixel_bounds).origin());
   return dip_rect;
 }
 
@@ -135,10 +135,11 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
 }
 
 gfx::Rect DIPToScreenRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
-  float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(hwnd);
+  const auto* const screen_win = display::win::GetScreenWin();
+  const float scale_factor = screen_win->GetScaleFactorForHWND(hwnd);
   gfx::Rect screen_rect = ScaleToRoundedRect(pixel_bounds, scale_factor);
   screen_rect.set_origin(
-      display::win::ScreenWin::DIPToScreenRect(hwnd, pixel_bounds).origin());
+      screen_win->DIPToScreenRect(hwnd, pixel_bounds).origin());
   return screen_rect;
 }
 
@@ -433,20 +434,21 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   SetBounds(gfx::Rect(GetPosition(), bounds.size()), false);
 #endif
 
-  SetOwnedByWidget(false);
-  RegisterDeleteDelegateCallback(base::BindOnce(
-      [](NativeWindowViews* window) {
-        if (window->is_modal() && window->parent()) {
-          auto* parent = window->parent();
-          // Enable parent window after current window gets closed.
-          static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
-          // Focus on parent window.
-          parent->Focus(true);
-        }
+  RegisterDeleteDelegateCallback(
+      RegisterDeleteCallbackPassKey(),
+      base::BindOnce(
+          [](NativeWindowViews* window) {
+            if (window->is_modal() && window->parent()) {
+              auto* parent = window->parent();
+              // Enable parent window after current window gets closed.
+              static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
+              // Focus on parent window.
+              parent->Focus(true);
+            }
 
-        window->NotifyWindowClosed();
-      },
-      this));
+            window->NotifyWindowClosed();
+          },
+          this));
 }
 
 NativeWindowViews::~NativeWindowViews() {
@@ -1081,8 +1083,7 @@ void NativeWindowViews::SetClosable(bool closable) {
 bool NativeWindowViews::IsClosable() const {
 #if BUILDFLAG(IS_WIN)
   HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
-  MENUITEMINFO info;
-  memset(&info, 0, sizeof(info));
+  MENUITEMINFO info = {};
   info.cbSize = sizeof(info);
   info.fMask = MIIM_STATE;
   if (!GetMenuItemInfo(menu, SC_CLOSE, false, &info)) {
@@ -1137,7 +1138,8 @@ void NativeWindowViews::Center() {
   widget()->SetBounds(window_bounds_in_screen);
 #else
   HWND hwnd = GetAcceleratedWidget();
-  gfx::Size size = display::win::ScreenWin::DIPToScreenSize(hwnd, GetSize());
+  gfx::Size size =
+      display::win::GetScreenWin()->DIPToScreenSize(hwnd, GetSize());
   gfx::CenterAndSizeWindow(nullptr, hwnd, size);
 #endif
 }
@@ -1218,7 +1220,7 @@ SkColor NativeWindowViews::GetBackgroundColor() const {
   auto* background = root_view_.background();
   if (!background)
     return SK_ColorTRANSPARENT;
-  return background->color().ConvertToSkColor(root_view_.GetColorProvider());
+  return background->color().ResolveToSkColor(root_view_.GetColorProvider());
 }
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
@@ -1361,9 +1363,9 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   }
 
   // Use global application menu bar when possible.
-  bool can_use_global_menus = ui::OzonePlatform::GetInstance()
-                                  ->GetPlatformProperties()
-                                  .supports_global_application_menus;
+  const bool can_use_global_menus = ui::OzonePlatform::GetInstance()
+                                        ->GetPlatformRuntimeProperties()
+                                        .supports_global_application_menus;
   if (can_use_global_menus && ShouldUseGlobalMenuBar()) {
     if (!global_menu_bar_)
       global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
