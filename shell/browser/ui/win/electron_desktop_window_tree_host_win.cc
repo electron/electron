@@ -74,7 +74,7 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
   // removed, the client area would then be drew outside current workspace.
   //
   // Indenting the client area can fix this behavior.
-  if (!native_window_view_->has_frame()) {
+  if (!native_window_view_->has_frame() && native_window_view_->IsResizable()) {
     // The insets would be eventually passed to WM_NCCALCSIZE, which takes
     // the metrics under the DPI of _main_ monitor instead of current monitor.
     //

@@ -3068,7 +3068,11 @@ describe('BrowserWindow module', () => {
       const contentSize = w.getContentSize();
       expect(contentSize).to.deep.equal([400, 400]);
       const size = w.getSize();
-      expect(size).to.deep.equal([400, 400]);
+      if (process.platform === 'win32') {
+        expect(size).to.deep.equal([416, 408]);
+      } else {
+        expect(size).to.deep.equal([400, 400]);
+      }
     });
   });
 
@@ -3125,7 +3129,11 @@ describe('BrowserWindow module', () => {
         titleBarStyle: 'hidden'
       });
       const contentSize = w.getContentSize();
-      expect(contentSize).to.deep.equal([400, 400]);
+      if (process.platform === 'win32') {
+        expect(contentSize).to.deep.equal([384, 392]);
+      } else {
+        expect(contentSize).to.deep.equal([400, 400]);
+      }
     });
 
     ifit(process.platform === 'darwin')('creates browser window with hidden inset title bar', () => {
