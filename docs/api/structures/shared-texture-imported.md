@@ -1,0 +1,6 @@
+# SharedTextureImported Object
+
+* `getVideoFrame` Function\<[VideoFrame](https://developer.mozilla.org/en-US/docs/Web/API/VideoFrame)\> - Create a `VideoFrame` that use the imported shared texture at current process. You can call `VideoFrame.close()` once you've finished using, the underlying resources will wait for GPU finish internally.
+* `startTransferSharedTexture` Function\<[SharedTextureTransfer](shared-texture-transfer.md)\> - Create a `SharedTextureTransfer` that can be serialized and transfer to other processes.
+* `release` Function - Release the resources. If you transferred and get multiple `SharedTextureImported`, you have to `release` it on every one of them. The resource on GPU process will be finally destroyed when last one is released.
+  * `callback` Function (optional) - Callback when GPU command buffer finished using this shared texture. It provides a precise event to safely release dependent resources. For example, if this object is created by `finishTransferSharedTexture`, you can use this callback to safely release the original one that called `startTransferSharedTexture` in other processes. You can also release the source shared texture that was used to `importSharedTexture` safely.
