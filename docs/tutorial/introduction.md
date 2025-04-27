@@ -1,5 +1,5 @@
 ---
-title: 'Introduction'
+title: 'Electron app'
 description: 'Welcome to the Electron documentation! If this is your first time developing an Electron app, read through this Getting Started section to get familiar with the basics. Otherwise, feel free to explore our guides and API documentation!'
 slug: /latest/
 hide_title: false
@@ -64,7 +64,7 @@ Are you getting stuck anywhere? Here are a few links to places to look:
   the [GitHub issue tracker][issue-tracker] to see if any existing issues match your
   problem. If not, feel free to fill out our bug report template and submit a new issue.
 
-<!-- Links -->
+<!-- Link -->
 
 [tutorial]: tutorial-1-prerequisites.md
 [api documentation]: ../api/app.md
