@@ -2361,10 +2361,10 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  describe('autoHideMenuBar state', () => {
+  ifdescribe(process.platform !== 'darwin')('autoHideMenuBar state', () => {
     afterEach(closeAllWindows);
 
-    it('for properties', () => {
+    describe('for properties', () => {
       it('can be set with autoHideMenuBar constructor option', () => {
         const w = new BrowserWindow({ show: false, autoHideMenuBar: true });
         expect(w.autoHideMenuBar).to.be.true('autoHideMenuBar');
@@ -2380,7 +2380,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    it('for functions', () => {
+    describe('for functions', () => {
       it('can be set with autoHideMenuBar constructor option', () => {
         const w = new BrowserWindow({ show: false, autoHideMenuBar: true });
         expect(w.isMenuBarAutoHide()).to.be.true('autoHideMenuBar');
