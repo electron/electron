@@ -2108,6 +2108,7 @@ describe('BrowserWindow module', () => {
             expect(w.fullScreen).to.be.true();
           });
 
+          // FIXME: this test needs to be fixed and re-enabled.
           it.skip('does not go fullscreen if roundedCorners are enabled', async () => {
             w = new BrowserWindow({ frame: false, roundedCorners: false, fullscreen: true });
             expect(w.fullScreen).to.be.false();
