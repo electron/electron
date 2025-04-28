@@ -396,7 +396,7 @@ A `View` property for the content view of the window.
 
 A `string` (optional) property that is equal to the `tabbingIdentifier` passed to the `BrowserWindow` constructor or `undefined` if none was set.
 
-#### `win.autoHideMenuBar`
+#### `win.autoHideMenuBar` _Linux_ _Windows_
 
 A `boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
 
