@@ -5428,6 +5428,36 @@ describe('BrowserWindow module', () => {
         });
       });
     });
+
+    describe('native window title', () => {
+      describe('with properties', () => {
+        it('can be set with title constructor option', () => {
+          const w = new BrowserWindow({ show: false, title: 'mYtItLe' });
+          expect(w.title).to.eql('mYtItLe');
+        });
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.title).to.eql('Electron Test Main');
+          w.title = 'NEW TITLE';
+          expect(w.title).to.eql('NEW TITLE');
+        });
+      });
+
+      describe('with functions', () => {
+        it('can be set with minimizable constructor option', () => {
+          const w = new BrowserWindow({ show: false, title: 'mYtItLe' });
+          expect(w.getTitle()).to.eql('mYtItLe');
+        });
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.getTitle()).to.eql('Electron Test Main');
+          w.setTitle('NEW TITLE');
+          expect(w.getTitle()).to.eql('NEW TITLE');
+        });
+      });
+    });
   });
 
   ifdescribe(process.platform !== 'linux')('window states (excluding Linux)', () => {
@@ -5504,36 +5534,6 @@ describe('BrowserWindow module', () => {
           expect(w.getRepresentedFilename()).to.eql('');
           w.setRepresentedFilename('a name');
           expect(w.getRepresentedFilename()).to.eql('a name');
-        });
-      });
-    });
-
-    describe('native window title', () => {
-      describe('with properties', () => {
-        it('can be set with title constructor option', () => {
-          const w = new BrowserWindow({ show: false, title: 'mYtItLe' });
-          expect(w.title).to.eql('mYtItLe');
-        });
-
-        it('can be changed', () => {
-          const w = new BrowserWindow({ show: false });
-          expect(w.title).to.eql('Electron Test Main');
-          w.title = 'NEW TITLE';
-          expect(w.title).to.eql('NEW TITLE');
-        });
-      });
-
-      describe('with functions', () => {
-        it('can be set with minimizable constructor option', () => {
-          const w = new BrowserWindow({ show: false, title: 'mYtItLe' });
-          expect(w.getTitle()).to.eql('mYtItLe');
-        });
-
-        it('can be changed', () => {
-          const w = new BrowserWindow({ show: false });
-          expect(w.getTitle()).to.eql('Electron Test Main');
-          w.setTitle('NEW TITLE');
-          expect(w.getTitle()).to.eql('NEW TITLE');
         });
       });
     });
