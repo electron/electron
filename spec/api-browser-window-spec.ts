@@ -5406,6 +5406,27 @@ describe('BrowserWindow module', () => {
         expect(w.webContents.isLoadingMainFrame()).to.be.true('isLoadingMainFrame');
       });
     });
+
+    // FIXME: enable this test on Linux as well.
+    ifdescribe(process.platform === 'darwin')('visibleOnAllWorkspaces state', () => {
+      describe('with properties', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.visibleOnAllWorkspaces).to.be.false();
+          w.visibleOnAllWorkspaces = true;
+          expect(w.visibleOnAllWorkspaces).to.be.true();
+        });
+      });
+
+      describe('with functions', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.isVisibleOnAllWorkspaces()).to.be.false();
+          w.setVisibleOnAllWorkspaces(true);
+          expect(w.isVisibleOnAllWorkspaces()).to.be.true();
+        });
+      });
+    });
   });
 
   ifdescribe(process.platform !== 'linux')('window states (excluding Linux)', () => {
@@ -5442,26 +5463,6 @@ describe('BrowserWindow module', () => {
           expect(w.isMovable()).to.be.false('movable');
           w.setMovable(true);
           expect(w.isMovable()).to.be.true('movable');
-        });
-      });
-    });
-
-    describe('visibleOnAllWorkspaces state', () => {
-      it('with properties', () => {
-        it('can be changed', () => {
-          const w = new BrowserWindow({ show: false });
-          expect(w.visibleOnAllWorkspaces).to.be.false();
-          w.visibleOnAllWorkspaces = true;
-          expect(w.visibleOnAllWorkspaces).to.be.true();
-        });
-      });
-
-      it('with functions', () => {
-        it('can be changed', () => {
-          const w = new BrowserWindow({ show: false });
-          expect(w.isVisibleOnAllWorkspaces()).to.be.false();
-          w.setVisibleOnAllWorkspaces(true);
-          expect(w.isVisibleOnAllWorkspaces()).to.be.true();
         });
       });
     });
