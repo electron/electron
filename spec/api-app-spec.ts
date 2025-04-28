@@ -978,7 +978,7 @@ describe('app module', () => {
     });
   });
 
-  describe('accessibilitySupportEnabled property', () => {
+  ifdescribe(process.platform !== 'linux')('accessibilitySupportEnabled property', () => {
     it('is mutable', () => {
       const values = [false, true, false];
       const setters: Array<(arg: boolean) => void> = [
