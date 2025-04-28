@@ -377,8 +377,8 @@ bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
   auto env = base::Environment::Create();
 
   // find the trash method
-  std::string trash;
-  if (!env->GetVar(ELECTRON_TRASH, &trash)) {
+  std::string trash = env->GetVar(ELECTRON_TRASH).value_or("");
+  if (trash.empty()) {
     // Determine desktop environment and set accordingly.
     const auto desktop_env(base::nix::GetDesktopEnvironment(env.get()));
     if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE4 ||
@@ -424,22 +424,21 @@ void Beep() {
   gdk_display_beep(display);
 }
 
-bool GetDesktopName(std::string* setme) {
-  return base::Environment::Create()->GetVar("CHROME_DESKTOP", setme);
+std::optional<std::string> GetDesktopName() {
+  return base::Environment::Create()->GetVar("CHROME_DESKTOP");
 }
 
 std::string GetXdgAppId() {
-  std::string desktop_file_name;
-  if (GetDesktopName(&desktop_file_name)) {
+  if (std::optional<std::string> desktop_file_name = GetDesktopName()) {
     const std::string kDesktopExtension{".desktop"};
-    if (base::EndsWith(desktop_file_name, kDesktopExtension,
+    if (base::EndsWith(*desktop_file_name, kDesktopExtension,
                        base::CompareCase::INSENSITIVE_ASCII)) {
-      desktop_file_name.resize(desktop_file_name.size() -
-                               kDesktopExtension.size());
+      desktop_file_name->resize(desktop_file_name->size() -
+                                kDesktopExtension.size());
     }
   }
 
-  return desktop_file_name;
+  return "";
 }
 
 }  // namespace platform_util

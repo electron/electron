@@ -25,7 +25,7 @@ constexpr std::string_view kElectronEnableLogging{"ELECTRON_ENABLE_LOGGING"};
 base::FilePath GetLogFileName(const base::CommandLine& command_line) {
   std::string filename = command_line.GetSwitchValueASCII(switches::kLogFile);
   if (filename.empty())
-    base::Environment::Create()->GetVar(kLogFileName, &filename);
+    filename = base::Environment::Create()->GetVar(kLogFileName).value_or("");
   if (!filename.empty())
     return base::FilePath::FromUTF8Unsafe(filename);
 
@@ -43,7 +43,7 @@ namespace {
 bool HasExplicitLogFile(const base::CommandLine& command_line) {
   std::string filename = command_line.GetSwitchValueASCII(switches::kLogFile);
   if (filename.empty())
-    base::Environment::Create()->GetVar(kLogFileName, &filename);
+    filename = base::Environment::Create()->GetVar(kLogFileName).value_or("");
   return !filename.empty();
 }
 
@@ -60,7 +60,7 @@ LoggingDestination DetermineLoggingDestination(
     auto env = base::Environment::Create();
     if (env->HasVar(kElectronEnableLogging)) {
       enable_logging = true;
-      env->GetVar(kElectronEnableLogging, &logging_destination);
+      logging_destination = env->GetVar(kElectronEnableLogging).value();
     }
   }
   if (!enable_logging)
@@ -68,11 +68,9 @@ LoggingDestination DetermineLoggingDestination(
 
   bool also_log_to_stderr = false;
 #if !defined(NDEBUG)
-  std::string also_log_to_stderr_str;
-  if (base::Environment::Create()->GetVar("ELECTRON_ALSO_LOG_TO_STDERR",
-                                          &also_log_to_stderr_str) &&
-      !also_log_to_stderr_str.empty())
-    also_log_to_stderr = true;
+  if (std::optional<std::string> also_log_to_stderr_str =
+          base::Environment::Create()->GetVar("ELECTRON_ALSO_LOG_TO_STDERR"))
+    also_log_to_stderr = !also_log_to_stderr_str->empty();
 #endif
 
   // --enable-logging logs to stderr, --enable-logging=file logs to a file.
