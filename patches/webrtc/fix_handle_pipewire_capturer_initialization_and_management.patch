@@ -36,7 +36,7 @@ for desktop capturer. This change re-enables that fallback, which was
 previously default behavior.
 
 diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
-index 45c13751aadb108325836efeca7edbbcb672c1fd..7569900495bfacaa27e6ec2a57cb4f283bbfc827 100644
+index 94605f409cd1523036f3e7d167a8d1f3c030e586..fae73654c84a7a8185ddf7255b49a86f6b239404 100644
 --- a/modules/desktop_capture/desktop_capturer.cc
 +++ b/modules/desktop_capture/desktop_capturer.cc
 @@ -117,7 +117,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(

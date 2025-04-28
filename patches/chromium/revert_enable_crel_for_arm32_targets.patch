@@ -8,7 +8,7 @@ as its one of our supported platforms.
 https://chromium-review.googlesource.com/q/I3a62f02f564f07be63173b0773b4ecaffbe939b9
 
 diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
-index 6f248e837d8ebf389f0b89254702034ae89f8044..251e90f0e3d81c6144e7a6e9e5c5d2165da8738f 100644
+index fca6c92950708307743b4e4f7081ff58ca1ad54c..3d3e9762875f3328cb777d1880d93527e2ed1f70 100644
 --- a/build/config/compiler/BUILD.gn
 +++ b/build/config/compiler/BUILD.gn
 @@ -619,7 +619,8 @@ config("compiler") {

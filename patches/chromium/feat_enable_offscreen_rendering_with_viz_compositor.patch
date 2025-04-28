@@ -522,10 +522,10 @@ index f0aca972c4a81c3dfb536e14244daafae21ee716..a15afbc1a3519e657121b4952444d2f4
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 7898d49d84cebde8d6f03e63a6555c29cc9becff..c86e066ae303220d699f4bc3832ae4b31b40b0bc 100644
+index ed921225298fbb4f6d12d7c49be825ee586d009c..78a393d96ddf4dc3bf8d1af297ed2642eacac495 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -115,7 +115,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -130,7 +130,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
@@ -585,10 +585,10 @@ index 8e2ddfa9337b5ba952a186a85bce78d39a62e8bd..efb54a95b2ad76546eafa1907064a298
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index 3046e60995bceb1c9931038be3d309577a830a60..4476f48510f807d03f05a4afa2a648dac8720010 100644
+index afdda5292ce89d6dac6eaa1e3476fdfd0e9e7f08..8147e4bf6173699df6ab9492898989c68ffbb2b8 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -125,7 +125,6 @@ interface DisplayClient {
+@@ -123,7 +123,6 @@ interface DisplayClient {
  
    // Creates a LayeredWindowUpdater implementation to draw into a layered
    // window.
