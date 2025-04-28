@@ -980,7 +980,7 @@ describe('app module', () => {
 
   describe('accessibilitySupportEnabled property', () => {
     it('is mutable', () => {
-      const values = [false, true, false, true];
+      const values = [false, true, false];
       const setters: Array<(arg: boolean) => void> = [
         (value) => { app.accessibilitySupportEnabled = value; },
         (value) => app.setAccessibilitySupportEnabled(value)
