@@ -649,8 +649,9 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 void NativeWindowViews::Maximize() {
 #if BUILDFLAG(IS_WIN)
   if (IsTranslucent()) {
-    // If a window is translucent but not transparent on Windows,
-    // that means it must have a backgroundMaterial set.
+    // Semi-transparent windows with backgroundMaterial not set to 'none', and
+    // not fully transparent, require manual handling of rounded corners when
+    // maximized.
     if (rounded_corner_)
       SetRoundedCorners(false);
 
