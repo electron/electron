@@ -497,7 +497,7 @@ A `Integer` property representing the unique ID of the window. Each ID is unique
 
 A `string` (optional) property that is equal to the `tabbingIdentifier` passed to the `BrowserWindow` constructor or `undefined` if none was set.
 
-#### `win.autoHideMenuBar`
+#### `win.autoHideMenuBar` _Linux_ _Windows_
 
 A `boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
 
