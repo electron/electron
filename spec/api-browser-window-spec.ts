@@ -5406,6 +5406,26 @@ describe('BrowserWindow module', () => {
         expect(w.webContents.isLoadingMainFrame()).to.be.true('isLoadingMainFrame');
       });
     });
+
+    ifdescribe(['darwin', 'linux'].includes(process.platform))('visibleOnAllWorkspaces state', () => {
+      it('with properties', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.visibleOnAllWorkspaces).to.be.false();
+          w.visibleOnAllWorkspaces = true;
+          expect(w.visibleOnAllWorkspaces).to.be.true();
+        });
+      });
+
+      it('with functions', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.isVisibleOnAllWorkspaces()).to.be.false();
+          w.setVisibleOnAllWorkspaces(true);
+          expect(w.isVisibleOnAllWorkspaces()).to.be.true();
+        });
+      });
+    });
   });
 
   ifdescribe(process.platform !== 'linux')('window states (excluding Linux)', () => {
@@ -5442,26 +5462,6 @@ describe('BrowserWindow module', () => {
           expect(w.isMovable()).to.be.false('movable');
           w.setMovable(true);
           expect(w.isMovable()).to.be.true('movable');
-        });
-      });
-    });
-
-    ifdescribe(['darwin', 'linux'].includes(process.platform))('visibleOnAllWorkspaces state', () => {
-      it('with properties', () => {
-        it('can be changed', () => {
-          const w = new BrowserWindow({ show: false });
-          expect(w.visibleOnAllWorkspaces).to.be.false();
-          w.visibleOnAllWorkspaces = true;
-          expect(w.visibleOnAllWorkspaces).to.be.true();
-        });
-      });
-
-      it('with functions', () => {
-        it('can be changed', () => {
-          const w = new BrowserWindow({ show: false });
-          expect(w.isVisibleOnAllWorkspaces()).to.be.false();
-          w.setVisibleOnAllWorkspaces(true);
-          expect(w.isVisibleOnAllWorkspaces()).to.be.true();
         });
       });
     });
