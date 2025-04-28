@@ -5408,7 +5408,7 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(['darwin', 'linux'].includes(process.platform))('visibleOnAllWorkspaces state', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
           expect(w.visibleOnAllWorkspaces).to.be.false();
@@ -5417,7 +5417,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
           expect(w.isVisibleOnAllWorkspaces()).to.be.false();
