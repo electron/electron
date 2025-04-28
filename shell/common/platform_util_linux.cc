@@ -436,6 +436,7 @@ std::string GetXdgAppId() {
       desktop_file_name->resize(desktop_file_name->size() -
                                 kDesktopExtension.size());
     }
+    return *desktop_file_name;
   }
 
   return "";
