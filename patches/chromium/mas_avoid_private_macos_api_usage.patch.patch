@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2e12fdc3f0d49e899d8ce8df570a4222fc84c956..73cc370f8c7390e156224f328c28f7b588ba8f30 100644
+index acec47a0be2986a4d7fe1e1284db0260e5814d6c..69a68e3776f142ab77f838a7c1827b1de99d4605 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1045,6 +1045,7 @@ component("base") {
@@ -1678,7 +1678,7 @@ index 6846060ef9622d8fc8d1d6c8da16e2f1b785e6bd..05c22db87e882b246bd7034e027cf149
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 8abb389faddb435980c1c06c3d69e33d5bf13881..62bb9b60b54252a44590616142a0beabbf6b55bf 100644
+index dfca458adb5b38cb1e597c16e9e6b6cc1521dea2..2372ff1193d1d52b719b6ee311cc07ac472a2f8d 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -365,6 +365,13 @@ component("base") {
@@ -1925,7 +1925,7 @@ index a8f20a694252ae90eb6c6c7d77d250dcdb2df1a3..8e3f87df5e1345ddeb12cb424abaf3a4
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index f71a4c7559edf9d8c420ca20aa7bd89097498951..6e94f732d996a726d5147db9b96c5e39e68d2fb5 100644
+index dcbd888db4ffec7b960bca18837c5210eb99bd87..2583e94b7de865ab5f02566760e9994a9f3bc434 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -18,6 +18,7 @@
@@ -1946,7 +1946,7 @@ index f71a4c7559edf9d8c420ca20aa7bd89097498951..6e94f732d996a726d5147db9b96c5e39
  @class NSView;
  
  namespace remote_cocoa {
-@@ -497,10 +500,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -501,10 +504,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    mojo::AssociatedRemote<remote_cocoa::mojom::NativeWidgetNSWindow>
        remote_ns_window_remote_;
  
@@ -1960,7 +1960,7 @@ index f71a4c7559edf9d8c420ca20aa7bd89097498951..6e94f732d996a726d5147db9b96c5e39
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 896ff97c4799a31f14bce4c25ca6d33e7dd2e2e8..0c9f3b71063ff55ea16d23fd6de2b8984feba0e0 100644
+index cfd4c6bd099edfcf10ed33be000c665a6d4af16e..1d77de15d281c597c1cb3dbca04eb4d8e16cc11d 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -21,6 +21,7 @@
@@ -1997,7 +1997,7 @@ index 896ff97c4799a31f14bce4c25ca6d33e7dd2e2e8..0c9f3b71063ff55ea16d23fd6de2b898
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1393,9 +1402,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1407,9 +1416,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // for PWAs. However this breaks accessibility on in-process windows,
    // so set it back to NO when a local window gains focus. See
    // https://crbug.com/41485830.
@@ -2009,7 +2009,7 @@ index 896ff97c4799a31f14bce4c25ca6d33e7dd2e2e8..0c9f3b71063ff55ea16d23fd6de2b898
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder) {
-@@ -1536,17 +1547,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1550,17 +1561,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -2030,7 +2030,7 @@ index 896ff97c4799a31f14bce4c25ca6d33e7dd2e2e8..0c9f3b71063ff55ea16d23fd6de2b898
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1559,6 +1573,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1573,6 +1587,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);

@@ -151,13 +151,18 @@ int NodeMain() {
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-  std::string fd_string, pid_string;
-  if (os_env->GetVar("CRASHDUMP_SIGNAL_FD", &fd_string) &&
-      os_env->GetVar("CRASHPAD_HANDLER_PID", &pid_string)) {
-    int fd = -1, pid = -1;
-    DCHECK(base::StringToInt(fd_string, &fd));
-    DCHECK(base::StringToInt(pid_string, &pid));
+  int pid = -1;
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  std::optional<std::string> fd_string = os_env->GetVar("CRASHDUMP_SIGNAL_FD");
+  std::optional<std::string> pid_string =
+      os_env->GetVar("CRASHPAD_HANDLER_PID");
+  if (fd_string && pid_string) {
+    int fd = -1;
+    DCHECK(base::StringToInt(fd_string.value(), &fd));
+    DCHECK(base::StringToInt(pid_string.value(), &pid));
     base::GlobalDescriptors::GetInstance()->Set(kCrashDumpSignal, fd);
+    command_line->AppendSwitchASCII(
+        crash_reporter::switches::kCrashpadHandlerPid, pid_string.value());
     // Following API is unsafe in multi-threaded scenario, but at this point
     // we are still single threaded.
     os_env->UnSetVar("CRASHDUMP_SIGNAL_FD");
@@ -200,10 +205,7 @@ int NodeMain() {
 #if BUILDFLAG(IS_LINUX)
     // On Linux, initialize crashpad after Nodejs init phase so that
     // crash and termination signal handlers can be set by the crashpad client.
-    if (!pid_string.empty()) {
-      auto* command_line = base::CommandLine::ForCurrentProcess();
-      command_line->AppendSwitchASCII(
-          crash_reporter::switches::kCrashpadHandlerPid, pid_string);
+    if (pid != -1) {
       ElectronCrashReporterClient::Create();
       crash_reporter::InitializeCrashpad(false, "node");
       crash_keys::SetCrashKeysFromCommandLine(

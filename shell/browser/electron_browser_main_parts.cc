@@ -308,9 +308,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   auto env = base::Environment::Create();
   std::optional<std::string> lc_all;
   if (!locale.empty()) {
-    std::string str;
-    if (env->GetVar("LC_ALL", &str))
-      lc_all.emplace(std::move(str));
+    lc_all = env->GetVar("LC_ALL");
     env->SetVar("LC_ALL", locale);
   }
 #endif

@@ -80,10 +80,10 @@ index 4fd8dff1089cd6afa6a66dc185734d7671657281..0a1f4268ea771a3d5d4a2668928c6e5d
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 4650a05dbfa8fb464a6264fc6d4f0108fbd60150..9f70060a0d581bafa5d74cc22c28285bc25b392a 100644
+index acb3a3aa595f3e6694270c928b9422388c0f25a5..670f77936863c686aca70072e9d42293463a6a28 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2310,12 +2310,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2314,12 +2314,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index 4650a05dbfa8fb464a6264fc6d4f0108fbd60150..9f70060a0d581bafa5d74cc22c28285b
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 23e920f90bca09f0e1efacf1a4291f7080dce382..0f12cca9cba240f8b8e620fbf4f99cbf3e9e6ea8 100644
+index c4cea0b6e8c4c95ebcddf5497d731d1d63934f22..7686b75c5504d093dcd9dd8a7ffd28e0c2fd036c 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -1025,8 +1025,7 @@ class Browser : public TabStripModelObserver,
+@@ -1026,8 +1026,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6e9b45c4b257edd7e7a5c452f709a0b9b64250fe..6dbbe9cf521eb5b165f1de1fc1db2a01e69e5d9b 100644
+index 7a8d7ce6f628123f5288d693046ca7602eeccac1..f73f2ac411c0af45d7c0a4ba94222b2bd1d4841c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5000,8 +5000,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5008,8 +5008,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // TODO(crbug.com/40202416): Support a way for MPArch guests to support this.
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,

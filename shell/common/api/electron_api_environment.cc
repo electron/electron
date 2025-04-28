@@ -9,9 +9,9 @@
 namespace {
 
 v8::Local<v8::Value> GetVar(v8::Isolate* isolate, const std::string& name) {
-  std::string value;
-  if (base::Environment::Create()->GetVar(name, &value)) {
-    return gin::StringToV8(isolate, value);
+  if (std::optional<std::string> value =
+          base::Environment::Create()->GetVar(name)) {
+    return gin::StringToV8(isolate, *value);
   } else {
     return v8::Null(isolate);
   }

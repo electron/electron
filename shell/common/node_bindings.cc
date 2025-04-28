@@ -394,9 +394,8 @@ void SetNodeOptions(base::Environment* env) {
 
   if (env->HasVar("NODE_OPTIONS")) {
     if (electron::fuses::IsNodeOptionsEnabled()) {
-      std::string options;
       std::string result_options;
-      env->GetVar("NODE_OPTIONS", &options);
+      std::string options = env->GetVar("NODE_OPTIONS").value();
       const std::vector<std::string_view> parts = base::SplitStringPiece(
           options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
