@@ -1,14 +1,35 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Shelley Vohr <shelley.vohr@gmail.com>
-Date: Thu, 24 Nov 2022 12:29:41 +0100
+From: reito <reito@chromium.org>
+Date: Mon, 28 Apr 2025 10:02:17 +0800
 Subject: chore: patch out Profile methods in profile_selections.cc
 
 We do not support the concept of Profiles and profile->IsSystemProfile()
 is therefore not a method that will compile given we don't include
 relevant files.
 
+remove usage of incognito APIs in the spellchecker
+
+chrome::GetBrowserContextRedirectedInIncognito is not available in
+Electron nor do we want it to be.  We could potentially upstream a
+change to move more of //chrome spellchecker logic into //components so
+that we can further separate our dependency from //chrome.
+
+diff --git a/chrome/browser/profiles/profile_keyed_service_factory.cc b/chrome/browser/profiles/profile_keyed_service_factory.cc
+index 30a7e6a641e7b17a47fb5c66fb44d3d5899b9e78..85764a533585df0abe398758e4fd510c711de375 100644
+--- a/chrome/browser/profiles/profile_keyed_service_factory.cc
++++ b/chrome/browser/profiles/profile_keyed_service_factory.cc
+@@ -22,6 +22,9 @@ ProfileKeyedServiceFactory::~ProfileKeyedServiceFactory() = default;
+ 
+ content::BrowserContext* ProfileKeyedServiceFactory::GetBrowserContextToUse(
+     content::BrowserContext* context) const {
++  return context;
++#if 0
+   Profile* profile = Profile::FromBrowserContext(context);
+   return profile_selections_.ApplyProfileSelection(profile);
++#endif
+ }
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index bc0bad82ebcdceadc505e912ff27202b452fefab..23355e00f9ff99c1b0d981076df97b5d4af355c2 100644
+index 25b15408665dc95702e7f1382fb8e7c0bb493599..94651992f26cb69b8dc9db1ba710b44ad1a07171 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
 @@ -13,6 +13,7 @@
@@ -28,3 +49,38 @@ index bc0bad82ebcdceadc505e912ff27202b452fefab..23355e00f9ff99c1b0d981076df97b5d
    return false;
  }
  
+@@ -106,6 +107,7 @@ ProfileSelections ProfileSelections::BuildRedirectedInIncognito() {
+ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
+   CHECK(profile);
+ 
++#if 0
+   ProfileSelection selection = GetProfileSelection(profile);
+   switch (selection) {
+     case ProfileSelection::kNone:
+@@ -119,6 +121,9 @@ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
+     case ProfileSelection::kOffTheRecordOnly:
+       return profile->IsOffTheRecord() ? profile : nullptr;
+   }
++#endif
++
++  return nullptr;
+ }
+ 
+ ProfileSelection ProfileSelections::GetProfileSelection(
+@@ -132,6 +137,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+   }
+ #endif  // BUILDFLAG(IS_CHROMEOS)
+ 
++#if 0
+   // Treat other off the record profiles as Incognito (primary otr) Profiles.
+   if (profile->IsRegularProfile() || profile->IsIncognitoProfile() ||
+       profile_metrics::GetBrowserProfileType(profile) ==
+@@ -148,6 +154,8 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+   }
+ 
+   NOTREACHED();
++#endif
++  return ProfileSelection::kNone;
+ }
+ 
+ void ProfileSelections::SetProfileSelectionForRegular(
