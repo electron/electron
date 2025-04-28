@@ -384,6 +384,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     }
 
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
+    SetRoundedCorners(rounded_corner_);
   }
 
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
