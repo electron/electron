@@ -58,8 +58,8 @@
   `false` on macOS. This option is not configurable on other platforms.
 * `disableAutoHideCursor` boolean (optional) - Whether to hide cursor when typing.
   Default is `false`.
-* `autoHideMenuBar` boolean (optional) - Auto hide the menu bar unless the `Alt`
-  key is pressed. Default is `false`.
+* `autoHideMenuBar` boolean (optional) _Linux_ _Windows_ - Auto hide the menu bar
+  unless the `Alt` key is pressed. Default is `false`.
 * `enableLargerThanScreen` boolean (optional) _macOS_ - Enable the window to
   be resized larger than screen. Only relevant for macOS, as other OSes
   allow larger-than-screen windows by default. Default is `false`.
