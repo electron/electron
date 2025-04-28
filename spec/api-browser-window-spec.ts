@@ -5446,7 +5446,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    describe('visibleOnAllWorkspaces state', () => {
+    ifdescribe(['darwin', 'linux'].includes(process.platform))('visibleOnAllWorkspaces state', () => {
       it('with properties', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
