@@ -5226,7 +5226,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('resizable state', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be set with resizable constructor option', () => {
           const w = new BrowserWindow({ show: false, resizable: false });
           expect(w.resizable).to.be.false('resizable');
@@ -5246,7 +5246,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be set with resizable constructor option', () => {
           const w = new BrowserWindow({ show: false, resizable: false });
           expect(w.isResizable()).to.be.false('resizable');
@@ -5525,7 +5525,7 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('representedFilename', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
           expect(w.representedFilename).to.eql('');
@@ -5534,7 +5534,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
           expect(w.getRepresentedFilename()).to.eql('');
@@ -5579,7 +5579,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('maximizable state (property)', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be set with maximizable constructor option', () => {
           const w = new BrowserWindow({ show: false, maximizable: false });
           expect(w.maximizable).to.be.false('maximizable');
@@ -5612,7 +5612,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be set with maximizable constructor option', () => {
           const w = new BrowserWindow({ show: false, maximizable: false });
           expect(w.isMaximizable()).to.be.false('isMaximizable');
