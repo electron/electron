@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_
 #define ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_
 
+#include <optional>
 #include <string>
 
 #include "base/files/file_path.h"

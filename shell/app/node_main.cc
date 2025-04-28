@@ -152,15 +152,15 @@ int NodeMain() {
 
 #if BUILDFLAG(IS_LINUX)
   int pid = -1;
-  if (std::optional<std::string> fd_string =
-          os_env->GetVar("CRASHDUMP_SIGNAL_FD") &&
-          std::optional<std::string> pid_string =
-              os_env->GetVar("CRASHPAD_HANDLER_PID")) {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  std::optional<std::string> fd_string = os_env->GetVar("CRASHDUMP_SIGNAL_FD");
+  std::optional<std::string> pid_string =
+      os_env->GetVar("CRASHPAD_HANDLER_PID");
+  if (fd_string && pid_string) {
     int fd = -1;
     DCHECK(base::StringToInt(fd_string.value(), &fd));
     DCHECK(base::StringToInt(pid_string.value(), &pid));
     base::GlobalDescriptors::GetInstance()->Set(kCrashDumpSignal, fd);
-    auto* command_line = base::CommandLine::ForCurrentProcess();
     command_line->AppendSwitchASCII(
         crash_reporter::switches::kCrashpadHandlerPid, pid_string.value());
     // Following API is unsafe in multi-threaded scenario, but at this point

@@ -109,8 +109,8 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  const std::vector<std::string> argv = {
-      kXdgSettings, "check", kXdgSettingsDefaultSchemeHandler, protocol};
+  std::vector<std::string> argv = {kXdgSettings, "check",
+                                   kXdgSettingsDefaultSchemeHandler, protocol};
   if (std::optional<std::string> desktop_name = env->GetVar("CHROME_DESKTOP")) {
     argv.emplace_back(desktop_name.value());
   } else {

@@ -129,7 +129,7 @@ void ElectronBrowserMainParts::DetectOzonePlatform() {
   }
 
   if (std::optional<std::string> desktop_startup_id =
-          desktop_startup_idenv->GetVar("DESKTOP_STARTUP_ID"))
+          env->GetVar("DESKTOP_STARTUP_ID"))
     command_line->AppendSwitchASCII("desktop-startup-id", *desktop_startup_id);
 }
 
