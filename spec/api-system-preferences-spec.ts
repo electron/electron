@@ -2,8 +2,8 @@ import { systemPreferences } from 'electron/main';
 
 import { expect } from 'chai';
 
-import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { ifdescribe } from './lib/spec-helpers';
+import { expectDeprecationMessages } from './lib/warning-helpers';
 
 describe('systemPreferences module', () => {
   ifdescribe(process.platform === 'win32')('systemPreferences.getAccentColor', () => {
