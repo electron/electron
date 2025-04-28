@@ -379,9 +379,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
       frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
 
-    bool rounded_corner = true;
-    options.Get(options::kRoundedCorners, &rounded_corner);
-    SetRoundedCorners(rounded_corner);
+    options.Get(options::kRoundedCorners, &rounded_corner_);
+    SetRoundedCorners(rounded_corner_);
   }
 
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
@@ -648,8 +647,9 @@ void NativeWindowViews::Maximize() {
   if (IsTranslucent()) {
     // If a window is translucent but not transparent on Windows,
     // that means it must have a backgroundMaterial set.
-    if (!transparent())
+    if (rounded_corner_)
       SetRoundedCorners(false);
+
     restore_bounds_ = GetBounds();
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
         GetNativeWindow());
@@ -678,7 +678,8 @@ void NativeWindowViews::Unmaximize() {
     NotifyWindowUnmaximize();
     if (transparent()) {
       UpdateThickFrame();
-    } else {
+    }
+    if (rounded_corner_) {
       SetRoundedCorners(true);
     }
     return;
@@ -724,7 +725,8 @@ void NativeWindowViews::Restore() {
     NotifyWindowRestore();
     if (transparent()) {
       UpdateThickFrame();
-    } else {
+    }
+    if (rounded_corner_) {
       SetRoundedCorners(true);
     }
     return;
@@ -756,6 +758,12 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   } else {
     last_window_state_ = ui::mojom::WindowShowState::kNormal;
     NotifyWindowLeaveFullScreen();
+  }
+
+  // If round corners are enabled,
+  // they need to be set based on whether the window is fullscreen.
+  if (rounded_corner_) {
+    SetRoundedCorners(!fullscreen);
   }
 
   // For window without WS_THICKFRAME style, we can not call SetFullscreen().
