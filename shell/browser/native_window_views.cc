@@ -1538,6 +1538,13 @@ void NativeWindowViews::SetVisibleOnAllWorkspaces(
 }
 
 bool NativeWindowViews::IsVisibleOnAllWorkspaces() const {
+  // NB: Electron >= 37 has a better long-term fix, but it also has an edge
+  // case which is a breaking change. The code here is dirtier (e.g. accessing
+  // a method marked as private) to avoid that edge case. More info @
+  // https://github.com/electron/electron/pull/46834#issuecomment-2836287699
+  if (const auto* view_native_widget = widget()->native_widget_private())
+    return view_native_widget->IsVisibleOnAllWorkspaces();
+
 #if BUILDFLAG(IS_LINUX)
   if (IsX11()) {
     // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
