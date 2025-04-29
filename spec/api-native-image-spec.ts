@@ -4,8 +4,8 @@ import { expect } from 'chai';
 
 import * as path from 'node:path';
 
-import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
+import { expectDeprecationMessages } from './lib/warning-helpers';
 
 describe('nativeImage module', () => {
   const fixturesPath = path.join(__dirname, 'fixtures');
