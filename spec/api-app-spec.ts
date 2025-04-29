@@ -979,22 +979,22 @@ describe('app module', () => {
   });
 
   ifdescribe(process.platform !== 'linux')('accessibilitySupportEnabled property', () => {
-    it('with properties', () => {
-      it('can set accessibility support enabled', () => {
-        expect(app.accessibilitySupportEnabled).to.eql(false);
-
-        app.accessibilitySupportEnabled = true;
-        expect(app.accessibilitySupportEnabled).to.eql(true);
-      });
-    });
-
-    describe('with functions', () => {
-      it('can set accessibility support enabled', () => {
-        expect(app.isAccessibilitySupportEnabled()).to.eql(false);
-
-        app.setAccessibilitySupportEnabled(true);
-        expect(app.isAccessibilitySupportEnabled()).to.eql(true);
-      });
+    it('is mutable', () => {
+      const values = [false, true, false];
+      const setters: Array<(arg: boolean) => void> = [
+        (value) => { app.accessibilitySupportEnabled = value; },
+        (value) => app.setAccessibilitySupportEnabled(value)
+      ];
+      const getters: Array<() => boolean> = [
+        () => app.accessibilitySupportEnabled,
+        () => app.isAccessibilitySupportEnabled()
+      ];
+      for (const value of values) {
+        for (const set of setters) {
+          set(value);
+          for (const get of getters) expect(get()).to.eql(value);
+        }
+      }
     });
   });
 
