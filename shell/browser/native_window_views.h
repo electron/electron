@@ -286,6 +286,9 @@ class NativeWindowViews : public NativeWindow,
   HWND legacy_window_ = nullptr;
   bool layered_ = false;
 
+  // This value is determined when the window is created.
+  bool rounded_corner_ = true;
+
   // Set to true if the window is always on top and behind the task bar.
   bool behind_task_bar_ = false;
 
