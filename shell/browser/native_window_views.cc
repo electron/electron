@@ -446,17 +446,9 @@ NativeWindowViews::~NativeWindowViews() {
   SetForwardMouseMessages(false);
 #endif
 
-  if (aura::Window* const window = GetNativeWindow())
+  aura::Window* window = GetNativeWindow();
+  if (window)
     window->RemovePreTargetHandler(this);
-
-  if (is_modal()) {
-    if (NativeWindow* const parent = this->parent()) {
-      // Enable parent window after current window gets closed.
-      static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
-      // Focus on parent window.
-      parent->Focus(true);
-    }
-  }
 }
 
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
@@ -1709,13 +1701,22 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
 }
 
 void NativeWindowViews::OnWidgetDestroying(views::Widget* widget) {
-  aura::Window* window = GetNativeWindow();
-  if (window)
+  if (aura::Window* window = GetNativeWindow())
     window->RemovePreTargetHandler(this);
+
+  if (is_modal()) {
+    if (NativeWindow* const parent = this->parent()) {
+      // Enable parent window after current window gets closed.
+      static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
+      // Focus on parent window.
+      parent->Focus(true);
+    }
+  }
 }
 
 void NativeWindowViews::OnWidgetDestroyed(views::Widget* changed_widget) {
   widget_destroyed_ = true;
+  NotifyWindowClosed();
 }
 
 views::View* NativeWindowViews::GetInitiallyFocusedView() {
