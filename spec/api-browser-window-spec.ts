@@ -3888,8 +3888,14 @@ describe('BrowserWindow module', () => {
         });
         it('works for window events', async () => {
           const pageTitleUpdated = once(w, 'page-title-updated');
-          w.loadURL('data:text/html,<script>document.title = \'changed\'</script>');
+          const newTitle = 'changed';
+          w.loadURL(`data:text/html,<script>document.title = '${newTitle}'</script>`);
           await pageTitleUpdated;
+
+          // w.title should update after 'page-title-updated'.
+          // It happens right *after* the event fires though,
+          // so we have to waitUntil it changes
+          waitUntil(() => w.title === newTitle);
         });
 
         it('works for stop events', async () => {
