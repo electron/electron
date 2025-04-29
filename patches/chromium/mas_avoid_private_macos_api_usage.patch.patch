@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index acec47a0be2986a4d7fe1e1284db0260e5814d6c..69a68e3776f142ab77f838a7c1827b1de99d4605 100644
+index 59721ed3c9e26fd83c553d82030f3e76af0c3dfd..e8a9715e9004e5d10aa96298332237c78796bf5b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1045,6 +1045,7 @@ component("base") {
@@ -582,7 +582,7 @@ index eca43bf620111c27c400ae2d95880e47c34fbc59..12ee7e75e437426f28002c7c9f4d5f5b
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 327caa3eae27370786cb66184c1ba48f1767b3ee..aa109c5c123613dfb7258267830eaa859c1d95d1 100644
+index 3256304fe1bfb80af0312f9046b1a78a2469956e..29281a0d8a4383ed4b2d5d8bac934acd54040aa8 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index b61e76a3b9136931cb6280ddfecff82889725a16..99bc0b5f06e11d67b598ec4b0d6262ae359ffc27 100644
+index 126c0d51647ef46a12b2c47930f7bd49e55dd736..d61474fb3478a27450a037f50d2a734097eb4ca9 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -662,6 +662,7 @@ static_library("test_support") {
@@ -824,7 +824,7 @@ index b61e76a3b9136931cb6280ddfecff82889725a16..99bc0b5f06e11d67b598ec4b0d6262ae
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3282,6 +3285,7 @@ test("content_unittests") {
+@@ -3283,6 +3286,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1960,7 +1960,7 @@ index dcbd888db4ffec7b960bca18837c5210eb99bd87..2583e94b7de865ab5f02566760e9994a
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index cfd4c6bd099edfcf10ed33be000c665a6d4af16e..1d77de15d281c597c1cb3dbca04eb4d8e16cc11d 100644
+index 32a3747e3fad70ba7665c1080863058bfb8a07d0..b51482ecbb8eaed649ae0ea9dd9c7c71125b51a2 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -21,6 +21,7 @@
@@ -1997,7 +1997,7 @@ index cfd4c6bd099edfcf10ed33be000c665a6d4af16e..1d77de15d281c597c1cb3dbca04eb4d8
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1407,9 +1416,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1414,9 +1423,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // for PWAs. However this breaks accessibility on in-process windows,
    // so set it back to NO when a local window gains focus. See
    // https://crbug.com/41485830.
@@ -2009,7 +2009,7 @@ index cfd4c6bd099edfcf10ed33be000c665a6d4af16e..1d77de15d281c597c1cb3dbca04eb4d8
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder) {
-@@ -1550,17 +1561,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1557,17 +1568,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -2030,7 +2030,7 @@ index cfd4c6bd099edfcf10ed33be000c665a6d4af16e..1d77de15d281c597c1cb3dbca04eb4d8
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1573,6 +1587,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1580,6 +1594,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);
