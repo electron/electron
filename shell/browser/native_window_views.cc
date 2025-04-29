@@ -634,13 +634,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 
 void NativeWindowViews::Maximize() {
 #if BUILDFLAG(IS_WIN)
-  if (IsTranslucent()) {
-    // Semi-transparent windows with backgroundMaterial not set to 'none', and
-    // not fully transparent, require manual handling of rounded corners when
-    // maximized.
-    if (rounded_corner_)
-      SetRoundedCorners(false);
-
+  if (transparent()) {
     restore_bounds_ = GetBounds();
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
         GetNativeWindow());
@@ -664,15 +658,10 @@ void NativeWindowViews::Unmaximize() {
     return;
 
 #if BUILDFLAG(IS_WIN)
-  if (IsTranslucent()) {
+  if (transparent()) {
     SetBounds(restore_bounds_, false);
     NotifyWindowUnmaximize();
-    if (transparent()) {
-      UpdateThickFrame();
-    }
-    if (rounded_corner_) {
-      SetRoundedCorners(true);
-    }
+    UpdateThickFrame();
     return;
   }
 #endif
@@ -689,7 +678,7 @@ bool NativeWindowViews::IsMaximized() const {
     return true;
 
 #if BUILDFLAG(IS_WIN)
-  if (IsTranslucent() && !IsMinimized()) {
+  if (transparent() && !IsMinimized()) {
     // If the window is the same dimensions and placement as the
     // display, we consider it maximized.
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
@@ -711,15 +700,10 @@ void NativeWindowViews::Minimize() {
 
 void NativeWindowViews::Restore() {
 #if BUILDFLAG(IS_WIN)
-  if (IsMaximized() && IsTranslucent()) {
+  if (IsMaximized() && transparent()) {
     SetBounds(restore_bounds_, false);
     NotifyWindowRestore();
-    if (transparent()) {
-      UpdateThickFrame();
-    }
-    if (rounded_corner_) {
-      SetRoundedCorners(true);
-    }
+    UpdateThickFrame();
     return;
   }
 #endif
@@ -865,7 +849,7 @@ gfx::Size NativeWindowViews::GetContentSize() const {
 
 gfx::Rect NativeWindowViews::GetNormalBounds() const {
 #if BUILDFLAG(IS_WIN)
-  if (IsMaximized() && IsTranslucent())
+  if (IsMaximized() && transparent())
     return restore_bounds_;
 #endif
   return widget()->GetRestoredBounds();
