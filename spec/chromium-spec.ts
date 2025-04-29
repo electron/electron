@@ -897,19 +897,19 @@ describe('chromium features', () => {
         const rc = await startRemoteControlApp(['--disable-geolocation']);
 
         const result = await rc.remotely(async (action: typeof handlerAction) => {
-          // Imports are needed because the remotely callback runs in the remote process context
           const { session, BrowserWindow } = require('electron');
           const path = require('node:path');
 
-          // Isolate each test's permissions by using unique sessions
+          // Isolate each test's permissions to prevent permission state leaks between the test variations
           const testSession = session.fromPartition(`geolocation-disable-${action}`);
 
           if (action !== 'none') {
+            // Make the PermissionRequestHandler behave according to action variable passed for this test
             testSession.setPermissionRequestHandler((_wc, permission, callback) => {
-              if (permission === 'geolocation' && action === 'allow') {
-                callback(true); // Simulate user allowing geolocation
-              } else {
-                callback(false);
+              if (permission === 'geolocation') {
+                if (action === 'allow') callback(true);
+                else if (action === 'deny') callback(false);
+                else callback(false);
               }
             });
           }
