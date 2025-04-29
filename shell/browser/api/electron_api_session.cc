@@ -852,7 +852,6 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
          const base::Value& details) {
 #if (BUILDFLAG(IS_MAC))
         if (permission_type == blink::PermissionType::GEOLOCATION) {
-          //
           if (IsGeolocationDisabledViaCommandLine()) {
             auto original_callback = std::move(callback);
             callback = base::BindOnce(
