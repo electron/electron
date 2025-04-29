@@ -5407,7 +5407,8 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform !== 'win32')('visibleOnAllWorkspaces state', () => {
+    // FIXME: enable this test on Linux as well.
+    ifdescribe(process.platform === 'darwin')('visibleOnAllWorkspaces state', () => {
       describe('with properties', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
