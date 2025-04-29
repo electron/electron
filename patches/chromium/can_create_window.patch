@@ -66,7 +66,7 @@ index 55bb4ae3bab4cdf20b3e1dde9450a5c0e4e62b37..fe444c7fa140166a1b65c7a8a2676e2d
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 0c3731448b236cedd333aa0a9a0b01577596d4bc..cd3ab7d799e31b2ce0f9b7a280121b07d740865d 100644
+index 9c36ad70531bd8c31158c741ab23763ea00bc068..6909f75fb4cbd0e7b4f3067cda52a5f67dc100de 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -821,6 +821,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index 0c3731448b236cedd333aa0a9a0b01577596d4bc..cd3ab7d799e31b2ce0f9b7a280121b07
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index d8b137849e15749e011b1c8ae1cb78cd0ed47844..f25e2eaeacfef82ca904e40f8b7b3913a121db9d 100644
+index f1fee091b84aec20f1e15dcc90917e50bb47d1c6..3a7a6dc0a4e75c151379f8488d371439a808f1a9 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -199,6 +199,7 @@ class NetworkService;

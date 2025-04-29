@@ -58,7 +58,7 @@ index 6c36ada80f6f225b84a8f3832405128f8ba83224..714d582d1060873765b24770b18eddcb
        NOTREACHED();
    }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 8abbc34ec283562685a46e10142901110b5c0b55..1c436c62cac1bc4b21255bdcbb2c18b882c4058b 100644
+index b19b5781f426bdfd4a8b6dfbead0f854545ca90a..9833c25f97e55ab7e7095243c307a90fbf4b53d8 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
 @@ -101,6 +101,8 @@ std::string GetPermissionString(PermissionType permission) {
@@ -71,9 +71,9 @@ index 8abbc34ec283562685a46e10142901110b5c0b55..1c436c62cac1bc4b21255bdcbb2c18b8
        NOTREACHED();
    }
 @@ -175,6 +177,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+     case PermissionType::NOTIFICATIONS:
+     case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
-     // TODO(crbug.com/394009026): Add permission policy for LNA.
-     case PermissionType::LOCAL_NETWORK_ACCESS:
 +    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
        return std::nullopt;
  
@@ -141,7 +141,7 @@ index c269698764bb8ae7f85c5d476436f5ae5209576d..65d7fd94128a755609192784722074c6
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 843a4f27807071eabfdbffce589a31ddac75aacb..8d189eae97caa48a5796c540a74aaafa2fa676ff 100644
+index 691726eb23434005adc559534fc0aeede937cc92..a980ed6afb84eceef9c9b594b325e8e3783821ec 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
 @@ -145,6 +145,8 @@ String PermissionNameToString(PermissionName name) {

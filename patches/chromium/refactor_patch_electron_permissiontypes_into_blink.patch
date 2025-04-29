@@ -80,7 +80,7 @@ index 714d582d1060873765b24770b18eddcbbdcf5506..3746bafd72223a65c4183a59726601e8
        NOTREACHED();
    }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 1c436c62cac1bc4b21255bdcbb2c18b882c4058b..929302db8d21c0cf8c16fc167a7b2110a400abfa 100644
+index 9833c25f97e55ab7e7095243c307a90fbf4b53d8..6489d1c932fc8e92e13af55227088fa1c169dcd6 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
 @@ -101,8 +101,23 @@ std::string GetPermissionString(PermissionType permission) {
@@ -107,11 +107,10 @@ index 1c436c62cac1bc4b21255bdcbb2c18b882c4058b..929302db8d21c0cf8c16fc167a7b2110
      case PermissionType::NUM:
        NOTREACHED();
    }
-@@ -177,7 +192,16 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+@@ -177,7 +192,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+     case PermissionType::NOTIFICATIONS:
+     case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
-     // TODO(crbug.com/394009026): Add permission policy for LNA.
-     case PermissionType::LOCAL_NETWORK_ACCESS:
-+      return std::nullopt;
 +
 +    // Permissions added by Electron
      case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
@@ -124,7 +123,7 @@ index 1c436c62cac1bc4b21255bdcbb2c18b882c4058b..929302db8d21c0cf8c16fc167a7b2110
        return std::nullopt;
  
      case PermissionType::NUM:
-@@ -345,9 +369,26 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
+@@ -345,9 +368,26 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
        return PermissionType::HAND_TRACKING;
      case PermissionName::WEB_PRINTING:
        return PermissionType::WEB_PRINTING;
@@ -198,7 +197,7 @@ index e47f2089a6a187b26c981afa1ef4135ec5e6a9e7..d66eb48c619dde34c59f33c5aaa0e38c
  
  struct MidiPermissionDescriptor {
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 8d189eae97caa48a5796c540a74aaafa2fa676ff..fd3e12b88df9c944256358129ca3df1ac3f168d6 100644
+index a980ed6afb84eceef9c9b594b325e8e3783821ec..ff2898ca035ae5f2bc218615a87ec148e3764385 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
 @@ -145,8 +145,22 @@ String PermissionNameToString(PermissionName name) {
