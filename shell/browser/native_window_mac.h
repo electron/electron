@@ -223,6 +223,7 @@ class NativeWindowMac : public NativeWindow,
   std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
       views::Widget* widget) override;
   void OnWidgetInitialized() override;
+  void OnWidgetDestroying(views::Widget* widget) override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
