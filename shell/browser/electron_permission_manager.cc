@@ -53,16 +53,6 @@ void PermissionRequestResponseCallbackWrapper(
 
 }  // namespace
 
-bool IsGeolocationDisabledViaCommandLine() {
-// Remove platform check once flag is extended to other platforms
-#if BUILDFLAG(IS_MAC)
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  return command_line->HasSwitch("disable-geolocation");
-#else
-  return false;
-#endif
-}
-
 class ElectronPermissionManager::PendingRequest {
  public:
   PendingRequest(content::RenderFrameHost* render_frame_host,
@@ -151,6 +141,16 @@ void ElectronPermissionManager::SetProtectedUSBHandler(
 void ElectronPermissionManager::SetBluetoothPairingHandler(
     const BluetoothPairingHandler& handler) {
   bluetooth_pairing_handler_ = handler;
+}
+
+bool ElectronPermissionManager::IsGeolocationDisabledViaCommandLine() {
+// Remove platform check once flag is extended to other platforms
+#if BUILDFLAG(IS_MAC)
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  return command_line->HasSwitch("disable-geolocation");
+#else
+  return false;
+#endif
 }
 
 void ElectronPermissionManager::RequestPermissionWithDetails(

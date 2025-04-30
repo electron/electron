@@ -29,8 +29,6 @@ class Local;
 
 namespace electron {
 
-bool IsGeolocationDisabledViaCommandLine();
-
 class ElectronBrowserContext;
 
 class ElectronPermissionManager : public content::PermissionControllerDelegate {
@@ -68,6 +66,8 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
 
   using BluetoothPairingHandler =
       base::RepeatingCallback<void(gin_helper::Dictionary, PairCallback)>;
+
+  static bool IsGeolocationDisabledViaCommandLine();
 
   void RequestPermissionWithDetails(
       blink::mojom::PermissionDescriptorPtr permission,

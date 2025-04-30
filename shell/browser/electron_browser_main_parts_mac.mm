@@ -33,14 +33,16 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
       setObject:@"NO"
          forKey:@"NSTreatUnknownArgumentsAsOpen"];
 
+  const bool geolocationDisabled =
+      ElectronPermissionManager::IsGeolocationDisabledViaCommandLine();
+
   // Check if geolocation api is NOT disabled via command line before
   // CreateGeolocationSystemPermissionManager is called
-  if (!IsGeolocationDisabledViaCommandLine()) {
-    if (!device::GeolocationSystemPermissionManager::GetInstance()) {
-      device::GeolocationSystemPermissionManager::SetInstance(
-          device::SystemGeolocationSourceApple::
-              CreateGeolocationSystemPermissionManager());
-    }
+  if (!geolocationDisabled &&
+      !device::GeolocationSystemPermissionManager::GetInstance()) {
+    device::GeolocationSystemPermissionManager::SetInstance(
+        device::SystemGeolocationSourceApple::
+            CreateGeolocationSystemPermissionManager());
   }
 }
 
