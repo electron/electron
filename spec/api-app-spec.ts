@@ -84,7 +84,7 @@ describe('app module', () => {
   });
 
   describe('app name APIs', () => {
-    it('with properties', () => {
+    describe('with properties', () => {
       it('returns the name field of package.json', () => {
         expect(app.name).to.equal('Electron Test Main');
       });
@@ -98,7 +98,7 @@ describe('app module', () => {
       });
     });
 
-    it('with functions', () => {
+    describe('with functions', () => {
       it('returns the name field of package.json', () => {
         expect(app.getName()).to.equal('Electron Test Main');
       });
@@ -988,7 +988,7 @@ describe('app module', () => {
       });
     });
 
-    it('with functions', () => {
+    describe('with functions', () => {
       it('can set accessibility support enabled', () => {
         expect(app.isAccessibilitySupportEnabled()).to.eql(false);
 
