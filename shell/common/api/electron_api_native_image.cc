@@ -286,9 +286,8 @@ v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
 
   if (!deprecated_warning_issued) {
     deprecated_warning_issued = true;
-    util::EmitWarning(isolate_,
-                      "getBitmap() is deprecated, use toBitmap() instead.",
-                      "DeprecationWarning");
+    util::EmitDeprecationWarning(
+        isolate_, "getBitmap() is deprecated, use toBitmap() instead.");
   }
 
   return ToBitmap(args);
