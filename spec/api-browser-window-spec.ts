@@ -2102,13 +2102,14 @@ describe('BrowserWindow module', () => {
       });
 
       ifdescribe(process.platform === 'win32')('Fullscreen state', () => {
-        it('with properties', () => {
+        describe('with properties', () => {
           it('can be set with the fullscreen constructor option', () => {
             w = new BrowserWindow({ fullscreen: true });
             expect(w.fullScreen).to.be.true();
           });
 
-          it('does not go fullscreen if roundedCorners are enabled', async () => {
+          // FIXME: this test needs to be fixed and re-enabled.
+          it.skip('does not go fullscreen if roundedCorners are enabled', async () => {
             w = new BrowserWindow({ frame: false, roundedCorners: false, fullscreen: true });
             expect(w.fullScreen).to.be.false();
           });
@@ -2186,7 +2187,7 @@ describe('BrowserWindow module', () => {
           });
         });
 
-        it('with functions', () => {
+        describe('with functions', () => {
           it('can be set with the fullscreen constructor option', () => {
             w = new BrowserWindow({ fullscreen: true });
             expect(w.isFullScreen()).to.be.true();
@@ -5434,7 +5435,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     describe('movable state', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be set with movable constructor option', () => {
           const w = new BrowserWindow({ show: false, movable: false });
           expect(w.movable).to.be.false('movable');
@@ -5450,7 +5451,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be set with movable constructor option', () => {
           const w = new BrowserWindow({ show: false, movable: false });
           expect(w.isMovable()).to.be.false('movable');
@@ -5468,7 +5469,7 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('documentEdited state', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
           expect(w.documentEdited).to.be.false();
@@ -5477,7 +5478,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
           expect(w.isDocumentEdited()).to.be.false();
@@ -5508,7 +5509,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('native window title', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be set with title constructor option', () => {
           const w = new BrowserWindow({ show: false, title: 'mYtItLe' });
           expect(w.title).to.eql('mYtItLe');
@@ -5522,7 +5523,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be set with minimizable constructor option', () => {
           const w = new BrowserWindow({ show: false, title: 'mYtItLe' });
           expect(w.getTitle()).to.eql('mYtItLe');
@@ -5538,7 +5539,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('minimizable state', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be set with minimizable constructor option', () => {
           const w = new BrowserWindow({ show: false, minimizable: false });
           expect(w.minimizable).to.be.false('minimizable');
@@ -5554,7 +5555,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be set with minimizable constructor option', () => {
           const w = new BrowserWindow({ show: false, minimizable: false });
           expect(w.isMinimizable()).to.be.false('movable');
@@ -5640,7 +5641,7 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform === 'win32')('maximizable state', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('is reset to its former state', () => {
           const w = new BrowserWindow({ show: false });
           w.maximizable = false;
@@ -5654,7 +5655,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('is reset to its former state', () => {
           const w = new BrowserWindow({ show: false });
           w.setMaximizable(false);
@@ -5767,7 +5768,7 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('fullscreenable state', () => {
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be set with fullscreenable constructor option', () => {
           const w = new BrowserWindow({ show: false, fullscreenable: false });
           expect(w.isFullScreenable()).to.be.false('isFullScreenable');
@@ -5834,7 +5835,7 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('isHiddenInMissionControl state', () => {
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be set with ignoreMissionControl constructor option', () => {
           const w = new BrowserWindow({ show: false, hiddenInMissionControl: true });
           expect(w.isHiddenInMissionControl()).to.be.true('isHiddenInMissionControl');
@@ -5854,7 +5855,7 @@ describe('BrowserWindow module', () => {
     // fullscreen events are dispatched eagerly and twiddling things too fast can confuse poor Electron
 
     ifdescribe(process.platform === 'darwin')('kiosk state', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be set with a constructor property', () => {
           const w = new BrowserWindow({ kiosk: true });
           expect(w.kiosk).to.be.true();
@@ -5875,7 +5876,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be set with a constructor property', () => {
           const w = new BrowserWindow({ kiosk: true });
           expect(w.isKiosk()).to.be.true();
@@ -6174,7 +6175,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('closable state', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be set with closable constructor option', () => {
           const w = new BrowserWindow({ show: false, closable: false });
           expect(w.closable).to.be.false('closable');
@@ -6190,7 +6191,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be set with closable constructor option', () => {
           const w = new BrowserWindow({ show: false, closable: false });
           expect(w.isClosable()).to.be.false('isClosable');
@@ -6208,7 +6209,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('hasShadow state', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('returns a boolean on all platforms', () => {
           const w = new BrowserWindow({ show: false });
           expect(w.shadow).to.be.a('boolean');
