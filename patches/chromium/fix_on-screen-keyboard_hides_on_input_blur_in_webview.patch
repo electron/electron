@@ -87,7 +87,7 @@ index 75df43e3cd2721a92c90c18154d53d5c203e2465..ce42c75c8face36d21f53f44c0201ac4
    // The view with active text input state, i.e., a focused <input> element.
    // It will be nullptr if no such view exists. Note that the active view
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3b9e634245986b1ef22e8bf4e116470343f5ff60..4c30f71ced0da645637c989c08ccc93e463e755f 100644
+index 013c37a355e0e31f19cd16887ac01fe3ddf20bf1..c93d4cb5f3443b438e7a7160f1481d900b2fb6f3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -9992,7 +9992,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
