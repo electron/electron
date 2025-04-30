@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Tue, 4 Mar 2025 12:58:08 -0800
+Subject: [Windows] Retrieve primary monitor information early
+
+This is a speculative workaround for the issue observed on the older
+version of Windows 10.
+
+Bug: 394622418
+Change-Id: Ibda160b1a10e0619bbc837a8a50206db8faab361
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6321426
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Reviewed-by: Robert Liao <robliao@chromium.org>
+Reviewed-by: Mitsuru Oshima <oshima@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1427929}
+
+diff --git a/ui/display/win/screen_win.cc b/ui/display/win/screen_win.cc
+index 0d277625e3b827f4cf7dfb693bd518d46fc5f377..5cc792faaa062aa18c4dbb194958ab3648c12c6d 100644
+--- a/ui/display/win/screen_win.cc
++++ b/ui/display/win/screen_win.cc
+@@ -899,6 +899,10 @@ gfx::Rect ScreenWin::DIPToScreenRectInWindow(gfx::NativeWindow window,
+ 
+ void ScreenWin::UpdateFromDisplayInfos(
+     const std::vector<internal::DisplayInfo>& display_infos) {
++  // Retrieve the primary monitor info here, instead of later below. This is a
++  // speculative workaround for the issue observed on older version of Windows
++  // 10.  See crbug.com/394622418 for more detail.
++  auto primary_monitor = MonitorFromWindow(nullptr, MONITOR_DEFAULTTOPRIMARY);
+   auto new_screen_win_displays = DisplayInfosToScreenWinDisplays(
+       display_infos, color_profile_reader_.get(), dxgi_info_.get());
+ 
+@@ -932,7 +936,7 @@ void ScreenWin::UpdateFromDisplayInfos(
+ 
+   // This primary information is used only to detect if another monitor has
+   // became the primary monitor.
+-  primary_monitor_ = MonitorFromWindow(nullptr, MONITOR_DEFAULTTOPRIMARY);
++  primary_monitor_ = primary_monitor;
+ 
+   const std::optional<MONITORINFOEX> primary_monitor_info =
+       MonitorInfoFromHMONITOR(primary_monitor_);
