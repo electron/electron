@@ -65,8 +65,8 @@ void EmitWarning(const std::string_view warning_msg,
 void EmitWarning(v8::Isolate* isolate,
                  const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate), warning_msg,
-                            warning_type);
+  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
+                                  warning_msg, warning_type);
 }
 
 void EmitDeprecationWarning(const std::string_view warning_msg,
@@ -78,8 +78,9 @@ void EmitDeprecationWarning(const std::string_view warning_msg,
 void EmitDeprecationWarning(v8::Isolate* isolate,
                             const std::string_view warning_msg,
                             const std::string_view deprecation_code) {
-  ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate), warning_msg,
-                            "DeprecationWarning", deprecation_code);
+  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
+                                  warning_msg, "DeprecationWarning",
+                                  deprecation_code);
 }
 
 node::Environment* CreateEnvironment(v8::Isolate* isolate,
