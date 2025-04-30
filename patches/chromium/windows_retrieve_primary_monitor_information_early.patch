@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Mitsuru Oshima <oshima@chromium.org>
 Date: Tue, 4 Mar 2025 12:58:08 -0800
-Subject: [Windows] Retrieve primary monitor information early
+Subject: Retrieve primary monitor information early
 
 This is a speculative workaround for the issue observed on the older
 version of Windows 10.
