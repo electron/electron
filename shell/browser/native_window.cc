@@ -505,23 +505,21 @@ void NativeWindow::SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect) {
 }
 
 void NativeWindow::NotifyWindowRequestPreferredWidth(int* width) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.RequestPreferredWidth(width);
+  observers_.Notify(&NativeWindowObserver::RequestPreferredWidth, width);
 }
 
 void NativeWindow::NotifyWindowCloseButtonClicked() {
   // First ask the observers whether we want to close.
   bool prevent_default = false;
-  for (NativeWindowObserver& observer : observers_)
-    observer.WillCloseWindow(&prevent_default);
+  observers_.Notify(&NativeWindowObserver::WillCloseWindow, &prevent_default);
   if (prevent_default) {
     WindowList::WindowCloseCancelled(this);
     return;
   }
 
   // Then ask the observers how should we close the window.
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnCloseButtonClicked(&prevent_default);
+  observers_.Notify(&NativeWindowObserver::OnCloseButtonClicked,
+                    &prevent_default);
   if (prevent_default)
     return;
 
@@ -533,8 +531,7 @@ void NativeWindow::NotifyWindowClosed() {
     return;
 
   is_closed_ = true;
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowClosed();
+  observers_.Notify(&NativeWindowObserver::OnWindowClosed);
 
   WindowList::RemoveWindow(this);
 }
@@ -542,180 +539,153 @@ void NativeWindow::NotifyWindowClosed() {
 void NativeWindow::NotifyWindowQueryEndSession(
     const std::vector<std::string>& reasons,
     bool* prevent_default) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowQueryEndSession(reasons, prevent_default);
+  observers_.Notify(&NativeWindowObserver::OnWindowQueryEndSession, reasons,
+                    prevent_default);
 }
 
 void NativeWindow::NotifyWindowEndSession(
     const std::vector<std::string>& reasons) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowEndSession(reasons);
+  observers_.Notify(&NativeWindowObserver::OnWindowEndSession, reasons);
 }
 
 void NativeWindow::NotifyWindowBlur() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowBlur();
+  observers_.Notify(&NativeWindowObserver::OnWindowBlur);
 }
 
 void NativeWindow::NotifyWindowFocus() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowFocus();
+  observers_.Notify(&NativeWindowObserver::OnWindowFocus);
 }
 
 void NativeWindow::NotifyWindowIsKeyChanged(bool is_key) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowIsKeyChanged(is_key);
+  observers_.Notify(&NativeWindowObserver::OnWindowIsKeyChanged, is_key);
 }
 
 void NativeWindow::NotifyWindowShow() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowShow();
+  observers_.Notify(&NativeWindowObserver::OnWindowShow);
 }
 
 void NativeWindow::NotifyWindowHide() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowHide();
+  observers_.Notify(&NativeWindowObserver::OnWindowHide);
 }
 
 void NativeWindow::NotifyWindowMaximize() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowMaximize();
+  observers_.Notify(&NativeWindowObserver::OnWindowMaximize);
 }
 
 void NativeWindow::NotifyWindowUnmaximize() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowUnmaximize();
+  observers_.Notify(&NativeWindowObserver::OnWindowUnmaximize);
 }
 
 void NativeWindow::NotifyWindowMinimize() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowMinimize();
+  observers_.Notify(&NativeWindowObserver::OnWindowMinimize);
 }
 
 void NativeWindow::NotifyWindowRestore() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowRestore();
+  observers_.Notify(&NativeWindowObserver::OnWindowRestore);
 }
 
 void NativeWindow::NotifyWindowWillResize(const gfx::Rect& new_bounds,
                                           const gfx::ResizeEdge& edge,
                                           bool* prevent_default) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowWillResize(new_bounds, edge, prevent_default);
+  observers_.Notify(&NativeWindowObserver::OnWindowWillResize, new_bounds, edge,
+                    prevent_default);
 }
 
 void NativeWindow::NotifyWindowWillMove(const gfx::Rect& new_bounds,
                                         bool* prevent_default) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowWillMove(new_bounds, prevent_default);
+  observers_.Notify(&NativeWindowObserver::OnWindowWillMove, new_bounds,
+                    prevent_default);
 }
 
 void NativeWindow::NotifyWindowResize() {
   NotifyLayoutWindowControlsOverlay();
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowResize();
+  observers_.Notify(&NativeWindowObserver::OnWindowResize);
 }
 
 void NativeWindow::NotifyWindowResized() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowResized();
+  observers_.Notify(&NativeWindowObserver::OnWindowResized);
 }
 
 void NativeWindow::NotifyWindowMove() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowMove();
+  observers_.Notify(&NativeWindowObserver::OnWindowMove);
 }
 
 void NativeWindow::NotifyWindowMoved() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowMoved();
+  observers_.Notify(&NativeWindowObserver::OnWindowMoved);
 }
 
 void NativeWindow::NotifyWindowEnterFullScreen() {
   NotifyLayoutWindowControlsOverlay();
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowEnterFullScreen();
+  observers_.Notify(&NativeWindowObserver::OnWindowEnterFullScreen);
 }
 
 void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowSwipe(direction);
+  observers_.Notify(&NativeWindowObserver::OnWindowSwipe, direction);
 }
 
 void NativeWindow::NotifyWindowRotateGesture(float rotation) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowRotateGesture(rotation);
+  observers_.Notify(&NativeWindowObserver::OnWindowRotateGesture, rotation);
 }
 
 void NativeWindow::NotifyWindowSheetBegin() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowSheetBegin();
+  observers_.Notify(&NativeWindowObserver::OnWindowSheetBegin);
 }
 
 void NativeWindow::NotifyWindowSheetEnd() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowSheetEnd();
+  observers_.Notify(&NativeWindowObserver::OnWindowSheetEnd);
 }
 
 void NativeWindow::NotifyWindowLeaveFullScreen() {
   NotifyLayoutWindowControlsOverlay();
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowLeaveFullScreen();
+  observers_.Notify(&NativeWindowObserver::OnWindowLeaveFullScreen);
 }
 
 void NativeWindow::NotifyWindowEnterHtmlFullScreen() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowEnterHtmlFullScreen();
+  observers_.Notify(&NativeWindowObserver::OnWindowEnterHtmlFullScreen);
 }
 
 void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowLeaveHtmlFullScreen();
+  observers_.Notify(&NativeWindowObserver::OnWindowLeaveHtmlFullScreen);
 }
 
 void NativeWindow::NotifyWindowAlwaysOnTopChanged() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowAlwaysOnTopChanged();
+  observers_.Notify(&NativeWindowObserver::OnWindowAlwaysOnTopChanged);
 }
 
 void NativeWindow::NotifyWindowExecuteAppCommand(
     const std::string_view command_name) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnExecuteAppCommand(command_name);
+  observers_.Notify(&NativeWindowObserver::OnExecuteAppCommand, command_name);
 }
 
 void NativeWindow::NotifyTouchBarItemInteraction(const std::string& item_id,
                                                  base::Value::Dict details) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnTouchBarItemResult(item_id, details);
+  observers_.Notify(&NativeWindowObserver::OnTouchBarItemResult, item_id,
+                    details);
 }
 
 void NativeWindow::NotifyNewWindowForTab() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnNewWindowForTab();
+  observers_.Notify(&NativeWindowObserver::OnNewWindowForTab);
 }
 
 void NativeWindow::NotifyWindowSystemContextMenu(int x,
                                                  int y,
                                                  bool* prevent_default) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnSystemContextMenu(x, y, prevent_default);
+  observers_.Notify(&NativeWindowObserver::OnSystemContextMenu, x, y,
+                    prevent_default);
 }
 
 void NativeWindow::NotifyLayoutWindowControlsOverlay() {
-  auto bounding_rect = GetWindowControlsOverlayRect();
-  if (bounding_rect.has_value()) {
-    for (NativeWindowObserver& observer : observers_)
-      observer.UpdateWindowControlsOverlay(bounding_rect.value());
-  }
+  if (const auto bounds = GetWindowControlsOverlayRect())
+    observers_.Notify(&NativeWindowObserver::UpdateWindowControlsOverlay,
+                      *bounds);
 }
 
 #if BUILDFLAG(IS_WIN)
 void NativeWindow::NotifyWindowMessage(UINT message,
                                        WPARAM w_param,
                                        LPARAM l_param) {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowMessage(message, w_param, l_param);
+  observers_.Notify(&NativeWindowObserver::OnWindowMessage, message, w_param,
+                    l_param);
 }
 #endif
 
