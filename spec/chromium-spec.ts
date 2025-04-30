@@ -894,7 +894,10 @@ describe('chromium features', () => {
 
     ifdescribe(process.platform === 'darwin')('with --disable-geolocation', () => {
       const testSwitchBehavior = (handlerAction: 'allow' | 'deny' | 'none') => async () => {
-        const rc = await startRemoteControlApp(['--disable-geolocation']);
+        const rc = await startRemoteControlApp([
+          '--disable-geolocation',
+          `--boot-eval=fixturesPath=${JSON.stringify(fixturesPath)}`
+        ]);
 
         const result = await rc.remotely(async (action: typeof handlerAction) => {
           const { session, BrowserWindow } = require('electron');
@@ -923,11 +926,7 @@ describe('chromium features', () => {
             }
           });
 
-          await w.loadFile(path.join(
-            path.resolve(__dirname, '../../../fixtures'),
-            'pages',
-            'blank.html'
-          ));
+          await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
 
           const permissionState = await w.webContents.executeJavaScript(`
             navigator.permissions.query({ name: 'geolocation' })
@@ -954,9 +953,9 @@ describe('chromium features', () => {
         expect(result.geoResult).to.equal(1, `Unexpected API result for ${handlerAction} handler`);
       };
 
-      it('denies geolocation when handler would allow', testSwitchBehavior('allow'));
-      it('denies geolocation when handler would deny', testSwitchBehavior('deny'));
-      it('denies geolocation with no handler', testSwitchBehavior('none'));
+      it('denies geolocation when permission request handler would allow', testSwitchBehavior('allow'));
+      it('denies geolocation when permission request handler would deny', testSwitchBehavior('deny'));
+      it('denies geolocation with no permission request handler', testSwitchBehavior('none'));
     });
   });
 
