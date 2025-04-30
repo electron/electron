@@ -804,6 +804,18 @@ std::u16string NativeWindow::GetAccessibleWindowTitle() const {
   return accessible_title_;
 }
 
+std::string NativeWindow::GetTitle() const {
+  return base::UTF16ToUTF8(WidgetDelegate::GetWindowTitle());
+}
+
+void NativeWindow::SetTitle(const std::string_view title) {
+  if (title == GetTitle())
+    return;
+
+  WidgetDelegate::SetTitle(base::UTF8ToUTF16(title));
+  OnTitleChanged();
+}
+
 void NativeWindow::SetAccessibleTitle(const std::string& title) {
   accessible_title_ = base::UTF8ToUTF16(title);
 }

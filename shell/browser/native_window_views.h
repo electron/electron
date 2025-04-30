@@ -98,8 +98,6 @@ class NativeWindowViews : public NativeWindow,
   ui::ZOrderLevel GetZOrderLevel() const override;
   void Center() override;
   void Invalidate() override;
-  void SetTitle(const std::string& title) override;
-  std::string GetTitle() const override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
   void SetExcludedFromShownWindowsMenu(bool excluded) override {}
@@ -191,7 +189,6 @@ class NativeWindowViews : public NativeWindow,
   views::View* GetInitiallyFocusedView() override;
   bool CanMaximize() const override;
   bool CanMinimize() const override;
-  std::u16string GetWindowTitle() const override;
   views::View* GetContentsView() override;
   bool ShouldDescendIntoChildForEventHandling(
       gfx::NativeView child,
@@ -327,7 +324,6 @@ class NativeWindowViews : public NativeWindow,
   bool maximizable_ = true;
   bool minimizable_ = true;
   bool fullscreenable_ = true;
-  std::string title_;
   gfx::Size widget_size_;
   double opacity_ = 1.0;
   bool widget_destroyed_ = false;

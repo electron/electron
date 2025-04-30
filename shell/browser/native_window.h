@@ -148,8 +148,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual ui::ZOrderLevel GetZOrderLevel() const = 0;
   virtual void Center() = 0;
   virtual void Invalidate() = 0;
-  virtual void SetTitle(const std::string& title) = 0;
-  virtual std::string GetTitle() const = 0;
 #if BUILDFLAG(IS_MAC)
   virtual std::string GetAlwaysOnTopLevel() const = 0;
   virtual void SetActive(bool is_key) = 0;
@@ -159,6 +157,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual void AttachChildren() = 0;
   virtual void DetachChildren() = 0;
 #endif
+
+  void SetTitle(std::string_view title);
+  [[nodiscard]] std::string GetTitle() const;
 
   // Ability to augment the window title for the screen readers.
   void SetAccessibleTitle(const std::string& title);
@@ -436,6 +437,8 @@ class NativeWindow : public base::SupportsUserData,
   friend class api::BrowserView;
 
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
+
+  virtual void OnTitleChanged() {}
 
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;

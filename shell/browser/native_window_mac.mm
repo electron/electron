@@ -938,14 +938,11 @@ void NativeWindowMac::Invalidate() {
   [[window_ contentView] setNeedsDisplay:YES];
 }
 
-void NativeWindowMac::SetTitle(const std::string& title) {
-  [window_ setTitle:base::SysUTF8ToNSString(title)];
+void NativeWindowMac::OnTitleChanged() {
+  [window_ setTitle:base::SysUTF8ToNSString(GetTitle())];
+
   if (buttons_proxy_)
     [buttons_proxy_ redraw];
-}
-
-std::string NativeWindowMac::GetTitle() const {
-  return base::SysNSStringToUTF8([window_ title]);
 }
 
 void NativeWindowMac::FlashFrame(bool flash) {

@@ -37,6 +37,7 @@ class NativeWindowMac : public NativeWindow,
   ~NativeWindowMac() override;
 
   // NativeWindow:
+  void OnTitleChanged() override;
   void SetContentView(views::View* view) override;
   void Close() override;
   void CloseImmediately() override;
@@ -85,8 +86,6 @@ class NativeWindowMac : public NativeWindow,
   ui::ZOrderLevel GetZOrderLevel() const override;
   void Center() override;
   void Invalidate() override;
-  void SetTitle(const std::string& title) override;
-  std::string GetTitle() const override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
   void SetExcludedFromShownWindowsMenu(bool excluded) override;

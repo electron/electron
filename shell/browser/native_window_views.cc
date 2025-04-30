@@ -198,7 +198,8 @@ class NativeWindowClientView : public views::ClientView {
 NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent) {
-  options.Get(options::kTitle, &title_);
+  if (std::string val; options.Get(options::kTitle, &val))
+    SetTitle(val);
 
   bool menu_bar_autohide;
   if (options.Get(options::kAutoHideMenuBar, &menu_bar_autohide))
@@ -1160,15 +1161,6 @@ void NativeWindowViews::Invalidate() {
   widget()->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
 }
 
-void NativeWindowViews::SetTitle(const std::string& title) {
-  title_ = title;
-  widget()->UpdateWindowTitle();
-}
-
-std::string NativeWindowViews::GetTitle() const {
-  return title_;
-}
-
 void NativeWindowViews::FlashFrame(bool flash) {
 #if BUILDFLAG(IS_WIN)
   // The Chromium's implementation has a bug stopping flash.
@@ -1748,10 +1740,6 @@ bool NativeWindowViews::CanMinimize() const {
 #elif BUILDFLAG(IS_LINUX)
   return true;
 #endif
-}
-
-std::u16string NativeWindowViews::GetWindowTitle() const {
-  return base::UTF8ToUTF16(title_);
 }
 
 views::View* NativeWindowViews::GetContentsView() {
