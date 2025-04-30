@@ -143,6 +143,7 @@ void ElectronPermissionManager::SetBluetoothPairingHandler(
   bluetooth_pairing_handler_ = handler;
 }
 
+// static
 bool ElectronPermissionManager::IsGeolocationDisabledViaCommandLine() {
 // Remove platform check once flag is extended to other platforms
 #if BUILDFLAG(IS_MAC)
