@@ -459,10 +459,20 @@ index 05a3882c7e17d78e27aabb29891aa250789a47c0..1f2fccce6ed8f14525557644e0bdd130
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 7c548d32b40365343f0e208c3aa856a1c847f4c3..a4811e566ade15eb66bcef8a511ed90e4843e37b 100644
+index 7c548d32b40365343f0e208c3aa856a1c847f4c3..6346f8f7199cf7b7d3736c59571606fff102fbb6 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -527,24 +527,15 @@ Maybe<void> Decorate(Environment* env,
+@@ -207,7 +207,8 @@ void TestFipsCrypto(const v8::FunctionCallbackInfo<v8::Value>& args) {
+ 
+ void GetOpenSSLSecLevelCrypto(const FunctionCallbackInfo<Value>& args) {
+   // for BoringSSL assume the same as the default
+-  int sec_level = OPENSSL_TLS_SECURITY_LEVEL;
++  // value of OPENSSL_TLS_SECURITY_LEVEL.
++  int sec_level = 1;
+ #ifndef OPENSSL_IS_BORINGSSL
+   Environment* env = Environment::GetCurrent(args);
+ 
+@@ -527,24 +528,15 @@ Maybe<void> Decorate(Environment* env,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -488,7 +498,7 @@ index 7c548d32b40365343f0e208c3aa856a1c847f4c3..a4811e566ade15eb66bcef8a511ed90e
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -686,7 +677,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -686,7 +678,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -497,7 +507,7 @@ index 7c548d32b40365343f0e208c3aa856a1c847f4c3..a4811e566ade15eb66bcef8a511ed90e
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -697,7 +688,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -697,7 +689,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -506,7 +516,7 @@ index 7c548d32b40365343f0e208c3aa856a1c847f4c3..a4811e566ade15eb66bcef8a511ed90e
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -705,10 +696,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -705,10 +697,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
