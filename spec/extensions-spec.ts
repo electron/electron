@@ -10,6 +10,7 @@ import * as path from 'node:path';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers';
 import { ifit, listen, waitUntil } from './lib/spec-helpers';
+import { expectWarningMessages } from './lib/warning-helpers';
 import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers';
 
 const uuid = require('uuid');
@@ -95,14 +96,13 @@ describe('chrome extensions', () => {
     it('recognize malformed host permissions', async () => {
       await w.loadURL(url);
 
-      const extPath = path.join(fixtures, 'extensions', 'host-permissions', 'malformed');
-      customSession.loadExtension(extPath);
-
-      const warning = await new Promise(resolve => { process.on('warning', resolve); });
-
-      const malformedHost = /URL pattern 'malformed_host' is malformed/;
-
-      expect(warning).to.match(malformedHost);
+      await expectWarningMessages(
+        async () => {
+          const extPath = path.join(fixtures, 'extensions', 'host-permissions', 'malformed');
+          await customSession.loadExtension(extPath);
+        },
+        { name: 'ExtensionLoadWarning', message: /URL pattern 'malformed_host' is malformed/ }
+      );
     });
 
     it('can grant special privileges to urls with host permissions', async () => {
