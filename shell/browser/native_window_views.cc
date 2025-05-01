@@ -436,22 +436,6 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   // bounds if the bounds are smaller than the current display
   SetBounds(gfx::Rect(GetPosition(), bounds.size()), false);
 #endif
-
-  RegisterDeleteDelegateCallback(
-      RegisterDeleteCallbackPassKey(),
-      base::BindOnce(
-          [](NativeWindowViews* window) {
-            if (window->is_modal() && window->parent()) {
-              auto* parent = window->parent();
-              // Enable parent window after current window gets closed.
-              static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
-              // Focus on parent window.
-              parent->Focus(true);
-            }
-
-            window->NotifyWindowClosed();
-          },
-          this));
 }
 
 NativeWindowViews::~NativeWindowViews() {
@@ -1717,13 +1701,22 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
 }
 
 void NativeWindowViews::OnWidgetDestroying(views::Widget* widget) {
-  aura::Window* window = GetNativeWindow();
-  if (window)
+  if (aura::Window* window = GetNativeWindow())
     window->RemovePreTargetHandler(this);
+
+  if (is_modal()) {
+    if (NativeWindow* const parent = this->parent()) {
+      // Enable parent window after current window gets closed.
+      static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
+      // Focus on parent window.
+      parent->Focus(true);
+    }
+  }
 }
 
 void NativeWindowViews::OnWidgetDestroyed(views::Widget* changed_widget) {
   widget_destroyed_ = true;
+  NotifyWindowClosed();
 }
 
 views::View* NativeWindowViews::GetInitiallyFocusedView() {
