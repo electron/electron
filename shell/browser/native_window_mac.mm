@@ -182,9 +182,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   if (windowType == "textured" && (transparent() || !has_frame())) {
-    util::EmitWarning(
-        "The 'textured' window type is deprecated and will be removed",
-        "DeprecationWarning");
+    util::EmitDeprecationWarning(
+        "The 'textured' window type is deprecated and will be removed");
     styleMask |= NSWindowStyleMaskTexturedBackground;
   }
 #pragma clang diagnostic pop
