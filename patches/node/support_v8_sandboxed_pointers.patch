@@ -64,10 +64,10 @@ index 5387d9625a28bb7d11f7f0f05a5f07d1fee2c216..1b3b8c7b70073926f8dbf02759c2e1af
    return Buffer::New(env, ab, 0, ab->ByteLength()).FromMaybe(Local<Value>());
  }
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index a4811e566ade15eb66bcef8a511ed90e4843e37b..c0a6997c85142ff06583e3a0170c855781080e00 100644
+index 6346f8f7199cf7b7d3736c59571606fff102fbb6..7eea2eaefcad5780663a6b87985925ae5d70a5f9 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -358,10 +358,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
+@@ -359,10 +359,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
    return *this;
  }
  
@@ -104,7 +104,7 @@ index a4811e566ade15eb66bcef8a511ed90e4843e37b..c0a6997c85142ff06583e3a0170c8557
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
        size(),
-@@ -373,10 +398,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
+@@ -374,10 +399,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
    data_ = nullptr;
    size_ = 0;
    return ptr;
@@ -117,7 +117,7 @@ index a4811e566ade15eb66bcef8a511ed90e4843e37b..c0a6997c85142ff06583e3a0170c8557
    return ArrayBuffer::New(env->isolate(), std::move(store));
  }
  
-@@ -673,6 +699,16 @@ namespace {
+@@ -674,6 +700,16 @@ namespace {
  // in which case this has the same semantics as
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
@@ -134,7 +134,7 @@ index a4811e566ade15eb66bcef8a511ed90e4843e37b..c0a6997c85142ff06583e3a0170c8557
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
-@@ -694,6 +730,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -695,6 +731,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
