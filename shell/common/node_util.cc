@@ -12,10 +12,10 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
 #include "gin/converter.h"
-#include "gin/dictionary.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
+#include "third_party/electron_node/src/node_process-inl.h"
 
 namespace electron::util {
 
@@ -65,14 +65,22 @@ void EmitWarning(const std::string_view warning_msg,
 void EmitWarning(v8::Isolate* isolate,
                  const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  v8::HandleScope scope{isolate};
-  gin::Dictionary process{
-      isolate, node::Environment::GetCurrent(isolate)->process_object()};
-  base::RepeatingCallback<void(std::string_view, std::string_view,
-                               std::string_view)>
-      emit_warning;
-  process.Get("emitWarning", &emit_warning);
-  emit_warning.Run(warning_msg, warning_type, "");
+  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
+                                  warning_msg, warning_type);
+}
+
+void EmitDeprecationWarning(const std::string_view warning_msg,
+                            const std::string_view deprecation_code) {
+  EmitDeprecationWarning(JavascriptEnvironment::GetIsolate(), warning_msg,
+                         deprecation_code);
+}
+
+void EmitDeprecationWarning(v8::Isolate* isolate,
+                            const std::string_view warning_msg,
+                            const std::string_view deprecation_code) {
+  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
+                                  warning_msg, "DeprecationWarning",
+                                  deprecation_code);
 }
 
 node::Environment* CreateEnvironment(v8::Isolate* isolate,
