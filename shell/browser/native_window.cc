@@ -26,7 +26,6 @@
 #include "shell/common/options_switches.h"
 #include "ui/base/hit_test.h"
 #include "ui/compositor/compositor.h"
-#include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
@@ -817,20 +816,6 @@ void NativeWindow::HandlePendingFullscreenTransitions() {
   bool next_transition = pending_transitions_.front();
   pending_transitions_.pop();
   SetFullScreen(next_transition);
-}
-
-void NativeWindow::SetContentProtection(bool enable) {
-#if !BUILDFLAG(IS_LINUX)
-  widget()->native_widget_private()->SetAllowScreenshots(!enable);
-#endif
-}
-
-bool NativeWindow::IsContentProtected() const {
-#if !BUILDFLAG(IS_LINUX)
-  return !widget()->native_widget_private()->AreScreenshotsAllowed();
-#else  // Not implemented on Linux
-  return false;
-#endif
 }
 
 bool NativeWindow::IsTranslucent() const {
