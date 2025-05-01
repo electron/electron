@@ -1,0 +1,465 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: yangwenming <yangwenming@bytedance.com>
+Date: Wed, 23 Apr 2025 22:14:00 +0800
+Subject: Enable --perf-prof flag on MacOS
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+MacOS actually can share the implementation of {PerfJitLogger} with
+Linux. From the issue 40112126, only Fuzzer tests on Windows ran
+into UNREACHABLE/FATAL because of the unimplemented {PerfJitLogger}.
+This CL enables the flag --perf-prof on MacOS.
+
+Bug: 403765219
+Change-Id: I97871fbcc0cb9890c51ca14fd7a6e65bd0e3c0d2
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6385655
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Auto-Submit: 杨文明 <yangwenming@bytedance.com>
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#99885}
+
+diff --git a/src/compiler/backend/code-generator.cc b/src/compiler/backend/code-generator.cc
+index 27281e81ea1ff7d001c84f9e804490d99bf883e9..b09af232d0df5cafba0901ff2348f41bc34be6e6 100644
+--- a/src/compiler/backend/code-generator.cc
++++ b/src/compiler/backend/code-generator.cc
+@@ -435,7 +435,7 @@ void CodeGenerator::AssembleCode() {
+     }
+   }
+ 
+-  // The LinuxPerfJitLogger logs code up until here, excluding the safepoint
++  // The PerfJitLogger logs code up until here, excluding the safepoint
+   // table. Resolve the unwinding info now so it is aware of the same code
+   // size as reported by perf.
+   unwinding_info_writer_.Finish(masm()->pc_offset());
+diff --git a/src/diagnostics/perf-jit.cc b/src/diagnostics/perf-jit.cc
+index f328a96c5ea0d246cce5f9ef30adbb66ee3234b6..d474acc77f71b99f8fe62f11309f2987991e4213 100644
+--- a/src/diagnostics/perf-jit.cc
++++ b/src/diagnostics/perf-jit.cc
+@@ -30,8 +30,8 @@
+ #include "src/common/assert-scope.h"
+ #include "src/flags/flags.h"
+ 
+-// Only compile the {LinuxPerfJitLogger} on Linux.
+-#if V8_OS_LINUX
++// Only compile the {PerfJitLogger} on Linux & Darwin.
++#if V8_OS_LINUX || V8_OS_DARWIN
+ 
+ #include <fcntl.h>
+ #include <sys/mman.h>
+@@ -118,22 +118,22 @@ struct PerfJitCodeUnwindingInfo : PerfJitBase {
+   // Followed by size_ - sizeof(PerfJitCodeUnwindingInfo) bytes of data.
+ };
+ 
+-const char LinuxPerfJitLogger::kFilenameFormatString[] = "%s/jit-%d.dump";
++const char PerfJitLogger::kFilenameFormatString[] = "%s/jit-%d.dump";
+ 
+ // Extra padding for the PID in the filename
+-const int LinuxPerfJitLogger::kFilenameBufferPadding = 16;
++const int PerfJitLogger::kFilenameBufferPadding = 16;
+ 
+ static const char kStringTerminator[] = {'\0'};
+ 
+ // The following static variables are protected by
+ // GetFileMutex().
+-int LinuxPerfJitLogger::process_id_ = 0;
+-uint64_t LinuxPerfJitLogger::reference_count_ = 0;
+-void* LinuxPerfJitLogger::marker_address_ = nullptr;
+-uint64_t LinuxPerfJitLogger::code_index_ = 0;
+-FILE* LinuxPerfJitLogger::perf_output_handle_ = nullptr;
++int PerfJitLogger::process_id_ = 0;
++uint64_t PerfJitLogger::reference_count_ = 0;
++void* PerfJitLogger::marker_address_ = nullptr;
++uint64_t PerfJitLogger::code_index_ = 0;
++FILE* PerfJitLogger::perf_output_handle_ = nullptr;
+ 
+-void LinuxPerfJitLogger::OpenJitDumpFile() {
++void PerfJitLogger::OpenJitDumpFile() {
+   // Open the perf JIT dump file.
+   perf_output_handle_ = nullptr;
+ 
+@@ -153,8 +153,17 @@ void LinuxPerfJitLogger::OpenJitDumpFile() {
+   if (v8_flags.perf_prof_delete_file)
+     CHECK_EQ(0, unlink(perf_dump_name.begin()));
+ 
++  // On Linux, call OpenMarkerFile so that perf knows about the file path via
++  // an MMAP record.
++  // On macOS, don't call OpenMarkerFile because samply has already detected
++  // the file path during the call to `open` above (it interposes `open` with
++  // a preloaded library), and because the mmap call can be slow.
++#if V8_OS_DARWIN
++  marker_address_ = nullptr;
++#else
+   marker_address_ = OpenMarkerFile(fd);
+   if (marker_address_ == nullptr) return;
++#endif
+ 
+   perf_output_handle_ = fdopen(fd, "w+");
+   if (perf_output_handle_ == nullptr) return;
+@@ -162,13 +171,13 @@ void LinuxPerfJitLogger::OpenJitDumpFile() {
+   setvbuf(perf_output_handle_, nullptr, _IOFBF, kLogBufferSize);
+ }
+ 
+-void LinuxPerfJitLogger::CloseJitDumpFile() {
++void PerfJitLogger::CloseJitDumpFile() {
+   if (perf_output_handle_ == nullptr) return;
+   base::Fclose(perf_output_handle_);
+   perf_output_handle_ = nullptr;
+ }
+ 
+-void* LinuxPerfJitLogger::OpenMarkerFile(int fd) {
++void* PerfJitLogger::OpenMarkerFile(int fd) {
+   long page_size = sysconf(_SC_PAGESIZE);  // NOLINT(runtime/int)
+   if (page_size == -1) return nullptr;
+ 
+@@ -180,15 +189,14 @@ void* LinuxPerfJitLogger::OpenMarkerFile(int fd) {
+   return (marker_address == MAP_FAILED) ? nullptr : marker_address;
+ }
+ 
+-void LinuxPerfJitLogger::CloseMarkerFile(void* marker_address) {
++void PerfJitLogger::CloseMarkerFile(void* marker_address) {
+   if (marker_address == nullptr) return;
+   long page_size = sysconf(_SC_PAGESIZE);  // NOLINT(runtime/int)
+   if (page_size == -1) return;
+   munmap(marker_address, page_size);
+ }
+ 
+-LinuxPerfJitLogger::LinuxPerfJitLogger(Isolate* isolate)
+-    : CodeEventLogger(isolate) {
++PerfJitLogger::PerfJitLogger(Isolate* isolate) : CodeEventLogger(isolate) {
+   base::LockGuard<base::RecursiveMutex> guard_file(GetFileMutex().Pointer());
+   process_id_ = base::OS::GetCurrentProcessId();
+ 
+@@ -201,7 +209,7 @@ LinuxPerfJitLogger::LinuxPerfJitLogger(Isolate* isolate)
+   }
+ }
+ 
+-LinuxPerfJitLogger::~LinuxPerfJitLogger() {
++PerfJitLogger::~PerfJitLogger() {
+   base::LockGuard<base::RecursiveMutex> guard_file(GetFileMutex().Pointer());
+ 
+   reference_count_--;
+@@ -211,16 +219,11 @@ LinuxPerfJitLogger::~LinuxPerfJitLogger() {
+   }
+ }
+ 
+-uint64_t LinuxPerfJitLogger::GetTimestamp() {
+-  struct timespec ts;
+-  int result = clock_gettime(CLOCK_MONOTONIC, &ts);
+-  DCHECK_EQ(0, result);
+-  USE(result);
+-  static const uint64_t kNsecPerSec = 1000000000;
+-  return (ts.tv_sec * kNsecPerSec) + ts.tv_nsec;
++uint64_t PerfJitLogger::GetTimestamp() {
++  return base::TimeTicks::Now().since_origin().InNanoseconds();
+ }
+ 
+-void LinuxPerfJitLogger::LogRecordedBuffer(
++void PerfJitLogger::LogRecordedBuffer(
+     Tagged<AbstractCode> abstract_code,
+     MaybeHandle<SharedFunctionInfo> maybe_sfi, const char* name,
+     size_t length) {
+@@ -264,8 +267,8 @@ void LinuxPerfJitLogger::LogRecordedBuffer(
+ }
+ 
+ #if V8_ENABLE_WEBASSEMBLY
+-void LinuxPerfJitLogger::LogRecordedBuffer(const wasm::WasmCode* code,
+-                                           const char* name, size_t length) {
++void PerfJitLogger::LogRecordedBuffer(const wasm::WasmCode* code,
++                                      const char* name, size_t length) {
+   base::LockGuard<base::RecursiveMutex> guard_file(GetFileMutex().Pointer());
+ 
+   if (perf_output_handle_ == nullptr) return;
+@@ -277,10 +280,9 @@ void LinuxPerfJitLogger::LogRecordedBuffer(const wasm::WasmCode* code,
+ }
+ #endif  // V8_ENABLE_WEBASSEMBLY
+ 
+-void LinuxPerfJitLogger::WriteJitCodeLoadEntry(const uint8_t* code_pointer,
+-                                               uint32_t code_size,
+-                                               const char* name,
+-                                               size_t name_length) {
++void PerfJitLogger::WriteJitCodeLoadEntry(const uint8_t* code_pointer,
++                                          uint32_t code_size, const char* name,
++                                          size_t name_length) {
+   PerfJitCodeLoad code_load;
+   code_load.event_ = PerfJitCodeLoad::kLoad;
+   code_load.size_ =
+@@ -342,8 +344,8 @@ SourcePositionInfo GetSourcePositionInfo(Isolate* isolate, Tagged<Code> code,
+ 
+ }  // namespace
+ 
+-void LinuxPerfJitLogger::LogWriteDebugInfo(Tagged<Code> code,
+-                                           Handle<SharedFunctionInfo> shared) {
++void PerfJitLogger::LogWriteDebugInfo(Tagged<Code> code,
++                                      Handle<SharedFunctionInfo> shared) {
+   // Line ends of all scripts have been initialized prior to this.
+   DisallowGarbageCollection no_gc;
+   // The WasmToJS wrapper stubs have source position entries.
+@@ -425,7 +427,7 @@ void LinuxPerfJitLogger::LogWriteDebugInfo(Tagged<Code> code,
+ }
+ 
+ #if V8_ENABLE_WEBASSEMBLY
+-void LinuxPerfJitLogger::LogWriteDebugInfo(const wasm::WasmCode* code) {
++void PerfJitLogger::LogWriteDebugInfo(const wasm::WasmCode* code) {
+   if (code->IsAnonymous()) {
+     return;
+   }
+@@ -497,7 +499,7 @@ void LinuxPerfJitLogger::LogWriteDebugInfo(const wasm::WasmCode* code) {
+ }
+ #endif  // V8_ENABLE_WEBASSEMBLY
+ 
+-void LinuxPerfJitLogger::LogWriteUnwindingInfo(Tagged<Code> code) {
++void PerfJitLogger::LogWriteUnwindingInfo(Tagged<Code> code) {
+   PerfJitCodeUnwindingInfo unwinding_info_header;
+   unwinding_info_header.event_ = PerfJitCodeLoad::kUnwindingInfo;
+   unwinding_info_header.time_stamp_ = GetTimestamp();
+@@ -532,13 +534,13 @@ void LinuxPerfJitLogger::LogWriteUnwindingInfo(Tagged<Code> code) {
+   LogWriteBytes(padding_bytes, padding_size);
+ }
+ 
+-void LinuxPerfJitLogger::LogWriteBytes(const char* bytes, size_t size) {
++void PerfJitLogger::LogWriteBytes(const char* bytes, size_t size) {
+   size_t rv = fwrite(bytes, 1, size, perf_output_handle_);
+   DCHECK_EQ(size, rv);
+   USE(rv);
+ }
+ 
+-void LinuxPerfJitLogger::LogWriteHeader() {
++void PerfJitLogger::LogWriteHeader() {
+   DCHECK_NOT_NULL(perf_output_handle_);
+   PerfJitHeader header;
+ 
+@@ -559,4 +561,4 @@ void LinuxPerfJitLogger::LogWriteHeader() {
+ }  // namespace internal
+ }  // namespace v8
+ 
+-#endif  // V8_OS_LINUX
++#endif  // V8_OS_LINUX || V8_OS_DARWIN
+diff --git a/src/diagnostics/perf-jit.h b/src/diagnostics/perf-jit.h
+index c01850bbe0497084a61428a40406eba3dce353b6..422addc5351c75094ff94a6cebf44cd23ad6db38 100644
+--- a/src/diagnostics/perf-jit.h
++++ b/src/diagnostics/perf-jit.h
+@@ -30,8 +30,8 @@
+ 
+ #include "include/v8config.h"
+ 
+-// {LinuxPerfJitLogger} is only implemented on Linux.
+-#if V8_OS_LINUX
++// {PerfJitLogger} is only implemented on Linux & Darwin.
++#if V8_OS_LINUX || V8_OS_DARWIN
+ 
+ #include "src/logging/log.h"
+ 
+@@ -39,10 +39,10 @@ namespace v8 {
+ namespace internal {
+ 
+ // Linux perf tool logging support.
+-class LinuxPerfJitLogger : public CodeEventLogger {
++class PerfJitLogger : public CodeEventLogger {
+  public:
+-  explicit LinuxPerfJitLogger(Isolate* isolate);
+-  ~LinuxPerfJitLogger() override;
++  explicit PerfJitLogger(Isolate* isolate);
++  ~PerfJitLogger() override;
+ 
+   void CodeMoveEvent(Tagged<InstructionStream> from,
+                      Tagged<InstructionStream> to) override {
+@@ -142,6 +142,6 @@ class LinuxPerfJitLogger : public CodeEventLogger {
+ }  // namespace internal
+ }  // namespace v8
+ 
+-#endif  // V8_OS_LINUX
++#endif  // V8_OS_LINUX || V8_OS_DARWIN
+ 
+ #endif  // V8_DIAGNOSTICS_PERF_JIT_H_
+diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
+index 2fa08475e1c34d519f55d0b2e6126559a8810d1f..0a2e65963b8a27540a6ddbaaa0b91b2e53df9e24 100644
+--- a/src/flags/flag-definitions.h
++++ b/src/flags/flag-definitions.h
+@@ -3179,7 +3179,7 @@ DEFINE_IMPLICATION(prof, log_code)
+ 
+ DEFINE_BOOL(ll_prof, false, "Enable low-level linux profiler.")
+ 
+-#if V8_OS_LINUX
++#if V8_OS_LINUX || V8_OS_DARWIN
+ #define DEFINE_PERF_PROF_BOOL(nam, cmt) DEFINE_BOOL(nam, false, cmt)
+ #define DEFINE_PERF_PROF_IMPLICATION DEFINE_IMPLICATION
+ #else
+@@ -3196,7 +3196,7 @@ DEFINE_BOOL(ll_prof, false, "Enable low-level linux profiler.")
+ #endif
+ 
+ DEFINE_PERF_PROF_BOOL(perf_basic_prof,
+-                      "Enable perf linux profiler (basic support).")
++                      "Enable basic support for perf profiler.")
+ DEFINE_NEG_IMPLICATION(perf_basic_prof, compact_code_space)
+ DEFINE_STRING(perf_basic_prof_path, DEFAULT_PERF_BASIC_PROF_PATH,
+               "directory to write perf-<pid>.map symbol file to")
+@@ -3205,8 +3205,8 @@ DEFINE_PERF_PROF_BOOL(
+     "Only report function code ranges to perf (i.e. no stubs).")
+ DEFINE_PERF_PROF_IMPLICATION(perf_basic_prof_only_functions, perf_basic_prof)
+ 
+-DEFINE_PERF_PROF_BOOL(
+-    perf_prof, "Enable perf linux profiler (experimental annotate support).")
++DEFINE_PERF_PROF_BOOL(perf_prof,
++                      "Enable experimental annotate support for perf profiler.")
+ DEFINE_STRING(perf_prof_path, DEFAULT_PERF_PROF_PATH,
+               "directory to write jit-<pid>.dump symbol file to")
+ DEFINE_PERF_PROF_BOOL(
+diff --git a/src/logging/log.cc b/src/logging/log.cc
+index bd539d425f7620fad37b9f16b768072141d3190d..4b531100d151148050026b410b1a3b57fcd89aea 100644
+--- a/src/logging/log.cc
++++ b/src/logging/log.cc
+@@ -346,12 +346,12 @@ void CodeEventLogger::RegExpCodeCreateEvent(Handle<AbstractCode> code,
+                     name_buffer_->get(), name_buffer_->size());
+ }
+ 
+-// Linux perf tool logging support.
+-#if V8_OS_LINUX
+-class LinuxPerfBasicLogger : public CodeEventLogger {
++// Linux & Darwin perf tool logging support.
++#if V8_OS_LINUX || V8_OS_DARWIN
++class PerfBasicLogger : public CodeEventLogger {
+  public:
+-  explicit LinuxPerfBasicLogger(Isolate* isolate);
+-  ~LinuxPerfBasicLogger() override;
++  explicit PerfBasicLogger(Isolate* isolate);
++  ~PerfBasicLogger() override;
+ 
+   void CodeMoveEvent(Tagged<InstructionStream> from,
+                      Tagged<InstructionStream> to) override {}
+@@ -384,21 +384,20 @@ class LinuxPerfBasicLogger : public CodeEventLogger {
+ };
+ 
+ // Extra space for the "perf-%d.map" filename, including the PID.
+-const int LinuxPerfBasicLogger::kFilenameBufferPadding = 32;
++const int PerfBasicLogger::kFilenameBufferPadding = 32;
+ 
+ // static
+-base::LazyRecursiveMutex& LinuxPerfBasicLogger::GetFileMutex() {
++base::LazyRecursiveMutex& PerfBasicLogger::GetFileMutex() {
+   static base::LazyRecursiveMutex file_mutex = LAZY_RECURSIVE_MUTEX_INITIALIZER;
+   return file_mutex;
+ }
+ 
+ // The following static variables are protected by
+-// LinuxPerfBasicLogger::GetFileMutex().
+-uint64_t LinuxPerfBasicLogger::reference_count_ = 0;
+-FILE* LinuxPerfBasicLogger::perf_output_handle_ = nullptr;
++// PerfBasicLogger::GetFileMutex().
++uint64_t PerfBasicLogger::reference_count_ = 0;
++FILE* PerfBasicLogger::perf_output_handle_ = nullptr;
+ 
+-LinuxPerfBasicLogger::LinuxPerfBasicLogger(Isolate* isolate)
+-    : CodeEventLogger(isolate) {
++PerfBasicLogger::PerfBasicLogger(Isolate* isolate) : CodeEventLogger(isolate) {
+   base::LockGuard<base::RecursiveMutex> guard_file(GetFileMutex().Pointer());
+   int process_id_ = base::OS::GetCurrentProcessId();
+   reference_count_++;
+@@ -420,7 +419,7 @@ LinuxPerfBasicLogger::LinuxPerfBasicLogger(Isolate* isolate)
+   }
+ }
+ 
+-LinuxPerfBasicLogger::~LinuxPerfBasicLogger() {
++PerfBasicLogger::~PerfBasicLogger() {
+   base::LockGuard<base::RecursiveMutex> guard_file(GetFileMutex().Pointer());
+   reference_count_--;
+ 
+@@ -432,9 +431,9 @@ LinuxPerfBasicLogger::~LinuxPerfBasicLogger() {
+   }
+ }
+ 
+-void LinuxPerfBasicLogger::WriteLogRecordedBuffer(uintptr_t address,
+-                                                  size_t size, const char* name,
+-                                                  size_t name_length) {
++void PerfBasicLogger::WriteLogRecordedBuffer(uintptr_t address, size_t size,
++                                             const char* name,
++                                             size_t name_length) {
+   // Linux perf expects hex literals without a leading 0x, while some
+   // implementations of printf might prepend one when using the %p format
+   // for pointers, leading to wrongly formatted JIT symbols maps. On the other
+@@ -452,9 +451,9 @@ void LinuxPerfBasicLogger::WriteLogRecordedBuffer(uintptr_t address,
+ #endif
+ }
+ 
+-void LinuxPerfBasicLogger::LogRecordedBuffer(Tagged<AbstractCode> code,
+-                                             MaybeHandle<SharedFunctionInfo>,
+-                                             const char* name, size_t length) {
++void PerfBasicLogger::LogRecordedBuffer(Tagged<AbstractCode> code,
++                                        MaybeHandle<SharedFunctionInfo>,
++                                        const char* name, size_t length) {
+   DisallowGarbageCollection no_gc;
+   PtrComprCageBase cage_base(isolate_);
+   if (v8_flags.perf_basic_prof_only_functions &&
+@@ -468,13 +467,13 @@ void LinuxPerfBasicLogger::LogRecordedBuffer(Tagged<AbstractCode> code,
+ }
+ 
+ #if V8_ENABLE_WEBASSEMBLY
+-void LinuxPerfBasicLogger::LogRecordedBuffer(const wasm::WasmCode* code,
+-                                             const char* name, size_t length) {
++void PerfBasicLogger::LogRecordedBuffer(const wasm::WasmCode* code,
++                                        const char* name, size_t length) {
+   WriteLogRecordedBuffer(static_cast<uintptr_t>(code->instruction_start()),
+                          code->instructions().length(), name, length);
+ }
+ #endif  // V8_ENABLE_WEBASSEMBLY
+-#endif  // V8_OS_LINUX
++#endif  // V8_OS_LINUX || V8_OS_DARWIN
+ 
+ // External LogEventListener
+ ExternalLogEventListener::ExternalLogEventListener(Isolate* isolate)
+@@ -2296,14 +2295,14 @@ bool V8FileLogger::SetUp(Isolate* isolate) {
+   PrepareLogFileName(log_file_name, isolate, v8_flags.logfile);
+   log_file_ = std::make_unique<LogFile>(this, log_file_name.str());
+ 
+-#if V8_OS_LINUX
++#if V8_OS_LINUX || V8_OS_DARWIN
+   if (v8_flags.perf_basic_prof) {
+-    perf_basic_logger_ = std::make_unique<LinuxPerfBasicLogger>(isolate);
++    perf_basic_logger_ = std::make_unique<PerfBasicLogger>(isolate);
+     CHECK(logger()->AddListener(perf_basic_logger_.get()));
+   }
+ 
+   if (v8_flags.perf_prof) {
+-    perf_jit_logger_ = std::make_unique<LinuxPerfJitLogger>(isolate);
++    perf_jit_logger_ = std::make_unique<PerfJitLogger>(isolate);
+     CHECK(logger()->AddListener(perf_jit_logger_.get()));
+   }
+ #else
+@@ -2449,7 +2448,7 @@ FILE* V8FileLogger::TearDownAndGetLogFile() {
+   ticker_.reset();
+   timer_.Stop();
+ 
+-#if V8_OS_LINUX
++#if V8_OS_LINUX || V8_OS_DARWIN
+   if (perf_basic_logger_) {
+     CHECK(logger()->RemoveListener(perf_basic_logger_.get()));
+     perf_basic_logger_.reset();
+diff --git a/src/logging/log.h b/src/logging/log.h
+index 04ecddf6adf54c8072d8439f1e3a89f32293cfd3..c3310c2887a4493e903757146e4ec003ffeacb30 100644
+--- a/src/logging/log.h
++++ b/src/logging/log.h
+@@ -64,8 +64,8 @@ class Isolate;
+ class JitLogger;
+ class LogFile;
+ class LowLevelLogger;
+-class LinuxPerfBasicLogger;
+-class LinuxPerfJitLogger;
++class PerfBasicLogger;
++class PerfJitLogger;
+ class Profiler;
+ class SourcePosition;
+ class Ticker;
+@@ -359,9 +359,9 @@ class V8FileLogger : public LogEventListener {
+ 
+   std::atomic<bool> is_logging_;
+   std::unique_ptr<LogFile> log_file_;
+-#if V8_OS_LINUX
+-  std::unique_ptr<LinuxPerfBasicLogger> perf_basic_logger_;
+-  std::unique_ptr<LinuxPerfJitLogger> perf_jit_logger_;
++#if V8_OS_LINUX || V8_OS_DARWIN
++  std::unique_ptr<PerfBasicLogger> perf_basic_logger_;
++  std::unique_ptr<PerfJitLogger> perf_jit_logger_;
+ #endif
+   std::unique_ptr<LowLevelLogger> ll_logger_;
+   std::unique_ptr<JitLogger> jit_logger_;
