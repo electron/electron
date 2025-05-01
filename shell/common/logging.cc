@@ -20,7 +20,7 @@
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
 #include "base/win/scoped_handle.h"
-#include "base/win/win_util.h"
+#include "base/win/windows_handle_util.h"
 #include "sandbox/policy/switches.h"
 #endif
 
