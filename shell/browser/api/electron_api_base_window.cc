@@ -362,8 +362,7 @@ void BaseWindow::SetContentView(gin::Handle<View> view) {
 }
 
 void BaseWindow::CloseImmediately() {
-  if (!window_->IsClosed())
-    window_->CloseImmediately();
+  window_->CloseImmediately();
 }
 
 void BaseWindow::Close() {

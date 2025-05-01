@@ -87,7 +87,7 @@ void WindowList::CloseAllWindows() {
   std::ranges::reverse(weak_windows);
 #endif
   for (const auto& window : weak_windows) {
-    if (window && !window->IsClosed())
+    if (window)
       window->Close();
   }
 }
@@ -98,7 +98,7 @@ void WindowList::DestroyAllWindows() {
       ConvertToWeakPtrVector(GetInstance()->windows_);
 
   for (const auto& window : weak_windows) {
-    if (window && !window->IsClosed())
+    if (window)
       window->CloseImmediately();
   }
 }
