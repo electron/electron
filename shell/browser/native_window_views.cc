@@ -44,6 +44,7 @@
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/webview.h"
+#include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/client_view.h"
 #include "ui/wm/core/shadow_types.h"
@@ -1321,6 +1322,20 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
       });
     }
   }
+#endif
+}
+
+void NativeWindowViews::SetContentProtection(bool enable) {
+#if BUILDFLAG(IS_WIN)
+  widget()->native_widget_private()->SetAllowScreenshots(!enable);
+#endif
+}
+
+bool NativeWindowViews::IsContentProtected() const {
+#if BUILDFLAG(IS_WIN)
+  return !widget()->native_widget_private()->AreScreenshotsAllowed();
+#else  // Not implemented on Linux
+  return false;
 #endif
 }
 
