@@ -80,7 +80,7 @@ index 4fd8dff1089cd6afa6a66dc185734d7671657281..0a1f4268ea771a3d5d4a2668928c6e5d
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 127ca8c04ce5822d9bedc8d401bf79b0fe63cc95..4534df7cdfe97307d45a59393a63dca5b85dd3a7 100644
+index de3f9f56b47628e1104b5f64b3c17cc35e10bfc7..3a19c28386fd3a0b8755a06510895c685f2c0cdb 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -2327,12 +2327,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -99,7 +99,7 @@ index 127ca8c04ce5822d9bedc8d401bf79b0fe63cc95..4534df7cdfe97307d45a59393a63dca5
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 9f47c929bc9c0994a185fefb1f89c713a48ca63f..2750b33807b79dcdecb4015902c36e89b66403d7 100644
+index 0bcb2fc072e47c2c259b724209b4814486329fe1..db674988cf87f198ed1af7e0f4def24776fbaa89 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -1027,8 +1027,7 @@ class Browser : public TabStripModelObserver,
@@ -218,10 +218,10 @@ index c6838c83ef971b88769b1f3fba8095025ae25464..2da6a4e08340e72ba7de5d03444c2f17
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 750e7c9f6687065e64f3cbb6152e01348a50d1a4..af256ceb7d19649b86f8e36dff851c058c146794 100644
+index e236eb74db68a6c11892e1ea16cab05b8c47afbf..b2d5733ff8c47f497af03171d9dfac68b2013e4d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5008,8 +5008,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5013,8 +5013,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // TODO(crbug.com/40202416): Support a way for MPArch guests to support this.
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -274,7 +274,7 @@ index 8d6fc67cb9b1d653bce64d1ba22aa7ec2d79257c..d5ce746373a1a4310e1eb530aee011a7
  
    return true;
 diff --git a/extensions/browser/guest_view/app_view/app_view_guest.h b/extensions/browser/guest_view/app_view/app_view_guest.h
-index 136448c9df06b9704e95d2797a60907d7ec5170a..21cc7b08dd8f9e4a32d29dd35c42ec2ce9f6cd53 100644
+index 775cfbf5adac0017f343bc091daee1b8883c75bb..dc97e5d60d3663ef7f7c78c28603f9e1c5aea4ff 100644
 --- a/extensions/browser/guest_view/app_view/app_view_guest.h
 +++ b/extensions/browser/guest_view/app_view/app_view_guest.h
 @@ -10,6 +10,7 @@
