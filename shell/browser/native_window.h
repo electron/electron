@@ -187,8 +187,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetDocumentEdited(bool edited) {}
   virtual bool IsDocumentEdited() const;
   virtual void SetIgnoreMouseEvents(bool ignore, bool forward) = 0;
-  void SetContentProtection(bool enable);
-  bool IsContentProtected() const;
+  virtual void SetContentProtection(bool enable) = 0;
+  virtual bool IsContentProtected() const = 0;
   virtual void SetFocusable(bool focusable) {}
   virtual bool IsFocusable() const;
   virtual void SetMenu(ElectronMenuModel* menu) {}

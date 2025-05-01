@@ -113,6 +113,8 @@ class NativeWindowViews : public NativeWindow,
   void SetOpacity(const double opacity) override;
   double GetOpacity() const override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
+  void SetContentProtection(bool enable) override;
+  bool IsContentProtected() const override;
   void SetFocusable(bool focusable) override;
   bool IsFocusable() const override;
   void SetMenu(ElectronMenuModel* menu_model) override;
