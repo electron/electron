@@ -5,7 +5,6 @@
 #include "shell/common/logging.h"
 
 #include <string>
-#include <string_view>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
@@ -13,14 +12,15 @@
 #include "base/files/file_path.h"
 #include "base/logging.h"
 #include "base/path_service.h"
+#include "base/strings/cstring_view.h"
 #include "base/strings/string_number_conversions.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
 
 namespace logging {
 
-constexpr std::string_view kLogFileName{"ELECTRON_LOG_FILE"};
-constexpr std::string_view kElectronEnableLogging{"ELECTRON_ENABLE_LOGGING"};
+constexpr base::cstring_view kLogFileName{"ELECTRON_LOG_FILE"};
+constexpr base::cstring_view kElectronEnableLogging{"ELECTRON_ENABLE_LOGGING"};
 
 base::FilePath GetLogFileName(const base::CommandLine& command_line) {
   std::string filename = command_line.GetSwitchValueASCII(switches::kLogFile);
