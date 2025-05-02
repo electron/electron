@@ -280,11 +280,11 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
 
       checked_for_a11y_support_ = true;
 
-      // TODO(wg-upgrades): crbug.com/1470199 remove use of deprecated
-      // AddAccessibilityModeFlags() and RemoveAccessibilityModeFlags()
       auto* const axState = content::BrowserAccessibilityState::GetInstance();
       if (axState && axState->GetAccessibilityMode() != ui::kAXModeComplete) {
-        axState->AddAccessibilityModeFlags(ui::kAXModeComplete);
+        scoped_accessibility_mode_ =
+            content::BrowserAccessibilityState::GetInstance()
+                ->CreateScopedModeForProcess(ui::kAXModeComplete);
         Browser::Get()->OnAccessibilitySupportChanged();
       }
 

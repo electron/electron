@@ -4,10 +4,9 @@
 
 #include "shell/browser/electron_browser_main_parts.h"
 
-#include <string_view>
-
 #include "base/command_line.h"
 #include "base/environment.h"
+#include "base/strings/cstring_view.h"
 #include "ui/base/ozone_buildflags.h"
 #include "ui/ozone/public/ozone_switches.h"
 
@@ -22,7 +21,7 @@ namespace electron {
 
 namespace {
 
-constexpr std::string_view kElectronOzonePlatformHint{
+constexpr base::cstring_view kElectronOzonePlatformHint{
     "ELECTRON_OZONE_PLATFORM_HINT"};
 
 #if BUILDFLAG(IS_OZONE_WAYLAND)
