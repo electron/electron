@@ -286,8 +286,7 @@ void UsbChooserContext::OnDeviceAdded(
   devices_.try_emplace(device_info->guid, device_info->Clone());
 
   // Notify all observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceAdded(*device_info);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceAdded, *device_info);
 }
 
 void UsbChooserContext::OnDeviceRemoved(
@@ -304,8 +303,7 @@ void UsbChooserContext::OnDeviceRemoved(
   DCHECK_EQ(n_erased, 1U);
 
   // Notify all device observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceRemoved(*device_info);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceRemoved, *device_info);
 
   // If the device was persistent, return. Otherwise, notify all permission
   // observers that its permissions were revoked.
@@ -327,8 +325,7 @@ void UsbChooserContext::OnDeviceManagerConnectionError() {
   ephemeral_devices_.clear();
 
   // Notify all device observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceManagerConnectionError();
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceManagerConnectionError);
 }
 
 }  // namespace electron
