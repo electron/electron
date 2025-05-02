@@ -142,8 +142,8 @@ Note: The Windows implementation will ignore `size.height` and scale the height 
 
 Returns `NativeImage`
 
-Creates a new `NativeImage` instance from a file located at `path`. This method
-returns an empty image if the `path` does not exist, cannot be read, or is not
+Creates a new `NativeImage` instance from an image file (PNG, JPG etc) located at `path`.
+This method returns an empty image if the `path` does not exist, cannot be read, or is not
 a valid image.
 
 ```js
