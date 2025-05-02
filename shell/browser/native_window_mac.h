@@ -158,8 +158,8 @@ class NativeWindowMac : public NativeWindow,
   void SetActive(bool is_key) override;
   bool IsActive() const override;
   // Remove the specified child window without closing it.
-  void RemoveChildWindow(NativeWindow* child) override;
-  void RemoveChildFromParentWindow() override;
+  void RemoveChildWindow(NativeWindowMac* child);
+  void RemoveChildFromParentWindow();
   // Attach child windows, if the window is visible.
   void AttachChildren() override;
   // Detach window from parent without destroying it.

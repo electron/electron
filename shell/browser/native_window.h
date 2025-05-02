@@ -153,8 +153,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetAlwaysOnTopLevel() const = 0;
   virtual void SetActive(bool is_key) = 0;
   virtual bool IsActive() const = 0;
-  virtual void RemoveChildFromParentWindow() = 0;
-  virtual void RemoveChildWindow(NativeWindow* child) = 0;
   virtual void AttachChildren() = 0;
   virtual void DetachChildren() = 0;
 #endif

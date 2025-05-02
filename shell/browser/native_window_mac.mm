@@ -572,7 +572,7 @@ void NativeWindowMac::RemoveFromTree() {
   RemoveChildFromParentWindow();
 
   auto tmp = child_windows_;
-  for (NativeWindow* child : base::Reversed(tmp))
+  for (NativeWindowMac* child : base::Reversed(tmp))
     child->RemoveChildFromParentWindow();
 }
 
@@ -583,7 +583,7 @@ void NativeWindowMac::RemoveChildFromParentWindow() {
   }
 }
 
-void NativeWindowMac::RemoveChildWindow(NativeWindow* child) {
+void NativeWindowMac::RemoveChildWindow(NativeWindowMac* child) {
   std::erase(child_windows_, child);
 
   [window_ removeChildWindow:child->GetNativeWindow().GetNativeNSWindow()];
