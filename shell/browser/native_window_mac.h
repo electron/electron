@@ -234,6 +234,8 @@ class NativeWindowMac : public NativeWindow,
                                uint32_t changed_metrics) override;
 
  private:
+  void RemoveFromTree();
+
   // Add custom layers to the content view.
   void AddContentViewLayers();
 

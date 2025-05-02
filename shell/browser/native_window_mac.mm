@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "base/apple/scoped_cftyperef.h"
+#include "base/containers/adapters.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
@@ -336,13 +337,7 @@ void NativeWindowMac::CloseImpl() {
     return;
   }
 
-  // Ensure we're detached from the parent window before closing.
-  RemoveChildFromParentWindow();
-
-  while (!child_windows_.empty()) {
-    auto* child = child_windows_.back();
-    child->RemoveChildFromParentWindow();
-  }
+  RemoveFromTree();
 
   // If a sheet is attached to the window when we call
   // [window_ performClose:nil], the window won't close properly
@@ -367,13 +362,7 @@ void NativeWindowMac::CloseImpl() {
 }
 
 void NativeWindowMac::CloseImmediatelyImpl() {
-  // Ensure we're detached from the parent window before closing.
-  RemoveChildFromParentWindow();
-
-  while (!child_windows_.empty()) {
-    auto* child = child_windows_.back();
-    child->RemoveChildFromParentWindow();
-  }
+  RemoveFromTree();
 
   [window_ close];
 }
@@ -579,10 +568,12 @@ bool NativeWindowMac::HandleDeferredClose() {
   return false;
 }
 
-void NativeWindowMac::RemoveChildWindow(NativeWindow* child) {
-  child_windows_.remove_if([&child](NativeWindow* w) { return (w == child); });
+void NativeWindowMac::RemoveFromTree() {
+  RemoveChildFromParentWindow();
 
-  [window_ removeChildWindow:child->GetNativeWindow().GetNativeNSWindow()];
+  auto tmp = child_windows_;
+  for (NativeWindow* child : base::Reversed(tmp))
+    child->RemoveChildFromParentWindow();
 }
 
 void NativeWindowMac::RemoveChildFromParentWindow() {
@@ -590,6 +581,12 @@ void NativeWindowMac::RemoveChildFromParentWindow() {
     parent()->RemoveChildWindow(this);
     NativeWindow::SetParentWindow(nullptr);
   }
+}
+
+void NativeWindowMac::RemoveChildWindow(NativeWindow* child) {
+  child_windows_.remove_if([&child](NativeWindow* w) { return (w == child); });
+
+  [window_ removeChildWindow:child->GetNativeWindow().GetNativeNSWindow()];
 }
 
 void NativeWindowMac::AttachChildren() {
