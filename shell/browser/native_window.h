@@ -82,9 +82,10 @@ class NativeWindow : public base::SupportsUserData,
 
   virtual void SetContentView(views::View* view) = 0;
 
-  virtual void Close() = 0;
-  virtual void CloseImmediately() = 0;
-  virtual bool IsClosed() const;
+  // wrapper around CloseImpl that checks that window_ can be closed
+  void Close();
+  // wrapper around CloseImmediatelyImpl that checks that window_ can be closed
+  void CloseImmediately();
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() const = 0;
   virtual void Show() = 0;
@@ -436,6 +437,8 @@ class NativeWindow : public base::SupportsUserData,
  protected:
   friend class api::BrowserView;
 
+  [[nodiscard]] constexpr bool is_closed() const { return is_closed_; }
+
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   virtual void OnTitleChanged() {}
@@ -446,6 +449,9 @@ class NativeWindow : public base::SupportsUserData,
   std::u16string GetAccessibleWindowTitle() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
+
+  virtual void CloseImpl() = 0;
+  virtual void CloseImmediatelyImpl() = 0;
 
   // The boolean parsing of the "titleBarOverlay" option
   bool titlebar_overlay_ = false;
