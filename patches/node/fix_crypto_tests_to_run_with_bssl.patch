@@ -581,6 +581,49 @@ index 6f88e81e9ff29defe73800fc038b0d96d1ebd846..c0b92e2bdf86d3d2638c973f8be3110d
  };
  
  // Create TLS1.2 server
+diff --git a/test/parallel/test-tls-alert-handling.js b/test/parallel/test-tls-alert-handling.js
+index cba5bebaa29b6f8ac4fd0fcedaadb2f7bb3eb321..019d95df499892b14ab088f99013ee32c432779c 100644
+--- a/test/parallel/test-tls-alert-handling.js
++++ b/test/parallel/test-tls-alert-handling.js
+@@ -35,7 +35,7 @@ let iter = 0;
+ 
+ const errorHandler = common.mustCall((err) => {
+   let expectedErrorCode = 'ERR_SSL_WRONG_VERSION_NUMBER';
+-  let expectedErrorReason = 'wrong version number';
++  let expectedErrorReason = /wrong[\s_]version[\s_]number/i;
+   if (hasOpenSSL(3, 2)) {
+     expectedErrorCode = 'ERR_SSL_PACKET_LENGTH_TOO_LONG';
+     expectedErrorReason = 'packet length too long';
+@@ -43,8 +43,8 @@ const errorHandler = common.mustCall((err) => {
+ 
+   assert.strictEqual(err.code, expectedErrorCode);
+   assert.strictEqual(err.library, 'SSL routines');
+-  if (!hasOpenSSL3) assert.strictEqual(err.function, 'ssl3_get_record');
+-  assert.strictEqual(err.reason, expectedErrorReason);
++  if (!hasOpenSSL3 && !common.openSSLIsBoringSSL) assert.strictEqual(err.function, 'ssl3_get_record');
++  assert.match(err.reason, expectedErrorReason);
+   errorReceived = true;
+   if (canCloseServer())
+     server.close();
+@@ -98,15 +98,15 @@ function sendBADTLSRecord() {
+   }));
+   client.on('error', common.mustCall((err) => {
+     let expectedErrorCode = 'ERR_SSL_TLSV1_ALERT_PROTOCOL_VERSION';
+-    let expectedErrorReason = 'tlsv1 alert protocol version';
++    let expectedErrorReason = /tlsv1[\s_]alert[\s_]protocol[\s_]version/i;
+     if (hasOpenSSL(3, 2)) {
+       expectedErrorCode = 'ERR_SSL_TLSV1_ALERT_RECORD_OVERFLOW';
+       expectedErrorReason = 'tlsv1 alert record overflow';
+     }
+     assert.strictEqual(err.code, expectedErrorCode);
+     assert.strictEqual(err.library, 'SSL routines');
+-    if (!hasOpenSSL3)
++    if (!hasOpenSSL3 && !common.openSSLIsBoringSSL)
+       assert.strictEqual(err.function, 'ssl3_read_bytes');
+-    assert.strictEqual(err.reason, expectedErrorReason);
++    assert.match(err.reason, expectedErrorReason);
+   }));
+ }
 diff --git a/test/parallel/test-tls-getprotocol.js b/test/parallel/test-tls-getprotocol.js
 index b1eab88fd6517e3698934dea17752ef2bb8d8d54..3ad6db20316baa8490e3787dd55903b58a54ad06 100644
 --- a/test/parallel/test-tls-getprotocol.js
