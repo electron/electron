@@ -102,19 +102,19 @@ class ElectronUsbDelegate::ContextObservation
 
   // UsbChooserContext::DeviceObserver:
   void OnDeviceAdded(const device::mojom::UsbDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceAdded(device_info);
+    observer_list_.Notify(&content::UsbDelegate::Observer::OnDeviceAdded,
+                          device_info);
   }
 
   void OnDeviceRemoved(
       const device::mojom::UsbDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceRemoved(device_info);
+    observer_list_.Notify(&content::UsbDelegate::Observer::OnDeviceRemoved,
+                          device_info);
   }
 
   void OnDeviceManagerConnectionError() override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceManagerConnectionError();
+    observer_list_.Notify(
+        &content::UsbDelegate::Observer::OnDeviceManagerConnectionError);
   }
 
   void OnBrowserContextShutdown() override {

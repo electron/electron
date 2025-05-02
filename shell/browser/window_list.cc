@@ -57,16 +57,13 @@ void WindowList::RemoveWindow(NativeWindow* window) {
   WindowVector& windows = GetInstance()->windows_;
   std::erase(windows, window);
 
-  if (windows.empty()) {
-    for (WindowListObserver& observer : GetObservers())
-      observer.OnWindowAllClosed();
-  }
+  if (windows.empty())
+    GetObservers().Notify(&WindowListObserver::OnWindowAllClosed);
 }
 
 // static
 void WindowList::WindowCloseCancelled(NativeWindow* window) {
-  for (WindowListObserver& observer : GetObservers())
-    observer.OnWindowCloseCancelled(window);
+  GetObservers().Notify(&WindowListObserver::OnWindowCloseCancelled, window);
 }
 
 // static
