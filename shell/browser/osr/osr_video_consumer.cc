@@ -109,7 +109,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     texture.shared_texture_handle =
         reinterpret_cast<uintptr_t>(gmb_handle.io_surface.get());
 #elif BUILDFLAG(IS_LINUX)
-    const auto& native_pixmap = gmb_handle.native_pixmap_handle;
+    const auto& native_pixmap = gmb_handle.native_pixmap_handle();
     texture.modifier = native_pixmap.modifier;
     for (const auto& plane : native_pixmap.planes) {
       texture.planes.emplace_back(plane.stride, plane.offset, plane.size,
