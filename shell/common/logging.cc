@@ -115,7 +115,7 @@ LoggingDestination DetermineLoggingDestination(
     // Child processes can log to a handle duplicated from the parent, and
     // provided in the log-file switch value.
     filename_is_handle = true;
-    return LOG_TO_FILE | (also_log_to_stderr ? LOG_TO_STDERR : 0);
+    return LOG_TO_FILE;
   }
 #endif  // BUILDFLAG(IS_WIN)
 

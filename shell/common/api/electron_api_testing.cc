@@ -2,8 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "base/command_line.h"
 #include "base/dcheck_is_on.h"
 #include "base/logging.h"
+#include "content/public/common/content_switches.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/v8.h"
@@ -34,12 +36,18 @@ void Log(int severity, std::string text) {
   }
 }
 
+std::string GetLoggingDestination() {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  return command_line->GetSwitchValueASCII(switches::kEnableLogging);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("log", &Log);
+  dict.SetMethod("getLoggingDestination", &GetLoggingDestination);
 }
 
 }  // namespace
