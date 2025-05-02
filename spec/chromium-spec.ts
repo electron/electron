@@ -1463,26 +1463,34 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
       const windowUrl = `file://${fixturesPath}/pages/window-open-size-inner.html`;
-      const { eventData } = await w.webContents.executeJavaScript(`(async () => {
-        const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
-        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no,innerWidth=400,height=450')
-        const e = await message
+      const windowCreatedPromise = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
+      const eventDataPromise = w.webContents.executeJavaScript(`(async () => {
+        const message = new Promise(resolve => window.addEventListener('message', resolve, { once: true }));
+        b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no,innerWidth=400,height=450');
+        const e = await message;
         b.close();
-        return { eventData: e.data }
+        return e.data;
       })()`);
+      const [[, newWindow], eventData] = await Promise.all([windowCreatedPromise, eventDataPromise]);
+
+      expect(newWindow.getContentSize().toString()).to.equal('400,450');
       expect(eventData).to.equal('size: 400 450');
     });
     it('window opened with innerHeight option has the same innerHeight', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
       const windowUrl = `file://${fixturesPath}/pages/window-open-size-inner.html`;
-      const { eventData } = await w.webContents.executeJavaScript(`(async () => {
+      const windowCreatedPromise = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
+      const eventDataPromise = w.webContents.executeJavaScript(`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
         const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no,width=350,innerHeight=400')
-        const e = await message
+        const e = await message;
         b.close();
-        return { eventData: e.data }
+        return e.data;
       })()`);
+      const [[, newWindow], eventData] = await Promise.all([windowCreatedPromise, eventDataPromise]);
+
+      expect(newWindow.getContentSize().toString()).to.equal('350,400');
       expect(eventData).to.equal('size: 350 400');
     });
 
