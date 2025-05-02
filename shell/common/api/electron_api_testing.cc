@@ -37,7 +37,7 @@ void Log(int severity, std::string text) {
 }
 
 std::string GetLoggingDestination() {
-  auto* command_line = base::CommandLine::ForCurrentProcess();
+  const auto* command_line = base::CommandLine::ForCurrentProcess();
   return command_line->GetSwitchValueASCII(switches::kEnableLogging);
 }
 
