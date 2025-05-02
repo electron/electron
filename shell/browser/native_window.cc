@@ -284,10 +284,6 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     Show();
 }
 
-bool NativeWindow::IsClosed() const {
-  return is_closed_;
-}
-
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
   SetBounds(gfx::Rect(GetPosition(), size), animate);
 }
@@ -525,8 +521,23 @@ void NativeWindow::NotifyWindowCloseButtonClicked() {
   CloseImmediately();
 }
 
+void NativeWindow::Close() {
+  if (!IsClosable()) {
+    WindowList::WindowCloseCancelled(this);
+    return;
+  }
+
+  if (!is_closed())
+    CloseImpl();
+}
+
+void NativeWindow::CloseImmediately() {
+  if (!is_closed())
+    CloseImmediatelyImpl();
+}
+
 void NativeWindow::NotifyWindowClosed() {
-  if (is_closed_)
+  if (is_closed())
     return;
 
   is_closed_ = true;
