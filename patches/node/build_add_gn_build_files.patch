@@ -250,10 +250,15 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index 44641b92678ab2f28e6f5de75a92878f9f3d322d..3b0529179f16e68e6e954279f6c9aabb0f0d8f27 100644
+index 44641b92678ab2f28e6f5de75a92878f9f3d322d..672e97436d9220e8d5046b0c92025f50ae50a3d8 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -146,28 +146,33 @@ template("node_gn_build") {
+@@ -142,32 +142,39 @@ template("node_gn_build") {
+     public_configs = [
+       ":node_external_config",
+       "deps/googletest:googletest_config",
++      ":zstd_include_config"
+     ]
      public_deps = [
        "deps/ada",
        "deps/uv",
@@ -273,10 +278,12 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..3b0529179f16e68e6e954279f6c9aabb
        "deps/postject",
        "deps/sqlite",
        "deps/uvwasi",
-       "deps/zstd",
+-      "deps/zstd",
        "//third_party/zlib",
 +      "//third_party/brotli:dec",
 +      "//third_party/brotli:enc",
++      "//third_party/zstd:decompress",
++      "//third_party/zstd:headers",
        "$node_simdutf_path",
        "$node_v8_path:v8_libplatform",
      ]
@@ -289,7 +296,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..3b0529179f16e68e6e954279f6c9aabb
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -190,7 +195,7 @@ template("node_gn_build") {
+@@ -190,7 +197,7 @@ template("node_gn_build") {
      }
      if (node_use_openssl) {
        deps += [ "deps/ncrypto" ]
@@ -298,7 +305,18 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..3b0529179f16e68e6e954279f6c9aabb
        sources += gypi_values.node_crypto_sources
      }
      if (node_enable_inspector) {
-@@ -288,6 +293,7 @@ template("node_gn_build") {
+@@ -214,6 +221,10 @@ template("node_gn_build") {
+     }
+   }
+ 
++  config("zstd_include_config") {
++    include_dirs = [ "//third_party/zstd/src/lib" ]
++  }
++
+   executable(target_name) {
+     forward_variables_from(invoker, "*")
+ 
+@@ -288,6 +299,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -306,7 +324,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..3b0529179f16e68e6e954279f6c9aabb
      deps = [
        "deps/uv",
        "$node_simdutf_path",
-@@ -298,26 +304,75 @@ template("node_gn_build") {
+@@ -298,26 +310,75 @@ template("node_gn_build") {
        "src/embedded_data.cc",
        "src/embedded_data.h",
      ]
@@ -392,7 +410,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..3b0529179f16e68e6e954279f6c9aabb
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -331,11 +386,11 @@ template("node_gn_build") {
+@@ -331,11 +392,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  
