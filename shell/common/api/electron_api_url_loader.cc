@@ -655,7 +655,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
             {"medium", net::MEDIUM},
             {"highest", net::HIGHEST},
         });
-    if (auto* iter = Lookup.find(priority); iter != Lookup.end())
+    if (auto iter = Lookup.find(priority); iter != Lookup.end())
       request->priority = iter->second;
   }
   if (bool priorityIncremental = request->priority_incremental;
