@@ -14,6 +14,18 @@ Reviewed-By: Michaël Zasso <targos@protonmail.com>
 Reviewed-By: Benjamin Gruenbaum <benjamingr@gmail.com>
 Reviewed-By: Yagiz Nizipli <yagiz.nizipli@sentry.io>
 
+diff --git a/doc/api/cli.md b/doc/api/cli.md
+index 114b7bbf6b1e105fc1696ed8a064065db73ff519..ad863e52761332c3249a86af0e3d239cd0f73b03 100644
+--- a/doc/api/cli.md
++++ b/doc/api/cli.md
+@@ -3313,7 +3313,6 @@ one is included in the list below.
+ * `--tls-min-v1.1`
+ * `--tls-min-v1.2`
+ * `--tls-min-v1.3`
+-* `--trace-atomics-wait`
+ * `--trace-deprecation`
+ * `--trace-env-js-stack`
+ * `--trace-env-native-stack`
 diff --git a/doc/node.1 b/doc/node.1
 index 9f534746ef9d9c1c1ee2edd6c195573a2e228600..e01fc511a1034518c0fb9bc5fa925524aecad927 100644
 --- a/doc/node.1
