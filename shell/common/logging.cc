@@ -35,7 +35,7 @@ base::win::ScopedHandle GetLogInheritedHandle(
   auto handle_str = command_line.GetSwitchValueNative(::switches::kLogFile);
   uint32_t handle_value = 0;
   if (!base::StringToUint(handle_str, &handle_value)) {
-    return base::win::ScopedHandle();
+    return {};
   }
   // Duplicate the handle from the command line so that different things can
   // init logging. This means the handle from the parent is never closed, but
@@ -45,7 +45,7 @@ base::win::ScopedHandle GetLogInheritedHandle(
                          base::win::Uint32ToHandle(handle_value),
                          ::GetCurrentProcess(), &log_handle, 0,
                          /*bInheritHandle=*/FALSE, DUPLICATE_SAME_ACCESS)) {
-    return base::win::ScopedHandle();
+    return {};
   }
   // Transfer ownership to the caller.
   return base::win::ScopedHandle(log_handle);
@@ -77,12 +77,9 @@ bool HasExplicitLogFile(const base::CommandLine& command_line) {
   return !filename.empty();
 }
 
-LoggingDestination DetermineLoggingDestination(
-    const base::CommandLine& command_line,
-    bool is_preinit,
-    bool& filename_is_handle) {
-  filename_is_handle = false;
-
+std::pair<LoggingDestination, bool /* filename_is_handle */>
+DetermineLoggingDestination(const base::CommandLine& command_line,
+                            bool is_preinit) {
   bool enable_logging = false;
   std::string logging_destination;
   if (command_line.HasSwitch(::switches::kEnableLogging)) {
@@ -97,7 +94,7 @@ LoggingDestination DetermineLoggingDestination(
     }
   }
   if (!enable_logging)
-    return LOG_NONE;
+    return {LOG_NONE, false};
 
   bool also_log_to_stderr = false;
 #if !defined(NDEBUG)
@@ -114,8 +111,7 @@ LoggingDestination DetermineLoggingDestination(
       command_line.HasSwitch(::switches::kLogFile)) {
     // Child processes can log to a handle duplicated from the parent, and
     // provided in the log-file switch value.
-    filename_is_handle = true;
-    return LOG_TO_FILE;
+    return {LOG_TO_FILE, true};
   }
 #endif  // BUILDFLAG(IS_WIN)
 
@@ -134,8 +130,8 @@ LoggingDestination DetermineLoggingDestination(
   // given.
   if (HasExplicitLogFile(command_line) ||
       (logging_destination == "file" && !is_preinit))
-    return LOG_TO_FILE | (also_log_to_stderr ? LOG_TO_STDERR : 0);
-  return LOG_TO_SYSTEM_DEBUG_LOG | LOG_TO_STDERR;
+    return {LOG_TO_FILE | (also_log_to_stderr ? LOG_TO_STDERR : 0), false};
+  return {LOG_TO_SYSTEM_DEBUG_LOG | LOG_TO_STDERR, false};
 }
 
 }  // namespace
@@ -144,9 +140,8 @@ void InitElectronLogging(const base::CommandLine& command_line,
                          bool is_preinit) {
   const std::string process_type =
       command_line.GetSwitchValueASCII(::switches::kProcessType);
-  bool filename_is_handle = false;
-  LoggingDestination logging_dest =
-      DetermineLoggingDestination(command_line, is_preinit, filename_is_handle);
+  auto [logging_dest, filename_is_handle] =
+      DetermineLoggingDestination(command_line, is_preinit);
   LogLockingState log_locking_state = LOCK_LOG_FILE;
   base::FilePath log_path;
 #if BUILDFLAG(IS_WIN)
