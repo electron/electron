@@ -409,6 +409,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   options.Get(options::kUseContentSize, &use_content_size_);
 
+  // NOTE(@mlaurencin) Spec requirements can be found here:
+  // https://developer.mozilla.org/en-US/docs/Web/API/Window/open#width
+  constexpr int kMinSizeReqdBySpec = 100;
   int inner_width = 0;
   int inner_height = 0;
   options.Get(options::kinnerWidth, &inner_width);
@@ -416,9 +419,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (inner_width || inner_height) {
     use_content_size_ = true;
     if (inner_width)
-      bounds.set_width((inner_width < 100) ? 100 : inner_width);
+      bounds.set_width(std::max(kMinSizeReqdBySpec, inner_width));
     if (inner_height)
-      bounds.set_height((inner_height < 100) ? 100 : inner_height);
+      bounds.set_height(std::max(kMinSizeReqdBySpec, inner_height));
   }
 
   gfx::Size size = bounds.size();
