@@ -128,20 +128,19 @@ void ElectronSerialDelegate::DeleteControllerForFrame(
 // SerialChooserContext::PortObserver:
 void ElectronSerialDelegate::OnPortAdded(
     const device::mojom::SerialPortInfo& port) {
-  for (auto& observer : observer_list_)
-    observer.OnPortAdded(port);
+  observer_list_.Notify(&content::SerialDelegate::Observer::OnPortAdded, port);
 }
 
 void ElectronSerialDelegate::OnPortRemoved(
     const device::mojom::SerialPortInfo& port) {
-  for (auto& observer : observer_list_)
-    observer.OnPortRemoved(port);
+  observer_list_.Notify(&content::SerialDelegate::Observer::OnPortRemoved,
+                        port);
 }
 
 void ElectronSerialDelegate::OnPortManagerConnectionError() {
   port_observation_.Reset();
-  for (auto& observer : observer_list_)
-    observer.OnPortManagerConnectionError();
+  observer_list_.Notify(
+      &content::SerialDelegate::Observer::OnPortManagerConnectionError);
 }
 
 void ElectronSerialDelegate::OnSerialChooserContextShutdown() {
