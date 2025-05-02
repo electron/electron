@@ -1299,8 +1299,7 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& rect) {
   if (!Emit("content-bounds-updated", rect))
-    for (ExtendedWebContentsObserver& observer : observers_)
-      observer.OnSetContentBounds(rect);
+    observers_.Notify(&ExtendedWebContentsObserver::OnSetContentBounds, rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
@@ -1316,8 +1315,7 @@ void WebContents::CloseContents(content::WebContents* source) {
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnActivateContents();
+  observers_.Notify(&ExtendedWebContentsObserver::OnActivateContents);
 }
 
 void WebContents::UpdateTargetURL(content::WebContents* source,
@@ -2112,8 +2110,8 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
   } else {
     final_title = web_contents()->GetTitle();
   }
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnPageTitleUpdated(final_title, explicit_set);
+  observers_.Notify(&ExtendedWebContentsObserver::OnPageTitleUpdated,
+                    final_title, explicit_set);
   Emit("page-title-updated", final_title, explicit_set);
 }
 
@@ -2169,8 +2167,7 @@ void WebContents::DevToolsClosed() {
 }
 
 void WebContents::DevToolsResized() {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnDevToolsResized();
+  observers_.Notify(&ExtendedWebContentsObserver::OnDevToolsResized);
 }
 
 void WebContents::SetOwnerWindow(NativeWindow* owner_window) {

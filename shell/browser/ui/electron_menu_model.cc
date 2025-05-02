@@ -101,16 +101,12 @@ void ElectronMenuModel::SetSharingItem(SharingItem item) {
 
 void ElectronMenuModel::MenuWillClose() {
   ui::SimpleMenuModel::MenuWillClose();
-  for (Observer& observer : observers_) {
-    observer.OnMenuWillClose();
-  }
+  observers_.Notify(&Observer::OnMenuWillClose);
 }
 
 void ElectronMenuModel::MenuWillShow() {
   ui::SimpleMenuModel::MenuWillShow();
-  for (Observer& observer : observers_) {
-    observer.OnMenuWillShow();
-  }
+  observers_.Notify(&Observer::OnMenuWillShow);
 }
 
 ElectronMenuModel* ElectronMenuModel::GetSubmenuModelAt(size_t index) {
