@@ -233,15 +233,12 @@ void SerialChooserContext::OnPortAdded(device::mojom::SerialPortInfoPtr port) {
     ports.erase(port->token);
   }
 
-  for (auto& observer : port_observer_list_)
-    observer.OnPortAdded(*port);
+  port_observer_list_.Notify(&PortObserver::OnPortAdded, *port);
 }
 
 void SerialChooserContext::OnPortRemoved(
     device::mojom::SerialPortInfoPtr port) {
-  for (auto& observer : port_observer_list_)
-    observer.OnPortRemoved(*port);
-
+  port_observer_list_.Notify(&PortObserver::OnPortRemoved, *port);
   port_info_.erase(port->token);
 }
 
