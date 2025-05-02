@@ -233,10 +233,10 @@ index 7c99a9512e6f65713fe8483cef7b7c9b494b4491..8fb6cf252961c9773d1a6a09d47bec6a
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index 9a619bf9a4e2801d7a67bd26104066d03dcfb465..6aa5f4cb75bc8e22048b6b9bb8456a958ad7b80d 100644
+index 9119155650ed4249c699cc57eaef9149b99e7297..13e2c0da07938d73b5a689cea19df4a445c4e5e5 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
-@@ -300,6 +300,14 @@ BASE_FEATURE(kIOSurfaceCapturer,
+@@ -294,6 +294,14 @@ BASE_FEATURE(kIOSurfaceCapturer,
               base::FEATURE_ENABLED_BY_DEFAULT);
  #endif
  
@@ -252,10 +252,10 @@ index 9a619bf9a4e2801d7a67bd26104066d03dcfb465..6aa5f4cb75bc8e22048b6b9bb8456a95
  // invalidated upon notifications sent by base::SystemMonitor. If disabled, the
  // cache is considered invalid on every enumeration request.
 diff --git a/content/common/features.h b/content/common/features.h
-index 7bc79ead73e5e51d7735d6964cf96990120670ca..83b5666e735aa99a8e2300b37154da1769baa2b0 100644
+index 0764c2fd1086bb0da16df91c95b171eea0a06bb1..3bc7a54999ec5e1f3afa45fe59d43ba12ec10286 100644
 --- a/content/common/features.h
 +++ b/content/common/features.h
-@@ -100,6 +100,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
+@@ -99,6 +99,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
  #if BUILDFLAG(IS_MAC)
  CONTENT_EXPORT BASE_DECLARE_FEATURE(kIOSurfaceCapturer);
  #endif

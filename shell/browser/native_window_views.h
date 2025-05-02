@@ -20,6 +20,7 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_gdi_object.h"
+#include "content/public/browser/scoped_accessibility_mode.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 #endif
 
@@ -306,6 +307,8 @@ class NativeWindowViews : public NativeWindow,
   // The message ID of the "TaskbarCreated" message, sent to us when we need to
   // reset our thumbar buttons.
   UINT taskbar_created_message_ = 0;
+
+  std::unique_ptr<content::ScopedAccessibilityMode> scoped_accessibility_mode_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

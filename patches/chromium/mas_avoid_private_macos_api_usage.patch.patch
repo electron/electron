@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 59721ed3c9e26fd83c553d82030f3e76af0c3dfd..e8a9715e9004e5d10aa96298332237c78796bf5b 100644
+index a6cbbaa18ab6631aff7d76873077d2e15cbedeb6..db6fac3683f2737d05c5bc2dabfcc4b669a8a6d1 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1045,6 +1045,7 @@ component("base") {
@@ -548,18 +548,18 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index eca43bf620111c27c400ae2d95880e47c34fbc59..12ee7e75e437426f28002c7c9f4d5f5b5016ec53 100644
+index 371b7b3ba73ee7b88027fcc31cb0a346cae40eea..c4b0654a56f4f2b4ab57ef05a119e38862b5fd2d 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -35,6 +35,7 @@
- #include "content/public/browser/browser_accessibility_state.h"
+@@ -36,6 +36,7 @@
  #import "content/public/browser/render_widget_host_view_mac_delegate.h"
+ #include "content/public/browser/scoped_accessibility_mode.h"
  #include "content/public/common/content_features.h"
 +#include "electron/mas.h"
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2136,15 +2137,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2138,15 +2139,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -582,7 +582,7 @@ index eca43bf620111c27c400ae2d95880e47c34fbc59..12ee7e75e437426f28002c7c9f4d5f5b
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3256304fe1bfb80af0312f9046b1a78a2469956e..29281a0d8a4383ed4b2d5d8bac934acd54040aa8 100644
+index bdc48f4549ce6f82c5558b3c9e70c5c5a92c4faa..d10a5afe9da445b6fb940a46252efa8e0c36bcb4 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 126c0d51647ef46a12b2c47930f7bd49e55dd736..d61474fb3478a27450a037f50d2a734097eb4ca9 100644
+index 4c59b6c62ad3fed9717b0330c7b46b8dc83a51a1..1c88c8f449387258259bcd65c13709d70f03117b 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -662,6 +662,7 @@ static_library("test_support") {
@@ -824,7 +824,7 @@ index 126c0d51647ef46a12b2c47930f7bd49e55dd736..d61474fb3478a27450a037f50d2a7340
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3283,6 +3286,7 @@ test("content_unittests") {
+@@ -3284,6 +3287,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1848,7 +1848,7 @@ index 874ac9d572931fe175ccab8beb7738fe0a7b3c1b..b70e2a8a7be9e00a379f47c77589dde6
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index e531cb42cde9863ff1c4a13150f35877b564226c..0c0ec308be02297b090d08b52cc713c22652da36 100644
+index c8f01a88e0d1797baf53c517341c735d9c6e6b4a..345743dd19f862cf2b4304d70cb47ce68e6895d1 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -337,6 +337,12 @@ component("gfx") {

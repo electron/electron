@@ -17,6 +17,7 @@
 #include "base/containers/fixed_flat_set.h"
 #include "base/environment.h"
 #include "base/feature_list.h"
+#include "base/strings/cstring_view.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "content/public/common/content_switches.h"
@@ -85,12 +86,13 @@ void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
 
 #if BUILDFLAG(IS_MAC)
 // A list of node envs that may be used to inject scripts.
-const char* kHijackableEnvs[] = {"NODE_OPTIONS", "NODE_REPL_EXTERNAL_MODULE"};
+constexpr base::cstring_view kHijackableEnvs[] = {"NODE_OPTIONS",
+                                                  "NODE_REPL_EXTERNAL_MODULE"};
 
 // Return true if there is any env in kHijackableEnvs.
 bool UnsetHijackableEnvs(base::Environment* env) {
   bool has = false;
-  for (const char* name : kHijackableEnvs) {
+  for (base::cstring_view name : kHijackableEnvs) {
     if (env->HasVar(name)) {
       env->UnSetVar(name);
       has = true;
