@@ -114,6 +114,34 @@ index bcff49c4bcee4a67b97172c3abc12dedda1eedda..43e0b9f8b421a1c0dc62cc2d66b6fdd0
   protected:
    AppleKeychain();
  };
+diff --git a/crypto/apple_keychain_secitem.h b/crypto/apple_keychain_secitem.h
+index 1632c22c669607f9da8b4fe7783ee716c6467f6e..3f0e3e0af568627a0aae352a65be4cc7d5d40802 100644
+--- a/crypto/apple_keychain_secitem.h
++++ b/crypto/apple_keychain_secitem.h
+@@ -17,7 +17,8 @@ class CRYPTO_EXPORT AppleKeychainSecItem : public AppleKeychain {
+ 
+   base::expected<std::vector<uint8_t>, OSStatus> FindGenericPassword(
+       std::string_view service_name,
+-      std::string_view account_name) const override;
++      std::string_view account_name,
++      AppleSecKeychainItemRef* item) const override;
+ 
+   OSStatus AddGenericPassword(
+       std::string_view service_name,
+diff --git a/crypto/apple_keychain_secitem.mm b/crypto/apple_keychain_secitem.mm
+index 12b400a1f2d6c11bc4ac67d0a2c98984d0be24e0..1abb4623bfabacbca34068113fac2030fea2c065 100644
+--- a/crypto/apple_keychain_secitem.mm
++++ b/crypto/apple_keychain_secitem.mm
+@@ -118,7 +118,8 @@
+ 
+ base::expected<std::vector<uint8_t>, OSStatus>
+ AppleKeychainSecItem::FindGenericPassword(std::string_view service_name,
+-                                          std::string_view account_name) const {
++                                          std::string_view account_name,
++                                          AppleSecKeychainItemRef* item) const {
+   base::apple::ScopedCFTypeRef<CFDictionaryRef> query =
+       MakeGenericPasswordQuery(service_name, account_name);
+ 
 diff --git a/crypto/apple_keychain_seckeychain.cc b/crypto/apple_keychain_seckeychain.cc
 index 3fa4feac6de46a65bcb306329d0fc923525330ed..61a90e531c7cf8060425bf1cde571818d2da7979 100644
 --- a/crypto/apple_keychain_seckeychain.cc
@@ -148,6 +176,20 @@ index 3fa4feac6de46a65bcb306329d0fc923525330ed..61a90e531c7cf8060425bf1cde571818
  ScopedKeychainUserInteractionAllowed::ScopedKeychainUserInteractionAllowed(
      Boolean allowed,
      OSStatus* status) {
+diff --git a/crypto/apple_keychain_seckeychain.h b/crypto/apple_keychain_seckeychain.h
+index ecf5e229c8f05a27574b635abc9c781d175c1773..6afb09c59011035337a287783bbef0c6b7d29d9a 100644
+--- a/crypto/apple_keychain_seckeychain.h
++++ b/crypto/apple_keychain_seckeychain.h
+@@ -20,7 +20,8 @@ class CRYPTO_EXPORT AppleKeychainSecKeychain : public AppleKeychain {
+ 
+   base::expected<std::vector<uint8_t>, OSStatus> FindGenericPassword(
+       std::string_view service_name,
+-      std::string_view account_name) const override;
++      std::string_view account_name,
++      AppleSecKeychainItemRef* item) const override;
+ 
+   OSStatus AddGenericPassword(
+       std::string_view service_name,
 diff --git a/crypto/mock_apple_keychain.cc b/crypto/mock_apple_keychain.cc
 index d766dc41299f32bc766e4efce5925c93f21b60c5..7f09d477ba152cbca798f3ef7a213786cc95a338 100644
 --- a/crypto/mock_apple_keychain.cc
