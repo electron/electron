@@ -56,25 +56,25 @@ class ElectronHidDelegate::ContextObservation
 
   // HidChooserContext::DeviceObserver:
   void OnDeviceAdded(const device::mojom::HidDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceAdded(device_info);
+    observer_list_.Notify(&content::HidDelegate::Observer::OnDeviceAdded,
+                          device_info);
   }
 
   void OnDeviceRemoved(
       const device::mojom::HidDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceRemoved(device_info);
+    observer_list_.Notify(&content::HidDelegate::Observer::OnDeviceRemoved,
+                          device_info);
   }
 
   void OnDeviceChanged(
       const device::mojom::HidDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceChanged(device_info);
+    observer_list_.Notify(&content::HidDelegate::Observer::OnDeviceChanged,
+                          device_info);
   }
 
   void OnHidManagerConnectionError() override {
-    for (auto& observer : observer_list_)
-      observer.OnHidManagerConnectionError();
+    observer_list_.Notify(
+        &content::HidDelegate::Observer::OnHidManagerConnectionError);
   }
 
   void OnHidChooserContextShutdown() override {
