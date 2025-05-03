@@ -78,7 +78,7 @@ index 3d388a85aaf52acdcc2b7aaea56f5a24b2435bff..7a0d28cbf1651e76a4356f1193b502d2
    }
  
 diff --git a/crypto/apple_keychain.h b/crypto/apple_keychain.h
-index c2aeebc449c7cc2d2e2fcd30dde3e8b9732aa0b3..4acd945d31cb6cb5f3c74548ef9b9cc23ee80205 100644
+index bcff49c4bcee4a67b97172c3abc12dedda1eedda..43e0b9f8b421a1c0dc62cc2d66b6fdd0eae496ce 100644
 --- a/crypto/apple_keychain.h
 +++ b/crypto/apple_keychain.h
 @@ -18,6 +18,12 @@
@@ -94,35 +94,37 @@ index c2aeebc449c7cc2d2e2fcd30dde3e8b9732aa0b3..4acd945d31cb6cb5f3c74548ef9b9cc2
  // DEPRECATED: use `AppleKeychainV2` instead.
  // Wraps the KeychainServices API in a very thin layer, to allow it to be
  // mocked out for testing.
-@@ -43,11 +49,16 @@ class CRYPTO_EXPORT AppleKeychain {
+@@ -46,13 +52,18 @@ class CRYPTO_EXPORT AppleKeychain {
    // std::vector<uint8_t> arm is populated instead.
    virtual base::expected<std::vector<uint8_t>, OSStatus> FindGenericPassword(
        std::string_view service_name,
--      std::string_view account_name) const;
+-      std::string_view account_name) const = 0;
 +      std::string_view account_name,
-+      AppleSecKeychainItemRef* item = nullptr) const;
++      AppleSecKeychainItemRef* item = nullptr) const = 0;
  
-   virtual OSStatus AddGenericPassword(std::string_view service_name,
-                                       std::string_view account_name,
-                                       base::span<const uint8_t> password) const;
-+
+   virtual OSStatus AddGenericPassword(
+       std::string_view service_name,
+       std::string_view account_name,
+       base::span<const uint8_t> password) const = 0;
+ 
 +#if BUILDFLAG(IS_MAC)
 +  virtual OSStatus ItemDelete(AppleSecKeychainItemRef item) const;
 +#endif  // !BUILDFLAG(IS_MAC)
++
+  protected:
+   AppleKeychain();
  };
- 
- #if BUILDFLAG(IS_MAC)
-diff --git a/crypto/apple_keychain_mac.cc b/crypto/apple_keychain_mac.cc
-index 0613e22fc0ce35378dc3580d797badd5f2680ae6..3ec4a2ba2fa5679363fabfa007be6200a0660ce7 100644
---- a/crypto/apple_keychain_mac.cc
-+++ b/crypto/apple_keychain_mac.cc
-@@ -58,14 +58,15 @@ AppleKeychain::~AppleKeychain() = default;
- 
+diff --git a/crypto/apple_keychain_seckeychain.cc b/crypto/apple_keychain_seckeychain.cc
+index 3fa4feac6de46a65bcb306329d0fc923525330ed..61a90e531c7cf8060425bf1cde571818d2da7979 100644
+--- a/crypto/apple_keychain_seckeychain.cc
++++ b/crypto/apple_keychain_seckeychain.cc
+@@ -59,14 +59,15 @@ AppleKeychainSecKeychain::~AppleKeychainSecKeychain() = default;
  base::expected<std::vector<uint8_t>, OSStatus>
- AppleKeychain::FindGenericPassword(std::string_view service_name,
--                                   std::string_view account_name) const {
-+                                   std::string_view account_name,
-+                                   AppleSecKeychainItemRef* item) const {
+ AppleKeychainSecKeychain::FindGenericPassword(
+     std::string_view service_name,
+-    std::string_view account_name) const {
++    std::string_view account_name,
++    AppleSecKeychainItemRef* item) const {
    base::AutoLock lock(GetMacSecurityServicesLock());
    uint32_t password_length = 0;
    void* password_data = nullptr;
@@ -134,7 +136,7 @@ index 0613e22fc0ce35378dc3580d797badd5f2680ae6..3ec4a2ba2fa5679363fabfa007be6200
    if (status != noErr) {
      return base::unexpected(status);
    }
-@@ -91,6 +92,11 @@ OSStatus AppleKeychain::AddGenericPassword(
+@@ -92,6 +93,11 @@ OSStatus AppleKeychainSecKeychain::AddGenericPassword(
        password.data(), nullptr);
  }
  
@@ -147,10 +149,10 @@ index 0613e22fc0ce35378dc3580d797badd5f2680ae6..3ec4a2ba2fa5679363fabfa007be6200
      Boolean allowed,
      OSStatus* status) {
 diff --git a/crypto/mock_apple_keychain.cc b/crypto/mock_apple_keychain.cc
-index 9b48805aacd161ff8d5550edf993217d5c6acfad..3b9fa4dc7f020740edb55a5aa80c9b526e4f585b 100644
+index d766dc41299f32bc766e4efce5925c93f21b60c5..7f09d477ba152cbca798f3ef7a213786cc95a338 100644
 --- a/crypto/mock_apple_keychain.cc
 +++ b/crypto/mock_apple_keychain.cc
-@@ -30,7 +30,8 @@ MockAppleKeychain::~MockAppleKeychain() = default;
+@@ -32,7 +32,8 @@ MockAppleKeychain::~MockAppleKeychain() = default;
  
  base::expected<std::vector<uint8_t>, OSStatus>
  MockAppleKeychain::FindGenericPassword(std::string_view service_name,

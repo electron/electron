@@ -307,7 +307,7 @@ index 2c2f4f405074e5baa4a26f255283404f86b40e21..ebeb7d6988ee9e6a4e78cb82fc01fdad
  
  ContouredRect PixelSnappedContouredBorderInternal(
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 6718aad4a16cd99c8dd7118ca62cebd29ffbfe97..39d426936b266d8f44ab8a614a48247462ceea2d 100644
+index b5a309cb7bad79f80fb43dcbcccbd8dc2fcdfef8..c90d8f2f283e9bd05184171d3971d0060731f67d 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1658,6 +1658,8 @@ component("platform") {
