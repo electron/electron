@@ -647,12 +647,12 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   // SetFullScreen is called by a user before windowWillEnterFullScreen
   // or windowWillExitFullScreen are invoked, and so a potential transition
   // could be dropped.
-  fullscreen_transition_state_ = fullscreen
-                                     ? FullScreenTransitionState::kEntering
-                                     : FullScreenTransitionState::kExiting;
+  set_fullscreen_transition_state(fullscreen
+                                      ? FullScreenTransitionState::kEntering
+                                      : FullScreenTransitionState::kExiting);
 
   if (![window_ toggleFullScreenMode:nil])
-    fullscreen_transition_state_ = FullScreenTransitionState::kNone;
+    set_fullscreen_transition_state(FullScreenTransitionState::kNone);
 }
 
 bool NativeWindowMac::IsFullscreen() const {
