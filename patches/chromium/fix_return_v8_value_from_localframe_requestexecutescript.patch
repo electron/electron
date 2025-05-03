@@ -20,7 +20,7 @@ index fc9cb7e68bdad4c40fab63f70243e09ad005ab80..199fbceda530da31aab9126d78b4bd21
        injector_->ExpectsResults(), injector_->ShouldWaitForPromise());
  }
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index 8db7be4dbc924c719783ceb667e4f5708ea0133e..d8622012721795c76831bf33c62ce393e81badbb 100644
+index 6ea4a0f04eab4e85ec4c9b67f50c5c4e5c6e01e1..5f055fe422904c95e05af5cb0e92241a5d9d53c1 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
 @@ -461,6 +461,7 @@ class BLINK_EXPORT WebLocalFrame : public WebFrame {
@@ -59,7 +59,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd43
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index fbfd4d96e8082df8c5db5d354ac7c39bc329d4ee..c8be9f437cc19668f8349e8777135e66a67fb9cb 100644
+index dd148eb3cce762d20e9117b4f8030c881057b8bb..e626d63f295b2d0fa62b179c76c45df125bbaeeb 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3113,6 +3113,7 @@ void LocalFrame::RequestExecuteScript(
@@ -215,7 +215,7 @@ index 5e12b61ba14cd1afb07b71ff15e73e905da0addc..685a2ebb6694c173471d045014932125
        mojom::blink::WantResultOption::kWantResult, wait_for_promise);
  }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index dcab8b2d4adcf14b285b558d85f69c303dc0818a..c998cba53d57dda9c32e7f75a9de3dcf0b974f58 100644
+index dd0c441d45ebb30c5a32822365f2ebe273b8cd16..164daddaccb84a28cf4bd387f382afddfc2613d3 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1111,14 +1111,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
@@ -237,7 +237,7 @@ index dcab8b2d4adcf14b285b558d85f69c303dc0818a..c998cba53d57dda9c32e7f75a9de3dcf
  
  bool WebLocalFrameImpl::IsInspectorConnected() {
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-index 1d50260fb58eb439d68506de7de04b78c616b6ee..3699e331d5cb15ca12b6fa2d2ba058f7ca74df40 100644
+index 87d933b2e413f404a9b80480bdf676eb0c8a2bfa..17329fb46c0d19645ad5411bbfba33dadfea4529 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 @@ -198,6 +198,7 @@ class CORE_EXPORT WebLocalFrameImpl final
@@ -249,10 +249,10 @@ index 1d50260fb58eb439d68506de7de04b78c616b6ee..3699e331d5cb15ca12b6fa2d2ba058f7
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption) override;
 diff --git a/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc b/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
-index 4eb146c0798514e9201f2d68dcfebfacc82b97ea..27398228f87982e5c53476d5dee13fde5a6fa64e 100644
+index 5e66719cf6d8170039c011ad03d56ea55ee8f2cb..5a71dd5172c88aed1498dea02f790a7f278ac174 100644
 --- a/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
 +++ b/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
-@@ -63,6 +63,7 @@ class VirtualTimeTest : public SimTest {
+@@ -59,6 +59,7 @@ class VirtualTimeTest : public SimTest {
          mojom::blink::LoadEventBlockingOption::kDoNotBlock,
          WTF::BindOnce(&ScriptExecutionCallbackHelper::Completed,
                        base::Unretained(&callback_helper)),
