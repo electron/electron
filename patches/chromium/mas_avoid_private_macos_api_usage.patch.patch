@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a6cbbaa18ab6631aff7d76873077d2e15cbedeb6..db6fac3683f2737d05c5bc2dabfcc4b669a8a6d1 100644
+index 82219748cc05ee4781731da17879f50dc1cea05f..25f5e50259e093d814271e53236d3be0647cb12b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1045,6 +1045,7 @@ component("base") {
@@ -477,7 +477,7 @@ index ff96d22a11051391423f4a49c7b1478b8176baf8..c7e640e968f8ef183d48a226d43cdac8
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index e522423645bf313ad1504a7ec47ecf3619888e35..d29bdc038fc6934c69b10b7a694d9cbf54839b02 100644
+index 15297546aa2641af1a249ff99bcf51764b107dbd..3c43af49c5d6d5f604c71e9a9dc1f7afe9aaf0f7 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -385,6 +385,7 @@ viz_component("service") {
@@ -582,7 +582,7 @@ index 371b7b3ba73ee7b88027fcc31cb0a346cae40eea..c4b0654a56f4f2b4ab57ef05a119e388
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index bdc48f4549ce6f82c5558b3c9e70c5c5a92c4faa..d10a5afe9da445b6fb940a46252efa8e0c36bcb4 100644
+index cf87c4749846d98e56f130ac10c9004029f56464..27327923cfdd0c05ad0368b5f4678ff8ecf835fc 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
@@ -833,10 +833,10 @@ index 4c59b6c62ad3fed9717b0330c7b46b8dc83a51a1..1c88c8f449387258259bcd65c13709d7
  
    if (enable_nocompile_tests) {
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index c17535742efb9a229120953ecb00c73ad391c07d..8142161f2ed49d7ce4f3785b86d846bf0728a92f 100644
+index dacf6fe8bbb3008e548a757aafaebc0d0a5cd66e..1e06aed0d22e460e5b5ad3bf72d767295454ddcf 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
-@@ -229,6 +229,7 @@ static_library("web_test_browser") {
+@@ -231,6 +231,7 @@ static_library("web_test_browser") {
      "//ui/gl",
      "//ui/shell_dialogs:shell_dialogs",
      "//url",
@@ -1436,7 +1436,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 3ff395b3ff3b646a64c43503d2c172776bf68c84..e40030307e8d9df7e00a402e241e00664b236c7d 100644
+index f2b874b368c6857013f6fbb7522d5d590f0540b5..1593565d61d284902ea364bf7bbee065e95acb48 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -414,6 +414,7 @@ component("core") {
@@ -1678,7 +1678,7 @@ index 6846060ef9622d8fc8d1d6c8da16e2f1b785e6bd..05c22db87e882b246bd7034e027cf149
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index dfca458adb5b38cb1e597c16e9e6b6cc1521dea2..2372ff1193d1d52b719b6ee311cc07ac472a2f8d 100644
+index d2bd63f57da9b3ff84ebe36053ec18978d86c9f3..a6261be96e00548af7eba8a5fc7461586b9dbf53 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -365,6 +365,13 @@ component("base") {
@@ -1695,7 +1695,7 @@ index dfca458adb5b38cb1e597c16e9e6b6cc1521dea2..2372ff1193d1d52b719b6ee311cc07ac
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -518,6 +525,12 @@ component("base") {
+@@ -511,6 +518,12 @@ component("base") {
      "//url",
    ]
  
