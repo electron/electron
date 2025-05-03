@@ -47,9 +47,6 @@ class PersistentDictionary;
 
 namespace electron {
 
-inline constexpr base::cstring_view kElectronNativeWindowKey =
-    "__ELECTRON_NATIVE_WINDOW__";
-
 class ElectronMenuModel;
 class BackgroundThrottlingSource;
 
@@ -77,6 +74,8 @@ class NativeWindow : public base::SupportsUserData,
   static std::unique_ptr<NativeWindow> Create(
       const gin_helper::Dictionary& options,
       NativeWindow* parent = nullptr);
+
+  [[nodiscard]] static NativeWindow* FromWidget(const views::Widget* widget);
 
   void InitFromOptions(const gin_helper::Dictionary& options);
 
@@ -452,6 +451,9 @@ class NativeWindow : public base::SupportsUserData,
 
   virtual void CloseImpl() = 0;
   virtual void CloseImmediatelyImpl() = 0;
+
+  static inline constexpr base::cstring_view kNativeWindowKey =
+      "__ELECTRON_NATIVE_WINDOW__";
 
   // The boolean parsing of the "titleBarOverlay" option
   bool titlebar_overlay_ = false;
