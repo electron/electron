@@ -361,9 +361,6 @@ class NativeWindow : public base::SupportsUserData,
   void set_fullscreen_transition_state(FullScreenTransitionState state) {
     fullscreen_transition_state_ = state;
   }
-  FullScreenTransitionState fullscreen_transition_state() const {
-    return fullscreen_transition_state_;
-  }
 
   [[nodiscard]] constexpr bool is_transitioning_fullscreen() const {
     return fullscreen_transition_state_ != FullScreenTransitionState::kNone;
