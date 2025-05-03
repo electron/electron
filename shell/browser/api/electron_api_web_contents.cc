@@ -3961,8 +3961,7 @@ bool WebContents::IsFullscreenForTabOrPending(
   if (!owner_window())
     return is_html_fullscreen();
 
-  bool in_transition = owner_window()->fullscreen_transition_state() !=
-                       NativeWindow::FullScreenTransitionState::kNone;
+  const bool in_transition = owner_window()->is_transitioning_fullscreen();
   bool is_html_transition = owner_window()->fullscreen_transition_type() ==
                             NativeWindow::FullScreenTransitionType::kHTML;
 
