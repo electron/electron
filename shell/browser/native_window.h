@@ -430,8 +430,6 @@ class NativeWindow : public base::SupportsUserData,
   void UpdateBackgroundThrottlingState();
 
  protected:
-  friend class api::BrowserView;
-
   constexpr void set_has_frame(const bool val) { has_frame_ = val; }
 
   [[nodiscard]] constexpr bool is_closed() const { return is_closed_; }
