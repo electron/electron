@@ -823,9 +823,8 @@ bool NativeWindow::IsTranslucent() const {
 
 #if BUILDFLAG(IS_MAC)
   // Windows with vibrancy set are translucent
-  if (!vibrancy().empty()) {
+  if (!vibrancy_.empty())
     return true;
-  }
 #endif
 
 #if BUILDFLAG(IS_WIN)
