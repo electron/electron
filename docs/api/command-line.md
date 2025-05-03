@@ -27,7 +27,7 @@ Append a switch (with optional `value`) to Chromium's command line.
 
 > [!NOTE]
 > This will not affect `process.argv`. The intended usage of this function is to
-control Chromium's behavior.
+> control Chromium's behavior.
 
 ```js
 const { app } = require('electron')
