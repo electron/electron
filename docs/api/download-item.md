@@ -144,8 +144,8 @@ Returns `string` - The file name of the download item.
 
 > [!NOTE]
 > The file name is not always the same as the actual one saved in local
-disk. If user changes the file name in a prompted download saving dialog, the
-actual name of saved file will be different.
+> disk. If user changes the file name in a prompted download saving dialog, the
+> actual name of saved file will be different.
 
 #### `downloadItem.getCurrentBytesPerSecond()`
 
