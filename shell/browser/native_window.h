@@ -402,7 +402,6 @@ class NativeWindow : public base::SupportsUserData,
   }
 
   bool has_frame() const { return has_frame_; }
-  void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
 
   bool has_client_frame() const { return has_client_frame_; }
   bool transparent() const { return transparent_; }
@@ -436,6 +435,8 @@ class NativeWindow : public base::SupportsUserData,
 
  protected:
   friend class api::BrowserView;
+
+  constexpr void set_has_frame(const bool val) { has_frame_ = val; }
 
   [[nodiscard]] constexpr bool is_closed() const { return is_closed_; }
 
