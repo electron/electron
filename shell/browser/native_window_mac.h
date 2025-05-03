@@ -38,8 +38,8 @@ class NativeWindowMac : public NativeWindow,
 
   // NativeWindow:
   void SetContentView(views::View* view) override;
-  void Close() override;
-  void CloseImmediately() override;
+  void CloseImpl() override;
+  void CloseImmediatelyImpl() override;
   void Focus(bool focus) override;
   bool IsFocused() const override;
   void Show() override;
