@@ -456,10 +456,6 @@ class NativeWindow : public base::SupportsUserData,
   // The boolean parsing of the "titleBarOverlay" option
   bool titlebar_overlay_ = false;
 
-  // The custom height parsed from the "height" option in a Object
-  // "titleBarOverlay"
-  int titlebar_overlay_height_ = 0;
-
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
 
@@ -486,6 +482,10 @@ class NativeWindow : public base::SupportsUserData,
 
   // The content view, weak ref.
   raw_ptr<views::View> content_view_ = nullptr;
+
+  // The custom height parsed from the "height" option in a Object
+  // "titleBarOverlay"
+  int titlebar_overlay_height_ = 0;
 
   // Whether window has standard frame.
   bool has_frame_ = true;
