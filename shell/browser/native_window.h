@@ -281,12 +281,6 @@ class NativeWindow : public base::SupportsUserData,
 
   virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) {}
 
-  // Converts between content bounds and window bounds.
-  virtual gfx::Rect ContentBoundsToWindowBounds(
-      const gfx::Rect& bounds) const = 0;
-  virtual gfx::Rect WindowBoundsToContentBounds(
-      const gfx::Rect& bounds) const = 0;
-
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -437,6 +431,12 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   virtual void OnTitleChanged() {}
+
+  // Converts between content bounds and window bounds.
+  virtual gfx::Rect ContentBoundsToWindowBounds(
+      const gfx::Rect& bounds) const = 0;
+  virtual gfx::Rect WindowBoundsToContentBounds(
+      const gfx::Rect& bounds) const = 0;
 
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;
