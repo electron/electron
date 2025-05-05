@@ -600,8 +600,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
 // attempt to get api key from env
 std::string ElectronBrowserClient::GetGeolocationApiKey() {
   auto env = base::Environment::Create();
-  std::string api_key;
-  env->GetVar("GOOGLE_API_KEY", &api_key);
+  std::string api_key = env->GetVar("GOOGLE_API_KEY").value_or("");
   return api_key;
 }
 

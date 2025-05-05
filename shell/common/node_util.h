@@ -30,8 +30,18 @@ void EmitWarning(v8::Isolate* isolate,
                  std::string_view warning_type);
 
 // Emit a warning via node's process.emitWarning(),
-// using JavscriptEnvironment's isolate
+// using JavascriptEnvironment's isolate
 void EmitWarning(std::string_view warning_msg, std::string_view warning_type);
+
+// Emit a deprecation warning via node's process.emitWarning()
+void EmitDeprecationWarning(v8::Isolate* isolate,
+                            std::string_view warning_msg,
+                            std::string_view deprecation_code = "");
+
+// Emit a deprecation warning via node's process.emitWarning(),
+// using JavascriptEnvironment's isolate
+void EmitDeprecationWarning(std::string_view warning_msg,
+                            std::string_view deprecation_code = "");
 
 // Run a script with JS source bundled inside the binary as if it's wrapped
 // in a function called with a null receiver and arguments specified in C++.

@@ -115,6 +115,24 @@ It has been always returning `true` since Electron 23, which only supports Windo
 
 https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw#disabling-dwm-composition-windows7-and-earlier
 
+### Changed: GTK 4 is default when running GNOME
+
+After an [upstream change](https://chromium-review.googlesource.com/c/chromium/src/+/6310469), GTK 4 is now the default when running GNOME.
+
+In rare cases, this may cause some applications or configurations to [error](https://github.com/electron/electron/issues/46538) with the following message:
+
+```stderr
+Gtk-ERROR **: 11:30:38.382: GTK 2/3 symbols detected. Using GTK 2/3 and GTK 4 in the same process is not supported
+```
+
+Affected users can work around this by specifying the `gtk-version` command-line flag:
+
+```shell
+$ electron --gtk-version=3   # or --gtk-version=2
+```
+
+The same can be done with the [`app.commandLine.appendSwitch`](https://www.electronjs.org/docs/latest/api/command-line#commandlineappendswitchswitch-value) function.
+
 ## Planned Breaking API Changes (35.0)
 
 ### Behavior Changed: Dialog API's `defaultPath` option on Linux

@@ -666,10 +666,9 @@ void WebRequest::SetListener(Event event,
       }
 
       if (filter_include_patterns.empty()) {
-        util::EmitWarning(
+        util::EmitDeprecationWarning(
             "The urls array in WebRequestFilter is empty, which is deprecated. "
-            "Please use '<all_urls>' to match all URLs.",
-            "DeprecationWarning");
+            "Please use '<all_urls>' to match all URLs.");
         filter_include_patterns.insert("<all_urls>");
       }
 

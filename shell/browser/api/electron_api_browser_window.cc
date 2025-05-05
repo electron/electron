@@ -132,7 +132,7 @@ void BrowserWindow::OnActivateContents() {
 void BrowserWindow::OnPageTitleUpdated(const std::u16string& title,
                                        bool explicit_set) {
   // Change window title to page title.
-  auto self = GetWeakPtr();
+  auto self = weak_factory_.GetWeakPtr();
   if (!Emit("page-title-updated", title, explicit_set)) {
     // |this| might be deleted, or marked as destroyed by close().
     if (self && !IsDestroyed())

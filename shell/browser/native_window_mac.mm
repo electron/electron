@@ -33,7 +33,6 @@
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "shell/browser/ui/cocoa/window_buttons_proxy.h"
 #include "shell/browser/ui/drag_util.h"
-#include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_util.h"
@@ -182,9 +181,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   if (windowType == "textured" && (transparent() || !has_frame())) {
-    util::EmitWarning(
-        "The 'textured' window type is deprecated and will be removed",
-        "DeprecationWarning");
+    util::EmitDeprecationWarning(
+        "The 'textured' window type is deprecated and will be removed");
     styleMask |= NSWindowStyleMaskTexturedBackground;
   }
 #pragma clang diagnostic pop
@@ -205,7 +203,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.native_widget =
       new ElectronNativeWidgetMac(this, windowType, styleMask, widget());
   widget()->Init(std::move(params));
-  widget()->SetNativeWindowProperty(kElectronNativeWindowKey.c_str(), this);
+  widget()->SetNativeWindowProperty(kNativeWindowKey.c_str(), this);
   SetCanResize(resizable);
   window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
@@ -332,13 +330,8 @@ void NativeWindowMac::SetContentView(views::View* view) {
   root_view->DeprecatedLayoutImmediately();
 }
 
-void NativeWindowMac::Close() {
-  if (!IsClosable()) {
-    WindowList::WindowCloseCancelled(this);
-    return;
-  }
-
-  if (fullscreen_transition_state() != FullScreenTransitionState::kNone) {
+void NativeWindowMac::CloseImpl() {
+  if (is_transitioning_fullscreen()) {
     SetHasDeferredWindowClose(true);
     return;
   }
@@ -373,7 +366,7 @@ void NativeWindowMac::Close() {
   }
 }
 
-void NativeWindowMac::CloseImmediately() {
+void NativeWindowMac::CloseImmediatelyImpl() {
   // Ensure we're detached from the parent window before closing.
   RemoveChildFromParentWindow();
 
@@ -630,7 +623,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   // that it's possible to call it while a fullscreen transition is currently
   // in process. This can create weird behavior (incl. phantom windows),
   // so we want to schedule a transition for when the current one has completed.
-  if (fullscreen_transition_state() != FullScreenTransitionState::kNone) {
+  if (is_transitioning_fullscreen()) {
     if (!pending_transitions_.empty()) {
       bool last_pending = pending_transitions_.back();
       // Only push new transitions if they're different than the last transition
@@ -654,12 +647,10 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   // SetFullScreen is called by a user before windowWillEnterFullScreen
   // or windowWillExitFullScreen are invoked, and so a potential transition
   // could be dropped.
-  fullscreen_transition_state_ = fullscreen
-                                     ? FullScreenTransitionState::kEntering
-                                     : FullScreenTransitionState::kExiting;
+  set_is_transitioning_fullscreen(true);
 
   if (![window_ toggleFullScreenMode:nil])
-    fullscreen_transition_state_ = FullScreenTransitionState::kNone;
+    set_is_transitioning_fullscreen(false);
 }
 
 bool NativeWindowMac::IsFullscreen() const {
@@ -787,8 +778,7 @@ void NativeWindowMac::SetResizable(bool resizable) {
 }
 
 bool NativeWindowMac::IsResizable() const {
-  bool in_fs_transition =
-      fullscreen_transition_state() != FullScreenTransitionState::kNone;
+  const bool in_fs_transition = is_transitioning_fullscreen();
   bool has_rs_mask = HasStyleMask(NSWindowStyleMaskResizable);
   return has_rs_mask && !IsFullscreen() && !in_fs_transition;
 }
@@ -938,14 +928,11 @@ void NativeWindowMac::Invalidate() {
   [[window_ contentView] setNeedsDisplay:YES];
 }
 
-void NativeWindowMac::SetTitle(const std::string& title) {
-  [window_ setTitle:base::SysUTF8ToNSString(title)];
+void NativeWindowMac::OnTitleChanged() {
+  [window_ setTitle:base::SysUTF8ToNSString(GetTitle())];
+
   if (buttons_proxy_)
     [buttons_proxy_ redraw];
-}
-
-std::string NativeWindowMac::GetTitle() const {
-  return base::SysNSStringToUTF8([window_ title]);
 }
 
 void NativeWindowMac::FlashFrame(bool flash) {
@@ -1693,7 +1680,7 @@ bool NativeWindowMac::IsActive() const {
 }
 
 void NativeWindowMac::Cleanup() {
-  DCHECK(!IsClosed());
+  DCHECK(!is_closed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
   display::Screen::GetScreen()->RemoveObserver(this);
   [window_ cleanup];

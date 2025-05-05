@@ -18,8 +18,6 @@
 #include "ui/views/widget/native_widget_mac.h"
 
 using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
-using FullScreenTransitionState =
-    electron::NativeWindow::FullScreenTransitionState;
 
 @implementation ElectronNSWindowDelegate
 
@@ -302,7 +300,7 @@ using FullScreenTransitionState =
   // Store resizable mask so it can be restored after exiting fullscreen.
   is_resizable_ = shell_->HasStyleMask(NSWindowStyleMaskResizable);
 
-  shell_->set_fullscreen_transition_state(FullScreenTransitionState::kEntering);
+  shell_->set_is_transitioning_fullscreen(true);
 
   shell_->NotifyWindowWillEnterFullScreen();
 
@@ -311,7 +309,7 @@ using FullScreenTransitionState =
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
-  shell_->set_fullscreen_transition_state(FullScreenTransitionState::kNone);
+  shell_->set_is_transitioning_fullscreen(false);
 
   shell_->NotifyWindowEnterFullScreen();
 
@@ -322,7 +320,7 @@ using FullScreenTransitionState =
 }
 
 - (void)windowDidFailToEnterFullScreen:(NSWindow*)window {
-  shell_->set_fullscreen_transition_state(FullScreenTransitionState::kNone);
+  shell_->set_is_transitioning_fullscreen(false);
 
   shell_->SetResizable(is_resizable_);
   shell_->NotifyWindowDidFailToEnterFullScreen();
@@ -334,13 +332,13 @@ using FullScreenTransitionState =
 }
 
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
-  shell_->set_fullscreen_transition_state(FullScreenTransitionState::kExiting);
+  shell_->set_is_transitioning_fullscreen(true);
 
   shell_->NotifyWindowWillLeaveFullScreen();
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
-  shell_->set_fullscreen_transition_state(FullScreenTransitionState::kNone);
+  shell_->set_is_transitioning_fullscreen(false);
 
   shell_->SetResizable(is_resizable_);
   shell_->NotifyWindowLeaveFullScreen();

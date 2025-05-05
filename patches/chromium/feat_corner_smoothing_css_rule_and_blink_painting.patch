@@ -99,18 +99,18 @@ index a53b4901dde0dc83dce6c9b56616eef0d02d94a5..b419672af985f673f375fbb63b4d2b2c
   protected:
    ~WebSettings() = default;
 diff --git a/third_party/blink/renderer/build/scripts/core/css/css_properties.py b/third_party/blink/renderer/build/scripts/core/css/css_properties.py
-index aa3a6b93cceae8c8bfbefdd7a043ae576f921979..17544d7ed4757fb51e2f82fd1b90638131ba05cc 100755
+index 6e991652d242795e292cea4c94cff59aaea078fa..b6834c78575520bb6e584dd2ce3333ac17299fef 100755
 --- a/third_party/blink/renderer/build/scripts/core/css/css_properties.py
 +++ b/third_party/blink/renderer/build/scripts/core/css/css_properties.py
-@@ -313,7 +313,7 @@ class CSSProperties(object):
-             if name_without_leading_dash.startswith('-'):
+@@ -314,7 +314,7 @@ class CSSProperties(object):
                  name_without_leading_dash = name_without_leading_dash[1:]
              internal_visited_order = 1
--            if name_without_leading_dash.startswith('internal-visited-'):
-+            if name_without_leading_dash.startswith('internal-'):
+             if name_without_leading_dash.startswith(
+-                    'internal-visited-'
++                    'internal-'
+             ) or name_without_leading_dash.startswith(
+                     'internal-forced-visited-'):
                  internal_visited_order = 0
-             property_.sorting_key = (-property_.priority,
-                                      internal_visited_order,
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
 index c3dfa4c1f53a6ebba5735214037e0d1c6a88961d..17a08450227844dceccbaab7ff9de60d6e058b1f 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
@@ -307,10 +307,10 @@ index 2c2f4f405074e5baa4a26f255283404f86b40e21..ebeb7d6988ee9e6a4e78cb82fc01fdad
  
  ContouredRect PixelSnappedContouredBorderInternal(
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index d419aae417d76f6f2e5a477e28dbb980e28ce07e..ddf8b3bd075914c52c0275049145cda95ac4ca70 100644
+index b5a309cb7bad79f80fb43dcbcccbd8dc2fcdfef8..c90d8f2f283e9bd05184171d3971d0060731f67d 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1656,6 +1656,8 @@ component("platform") {
+@@ -1658,6 +1658,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",

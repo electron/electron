@@ -149,7 +149,7 @@ index 402355cb836cea14e9ee725a142a4bad44fd5bed..7e7f028dcfb87c7b80adebabac19ced8
  
  void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val,
 diff --git a/gin/wrappable.h b/gin/wrappable.h
-index 4e7115685a5bf6997e78edcc1851e28bd00b1aa2..ca51fe33605e855438e88969e3d3cc734ef4523e 100644
+index 2ae2cf67157ce8b161ae917291a913d237b7d535..c8c8cbe84e946cebde97a71b42815c62ccaf7b96 100644
 --- a/gin/wrappable.h
 +++ b/gin/wrappable.h
 @@ -80,6 +80,13 @@ class GIN_EXPORT WrappableBase {

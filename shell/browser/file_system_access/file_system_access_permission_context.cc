@@ -746,7 +746,7 @@ void FileSystemAccessPermissionContext::SetLastPickedDirectory(
     base::Value::Dict dict;
     dict.Set(GenerateLastPickedDirectoryKey(id), std::move(entry));
     MaybeEvictEntries(dict);
-    id_pathinfo_map_.insert(std::make_pair(origin, std::move(dict)));
+    id_pathinfo_map_.try_emplace(origin, std::move(dict));
   }
 }
 

@@ -56,25 +56,25 @@ class ElectronHidDelegate::ContextObservation
 
   // HidChooserContext::DeviceObserver:
   void OnDeviceAdded(const device::mojom::HidDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceAdded(device_info);
+    observer_list_.Notify(&content::HidDelegate::Observer::OnDeviceAdded,
+                          device_info);
   }
 
   void OnDeviceRemoved(
       const device::mojom::HidDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceRemoved(device_info);
+    observer_list_.Notify(&content::HidDelegate::Observer::OnDeviceRemoved,
+                          device_info);
   }
 
   void OnDeviceChanged(
       const device::mojom::HidDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceChanged(device_info);
+    observer_list_.Notify(&content::HidDelegate::Observer::OnDeviceChanged,
+                          device_info);
   }
 
   void OnHidManagerConnectionError() override {
-    for (auto& observer : observer_list_)
-      observer.OnHidManagerConnectionError();
+    observer_list_.Notify(
+        &content::HidDelegate::Observer::OnHidManagerConnectionError);
   }
 
   void OnHidChooserContextShutdown() override {
@@ -241,8 +241,7 @@ HidChooserController* ElectronHidDelegate::AddControllerForFrame(
   auto controller = std::make_unique<HidChooserController>(
       render_frame_host, std::move(filters), std::move(exclusion_filters),
       std::move(callback), web_contents, weak_factory_.GetWeakPtr());
-  controller_map_.insert(
-      std::make_pair(render_frame_host, std::move(controller)));
+  controller_map_.try_emplace(render_frame_host, std::move(controller));
   return ControllerForFrame(render_frame_host);
 }
 

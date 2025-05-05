@@ -244,8 +244,7 @@ void HidChooserContext::DeviceAdded(device::mojom::HidDeviceInfoPtr device) {
     devices_.insert({device->guid, device->Clone()});
 
   // Notify all observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceAdded(*device);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceAdded, *device);
 }
 
 void HidChooserContext::DeviceRemoved(device::mojom::HidDeviceInfoPtr device) {
@@ -256,8 +255,7 @@ void HidChooserContext::DeviceRemoved(device::mojom::HidDeviceInfoPtr device) {
   DCHECK_EQ(n_erased, 1U);
 
   // Notify all device observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceRemoved(*device);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceRemoved, *device);
 
   // Next we'll notify observers for revoked permissions. If the device does not
   // support persistent permissions then device permissions are revoked on
@@ -278,8 +276,7 @@ void HidChooserContext::DeviceChanged(device::mojom::HidDeviceInfoPtr device) {
   mapped = device->Clone();
 
   // Notify all observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceChanged(*device);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceChanged, *device);
 }
 
 void HidChooserContext::EnsureHidManagerConnection() {
@@ -307,7 +304,7 @@ void HidChooserContext::SetUpHidManagerConnection(
 void HidChooserContext::InitDeviceList(
     std::vector<device::mojom::HidDeviceInfoPtr> devices) {
   for (auto& device : devices)
-    devices_.insert({device->guid, std::move(device)});
+    devices_.try_emplace(device->guid, std::move(device));
 
   is_initialized_ = true;
 
@@ -329,8 +326,7 @@ void HidChooserContext::OnHidManagerConnectionError() {
   ephemeral_devices_.clear();
 
   // Notify all device observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnHidManagerConnectionError();
+  device_observer_list_.Notify(&DeviceObserver::OnHidManagerConnectionError);
 }
 
 }  // namespace electron

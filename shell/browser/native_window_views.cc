@@ -31,7 +31,6 @@
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_view_manager.h"
-#include "shell/browser/window_list.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -54,6 +53,7 @@
 #include "base/strings/string_util.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/linux/unity_service.h"
+#include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "shell/browser/ui/views/native_frame_view.h"
@@ -164,13 +164,6 @@ gfx::Size WindowSizeToContentSizeBuggy(HWND hwnd, const gfx::Size& size) {
 
 #endif
 
-[[maybe_unused, nodiscard]] bool IsX11() {
-  static const bool is_x11 = ui::OzonePlatform::GetInstance()
-                                 ->GetPlatformProperties()
-                                 .electron_can_call_x11;
-  return is_x11;
-}
-
 class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
@@ -199,7 +192,8 @@ class NativeWindowClientView : public views::ClientView {
 NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent) {
-  options.Get(options::kTitle, &title_);
+  if (std::string val; options.Get(options::kTitle, &val))
+    SetTitle(val);
 
   bool menu_bar_autohide;
   if (options.Get(options::kAutoHideMenuBar, &menu_bar_autohide))
@@ -313,7 +307,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 #endif
 
   widget()->Init(std::move(params));
-  widget()->SetNativeWindowProperty(kElectronNativeWindowKey.c_str(), this);
+  widget()->SetNativeWindowProperty(kNativeWindowKey.c_str(), this);
   SetCanResize(resizable_);
 
   bool fullscreen = false;
@@ -332,7 +326,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (parent)
     SetParentWindow(parent);
 
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     // Before the window is mapped the SetWMSpecState can not work, so we have
     // to manually set the _NET_WM_STATE.
     std::vector<x11::Atom> state_atom_list;
@@ -376,14 +370,17 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
       frame_style |= WS_MINIMIZEBOX;
     if (maximizable_)
       frame_style |= WS_MAXIMIZEBOX;
-    // We should not show a frame for transparent window.
-    if (!thick_frame_)
-      frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
-    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
 
-    bool rounded_corner = true;
-    options.Get(options::kRoundedCorners, &rounded_corner);
-    SetRoundedCorners(rounded_corner);
+    // We should not show a frame for transparent window.
+    if (!thick_frame_) {
+      frame_style &= ~(WS_THICKFRAME | WS_CAPTION);
+      rounded_corner_ = false;
+    } else {
+      options.Get(options::kRoundedCorners, &rounded_corner_);
+    }
+
+    ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
+    SetRoundedCorners(rounded_corner_);
   }
 
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
@@ -433,22 +430,6 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   // bounds if the bounds are smaller than the current display
   SetBounds(gfx::Rect(GetPosition(), bounds.size()), false);
 #endif
-
-  RegisterDeleteDelegateCallback(
-      RegisterDeleteCallbackPassKey(),
-      base::BindOnce(
-          [](NativeWindowViews* window) {
-            if (window->is_modal() && window->parent()) {
-              auto* parent = window->parent();
-              // Enable parent window after current window gets closed.
-              static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
-              // Focus on parent window.
-              parent->Focus(true);
-            }
-
-            window->NotifyWindowClosed();
-          },
-          this));
 }
 
 NativeWindowViews::~NativeWindowViews() {
@@ -466,7 +447,7 @@ NativeWindowViews::~NativeWindowViews() {
 
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 #if BUILDFLAG(IS_LINUX)
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     const std::string color = use_dark_theme ? "dark" : "light";
     auto* connection = x11::Connection::Get();
     connection->SetStringProperty(
@@ -486,16 +467,11 @@ void NativeWindowViews::SetContentView(views::View* view) {
   root_view_.GetMainView()->DeprecatedLayoutImmediately();
 }
 
-void NativeWindowViews::Close() {
-  if (!IsClosable()) {
-    WindowList::WindowCloseCancelled(this);
-    return;
-  }
-
+void NativeWindowViews::CloseImpl() {
   widget()->Close();
 }
 
-void NativeWindowViews::CloseImmediately() {
+void NativeWindowViews::CloseImmediatelyImpl() {
   widget()->CloseNow();
 }
 
@@ -533,7 +509,7 @@ void NativeWindowViews::Show() {
 
   // On X11, setting Z order before showing the window doesn't take effect,
   // so we have to call it again.
-  if (IsX11())
+  if (x11_util::IsX11())
     widget()->SetZOrderLevel(widget()->GetZOrderLevel());
 #endif
 }
@@ -549,7 +525,7 @@ void NativeWindowViews::ShowInactive() {
 
   // On X11, setting Z order before showing the window doesn't take effect,
   // so we have to call it again.
-  if (IsX11())
+  if (x11_util::IsX11())
     widget()->SetZOrderLevel(widget()->GetZOrderLevel());
 #endif
 }
@@ -594,7 +570,7 @@ bool NativeWindowViews::IsEnabled() const {
 #if BUILDFLAG(IS_WIN)
   return ::IsWindowEnabled(GetAcceleratedWidget());
 #elif BUILDFLAG(IS_LINUX)
-  if (IsX11())
+  if (x11_util::IsX11())
     return !event_disabler_.get();
   NOTIMPLEMENTED();
   return true;
@@ -631,7 +607,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 #if BUILDFLAG(IS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), enable);
 #else
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     views::DesktopWindowTreeHostPlatform* tree_host =
         views::DesktopWindowTreeHostLinux::GetHostForWidget(
             GetAcceleratedWidget());
@@ -649,10 +625,12 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 void NativeWindowViews::Maximize() {
 #if BUILDFLAG(IS_WIN)
   if (IsTranslucent()) {
-    // If a window is translucent but not transparent on Windows,
-    // that means it must have a backgroundMaterial set.
-    if (!transparent())
+    // Semi-transparent windows with backgroundMaterial not set to 'none', and
+    // not fully transparent, require manual handling of rounded corners when
+    // maximized.
+    if (rounded_corner_)
       SetRoundedCorners(false);
+
     restore_bounds_ = GetBounds();
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
         GetNativeWindow());
@@ -681,7 +659,8 @@ void NativeWindowViews::Unmaximize() {
     NotifyWindowUnmaximize();
     if (transparent()) {
       UpdateThickFrame();
-    } else {
+    }
+    if (rounded_corner_) {
       SetRoundedCorners(true);
     }
     return;
@@ -727,7 +706,8 @@ void NativeWindowViews::Restore() {
     NotifyWindowRestore();
     if (transparent()) {
       UpdateThickFrame();
-    } else {
+    }
+    if (rounded_corner_) {
       SetRoundedCorners(true);
     }
     return;
@@ -759,6 +739,12 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   } else {
     last_window_state_ = ui::mojom::WindowShowState::kNormal;
     NotifyWindowLeaveFullScreen();
+  }
+
+  // If round corners are enabled,
+  // they need to be set based on whether the window is fullscreen.
+  if (rounded_corner_) {
+    SetRoundedCorners(!fullscreen);
   }
 
   // For window without WS_THICKFRAME style, we can not call SetFullscreen().
@@ -953,7 +939,7 @@ bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
                  0, 0, 0,
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 #else
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     if (!IsWindowValid(static_cast<x11::Window>(id.id)))
       return false;
 
@@ -975,7 +961,7 @@ void NativeWindowViews::MoveTop() {
                  size.width(), size.height(),
                  SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 #else
-  if (IsX11())
+  if (x11_util::IsX11())
     electron::MoveWindowToForeground(
         static_cast<x11::Window>(GetAcceleratedWidget()));
 #endif
@@ -1148,15 +1134,6 @@ void NativeWindowViews::Invalidate() {
   widget()->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
 }
 
-void NativeWindowViews::SetTitle(const std::string& title) {
-  title_ = title;
-  widget()->UpdateWindowTitle();
-}
-
-std::string NativeWindowViews::GetTitle() const {
-  return title_;
-}
-
 void NativeWindowViews::FlashFrame(bool flash) {
 #if BUILDFLAG(IS_WIN)
   // The Chromium's implementation has a bug stopping flash.
@@ -1289,7 +1266,7 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
     SetForwardMouseMessages(forward);
   }
 #else
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     auto* connection = x11::Connection::Get();
     if (ignore) {
       x11::Rectangle r{0, 0, 1, 1};
@@ -1410,7 +1387,7 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 
 #if BUILDFLAG(IS_LINUX)
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     auto* connection = x11::Connection::Get();
     connection->SetProperty(
         static_cast<x11::Window>(GetAcceleratedWidget()),
@@ -1727,13 +1704,22 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
 }
 
 void NativeWindowViews::OnWidgetDestroying(views::Widget* widget) {
-  aura::Window* window = GetNativeWindow();
-  if (window)
+  if (aura::Window* window = GetNativeWindow())
     window->RemovePreTargetHandler(this);
+
+  if (is_modal()) {
+    if (NativeWindow* const parent = this->parent()) {
+      // Enable parent window after current window gets closed.
+      static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
+      // Focus on parent window.
+      parent->Focus(true);
+    }
+  }
 }
 
 void NativeWindowViews::OnWidgetDestroyed(views::Widget* changed_widget) {
   widget_destroyed_ = true;
+  NotifyWindowClosed();
 }
 
 views::View* NativeWindowViews::GetInitiallyFocusedView() {
@@ -1750,10 +1736,6 @@ bool NativeWindowViews::CanMinimize() const {
 #elif BUILDFLAG(IS_LINUX)
   return true;
 #endif
-}
-
-std::u16string NativeWindowViews::GetWindowTitle() const {
-  return base::UTF8ToUTF16(title_);
 }
 
 views::View* NativeWindowViews::GetContentsView() {

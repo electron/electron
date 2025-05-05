@@ -32,10 +32,6 @@ class BrowserWindow : public BaseWindow,
   static v8::Local<v8::Value> From(v8::Isolate* isolate,
                                    NativeWindow* native_window);
 
-  base::WeakPtr<BrowserWindow> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  }
-
   // disable copy
   BrowserWindow(const BrowserWindow&) = delete;
   BrowserWindow& operator=(const BrowserWindow&) = delete;
