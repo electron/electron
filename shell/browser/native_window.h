@@ -132,9 +132,11 @@ class NativeWindow : public base::SupportsUserData,
 
   virtual gfx::Size GetContentMinimumSize() const;
   virtual gfx::Size GetContentMaximumSize() const;
-  virtual void SetSheetOffset(const double offsetX, const double offsetY);
-  virtual double GetSheetOffsetX() const;
-  virtual double GetSheetOffsetY() const;
+
+  void SetSheetOffset(const double offsetX, const double offsetY);
+  [[nodiscard]] double GetSheetOffsetX() const;
+  [[nodiscard]] double GetSheetOffsetY() const;
+
   virtual void SetResizable(bool resizable) = 0;
   virtual bool MoveAbove(const std::string& sourceId) = 0;
   virtual void MoveTop() = 0;
