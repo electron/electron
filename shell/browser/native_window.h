@@ -104,10 +104,13 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsFullscreen() const = 0;
   virtual void SetBounds(const gfx::Rect& bounds, bool animate = false) = 0;
   virtual gfx::Rect GetBounds() const = 0;
-  virtual void SetSize(const gfx::Size& size, bool animate = false);
-  virtual gfx::Size GetSize() const;
-  virtual void SetPosition(const gfx::Point& position, bool animate = false);
-  virtual gfx::Point GetPosition() const;
+
+  void SetSize(const gfx::Size& size, bool animate = false);
+  [[nodiscard]] gfx::Size GetSize() const;
+
+  void SetPosition(const gfx::Point& position, bool animate = false);
+  [[nodiscard]] gfx::Point GetPosition() const;
+
   virtual void SetContentSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetContentSize() const;
   virtual void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
