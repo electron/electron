@@ -87,7 +87,7 @@ void CheckPortalAvailabilityOnBusThread() {
             flag->Set();
             bus->ShutdownAndBlock();
           },
-          bus, flag));
+          std::move(bus), flag));
 }
 
 }  // namespace
