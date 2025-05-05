@@ -10,6 +10,8 @@ This CL adds support for the following features to //shell_dialogs:
 
 It also:
 * Changes XDG Portal implementation behavior to set default path regardless of dialog type.
+* XDG Portal implementation calls into //electron to perform version checks on the dbus thread
+  Refs https://github.com/electron/electron/issues/46652.
 
 This may be partially upstreamed to Chromium in the future.
 
@@ -345,83 +347,52 @@ index 9d45ec49a4fb5e12407b65b83c1ba0c13cd0dfd8..400cce91b020ecd5e48566f125515d2c
 +
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea0396a49e 100644
+index b6a116654ef6815e3d97dd9302d2a9930877dda8..cdc929d9538ae22ad8b9fa4044e4fc6ee326564b 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -7,6 +7,7 @@
- #include <string_view>
- 
- #include "base/check.h"
-+#include "base/command_line.h"
- #include "base/files/file_util.h"
- #include "base/functional/bind.h"
- #include "base/logging.h"
-@@ -40,6 +41,8 @@ namespace {
- constexpr char kXdgPortalService[] = "org.freedesktop.portal.Desktop";
- constexpr char kXdgPortalObject[] = "/org/freedesktop/portal/desktop";
- 
-+// Version 4 includes support for current_folder option to the OpenFile method via
-+// https://github.com/flatpak/xdg-desktop-portal/commit/71165a5.
- constexpr int kXdgPortalRequiredVersion = 3;
- 
- constexpr char kFileChooserInterfaceName[] =
-@@ -61,6 +64,8 @@ constexpr uint32_t kFileChooserFilterKindGlob = 0;
- 
- constexpr char kFileUriPrefix[] = "file://";
- 
-+const char kXdgPortalRequiredVersionFlag[] = "xdg-portal-required-version";
-+
- enum class ServiceAvailability {
-   kNotStarted,
-   kInProgress,
-@@ -70,6 +75,9 @@ enum class ServiceAvailability {
- 
- ServiceAvailability g_service_availability = ServiceAvailability::kNotStarted;
- 
-+uint32_t g_available_portal_version = 0;
-+uint32_t g_required_portal_version = kXdgPortalRequiredVersion;
-+
- scoped_refptr<base::SequencedTaskRunner>& GetMainTaskRunner() {
-   static base::NoDestructor<scoped_refptr<base::SequencedTaskRunner>>
-       main_task_runner;
-@@ -89,9 +97,10 @@ void OnGetPropertyReply(dbus::Response* response) {
-     return;
-   }
- 
--  g_service_availability = version >= kXdgPortalRequiredVersion
-+  g_service_availability = version >= g_required_portal_version
-                                ? ServiceAvailability::kAvailable
+@@ -23,6 +23,7 @@
+ #include "dbus/message.h"
+ #include "dbus/object_path.h"
+ #include "dbus/object_proxy.h"
++#include "electron/shell/browser/ui/file_dialog.h"
+ #include "ui/aura/window_tree_host.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/gfx/native_widget_types.h"
+@@ -94,7 +95,7 @@ void OnGetPropertyReply(dbus::Response* response) {
                                 : ServiceAvailability::kNotAvailable;
-+  g_available_portal_version = version;
  }
  
- void OnServiceStarted(std::optional<bool> service_started) {
-@@ -159,6 +168,12 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
-   }
-   g_service_availability = ServiceAvailability::kInProgress;
+-void OnServiceStarted(std::optional<bool> service_started) {
++[[maybe_unused]] void OnServiceStarted(std::optional<bool> service_started) {
+   if (!service_started.value_or(false)) {
+     g_service_availability = ServiceAvailability::kNotAvailable;
+     return;
+@@ -161,18 +162,24 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
  
-+  auto* cmd = base::CommandLine::ForCurrentProcess();
-+  if (!base::StringToUint(cmd->GetSwitchValueASCII(kXdgPortalRequiredVersionFlag),
-+                          &g_required_portal_version)) {
-+    g_required_portal_version = kXdgPortalRequiredVersion;
-+  }
-+
    GetMainTaskRunner() = base::SequencedTaskRunner::GetCurrentDefault();
  
++#if 0
    dbus_utils::CheckForServiceAndStart(dbus_thread_linux::GetSharedSessionBus(),
-@@ -175,6 +190,11 @@ bool SelectFileDialogLinuxPortal::IsPortalAvailable() {
-   return g_service_availability == ServiceAvailability::kAvailable;
+                                       kXdgPortalService,
+                                       base::BindOnce(&OnServiceStarted));
++#endif
++  file_dialog::StartPortalAvailabilityTestInBackground();
  }
  
-+// static
-+uint32_t SelectFileDialogLinuxPortal::GetPortalVersion() {
-+  return g_available_portal_version;
-+}
-+
+ // static
+ bool SelectFileDialogLinuxPortal::IsPortalAvailable() {
++#if 0
+   if (g_service_availability == ServiceAvailability::kInProgress) {
+     LOG(WARNING) << "Portal availability checked before test was complete";
+   }
+ 
+   return g_service_availability == ServiceAvailability::kAvailable;
++#endif
++  return file_dialog::IsPortalAvailable();
+ }
+ 
  bool SelectFileDialogLinuxPortal::IsRunning(
-     gfx::NativeWindow parent_window) const {
-   return parent_window && host_ && host_.get() == parent_window->GetHost();
-@@ -377,11 +397,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -377,11 +384,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
    DbusDictionary dict;
  
@@ -439,7 +410,7 @@ index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -394,6 +417,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -394,6 +404,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  
@@ -450,17 +421,3 @@ index b6a116654ef6815e3d97dd9302d2a9930877dda8..20ebcdd46bd1570ad671c661e7f866ea
    if (!default_path.empty()) {
      if (default_path_exists) {
        // If this is an existing directory, navigate to that directory, with no
-diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.h b/ui/shell_dialogs/select_file_dialog_linux_portal.h
-index 651684b1840eaff664f3d73d99bbea40e097c866..9a9d541f1e9586d9d545f8547d3f09ff33dce48d 100644
---- a/ui/shell_dialogs/select_file_dialog_linux_portal.h
-+++ b/ui/shell_dialogs/select_file_dialog_linux_portal.h
-@@ -45,6 +45,9 @@ class SelectFileDialogLinuxPortal : public SelectFileDialogLinux {
-   // availability test has not yet completed.
-   static bool IsPortalAvailable();
- 
-+  // Get version of portal if available.
-+  static uint32_t GetPortalVersion();
-+
-  protected:
-   ~SelectFileDialogLinuxPortal() override;
- 
