@@ -35,6 +35,7 @@ filenames = {
     "shell/browser/relauncher_linux.cc",
     "shell/browser/ui/electron_desktop_window_tree_host_linux.cc",
     "shell/browser/ui/file_dialog_linux.cc",
+    "shell/browser/ui/file_dialog_linux_portal.cc",
     "shell/browser/ui/gtk/menu_gtk.cc",
     "shell/browser/ui/gtk/menu_gtk.h",
     "shell/browser/ui/gtk/menu_util.cc",
