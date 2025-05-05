@@ -284,6 +284,13 @@ bool NativeWindow::IsClosed() const {
   return is_closed_;
 }
 
+// static
+NativeWindow* NativeWindow::FromWidget(const views::Widget* widget) {
+  DCHECK(widget);
+  return static_cast<NativeWindow*>(
+      widget->GetNativeWindowProperty(kNativeWindowKey.c_str()));
+}
+
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
   SetBounds(gfx::Rect(GetPosition(), size), animate);
 }
