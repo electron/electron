@@ -331,7 +331,7 @@ void NativeWindowMac::SetContentView(views::View* view) {
 }
 
 void NativeWindowMac::CloseImpl() {
-  if (fullscreen_transition_state() != FullScreenTransitionState::kNone) {
+  if (is_transitioning_fullscreen()) {
     SetHasDeferredWindowClose(true);
     return;
   }
@@ -623,7 +623,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   // that it's possible to call it while a fullscreen transition is currently
   // in process. This can create weird behavior (incl. phantom windows),
   // so we want to schedule a transition for when the current one has completed.
-  if (fullscreen_transition_state() != FullScreenTransitionState::kNone) {
+  if (is_transitioning_fullscreen()) {
     if (!pending_transitions_.empty()) {
       bool last_pending = pending_transitions_.back();
       // Only push new transitions if they're different than the last transition
@@ -780,8 +780,7 @@ void NativeWindowMac::SetResizable(bool resizable) {
 }
 
 bool NativeWindowMac::IsResizable() const {
-  bool in_fs_transition =
-      fullscreen_transition_state() != FullScreenTransitionState::kNone;
+  const bool in_fs_transition = is_transitioning_fullscreen();
   bool has_rs_mask = HasStyleMask(NSWindowStyleMaskResizable);
   return has_rs_mask && !IsFullscreen() && !in_fs_transition;
 }

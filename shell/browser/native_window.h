@@ -364,6 +364,10 @@ class NativeWindow : public base::SupportsUserData,
     return fullscreen_transition_state_;
   }
 
+  [[nodiscard]] constexpr bool is_transitioning_fullscreen() const {
+    return fullscreen_transition_state_ != FullScreenTransitionState::kNone;
+  }
+
   enum class FullScreenTransitionType { kHTML, kNative, kNone };
 
   void set_fullscreen_transition_type(FullScreenTransitionType type) {
