@@ -123,10 +123,13 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
   virtual extensions::SizeConstraints GetContentSizeConstraints() const;
-  virtual void SetMinimumSize(const gfx::Size& size);
-  virtual gfx::Size GetMinimumSize() const;
-  virtual void SetMaximumSize(const gfx::Size& size);
-  virtual gfx::Size GetMaximumSize() const;
+
+  void SetMinimumSize(const gfx::Size& size);
+  [[nodiscard]] gfx::Size GetMinimumSize() const;
+
+  void SetMaximumSize(const gfx::Size& size);
+  [[nodiscard]] gfx::Size GetMaximumSize() const;
+
   virtual gfx::Size GetContentMinimumSize() const;
   virtual gfx::Size GetContentMaximumSize() const;
   virtual void SetSheetOffset(const double offsetX, const double offsetY);
