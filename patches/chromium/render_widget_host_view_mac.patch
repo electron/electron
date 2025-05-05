@@ -8,7 +8,7 @@ respond to the first mouse click in their window, which is desirable for some
 kinds of utility windows. Similarly for `disableAutoHideCursor`.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 91e5beaa68fc0b8231fce4bf195efa924744a532..371b7b3ba73ee7b88027fcc31cb0a346cae40eea 100644
+index a606a4870bd3f504c4bd6316aa3ab833621ab205..f97ab6bdafbc35216b1935cf979443d071dd889f 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -171,6 +171,15 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -27,7 +27,7 @@ index 91e5beaa68fc0b8231fce4bf195efa924744a532..371b7b3ba73ee7b88027fcc31cb0a346
  // RenderWidgetHostViewCocoa ---------------------------------------------------
  
  // Private methods:
-@@ -776,6 +785,9 @@ - (AcceptMouseEventsOption)acceptsMouseEventsOption {
+@@ -782,6 +791,9 @@ - (AcceptMouseEventsOption)acceptsMouseEventsOption {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -37,7 +37,7 @@ index 91e5beaa68fc0b8231fce4bf195efa924744a532..371b7b3ba73ee7b88027fcc31cb0a346
    // Enable "click-through" if mouse clicks are accepted in inactive windows
    return [self acceptsMouseEventsOption] > kAcceptMouseEventsInActiveWindow;
  }
-@@ -921,6 +933,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
+@@ -927,6 +939,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
    // its parent view.
    BOOL hitSelf = NO;
    while (view) {
@@ -48,7 +48,7 @@ index 91e5beaa68fc0b8231fce4bf195efa924744a532..371b7b3ba73ee7b88027fcc31cb0a346
      if (view == self)
        hitSelf = YES;
      if ([view isKindOfClass:[self class]] && ![view isEqual:self] &&
-@@ -1255,6 +1271,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -1261,6 +1277,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSEventTypeKeyDown &&
                                !(modifierFlags & NSEventModifierFlagCommand);
  
