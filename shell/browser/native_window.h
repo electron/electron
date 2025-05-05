@@ -103,10 +103,13 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsFullscreen() const = 0;
   virtual void SetBounds(const gfx::Rect& bounds, bool animate = false) = 0;
   virtual gfx::Rect GetBounds() const = 0;
-  virtual void SetSize(const gfx::Size& size, bool animate = false);
-  virtual gfx::Size GetSize() const;
-  virtual void SetPosition(const gfx::Point& position, bool animate = false);
-  virtual gfx::Point GetPosition() const;
+
+  void SetSize(const gfx::Size& size, bool animate = false);
+  [[nodiscard]] gfx::Size GetSize() const;
+
+  void SetPosition(const gfx::Point& position, bool animate = false);
+  [[nodiscard]] gfx::Point GetPosition() const;
+
   virtual void SetContentSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetContentSize() const;
   virtual void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
@@ -119,15 +122,20 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
   virtual extensions::SizeConstraints GetContentSizeConstraints() const;
-  virtual void SetMinimumSize(const gfx::Size& size);
-  virtual gfx::Size GetMinimumSize() const;
-  virtual void SetMaximumSize(const gfx::Size& size);
-  virtual gfx::Size GetMaximumSize() const;
-  virtual gfx::Size GetContentMinimumSize() const;
-  virtual gfx::Size GetContentMaximumSize() const;
-  virtual void SetSheetOffset(const double offsetX, const double offsetY);
-  virtual double GetSheetOffsetX() const;
-  virtual double GetSheetOffsetY() const;
+
+  void SetMinimumSize(const gfx::Size& size);
+  [[nodiscard]] gfx::Size GetMinimumSize() const;
+
+  void SetMaximumSize(const gfx::Size& size);
+  [[nodiscard]] gfx::Size GetMaximumSize() const;
+
+  [[nodiscard]] gfx::Size GetContentMinimumSize() const;
+  [[nodiscard]] gfx::Size GetContentMaximumSize() const;
+
+  void SetSheetOffset(const double offsetX, const double offsetY);
+  [[nodiscard]] double GetSheetOffsetX() const;
+  [[nodiscard]] double GetSheetOffsetY() const;
+
   virtual void SetResizable(bool resizable) = 0;
   virtual bool MoveAbove(const std::string& sourceId) = 0;
   virtual void MoveTop() = 0;
