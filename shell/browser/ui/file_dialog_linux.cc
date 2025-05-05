@@ -18,7 +18,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
-#include "ui/shell_dialogs/select_file_dialog_linux_portal.h"
 #include "ui/shell_dialogs/select_file_policy.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
@@ -60,11 +59,9 @@ ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
 }
 
 void LogIfNeededAboutUnsupportedPortalFeature(const DialogSettings& settings) {
-  if (!settings.default_path.empty() &&
-      ui::SelectFileDialogLinuxPortal::IsPortalAvailable() &&
-      ui::SelectFileDialogLinuxPortal::GetPortalVersion() < 4) {
-    LOG(INFO) << "Available portal version "
-              << ui::SelectFileDialogLinuxPortal::GetPortalVersion()
+  if (!settings.default_path.empty() && IsPortalAvailable() &&
+      GetPortalVersion() < 4) {
+    LOG(INFO) << "Available portal version " << GetPortalVersion()
               << " does not support defaultPath option, try the non-portal"
               << " file chooser dialogs by launching with"
               << " --xdg-portal-required-version";
