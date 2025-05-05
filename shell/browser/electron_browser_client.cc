@@ -36,6 +36,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/login_delegate.h"
+#include "content/public/browser/navigation_throttle_registry.h"
 #include "content/public/browser/overlay_window.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -954,8 +955,10 @@ bool ElectronBrowserClient::HandleExternalProtocol(
 
 std::vector<std::unique_ptr<content::NavigationThrottle>>
 ElectronBrowserClient::CreateThrottlesForNavigation(
-    content::NavigationHandle* handle) {
+    content::NavigationThrottleRegistry& registry) {
   std::vector<std::unique_ptr<content::NavigationThrottle>> throttles;
+
+  content::NavigationHandle* handle = &registry.GetNavigationHandle();
   throttles.push_back(std::make_unique<ElectronNavigationThrottle>(handle));
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
