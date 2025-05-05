@@ -78,6 +78,7 @@
 #include "base/win/windows_version.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
+#include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/color_utils.h"
@@ -360,6 +361,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
+
     DWORD frame_style = WS_CAPTION | WS_OVERLAPPED;
     if (resizable_)
       frame_style |= WS_THICKFRAME;
@@ -1486,23 +1488,42 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
     return;
 
   DWM_SYSTEMBACKDROP_TYPE backdrop_type = GetBackdropFromString(material);
+  const bool is_translucent = backdrop_type != DWMSBT_NONE &&
+                              backdrop_type != DWMSBT_AUTO && !has_frame();
+
+  const NativeWindowHandle nativeWindowHandle = GetAcceleratedWidget();
+  if (is_translucent) {
+    MARGINS m = {-1, -1, -1, -1};
+    DwmExtendFrameIntoClientArea(nativeWindowHandle, &m);
+  }
+
   HRESULT result =
-      DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_SYSTEMBACKDROP_TYPE,
+      DwmSetWindowAttribute(nativeWindowHandle, DWMWA_SYSTEMBACKDROP_TYPE,
                             &backdrop_type, sizeof(backdrop_type));
   if (FAILED(result))
     LOG(WARNING) << "Failed to set background material to " << material;
+
+  auto* desktop_window_tree_host =
+      static_cast<ElectronDesktopWindowTreeHostWin*>(
+          widget()->GetNativeWindow()->GetHost());
+  desktop_window_tree_host->SetIsTranslucent(is_translucent);
+
+  auto* desktop_native_widget_aura =
+      static_cast<ElectronDesktopNativeWidgetAura*>(widget()->native_widget());
+  desktop_native_widget_aura->UpdateWindowTransparency();
 
   // For frameless windows with a background material set, we also need to
   // remove the caption color so it doesn't render a caption bar (since the
   // window is frameless)
   COLORREF caption_color = DWMWA_COLOR_DEFAULT;
-  if (backdrop_type != DWMSBT_NONE && backdrop_type != DWMSBT_AUTO &&
-      !has_frame()) {
+  if (is_translucent) {
     caption_color = DWMWA_COLOR_NONE;
   }
-  result = DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_CAPTION_COLOR,
+  result = DwmSetWindowAttribute(nativeWindowHandle, DWMWA_CAPTION_COLOR,
                                  &caption_color, sizeof(caption_color));
 
+  DefWindowProc(nativeWindowHandle, WM_NCACTIVATE, TRUE,
+                is_translucent ? -1 : 0);
   if (FAILED(result))
     LOG(WARNING) << "Failed to set caption color to transparent";
 #endif
