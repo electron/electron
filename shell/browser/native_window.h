@@ -355,13 +355,12 @@ class NativeWindow : public base::SupportsUserData,
   // Handle fullscreen transitions.
   void HandlePendingFullscreenTransitions();
 
-  enum class FullScreenTransitionState { kEntering, kExiting, kNone };
-
-  void set_fullscreen_transition_state(FullScreenTransitionState state) {
-    fullscreen_transition_state_ = state;
+  constexpr void set_is_transitioning_fullscreen(const bool val) {
+    is_transitioning_fullscreen_ = val;
   }
-  FullScreenTransitionState fullscreen_transition_state() const {
-    return fullscreen_transition_state_;
+
+  [[nodiscard]] constexpr bool is_transitioning_fullscreen() const {
+    return is_transitioning_fullscreen_;
   }
 
   enum class FullScreenTransitionType { kHTML, kNative, kNone };
@@ -473,8 +472,6 @@ class NativeWindow : public base::SupportsUserData,
   std::optional<extensions::SizeConstraints> content_size_constraints_;
 
   std::queue<bool> pending_transitions_;
-  FullScreenTransitionState fullscreen_transition_state_ =
-      FullScreenTransitionState::kNone;
   FullScreenTransitionType fullscreen_transition_type_ =
       FullScreenTransitionType::kNone;
 
@@ -521,6 +518,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // Is this a modal window.
   bool is_modal_ = false;
+
+  bool is_transitioning_fullscreen_ = false;
 
   std::list<DraggableRegionProvider*> draggable_region_providers_;
 
