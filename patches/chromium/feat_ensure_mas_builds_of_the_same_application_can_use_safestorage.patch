@@ -146,7 +146,7 @@ diff --git a/crypto/apple_keychain_seckeychain.cc b/crypto/apple_keychain_seckey
 index 3fa4feac6de46a65bcb306329d0fc923525330ed..61a90e531c7cf8060425bf1cde571818d2da7979 100644
 --- a/crypto/apple_keychain_seckeychain.cc
 +++ b/crypto/apple_keychain_seckeychain.cc
-@@ -59,14 +59,15 @@ AppleKeychainSecKeychain::~AppleKeychainSecKeychain() = default;
+@@ -26,14 +26,15 @@ AppleKeychainSecKeychain::~AppleKeychainSecKeychain() = default;
  base::expected<std::vector<uint8_t>, OSStatus>
  AppleKeychainSecKeychain::FindGenericPassword(
      std::string_view service_name,
@@ -164,7 +164,7 @@ index 3fa4feac6de46a65bcb306329d0fc923525330ed..61a90e531c7cf8060425bf1cde571818
    if (status != noErr) {
      return base::unexpected(status);
    }
-@@ -92,6 +93,11 @@ OSStatus AppleKeychainSecKeychain::AddGenericPassword(
+@@ -59,6 +60,11 @@ OSStatus AppleKeychainSecKeychain::AddGenericPassword(
        password.data(), nullptr);
  }
  
@@ -173,9 +173,9 @@ index 3fa4feac6de46a65bcb306329d0fc923525330ed..61a90e531c7cf8060425bf1cde571818
 +  return SecKeychainItemDelete(item);
 +}
 +
- ScopedKeychainUserInteractionAllowed::ScopedKeychainUserInteractionAllowed(
-     Boolean allowed,
-     OSStatus* status) {
+ #pragma clang diagnostic pop
+ 
+ }  // namespace crypto
 diff --git a/crypto/apple_keychain_seckeychain.h b/crypto/apple_keychain_seckeychain.h
 index ecf5e229c8f05a27574b635abc9c781d175c1773..6afb09c59011035337a287783bbef0c6b7d29d9a 100644
 --- a/crypto/apple_keychain_seckeychain.h
