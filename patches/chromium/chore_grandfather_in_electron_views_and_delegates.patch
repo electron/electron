@@ -52,8 +52,8 @@ diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate
 index 7c2463cb91d00de2b0fa4f10221ea960be860d9a..e79beefddbd815e1ba7d9be86256e49d3ee7c619 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
-@@ -169,6 +169,12 @@ namespace data_controls {
- class DesktopDataControlsDialog;
+@@ -165,6 +165,12 @@ namespace crostini {
+ class AppRestartDialog;
  }
  
 +namespace electron {
