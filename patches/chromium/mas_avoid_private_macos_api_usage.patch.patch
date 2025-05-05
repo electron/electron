@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 82219748cc05ee4781731da17879f50dc1cea05f..25f5e50259e093d814271e53236d3be0647cb12b 100644
+index 5267ae3844f58d17e795c17184c85592157fda6f..21cab5e75e92570260df2e5fe4d2e404d2cb020a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1045,6 +1045,7 @@ component("base") {
+@@ -1046,6 +1046,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -548,7 +548,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 371b7b3ba73ee7b88027fcc31cb0a346cae40eea..c4b0654a56f4f2b4ab57ef05a119e38862b5fd2d 100644
+index f97ab6bdafbc35216b1935cf979443d071dd889f..e72d2347099c6549b5f9f318f99a1140839939e7 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -36,6 +36,7 @@
@@ -559,7 +559,7 @@ index 371b7b3ba73ee7b88027fcc31cb0a346cae40eea..c4b0654a56f4f2b4ab57ef05a119e388
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2138,15 +2139,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2144,15 +2145,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -582,10 +582,10 @@ index 371b7b3ba73ee7b88027fcc31cb0a346cae40eea..c4b0654a56f4f2b4ab57ef05a119e388
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index cf87c4749846d98e56f130ac10c9004029f56464..27327923cfdd0c05ad0368b5f4678ff8ecf835fc 100644
+index 86e30304014f4811578595013a20a76790b1e84d..7964ac6af0fc3821b8208e34be766a712ccd2026 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -342,6 +342,7 @@ source_set("browser") {
+@@ -343,6 +343,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -797,10 +797,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 4c59b6c62ad3fed9717b0330c7b46b8dc83a51a1..1c88c8f449387258259bcd65c13709d70f03117b 100644
+index d72fc747932acd8cca621cd4bbfd3cb244c17da9..58687ab05e82b6d6314c979c88d77323dd7047e4 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -662,6 +662,7 @@ static_library("test_support") {
+@@ -664,6 +664,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -808,7 +808,7 @@ index 4c59b6c62ad3fed9717b0330c7b46b8dc83a51a1..1c88c8f449387258259bcd65c13709d7
    ]
  
    data_deps = [
-@@ -1117,6 +1118,7 @@ static_library("browsertest_support") {
+@@ -1120,6 +1121,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -816,7 +816,7 @@ index 4c59b6c62ad3fed9717b0330c7b46b8dc83a51a1..1c88c8f449387258259bcd65c13709d7
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1959,6 +1961,7 @@ test("content_browsertests") {
+@@ -1962,6 +1964,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 4c59b6c62ad3fed9717b0330c7b46b8dc83a51a1..1c88c8f449387258259bcd65c13709d7
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3284,6 +3287,7 @@ test("content_unittests") {
+@@ -3292,6 +3295,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",

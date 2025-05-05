@@ -33,7 +33,7 @@ index 4b3f01018a9dea91b46b5917e099f272582991b2..8250f2e447ff19829cfae3f00b3df70b
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 5c26efefaa030e5f5b7ba6089e989303795d771c..5df9bd353fe212491e473027a7080854cc5ea738 100644
+index ae32014a8a25f3b1de7f6087551a87400e1463b5..be77c4e02cc495194ed6b248e56bcb75abe4efce 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4627,7 +4627,7 @@ static_library("browser") {
@@ -46,10 +46,10 @@ index 5c26efefaa030e5f5b7ba6089e989303795d771c..5df9bd353fe212491e473027a7080854
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 897f91ed0f1fcd386f980fe2073c07915cfc6458..43c6c436a391362173cc3ae562d6cd0fb5191d1b 100644
+index e08035df314884fab39562cd9ee4960ec5af3cb5..28f0f4d671e16ffff770b43fa5a2e366491d4b30 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7181,9 +7181,12 @@ test("unit_tests") {
+@@ -7185,9 +7185,12 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
@@ -63,7 +63,7 @@ index 897f91ed0f1fcd386f980fe2073c07915cfc6458..43c6c436a391362173cc3ae562d6cd0f
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -8149,6 +8152,10 @@ test("unit_tests") {
+@@ -8153,6 +8156,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index 897f91ed0f1fcd386f980fe2073c07915cfc6458..43c6c436a391362173cc3ae562d6cd0f
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8204,7 +8211,6 @@ test("unit_tests") {
+@@ -8208,7 +8215,6 @@ test("unit_tests") {
      # Non-android deps for "unit_tests" target.
      deps += [
        "../browser/screen_ai:screen_ai_install_state",
