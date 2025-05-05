@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: zoy <zoy-l@outlook.com>
+Date: Mon, 5 May 2025 23:28:53 +0800
+Subject: fix: resolve dynamic background material update issue on Windows 11
+
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index 24283be8d1660acce0a5ae89386b8eef9989fc12..a5e571f5ac197eb29cd88532794c96e733742713 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -182,6 +182,10 @@ void DesktopWindowTreeHostWin::FinishTouchDrag(gfx::Point screen_point) {
+   }
+ }
+ 
++void DesktopWindowTreeHostWin::SetIsTranslucent(bool is_translucent) {
++  message_handler_->set_is_translucent(is_translucent);
++}
++
+ // DesktopWindowTreeHostWin, DesktopWindowTreeHost implementation:
+ 
+ void DesktopWindowTreeHostWin::Init(const Widget::InitParams& params) {
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+index 177134d439866db9dbbde657ff358a761ad7f39d..e4f42fcf31a308e3014327ef3e293c820fccb812 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+@@ -94,6 +94,8 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+   // false.
+   void FinishTouchDrag(gfx::Point screen_point);
+ 
++  void SetIsTranslucent(bool is_translucent);
++
+  protected:
+   // Overridden from DesktopWindowTreeHost:
+   void Init(const Widget::InitParams& params) override;
