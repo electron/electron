@@ -347,10 +347,10 @@ index d13e6db4857242480591bff040709532d16f513d..1164da12ee71a8575c17bf1b84a505e8
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index 824afc2cfd01a0321d1b01cd370243dafefa1d24..ab77c85595dd5bde9eb9fd21f4914e1f9dfd4433 100644
+index 5ff3c5dcb972eb635107557ea7c26eb1f3331d22..5b1939226dcb84a61b09eefe69ab24a5ad595e1b 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
-@@ -38,17 +38,19 @@ UtilitySandboxedProcessLauncherDelegate::
+@@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::
      UtilitySandboxedProcessLauncherDelegate(
          sandbox::mojom::Sandbox sandbox_type,
          const base::EnvironmentMap& env,
@@ -374,7 +374,7 @@ index 824afc2cfd01a0321d1b01cd370243dafefa1d24..ab77c85595dd5bde9eb9fd21f4914e1f
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -114,11 +116,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -115,11 +117,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
