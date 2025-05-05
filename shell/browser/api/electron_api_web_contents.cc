@@ -3133,11 +3133,21 @@ void WebContents::Print(gin::Arguments* args) {
   options.Get("duplexMode", &duplex_mode);
   settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
 
-  // We've already done necessary parameter sanitization at the
-  // JS level, so we can simply pass this through.
-  base::Value media_size(base::Value::Type::DICT);
-  if (options.Get("mediaSize", &media_size))
+  base::Value::Dict media_size;
+  if (options.Get("mediaSize", &media_size)) {
     settings.Set(printing::kSettingMediaSize, std::move(media_size));
+  } else {
+    // Default to A4 paper size (210mm x 297mm)
+    settings.Set(printing::kSettingMediaSize,
+                 base::Value::Dict()
+                     .Set(printing::kSettingMediaSizeHeightMicrons, 297000)
+                     .Set(printing::kSettingMediaSizeWidthMicrons, 210000)
+                     .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
+                     .Set(printing::kSettingsImageableAreaTopMicrons, 297000)
+                     .Set(printing::kSettingsImageableAreaRightMicrons, 210000)
+                     .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
+                     .Set(printing::kSettingMediaSizeIsDefault, true));
+  }
 
   // Set custom dots per inch (dpi)
   gin_helper::Dictionary dpi_settings;
