@@ -928,10 +928,12 @@ describe('Menu module', function () {
       w.show();
     });
 
-    it('does not crash when rendering menu item with single accelerator combinations', async () => {
-      const chunkSize = 10;
-      for (let i = 0; i < singleModifierCombinations.length; i += chunkSize) {
-        const chunk = singleModifierCombinations.slice(i, i + chunkSize);
+    const chunkSize = 10;
+    let chunkCount = 0;
+    const totalChunks = Math.ceil(singleModifierCombinations.length / chunkSize);
+    for (let i = 0; i < singleModifierCombinations.length; i += chunkSize) {
+      const chunk = singleModifierCombinations.slice(i, i + chunkSize);
+      it(`does not crash when rendering menu item with single accelerator combinations ${++chunkCount}/${totalChunks}`, async () => {
         const menu = Menu.buildFromTemplate([
           ...chunk.map(combination => ({
             label: `Test ${combination}`,
@@ -940,9 +942,8 @@ describe('Menu module', function () {
         ]);
         menu.popup({ window: w });
         menu.closePopup();
-        await setTimeout(100);
-      }
-    });
+      });
+    }
   });
 
   describe('Menu.setApplicationMenu', () => {
