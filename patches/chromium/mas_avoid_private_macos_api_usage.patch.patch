@@ -548,7 +548,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index f97ab6bdafbc35216b1935cf979443d071dd889f..e72d2347099c6549b5f9f318f99a1140839939e7 100644
+index d83f420d25e2c108ad400ebecae02b1ac327c058..77852c5c315ac09dddb7227adf3b840ee9d93928 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -36,6 +36,7 @@
@@ -559,7 +559,7 @@ index f97ab6bdafbc35216b1935cf979443d071dd889f..e72d2347099c6549b5f9f318f99a1140
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2144,15 +2145,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2147,15 +2148,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index d72fc747932acd8cca621cd4bbfd3cb244c17da9..58687ab05e82b6d6314c979c88d77323dd7047e4 100644
+index 2c8e8e9b4260366b5312be7f2a3bbf9d332fe916..fb9e07491c93593904db7fd55c24e67820de982c 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -664,6 +664,7 @@ static_library("test_support") {
@@ -1436,7 +1436,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index f2b874b368c6857013f6fbb7522d5d590f0540b5..1593565d61d284902ea364bf7bbee065e95acb48 100644
+index 1b5e616ebd3c610739a9dcf3fd6694f1e442d783..8449d7eb65687fa82db0f23c7627807ef26e34f3 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -414,6 +414,7 @@ component("core") {
