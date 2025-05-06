@@ -32,3 +32,23 @@ index 177134d439866db9dbbde657ff358a761ad7f39d..e4f42fcf31a308e3014327ef3e293c82
   protected:
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 09509acd13511525b0eb7b9afa972e20d8d3601c..0e273da13a895ca119ea8376cdfdd0e425ad4be1 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -1037,7 +1037,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
+   //   allowing ui::GetResizableFrameThickness() to be used consistently when
+   //   removing the visible system frame.
+   const bool had_caption_on_init = window_style() & WS_CAPTION;
+-  const bool can_resize = !is_translucent_ && delegate_->CanResize();
++
++  // In Chromium, the !is_translucent_ check was introduced for Glic-specific
++  // behavior. Since Electron does not use Glic, this restriction can be safely
++  // removed. Keeping the is_translucent_ check disables maximization for
++  // translucent framed windows. Original code: !is_translucent_ &&
++  // delegate_->CanResize() See:
++  // https://chromium-review.googlesource.com/c/chromium/src/+/6372329
++  const bool can_resize = delegate_->CanResize();
+   const bool can_maximize = can_resize && delegate_->CanMaximize();
+ 
+   auto set_style_func = [&style](LONG bit, bool should_set) {
