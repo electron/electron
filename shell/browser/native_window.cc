@@ -589,7 +589,7 @@ void NativeWindow::NotifyWindowRestore() {
 }
 
 void NativeWindow::NotifyWindowWillResize(const gfx::Rect& new_bounds,
-                                          const gfx::ResizeEdge& edge,
+                                          const gfx::ResizeEdge edge,
                                           bool* prevent_default) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowWillResize(new_bounds, edge, prevent_default);
