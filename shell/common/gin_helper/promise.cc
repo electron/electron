@@ -16,10 +16,14 @@ namespace gin_helper {
 PromiseBase::SettleScope::SettleScope(const PromiseBase& base)
     : handle_scope_{base.isolate()},
       context_{base.GetContext()},
-      microtasks_scope_{context_, false, v8::MicrotasksScope::kRunMicrotasks},
+      microtasks_scope_(context_, v8::MicrotasksScope::kRunMicrotasks),
       context_scope_{context_} {}
 
-PromiseBase::SettleScope::~SettleScope() = default;
+PromiseBase::SettleScope::~SettleScope() {
+  if (electron::IsBrowserProcess()) {
+    context_->GetMicrotaskQueue()->PerformCheckpoint(context_->GetIsolate());
+  }
+}
 
 PromiseBase::PromiseBase(v8::Isolate* isolate)
     : PromiseBase(isolate,
