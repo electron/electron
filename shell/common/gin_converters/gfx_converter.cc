@@ -197,7 +197,7 @@ v8::Local<v8::Value> Converter<display::Display>::ToV8(
 
 v8::Local<v8::Value> Converter<gfx::ResizeEdge>::ToV8(
     v8::Isolate* isolate,
-    const gfx::ResizeEdge& val) {
+    const gfx::ResizeEdge val) {
   switch (val) {
     case gfx::ResizeEdge::kRight:
       return StringToV8(isolate, "right");

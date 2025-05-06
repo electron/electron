@@ -318,7 +318,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowRestore();
   void NotifyWindowMove();
   void NotifyWindowWillResize(const gfx::Rect& new_bounds,
-                              const gfx::ResizeEdge& edge,
+                              gfx::ResizeEdge edge,
                               bool* prevent_default);
   void NotifyWindowResize();
   void NotifyWindowResized();
