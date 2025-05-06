@@ -501,16 +501,9 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   settings.Get("label", &label);
   item.label = base::SysUTF8ToNSString(label);
 
-  int maxValue = 100;
-  int minValue = 0;
-  int value = 50;
-  settings.Get("minValue", &minValue);
-  settings.Get("maxValue", &maxValue);
-  settings.Get("value", &value);
-
-  item.slider.minValue = minValue;
-  item.slider.maxValue = maxValue;
-  item.slider.doubleValue = value;
+  item.slider.minValue = settings.ValueOrDefault("minValue", 0);
+  item.slider.maxValue = settings.ValueOrDefault("maxValue", 100);
+  item.slider.doubleValue = settings.ValueOrDefault("value", 50);
 }
 
 - (NSTouchBarItem*)makePopoverForID:(NSString*)id
@@ -540,9 +533,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     item.collapsedRepresentationImage = image.AsNSImage();
   }
 
-  bool showCloseButton = true;
-  settings.Get("showCloseButton", &showCloseButton);
-  item.showsCloseButton = showCloseButton;
+  item.showsCloseButton = settings.ValueOrDefault("showCloseButton", true);
 
   v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
@@ -670,8 +661,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   for (size_t i = 0; i < segments.size(); ++i) {
     std::string label;
     gfx::Image image;
-    bool enabled = true;
-    segments[i].Get("enabled", &enabled);
+    const bool enabled = segments[i].ValueOrDefault("enabled", true);
     if (segments[i].Get("label", &label)) {
       [control setLabel:base::SysUTF8ToNSString(label) forSegment:i];
     } else {
@@ -686,8 +676,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     [control setEnabled:enabled forSegment:i];
   }
 
-  int selectedIndex = 0;
-  settings.Get("selectedIndex", &selectedIndex);
+  const int selectedIndex = settings.ValueOrDefault("selectedIndex", 0);
   if (selectedIndex >= 0 && selectedIndex < control.segmentCount)
     control.selectedSegment = selectedIndex;
 }
@@ -726,8 +715,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
           withSettings:(const gin_helper::PersistentDictionary&)settings {
   NSScrubber* scrubber = item.view;
 
-  bool showsArrowButtons = false;
-  settings.Get("showArrowButtons", &showsArrowButtons);
+  const bool showsArrowButtons =
+      settings.ValueOrDefault("showArrowButtons", false);
   // The scrubber will crash if the user tries to scroll
   // and there are no items.
   if ([self numberOfItemsForScrubber:scrubber] > 0)
@@ -766,9 +755,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     scrubber.mode = NSScrubberModeFree;
   }
 
-  bool continuous = true;
-  settings.Get("continuous", &continuous);
-  scrubber.continuous = continuous;
+  scrubber.continuous = settings.ValueOrDefault("continuous", true);
 
   [scrubber reloadData];
 }
