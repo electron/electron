@@ -77,7 +77,7 @@ struct Converter<display::Display> {
 template <>
 struct Converter<gfx::ResizeEdge> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const gfx::ResizeEdge& val);
+                                   const gfx::ResizeEdge val);
 };
 
 template <>
