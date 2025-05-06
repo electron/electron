@@ -52,11 +52,21 @@ void MenuViews::PopupAt(BaseWindow* window,
   // callback, it is fine passing OnceCallback to it because we reset the
   // menu runner immediately when the menu is closed.
   int32_t window_id = window->weak_map_id();
-  auto close_callback = base::AdaptCallbackForRepeating(
-      base::BindOnce(&MenuViews::OnClosed, weak_factory_.GetWeakPtr(),
-                     window_id, std::move(callback_with_ref)));
+  auto shared_callback =
+      std::make_shared<base::OnceClosure>(std::move(callback_with_ref));
+
+  auto close_callback = base::BindRepeating(
+      [](base::WeakPtr<MenuViews> self, int32_t id,
+         std::shared_ptr<base::OnceClosure> callback) {
+        if (self && callback && *callback) {
+          auto cb = std::move(*callback);
+          self->OnClosed(id, std::move(cb));
+        }
+      },
+      weak_factory_.GetWeakPtr(), window_id, shared_callback);
+
   auto& runner = menu_runners_[window_id] =
-      std::make_unique<MenuRunner>(model(), flags, std::move(close_callback));
+      std::make_unique<MenuRunner>(model(), flags, close_callback);
   runner->RunMenuAt(native_window->widget(), nullptr,
                     gfx::Rect{location, gfx::Size{}},
                     views::MenuAnchorPosition::kTopLeft, source_type);
