@@ -20,7 +20,7 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 0aae1d3b2777d5f6db711d1ade99b4bde24e76bf..e350f6789c710826e0885ccdc19e66e2213820df 100644
+index f134056b6b255935250721d6fbd417b1d658c87c..f69c10c32011c9da5c235a5199abce44e64982da 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -502,6 +502,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
@@ -58,7 +58,7 @@ index 6c36ada80f6f225b84a8f3832405128f8ba83224..714d582d1060873765b24770b18eddcb
        NOTREACHED();
    }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index b19b5781f426bdfd4a8b6dfbead0f854545ca90a..9833c25f97e55ab7e7095243c307a90fbf4b53d8 100644
+index 6886f5764a87dd8b41746969745e80c82b69430b..cb39508717b9ebdd30470f6d7fd7e8626cc65948 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
 @@ -101,6 +101,8 @@ std::string GetPermissionString(PermissionType permission) {
