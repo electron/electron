@@ -7,7 +7,6 @@
 
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/process_util.h"
 #include "v8/include/v8-context.h"

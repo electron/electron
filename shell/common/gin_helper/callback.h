@@ -12,7 +12,6 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/locker.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "v8/include/v8-function.h"
 // Implements safe conversions between JS functions and base::RepeatingCallback.
 

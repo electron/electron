@@ -36,7 +36,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
