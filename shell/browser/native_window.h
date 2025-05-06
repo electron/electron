@@ -229,12 +229,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetAutoHideCursor(bool auto_hide) {}
 
   // Vibrancy API
-  const std::string& vibrancy() const { return vibrancy_; }
   virtual void SetVibrancy(const std::string& type, int duration);
 
-  const std::string& background_material() const {
-    return background_material_;
-  }
   virtual void SetBackgroundMaterial(const std::string& type);
 
   // Traffic Light API
@@ -289,12 +285,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual void CloseFilePreview() {}
 
   virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) {}
-
-  // Converts between content bounds and window bounds.
-  virtual gfx::Rect ContentBoundsToWindowBounds(
-      const gfx::Rect& bounds) const = 0;
-  virtual gfx::Rect WindowBoundsToContentBounds(
-      const gfx::Rect& bounds) const = 0;
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -406,7 +396,6 @@ class NativeWindow : public base::SupportsUserData,
   }
 
   bool has_frame() const { return has_frame_; }
-  void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
 
   bool has_client_frame() const { return has_client_frame_; }
   bool transparent() const { return transparent_; }
@@ -439,9 +428,15 @@ class NativeWindow : public base::SupportsUserData,
   void UpdateBackgroundThrottlingState();
 
  protected:
-  friend class api::BrowserView;
+  constexpr void set_has_frame(const bool val) { has_frame_ = val; }
 
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
+
+  // Converts between content bounds and window bounds.
+  virtual gfx::Rect ContentBoundsToWindowBounds(
+      const gfx::Rect& bounds) const = 0;
+  virtual gfx::Rect WindowBoundsToContentBounds(
+      const gfx::Rect& bounds) const = 0;
 
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;
@@ -455,10 +450,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // The boolean parsing of the "titleBarOverlay" option
   bool titlebar_overlay_ = false;
-
-  // The custom height parsed from the "height" option in a Object
-  // "titleBarOverlay"
-  int titlebar_overlay_height_ = 0;
 
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
@@ -484,6 +475,10 @@ class NativeWindow : public base::SupportsUserData,
 
   // The content view, weak ref.
   raw_ptr<views::View> content_view_ = nullptr;
+
+  // The custom height parsed from the "height" option in a Object
+  // "titleBarOverlay"
+  int titlebar_overlay_height_ = 0;
 
   // Whether window has standard frame.
   bool has_frame_ = true;
