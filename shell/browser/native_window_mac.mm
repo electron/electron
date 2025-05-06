@@ -120,42 +120,37 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
   display::Screen::GetScreen()->AddObserver(this);
 
-  int width = 800, height = 600;
-  options.Get(options::kWidth, &width);
-  options.Get(options::kHeight, &height);
+  const int width = options.ValueOrDefault(options::kWidth, 800);
+  const int height = options.ValueOrDefault(options::kHeight, 600);
 
   NSRect main_screen_rect = [[[NSScreen screens] firstObject] frame];
   gfx::Rect bounds(round((NSWidth(main_screen_rect) - width) / 2),
                    round((NSHeight(main_screen_rect) - height) / 2), width,
                    height);
 
-  bool resizable = true;
-  options.Get(options::kResizable, &resizable);
+  const bool resizable = options.ValueOrDefault(options::kResizable, true);
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
   options.Get(options::kSimpleFullscreen, &always_simple_fullscreen_);
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
   options.Get(options::kVisualEffectState, &visual_effect_state_);
 
-  bool minimizable = true;
-  options.Get(options::kMinimizable, &minimizable);
+  const bool minimizable = options.ValueOrDefault(options::kMinimizable, true);
 
-  bool maximizable = true;
-  options.Get(options::kMaximizable, &maximizable);
+  const bool maximizable = options.ValueOrDefault(options::kMaximizable, true);
 
-  bool closable = true;
-  options.Get(options::kClosable, &closable);
+  const bool closable = options.ValueOrDefault(options::kClosable, true);
 
-  std::string tabbingIdentifier;
-  options.Get(options::kTabbingIdentifier, &tabbingIdentifier);
+  const std::string tabbingIdentifier =
+      options.ValueOrDefault(options::kTabbingIdentifier, std::string{});
 
-  std::string windowType;
-  options.Get(options::kType, &windowType);
+  const std::string windowType =
+      options.ValueOrDefault(options::kType, std::string{});
 
-  bool hiddenInMissionControl = false;
-  options.Get(options::kHiddenInMissionControl, &hiddenInMissionControl);
+  const bool hiddenInMissionControl =
+      options.ValueOrDefault(options::kHiddenInMissionControl, false);
 
-  bool paint_when_initially_hidden = true;
-  options.Get(options::kPaintWhenInitiallyHidden, &paint_when_initially_hidden);
+  const bool paint_when_initially_hidden =
+      options.ValueOrDefault(options::kPaintWhenInitiallyHidden, true);
 
   // The window without titlebar is treated the same with frameless window.
   if (title_bar_style_ != TitleBarStyle::kNormal)
@@ -165,8 +160,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 
   // The NSWindowStyleMaskFullSizeContentView style removes rounded corners
   // for frameless window.
-  bool rounded_corner = true;
-  options.Get(options::kRoundedCorners, &rounded_corner);
+  const bool rounded_corner =
+      options.ValueOrDefault(options::kRoundedCorners, true);
   if (!rounded_corner && !has_frame())
     styleMask = NSWindowStyleMaskBorderless;
 
@@ -288,19 +283,19 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   }
 
   // Resize to content bounds.
-  bool use_content_size = false;
-  options.Get(options::kUseContentSize, &use_content_size);
+  const bool use_content_size =
+      options.ValueOrDefault(options::kUseContentSize, false);
   if (!has_frame() || use_content_size)
     SetContentSize(gfx::Size(width, height));
 
   // Enable the NSView to accept first mouse event.
-  bool acceptsFirstMouse = false;
-  options.Get(options::kAcceptFirstMouse, &acceptsFirstMouse);
+  const bool acceptsFirstMouse =
+      options.ValueOrDefault(options::kAcceptFirstMouse, false);
   [window_ setAcceptsFirstMouse:acceptsFirstMouse];
 
   // Disable auto-hiding cursor.
-  bool disableAutoHideCursor = false;
-  options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
+  const bool disableAutoHideCursor =
+      options.ValueOrDefault(options::kDisableAutoHideCursor, false);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
   SetHiddenInMissionControl(hiddenInMissionControl);
