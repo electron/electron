@@ -6,7 +6,7 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index e350f6789c710826e0885ccdc19e66e2213820df..b8ba008470f39f6f3559d29b9eff0a23863da364 100644
+index f69c10c32011c9da5c235a5199abce44e64982da..3b166dd8f571538102772a9bcd5bbe55015742f3 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -502,7 +502,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
@@ -80,7 +80,7 @@ index 714d582d1060873765b24770b18eddcbbdcf5506..3746bafd72223a65c4183a59726601e8
        NOTREACHED();
    }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 9833c25f97e55ab7e7095243c307a90fbf4b53d8..6489d1c932fc8e92e13af55227088fa1c169dcd6 100644
+index cb39508717b9ebdd30470f6d7fd7e8626cc65948..10af1f297739d29cc96d6fd5752fca1532e6fba4 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
 @@ -103,6 +103,18 @@ std::string GetPermissionString(PermissionType permission) {
@@ -102,7 +102,7 @@ index 9833c25f97e55ab7e7095243c307a90fbf4b53d8..6489d1c932fc8e92e13af55227088fa1
      case PermissionType::NUM:
        NOTREACHED();
    }
-@@ -177,7 +192,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+@@ -177,7 +189,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
