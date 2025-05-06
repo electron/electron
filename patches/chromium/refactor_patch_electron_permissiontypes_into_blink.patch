@@ -83,12 +83,8 @@ diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_pa
 index 9833c25f97e55ab7e7095243c307a90fbf4b53d8..6489d1c932fc8e92e13af55227088fa1c169dcd6 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -101,8 +101,23 @@ std::string GetPermissionString(PermissionType permission) {
-       return "WebAppInstallation";
-     case PermissionType::LOCAL_NETWORK_ACCESS:
+@@ -103,6 +103,18 @@ std::string GetPermissionString(PermissionType permission) {
        return "LocalNetworkAccess";
-+
-+    // Permissions added by Electron
      case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
        return "DeprecatedSyncClipboardRead";
 +    case PermissionType::FILE_SYSTEM:
@@ -103,7 +99,6 @@ index 9833c25f97e55ab7e7095243c307a90fbf4b53d8..6489d1c932fc8e92e13af55227088fa1
 +      return "Serial";
 +    case PermissionType::USB:
 +      return "USB";
-+
      case PermissionType::NUM:
        NOTREACHED();
    }
@@ -123,15 +118,10 @@ index 9833c25f97e55ab7e7095243c307a90fbf4b53d8..6489d1c932fc8e92e13af55227088fa1
        return std::nullopt;
  
      case PermissionType::NUM:
-@@ -345,9 +368,26 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
-       return PermissionType::HAND_TRACKING;
-     case PermissionName::WEB_PRINTING:
+@@ -347,6 +367,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
        return PermissionType::WEB_PRINTING;
--    default:
--      NOTREACHED();
-+    case PermissionName::SMART_CARD:
-+      return PermissionType::SMART_CARD;
-+
+     case PermissionName::SMART_CARD:
+       return PermissionType::SMART_CARD;
 +    // Permissions added by Electron
 +    case PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ:
 +      return PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ;
@@ -148,10 +138,8 @@ index 9833c25f97e55ab7e7095243c307a90fbf4b53d8..6489d1c932fc8e92e13af55227088fa1
 +    case PermissionName::USB:
 +      return PermissionType::USB;
    }
-+  NOTREACHED();
  }
  
- }  // namespace blink
 diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
 index c286d87043ec4cb2e51ec9d82d08e4c84f5a270c..164a2a446947dae687922363d324a6d35b7ae0b8 100644
 --- a/third_party/blink/public/common/permissions/permission_utils.h
