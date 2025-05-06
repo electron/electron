@@ -164,17 +164,17 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     Center();
   }
 
-  bool use_content_size = false;
-  options.Get(options::kUseContentSize, &use_content_size);
+  const bool use_content_size =
+      options.ValueOrDefault(options::kUseContentSize, false);
 
   // On Linux and Window we may already have maximum size defined.
   extensions::SizeConstraints size_constraints(
       use_content_size ? GetContentSizeConstraints() : GetSizeConstraints());
 
-  int min_width = size_constraints.GetMinimumSize().width();
-  int min_height = size_constraints.GetMinimumSize().height();
-  options.Get(options::kMinWidth, &min_width);
-  options.Get(options::kMinHeight, &min_height);
+  const int min_width = options.ValueOrDefault(
+      options::kMinWidth, size_constraints.GetMinimumSize().width());
+  const int min_height = options.ValueOrDefault(
+      options::kMinHeight, size_constraints.GetMinimumSize().height());
   size_constraints.set_minimum_size(gfx::Size(min_width, min_height));
 
   gfx::Size max_size = size_constraints.GetMaximumSize();
@@ -274,9 +274,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   SetTitle(title);
 
   // Then show it.
-  bool show = true;
-  options.Get(options::kShow, &show);
-  if (show)
+  if (options.ValueOrDefault(options::kShow, true))
     Show();
 }
 
