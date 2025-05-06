@@ -131,10 +131,6 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
     [file_types_list addObject:content_types_set];
   }
 
-  // Don't add file format picker.
-  if ([file_types_list count] <= 1)
-    return;
-
   NSArray* content_types = [file_types_list objectAtIndex:0];
 
   __block BOOL allowAllFiles = NO;
@@ -147,6 +143,10 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
       }];
 
   [dialog setAllowedContentTypes:allowAllFiles ? @[] : content_types];
+
+  // Don't add file format picker.
+  if ([file_types_list count] <= 1)
+    return;
 
   // Add file format picker.
   ElectronAccessoryView* accessoryView = [[ElectronAccessoryView alloc]
