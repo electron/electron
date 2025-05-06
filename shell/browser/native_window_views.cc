@@ -257,11 +257,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     SetContentSizeConstraints(extensions::SizeConstraints(
         gfx::Size(), gfx::Size(INT_MAX / 10, INT_MAX / 10)));
 
-  int width = 800, height = 600;
-  options.Get(options::kWidth, &width);
-  options.Get(options::kHeight, &height);
-  gfx::Rect bounds(0, 0, width, height);
-
+  const int width = options.ValueOrDefault(options::kWidth, 800);
+  const int height = options.ValueOrDefault(options::kHeight, 600);
+  gfx::Rect bounds{0, 0, width, height};
   widget_size_ = bounds.size();
 
   widget()->AddObserver(this);
@@ -311,18 +309,15 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   widget()->SetNativeWindowProperty(kElectronNativeWindowKey.c_str(), this);
   SetCanResize(resizable_);
 
-  bool fullscreen = false;
-  options.Get(options::kFullscreen, &fullscreen);
+  const bool fullscreen = options.ValueOrDefault(options::kFullscreen, false);
 
   std::string window_type;
   options.Get(options::kType, &window_type);
 
 #if BUILDFLAG(IS_LINUX)
   // Set _GTK_THEME_VARIANT to dark if we have "dark-theme" option set.
-  bool use_dark_theme = false;
-  if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
-    SetGTKDarkThemeEnabled(use_dark_theme);
-  }
+  if (options.ValueOrDefault(options::kDarkTheme, false))
+    SetGTKDarkThemeEnabled(true);
 
   if (parent)
     SetParentWindow(parent);
