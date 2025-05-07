@@ -259,7 +259,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   const int width = options.ValueOrDefault(options::kWidth, 800);
   const int height = options.ValueOrDefault(options::kHeight, 600);
-  const gfx::Rect bounds{0, 0, width, height};
+  gfx::Rect bounds{0, 0, width, height};
   widget_size_ = bounds.size();
 
   widget()->AddObserver(this);
@@ -404,7 +404,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   // NOTE(@mlaurencin) Spec requirements can be found here:
   // https://developer.mozilla.org/en-US/docs/Web/API/Window/open#width
-  constexpr int kMinSizeReqdBySpec = 100;
+  int kMinSizeReqdBySpec = 100;
   int inner_width = 0;
   int inner_height = 0;
   options.Get(options::kinnerWidth, &inner_width);
