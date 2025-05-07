@@ -4,7 +4,6 @@ blink_local_frame.patch
 can_create_window.patch
 disable_hidden.patch
 dom_storage_limits.patch
-render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
 webview_cross_drag.patch
 gin_enable_disable_v8_platform.patch

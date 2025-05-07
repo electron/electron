@@ -170,7 +170,7 @@ class OffScreenRenderWidgetHostView
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost*,
       content::RenderWidgetHost*,
-      content::WebContentsView*) override;
+      content::WebContentsView*);
 
   const viz::LocalSurfaceId& GetLocalSurfaceId() const override;
   const viz::FrameSinkId& GetFrameSinkId() const override;
