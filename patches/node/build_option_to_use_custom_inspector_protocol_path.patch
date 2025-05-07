@@ -39,7 +39,7 @@ index d8aacbdf1a8fc858c792ad3ce17ca2f46baebe7e..4625008c048532c2c3340130670647d2
  
    void HandleDouble(double value) override {
 diff --git a/src/inspector/node_string.h b/src/inspector/node_string.h
-index b2f67c224acc7b3a3b867867e251a7c62833f46e..33e93ce5bf7dda7e30b7b1b198ff3b53ccfac22a 100644
+index b2f67c224acc7b3a3b867867e251a7c62833f46e..a17b12a17518259e243cb176e1fbdc11ce63c78d 100644
 --- a/src/inspector/node_string.h
 +++ b/src/inspector/node_string.h
 @@ -66,7 +66,7 @@ class Binary {
