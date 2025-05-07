@@ -11,10 +11,10 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 84fab7fcdb1a7ded880c0ff4867e09c740e7a5d2..f03f0e67c083880dc13f8f90d9375ff62717ba00 100644
+index 4b3f01018a9dea91b46b5917e099f272582991b2..8250f2e447ff19829cfae3f00b3df70b47749874 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -197,11 +197,16 @@ if (!is_android && !is_mac) {
+@@ -200,11 +200,16 @@ if (!is_android && !is_mac) {
          "common/crash_keys.h",
        ]
  
@@ -33,7 +33,7 @@ index 84fab7fcdb1a7ded880c0ff4867e09c740e7a5d2..f03f0e67c083880dc13f8f90d9375ff6
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index ed639e1fd384ce325f56df99d5fcf72f00aaf2b1..ea7919d5a9dd2699822facb47ae974a7a4e87172 100644
+index 73f7fc927f1c14c038e0ca91066dbb4e9bd8be62..d7d46198d11b7454d07188641f46617c924d63b1 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4633,7 +4633,7 @@ static_library("browser") {
@@ -46,7 +46,7 @@ index ed639e1fd384ce325f56df99d5fcf72f00aaf2b1..ea7919d5a9dd2699822facb47ae974a7
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index dd82cb96686234350a078536bce94a47aeb96ef8..2cb71c9c12ad89aa6a16c538f97979b3094b9cda 100644
+index 4866689b354bc9d963638edabf1eb02d16ba984c..c5b383f2c78592a57f0d138538733937b8e76ecd 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -7210,9 +7210,12 @@ test("unit_tests") {
