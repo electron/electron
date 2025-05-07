@@ -17,6 +17,7 @@
 #include "base/containers/fixed_flat_set.h"
 #include "base/environment.h"
 #include "base/feature_list.h"
+#include "base/strings/cstring_view.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
 #include "content/public/common/content_switches.h"
@@ -85,12 +86,13 @@ void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
 
 #if BUILDFLAG(IS_MAC)
 // A list of node envs that may be used to inject scripts.
-const char* kHijackableEnvs[] = {"NODE_OPTIONS", "NODE_REPL_EXTERNAL_MODULE"};
+constexpr base::cstring_view kHijackableEnvs[] = {"NODE_OPTIONS",
+                                                  "NODE_REPL_EXTERNAL_MODULE"};
 
 // Return true if there is any env in kHijackableEnvs.
 bool UnsetHijackableEnvs(base::Environment* env) {
   bool has = false;
-  for (const char* name : kHijackableEnvs) {
+  for (base::cstring_view name : kHijackableEnvs) {
     if (env->HasVar(name)) {
       env->UnSetVar(name);
       has = true;
@@ -151,13 +153,18 @@ int NodeMain() {
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-  std::string fd_string, pid_string;
-  if (os_env->GetVar("CRASHDUMP_SIGNAL_FD", &fd_string) &&
-      os_env->GetVar("CRASHPAD_HANDLER_PID", &pid_string)) {
-    int fd = -1, pid = -1;
-    DCHECK(base::StringToInt(fd_string, &fd));
-    DCHECK(base::StringToInt(pid_string, &pid));
+  int pid = -1;
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  std::optional<std::string> fd_string = os_env->GetVar("CRASHDUMP_SIGNAL_FD");
+  std::optional<std::string> pid_string =
+      os_env->GetVar("CRASHPAD_HANDLER_PID");
+  if (fd_string && pid_string) {
+    int fd = -1;
+    DCHECK(base::StringToInt(fd_string.value(), &fd));
+    DCHECK(base::StringToInt(pid_string.value(), &pid));
     base::GlobalDescriptors::GetInstance()->Set(kCrashDumpSignal, fd);
+    command_line->AppendSwitchASCII(
+        crash_reporter::switches::kCrashpadHandlerPid, pid_string.value());
     // Following API is unsafe in multi-threaded scenario, but at this point
     // we are still single threaded.
     os_env->UnSetVar("CRASHDUMP_SIGNAL_FD");
@@ -200,10 +207,7 @@ int NodeMain() {
 #if BUILDFLAG(IS_LINUX)
     // On Linux, initialize crashpad after Nodejs init phase so that
     // crash and termination signal handlers can be set by the crashpad client.
-    if (!pid_string.empty()) {
-      auto* command_line = base::CommandLine::ForCurrentProcess();
-      command_line->AppendSwitchASCII(
-          crash_reporter::switches::kCrashpadHandlerPid, pid_string);
+    if (pid != -1) {
       ElectronCrashReporterClient::Create();
       crash_reporter::InitializeCrashpad(false, "node");
       crash_keys::SetCrashKeysFromCommandLine(

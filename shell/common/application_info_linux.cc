@@ -18,9 +18,8 @@ namespace {
 GDesktopAppInfo* get_desktop_app_info() {
   GDesktopAppInfo* ret = nullptr;
 
-  std::string desktop_id;
-  if (platform_util::GetDesktopName(&desktop_id))
-    ret = g_desktop_app_info_new(desktop_id.c_str());
+  if (std::optional<std::string> desktop_id = platform_util::GetDesktopName())
+    ret = g_desktop_app_info_new(desktop_id->c_str());
 
   return ret;
 }

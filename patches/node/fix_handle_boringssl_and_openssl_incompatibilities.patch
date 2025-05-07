@@ -238,20 +238,10 @@ index d94f6e1c82c4a62547b3b395f375c86ce4deb5de..b81b9005365272217c77e2b9289bd9f8
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index c89d591c6804ab7d41199d61452d10d12cdf7398..05740c7dc599954bca0779b8c8d6bd615183288a 100644
+index a054e4c1285208c9ba8b9679c284f459f1ace690..3de8ef4fafcdbdc2cb0ce31de162663d5272340f 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -26,7 +26,9 @@ using ncrypto::BIOPointer;
- using ncrypto::ClearErrorOnReturn;
- using ncrypto::CryptoErrorList;
- using ncrypto::DHPointer;
-+#ifndef OPENSSL_NO_ENGINE
- using ncrypto::EnginePointer;
-+#endif  // !OPENSSL_NO_ENGINE
- using ncrypto::EVPKeyPointer;
- using ncrypto::MarkPopErrorOnReturn;
- using ncrypto::SSLPointer;
-@@ -105,7 +107,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+@@ -123,7 +123,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
  
@@ -260,7 +250,7 @@ index c89d591c6804ab7d41199d61452d10d12cdf7398..05740c7dc599954bca0779b8c8d6bd61
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -931,11 +933,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -1584,11 +1584,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -274,7 +264,7 @@ index c89d591c6804ab7d41199d61452d10d12cdf7398..05740c7dc599954bca0779b8c8d6bd61
    DHPointer dh;
    {
      BIOPointer bio(LoadBIO(env, args[0]));
-@@ -1161,7 +1164,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -1814,7 +1815,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -416,7 +406,7 @@ index 471fee77531139ce988292470dff443fdfb05b07..931f7c2ae3d7e12afce471545d610d22
      return EVPKeyCtxPointer();
  
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index f66c57b1079af6cd040dc6d11e72f353507b75e5..abd2bccb9669e06dd8355f66220f8b06c8e863dc 100644
+index b38a9a377738fd5fe6cc89c3a27c403bf6a97715..0cd43c2005b431e180b7483cb89825a75e1fe03f 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
 @@ -949,6 +949,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
@@ -469,20 +459,20 @@ index 05a3882c7e17d78e27aabb29891aa250789a47c0..1f2fccce6ed8f14525557644e0bdd130
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index e255288f6e013ce122f317c415d73d9c93d38580..25fa9af8153852f49d5289aa253f3c8f7268d89c 100644
+index 7c548d32b40365343f0e208c3aa856a1c847f4c3..6346f8f7199cf7b7d3736c59571606fff102fbb6 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -29,7 +29,9 @@ namespace node {
- using ncrypto::BignumPointer;
- using ncrypto::BIOPointer;
- using ncrypto::CryptoErrorList;
-+#ifndef OPENSSL_NO_ENGINE
- using ncrypto::EnginePointer;
-+#endif  // !OPENSSL_NO_ENGINE
- using ncrypto::EVPKeyCtxPointer;
- using v8::ArrayBuffer;
- using v8::BackingStore;
-@@ -502,24 +504,15 @@ Maybe<void> Decorate(Environment* env,
+@@ -207,7 +207,8 @@ void TestFipsCrypto(const v8::FunctionCallbackInfo<v8::Value>& args) {
+ 
+ void GetOpenSSLSecLevelCrypto(const FunctionCallbackInfo<Value>& args) {
+   // for BoringSSL assume the same as the default
+-  int sec_level = OPENSSL_TLS_SECURITY_LEVEL;
++  // value of OPENSSL_TLS_SECURITY_LEVEL.
++  int sec_level = 1;
+ #ifndef OPENSSL_IS_BORINGSSL
+   Environment* env = Environment::GetCurrent(args);
+ 
+@@ -527,24 +528,15 @@ Maybe<void> Decorate(Environment* env,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -508,7 +498,7 @@ index e255288f6e013ce122f317c415d73d9c93d38580..25fa9af8153852f49d5289aa253f3c8f
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -661,7 +654,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -686,7 +678,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -517,7 +507,7 @@ index e255288f6e013ce122f317c415d73d9c93d38580..25fa9af8153852f49d5289aa253f3c8f
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -672,7 +665,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -697,7 +689,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -526,7 +516,7 @@ index e255288f6e013ce122f317c415d73d9c93d38580..25fa9af8153852f49d5289aa253f3c8f
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -680,10 +673,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -705,10 +697,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -540,7 +530,7 @@ index e255288f6e013ce122f317c415d73d9c93d38580..25fa9af8153852f49d5289aa253f3c8f
  }  // namespace
  
 diff --git a/src/env.h b/src/env.h
-index 1239cbdbf2d375a50ada37ee0ed5592c751d4c5c..aed066852d7c257076cc7ca8b173fd2a3a353a00 100644
+index b6bdff9b8580d2588a39f00b594c4c480157d78a..cfe917c797a6e4bb0f0284ec56be82637f840129 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -50,7 +50,7 @@
@@ -552,7 +542,7 @@ index 1239cbdbf2d375a50ada37ee0ed5592c751d4c5c..aed066852d7c257076cc7ca8b173fd2a
  #include <openssl/evp.h>
  #endif
  
-@@ -1071,7 +1071,7 @@ class Environment final : public MemoryRetainer {
+@@ -1073,7 +1073,7 @@ class Environment final : public MemoryRetainer {
      kExitInfoFieldCount
    };
  
@@ -562,7 +552,7 @@ index 1239cbdbf2d375a50ada37ee0ed5592c751d4c5c..aed066852d7c257076cc7ca8b173fd2a
    // We declare another alias here to avoid having to include crypto_util.h
    using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index c59e65ad1fe3fac23f1fc25ca77e6133d1ccaccd..f2f07434e076e2977755ef7dac7d489aedb760b0 100644
+index 6f8cb433ff8059c63d5cf16c8783139ae92fbf61..603ac3dde7d1a1109afbc451b69c8d0935b81641 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -6,7 +6,7 @@
@@ -575,7 +565,7 @@ index c59e65ad1fe3fac23f1fc25ca77e6133d1ccaccd..f2f07434e076e2977755ef7dac7d489a
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 1d81079a9b7d8a69ad2d87835090be88ae507bd8..3608ab2b4aeb09e985ca98e23f2dff23567ade71 100644
+index 1444acd59d42f64831cead5f153419f7c12a88bf..23cb558a22b4462f5ce4f74833d25c7f712f8139 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -588,7 +578,7 @@ index 1d81079a9b7d8a69ad2d87835090be88ae507bd8..3608ab2b4aeb09e985ca98e23f2dff23
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 621f5eca96b10685734a39e56cce7cee6c8a25bf..41dd04f5e2b1cd54c32df70830389d44d7b39aa2 100644
+index e68a41b60832c4b000e17dd15ce16c1bdaf4b54b..065457acfde6ba4d04ed570cc72005cfd2798fd5 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
@@ -600,24 +590,3 @@ index 621f5eca96b10685734a39e56cce7cee6c8a25bf..41dd04f5e2b1cd54c32df70830389d44
  #include "openssl/opensslv.h"
  #endif
  
-diff --git a/unofficial.gni b/unofficial.gni
-index a2f3a769ceaa08db6d7438223884dc5aeab1340d..08603eaef2da51fd92f9bf977647b56409eff48c 100644
---- a/unofficial.gni
-+++ b/unofficial.gni
-@@ -151,7 +151,6 @@ template("node_gn_build") {
-     ]
-     deps = [
-       ":run_node_js2c",
--      "deps/brotli",
-       "deps/cares",
-       "deps/histogram",
-       "deps/llhttp",
-@@ -161,6 +160,8 @@ template("node_gn_build") {
-       "deps/sqlite",
-       "deps/uvwasi",
-       "//third_party/zlib",
-+      "//third_party/brotli:dec",
-+      "//third_party/brotli:enc",
-       "$node_simdutf_path",
-       "$node_v8_path:v8_libplatform",
-     ]

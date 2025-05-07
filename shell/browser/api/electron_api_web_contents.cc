@@ -1299,8 +1299,7 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& rect) {
   if (!Emit("content-bounds-updated", rect))
-    for (ExtendedWebContentsObserver& observer : observers_)
-      observer.OnSetContentBounds(rect);
+    observers_.Notify(&ExtendedWebContentsObserver::OnSetContentBounds, rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
@@ -1316,8 +1315,7 @@ void WebContents::CloseContents(content::WebContents* source) {
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnActivateContents();
+  observers_.Notify(&ExtendedWebContentsObserver::OnActivateContents);
 }
 
 void WebContents::UpdateTargetURL(content::WebContents* source,
@@ -2112,8 +2110,8 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
   } else {
     final_title = web_contents()->GetTitle();
   }
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnPageTitleUpdated(final_title, explicit_set);
+  observers_.Notify(&ExtendedWebContentsObserver::OnPageTitleUpdated,
+                    final_title, explicit_set);
   Emit("page-title-updated", final_title, explicit_set);
 }
 
@@ -2169,8 +2167,7 @@ void WebContents::DevToolsClosed() {
 }
 
 void WebContents::DevToolsResized() {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnDevToolsResized();
+  observers_.Notify(&ExtendedWebContentsObserver::OnDevToolsResized);
 }
 
 void WebContents::SetOwnerWindow(NativeWindow* owner_window) {
@@ -2979,9 +2976,7 @@ void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
       v8::Local<v8::Context>::New(isolate, promise.GetContext()));
 
   v8::Local<v8::Value> buffer =
-      node::Buffer::Copy(isolate, reinterpret_cast<const char*>(data->front()),
-                         data->size())
-          .ToLocalChecked();
+      electron::Buffer::Copy(isolate, *data).ToLocalChecked();
 
   promise.Resolve(buffer);
 }
@@ -3138,11 +3133,21 @@ void WebContents::Print(gin::Arguments* args) {
   options.Get("duplexMode", &duplex_mode);
   settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
 
-  // We've already done necessary parameter sanitization at the
-  // JS level, so we can simply pass this through.
-  base::Value media_size(base::Value::Type::DICT);
-  if (options.Get("mediaSize", &media_size))
+  base::Value::Dict media_size;
+  if (options.Get("mediaSize", &media_size)) {
     settings.Set(printing::kSettingMediaSize, std::move(media_size));
+  } else {
+    // Default to A4 paper size (210mm x 297mm)
+    settings.Set(printing::kSettingMediaSize,
+                 base::Value::Dict()
+                     .Set(printing::kSettingMediaSizeHeightMicrons, 297000)
+                     .Set(printing::kSettingMediaSizeWidthMicrons, 210000)
+                     .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
+                     .Set(printing::kSettingsImageableAreaTopMicrons, 297000)
+                     .Set(printing::kSettingsImageableAreaRightMicrons, 210000)
+                     .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
+                     .Set(printing::kSettingMediaSizeIsDefault, true));
+  }
 
   // Set custom dots per inch (dpi)
   gin_helper::Dictionary dpi_settings;
@@ -3966,8 +3971,7 @@ bool WebContents::IsFullscreenForTabOrPending(
   if (!owner_window())
     return is_html_fullscreen();
 
-  bool in_transition = owner_window()->fullscreen_transition_state() !=
-                       NativeWindow::FullScreenTransitionState::kNone;
+  const bool in_transition = owner_window()->is_transitioning_fullscreen();
   bool is_html_transition = owner_window()->fullscreen_transition_type() ==
                             NativeWindow::FullScreenTransitionType::kHTML;
 
@@ -4002,6 +4006,14 @@ content::PictureInPictureResult WebContents::EnterPictureInPicture(
 
 void WebContents::ExitPictureInPicture() {
   PictureInPictureWindowManager::GetInstance()->ExitPictureInPicture();
+}
+
+bool WebContents::ShouldFocusPageAfterCrash(content::WebContents* source) {
+  // WebView uses WebContentsViewChildFrame, which doesn't have a Focus impl
+  // and triggers a fatal NOTREACHED.
+  if (is_guest())
+    return false;
+  return true;
 }
 
 void WebContents::DevToolsSaveToFile(const std::string& url,

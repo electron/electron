@@ -51,7 +51,7 @@ index 04ca1efa6037e6b20294d9b9b9c794356f0e2439..a484a8fb9c32a1ffe20c78afad1f7cf5
        "https://redirector.gvt1.com/edgedl/chrome/dict/";
  
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
-index def025dbffec3f44074604fcfb441b769886c3ab..459e8be9dcbf6d3ede156b57abcf9c9ede5587c7 100644
+index caeaf418c3fcac7dba27110848205db851328881..52b54d5e88d3b73ca0b44113e2151896cf16e5e7 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
 @@ -96,6 +96,8 @@ class SpellcheckHunspellDictionary : public SpellcheckDictionary {

@@ -47,9 +47,6 @@ class PersistentDictionary;
 
 namespace electron {
 
-inline constexpr base::cstring_view kElectronNativeWindowKey =
-    "__ELECTRON_NATIVE_WINDOW__";
-
 class ElectronMenuModel;
 class BackgroundThrottlingSource;
 
@@ -78,13 +75,16 @@ class NativeWindow : public base::SupportsUserData,
       const gin_helper::Dictionary& options,
       NativeWindow* parent = nullptr);
 
+  [[nodiscard]] static NativeWindow* FromWidget(const views::Widget* widget);
+
   void InitFromOptions(const gin_helper::Dictionary& options);
 
   virtual void SetContentView(views::View* view) = 0;
 
-  virtual void Close() = 0;
-  virtual void CloseImmediately() = 0;
-  virtual bool IsClosed() const;
+  // wrapper around CloseImpl that checks that window_ can be closed
+  void Close();
+  // wrapper around CloseImmediatelyImpl that checks that window_ can be closed
+  void CloseImmediately();
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() const = 0;
   virtual void Show() = 0;
@@ -103,10 +103,13 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsFullscreen() const = 0;
   virtual void SetBounds(const gfx::Rect& bounds, bool animate = false) = 0;
   virtual gfx::Rect GetBounds() const = 0;
-  virtual void SetSize(const gfx::Size& size, bool animate = false);
-  virtual gfx::Size GetSize() const;
-  virtual void SetPosition(const gfx::Point& position, bool animate = false);
-  virtual gfx::Point GetPosition() const;
+
+  void SetSize(const gfx::Size& size, bool animate = false);
+  [[nodiscard]] gfx::Size GetSize() const;
+
+  void SetPosition(const gfx::Point& position, bool animate = false);
+  [[nodiscard]] gfx::Point GetPosition() const;
+
   virtual void SetContentSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetContentSize() const;
   virtual void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
@@ -119,15 +122,20 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
   virtual extensions::SizeConstraints GetContentSizeConstraints() const;
-  virtual void SetMinimumSize(const gfx::Size& size);
-  virtual gfx::Size GetMinimumSize() const;
-  virtual void SetMaximumSize(const gfx::Size& size);
-  virtual gfx::Size GetMaximumSize() const;
-  virtual gfx::Size GetContentMinimumSize() const;
-  virtual gfx::Size GetContentMaximumSize() const;
-  virtual void SetSheetOffset(const double offsetX, const double offsetY);
-  virtual double GetSheetOffsetX() const;
-  virtual double GetSheetOffsetY() const;
+
+  void SetMinimumSize(const gfx::Size& size);
+  [[nodiscard]] gfx::Size GetMinimumSize() const;
+
+  void SetMaximumSize(const gfx::Size& size);
+  [[nodiscard]] gfx::Size GetMaximumSize() const;
+
+  [[nodiscard]] gfx::Size GetContentMinimumSize() const;
+  [[nodiscard]] gfx::Size GetContentMaximumSize() const;
+
+  void SetSheetOffset(const double offsetX, const double offsetY);
+  [[nodiscard]] double GetSheetOffsetX() const;
+  [[nodiscard]] double GetSheetOffsetY() const;
+
   virtual void SetResizable(bool resizable) = 0;
   virtual bool MoveAbove(const std::string& sourceId) = 0;
   virtual void MoveTop() = 0;
@@ -148,8 +156,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual ui::ZOrderLevel GetZOrderLevel() const = 0;
   virtual void Center() = 0;
   virtual void Invalidate() = 0;
-  virtual void SetTitle(const std::string& title) = 0;
-  virtual std::string GetTitle() const = 0;
 #if BUILDFLAG(IS_MAC)
   virtual std::string GetAlwaysOnTopLevel() const = 0;
   virtual void SetActive(bool is_key) = 0;
@@ -159,6 +165,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual void AttachChildren() = 0;
   virtual void DetachChildren() = 0;
 #endif
+
+  void SetTitle(std::string_view title);
+  [[nodiscard]] std::string GetTitle() const;
 
   // Ability to augment the window title for the screen readers.
   void SetAccessibleTitle(const std::string& title);
@@ -222,12 +231,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetAutoHideCursor(bool auto_hide) {}
 
   // Vibrancy API
-  const std::string& vibrancy() const { return vibrancy_; }
   virtual void SetVibrancy(const std::string& type, int duration);
 
-  const std::string& background_material() const {
-    return background_material_;
-  }
   virtual void SetBackgroundMaterial(const std::string& type);
 
   // Traffic Light API
@@ -283,12 +288,6 @@ class NativeWindow : public base::SupportsUserData,
 
   virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) {}
 
-  // Converts between content bounds and window bounds.
-  virtual gfx::Rect ContentBoundsToWindowBounds(
-      const gfx::Rect& bounds) const = 0;
-  virtual gfx::Rect WindowBoundsToContentBounds(
-      const gfx::Rect& bounds) const = 0;
-
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -320,7 +319,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowRestore();
   void NotifyWindowMove();
   void NotifyWindowWillResize(const gfx::Rect& new_bounds,
-                              const gfx::ResizeEdge& edge,
+                              gfx::ResizeEdge edge,
                               bool* prevent_default);
   void NotifyWindowResize();
   void NotifyWindowResized();
@@ -354,13 +353,12 @@ class NativeWindow : public base::SupportsUserData,
   // Handle fullscreen transitions.
   void HandlePendingFullscreenTransitions();
 
-  enum class FullScreenTransitionState { kEntering, kExiting, kNone };
-
-  void set_fullscreen_transition_state(FullScreenTransitionState state) {
-    fullscreen_transition_state_ = state;
+  constexpr void set_is_transitioning_fullscreen(const bool val) {
+    is_transitioning_fullscreen_ = val;
   }
-  FullScreenTransitionState fullscreen_transition_state() const {
-    return fullscreen_transition_state_;
+
+  [[nodiscard]] constexpr bool is_transitioning_fullscreen() const {
+    return is_transitioning_fullscreen_;
   }
 
   enum class FullScreenTransitionType { kHTML, kNative, kNone };
@@ -400,7 +398,6 @@ class NativeWindow : public base::SupportsUserData,
   }
 
   bool has_frame() const { return has_frame_; }
-  void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
 
   bool has_client_frame() const { return has_client_frame_; }
   bool transparent() const { return transparent_; }
@@ -433,9 +430,19 @@ class NativeWindow : public base::SupportsUserData,
   void UpdateBackgroundThrottlingState();
 
  protected:
-  friend class api::BrowserView;
+  constexpr void set_has_frame(const bool val) { has_frame_ = val; }
+
+  [[nodiscard]] constexpr bool is_closed() const { return is_closed_; }
 
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
+
+  virtual void OnTitleChanged() {}
+
+  // Converts between content bounds and window bounds.
+  virtual gfx::Rect ContentBoundsToWindowBounds(
+      const gfx::Rect& bounds) const = 0;
+  virtual gfx::Rect WindowBoundsToContentBounds(
+      const gfx::Rect& bounds) const = 0;
 
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;
@@ -444,12 +451,14 @@ class NativeWindow : public base::SupportsUserData,
 
   void set_content_view(views::View* view) { content_view_ = view; }
 
+  virtual void CloseImpl() = 0;
+  virtual void CloseImmediatelyImpl() = 0;
+
+  static inline constexpr base::cstring_view kNativeWindowKey =
+      "__ELECTRON_NATIVE_WINDOW__";
+
   // The boolean parsing of the "titleBarOverlay" option
   bool titlebar_overlay_ = false;
-
-  // The custom height parsed from the "height" option in a Object
-  // "titleBarOverlay"
-  int titlebar_overlay_height_ = 0;
 
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
@@ -462,8 +471,6 @@ class NativeWindow : public base::SupportsUserData,
   std::optional<extensions::SizeConstraints> content_size_constraints_;
 
   std::queue<bool> pending_transitions_;
-  FullScreenTransitionState fullscreen_transition_state_ =
-      FullScreenTransitionState::kNone;
   FullScreenTransitionType fullscreen_transition_type_ =
       FullScreenTransitionType::kNone;
 
@@ -477,6 +484,10 @@ class NativeWindow : public base::SupportsUserData,
 
   // The content view, weak ref.
   raw_ptr<views::View> content_view_ = nullptr;
+
+  // The custom height parsed from the "height" option in a Object
+  // "titleBarOverlay"
+  int titlebar_overlay_height_ = 0;
 
   // Whether window has standard frame.
   bool has_frame_ = true;
@@ -510,6 +521,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // Is this a modal window.
   bool is_modal_ = false;
+
+  bool is_transitioning_fullscreen_ = false;
 
   std::list<DraggableRegionProvider*> draggable_region_providers_;
 

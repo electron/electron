@@ -19,6 +19,7 @@
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/features.h"
 #include "third_party/blink/public/common/features.h"
+#include "ui/accessibility/ax_features.mojom-features.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "device/base/features.h"  // nogncheck
@@ -49,7 +50,10 @@ void InitializeFeatureList() {
   // Can be reenabled when our site instance policy is aligned with chromium
   // when node integration is enabled.
   disable_features +=
-      std::string(",") + features::kSpareRendererForSitePerProcess.name;
+      std::string(",") + features::kSpareRendererForSitePerProcess.name +
+      // See https://chromium-review.googlesource.com/c/chromium/src/+/6487926
+      // this breaks PDFs locally as we don't have GLIC infra enabled.
+      std::string(",") + ax::mojom::features::kScreenAIOCREnabled.name;
 
 #if BUILDFLAG(IS_WIN)
   disable_features +=
