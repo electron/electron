@@ -16,10 +16,10 @@ a bus error killing node.
 see https://github.com/google/brotli/issues/1159
 
 diff --git a/src/node_zlib.cc b/src/node_zlib.cc
-index 90307cd4984ae5aa55386f2980ad9cd540322dfd..6f12b5034d1a98da50c064cf2cfdf12fc88137eb 100644
+index 0b7c47b326c7c5480086228b3d40d54c260ef16a..7e6b38ecd1aa360012c0d73e94412530a48cb8c3 100644
 --- a/src/node_zlib.cc
 +++ b/src/node_zlib.cc
-@@ -493,7 +493,8 @@ class CompressionStream : public AsyncWrap, public ThreadPoolWork {
+@@ -608,7 +608,8 @@ class CompressionStream : public AsyncWrap, public ThreadPoolWork {
    }
  
    static void* AllocForBrotli(void* data, size_t size) {
@@ -29,7 +29,7 @@ index 90307cd4984ae5aa55386f2980ad9cd540322dfd..6f12b5034d1a98da50c064cf2cfdf12f
      CompressionStream* ctx = static_cast<CompressionStream*>(data);
      char* memory = UncheckedMalloc(size);
      if (memory == nullptr) [[unlikely]] {
-@@ -502,7 +503,7 @@ class CompressionStream : public AsyncWrap, public ThreadPoolWork {
+@@ -617,7 +618,7 @@ class CompressionStream : public AsyncWrap, public ThreadPoolWork {
      *reinterpret_cast<size_t*>(memory) = size;
      ctx->unreported_allocations_.fetch_add(size,
                                             std::memory_order_relaxed);
@@ -38,7 +38,7 @@ index 90307cd4984ae5aa55386f2980ad9cd540322dfd..6f12b5034d1a98da50c064cf2cfdf12f
    }
  
    static void FreeForZlib(void* data, void* pointer) {
-@@ -510,7 +511,8 @@ class CompressionStream : public AsyncWrap, public ThreadPoolWork {
+@@ -625,7 +626,8 @@ class CompressionStream : public AsyncWrap, public ThreadPoolWork {
        return;
      }
      CompressionStream* ctx = static_cast<CompressionStream*>(data);
