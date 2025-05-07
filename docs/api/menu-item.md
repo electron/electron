@@ -19,7 +19,7 @@ See [`Menu`](menu.md) for examples.
   * `type` string (optional) - Can be `normal`, `separator`, `submenu`, `checkbox` or
     `radio`.
   * `label` string (optional)
-  * `sublabel` string (optional)
+  * `sublabel` string (optional) _macOS_ - Available in macOS >= 14.4
   * `toolTip` string (optional) _macOS_ - Hover text for this menu item.
   * `accelerator` [Accelerator](accelerator.md) (optional)
   * `icon` ([NativeImage](native-image.md) | string) (optional)
