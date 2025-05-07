@@ -1,0 +1,475 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Thu, 20 Feb 2025 17:19:15 -0800
+Subject: Add Linux window controls menu
+
+This enables Linux users to access more window actions via the menu,
+eg: "take screenshot", "hide", "always on top", "always on visible
+workspace", "move to workspace", etc.
+
+* Implement platform-specific behavior:
+  * Wayland: Call xdg_toplevel::show_window_menu from xdg_shell.
+  * X11: Send a _GTK_SHOW_WINDOW_MENU client message to the WM.
+* Only show the menu if (_GTK_SHOW_WINDOW_MENU is advertised by the
+  WM, or if xdg_shell is supported on Wayland), and system titlebars
+  are not enabled (because right-clicking the system titlebar already
+  shows the system menu).
+
+NO_IFTTT=The added command isn't gated on fenced frame network status
+
+Change-Id: I6f8d224983931808a8ea87c8411eacdf837e2fbb
+Fixed: 41424652
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6231191
+Reviewed-by: Nick Yamane <nickdiego@igalia.com>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Robert Liao <robliao@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1422887}
+
+diff --git a/ui/gfx/x/atom_cache.cc b/ui/gfx/x/atom_cache.cc
+index 3028fba0d46fe07efd6138b29b4ecc612c91e5ce..8a26aba4f8da4b5f3512132f9876a80e9df5ca59 100644
+--- a/ui/gfx/x/atom_cache.cc
++++ b/ui/gfx/x/atom_cache.cc
+@@ -105,6 +105,7 @@ constexpr auto kAtomsToCache = std::to_array<const char* const>({
+     "_CHROMIUM_DRAG_RECEIVER",
+     "_GTK_FRAME_EXTENTS",
+     "_GTK_HIDE_TITLEBAR_WHEN_MAXIMIZED",
++    "_GTK_SHOW_WINDOW_MENU",
+     "_GTK_THEME_VARIANT",
+     "_ICC_PROFILE",
+     "_MOTIF_WM_HINTS",
+diff --git a/ui/ozone/platform/wayland/host/shell_toplevel_wrapper.h b/ui/ozone/platform/wayland/host/shell_toplevel_wrapper.h
+index 1c2f0f5c929f32c8a14e2acea8245384749a9762..a6de8333fec78f1d2b1ae73aa0d44232f2e8657f 100644
+--- a/ui/ozone/platform/wayland/host/shell_toplevel_wrapper.h
++++ b/ui/ozone/platform/wayland/host/shell_toplevel_wrapper.h
+@@ -106,6 +106,10 @@ class ShellToplevelWrapper {
+   // .desktop file and use the icon set there.
+   virtual void SetAppId(const std::string& app_id) = 0;
+ 
++  // Requests the compositor to show a menu with window controls.
++  virtual void ShowWindowMenu(WaylandConnection* connection,
++                              const gfx::Point& point) = 0;
++
+   // In case of kClientSide or kServerSide, this function sends a request to the
+   // wayland compositor to update the decoration mode for a surface associated
+   // with this top level window.
+diff --git a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+index 19aa42165ab02f5746ee564601e61c19132ef51e..0d549a0e5cf6983ebd72b6c4ab5cfeb74217390f 100644
+--- a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
++++ b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+@@ -263,6 +263,14 @@ void WaylandToplevelWindow::Restore() {
+   SetWindowState(PlatformWindowState::kNormal, display::kInvalidDisplayId);
+ }
+ 
++void WaylandToplevelWindow::ShowWindowControlsMenu(const gfx::Point& point) {
++  if (shell_toplevel_) {
++    shell_toplevel_->ShowWindowMenu(
++        connection(),
++        gfx::ScaleToRoundedPoint(point, applied_state().ui_scale));
++  }
++}
++
+ void WaylandToplevelWindow::ActivateWithToken(std::string token) {
+   DCHECK(connection()->xdg_activation());
+   // xdg-activation implementation doesn't seem to interact well with dnd in
+diff --git a/ui/ozone/platform/wayland/host/wayland_toplevel_window.h b/ui/ozone/platform/wayland/host/wayland_toplevel_window.h
+index e088bb9e1dfe83118a6c1d5790bf2e6d7c580578..111048dff0ddf72faa5f4347f3fd64f161e3479c 100644
+--- a/ui/ozone/platform/wayland/host/wayland_toplevel_window.h
++++ b/ui/ozone/platform/wayland/host/wayland_toplevel_window.h
+@@ -91,6 +91,7 @@ class WaylandToplevelWindow : public WaylandWindow,
+   void Maximize() override;
+   void Minimize() override;
+   void Restore() override;
++  void ShowWindowControlsMenu(const gfx::Point& point) override;
+   void Activate() override;
+   void SetWindowIcons(const gfx::ImageSkia& window_icon,
+                       const gfx::ImageSkia& app_icon) override;
+diff --git a/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.cc b/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.cc
+index db90fb7bcbeb9faa0d974a616e65e262cd149942..a856c45da7b235c501030486ebf2bd1241ec125c 100644
+--- a/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.cc
++++ b/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.cc
+@@ -195,6 +195,16 @@ void XDGToplevelWrapperImpl::SetAppId(const std::string& app_id) {
+   xdg_toplevel_set_app_id(xdg_toplevel_.get(), app_id.c_str());
+ }
+ 
++void XDGToplevelWrapperImpl::ShowWindowMenu(WaylandConnection* connection,
++                                            const gfx::Point& point) {
++  DCHECK(xdg_toplevel_);
++  if (auto serial = GetSerialForMoveResize(connection)) {
++    xdg_toplevel_show_window_menu(xdg_toplevel_.get(),
++                                  connection_->seat()->wl_object(),
++                                  serial->value, point.x(), point.y());
++  }
++}
++
+ void XDGToplevelWrapperImpl::SetDecoration(DecorationMode decoration) {
+   SetTopLevelDecorationMode(decoration);
+ }
+diff --git a/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.h b/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.h
+index 55dfb57f5d8c5e737fda0c31316cc136905c4570..599d1cf524d8ef7c01e33f08d819bd64f13c96c2 100644
+--- a/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.h
++++ b/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.h
+@@ -42,6 +42,8 @@ class XDGToplevelWrapperImpl : public ShellToplevelWrapper {
+   void SetMinSize(int32_t width, int32_t height) override;
+   void SetMaxSize(int32_t width, int32_t height) override;
+   void SetAppId(const std::string& app_id) override;
++  void ShowWindowMenu(WaylandConnection* connection,
++                      const gfx::Point& point) override;
+   void SetDecoration(DecorationMode decoration) override;
+   void SetSystemModal(bool modal) override;
+   void SetIcon(const gfx::ImageSkia& icon) override;
+diff --git a/ui/ozone/platform/wayland/ozone_platform_wayland.cc b/ui/ozone/platform/wayland/ozone_platform_wayland.cc
+index afc54743e93a85b71071abae46c6314b6d60ab9c..232b4db5d9fe5eadee9696795eb9ff14c151e2a5 100644
+--- a/ui/ozone/platform/wayland/ozone_platform_wayland.cc
++++ b/ui/ozone/platform/wayland/ozone_platform_wayland.cc
+@@ -383,6 +383,7 @@ class OzonePlatformWayland : public OzonePlatform,
+           (connection_->xdg_decoration_manager_v1() != nullptr &&
+            override_supports_ssd_for_test == SupportsForTest::kNotSet) ||
+           override_supports_ssd_for_test == SupportsForTest::kYes;
++      properties.supports_server_window_menus = connection_->shell();
+       properties.supports_overlays =
+           connection_->ShouldUseOverlayDelegation() &&
+           connection_->viewporter();
+diff --git a/ui/ozone/platform/x11/ozone_platform_x11.cc b/ui/ozone/platform/x11/ozone_platform_x11.cc
+index d5e5f81b8c6ccae1822e8192b107eeff2d3a6dd9..9a10db499bd0a48feb1c96f87e71af4ffb114d75 100644
+--- a/ui/ozone/platform/x11/ozone_platform_x11.cc
++++ b/ui/ozone/platform/x11/ozone_platform_x11.cc
+@@ -30,6 +30,7 @@
+ #include "ui/gfx/linux/gpu_memory_buffer_support_x11.h"
+ #include "ui/gfx/native_widget_types.h"
+ #include "ui/gfx/switches.h"
++#include "ui/gfx/x/atom_cache.h"
+ #include "ui/gfx/x/visual_manager.h"
+ #include "ui/linux/linux_ui_delegate.h"
+ #include "ui/ozone/common/stub_overlay_manager.h"
+@@ -216,6 +217,9 @@ class OzonePlatformX11 : public OzonePlatform,
+     }
+     properties.supports_subwindows_as_accelerated_widgets = true;
+     properties.supports_system_tray_windowing = true;
++    properties.supports_server_window_menus =
++        x11::Connection::Get()->WmSupportsHint(
++            x11::GetAtom("_GTK_SHOW_WINDOW_MENU"));
+ 
+     return properties;
+   }
+diff --git a/ui/ozone/platform/x11/x11_window.cc b/ui/ozone/platform/x11/x11_window.cc
+index 7d00ff55616fd01126268581fa0e2aba636226a5..cf012a4eb8f9ab6400a21db89b94631e1299c3f2 100644
+--- a/ui/ozone/platform/x11/x11_window.cc
++++ b/ui/ozone/platform/x11/x11_window.cc
+@@ -771,6 +771,13 @@ void X11Window::Restore() {
+   }
+ }
+ 
++void X11Window::ShowWindowControlsMenu(const gfx::Point& point) {
++  SendClientMessage(xwindow_, x_root_window_,
++                    x11::GetAtom("_GTK_SHOW_WINDOW_MENU"),
++                    {/*device_id=*/0, base::bit_cast<uint32_t>(point.x()),
++                     base::bit_cast<uint32_t>(point.y()), 0, 0});
++}
++
+ PlatformWindowState X11Window::GetPlatformWindowState() const {
+   return state_;
+ }
+diff --git a/ui/ozone/platform/x11/x11_window.h b/ui/ozone/platform/x11/x11_window.h
+index 1857ee0f82b9b82403d20cb37a97f5e89515c5a2..14a78c3b61cd822bff981da95e2e1f41b2a75fcb 100644
+--- a/ui/ozone/platform/x11/x11_window.h
++++ b/ui/ozone/platform/x11/x11_window.h
+@@ -94,6 +94,7 @@ class X11Window : public PlatformWindow,
+   void Maximize() override;
+   void Minimize() override;
+   void Restore() override;
++  void ShowWindowControlsMenu(const gfx::Point& point) override;
+   PlatformWindowState GetPlatformWindowState() const override;
+   void Activate() override;
+   void Deactivate() override;
+diff --git a/ui/ozone/public/ozone_platform.h b/ui/ozone/public/ozone_platform.h
+index 8ca1b1451b5bea0100a723e327762d16622c76fe..0d3ad44225274a274102a0c741ad7471915ec071 100644
+--- a/ui/ozone/public/ozone_platform.h
++++ b/ui/ozone/public/ozone_platform.h
+@@ -175,9 +175,13 @@ class COMPONENT_EXPORT(OZONE) OzonePlatform {
+     // via overlays. If overlays are not supported the promotion and validation
+     // logic can be skipped.
+     bool supports_overlays = false;
++
+     // Indicates whether the platform supports server-side window decorations.
+     bool supports_server_side_window_decorations = true;
+ 
++    // Indicates whether the platform supports window controls menus.
++    bool supports_server_window_menus = false;
++
+     // For platforms that have optional support for server-side decorations,
+     // this parameter allows setting the desired state in tests.  The platform
+     // must have the appropriate logic in its GetPlatformRuntimeProperties()
+diff --git a/ui/platform_window/platform_window.cc b/ui/platform_window/platform_window.cc
+index 3f224ec0b48442506fc3c9b19ae6c5f38932e344..8b5964d3c9993d9b39ba72d8ecc72b17919fe6ba 100644
+--- a/ui/platform_window/platform_window.cc
++++ b/ui/platform_window/platform_window.cc
+@@ -62,6 +62,8 @@ void PlatformWindow::SetVideoCapture() {}
+ 
+ void PlatformWindow::ReleaseVideoCapture() {}
+ 
++void PlatformWindow::ShowWindowControlsMenu(const gfx::Point& point) {}
++
+ void PlatformWindow::SetOpaqueRegion(
+     std::optional<std::vector<gfx::Rect>> region_px) {}
+ 
+diff --git a/ui/platform_window/platform_window.h b/ui/platform_window/platform_window.h
+index 30e1f81d29507a906de8cc8dc195d51d208b1946..aa030af4844f7743777fd3fb6c898e0005af3276 100644
+--- a/ui/platform_window/platform_window.h
++++ b/ui/platform_window/platform_window.h
+@@ -86,6 +86,7 @@ class COMPONENT_EXPORT(PLATFORM_WINDOW) PlatformWindow
+   virtual void Maximize() = 0;
+   virtual void Minimize() = 0;
+   virtual void Restore() = 0;
++  virtual void ShowWindowControlsMenu(const gfx::Point& point);
+   virtual PlatformWindowState GetPlatformWindowState() const = 0;
+ 
+   virtual void Activate() = 0;
+diff --git a/ui/views/widget/desktop_aura/desktop_native_widget_aura.cc b/ui/views/widget/desktop_aura/desktop_native_widget_aura.cc
+index 06b929f5afbf00fdd1bc8c84328ff36fb459143f..0ad582b8f33926dc8075b4ba9ed487ddad154653 100644
+--- a/ui/views/widget/desktop_aura/desktop_native_widget_aura.cc
++++ b/ui/views/widget/desktop_aura/desktop_native_widget_aura.cc
+@@ -1052,6 +1052,12 @@ void DesktopNativeWidgetAura::Restore() {
+   }
+ }
+ 
++void DesktopNativeWidgetAura::ShowWindowControlsMenu(const gfx::Point& point) {
++  if (desktop_window_tree_host_) {
++    desktop_window_tree_host_->ShowWindowControlsMenu(point);
++  }
++}
++
+ void DesktopNativeWidgetAura::SetFullscreen(bool fullscreen,
+                                             int64_t target_display_id) {
+   if (desktop_window_tree_host_) {
+diff --git a/ui/views/widget/desktop_aura/desktop_native_widget_aura.h b/ui/views/widget/desktop_aura/desktop_native_widget_aura.h
+index 2ac64acf1152f004ec57a1c6057730cd6ab25819..378ca2a4914f5c14845c01c2114d27ce3e18daf7 100644
+--- a/ui/views/widget/desktop_aura/desktop_native_widget_aura.h
++++ b/ui/views/widget/desktop_aura/desktop_native_widget_aura.h
+@@ -180,6 +180,7 @@ class VIEWS_EXPORT DesktopNativeWidgetAura
+   bool IsMaximized() const override;
+   bool IsMinimized() const override;
+   void Restore() override;
++  void ShowWindowControlsMenu(const gfx::Point& point) override;
+   void SetFullscreen(bool fullscreen, int64_t target_display_id) override;
+   bool IsFullscreen() const override;
+   void SetCanAppearInExistingFullscreenSpaces(
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host.cc
+index abd40f8ab82a3e94a6c7241d946d61631c3529cd..6543ec901da65a78a4d174a32c2166b544ad8c55 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host.cc
+@@ -22,6 +22,8 @@ void DesktopWindowTreeHost::UpdateWindowShapeIfNeeded(
+ 
+ void DesktopWindowTreeHost::PaintAsActiveChanged() {}
+ 
++void DesktopWindowTreeHost::ShowWindowControlsMenu(const gfx::Point& point) {}
++
+ std::unique_ptr<aura::client::ScreenPositionClient>
+ DesktopWindowTreeHost::CreateScreenPositionClient() {
+   return std::make_unique<DesktopScreenPositionClient>(
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host.h b/ui/views/widget/desktop_aura/desktop_window_tree_host.h
+index 256b3ca3b25051cd8ab5eba9e919c7c0dca632f5..4a2279af3cfb7e7a453556744df74c530a456a51 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host.h
+@@ -139,6 +139,7 @@ class VIEWS_EXPORT DesktopWindowTreeHost {
+   virtual void Maximize() = 0;
+   virtual void Minimize() = 0;
+   virtual void Restore() = 0;
++  virtual void ShowWindowControlsMenu(const gfx::Point& point);
+   virtual bool IsMaximized() const = 0;
+   virtual bool IsMinimized() const = 0;
+ 
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
+index 0ec0badc19066a80448d16eefb0edce89cad7193..e19eb0360e4caab709187a7ee58a6af8841a8dc0 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
+@@ -629,6 +629,11 @@ void DesktopWindowTreeHostPlatform::Restore() {
+   Show(ui::mojom::WindowShowState::kNormal, gfx::Rect());
+ }
+ 
++void DesktopWindowTreeHostPlatform::ShowWindowControlsMenu(
++    const gfx::Point& point) {
++  platform_window()->ShowWindowControlsMenu(point);
++}
++
+ bool DesktopWindowTreeHostPlatform::IsMaximized() const {
+   return platform_window()->GetPlatformWindowState() ==
+          ui::PlatformWindowState::kMaximized;
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h
+index 5260332d839100e6398ebdbdfc365ad7520ba1b2..8595482499067fcf1ce7b9a65faac0eb407a77d0 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h
+@@ -100,6 +100,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostPlatform
+   void Maximize() override;
+   void Minimize() override;
+   void Restore() override;
++  void ShowWindowControlsMenu(const gfx::Point& point) override;
+   bool IsMaximized() const override;
+   bool IsMinimized() const override;
+   bool HasCapture() const override;
+diff --git a/ui/views/widget/desktop_aura/window_event_filter_linux.cc b/ui/views/widget/desktop_aura/window_event_filter_linux.cc
+index 5c0d20c20316f098daf4166b1fe615958425b2d1..fd057baf0b6bda6c412b7f22543240f5470d52ed 100644
+--- a/ui/views/widget/desktop_aura/window_event_filter_linux.cc
++++ b/ui/views/widget/desktop_aura/window_event_filter_linux.cc
+@@ -19,6 +19,7 @@
+ #include "ui/events/event.h"
+ #include "ui/events/event_utils.h"
+ #include "ui/linux/linux_ui.h"
++#include "ui/ozone/public/ozone_platform.h"
+ #include "ui/platform_window/wm/wm_move_resize_handler.h"
+ #include "ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h"
+ #include "ui/views/widget/native_widget_aura.h"
+@@ -60,7 +61,7 @@ bool WindowEventFilterLinux::HandleMouseEventWithHitTest(
+     int hit_test,
+     ui::MouseEvent* event) {
+   int previous_click_component = HTNOWHERE;
+-  if (event->IsLeftMouseButton()) {
++  if (event->changed_button_flags() & ui::EF_LEFT_MOUSE_BUTTON) {
+     previous_click_component = click_component_;
+     click_component_ = hit_test;
+   }
+@@ -70,9 +71,22 @@ bool WindowEventFilterLinux::HandleMouseEventWithHitTest(
+     return true;
+   }
+ 
+-  if (hit_test == HTMAXBUTTON) {
+-    OnClickedMaximizeButton(event);
+-    return true;
++  if (event->changed_button_flags() & ui::EF_RIGHT_MOUSE_BUTTON) {
++    switch (hit_test) {
++      case HTMINBUTTON:
++      case HTMAXBUTTON:
++      case HTCLOSE:
++        if (ui::OzonePlatform::GetInstance()
++                ->GetPlatformRuntimeProperties()
++                .supports_server_window_menus) {
++          desktop_window_tree_host_->ShowWindowControlsMenu(
++              display::Screen::GetScreen()->GetCursorScreenPoint());
++          return true;
++        }
++        break;
++      default:
++        break;
++    }
+   }
+ 
+   return false;
+@@ -83,13 +97,13 @@ void WindowEventFilterLinux::OnClickedCaption(ui::MouseEvent* event,
+   ui::LinuxUi::WindowFrameActionSource action_type;
+   ui::LinuxUi::WindowFrameAction default_action;
+ 
+-  if (event->IsRightMouseButton()) {
++  if (event->changed_button_flags() & ui::EF_RIGHT_MOUSE_BUTTON) {
+     action_type = ui::LinuxUi::WindowFrameActionSource::kRightClick;
+     default_action = ui::LinuxUi::WindowFrameAction::kMenu;
+-  } else if (event->IsMiddleMouseButton()) {
++  } else if (event->changed_button_flags() & ui::EF_MIDDLE_MOUSE_BUTTON) {
+     action_type = ui::LinuxUi::WindowFrameActionSource::kMiddleClick;
+     default_action = ui::LinuxUi::WindowFrameAction::kNone;
+-  } else if (event->IsLeftMouseButton() &&
++  } else if (event->changed_button_flags() & ui::EF_LEFT_MOUSE_BUTTON &&
+              event->flags() & ui::EF_IS_DOUBLE_CLICK) {
+     click_component_ = HTNOWHERE;
+     if (previous_click_component == HTCAPTION) {
+@@ -147,30 +161,6 @@ void WindowEventFilterLinux::OnClickedCaption(ui::MouseEvent* event,
+   }
+ }
+ 
+-void WindowEventFilterLinux::OnClickedMaximizeButton(ui::MouseEvent* event) {
+-  auto* content_window = desktop_window_tree_host_->GetContentWindow();
+-  views::Widget* widget = views::Widget::GetWidgetForNativeView(content_window);
+-  if (!widget) {
+-    return;
+-  }
+-
+-  gfx::Rect display_work_area = display::Screen::GetScreen()
+-                                    ->GetDisplayNearestWindow(content_window)
+-                                    .work_area();
+-  gfx::Rect bounds = widget->GetWindowBoundsInScreen();
+-  if (event->IsMiddleMouseButton()) {
+-    bounds.set_y(display_work_area.y());
+-    bounds.set_height(display_work_area.height());
+-    widget->SetBounds(bounds);
+-    event->StopPropagation();
+-  } else if (event->IsRightMouseButton()) {
+-    bounds.set_x(display_work_area.x());
+-    bounds.set_width(display_work_area.width());
+-    widget->SetBounds(bounds);
+-    event->StopPropagation();
+-  }
+-}
+-
+ void WindowEventFilterLinux::MaybeToggleMaximizedState(aura::Window* window) {
+   if (!(window->GetProperty(aura::client::kResizeBehaviorKey) &
+         aura::client::kResizeBehaviorCanMaximize)) {
+diff --git a/ui/views/widget/desktop_aura/window_event_filter_linux.h b/ui/views/widget/desktop_aura/window_event_filter_linux.h
+index d698d8b1a744ac435e4910ecb1c66717eff6ecc8..3d0509f2b31aa480b078b0d1cc834739a376049c 100644
+--- a/ui/views/widget/desktop_aura/window_event_filter_linux.h
++++ b/ui/views/widget/desktop_aura/window_event_filter_linux.h
+@@ -45,9 +45,6 @@ class VIEWS_EXPORT WindowEventFilterLinux : public ui::EventHandler {
+   // Called when the user clicked the caption area.
+   void OnClickedCaption(ui::MouseEvent* event, int previous_click_component);
+ 
+-  // Called when the user clicked the maximize button.
+-  void OnClickedMaximizeButton(ui::MouseEvent* event);
+-
+   void MaybeToggleMaximizedState(aura::Window* window);
+ 
+   // Dispatches a message to the window manager to tell it to act as if a border
+diff --git a/ui/views/widget/native_widget_private.cc b/ui/views/widget/native_widget_private.cc
+index 5177574ebe7bde6968dcb212b9038269ad3a8924..3f3c1342e0710d1cf1a08b0225efe13dd1827d6c 100644
+--- a/ui/views/widget/native_widget_private.cc
++++ b/ui/views/widget/native_widget_private.cc
+@@ -28,6 +28,8 @@ gfx::Rect NativeWidgetPrivate::ConstrainBoundsToDisplayWorkArea(
+ 
+ void NativeWidgetPrivate::PaintAsActiveChanged() {}
+ 
++void NativeWidgetPrivate::ShowWindowControlsMenu(const gfx::Point& point) {}
++
+ void NativeWidgetPrivate::ShowEmojiPanel() {
+   ui::ShowEmojiPanel();
+ }
+diff --git a/ui/views/widget/native_widget_private.h b/ui/views/widget/native_widget_private.h
+index 6f412161c0742a94b3c139c2bec0dc93872c584b..48d1cd41a9760022d1c0c07cfa504a91f009c79f 100644
+--- a/ui/views/widget/native_widget_private.h
++++ b/ui/views/widget/native_widget_private.h
+@@ -212,6 +212,7 @@ class VIEWS_EXPORT NativeWidgetPrivate : public NativeWidget {
+   virtual bool IsMaximized() const = 0;
+   virtual bool IsMinimized() const = 0;
+   virtual void Restore() = 0;
++  virtual void ShowWindowControlsMenu(const gfx::Point& point);
+   virtual void SetFullscreen(bool fullscreen, int64_t target_display_id) = 0;
+   virtual bool IsFullscreen() const = 0;
+   virtual void SetCanAppearInExistingFullscreenSpaces(
+diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
+index 6853d63ce96bd5e090eb8bdda570c7a56de4876f..7503edc778d590030c1088b83638da0704224fb6 100644
+--- a/ui/views/widget/widget.cc
++++ b/ui/views/widget/widget.cc
+@@ -1141,6 +1141,12 @@ void Widget::Restore() {
+   }
+ }
+ 
++void Widget::ShowWindowControlsMenu(const gfx::Point& point) {
++  if (native_widget_) {
++    native_widget_->ShowWindowControlsMenu(point);
++  }
++}
++
+ bool Widget::IsMaximized() const {
+   return native_widget_ ? native_widget_->IsMaximized() : false;
+ }
+diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
+index 2e76f18cf48303462c7489a01d002a3531695b83..4fa83a96ab9690c77460de1214d8ec21809a76c3 100644
+--- a/ui/views/widget/widget.h
++++ b/ui/views/widget/widget.h
+@@ -933,6 +933,10 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+   void Minimize();
+   void Restore();
+ 
++  // Shows a menu with controls beyond minimize/maximize/restore. Only
++  // implemented on Linux.
++  void ShowWindowControlsMenu(const gfx::Point& point);
++
+   // Whether or not the window is maximized or minimized.
+   virtual bool IsMaximized() const;
+   bool IsMinimized() const;
