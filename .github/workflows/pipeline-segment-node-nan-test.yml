@@ -90,7 +90,7 @@ jobs:
         do
           sleep 60
         done
-  nan-tests-with-libc++:
+  nan-tests-with-libcxx:
     name: Run Nan Tests (libc++)
     runs-on: electron-arc-linux-amd64-4core
     timeout-minutes: 30
