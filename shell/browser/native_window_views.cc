@@ -1846,7 +1846,7 @@ ui::mojom::WindowShowState NativeWindowViews::GetRestoredState() {
   if (IsMaximized()) {
 #if BUILDFLAG(IS_WIN)
     // Restore maximized state for windows that are not translucent.
-    if (!IsTranslucent()) {
+    if (!transparent()) {
       return ui::mojom::WindowShowState::kMaximized;
     }
 #else
