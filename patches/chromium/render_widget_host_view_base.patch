@@ -62,7 +62,7 @@ index faed571e3232545cdba8fc113c039d3432441448..e349711282d623c975501de5fc1a5c9c
    const viz::DisplayHitTestQueryMap& GetDisplayHitTestQuery() const override;
  
 @@ -197,6 +205,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
-   void NotifyContextMenuInsetsObservers(const gfx::Rect&) override {}
+   void ShowInterestInElement(int) override {}
    bool IsHTMLFormPopup() const override;
  
 +  virtual void InitAsGuest(RenderWidgetHostView* parent_host_view,
