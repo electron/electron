@@ -1492,10 +1492,15 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
                               backdrop_type != DWMSBT_AUTO && !has_frame();
 
   const NativeWindowHandle nativeWindowHandle = GetAcceleratedWidget();
+
+  MARGINS m = {0, 0, 0, 0};
   if (is_translucent) {
-    MARGINS m = {-1, -1, -1, -1};
-    DwmExtendFrameIntoClientArea(nativeWindowHandle, &m);
+    // Since Chromium won't update it again internally, we need to update it
+    // manually. See: ui/views/widget/widget_hwnd_utils.cc#157 See:
+    // src/ui/views/win/hwnd_message_handler.cc#1793
+    m = {-1, -1, -1, -1};
   }
+  DwmExtendFrameIntoClientArea(nativeWindowHandle, &m);
 
   HRESULT result =
       DwmSetWindowAttribute(nativeWindowHandle, DWMWA_SYSTEMBACKDROP_TYPE,
@@ -1505,8 +1510,13 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
 
   auto* desktop_window_tree_host =
       static_cast<ElectronDesktopWindowTreeHostWin*>(
-          widget()->GetNativeWindow()->GetHost());
-  desktop_window_tree_host->SetIsTranslucent(is_translucent);
+          GetNativeWindow()->GetHost());
+
+  // Synchronize the internal state; otherwise, the background material may not
+  // work properly.
+  if (desktop_window_tree_host) {
+    desktop_window_tree_host->SetIsTranslucent(is_translucent);
+  }
 
   auto* desktop_native_widget_aura =
       static_cast<ElectronDesktopNativeWidgetAura*>(widget()->native_widget());
@@ -1521,11 +1531,13 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
   }
   result = DwmSetWindowAttribute(nativeWindowHandle, DWMWA_CAPTION_COLOR,
                                  &caption_color, sizeof(caption_color));
-
-  DefWindowProc(nativeWindowHandle, WM_NCACTIVATE, TRUE,
-                is_translucent ? -1 : 0);
   if (FAILED(result))
     LOG(WARNING) << "Failed to set caption color to transparent";
+
+  // Activate the translucent window while avoiding the title bar caused by
+  // thick_frame_
+  DefWindowProc(nativeWindowHandle, WM_NCACTIVATE, TRUE,
+                (is_translucent || !thick_frame_) ? -1 : 0);
 #endif
 }
 

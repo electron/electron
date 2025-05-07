@@ -33,7 +33,7 @@ index 177134d439866db9dbbde657ff358a761ad7f39d..e4f42fcf31a308e3014327ef3e293c82
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 09509acd13511525b0eb7b9afa972e20d8d3601c..0e273da13a895ca119ea8376cdfdd0e425ad4be1 100644
+index 09509acd13511525b0eb7b9afa972e20d8d3601c..f9f90ca97bab1bbba28a36f9dee963f4564a73bf 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -1037,7 +1037,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
@@ -52,3 +52,34 @@ index 09509acd13511525b0eb7b9afa972e20d8d3601c..0e273da13a895ca119ea8376cdfdd0e4
    const bool can_maximize = can_resize && delegate_->CanMaximize();
  
    auto set_style_func = [&style](LONG bit, bool should_set) {
+@@ -1629,11 +1636,16 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
+   // through, but that isn't the case when using Direct3D to draw transparent
+   // windows. So we route translucent windows throught to the delegate to
+   // allow for a custom hit mask.
+-  if (!is_translucent_ && !custom_window_region_.is_valid() &&
++  // patch: fix_resolve_dynamic_background_material_update_issue_on_windows_11
++  // Our translucent windows use the native frame by default, and we don't need
++  // to set a custom region; otherwise, a white title bar appears when the
++  // translucent window is maximized.
++  if (!custom_window_region_.is_valid() &&
+       (IsFrameSystemDrawn() || !delegate_->HasNonClientView())) {
+     if (force) {
+       SetWindowRgn(hwnd(), nullptr, redraw);
+     }
++
+     return;
+   }
+ 
+@@ -2310,6 +2322,12 @@ void HWNDMessageHandler::OnMoving(UINT param, const RECT* new_bounds) {
+ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+                                          WPARAM w_param,
+                                          LPARAM l_param) {
++  // patch: fix_resolve_dynamic_background_material_update_issue_on_windows_11
++  // When in fullscreen or when thick_frame_ is enabled, we don't need to update
++  // it to avoid showing a white title bar.
++  if (IsFullscreen() || !(GetWindowLong(hwnd(), GWL_STYLE) & WS_THICKFRAME)) {
++    return 0;
++  }
+   // Per MSDN, w_param is either TRUE or FALSE. However, MSDN also hints that:
+   // "If the window is minimized when this message is received, the application
+   // should pass the message to the DefWindowProc function."
