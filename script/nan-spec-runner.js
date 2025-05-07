@@ -39,9 +39,6 @@ async function main () {
     npm_config_yes: 'true'
   };
 
-  let cc = process.env.CC ?? '';
-  let cxx = process.env.CXX ?? '';
-  let ld = process.env.LD ?? '';
   const cxxflags = [
     '-std=c++20',
     '-Wno-trigraphs',
@@ -54,9 +51,11 @@ async function main () {
 
   if (useLibcxx) {
     const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
-    cc = path.resolve(clangDir, 'clang');
-    cxx = path.resolve(clangDir, 'clang++');
-    ld = path.resolve(clangDir, 'lld');
+    if (process.platform !== 'win32') {
+      env.CC = path.resolve(clangDir, 'clang');
+      env.CXX = path.resolve(clangDir, 'clang++');
+      env.LD = path.resolve(clangDir, 'lld');
+    }
 
     const platformFlags = [];
     if (process.platform === 'darwin') {
@@ -102,9 +101,6 @@ async function main () {
   }
 
   if (process.platform !== 'win32') {
-    env.CC = cc;
-    env.CXX = cxx;
-    env.LD = ld;
     env.CFLAGS = cxxflags.join(' ');
     env.CXXFLAGS = cxxflags.join(' ');
     env.LDFLAGS = ldflags.join(' ');
