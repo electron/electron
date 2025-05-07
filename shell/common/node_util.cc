@@ -130,6 +130,16 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
   return env;
 }
 
+ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)
+    : microtask_queue_(queue), original_policy_(queue->microtasks_policy()) {
+  DCHECK_EQ(microtask_queue_->GetMicrotasksScopeDepth(), 0);
+  microtask_queue_->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
+}
+
+ExplicitMicrotasksScope::~ExplicitMicrotasksScope() {
+  microtask_queue_->set_microtasks_policy(original_policy_);
+}
+
 }  // namespace electron::util
 
 namespace electron::Buffer {
