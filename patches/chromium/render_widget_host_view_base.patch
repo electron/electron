@@ -24,7 +24,7 @@ index bb7475f1f8be4038c77d2dc68b09a7ac2338b160..c35ef5290ef1f812c5e7ff31d71ae066
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index faed571e3232545cdba8fc113c039d3432441448..e349711282d623c975501de5fc1a5c9c7309001f 100644
+index 5627ee381a99c49760bbaa6e5e3476d8b4bc8cb1..230e059ee11ed64a1694232dad791fbb5644b578 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -30,6 +30,8 @@
@@ -61,7 +61,7 @@ index faed571e3232545cdba8fc113c039d3432441448..e349711282d623c975501de5fc1a5c9c
    void OnAutoscrollStart() override;
    const viz::DisplayHitTestQueryMap& GetDisplayHitTestQuery() const override;
  
-@@ -197,6 +205,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -198,6 +206,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    void ShowInterestInElement(int) override {}
    bool IsHTMLFormPopup() const override;
  

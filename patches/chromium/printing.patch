@@ -666,7 +666,7 @@ index 6809c4576c71bc1e1a6ad4e0a37707272a9a10f4..3aad10424a6a31dab2ca393d00149ec6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 09eec30627132cf715380518643cf245b10b4bf8..a1b0bd1e46c8608ad0e3a0be8b882049514788e9 100644
+index 774392650ad07ee56cb931db7d1a46eaedb1eaa1..d42afb1a744113af660aadc832c71244b8918090 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -52,6 +52,7 @@
@@ -677,7 +677,7 @@ index 09eec30627132cf715380518643cf245b10b4bf8..a1b0bd1e46c8608ad0e3a0be8b882049
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1236,14 +1237,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1235,14 +1236,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -694,7 +694,7 @@ index 09eec30627132cf715380518643cf245b10b4bf8..a1b0bd1e46c8608ad0e3a0be8b882049
    if (!weak_this) {
      return;
    }
-@@ -1274,12 +1275,14 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1273,12 +1274,14 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -712,7 +712,7 @@ index 09eec30627132cf715380518643cf245b10b4bf8..a1b0bd1e46c8608ad0e3a0be8b882049
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint) {
      return;
-@@ -1296,9 +1299,10 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
+@@ -1295,9 +1298,10 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
  
      is_loading_ = frame->WillPrintSoon();
      if (is_loading_) {
@@ -726,7 +726,7 @@ index 09eec30627132cf715380518643cf245b10b4bf8..a1b0bd1e46c8608ad0e3a0be8b882049
        SetupOnStopLoadingTimeout();
        return;
      }
-@@ -1308,7 +1312,7 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
+@@ -1307,7 +1311,7 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -735,7 +735,7 @@ index 09eec30627132cf715380518643cf245b10b4bf8..a1b0bd1e46c8608ad0e3a0be8b882049
  
    if (render_frame_gone_) {
      return;
-@@ -1464,6 +1468,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1463,6 +1467,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -744,7 +744,7 @@ index 09eec30627132cf715380518643cf245b10b4bf8..a1b0bd1e46c8608ad0e3a0be8b882049
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS)
-@@ -2076,17 +2082,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2075,17 +2081,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -767,7 +767,7 @@ index 09eec30627132cf715380518643cf245b10b4bf8..a1b0bd1e46c8608ad0e3a0be8b882049
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2107,8 +2115,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2106,8 +2114,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -784,7 +784,7 @@ index 09eec30627132cf715380518643cf245b10b4bf8..a1b0bd1e46c8608ad0e3a0be8b882049
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2376,29 +2391,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2375,29 +2390,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
