@@ -781,14 +781,6 @@ const views::Widget* NativeWindow::GetWidget() const {
   return widget();
 }
 
-std::u16string NativeWindow::GetAccessibleWindowTitle() const {
-  if (accessible_title_.empty()) {
-    return views::WidgetDelegate::GetAccessibleWindowTitle();
-  }
-
-  return accessible_title_;
-}
-
 std::string NativeWindow::GetTitle() const {
   return base::UTF16ToUTF8(WidgetDelegate::GetWindowTitle());
 }
@@ -802,11 +794,11 @@ void NativeWindow::SetTitle(const std::string_view title) {
 }
 
 void NativeWindow::SetAccessibleTitle(const std::string& title) {
-  accessible_title_ = base::UTF8ToUTF16(title);
+  WidgetDelegate::SetAccessibleTitle(base::UTF8ToUTF16(title));
 }
 
 std::string NativeWindow::GetAccessibleTitle() {
-  return base::UTF16ToUTF8(accessible_title_);
+  return base::UTF16ToUTF8(GetAccessibleWindowTitle());
 }
 
 void NativeWindow::HandlePendingFullscreenTransitions() {

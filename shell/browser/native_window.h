@@ -447,7 +447,6 @@ class NativeWindow : public base::SupportsUserData,
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
-  std::u16string GetAccessibleWindowTitle() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
 
@@ -531,9 +530,6 @@ class NativeWindow : public base::SupportsUserData,
 
   absl::flat_hash_set<BackgroundThrottlingSource*>
       background_throttling_sources_;
-
-  // Accessible title.
-  std::u16string accessible_title_;
 
   std::string vibrancy_;
   std::string background_material_;
