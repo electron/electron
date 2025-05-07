@@ -1,5 +1,6 @@
 // eslint-disable-next-line camelcase
 const electron_1 = require('electron');
+const vm = require('node:vm');
 
 // eslint-disable-next-line camelcase
 const { app } = electron_1;
@@ -21,7 +22,10 @@ app.whenReady().then(() => {
       const js = Buffer.concat(chunks).toString('utf8');
       (async () => {
         try {
-          const result = await Promise.resolve(eval(js)); // eslint-disable-line no-eval
+          const vm = require('node:vm');
+          const sandbox = {};
+          vm.createContext(sandbox); // Create a secure context
+          const result = await Promise.resolve(vm.runInContext(js, sandbox));
           res.end(v8.serialize({ result }));
         } catch (e) {
           res.end(v8.serialize({ error: e.stack }));
