@@ -398,8 +398,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     }
   }
 
-  bool enabled = true;
-  settings.Get("enabled", &enabled);
+  const bool enabled = settings.ValueOrDefault("enabled", true);
   [button setEnabled:enabled];
 }
 
