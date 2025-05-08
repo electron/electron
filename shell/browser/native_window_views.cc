@@ -1534,8 +1534,7 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
   if (FAILED(result))
     LOG(WARNING) << "Failed to set caption color to transparent";
 
-  // Activate the translucent window while avoiding the title bar caused by
-  // thick_frame_
+  // Activate the translucent window
   DefWindowProc(nativeWindowHandle, WM_NCACTIVATE, TRUE, has_frame() ? 0 : -1);
 #endif
 }
