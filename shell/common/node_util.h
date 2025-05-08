@@ -10,6 +10,8 @@
 #include <vector>
 
 #include "base/containers/span.h"
+#include "base/memory/raw_ptr.h"
+#include "v8-microtask-queue.h"
 #include "v8/include/v8-forward.h"
 
 namespace node {
@@ -62,6 +64,27 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
                                      const std::vector<std::string>& exec_args,
                                      node::EnvironmentFlags::Flags env_flags,
                                      std::string_view process_type = "");
+
+// A scope that temporarily changes the microtask policy to explicit. Use this
+// anywhere that can trigger Node.js or uv_run().
+//
+// Node.js expects `kExplicit` microtasks policy and will run microtasks
+// checkpoints after every call into JavaScript. Since we use a different
+// policy in the renderer, this scope temporarily changes the policy to
+// `kExplicit` while the scope is active, then restores the original policy
+// when it's destroyed.
+class ExplicitMicrotasksScope {
+ public:
+  explicit ExplicitMicrotasksScope(v8::MicrotaskQueue* queue);
+  ~ExplicitMicrotasksScope();
+
+  ExplicitMicrotasksScope(const ExplicitMicrotasksScope&) = delete;
+  ExplicitMicrotasksScope& operator=(const ExplicitMicrotasksScope&) = delete;
+
+ private:
+  base::raw_ptr<v8::MicrotaskQueue> microtask_queue_;
+  v8::MicrotasksPolicy original_policy_;
+};
 
 }  // namespace electron::util
 
