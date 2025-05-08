@@ -401,8 +401,7 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
 
 #if defined(USE_AURA)
   // Matches the behavior of ui/events/blink/web_input_event_traits.cc:
-  const bool can_scroll = dict.ValueOrDefault("canScroll", true);
-  if (!can_scroll) {
+  if (!dict.ValueOrDefault("canScroll", true)) {
     out->delta_units = ui::ScrollGranularity::kScrollByPage;
     out->SetModifiers(out->GetModifiers() &
                       ~blink::WebInputEvent::Modifiers::kControlKey);
