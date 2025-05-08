@@ -3022,17 +3022,16 @@ void WebContents::Print(gin::Arguments* args) {
     settings.Set(printing::kSettingMarginsType, static_cast<int>(margin_type));
 
     if (margin_type == printing::mojom::MarginType::kCustomMargins) {
-      const int top = margins.ValueOrDefault("top", 0);
-      const int bottom = margins.ValueOrDefault("bottom", 0);
-      const int left = margins.ValueOrDefault("left", 0);
-      const int right = margins.ValueOrDefault("right", 0);
-
       settings.Set(printing::kSettingMarginsCustom,
                    base::Value::Dict{}
-                       .Set(printing::kSettingMarginTop, top)
-                       .Set(printing::kSettingMarginBottom, bottom)
-                       .Set(printing::kSettingMarginLeft, left)
-                       .Set(printing::kSettingMarginRight, right));
+                       .Set(printing::kSettingMarginTop,
+                            margins.ValueOrDefault("top", 0))
+                       .Set(printing::kSettingMarginBottom,
+                            margins.ValueOrDefault("bottom", 0))
+                       .Set(printing::kSettingMarginLeft,
+                            margins.ValueOrDefault("left", 0))
+                       .Set(printing::kSettingMarginRight,
+                            margins.ValueOrDefault("right", 0)));
     }
   } else {
     settings.Set(
