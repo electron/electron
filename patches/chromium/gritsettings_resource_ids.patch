@@ -9,15 +9,15 @@ diff --git a/tools/gritsettings/resource_ids.spec b/tools/gritsettings/resource_
 index e9d1729c376bc36ac2c5b0a2c03ae03eb7e3dbff..18f1797d64573ee676e7f3337256d3199f91f29f 100644
 --- a/tools/gritsettings/resource_ids.spec
 +++ b/tools/gritsettings/resource_ids.spec
-@@ -1508,6 +1508,11 @@
-   "<(SHARED_INTERMEDIATE_DIR)/third_party/blink/public/strings/permission_element_generated_strings.grd": {
-     "META": {"sizes": {"messages": [2000],}},
-     "messages": [10080],
-+  },
-+
+@@ -1514,6 +1514,11 @@
+     "structures": [10100],
+   }
+ 
 +  "electron/build/electron_resources.grd": {
 +    "messages": [31750],
 +    "includes": [31950],
-   }
- 
++   }
++
    # END "everything else" section.
+   # Everything but chrome/, components/, content/, and ios/
+ 
