@@ -24,7 +24,7 @@ This patch temporarily disables the metrics so we can have green CI, and we
 should continue seeking for a real fix.
 
 diff --git a/content/browser/renderer_host/navigator.cc b/content/browser/renderer_host/navigator.cc
-index 54ce1ea5ac11c9831a9553fbb5c5584c05440071..be95785fa144a4f11a3c97fea562dd4635ffe7b0 100644
+index d976c082529a62bcef7352531ced808e5970027e..31e95005359f6e8e4e18ebd75324940f4fdd11eb 100644
 --- a/content/browser/renderer_host/navigator.cc
 +++ b/content/browser/renderer_host/navigator.cc
 @@ -1476,6 +1476,7 @@ void Navigator::RecordNavigationMetrics(
