@@ -1536,8 +1536,7 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
 
   // Activate the translucent window while avoiding the title bar caused by
   // thick_frame_
-  DefWindowProc(nativeWindowHandle, WM_NCACTIVATE, TRUE,
-                (is_translucent || !thick_frame_) ? -1 : 0);
+  DefWindowProc(nativeWindowHandle, WM_NCACTIVATE, TRUE, has_frame() ? 0 : -1);
 #endif
 }
 

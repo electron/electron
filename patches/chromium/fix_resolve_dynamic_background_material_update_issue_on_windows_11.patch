@@ -33,9 +33,25 @@ index 177134d439866db9dbbde657ff358a761ad7f39d..e4f42fcf31a308e3014327ef3e293c82
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 09509acd13511525b0eb7b9afa972e20d8d3601c..e0024f400de5c2de60524b4b75047062cde2f31f 100644
+index 6e706c32ca4c2a5d0831588ee2eea8a8059f04fe..8b7eab8c800c322e1ec866eecd258ce1279e778f 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
+@@ -936,13 +936,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
+ 
+ void HWNDMessageHandler::PaintAsActiveChanged() {
+   if (!delegate_->HasNonClientView() || !delegate_->CanActivate() ||
+-      !delegate_->HasFrame() ||
++      (!delegate_->HasFrame() && !is_translucent_) ||
+       (delegate_->GetFrameMode() == FrameMode::CUSTOM_DRAWN)) {
+     return;
+   }
+ 
+   DefWindowProcWithRedrawLock(WM_NCACTIVATE, delegate_->ShouldPaintAsActive(),
+-                              0);
++                              delegate_->HasFrame() ? 0 : -1);
+ }
+ 
+ void HWNDMessageHandler::SetWindowIcons(const gfx::ImageSkia& window_icon,
 @@ -1037,7 +1037,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
    //   allowing ui::GetResizableFrameThickness() to be used consistently when
    //   removing the visible system frame.
@@ -70,16 +86,27 @@ index 09509acd13511525b0eb7b9afa972e20d8d3601c..e0024f400de5c2de60524b4b75047062
      return;
    }
  
-@@ -2310,6 +2322,12 @@ void HWNDMessageHandler::OnMoving(UINT param, const RECT* new_bounds) {
- LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
-                                          WPARAM w_param,
-                                          LPARAM l_param) {
-+  // patch: fix_resolve_dynamic_background_material_update_issue_on_windows_11
-+  // When in fullscreen or when thick_frame_ is false, we should skip the update
-+  // to avoid showing a white title bar.
-+  if (IsFullscreen() || !(GetWindowLong(hwnd(), GWL_STYLE) & WS_THICKFRAME)) {
-+    return 0;
-+  }
-   // Per MSDN, w_param is either TRUE or FALSE. However, MSDN also hints that:
-   // "If the window is minimized when this message is received, the application
-   // should pass the message to the DefWindowProc function."
+@@ -2347,17 +2359,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+     delegate_->SchedulePaint();
+   }
+ 
+-  // Calling DefWindowProc is only necessary if there's a system frame being
+-  // drawn. Otherwise it can draw an incorrect title bar and cause visual
+-  // corruption.
+-  if (!delegate_->HasFrame() ||
++  // If the window is translucent, it may have the Mica background.
++  // In that case, it's necessary to call |DefWindowProc|, but we can
++  // pass -1 in the lParam to prevent any non-client area elements from
++  // being displayed.
++  if ((!delegate_->HasFrame() && !is_translucent_) ||
+       delegate_->GetFrameMode() == FrameMode::CUSTOM_DRAWN) {
+     SetMsgHandled(TRUE);
+     return TRUE;
+   }
+ 
+   return DefWindowProcWithRedrawLock(WM_NCACTIVATE, paint_as_active || active,
+-                                     0);
++                                     delegate_->HasFrame() ? 0 : -1);
+ }
+ 
+ LRESULT HWNDMessageHandler::OnNCCalcSize(BOOL mode, LPARAM l_param) {
