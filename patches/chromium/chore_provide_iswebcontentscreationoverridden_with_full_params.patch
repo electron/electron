@@ -83,18 +83,22 @@ diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
 index de3f9f56b47628e1104b5f64b3c17cc35e10bfc7..3a19c28386fd3a0b8755a06510895c685f2c0cdb 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2327,12 +2327,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2355,8 +2355,7 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
 +    const content::mojom::CreateNewWindowParams& params) {
-   return window_container_type ==
-              content::mojom::WindowContainerType::BACKGROUND &&
-          ShouldCreateBackgroundContents(source_site_instance, opener_url,
--                                        frame_name);
-+                                        params.frame_name);
+   if (IsActorCoordinatorActingOnTab(
+           profile(), content::WebContents::FromRenderFrameHost(opener))) {
+     // If an ActorCoordinator is acting on the opener, prevent it from creating
+@@ -2368,7 +2367,7 @@ bool Browser::IsWebContentsCreationOverridden(
+   return (window_container_type ==
+               content::mojom::WindowContainerType::BACKGROUND &&
+           ShouldCreateBackgroundContents(source_site_instance, opener_url,
+-                                         frame_name));
++                                         params.frame));
  }
  
  WebContents* Browser::CreateCustomWebContents(
@@ -221,13 +225,13 @@ diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser
 index 94b4429fffb474304c1d43d1cf1337fde90d9e45..2a683ac9a810d7bc7286e56ce50dd51adfc4f25f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5021,8 +5021,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
-   // TODO(crbug.com/40202416): Support a way for MPArch guests to support this.
-   if (delegate_ && delegate_->IsWebContentsCreationOverridden(
-                        source_site_instance, params.window_container_type,
--                       opener->GetLastCommittedURL(), params.frame_name,
--                       params.target_url)) {
-+                       opener->GetLastCommittedURL(), params)) {
+@@ -5027,8 +5027,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+   if (delegate_ &&
+       delegate_->IsWebContentsCreationOverridden(
+           opener, source_site_instance, params.window_container_type,
+-          opener->GetLastCommittedURL(), params.frame_name,
+-          params.target_url)) {
++          opener->GetLastCommittedURL(), params)) {
      auto* web_contents_impl =
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
