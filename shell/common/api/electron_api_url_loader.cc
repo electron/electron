@@ -615,9 +615,8 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     }
   }
 
-  blink::mojom::FetchCacheMode cache_mode =
-      blink::mojom::FetchCacheMode::kDefault;
-  opts.Get("cache", &cache_mode);
+  const auto cache_mode =
+      opts.ValueOrDefault("cache", blink::mojom::FetchCacheMode::kDefault);
   switch (cache_mode) {
     case blink::mojom::FetchCacheMode::kNoStore:
       request->load_flags |= net::LOAD_DISABLE_CACHE;
@@ -645,8 +644,8 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       break;
   }
 
-  bool use_session_cookies = false;
-  opts.Get("useSessionCookies", &use_session_cookies);
+  const bool use_session_cookies =
+      opts.ValueOrDefault("useSessionCookies", false);
   int options = network::mojom::kURLLoadOptionSniffMimeType;
   if (!credentials_specified && !use_session_cookies) {
     // This is the default case, as well as the case when credentials is not
@@ -656,9 +655,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     options |= network::mojom::kURLLoadOptionBlockAllCookies;
   }
 
-  bool bypass_custom_protocol_handlers = false;
-  opts.Get("bypassCustomProtocolHandlers", &bypass_custom_protocol_handlers);
-  if (bypass_custom_protocol_handlers)
+  if (opts.ValueOrDefault("bypassCustomProtocolHandlers", false))
     options |= kBypassCustomProtocolHandlers;
 
   v8::Local<v8::Value> body;
