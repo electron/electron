@@ -908,28 +908,22 @@ void NodeBindings::UvRunOnce() {
   // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
 
-  // Node.js expects `kExplicit` microtasks policy and will run microtasks
-  // checkpoints after every call into JavaScript. Since we use a different
-  // policy in the renderer - switch to `kExplicit` and then drop back to the
-  // previous policy value.
-  v8::MicrotaskQueue* microtask_queue = env->context()->GetMicrotaskQueue();
-  auto old_policy = microtask_queue->microtasks_policy();
-  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
-  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
+  {
+    util::ExplicitMicrotasksScope microtasks_scope(
+        env->context()->GetMicrotaskQueue());
 
-  if (browser_env_ != BrowserEnvironment::kBrowser)
-    TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
+    if (browser_env_ != BrowserEnvironment::kBrowser)
+      TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
 
-  // Deal with uv events.
-  int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
+    // Deal with uv events.
+    int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
 
-  if (browser_env_ != BrowserEnvironment::kBrowser)
-    TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
+    if (browser_env_ != BrowserEnvironment::kBrowser)
+      TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
 
-  microtask_queue->set_microtasks_policy(old_policy);
-
-  if (r == 0)
-    base::RunLoop().QuitWhenIdle();  // Quit from uv.
+    if (r == 0)
+      base::RunLoop().QuitWhenIdle();  // Quit from uv.
+  }
 
   // Tell the worker thread to continue polling.
   uv_sem_post(&embed_sem_);
