@@ -124,8 +124,8 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
     return head;
   }
 
-  int status_code = net::HTTP_OK;
-  dict.Get("statusCode", &status_code);
+  const int status_code =
+      dict.ValueOrDefault("statusCode", static_cast<int>(net::HTTP_OK));
   head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
       absl::StrFormat("HTTP/1.1 %d %s", status_code,
                       net::GetHttpReasonPhrase(
