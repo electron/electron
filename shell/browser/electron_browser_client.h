@@ -319,6 +319,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const blink::StorageKey& storage_key,
       base::OnceCallback<void(bool, const std::string&)> callback) override;
   base::FilePath GetLoggingFileName(const base::CommandLine& cmd_line) override;
+  std::optional<
+      content::ContentBrowserClient::SpareProcessRefusedByEmbedderReason>
+  ShouldUseSpareRenderProcessHost(content::BrowserContext* browser_context,
+                                  const GURL& site_url) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

@@ -794,6 +794,26 @@ base::FilePath ElectronBrowserClient::GetLoggingFileName(
   return logging::GetLogFileName(cmd_line);
 }
 
+std::optional<
+    content::ContentBrowserClient::SpareProcessRefusedByEmbedderReason>
+ElectronBrowserClient::ShouldUseSpareRenderProcessHost(
+    content::BrowserContext* browser_context,
+    const GURL& site_url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Extensions should not use a spare process, because they require passing a
+  // command-line flag (switches::kExtensionProcess) to the renderer process
+  // when it launches. A spare process is launched earlier, before it is known
+  // which navigation will use it, so it lacks this flag.
+  if (site_url.SchemeIs(extensions::kExtensionScheme)) {
+    return content::ContentBrowserClient::SpareProcessRefusedByEmbedderReason::
+        ExtensionProcess;
+  }
+  return std::nullopt;
+#else
+  return std::nullopt;
+#endif
+}
+
 std::unique_ptr<net::ClientCertStore>
 ElectronBrowserClient::CreateClientCertStore(
     content::BrowserContext* browser_context) {
