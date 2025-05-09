@@ -12,13 +12,14 @@
 #include <string>
 #include <vector>
 
+#include "base/callback_list.h"
 #include "base/functional/callback_forward.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time/clock.h"
 #include "base/time/default_clock.h"
 #include "base/values.h"
 #include "components/keyed_service/core/keyed_service.h"
-#include "content/public/browser/file_system_access_permission_context.h"
+#include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h"  // nogncheck
 
 class GURL;
 
@@ -135,6 +136,14 @@ class FileSystemAccessPermissionContext
 
   void PermissionGrantDestroyed(PermissionGrantImpl* grant);
 
+  void CheckShouldBlockAccessToPathAndReply(
+      base::FilePath path,
+      HandleType handle_type,
+      std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
+          extra_rules,
+      base::OnceCallback<void(bool)> callback,
+     ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules);
+
   void CheckPathAgainstBlocklist(const content::PathInfo& path,
                                  HandleType handle_type,
                                  base::OnceCallback<void(bool)> callback);
@@ -175,6 +184,15 @@ class FileSystemAccessPermissionContext
 
   std::map<base::FilePath, base::OnceCallback<void(SensitiveEntryResult)>>
       callback_map_;
+
+  bool should_normalize_file_path_ = false;
+
+  std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules> block_path_rules_;
+  bool is_block_path_rules_init_complete_ = false;
+  std::vector<base::CallbackListSubscription> block_rules_check_subscription_;
+  base::OnceCallbackList<void(
+      ChromeFileSystemAccessPermissionContext::BlockPathRules)>
+      block_rules_check_callbacks_;
 
   base::WeakPtrFactory<FileSystemAccessPermissionContext> weak_factory_{this};
 };
