@@ -73,7 +73,8 @@ Passing `--enable-logging=file` will result in logs being saved to the file
 specified by `--log-file=...`, or to `electron_debug.log` in the user-data
 directory if `--log-file` is not specified.
 
-> **Note:** On Windows, logs from child processes cannot be sent to stderr.
+> [!NOTE]
+> On Windows, logs from child processes cannot be sent to stderr.
 > Logging to a file is the most reliable way to collect logs on Windows.
 
 See also `--log-file`, `--log-level`, `--v`, and `--vmodule`.
@@ -252,7 +253,8 @@ the required version is unavailable. Current default is set to `3`.
 
 Electron supports some of the [CLI flags][node-cli] supported by Node.js.
 
-**Note:** Passing unsupported command line switches to Electron when it is not running in `ELECTRON_RUN_AS_NODE` will have no effect.
+> [!NOTE]
+> Passing unsupported command line switches to Electron when it is not running in `ELECTRON_RUN_AS_NODE` will have no effect.
 
 ### `--inspect-brk[=[host:]port]`
 

@@ -8,13 +8,13 @@ The `globalShortcut` module can register/unregister a global keyboard shortcut
 with the operating system so that you can customize the operations for various
 shortcuts.
 
-**Note:** The shortcut is global; it will work even if the app does
-not have the keyboard focus. This module cannot be used before the `ready`
-event of the app module is emitted.
-
-Please also note that it is also possible to use Chromium's
-`GlobalShortcutsPortal` implementation, which allows apps to bind global
-shortcuts when running within a Wayland session.
+> [!NOTE]
+> The shortcut is global; it will work even if the app does
+> not have the keyboard focus. This module cannot be used before the `ready`
+> event of the app module is emitted.
+> Please also note that it is also possible to use Chromium's
+> `GlobalShortcutsPortal` implementation, which allows apps to bind global
+> shortcuts when running within a Wayland session.
 
 ```js
 const { app, globalShortcut } = require('electron')
