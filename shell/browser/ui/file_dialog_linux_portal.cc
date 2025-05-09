@@ -86,8 +86,9 @@ void CheckPortalAvailabilityOnBusThread() {
                     << (g_portal_available ? "yes" : "no");
             flag->Set();
             bus->ShutdownAndBlock();
+            bus.reset();
           },
-          std::move(bus), flag));
+          bus, flag));
 }
 
 }  // namespace
