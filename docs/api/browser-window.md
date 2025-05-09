@@ -868,7 +868,7 @@ Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window's cl
 Returns [`Rectangle`](structures/rectangle.md) - Contains the window bounds of the normal state
 
 > [!NOTE]
-> Whatever the current state of the window : maximized, minimized or in fullscreen, this function always returns the position and size of the window in normal state. In normal state, getBounds and getNormalBounds returns the same [`Rectangle`](structures/rectangle.md).
+> Whatever the current state of the window (maximized, minimized or in fullscreen), this function always returns the position and size of the window in normal state. In normal state, `getBounds` and `getNormalBounds` return the same [`Rectangle`](structures/rectangle.md).
 
 #### `win.setEnabled(enable)`
 
