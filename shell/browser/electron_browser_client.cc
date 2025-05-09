@@ -412,7 +412,6 @@ void ElectronBrowserClient::OverrideWebPreferences(
   prefs->javascript_can_access_clipboard = false;
   prefs->allow_scripts_to_close_windows = true;
   prefs->local_storage_enabled = true;
-  prefs->databases_enabled = true;
   prefs->allow_universal_access_from_file_urls =
       electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled();
   prefs->allow_file_access_from_file_urls =
