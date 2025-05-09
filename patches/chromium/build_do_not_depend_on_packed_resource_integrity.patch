@@ -46,7 +46,7 @@ index b5783087429ee651d21e04f6f5f11f5cb6f015a8..dae1cca8cee4fccfed3183aca1ba7cc3
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index a1338c3f145e3ae0ca0acbe20ffcec35c3cc5ba1..39d0efc3367b80b18cf3a4ef8756f147807ad79b 100644
+index 4dac075ed00691be14546b8bcd8f1b14fdc038b1..593ef717845c2c4c98aacd077d0696de207cff29 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -7096,9 +7096,12 @@ test("unit_tests") {

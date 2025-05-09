@@ -6,14 +6,16 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index c5f3700f8f04b11b1a3dcc214dab40622652cd3a..43cbc0f8febd2330f47b5617b3dc9da9beac4962 100644
+index 74dd82258742f9e217966174e3ee438086b946bb..9b8b40fa87f3354f9b5ee7a5c4746aae22f5c8c6 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -701,6 +701,14 @@ void MenuController::Run(Widget* parent,
+@@ -711,6 +711,16 @@ void MenuController::Run(Widget* parent,
      SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
    }
  
-+  if (source_type == ui::mojom::MenuSourceType::kKeyboard && context_menu && root->HasSubmenu()) {
++  if (source_type == ui::mojom::MenuSourceType::kKeyboard &&
++     (menu_type == MenuType::kContextMenu || menu_type == MenuType::kMenuItemContextMenu) &&
++     root->HasSubmenu()) {
 +    // For context menus opened via the keyboard we select the first item by default
 +    // to match accessibility expectations
 +    MenuItemView* first_item = FindInitialSelectableMenuItem(root, INCREMENT_SELECTION_DOWN);
@@ -24,7 +26,7 @@ index c5f3700f8f04b11b1a3dcc214dab40622652cd3a..43cbc0f8febd2330f47b5617b3dc9da9
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2407,19 +2415,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2427,19 +2437,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
