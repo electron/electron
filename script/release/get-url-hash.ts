@@ -2,12 +2,12 @@ import got from 'got';
 
 import * as url from 'node:url';
 
-const HASHER_FUNCTION_HOST = 'electron-artifact-hasher.azurewebsites.net';
-const HASHER_FUNCTION_ROUTE = '/api/HashArtifact';
+const HASHER_FUNCTION_HOST = 'electron-hasher.azurewebsites.net';
+const HASHER_FUNCTION_ROUTE = '/api/hashRemoteAsset';
 
 export async function getUrlHash (targetUrl: string, algorithm = 'sha256', attempts = 3) {
   const options = {
-    code: process.env.ELECTRON_ARTIFACT_HASHER_FUNCTION_KEY!,
+    code: process.env.ELECTRON_HASHER_FUNCTION_KEY!,
     targetUrl,
     algorithm
   };
