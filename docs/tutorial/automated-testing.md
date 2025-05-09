@@ -74,46 +74,23 @@ describe('keyboard input', () => {
 Furthermore, WebdriverIO allows you to access Electron APIs to get static information about your application:
 
 ```js @ts-nocheck
-import { browser, $, expect } from '@wdio/globals'
+import { browser } from '@wdio/globals'
 
-describe('when the make smaller button is clicked', () => {
-  it('should decrease the window height and width by 10 pixels', async () => {
-    const boundsBefore = await browser.electron.browserWindow('getBounds')
-    expect(boundsBefore.width).toEqual(210)
-    expect(boundsBefore.height).toEqual(310)
-
-    await $('.make-smaller').click()
-    const boundsAfter = await browser.electron.browserWindow('getBounds')
-    expect(boundsAfter.width).toEqual(200)
-    expect(boundsAfter.height).toEqual(300)
-  })
-})
-```
-
-or to retrieve other Electron process information:
-
-```js @ts-nocheck
-import fs from 'node:fs'
-import path from 'node:path'
-import { browser, expect } from '@wdio/globals'
-
-const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), { encoding: 'utf-8' }))
-const { name, version } = packageJson
-
-describe('electron APIs', () => {
-  it('should retrieve app metadata through the electron API', async () => {
-    const appName = await browser.electron.app('getName')
-    expect(appName).toEqual(name)
-    const appVersion = await browser.electron.app('getVersion')
-    expect(appVersion).toEqual(version)
-  })
-
-  it('should pass args through to the launched application', async () => {
-    // custom args are set in the wdio.conf.js file as they need to be set before WDIO starts
-    const argv = await browser.electron.mainProcess('argv')
-    expect(argv).toContain('--foo')
-    expect(argv).toContain('--bar=baz')
-  })
+describe('trigger message modal', async () => {
+  it('message modal can be triggered from a test', async () => {
+    await browser.electron.execute(
+      (electron, param1, param2, param3) => {
+        const appWindow = electron.BrowserWindow.getFocusedWindow();
+        electron.dialog.showMessageBox(appWindow, {
+          message: 'Hello World!',
+          detail: `${param1} + ${param2} + ${param3} = ${param1 + param2 + param3}`,
+        });
+      },
+      1,
+      2,
+      3,
+    );
+  });
 })
 ```
 
@@ -204,7 +181,7 @@ npm install --save-dev @playwright/test
 ```
 
 :::caution Dependencies
-This tutorial was written with `@playwright/test@1.41.1`. Check out
+This tutorial was written with `@playwright/test@1.52.0`. Check out
 [Playwright's releases][playwright-releases] page to learn about
 changes that might affect the code below.
 :::
@@ -216,10 +193,10 @@ To point this API to your Electron app, you can pass the path to your main proce
 entry point (here, it is `main.js`).
 
 ```js {5} @ts-nocheck
-const { test, _electron: electron } = require('@playwright/test')
+import { test, _electron as electron } from "@playwright/test";
 
 test('launch app', async () => {
-  const electronApp = await electron.launch({ args: ['main.js'] })
+  const electronApp = await electron.launch({ args: ['.'] })
   // close app
   await electronApp.close()
 })
@@ -229,10 +206,10 @@ After that, you will access to an instance of Playwright's `ElectronApp` class. 
 is a powerful class that has access to main process modules for example:
 
 ```js {5-10} @ts-nocheck
-const { test, _electron: electron } = require('@playwright/test')
+import { test, _electron as electron } from "@playwright/test";
 
 test('get isPackaged', async () => {
-  const electronApp = await electron.launch({ args: ['main.js'] })
+  const electronApp = await electron.launch({ args: ['.'] })
   const isPackaged = await electronApp.evaluate(async ({ app }) => {
     // This runs in Electron's main process, parameter here is always
     // the result of the require('electron') in the main app script.
@@ -248,10 +225,10 @@ It can also create individual [Page][playwright-page] objects from Electron Brow
 For example, to grab the first BrowserWindow and save a screenshot:
 
 ```js {6-7} @ts-nocheck
-const { test, _electron: electron } = require('@playwright/test')
+import { test, _electron as electron } from "@playwright/test";
 
 test('save screenshot', async () => {
-  const electronApp = await electron.launch({ args: ['main.js'] })
+  const electronApp = await electron.launch({ args: ['.'] })
   const window = await electronApp.firstWindow()
   await window.screenshot({ path: 'intro.png' })
   // close app
@@ -263,7 +240,7 @@ Putting all this together using the Playwright test-runner, let's create a `exam
 test file with a single test and assertion:
 
 ```js title='example.spec.js' @ts-nocheck
-const { test, expect, _electron: electron } = require('@playwright/test')
+import { test, expect, _electron as electron } from "@playwright/test";
 
 test('example test', async () => {
   const electronApp = await electron.launch({ args: ['.'] })
