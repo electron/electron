@@ -272,6 +272,13 @@ Set the `host:port` to be used when the inspector is activated. Useful when acti
 
 Aliased to `--debug-port=[host:]port`.
 
+### `--disable-warning=code-or-type`
+
+Disable specific process warnings by `code` or `type`.
+
+Warnings emitted from [`process.emitWarning()`](https://nodejs.org/api/process.html#processemitwarningwarning-options)
+may contain a `code` and a `type`. This option will not-emit warnings that have a matching `code` or `type`.
+
 ### `--inspect\[=\[host:]port]`
 
 Activate inspector on `host:port`. Default is `127.0.0.1:9229`.
@@ -291,6 +298,10 @@ By default inspector websocket url is available in stderr and under /json/list e
 ### `--no-deprecation`
 
 Silence deprecation warnings.
+
+### `--no-warnings`
+
+Silence all process warnings (including deprecations).
 
 ### `--throw-deprecation`
 

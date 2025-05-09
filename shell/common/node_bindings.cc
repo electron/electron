@@ -353,8 +353,10 @@ bool IsAllowedOption(const std::string_view option) {
   // This should be aligned with what's possible to set via the process object.
   static constexpr auto options = base::MakeFixedFlatSet<std::string_view>({
       "--diagnostic-dir",
+      "--disable-warning",
       "--dns-result-order",
       "--no-deprecation",
+      "--no-warnings",
       "--throw-deprecation",
       "--trace-deprecation",
       "--trace-warnings",
