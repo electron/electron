@@ -32,16 +32,18 @@ In order to escape the `&` character in an item name, add a proceeding `&`. For 
 Passing `null` will suppress the default menu. On Windows and Linux,
 this has the additional effect of removing the menu bar from the window.
 
-**Note:** The default menu will be created automatically if the app does not set one.
-It contains standard items such as `File`, `Edit`, `View`, `Window` and `Help`.
+> [!NOTE]
+> The default menu will be created automatically if the app does not set one.
+> It contains standard items such as `File`, `Edit`, `View`, `Window` and `Help`.
 
 #### `Menu.getApplicationMenu()`
 
 Returns `Menu | null` - The application menu, if set, or `null`, if not set.
 
-**Note:** The returned `Menu` instance doesn't support dynamic addition or
-removal of menu items. [Instance properties](#instance-properties) can still
-be dynamically modified.
+> [!NOTE]
+> The returned `Menu` instance doesn't support dynamic addition or
+> removal of menu items. [Instance properties](#instance-properties) can still
+> be dynamically modified.
 
 #### `Menu.sendActionToFirstResponder(action)` _macOS_
 
@@ -119,8 +121,9 @@ Inserts the `menuItem` to the `pos` position of the menu.
 
 Objects created with `new Menu` or returned by `Menu.buildFromTemplate` emit the following events:
 
-**Note:** Some events are only available on specific operating systems and are
-labeled as such.
+> [!NOTE]
+> Some events are only available on specific operating systems and are
+> labeled as such.
 
 #### Event: 'menu-will-show'
 

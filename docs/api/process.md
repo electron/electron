@@ -233,7 +233,8 @@ console.log(version)
 // On Linux -> '4.15.0-45-generic'
 ```
 
-**Note:** It returns the actual operating system version instead of kernel version on macOS unlike `os.release()`.
+> [!NOTE]
+> It returns the actual operating system version instead of kernel version on macOS unlike `os.release()`.
 
 ### `process.takeHeapSnapshot(filePath)`
 
