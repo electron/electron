@@ -323,9 +323,9 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
                                          keyEquivalent:@""];
 
   if (!rawSecondaryLabel.empty()) {
-    NSString* secondary_label =
-        l10n_util::FixUpWindowsStyleLabel(rawSecondaryLabel);
-    if (@available(macOS 14.4, *)) {
+     if (@available(macOS 14.4, *)) {
+      NSString* secondary_label =
+          l10n_util::FixUpWindowsStyleLabel(rawSecondaryLabel);
       item.subtitle = secondary_label;
     }
   }
