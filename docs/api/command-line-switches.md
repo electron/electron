@@ -288,6 +288,10 @@ Specify ways of the inspector web socket url exposure.
 
 By default inspector websocket url is available in stderr and under /json/list endpoint on `http://host:port/json/list`.
 
+### `--experimental-network-inspector`
+
+Enable support for devtools network inspector events, for visibility into requests made by the nodejs `http` and `https` modules.
+
 ### `--no-deprecation`
 
 Silence deprecation warnings.
