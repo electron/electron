@@ -14,7 +14,7 @@ error: duplicate symbol: crdtp::ProtocolTypeTraits<std::__Cr::basic_string<char,
 Some distinguishing change should be upstreamed to Node.js.
 
 diff --git a/src/inspector/node_string.cc b/src/inspector/node_string.cc
-index d83c53c81ca7745a31b200d5af3656af59f4f530..b2f6d412415e2988ead3c1e25b9557e1f0c91de3 100644
+index 6db4bee1072bfe911a4179c3edb2bbaf18f1a182..c603f95f1f93438bd55bce3ff7f5bb314eb33666 100644
 --- a/src/inspector/node_string.cc
 +++ b/src/inspector/node_string.cc
 @@ -7,7 +7,8 @@
@@ -44,7 +44,7 @@ index d83c53c81ca7745a31b200d5af3656af59f4f530..b2f6d412415e2988ead3c1e25b9557e1
  namespace inspector {
  namespace protocol {
 diff --git a/src/inspector/node_string.h b/src/inspector/node_string.h
-index d529d1337be0e2292202920446e841701d16b0b7..08e00f9b94918e3385aed18de80eec5c7ad81095 100644
+index 38cf96e874dcc49cde87137b2737c35a84f418d0..b2f67c224acc7b3a3b867867e251a7c62833f46e 100644
 --- a/src/inspector/node_string.h
 +++ b/src/inspector/node_string.h
 @@ -15,8 +15,8 @@ namespace crdtp {

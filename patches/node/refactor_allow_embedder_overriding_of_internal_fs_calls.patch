@@ -7,10 +7,10 @@ We use this to allow node's 'fs' module to read from ASAR files as if they were
 a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index f5c0208864084a234a05898e793845681b6e80cc..48d809f61eaf09097acb3e996e956e39cf7b4ef3 100644
+index 4fd535f730e6382672b853bf2098b3fefc1f83b4..bd6724de52ee1f01fa42084c7652c71054f0a9c6 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
-@@ -134,6 +134,10 @@ process.domain = null;
+@@ -132,6 +132,10 @@ process.domain = null;
  }
  process._exiting = false;
  

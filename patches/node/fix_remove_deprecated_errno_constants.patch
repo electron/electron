@@ -86,7 +86,7 @@ index 13263149c111beede83b7063fa54f56655aea54c..99068098e1867af4846e18a5d039a256
    NODE_DEFINE_CONSTANT(target, ETIMEDOUT);
  #endif
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 609601328f7f5ff5f121151e81c2df82e7ef4253..6b9b944c11af917fe4e296961e6ed7df7b89a123 100644
+index 5f51add4cdf68a9487edfc9382f586cc94539571..befb642f1effa3c4139e4cd99ff64d9c5175fd72 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
 @@ -862,10 +862,6 @@ const char* errno_string(int errorno) {

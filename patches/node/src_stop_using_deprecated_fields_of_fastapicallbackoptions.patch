@@ -40,10 +40,10 @@ index 0f0cde7be431dcb80c5314b1a9da49886c436d1c..f6d2bd439cad8b9f91c9d9a6cdb302e6
    }
    HistogramBase* histogram;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 3d7e303741a73134e140152bed637fe5ae8bc1db..5e744bc34b9dc364e8f20adfd37ee41d76451170 100644
+index c7915e2c8161a5d0fa05ccce368ce9c44345c05d..23347379328794467a497c86cbae0b428b7ba791 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -1061,13 +1061,8 @@ static int32_t FastInternalModuleStat(
+@@ -1071,13 +1071,8 @@ static int32_t FastInternalModuleStat(
      // NOLINTNEXTLINE(runtime/references) This is V8 api.
      FastApiCallbackOptions& options) {
    // This needs a HandleScope which needs an isolate.
@@ -60,10 +60,10 @@ index 3d7e303741a73134e140152bed637fe5ae8bc1db..5e744bc34b9dc364e8f20adfd37ee41d
    auto path = std::filesystem::path(input.data, input.data + input.length);
  
 diff --git a/src/node_wasi.cc b/src/node_wasi.cc
-index 468c2e59903fefe58d9c178d3afac3ef5b09f611..23a376e52e08a8af49dd47c47488552e01287426 100644
+index 090866960beb8f1759c99e95536924b8b61fb723..3f91b651b83a20e70d5b368e012f5ee4b9d16092 100644
 --- a/src/node_wasi.cc
 +++ b/src/node_wasi.cc
-@@ -251,17 +251,19 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
+@@ -275,17 +275,19 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
      return EinvalError<R>();
    }
  
