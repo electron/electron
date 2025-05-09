@@ -28,7 +28,9 @@ export async function getUrlHash (targetUrl: string, algorithm = 'sha256', attem
     }
     if (!resp.body) throw new Error('Successful lambda call but failed to get valid hash');
 
-    return resp.body.trim();
+    // response shape should be { hash: 'xyz', invocationId: "abc"}
+    const { hash } = JSON.parse(resp.body.trim());
+    return hash;
   } catch (err) {
     if (attempts > 1) {
       const { response } = err as any;
