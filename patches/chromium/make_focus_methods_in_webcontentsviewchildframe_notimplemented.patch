@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 7 May 2025 05:08:18 -0700
+Subject: Make focus methods in WebContentsViewChildFrame NOTIMPLEMENTED
+
+Change focus methods in WebContentsViewChildFrame to NOTIMPLEMENTED.
+It's possible to for focus to be called on the child frame, e.g. in the
+context of chrome.webviewTag, and shouldn't necessarily crash.
+
+This also fixes an associated crash in Electron, where the NOTREACHED is
+hit when PointerLockController::LockPointer calls web_contents->Focus().
+
+Change-Id: Ide58aae2187fbdd807be4ec176d13c76e459ba9c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6508949
+Commit-Queue: Bo Liu <boliu@chromium.org>
+Reviewed-by: Bo Liu <boliu@chromium.org>
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1456886}
+
+diff --git a/content/browser/web_contents/web_contents_view_child_frame.cc b/content/browser/web_contents/web_contents_view_child_frame.cc
+index b89d4621dc2acc84f7d8c749f34f7f5563543c72..9c206f6ee424fc423d5f772c7559e60ec0df6eef 100644
+--- a/content/browser/web_contents/web_contents_view_child_frame.cc
++++ b/content/browser/web_contents/web_contents_view_child_frame.cc
+@@ -6,6 +6,7 @@
+ 
+ #include <utility>
+ 
++#include "base/notimplemented.h"
+ #include "build/build_config.h"
+ #include "content/browser/renderer_host/render_frame_proxy_host.h"
+ #include "content/browser/renderer_host/render_widget_host_view_child_frame.h"
+@@ -160,15 +161,15 @@ void WebContentsViewChildFrame::DestroyBackForwardTransitionAnimationManager() {
+ }
+ 
+ void WebContentsViewChildFrame::RestoreFocus() {
+-  NOTREACHED();
++  NOTIMPLEMENTED();
+ }
+ 
+ void WebContentsViewChildFrame::Focus() {
+-  NOTREACHED();
++  NOTIMPLEMENTED();
+ }
+ 
+ void WebContentsViewChildFrame::StoreFocus() {
+-  NOTREACHED();
++  NOTIMPLEMENTED();
+ }
+ 
+ void WebContentsViewChildFrame::FocusThroughTabTraversal(bool reverse) {
