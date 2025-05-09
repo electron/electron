@@ -95,6 +95,10 @@ bool SetDefaultWebClient(const std::string& protocol) {
 
 void Browser::AddRecentDocument(const base::FilePath& path) {}
 
+std::vector<std::string> Browser::GetRecentDocuments() {
+  return std::vector<std::string>();
+}
+
 void Browser::ClearRecentDocuments() {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
