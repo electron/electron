@@ -41,6 +41,8 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
                            HMONITOR monitor) const override;
   bool HandleMouseEventForCaption(UINT message) const override;
   bool HandleMouseEvent(ui::MouseEvent* event) override;
+  void HandleVisibilityChanged(bool visible) override;
+  void SetAllowScreenshots(bool allow) override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;

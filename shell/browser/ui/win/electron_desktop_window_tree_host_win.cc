@@ -126,6 +126,16 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
   return views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
 }
 
+void ElectronDesktopWindowTreeHostWin::HandleVisibilityChanged(bool visible) {
+  if (native_window_view_->widget())
+    native_window_view_->widget()->OnNativeWidgetVisibilityChanged(visible);
+}
+
+void ElectronDesktopWindowTreeHostWin::SetAllowScreenshots(bool allow) {
+  ::SetWindowDisplayAffinity(GetAcceleratedWidget(),
+                             allow ? WDA_NONE : WDA_EXCLUDEFROMCAPTURE);
+}
+
 void ElectronDesktopWindowTreeHostWin::OnNativeThemeUpdated(
     ui::NativeTheme* observed_theme) {
   HWND hWnd = GetAcceleratedWidget();
