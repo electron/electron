@@ -315,11 +315,20 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 - (NSMenuItem*)makeMenuItemForIndex:(NSInteger)index
                           fromModel:(electron::ElectronMenuModel*)model {
   std::u16string label16 = model->GetLabelAt(index);
+  auto rawSecondaryLabel = model->GetSecondaryLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
 
   NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:label
                                                 action:@selector(itemSelected:)
                                          keyEquivalent:@""];
+
+  if (!rawSecondaryLabel.empty()) {
+    NSString* secondary_label =
+        l10n_util::FixUpWindowsStyleLabel(rawSecondaryLabel);
+    if (@available(macOS 14.4, *)) {
+      item.subtitle = secondary_label;
+    }
+  }
 
   // If the menu item has an icon, set it.
   ui::ImageModel icon = model->GetIconAt(index);
