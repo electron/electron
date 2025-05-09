@@ -7,8 +7,9 @@ Process: [Main](../glossary.md#main-process)
 This module does not include a web interface. To view recorded traces, use
 [trace viewer][], available at `chrome://tracing` in Chrome.
 
-**Note:** You should not use this module until the `ready` event of the app
-module is emitted.
+> [!NOTE]
+> You should not use this module until the `ready` event of the app
+> module is emitted.
 
 ```js
 const { app, contentTracing } = require('electron')
