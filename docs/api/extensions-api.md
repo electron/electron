@@ -92,11 +92,13 @@ app.whenReady().then(async () => {
 
 This API does not support loading packed (.crx) extensions.
 
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
+> [!NOTE]
+> This API cannot be called before the `ready` event of the `app` module
+> is emitted.
 
-**Note:** Loading extensions into in-memory (non-persistent) sessions is not
-supported and will throw an error.
+> [!NOTE]
+> Loading extensions into in-memory (non-persistent) sessions is not
+> supported and will throw an error.
 
 #### `extensions.removeExtension(extensionId)`
 
@@ -104,8 +106,9 @@ supported and will throw an error.
 
 Unloads an extension.
 
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
+> [!NOTE]
+> This API cannot be called before the `ready` event of the `app` module
+> is emitted.
 
 #### `extensions.getExtension(extensionId)`
 
@@ -113,12 +116,14 @@ is emitted.
 
 Returns `Extension | null` - The loaded extension with the given ID.
 
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
+> [!NOTE]
+> This API cannot be called before the `ready` event of the `app` module
+> is emitted.
 
 #### `extensions.getAllExtensions()`
 
 Returns `Extension[]` - A list of all loaded extensions.
 
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
+> [!NOTE]
+> This API cannot be called before the `ready` event of the `app` module
+> is emitted.

@@ -51,7 +51,8 @@ See [`Menu`](menu.md) for examples.
     the placement of their containing group after the containing group of the item
     with the specified id.
 
-**Note:** `acceleratorWorksWhenHidden` is specified as being macOS-only because accelerators always work when items are hidden on Windows and Linux. The option is exposed to users to give them the option to turn it off, as this is possible in native macOS development.
+> [!NOTE]
+> `acceleratorWorksWhenHidden` is specified as being macOS-only because accelerators always work when items are hidden on Windows and Linux. The option is exposed to users to give them the option to turn it off, as this is possible in native macOS development.
 
 ### Roles
 
@@ -125,7 +126,8 @@ When specifying a `role` on macOS, `label` and `accelerator` are the only
 options that will affect the menu item. All other options will be ignored.
 Lowercase `role`, e.g. `toggledevtools`, is still supported.
 
-**Note:** The `enabled` and `visibility` properties are not available for top-level menu items in the tray on macOS.
+> [!NOTE]
+> The `enabled` and `visibility` properties are not available for top-level menu items in the tray on macOS.
 
 ### Instance Properties
 
@@ -170,7 +172,8 @@ An `Accelerator` (optional) indicating the item's accelerator, if set.
 
 An `Accelerator | null` indicating the item's [user-assigned accelerator](https://developer.apple.com/documentation/appkit/nsmenuitem/1514850-userkeyequivalent?language=objc) for the menu item.
 
-**Note:** This property is only initialized after the `MenuItem` has been added to a `Menu`. Either via `Menu.buildFromTemplate` or via `Menu.append()/insert()`.  Accessing before initialization will just return `null`.
+> [!NOTE]
+> This property is only initialized after the `MenuItem` has been added to a `Menu`. Either via `Menu.buildFromTemplate` or via `Menu.append()/insert()`.  Accessing before initialization will just return `null`.
 
 #### `menuItem.icon`
 
