@@ -11,7 +11,7 @@ shortcuts.
 > [!NOTE]
 > The shortcut is global; it will work even if the app does
 > not have the keyboard focus. This module cannot be used before the `ready`
-> event of the app module is emitted.
+> event of the app module is emitted.  
 > Please also note that it is also possible to use Chromium's
 > `GlobalShortcutsPortal` implementation, which allows apps to bind global
 > shortcuts when running within a Wayland session.
