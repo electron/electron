@@ -33,7 +33,7 @@ class NetworkContextService : public KeyedService {
   NetworkContextService(const NetworkContextService&) = delete;
   NetworkContextService& operator=(const NetworkContextService&) = delete;
 
-  void ConfigureNetworkContextParams(
+  avoid ConfigureNetworkContextParams(
       network::mojom::NetworkContextParams* network_context_params,
       cert_verifier::mojom::CertVerifierCreationParams*
           cert_verifier_creation_params);
