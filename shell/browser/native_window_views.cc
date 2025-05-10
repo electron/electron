@@ -37,6 +37,7 @@
 #include "shell/common/options_switches.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
+#include "ui/compositor/compositor.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_widget_types.h"
@@ -1217,6 +1218,7 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
     DeleteObject((HBRUSH)previous_brush);
   InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
+  GetWidget()->GetCompositor()->SetBackgroundColor(background_color);
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
