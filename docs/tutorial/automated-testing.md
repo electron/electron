@@ -80,17 +80,17 @@ describe('trigger message modal', async () => {
   it('message modal can be triggered from a test', async () => {
     await browser.electron.execute(
       (electron, param1, param2, param3) => {
-        const appWindow = electron.BrowserWindow.getFocusedWindow();
+        const appWindow = electron.BrowserWindow.getFocusedWindow()
         electron.dialog.showMessageBox(appWindow, {
           message: 'Hello World!',
-          detail: `${param1} + ${param2} + ${param3} = ${param1 + param2 + param3}`,
-        });
+          detail: `${param1} + ${param2} + ${param3} = ${param1 + param2 + param3}`
+        })
       },
       1,
       2,
-      3,
-    );
-  });
+      3
+    )
+  })
 })
 ```
 
@@ -193,7 +193,7 @@ To point this API to your Electron app, you can pass the path to your main proce
 entry point (here, it is `main.js`).
 
 ```js {5} @ts-nocheck
-import { test, _electron as electron } from "@playwright/test";
+import { test, _electron as electron } from '@playwright/test'
 
 test('launch app', async () => {
   const electronApp = await electron.launch({ args: ['.'] })
@@ -206,7 +206,7 @@ After that, you will access to an instance of Playwright's `ElectronApp` class. 
 is a powerful class that has access to main process modules for example:
 
 ```js {5-10} @ts-nocheck
-import { test, _electron as electron } from "@playwright/test";
+import { test, _electron as electron } from '@playwright/test'
 
 test('get isPackaged', async () => {
   const electronApp = await electron.launch({ args: ['.'] })
@@ -225,7 +225,7 @@ It can also create individual [Page][playwright-page] objects from Electron Brow
 For example, to grab the first BrowserWindow and save a screenshot:
 
 ```js {6-7} @ts-nocheck
-import { test, _electron as electron } from "@playwright/test";
+import { test, _electron as electron } from '@playwright/test'
 
 test('save screenshot', async () => {
   const electronApp = await electron.launch({ args: ['.'] })
@@ -240,7 +240,7 @@ Putting all this together using the Playwright test-runner, let's create a `exam
 test file with a single test and assertion:
 
 ```js title='example.spec.js' @ts-nocheck
-import { test, expect, _electron as electron } from "@playwright/test";
+import { test, expect, _electron as electron } from '@playwright/test'
 
 test('example test', async () => {
   const electronApp = await electron.launch({ args: ['.'] })
