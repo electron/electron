@@ -110,12 +110,21 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   metadata.Set("frameCount", val.frame_count);
   dict.Set("metadata", ConvertToV8(isolate, metadata));
 
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
-  dict.Set("sharedTextureHandle",
-           electron::Buffer::Copy(
-               isolate, base::byte_span_from_ref(val.shared_texture_handle))
-               .ToLocalChecked());
+  gin::Dictionary sharedTexture(isolate, v8::Object::New(isolate));
+#if BUILDFLAG(IS_WIN)
+  sharedTexture.Set(
+      "ntHandle",
+      electron::Buffer::Copy(
+          isolate, base::byte_span_from_ref(val.shared_texture_handle))
+          .ToLocalChecked());
+#elif BUILDFLAG(IS_MAC)
+  sharedTexture.Set(
+      "ioSurface",
+      electron::Buffer::Copy(
+          isolate, base::byte_span_from_ref(val.shared_texture_handle))
+          .ToLocalChecked());
 #elif BUILDFLAG(IS_LINUX)
+  gin::Dictionary nativePixmap(isolate, v8::Object::New(isolate));
   auto v8_planes = base::ToVector(val.planes, [isolate](const auto& plane) {
     gin::Dictionary v8_plane(isolate, v8::Object::New(isolate));
     v8_plane.Set("stride", plane.stride);
@@ -124,10 +133,12 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
     v8_plane.Set("fd", plane.fd);
     return v8_plane;
   });
-  dict.Set("planes", v8_planes);
-  dict.Set("modifier", base::NumberToString(val.modifier));
+  nativePixmap.Set("planes", v8_planes);
+  nativePixmap.Set("modifier", base::NumberToString(val.modifier));
+  sharedTexture.Set("nativePixmap", ConvertToV8(isolate, nativePixmap));
 #endif
 
+  dict.Set("sharedTextureData", ConvertToV8(isolate, sharedTexture));
   root.Set("textureInfo", ConvertToV8(isolate, dict));
   auto root_local = ConvertToV8(isolate, root);
 

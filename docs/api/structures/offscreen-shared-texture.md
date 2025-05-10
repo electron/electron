@@ -12,13 +12,16 @@
     * `regionCaptureRect` [Rectangle](rectangle.md) (optional) - May reflect the frame's contents origin if region capture is used internally.
     * `sourceSize` [Rectangle](rectangle.md) (optional) - Full size of the source frame.
     * `frameCount` number (optional) - The increasing count of captured frame. May contain gaps if frames are dropped between two consecutively received frames.
-  * `sharedTextureHandle` Buffer _Windows_ _macOS_ - The handle to the shared texture.
-  * `planes` Object[] _Linux_ - Each plane's info of the shared texture.
-    * `stride` number - The strides and offsets in bytes to be used when accessing the buffers via a memory mapping. One per plane per entry.
-    * `offset` number - The strides and offsets in bytes to be used when accessing the buffers via a memory mapping. One per plane per entry.
-    * `size` number - Size in bytes of the plane. This is necessary to map the buffers.
-    * `fd` number - File descriptor for the underlying memory object (usually dmabuf).
-  * `modifier` string _Linux_ - The modifier is retrieved from GBM library and passed to EGL driver.
+  * `sharedTextureData` Object - The shared texture handle data.
+    * `ntHandle` Buffer (optional) _Windows_ - NT HANDLE holds the shared texture. Note that this NT HANDLE is local to current process.
+    * `ioSurface` Buffer (optional) _macOS_ - IOSurfaceRef holds the shared texture. Note that this IOSurface is local to current process (not global).
+    * `nativePixmap` Object (optional) _Linux_ - Structure contains planes of shared texture.
+      * `planes` Object[] _Linux_ - Each plane's info of the shared texture.
+        * `stride` number - The strides and offsets in bytes to be used when accessing the buffers via a memory mapping. One per plane per entry.
+        * `offset` number - The strides and offsets in bytes to be used when accessing the buffers via a memory mapping. One per plane per entry.
+        * `size` number - Size in bytes of the plane. This is necessary to map the buffers.
+        * `fd` number - File descriptor for the underlying memory object (usually dmabuf).
+      * `modifier` string _Linux_ - The modifier is retrieved from GBM library and passed to EGL driver.
 * `release` Function - Release the resources. The `texture` cannot be directly passed to another process, users need to maintain texture lifecycles in
   main process, but it is safe to pass the `textureInfo` to another process. Only a limited number of textures can exist at the same time, so it's important
   that you call `texture.release()` as soon as you're done with the texture.
