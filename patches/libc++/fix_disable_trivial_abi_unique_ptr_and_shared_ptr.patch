@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 7 May 2025 01:49:22 +0900
+Subject: fix: disable trivial_abi unique_ptr and shared_ptr
+
+Refs https://nornagon.medium.com/a-libc-odyssey-973e51649063
+
+diff --git a/include/__configuration/abi.h b/include/__configuration/abi.h
+index 01a4a4c023983594839bc2af8481313e9806a56d..a17d1884ba987317f95e9196923a70a79e695191 100644
+--- a/include/__configuration/abi.h
++++ b/include/__configuration/abi.h
+@@ -65,9 +65,9 @@
+ // performance and fast-path inlining.
+ #  define _LIBCPP_ABI_STRING_OPTIMIZED_EXTERNAL_INSTANTIATION
+ // Enable clang::trivial_abi on std::unique_ptr.
+-#  define _LIBCPP_ABI_ENABLE_UNIQUE_PTR_TRIVIAL_ABI
++// #  define _LIBCPP_ABI_ENABLE_UNIQUE_PTR_TRIVIAL_ABI
+ // Enable clang::trivial_abi on std::shared_ptr and std::weak_ptr
+-#  define _LIBCPP_ABI_ENABLE_SHARED_PTR_TRIVIAL_ABI
++// #  define _LIBCPP_ABI_ENABLE_SHARED_PTR_TRIVIAL_ABI
+ // std::random_device holds some state when it uses an implementation that gets
+ // entropy from a file (see _LIBCPP_USING_DEV_RANDOM). When switching from this
+ // implementation to another one on a platform that has already shipped
