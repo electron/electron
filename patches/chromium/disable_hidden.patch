@@ -21,10 +21,10 @@ index 00583269d16f4b8eacb4875b12a3e69155839d12..23d5baa267333e18551d449317f3e3a6
    // Prompts should remain open and functional across tab switches.
    if (!delegate_ || !delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 86a80795fb931f569b21c3138697b90d8b38d750..6268d7e3a64bac17b94f0bfb8e24c44a61cf7d3f 100644
+index 70acc7b54d862e9aac9ec8a0867893e22512f77c..03ee050653c48a22d68881151cdf8f787161a32b 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1012,6 +1012,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -1016,6 +1016,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    // Requests a commit and forced redraw in the renderer compositor.
    void ForceRedrawForTesting();
  
