@@ -78,6 +78,7 @@
 #include "base/win/windows_version.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
+#include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/color_utils.h"
@@ -360,6 +361,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
+
     DWORD frame_style = WS_CAPTION | WS_OVERLAPPED;
     if (resizable_)
       frame_style |= WS_THICKFRAME;
@@ -635,13 +637,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 
 void NativeWindowViews::Maximize() {
 #if BUILDFLAG(IS_WIN)
-  if (IsTranslucent()) {
-    // Semi-transparent windows with backgroundMaterial not set to 'none', and
-    // not fully transparent, require manual handling of rounded corners when
-    // maximized.
-    if (rounded_corner_)
-      SetRoundedCorners(false);
-
+  if (transparent()) {
     restore_bounds_ = GetBounds();
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
         GetNativeWindow());
@@ -665,15 +661,10 @@ void NativeWindowViews::Unmaximize() {
     return;
 
 #if BUILDFLAG(IS_WIN)
-  if (IsTranslucent()) {
+  if (transparent()) {
     SetBounds(restore_bounds_, false);
     NotifyWindowUnmaximize();
-    if (transparent()) {
-      UpdateThickFrame();
-    }
-    if (rounded_corner_) {
-      SetRoundedCorners(true);
-    }
+    UpdateThickFrame();
     return;
   }
 #endif
@@ -690,7 +681,7 @@ bool NativeWindowViews::IsMaximized() const {
     return true;
 
 #if BUILDFLAG(IS_WIN)
-  if (IsTranslucent() && !IsMinimized()) {
+  if (transparent() && !IsMinimized()) {
     // If the window is the same dimensions and placement as the
     // display, we consider it maximized.
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
@@ -712,15 +703,10 @@ void NativeWindowViews::Minimize() {
 
 void NativeWindowViews::Restore() {
 #if BUILDFLAG(IS_WIN)
-  if (IsMaximized() && IsTranslucent()) {
+  if (IsMaximized() && transparent()) {
     SetBounds(restore_bounds_, false);
     NotifyWindowRestore();
-    if (transparent()) {
-      UpdateThickFrame();
-    }
-    if (rounded_corner_) {
-      SetRoundedCorners(true);
-    }
+    UpdateThickFrame();
     return;
   }
 #endif
@@ -866,7 +852,7 @@ gfx::Size NativeWindowViews::GetContentSize() const {
 
 gfx::Rect NativeWindowViews::GetNormalBounds() const {
 #if BUILDFLAG(IS_WIN)
-  if (IsMaximized() && IsTranslucent())
+  if (IsMaximized() && transparent())
     return restore_bounds_;
 #endif
   return widget()->GetRestoredBounds();
@@ -1501,25 +1487,54 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
     return;
 
   DWM_SYSTEMBACKDROP_TYPE backdrop_type = GetBackdropFromString(material);
+  const bool is_translucent = backdrop_type != DWMSBT_NONE &&
+                              backdrop_type != DWMSBT_AUTO && !has_frame();
+
+  const NativeWindowHandle nativeWindowHandle = GetAcceleratedWidget();
+
+  MARGINS m = {0, 0, 0, 0};
+  if (is_translucent) {
+    // Since Chromium won't update it again internally, we need to update it
+    // manually. See: ui/views/widget/widget_hwnd_utils.cc#157 See:
+    // src/ui/views/win/hwnd_message_handler.cc#1793
+    m = {-1, -1, -1, -1};
+  }
+  DwmExtendFrameIntoClientArea(nativeWindowHandle, &m);
+
   HRESULT result =
-      DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_SYSTEMBACKDROP_TYPE,
+      DwmSetWindowAttribute(nativeWindowHandle, DWMWA_SYSTEMBACKDROP_TYPE,
                             &backdrop_type, sizeof(backdrop_type));
   if (FAILED(result))
     LOG(WARNING) << "Failed to set background material to " << material;
+
+  auto* desktop_window_tree_host =
+      static_cast<ElectronDesktopWindowTreeHostWin*>(
+          GetNativeWindow()->GetHost());
+
+  // Synchronize the internal state; otherwise, the background material may not
+  // work properly.
+  if (desktop_window_tree_host) {
+    desktop_window_tree_host->SetIsTranslucent(is_translucent);
+  }
+
+  auto* desktop_native_widget_aura =
+      static_cast<ElectronDesktopNativeWidgetAura*>(widget()->native_widget());
+  desktop_native_widget_aura->UpdateWindowTransparency();
 
   // For frameless windows with a background material set, we also need to
   // remove the caption color so it doesn't render a caption bar (since the
   // window is frameless)
   COLORREF caption_color = DWMWA_COLOR_DEFAULT;
-  if (backdrop_type != DWMSBT_NONE && backdrop_type != DWMSBT_AUTO &&
-      !has_frame()) {
+  if (is_translucent) {
     caption_color = DWMWA_COLOR_NONE;
   }
-  result = DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_CAPTION_COLOR,
+  result = DwmSetWindowAttribute(nativeWindowHandle, DWMWA_CAPTION_COLOR,
                                  &caption_color, sizeof(caption_color));
-
   if (FAILED(result))
     LOG(WARNING) << "Failed to set caption color to transparent";
+
+  // Activate the translucent window
+  DefWindowProc(nativeWindowHandle, WM_NCACTIVATE, TRUE, has_frame() ? 0 : -1);
 #endif
 }
 
@@ -1828,7 +1843,7 @@ ui::mojom::WindowShowState NativeWindowViews::GetRestoredState() {
   if (IsMaximized()) {
 #if BUILDFLAG(IS_WIN)
     // Restore maximized state for windows that are not translucent.
-    if (!IsTranslucent()) {
+    if (!transparent()) {
       return ui::mojom::WindowShowState::kMaximized;
     }
 #else
