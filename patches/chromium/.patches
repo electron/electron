@@ -57,7 +57,6 @@ export_gin_v8platform_pageallocator_for_usage_outside_of_the_gin.patch
 fix_export_zlib_symbols.patch
 web_contents.patch
 webview_fullscreen.patch
-disable_unload_metrics.patch
 extend_apply_webpreferences.patch
 build_libc_as_static_library.patch
 build_do_not_depend_on_packed_resource_integrity.patch
