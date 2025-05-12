@@ -168,17 +168,17 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     Center();
   }
 
-  bool use_content_size = false;
-  options.Get(options::kUseContentSize, &use_content_size);
+  const bool use_content_size =
+      options.ValueOrDefault(options::kUseContentSize, false);
 
   // On Linux and Window we may already have maximum size defined.
   extensions::SizeConstraints size_constraints(
       use_content_size ? GetContentSizeConstraints() : GetSizeConstraints());
 
-  int min_width = size_constraints.GetMinimumSize().width();
-  int min_height = size_constraints.GetMinimumSize().height();
-  options.Get(options::kMinWidth, &min_width);
-  options.Get(options::kMinHeight, &min_height);
+  const int min_width = options.ValueOrDefault(
+      options::kMinWidth, size_constraints.GetMinimumSize().width());
+  const int min_height = options.ValueOrDefault(
+      options::kMinHeight, size_constraints.GetMinimumSize().height());
   size_constraints.set_minimum_size(gfx::Size(min_width, min_height));
 
   gfx::Size max_size = size_constraints.GetMaximumSize();
@@ -278,9 +278,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   SetTitle(title);
 
   // Then show it.
-  bool show = true;
-  options.Get(options::kShow, &show);
-  if (show)
+  if (options.ValueOrDefault(options::kShow, true))
     Show();
 }
 
@@ -602,7 +600,7 @@ void NativeWindow::NotifyWindowRestore() {
 }
 
 void NativeWindow::NotifyWindowWillResize(const gfx::Rect& new_bounds,
-                                          const gfx::ResizeEdge& edge,
+                                          const gfx::ResizeEdge edge,
                                           bool* prevent_default) {
   observers_.Notify(&NativeWindowObserver::OnWindowWillResize, new_bounds, edge,
                     prevent_default);
@@ -783,14 +781,6 @@ const views::Widget* NativeWindow::GetWidget() const {
   return widget();
 }
 
-std::u16string NativeWindow::GetAccessibleWindowTitle() const {
-  if (accessible_title_.empty()) {
-    return views::WidgetDelegate::GetAccessibleWindowTitle();
-  }
-
-  return accessible_title_;
-}
-
 std::string NativeWindow::GetTitle() const {
   return base::UTF16ToUTF8(WidgetDelegate::GetWindowTitle());
 }
@@ -804,11 +794,11 @@ void NativeWindow::SetTitle(const std::string_view title) {
 }
 
 void NativeWindow::SetAccessibleTitle(const std::string& title) {
-  accessible_title_ = base::UTF8ToUTF16(title);
+  WidgetDelegate::SetAccessibleTitle(base::UTF8ToUTF16(title));
 }
 
 std::string NativeWindow::GetAccessibleTitle() {
-  return base::UTF16ToUTF8(accessible_title_);
+  return base::UTF16ToUTF8(GetAccessibleWindowTitle());
 }
 
 void NativeWindow::HandlePendingFullscreenTransitions() {

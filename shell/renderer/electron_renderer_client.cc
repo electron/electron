@@ -16,6 +16,7 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
@@ -178,19 +179,12 @@ void ElectronRendererClient::WillReleaseScriptContext(
   if (env == node_bindings_->uv_env())
     node_bindings_->set_uv_env(nullptr);
 
-  // Destroying the node environment will also run the uv loop,
-  // Node.js expects `kExplicit` microtasks policy and will run microtasks
-  // checkpoints after every call into JavaScript. Since we use a different
-  // policy in the renderer - switch to `kExplicit` and then drop back to the
-  // previous policy value.
-  v8::MicrotaskQueue* microtask_queue = context->GetMicrotaskQueue();
-  auto old_policy = microtask_queue->microtasks_policy();
-  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
-  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
-
-  environments_.erase(iter);
-
-  microtask_queue->set_microtasks_policy(old_policy);
+  // Destroying the node environment will also run the uv loop.
+  {
+    util::ExplicitMicrotasksScope microtasks_scope(
+        context->GetMicrotaskQueue());
+    environments_.erase(iter);
+  }
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);

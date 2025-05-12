@@ -39,8 +39,9 @@ Building Electron is done entirely with command-line scripts and cannot be done
 with Visual Studio. You can develop Electron with any editor but support for
 building with Visual Studio will come in the future.
 
-**Note:** Even though Visual Studio is not used for building, it's still
-**required** because we need the build toolchains it provides.
+> [!NOTE]
+> Even though Visual Studio is not used for building, it's still
+> **required** because we need the build toolchains it provides.
 
 ## Exclude source tree from Windows Security
 

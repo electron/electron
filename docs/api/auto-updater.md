@@ -26,8 +26,9 @@ requirements, you can read [Server Support][server-support]. Note that
 update process. Apps that need to disable ATS can add the
 `NSAllowsArbitraryLoads` key to their app's plist.
 
-**Note:** Your application must be signed for automatic updates on macOS.
-This is a requirement of `Squirrel.Mac`.
+> [!IMPORTANT]
+> Your application must be signed for automatic updates on macOS.
+> This is a requirement of `Squirrel.Mac`.
 
 ### Windows
 
@@ -93,8 +94,9 @@ Emitted when an update has been downloaded.
 
 On Windows only `releaseName` is available.
 
-**Note:** It is not strictly necessary to handle this event. A successfully
-downloaded update will still be applied the next time the application starts.
+> [!NOTE]
+> It is not strictly necessary to handle this event. A successfully
+> downloaded update will still be applied the next time the application starts.
 
 ### Event: 'before-quit-for-update'
 
@@ -125,8 +127,9 @@ Returns `string` - The current update feed URL.
 Asks the server whether there is an update. You must call `setFeedURL` before
 using this API.
 
-**Note:** If an update is available it will be downloaded automatically.
-Calling `autoUpdater.checkForUpdates()` twice will download the update two times.
+> [!NOTE]
+> If an update is available it will be downloaded automatically.
+> Calling `autoUpdater.checkForUpdates()` twice will download the update two times.
 
 ### `autoUpdater.quitAndInstall()`
 
@@ -137,9 +140,10 @@ Under the hood calling `autoUpdater.quitAndInstall()` will close all application
 windows first, and automatically call `app.quit()` after all windows have been
 closed.
 
-**Note:** It is not strictly necessary to call this function to apply an update,
-as a successfully downloaded update will always be applied the next time the
-application starts.
+> [!NOTE]
+> It is not strictly necessary to call this function to apply an update,
+> as a successfully downloaded update will always be applied the next time the
+> application starts.
 
 [squirrel-mac]: https://github.com/Squirrel/Squirrel.Mac
 [server-support]: https://github.com/Squirrel/Squirrel.Mac#server-support

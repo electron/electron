@@ -16,6 +16,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as nodeUrl from 'node:url';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
+import { randomString } from './lib/net-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
@@ -229,6 +230,36 @@ describe('BrowserWindow module', () => {
           await destroyed;
         });
       }
+    });
+  });
+
+  describe('window.accessibleTitle', () => {
+    const title = 'Window Title';
+    let w: BrowserWindow;
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false, title, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+    });
+    afterEach(async () => {
+      await closeWindow(w);
+      w = null as unknown as BrowserWindow;
+    });
+
+    it('should default to the window title', async () => {
+      expect(w.accessibleTitle).to.equal(title);
+    });
+
+    it('should be mutable', async () => {
+      const accessibleTitle = randomString(20);
+      w.accessibleTitle = accessibleTitle;
+      expect(w.accessibleTitle).to.equal(accessibleTitle);
+    });
+
+    it('should be clearable', async () => {
+      const accessibleTitle = randomString(20);
+      w.accessibleTitle = accessibleTitle;
+      expect(w.accessibleTitle).to.equal(accessibleTitle);
+      w.accessibleTitle = '';
+      expect(w.accessibleTitle).to.equal(title);
     });
   });
 
@@ -5464,6 +5495,57 @@ describe('BrowserWindow module', () => {
         });
       });
     });
+
+    describe('hasShadow state', () => {
+      describe('with properties', () => {
+        it('returns a boolean on all platforms', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.shadow).to.be.a('boolean');
+        });
+
+        // On Windows there's no shadow by default & it can't be changed dynamically.
+        it('can be changed with hasShadow option', () => {
+          const hasShadow = process.platform !== 'darwin';
+          const w = new BrowserWindow({ show: false, hasShadow });
+          expect(w.shadow).to.equal(hasShadow);
+        });
+
+        it('can be changed with setHasShadow method', () => {
+          const w = new BrowserWindow({ show: false });
+          w.shadow = false;
+          expect(w.shadow).to.be.false('hasShadow');
+          w.shadow = true;
+          expect(w.shadow).to.be.true('hasShadow');
+          w.shadow = false;
+          expect(w.shadow).to.be.false('hasShadow');
+        });
+      });
+
+      describe('with functions', () => {
+        it('returns a boolean on all platforms', () => {
+          const w = new BrowserWindow({ show: false });
+          const hasShadow = w.hasShadow();
+          expect(hasShadow).to.be.a('boolean');
+        });
+
+        // On Windows there's no shadow by default & it can't be changed dynamically.
+        it('can be changed with hasShadow option', () => {
+          const hasShadow = process.platform !== 'darwin';
+          const w = new BrowserWindow({ show: false, hasShadow });
+          expect(w.hasShadow()).to.equal(hasShadow);
+        });
+
+        it('can be changed with setHasShadow method', () => {
+          const w = new BrowserWindow({ show: false });
+          w.setHasShadow(false);
+          expect(w.hasShadow()).to.be.false('hasShadow');
+          w.setHasShadow(true);
+          expect(w.hasShadow()).to.be.true('hasShadow');
+          w.setHasShadow(false);
+          expect(w.hasShadow()).to.be.false('hasShadow');
+        });
+      });
+    });
   });
 
   ifdescribe(process.platform !== 'linux')('window states (excluding Linux)', () => {
@@ -6210,57 +6292,6 @@ describe('BrowserWindow module', () => {
           expect(w.isClosable()).to.be.false('isClosable');
           w.setClosable(true);
           expect(w.isClosable()).to.be.true('isClosable');
-        });
-      });
-    });
-
-    describe('hasShadow state', () => {
-      describe('with properties', () => {
-        it('returns a boolean on all platforms', () => {
-          const w = new BrowserWindow({ show: false });
-          expect(w.shadow).to.be.a('boolean');
-        });
-
-        // On Windows there's no shadow by default & it can't be changed dynamically.
-        it('can be changed with hasShadow option', () => {
-          const hasShadow = process.platform !== 'darwin';
-          const w = new BrowserWindow({ show: false, hasShadow });
-          expect(w.shadow).to.equal(hasShadow);
-        });
-
-        it('can be changed with setHasShadow method', () => {
-          const w = new BrowserWindow({ show: false });
-          w.shadow = false;
-          expect(w.shadow).to.be.false('hasShadow');
-          w.shadow = true;
-          expect(w.shadow).to.be.true('hasShadow');
-          w.shadow = false;
-          expect(w.shadow).to.be.false('hasShadow');
-        });
-      });
-
-      describe('with functions', () => {
-        it('returns a boolean on all platforms', () => {
-          const w = new BrowserWindow({ show: false });
-          const hasShadow = w.hasShadow();
-          expect(hasShadow).to.be.a('boolean');
-        });
-
-        // On Windows there's no shadow by default & it can't be changed dynamically.
-        it('can be changed with hasShadow option', () => {
-          const hasShadow = process.platform !== 'darwin';
-          const w = new BrowserWindow({ show: false, hasShadow });
-          expect(w.hasShadow()).to.equal(hasShadow);
-        });
-
-        it('can be changed with setHasShadow method', () => {
-          const w = new BrowserWindow({ show: false });
-          w.setHasShadow(false);
-          expect(w.hasShadow()).to.be.false('hasShadow');
-          w.setHasShadow(true);
-          expect(w.hasShadow()).to.be.true('hasShadow');
-          w.setHasShadow(false);
-          expect(w.hasShadow()).to.be.false('hasShadow');
         });
       });
     });

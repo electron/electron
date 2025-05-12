@@ -16,9 +16,9 @@
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-external.h"
+#include "v8/include/v8-microtask-queue.h"
 #include "v8/include/v8-template.h"
 
 // This file is forked from gin/function_template.h with 2 differences:
@@ -269,9 +269,8 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
   template <typename ReturnType>
   void DispatchToCallback(
       base::RepeatingCallback<ReturnType(ArgTypes...)> callback) {
-    gin_helper::MicrotasksScope microtasks_scope{
-        args_->GetHolderCreationContext(), true,
-        v8::MicrotasksScope::kRunMicrotasks};
+    v8::MicrotasksScope microtasks_scope(args_->GetHolderCreationContext(),
+                                         v8::MicrotasksScope::kRunMicrotasks);
     args_->Return(
         callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
   }
@@ -280,9 +279,8 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
   // expression to foo. As a result, we must specialize the case of Callbacks
   // that have the void return type.
   void DispatchToCallback(base::RepeatingCallback<void(ArgTypes...)> callback) {
-    gin_helper::MicrotasksScope microtasks_scope{
-        args_->GetHolderCreationContext(), true,
-        v8::MicrotasksScope::kRunMicrotasks};
+    v8::MicrotasksScope microtasks_scope(args_->GetHolderCreationContext(),
+                                         v8::MicrotasksScope::kRunMicrotasks);
     callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 

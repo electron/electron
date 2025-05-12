@@ -41,6 +41,15 @@ class PersistentDictionary {
            gin::ConvertFromV8(isolate_, value, out);
   }
 
+  // Convenience function for using a default value if the
+  // specified key isn't present in the dictionary.
+  template <typename T>
+  T ValueOrDefault(const std::string_view key, T default_value) const {
+    if (auto value = T{}; Get(key, &value))
+      return value;
+    return default_value;
+  }
+
  private:
   raw_ptr<v8::Isolate> isolate_ = nullptr;
   v8::Global<v8::Object> handle_;

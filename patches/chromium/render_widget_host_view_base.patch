@@ -6,10 +6,10 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 30ec1b5e2688b94bfe6a9c6cf55a839580e81e68..e9ee463b37ebc61d01fe1ceccbb6a280e33fd268 100644
+index bb7475f1f8be4038c77d2dc68b09a7ac2338b160..c35ef5290ef1f812c5e7ff31d71ae0661b26d124 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -654,6 +654,13 @@ void RenderWidgetHostViewBase::OnFrameTokenChangedForView(
+@@ -655,6 +655,13 @@ void RenderWidgetHostViewBase::OnFrameTokenChangedForView(
      host()->DidProcessFrame(frame_token, activation_time);
  }
  
@@ -24,7 +24,7 @@ index 30ec1b5e2688b94bfe6a9c6cf55a839580e81e68..e9ee463b37ebc61d01fe1ceccbb6a280
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index c93e93d13f1013641709f5808bc1c66ea772d082..db5234cd13819d14b737aec3315e77e420e01603 100644
+index 5627ee381a99c49760bbaa6e5e3476d8b4bc8cb1..230e059ee11ed64a1694232dad791fbb5644b578 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -30,6 +30,8 @@
@@ -50,7 +50,7 @@ index c93e93d13f1013641709f5808bc1c66ea772d082..db5234cd13819d14b737aec3315e77e4
  class DelegatedFrameHost;
  class SyntheticGestureTarget;
  
-@@ -151,6 +155,10 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -149,6 +153,10 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    void ProcessGestureEvent(const blink::WebGestureEvent& event,
                             const ui::LatencyInfo& latency) override;
    RenderWidgetHostViewBase* GetRootView() override;
@@ -61,8 +61,8 @@ index c93e93d13f1013641709f5808bc1c66ea772d082..db5234cd13819d14b737aec3315e77e4
    void OnAutoscrollStart() override;
    const viz::DisplayHitTestQueryMap& GetDisplayHitTestQuery() const override;
  
-@@ -199,6 +207,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
-   void NotifyContextMenuInsetsObservers(const gfx::Rect&) override {}
+@@ -198,6 +206,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+   void ShowInterestInElement(int) override {}
    bool IsHTMLFormPopup() const override;
  
 +  virtual void InitAsGuest(RenderWidgetHostView* parent_host_view,

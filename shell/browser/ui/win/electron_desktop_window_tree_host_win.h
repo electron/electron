@@ -31,6 +31,8 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
 
  protected:
   // views::DesktopWindowTreeHostWin:
+  void OnWidgetInitDone() override;
+  bool ShouldUpdateWindowTransparency() const override;
   bool PreHandleMSG(UINT message,
                     WPARAM w_param,
                     LPARAM l_param,
@@ -41,6 +43,8 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
                            int frame_thickness) const override;
   bool HandleMouseEventForCaption(UINT message) const override;
   bool HandleMouseEvent(ui::MouseEvent* event) override;
+  void HandleVisibilityChanged(bool visible) override;
+  void SetAllowScreenshots(bool allow) override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
@@ -49,6 +53,7 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
  private:
   raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
   std::optional<bool> force_should_paint_as_active_;
+  bool widget_init_done_ = false;
 };
 
 }  // namespace electron

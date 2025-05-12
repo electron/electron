@@ -134,7 +134,8 @@ Creates an empty `NativeImage` instance.
 
 Returns `Promise<NativeImage>` - fulfilled with the file's thumbnail preview image, which is a [NativeImage](native-image.md).
 
-Note: The Windows implementation will ignore `size.height` and scale the height according to `size.width`.
+> [!NOTE]
+> Windows implementation will ignore `size.height` and scale the height according to `size.width`.
 
 ### `nativeImage.createFromPath(path)`
 

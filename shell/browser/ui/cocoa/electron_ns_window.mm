@@ -218,7 +218,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (NSRect)contentRectForFrameRect:(NSRect)frameRect {
-  if (shell_->has_frame())
+  if (shell_ && shell_->has_frame())
     return [super contentRectForFrameRect:frameRect];
   else
     return frameRect;
