@@ -1,8 +1,8 @@
 # safeStorage
-
+# rucellmai61✨
 > Allows access to simple encryption and decryption of strings for storage on the local machine.
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process) rucellmai61 
 
 This module adds extra protection to data being stored on disk by using OS-provided cryptography systems. Current
 security semantics for each platform are outlined below.
