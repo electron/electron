@@ -19,6 +19,7 @@
 #include "base/timer/timer.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h"  // nogncheck
 #include "chrome/browser/file_system_access/file_system_access_features.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/grit/generated_resources.h"
@@ -38,6 +39,17 @@
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_manager.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
+
+ChromeFileSystemAccessPermissionContext::BlockPathRules::BlockPathRules() =
+    default;
+ChromeFileSystemAccessPermissionContext::BlockPathRules::~BlockPathRules() =
+    default;
+ChromeFileSystemAccessPermissionContext::BlockPathRules::BlockPathRules(
+    const BlockPathRules& other) = default;
+ChromeFileSystemAccessPermissionContext::BlockPathRules&
+ChromeFileSystemAccessPermissionContext::BlockPathRules::operator=(
+    const BlockPathRules& other) = default;
+
 namespace gin {
 
 template <>
@@ -140,21 +152,6 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
 }
 #endif  // BUILDFLAG(IS_WIN)
 
-// A wrapper around `base::NormalizeFilePath` that returns its result instead of
-// using an out parameter.
-base::FilePath NormalizeFilePath(const base::FilePath& path) {
-  CHECK(path.IsAbsolute());
-  // TODO(crbug.com/368130513O): On Windows, this call will fail if the target
-  // file path is greater than MAX_PATH. We should decide how to handle this
-  // scenario.
-  base::FilePath normalized_path;
-  if (!base::NormalizeFilePath(path, &normalized_path)) {
-    return path;
-  }
-  CHECK_EQ(path.empty(), normalized_path.empty());
-  return normalized_path;
-}
-
 bool ShouldBlockAccessToPath(
     base::FilePath path,
     HandleType handle_type,
@@ -164,9 +161,10 @@ bool ShouldBlockAccessToPath(
   DCHECK(!path.empty());
   DCHECK(path.IsAbsolute());
 
-  path = NormalizeFilePath(path);
+  path = ChromeFileSystemAccessPermissionContext::NormalizeFilePath(path);
   for (auto& rule : extra_rules) {
-    rule.path = NormalizeFilePath(rule.path);
+    rule.path =
+        ChromeFileSystemAccessPermissionContext::NormalizeFilePath(rule.path);
   }
 
 #if BUILDFLAG(IS_WIN)
@@ -475,8 +473,8 @@ void FileSystemAccessPermissionContext::ResetBlockPaths() {
   is_block_path_rules_init_complete_ = false;
   base::ThreadPool::PostTaskAndReplyWithResult(
       FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
-      base::BindOnce(&ChromeFileSystemAccessPermissionContext::GetBlockPaths,
-                     true),
+      base::BindOnce(
+          &ChromeFileSystemAccessPermissionContext::GenerateBlockPaths, true),
       base::BindOnce(&FileSystemAccessPermissionContext::UpdateBlockPaths,
                      weak_factory_.GetWeakPtr()));
 }
