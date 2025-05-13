@@ -7,284 +7,86 @@ This CL exposes the file system access blocklist publicly so that we can leverag
 it in Electron and prevent drift from Chrome's blocklist. We should look for a way
 to upstream this change to Chrome.
 
-diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 3514864559de0d2f2f36fda9b0add0b7b88f3b2a..5ffe260596202bacc58aa83d68855d05f7e76108 100644
---- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-+++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -45,7 +45,6 @@
- #include "chrome/browser/ui/file_system_access/file_system_access_dangerous_file_dialog.h"
- #include "chrome/browser/ui/file_system_access/file_system_access_dialogs.h"
- #include "chrome/browser/ui/file_system_access/file_system_access_restricted_directory_dialog.h"
--#include "chrome/common/chrome_paths.h"
- #include "chrome/grit/generated_resources.h"
- #include "components/content_settings/core/browser/host_content_settings_map.h"
- #include "components/content_settings/core/common/content_settings.h"
-@@ -261,114 +260,13 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
- }
- #endif
- 
--// Sentinel used to indicate that no PathService key is specified for a path in
--// the struct below.
--constexpr const int kNoBasePathKey = -1;
--
--using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
--
--std::vector<ChromeFileSystemAccessPermissionContext::BlockedPath>
--GenerateBlockedPath() {
--  return {
--      // Don't allow users to share their entire home directory, entire desktop
--      // or entire documents folder, but do allow sharing anything inside those
--      // directories not otherwise blocked.
--      {base::DIR_HOME, nullptr, BlockType::kDontBlockChildren},
--      {base::DIR_USER_DESKTOP, nullptr, BlockType::kDontBlockChildren},
--      {chrome::DIR_USER_DOCUMENTS, nullptr, BlockType::kDontBlockChildren},
--      // Similar restrictions for the downloads directory.
--      {chrome::DIR_DEFAULT_DOWNLOADS, nullptr, BlockType::kDontBlockChildren},
--      {chrome::DIR_DEFAULT_DOWNLOADS_SAFE, nullptr,
--       BlockType::kDontBlockChildren},
--      // The Chrome installation itself should not be modified by the web.
--      {base::DIR_EXE, nullptr, BlockType::kBlockAllChildren},
--      {base::DIR_MODULE, nullptr, BlockType::kBlockAllChildren},
--      {base::DIR_ASSETS, nullptr, BlockType::kBlockAllChildren},
--      // And neither should the configuration of at least the currently running
--      // Chrome instance (note that this does not take --user-data-dir command
--      // line overrides into account).
--      {chrome::DIR_USER_DATA, nullptr, BlockType::kBlockAllChildren},
--      // ~/.ssh is pretty sensitive on all platforms, so block access to that.
--      {base::DIR_HOME, FILE_PATH_LITERAL(".ssh"), BlockType::kBlockAllChildren},
--      // And limit access to ~/.gnupg as well.
--      {base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"),
--       BlockType::kBlockAllChildren},
--#if BUILDFLAG(IS_WIN)
--      // Some Windows specific directories to block, basically all apps, the
--      // operating system itself, as well as configuration data for apps.
--      {base::DIR_PROGRAM_FILES, nullptr, BlockType::kBlockAllChildren},
--      {base::DIR_PROGRAM_FILESX86, nullptr, BlockType::kBlockAllChildren},
--      {base::DIR_PROGRAM_FILES6432, nullptr, BlockType::kBlockAllChildren},
--      {base::DIR_WINDOWS, nullptr, BlockType::kBlockAllChildren},
--      {base::DIR_ROAMING_APP_DATA, nullptr, BlockType::kBlockAllChildren},
--      {base::DIR_LOCAL_APP_DATA, nullptr, BlockType::kBlockAllChildren},
--      {base::DIR_COMMON_APP_DATA, nullptr, BlockType::kBlockAllChildren},
--      // Opening a file from an MTP device, such as a smartphone or a camera, is
--      // implemented by Windows as opening a file in the temporary internet
--      // files directory. To support that, allow opening files in that
--      // directory, but not whole directories.
--      {base::DIR_IE_INTERNET_CACHE, nullptr,
--       BlockType::kBlockNestedDirectories},
--#endif
--#if BUILDFLAG(IS_MAC)
--      // Similar Mac specific blocks.
--      {base::DIR_APP_DATA, nullptr, BlockType::kBlockAllChildren},
--      // Block access to the current bundle directory.
--      {chrome::DIR_OUTER_BUNDLE, nullptr, BlockType::kBlockAllChildren},
--      // Block access to the user's Applications directory.
--      {base::DIR_HOME, FILE_PATH_LITERAL("Applications"),
--       BlockType::kBlockAllChildren},
--      // Block access to the root Applications directory.
--      {kNoBasePathKey, FILE_PATH_LITERAL("/Applications"),
--       BlockType::kBlockAllChildren},
--      {base::DIR_HOME, FILE_PATH_LITERAL("Library"),
--       BlockType::kBlockAllChildren},
--      // Allow access to other cloud files, such as Google Drive.
--      {base::DIR_HOME, FILE_PATH_LITERAL("Library/CloudStorage"),
--       BlockType::kDontBlockChildren},
--      // Allow the site to interact with data from its corresponding natively
--      // installed (sandboxed) application. It would be nice to limit a site to
--      // access only _its_ corresponding natively installed application, but
--      // unfortunately there's no straightforward way to do that. See
--      // https://crbug.com/984641#c22.
--      {base::DIR_HOME, FILE_PATH_LITERAL("Library/Containers"),
--       BlockType::kDontBlockChildren},
--      // Allow access to iCloud files...
--      {base::DIR_HOME, FILE_PATH_LITERAL("Library/Mobile Documents"),
--       BlockType::kDontBlockChildren},
--      // ... which may also appear at this directory.
--      {base::DIR_HOME,
--       FILE_PATH_LITERAL("Library/Mobile Documents/com~apple~CloudDocs"),
--       BlockType::kDontBlockChildren},
--#endif
--#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
--      // On Linux also block access to devices via /dev.
--      {kNoBasePathKey, FILE_PATH_LITERAL("/dev"), BlockType::kBlockAllChildren},
--      // And security sensitive data in /proc and /sys.
--      {kNoBasePathKey, FILE_PATH_LITERAL("/proc"),
--       BlockType::kBlockAllChildren},
--      {kNoBasePathKey, FILE_PATH_LITERAL("/sys"), BlockType::kBlockAllChildren},
--      // And system files in /boot and /etc.
--      {kNoBasePathKey, FILE_PATH_LITERAL("/boot"),
--       BlockType::kBlockAllChildren},
--      {kNoBasePathKey, FILE_PATH_LITERAL("/etc"), BlockType::kBlockAllChildren},
--      // And block all of ~/.config, matching the similar restrictions on mac
--      // and windows.
--      {base::DIR_HOME, FILE_PATH_LITERAL(".config"),
--       BlockType::kBlockAllChildren},
--      // Block ~/.dbus as well, just in case, although there probably isn't much
--      // a website can do with access to that directory and its contents.
--      {base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
--       BlockType::kBlockAllChildren},
--#endif
--#if BUILDFLAG(IS_ANDROID)
--      {base::DIR_ANDROID_APP_DATA, nullptr, BlockType::kBlockAllChildren},
--      {base::DIR_CACHE, nullptr, BlockType::kBlockAllChildren},
--#endif
--      // TODO(crbug.com/40095723): Refine this list, for example add
--      // XDG_CONFIG_HOME when it is not set ~/.config?
--  };
--}
-+// This patch moves the deleted content from this file over to
-+// chrome/browser/file_system_access/chrome_file_system_access_permission_context.h.
-+// NOTE IF THERE IS A CONFLICT ABOVE, you will need to copy the changes in the
-+// removed block over to chrome_file_system_access_permission_context.h.
-+
-+// Describes a rule for blocking a directory, which can be constructed
-+// dynamically (based on state) or statically (from kBlockedPaths).
- 
- // A wrapper around `base::NormalizeFilePath` that returns its result instead of
- // using an out parameter.
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 46a2019587b534add3c89f464cdf7261a67e7cce..7d313934b24b32830976ce19479cf3b00d3ddca8 100644
+index 5e1aa12c6337e..f57560891de42 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-@@ -21,7 +21,7 @@
- #include "chrome/browser/file_system_access/file_system_access_permission_request_manager.h"
- #include "chrome/browser/permissions/one_time_permissions_tracker.h"
- #include "chrome/browser/permissions/one_time_permissions_tracker_observer.h"
--#include "components/enterprise/buildflags/buildflags.h"
-+#include "chrome/common/chrome_paths.h"
- #include "components/permissions/features.h"
- #include "components/permissions/object_permission_context_base.h"
- #include "content/public/browser/file_system_access_permission_context.h"
-@@ -31,7 +31,7 @@
- #include "chrome/browser/web_applications/web_app_install_manager_observer.h"
- #endif
+@@ -399,6 +399,8 @@ class ChromeFileSystemAccessPermissionContext
+   // This is needed when updating path with ScopedPathOverride.
+   void ResetBlockPathsForTesting();
  
--#if BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
-+#if 0
- #include "components/enterprise/common/files_scan_data.h"
- #endif
- 
-@@ -371,6 +371,115 @@ class ChromeFileSystemAccessPermissionContext
-   // KeyedService:
-   void Shutdown() override;
- 
-+  // Sentinel used to indicate that no PathService key is specified for a path in
-+  // the struct below.
-+  static constexpr const int kNoBasePathKey = -1;
-+
-+  using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
-+
-+  static std::vector<ChromeFileSystemAccessPermissionContext::BlockedPath>
-+  GenerateBlockedPath() {
-+    return {
-+        // Don't allow users to share their entire home directory, entire desktop
-+        // or entire documents folder, but do allow sharing anything inside those
-+        // directories not otherwise blocked.
-+        {base::DIR_HOME, nullptr, BlockType::kDontBlockChildren},
-+        {base::DIR_USER_DESKTOP, nullptr, BlockType::kDontBlockChildren},
-+        {chrome::DIR_USER_DOCUMENTS, nullptr, BlockType::kDontBlockChildren},
-+        // Similar restrictions for the downloads directory.
-+        {chrome::DIR_DEFAULT_DOWNLOADS, nullptr, BlockType::kDontBlockChildren},
-+        {chrome::DIR_DEFAULT_DOWNLOADS_SAFE, nullptr,
-+         BlockType::kDontBlockChildren},
-+        // The Chrome installation itself should not be modified by the web.
-+        {base::DIR_EXE, nullptr, BlockType::kBlockAllChildren},
-+        {base::DIR_MODULE, nullptr, BlockType::kBlockAllChildren},
-+        {base::DIR_ASSETS, nullptr, BlockType::kBlockAllChildren},
-+        // And neither should the configuration of at least the currently running
-+        // Chrome instance (note that this does not take --user-data-dir command
-+        // line overrides into account).
-+        {chrome::DIR_USER_DATA, nullptr, BlockType::kBlockAllChildren},
-+        // ~/.ssh is pretty sensitive on all platforms, so block access to that.
-+        {base::DIR_HOME, FILE_PATH_LITERAL(".ssh"), BlockType::kBlockAllChildren},
-+        // And limit access to ~/.gnupg as well.
-+        {base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"),
-+         BlockType::kBlockAllChildren},
-+  #if BUILDFLAG(IS_WIN)
-+        // Some Windows specific directories to block, basically all apps, the
-+        // operating system itself, as well as configuration data for apps.
-+        {base::DIR_PROGRAM_FILES, nullptr, BlockType::kBlockAllChildren},
-+        {base::DIR_PROGRAM_FILESX86, nullptr, BlockType::kBlockAllChildren},
-+        {base::DIR_PROGRAM_FILES6432, nullptr, BlockType::kBlockAllChildren},
-+        {base::DIR_WINDOWS, nullptr, BlockType::kBlockAllChildren},
-+        {base::DIR_ROAMING_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-+        {base::DIR_LOCAL_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-+        {base::DIR_COMMON_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-+        // Opening a file from an MTP device, such as a smartphone or a camera, is
-+        // implemented by Windows as opening a file in the temporary internet
-+        // files directory. To support that, allow opening files in that
-+        // directory, but not whole directories.
-+        {base::DIR_IE_INTERNET_CACHE, nullptr,
-+         BlockType::kBlockNestedDirectories},
-+  #endif
-+  #if BUILDFLAG(IS_MAC)
-+        // Similar Mac specific blocks.
-+        {base::DIR_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-+        // Block access to the current bundle directory.
-+        {chrome::DIR_OUTER_BUNDLE, nullptr, BlockType::kBlockAllChildren},
-+        // Block access to the user's Applications directory.
-+        {base::DIR_HOME, FILE_PATH_LITERAL("Applications"),
-+         BlockType::kBlockAllChildren},
-+        // Block access to the root Applications directory.
-+        {kNoBasePathKey, FILE_PATH_LITERAL("/Applications"),
-+         BlockType::kBlockAllChildren},
-+        {base::DIR_HOME, FILE_PATH_LITERAL("Library"),
-+         BlockType::kBlockAllChildren},
-+        // Allow access to other cloud files, such as Google Drive.
-+        {base::DIR_HOME, FILE_PATH_LITERAL("Library/CloudStorage"),
-+         BlockType::kDontBlockChildren},
-+        // Allow the site to interact with data from its corresponding natively
-+        // installed (sandboxed) application. It would be nice to limit a site to
-+        // access only _its_ corresponding natively installed application, but
-+        // unfortunately there's no straightforward way to do that. See
-+        // https://crbug.com/984641#c22.
-+        {base::DIR_HOME, FILE_PATH_LITERAL("Library/Containers"),
-+         BlockType::kDontBlockChildren},
-+        // Allow access to iCloud files...
-+        {base::DIR_HOME, FILE_PATH_LITERAL("Library/Mobile Documents"),
-+         BlockType::kDontBlockChildren},
-+        // ... which may also appear at this directory.
-+        {base::DIR_HOME,
-+         FILE_PATH_LITERAL("Library/Mobile Documents/com~apple~CloudDocs"),
-+         BlockType::kDontBlockChildren},
-+  #endif
-+  #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
-+        // On Linux also block access to devices via /dev.
-+        {kNoBasePathKey, FILE_PATH_LITERAL("/dev"), BlockType::kBlockAllChildren},
-+        // And security sensitive data in /proc and /sys.
-+        {kNoBasePathKey, FILE_PATH_LITERAL("/proc"),
-+         BlockType::kBlockAllChildren},
-+        {kNoBasePathKey, FILE_PATH_LITERAL("/sys"), BlockType::kBlockAllChildren},
-+        // And system files in /boot and /etc.
-+        {kNoBasePathKey, FILE_PATH_LITERAL("/boot"),
-+         BlockType::kBlockAllChildren},
-+        {kNoBasePathKey, FILE_PATH_LITERAL("/etc"), BlockType::kBlockAllChildren},
-+        // And block all of ~/.config, matching the similar restrictions on mac
-+        // and windows.
-+        {base::DIR_HOME, FILE_PATH_LITERAL(".config"),
-+         BlockType::kBlockAllChildren},
-+        // Block ~/.dbus as well, just in case, although there probably isn't much
-+        // a website can do with access to that directory and its contents.
-+        {base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
-+         BlockType::kBlockAllChildren},
-+  #endif
-+  #if BUILDFLAG(IS_ANDROID)
-+        {base::DIR_ANDROID_APP_DATA, nullptr, BlockType::kBlockAllChildren},
-+        {base::DIR_CACHE, nullptr, BlockType::kBlockAllChildren},
-+  #endif
-+        // TODO(crbug.com/40095723): Refine this list, for example add
-+        // XDG_CONFIG_HOME when it is not set ~/.config?
-+    };
-+  }
++  std::unique_ptr<BlockPathRules> GetBlockPaths();
 +
   protected:
    SEQUENCE_CHECKER(sequence_checker_);
  
-@@ -390,7 +499,7 @@ class ChromeFileSystemAccessPermissionContext
- 
-   void PermissionGrantDestroyed(PermissionGrantImpl* grant);
- 
--#if BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+index 5b543e82abb17..031d1ce8a5d84 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+@@ -82,11 +82,13 @@
+ #include "chrome/browser/ui/browser_window.h"
+ #include "chrome/browser/ui/tabs/public/tab_features.h"
+ #include "chrome/browser/ui/views/file_system_access/file_system_access_page_action_controller.h"
 +#if 0
-   void OnContentAnalysisComplete(
-       std::vector<content::PathInfo> entries,
-       EntriesAllowedByEnterprisePolicyCallback callback,
+ #include "chrome/browser/web_applications/proto/web_app_install_state.pb.h"
+ #include "chrome/browser/web_applications/web_app_install_manager.h"
+ #include "chrome/browser/web_applications/web_app_install_manager_observer.h"
+ #include "chrome/browser/web_applications/web_app_provider.h"
+ #include "chrome/browser/web_applications/web_app_registrar.h"
++#endif
+ #include "components/tabs/public/tab_interface.h"
+ #if BUILDFLAG(ENABLE_PLATFORM_APPS)
+ #include "extensions/browser/extension_registry.h"  // nogncheck
+@@ -1289,7 +1291,7 @@ ChromeFileSystemAccessPermissionContext::
+ #if BUILDFLAG(IS_ANDROID)
+   one_time_permissions_tracker_.Observe(
+       OneTimePermissionsTrackerFactory::GetForBrowserContext(context));
+-#else
++#elif 0
+   auto* provider = web_app::WebAppProvider::GetForWebApps(
+       Profile::FromBrowserContext(profile_));
+   if (provider) {
+@@ -1335,6 +1337,11 @@ void ChromeFileSystemAccessPermissionContext::ResetBlockPathsForTesting() {
+   ResetBlockPaths();
+ }
+ 
++std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
++ChromeFileSystemAccessPermissionContext::GetBlockPaths() {
++  return GenerateBlockPaths(should_normalize_file_path_);
++}
++
+ void ChromeFileSystemAccessPermissionContext::UpdateBlockPaths(
+     std::unique_ptr<BlockPathRules> block_path_rules) {
+   block_path_rules_ = std::move(block_path_rules);
+@@ -2551,7 +2558,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+   one_time_permissions_tracker_.Reset();
+ }
+ 
+-#if !BUILDFLAG(IS_ANDROID)
++#if 0
+ void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
+     const webapps::AppId& app_id) {
+   if (!base::FeatureList::IsEnabled(
+@@ -3108,11 +3115,7 @@ bool ChromeFileSystemAccessPermissionContext::OriginHasExtendedPermission(
+     const url::Origin& origin) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+-#if BUILDFLAG(IS_ANDROID)
+-  // TODO(crbug.com/40101963): Enable when android persisted permissions are
+-  // implemented.
+-  return false;
+-#else
++#if 0
+   if (!base::FeatureList::IsEnabled(
+           features::kFileSystemAccessPersistentPermissions)) {
+     return false;
+@@ -3156,6 +3159,7 @@ bool ChromeFileSystemAccessPermissionContext::OriginHasExtendedPermission(
+                                             : WebAppInstallStatus::kUninstalled;
+   return app_has_os_integration;
+ #endif  // BUILDFLAG(IS_ANDROID)
++  return false;
+ }
+ 
+ void ChromeFileSystemAccessPermissionContext::SetOriginExtendedPermissionByUser(
+ 
