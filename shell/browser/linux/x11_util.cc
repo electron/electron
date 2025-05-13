@@ -11,7 +11,7 @@ namespace x11_util {
 bool IsX11() {
   return ui::OzonePlatform::GetInstance()
       ->GetPlatformProperties()
-      .electron_can_call_x11;
+      .skia_can_fall_back_to_x11;
 }
 
 }  // namespace x11_util
