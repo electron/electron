@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 02ac517502a51603a689c74d8073b2e5862f1e45..f0d167bb6c3a53950c431170eaa45a69408f93d9 100644
+index 34f4bc9ac4d03ad40af9f08c9985d7afe4b37133..58c1b9670baba4a19a0f0876201e86c92cb46bc7 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1046,6 +1046,7 @@ component("base") {
@@ -582,10 +582,10 @@ index d83f420d25e2c108ad400ebecae02b1ac327c058..77852c5c315ac09dddb7227adf3b840e
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 86e30304014f4811578595013a20a76790b1e84d..7964ac6af0fc3821b8208e34be766a712ccd2026 100644
+index f2a64f86c4cc9e5679179e46ebbb0b82b91aa5db..aa174060de7c4f12b788c28d40931b098d80727e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -343,6 +343,7 @@ source_set("browser") {
+@@ -342,6 +342,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 2c8e8e9b4260366b5312be7f2a3bbf9d332fe916..fb9e07491c93593904db7fd55c24e67820de982c 100644
+index 148875846a0dd90471e822bfb81cfd3649b0c029..795b537214a6da9442a359c791d2b4f0c2685f9f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -664,6 +664,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 2c8e8e9b4260366b5312be7f2a3bbf9d332fe916..fb9e07491c93593904db7fd55c24e678
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1962,6 +1964,7 @@ test("content_browsertests") {
+@@ -1961,6 +1963,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 2c8e8e9b4260366b5312be7f2a3bbf9d332fe916..fb9e07491c93593904db7fd55c24e678
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3292,6 +3295,7 @@ test("content_unittests") {
+@@ -3291,6 +3294,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -937,7 +937,7 @@ index f89dbdfb0c4e8e31d387d1ce2e5304277ac4df26..7b75bfeba59345d63f4ac81153697941
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 8bcbb663710445e977a3080209cd518d3fc2c6e0..0680d3af1f219235e20c0e83b80c0ea9cbf7b3a1 100644
+index 4f663e28aa078bd2e692a79d06dbdde055287f3c..8588214d7f30384cc37aaf0062c941a854d4bba5 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -198,6 +198,7 @@ source_set("audio") {
@@ -1448,7 +1448,7 @@ index 1b5e616ebd3c610739a9dcf3fd6694f1e442d783..8449d7eb65687fa82db0f23c7627807e
  
    if (is_mac) {
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index 0645e5e49137b753bbc17138c88eabc53969bed8..8dcf005f4ae7bcf996b4d868e6f4855a6148d4b1 100644
+index aa7e9938b22adaf1becf468330623aff69a6c418..d0523bd5c333369adf073c55060d8a0fcd97d905 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
 @@ -362,10 +362,14 @@ blink_core_sources_editing = [
@@ -1801,10 +1801,10 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..de771ef414b9a69e331261524f08e9a1
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index e598004da50257f4ee37a6431222c2b9e9f24b62..3f2ea7a469d6580d25fe51b657555d77a9ce9b80 100644
+index 491b8006c83c8602122a77d60e161c2167744756..abbf5248199598eadb57af99c3e3dc4c72f58af9 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
-@@ -127,6 +127,12 @@ component("display") {
+@@ -129,6 +129,12 @@ component("display") {
      "//ui/gfx/geometry",
    ]
  
@@ -1818,18 +1818,18 @@ index e598004da50257f4ee37a6431222c2b9e9f24b62..3f2ea7a469d6580d25fe51b657555d77
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 874ac9d572931fe175ccab8beb7738fe0a7b3c1b..b70e2a8a7be9e00a379f47c77589dde6b8b1f081 100644
+index 033ebc0036bcd373b011ca829d255e8c83701a6d..ad06707f31872c58217d2d034f050c5570010ba5 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
-@@ -30,6 +30,7 @@
+@@ -32,6 +32,7 @@
  #include "base/trace_event/trace_event.h"
  #include "build/build_config.h"
  #include "components/device_event_log/device_event_log.h"
 +#include "electron/mas.h"
  #include "ui/display/display.h"
  #include "ui/display/display_change_notifier.h"
- #include "ui/display/util/display_util.h"
-@@ -177,7 +178,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
+ #include "ui/display/mac/screen_mac_headless.h"
+@@ -181,7 +182,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
      display.set_color_depth(Display::kDefaultBitsPerPixel);
      display.set_depth_per_component(Display::kDefaultBitsPerComponent);
    }
@@ -1848,7 +1848,7 @@ index 874ac9d572931fe175ccab8beb7738fe0a7b3c1b..b70e2a8a7be9e00a379f47c77589dde6
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index c8f01a88e0d1797baf53c517341c735d9c6e6b4a..345743dd19f862cf2b4304d70cb47ce68e6895d1 100644
+index af66f53bbec8e3cf9b1e2e69e602173725958706..381498a4d51b32a30a206d9ec3878d9ab3109386 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -337,6 +337,12 @@ component("gfx") {

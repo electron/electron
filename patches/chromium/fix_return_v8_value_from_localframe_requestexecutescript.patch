@@ -20,7 +20,7 @@ index fc9cb7e68bdad4c40fab63f70243e09ad005ab80..199fbceda530da31aab9126d78b4bd21
        injector_->ExpectsResults(), injector_->ShouldWaitForPromise());
  }
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index 6ea4a0f04eab4e85ec4c9b67f50c5c4e5c6e01e1..5f055fe422904c95e05af5cb0e92241a5d9d53c1 100644
+index 202a7b6771ce1890a4bb33b66c533584bce746ed..3c5edffc6d623aaabc62bfc134fb968db6bc5345 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
 @@ -461,6 +461,7 @@ class BLINK_EXPORT WebLocalFrame : public WebFrame {
@@ -215,7 +215,7 @@ index 5e12b61ba14cd1afb07b71ff15e73e905da0addc..685a2ebb6694c173471d045014932125
        mojom::blink::WantResultOption::kWantResult, wait_for_promise);
  }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index dd0c441d45ebb30c5a32822365f2ebe273b8cd16..164daddaccb84a28cf4bd387f382afddfc2613d3 100644
+index 61fd7ff4630b21db33f05523aa86d3dc5b103e2a..d3d77005ffafb8c080792f4814be239a7fd24392 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1111,14 +1111,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
