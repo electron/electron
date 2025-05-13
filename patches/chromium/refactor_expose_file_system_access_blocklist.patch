@@ -7,21 +7,8 @@ This CL exposes the file system access blocklist publicly so that we can leverag
 it in Electron and prevent drift from Chrome's blocklist. We should look for a way
 to upstream this change to Chrome.
 
-diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 5e1aa12c6337e..f57560891de42 100644
---- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-+++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-@@ -399,6 +399,8 @@ class ChromeFileSystemAccessPermissionContext
-   // This is needed when updating path with ScopedPathOverride.
-   void ResetBlockPathsForTesting();
- 
-+  std::unique_ptr<BlockPathRules> GetBlockPaths();
-+
-  protected:
-   SEQUENCE_CHECKER(sequence_checker_);
- 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 5b543e82abb17..031d1ce8a5d84 100644
+index 5b543e82abb17cbb91bf37fa6bac016b6053eb93..5500755603079df80f12d7526069bd059cb3c826 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -82,11 +82,13 @@
@@ -47,19 +34,20 @@ index 5b543e82abb17..031d1ce8a5d84 100644
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -1335,6 +1337,11 @@ void ChromeFileSystemAccessPermissionContext::ResetBlockPathsForTesting() {
+@@ -1335,6 +1337,12 @@ void ChromeFileSystemAccessPermissionContext::ResetBlockPathsForTesting() {
    ResetBlockPaths();
  }
  
++// static
 +std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
-+ChromeFileSystemAccessPermissionContext::GetBlockPaths() {
-+  return GenerateBlockPaths(should_normalize_file_path_);
++ChromeFileSystemAccessPermissionContext::GetBlockPaths(bool should_normalize_file_path) {
++  return GenerateBlockPaths(should_normalize_file_path);
 +}
 +
  void ChromeFileSystemAccessPermissionContext::UpdateBlockPaths(
      std::unique_ptr<BlockPathRules> block_path_rules) {
    block_path_rules_ = std::move(block_path_rules);
-@@ -2551,7 +2558,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -2551,7 +2559,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -68,7 +56,7 @@ index 5b543e82abb17..031d1ce8a5d84 100644
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3108,11 +3115,7 @@ bool ChromeFileSystemAccessPermissionContext::OriginHasExtendedPermission(
+@@ -3108,11 +3116,7 @@ bool ChromeFileSystemAccessPermissionContext::OriginHasExtendedPermission(
      const url::Origin& origin) {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
  
@@ -81,7 +69,7 @@ index 5b543e82abb17..031d1ce8a5d84 100644
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3156,6 +3159,7 @@ bool ChromeFileSystemAccessPermissionContext::OriginHasExtendedPermission(
+@@ -3156,6 +3160,7 @@ bool ChromeFileSystemAccessPermissionContext::OriginHasExtendedPermission(
                                              : WebAppInstallStatus::kUninstalled;
    return app_has_os_integration;
  #endif  // BUILDFLAG(IS_ANDROID)
@@ -89,4 +77,16 @@ index 5b543e82abb17..031d1ce8a5d84 100644
  }
  
  void ChromeFileSystemAccessPermissionContext::SetOriginExtendedPermissionByUser(
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+index 5e1aa12c6337e8d0dee9f24d7ec233a894763053..b4bec473071cee2839200b9d5b170ac8f1836770 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+@@ -399,6 +399,8 @@ class ChromeFileSystemAccessPermissionContext
+   // This is needed when updating path with ScopedPathOverride.
+   void ResetBlockPathsForTesting();
+ 
++  static std::unique_ptr<BlockPathRules> GetBlockPaths(bool should_normalize_file_path);
++
+  protected:
+   SEQUENCE_CHECKER(sequence_checker_);
  

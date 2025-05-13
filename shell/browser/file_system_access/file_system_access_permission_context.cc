@@ -156,19 +156,17 @@ base::FilePath NormalizeFilePath(const base::FilePath& path) {
 }
 
 bool ShouldBlockAccessToPath(
-    bool should_normalize_file_path,
     base::FilePath path,
     HandleType handle_type,
-    std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule> extra_rules,
+    std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
+        extra_rules,
     ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules) {
   DCHECK(!path.empty());
   DCHECK(path.IsAbsolute());
 
-  if (should_normalize_file_path) {
-    path = NormalizeFilePath(path);
-    for (auto& rule : extra_rules) {
-      rule.path = NormalizeFilePath(rule.path);
-    }
+  path = NormalizeFilePath(path);
+  for (auto& rule : extra_rules) {
+    rule.path = NormalizeFilePath(rule.path);
   }
 
 #if BUILDFLAG(IS_WIN)
@@ -467,10 +465,29 @@ FileSystemAccessPermissionContext::FileSystemAccessPermissionContext(
     const base::Clock* clock)
     : browser_context_(browser_context), clock_(clock) {
   DETACH_FROM_SEQUENCE(sequence_checker_);
+  ResetBlockPaths();
 }
 
 FileSystemAccessPermissionContext::~FileSystemAccessPermissionContext() =
     default;
+
+void FileSystemAccessPermissionContext::ResetBlockPaths() {
+  is_block_path_rules_init_complete_ = false;
+  base::ThreadPool::PostTaskAndReplyWithResult(
+      FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
+      base::BindOnce(&ChromeFileSystemAccessPermissionContext::GetBlockPaths,
+                     true),
+      base::BindOnce(&FileSystemAccessPermissionContext::UpdateBlockPaths,
+                     weak_factory_.GetWeakPtr()));
+}
+
+void FileSystemAccessPermissionContext::UpdateBlockPaths(
+    std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
+        block_path_rules) {
+  block_path_rules_ = std::move(block_path_rules);
+  is_block_path_rules_init_complete_ = true;
+  block_rules_check_callbacks_.Notify(*block_path_rules_.get());
+}
 
 scoped_refptr<content::FileSystemAccessPermissionGrant>
 FileSystemAccessPermissionContext::GetReadPermissionGrant(
@@ -625,20 +642,19 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
                             std::move(after_blocklist_check_callback));
 }
 
-void FileSystemAccessPermissionContext::
-    CheckShouldBlockAccessToPathAndReply(
-        base::FilePath path,
-        HandleType handle_type,
-        std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule> extra_rules,
-        base::OnceCallback<void(bool)> callback,
-        ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules) {
+void FileSystemAccessPermissionContext::CheckShouldBlockAccessToPathAndReply(
+    base::FilePath path,
+    HandleType handle_type,
+    std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
+        extra_rules,
+    base::OnceCallback<void(bool)> callback,
+    ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules) {
   base::ThreadPool::PostTaskAndReplyWithResult(
       FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
-      base::BindOnce(&ShouldBlockAccessToPath, should_normalize_file_path_,
-                     path, handle_type, extra_rules, block_path_rules),
+      base::BindOnce(&ShouldBlockAccessToPath, path, handle_type, extra_rules,
+                     block_path_rules),
       std::move(callback));
 }
-
 
 void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
     const content::PathInfo& path_info,
@@ -660,7 +676,8 @@ void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
   // profile manager, where it exists (it does not in unit tests), and via the
   // profile's directory, assuming the profile dir is a child of the user data
   // dir.
-  std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule> extra_rules;
+  std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
+      extra_rules;
   if (is_block_path_rules_init_complete_) {
     // The rules initialization is completed, we can just post the task to a
     // anonymous blocking traits.
