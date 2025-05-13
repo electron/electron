@@ -32,7 +32,7 @@ index 9fe216ae76191985751c5aff735cb38ba747a5cb..274dbe4fe45f5ca03e4f93fa1ef94f22
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 15117b459ff963aba79a1ea3dce7eae4c0686d30..ae999daec4a739360ee7552f04543f3346cdef5e 100644
+index 2d9ef567d7aba3d78ecb0637fc7a31cbaaba564b..9c6c5e3b2668bdfa3ec1f5f0482bc1294bfed9b0 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@

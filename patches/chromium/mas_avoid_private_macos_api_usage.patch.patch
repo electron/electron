@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 34f4bc9ac4d03ad40af9f08c9985d7afe4b37133..58c1b9670baba4a19a0f0876201e86c92cb46bc7 100644
+index 7860ff639da1116f007fda4ecf3010d065203f8c..c61bc8d60d69d348da992c980c6222c7c21623af 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1046,6 +1046,7 @@ component("base") {
@@ -582,7 +582,7 @@ index d83f420d25e2c108ad400ebecae02b1ac327c058..77852c5c315ac09dddb7227adf3b840e
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index f2a64f86c4cc9e5679179e46ebbb0b82b91aa5db..aa174060de7c4f12b788c28d40931b098d80727e 100644
+index b40575d6a1201e3543927f8d71ebf76d61a61ab7..088555a527f6a93486cd2cede7f4ba0b46b22fa1 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 148875846a0dd90471e822bfb81cfd3649b0c029..795b537214a6da9442a359c791d2b4f0c2685f9f 100644
+index 4df384721ee529863d35ae7afe8249e3989697b0..2369ebc00ff008a94409d68404d3017f85592f74 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -664,6 +664,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 148875846a0dd90471e822bfb81cfd3649b0c029..795b537214a6da9442a359c791d2b4f0
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1961,6 +1963,7 @@ test("content_browsertests") {
+@@ -1962,6 +1964,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 148875846a0dd90471e822bfb81cfd3649b0c029..795b537214a6da9442a359c791d2b4f0
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3291,6 +3294,7 @@ test("content_unittests") {
+@@ -3292,6 +3295,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1448,10 +1448,10 @@ index 1b5e616ebd3c610739a9dcf3fd6694f1e442d783..8449d7eb65687fa82db0f23c7627807e
  
    if (is_mac) {
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index aa7e9938b22adaf1becf468330623aff69a6c418..d0523bd5c333369adf073c55060d8a0fcd97d905 100644
+index 8e0ca95409bf8d350658effa26c53453e2d434a0..373e3b8f9522be27ab78448557139054e98ad589 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
-@@ -362,10 +362,14 @@ blink_core_sources_editing = [
+@@ -364,10 +364,14 @@ blink_core_sources_editing = [
  if (is_mac) {
    blink_core_sources_editing += [
      "commands/smart_replace_cf.cc",
