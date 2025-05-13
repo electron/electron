@@ -1,0 +1,97 @@
+From 22ac8acf3508ff99e17323383a1b0182d21a8ce7 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Mon, 17 Mar 2025 17:26:24 +0100
+Subject: [PATCH] Make F.p.caller return null when called from Wasm
+
+Returning the calling Wasm function isn't generally possible when
+that function isn't exported; skipping that and returning something
+else would be either surprising or plain incorrect.
+
+Fixed: 403364367
+Change-Id: I2406a0abe15a8d66da06302e946ce653aaff259d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6362435
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#99296}
+---
+
+diff --git a/src/builtins/accessors.cc b/src/builtins/accessors.cc
+index 0722b4f..19f63be 100644
+--- a/src/builtins/accessors.cc
++++ b/src/builtins/accessors.cc
+@@ -582,24 +582,16 @@
+     return true;
+   }
+ 
+-  // Iterate through functions until the next non-toplevel one is found.
++  // Iterate through functions, at least one step, until the first candidate
++  // is found that is not toplevel and either user-provided JavaScript or
++  // "native" (not defined in user-provided scripts, but directly exposed).
+   // Returns true if one is found, and false if the iterator ends before.
+-  bool FindNextNonTopLevel() {
++  bool FindNextNonTopLevelNativeOrUserJavaScript() {
+     do {
+       if (!next().ToHandle(&function_)) return false;
+-    } while (function_->shared()->is_toplevel());
+-    return true;
+-  }
+-
+-  // Iterate through function until the first native or user-provided function
+-  // is found. Functions not defined in user-provided scripts are not visible
+-  // unless directly exposed, in which case the native flag is set on them.
+-  // Returns true if one is found, and false if the iterator ends before.
+-  bool FindFirstNativeOrUserJavaScript() {
+-    while (!function_->shared()->native() &&
+-           !function_->shared()->IsUserJavaScript()) {
+-      if (!next().ToHandle(&function_)) return false;
+-    }
++    } while (function_->shared()->is_toplevel() ||
++             (!function_->shared()->native() &&
++              !function_->shared()->IsUserJavaScript()));
+     return true;
+   }
+ 
+@@ -676,13 +668,10 @@
+   if (!it.Find(function)) {
+     return {};
+   }
+-  // Find previously called non-toplevel function.
+-  if (!it.FindNextNonTopLevel()) {
+-    return {};
+-  }
+-  // Find the first user-land JavaScript function (or the entry point into
+-  // native JavaScript builtins in case such a builtin was the caller).
+-  if (!it.FindFirstNativeOrUserJavaScript()) {
++  // Find previously called non-toplevel function that is also a user-land
++  // JavaScript function (or the entry point into native JavaScript builtins
++  // in case such a builtin was the caller).
++  if (!it.FindNextNonTopLevelNativeOrUserJavaScript()) {
+     return {};
+   }
+ 
+diff --git a/test/mjsunit/regress/wasm/regress-403364367.js b/test/mjsunit/regress/wasm/regress-403364367.js
+new file mode 100644
+index 0000000..0952a1b
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-403364367.js
+@@ -0,0 +1,19 @@
++// Copyright 2025 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++let import0 = builder.addImport('imports', 'f0', kSig_v_v);
++builder.addFunction("wrap_f0", kSig_v_v).exportFunc().addBody([
++    kExprCallFunction, import0,
++  ]);
++
++function f0() {
++  assertEquals(null, f0.caller);
++}
++
++f0();
++const wasm = builder.instantiate({ imports: { f0 } });
++wasm.exports.wrap_f0();
