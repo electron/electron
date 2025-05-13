@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Wed, 17 May 2023 14:42:09 -0500
+Subject: chore: patch out Profile methods
+
+Electron does not support Profiles, so we need to patch it out of any
+code that we use.
+
+diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
+index e3b9f14a4cf2167064ce6716053e663adffa1542..65f13a4607c8145858fd47d81cb9960c44272d79 100644
+--- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
++++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
+@@ -45,6 +45,7 @@ namespace {
+ // hierarchy is: enterprise policy > user choice > finch experiment.
+ bool ShouldEnableSkiaRenderer(content::WebContents* contents) {
+   CHECK(contents);
++#if 0
+   const PrefService* prefs =
+       Profile::FromBrowserContext(contents->GetBrowserContext())->GetPrefs();
+ 
+@@ -52,6 +53,7 @@ bool ShouldEnableSkiaRenderer(content::WebContents* contents) {
+   if (prefs->IsManagedPreference(prefs::kPdfUseSkiaRendererEnabled)) {
+     return prefs->GetBoolean(prefs::kPdfUseSkiaRendererEnabled);
+   }
++#endif
+ 
+   //  When the enterprise policy is not set, use finch/feature flag choice.
+   return base::FeatureList::IsEnabled(
+diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
+index bc0bad82ebcdceadc505e912ff27202b452fefab..23355e00f9ff99c1b0d981076df97b5d4af355c2 100644
+--- a/chrome/browser/profiles/profile_selections.cc
++++ b/chrome/browser/profiles/profile_selections.cc
+@@ -13,6 +13,7 @@
+ #endif  // BUILDFLAG(IS_CHROMEOS)
+ 
+ bool AreKeyedServicesDisabledForProfileByDefault(const Profile* profile) {
++#if 0
+   // By default disable all services for System Profile.
+   // Even though having no services is also the default value for Guest Profile,
+   // this is not really the case in practice because a lot of Service Factories
+@@ -20,7 +21,7 @@ bool AreKeyedServicesDisabledForProfileByDefault(const Profile* profile) {
+   if (profile && profile->IsSystemProfile()) {
+     return true;
+   }
+-
++#endif
+   return false;
+ }
+ 
+diff --git a/chrome/browser/win/titlebar_config.cc b/chrome/browser/win/titlebar_config.cc
+index 7898ea88ca529660e52c1f9e2517d6f016b740a5..114046912999f4ca9d21f7d5859d14ecaaab9f56 100644
+--- a/chrome/browser/win/titlebar_config.cc
++++ b/chrome/browser/win/titlebar_config.cc
+@@ -12,8 +12,10 @@
+ 
+ bool ShouldBrowserCustomDrawTitlebar(BrowserView* browser_view) {
+   return !ShouldDefaultThemeUseMicaTitlebar() ||
++#if 0
+          !ThemeServiceFactory::GetForProfile(browser_view->GetProfile())
+               ->UsingSystemTheme() ||
++#endif
+          (!browser_view->browser()->is_type_normal() &&
+           !browser_view->browser()->is_type_popup() &&
+           !browser_view->browser()->is_type_devtools());
+diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
+index 910534aac947890b16b176b10ac8eae9857bd2d7..1bb22b89b6ec4d620354bb7747c37cae9dd3a57e 100644
+--- a/chrome/browser/spellchecker/spellcheck_service.cc
++++ b/chrome/browser/spellchecker/spellcheck_service.cc
+@@ -20,8 +20,10 @@
+ #include "base/synchronization/waitable_event.h"
+ #include "base/values.h"
+ #include "build/build_config.h"
++#if 0
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/profiles/profiles_state.h"
++#endif
+ #include "chrome/browser/spellchecker/spellcheck_factory.h"
+ #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
+ #include "components/language/core/browser/pref_names.h"
+@@ -66,7 +68,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
+ // Only record spelling-configuration metrics for profiles in which the user
+ // can configure spelling.
+ bool RecordSpellingConfigurationMetrics(content::BrowserContext* context) {
++#if 0
+   return profiles::IsRegularUserProfile(Profile::FromBrowserContext(context));
++#endif
++  return true;
+ }
+ 
+ }  // namespace
