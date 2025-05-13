@@ -24,20 +24,20 @@ diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser
 index cb039c0ac747feefd5e8a13ed03715508ae874d0..b6fc96993cdea489450978495ca4c1f3c58166af 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5139,6 +5139,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
-   SetPartitionedPopinOpenerOnNewWindowIfNeeded(new_contents_impl, params,
-                                                opener);
+@@ -5148,6 +5148,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+   // Sets the newly created WebContents WindowOpenDisposition.
+   new_contents_impl->original_window_open_disposition_ = params.disposition;
  
 +  if (delegate_) {
-+    delegate_->WebContentsCreatedWithFullParams(this, render_process_id,
-+                                                opener->GetRoutingID(),
-+                                                params, new_contents_impl);
++    delegate_->WebContentsCreated(this, render_process_id,
++                                  opener->GetRoutingID(), params.frame_name,
++                                  params.target_url, new_contents_impl);
 +  }
 +
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5180,12 +5186,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5189,12 +5195,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
