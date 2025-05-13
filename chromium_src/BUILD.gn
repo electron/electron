@@ -36,8 +36,6 @@ static_library("chrome") {
     "//chrome/browser/devtools/visual_logging.h",
     "//chrome/browser/file_system_access/file_system_access_features.cc",
     "//chrome/browser/file_system_access/file_system_access_features.h",
-    "//chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc",
-    "//chrome/browser/file_system_access/chrome_file_system_access_permission_context.h",
     "//chrome/browser/icon_loader.cc",
     "//chrome/browser/icon_loader.h",
     "//chrome/browser/icon_manager.cc",
