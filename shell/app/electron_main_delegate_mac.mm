@@ -76,7 +76,7 @@ void ElectronMainDelegate::SetUpBundleOverrides() {
     NSString* team_id = [bundle objectForInfoDictionaryKey:@"ElectronTeamID"];
     if (team_id)
       base_bundle_id = base::SysNSStringToUTF8(team_id) + "." + base_bundle_id;
-    base::apple::SetBaseBundleID(base_bundle_id.c_str());
+    base::apple::SetBaseBundleIDOverride(base_bundle_id);
   }
 }
 
