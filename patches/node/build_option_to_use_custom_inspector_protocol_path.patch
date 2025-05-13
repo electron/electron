@@ -39,10 +39,10 @@ index d8aacbdf1a8fc858c792ad3ce17ca2f46baebe7e..4625008c048532c2c3340130670647d2
  
    void HandleDouble(double value) override {
 diff --git a/src/inspector/node_string.h b/src/inspector/node_string.h
-index 08e00f9b94918e3385aed18de80eec5c7ad81095..e84281c0e06f1d09889c5e1f2b2c5144f1b77564 100644
+index b2f67c224acc7b3a3b867867e251a7c62833f46e..a17b12a17518259e243cb176e1fbdc11ce63c78d 100644
 --- a/src/inspector/node_string.h
 +++ b/src/inspector/node_string.h
-@@ -63,7 +63,7 @@ class Binary {
+@@ -66,7 +66,7 @@ class Binary {
    static Binary fromBase64(const std::string_view base64, bool* success) {
      UNREACHABLE();
    }
@@ -65,10 +65,10 @@ index 3d7aa148678b2646b88fa7c32abec91791b02b82..4810d93eb971b253f7dadff7011a632f
    gypi_values = exec_script(
        "../../tools/gypi_to_gn.py",
 diff --git a/unofficial.gni b/unofficial.gni
-index cd0eae52ca9bf244e43643a2034fa9d26c4db206..d61a9bd5f4f0c92682f10b449976735859ecbc55 100644
+index a8ce18acfe333350f91b3e5f235db5f756b2e34a..6bcc40b282543fc40f80c5c6659de658209844b8 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -204,13 +204,14 @@ template("node_gn_build") {
+@@ -211,13 +211,14 @@ template("node_gn_build") {
      }
      if (node_enable_inspector) {
        deps += [

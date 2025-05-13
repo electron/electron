@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index ad323fc800a33c010b0504a4aa55c107498dee26..fc9b056d2f7e25109100fbde5f3ab0aebc8c619a 100644
+index 88c2c932a6b045317c83c911b1cd8267b60d9334..7f4f233b26425493a58ce71dfc0c3a92b7c0bef8 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -102,6 +102,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -64,10 +64,10 @@ index 5387d9625a28bb7d11f7f0f05a5f07d1fee2c216..1b3b8c7b70073926f8dbf02759c2e1af
    return Buffer::New(env, ab, 0, ab->ByteLength()).FromMaybe(Local<Value>());
  }
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 25fa9af8153852f49d5289aa253f3c8f7268d89c..a67268f78b18cf71b90b9e31ad733eb0c8d93af3 100644
+index 6346f8f7199cf7b7d3736c59571606fff102fbb6..7eea2eaefcad5780663a6b87985925ae5d70a5f9 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -335,10 +335,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
+@@ -359,10 +359,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
    return *this;
  }
  
@@ -104,7 +104,7 @@ index 25fa9af8153852f49d5289aa253f3c8f7268d89c..a67268f78b18cf71b90b9e31ad733eb0
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
        size(),
-@@ -350,10 +375,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
+@@ -374,10 +399,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
    data_ = nullptr;
    size_ = 0;
    return ptr;
@@ -117,7 +117,7 @@ index 25fa9af8153852f49d5289aa253f3c8f7268d89c..a67268f78b18cf71b90b9e31ad733eb0
    return ArrayBuffer::New(env->isolate(), std::move(store));
  }
  
-@@ -650,6 +676,16 @@ namespace {
+@@ -674,6 +700,16 @@ namespace {
  // in which case this has the same semantics as
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
@@ -134,7 +134,7 @@ index 25fa9af8153852f49d5289aa253f3c8f7268d89c..a67268f78b18cf71b90b9e31ad733eb0
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
-@@ -671,6 +707,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -695,6 +731,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
@@ -143,10 +143,10 @@ index 25fa9af8153852f49d5289aa253f3c8f7268d89c..a67268f78b18cf71b90b9e31ad733eb0
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index a5967c7d24b8365eb64ab63ec0b3ef8dc23c727e..2acebc3ac2ed9f631fc572f42f19f2e3dccfeb12 100644
+index b85c8daeb464097c2e93bdc7ffdfcfe16b76234b..470a0c4adadcd092dd0105c384e87917ac6fe69a 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -241,7 +241,7 @@ class ByteSource {
+@@ -242,7 +242,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.
@@ -189,7 +189,7 @@ index 3465454e4de4a78912b81e7eca0de395fbe89911..c8ae863460107c69dd77d67c76c11843
    Local<Value> ret;
    if (!Buffer::New(env, ab, 0, ab->ByteLength()).ToLocal(&ret)) return {};
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index 0bcf10a0b35accb8d6d5fe9891d4f52b27d40346..606c2021242e6967ea4195af3e2493a7d5745dae 100644
+index ea7810e41e2667713a896250dc1b904b0a7cf198..865b3128c1edfe7074769f25a0b87878ca094f31 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -104,7 +104,7 @@ namespace {
@@ -253,7 +253,7 @@ index 382df89a2312f76b5293412a8d51969ae5d9fa9c..1c90da9bbcb9547ab36de4d01088c03f
  
    // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index 7a70997bc024efa4f3ff4cabe30d5e88dcc7bc78..6552af3ed0acede41c1b16ef77eb359dc54f088a 100644
+index c55a2e28066147ae5ca5def10ec76ccc03c634b4..c54183c72944989219b6437c9e571a3f7f3f8dd5 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
 @@ -29,6 +29,26 @@ using v8::ValueSerializer;
