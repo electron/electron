@@ -28,7 +28,7 @@ class TrackableObjectBase : public CleanedUpAtExit {
   TrackableObjectBase& operator=(const TrackableObjectBase&) = delete;
 
   // The ID in weak map.
-  int32_t weak_map_id() const { return weak_map_id_; }
+  [[nodiscard]] constexpr int32_t weak_map_id() const { return weak_map_id_; }
 
   // Wrap TrackableObject into a class that SupportsUserData.
   void AttachAsUserData(base::SupportsUserData* wrapped);
