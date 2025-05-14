@@ -29,7 +29,7 @@
 
 @interface PopUpButtonHandler : NSObject
 
-@property(nonatomic, assign) NSSavePanel* savePanel;
+@property(nonatomic, weak) NSSavePanel* savePanel;
 @property(nonatomic, strong) NSArray* contentTypesList;
 
 - (instancetype)initWithPanel:(NSSavePanel*)panel

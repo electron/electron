@@ -194,10 +194,10 @@ index 996b3d453b375fec2a823a0dd0d3122ba626b5f2..5a5c6ed67f698fdd914e79df528e2ca3
    bool DidAddMessageToConsole(content::WebContents* source,
                                blink::mojom::ConsoleMessageLevel log_level,
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.cc b/components/offline_pages/content/background_loader/background_loader_contents.cc
-index 9dcf196de0d70fda966162473408968bfd9d16e0..2d2007e60c3512d002b7e1a858afb2908201e964 100644
+index 14f2758f2d71d4d4ba77e4fcb9be40bb878526e0..536db4f8fe9771b60f0359df5c680b298c89cad4 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.cc
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.cc
-@@ -90,8 +90,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
+@@ -86,8 +86,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -208,10 +208,10 @@ index 9dcf196de0d70fda966162473408968bfd9d16e0..2d2007e60c3512d002b7e1a858afb290
    return true;
  }
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.h b/components/offline_pages/content/background_loader/background_loader_contents.h
-index b3fef77c892a21565235c1a13ff50e11536d360c..2400dbbc53acca6871ae16a610a337134b61aafe 100644
+index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c58df53573 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.h
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.h
-@@ -67,8 +67,7 @@ class BackgroundLoaderContents : public content::WebContentsDelegate {
+@@ -66,8 +66,7 @@ class BackgroundLoaderContents : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -222,10 +222,10 @@ index b3fef77c892a21565235c1a13ff50e11536d360c..2400dbbc53acca6871ae16a610a33713
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2eb45ae773f9fbd28fa05b14e5684f4b7d17cc85..7b416ade6fe632d7fab319460876cb42f5b5dd83 100644
+index 27dfdfaa258312b3e096cfe784e085376026d9ef..420879681bab99129e314b8717c4edf075037d35 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5041,8 +5041,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5042,8 +5042,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,
@@ -236,7 +236,7 @@ index 2eb45ae773f9fbd28fa05b14e5684f4b7d17cc85..7b416ade6fe632d7fab319460876cb42
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 8c1d83692daccfbdda90f292b5a3fb9a8f1b118f..c836a731050027fd101aea0cd65782a4a7b5627b 100644
+index f6ab6ab2b036c7621b429181c3ff89d9f1ff77f9..d151ba757ae81c6f023ee08328ab155405b0fb95 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -160,8 +160,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -250,7 +250,7 @@ index 8c1d83692daccfbdda90f292b5a3fb9a8f1b118f..c836a731050027fd101aea0cd65782a4
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index c4cee108b0caac7d6a2a9115586882dd32bab714..a9ce49d79b613c58c2e6ae4b7b9a1076a2252ee1 100644
+index 83bdd195339eb7d61ac88e2994fd8dabe93f6ecc..682e5eecb7ce514094f76253447aa7ac4b6f29b1 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -359,8 +359,7 @@ class CONTENT_EXPORT WebContentsDelegate {
