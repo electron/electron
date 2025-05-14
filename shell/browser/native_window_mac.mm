@@ -119,8 +119,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
   display::Screen::GetScreen()->AddObserver(this);
 
-  const int width = options.ValueOrDefault(options::kWidth, 800);
-  const int height = options.ValueOrDefault(options::kHeight, 600);
+  int width = options.ValueOrDefault(options::kWidth, 800);
+  int height = options.ValueOrDefault(options::kHeight, 600);
 
   NSRect main_screen_rect = [[[NSScreen screens] firstObject] frame];
   gfx::Rect bounds(round((NSWidth(main_screen_rect) - width) / 2),
@@ -283,8 +283,23 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   }
 
   // Resize to content bounds.
-  const bool use_content_size =
+  // NOTE(@mlaurencin) Spec requirements can be found here:
+  // https://developer.mozilla.org/en-US/docs/Web/API/Window/open#width
+  constexpr int kMinSizeReqdBySpec = 100;
+  int inner_width = 0;
+  int inner_height = 0;
+  bool use_content_size =
       options.ValueOrDefault(options::kUseContentSize, false);
+  options.Get(options::kinnerWidth, &inner_width);
+  options.Get(options::kinnerHeight, &inner_height);
+  if (inner_width || inner_height) {
+    use_content_size = true;
+    if (inner_width)
+      width = std::max(kMinSizeReqdBySpec, inner_width);
+    if (inner_height)
+      height = std::max(kMinSizeReqdBySpec, inner_height);
+  }
+
   if (!has_frame() || use_content_size)
     SetContentSize(gfx::Size(width, height));
 
