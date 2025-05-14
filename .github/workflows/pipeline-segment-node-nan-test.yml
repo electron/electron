@@ -90,6 +90,60 @@ jobs:
         do
           sleep 60
         done
+  nan-tests-with-libcxx:
+    name: Run Nan Tests (libc++)
+    runs-on: electron-arc-linux-amd64-4core
+    timeout-minutes: 30
+    env: 
+      TARGET_ARCH: ${{ inputs.target-arch }}
+      BUILD_TYPE: linux
+    container: ${{ fromJSON(inputs.test-container) }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      with:
+        path: src/electron
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
+    - name: Install Build Tools
+      uses: ./src/electron/.github/actions/install-build-tools
+    - name: Init Build Tools
+      run: |
+        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
+    - name: Install Dependencies
+      uses: ./src/electron/.github/actions/install-dependencies
+    - name: Download Generated Artifacts
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        name: generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
+        path: ./generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
+    - name: Download Src Artifacts
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        name: src_artifacts_linux_${{ env.TARGET_ARCH }}
+        path: ./src_artifacts_linux_${{ env.TARGET_ARCH }}
+    - name: Restore Generated Artifacts
+      run: ./src/electron/script/actions/restore-artifacts.sh
+    - name: Unzip Dist
+      run: |
+        cd src/out/Default
+        unzip -:o dist.zip
+    - name: Setup Linux for Headless Testing
+      run: sh -e /etc/init.d/xvfb start
+    - name: Run Nan Tests
+      run: |
+        cd src
+        node electron/script/nan-spec-runner.js --with-libc++
+    - name: Wait for active SSH sessions
+      shell: bash
+      if: always() && !cancelled()
+      run: |
+        while [ -f /var/.ssh-lock ]
+        do
+          sleep 60
+        done
   nan-tests:
     name: Run Nan Tests
     runs-on: electron-arc-linux-amd64-4core
