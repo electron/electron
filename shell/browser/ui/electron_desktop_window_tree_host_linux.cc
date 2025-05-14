@@ -13,6 +13,7 @@
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/linux/x11_util.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
@@ -82,9 +83,7 @@ void ElectronDesktopWindowTreeHostLinux::OnBoundsChanged(
   views::DesktopWindowTreeHostLinux::OnBoundsChanged(change);
   UpdateFrameHints();
 
-  if (ui::OzonePlatform::GetInstance()
-          ->GetPlatformProperties()
-          .electron_can_call_x11) {
+  if (x11_util::IsX11()) {
     // The OnWindowStateChanged should receive all updates but currently under
     // X11 it doesn't receive changes to the fullscreen status because chromium
     // is handling the fullscreen state changes synchronously, see
