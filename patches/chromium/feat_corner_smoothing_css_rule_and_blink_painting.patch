@@ -112,10 +112,10 @@ index 6e991652d242795e292cea4c94cff59aaea078fa..b6834c78575520bb6e584dd2ce3333ac
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index c3dfa4c1f53a6ebba5735214037e0d1c6a88961d..17a08450227844dceccbaab7ff9de60d6e058b1f 100644
+index cc8657b515dd791e910343122e73be6fc8c1d38e..78299aca166e20c1e5f1f049beab915334d1612d 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8822,6 +8822,24 @@
+@@ -8823,6 +8823,24 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -154,10 +154,10 @@ index ff1cc33c1787df522300a220000ad3d3123cd7bd..6b9e72f60db9af5ceeac7cc663ac666b
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 4bc9534e12a7f71f9837ea8de4c85572d2e4af11..0d9368c96b175b767c8ed912daf434a334093123 100644
+index cefbbebae039bb9cdbdf57612feff660dfe94d87..3c3dea18f97a3df1ef6eb095c34951492285cee0 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12050,5 +12050,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12071,5 +12071,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -239,7 +239,7 @@ index 5e8d2bfbccd0625c2598544a9cba3d71373eded2..e68a97ee75754fc7196f11cf5c731550
    bool RenderVSyncNotificationEnabled() const {
      return render_v_sync_notification_enabled_;
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index f2e37be51049caab4fd6385b5b55f1151708bd82..c0078bff37cfd1a4e5da111f6ec1aa817987a7ab 100644
+index c996ded8e1cf83ca0ebb4b3fc18b8d6d80409c9a..d589a8a5264b2a7c2b21aa83e8c1faa5fb8f93a1 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3574,6 +3574,9 @@ void WebViewImpl::UpdateRendererPreferences(
@@ -307,7 +307,7 @@ index 2c2f4f405074e5baa4a26f255283404f86b40e21..ebeb7d6988ee9e6a4e78cb82fc01fdad
  
  ContouredRect PixelSnappedContouredBorderInternal(
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index b5a309cb7bad79f80fb43dcbcccbd8dc2fcdfef8..c90d8f2f283e9bd05184171d3971d0060731f67d 100644
+index 3788f76b50f6a1776baef2131033a62875e101b9..f3e2226021d1de6a5cb787538ca6c0f18f208670 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1658,6 +1658,8 @@ component("platform") {
