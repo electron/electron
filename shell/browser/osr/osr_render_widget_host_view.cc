@@ -542,11 +542,6 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
   if (auto* rwhv = render_widget_host->GetView())
     return static_cast<content::RenderWidgetHostViewBase*>(rwhv);
 
-  if (web_contents_view) {
-    return static_cast<content::RenderWidgetHostViewBase*>(
-        web_contents_view->CreateViewForWidget(render_widget_host));
-  }
-
   OffScreenRenderWidgetHostView* embedder_host_view = nullptr;
   if (embedder_render_widget_host) {
     embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
