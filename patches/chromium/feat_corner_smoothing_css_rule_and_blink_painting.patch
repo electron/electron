@@ -21,7 +21,7 @@ making three primary changes to Blink:
     * Mostly simple "plumbing" for the setting through blink.
 
 diff --git a/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc b/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc
-index 5e233d63c09088d73cd1a54a58b235018c193ac3..4f2dcb339ad79f31ba5e4c347cb91d5639d27ce6 100644
+index c13dfd7f20e6f281f51ae373ceebeb86104c5cd9..fac89df9f23f3f098096d2a07a07e623b1067270 100644
 --- a/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/renderer_preferences/renderer_preferences_mojom_traits.cc
 @@ -128,6 +128,8 @@ bool StructTraits<blink::mojom::RendererPreferencesDataView,
@@ -32,9 +32,9 @@ index 5e233d63c09088d73cd1a54a58b235018c193ac3..4f2dcb339ad79f31ba5e4c347cb91d56
 +
    out->canvas_noise_token = data.canvas_noise_token();
  
-   return true;
+   out->view_source_line_wrap_enabled = data.view_source_line_wrap_enabled();
 diff --git a/third_party/blink/public/common/renderer_preferences/renderer_preferences.h b/third_party/blink/public/common/renderer_preferences/renderer_preferences.h
-index ff84a20511448d4211d0e25dfc12e7eabc34a9e0..886e9d819c3bde7f33eec3497d1cadb76de4237f 100644
+index 75acd696a5258e52f5c17b88559dfb3f6373c669..34b5ed725702dca72c383c1def08fdb835f7fa6b 100644
 --- a/third_party/blink/public/common/renderer_preferences/renderer_preferences.h
 +++ b/third_party/blink/public/common/renderer_preferences/renderer_preferences.h
 @@ -91,6 +91,7 @@ struct BLINK_COMMON_EXPORT RendererPreferences {
@@ -43,10 +43,10 @@ index ff84a20511448d4211d0e25dfc12e7eabc34a9e0..886e9d819c3bde7f33eec3497d1cadb7
    std::vector<uint16_t> explicitly_allowed_network_ports;
 +  bool electron_corner_smoothing_css{true};
    uint64_t canvas_noise_token{0};
- 
-   RendererPreferences();
+   // The default value must be false to avoid performance problems on very large
+   // source pages.
 diff --git a/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h b/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h
-index c88ddaf7fd5fc27889bcacac9366330e4013eba3..e4f492a11637886c60ece665371d117f3a34ec8d 100644
+index defe40d7091cb4ba4b099a22aeaee71f78ff5e77..e8326fa7a3c45c08c7d9250edd52a6d73fcc3ff9 100644
 --- a/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/renderer_preferences/renderer_preferences_mojom_traits.h
 @@ -275,6 +275,11 @@ struct BLINK_COMMON_EXPORT
@@ -62,7 +62,7 @@ index c88ddaf7fd5fc27889bcacac9366330e4013eba3..e4f492a11637886c60ece665371d117f
        const ::blink::RendererPreferences& data) {
      return data.canvas_noise_token;
 diff --git a/third_party/blink/public/mojom/renderer_preferences.mojom b/third_party/blink/public/mojom/renderer_preferences.mojom
-index 65766b955e81bfc332bc2c4e0b9da48389c1bd68..a475e1bfee46f0a77d1cfbdea47e9de6516d1194 100644
+index f8361faf6151210d65a597562c533aaa0a5235df..328238c34a9381fbbeb5970af3de721c8412104e 100644
 --- a/third_party/blink/public/mojom/renderer_preferences.mojom
 +++ b/third_party/blink/public/mojom/renderer_preferences.mojom
 @@ -202,6 +202,8 @@ struct RendererPreferences {
@@ -112,10 +112,10 @@ index 6e991652d242795e292cea4c94cff59aaea078fa..b6834c78575520bb6e584dd2ce3333ac
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index cc8657b515dd791e910343122e73be6fc8c1d38e..78299aca166e20c1e5f1f049beab915334d1612d 100644
+index 5bacbf438f37363e8a6c2f61ff8eff0dae781aaa..e16363cbff7a4af50656f64f7f69ecfa15081245 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8823,6 +8823,24 @@
+@@ -8810,6 +8810,24 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -141,7 +141,7 @@ index cc8657b515dd791e910343122e73be6fc8c1d38e..78299aca166e20c1e5f1f049beab9153
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index ff1cc33c1787df522300a220000ad3d3123cd7bd..6b9e72f60db9af5ceeac7cc663ac666b0eeb7b09 100644
+index 936bd39e77a5a181a94a48129e38efc9c8c82847..75d332ef497018e4c863a47d4491d25da365206a 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
 @@ -346,6 +346,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
@@ -154,10 +154,10 @@ index ff1cc33c1787df522300a220000ad3d3123cd7bd..6b9e72f60db9af5ceeac7cc663ac666b
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index cefbbebae039bb9cdbdf57612feff660dfe94d87..3c3dea18f97a3df1ef6eb095c34951492285cee0 100644
+index aa12ac9e27c55870269dd780e868b5eaee5acaab..1a06511ee56717df547817813eb80c3db1fa01df 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12071,5 +12071,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12086,5 +12086,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -184,10 +184,10 @@ index cefbbebae039bb9cdbdf57612feff660dfe94d87..3c3dea18f97a3df1ef6eb095c3495149
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 5d803e8baebc35075d7475e091f97811407add79..50991917a87ff1a219fe2b3dd80dd055fd3e4289 100644
+index 56429f6e0da31c28aef86b1b5a5e538207b42706..33c6a8ff7cf6ffff2952b5a8b9389eb04ee6946d 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -3869,4 +3869,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
+@@ -3900,4 +3900,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
    return PositionArea(span[0], span[1], span[2], span[3]);
  }
  
@@ -201,10 +201,10 @@ index 5d803e8baebc35075d7475e091f97811407add79..50991917a87ff1a219fe2b3dd80dd055
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index a33d85561b005010653c5e3a562227b1f379ec90..0c2d3b0e9b691477d46c892afc16d8b0421e7263 100644
+index d761af01cc6b4ef01304dfe384c3aa92f414b8a2..de0f1c09f41b4f348a7163967f6d90d98fe7c06c 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -419,6 +419,8 @@ class StyleBuilderConverter {
+@@ -421,6 +421,8 @@ class StyleBuilderConverter {
                                                   const CSSValue&);
  
    static PositionArea ConvertPositionArea(StyleResolverState&, const CSSValue&);
@@ -239,11 +239,11 @@ index 5e8d2bfbccd0625c2598544a9cba3d71373eded2..e68a97ee75754fc7196f11cf5c731550
    bool RenderVSyncNotificationEnabled() const {
      return render_v_sync_notification_enabled_;
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index c996ded8e1cf83ca0ebb4b3fc18b8d6d80409c9a..d589a8a5264b2a7c2b21aa83e8c1faa5fb8f93a1 100644
+index 15a6b41cacb7b66d95e6dc2cff8148c3d6c8c28b..88bb3d17a4ca0784f1f28fde14b9fa58e15b5c44 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3574,6 +3574,9 @@ void WebViewImpl::UpdateRendererPreferences(
-   CanvasNoiseToken::Set(renderer_preferences_.canvas_noise_token);
+@@ -3577,6 +3577,9 @@ void WebViewImpl::UpdateRendererPreferences(
+       renderer_preferences_.view_source_line_wrap_enabled);
  
    MaybePreloadSystemFonts(GetPage());
 +

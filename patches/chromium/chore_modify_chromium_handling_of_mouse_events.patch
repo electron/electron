@@ -34,7 +34,7 @@ index 39b5a8fdd165efd74b00256552b51b5413107958..bfc4ef4f50efff4a77f2aef64335bb7e
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 61509e2eb982797845098abf5f36e031be63686b..24283be8d1660acce0a5ae89386b8eef9989fc12 100644
+index 5f9612ff000c1544f572bab0cbc9982dc4e647ce..2ce65548dd1283adb4c095e37198e08a8a13635c 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -1415,6 +1415,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
