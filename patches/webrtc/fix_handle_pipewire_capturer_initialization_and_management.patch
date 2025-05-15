@@ -36,10 +36,10 @@ for desktop capturer. This change re-enables that fallback, which was
 previously default behavior.
 
 diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
-index 7fd0fc31d81bf4d5eca5f8aa7106388ea4c518e4..51dde063a78be7aade1953fbee8bb2db71b72ce5 100644
+index 94605f409cd1523036f3e7d167a8d1f3c030e586..fae73654c84a7a8185ddf7255b49a86f6b239404 100644
 --- a/modules/desktop_capture/desktop_capturer.cc
 +++ b/modules/desktop_capture/desktop_capturer.cc
-@@ -113,7 +113,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
+@@ -117,7 +117,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
    std::unique_ptr<DesktopCapturer> capturer;
  
  #if defined(WEBRTC_USE_PIPEWIRE)
@@ -49,7 +49,7 @@ index 7fd0fc31d81bf4d5eca5f8aa7106388ea4c518e4..51dde063a78be7aade1953fbee8bb2db
          options, CaptureType::kAnyScreenContent);
    }
 diff --git a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
-index 81caa9bd2d97ec73120c07c17d7290b2c3c5d598..3ba5267bf5c7de420131b2c14fcadffd1f5b1326 100644
+index 722806340163be3371f29263e56bcc808b6846c6..6453101606e2088de640e70a730817803d0a1a09 100644
 --- a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
 +++ b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
 @@ -111,6 +111,7 @@ void BaseCapturerPipeWire::OnScreenCastRequestResult(RequestResponse result,

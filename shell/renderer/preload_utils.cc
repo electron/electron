@@ -5,6 +5,7 @@
 #include "shell/renderer/preload_utils.h"
 
 #include "base/process/process.h"
+#include "base/strings/strcat.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -46,10 +47,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
   auto* mod = node::binding::get_linked_module(binding_key.c_str());
 
   if (!mod) {
-    char errmsg[1024];
-    snprintf(errmsg, sizeof(errmsg), "No such binding: %s",
-             binding_key.c_str());
-    margs->ThrowError(errmsg);
+    margs->ThrowError(base::StrCat({"No such binding: ", binding_key}));
     return exports;
   }
 

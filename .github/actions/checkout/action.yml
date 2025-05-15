@@ -179,3 +179,11 @@ runs:
       else
         echo "Cache key persisted in $final_cache_path"
       fi
+  - name: Wait for active SSH sessions
+    shell: bash
+    if: always() && !cancelled()
+    run: |
+      while [ -f /var/.ssh-lock ]
+      do
+        sleep 60
+      done

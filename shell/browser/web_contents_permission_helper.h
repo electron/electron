@@ -25,16 +25,6 @@ class WebContentsPermissionHelper
   WebContentsPermissionHelper& operator=(const WebContentsPermissionHelper&) =
       delete;
 
-  enum class PermissionType {
-    FULLSCREEN = static_cast<int>(blink::PermissionType::NUM) + 1,
-    OPEN_EXTERNAL,
-    SERIAL,
-    HID,
-    USB,
-    KEYBOARD_LOCK,
-    FILE_SYSTEM,
-  };
-
   // Asynchronous Requests
   void RequestFullscreenPermission(content::RenderFrameHost* requesting_frame,
                                    base::OnceCallback<void(bool)> callback);

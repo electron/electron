@@ -18,7 +18,7 @@ This patch adds a few changes to the Chromium code:
    admin permissions.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 23a8257aa2a0a671cf7af35aff9906891091606d..31f5b160e4cd755cfb56a62b04261ee1bee80277 100644
+index 4d446aa9ecfa14ffb1f65a2f45af6aaded122890..085b00fbb3ff95cdcde2a46760ab449808b4c1a9 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -102,12 +102,19 @@ class ProcessSingleton {

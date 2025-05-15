@@ -15,10 +15,10 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 5f1ca23a16474281a0b00b25ff8fc61c9bf4541f..bcf00895b6eb7345481143ea9b7ef49fc84262b5 100644
+index 50b665fea15c81326ea7610c66ecad970bc5b261..99c34a259786176c24c67cf91aa528ce88a6e58d 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
-@@ -56,7 +56,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
+@@ -57,7 +57,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
  void MediaStreamDevicesController::RequestPermissions(
      const content::MediaStreamRequest& request,
      MediaStreamDeviceEnumerator* enumerator,
@@ -28,16 +28,16 @@ index 5f1ca23a16474281a0b00b25ff8fc61c9bf4541f..bcf00895b6eb7345481143ea9b7ef49f
    content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
        request.render_process_id, request.render_frame_id);
    // The RFH may have been destroyed by the time the request is processed.
-@@ -91,7 +92,7 @@ void MediaStreamDevicesController::RequestPermissions(
+@@ -92,7 +93,7 @@ void MediaStreamDevicesController::RequestPermissions(
                                         std::move(callback)));
  
-   std::vector<blink::PermissionType> permission_types;
+   std::vector<blink::mojom::PermissionDescriptorPtr> permission_types;
 -
 +#if 0
    content::PermissionController* permission_controller =
        web_contents->GetBrowserContext()->GetPermissionController();
  
-@@ -164,19 +165,26 @@ void MediaStreamDevicesController::RequestPermissions(
+@@ -174,19 +175,26 @@ void MediaStreamDevicesController::RequestPermissions(
        requested_audio_capture_device_ids;
    permission_request_description.requested_video_capture_device_ids =
        requested_video_capture_device_ids;
@@ -63,7 +63,7 @@ index 5f1ca23a16474281a0b00b25ff8fc61c9bf4541f..bcf00895b6eb7345481143ea9b7ef49f
 +        ->GetPermissionController()
 +        ->RequestPermissionsFromCurrentDocument(
 +            rfh,
-+            content::PermissionRequestDescription(permission_types,
++            content::PermissionRequestDescription(std::move(permission_types),
 +                                                  request.user_gesture),
 +            base::BindOnce(
 +                &MediaStreamDevicesController::PromptAnsweredGroupedRequest,
@@ -72,7 +72,7 @@ index 5f1ca23a16474281a0b00b25ff8fc61c9bf4541f..bcf00895b6eb7345481143ea9b7ef49f
  }
  
  MediaStreamDevicesController::~MediaStreamDevicesController() {
-@@ -425,6 +433,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -436,6 +444,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      return false;
    }
  
@@ -80,7 +80,7 @@ index 5f1ca23a16474281a0b00b25ff8fc61c9bf4541f..bcf00895b6eb7345481143ea9b7ef49f
    // TODO(raymes): This function wouldn't be needed if
    // PermissionManager::RequestPermissions returned a denial reason.
    content::PermissionResult result =
-@@ -435,6 +444,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -449,6 +458,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      DCHECK_EQ(blink::mojom::PermissionStatus::DENIED, result.status);
      return true;
    }
@@ -89,10 +89,10 @@ index 5f1ca23a16474281a0b00b25ff8fc61c9bf4541f..bcf00895b6eb7345481143ea9b7ef49f
  }
  
 diff --git a/components/webrtc/media_stream_devices_controller.h b/components/webrtc/media_stream_devices_controller.h
-index 4d3bf184243a4c1296f41070e934730a3bd2620e..78610ff9fb93cfa1c9aae898d6f8c83520fc860a 100644
+index a976526aedc2107dd43242199b04142ca4d34eda..0410c8818d6ffdd55c49f1bef27ddb4ea16d8ab9 100644
 --- a/components/webrtc/media_stream_devices_controller.h
 +++ b/components/webrtc/media_stream_devices_controller.h
-@@ -48,7 +48,8 @@ class MediaStreamDevicesController {
+@@ -49,7 +49,8 @@ class MediaStreamDevicesController {
    // synchronously or asynchronously returned via |callback|.
    static void RequestPermissions(const content::MediaStreamRequest& request,
                                   MediaStreamDeviceEnumerator* enumerator,

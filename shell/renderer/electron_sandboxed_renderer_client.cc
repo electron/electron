@@ -14,7 +14,6 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
@@ -146,8 +145,8 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
     return;
 
   auto* isolate = context->GetIsolate();
-  gin_helper::MicrotasksScope microtasks_scope{
-      context, false, v8::MicrotasksScope::kDoNotRunMicrotasks};
+  v8::MicrotasksScope microtasks_scope(
+      context, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   InvokeEmitProcessEvent(context, "exit");
@@ -164,8 +163,8 @@ void ElectronSandboxedRendererClient::EmitProcessEvent(
   v8::HandleScope handle_scope{isolate};
 
   v8::Local<v8::Context> context = GetContext(frame, isolate);
-  gin_helper::MicrotasksScope microtasks_scope{
-      context, false, v8::MicrotasksScope::kDoNotRunMicrotasks};
+  v8::MicrotasksScope microtasks_scope(
+      context, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::Context::Scope context_scope(context);
 
   InvokeEmitProcessEvent(context, event_name);

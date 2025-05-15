@@ -12,7 +12,6 @@
 #include "net/grit/net_resources.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/web_contents_utility.mojom.h"
 #include "shell/common/world_ids.h"

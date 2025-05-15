@@ -39,10 +39,10 @@ index e87c180342b967756efeb701c73207fcee8754f1..42e37564e585987d367921568f0f1d2b
            NOTREACHED();
        }
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
-index c98ecc36007185052481b6479b2ba4608e326021..dd0e4553b78997beea0f11242eeb9f759359066f 100644
+index b6985bd63a34c55154fcfae601add6ce6c451704..fb44cc65b1a15c8b69410a2a2cb925a0326bb438 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
-@@ -111,7 +111,8 @@ bool GlobalAcceleratorListenerOzone::StartListeningForAccelerator(
+@@ -147,7 +147,8 @@ bool GlobalAcceleratorListenerOzone::StartListeningForAccelerator(
    const bool registered =
        platform_global_shortcut_listener_->RegisterAccelerator(
            accelerator.key_code(), accelerator.IsAltDown(),
@@ -52,7 +52,7 @@ index c98ecc36007185052481b6479b2ba4608e326021..dd0e4553b78997beea0f11242eeb9f75
    if (registered) {
      registered_hot_keys_.insert(accelerator);
    }
-@@ -126,14 +127,15 @@ void GlobalAcceleratorListenerOzone::StopListeningForAccelerator(
+@@ -162,14 +163,15 @@ void GlobalAcceleratorListenerOzone::StopListeningForAccelerator(
  
    platform_global_shortcut_listener_->UnregisterAccelerator(
        accelerator.key_code(), accelerator.IsAltDown(), accelerator.IsCtrlDown(),
@@ -70,7 +70,7 @@ index c98ecc36007185052481b6479b2ba4608e326021..dd0e4553b78997beea0f11242eeb9f75
    int modifiers = 0;
    if (is_alt_down) {
      modifiers |= ui::EF_ALT_DOWN;
-@@ -144,6 +146,9 @@ void GlobalAcceleratorListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
+@@ -180,6 +182,9 @@ void GlobalAcceleratorListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
    if (is_shift_down) {
      modifiers |= ui::EF_SHIFT_DOWN;
    }

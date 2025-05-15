@@ -6,10 +6,10 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index 6c679ef877067297ec3bf1a23af6c03a2af8dcf5..1ac93433189580c13b69cd52ce62681a8620da3d 100644
+index b9e7ef002a8d7842b4e97dbcaa59aa289ba652a1..81bd39f47d8411da53824d47e053b39f8fa24721 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-@@ -168,6 +168,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
+@@ -167,6 +167,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
                (network::mojom::AttributionSupport support),
                (override));
  
@@ -23,10 +23,10 @@ index 6c679ef877067297ec3bf1a23af6c03a2af8dcf5..1ac93433189580c13b69cd52ce62681a
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 6c1e46e58d975137eee6c0fd7b01d2ae970a2e10..5ca29616369e76e298eb03188e18ca545c76a162 100644
+index 1654ffbb2184cc1db6c0b862cc745ba2e467b740..567f5279d943a58e451a78fb506606cf17a0ef79 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -765,6 +765,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -761,6 +761,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -39,7 +39,7 @@ index 6c1e46e58d975137eee6c0fd7b01d2ae970a2e10..5ca29616369e76e298eb03188e18ca54
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 56e52f079d1ad7c7a22764b976f0c8b2cc48dff2..1231fe522ad103e94d3c30ad7d5e5d23df9b3554 100644
+index 6eade0d29bc266a6a8928e768c923687bd12e656..53465bc76a22ae97ba4602d02a41f52e194af68b 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
 @@ -135,6 +135,7 @@ class CONTENT_EXPORT RenderViewHostImpl
@@ -80,10 +80,10 @@ index 20ca763ff7f55e8176b77349b41917b11e051ae6..a50c122064b5f0092f57e3d508fb1938
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/test/test_page_broadcast.h b/content/test/test_page_broadcast.h
-index 913e465918750df6852c3ede34a75ecebab8b1fa..c81d6ad098cf977cbd8933721e539c52056c258b 100644
+index 3f4fdfcdf2f701a394e182bd61baf226338ef7f8..f2faa1225e8ca6abb190e6f7a0775545fa3f785d 100644
 --- a/content/test/test_page_broadcast.h
 +++ b/content/test/test_page_broadcast.h
-@@ -50,6 +50,7 @@ class TestPageBroadcast : public blink::mojom::PageBroadcast {
+@@ -51,6 +51,7 @@ class TestPageBroadcast : public blink::mojom::PageBroadcast {
        network::mojom::AttributionSupport support) override;
    void UpdateColorProviders(
        const blink::ColorProviderColorMaps& color_provider_colors) override;
@@ -92,10 +92,10 @@ index 913e465918750df6852c3ede34a75ecebab8b1fa..c81d6ad098cf977cbd8933721e539c52
    mojo::AssociatedReceiver<blink::mojom::PageBroadcast> receiver_;
  };
 diff --git a/third_party/blink/public/mojom/page/page.mojom b/third_party/blink/public/mojom/page/page.mojom
-index f868a3cc56b49b7fdac9fa1415386bd3a59a3dd7..ac7e92740bf7a61f3d8dcf8feff0fee978ffbfee 100644
+index b6a4e3609af1f090f1f845d77fa0589e5b178d8a..989b2cf76ce88614b57e75ce2fcace101225f43e 100644
 --- a/third_party/blink/public/mojom/page/page.mojom
 +++ b/third_party/blink/public/mojom/page/page.mojom
-@@ -173,4 +173,7 @@ interface PageBroadcast {
+@@ -175,4 +175,7 @@ interface PageBroadcast {
    // 2. The ColorProvider associated with the WebContents changes as a result
    // of theme changes.
    UpdateColorProviders(ColorProviderColorMaps color_provider_colors);
@@ -104,10 +104,10 @@ index f868a3cc56b49b7fdac9fa1415386bd3a59a3dd7..ac7e92740bf7a61f3d8dcf8feff0fee9
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index b1689844282d6917b9750fbc6a875848ddf84b70..f1cc159b7c3448a33a6d9e213f8fbd3b47141fb7 100644
+index 7c1eb9baabfb9e0f3645421b5cbe467862252638..00d2cd41d795cb550e16fb80944b238252e4e53c 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -371,6 +371,7 @@ class BLINK_EXPORT WebView {
+@@ -370,6 +370,7 @@ class BLINK_EXPORT WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
@@ -116,10 +116,10 @@ index b1689844282d6917b9750fbc6a875848ddf84b70..f1cc159b7c3448a33a6d9e213f8fbd3b
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index c1af09d0a80ffba9b1265e59cf3d066ad2a5bfa0..fbfc0af8a6f29da9ee2d5fd6ae5a02958a7e3a81 100644
+index feba9635b40664b1db83ab727798a34b98e5e0b8..f6a248b1de8b313658453dd380529ec7c2e40033 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2465,6 +2465,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2467,6 +2467,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index c1af09d0a80ffba9b1265e59cf3d066ad2a5bfa0..fbfc0af8a6f29da9ee2d5fd6ae5a0295
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -3988,10 +3992,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3990,10 +3994,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -155,7 +155,7 @@ index c1af09d0a80ffba9b1265e59cf3d066ad2a5bfa0..fbfc0af8a6f29da9ee2d5fd6ae5a0295
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 06f7cf79b4526ca3ec7670c234a6bb8faec32f04..b8fe2a9b7b6b4de2a689f3857c7ce44909e6f2dc 100644
+index eaa593b41ec2e9a12fca53eb9925e6b868a4d9f1..8ce3ea0e5d6e5bdff982b956de305047347b4385 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -448,6 +448,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,

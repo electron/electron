@@ -28,6 +28,11 @@ OffScreenVideoConsumer::OffScreenVideoConsumer(
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
   video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB);
 
+  // https://crrev.org/c/6438681
+  // Disable capturer's animation lock-in feature for offscreen capture to
+  // avoid output stutter.
+  video_capturer_->SetAnimationFpsLockIn(false, 1);
+
   // Previous design of OSR try to set the resolution constraint to match the
   // view's size. It is actually not necessary and creates faulty textures
   // when the window/view's size changes frequently. The constraint may not
@@ -104,7 +109,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     texture.shared_texture_handle =
         reinterpret_cast<uintptr_t>(gmb_handle.io_surface.get());
 #elif BUILDFLAG(IS_LINUX)
-    const auto& native_pixmap = gmb_handle.native_pixmap_handle;
+    const auto& native_pixmap = gmb_handle.native_pixmap_handle();
     texture.modifier = native_pixmap.modifier;
     for (const auto& plane : native_pixmap.planes) {
       texture.planes.emplace_back(plane.stride, plane.offset, plane.size,

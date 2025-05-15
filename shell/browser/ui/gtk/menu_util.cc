@@ -12,6 +12,7 @@
 #include "base/containers/flat_map.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/app/chrome_command_ids.h"
+#include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/gtk_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/accelerators/accelerator.h"
@@ -219,9 +220,7 @@ void BuildSubmenuFromModel(ui::MenuModel* model,
       connect_to_activate = false;
     }
 
-    if (ui::OzonePlatform::GetInstance()
-            ->GetPlatformProperties()
-            .electron_can_call_x11) {
+    if (x11_util::IsX11()) {
       ui::Accelerator accelerator;
       if (model->GetAcceleratorAt(i, &accelerator)) {
         gtk_widget_add_accelerator(menu_item, "activate", nullptr,

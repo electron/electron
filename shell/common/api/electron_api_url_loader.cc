@@ -13,6 +13,7 @@
 
 #include "base/check_op.h"
 #include "base/containers/fixed_flat_map.h"
+#include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
 #include "base/notreached.h"
 #include "base/sequence_checker.h"
@@ -151,20 +152,13 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
  private:
   // mojo::DataPipeProducer::DataSource:
   [[nodiscard]] uint64_t GetLength() const override { return buffer_.size(); }
-  ReadResult Read(uint64_t offset, base::span<char> buffer) override {
-    ReadResult result;
-    if (offset <= buffer_.size()) {
-      size_t readable_size = buffer_.size() - offset;
-      size_t writable_size = buffer.size();
-      size_t copyable_size = std::min(readable_size, writable_size);
-      if (copyable_size > 0) {
-        memcpy(buffer.data(), &buffer_[offset], copyable_size);
-      }
-      result.bytes_read = copyable_size;
-    } else {
-      NOTREACHED();
-    }
-    return result;
+  ReadResult Read(uint64_t offset, base::span<char> tgt) override {
+    CHECK_LE(offset, buffer_.size());
+    const auto src =
+        base::span<const char>{buffer_}.subspan(static_cast<size_t>(offset));
+    const auto n_copied = std::min(src.size(), tgt.size());
+    tgt.first(n_copied).copy_from(src.first(n_copied));
+    return ReadResult{.bytes_read = n_copied};
   }
 
   std::vector<char> buffer_;
@@ -615,9 +609,8 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     }
   }
 
-  blink::mojom::FetchCacheMode cache_mode =
-      blink::mojom::FetchCacheMode::kDefault;
-  opts.Get("cache", &cache_mode);
+  const auto cache_mode =
+      opts.ValueOrDefault("cache", blink::mojom::FetchCacheMode::kDefault);
   switch (cache_mode) {
     case blink::mojom::FetchCacheMode::kNoStore:
       request->load_flags |= net::LOAD_DISABLE_CACHE;
@@ -645,8 +638,8 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       break;
   }
 
-  bool use_session_cookies = false;
-  opts.Get("useSessionCookies", &use_session_cookies);
+  const bool use_session_cookies =
+      opts.ValueOrDefault("useSessionCookies", false);
   int options = network::mojom::kURLLoadOptionSniffMimeType;
   if (!credentials_specified && !use_session_cookies) {
     // This is the default case, as well as the case when credentials is not
@@ -656,9 +649,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     options |= network::mojom::kURLLoadOptionBlockAllCookies;
   }
 
-  bool bypass_custom_protocol_handlers = false;
-  opts.Get("bypassCustomProtocolHandlers", &bypass_custom_protocol_handlers);
-  if (bypass_custom_protocol_handlers)
+  if (opts.ValueOrDefault("bypassCustomProtocolHandlers", false))
     options |= kBypassCustomProtocolHandlers;
 
   v8::Local<v8::Value> body;
@@ -715,7 +706,9 @@ void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_view.size());
-  memcpy(array_buffer->Data(), string_view.data(), string_view.size());
+  // TODO SAFETY: migrate this to shell/common/v8_util.h
+  UNSAFE_BUFFERS(
+      std::ranges::copy(string_view, static_cast<char*>(array_buffer->Data())));
   Emit("data", array_buffer, std::move(resume));
 }
 

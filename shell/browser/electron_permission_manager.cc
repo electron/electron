@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/to_vector.h"
 #include "base/values.h"
 #include "content/browser/permissions/permission_util.h"  // nogncheck
 #include "content/public/browser/child_process_security_policy.h"
@@ -54,20 +55,21 @@ void PermissionRequestResponseCallbackWrapper(
 class ElectronPermissionManager::PendingRequest {
  public:
   PendingRequest(content::RenderFrameHost* render_frame_host,
-                 const std::vector<blink::PermissionType>& permissions,
+                 std::vector<blink::mojom::PermissionDescriptorPtr> permissions,
                  StatusesCallback callback)
       : render_frame_host_id_(render_frame_host->GetGlobalId()),
         callback_(std::move(callback)),
-        permissions_(permissions),
-        results_(permissions.size(), blink::mojom::PermissionStatus::DENIED),
-        remaining_results_(permissions.size()) {}
+        permissions_(std::move(permissions)),
+        results_(permissions_.size(), blink::mojom::PermissionStatus::DENIED),
+        remaining_results_(permissions_.size()) {}
 
   void SetPermissionStatus(int permission_id,
                            blink::mojom::PermissionStatus status) {
     DCHECK(!IsComplete());
 
     if (status == blink::mojom::PermissionStatus::GRANTED) {
-      const auto permission = permissions_[permission_id];
+      const auto permission = blink::PermissionDescriptorToPermissionType(
+          permissions_[permission_id]);
       if (permission == blink::PermissionType::MIDI_SYSEX) {
         content::ChildProcessSecurityPolicy::GetInstance()
             ->GrantSendMidiSysExMessage(render_frame_host_id_.child_id);
@@ -97,7 +99,7 @@ class ElectronPermissionManager::PendingRequest {
  private:
   content::GlobalRenderFrameHostId render_frame_host_id_;
   StatusesCallback callback_;
-  std::vector<blink::PermissionType> permissions_;
+  std::vector<blink::mojom::PermissionDescriptorPtr> permissions_;
   std::vector<blink::mojom::PermissionStatus> results_;
   size_t remaining_results_;
 };
@@ -141,7 +143,7 @@ void ElectronPermissionManager::SetBluetoothPairingHandler(
 }
 
 void ElectronPermissionManager::RequestPermissionWithDetails(
-    blink::PermissionType permission,
+    blink::mojom::PermissionDescriptorPtr permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
@@ -154,7 +156,7 @@ void ElectronPermissionManager::RequestPermissionWithDetails(
 
   RequestPermissionsWithDetails(
       render_frame_host,
-      content::PermissionRequestDescription(permission, user_gesture,
+      content::PermissionRequestDescription(std::move(permission), user_gesture,
                                             requesting_origin),
       std::move(details),
       base::BindOnce(PermissionRequestResponseCallbackWrapper,
@@ -181,20 +183,26 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
     const content::PermissionRequestDescription& request_description,
     base::Value::Dict details,
     StatusesCallback response_callback) {
-  auto& permissions = request_description.permissions;
-  if (permissions.empty()) {
+  if (request_description.permissions.empty()) {
     std::move(response_callback).Run({});
     return;
   }
 
+  auto permissions = base::ToVector(request_description.permissions,
+                                    [](const auto& permission_descriptor) {
+                                      return permission_descriptor.Clone();
+                                    });
+
   if (request_handler_.is_null()) {
     std::vector<blink::mojom::PermissionStatus> statuses;
-    for (auto& permission : permissions) {
-      if (permission == blink::PermissionType::MIDI_SYSEX) {
+    for (const auto& permission : permissions) {
+      const auto permission_type =
+          blink::PermissionDescriptorToPermissionType(permission);
+      if (permission_type == blink::PermissionType::MIDI_SYSEX) {
         content::ChildProcessSecurityPolicy::GetInstance()
             ->GrantSendMidiSysExMessage(
                 render_frame_host->GetProcess()->GetDeprecatedID());
-      } else if (permission == blink::PermissionType::GEOLOCATION) {
+      } else if (permission_type == blink::PermissionType::GEOLOCATION) {
         ElectronBrowserMainParts::Get()
             ->GetGeolocationControl()
             ->UserDidOptIntoLocationServices();
@@ -208,14 +216,15 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
   int request_id = pending_requests_.Add(std::make_unique<PendingRequest>(
-      render_frame_host, permissions, std::move(response_callback)));
+      render_frame_host, std::move(permissions), std::move(response_callback)));
 
   details.Set("requestingUrl", render_frame_host->GetLastCommittedURL().spec());
   details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
   base::Value dict_value(std::move(details));
 
-  for (size_t i = 0; i < permissions.size(); ++i) {
-    auto permission = permissions[i];
+  for (size_t i = 0; i < request_description.permissions.size(); ++i) {
+    const auto permission = blink::PermissionDescriptorToPermissionType(
+        request_description.permissions[i]);
     const auto callback =
         base::BindRepeating(&ElectronPermissionManager::OnPermissionResponse,
                             base::Unretained(this), request_id, i);
@@ -260,9 +269,11 @@ void ElectronPermissionManager::RequestPermissionsFromCurrentDocument(
 }
 
 blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
-    blink::PermissionType permission,
+    const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
+  const auto permission =
+      blink::PermissionDescriptorToPermissionType(permission_descriptor);
   base::Value::Dict details;
   details.Set("embeddingOrigin", embedding_origin.spec());
   bool granted = CheckPermissionWithDetails(permission, {}, requesting_origin,
@@ -273,11 +284,12 @@ blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
 
 content::PermissionResult
 ElectronPermissionManager::GetPermissionResultForOriginWithoutContext(
-    blink::PermissionType permission,
+    const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
     const url::Origin& requesting_origin,
     const url::Origin& embedding_origin) {
-  blink::mojom::PermissionStatus status = GetPermissionStatus(
-      permission, requesting_origin.GetURL(), embedding_origin.GetURL());
+  blink::mojom::PermissionStatus status =
+      GetPermissionStatus(permission_descriptor, requesting_origin.GetURL(),
+                          embedding_origin.GetURL());
   return {status, content::PermissionStatusSource::UNSPECIFIED};
 }
 
@@ -381,12 +393,14 @@ ElectronPermissionManager::CheckProtectedUSBClasses(
 
 blink::mojom::PermissionStatus
 ElectronPermissionManager::GetPermissionStatusForCurrentDocument(
-    blink::PermissionType permission,
+    const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
     content::RenderFrameHost* render_frame_host,
     bool /*should_include_device_status*/) {
   if (render_frame_host->IsNestedWithinFencedFrame())
     return blink::mojom::PermissionStatus::DENIED;
 
+  const auto permission =
+      blink::PermissionDescriptorToPermissionType(permission_descriptor);
   base::Value::Dict details;
   details.Set("embeddingOrigin",
               content::PermissionUtil::GetLastCommittedOriginAsURL(
@@ -401,22 +415,23 @@ ElectronPermissionManager::GetPermissionStatusForCurrentDocument(
 
 blink::mojom::PermissionStatus
 ElectronPermissionManager::GetPermissionStatusForWorker(
-    blink::PermissionType permission,
+    const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
     content::RenderProcessHost* render_process_host,
     const GURL& worker_origin) {
-  return GetPermissionStatus(permission, worker_origin, worker_origin);
+  return GetPermissionStatus(permission_descriptor, worker_origin,
+                             worker_origin);
 }
 
 blink::mojom::PermissionStatus
 ElectronPermissionManager::GetPermissionStatusForEmbeddedRequester(
-    blink::PermissionType permission,
+    const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
     content::RenderFrameHost* render_frame_host,
     const url::Origin& overridden_origin) {
   if (render_frame_host->IsNestedWithinFencedFrame())
     return blink::mojom::PermissionStatus::DENIED;
 
   return GetPermissionStatus(
-      permission, overridden_origin.GetURL(),
+      permission_descriptor, overridden_origin.GetURL(),
       render_frame_host->GetLastCommittedOrigin().GetURL());
 }
 

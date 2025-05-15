@@ -28,27 +28,26 @@ The patch should be removed in favor of either:
 Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 005c18b0685e504a7c323cb2a622e893955fe738..c9e55ca1da0e3f37777cc989511942e622ad05a8 100644
+index e5776378633dba0b60a79a9044991ceaafe86e72..2beccf1bb05e8695e3e2191683e0a9bc1184544a 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -11083,6 +11083,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
-         "blob");
+@@ -11076,6 +11076,11 @@ url::Origin NavigationRequest::GetOriginForURLLoaderFactoryUnchecked() {
+             target_rph_id);
    }
  
 +  if (!common_params().url.IsStandard() && !common_params().url.IsAboutBlank()) {
-+    return std::make_pair(url::Origin::Resolve(common_params().url,
-+                                url::Origin()),
-+          "url_non_standard");
++    return url::Origin::Resolve(common_params().url,
++                                url::Origin());
 +  }
 +
    // In cases not covered above, URLLoaderFactory should be associated with the
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index ca61af9af555e267228430496118797eff130160..bb7c020ba1672e21a3ffee13ff1d3934bde0f099 100644
+index 59e909f5b9b3b9e2cb648359d3a0b4db2f1671b7..297aa66d55a62557deafe1d723809d68f898095c 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2334,6 +2334,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2332,6 +2332,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -56,17 +55,16 @@ index ca61af9af555e267228430496118797eff130160..bb7c020ba1672e21a3ffee13ff1d3934
 +  std::string protocol = url_.Protocol().Ascii();
 +  is_standard = url::IsStandard(
 +      protocol.data(), url::Component(0, static_cast<int>(protocol.size())));
-   StringBuilder debug_info_builder;
    // Whether the origin is newly created within this call, instead of copied
    // from an existing document's origin or from `origin_to_commit_`. If this is
-@@ -2387,6 +2391,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+   // true, we won't try to compare the nonce of this origin (if it's opaque) to
+@@ -2368,6 +2372,9 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+     // non-renderer only origin bits will be the same, which will be asserted at
      // the end of this function.
      origin = origin_to_commit_;
-     debug_info_builder.Append("use_origin_to_commit");
 +  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) &&
 +             !is_standard) {
-+    debug_info_builder.Append("use_url_with_non_standard_scheme");
 +    origin = SecurityOrigin::Create(url_);
    } else {
-     debug_info_builder.Append("use_url_with_precursor");
      // Otherwise, create an origin that propagates precursor information
+     // as needed. For non-opaque origins, this creates a standard tuple

@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index cad3cf44df0c65067d18490ee7694fd0f82153af..0f9b64a81e0c4114bd885b24ff65c458810ceb99 100644
+index d6ddb79521290790aeb8fbd997117cf3c6157c75..52a9536f4187418327f980fd3dd68211d8103374 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -8,6 +8,7 @@
@@ -140,7 +140,7 @@ index c5fb0546fb8724a6ba34b55d8d52b2f70ad5bc0c..883c4022aa58e5eb5345ec4e8815a137
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index be7a332d8c071f09a2a09c382e7c6c906008c9ec..8227df3c7faa07552c7ce5cc88941285dfa9ca9c 100644
+index c810c580efea05ba9b3b41a90b289224220bb203..55864eed550b09ba41732c706a81a122594949d6 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
 @@ -11,17 +11,22 @@
@@ -163,10 +163,10 @@ index be7a332d8c071f09a2a09c382e7c6c906008c9ec..8227df3c7faa07552c7ce5cc88941285
  #include "content/shell/browser/shell.h"
  #include "content/test/content_browser_test_utils_internal.h"
 +#include "content/test/test_content_client.h"
+ #include "net/base/features.h"
  #include "net/dns/mock_host_resolver.h"
  #include "third_party/blink/public/common/features.h"
- #include "third_party/blink/public/common/page/v8_compile_hints_histograms.h"
-@@ -30,6 +35,8 @@ namespace content {
+@@ -31,6 +36,8 @@ namespace content {
  
  namespace {
  
@@ -175,7 +175,7 @@ index be7a332d8c071f09a2a09c382e7c6c906008c9ec..8227df3c7faa07552c7ce5cc88941285
  bool SupportsSharedWorker() {
  #if BUILDFLAG(IS_ANDROID)
    // SharedWorkers are not enabled on Android. https://crbug.com/154571
-@@ -874,4 +881,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
+@@ -875,4 +882,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
    }
  }
  

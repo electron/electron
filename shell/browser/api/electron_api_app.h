@@ -16,10 +16,12 @@
 #include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/scoped_accessibility_mode.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
+#include "net/base/features.h"
 #include "net/ssl/client_cert_identity.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
@@ -275,6 +277,8 @@ class App final : public ElectronBrowserClient::Delegate,
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;
   bool watch_singleton_socket_on_ready_ = false;
+
+  std::unique_ptr<content::ScopedAccessibilityMode> scoped_accessibility_mode_;
 };
 
 }  // namespace api

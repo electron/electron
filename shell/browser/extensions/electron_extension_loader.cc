@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "base/auto_reset.h"
+#include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
@@ -26,8 +27,6 @@
 #include "extensions/common/manifest_constants.h"
 
 namespace extensions {
-
-using LoadErrorBehavior = ExtensionRegistrar::LoadErrorBehavior;
 
 namespace {
 
@@ -98,7 +97,7 @@ ElectronExtensionLoader::ElectronExtensionLoader(
     : browser_context_(browser_context),
       extension_registrar_(ExtensionRegistrar::Get(browser_context)) {
   extension_registrar_->Init(
-      this, /*extensions_enabled=*/true,
+      this, /*extensions_enabled=*/true, base::CommandLine::ForCurrentProcess(),
       browser_context_->GetPath().AppendASCII(kInstallDirectoryName),
       browser_context_->GetPath().AppendASCII(kUnpackedInstallDirectoryName));
 }
@@ -126,8 +125,7 @@ void ElectronExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
   DCHECK_EQ(false, did_schedule_reload_);
   base::AutoReset<bool> reset_did_schedule_reload(&did_schedule_reload_, false);
 
-  extension_registrar_->ReloadExtension(extension_id,
-                                        LoadErrorBehavior::kQuiet);
+  extension_registrar_->ReloadExtensionWithQuietFailure(extension_id);
   if (did_schedule_reload_)
     return;
 }
@@ -200,13 +198,9 @@ void ElectronExtensionLoader::PostUninstallExtension(
     scoped_refptr<const Extension> extension,
     base::OnceClosure done_callback) {}
 
-void ElectronExtensionLoader::PostNotifyUninstallExtension(
-    scoped_refptr<const Extension> extension) {}
-
-void ElectronExtensionLoader::LoadExtensionForReload(
+void ElectronExtensionLoader::DoLoadExtensionForReload(
     const ExtensionId& extension_id,
-    const base::FilePath& path,
-    LoadErrorBehavior load_error_behavior) {
+    const base::FilePath& path) {
   CHECK(!path.empty());
 
   // TODO(nornagon): we should save whether file access was granted
@@ -220,15 +214,21 @@ void ElectronExtensionLoader::LoadExtensionForReload(
   did_schedule_reload_ = true;
 }
 
+void ElectronExtensionLoader::LoadExtensionForReload(
+    const ExtensionId& extension_id,
+    const base::FilePath& path) {
+  DoLoadExtensionForReload(extension_id, path);
+}
+
+void ElectronExtensionLoader::LoadExtensionForReloadWithQuietFailure(
+    const ExtensionId& extension_id,
+    const base::FilePath& path) {
+  DoLoadExtensionForReload(extension_id, path);
+}
+
 void ElectronExtensionLoader::ShowExtensionDisabledError(
     const Extension* extension,
     bool is_remote_install) {}
-
-void ElectronExtensionLoader::FinishDelayedInstallationsIfAny() {}
-
-bool ElectronExtensionLoader::CanAddExtension(const Extension* extension) {
-  return true;
-}
 
 bool ElectronExtensionLoader::CanEnableExtension(const Extension* extension) {
   return true;
@@ -236,10 +236,6 @@ bool ElectronExtensionLoader::CanEnableExtension(const Extension* extension) {
 
 bool ElectronExtensionLoader::CanDisableExtension(const Extension* extension) {
   // Extensions cannot be disabled by the user.
-  return false;
-}
-
-bool ElectronExtensionLoader::ShouldBlockExtension(const Extension* extension) {
   return false;
 }
 

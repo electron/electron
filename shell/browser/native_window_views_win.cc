@@ -19,7 +19,6 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/resize_utils.h"
-#include "ui/views/widget/native_widget_private.h"
 
 // Must be included after other Windows headers.
 #include <UIAutomationClient.h>
@@ -282,7 +281,9 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
 
       auto* const axState = content::BrowserAccessibilityState::GetInstance();
       if (axState && axState->GetAccessibilityMode() != ui::kAXModeComplete) {
-        axState->EnableProcessAccessibility();
+        scoped_accessibility_mode_ =
+            content::BrowserAccessibilityState::GetInstance()
+                ->CreateScopedModeForProcess(ui::kAXModeComplete);
         Browser::Get()->OnAccessibilitySupportChanged();
       }
 

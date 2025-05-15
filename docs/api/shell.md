@@ -14,7 +14,8 @@ const { shell } = require('electron')
 shell.openExternal('https://github.com')
 ```
 
-**Note:** While the `shell` module can be used in the renderer process, it will not function in a sandboxed renderer.
+> [!WARNING]
+> While the `shell` module can be used in the renderer process, it will not function in a sandboxed renderer.
 
 ## Methods
 

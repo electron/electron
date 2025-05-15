@@ -37,9 +37,10 @@ class NativeWindowMac : public NativeWindow,
   ~NativeWindowMac() override;
 
   // NativeWindow:
+  void OnTitleChanged() override;
   void SetContentView(views::View* view) override;
-  void Close() override;
-  void CloseImmediately() override;
+  void CloseImpl() override;
+  void CloseImmediatelyImpl() override;
   void Focus(bool focus) override;
   bool IsFocused() const override;
   void Show() override;
@@ -85,8 +86,6 @@ class NativeWindowMac : public NativeWindow,
   ui::ZOrderLevel GetZOrderLevel() const override;
   void Center() override;
   void Invalidate() override;
-  void SetTitle(const std::string& title) override;
-  std::string GetTitle() const override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
   void SetExcludedFromShownWindowsMenu(bool excluded) override;
@@ -225,6 +224,7 @@ class NativeWindowMac : public NativeWindow,
   bool CanMaximize() const override;
   std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
       views::Widget* widget) override;
+  void OnWidgetInitialized() override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;

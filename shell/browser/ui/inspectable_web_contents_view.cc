@@ -23,8 +23,6 @@
 
 namespace electron {
 
-namespace {
-
 class DevToolsWindowDelegate : public views::ClientView,
                                public views::WidgetDelegate {
  public:
@@ -35,8 +33,8 @@ class DevToolsWindowDelegate : public views::ClientView,
         shell_(shell),
         view_(view),
         widget_(widget) {
-    SetOwnedByWidget(true);
-    set_owned_by_client();
+    SetOwnedByWidget(OwnedByWidgetPassKey{});
+    set_owned_by_client(OwnedByClientPassKey{});
 
     if (shell->GetDelegate())
       icon_ = shell->GetDelegate()->GetDevToolsWindowIcon();
@@ -71,8 +69,6 @@ class DevToolsWindowDelegate : public views::ClientView,
   raw_ptr<views::Widget> widget_;
   ui::ImageModel icon_;
 };
-
-}  // namespace
 
 InspectableWebContentsView::InspectableWebContentsView(
     InspectableWebContents* inspectable_web_contents)

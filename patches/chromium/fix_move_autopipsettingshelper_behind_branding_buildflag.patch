@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 9f82c7f92f735ed9f9569a8d299d23c7cb83e596..9b7598a26781da8b1e1c7364606574024000921f 100644
+index 659e8d79766a78d261e58adab08f9abccda8390b..bc4dc2e3a93877d2e20890560f61d3f22c8b7b9a 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -75,10 +75,10 @@ index 9f82c7f92f735ed9f9569a8d299d23c7cb83e596..9b7598a26781da8b1e1c736460657402
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index e8524bb6706ae06a0feabccbe44250580098e937..87b28c59d5a3abc49c7f5ed084ad78dcae02b39a 100644
+index 4ef685a3cdf981d876550d17c3df997ed5d97191..9bb8ef5af976c0b9d038d34a9a1056f7dae4abcb 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -430,11 +430,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -432,11 +432,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
  
  #endif  // BUILDFLAG(IS_WIN)
  

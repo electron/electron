@@ -78,7 +78,8 @@ class URLLoaderNetworkObserver
       network::mojom::IPAddressSpace client_address_space,
       network::mojom::IPAddressSpace target_address_space) override {}
   void OnAdAuctionEventRecordHeaderReceived(
-      network::AdAuctionEventRecord event_record) override {}
+      network::AdAuctionEventRecord event_record,
+      const std::optional<url::Origin>& top_frame_origin) override {}
   void Clone(
       mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
           observer) override;

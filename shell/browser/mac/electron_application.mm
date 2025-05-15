@@ -13,9 +13,11 @@
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/native_event_processor_mac.h"
 #include "content/public/browser/native_event_processor_observer_mac.h"
+#include "content/public/browser/scoped_accessibility_mode.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/mac/dict_util.h"
 #import "shell/browser/mac/electron_application_delegate.h"
+#include "ui/accessibility/ax_mode.h"
 
 namespace {
 
@@ -34,7 +36,10 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 }
 @end
 
-@implementation AtomApplication
+@implementation AtomApplication {
+  std::unique_ptr<content::ScopedAccessibilityMode>
+      _scoped_accessibility_mode_general;
+}
 
 + (AtomApplication*)sharedApplication {
   return (AtomApplication*)[super sharedApplication];
@@ -209,11 +214,12 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
   bool is_manual_ax = [attribute isEqualToString:@"AXManualAccessibility"];
   if ([attribute isEqualToString:@"AXEnhancedUserInterface"] || is_manual_ax) {
-    auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-    if ([value boolValue]) {
-      ax_state->EnableProcessAccessibility();
-    } else {
-      ax_state->DisableProcessAccessibility();
+    if (![value boolValue]) {
+      _scoped_accessibility_mode_general.reset();
+    } else if (!_scoped_accessibility_mode_general) {
+      _scoped_accessibility_mode_general =
+          content::BrowserAccessibilityState::GetInstance()
+              ->CreateScopedModeForProcess(ui::kAXModeComplete);
     }
 
     electron::Browser::Get()->OnAccessibilitySupportChanged();
@@ -228,15 +234,21 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   return [super accessibilitySetValue:value forAttribute:attribute];
 }
 
+// FROM:
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/chrome_browser_application_mac.mm;l=549;drc=4341cc4e529444bd201ad3aeeed0ec561e04103f
 - (NSAccessibilityRole)accessibilityRole {
-  // For non-VoiceOver AT, such as Voice Control, Apple recommends turning on
-  // a11y when an AT accesses the 'accessibilityRole' property. This function
-  // is accessed frequently so we only change the accessibility state when
-  // accessibility is disabled.
-  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-  if (!ax_state->GetAccessibilityMode().has_mode(ui::kAXModeBasic.flags())) {
-    ax_state->AddAccessibilityModeFlags(ui::kAXModeBasic);
+  // For non-VoiceOver assistive technology (AT), such as Voice Control, Apple
+  // recommends turning on a11y when an AT accesses the 'accessibilityRole'
+  // property. This function is accessed frequently, so we only change the
+  // accessibility state when accessibility is already disabled.
+  if (!_scoped_accessibility_mode_general) {
+    ui::AXMode target_mode = ui::kAXModeBasic;
+    _scoped_accessibility_mode_general =
+        content::BrowserAccessibilityState::GetInstance()
+            ->CreateScopedModeForProcess(target_mode |
+                                         ui::AXMode::kFromPlatform);
   }
+
   return [super accessibilityRole];
 }
 

@@ -5,6 +5,7 @@
 #include "shell/common/node_bindings.h"
 
 #include <algorithm>
+#include <iostream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -35,7 +36,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -315,8 +315,8 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   node::Environment* env = node::Environment::GetCurrent(isolate);
   if (env) {
-    gin_helper::MicrotasksScope microtasks_scope(
-        env->context(), false, v8::MicrotasksScope::kDoNotRunMicrotasks);
+    v8::MicrotasksScope microtasks_scope(
+        env->context(), v8::MicrotasksScope::kDoNotRunMicrotasks);
     // Emit the after() hooks now that the exception has been handled.
     // Analogous to node/lib/internal/process/execution.js#L176-L180
     if (env->async_hooks()->fields()[node::AsyncHooks::kAfter]) {
@@ -348,6 +348,7 @@ bool IsAllowedOption(const std::string_view option) {
           "--inspect-brk-node",
           "--inspect-port",
           "--inspect-publish-uid",
+          "--experimental-network-inspection",
       });
 
   // This should be aligned with what's possible to set via the process object.
@@ -393,9 +394,8 @@ void SetNodeOptions(base::Environment* env) {
 
   if (env->HasVar("NODE_OPTIONS")) {
     if (electron::fuses::IsNodeOptionsEnabled()) {
-      std::string options;
       std::string result_options;
-      env->GetVar("NODE_OPTIONS", &options);
+      std::string options = env->GetVar("NODE_OPTIONS").value();
       const std::vector<std::string_view> parts = base::SplitStringPiece(
           options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
@@ -605,9 +605,8 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
           args,
           static_cast<node::ProcessInitializationFlags::Flags>(process_flags));
 
-  for (const std::string& error : result->errors()) {
-    fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
-  }
+  for (const std::string& error : result->errors())
+    std::cerr << args[0] << ": " << error << '\n';
 
   if (result->early_return() != 0)
     exit(result->exit_code());
@@ -910,28 +909,22 @@ void NodeBindings::UvRunOnce() {
   // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
 
-  // Node.js expects `kExplicit` microtasks policy and will run microtasks
-  // checkpoints after every call into JavaScript. Since we use a different
-  // policy in the renderer - switch to `kExplicit` and then drop back to the
-  // previous policy value.
-  v8::MicrotaskQueue* microtask_queue = env->context()->GetMicrotaskQueue();
-  auto old_policy = microtask_queue->microtasks_policy();
-  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
-  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
+  {
+    util::ExplicitMicrotasksScope microtasks_scope(
+        env->context()->GetMicrotaskQueue());
 
-  if (browser_env_ != BrowserEnvironment::kBrowser)
-    TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
+    if (browser_env_ != BrowserEnvironment::kBrowser)
+      TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
 
-  // Deal with uv events.
-  int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
+    // Deal with uv events.
+    int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
 
-  if (browser_env_ != BrowserEnvironment::kBrowser)
-    TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
+    if (browser_env_ != BrowserEnvironment::kBrowser)
+      TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
 
-  microtask_queue->set_microtasks_policy(old_policy);
-
-  if (r == 0)
-    base::RunLoop().QuitWhenIdle();  // Quit from uv.
+    if (r == 0)
+      base::RunLoop().QuitWhenIdle();  // Quit from uv.
+  }
 
   // Tell the worker thread to continue polling.
   uv_sem_post(&embed_sem_);

@@ -12,10 +12,10 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
 #include "gin/converter.h"
-#include "gin/dictionary.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
+#include "third_party/electron_node/src/node_process-inl.h"
 
 namespace electron::util {
 
@@ -65,24 +65,22 @@ void EmitWarning(const std::string_view warning_msg,
 void EmitWarning(v8::Isolate* isolate,
                  const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  v8::HandleScope scope{isolate};
-  gin::Dictionary process{
-      isolate, node::Environment::GetCurrent(isolate)->process_object()};
-  base::RepeatingCallback<void(std::string_view, std::string_view,
-                               std::string_view)>
-      emit_warning;
-  process.Get("emitWarning", &emit_warning);
-  emit_warning.Run(warning_msg, warning_type, "");
+  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
+                                  warning_msg, warning_type);
 }
 
-// SAFETY: There is no node::Buffer API that passes the UNSAFE_BUFFER_USAGE
-// test, so let's isolate the unsafe API use into this function. Instead of
-// calling `Buffer::Data()` and `Buffer::Length()` directly, the rest of our
-// code should prefer to use spans returned by this function.
-base::span<uint8_t> as_byte_span(v8::Local<v8::Value> node_buffer) {
-  auto* data = reinterpret_cast<uint8_t*>(node::Buffer::Data(node_buffer));
-  const auto size = node::Buffer::Length(node_buffer);
-  return UNSAFE_BUFFERS(base::span{data, size});
+void EmitDeprecationWarning(const std::string_view warning_msg,
+                            const std::string_view deprecation_code) {
+  EmitDeprecationWarning(JavascriptEnvironment::GetIsolate(), warning_msg,
+                         deprecation_code);
+}
+
+void EmitDeprecationWarning(v8::Isolate* isolate,
+                            const std::string_view warning_msg,
+                            const std::string_view deprecation_code) {
+  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
+                                  warning_msg, "DeprecationWarning",
+                                  deprecation_code);
 }
 
 node::Environment* CreateEnvironment(v8::Isolate* isolate,
@@ -132,4 +130,39 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
   return env;
 }
 
+ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)
+    : microtask_queue_(queue), original_policy_(queue->microtasks_policy()) {
+  DCHECK_EQ(microtask_queue_->GetMicrotasksScopeDepth(), 0);
+  microtask_queue_->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
+}
+
+ExplicitMicrotasksScope::~ExplicitMicrotasksScope() {
+  microtask_queue_->set_microtasks_policy(original_policy_);
+}
+
 }  // namespace electron::util
+
+namespace electron::Buffer {
+
+// SAFETY: There is no node::Buffer API that passes the UNSAFE_BUFFER_USAGE
+// test, so let's isolate the unsafe API use into this function. Instead of
+// calling `Buffer::Data()` and `Buffer::Length()` directly, the rest of our
+// code should prefer to use spans returned by this function.
+base::span<uint8_t> as_byte_span(v8::Local<v8::Value> node_buffer) {
+  auto* data = reinterpret_cast<uint8_t*>(node::Buffer::Data(node_buffer));
+  const auto size = node::Buffer::Length(node_buffer);
+  return UNSAFE_BUFFERS(base::span{data, size});
+}
+
+v8::MaybeLocal<v8::Object> Copy(v8::Isolate* isolate,
+                                const base::span<const char> data) {
+  // SAFETY: span-friendly version of node::Buffer::Copy()
+  return UNSAFE_BUFFERS(node::Buffer::Copy(isolate, data.data(), data.size()));
+}
+
+v8::MaybeLocal<v8::Object> Copy(v8::Isolate* isolate,
+                                const base::span<const uint8_t> data) {
+  return Copy(isolate, base::as_chars(data));
+}
+
+}  // namespace electron::Buffer

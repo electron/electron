@@ -252,12 +252,8 @@ std::string MakePartitionName(const std::string& input) {
 bool DoesDeviceMatch(const base::Value& device,
                      const base::Value& device_to_compare,
                      const blink::PermissionType permission_type) {
-  if (permission_type ==
-          static_cast<blink::PermissionType>(
-              WebContentsPermissionHelper::PermissionType::HID) ||
-      permission_type ==
-          static_cast<blink::PermissionType>(
-              WebContentsPermissionHelper::PermissionType::USB)) {
+  if (permission_type == blink::PermissionType::HID ||
+      permission_type == blink::PermissionType::USB) {
     if (device.GetDict().FindInt(kDeviceVendorIdKey) !=
             device_to_compare.GetDict().FindInt(kDeviceVendorIdKey) ||
         device.GetDict().FindInt(kDeviceProductIdKey) !=
@@ -273,9 +269,7 @@ bool DoesDeviceMatch(const base::Value& device,
     if (serial_number && device_serial_number &&
         *device_serial_number == *serial_number)
       return true;
-  } else if (permission_type ==
-             static_cast<blink::PermissionType>(
-                 WebContentsPermissionHelper::PermissionType::SERIAL)) {
+  } else if (permission_type == blink::PermissionType::SERIAL) {
 #if BUILDFLAG(IS_WIN)
     const auto* instance_id = device.GetDict().FindString(kDeviceInstanceIdKey);
     const auto* port_instance_id =
@@ -764,9 +758,9 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &rfh)) {
-      bool enable_local_echo = false;
-      result_dict.Get("enableLocalEcho", &enable_local_echo);
-      bool disable_local_echo = !enable_local_echo;
+      const bool enable_local_echo =
+          result_dict.ValueOrDefault("enableLocalEcho", false);
+      const bool disable_local_echo = !enable_local_echo;
       auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
       blink::MediaStreamDevice audio_device(
           request.audio_type,

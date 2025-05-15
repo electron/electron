@@ -98,10 +98,9 @@ void HidChooserContext::GrantDevicePermission(
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
 
-    permission_manager->GrantDevicePermission(
-        static_cast<blink::PermissionType>(
-            WebContentsPermissionHelper::PermissionType::HID),
-        origin, DeviceInfoToValue(device), browser_context_);
+    permission_manager->GrantDevicePermission(blink::PermissionType::HID,
+                                              origin, DeviceInfoToValue(device),
+                                              browser_context_);
   } else {
     ephemeral_devices_[origin].insert(device.guid);
   }
@@ -132,10 +131,9 @@ void HidChooserContext::RevokePersistentDevicePermission(
     const device::mojom::HidDeviceInfo& device) {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
-  permission_manager->RevokeDevicePermission(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::HID),
-      origin, DeviceInfoToValue(device), browser_context_);
+  permission_manager->RevokeDevicePermission(blink::PermissionType::HID, origin,
+                                             DeviceInfoToValue(device),
+                                             browser_context_);
   RevokeEphemeralDevicePermission(origin, device);
 }
 
@@ -173,9 +171,8 @@ bool HidChooserContext::HasDevicePermission(
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
   return permission_manager->CheckDevicePermission(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::HID),
-      origin, DeviceInfoToValue(device), browser_context_);
+      blink::PermissionType::HID, origin, DeviceInfoToValue(device),
+      browser_context_);
 }
 
 bool HidChooserContext::IsFidoAllowedForOrigin(const url::Origin& origin) {
@@ -247,8 +244,7 @@ void HidChooserContext::DeviceAdded(device::mojom::HidDeviceInfoPtr device) {
     devices_.insert({device->guid, device->Clone()});
 
   // Notify all observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceAdded(*device);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceAdded, *device);
 }
 
 void HidChooserContext::DeviceRemoved(device::mojom::HidDeviceInfoPtr device) {
@@ -259,8 +255,7 @@ void HidChooserContext::DeviceRemoved(device::mojom::HidDeviceInfoPtr device) {
   DCHECK_EQ(n_erased, 1U);
 
   // Notify all device observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceRemoved(*device);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceRemoved, *device);
 
   // Next we'll notify observers for revoked permissions. If the device does not
   // support persistent permissions then device permissions are revoked on
@@ -281,8 +276,7 @@ void HidChooserContext::DeviceChanged(device::mojom::HidDeviceInfoPtr device) {
   mapped = device->Clone();
 
   // Notify all observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceChanged(*device);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceChanged, *device);
 }
 
 void HidChooserContext::EnsureHidManagerConnection() {
@@ -310,7 +304,7 @@ void HidChooserContext::SetUpHidManagerConnection(
 void HidChooserContext::InitDeviceList(
     std::vector<device::mojom::HidDeviceInfoPtr> devices) {
   for (auto& device : devices)
-    devices_.insert({device->guid, std::move(device)});
+    devices_.try_emplace(device->guid, std::move(device));
 
   is_initialized_ = true;
 
@@ -332,8 +326,7 @@ void HidChooserContext::OnHidManagerConnectionError() {
   ephemeral_devices_.clear();
 
   // Notify all device observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnHidManagerConnectionError();
+  device_observer_list_.Notify(&DeviceObserver::OnHidManagerConnectionError);
 }
 
 }  // namespace electron

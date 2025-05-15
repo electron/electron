@@ -11,7 +11,7 @@ For resolving complex conflict please pin @reitowo
 For more reason please see: https://crrev.com/c/5465148
 
 diff --git a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-index f51591d21a0ce44028a3711cba72ceebb55b3567..31e01429e26f2856587b98a0213f1a5f80ddc52e 100644
+index c821349f35116f07988b2b58a6521e73a514548c..2b8f41a584c5d14ea9d72d67c2abe71eed4a54ac 100644
 --- a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
 +++ b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
 @@ -178,7 +178,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
@@ -36,10 +36,10 @@ index f51591d21a0ce44028a3711cba72ceebb55b3567..31e01429e26f2856587b98a0213f1a5f
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index 4f216eb88e51c929468abf52049524177c3f0bb3..e216283028864b48516f690209b0e6b03f02d11c 100644
+index 7c90eca71d39521ec1968a946b6c68c9a564d225..9c40397be51f1ce30cbe73d8c6fc0bb279c95d7a 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-@@ -194,7 +194,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
+@@ -196,7 +196,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
  bool FrameResources::Initialize() {
    auto* context = pool_->GetContext();
  
@@ -48,7 +48,7 @@ index 4f216eb88e51c929468abf52049524177c3f0bb3..e216283028864b48516f690209b0e6b0
  #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
        gfx::BufferUsage::SCANOUT_VEA_CPU_READ
  #else
-@@ -208,6 +208,23 @@ bool FrameResources::Initialize() {
+@@ -210,6 +210,23 @@ bool FrameResources::Initialize() {
    const gfx::Size buffer_size_in_pixels =
        GetBufferSizeInPixelsForVideoPixelFormat(format_, coded_size_);
  
@@ -72,7 +72,7 @@ index 4f216eb88e51c929468abf52049524177c3f0bb3..e216283028864b48516f690209b0e6b0
    gpu::SharedImageUsageSet usage =
  #if BUILDFLAG(IS_MAC)
        gpu::SHARED_IMAGE_USAGE_MACOS_VIDEO_TOOLBOX |
-@@ -248,7 +265,7 @@ bool FrameResources::Initialize() {
+@@ -250,7 +267,7 @@ bool FrameResources::Initialize() {
        viz::GetSharedImageFormat(buffer_format);
  
    shared_image_ =

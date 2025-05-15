@@ -9,14 +9,15 @@ Electron when a session is non persistent we do not initialize the
 ExtensionSystem, so this check is not relevant for Electron.
 
 diff --git a/extensions/browser/script_injection_tracker.cc b/extensions/browser/script_injection_tracker.cc
-index 8f590b9ebd02969f0c5d9f617852954a69f51afd..91c4a61525173d2cd95a8c2c626c1be5a84b003f 100644
+index 172f02dbe9bb22425f8d45119b6d8466c949ba36..063015e14053f75544e6700c9251d6ecae95389c 100644
 --- a/extensions/browser/script_injection_tracker.cc
 +++ b/extensions/browser/script_injection_tracker.cc
-@@ -176,7 +176,6 @@ std::vector<const UserScript*> GetLoadedDynamicScripts(
-   UserScriptManager* manager =
-       ExtensionSystem::Get(process.GetBrowserContext())->user_script_manager();
+@@ -178,7 +178,7 @@ std::vector<const UserScript*> GetLoadedDynamicScripts(
    if (!manager) {
--    CHECK_IS_TEST();
+     // TODO(crbug.com/412829476): Remove this guard once we enable
+     // UserScriptManager on desktop Android.
+-#if BUILDFLAG(ENABLE_EXTENSIONS)
++#if 0
+     CHECK_IS_TEST();
+ #endif
      return std::vector<const UserScript*>();
-   }
- 

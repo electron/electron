@@ -11,7 +11,6 @@
 #include "base/memory/raw_ptr.h"
 #include "gin/converter.h"
 #include "shell/common/api/electron_api_native_image.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "skia/public/mojom/bitmap.mojom.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
 #include "third_party/blink/public/common/messaging/web_message_port.h"
@@ -35,9 +34,9 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   ~V8Serializer() override = default;
 
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
-    gin_helper::MicrotasksScope microtasks_scope{
-        isolate_->GetCurrentContext(), false,
-        v8::MicrotasksScope::kDoNotRunMicrotasks};
+    v8::MicrotasksScope microtasks_scope(
+        isolate_->GetCurrentContext(),
+        v8::MicrotasksScope::kDoNotRunMicrotasks);
     WriteBlinkEnvelope(19);
 
     serializer_.WriteHeader();

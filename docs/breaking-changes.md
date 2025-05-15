@@ -14,6 +14,19 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (37.0)
 
+### Utility Process unhandled rejection behavior change
+
+Utility Processes will now warn with an error message when an unhandled
+rejection occurs instead of crashing the process.
+
+To restore the previous behavior, you can use:
+
+```js
+process.on('unhandledRejection', () => {
+  process.exit(1)
+})
+```
+
 ### Behavior Changed: WebUSB and WebSerial Blocklist Support
 
 [WebUSB](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API) and [Web Serial](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API) now support the [WebUSB Blocklist](https://wicg.github.io/webusb/#blocklist) and [Web Serial Blocklist](https://wicg.github.io/serial/#blocklist) used by Chromium and outlined in their respective specifications.
@@ -37,6 +50,8 @@ and then using it in `ProtocolResponse.session`.
 `BrowserWindow.IsVisibleOnAllWorkspaces()` will now return false on Linux if the
 window is not currently visible.
 
+## Planned Breaking API Changes (36.0)
+
 ### Behavior Changes: `app.commandLine`
 
 `app.commandLine` will convert upper-cases switches and arguments to lowercase.
@@ -45,19 +60,17 @@ window is not currently visible.
 
 If you were using `app.commandLine` to control the behavior of the  main process, you should do this via `process.argv`.
 
-## Planned Breaking API Changes (36.0)
+### Deprecated: `NativeImage.getBitmap()`
 
-### Utility Process unhandled rejection behavior change
+`NativeImage.toBitmap()` returns a newly-allocated copy of the bitmap. `NativeImage.getBitmap()` was originally an alternative function that returned the original instead of a copy. This changed when sandboxing was introduced, so both return a copy and are functionally equivalent.
 
-Utility Processes will now warn with an error message when an unhandled
-rejection occurs instead of crashing the process.
-
-To restore the previous behavior, you can use:
+Client code should call `NativeImage.toBitmap()` instead:
 
 ```js
-process.on('unhandledRejection', () => {
-  process.exit(1)
-})
+// Deprecated
+bitmap = image.getBitmap()
+// Use this instead
+bitmap = image.toBitmap()
 ```
 
 ### Removed: `isDefault` and `status` properties on `PrinterInfo`
@@ -101,6 +114,24 @@ The `systemPreferences.isAeroGlassEnabled()` function has been removed without r
 It has been always returning `true` since Electron 23, which only supports Windows 10+, where DWM composition can no longer be disabled.
 
 https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw#disabling-dwm-composition-windows7-and-earlier
+
+### Changed: GTK 4 is default when running GNOME
+
+After an [upstream change](https://chromium-review.googlesource.com/c/chromium/src/+/6310469), GTK 4 is now the default when running GNOME.
+
+In rare cases, this may cause some applications or configurations to [error](https://github.com/electron/electron/issues/46538) with the following message:
+
+```stderr
+Gtk-ERROR **: 11:30:38.382: GTK 2/3 symbols detected. Using GTK 2/3 and GTK 4 in the same process is not supported
+```
+
+Affected users can work around this by specifying the `gtk-version` command-line flag:
+
+```shell
+$ electron --gtk-version=3   # or --gtk-version=2
+```
+
+The same can be done with the [`app.commandLine.appendSwitch`](https://www.electronjs.org/docs/latest/api/command-line#commandlineappendswitchswitch-value) function.
 
 ## Planned Breaking API Changes (35.0)
 

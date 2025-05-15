@@ -34,10 +34,10 @@ index 39b5a8fdd165efd74b00256552b51b5413107958..bfc4ef4f50efff4a77f2aef64335bb7e
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 19826b92b39c812a3170bfa470a08192b2a712bc..d97262cc28622de335bfe5a82c26779e9dccd586 100644
+index 5f9612ff000c1544f572bab0cbc9982dc4e647ce..2ce65548dd1283adb4c095e37198e08a8a13635c 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1387,6 +1387,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
+@@ -1415,6 +1415,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
    window()->SetProperty(aura::client::kHeadlessBoundsKey, bounds);
  }
  
@@ -49,22 +49,22 @@ index 19826b92b39c812a3170bfa470a08192b2a712bc..d97262cc28622de335bfe5a82c26779e
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 2ee5e4b4673f4f18880dddecc48118c89823fd3f..37109b8d3d439073b5c9e2ea3597c36f32de5704 100644
+index dab595aacaeca4f6f735fd04004c27a4949278d2..177134d439866db9dbbde657ff358a761ad7f39d 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -268,6 +268,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin : public DesktopWindowTreeHost,
+@@ -272,6 +272,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    void HandleWindowSizeUnchanged() override;
    void HandleWindowScaleFactorChanged(float window_scale_factor) override;
    void HandleHeadlessWindowBoundsChanged(const gfx::Rect& bounds) override;
 +  bool HandleMouseEventForCaption(UINT message) const override;
  
-   // Overridden from WidgetObserver.
-   void OnWidgetThemeChanged(Widget* widget) override;
+   Widget* GetWidget();
+   const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 1cf98eadc8cbc1ada481c709a873dc1dd443de66..cec234006cbcacff953ce9ff4175006b057aa341 100644
+index 9747e945b2ebfc113ffd12839c28a98fcccf2872..6f2e2702d3b982fe7e8d258f303c8055d3d37df8 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3177,15 +3177,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3167,15 +3167,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      }
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.
@@ -86,7 +86,7 @@ index 1cf98eadc8cbc1ada481c709a873dc1dd443de66..cec234006cbcacff953ce9ff4175006b
        return 0;
      }
    }
-@@ -3208,6 +3212,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3198,6 +3202,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      // handle alt-space, or in the frame itself.
      is_right_mouse_pressed_on_caption_ = false;
      ReleaseCapture();
@@ -94,7 +94,7 @@ index 1cf98eadc8cbc1ada481c709a873dc1dd443de66..cec234006cbcacff953ce9ff4175006b
      // |point| is in window coordinates, but WM_NCHITTEST and TrackPopupMenu()
      // expect screen coordinates.
      POINT screen_point = CR_POINT_INITIALIZER_FROM_LPARAM(l_param);
-@@ -3215,7 +3220,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3205,7 +3210,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      w_param = static_cast<WPARAM>(SendMessage(
          hwnd(), WM_NCHITTEST, 0, MAKELPARAM(screen_point.x, screen_point.y)));
      if (w_param == HTCAPTION || w_param == HTSYSMENU) {
@@ -114,7 +114,7 @@ index 1cf98eadc8cbc1ada481c709a873dc1dd443de66..cec234006cbcacff953ce9ff4175006b
      }
    } else if (message == WM_NCLBUTTONDOWN &&
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 83c26bf2b4bc11c0e3d839093eea56eed1bf581b..075e456e851bbde2b0174ca0cc34428cc32b6966 100644
+index 252d7ce78ad49596fb030160cb69d9bf3dc0951f..5e7975cf5cb3435b844fda58d7582d54cb583a72 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
 @@ -255,6 +255,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
