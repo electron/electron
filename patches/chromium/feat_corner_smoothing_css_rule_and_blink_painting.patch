@@ -112,7 +112,7 @@ index 6e991652d242795e292cea4c94cff59aaea078fa..b6834c78575520bb6e584dd2ce3333ac
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 5bacbf438f37363e8a6c2f61ff8eff0dae781aaa..e16363cbff7a4af50656f64f7f69ecfa15081245 100644
+index 8cceff39cda7a7cfde6794931515c4e6aea86d25..076cdfa252044c75c52efc596c44b1cedccf5000 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
 @@ -8810,6 +8810,24 @@
@@ -154,10 +154,10 @@ index 936bd39e77a5a181a94a48129e38efc9c8c82847..75d332ef497018e4c863a47d4491d25d
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index aa12ac9e27c55870269dd780e868b5eaee5acaab..1a06511ee56717df547817813eb80c3db1fa01df 100644
+index 1737096ba7d04b03de2fb812a5cd690d0e512c56..e1f8c73023043cba3a4b605332fc9196800218be 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12086,5 +12086,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12095,5 +12095,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -184,10 +184,10 @@ index aa12ac9e27c55870269dd780e868b5eaee5acaab..1a06511ee56717df547817813eb80c3d
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 56429f6e0da31c28aef86b1b5a5e538207b42706..33c6a8ff7cf6ffff2952b5a8b9389eb04ee6946d 100644
+index a1a46c2d649f2a04002354d965c3c3ed886747f8..566de4fb3f53254d9fd4fc6ebb8f0d4fc137560d 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -3900,4 +3900,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
+@@ -3905,4 +3905,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
    return PositionArea(span[0], span[1], span[2], span[3]);
  }
  
@@ -307,7 +307,7 @@ index 2c2f4f405074e5baa4a26f255283404f86b40e21..ebeb7d6988ee9e6a4e78cb82fc01fdad
  
  ContouredRect PixelSnappedContouredBorderInternal(
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 3788f76b50f6a1776baef2131033a62875e101b9..f3e2226021d1de6a5cb787538ca6c0f18f208670 100644
+index b63dfc16103a6882ffb4dd81a20408092aaed3ab..d56e6f0a527ddc8adccb5fec3adb66fd2f5c99bd 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1658,6 +1658,8 @@ component("platform") {
@@ -320,7 +320,7 @@ index 3788f76b50f6a1776baef2131033a62875e101b9..f3e2226021d1de6a5cb787538ca6c0f1
  
    sources -= blink_platform_avx_files
 diff --git a/third_party/blink/renderer/platform/geometry/contoured_rect.h b/third_party/blink/renderer/platform/geometry/contoured_rect.h
-index 88e78f1d8050c73ae6a8929f23e636ef7a383404..17b63c5ecdcd8feb17b76a13392595c737c316b7 100644
+index 54d3ae85eaed0699714728bcb8ff0c817f6b5e86..3014d286ecbef8b9a90f007527cce5141110eaf6 100644
 --- a/third_party/blink/renderer/platform/geometry/contoured_rect.h
 +++ b/third_party/blink/renderer/platform/geometry/contoured_rect.h
 @@ -47,19 +47,29 @@ class PLATFORM_EXPORT ContouredRect {
@@ -373,7 +373,7 @@ index 88e78f1d8050c73ae6a8929f23e636ef7a383404..17b63c5ecdcd8feb17b76a13392595c7
  
    // A Corner is a axis-aligned quad, with the points ordered (start, outer,
 diff --git a/third_party/blink/renderer/platform/geometry/path_builder.cc b/third_party/blink/renderer/platform/geometry/path_builder.cc
-index b17bc9760b97b1e72783ae174ffa0f69ca830462..226b546694524e3848ea849059df74970403690e 100644
+index 414b73e219a7f4e499414cf120c5b8ebd0ae3a63..2093364a27e89fa10fe9a6921453d2d8285e445e 100644
 --- a/third_party/blink/renderer/platform/geometry/path_builder.cc
 +++ b/third_party/blink/renderer/platform/geometry/path_builder.cc
 @@ -4,6 +4,7 @@
