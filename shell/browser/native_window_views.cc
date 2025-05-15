@@ -265,7 +265,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   const int width = options.ValueOrDefault(options::kWidth, 800);
   const int height = options.ValueOrDefault(options::kHeight, 600);
-  const gfx::Rect bounds{0, 0, width, height};
+  gfx::Rect bounds{0, 0, width, height};
   widget_size_ = bounds.size();
 
   widget()->AddObserver(this);
@@ -406,10 +406,25 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   // Default content view.
   SetContentView(new views::View());
 
+  options.Get(options::kUseContentSize, &use_content_size_);
+
+  // NOTE(@mlaurencin) Spec requirements can be found here:
+  // https://developer.mozilla.org/en-US/docs/Web/API/Window/open#width
+  int kMinSizeReqdBySpec = 100;
+  int inner_width = 0;
+  int inner_height = 0;
+  options.Get(options::kinnerWidth, &inner_width);
+  options.Get(options::kinnerHeight, &inner_height);
+  if (inner_width || inner_height) {
+    use_content_size_ = true;
+    if (inner_width)
+      bounds.set_width(std::max(kMinSizeReqdBySpec, inner_width));
+    if (inner_height)
+      bounds.set_height(std::max(kMinSizeReqdBySpec, inner_height));
+  }
+
   gfx::Size size = bounds.size();
-  if (has_frame() &&
-      options.Get(options::kUseContentSize, &use_content_size_) &&
-      use_content_size_)
+  if (has_frame() && use_content_size_)
     size = ContentBoundsToWindowBounds(gfx::Rect(size)).size();
 
   widget()->CenterWindow(size);
