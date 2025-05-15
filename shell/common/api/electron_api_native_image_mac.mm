@@ -36,7 +36,7 @@ NSData* bufferFromNSImage(NSImage* image) {
 }
 
 double safeShift(double in, double def) {
-  if (in >= 0 || in <= 1 || in == def)
+  if ((in >= 0 && in <= 1) || in == def)
     return in;
   return def;
 }
