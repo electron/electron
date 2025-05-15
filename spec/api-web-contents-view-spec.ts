@@ -55,6 +55,20 @@ describe('WebContentsView', () => {
     })).to.throw('options.webContents is already attached to a window');
   });
 
+  it('should throw an error when adding a destroyed child view to the parent view', async () => {
+    const browserWindow = new BrowserWindow();
+
+    const webContentsView = new WebContentsView();
+    webContentsView.webContents.loadURL('about:blank');
+    webContentsView.webContents.destroy();
+
+    const destroyed = once(webContentsView.webContents, 'destroyed');
+    await destroyed;
+    expect(() => browserWindow.contentView.addChildView(webContentsView)).to.throw(
+      'Can\'t add a destroyed child view to a parent view'
+    );
+  });
+
   it('should throw error when created with already attached webContents to other WebContentsView', () => {
     const browserWindow = new BrowserWindow();
 
