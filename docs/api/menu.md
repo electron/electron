@@ -327,6 +327,27 @@ name, no matter what label you set. To change it, modify your app bundle's
 [About Information Property List Files][AboutInformationPropertyListFiles]
 for more information.
 
+### Menu Sublabels
+
+Menu sublabels, or [subtitles](https://developer.apple.com/documentation/appkit/nsmenuitem/subtitle?language=objc), can be added to menu items using the `sublabel` option. Below is an example based on the renderer example above:
+
+```js @ts-expect-error=[12]
+// main
+ipcMain.on('show-context-menu', (event) => {
+  const template = [
+    {
+      label: 'Menu Item 1',
+      sublabel: 'Subtitle 1',
+      click: () => { event.sender.send('context-menu-command', 'menu-item-1') }
+    },
+    { type: 'separator' },
+    { label: 'Menu Item 2', sublabel: 'Subtitle 2', type: 'checkbox', checked: true }
+  ]
+  const menu = Menu.buildFromTemplate(template)
+  menu.popup({ window: BrowserWindow.fromWebContents(event.sender) })
+})
+```
+
 ## Setting Menu for Specific Browser Window (_Linux_ _Windows_)
 
 The [`setMenu` method][setMenu] of browser windows can set the menu of certain
