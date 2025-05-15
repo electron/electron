@@ -58,6 +58,14 @@ app.whenReady().then(() => {
 })
 ```
 
+> [!NOTE]
+> Screen coordinates used by this module are [`Point`](structures/point.md) structures.
+> There are two kinds of coordinates available to the process:
+>
+> * **Physical screen points** are raw hardware pixels on a display.
+> * **Device-independent pixel (DIP) points** are virtualized screen points scaled based on the DPI
+>   (dots per inch) of the display.
+
 ## Events
 
 The `screen` module emits the following events:
