@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7860ff639da1116f007fda4ecf3010d065203f8c..c61bc8d60d69d348da992c980c6222c7c21623af 100644
+index 01c19144731d186d857dda72c3ac002a9ae2e911..14faff7dd8f32437f849011df222a37744f379d5 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1046,6 +1046,7 @@ component("base") {
@@ -582,7 +582,7 @@ index d83f420d25e2c108ad400ebecae02b1ac327c058..77852c5c315ac09dddb7227adf3b840e
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4c02b0aef40b31a0dd55859c718842e25652fe74..0ad5b87248ac7c15774a870d5a4268c60a2c36c0 100644
+index 1006244a7ed861fdd58bfb3af926a69af2061322..4074a0429ce78963d4406f957c96382333d760ed 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
@@ -594,7 +594,7 @@ index 4c02b0aef40b31a0dd55859c718842e25652fe74..0ad5b87248ac7c15774a870d5a4268c6
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 1b923f0e0dc6d7dc9e67d278b8da00b35745241e..6f7ee79df9b9e3026663e2a4637007de5b5da902 100644
+index c8f64d6c7a7a790659a05fd626e582608c46a8a7..21f26e2c619c632d6ccb331ddd7a6870340f644e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -24,6 +24,7 @@
@@ -628,7 +628,7 @@ index 1b923f0e0dc6d7dc9e67d278b8da00b35745241e..6f7ee79df9b9e3026663e2a4637007de
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 27f481c6a31cdd59684eb38ea8b2ffdcb5849ddf..88a6090a49da6071fded348a901c7c62b647b503 100644
+index 8b32428734dbc038b52f2d2b7e738cc508216820..dc1dc1c15db217c4b8640b9c6ec6c051c0abb12b 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -50,6 +50,7 @@
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 4df384721ee529863d35ae7afe8249e3989697b0..2369ebc00ff008a94409d68404d3017f85592f74 100644
+index 5544ddc8faae9cc4a75c812227a94df4ad4f5e53..d6fa2a588fec9895101dc4c308eb84b015a908aa 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -664,6 +664,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 4df384721ee529863d35ae7afe8249e3989697b0..2369ebc00ff008a94409d68404d3017f
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1962,6 +1964,7 @@ test("content_browsertests") {
+@@ -1963,6 +1965,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 4df384721ee529863d35ae7afe8249e3989697b0..2369ebc00ff008a94409d68404d3017f
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3292,6 +3295,7 @@ test("content_unittests") {
+@@ -3293,6 +3296,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1584,10 +1584,10 @@ index dcf493d62990018040a3f84b6f875af737bd2214..3d1c4dcc9ee0bbfdac15f40d9c74e9f3
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 30440d1b5ba071c8cf2076e7e7acb24681f78a2f..ca18e61ff2eb743fabeb10af06c208f84b526dd8 100644
+index 349a50ce687d5594296ce3c302938424be2e739b..0c5313b8f31a97747ae28f2c188e0fb591e5cc36 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -295,6 +295,7 @@ component("platform") {
+@@ -296,6 +296,7 @@ component("platform") {
          "AppKit.framework",
          "Foundation.framework",
        ]
