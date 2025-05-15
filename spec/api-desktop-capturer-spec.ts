@@ -119,7 +119,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     // bots while it is not on my workstation, as expected, with and without
     // the --ci parameter.
     if (process.platform === 'linux' && sources.length === 0) {
-      it.skip('desktopCapturer.getSources returned an empty source list');
+      this?.skip('desktopCapturer.getSources returned an empty source list');
       return;
     }
 
@@ -155,7 +155,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     // bots while it is not on my workstation, as expected, with and without
     // the --ci parameter.
     if (process.platform === 'linux' && sources.length === 0) {
-      it.skip('desktopCapturer.getSources returned an empty source list');
+      this?.skip('desktopCapturer.getSources returned an empty source list');
       return;
     }
 
@@ -225,7 +225,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
       // the --ci parameter.
       if (process.platform === 'linux' && sources.length === 0) {
         destroyWindows();
-        it.skip('desktopCapturer.getSources returned an empty source list');
+        this?.skip('desktopCapturer.getSources returned an empty source list');
         return;
       }
 
