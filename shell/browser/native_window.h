@@ -406,7 +406,7 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }
 
-  int32_t window_id() const { return window_id_; }
+  [[nodiscard]] constexpr int32_t window_id() const { return window_id_; }
 
   void add_child_window(NativeWindow* child) {
     child_windows_.push_back(child);
