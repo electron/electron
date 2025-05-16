@@ -27,6 +27,7 @@
 namespace electron {
 
 #if BUILDFLAG(IS_LINUX)
+class ClientFrameViewLinux;
 class GlobalMenuBarX11;
 #endif
 
@@ -179,6 +180,12 @@ class NativeWindowViews : public NativeWindow,
   void set_overlay_symbol_color(SkColor color) {
     overlay_symbol_color_ = color;
   }
+
+#if BUILDFLAG(IS_LINUX)
+  // returns the ClientFrameViewLinux iff that is our NonClientFrameView type,
+  // nullptr otherwise.
+  ClientFrameViewLinux* GetClientFrameViewLinux();
+#endif
 
  private:
   // views::WidgetObserver:
