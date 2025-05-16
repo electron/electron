@@ -1568,7 +1568,7 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() const {
     return view_native_widget->IsVisibleOnAllWorkspaces();
 
 #if BUILDFLAG(IS_LINUX)
-  if (IsX11()) {
+  if (x11_util::IsX11()) {
     // Use the presence/absence of _NET_WM_STATE_STICKY in _NET_WM_STATE to
     // determine whether the current window is visible on all workspaces.
     x11::Atom sticky_atom = x11::GetAtom("_NET_WM_STATE_STICKY");
