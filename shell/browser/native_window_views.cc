@@ -506,18 +506,12 @@ void NativeWindowViews::SetTitleBarOverlay(
     updated = true;
   }
 
-  if (!updated)
-    return;
-
   // If anything was updated, ensure the overlay is repainted.
-#if BUILDFLAG(IS_WIN)
-  auto* frame_view =
-      static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
-#else
-  auto* frame_view =
-      static_cast<OpaqueFrameView*>(widget()->non_client_view()->frame_view());
-#endif
-  frame_view->InvalidateCaptionButtons();
+  if (updated) {
+    auto* frame_view =
+        static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
+    frame_view->InvalidateCaptionButtons();
+  }
 }
 
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
