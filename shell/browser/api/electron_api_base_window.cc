@@ -684,7 +684,7 @@ double BaseWindow::GetOpacity() const {
 }
 
 void BaseWindow::SetShape(const std::vector<gfx::Rect>& rects) {
-  window_->widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
+  window_->SetShape(rects);
 }
 
 void BaseWindow::SetRepresentedFilename(const std::string& filename) {

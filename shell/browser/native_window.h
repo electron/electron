@@ -101,9 +101,10 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsMinimized() const = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() const = 0;
+
   virtual void SetBounds(const gfx::Rect& bounds, bool animate = false) = 0;
   virtual gfx::Rect GetBounds() const = 0;
-
+  void SetShape(const std::vector<gfx::Rect>& rects);
   void SetSize(const gfx::Size& size, bool animate = false);
   [[nodiscard]] gfx::Size GetSize() const;
 
