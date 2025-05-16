@@ -393,9 +393,6 @@ class NativeWindow : public base::SupportsUserData,
   }
 
   int titlebar_overlay_height() const { return titlebar_overlay_height_; }
-  void set_titlebar_overlay_height(int height) {
-    titlebar_overlay_height_ = height;
-  }
 
   bool has_frame() const { return has_frame_; }
 
@@ -430,6 +427,10 @@ class NativeWindow : public base::SupportsUserData,
   void UpdateBackgroundThrottlingState();
 
  protected:
+  void set_titlebar_overlay_height(int height) {
+    titlebar_overlay_height_ = height;
+  }
+
   constexpr void set_has_frame(const bool val) { has_frame_ = val; }
 
   [[nodiscard]] constexpr bool is_closed() const { return is_closed_; }
