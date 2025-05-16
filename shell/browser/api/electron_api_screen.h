@@ -15,6 +15,7 @@
 
 namespace gfx {
 class Point;
+class PointF;
 class Rect;
 class Screen;
 }  // namespace gfx
@@ -57,6 +58,9 @@ class Screen final : public gin::Wrappable<Screen>,
   display::Display GetDisplayMatching(const gfx::Rect& match_rect) const {
     return screen_->GetDisplayMatching(match_rect);
   }
+
+  gfx::PointF ScreenToDIPPoint(const gfx::PointF& point_px);
+  gfx::Point DIPToScreenPoint(const gfx::Point& point_dip);
 
   // display::DisplayObserver:
   void OnDisplayAdded(const display::Display& new_display) override;
