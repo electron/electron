@@ -179,15 +179,16 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   SkColor overlay_button_color() const { return overlay_button_color_; }
+  SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
+
+ private:
   void set_overlay_button_color(SkColor color) {
     overlay_button_color_ = color;
   }
-  SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
   void set_overlay_symbol_color(SkColor color) {
     overlay_symbol_color_ = color;
   }
 
- private:
   // views::WidgetObserver:
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
   void OnWidgetBoundsChanged(views::Widget* widget,
