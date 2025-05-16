@@ -6,7 +6,7 @@ vars = {
   'node_version':
     'v22.15.0',
   'nan_version':
-    'e14bdcd1f72d62bca1d541b66da43130384ec213',
+    '3bf886345aa9be3ae2ee73068906de1a6f2c51a3',
   'squirrel.mac_version':
     '0e5d146ba13101a1302d59ea6e6e0b3cace4ae38',
   'reactiveobjc_version':
