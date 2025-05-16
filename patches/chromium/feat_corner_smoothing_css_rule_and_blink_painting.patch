@@ -112,10 +112,10 @@ index 6e991652d242795e292cea4c94cff59aaea078fa..b6834c78575520bb6e584dd2ce3333ac
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 8cceff39cda7a7cfde6794931515c4e6aea86d25..076cdfa252044c75c52efc596c44b1cedccf5000 100644
+index 2d5e3d0396b13e90b04ea4b4dce56721d1fc35cd..5a5488eb09019f63e29ac0a24233fba8d2e17c87 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8810,6 +8810,24 @@
+@@ -8808,6 +8808,24 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -154,10 +154,10 @@ index 936bd39e77a5a181a94a48129e38efc9c8c82847..75d332ef497018e4c863a47d4491d25d
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 1737096ba7d04b03de2fb812a5cd690d0e512c56..e1f8c73023043cba3a4b605332fc9196800218be 100644
+index 31142a3cff295f34ed1fa9f96b0f4923a15859f6..3e6bcdd57642ccd8f0e0f68fbc1b8819d223e169 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12095,5 +12095,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12119,5 +12119,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -184,10 +184,10 @@ index 1737096ba7d04b03de2fb812a5cd690d0e512c56..e1f8c73023043cba3a4b605332fc9196
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index a1a46c2d649f2a04002354d965c3c3ed886747f8..566de4fb3f53254d9fd4fc6ebb8f0d4fc137560d 100644
+index a1d89ff23f71259fcd0c623610974f624babae79..2d41422ebb7e32708d3bc4a0ed6e8f75fcd237e6 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -3905,4 +3905,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
+@@ -3912,4 +3912,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
    return PositionArea(span[0], span[1], span[2], span[3]);
  }
  
