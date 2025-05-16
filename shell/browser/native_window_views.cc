@@ -1845,6 +1845,18 @@ NativeWindowViews::CreateNonClientFrameView(views::Widget* widget) {
 #endif
 }
 
+#if BUILDFLAG(IS_LINUX)
+electron::ClientFrameViewLinux* NativeWindowViews::GetClientFrameViewLinux() {
+  // CreateNonClientFrameView creates `ClientFrameViewLinux` only when both
+  // frame and client_frame booleans are set, otherwise it is a different type
+  // of view.
+  if (!has_frame() || !has_client_frame())
+    return {};
+  return static_cast<ClientFrameViewLinux*>(
+      widget()->non_client_view()->frame_view());
+}
+#endif
+
 void NativeWindowViews::OnWidgetMove() {
   NotifyWindowMove();
 }
