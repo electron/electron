@@ -17,7 +17,7 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 28355f4c6c3cbbe60e827246e88107ce7374104a..4183f448dc40f0fbe1fabadf58f09eeb84c9f684 100644
+index 0becf4f37532fb7acfdf4d516a72f7048e98c550..0a267234eff1684fe2e6231584ccd1b5c9ed03e3 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
 @@ -178,6 +178,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
@@ -37,10 +37,10 @@ index 28355f4c6c3cbbe60e827246e88107ce7374104a..4183f448dc40f0fbe1fabadf58f09eeb
           allow_cookies_from_browser == other.allow_cookies_from_browser &&
           include_request_cookies_with_response ==
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index 8634c50fbede68bf5497ed50e258eecac594b4d4..c6f06966f0f58e5087e1f62537eecffc95cd1962 100644
+index df29c7cb739a488684c0c50bc5343df101911a31..86b5576c9c10e5544347117e4f6b09d7692caffa 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
-@@ -77,6 +77,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
+@@ -78,6 +78,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
      bool has_user_activation = false;
      bool allow_cookies_from_browser = false;
      bool include_request_cookies_with_response = false;
@@ -49,10 +49,10 @@ index 8634c50fbede68bf5497ed50e258eecac594b4d4..c6f06966f0f58e5087e1f62537eecffc
      mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
      mojo::PendingRemote<mojom::URLLoaderNetworkServiceObserver>
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index e67d4d6f11cb68cfc7f6f1dad60285cbaf905e76..e8e35f02b4a9c5662cd8b2cbb7dbb30e31efd4f3 100644
+index 1fbe54bda8198423b42cb5eba291d7346a76873c..71b58ec4e11317a4da1c89d9407ab439ff1629c3 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
-@@ -49,6 +49,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
+@@ -50,6 +50,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
    out->allow_cookies_from_browser = data.allow_cookies_from_browser();
    out->include_request_cookies_with_response =
        data.include_request_cookies_with_response();
@@ -61,10 +61,10 @@ index e67d4d6f11cb68cfc7f6f1dad60285cbaf905e76..e8e35f02b4a9c5662cd8b2cbb7dbb30e
        mojo::PendingRemote<network::mojom::CookieAccessObserver>>();
    out->trust_token_observer = data.TakeTrustTokenObserver<
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 91628c93c415d8293ac989bdf9135cf2c8c59557..a51f9ca3f06ada3232c52b2b3e39a4433860bf2a 100644
+index 1d6f7cb0347c2d1156052f43b82f22130c4750aa..ef6625a9148107772f94d2f62478914fc84d6b89 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
-@@ -71,6 +71,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
+@@ -72,6 +72,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
        const network::ResourceRequest::TrustedParams& trusted_params) {
      return trusted_params.include_request_cookies_with_response;
    }
@@ -76,10 +76,10 @@ index 91628c93c415d8293ac989bdf9135cf2c8c59557..a51f9ca3f06ada3232c52b2b3e39a443
    cookie_observer(
        const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index e4ebfcfbbd56e284dcb88918a779abccc467a4af..f22dc2c544c676e3c0bd318f21cba11205ed8386 100644
+index 392d697a8d1573815bf08e37b1bcc5c0c7493116..cf9915b9322487734b27a1776e721440035d7ad7 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
-@@ -86,6 +86,9 @@ struct TrustedUrlRequestParams {
+@@ -87,6 +87,9 @@ struct TrustedUrlRequestParams {
    // client which should not be able to see them.
    bool include_request_cookies_with_response = false;
  

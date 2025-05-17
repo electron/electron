@@ -10,7 +10,6 @@
 
 #include "base/base_paths.h"
 #include "base/files/file_path.h"
-#include "base/files/file_util.h"
 #include "base/json/values_util.h"
 #include "base/path_service.h"
 #include "base/task/bind_post_task.h"
@@ -39,16 +38,6 @@
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_manager.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
-
-ChromeFileSystemAccessPermissionContext::BlockPathRules::BlockPathRules() =
-    default;
-ChromeFileSystemAccessPermissionContext::BlockPathRules::~BlockPathRules() =
-    default;
-ChromeFileSystemAccessPermissionContext::BlockPathRules::BlockPathRules(
-    const BlockPathRules& other) = default;
-ChromeFileSystemAccessPermissionContext::BlockPathRules&
-ChromeFileSystemAccessPermissionContext::BlockPathRules::operator=(
-    const BlockPathRules& other) = default;
 
 namespace gin {
 
@@ -152,53 +141,51 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
 }
 #endif  // BUILDFLAG(IS_WIN)
 
-bool ShouldBlockAccessToPath(
-    base::FilePath path,
-    HandleType handle_type,
-    std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
-        extra_rules,
-    ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules) {
+// Describes a rule for blocking a directory, which can be constructed
+// dynamically (based on state) or statically (from kBlockedPaths).
+struct BlockPathRule {
+  base::FilePath path;
+  BlockType type;
+};
+
+bool ShouldBlockAccessToPath(const base::FilePath& path,
+                             HandleType handle_type,
+                             std::vector<BlockPathRule> rules) {
   DCHECK(!path.empty());
   DCHECK(path.IsAbsolute());
-
-  path = ChromeFileSystemAccessPermissionContext::NormalizeFilePath(path);
-  for (auto& rule : extra_rules) {
-    rule.path =
-        ChromeFileSystemAccessPermissionContext::NormalizeFilePath(rule.path);
-  }
 
 #if BUILDFLAG(IS_WIN)
   // On Windows, local UNC paths are rejected, as UNC path can be written in a
   // way that can bypass the blocklist.
-  if (MaybeIsLocalUNCPath(path)) {
+  if (MaybeIsLocalUNCPath(path))
     return true;
+#endif  // BUILDFLAG(IS_WIN)
+
+  // Add the hard-coded rules to the dynamic rules.
+  for (auto const& [key, rule_path, type] :
+       ChromeFileSystemAccessPermissionContext::GenerateBlockedPath()) {
+    if (key == ChromeFileSystemAccessPermissionContext::kNoBasePathKey) {
+      rules.emplace_back(base::FilePath{rule_path}, type);
+    } else if (base::FilePath block_path;
+               base::PathService::Get(key, &block_path)) {
+      rules.emplace_back(rule_path ? block_path.Append(rule_path) : block_path,
+                         type);
+    }
   }
-#endif
 
   base::FilePath nearest_ancestor;
   BlockType nearest_ancestor_block_type = BlockType::kDontBlockChildren;
-  auto should_block_with_rule = [&](const base::FilePath& block_path,
-                                    BlockType block_type) -> bool {
-    if (path == block_path || path.IsParent(block_path)) {
-      VLOG(1) << "Blocking access to " << path << " because it is a parent of "
-              << block_path;
+  for (const auto& block : rules) {
+    if (path == block.path || path.IsParent(block.path)) {
+      DLOG(INFO) << "Blocking access to " << path
+                 << " because it is a parent of " << block.path;
       return true;
     }
 
-    if (block_path.IsParent(path) &&
-        (nearest_ancestor.empty() || nearest_ancestor.IsParent(block_path))) {
-      nearest_ancestor = block_path;
-      nearest_ancestor_block_type = block_type;
-    }
-    return false;
-  };
-
-  for (const auto* block_rules_ptr :
-       {&extra_rules, &block_path_rules.block_path_rules_}) {
-    for (const auto& block : *block_rules_ptr) {
-      if (should_block_with_rule(block.path, block.type)) {
-        return true;
-      }
+    if (block.path.IsParent(path) &&
+        (nearest_ancestor.empty() || nearest_ancestor.IsParent(block.path))) {
+      nearest_ancestor = block.path;
+      nearest_ancestor_block_type = block.type;
     }
   }
 
@@ -206,8 +193,6 @@ bool ShouldBlockAccessToPath(
   // nearest ancestor does not block access to its children. Grant access.
   if (nearest_ancestor.empty() ||
       nearest_ancestor_block_type == BlockType::kDontBlockChildren) {
-    VLOG(1) << "Not blocking access to " << path << " because it is inside "
-            << nearest_ancestor << " and it's kDontBlockChildren";
     return false;
   }
 
@@ -215,14 +200,12 @@ bool ShouldBlockAccessToPath(
   // access to directories. Grant access.
   if (handle_type == HandleType::kFile &&
       nearest_ancestor_block_type == BlockType::kBlockNestedDirectories) {
-    VLOG(1) << "Not blocking access to " << path << " because it is inside "
-            << nearest_ancestor << " and it's kBlockNestedDirectories";
     return false;
   }
 
   // The nearest ancestor blocks access to its children, so block access.
-  VLOG(1) << "Blocking access to " << path << " because it is inside "
-          << nearest_ancestor << " and it's kBlockAllChildren";
+  DLOG(INFO) << "Blocking access to " << path << " because it is inside "
+             << nearest_ancestor;
   return true;
 }
 
@@ -463,29 +446,10 @@ FileSystemAccessPermissionContext::FileSystemAccessPermissionContext(
     const base::Clock* clock)
     : browser_context_(browser_context), clock_(clock) {
   DETACH_FROM_SEQUENCE(sequence_checker_);
-  ResetBlockPaths();
 }
 
 FileSystemAccessPermissionContext::~FileSystemAccessPermissionContext() =
     default;
-
-void FileSystemAccessPermissionContext::ResetBlockPaths() {
-  is_block_path_rules_init_complete_ = false;
-  base::ThreadPool::PostTaskAndReplyWithResult(
-      FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
-      base::BindOnce(
-          &ChromeFileSystemAccessPermissionContext::GenerateBlockPaths, true),
-      base::BindOnce(&FileSystemAccessPermissionContext::UpdateBlockPaths,
-                     weak_factory_.GetWeakPtr()));
-}
-
-void FileSystemAccessPermissionContext::UpdateBlockPaths(
-    std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
-        block_path_rules) {
-  block_path_rules_ = std::move(block_path_rules);
-  is_block_path_rules_init_complete_ = true;
-  block_rules_check_callbacks_.Notify(*block_path_rules_.get());
-}
 
 scoped_refptr<content::FileSystemAccessPermissionGrant>
 FileSystemAccessPermissionContext::GetReadPermissionGrant(
@@ -640,26 +604,12 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
                             std::move(after_blocklist_check_callback));
 }
 
-void FileSystemAccessPermissionContext::CheckShouldBlockAccessToPathAndReply(
-    base::FilePath path,
-    HandleType handle_type,
-    std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
-        extra_rules,
-    base::OnceCallback<void(bool)> callback,
-    ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules) {
-  base::ThreadPool::PostTaskAndReplyWithResult(
-      FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
-      base::BindOnce(&ShouldBlockAccessToPath, path, handle_type, extra_rules,
-                     block_path_rules),
-      std::move(callback));
-}
-
 void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
     const content::PathInfo& path_info,
     HandleType handle_type,
     base::OnceCallback<void(bool)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  // TODO(crbug.com/40101272): Figure out what external paths should be
+  // TODO(https://crbug.com/1009970): Figure out what external paths should be
   // blocked. We could resolve the external path to a local path, and check for
   // blocked directories based on that, but that doesn't work well. Instead we
   // should have a separate Chrome OS only code path to block for example the
@@ -669,27 +619,15 @@ void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
     return;
   }
 
-  // Unlike the DIR_USER_DATA check, this handles the --user-data-dir override.
-  // We check for the user data dir in two different ways: directly, via the
-  // profile manager, where it exists (it does not in unit tests), and via the
-  // profile's directory, assuming the profile dir is a child of the user data
-  // dir.
-  std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
-      extra_rules;
-  if (is_block_path_rules_init_complete_) {
-    // The rules initialization is completed, we can just post the task to a
-    // anonymous blocking traits.
-    CheckShouldBlockAccessToPathAndReply(path_info.path, handle_type,
-                                         extra_rules, std::move(callback),
-                                         *block_path_rules_.get());
-    return;
-  }
-  // The check must be performed after the rules initialization is done.
-  block_rules_check_subscription_.push_back(block_rules_check_callbacks_.Add(
-      base::BindOnce(&FileSystemAccessPermissionContext::
-                         CheckShouldBlockAccessToPathAndReply,
-                     weak_factory_.GetWeakPtr(), path_info.path, handle_type,
-                     extra_rules, std::move(callback))));
+  std::vector<BlockPathRule> extra_rules;
+  extra_rules.emplace_back(browser_context_->GetPath().DirName(),
+                           BlockType::kBlockAllChildren);
+
+  base::ThreadPool::PostTaskAndReplyWithResult(
+      FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
+      base::BindOnce(&ShouldBlockAccessToPath, path_info.path, handle_type,
+                     extra_rules),
+      std::move(callback));
 }
 
 void FileSystemAccessPermissionContext::PerformAfterWriteChecks(
