@@ -46,10 +46,10 @@ index d033cd204b3200cdd736b581abe027d6e46e4ff3..73fec107a36c3db4af6f492137d0ca17
  largeBuffer.toString('utf8', threshold, threshold + 20);
 +}
 diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
-index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..29149838ca76986928c7649a5f60a0f5e22a0705 100644
+index b35dd08e6c49796418cd9d10eb5cc9d02b39961e..a49fdde82ea4cbadd60307cdc99439be892ef5a6 100644
 --- a/test/parallel/test-crypto-async-sign-verify.js
 +++ b/test/parallel/test-crypto-async-sign-verify.js
-@@ -88,6 +88,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
+@@ -89,6 +89,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
  // ED25519
  test('ed25519_public.pem', 'ed25519_private.pem', undefined, true);
  // ED448
@@ -57,7 +57,7 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..29149838ca76986928c7649a5f60a0f5
  test('ed448_public.pem', 'ed448_private.pem', undefined, true);
  
  // ECDSA w/ der signature encoding
-@@ -109,6 +110,7 @@ test('dsa_public.pem', 'dsa_private.pem', 'sha256',
+@@ -110,6 +111,7 @@ test('dsa_public.pem', 'dsa_private.pem', 'sha256',
  // DSA w/ ieee-p1363 signature encoding
  test('dsa_public.pem', 'dsa_private.pem', 'sha256', false,
       { dsaEncoding: 'ieee-p1363' });
@@ -65,6 +65,27 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..29149838ca76986928c7649a5f60a0f5
  
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
+@@ -150,8 +152,10 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
+   const data = crypto.randomBytes(32);
+   const signature = crypto.randomBytes(16);
+ 
+-  const expected = hasOpenSSL3 ?
+-    /operation not supported for this keytype/ : /no default digest/;
++  let expected = /no default digest/;
++  if (hasOpenSSL3 || common.openSSLIsBoringSSL) {
++    expected = /operation[\s_]not[\s_]supported[\s_]for[\s_]this[\s_]keytype/i;
++  }
+ 
+   crypto.verify(undefined, data, untrustedKey, signature, common.mustCall((err) => {
+     assert.ok(err);
+@@ -165,6 +169,6 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
+   });
+   crypto.sign('sha512', 'message', privateKey, common.mustCall((err) => {
+     assert.ok(err);
+-    assert.match(err.message, /digest too big for rsa key/);
++    assert.match(err.message, /digest[\s_]too[\s_]big[\s_]for[\s_]rsa[\s_]key/i);
+   }));
+ }
 diff --git a/test/parallel/test-crypto-certificate.js b/test/parallel/test-crypto-certificate.js
 index 4a5f1f149fe6c739f7f1d2ee17df6e61a942d621..b3287f428ce6b3fde11d449c601a57ff5e3843f9 100644
 --- a/test/parallel/test-crypto-certificate.js
