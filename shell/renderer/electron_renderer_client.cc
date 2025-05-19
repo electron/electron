@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/containers/contains.h"
 #include "base/debug/stack_trace.h"
@@ -228,6 +229,66 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     if (current)
       current->ContextWillDestroy(context);
   }
+}
+
+void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
+  // Freezing flags after init conflicts with node in the renderer.
+  // We do this here in order to avoid having to patch the ctor in
+  // content/renderer/render_process_impl.cc.
+  v8::V8::SetFlagsFromString("--no-freeze-flags-after-init");
+
+// See CL:5372409 - copied from ShellContentRendererClient.
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
+  // Mac and Windows use the default implementation (where the default v8 trap
+  // handler gets set up).
+  ContentRendererClient::SetUpWebAssemblyTrapHandler();
+  return;
+#else
+  base::CommandLine* const command_line =
+      base::CommandLine::ForCurrentProcess();
+  const bool crash_reporter_enabled =
+      command_line->HasSwitch(::switches::kEnableCrashReporter)
+#if BUILDFLAG(IS_POSIX)
+      || command_line->HasSwitch(::switches::kEnableCrashReporterForTesting)
+#endif  // BUILDFLAG(IS_POSIX)
+      ;
+
+  if (crash_reporter_enabled) {
+    // If either --enable-crash-reporter or --enable-crash-reporter-for-testing
+    // is enabled it should take care of signal handling for us, use the default
+    // implementation which doesn't register an additional handler.
+    ContentRendererClient::SetUpWebAssemblyTrapHandler();
+    return;
+  }
+
+  const bool use_v8_default_handler =
+#if defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kDisableInProcessStackTraces)
+#else
+      true
+#endif  // defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
+      ;
+
+  if (use_v8_default_handler) {
+    // There is no signal handler yet, but it's okay if v8 registers one.
+    v8::V8::EnableWebAssemblyTrapHandler(/*use_v8_signal_handler=*/true);
+    return;
+  }
+
+#if defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
+  if (base::debug::SetStackDumpFirstChanceCallback(
+          v8::TryHandleWebAssemblyTrapPosix)) {
+    // Crashpad and Breakpad are disabled, but the in-process stack dump
+    // handlers are enabled, so set the callback on the stack dump handlers.
+    v8::V8::EnableWebAssemblyTrapHandler(/*use_v8_signal_handler=*/false);
+    return;
+  }
+
+  // As the registration of the callback failed, we don't enable trap
+  // handlers.
+#endif  // defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
+#endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 }
 
 node::Environment* ElectronRendererClient::GetEnvironment(
