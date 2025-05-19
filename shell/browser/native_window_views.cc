@@ -1259,7 +1259,7 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
     DeleteObject((HBRUSH)previous_brush);
   InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
-  GetWidget()->GetCompositor()->SetBackgroundColor(background_color);
+  widget()->GetCompositor()->SetBackgroundColor(background_color);
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
