@@ -289,6 +289,10 @@ NativeWindow* NativeWindow::FromWidget(const views::Widget* widget) {
       widget->GetNativeWindowProperty(kNativeWindowKey.c_str()));
 }
 
+void NativeWindow::SetShape(const std::vector<gfx::Rect>& rects) {
+  widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
+}
+
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
   SetBounds(gfx::Rect(GetPosition(), size), animate);
 }
