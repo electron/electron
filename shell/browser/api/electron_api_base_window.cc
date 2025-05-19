@@ -386,9 +386,6 @@ void BaseWindow::Show() {
 }
 
 void BaseWindow::ShowInactive() {
-  // This method doesn't make sense for modal window.
-  if (IsModal())
-    return;
   window_->ShowInactive();
 }
 
