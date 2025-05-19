@@ -55,23 +55,26 @@ using extensions::ExtensionsBrowserClient;
 namespace electron {
 
 ElectronExtensionsBrowserClient::ElectronExtensionsBrowserClient()
-    : api_client_(std::make_unique<extensions::ElectronExtensionsAPIClient>()),
-      process_manager_delegate_(
-          std::make_unique<extensions::ElectronProcessManagerDelegate>()),
-      extension_cache_(std::make_unique<extensions::NullExtensionCache>()) {
-  // Electron does not have a concept of channel, so leave UNKNOWN to
-  // enable all channel-dependent extension APIs.
-  extensions::SetCurrentChannel(version_info::Channel::UNKNOWN);
-  resource_manager_ =
-      std::make_unique<extensions::ElectronComponentExtensionResourceManager>();
-
+    : extension_cache_(std::make_unique<extensions::NullExtensionCache>()) {
   AddAPIProvider(
       std::make_unique<extensions::CoreExtensionsBrowserAPIProvider>());
   AddAPIProvider(
       std::make_unique<extensions::ElectronExtensionsBrowserAPIProvider>());
+
+  // Electron does not have a concept of channel, so leave UNKNOWN to
+  // enable all channel-dependent extension APIs.
+  extensions::SetCurrentChannel(version_info::Channel::UNKNOWN);
 }
 
 ElectronExtensionsBrowserClient::~ElectronExtensionsBrowserClient() = default;
+
+void ElectronExtensionsBrowserClient::Init() {
+  process_manager_delegate_ =
+      std::make_unique<extensions::ElectronProcessManagerDelegate>();
+  api_client_ = std::make_unique<extensions::ElectronExtensionsAPIClient>();
+  resource_manager_ =
+      std::make_unique<extensions::ElectronComponentExtensionResourceManager>();
+}
 
 bool ElectronExtensionsBrowserClient::IsShuttingDown() {
   return electron::Browser::Get()->is_shutting_down();

@@ -18,7 +18,8 @@ console.log(clipboard.readText('selection'))
 
 The `clipboard` module has the following methods:
 
-**Note:** Experimental APIs are marked as such and could be removed in future.
+> [!NOTE]
+> Experimental APIs are marked as such and could be removed in future.
 
 ### `clipboard.readText([type])`
 
@@ -141,9 +142,10 @@ bookmark is unavailable.  The `title` value will always be empty on Windows.
 
 Writes the `title` (macOS only) and `url` into the clipboard as a bookmark.
 
-**Note:** Most apps on Windows don't support pasting bookmarks into them so
-you can use `clipboard.write` to write both a bookmark and fallback text to the
-clipboard.
+> [!NOTE]
+> Most apps on Windows don't support pasting bookmarks into them so
+> you can use `clipboard.write` to write both a bookmark and fallback text to the
+> clipboard.
 
 ```js
 const { clipboard } = require('electron')

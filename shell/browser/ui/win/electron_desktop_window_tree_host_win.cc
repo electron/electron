@@ -23,6 +23,20 @@ ElectronDesktopWindowTreeHostWin::ElectronDesktopWindowTreeHostWin(
 
 ElectronDesktopWindowTreeHostWin::~ElectronDesktopWindowTreeHostWin() = default;
 
+bool ElectronDesktopWindowTreeHostWin::ShouldUpdateWindowTransparency() const {
+  // If transparency is updated for an opaque window before widget init is
+  // completed, the window flickers white before the background color is applied
+  // and we don't want that. We do, however, want translucent windows to be
+  // properly transparent, so ensure it gets updated in that case.
+  if (!widget_init_done_ && !native_window_view_->IsTranslucent())
+    return false;
+  return views::DesktopWindowTreeHostWin::ShouldUpdateWindowTransparency();
+}
+
+void ElectronDesktopWindowTreeHostWin::OnWidgetInitDone() {
+  widget_init_done_ = true;
+}
+
 bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
                                                     WPARAM w_param,
                                                     LPARAM l_param,
@@ -124,6 +138,16 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
   }
 
   return views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
+}
+
+void ElectronDesktopWindowTreeHostWin::HandleVisibilityChanged(bool visible) {
+  if (native_window_view_->widget())
+    native_window_view_->widget()->OnNativeWidgetVisibilityChanged(visible);
+}
+
+void ElectronDesktopWindowTreeHostWin::SetAllowScreenshots(bool allow) {
+  ::SetWindowDisplayAffinity(GetAcceleratedWidget(),
+                             allow ? WDA_NONE : WDA_EXCLUDEFROMCAPTURE);
 }
 
 void ElectronDesktopWindowTreeHostWin::OnNativeThemeUpdated(

@@ -261,7 +261,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetTitleBarOverlay(const gin_helper::Dictionary& options,
                           gin_helper::Arguments* args);
 #endif
-  int32_t GetID() const;
+  [[nodiscard]] constexpr int32_t GetID() const { return weak_map_id(); }
 
  private:
   // Helpers.

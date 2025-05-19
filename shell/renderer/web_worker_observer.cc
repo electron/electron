@@ -14,6 +14,7 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 
 namespace electron {
 
@@ -112,19 +113,13 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
     gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
   }
 
-  // Destroying the node environment will also run the uv loop,
-  // Node.js expects `kExplicit` microtasks policy and will run microtasks
-  // checkpoints after every call into JavaScript. Since we use a different
-  // policy in the renderer - switch to `kExplicit`
-  v8::MicrotaskQueue* microtask_queue = context->GetMicrotaskQueue();
-  auto old_policy = microtask_queue->microtasks_policy();
-  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
-  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
-
-  base::EraseIf(environments_,
-                [env](auto const& item) { return item.get() == env; });
-
-  microtask_queue->set_microtasks_policy(old_policy);
+  // Destroying the node environment will also run the uv loop.
+  {
+    util::ExplicitMicrotasksScope microtasks_scope(
+        context->GetMicrotaskQueue());
+    base::EraseIf(environments_,
+                  [env](auto const& item) { return item.get() == env; });
+  }
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);

@@ -25,8 +25,9 @@ document.
 
 Append a switch (with optional `value`) to Chromium's command line.
 
-**Note:** This will not affect `process.argv`. The intended usage of this function is to
-control Chromium's behavior.
+> [!NOTE]
+> This will not affect `process.argv`. The intended usage of this function is to
+> control Chromium's behavior.
 
 ```js
 const { app } = require('electron')
@@ -49,8 +50,9 @@ const { app } = require('electron')
 app.commandLine.appendArgument('--enable-experimental-web-platform-features')
 ```
 
-**Note:** This will not affect `process.argv`. The intended usage of this function is to
-control Chromium's behavior.
+> [!NOTE]
+> This will not affect `process.argv`. The intended usage of this function is to
+> control Chromium's behavior.
 
 #### `commandLine.hasSwitch(switch)`
 
@@ -84,7 +86,8 @@ const portValue = app.commandLine.getSwitchValue('remote-debugging-port')
 console.log(portValue) // '8315'
 ```
 
-**Note:** When the switch is not present or has no value, it returns empty string.
+> [!NOTE]
+> When the switch is not present or has no value, it returns empty string.
 
 #### `commandLine.removeSwitch(switch)`
 
@@ -102,5 +105,6 @@ app.commandLine.removeSwitch('remote-debugging-port')
 console.log(app.commandLine.hasSwitch('remote-debugging-port')) // false
 ```
 
-**Note:** This will not affect `process.argv`. The intended usage of this function is to
-control Chromium's behavior.
+> [!NOTE]
+> This will not affect `process.argv`. The intended usage of this function is to
+> control Chromium's behavior.

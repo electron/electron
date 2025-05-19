@@ -294,8 +294,7 @@ void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
   if (!item)
     return;
 
-  bool canceled = true;
-  result.Get("canceled", &canceled);
+  const bool canceled = result.ValueOrDefault("canceled", true);
 
   base::FilePath path;
 

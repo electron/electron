@@ -20,7 +20,8 @@ const win = new BrowserWindow({
 The `nodeIntegrationInWorker` can be used independent of `nodeIntegration`, but
 `sandbox` must not be set to `true`.
 
-**Note:** This option is not available in [`SharedWorker`s](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker) or [`Service Worker`s](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker) owing to incompatibilities in sandboxing policies.
+> [!NOTE]
+> This option is not available in [`SharedWorker`s](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker) or [`Service Worker`s](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker) owing to incompatibilities in sandboxing policies.
 
 ## Available APIs
 

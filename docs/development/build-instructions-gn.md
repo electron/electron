@@ -155,7 +155,8 @@ $ gn gen out/Release --args="import(\"//electron/build/args/release.gn\")"
 $ gn gen out/Release --args="import(\`"//electron/build/args/release.gn\`")"
 ```
 
-**Note:** This will generate a `out/Testing` or `out/Release` build directory under `src/` with the testing or release build depending upon the configuration passed above. You can replace `Testing|Release` with another names, but it should be a subdirectory of `out`.
+> [!NOTE]
+> This will generate a `out/Testing` or `out/Release` build directory under `src/` with the testing or release build depending upon the configuration passed above. You can replace `Testing|Release` with another names, but it should be a subdirectory of `out`.
 
 Also you shouldn't have to run `gn gen` again—if you want to change the build arguments, you can run `gn args out/Testing` to bring up an editor. To see the list of available build configuration options, run `gn args out/Testing --list`.
 

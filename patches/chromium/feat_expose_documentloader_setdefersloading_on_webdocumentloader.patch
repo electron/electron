@@ -7,7 +7,7 @@ This allows embedders to call SetDefersLoading without reaching into Blink inter
 This might be upstreamable?
 
 diff --git a/third_party/blink/public/web/web_document_loader.h b/third_party/blink/public/web/web_document_loader.h
-index 0527831e1f8d7923ba0f687a5c0da8573189d867..f72af0e6cfcf06d47bd917def993f081530ab66b 100644
+index 33e23680b927d417b0882c7572fe32dc2d2b90c3..9413492f8e0fd6c5371c66329e1ad6d4163ba670 100644
 --- a/third_party/blink/public/web/web_document_loader.h
 +++ b/third_party/blink/public/web/web_document_loader.h
 @@ -38,6 +38,7 @@
@@ -28,10 +28,10 @@ index 0527831e1f8d7923ba0f687a5c0da8573189d867..f72af0e6cfcf06d47bd917def993f081
  
    // Returns the http referrer of original request which initited this load.
 diff --git a/third_party/blink/renderer/core/loader/document_loader.h b/third_party/blink/renderer/core/loader/document_loader.h
-index 10682e129daf40104a71d0067aa126cc13a1e8b7..fb8696d850fc3fbbcd66087c8cafc53acee462aa 100644
+index 01b97e569a69fb1395e63492ac75432d648bb71f..6e58d859e2afd3bd8b9b17c53ba9ccc6dbdcd458 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.h
 +++ b/third_party/blink/renderer/core/loader/document_loader.h
-@@ -328,7 +328,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
+@@ -325,7 +325,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
            soft_navigation_heuristics_task_id,
        bool should_skip_screenshot);
  

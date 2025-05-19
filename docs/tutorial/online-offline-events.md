@@ -83,4 +83,5 @@ After launching the Electron application, you should see the notification:
 
 ![Connection status](../images/connection-status.png)
 
-> Note: If you need to communicate the connection status to the main process, use the [IPC renderer](../api/ipc-renderer.md) API.
+> [!NOTE]
+> If you need to communicate the connection status to the main process, use the [IPC renderer](../api/ipc-renderer.md) API.

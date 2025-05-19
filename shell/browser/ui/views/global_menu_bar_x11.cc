@@ -9,7 +9,6 @@
 
 #include "base/functional/bind.h"
 #include "base/strings/utf_string_conversions.h"
-#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/global_menu_bar_registrar_x11.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
@@ -173,10 +172,8 @@ std::string GetMenuModelStatus(ElectronMenuModel* model) {
 
 }  // namespace
 
-GlobalMenuBarX11::GlobalMenuBarX11(NativeWindowViews* window)
-    : window_(window),
-      xwindow_(static_cast<x11::Window>(
-          window_->GetNativeWindow()->GetHost()->GetAcceleratedWidget())) {
+GlobalMenuBarX11::GlobalMenuBarX11(gfx::AcceleratedWidget accelerated_widget)
+    : xwindow_(static_cast<x11::Window>(accelerated_widget)) {
   EnsureMethodsLoaded();
   if (server_new)
     InitServer(xwindow_);

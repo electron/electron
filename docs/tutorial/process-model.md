@@ -64,7 +64,8 @@ const contents = win.webContents
 console.log(contents)
 ```
 
-> Note: A renderer process is also created for [web embeds][web-embed] such as the
+> [!NOTE]
+> A renderer process is also created for [web embeds][web-embed] such as the
 > `BrowserView` module. The `webContents` object is also accessible for embedded
 > web content.
 

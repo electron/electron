@@ -29,7 +29,7 @@
 
 @interface PopUpButtonHandler : NSObject
 
-@property(nonatomic, assign) NSSavePanel* savePanel;
+@property(nonatomic, weak) NSSavePanel* savePanel;
 @property(nonatomic, strong) NSArray* contentTypesList;
 
 - (instancetype)initWithPanel:(NSSavePanel*)panel
@@ -318,9 +318,10 @@ void ReadDialogPathsWithBookmarks(NSOpenPanel* dialog,
       BOOL exists =
           [[NSFileManager defaultManager] fileExistsAtPath:path
                                                isDirectory:&is_directory];
-      BOOL is_package =
-          [[NSWorkspace sharedWorkspace] isFilePackageAtPath:path];
-      if (!exists || !is_directory || is_package)
+      BOOL is_package_as_directory =
+          [[NSWorkspace sharedWorkspace] isFilePackageAtPath:path] &&
+          [dialog treatsFilePackagesAsDirectories];
+      if (!exists || !is_directory || !is_package_as_directory)
         continue;
     }
 

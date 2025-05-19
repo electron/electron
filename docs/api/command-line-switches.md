@@ -73,7 +73,8 @@ Passing `--enable-logging=file` will result in logs being saved to the file
 specified by `--log-file=...`, or to `electron_debug.log` in the user-data
 directory if `--log-file` is not specified.
 
-> **Note:** On Windows, logs from child processes cannot be sent to stderr.
+> [!NOTE]
+> On Windows, logs from child processes cannot be sent to stderr.
 > Logging to a file is the most reliable way to collect logs on Windows.
 
 See also `--log-file`, `--log-level`, `--v`, and `--vmodule`.
@@ -252,9 +253,10 @@ the required version is unavailable. Current default is set to `3`.
 
 Electron supports some of the [CLI flags][node-cli] supported by Node.js.
 
-**Note:** Passing unsupported command line switches to Electron when it is not running in `ELECTRON_RUN_AS_NODE` will have no effect.
+> [!NOTE]
+> Passing unsupported command line switches to Electron when it is not running in `ELECTRON_RUN_AS_NODE` will have no effect.
 
-### `--inspect-brk\[=\[host:]port]`
+### `--inspect-brk[=[host:]port]`
 
 Activate inspector on host:port and break at start of user script. Default host:port is 127.0.0.1:9229.
 
@@ -266,13 +268,13 @@ Activate inspector on `host:port` and break at start of the first internal
 JavaScript script executed when the inspector is available.
 Default `host:port` is `127.0.0.1:9229`.
 
-### `--inspect-port=\[host:]port`
+### `--inspect-port=[host:]port`
 
 Set the `host:port` to be used when the inspector is activated. Useful when activating the inspector by sending the SIGUSR1 signal. Default host is `127.0.0.1`.
 
 Aliased to `--debug-port=[host:]port`.
 
-### `--inspect\[=\[host:]port]`
+### `--inspect[=[host:]port]`
 
 Activate inspector on `host:port`. Default is `127.0.0.1:9229`.
 
@@ -287,6 +289,10 @@ Aliased to `--debug[=[host:]port`.
 Specify ways of the inspector web socket url exposure.
 
 By default inspector websocket url is available in stderr and under /json/list endpoint on `http://host:port/json/list`.
+
+### `--experimental-network-inspector`
+
+Enable support for devtools network inspector events, for visibility into requests made by the nodejs `http` and `https` modules.
 
 ### `--no-deprecation`
 

@@ -15,12 +15,14 @@ Process: [Main](../glossary.md#main-process)
 Creates a new touch bar with the specified items. Use
 `BrowserWindow.setTouchBar` to add the `TouchBar` to a window.
 
-**Note:** The TouchBar API is currently experimental and may change or be
-removed in future Electron releases.
+> [!NOTE]
+> The TouchBar API is currently experimental and may change or be
+> removed in future Electron releases.
 
-**Tip:** If you don't have a MacBook with Touch Bar, you can use
-[Touch Bar Simulator](https://github.com/sindresorhus/touch-bar-simulator)
-to test Touch Bar usage in your app.
+> [!TIP]
+> If you don't have a MacBook with Touch Bar, you can use
+> [Touch Bar Simulator](https://github.com/sindresorhus/touch-bar-simulator)
+> to test Touch Bar usage in your app.
 
 ### Static Properties
 

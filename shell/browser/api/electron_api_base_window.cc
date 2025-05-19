@@ -1154,10 +1154,6 @@ void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
 }
 #endif
 
-int32_t BaseWindow::GetID() const {
-  return weak_map_id();
-}
-
 void BaseWindow::RemoveFromParentChildWindows() {
   if (parent_window_.IsEmpty())
     return;

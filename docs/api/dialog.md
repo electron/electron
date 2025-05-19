@@ -67,10 +67,11 @@ The `extensions` array should contain extensions without wildcards or dots (e.g.
 `'png'` is good but `'.png'` and `'*.png'` are bad). To show all files, use the
 `'*'` wildcard (no other wildcard is supported).
 
-**Note:** On Windows and Linux an open dialog can not be both a file selector
-and a directory selector, so if you set `properties` to
-`['openFile', 'openDirectory']` on these platforms, a directory selector will be
-shown.
+> [!NOTE]
+> On Windows and Linux an open dialog can not be both a file selector
+> and a directory selector, so if you set `properties` to
+> `['openFile', 'openDirectory']` on these platforms, a directory selector will be
+> shown.
 
 ```js @ts-type={mainWindow:Electron.BaseWindow}
 dialog.showOpenDialogSync(mainWindow, {
@@ -78,10 +79,11 @@ dialog.showOpenDialogSync(mainWindow, {
 })
 ```
 
-**Note:** On Linux `defaultPath` is not supported when using portal file chooser
-dialogs unless the portal backend is version 4 or higher. You can use `--xdg-portal-required-version`
-[command-line switch](./command-line-switches.md#--xdg-portal-required-versionversion)
-to force gtk or kde dialogs.
+> [!NOTE]
+> On Linux `defaultPath` is not supported when using portal file chooser
+> dialogs unless the portal backend is version 4 or higher. You can use `--xdg-portal-required-version`
+> [command-line switch](./command-line-switches.md#--xdg-portal-required-versionversion)
+> to force gtk or kde dialogs.
 
 ### `dialog.showOpenDialog([window, ]options)`
 
@@ -139,10 +141,11 @@ The `extensions` array should contain extensions without wildcards or dots (e.g.
 `'png'` is good but `'.png'` and `'*.png'` are bad). To show all files, use the
 `'*'` wildcard (no other wildcard is supported).
 
-**Note:** On Windows and Linux an open dialog can not be both a file selector
-and a directory selector, so if you set `properties` to
-`['openFile', 'openDirectory']` on these platforms, a directory selector will be
-shown.
+> [!NOTE]
+> On Windows and Linux an open dialog can not be both a file selector
+> and a directory selector, so if you set `properties` to
+> `['openFile', 'openDirectory']` on these platforms, a directory selector will be
+> shown.
 
 ```js @ts-type={mainWindow:Electron.BaseWindow}
 dialog.showOpenDialog(mainWindow, {
@@ -155,10 +158,11 @@ dialog.showOpenDialog(mainWindow, {
 })
 ```
 
-**Note:** On Linux `defaultPath` is not supported when using portal file chooser
-dialogs unless the portal backend is version 4 or higher. You can use `--xdg-portal-required-version`
-[command-line switch](./command-line-switches.md#--xdg-portal-required-versionversion)
-to force gtk or kde dialogs.
+> [!NOTE]
+> On Linux `defaultPath` is not supported when using portal file chooser
+> dialogs unless the portal backend is version 4 or higher. You can use `--xdg-portal-required-version`
+> [command-line switch](./command-line-switches.md#--xdg-portal-required-versionversion)
+> to force gtk or kde dialogs.
 
 ### `dialog.showSaveDialogSync([window, ]options)`
 
@@ -225,8 +229,9 @@ The `window` argument allows the dialog to attach itself to a parent window, mak
 The `filters` specifies an array of file types that can be displayed, see
 `dialog.showOpenDialog` for an example.
 
-**Note:** On macOS, using the asynchronous version is recommended to avoid issues when
-expanding and collapsing the dialog.
+> [!NOTE]
+> On macOS, using the asynchronous version is recommended to avoid issues when
+> expanding and collapsing the dialog.
 
 ### `dialog.showMessageBoxSync([window, ]options)`
 

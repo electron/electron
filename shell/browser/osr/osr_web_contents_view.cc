@@ -122,14 +122,19 @@ OffScreenWebContentsView::CreateViewForChildWidget(
   auto* web_contents_impl =
       static_cast<content::WebContentsImpl*>(web_contents_);
 
-  auto* view = static_cast<OffScreenRenderWidgetHostView*>(
-      web_contents_impl->GetOuterWebContents()
-          ? web_contents_impl->GetOuterWebContents()->GetRenderWidgetHostView()
-          : web_contents_impl->GetRenderWidgetHostView());
+  OffScreenRenderWidgetHostView* embedder_host_view = nullptr;
+  if (web_contents_impl->GetOuterWebContents()) {
+    embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
+        web_contents_impl->GetOuterWebContents()->GetRenderWidgetHostView());
+  } else {
+    embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
+        web_contents_impl->GetRenderWidgetHostView());
+  }
 
   return new OffScreenRenderWidgetHostView(
       transparent_, offscreen_use_shared_texture_, painting_,
-      view->frame_rate(), callback_, render_widget_host, view, GetSize());
+      embedder_host_view->frame_rate(), callback_, render_widget_host,
+      embedder_host_view, GetSize());
 }
 
 void OffScreenWebContentsView::RenderViewReady() {

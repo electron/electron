@@ -758,9 +758,9 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &rfh)) {
-      bool enable_local_echo = false;
-      result_dict.Get("enableLocalEcho", &enable_local_echo);
-      bool disable_local_echo = !enable_local_echo;
+      const bool enable_local_echo =
+          result_dict.ValueOrDefault("enableLocalEcho", false);
+      const bool disable_local_echo = !enable_local_echo;
       auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
       blink::MediaStreamDevice audio_device(
           request.audio_type,

@@ -369,10 +369,8 @@ bool Converter<blink::WebMouseEvent>::FromV8(v8::Isolate* isolate,
   if (!dict.Get("button", &out->button))
     out->button = blink::WebMouseEvent::Button::kLeft;
 
-  float global_x = 0.f;
-  float global_y = 0.f;
-  dict.Get("globalX", &global_x);
-  dict.Get("globalY", &global_y);
+  const float global_x = dict.ValueOrDefault("globalX", 0.F);
+  const float global_y = dict.ValueOrDefault("globalY", 0.F);
   out->SetPositionInScreen(global_x, global_y);
 
   dict.Get("movementX", &out->movement_x);
@@ -397,23 +395,19 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   dict.Get("accelerationRatioX", &out->acceleration_ratio_x);
   dict.Get("accelerationRatioY", &out->acceleration_ratio_y);
 
-  bool has_precise_scrolling_deltas = false;
-  dict.Get("hasPreciseScrollingDeltas", &has_precise_scrolling_deltas);
-  if (has_precise_scrolling_deltas) {
-    out->delta_units = ui::ScrollGranularity::kScrollByPrecisePixel;
-  } else {
-    out->delta_units = ui::ScrollGranularity::kScrollByPixel;
-  }
+  const bool precise = dict.ValueOrDefault("hasPreciseScrollingDeltas", false);
+  out->delta_units = precise ? ui::ScrollGranularity::kScrollByPrecisePixel
+                             : ui::ScrollGranularity::kScrollByPixel;
 
 #if defined(USE_AURA)
   // Matches the behavior of ui/events/blink/web_input_event_traits.cc:
-  bool can_scroll = true;
-  if (dict.Get("canScroll", &can_scroll) && !can_scroll) {
+  if (!dict.ValueOrDefault("canScroll", true)) {
     out->delta_units = ui::ScrollGranularity::kScrollByPage;
     out->SetModifiers(out->GetModifiers() &
                       ~blink::WebInputEvent::Modifiers::kControlKey);
   }
 #endif
+
   return true;
 }
 

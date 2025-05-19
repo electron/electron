@@ -99,7 +99,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     expect(isEmpties.every(e => e === true)).to.be.true();
   });
 
-  it('getMediaSourceId should match DesktopCapturerSource.id', async () => {
+  it('getMediaSourceId should match DesktopCapturerSource.id', async function () {
     const w = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
     const wShown = once(w, 'show');
     const wFocused = once(w, 'focus');
@@ -119,7 +119,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     // bots while it is not on my workstation, as expected, with and without
     // the --ci parameter.
     if (process.platform === 'linux' && sources.length === 0) {
-      it.skip('desktopCapturer.getSources returned an empty source list');
+      this.skip();
       return;
     }
 
@@ -130,7 +130,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     expect(mediaSourceId).to.equal(foundSource!.id);
   });
 
-  it('getSources should not incorrectly duplicate window_id', async () => {
+  it('getSources should not incorrectly duplicate window_id', async function () {
     const w = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
     const wShown = once(w, 'show');
     const wFocused = once(w, 'focus');
@@ -155,7 +155,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     // bots while it is not on my workstation, as expected, with and without
     // the --ci parameter.
     if (process.platform === 'linux' && sources.length === 0) {
-      it.skip('desktopCapturer.getSources returned an empty source list');
+      this.skip();
       return;
     }
 
@@ -180,7 +180,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     expect(w.resizable).to.be.false();
   });
 
-  it('moveAbove should move the window at the requested place', async () => {
+  it('moveAbove should move the window at the requested place', async function () {
     // DesktopCapturer.getSources() is guaranteed to return in the correct
     // z-order from foreground to background.
     const MAX_WIN = 4;
@@ -225,7 +225,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
       // the --ci parameter.
       if (process.platform === 'linux' && sources.length === 0) {
         destroyWindows();
-        it.skip('desktopCapturer.getSources returned an empty source list');
+        this.skip();
         return;
       }
 

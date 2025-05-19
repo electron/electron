@@ -51,6 +51,7 @@ class ElectronExtensionsBrowserClient
       const ElectronExtensionsBrowserClient&) = delete;
 
   // ExtensionsBrowserClient overrides:
+  void Init() override;
   bool IsShuttingDown() override;
   bool AreExtensionsDisabled(const base::CommandLine& command_line,
                              content::BrowserContext* context) override;
