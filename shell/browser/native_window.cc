@@ -722,7 +722,7 @@ int NativeWindow::NonClientHitTest(const gfx::Point& point) {
 
   // This is to disable dragging in HTML5 full screen mode.
   // Details: https://github.com/electron/electron/issues/41002
-  if (GetWidget()->IsFullscreen())
+  if (widget()->IsFullscreen())
     return HTNOWHERE;
 
   for (auto* provider : draggable_region_providers_) {
@@ -762,7 +762,7 @@ void NativeWindow::RemoveBackgroundThrottlingSource(
 }
 
 void NativeWindow::UpdateBackgroundThrottlingState() {
-  if (!GetWidget() || !GetWidget()->GetCompositor()) {
+  if (!widget() || !widget()->GetCompositor()) {
     return;
   }
   bool enable_background_throttling = true;
@@ -773,7 +773,7 @@ void NativeWindow::UpdateBackgroundThrottlingState() {
       break;
     }
   }
-  GetWidget()->GetCompositor()->SetBackgroundThrottling(
+  widget()->GetCompositor()->SetBackgroundThrottling(
       enable_background_throttling);
 }
 
