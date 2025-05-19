@@ -1202,6 +1202,11 @@ void NativeWindowViews::Invalidate() {
   widget()->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
 }
 
+bool NativeWindowViews::IsActive() const {
+  views::Widget* const widget = this->widget();
+  return widget && widget->IsActive();
+}
+
 void NativeWindowViews::FlashFrame(bool flash) {
 #if BUILDFLAG(IS_WIN)
   // The Chromium's implementation has a bug stopping flash.
