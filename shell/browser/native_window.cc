@@ -127,17 +127,6 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   if (parent)
     options.Get("modal", &is_modal_);
 
-#if defined(USE_OZONE)
-  // Ozone X11 likes to prefer custom frames, but we don't need them unless
-  // on Wayland.
-  if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
-      !ui::OzonePlatform::GetInstance()
-           ->GetPlatformRuntimeProperties()
-           .supports_server_side_window_decorations) {
-    has_client_frame_ = true;
-  }
-#endif
-
   WindowList::AddWindow(this);
 }
 
@@ -835,6 +824,22 @@ bool NativeWindow::IsTranslucent() const {
 #endif
 
   return false;
+}
+
+// static
+bool NativeWindow::PlatformHasClientFrame() {
+#if defined(USE_OZONE)
+  // Ozone X11 likes to prefer custom frames,
+  // but we don't need them unless on Wayland.
+  static const bool has_client_frame =
+      base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
+      !ui::OzonePlatform::GetInstance()
+           ->GetPlatformRuntimeProperties()
+           .supports_server_side_window_decorations;
+  return has_client_frame;
+#else
+  return false;
+#endif
 }
 
 // static

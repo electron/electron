@@ -397,7 +397,9 @@ class NativeWindow : public base::SupportsUserData,
 
   bool has_frame() const { return has_frame_; }
 
-  bool has_client_frame() const { return has_client_frame_; }
+  [[nodiscard]] constexpr bool has_client_frame() const {
+    return has_client_frame_;
+  }
   bool transparent() const { return transparent_; }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
 
@@ -478,6 +480,8 @@ class NativeWindow : public base::SupportsUserData,
   std::list<NativeWindow*> child_windows_;
 
  private:
+  static bool PlatformHasClientFrame();
+
   std::unique_ptr<views::Widget> widget_;
 
   static inline int32_t next_id_ = 0;
@@ -496,7 +500,7 @@ class NativeWindow : public base::SupportsUserData,
   // Whether window has standard frame, but it's drawn by Electron (the client
   // application) instead of the OS. Currently only has meaning on Linux for
   // Wayland hosts.
-  bool has_client_frame_ = false;
+  const bool has_client_frame_ = PlatformHasClientFrame();
 
   // Whether window is transparent.
   bool transparent_ = false;
