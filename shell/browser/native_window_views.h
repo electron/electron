@@ -101,6 +101,7 @@ class NativeWindowViews : public NativeWindow,
   void Invalidate() override;
   void SetTitle(const std::string& title) override;
   std::string GetTitle() const override;
+  [[nodiscard]] bool IsActive() const override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
   void SetExcludedFromShownWindowsMenu(bool excluded) override {}
