@@ -398,9 +398,8 @@ class NativeWindow : public base::SupportsUserData,
 
   bool has_frame() const { return has_frame_; }
 
-  [[nodiscard]] constexpr bool has_client_frame() const {
-    return has_client_frame_;
-  }
+  [[nodiscard]] bool has_client_frame() const { return has_client_frame_; }
+
   bool transparent() const { return transparent_; }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
 
