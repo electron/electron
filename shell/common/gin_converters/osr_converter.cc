@@ -145,19 +145,21 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
           // texture, output it in second pass callback.
           data.SetSecondPassCallback([](const v8::WeakCallbackInfo<
                                          OffscreenReleaseHolderMonitor>& data) {
-            auto* iso = data.GetIsolate();
             // Emit warning only once
             static std::once_flag flag;
             std::call_once(flag, [=] {
-              electron::util::EmitWarning(
-                  iso,
-                  "[OSR TEXTURE LEAKED] When using OSR with "
-                  "`useSharedTexture`, `texture.release()` "
-                  "must be called explicitly as soon as the texture is "
-                  "copied to your rendering system. "
-                  "Otherwise, it will soon drain the underlying "
-                  "framebuffer and prevent future frames from being generated.",
-                  "SharedTextureOSRNotReleased");
+              base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+                  FROM_HERE, base::BindOnce([] {
+                    electron::util::EmitWarning(
+                        "Offscreen rendering shared texture was garbage "
+                        "collected before calling `release()`. When using OSR "
+                        "with `useSharedTexture: true`, `texture.release()` "
+                        "must be called explicitly as soon as the texture is "
+                        "copied to your rendering system. Otherwise, it will "
+                        "soon drain the underlying frame pool and prevent "
+                        "future frames from being sent.",
+                        "OSRSharedTextureNotReleased");
+                  }));
             });
           });
         }
