@@ -143,3 +143,5 @@ fix_enable_wrap_iter_in_string_view_and_array.patch
 fix_linter_error.patch
 chore_grandfather_in_electron_views_and_delegates.patch
 refactor_patch_electron_permissiontypes_into_blink.patch
+cherry-pick-295a4a1b14b8.patch
+cherry-pick-c3568ceda9d8.patch
