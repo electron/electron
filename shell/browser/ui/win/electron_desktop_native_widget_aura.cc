@@ -26,7 +26,7 @@ ElectronDesktopNativeWidgetAura::ElectronDesktopNativeWidgetAura(
 void ElectronDesktopNativeWidgetAura::InitNativeWidget(
     views::Widget::InitParams params) {
   desktop_window_tree_host_ = new ElectronDesktopWindowTreeHostWin(
-      native_window_view_,
+      native_window_view_, native_window_view_.widget(),
       static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
   params.desktop_window_tree_host = desktop_window_tree_host_;
   views::DesktopNativeWidgetAura::InitNativeWidget(std::move(params));
