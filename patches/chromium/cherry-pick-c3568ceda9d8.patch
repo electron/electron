@@ -1,7 +1,7 @@
-From c3568ceda9d8aa3d9e5b80d1aaa02cba547224a5 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Takashi Nakayama <tnak@chromium.org>
-Date: Thu, 08 May 2025 04:57:11 -0700
-Subject: [PATCH] Set `referrerpolicy: "no-referrer"` in link loads from subresources
+Date: Thu, 8 May 2025 04:57:11 -0700
+Subject: Set `referrerpolicy: "no-referrer"` in link loads from subresources
 
 This CL overwrites the referrerpolicy attribute on Link header in sub-
 resource loads.
@@ -13,13 +13,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6522070
 Commit-Queue: Takashi Nakayama <tnak@chromium.org>
 Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1457510}
----
 
 diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
-index 0776a82..e340190 100644
+index 34f5b77f9dc8a64312fe7a35883a9883859965ed..30b8bf535393a015e670acb64816c0e784dd92b0 100644
 --- a/third_party/blink/common/features.cc
 +++ b/third_party/blink/common/features.cc
-@@ -2821,6 +2821,10 @@
+@@ -2830,6 +2830,10 @@ BASE_FEATURE(kWebviewAccelerateSmallCanvases,
               "WebviewAccelerateSmallCanvases",
               base::FEATURE_DISABLED_BY_DEFAULT);
  
@@ -31,10 +30,10 @@ index 0776a82..e340190 100644
  // sorted by identifier name (e.g. `kAwesomeFeature`), and the constants for
  // that feature grouped with the associated feature.
 diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
-index 5fc0249..4fb83eb 100644
+index 4b59f650318fc6b946c41a7d05d68486313e8beb..360512748cbcc0321cb1c54d4c7f87753e182bd4 100644
 --- a/third_party/blink/public/common/features.h
 +++ b/third_party/blink/public/common/features.h
-@@ -1835,6 +1835,9 @@
+@@ -1834,6 +1834,9 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebUSBTransferSizeLimit);
  
  BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebviewAccelerateSmallCanvases);
  
@@ -45,7 +44,7 @@ index 5fc0249..4fb83eb 100644
  // sorted by identifier name (e.g. `kAwesomeFeature`), and the constants for
  // that feature grouped with the associated feature.
 diff --git a/third_party/blink/renderer/core/loader/preload_helper.cc b/third_party/blink/renderer/core/loader/preload_helper.cc
-index 6dbb02e..c9a105a 100644
+index 0308d9d412fdb0ab3cfb8ab01b3d012133bd2b54..259776577188f48ae484f472f76f4aa3ea8d7ec3 100644
 --- a/third_party/blink/renderer/core/loader/preload_helper.cc
 +++ b/third_party/blink/renderer/core/loader/preload_helper.cc
 @@ -4,6 +4,7 @@
@@ -56,7 +55,7 @@ index 6dbb02e..c9a105a 100644
  #include "base/metrics/histogram_functions.h"
  #include "base/timer/elapsed_timer.h"
  #include "third_party/blink/public/common/features.h"
-@@ -246,6 +247,23 @@
+@@ -246,6 +247,23 @@ bool IsCompressionDictionaryLoadAllowed(
    }
  }
  
@@ -80,7 +79,7 @@ index 6dbb02e..c9a105a 100644
  }  // namespace
  
  void PreloadHelper::DnsPrefetchIfNeeded(
-@@ -790,6 +808,15 @@
+@@ -789,6 +807,15 @@ void PreloadHelper::LoadLinksFromHeader(
      LinkLoadParameters params(header, base_url);
      bool change_rel_to_prefetch = false;
  

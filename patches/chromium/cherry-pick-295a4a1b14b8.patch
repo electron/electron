@@ -1,7 +1,7 @@
-From 295a4a1b14b8fe12929bb61e6e00a74ac43098e8 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Alex Gough <ajgo@chromium.org>
-Date: Mon, 05 May 2025 19:09:15 -0700
-Subject: [PATCH] Drop transitive trust from transports
+Date: Mon, 5 May 2025 19:09:15 -0700
+Subject: Drop transitive trust from transports
 
 Untrusted nodes could reflect a broker initiated transport back to
 a broker. This ultimately allows for handle leaks if the reflected
@@ -39,13 +39,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6497400
 Reviewed-by: Daniel Cheng <dcheng@chromium.org>
 Commit-Queue: Alex Gough <ajgo@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1456055}
----
 
 diff --git a/mojo/core/ipcz_driver/invitation.cc b/mojo/core/ipcz_driver/invitation.cc
-index 4b3f717..001b146 100644
+index 4b3f717dab641bc08070dbb70aad6838fa397c63..001b146f1469579c6b6192fb16ad06e49dc045eb 100644
 --- a/mojo/core/ipcz_driver/invitation.cc
 +++ b/mojo/core/ipcz_driver/invitation.cc
-@@ -90,7 +90,7 @@
+@@ -90,7 +90,7 @@ IpczDriverHandle CreateTransportForMojoEndpoint(
      base::Process remote_process = base::Process(),
      MojoProcessErrorHandler error_handler = nullptr,
      uintptr_t error_handler_context = 0,
@@ -54,7 +53,7 @@ index 4b3f717..001b146 100644
    CHECK_EQ(endpoint.num_platform_handles, 1u);
    auto handle =
        PlatformHandle::FromMojoPlatformHandle(&endpoint.platform_handles[0]);
-@@ -100,7 +100,7 @@
+@@ -100,7 +100,7 @@ IpczDriverHandle CreateTransportForMojoEndpoint(
  
    auto transport = base::MakeRefCounted<Transport>(
        endpoint_types, PlatformChannelEndpoint(std::move(handle)),
@@ -63,7 +62,7 @@ index 4b3f717..001b146 100644
    transport->SetErrorHandler(error_handler, error_handler_context);
    transport->set_leak_channel_on_shutdown(options.leak_channel_on_shutdown);
    transport->set_is_peer_trusted(options.is_peer_trusted);
-@@ -268,15 +268,21 @@
+@@ -268,15 +268,21 @@ MojoResult Invitation::Send(
    // bit essentially means that the remote process is especially untrustworthy
    // (e.g. a Chrome renderer) and should be subject to additional constraints
    // regarding what types of objects can be transferred to it.
@@ -89,7 +88,7 @@ index 4b3f717..001b146 100644
  #endif
  
  #if BUILDFLAG(IS_WIN)
-@@ -296,7 +302,7 @@
+@@ -296,7 +302,7 @@ MojoResult Invitation::Send(
        *transport_endpoint,
        {.is_peer_trusted = is_peer_elevated, .is_trusted_by_peer = true},
        std::move(remote_process), error_handler, error_handler_context,
@@ -99,10 +98,10 @@ index 4b3f717..001b146 100644
      return MOJO_RESULT_INVALID_ARGUMENT;
    }
 diff --git a/mojo/core/ipcz_driver/transport.cc b/mojo/core/ipcz_driver/transport.cc
-index c1516bae..bca98fd 100644
+index d1e3286f5b59df3e971870c43511780538c3856e..45478609ee8d2dd79ef961ca286c3dbec437c681 100644
 --- a/mojo/core/ipcz_driver/transport.cc
 +++ b/mojo/core/ipcz_driver/transport.cc
-@@ -136,7 +136,7 @@
+@@ -135,7 +135,7 @@ bool EncodeHandle(PlatformHandle& handle,
                    const base::Process& remote_process,
                    HandleOwner handle_owner,
                    HandleData& out_handle_data,
@@ -111,7 +110,7 @@ index c1516bae..bca98fd 100644
    CHECK(handle.is_valid());
    // Duplicating INVALID_HANDLE_VALUE passes a process handle. If you intend to
    // do this, you must open a valid process handle, not pass the result of
-@@ -158,7 +158,7 @@
+@@ -157,7 +157,7 @@ bool EncodeHandle(PlatformHandle& handle,
    DCHECK_EQ(handle_owner, HandleOwner::kRecipient);
    DCHECK(remote_process.IsValid());
  #if BUILDFLAG(IS_WIN)
@@ -120,7 +119,7 @@ index c1516bae..bca98fd 100644
      DcheckIfFileHandleIsUnsafe(handle.GetHandle().get());
    }
  #endif
-@@ -242,23 +242,20 @@
+@@ -229,23 +229,20 @@ size_t Transport::FirstHandleOffsetForTesting() {
  Transport::Transport(EndpointTypes endpoint_types,
                       PlatformChannelEndpoint endpoint,
                       base::Process remote_process,
@@ -149,7 +148,7 @@ index c1516bae..bca98fd 100644
  }
  
  // static
-@@ -495,7 +492,7 @@
+@@ -482,7 +479,7 @@ IpczResult Transport::SerializeObject(ObjectBase& object,
    for (size_t i = 0; i < object_num_handles; ++i) {
  #if BUILDFLAG(IS_WIN)
      ok &= EncodeHandle(platform_handles[i], remote_process_, handle_owner,
@@ -158,7 +157,7 @@ index c1516bae..bca98fd 100644
  #else
      handles[i] = TransmissiblePlatformHandle::ReleaseAsHandle(
          base::MakeRefCounted<TransmissiblePlatformHandle>(
-@@ -654,23 +651,39 @@
+@@ -638,23 +635,39 @@ scoped_refptr<Transport> Transport::Deserialize(
      process = base::Process(handles[1].ReleaseHandle());
    }
  #endif
@@ -204,10 +203,10 @@ index c1516bae..bca98fd 100644
    // Inherit the IO task used by the receiving Transport. Deserialized
    // transports are always adopted by the receiving node, and we want any given
 diff --git a/mojo/core/ipcz_driver/transport.h b/mojo/core/ipcz_driver/transport.h
-index 6e69734..6e88d69c 100644
+index 6e69734d350f3688d7f1b3c51aa5fec3b4937b5e..6e88d69c7b6bd68f9aa3c8722f4980a9b9bde3ad 100644
 --- a/mojo/core/ipcz_driver/transport.h
 +++ b/mojo/core/ipcz_driver/transport.h
-@@ -36,6 +36,18 @@
+@@ -36,6 +36,18 @@ class MOJO_SYSTEM_IMPL_EXPORT Transport : public Object<Transport>,
      kNonBroker,
    };
  
@@ -226,7 +225,7 @@ index 6e69734..6e88d69c 100644
    struct EndpointTypes {
      EndpointType source;
      EndpointType destination;
-@@ -43,7 +55,7 @@
+@@ -43,7 +55,7 @@ class MOJO_SYSTEM_IMPL_EXPORT Transport : public Object<Transport>,
    Transport(EndpointTypes endpoint_types,
              PlatformChannelEndpoint endpoint,
              base::Process remote_process,
@@ -235,7 +234,7 @@ index 6e69734..6e88d69c 100644
  
    // Static helper that is slightly more readable due to better type deduction
    // than MakeRefCounted<T>.
-@@ -51,7 +63,7 @@
+@@ -51,7 +63,7 @@ class MOJO_SYSTEM_IMPL_EXPORT Transport : public Object<Transport>,
        EndpointTypes endpoint_types,
        PlatformChannelEndpoint endpoint,
        base::Process remote_process = base::Process(),
@@ -244,7 +243,7 @@ index 6e69734..6e88d69c 100644
  
    static std::pair<scoped_refptr<Transport>, scoped_refptr<Transport>>
    CreatePair(EndpointType first_type, EndpointType second_type);
-@@ -84,6 +96,8 @@
+@@ -84,6 +96,8 @@ class MOJO_SYSTEM_IMPL_EXPORT Transport : public Object<Transport>,
    void set_is_trusted_by_peer(bool trusted) { is_trusted_by_peer_ = trusted; }
    bool is_trusted_by_peer() const { return is_trusted_by_peer_; }
  
@@ -253,7 +252,7 @@ index 6e69734..6e88d69c 100644
    void SetErrorHandler(MojoProcessErrorHandler handler, uintptr_t context) {
      error_handler_ = handler;
      error_handler_context_ = context;
-@@ -206,12 +220,10 @@
+@@ -206,12 +220,10 @@ class MOJO_SYSTEM_IMPL_EXPORT Transport : public Object<Transport>,
    // meaningless on platforms other than Windows.
    bool is_trusted_by_peer_ = false;
  
@@ -268,259 +267,3 @@ index 6e69734..6e88d69c 100644
  
    // The channel endpoint which will be used by this Transport to construct and
    // start its underlying Channel instance once activated. Not guarded by a lock
-diff --git a/mojo/core/ipcz_driver/transport_test.cc b/mojo/core/ipcz_driver/transport_test.cc
-index b9a1e994..f37157e 100644
---- a/mojo/core/ipcz_driver/transport_test.cc
-+++ b/mojo/core/ipcz_driver/transport_test.cc
-@@ -72,7 +72,13 @@
-   static scoped_refptr<Transport> CreateAndSendTransport(
-       MojoHandle pipe,
-       const base::Process& process,
--      bool untrusted = false) {
-+#if BUILDFLAG(IS_WIN)
-+      Transport::ProcessTrust process_trust = Transport::ProcessTrust::kTrusted
-+#else
-+      // Parameter is not tracked on non-Windows platforms.
-+      Transport::ProcessTrust process_trust = Transport::ProcessTrust{}
-+#endif
-+  ) {
-     PlatformChannel channel;
-     MojoHandle transport_for_client =
-         WrapPlatformHandle(channel.TakeRemoteEndpoint().TakePlatformHandle())
-@@ -81,7 +87,7 @@
-     WriteMessageWithHandles(pipe, "", &transport_for_client, 1);
-     return Transport::Create(
-         {.source = Transport::kBroker, .destination = Transport::kNonBroker},
--        channel.TakeLocalEndpoint(), process.Duplicate(), untrusted);
-+        channel.TakeLocalEndpoint(), process.Duplicate(), process_trust);
-   }
- 
-   // Retrieves a PlatformChannel endpoint from `pipe` and returns a newly
-@@ -263,6 +269,93 @@
-   });
- }
- 
-+DEFINE_TEST_CLIENT_TEST_WITH_PIPE(MalformedTransportClient,
-+                                  MojoIpczTransportTest,
-+                                  h) {
-+  // Offsets of enums that should be validated on receipt. Serialized objects
-+  // use types internal to transport.cc e.g. [ObjectHeader][TransportHeader]...
-+  // so supply direct offsets here.
-+
-+  // offsetof(ObjectHeader, type).
-+  constexpr size_t object_type_offset = 4;
-+  // offsetof(TransportHeader, destination_type) + sizeof(ObjectHeader)
-+#if BUILDFLAG(IS_WIN)
-+  constexpr size_t transport_destination_type_offset = 0x18;
-+#else
-+  constexpr size_t transport_destination_type_offset = 0x08;
-+#endif
-+
-+  scoped_refptr<Transport> transport = ReceiveTransport(h);
-+
-+  TransportListener listener(*transport);
-+  EXPECT_EQ("ready", listener.WaitForNextMessage().as_string());
-+
-+  {
-+    auto [our_new_transport, their_new_transport] =
-+        Transport::CreatePair(Transport::kNonBroker, Transport::kNonBroker);
-+
-+    TestMessage msg =
-+        SerializeObjectFor(*transport, std::move(their_new_transport));
-+    // Peek into the message to break the encoded object type by using an out
-+    // of range enum value. This is uint32_t sized.
-+    msg.bytes[object_type_offset] = 22;
-+    msg.Transmit(*transport);
-+
-+    EXPECT_EQ("got null", listener.WaitForNextMessage().as_string());
-+  }
-+
-+  {
-+    auto [our_new_transport, their_new_transport] =
-+        Transport::CreatePair(Transport::kNonBroker, Transport::kNonBroker);
-+
-+    TestMessage msg =
-+        SerializeObjectFor(*transport, std::move(their_new_transport));
-+    // Peek into the message to break the encoded transport type by using an out
-+    // of range enum value. This is uint8_t sized.
-+    msg.bytes[transport_destination_type_offset] = 22;
-+    msg.Transmit(*transport);
-+
-+    EXPECT_EQ("got null", listener.WaitForNextMessage().as_string());
-+  }
-+
-+  TestMessage("done").Transmit(*transport);
-+  EXPECT_EQ(MOJO_RESULT_OK, MojoClose(h));
-+}
-+
-+TEST_F(MojoIpczTransportTest, MalformedTransport) {
-+  RunTestClientWithController(
-+      "MalformedTransportClient", [&](ClientController& c) {
-+        scoped_refptr<Transport> transport =
-+            CreateAndSendTransport(c.pipe(), c.process());
-+
-+        TransportListener listener(*transport);
-+        TestMessage("ready").Transmit(*transport);
-+
-+        {
-+          // Object type is invalid so the object should be rejected.
-+          TestMessage message = listener.WaitForNextMessage();
-+          scoped_refptr<ObjectBase> object;
-+          const IpczResult result = transport->DeserializeObject(
-+              base::span(message.bytes), base::span(message.handles), object);
-+          EXPECT_EQ(result, IPCZ_RESULT_UNIMPLEMENTED);
-+          TestMessage("got null").Transmit(*transport);
-+        }
-+
-+        {
-+          // Transport type is invalid so the object should be rejected.
-+          TestMessage message = listener.WaitForNextMessage();
-+          scoped_refptr<ObjectBase> object;
-+          const IpczResult result = transport->DeserializeObject(
-+              base::span(message.bytes), base::span(message.handles), object);
-+          EXPECT_EQ(result, IPCZ_RESULT_INVALID_ARGUMENT);
-+          TestMessage("got null").Transmit(*transport);
-+        }
-+
-+        EXPECT_EQ("done", listener.WaitForNextMessage().as_string());
-+        listener.WaitForDisconnect();
-+      });
-+}
-+
- // Transport on Windows does not support out-of-band handle transfer, so this
- // test is impossible there. Windows handle transmission is instead covered by
- // tests which more broadly cover driver object serialization.
-@@ -415,13 +508,22 @@
-     return false;
- #endif
-   }
-+  Transport::ProcessTrust TransportProcessTrust() {
-+// Enforcement only happens on Windows.
-+#if BUILDFLAG(IS_WIN)
-+    return IsEnforcementEnabled() ? Transport::ProcessTrust::kUntrusted
-+                                  : Transport::ProcessTrust::kTrusted;
-+#else
-+    return Transport::ProcessTrust::kUntracked;
-+#endif
-+  }
-   bool ShouldMarkNoExecute() { return std::get<1>(GetParam()); }
- };
- 
- TEST_P(MojoIpczTransportSecurityTest, TransmitFile) {
-   RunTestClientWithController("TransmitFileClient", [&](ClientController& c) {
-     scoped_refptr<Transport> transport =
--        CreateAndSendTransport(c.pipe(), c.process(), IsEnforcementEnabled());
-+        CreateAndSendTransport(c.pipe(), c.process(), TransportProcessTrust());
-     base::ScopedTempDir temp_dir;
-     CHECK(temp_dir.CreateUniqueTempDir());
-     int32_t flags = base::File::FLAG_CREATE | base::File::FLAG_READ |
-@@ -644,8 +746,8 @@
- TEST_F(MojoIpczTransportTest, InvalidHandleUntrusted) {
-   RunTestClientWithController(
-       "InvalidHandleUntrustedClient", [&](ClientController& c) {
--        scoped_refptr<Transport> transport =
--            CreateAndSendTransport(c.pipe(), c.process(), /*untrusted=*/true);
-+        scoped_refptr<Transport> transport = CreateAndSendTransport(
-+            c.pipe(), c.process(), Transport::ProcessTrust{});
- 
-         TransportListener listener(*transport);
-         TestMessage(kFromTrusted).Transmit(*transport);
-@@ -666,5 +768,98 @@
- 
- #endif  // BUILDFLAG(IS_WIN)
- 
-+DEFINE_TEST_CLIENT_TEST_WITH_PIPE(TransportFromUntrustedClient,
-+                                  MojoIpczTransportTest,
-+                                  h) {
-+  scoped_refptr<Transport> transport = ReceiveTransport(h);
-+  TransportListener listener(*transport);
-+  EXPECT_EQ("ready", listener.WaitForNextMessage().as_string());
-+
-+  for (int i = 0; i < 2; i++) {
-+    auto ours = i == 0 ? Transport::kNonBroker : Transport::kBroker;
-+    auto theirs = i == 0 ? Transport::kBroker : Transport::kNonBroker;
-+    {
-+      auto [our_new_transport, their_new_transport] =
-+          Transport::CreatePair(ours, theirs);
-+
-+      their_new_transport->set_is_peer_trusted(true);
-+
-+      SerializeObjectFor(*transport, std::move(their_new_transport))
-+          .Transmit(*transport);
-+      EXPECT_EQ("got null", listener.WaitForNextMessage().as_string());
-+    }
-+
-+    {
-+      auto [our_new_transport, their_new_transport] =
-+          Transport::CreatePair(ours, theirs);
-+
-+      their_new_transport->set_is_trusted_by_peer(true);
-+
-+      SerializeObjectFor(*transport, std::move(their_new_transport))
-+          .Transmit(*transport);
-+      if (ours == Transport::kNonBroker) {
-+        EXPECT_EQ("got untrusted", listener.WaitForNextMessage().as_string());
-+      } else {
-+        EXPECT_EQ("got null", listener.WaitForNextMessage().as_string());
-+      }
-+    }
-+  }
-+
-+  EXPECT_EQ(MOJO_RESULT_OK, MojoClose(h));
-+}
-+
-+TEST_F(MojoIpczTransportTest, TransportFromUntrusted) {
-+#if BUILDFLAG(IS_WIN)
-+  // TODO(crbug.com/414392683) default to untrusted/untracked.
-+  Transport::ProcessTrust process_trust = Transport::ProcessTrust::kUntrusted;
-+#else
-+  Transport::ProcessTrust process_trust{};
-+#endif
-+  RunTestClientWithController(
-+      "TransportFromUntrustedClient", [&](ClientController& c) {
-+        scoped_refptr<Transport> transport =
-+            CreateAndSendTransport(c.pipe(), c.process(), process_trust);
-+
-+        TransportListener listener(*transport);
-+        TestMessage("ready").Transmit(*transport);
-+
-+        // A broker (this process) should reject transports from untrusted
-+        // clients if they claim the transport's peer is trusted or is a broker.
-+        // It is ok to allow transports from a client that indicates they trust
-+        // the peer, as a broker will not make trust decisions based on that.
-+        for (int i = 0; i < 2; i++) {
-+          auto theirs = i == 0 ? Transport::kNonBroker : Transport::kBroker;
-+          {
-+            TestMessage message = listener.WaitForNextMessage();
-+            scoped_refptr<ObjectBase> object;
-+            const IpczResult result = transport->DeserializeObject(
-+                base::span(message.bytes), base::span(message.handles), object);
-+            EXPECT_EQ(result, IPCZ_RESULT_INVALID_ARGUMENT);
-+            TestMessage("got null").Transmit(*transport);
-+          }
-+
-+          {
-+            TestMessage message = listener.WaitForNextMessage();
-+            if (theirs == Transport::kNonBroker) {
-+              scoped_refptr<Transport> transport2 =
-+                  DeserializeObjectFrom<Transport>(*transport, message);
-+              EXPECT_TRUE(transport2->is_trusted_by_peer());
-+              EXPECT_FALSE(transport2->is_peer_trusted());
-+              TestMessage("got untrusted").Transmit(*transport);
-+            } else {
-+              scoped_refptr<ObjectBase> object;
-+              const IpczResult result = transport->DeserializeObject(
-+                  base::span(message.bytes), base::span(message.handles),
-+                  object);
-+              EXPECT_EQ(result, IPCZ_RESULT_INVALID_ARGUMENT);
-+              TestMessage("got null").Transmit(*transport);
-+            }
-+          }
-+        }
-+
-+        listener.WaitForDisconnect();
-+      });
-+}
-+
- }  // namespace
- }  // namespace mojo::core::ipcz_driver
