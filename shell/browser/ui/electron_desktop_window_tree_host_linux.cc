@@ -33,10 +33,10 @@ namespace electron {
 
 ElectronDesktopWindowTreeHostLinux::ElectronDesktopWindowTreeHostLinux(
     NativeWindowViews* native_window_view,
+    views::Widget* widget,
     views::DesktopNativeWidgetAura* desktop_native_widget_aura)
-    : views::DesktopWindowTreeHostLinux(native_window_view->widget(),
-                                        desktop_native_widget_aura),
-      native_window_view_(native_window_view) {}
+    : views::DesktopWindowTreeHostLinux{widget, desktop_native_widget_aura},
+      native_window_view_{native_window_view} {}
 
 ElectronDesktopWindowTreeHostLinux::~ElectronDesktopWindowTreeHostLinux() =
     default;
