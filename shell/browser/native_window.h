@@ -482,7 +482,7 @@ class NativeWindow : public base::SupportsUserData,
  private:
   static bool PlatformHasClientFrame();
 
-  std::unique_ptr<views::Widget> widget_;
+  std::unique_ptr<views::Widget> widget_ = std::make_unique<views::Widget>();
 
   static inline int32_t next_id_ = 0;
   const int32_t window_id_ = ++next_id_;
