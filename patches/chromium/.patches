@@ -155,3 +155,5 @@ cherry-pick-b8f80176b163.patch
 fix_false_activation_logic_for_context_menu.patch
 mac_fix_check_on_ime_reconversion_due_to_invalid_replacement_range.patch
 cherry-pick-0333ecde9142.patch
+cherry-pick-295a4a1b14b8.patch
+cherry-pick-c3568ceda9d8.patch
