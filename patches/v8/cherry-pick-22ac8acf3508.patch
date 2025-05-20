@@ -1,7 +1,7 @@
-From 22ac8acf3508ff99e17323383a1b0182d21a8ce7 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jakob Kummerow <jkummerow@chromium.org>
 Date: Mon, 17 Mar 2025 17:26:24 +0100
-Subject: [PATCH] Make F.p.caller return null when called from Wasm
+Subject: Make F.p.caller return null when called from Wasm
 
 Returning the calling Wasm function isn't generally possible when
 that function isn't exported; skipping that and returning something
@@ -14,13 +14,12 @@ Reviewed-by: Toon Verwaest <verwaest@chromium.org>
 Commit-Queue: Toon Verwaest <verwaest@chromium.org>
 Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#99296}
----
 
 diff --git a/src/builtins/accessors.cc b/src/builtins/accessors.cc
-index 0722b4f..19f63be 100644
+index 0722b4feb88929b1f618d9748ca15336be10fbd1..19f63be011eb77f1825cc73cb2057d55afe049e5 100644
 --- a/src/builtins/accessors.cc
 +++ b/src/builtins/accessors.cc
-@@ -582,24 +582,16 @@
+@@ -582,24 +582,16 @@ class FrameFunctionIterator {
      return true;
    }
  
@@ -52,7 +51,7 @@ index 0722b4f..19f63be 100644
      return true;
    }
  
-@@ -676,13 +668,10 @@
+@@ -676,13 +668,10 @@ MaybeDirectHandle<JSFunction> FindCaller(Isolate* isolate,
    if (!it.Find(function)) {
      return {};
    }
@@ -72,7 +71,7 @@ index 0722b4f..19f63be 100644
  
 diff --git a/test/mjsunit/regress/wasm/regress-403364367.js b/test/mjsunit/regress/wasm/regress-403364367.js
 new file mode 100644
-index 0000000..0952a1b
+index 0000000000000000000000000000000000000000..0952a1b02bd13542fdcbab20f37dc1f7900914c4
 --- /dev/null
 +++ b/test/mjsunit/regress/wasm/regress-403364367.js
 @@ -0,0 +1,19 @@
