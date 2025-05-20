@@ -274,7 +274,7 @@ index a054e4c1285208c9ba8b9679c284f459f1ace690..3de8ef4fafcdbdc2cb0ce31de162663d
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 7041eb985d9f6d163098a94342aec976cb6c2bb9..5387d9625a28bb7d11f7f0f05a5f07d1fee2c216 100644
+index c26a88b395abfc645da56231635b36fb23c8fa09..f23cedf4f2449d8edc9a8de1b70332e75d693cdd 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -7,7 +7,9 @@
@@ -428,7 +428,7 @@ index b38a9a377738fd5fe6cc89c3a27c403bf6a97715..0cd43c2005b431e180b7483cb89825a7
  
  void KeyObjectHandle::CheckEcKeyData(const FunctionCallbackInfo<Value>& args) {
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index cb96698aa644c3b6c506c0979910f2b4421d63ad..b9b21329199b49c9e41f9ae708296e5b0edb39b0 100644
+index 78f2093d1d010be6f9c492662f4f582657ff6a13..b6aef7fd27cd974697bcee05955bfd9ccf4d5837 100644
 --- a/src/crypto/crypto_random.cc
 +++ b/src/crypto/crypto_random.cc
 @@ -143,7 +143,7 @@ Maybe<void> RandomPrimeTraits::AdditionalConfig(
