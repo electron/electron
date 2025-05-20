@@ -41,10 +41,10 @@ class ElectronDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
                          aura::Window* gained_active,
                          aura::Window* lost_active) override;
 
-  raw_ptr<NativeWindowViews> native_window_view_;
+  const raw_ptr<NativeWindowViews> native_window_view_;
 
   // Owned by DesktopNativeWidgetAura.
-  raw_ptr<views::DesktopWindowTreeHost> desktop_window_tree_host_;
+  const raw_ptr<views::DesktopWindowTreeHost> desktop_window_tree_host_;
 };
 
 }  // namespace electron
