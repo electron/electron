@@ -1,7 +1,7 @@
-From c3568ceda9d8aa3d9e5b80d1aaa02cba547224a5 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Takashi Nakayama <tnak@chromium.org>
-Date: Thu, 08 May 2025 04:57:11 -0700
-Subject: [PATCH] Set `referrerpolicy: "no-referrer"` in link loads from subresources
+Date: Thu, 8 May 2025 04:57:11 -0700
+Subject: Set `referrerpolicy: "no-referrer"` in link loads from subresources
 
 This CL overwrites the referrerpolicy attribute on Link header in sub-
 resource loads.
@@ -13,30 +13,30 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6522070
 Commit-Queue: Takashi Nakayama <tnak@chromium.org>
 Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1457510}
----
 
 diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
-index 0776a82..e340190 100644
+index 1b2b6128e69953be7f9f96853d76c5c0e16552fe..0796e273ecf510292f808fb146658d1e96c6aeb1 100644
 --- a/third_party/blink/common/features.cc
 +++ b/third_party/blink/common/features.cc
-@@ -2821,6 +2821,10 @@
-              "WebviewAccelerateSmallCanvases",
-              base::FEATURE_DISABLED_BY_DEFAULT);
+@@ -2864,7 +2864,10 @@ BASE_FEATURE(kReleaseResourceDecodedDataOnMemoryPressure,
+              "ReleaseResourceDecodedDataOnMemoryPressure",
+              base::FEATURE_ENABLED_BY_DEFAULT);
  
+-// When adding new features or constants for features, please keep the features
 +BASE_FEATURE(kNoReferrerForPreloadFromSubresource,
 +             "NoReferrerForPreloadFromSubresource",
 +             base::FEATURE_ENABLED_BY_DEFAULT);
 +
- // When adding new features or constants for features, please keep the features
  // sorted by identifier name (e.g. `kAwesomeFeature`), and the constants for
  // that feature grouped with the associated feature.
+ //
 diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
-index 5fc0249..4fb83eb 100644
+index 0bc9302cd8f3f291949be328aba5df88e2ab0d03..4d8855be76776c390a65c40094c51a13940ff792 100644
 --- a/third_party/blink/public/common/features.h
 +++ b/third_party/blink/public/common/features.h
-@@ -1835,6 +1835,9 @@
- 
- BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebviewAccelerateSmallCanvases);
+@@ -1832,6 +1832,9 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
+     kReleaseResourceDecodedDataOnMemoryPressure);
  
 +// Kill switch for https://crbug.com/415810136.
 +BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kNoReferrerForPreloadFromSubresource);
@@ -45,7 +45,7 @@ index 5fc0249..4fb83eb 100644
  // sorted by identifier name (e.g. `kAwesomeFeature`), and the constants for
  // that feature grouped with the associated feature.
 diff --git a/third_party/blink/renderer/core/loader/preload_helper.cc b/third_party/blink/renderer/core/loader/preload_helper.cc
-index 6dbb02e..c9a105a 100644
+index 3ffce30776c56991b41103b098ec981db8143a5d..630147649907abdd279e06d283b6d282908c8dc0 100644
 --- a/third_party/blink/renderer/core/loader/preload_helper.cc
 +++ b/third_party/blink/renderer/core/loader/preload_helper.cc
 @@ -4,6 +4,7 @@
@@ -56,7 +56,7 @@ index 6dbb02e..c9a105a 100644
  #include "base/metrics/histogram_functions.h"
  #include "base/timer/elapsed_timer.h"
  #include "third_party/blink/public/common/features.h"
-@@ -246,6 +247,23 @@
+@@ -246,6 +247,23 @@ bool IsCompressionDictionaryLoadAllowed(
    }
  }
  
@@ -80,7 +80,7 @@ index 6dbb02e..c9a105a 100644
  }  // namespace
  
  void PreloadHelper::DnsPrefetchIfNeeded(
-@@ -790,6 +808,15 @@
+@@ -795,6 +813,15 @@ void PreloadHelper::LoadLinksFromHeader(
      LinkLoadParameters params(header, base_url);
      bool change_rel_to_prefetch = false;
  
