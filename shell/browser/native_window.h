@@ -8,11 +8,11 @@
 #include <list>
 #include <memory>
 #include <optional>
-#include <queue>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "base/containers/queue.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
@@ -467,7 +467,8 @@ class NativeWindow : public base::SupportsUserData,
   // on HiDPI displays on some environments.
   std::optional<extensions::SizeConstraints> content_size_constraints_;
 
-  std::queue<bool> pending_transitions_;
+  base::queue<bool> pending_transitions_;
+
   FullScreenTransitionType fullscreen_transition_type_ =
       FullScreenTransitionType::kNone;
 
