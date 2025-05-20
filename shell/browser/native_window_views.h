@@ -31,6 +31,7 @@ class Arguments;
 namespace electron {
 
 #if BUILDFLAG(IS_LINUX)
+class ClientFrameViewLinux;
 class GlobalMenuBarX11;
 #endif
 
@@ -181,6 +182,12 @@ class NativeWindowViews : public NativeWindow,
 
   SkColor overlay_button_color() const { return overlay_button_color_; }
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
+
+#if BUILDFLAG(IS_LINUX)
+  // returns the ClientFrameViewLinux iff that is our NonClientFrameView type,
+  // nullptr otherwise.
+  ClientFrameViewLinux* GetClientFrameViewLinux();
+#endif
 
  private:
   void set_overlay_button_color(SkColor color) {

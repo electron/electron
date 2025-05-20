@@ -1850,6 +1850,19 @@ NativeWindowViews::CreateNonClientFrameView(views::Widget* widget) {
 #endif
 }
 
+#if BUILDFLAG(IS_LINUX)
+electron::ClientFrameViewLinux* NativeWindowViews::GetClientFrameViewLinux() {
+  // Check to make sure this window's non-client frame view is a
+  // ClientFrameViewLinux.  If either has_frame() or has_client_frame()
+  // are false, it will be an OpaqueFrameView or NativeFrameView instead.
+  // See NativeWindowViews::CreateNonClientFrameView.
+  if (!has_frame() || !has_client_frame())
+    return {};
+  return static_cast<ClientFrameViewLinux*>(
+      widget()->non_client_view()->frame_view());
+}
+#endif
+
 void NativeWindowViews::OnWidgetMove() {
   NotifyWindowMove();
 }
