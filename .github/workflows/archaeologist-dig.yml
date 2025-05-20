@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node.js/npm
         uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
         with:
-          node-version: 20.11.x
+          node-version: 20.19.x
       - name: Setting Up Dig Site
         run: |
           echo "remote: ${{ github.event.pull_request.head.repo.clone_url }}"
