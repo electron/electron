@@ -13,19 +13,20 @@ app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 085b00fbb3ff95cdcde2a46760ab449808b4c1a9..22d5c994a6944ce7ea725ee045d9801126c32dd4 100644
+index 2748dd196fe1f56357348a204e24f0b8a28b97dd..5800dd00b47c657d9e6766f3fc5a30654cffffa6 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
-@@ -18,6 +18,8 @@
+@@ -18,7 +18,8 @@
  #include "base/functional/callback.h"
  #include "base/memory/scoped_refptr.h"
  #include "base/process/process.h"
+-
 +#include "base/containers/span.h"
 +#include "base/memory/raw_span.h"
- #include "ui/gfx/native_widget_types.h"
- 
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
-@@ -100,21 +102,24 @@ class ProcessSingleton {
+ #include "base/files/scoped_temp_dir.h"
+ #endif
+@@ -99,21 +100,24 @@ class ProcessSingleton {
    // should handle it (i.e., because the current process is shutting down).
    using NotificationCallback =
        base::RepeatingCallback<bool(base::CommandLine command_line,
@@ -52,7 +53,7 @@ index 085b00fbb3ff95cdcde2a46760ab449808b4c1a9..22d5c994a6944ce7ea725ee045d98011
    ~ProcessSingleton();
  
    // Notify another process, if available. Otherwise sets ourselves as the
-@@ -178,7 +183,10 @@ class ProcessSingleton {
+@@ -177,7 +181,10 @@ class ProcessSingleton {
  #endif
  
   private:
