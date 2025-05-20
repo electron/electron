@@ -18,7 +18,8 @@ class NativeWindowViews;
 class ElectronDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
  public:
   explicit ElectronDesktopNativeWidgetAura(
-      NativeWindowViews* native_window_view);
+      NativeWindowViews* native_window_view,
+      views::Widget* widget);
 
   // disable copy
   ElectronDesktopNativeWidgetAura(const ElectronDesktopNativeWidgetAura&) =

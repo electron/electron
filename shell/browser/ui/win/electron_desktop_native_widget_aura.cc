@@ -14,9 +14,10 @@
 namespace electron {
 
 ElectronDesktopNativeWidgetAura::ElectronDesktopNativeWidgetAura(
-    NativeWindowViews* native_window_view)
-    : views::DesktopNativeWidgetAura(native_window_view->widget()),
-      native_window_view_(native_window_view) {
+    NativeWindowViews* native_window_view,
+    views::Widget* widget)
+    : views::DesktopNativeWidgetAura{widget},
+      native_window_view_{native_window_view} {
   GetNativeWindow()->SetName("ElectronDesktopNativeWidgetAura");
   // This is to enable the override of OnWindowActivated
   wm::SetActivationChangeObserver(GetNativeWindow(), this);
