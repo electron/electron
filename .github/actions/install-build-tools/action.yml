@@ -15,6 +15,7 @@ runs:
       fi
       export BUILD_TOOLS_SHA=6e8526315ea3b4828882497e532b8340e64e053c
       npm i -g @electron/build-tools
+      e d update_depot_tools
       e auto-update disable
       e d auto-update disable
       if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
