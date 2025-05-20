@@ -19,7 +19,7 @@ ElectronDesktopNativeWidgetAura::ElectronDesktopNativeWidgetAura(
     : views::DesktopNativeWidgetAura{widget},
       native_window_view_{native_window_view},
       desktop_window_tree_host_{new ElectronDesktopWindowTreeHostWin{
-          native_winodw_view_, widget, this}} {
+          native_window_view, widget, this}} {
   GetNativeWindow()->SetName("ElectronDesktopNativeWidgetAura");
   // This is to enable the override of OnWindowActivated
   wm::SetActivationChangeObserver(GetNativeWindow(), this);
