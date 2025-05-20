@@ -2014,13 +2014,8 @@ void WebContents::ReadyToCommitNavigation(
   // Don't focus content in an inactive window.
   if (!owner_window())
     return;
-#if BUILDFLAG(IS_MAC)
   if (!owner_window()->IsActive())
     return;
-#else
-  if (!owner_window()->widget()->IsActive())
-    return;
-#endif
   // Don't focus content after subframe navigations.
   if (!navigation_handle->IsInMainFrame())
     return;
