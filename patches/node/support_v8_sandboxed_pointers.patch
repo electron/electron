@@ -26,7 +26,7 @@ index 88c2c932a6b045317c83c911b1cd8267b60d9334..7f4f233b26425493a58ce71dfc0c3a92
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 5387d9625a28bb7d11f7f0f05a5f07d1fee2c216..1b3b8c7b70073926f8dbf02759c2e1af5d938679 100644
+index f23cedf4f2449d8edc9a8de1b70332e75d693cdd..976653dd1e9363e046788fc3419a9b649ceb2ea4 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -55,13 +55,32 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
@@ -143,7 +143,7 @@ index 6346f8f7199cf7b7d3736c59571606fff102fbb6..7eea2eaefcad5780663a6b87985925ae
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index b85c8daeb464097c2e93bdc7ffdfcfe16b76234b..470a0c4adadcd092dd0105c384e87917ac6fe69a 100644
+index 1592134716da2de40de4ba028ee937b765423e37..8f3ba65f1fef2c066d6df6087a08ba71100d1090 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
 @@ -242,7 +242,7 @@ class ByteSource {
