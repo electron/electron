@@ -1,0 +1,98 @@
+From c3568ceda9d8aa3d9e5b80d1aaa02cba547224a5 Mon Sep 17 00:00:00 2001
+From: Takashi Nakayama <tnak@chromium.org>
+Date: Thu, 08 May 2025 04:57:11 -0700
+Subject: [PATCH] Set `referrerpolicy: "no-referrer"` in link loads from subresources
+
+This CL overwrites the referrerpolicy attribute on Link header in sub-
+resource loads.
+See the bug for details.
+
+Bug: 415810136
+Change-Id: I750e1043ecbd2ce63e827cdbdd2a2a22661ffea7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6522070
+Commit-Queue: Takashi Nakayama <tnak@chromium.org>
+Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1457510}
+---
+
+diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
+index 0776a82..e340190 100644
+--- a/third_party/blink/common/features.cc
++++ b/third_party/blink/common/features.cc
+@@ -2821,6 +2821,10 @@
+              "WebviewAccelerateSmallCanvases",
+              base::FEATURE_DISABLED_BY_DEFAULT);
+ 
++BASE_FEATURE(kNoReferrerForPreloadFromSubresource,
++             "NoReferrerForPreloadFromSubresource",
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ // When adding new features or constants for features, please keep the features
+ // sorted by identifier name (e.g. `kAwesomeFeature`), and the constants for
+ // that feature grouped with the associated feature.
+diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
+index 5fc0249..4fb83eb 100644
+--- a/third_party/blink/public/common/features.h
++++ b/third_party/blink/public/common/features.h
+@@ -1835,6 +1835,9 @@
+ 
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebviewAccelerateSmallCanvases);
+ 
++// Kill switch for https://crbug.com/415810136.
++BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kNoReferrerForPreloadFromSubresource);
++
+ // When adding new features or constants for features, please keep the features
+ // sorted by identifier name (e.g. `kAwesomeFeature`), and the constants for
+ // that feature grouped with the associated feature.
+diff --git a/third_party/blink/renderer/core/loader/preload_helper.cc b/third_party/blink/renderer/core/loader/preload_helper.cc
+index 6dbb02e..c9a105a 100644
+--- a/third_party/blink/renderer/core/loader/preload_helper.cc
++++ b/third_party/blink/renderer/core/loader/preload_helper.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/core/loader/preload_helper.h"
+ 
++#include "base/feature_list.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/timer/elapsed_timer.h"
+ #include "third_party/blink/public/common/features.h"
+@@ -246,6 +247,23 @@
+   }
+ }
+ 
++bool IsSubresourceLoad(PreloadHelper::LoadLinksFromHeaderMode mode) {
++  switch (mode) {
++    case PreloadHelper::LoadLinksFromHeaderMode::kDocumentBeforeCommit:
++    case PreloadHelper::LoadLinksFromHeaderMode::
++        kDocumentAfterCommitWithoutViewport:
++    case PreloadHelper::LoadLinksFromHeaderMode::
++        kDocumentAfterCommitWithViewport:
++    case PreloadHelper::LoadLinksFromHeaderMode::kDocumentAfterLoadCompleted:
++      return false;
++    case PreloadHelper::LoadLinksFromHeaderMode::kSubresourceFromMemoryCache:
++    case PreloadHelper::LoadLinksFromHeaderMode::kSubresourceNotFromMemoryCache:
++      return true;
++    default:
++      NOTREACHED();
++  }
++}
++
+ }  // namespace
+ 
+ void PreloadHelper::DnsPrefetchIfNeeded(
+@@ -790,6 +808,15 @@
+     LinkLoadParameters params(header, base_url);
+     bool change_rel_to_prefetch = false;
+ 
++    // For security purposes, set `referrerpolicy: "no-referrer"` in link loads
++    // from subresources. See https://crbug.com/415810136 for details.
++    if (base::FeatureList::IsEnabled(
++            blink::features::kNoReferrerForPreloadFromSubresource)) {
++      if (IsSubresourceLoad(mode)) {
++        params.referrer_policy = network::mojom::ReferrerPolicy::kNever;
++      }
++    }
++
+     if (params.rel.IsLinkPreload() && recursive_prefetch_token) {
+       // Only preload headers are expected to have a recursive prefetch token
+       // In response to that token's existence, we treat the request as a
