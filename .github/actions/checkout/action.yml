@@ -136,6 +136,11 @@ runs:
     run: |
       echo "::remove-matcher owner=merge-conflict::"
       echo "::remove-matcher owner=patch-conflict::"
+  - name: Upload patches stats
+    if: ${{ inputs.target-platform == 'linux' && github.ref == 'refs/heads/main' }}
+    shell: bash
+    run: |
+      npx node src/electron/script/patches-stats.mjs --upload-stats || true
   # delete all .git directories under src/ except for
   # third_party/angle/ and third_party/dawn/ because of build time generation of files
   # gen/angle/commit.h depends on third_party/angle/.git/HEAD
