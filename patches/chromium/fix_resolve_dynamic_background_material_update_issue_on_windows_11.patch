@@ -3,6 +3,9 @@ From: zoy <zoy-l@outlook.com>
 Date: Mon, 5 May 2025 23:28:53 +0800
 Subject: fix: resolve dynamic background material update issue on Windows 11
 
+This patch addresses issues with background materials on Windows 11,
+such as the background turning black when maximizing the window and
+dynamic background material settings not taking effect.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 index 24283be8d1660acce0a5ae89386b8eef9989fc12..a5e571f5ac197eb29cd88532794c96e733742713 100644
