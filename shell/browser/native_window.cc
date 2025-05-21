@@ -97,13 +97,14 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : transparent_{options.ValueOrDefault(options::kTransparent, false)},
+    : title_bar_style_{options.ValueOrDefault(options::kTitleBarStyle,
+                                              TitleBarStyle::kNormal)},
+      transparent_{options.ValueOrDefault(options::kTransparent, false)},
       enable_larger_than_screen_{
           options.ValueOrDefault(options::kEnableLargerThanScreen, false)},
       is_modal_{parent != nullptr && options.ValueOrDefault("modal", false)},
       parent_{parent} {
   options.Get(options::kFrame, &has_frame_);
-  options.Get(options::kTitleBarStyle, &title_bar_style_);
 #if BUILDFLAG(IS_WIN)
   options.Get(options::kBackgroundMaterial, &background_material_);
 #elif BUILDFLAG(IS_MAC)
