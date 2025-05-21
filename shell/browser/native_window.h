@@ -397,7 +397,6 @@ class NativeWindow : public base::SupportsUserData,
 
   bool has_frame() const { return has_frame_; }
 
-
   [[nodiscard]] bool has_client_frame() const { return has_client_frame_; }
 
   [[nodiscard]] bool transparent() const { return transparent_; }
