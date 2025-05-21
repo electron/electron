@@ -244,14 +244,8 @@ void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
   ContentRendererClient::SetUpWebAssemblyTrapHandler();
   return;
 #else
-  base::CommandLine* const command_line =
-      base::CommandLine::ForCurrentProcess();
   const bool crash_reporter_enabled =
-      command_line->HasSwitch(::switches::kEnableCrashReporter)
-#if BUILDFLAG(IS_POSIX)
-      || command_line->HasSwitch(::switches::kEnableCrashReporterForTesting)
-#endif  // BUILDFLAG(IS_POSIX)
-      ;
+      crash_reporter::GetHandlerSocket(nullptr, nullptr);
 
   if (crash_reporter_enabled) {
     // If either --enable-crash-reporter or --enable-crash-reporter-for-testing
