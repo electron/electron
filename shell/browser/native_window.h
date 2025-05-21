@@ -400,8 +400,11 @@ class NativeWindow : public base::SupportsUserData,
 
   [[nodiscard]] bool has_client_frame() const { return has_client_frame_; }
 
-  bool transparent() const { return transparent_; }
-  bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
+  [[nodiscard]] bool transparent() const { return transparent_; }
+
+  [[nodiscard]] bool enable_larger_than_screen() const {
+    return enable_larger_than_screen_;
+  }
 
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }
@@ -478,10 +481,16 @@ class NativeWindow : public base::SupportsUserData,
  private:
   static bool PlatformHasClientFrame();
 
-  std::unique_ptr<views::Widget> widget_;
+  std::unique_ptr<views::Widget> widget_ = std::make_unique<views::Widget>();
 
   static inline int32_t next_id_ = 0;
   const int32_t window_id_ = ++next_id_;
+
+  // Whether window is transparent.
+  const bool transparent_;
+
+  // Whether window can be resized larger than screen.
+  const bool enable_larger_than_screen_;
 
   // The content view, weak ref.
   raw_ptr<views::View> content_view_ = nullptr;
@@ -497,12 +506,6 @@ class NativeWindow : public base::SupportsUserData,
   // application) instead of the OS. Currently only has meaning on Linux for
   // Wayland hosts.
   const bool has_client_frame_ = PlatformHasClientFrame();
-
-  // Whether window is transparent.
-  bool transparent_ = false;
-
-  // Whether window can be resized larger than screen.
-  bool enable_larger_than_screen_ = false;
 
   // The windows has been closed.
   bool is_closed_ = false;
