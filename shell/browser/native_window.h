@@ -397,7 +397,7 @@ class NativeWindow : public base::SupportsUserData,
 
   int titlebar_overlay_height() const { return titlebar_overlay_height_; }
 
-  bool has_frame() const { return has_frame_; }
+  [[nodiscard]] bool has_frame() const { return has_frame_; }
 
   NativeWindow* parent() const { return parent_; }
 
@@ -427,11 +427,11 @@ class NativeWindow : public base::SupportsUserData,
   void UpdateBackgroundThrottlingState();
 
  protected:
+  NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
+
   void set_titlebar_overlay_height(int height) {
     titlebar_overlay_height_ = height;
   }
-
-  constexpr void set_has_frame(const bool val) { has_frame_ = val; }
 
   [[nodiscard]] bool has_client_frame() const { return has_client_frame_; }
 
@@ -442,8 +442,6 @@ class NativeWindow : public base::SupportsUserData,
   [[nodiscard]] bool enable_larger_than_screen() const {
     return enable_larger_than_screen_;
   }
-
-  NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   virtual void OnTitleChanged() {}
 
@@ -507,15 +505,15 @@ class NativeWindow : public base::SupportsUserData,
   // Is this a modal window.
   const bool is_modal_;
 
+  // Whether window has standard frame.
+  const bool has_frame_;
+
   // The content view, weak ref.
   raw_ptr<views::View> content_view_ = nullptr;
 
   // The custom height parsed from the "height" option in a Object
   // "titleBarOverlay"
   int titlebar_overlay_height_ = 0;
-
-  // Whether window has standard frame.
-  bool has_frame_ = true;
 
   // The windows has been closed.
   bool is_closed_ = false;

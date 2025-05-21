@@ -241,10 +241,6 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     }
   }
 
-  // |hidden| is the only non-default titleBarStyle valid on Windows and Linux.
-  if (title_bar_style() == TitleBarStyle::kHidden)
-    set_has_frame(false);
-
 #if BUILDFLAG(IS_WIN)
   // If the taskbar is re-created after we start up, we have to rebuild all of
   // our buttons.

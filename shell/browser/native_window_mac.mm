@@ -151,10 +151,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   const bool paint_when_initially_hidden =
       options.ValueOrDefault(options::kPaintWhenInitiallyHidden, true);
 
-  // The window without titlebar is treated the same with frameless window.
-  if (title_bar_style() != TitleBarStyle::kNormal)
-    set_has_frame(false);
-
   NSUInteger styleMask = NSWindowStyleMaskTitled;
 
   // The NSWindowStyleMaskFullSizeContentView style removes rounded corners

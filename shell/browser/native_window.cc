@@ -103,8 +103,9 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
       enable_larger_than_screen_{
           options.ValueOrDefault(options::kEnableLargerThanScreen, false)},
       is_modal_{parent != nullptr && options.ValueOrDefault("modal", false)},
+      has_frame_{options.ValueOrDefault(options::kFrame, true) &&
+                 title_bar_style_ == TitleBarStyle::kNormal},
       parent_{parent} {
-  options.Get(options::kFrame, &has_frame_);
 #if BUILDFLAG(IS_WIN)
   options.Get(options::kBackgroundMaterial, &background_material_);
 #elif BUILDFLAG(IS_MAC)
