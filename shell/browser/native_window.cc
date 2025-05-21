@@ -97,10 +97,11 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : widget_(std::make_unique<views::Widget>()), parent_(parent) {
+    : transparent_{options.ValueOrDefault(options::kTransparent, false)},
+      enable_larger_than_screen_{
+          options.ValueOrDefault(options::kEnableLargerThanScreen, false)},
+      parent_{parent} {
   options.Get(options::kFrame, &has_frame_);
-  options.Get(options::kTransparent, &transparent_);
-  options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
   options.Get(options::kTitleBarStyle, &title_bar_style_);
 #if BUILDFLAG(IS_WIN)
   options.Get(options::kBackgroundMaterial, &background_material_);
