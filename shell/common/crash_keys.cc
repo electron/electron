@@ -5,11 +5,11 @@
 #include "shell/common/crash_keys.h"
 
 #include <cstdint>
-#include <deque>
 #include <map>
 #include <string>
 
 #include "base/command_line.h"
+#include "base/containers/circular_deque.h"
 #include "base/environment.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
@@ -28,19 +28,17 @@ namespace electron::crash_keys {
 
 namespace {
 
-constexpr size_t kMaxCrashKeyValueSize = 20320;
-static_assert(kMaxCrashKeyValueSize < crashpad::Annotation::kValueMaxSize,
-              "max crash key value length above what crashpad supports");
-
-using ExtraCrashKeys =
-    std::deque<crash_reporter::CrashKeyString<kMaxCrashKeyValueSize>>;
-ExtraCrashKeys& GetExtraCrashKeys() {
-  static base::NoDestructor<ExtraCrashKeys> extra_keys;
+auto& GetExtraCrashKeys() {
+  constexpr size_t kMaxCrashKeyValueSize = 20320;
+  static_assert(kMaxCrashKeyValueSize < crashpad::Annotation::kValueMaxSize,
+                "max crash key value length above what crashpad supports");
+  using CrashKeyString = crash_reporter::CrashKeyString<kMaxCrashKeyValueSize>;
+  static base::NoDestructor<base::circular_deque<CrashKeyString>> extra_keys;
   return *extra_keys;
 }
 
-std::deque<std::string>& GetExtraCrashKeyNames() {
-  static base::NoDestructor<std::deque<std::string>> crash_key_names;
+auto& GetExtraCrashKeyNames() {
+  static base::NoDestructor<base::circular_deque<std::string>> crash_key_names;
   return *crash_key_names;
 }
 
