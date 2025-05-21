@@ -406,7 +406,8 @@ class NativeWindow : public base::SupportsUserData,
   }
 
   NativeWindow* parent() const { return parent_; }
-  bool is_modal() const { return is_modal_; }
+
+  [[nodiscard]] bool is_modal() const { return is_modal_; }
 
   [[nodiscard]] constexpr int32_t window_id() const { return window_id_; }
 
@@ -490,11 +491,19 @@ class NativeWindow : public base::SupportsUserData,
   static inline int32_t next_id_ = 0;
   const int32_t window_id_ = ++next_id_;
 
+  // Whether window has standard frame, but it's drawn by Electron (the client
+  // application) instead of the OS. Currently only has meaning on Linux for
+  // Wayland hosts.
+  const bool has_client_frame_ = PlatformHasClientFrame();
+
   // Whether window is transparent.
   const bool transparent_;
 
   // Whether window can be resized larger than screen.
   const bool enable_larger_than_screen_;
+
+  // Is this a modal window.
+  const bool is_modal_;
 
   // The content view, weak ref.
   raw_ptr<views::View> content_view_ = nullptr;
@@ -505,11 +514,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // Whether window has standard frame.
   bool has_frame_ = true;
-
-  // Whether window has standard frame, but it's drawn by Electron (the client
-  // application) instead of the OS. Currently only has meaning on Linux for
-  // Wayland hosts.
-  const bool has_client_frame_ = PlatformHasClientFrame();
 
   // The windows has been closed.
   bool is_closed_ = false;
@@ -526,9 +530,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // The parent window, it is guaranteed to be valid during this window's life.
   raw_ptr<NativeWindow> parent_ = nullptr;
-
-  // Is this a modal window.
-  bool is_modal_ = false;
 
   bool is_transitioning_fullscreen_ = false;
 
