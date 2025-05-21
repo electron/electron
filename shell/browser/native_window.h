@@ -399,10 +399,6 @@ class NativeWindow : public base::SupportsUserData,
 
   bool has_frame() const { return has_frame_; }
 
-  [[nodiscard]] bool enable_larger_than_screen() const {
-    return enable_larger_than_screen_;
-  }
-
   NativeWindow* parent() const { return parent_; }
 
   [[nodiscard]] bool is_modal() const { return is_modal_; }
@@ -442,6 +438,10 @@ class NativeWindow : public base::SupportsUserData,
   [[nodiscard]] bool transparent() const { return transparent_; }
 
   [[nodiscard]] bool is_closed() const { return is_closed_; }
+
+  [[nodiscard]] bool enable_larger_than_screen() const {
+    return enable_larger_than_screen_;
+  }
 
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
