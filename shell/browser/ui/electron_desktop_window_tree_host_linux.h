@@ -29,6 +29,7 @@ class ElectronDesktopWindowTreeHostLinux
  public:
   ElectronDesktopWindowTreeHostLinux(
       NativeWindowViews* native_window_view,
+      views::Widget* widget,
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
   ~ElectronDesktopWindowTreeHostLinux() override;
 
