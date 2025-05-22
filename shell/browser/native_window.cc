@@ -75,10 +75,12 @@ namespace electron {
 namespace {
 
 #if BUILDFLAG(IS_WIN)
-gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
+gfx::Size GetExpandedWindowSize(const NativeWindow* window,
+                                bool transparent,
+                                gfx::Size size) {
   if (!base::FeatureList::IsEnabled(
           views::features::kEnableTransparentHwndEnlargement) ||
-      !window->transparent()) {
+      !transparent) {
     return size;
   }
 
@@ -407,14 +409,15 @@ gfx::Size NativeWindow::GetContentMinimumSize() const {
 }
 
 gfx::Size NativeWindow::GetContentMaximumSize() const {
-  gfx::Size maximum_size = GetContentSizeConstraints().GetMaximumSize();
+  const auto size_constraints = GetContentSizeConstraints();
+  gfx::Size maximum_size = size_constraints.GetMaximumSize();
+
 #if BUILDFLAG(IS_WIN)
-  return GetContentSizeConstraints().HasMaximumSize()
-             ? GetExpandedWindowSize(this, maximum_size)
-             : maximum_size;
-#else
-  return maximum_size;
+  if (size_constraints.HasMaximumSize())
+    maximum_size = GetExpandedWindowSize(this, transparent(), maximum_size);
 #endif
+
+  return maximum_size;
 }
 
 void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {
