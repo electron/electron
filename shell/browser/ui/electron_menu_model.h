@@ -124,10 +124,11 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   std::optional<SharingItem> sharing_item_;
 #endif
 
-  base::flat_map<int, std::u16string> toolTips_;     // command id -> tooltip
-  base::flat_map<int, std::u16string> roles_;        // command id -> role
-  base::flat_map<int, std::u16string> sublabels_;    // command id -> sublabel
-  base::flat_map<int, std::u16string> customTypes_;  // command id -> tooltip
+  base::flat_map<int, std::u16string> toolTips_;   // command id -> tooltip
+  base::flat_map<int, std::u16string> roles_;      // command id -> role
+  base::flat_map<int, std::u16string> sublabels_;  // command id -> sublabel
+  base::flat_map<int, std::u16string>
+      customTypes_;  // command id -> custom type
   base::ObserverList<Observer> observers_;
 
   base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};
