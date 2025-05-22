@@ -132,7 +132,6 @@ jobs:
         uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
         with:
           payload: |
-            message: "⚠️ CI errors found, see audit run"
             link: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           webhook: ${{ secrets.CI_ERRORS_SLACK_WEBHOOK_URL }}
           webhook-type: webhook-trigger
