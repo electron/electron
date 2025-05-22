@@ -374,14 +374,16 @@ class NativeWindow : public base::SupportsUserData,
   views::Widget* widget() const { return widget_.get(); }
   views::View* content_view() const { return content_view_; }
 
-  enum class TitleBarStyle {
+  enum class TitleBarStyle : uint8_t {
     kNormal,
     kHidden,
     kHiddenInset,
     kCustomButtonsOnHover,
   };
 
-  TitleBarStyle title_bar_style() const { return title_bar_style_; }
+  [[nodiscard]] TitleBarStyle title_bar_style() const {
+    return title_bar_style_;
+  }
 
   bool IsWindowControlsOverlayEnabled() const {
     bool valid_titlebar_style = title_bar_style() == TitleBarStyle::kHidden
@@ -395,18 +397,11 @@ class NativeWindow : public base::SupportsUserData,
 
   int titlebar_overlay_height() const { return titlebar_overlay_height_; }
 
-  bool has_frame() const { return has_frame_; }
-
-  [[nodiscard]] bool has_client_frame() const { return has_client_frame_; }
-
-  [[nodiscard]] bool transparent() const { return transparent_; }
-
-  [[nodiscard]] bool enable_larger_than_screen() const {
-    return enable_larger_than_screen_;
-  }
+  [[nodiscard]] bool has_frame() const { return has_frame_; }
 
   NativeWindow* parent() const { return parent_; }
-  bool is_modal() const { return is_modal_; }
+
+  [[nodiscard]] bool is_modal() const { return is_modal_; }
 
   [[nodiscard]] constexpr int32_t window_id() const { return window_id_; }
 
@@ -432,15 +427,21 @@ class NativeWindow : public base::SupportsUserData,
   void UpdateBackgroundThrottlingState();
 
  protected:
+  NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
+
   void set_titlebar_overlay_height(int height) {
     titlebar_overlay_height_ = height;
   }
 
-  constexpr void set_has_frame(const bool val) { has_frame_ = val; }
+  [[nodiscard]] bool has_client_frame() const { return has_client_frame_; }
 
-  [[nodiscard]] constexpr bool is_closed() const { return is_closed_; }
+  [[nodiscard]] bool transparent() const { return transparent_; }
 
-  NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
+  [[nodiscard]] bool is_closed() const { return is_closed_; }
+
+  [[nodiscard]] bool enable_larger_than_screen() const {
+    return enable_larger_than_screen_;
+  }
 
   virtual void OnTitleChanged() {}
 
@@ -465,9 +466,6 @@ class NativeWindow : public base::SupportsUserData,
   // The boolean parsing of the "titleBarOverlay" option
   bool titlebar_overlay_ = false;
 
-  // The "titleBarStyle" option.
-  TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
-
   // Minimum and maximum size.
   std::optional<extensions::SizeConstraints> size_constraints_;
   // Same as above but stored as content size, we are storing 2 types of size
@@ -490,11 +488,25 @@ class NativeWindow : public base::SupportsUserData,
   static inline int32_t next_id_ = 0;
   const int32_t window_id_ = ++next_id_;
 
+  // The "titleBarStyle" option.
+  const TitleBarStyle title_bar_style_;
+
+  // Whether window has standard frame, but it's drawn by Electron (the client
+  // application) instead of the OS. Currently only has meaning on Linux for
+  // Wayland hosts.
+  const bool has_client_frame_ = PlatformHasClientFrame();
+
   // Whether window is transparent.
   const bool transparent_;
 
   // Whether window can be resized larger than screen.
   const bool enable_larger_than_screen_;
+
+  // Is this a modal window.
+  const bool is_modal_;
+
+  // Whether window has standard frame.
+  const bool has_frame_;
 
   // The content view, weak ref.
   raw_ptr<views::View> content_view_ = nullptr;
@@ -502,14 +514,6 @@ class NativeWindow : public base::SupportsUserData,
   // The custom height parsed from the "height" option in a Object
   // "titleBarOverlay"
   int titlebar_overlay_height_ = 0;
-
-  // Whether window has standard frame.
-  bool has_frame_ = true;
-
-  // Whether window has standard frame, but it's drawn by Electron (the client
-  // application) instead of the OS. Currently only has meaning on Linux for
-  // Wayland hosts.
-  const bool has_client_frame_ = PlatformHasClientFrame();
 
   // The windows has been closed.
   bool is_closed_ = false;
@@ -526,9 +530,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // The parent window, it is guaranteed to be valid during this window's life.
   raw_ptr<NativeWindow> parent_ = nullptr;
-
-  // Is this a modal window.
-  bool is_modal_ = false;
 
   bool is_transitioning_fullscreen_ = false;
 

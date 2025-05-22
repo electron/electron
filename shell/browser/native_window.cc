@@ -75,10 +75,12 @@ namespace electron {
 namespace {
 
 #if BUILDFLAG(IS_WIN)
-gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
+gfx::Size GetExpandedWindowSize(const NativeWindow* window,
+                                bool transparent,
+                                gfx::Size size) {
   if (!base::FeatureList::IsEnabled(
           views::features::kEnableTransparentHwndEnlargement) ||
-      !window->transparent()) {
+      !transparent) {
     return size;
   }
 
@@ -97,12 +99,15 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : transparent_{options.ValueOrDefault(options::kTransparent, false)},
+    : title_bar_style_{options.ValueOrDefault(options::kTitleBarStyle,
+                                              TitleBarStyle::kNormal)},
+      transparent_{options.ValueOrDefault(options::kTransparent, false)},
       enable_larger_than_screen_{
           options.ValueOrDefault(options::kEnableLargerThanScreen, false)},
+      is_modal_{parent != nullptr && options.ValueOrDefault("modal", false)},
+      has_frame_{options.ValueOrDefault(options::kFrame, true) &&
+                 title_bar_style_ == TitleBarStyle::kNormal},
       parent_{parent} {
-  options.Get(options::kFrame, &has_frame_);
-  options.Get(options::kTitleBarStyle, &title_bar_style_);
 #if BUILDFLAG(IS_WIN)
   options.Get(options::kBackgroundMaterial, &background_material_);
 #elif BUILDFLAG(IS_MAC)
@@ -124,9 +129,6 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
         titlebar_overlay_height_ = height;
     }
   }
-
-  if (parent)
-    options.Get("modal", &is_modal_);
 
   WindowList::AddWindow(this);
 }
@@ -407,14 +409,15 @@ gfx::Size NativeWindow::GetContentMinimumSize() const {
 }
 
 gfx::Size NativeWindow::GetContentMaximumSize() const {
-  gfx::Size maximum_size = GetContentSizeConstraints().GetMaximumSize();
+  const auto size_constraints = GetContentSizeConstraints();
+  gfx::Size maximum_size = size_constraints.GetMaximumSize();
+
 #if BUILDFLAG(IS_WIN)
-  return GetContentSizeConstraints().HasMaximumSize()
-             ? GetExpandedWindowSize(this, maximum_size)
-             : maximum_size;
-#else
-  return maximum_size;
+  if (size_constraints.HasMaximumSize())
+    maximum_size = GetExpandedWindowSize(this, transparent(), maximum_size);
 #endif
+
+  return maximum_size;
 }
 
 void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {

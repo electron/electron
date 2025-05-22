@@ -151,10 +151,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   const bool paint_when_initially_hidden =
       options.ValueOrDefault(options::kPaintWhenInitiallyHidden, true);
 
-  // The window without titlebar is treated the same with frameless window.
-  if (title_bar_style_ != TitleBarStyle::kNormal)
-    set_has_frame(false);
-
   NSUInteger styleMask = NSWindowStyleMaskTitled;
 
   // The NSWindowStyleMaskFullSizeContentView style removes rounded corners
@@ -252,20 +248,20 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     // https://github.com/electron/electron/issues/517.
     [window_ setOpaque:NO];
     // Show window buttons if titleBarStyle is not "normal".
-    if (title_bar_style_ == TitleBarStyle::kNormal) {
+    if (title_bar_style() == TitleBarStyle::kNormal) {
       InternalSetWindowButtonVisibility(false);
     } else {
       buttons_proxy_ = [[WindowButtonsProxy alloc] initWithWindow:window_];
       [buttons_proxy_ setHeight:titlebar_overlay_height()];
       if (traffic_light_position_) {
         [buttons_proxy_ setMargin:*traffic_light_position_];
-      } else if (title_bar_style_ == TitleBarStyle::kHiddenInset) {
+      } else if (title_bar_style() == TitleBarStyle::kHiddenInset) {
         // For macOS >= 11, while this value does not match official macOS apps
         // like Safari or Notes, it matches titleBarStyle's old implementation
         // before Electron <= 12.
         [buttons_proxy_ setMargin:gfx::Point(12, 11)];
       }
-      if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover) {
+      if (title_bar_style() == TitleBarStyle::kCustomButtonsOnHover) {
         [buttons_proxy_ setShowOnHover:YES];
       } else {
         // customButtonsOnHover does not show buttons initially.
@@ -1053,7 +1049,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
       if (has_frame())
         visibility = true;
       else
-        visibility = title_bar_style_ != TitleBarStyle::kNormal;
+        visibility = title_bar_style() != TitleBarStyle::kNormal;
       InternalSetWindowButtonVisibility(visibility);
     }
 
@@ -1481,7 +1477,7 @@ void NativeWindowMac::SetWindowButtonVisibility(bool visible) {
     [buttons_proxy_ setVisible:visible];
   }
 
-  if (title_bar_style_ != TitleBarStyle::kCustomButtonsOnHover)
+  if (title_bar_style() != TitleBarStyle::kCustomButtonsOnHover)
     InternalSetWindowButtonVisibility(visible);
 
   NotifyLayoutWindowControlsOverlay();
