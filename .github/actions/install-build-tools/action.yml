@@ -13,11 +13,16 @@ runs:
       fi
       export BUILD_TOOLS_SHA=8246e57791b0af4ae5975eb96f09855f9269b1cd
       npm i -g @electron/build-tools
+      # Update depot_tools to ensure python
       e d update_depot_tools
       e auto-update disable
+      # Disable further updates of depot_tools
       e d auto-update disable
       if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
         e d cipd.bat --version
         cp "C:\Python311\python.exe" "C:\Python311\python3.exe"
+        echo "C:\Users\ContainerAdministrator\.electron_build_tools\third_party\depot_tools" >> $GITHUB_PATH
+      else
+        echo "$HOME/.electron_build_tools/third_party/depot_tools" >> $GITHUB_PATH
+        echo "$HOME/.electron_build_tools/third_party/depot_tools/python-bin" >> $GITHUB_PATH
       fi
-      echo "$HOME/.electron_build_tools/third_party/depot_tools" >> $GITHUB_PATH
