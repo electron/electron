@@ -20,6 +20,7 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
  public:
   ElectronDesktopWindowTreeHostWin(
       NativeWindowViews* native_window_view,
+      views::Widget* widget,
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
   ~ElectronDesktopWindowTreeHostWin() override;
 

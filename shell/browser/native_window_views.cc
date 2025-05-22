@@ -33,6 +33,7 @@
 #include "shell/browser/web_view_manager.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "ui/aura/window_tree_host.h"
@@ -289,7 +290,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget = new ElectronDesktopNativeWidgetAura(this);
+  params.native_widget = new ElectronDesktopNativeWidgetAura{this, widget()};
 #elif BUILDFLAG(IS_LINUX)
   std::string name = Browser::Get()->GetName();
   // Set WM_WINDOW_ROLE.
@@ -303,7 +304,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   auto* native_widget = new views::DesktopNativeWidgetAura(widget());
   params.native_widget = native_widget;
   params.desktop_window_tree_host =
-      new ElectronDesktopWindowTreeHostLinux(this, native_widget);
+      new ElectronDesktopWindowTreeHostLinux{this, widget(), native_widget};
 #endif
 
   widget()->Init(std::move(params));
@@ -455,6 +456,62 @@ NativeWindowViews::~NativeWindowViews() {
   aura::Window* window = GetNativeWindow();
   if (window)
     window->RemovePreTargetHandler(this);
+}
+
+void NativeWindowViews::SetTitleBarOverlay(
+    const gin_helper::Dictionary& options,
+    gin_helper::Arguments* args) {
+  // Ensure WCO is already enabled on this window
+  if (!IsWindowControlsOverlayEnabled()) {
+    args->ThrowError("Titlebar overlay is not enabled");
+    return;
+  }
+
+  bool updated = false;
+
+  // Check and update the button color
+  std::string btn_color;
+  if (options.Get(options::kOverlayButtonColor, &btn_color)) {
+    // Parse the string as a CSS color
+    SkColor color;
+    if (!content::ParseCssColorString(btn_color, &color)) {
+      args->ThrowError("Could not parse color as CSS color");
+      return;
+    }
+
+    // Update the view
+    set_overlay_button_color(color);
+    updated = true;
+  }
+
+  // Check and update the symbol color
+  std::string symbol_color;
+  if (options.Get(options::kOverlaySymbolColor, &symbol_color)) {
+    // Parse the string as a CSS color
+    SkColor color;
+    if (!content::ParseCssColorString(symbol_color, &color)) {
+      args->ThrowError("Could not parse symbol color as CSS color");
+      return;
+    }
+
+    // Update the view
+    set_overlay_symbol_color(color);
+    updated = true;
+  }
+
+  // Check and update the height
+  int height = 0;
+  if (options.Get(options::kOverlayHeight, &height)) {
+    set_titlebar_overlay_height(height);
+    updated = true;
+  }
+
+  // If anything was updated, ensure the overlay is repainted.
+  if (updated) {
+    auto* frame_view =
+        static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
+    frame_view->InvalidateCaptionButtons();
+  }
 }
 
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
@@ -1145,6 +1202,11 @@ void NativeWindowViews::Invalidate() {
   widget()->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
 }
 
+bool NativeWindowViews::IsActive() const {
+  views::Widget* const widget = this->widget();
+  return widget && widget->IsActive();
+}
+
 void NativeWindowViews::FlashFrame(bool flash) {
 #if BUILDFLAG(IS_WIN)
   // The Chromium's implementation has a bug stopping flash.
@@ -1225,7 +1287,7 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
     DeleteObject((HBRUSH)previous_brush);
   InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
-  GetWidget()->GetCompositor()->SetBackgroundColor(background_color);
+  widget()->GetCompositor()->SetBackgroundColor(background_color);
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
@@ -1357,7 +1419,8 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
                                         .supports_global_application_menus;
   if (can_use_global_menus && ShouldUseGlobalMenuBar()) {
     if (!global_menu_bar_)
-      global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
+      global_menu_bar_ =
+          std::make_unique<GlobalMenuBarX11>(GetAcceleratedWidget());
     if (global_menu_bar_->IsServerStarted()) {
       root_view_.RegisterAcceleratorsWithFocusManager(menu_model);
       global_menu_bar_->SetMenu(menu_model);
@@ -1786,6 +1849,19 @@ NativeWindowViews::CreateNonClientFrameView(views::Widget* widget) {
   }
 #endif
 }
+
+#if BUILDFLAG(IS_LINUX)
+electron::ClientFrameViewLinux* NativeWindowViews::GetClientFrameViewLinux() {
+  // Check to make sure this window's non-client frame view is a
+  // ClientFrameViewLinux.  If either has_frame() or has_client_frame()
+  // are false, it will be an OpaqueFrameView or NativeFrameView instead.
+  // See NativeWindowViews::CreateNonClientFrameView.
+  if (!has_frame() || !has_client_frame())
+    return {};
+  return static_cast<ClientFrameViewLinux*>(
+      widget()->non_client_view()->frame_view());
+}
+#endif
 
 void NativeWindowViews::OnWidgetMove() {
   NotifyWindowMove();

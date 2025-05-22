@@ -97,10 +97,11 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : widget_(std::make_unique<views::Widget>()), parent_(parent) {
+    : transparent_{options.ValueOrDefault(options::kTransparent, false)},
+      enable_larger_than_screen_{
+          options.ValueOrDefault(options::kEnableLargerThanScreen, false)},
+      parent_{parent} {
   options.Get(options::kFrame, &has_frame_);
-  options.Get(options::kTransparent, &transparent_);
-  options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
   options.Get(options::kTitleBarStyle, &title_bar_style_);
 #if BUILDFLAG(IS_WIN)
   options.Get(options::kBackgroundMaterial, &background_material_);
@@ -126,17 +127,6 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 
   if (parent)
     options.Get("modal", &is_modal_);
-
-#if defined(USE_OZONE)
-  // Ozone X11 likes to prefer custom frames, but we don't need them unless
-  // on Wayland.
-  if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
-      !ui::OzonePlatform::GetInstance()
-           ->GetPlatformRuntimeProperties()
-           .supports_server_side_window_decorations) {
-    has_client_frame_ = true;
-  }
-#endif
 
   WindowList::AddWindow(this);
 }
@@ -287,6 +277,10 @@ NativeWindow* NativeWindow::FromWidget(const views::Widget* widget) {
   DCHECK(widget);
   return static_cast<NativeWindow*>(
       widget->GetNativeWindowProperty(kNativeWindowKey.c_str()));
+}
+
+void NativeWindow::SetShape(const std::vector<gfx::Rect>& rects) {
+  widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
 }
 
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
@@ -718,7 +712,7 @@ int NativeWindow::NonClientHitTest(const gfx::Point& point) {
 
   // This is to disable dragging in HTML5 full screen mode.
   // Details: https://github.com/electron/electron/issues/41002
-  if (GetWidget()->IsFullscreen())
+  if (widget()->IsFullscreen())
     return HTNOWHERE;
 
   for (auto* provider : draggable_region_providers_) {
@@ -758,7 +752,7 @@ void NativeWindow::RemoveBackgroundThrottlingSource(
 }
 
 void NativeWindow::UpdateBackgroundThrottlingState() {
-  if (!GetWidget() || !GetWidget()->GetCompositor()) {
+  if (!widget() || !widget()->GetCompositor()) {
     return;
   }
   bool enable_background_throttling = true;
@@ -769,7 +763,7 @@ void NativeWindow::UpdateBackgroundThrottlingState() {
       break;
     }
   }
-  GetWidget()->GetCompositor()->SetBackgroundThrottling(
+  widget()->GetCompositor()->SetBackgroundThrottling(
       enable_background_throttling);
 }
 
@@ -831,6 +825,22 @@ bool NativeWindow::IsTranslucent() const {
 #endif
 
   return false;
+}
+
+// static
+bool NativeWindow::PlatformHasClientFrame() {
+#if defined(USE_OZONE)
+  // Ozone X11 likes to prefer custom frames,
+  // but we don't need them unless on Wayland.
+  static const bool has_client_frame =
+      base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
+      !ui::OzonePlatform::GetInstance()
+           ->GetPlatformRuntimeProperties()
+           .supports_server_side_window_decorations;
+  return has_client_frame;
+#else
+  return false;
+#endif
 }
 
 // static

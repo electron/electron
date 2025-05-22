@@ -15,6 +15,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 #include "third_party/electron_node/src/node_process-inl.h"
 
 namespace electron::util {
@@ -132,7 +133,17 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
 
 ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)
     : microtask_queue_(queue), original_policy_(queue->microtasks_policy()) {
-  DCHECK_EQ(microtask_queue_->GetMicrotasksScopeDepth(), 0);
+  // In browser-like processes, some nested run loops (macOS usually) may
+  // re-enter. This is safe because we expect the policy was explicit in the
+  // first place for those processes. However, in renderer processes, there may
+  // be unexpected behavior if this code is triggered within a pending microtask
+  // scope.
+  if (electron::IsBrowserProcess() || electron::IsUtilityProcess()) {
+    DCHECK_EQ(original_policy_, v8::MicrotasksPolicy::kExplicit);
+  } else {
+    DCHECK_EQ(microtask_queue_->GetMicrotasksScopeDepth(), 0);
+  }
+
   microtask_queue_->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
 }
 

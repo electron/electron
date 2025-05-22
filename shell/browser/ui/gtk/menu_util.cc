@@ -61,27 +61,21 @@ GdkModifierType GetGdkModifierForAccelerator(
 
 }  // namespace
 
-GtkWidget* BuildMenuItemWithImage(const std::string& label, GtkWidget* image) {
-// GTK4 removed support for image menu items.
+GtkWidget* BuildMenuItemWithImage(const std::string& label,
+                                  const gfx::Image& icon) {
+// GTK4 removed support for menuitem icons.
 #if GTK_CHECK_VERSION(3, 90, 0)
   return gtk_menu_item_new_with_mnemonic(label.c_str());
 #else
   G_GNUC_BEGIN_IGNORE_DEPRECATIONS;
   GtkWidget* menu_item = gtk_image_menu_item_new_with_mnemonic(label.c_str());
+  GdkPixbuf* pixbuf = gtk_util::GdkPixbufFromSkBitmap(*icon.ToSkBitmap());
+  GtkWidget* image = gtk_image_new_from_pixbuf(pixbuf);
   gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image);
+  g_object_unref(pixbuf);
   G_GNUC_END_IGNORE_DEPRECATIONS;
   return menu_item;
 #endif
-}
-
-GtkWidget* BuildMenuItemWithImage(const std::string& label,
-                                  const gfx::Image& icon) {
-  GdkPixbuf* pixbuf = gtk_util::GdkPixbufFromSkBitmap(*icon.ToSkBitmap());
-
-  GtkWidget* menu_item =
-      BuildMenuItemWithImage(label, gtk_image_new_from_pixbuf(pixbuf));
-  g_object_unref(pixbuf);
-  return menu_item;
 }
 
 GtkWidget* BuildMenuItemWithLabel(const std::string& label) {

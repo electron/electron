@@ -8,11 +8,11 @@
 #include <list>
 #include <memory>
 #include <optional>
-#include <queue>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "base/containers/queue.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
@@ -101,9 +101,10 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsMinimized() const = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() const = 0;
+
   virtual void SetBounds(const gfx::Rect& bounds, bool animate = false) = 0;
   virtual gfx::Rect GetBounds() const = 0;
-
+  void SetShape(const std::vector<gfx::Rect>& rects);
   void SetSize(const gfx::Size& size, bool animate = false);
   [[nodiscard]] gfx::Size GetSize() const;
 
@@ -156,10 +157,10 @@ class NativeWindow : public base::SupportsUserData,
   virtual ui::ZOrderLevel GetZOrderLevel() const = 0;
   virtual void Center() = 0;
   virtual void Invalidate() = 0;
+  [[nodiscard]] virtual bool IsActive() const = 0;
 #if BUILDFLAG(IS_MAC)
   virtual std::string GetAlwaysOnTopLevel() const = 0;
   virtual void SetActive(bool is_key) = 0;
-  virtual bool IsActive() const = 0;
   virtual void RemoveChildFromParentWindow() = 0;
   virtual void RemoveChildWindow(NativeWindow* child) = 0;
   virtual void AttachChildren() = 0;
@@ -393,20 +394,21 @@ class NativeWindow : public base::SupportsUserData,
   }
 
   int titlebar_overlay_height() const { return titlebar_overlay_height_; }
-  void set_titlebar_overlay_height(int height) {
-    titlebar_overlay_height_ = height;
-  }
 
   bool has_frame() const { return has_frame_; }
 
-  bool has_client_frame() const { return has_client_frame_; }
-  bool transparent() const { return transparent_; }
-  bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
+  [[nodiscard]] bool has_client_frame() const { return has_client_frame_; }
+
+  [[nodiscard]] bool transparent() const { return transparent_; }
+
+  [[nodiscard]] bool enable_larger_than_screen() const {
+    return enable_larger_than_screen_;
+  }
 
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }
 
-  int32_t window_id() const { return window_id_; }
+  [[nodiscard]] constexpr int32_t window_id() const { return window_id_; }
 
   void add_child_window(NativeWindow* child) {
     child_windows_.push_back(child);
@@ -430,6 +432,10 @@ class NativeWindow : public base::SupportsUserData,
   void UpdateBackgroundThrottlingState();
 
  protected:
+  void set_titlebar_overlay_height(int height) {
+    titlebar_overlay_height_ = height;
+  }
+
   constexpr void set_has_frame(const bool val) { has_frame_ = val; }
 
   [[nodiscard]] constexpr bool is_closed() const { return is_closed_; }
@@ -469,17 +475,26 @@ class NativeWindow : public base::SupportsUserData,
   // on HiDPI displays on some environments.
   std::optional<extensions::SizeConstraints> content_size_constraints_;
 
-  std::queue<bool> pending_transitions_;
+  base::queue<bool> pending_transitions_;
+
   FullScreenTransitionType fullscreen_transition_type_ =
       FullScreenTransitionType::kNone;
 
   std::list<NativeWindow*> child_windows_;
 
  private:
-  std::unique_ptr<views::Widget> widget_;
+  static bool PlatformHasClientFrame();
+
+  std::unique_ptr<views::Widget> widget_ = std::make_unique<views::Widget>();
 
   static inline int32_t next_id_ = 0;
   const int32_t window_id_ = ++next_id_;
+
+  // Whether window is transparent.
+  const bool transparent_;
+
+  // Whether window can be resized larger than screen.
+  const bool enable_larger_than_screen_;
 
   // The content view, weak ref.
   raw_ptr<views::View> content_view_ = nullptr;
@@ -494,13 +509,7 @@ class NativeWindow : public base::SupportsUserData,
   // Whether window has standard frame, but it's drawn by Electron (the client
   // application) instead of the OS. Currently only has meaning on Linux for
   // Wayland hosts.
-  bool has_client_frame_ = false;
-
-  // Whether window is transparent.
-  bool transparent_ = false;
-
-  // Whether window can be resized larger than screen.
-  bool enable_larger_than_screen_ = false;
+  const bool has_client_frame_ = PlatformHasClientFrame();
 
   // The windows has been closed.
   bool is_closed_ = false;

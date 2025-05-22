@@ -16,10 +16,10 @@ namespace electron {
 
 ElectronDesktopWindowTreeHostWin::ElectronDesktopWindowTreeHostWin(
     NativeWindowViews* native_window_view,
+    views::Widget* widget,
     views::DesktopNativeWidgetAura* desktop_native_widget_aura)
-    : views::DesktopWindowTreeHostWin(native_window_view->widget(),
-                                      desktop_native_widget_aura),
-      native_window_view_(native_window_view) {}
+    : views::DesktopWindowTreeHostWin{widget, desktop_native_widget_aura},
+      native_window_view_{native_window_view} {}
 
 ElectronDesktopWindowTreeHostWin::~ElectronDesktopWindowTreeHostWin() = default;
 
