@@ -1,0 +1,91 @@
+From 69d5a982aed6df5b6d7341a39c25055ebf9f5c37 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Thu, 15 May 2025 06:22:26 -0700
+Subject: [PATCH] [EnumerateDevices] Disable relaxed mode for audio devices
+
+Relaxed mode is required only for cameras and there have been
+reports of problems with audio bluetooth devices.
+
+Bug: 417256410
+Change-Id: Icfff72e5de12ea9efa1f0fe529b8a01ff4b5a149
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6550297
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Palak Agarwal <agpalak@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1460672}
+---
+
+diff --git a/content/browser/renderer_host/media/media_devices_manager.cc b/content/browser/renderer_host/media/media_devices_manager.cc
+index 4d3189e..20ca4a9 100644
+--- a/content/browser/renderer_host/media/media_devices_manager.cc
++++ b/content/browser/renderer_host/media/media_devices_manager.cc
+@@ -354,7 +354,8 @@
+ // considered valid for some time after an enumeration.
+ class MediaDevicesManager::CacheInfo {
+  public:
+-  CacheInfo() = default;
++  explicit CacheInfo(bool allow_relaxed_mode)
++      : allow_relaxed_mode_(allow_relaxed_mode) {}
+ 
+   void InvalidateCache() {
+     DCHECK(thread_checker_.CalledOnValidThread());
+@@ -425,7 +426,7 @@
+   void RecordSpuriousInvalidation() {
+     DCHECK(thread_checker_.CalledOnValidThread());
+     CHECK(IsRelaxedCacheFeatureEnabled());
+-    if (is_in_relaxed_mode_) {
++    if (is_in_relaxed_mode_ || !allow_relaxed_mode_) {
+       return;
+     }
+     if (++num_spurious_invalidations_ >= kMaxSpuriousInvalidations) {
+@@ -434,6 +435,8 @@
+     }
+   }
+ 
++  bool allow_relaxed_mode() const { return allow_relaxed_mode_; }
++
+  private:
+   bool IsCacheExpired() const {
+     CHECK(IsRelaxedCacheFeatureEnabled());
+@@ -451,9 +454,13 @@
+   int64_t seq_last_invalidation_ = 0;
+   bool is_update_ongoing_ = false;
+   int num_spurious_invalidations_ = 0;
++  const bool allow_relaxed_mode_;
+   // This is eventually set to true on systems where the normal cache policy
+   // can result in notification loops. Once set to true, it is never set back
+   // to false in order to avoid these loops. See https://crbug.com/325590346.
++  // An invariant that must be preserved at all times is that
++  // `is_in_relaxed_mode_` can be set to true only if `allow_relaxed_mode_` is
++  // true.
+   bool is_in_relaxed_mode_ = false;
+   base::TimeTicks time_last_update_;
+   base::ThreadChecker thread_checker_;
+@@ -551,7 +558,6 @@
+       stop_removed_input_device_cb_(std::move(stop_removed_input_device_cb)),
+       ui_input_device_change_cb_(std::move(ui_input_device_change_cb)),
+       permission_checker_(std::make_unique<MediaDevicesPermissionChecker>()),
+-      cache_infos_(static_cast<size_t>(MediaDeviceType::kNumMediaDeviceTypes)),
+       get_salt_and_origin_cb_(
+           base::BindRepeating(&GetMediaDeviceSaltAndOrigin)) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+@@ -559,6 +565,20 @@
+   DCHECK(video_capture_manager_.get());
+   DCHECK(!stop_removed_input_device_cb_.is_null());
+   DCHECK(!ui_input_device_change_cb_.is_null());
++  // Enable relaxed mode only for cameras.
++  // Audio devices do not need relaxed mode and it can interfere with bluetooth
++  // notifications. See https://crbug.com/417256410
++  cache_infos_.emplace_back(/*allow_relaxed_mode=*/false);
++  cache_infos_.emplace_back(/*allow_relaxed_mode=*/true);
++  cache_infos_.emplace_back(/*allow_relaxed_mode=*/false);
++  CHECK_EQ(cache_infos_.size(),
++           static_cast<size_t>(MediaDeviceType::kNumMediaDeviceTypes));
++  CHECK(!cache_infos_[static_cast<size_t>(MediaDeviceType::kMediaAudioInput)]
++             .allow_relaxed_mode());
++  CHECK(cache_infos_[static_cast<size_t>(MediaDeviceType::kMediaVideoInput)]
++            .allow_relaxed_mode());
++  CHECK(!cache_infos_[static_cast<size_t>(MediaDeviceType::kMediaAudioOutput)]
++             .allow_relaxed_mode());
+   SendLogMessage("MediaDevicesManager()");
+   cache_policies_.fill(CachePolicy::NO_CACHE);
+ }
