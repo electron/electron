@@ -61,7 +61,7 @@ index 932351e288f37fd09ae1a43f44e8b51fb0caa4b8..4a0616bc210d234e51e564daabdd2ebd
    // Overridden from WidgetObserver.
    void OnWidgetThemeChanged(Widget* widget) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index c4d1d483454591031bd76dffced0c1d821800e13..e3bb491f218b2e5d96c424e40a071a618b345039 100644
+index 193e7c1bd76ce18abe6ac47848fc0fb02f2151dd..e985cd1017a54cf8d93875d642d846efb76b60e0 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -3165,15 +3165,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
