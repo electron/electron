@@ -38,6 +38,9 @@ runs:
       run: |
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"x64\" v8_snapshot_toolchain=\"//build/toolchain/mac:clang_x64\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
+    - name: Add Clang problem matcher
+      shell: bash
+      run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Build Electron ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -199,6 +202,9 @@ runs:
         e build --target electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Remove Clang problem matcher
+      shell: bash
+      run: echo "::remove-matcher owner=clang::"
     - name: Generate TypeScript Definitions ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
       shell: bash
