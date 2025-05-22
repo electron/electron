@@ -88,18 +88,6 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
                            base::Unretained(this)));
       }
     }
-  } else if (message == WM_POWERBROADCAST) {
-    if (wparam == PBT_APMRESUMEAUTOMATIC) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE,
-          base::BindOnce([](PowerMonitor* pm) { pm->Emit("resume"); },
-                         base::Unretained(this)));
-    } else if (wparam == PBT_APMSUSPEND) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE,
-          base::BindOnce([](PowerMonitor* pm) { pm->Emit("suspend"); },
-                         base::Unretained(this)));
-    }
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);
 }
