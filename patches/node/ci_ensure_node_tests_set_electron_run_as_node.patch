@@ -11,12 +11,16 @@ diff --git a/test/fixtures/test-runner/output/arbitrary-output-colored.js b/test
 index af23e674cb361ed81dafa22670d5633559cd1144..1dd59990cb7cdba8aecf4f499ee6b92e7cd41b30 100644
 --- a/test/fixtures/test-runner/output/arbitrary-output-colored.js
 +++ b/test/fixtures/test-runner/output/arbitrary-output-colored.js
-@@ -7,6 +7,6 @@ const fixtures = require('../../../common/fixtures');
+@@ -7,9 +7,9 @@ const fixtures = require('../../../common/fixtures');
  (async function run() {
    const test = fixtures.path('test-runner/output/arbitrary-output-colored-1.js');
    const reset = fixtures.path('test-runner/output/reset-color-depth.js');
 -  await once(spawn(process.execPath, ['-r', reset, '--test', test], { stdio: 'inherit' }), 'exit');
--  await once(spawn(process.execPath, ['-r', reset, '--test', '--test-reporter', 'tap', test], { stdio: 'inherit'  }), 'exit');
 +  await once(spawn(process.execPath, ['-r', reset, '--test', test], { stdio: 'inherit', env: { ELECTRON_RUN_AS_NODE: 1 }}), 'exit');
-+  await once(spawn(process.execPath, ['-r', reset, '--test', '--test-reporter', 'tap', test], { stdio: 'inherit', env: { ELECTRON_RUN_AS_NODE: 1 }  }), 'exit');
+   await once(
+-    spawn(process.execPath, ['-r', reset, '--test', '--test-reporter', 'tap', test], { stdio: 'inherit' }),
++    spawn(process.execPath, ['-r', reset, '--test', '--test-reporter', 'tap', test], { stdio: 'inherit', env: { ELECTRON_RUN_AS_NODE: 1 }}),
+     'exit',
+   );
  })().then(common.mustCall());
+
