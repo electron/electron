@@ -177,6 +177,8 @@ declare namespace NodeJS {
     mode?: string;
     destination?: string;
     bypassCustomProtocolHandlers?: boolean;
+    priority?: 'throttled' | 'idle' | 'lowest' | 'low' | 'medium' | 'highest';
+    priorityIncremental?: boolean;
   };
   type ResponseHead = {
     statusCode: number;
