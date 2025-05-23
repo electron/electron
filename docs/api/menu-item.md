@@ -16,8 +16,14 @@ See [`Menu`](menu.md) for examples.
     * `event` [KeyboardEvent](structures/keyboard-event.md)
   * `role` string (optional) - Can be `undo`, `redo`, `cut`, `copy`, `paste`, `pasteAndMatchStyle`, `delete`, `selectAll`, `reload`, `forceReload`, `toggleDevTools`, `resetZoom`, `zoomIn`, `zoomOut`, `toggleSpellChecker`, `togglefullscreen`, `window`, `minimize`, `close`, `help`, `about`, `services`, `hide`, `hideOthers`, `unhide`, `quit`, `showSubstitutions`, `toggleSmartQuotes`, `toggleSmartDashes`, `toggleTextReplacement`, `startSpeaking`, `stopSpeaking`, `zoom`, `front`, `appMenu`, `fileMenu`, `editMenu`, `viewMenu`, `shareMenu`, `recentDocuments`, `toggleTabBar`, `selectNextTab`, `selectPreviousTab`, `showAllTabs`, `mergeAllWindows`, `clearRecentDocuments`, `moveTabToNewWindow` or `windowMenu` - Define the action of the menu item, when specified the
     `click` property will be ignored. See [roles](#roles).
-  * `type` string (optional) - Can be `normal`, `separator`, `submenu`, `checkbox` or
-    `radio`.
+  * `type` string (optional)
+    * `normal`
+    * `separator`
+    * `submenu`
+    * `checkbox`
+    * `radio`
+    * `header` - Only available on macOS 14 and up.
+    * `palette` - Only available on macOS 14 and up.
   * `label` string (optional)
   * `sublabel` string (optional) _macOS_ - Available in macOS >= 14.4
   * `toolTip` string (optional) _macOS_ - Hover text for this menu item.
@@ -158,7 +164,10 @@ item's submenu, if present.
 
 #### `menuItem.type`
 
-A `string` indicating the type of the item. Can be `normal`, `separator`, `submenu`, `checkbox` or `radio`.
+A `string` indicating the type of the item. Can be `normal`, `separator`, `submenu`, `checkbox`, `radio`, `header` or `palette`.
+
+> [!NOTE]
+> `header` and `palette` are only available on macOS 14 and up.
 
 #### `menuItem.role`
 
