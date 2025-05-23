@@ -15,10 +15,10 @@ Reviewed-By: Benjamin Gruenbaum <benjamingr@gmail.com>
 Reviewed-By: Yagiz Nizipli <yagiz.nizipli@sentry.io>
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index 114b7bbf6b1e105fc1696ed8a064065db73ff519..ad863e52761332c3249a86af0e3d239cd0f73b03 100644
+index 121d8f2bbd2b1d93067a06a902b1e7b986bcdb49..3460ad33c6186dcc3aa3281d80b723a1cc1d50dd 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -3313,7 +3313,6 @@ one is included in the list below.
+@@ -3367,7 +3367,6 @@ one is included in the list below.
  * `--tls-min-v1.1`
  * `--tls-min-v1.2`
  * `--tls-min-v1.3`
@@ -27,10 +27,10 @@ index 114b7bbf6b1e105fc1696ed8a064065db73ff519..ad863e52761332c3249a86af0e3d239c
  * `--trace-env-js-stack`
  * `--trace-env-native-stack`
 diff --git a/doc/node.1 b/doc/node.1
-index 9f534746ef9d9c1c1ee2edd6c195573a2e228600..e01fc511a1034518c0fb9bc5fa925524aecad927 100644
+index 663d123ac728f097e8a76c94cf10c53d059983d7..497f5a61182beafbaa26b945181056353674cfc3 100644
 --- a/doc/node.1
 +++ b/doc/node.1
-@@ -533,11 +533,6 @@ but the option is supported for compatibility with older Node.js versions.
+@@ -539,11 +539,6 @@ but the option is supported for compatibility with older Node.js versions.
  Set default minVersion to 'TLSv1.3'. Use to disable support for TLSv1.2 in
  favour of TLSv1.3, which is more secure.
  .
@@ -43,10 +43,10 @@ index 9f534746ef9d9c1c1ee2edd6c195573a2e228600..e01fc511a1034518c0fb9bc5fa925524
  Print stack traces for deprecations.
  .
 diff --git a/src/node.cc b/src/node.cc
-index 2f58a6fa69069dabb99b5ddb8011991b07fa5f02..9f6fa646ba6673f67f5f625e157ed850633a26da 100644
+index 6f8f6386d0db8aef1e2e0126cc9064101cbe6112..bc670a6c8b5027417cdc35e1cd94a60f63fd342d 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -226,44 +226,6 @@ void Environment::WaitForInspectorFrontendByOptions() {
+@@ -232,44 +232,6 @@ void Environment::WaitForInspectorFrontendByOptions() {
  }
  #endif  // HAVE_INSPECTOR
  
@@ -91,7 +91,7 @@ index 2f58a6fa69069dabb99b5ddb8011991b07fa5f02..9f6fa646ba6673f67f5f625e157ed850
  void Environment::InitializeDiagnostics() {
    isolate_->GetHeapProfiler()->AddBuildEmbedderGraphCallback(
        Environment::BuildEmbedderGraph, this);
-@@ -272,17 +234,6 @@ void Environment::InitializeDiagnostics() {
+@@ -278,17 +240,6 @@ void Environment::InitializeDiagnostics() {
    }
    if (options_->trace_uncaught)
      isolate_->SetCaptureStackTraceForUncaughtExceptions(true);
@@ -110,10 +110,10 @@ index 2f58a6fa69069dabb99b5ddb8011991b07fa5f02..9f6fa646ba6673f67f5f625e157ed850
      isolate_->SetPromiseHook(TracePromises);
    }
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 54b253aa54f5cdebdb04315f9c6c2506977555c0..acf390bd456c7ddfa6987e440fb45940aec6b1ff 100644
+index a9500716f2a955fc591628a969c5fba40783a2e7..b153d2c6a771e80bcdf5ed6adbc1cd225b3bf97e 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -762,10 +762,6 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
+@@ -770,10 +770,6 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
              "throw an exception on deprecations",
              &EnvironmentOptions::throw_deprecation,
              kAllowedInEnvvar);
@@ -125,7 +125,7 @@ index 54b253aa54f5cdebdb04315f9c6c2506977555c0..acf390bd456c7ddfa6987e440fb45940
              "show stack traces on deprecations",
              &EnvironmentOptions::trace_deprecation,
 diff --git a/src/node_options.h b/src/node_options.h
-index 065457acfde6ba4d04ed570cc72005cfd2798fd5..150f833bb21bd6d37f652f0785a4a98f3de5f67d 100644
+index 60068b008b2e2a034c3f0c58b947a8d04d55e3b2..d821bc6a9adf28ea312a9c446f8acfc8ed586ae3 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -203,7 +203,6 @@ class EnvironmentOptions : public Options {
