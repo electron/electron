@@ -55,10 +55,10 @@ index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3f
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index e85860de93dd5753dd4542ecee9f0888af93898a..04eab49c368c8f86837ed2c1384bf3c63e4bde24 100644
+index defb657a62a0316224a02b68505ac1142fd89d03..d637faac88875bfa110e2b8d1f53962061d98279 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -783,6 +783,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -785,6 +785,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -67,7 +67,7 @@ index e85860de93dd5753dd4542ecee9f0888af93898a..04eab49c368c8f86837ed2c1384bf3c6
  
  }  // namespace builtins
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index a73de23a1debfdac66873e0baccf882e383bfc36..7ac5291be093773ee7efd39e77e01bf5d5ce5247 100644
+index f9426599f2d5dc6ad061407f0c4eb2c9203a4433..302030f610965f07dd6998d282275c1bdf738009 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -74,6 +74,8 @@ using BuiltinCodeCacheMap =
