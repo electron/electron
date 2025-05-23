@@ -597,11 +597,11 @@ void RendererClientBase::SetupMainWorldOverrides(
     }
   }
 
-  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
-      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedApi")};
+  v8::LocalVector<v8::String> isolated_bundle_params(
+      isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "isolatedApi")});
 
-  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      isolated_api.GetHandle()};
+  v8::LocalVector<v8::Value> isolated_bundle_args(isolate,
+                                                  {isolated_api.GetHandle()});
 
   util::CompileAndCall(context, "electron/js2c/isolated_bundle",
                        &isolated_bundle_params, &isolated_bundle_args);
