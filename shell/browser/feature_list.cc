@@ -45,12 +45,7 @@ void InitializeFeatureList() {
       cmd_line->GetSwitchValueASCII(::switches::kEnableFeatures);
   auto disable_features =
       cmd_line->GetSwitchValueASCII(::switches::kDisableFeatures);
-  // Disable creation of spare renderer process with site-per-process mode,
-  // it interferes with our process preference tracking for non sandboxed mode.
-  // Can be reenabled when our site instance policy is aligned with chromium
-  // when node integration is enabled.
   disable_features +=
-      std::string(",") + features::kSpareRendererForSitePerProcess.name +
       // See https://chromium-review.googlesource.com/c/chromium/src/+/6487926
       // this breaks PDFs locally as we don't have GLIC infra enabled.
       std::string(",") + ax::mojom::features::kScreenAIOCREnabled.name;
