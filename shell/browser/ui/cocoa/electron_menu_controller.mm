@@ -330,6 +330,17 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     }
   }
 
+  std::u16string role = model->GetRoleAt(index);
+  electron::ElectronMenuModel::ItemType type = model->GetTypeAt(index);
+  std::u16string customType = model->GetCustomTypeAt(index);
+
+  // The sectionHeaderWithTitle menu item is only available in macOS 14.0+.
+  if (@available(macOS 14, *)) {
+    if (customType == u"header") {
+      item = [NSMenuItem sectionHeaderWithTitle:label];
+    }
+  }
+
   // If the menu item has an icon, set it.
   ui::ImageModel icon = model->GetIconAt(index);
   if (icon.IsImage())
@@ -337,9 +348,6 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 
   std::u16string toolTip = model->GetToolTipAt(index);
   [item setToolTip:base::SysUTF16ToNSString(toolTip)];
-
-  std::u16string role = model->GetRoleAt(index);
-  electron::ElectronMenuModel::ItemType type = model->GetTypeAt(index);
 
   if (role == u"services") {
     std::u16string title = u"Services";
@@ -372,6 +380,14 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     NSMenu* submenu = MenuHasVisibleItems(submenuModel)
                           ? [self menuFromModel:submenuModel]
                           : MakeEmptySubmenu();
+
+    // NSMenuPresentationStylePalette is only available in macOS 14.0+.
+    if (@available(macOS 14, *)) {
+      if (customType == u"palette") {
+        submenu.presentationStyle = NSMenuPresentationStylePalette;
+      }
+    }
+
     [submenu setTitle:[item title]];
     [item setSubmenu:submenu];
 
