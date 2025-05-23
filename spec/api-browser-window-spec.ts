@@ -6674,8 +6674,14 @@ describe('BrowserWindow module', () => {
     const imagePath = path.join(fixtures, 'assets', 'osr.png');
     const targetImage = nativeImage.createFromPath(imagePath);
     const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
-    ifit(nativeModulesEnabled && ['win32'].includes(process.platform))('use shared texture, hardware acceleration enabled', (done) => {
+    ifit(nativeModulesEnabled).only('use shared texture, hardware acceleration enabled', (done) => {
       const { ExtractPixels, InitializeGpu } = require('@electron-ci/osr-gpu');
+
+      if (!app._isHardwareAccelerationEnabled()) {
+        console.log('Hardware acceleration is disabled, this spec needs hardware acceleration. Skipping...');
+        done();
+        return;
+      }
 
       try {
         InitializeGpu();
