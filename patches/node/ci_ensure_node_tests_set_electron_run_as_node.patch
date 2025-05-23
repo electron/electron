@@ -8,7 +8,7 @@ which causes the `ELECTRON_RUN_AS_NODE` variable to be lost. This patch
 re-injects it.
 
 diff --git a/test/fixtures/test-runner/output/arbitrary-output-colored.js b/test/fixtures/test-runner/output/arbitrary-output-colored.js
-index af23e674cb361ed81dafa22670d5633559cd1144..1dd59990cb7cdba8aecf4f499ee6b92e7cd41b30 100644
+index 444531da1df2f9bbbc19bb8a43fb6eb2d1802d1a..81b3b3e37e5664dc53bec987a2ce3a83a8da105f 100644
 --- a/test/fixtures/test-runner/output/arbitrary-output-colored.js
 +++ b/test/fixtures/test-runner/output/arbitrary-output-colored.js
 @@ -7,9 +7,9 @@ const fixtures = require('../../../common/fixtures');
@@ -23,4 +23,3 @@ index af23e674cb361ed81dafa22670d5633559cd1144..1dd59990cb7cdba8aecf4f499ee6b92e
      'exit',
    );
  })().then(common.mustCall());
-
