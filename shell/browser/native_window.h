@@ -234,6 +234,10 @@ class NativeWindow : public base::SupportsUserData,
   // Vibrancy API
   virtual void SetVibrancy(const std::string& type, int duration);
 
+  const std::string& background_material() const {
+    return background_material_;
+  }
+
   virtual void SetBackgroundMaterial(const std::string& type);
 
   // Traffic Light API
