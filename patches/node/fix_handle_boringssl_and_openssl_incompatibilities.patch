@@ -20,16 +20,6 @@ diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
 index ce2e7b384eb1987ddb081f79884fb8cb62ade60b..bffdb0259eeed7389adb54a8ff13a1ac4e767d90 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
-@@ -11,9 +11,6 @@
- #if OPENSSL_VERSION_MAJOR >= 3
- #include <openssl/provider.h>
- #endif
--#ifdef OPENSSL_IS_BORINGSSL
--#include "dh-primes.h"
--#endif  // OPENSSL_IS_BORINGSSL
- 
- namespace ncrypto {
- namespace {
 @@ -789,7 +786,7 @@ bool SafeX509SubjectAltNamePrint(const BIOPointer& out, X509_EXTENSION* ext) {
  
    bool ok = true;
