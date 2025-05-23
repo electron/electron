@@ -226,6 +226,12 @@ void View::AddChildViewAt(gin::Handle<View> child,
   size_t index =
       std::min(child_views_.size(), maybe_index.value_or(child_views_.size()));
 
+  if (!child->view()) {
+    gin_helper::ErrorThrower(isolate()).ThrowError(
+       "Can't add a destroyed child view to a parent view");
+    return;
+  }
+
   // If the child is already a child of this view, just reorder it.
   // This matches the behavior of View::AddChildViewAtImpl and
   // otherwise will CHECK if the same view is added multiple times.
