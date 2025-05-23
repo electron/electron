@@ -233,9 +233,9 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     return;
 
   auto* current = WebWorkerObserver::GetCurrent();
-  if (current)
-    return;
-  WebWorkerObserver::Create()->WorkerScriptReadyForEvaluation(context);
+  if (!current)
+    current = WebWorkerObserver::Create();
+  current->WorkerScriptReadyForEvaluation(context);
 }
 
 void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
