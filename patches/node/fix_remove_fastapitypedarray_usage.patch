@@ -192,7 +192,7 @@ index 10659fbf57e4535736fc001c0dbdd9b93e8f60f1..c0bd975bae23d1c05ace42fd8c9846ee
 +      std::min<uint32_t>(dst_size - offset, max_length));
  }
  
- static v8::CFunction fast_write_string_ascii(
+ static const v8::CFunction fast_write_string_ascii(
 diff --git a/src/node_external_reference.h b/src/node_external_reference.h
 index bb007dbdcce486659afeed07b78103e44b00307b..314a4ded6908a94107de1ae1e550b7d46afdce75 100644
 --- a/src/node_external_reference.h
