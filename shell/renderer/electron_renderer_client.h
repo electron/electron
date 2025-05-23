@@ -45,6 +45,7 @@ class ElectronRendererClient : public RendererClientBase {
       v8::Local<v8::Context> context) override;
   void WillDestroyWorkerContextOnWorkerThread(
       v8::Local<v8::Context> context) override;
+  void SetUpWebAssemblyTrapHandler() override;
 
   node::Environment* GetEnvironment(content::RenderFrame* frame) const;
 
