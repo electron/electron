@@ -143,11 +143,33 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
 void ElectronDesktopWindowTreeHostWin::HandleVisibilityChanged(bool visible) {
   if (native_window_view_->widget())
     native_window_view_->widget()->OnNativeWidgetVisibilityChanged(visible);
+
+  if (visible)
+    UpdateAllowScreenshots();
 }
 
 void ElectronDesktopWindowTreeHostWin::SetAllowScreenshots(bool allow) {
-  ::SetWindowDisplayAffinity(GetAcceleratedWidget(),
-                             allow ? WDA_NONE : WDA_EXCLUDEFROMCAPTURE);
+  if (allow_screenshots_ == allow)
+    return;
+
+  allow_screenshots_ = allow;
+
+  // If the window is not visible, do not set the window display affinity
+  // because `SetWindowDisplayAffinity` will attempt to compose the window,
+  if (!IsVisible())
+    return;
+
+  UpdateAllowScreenshots();
+}
+
+void ElectronDesktopWindowTreeHostWin::UpdateAllowScreenshots() {
+  bool allowed = views::DesktopWindowTreeHostWin::AreScreenshotsAllowed();
+  if (allowed == allow_screenshots_)
+    return;
+
+  ::SetWindowDisplayAffinity(
+      GetAcceleratedWidget(),
+      allow_screenshots_ ? WDA_NONE : WDA_EXCLUDEFROMCAPTURE);
 }
 
 void ElectronDesktopWindowTreeHostWin::OnNativeThemeUpdated(
