@@ -13,7 +13,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
-  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}  
+  CHROMIUM_GIT_AUTH: ${{ secrets.CHROMIUM_GIT_AUTH }}
+  CHROMIUM_GIT_USER: ${{ secrets.CHROMIUM_GIT_USER }}
 
 jobs:
   lint:
@@ -30,8 +31,8 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
-    - name: Set Chromium Git Cookie
-      uses: ./src/electron/.github/actions/set-chromium-cookie
+    - name: Set Chromium Git Helper
+      uses: ./src/electron/.github/actions/set-chromium-git-helper
     - name: Setup third_party Depot Tools
       shell: bash
       run: |

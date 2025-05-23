@@ -27,7 +27,8 @@ jobs:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas
     env:
-      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_AUTH: ${{ secrets.CHROMIUM_GIT_AUTH }}
+      CHROMIUM_GIT_USER: ${{ secrets.CHROMIUM_GIT_USER }}
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
