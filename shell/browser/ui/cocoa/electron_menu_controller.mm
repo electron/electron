@@ -332,10 +332,11 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 
   std::u16string role = model->GetRoleAt(index);
   electron::ElectronMenuModel::ItemType type = model->GetTypeAt(index);
+  std::u16string customType = model->GetCustomTypeAt(index);
 
   // The sectionHeaderWithTitle menu item is only available in macOS 14.0+.
   if (@available(macOS 14, *)) {
-    if (role == u"header") {
+    if (customType == u"header") {
       item = [NSMenuItem sectionHeaderWithTitle:label];
     }
   }
@@ -382,7 +383,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 
     // NSMenuPresentationStylePalette is only available in macOS 14.0+.
     if (@available(macOS 14, *)) {
-      if (role == u"palette") {
+      if (customType == u"palette") {
         submenu.presentationStyle = NSMenuPresentationStylePalette;
       }
     }
