@@ -36,6 +36,175 @@
 #include "extensions/common/constants.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
+namespace {
+
+// Adapted from third_party/blink/renderer/modules/hid/hid_device.cc.
+enum HidUnitSystem {
+  // none: No unit system
+  kUnitSystemNone = 0x00,
+  // si-linear: Centimeter, Gram, Seconds, Kelvin, Ampere, Candela
+  kUnitSystemSILinear = 0x01,
+  // si-rotation: Radians, Gram, Seconds, Kelvin, Ampere, Candela
+  kUnitSystemSIRotation = 0x02,
+  // english-linear: Inch, Slug, Seconds, Fahrenheit, Ampere, Candela
+  kUnitSystemEnglishLinear = 0x03,
+  // english-linear: Degrees, Slug, Seconds, Fahrenheit, Ampere, Candela
+  kUnitSystemEnglishRotation = 0x04,
+  // vendor-defined unit system
+  kUnitSystemVendorDefined = 0x0f,
+};
+
+// Adapted from third_party/blink/renderer/modules/hid/hid_device.cc.
+int ConvertHidUsageAndPageToInt(const device::mojom::HidUsageAndPage& usage) {
+  return static_cast<int>((usage.usage_page) << 16 | usage.usage);
+}
+
+// Adapted from third_party/blink/renderer/modules/hid/hid_device.cc.
+int8_t UnitFactorExponentToInt(uint8_t unit_factor_exponent) {
+  DCHECK_LE(unit_factor_exponent, 0x0f);
+  // Values from 0x08 to 0x0f encode negative exponents.
+  if (unit_factor_exponent > 0x08)
+    return static_cast<int8_t>(unit_factor_exponent) - 16;
+  return unit_factor_exponent;
+}
+
+// Adapted from third_party/blink/renderer/modules/hid/hid_device.cc.
+std::string UnitSystemToString(uint8_t unit) {
+  DCHECK_LE(unit, 0x0f);
+  switch (unit) {
+    case kUnitSystemNone:
+      return "none";
+    case kUnitSystemSILinear:
+      return "si-linear";
+    case kUnitSystemSIRotation:
+      return "si-rotation";
+    case kUnitSystemEnglishLinear:
+      return "english-linear";
+    case kUnitSystemEnglishRotation:
+      return "english-rotation";
+    case kUnitSystemVendorDefined:
+      return "vendor-defined";
+    default:
+      break;
+  }
+  // Values other than those defined in HidUnitSystem are reserved by the spec.
+  return "reserved";
+}
+
+// Adapted from third_party/blink/renderer/modules/hid/hid_device.cc.
+base::Value::Dict HidReportItemToValue(
+    const device::mojom::HidReportItem& item) {
+  base::Value::Dict dict;
+
+  dict.Set("hasNull", item.has_null_position);
+  dict.Set("hasPreferredState", !item.no_preferred_state);
+  dict.Set("isAbsolute", !item.is_relative);
+  dict.Set("isArray", !item.is_variable);
+  dict.Set("isBufferedBytes", item.is_buffered_bytes);
+  dict.Set("isConstant", item.is_constant);
+  dict.Set("isLinear", !item.is_non_linear);
+  dict.Set("isRange", item.is_range);
+  dict.Set("isVolatile", item.is_volatile);
+  dict.Set("logicalMinimum", item.logical_minimum);
+  dict.Set("logicalMaximum", item.logical_maximum);
+  dict.Set("physicalMinimum", item.physical_minimum);
+  dict.Set("physicalMaximum", item.physical_maximum);
+  dict.Set("reportCount", static_cast<int>(item.report_count));
+  dict.Set("reportSize", static_cast<int>(item.report_size));
+
+  dict.Set("unitExponent", UnitFactorExponentToInt(item.unit_exponent & 0x0f));
+  dict.Set("unitFactorCurrentExponent",
+           UnitFactorExponentToInt((item.unit >> 20) & 0x0f));
+  dict.Set("unitFactorLengthExponent",
+           UnitFactorExponentToInt((item.unit >> 4) & 0x0f));
+  dict.Set("unitFactorLuminousIntensityExponent",
+           UnitFactorExponentToInt((item.unit >> 24) & 0x0f));
+  dict.Set("unitFactorMassExponent",
+           UnitFactorExponentToInt((item.unit >> 8) & 0x0f));
+  dict.Set("unitFactorTemperatureExponent",
+           UnitFactorExponentToInt((item.unit >> 16) & 0x0f));
+  dict.Set("unitFactorTimeExponent",
+           UnitFactorExponentToInt((item.unit >> 12) & 0x0f));
+  dict.Set("unitSystem", UnitSystemToString(item.unit & 0x0f));
+
+  if (item.is_range) {
+    dict.Set("usageMinimum", ConvertHidUsageAndPageToInt(*item.usage_minimum));
+    dict.Set("usageMaximum", ConvertHidUsageAndPageToInt(*item.usage_maximum));
+  } else {
+    base::Value::List usages_list;
+    for (const auto& usage : item.usages) {
+      usages_list.Append(ConvertHidUsageAndPageToInt(*usage));
+    }
+    dict.Set("usages", std::move(usages_list));
+  }
+
+  dict.Set("wrap", item.wrap);
+
+  return dict;
+}
+
+// Adapted from third_party/blink/renderer/modules/hid/hid_device.cc.
+base::Value::Dict HidReportDescriptionToValue(
+    const device::mojom::HidReportDescription& report) {
+  base::Value::Dict dict;
+  dict.Set("reportId", static_cast<int>(report.report_id));
+
+  base::Value::List items_list;
+  for (const auto& item : report.items) {
+    items_list.Append(base::Value(HidReportItemToValue(*item)));
+  }
+  dict.Set("items", std::move(items_list));
+
+  return dict;
+}
+
+// Adapted from third_party/blink/renderer/modules/hid/hid_device.cc.
+base::Value::Dict HidCollectionInfoToValue(
+    const device::mojom::HidCollectionInfo& collection) {
+  base::Value::Dict dict;
+
+  // Usage information
+  dict.Set("usage", collection.usage->usage);
+  dict.Set("usagePage", collection.usage->usage_page);
+
+  // Collection type
+  dict.Set("collectionType", static_cast<int>(collection.collection_type));
+
+  // Input reports
+  base::Value::List input_reports_list;
+  for (const auto& report : collection.input_reports) {
+    input_reports_list.Append(
+        base::Value(HidReportDescriptionToValue(*report)));
+  }
+  dict.Set("inputReports", std::move(input_reports_list));
+
+  // Output reports
+  base::Value::List output_reports_list;
+  for (const auto& report : collection.output_reports) {
+    output_reports_list.Append(
+        base::Value(HidReportDescriptionToValue(*report)));
+  }
+  dict.Set("outputReports", std::move(output_reports_list));
+
+  // Feature reports
+  base::Value::List feature_reports_list;
+  for (const auto& report : collection.feature_reports) {
+    feature_reports_list.Append(
+        base::Value(HidReportDescriptionToValue(*report)));
+  }
+  dict.Set("featureReports", std::move(feature_reports_list));
+
+  // Child collections (recursive)
+  base::Value::List children_list;
+  for (const auto& child : collection.children) {
+    children_list.Append(base::Value(HidCollectionInfoToValue(*child)));
+  }
+  dict.Set("children", std::move(children_list));
+
+  return dict;
+}
+}  // namespace
+
 namespace electron {
 
 HidChooserContext::HidChooserContext(ElectronBrowserContext* context)
@@ -77,6 +246,7 @@ base::Value HidChooserContext::DeviceInfoToValue(
       base::UTF16ToUTF8(HidChooserContext::DisplayNameFromDeviceInfo(device)));
   value.Set(kDeviceVendorIdKey, device.vendor_id);
   value.Set(kDeviceProductIdKey, device.product_id);
+
   if (HidChooserContext::CanStorePersistentEntry(device)) {
     // Use the USB serial number as a persistent identifier. If it is
     // unavailable, only ephemeral permissions may be granted.
@@ -87,6 +257,14 @@ base::Value HidChooserContext::DeviceInfoToValue(
     // and must be granted again each time the device is connected.
     value.Set(kHidGuidKey, device.guid);
   }
+
+  // Convert collections array
+  base::Value::List collections_list;
+  for (const auto& collection : device.collections) {
+    collections_list.Append(base::Value(HidCollectionInfoToValue(*collection)));
+  }
+  value.Set("collections", std::move(collections_list));
+
   return base::Value(std::move(value));
 }
 
