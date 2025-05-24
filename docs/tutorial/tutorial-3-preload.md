@@ -233,6 +233,7 @@ const func = async () => {
 
 func()
 ```
+The response will be logged in the window console. Open DevTools (Ctrl+Shift+I or Cmd+Option+I on Mac) and go to console.
 
 :::info
 
