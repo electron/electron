@@ -1,6 +1,7 @@
 {
   "config": {
     "extends": "@electron/lint-roller/configs/markdownlint.json",
+    "descriptive-link-text": false,
     "link-image-style": {
       "autolink": false,
       "shortcut": false
@@ -26,6 +27,6 @@
     "no-newline-in-links": true
   },
   "customRules": [
-    "@electron/lint-roller/markdownlint-rules/"
+    "./node_modules/@electron/lint-roller/markdownlint-rules/index.mjs"
   ]
 }
