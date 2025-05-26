@@ -1,0 +1,6 @@
+{
+  "extends": "standard",
+  "rules": {
+    "import/order": "off"
+  }
+}
