@@ -49,6 +49,9 @@ Bounces the Downloads stack if the filePath is inside the Downloads folder.
 
 Sets the string to be displayed in the dock’s badging area.
 
+> [!IMPORTANT]
+> You need to ensure that your application has the permission to display notifications for this method to work.
+
 #### `dock.getBadge()` _macOS_
 
 Returns `string` - The badge string of the dock.
