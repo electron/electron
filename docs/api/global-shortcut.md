@@ -46,6 +46,9 @@ app.on('will-quit', () => {
 })
 ```
 
+> [!TIP]
+> See also: [A detailed guide on Keyboard Shortcuts](../tutorial/keyboard-shortcuts.md).
+
 ## Methods
 
 The `globalShortcut` module has the following methods:

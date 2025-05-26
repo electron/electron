@@ -5,12 +5,8 @@
 Process: [Main](../glossary.md#main-process)<br />
 _This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
-The following example shows how to bounce your icon on the dock.
-
-```js
-const { app } = require('electron')
-app.dock?.bounce()
-```
+> [!TIP]
+> See also: [A detailed guide about how to implement Dock menus](../tutorial/macos-dock.md).
 
 ### Instance Methods
 

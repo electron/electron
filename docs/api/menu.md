@@ -6,6 +6,9 @@
 
 Process: [Main](../glossary.md#main-process)
 
+> [!TIP]
+> See also: [A detailed guide about how to implement menus in your application](../tutorial/menus.md).
+
 ### `new Menu()`
 
 Creates a new menu.
@@ -16,7 +19,7 @@ The `Menu` class has the following static methods:
 
 #### `Menu.setApplicationMenu(menu)`
 
-* `menu` Menu | null
+- `menu` Menu | null
 
 Sets `menu` as the application menu on macOS. On Windows and Linux, the
 `menu` will be set as each window's top menu.
@@ -47,7 +50,7 @@ Returns `Menu | null` - The application menu, if set, or `null`, if not set.
 
 #### `Menu.sendActionToFirstResponder(action)` _macOS_
 
-* `action` string
+- `action` string
 
 Sends the `action` to the first responder of application. This is used for
 emulating default macOS menu behaviors. Usually you would use the
@@ -58,7 +61,7 @@ for more information on macOS' native actions.
 
 #### `Menu.buildFromTemplate(template)`
 
-* `template` (MenuItemConstructorOptions | MenuItem)[]
+- `template` (MenuItemConstructorOptions | MenuItem)[]
 
 Returns `Menu`
 
@@ -73,22 +76,22 @@ The `menu` object has the following instance methods:
 
 #### `menu.popup([options])`
 
-* `options` Object (optional)
-  * `window` [BaseWindow](base-window.md) (optional) - Default is the focused window.
-  * `frame` [WebFrameMain](web-frame-main.md) (optional) - Provide the relevant frame
+- `options` Object (optional)
+  - `window` [BaseWindow](base-window.md) (optional) - Default is the focused window.
+  - `frame` [WebFrameMain](web-frame-main.md) (optional) - Provide the relevant frame
     if you want certain OS-level features such as Writing Tools on macOS to function correctly. Typically, this should be `params.frame` from the [`context-menu` event](web-contents.md#event-context-menu) on a WebContents, or the [`focusedFrame` property](web-contents.md#contentsfocusedframe-readonly) of a WebContents.
-  * `x` number (optional) - Default is the current mouse cursor position.
+  - `x` number (optional) - Default is the current mouse cursor position.
     Must be declared if `y` is declared.
-  * `y` number (optional) - Default is the current mouse cursor position.
+  - `y` number (optional) - Default is the current mouse cursor position.
     Must be declared if `x` is declared.
-  * `positioningItem` number (optional) _macOS_ - The index of the menu item to
+  - `positioningItem` number (optional) _macOS_ - The index of the menu item to
     be positioned under the mouse cursor at the specified coordinates. Default
     is -1.
-  * `sourceType` string (optional) _Windows_ _Linux_ - This should map to the `menuSourceType`
+  - `sourceType` string (optional) _Windows_ _Linux_ - This should map to the `menuSourceType`
     provided by the `context-menu` event. It is not recommended to set this value manually,
     only provide values you receive from other APIs or leave it `undefined`.
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
-  * `callback` Function (optional) - Called when menu is closed.
+  - `callback` Function (optional) - Called when menu is closed.
 
 Pops up this menu as a context menu in the [`BaseWindow`](base-window.md).
 
@@ -97,26 +100,26 @@ Pops up this menu as a context menu in the [`BaseWindow`](base-window.md).
 
 #### `menu.closePopup([window])`
 
-* `window` [BaseWindow](base-window.md) (optional) - Default is the focused window.
+- `window` [BaseWindow](base-window.md) (optional) - Default is the focused window.
 
 Closes the context menu in the `window`.
 
 #### `menu.append(menuItem)`
 
-* `menuItem` [MenuItem](menu-item.md)
+- `menuItem` [MenuItem](menu-item.md)
 
 Appends the `menuItem` to the menu.
 
 #### `menu.getMenuItemById(id)`
 
-* `id` string
+- `id` string
 
 Returns `MenuItem | null` the item with the specified `id`
 
 #### `menu.insert(pos, menuItem)`
 
-* `pos` Integer
-* `menuItem` [MenuItem](menu-item.md)
+- `pos` Integer
+- `menuItem` [MenuItem](menu-item.md)
 
 Inserts the `menuItem` to the `pos` position of the menu.
 
@@ -132,7 +135,7 @@ Objects created with `new Menu` or returned by `Menu.buildFromTemplate` emit the
 
 Returns:
 
-* `event` Event
+- `event` Event
 
 Emitted when `menu.popup()` is called.
 
@@ -140,7 +143,7 @@ Emitted when `menu.popup()` is called.
 
 Returns:
 
-* `event` Event
+- `event` Event
 
 Emitted when a popup is closed either manually or with `menu.closePopup()`.
 

@@ -8,7 +8,7 @@ Process: [Main](../glossary.md#main-process)
 
 `Tray` is an [EventEmitter][event-emitter].
 
-```js
+```js title='Creating a basic tray menu'
 const { app, Menu, Tray } = require('electron')
 
 let tray = null
@@ -24,6 +24,9 @@ app.whenReady().then(() => {
   tray.setContextMenu(contextMenu)
 })
 ```
+
+> [!TIP]
+> See also: [A detailed guide about how to implement Tray menus](../tutorial/tray.md).
 
 ### `new Tray(image, [guid])`
 
