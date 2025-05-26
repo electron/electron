@@ -15,6 +15,7 @@
 #include "base/containers/unique_ptr_adapters.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "base/sequence_checker.h"
 #include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
@@ -264,6 +265,8 @@ class InspectableWebContents
   // The DevTools frontend *must* call `Register` for each setting prior to
   // use, which guarantees that this set must not be persisted.
   base::flat_set<std::string> synced_setting_names_;
+
+  SEQUENCE_CHECKER(sequence_checker_);
 
   base::WeakPtrFactory<InspectableWebContents> weak_factory_{this};
 };

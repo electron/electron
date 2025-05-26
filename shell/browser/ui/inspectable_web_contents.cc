@@ -529,6 +529,8 @@ void InspectableWebContents::CloseWindow() {
 }
 
 void InspectableWebContents::LoadCompleted() {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
   frontend_loaded_ = true;
   if (managed_devtools_web_contents_)
     view_->ShowDevTools(activate_);
