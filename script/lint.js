@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-const { getCodeBlocks } = require('@electron/lint-roller/dist/lib/markdown');
-
 const { GitProcess } = require('dugite');
 const { ESLint } = require('eslint');
 const minimist = require('minimist');
@@ -281,6 +279,7 @@ const LINTERS = [{
   ignoreRoots: ['.git', 'node_modules', 'spec/node_modules'],
   test: filename => filename.endsWith('.md'),
   run: async (opts, filenames) => {
+    const { getCodeBlocks } = await import('@electron/lint-roller/dist/lib/markdown.js');
     let errors = false;
 
     // Run markdownlint on all Markdown files
