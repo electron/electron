@@ -306,7 +306,7 @@ void ReadDialogPathsWithBookmarks(NSOpenPanel* dialog,
       BOOL is_package_as_directory =
           [[NSWorkspace sharedWorkspace] isFilePackageAtPath:path] &&
           [dialog treatsFilePackagesAsDirectories];
-      if (!exists || !is_directory || !is_package_as_directory)
+      if (!exists || !(is_directory || is_package_as_directory))
         continue;
     }
 
