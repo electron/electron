@@ -27,7 +27,7 @@ The same menu API is used for multiple use cases:
 * On macOS, the **dock menu** is a special context menu triggered when right-clicking on your app's
   icon in the system [Dock](https://support.apple.com/en-ca/guide/mac-help/mh35859/mac).
 
-To learn more about the various types of native menus you can create and how to specify keyboard
+To learn more about the various kinds of native menus you can create and how to specify keyboard
 shortcuts, see the individual guides in this section:
 
 <DocCardList />
@@ -91,6 +91,9 @@ Other available types, when specified, give special additional properties to the
 
 * `checkbox` - toggles the `checked` property whenever the menu item is clicked
 * `radio` - toggles the `checked` property and turns off that property for all adjacent `radio` items
+* `palette` - creates a [Palette](https://developer.apple.com/documentation/appkit/nsmenu/presentationstyle-swift.enum/palette)
+submenu, which aligns items horizontally (available on macOS 14 and above)
+* `header` - creates a section header, which can convey groupings with labels (available on macOS 14 and above)
 
 > [!TIP]
 > Adjacent `radio` items are at the same level of submenu and not divided by a separator.
