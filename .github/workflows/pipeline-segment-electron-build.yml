@@ -104,7 +104,7 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6
       with:
-        node-version: 20.11.x
+        node-version: 20.19.x
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Install Dependencies
