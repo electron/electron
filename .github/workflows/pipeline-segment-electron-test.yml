@@ -81,7 +81,7 @@ jobs:
       if: ${{ inputs.target-platform == 'win' }}
       uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
       with:
-        node-version: 20.11.x
+        node-version: 20.19.x
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
