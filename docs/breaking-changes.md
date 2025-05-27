@@ -110,7 +110,7 @@ On Linux, the required portal version for file dialogs has been reverted
 to 3 from 4. Using the `defaultPath` option of the Dialog API is not
 supported when using portal file chooser dialogs unless the portal
 backend is version 4 or higher. The `--xdg-portal-required-version`
-[command-line switch](/api/command-line-switches.md#--xdg-portal-required-versionversion)
+[command-line switch](api/command-line-switches.md#--xdg-portal-required-versionversion)
 can be used to force a required version for your application.
 See [#44426](https://github.com/electron/electron/pull/44426) for more details.
 
