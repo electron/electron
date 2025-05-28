@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index f134056b6b255935250721d6fbd417b1d658c87c..f69c10c32011c9da5c235a5199abce44e64982da 100644
+index b379cc24f772260ea360779b26ca0836d21c89c4..bface283d508d1c1a3f9fd297d92e048bdd423af 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -502,6 +502,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -520,6 +520,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -105,7 +105,7 @@ index 02e1941c37173a1e84e5190eb396f1007a8bbc2c..e47f2089a6a187b26c981afa1ef4135e
  
  struct MidiPermissionDescriptor {
 diff --git a/third_party/blink/public/platform/web_content_settings_client.h b/third_party/blink/public/platform/web_content_settings_client.h
-index 5c71490d17ffe3f2f57b18e58e947f20ff3f66e3..75209a69c33780a0c71d48e184cc1897f0cb8a36 100644
+index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae66e50518 100644
 --- a/third_party/blink/public/platform/web_content_settings_client.h
 +++ b/third_party/blink/public/platform/web_content_settings_client.h
 @@ -54,6 +54,9 @@ class WebContentSettingsClient {
@@ -115,9 +115,9 @@ index 5c71490d17ffe3f2f57b18e58e947f20ff3f66e3..75209a69c33780a0c71d48e184cc1897
 +  // Controls whether synchronous access to read the clipboard is allowed for this frame.
 +  virtual bool AllowReadFromClipboardSync() { return false; }
 +
-   // Controls whether to enable MutationEvents for this frame.
-   // The common use case of this method is actually to selectively disable
-   // MutationEvents, but it's been named for consistency with the rest of the
+   // Reports that passive mixed content was found at the provided URL.
+   virtual void PassiveInsecureContentFound(const WebURL&) {}
+ 
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 index c269698764bb8ae7f85c5d476436f5ae5209576d..65d7fd94128a755609192784722074c6c2b7b7cf 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
