@@ -90,10 +90,10 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 3c43af49c5d6d5f604c71e9a9dc1f7afe9aaf0f7..857e422776e7ec33eaf4c9983d42d6433b7723cc 100644
+index 9f83b5e1a857231854fa97747d43f2b364aeb3ad..6e5ecc97eff9d532a4a3dcaaf23f23fe8389304c 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -178,6 +178,8 @@ viz_component("service") {
+@@ -176,6 +176,8 @@ viz_component("service") {
      "display_embedder/skia_output_surface_impl_on_gpu_debug_capture.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
@@ -522,7 +522,7 @@ index f0aca972c4a81c3dfb536e14244daafae21ee716..a15afbc1a3519e657121b4952444d2f4
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 391004b202e6f20ad06eb6a53a6d55f5e8981c75..acb849f4e737de45e7aa4640b6866791424f010b 100644
+index 8a80035fe2fc16a7bb42621605be94c7634b4aa7..0e7337b0c3fa7153d9cfcbaf68ce4d29c5c829d3 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -130,7 +130,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -585,10 +585,10 @@ index 130067b91baa360a7234fecfe6342c8239d587b5..d701328102f9a53e12b1b2e2a8626591
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index afdda5292ce89d6dac6eaa1e3476fdfd0e9e7f08..8147e4bf6173699df6ab9492898989c68ffbb2b8 100644
+index e063835e87f08e6a2359886a96d7b78954e3d5b2..34bcf67726f64466d11a56d7a315ce7e05a0cb3d 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -123,7 +123,6 @@ interface DisplayClient {
+@@ -119,7 +119,6 @@ interface DisplayClient {
  
    // Creates a LayeredWindowUpdater implementation to draw into a layered
    // window.
@@ -597,7 +597,7 @@ index afdda5292ce89d6dac6eaa1e3476fdfd0e9e7f08..8147e4bf6173699df6ab9492898989c6
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 4828bfcb0c221ce9de3f1fe9952849c542e7e3df..4d3667deff36216db4d51ae3f01f732d691f4866 100644
+index 3066550e422058eec23d5fe3e655625f5446d694..7358b05a646a2f80717a91182c4929776a404179 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -39,6 +39,7 @@ struct RootCompositorFrameSinkParams {
