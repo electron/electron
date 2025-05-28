@@ -49,10 +49,10 @@ index 94605f409cd1523036f3e7d167a8d1f3c030e586..fae73654c84a7a8185ddf7255b49a86f
          options, CaptureType::kAnyScreenContent);
    }
 diff --git a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
-index 722806340163be3371f29263e56bcc808b6846c6..6453101606e2088de640e70a730817803d0a1a09 100644
+index 76340ced4101d3c04a853dacd522365ae70bc5b4..309804a88c19b1e1d5c8592d8b0a5addc74ad844 100644
 --- a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
 +++ b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
-@@ -111,6 +111,7 @@ void BaseCapturerPipeWire::OnScreenCastRequestResult(RequestResponse result,
+@@ -112,6 +112,7 @@ void BaseCapturerPipeWire::OnScreenCastRequestResult(RequestResponse result,
  void BaseCapturerPipeWire::OnScreenCastSessionClosed() {
    if (!capturer_failed_) {
      options_.screencast_stream()->StopScreenCastStream();
