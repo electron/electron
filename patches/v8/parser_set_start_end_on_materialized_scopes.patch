@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Simon=20Z=C3=BCnd?= <szuend@chromium.org>
+Date: Mon, 5 May 2025 07:59:53 +0000
+Subject: [parser] Set start/end on materialized scopes
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+debug-evaluate requires the 'UniqueIdInScript' of scopes to compare
+re-parsed with runtime scopes. parsing::ParseFunction materializes
+outer scopes from runtime scopes before (re-)parsing a function.
+Currently, this materialization step does not re-materialize the
+start/end position, so debug-evaluate is not able to properly compare
+parsed with runtime scopes.
+
+This CL fixes this by also re-materializing the position info when
+parsing functions.
+
+For the script scope we don't have to set the start/end
+position as the script scope always has a UniqueIdInScript of -2.
+
+Note: The current implementation leads `HasContext()` to return
+`false` even though we have a context and the parsed and runtime
+scope. One could think that we might show variables as unavailable
+in this case. But we got lucky: For the scope view, we re-parse the
+full script, which results in full position information for all
+scopes. We use `parsing::ParseFunction` only for debug-evaluate
+where `HasContext()` for outer scopes is unused and does not matter.
+
+R=leszeks@chromium.org
+
+Bug: 399002824
+Change-Id: If8c4e73693b112dbced945f2094730cd92b535c3
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6507407
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#100041}
+
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 53651e867d244314ffb35e3aa66415cf01d55d99..6c0c0b534a31641971d028ef2aa8f8e38e3eb033 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -496,6 +496,9 @@ Scope* Scope::DeserializeScopeChain(IsolateT* isolate, Zone* zone,
+     if (current_scope != nullptr) {
+       outer_scope->AddInnerScope(current_scope);
+     }
++    outer_scope->set_start_position(scope_info->StartPosition());
++    outer_scope->set_end_position(scope_info->EndPosition());
++
+     current_scope = outer_scope;
+     if (innermost_scope == nullptr) innermost_scope = current_scope;
+     scope_info = scope_info->HasOuterScopeInfo() ? scope_info->OuterScopeInfo()
+diff --git a/src/debug/debug-scopes.cc b/src/debug/debug-scopes.cc
+index f15943e2cd530c875b0784f5a3b20b747c96cac4..4c770f8572ac5051391dd4c4e33d4ba4b6a37a36 100644
+--- a/src/debug/debug-scopes.cc
++++ b/src/debug/debug-scopes.cc
+@@ -436,12 +436,7 @@ bool ScopeIterator::HasContext() const {
+   //
+   // We can detect this by comparing the scope ID of the parsed scope and the
+   // runtime scope.
+-  // We can skip this check for function scopes, those will have their context
+-  // always pushed. Also, there is an oddity where parsing::ParseFunction
+-  // produces function scopes with (-1, -1) as the start/end position,
+-  // which messes up the unique ID.
+-  if (current_scope_ && !current_scope_->is_function_scope() &&
+-      NeedsContext() &&
++  if (current_scope_ && NeedsContext() &&
+       current_scope_->UniqueIdInScript() !=
+           context_->scope_info()->UniqueIdInScript()) {
+     return false;
+@@ -554,8 +549,7 @@ void ScopeIterator::Next() {
+   MaybeCollectAndStoreLocalBlocklists();
+   UnwrapEvaluationContext();
+ 
+-  DCHECK_IMPLIES(current_scope_ && !current_scope_->is_function_scope() &&
+-                     NeedsAndHasContext(),
++  DCHECK_IMPLIES(current_scope_ && NeedsAndHasContext(),
+                  current_scope_->UniqueIdInScript() ==
+                      context_->scope_info()->UniqueIdInScript());
+ 

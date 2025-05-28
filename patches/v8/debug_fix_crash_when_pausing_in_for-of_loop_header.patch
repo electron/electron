@@ -1,0 +1,221 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Simon=20Z=C3=BCnd?= <szuend@chromium.org>
+Date: Fri, 2 May 2025 10:44:42 +0000
+Subject: [debug] Fix crash when pausing in for-of loop header
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Given a for-of loop:
+
+  for (const each of subject) {
+
+The bytecode generator emits the iterator.next call + done check +
+assigning to `each` all into the source position of `const each`.
+
+The pseudo-desugared code looks something like:
+
+  var tmp;
+  loop {
+    var result = iterator.next();
+    if (result.done) break;
+    tmp = result.value;
+
+    PushBlockContext;
+    const each = tmp;
+
+    // rest of the loop.
+  }
+
+This is a problem, as the parser starts the block scope already on
+the `const each`. If the scope requires a context we can pause on
+bytecode that has or has not pushed the block context yet, while
+the source position looks the same.
+
+The recent addition of per-script unique scope IDs lets us fix
+this problem in the debugger: We can check if the scope ID of
+the runtime scope matches the parser scope. If not, the context
+was not pushed yet.
+
+The debugger already has a `HasContext` helper. We extend it to
+also check for matching scope IDs and then use `HasContext` where
+we would read variable values off the context. If the context was
+not pushed yet, we report them as 'unavailable'.
+
+R=leszeks@chromium.org
+
+Fixed: 384413079,399002824
+Change-Id: Ia2d0008d574e7eaf6c06b640053df696014d37f8
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6507402
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#100029}
+
+diff --git a/src/debug/debug-scopes.cc b/src/debug/debug-scopes.cc
+index 001cf25be3abf4c164610007d657236f23038f4d..f15943e2cd530c875b0784f5a3b20b747c96cac4 100644
+--- a/src/debug/debug-scopes.cc
++++ b/src/debug/debug-scopes.cc
+@@ -431,6 +431,22 @@ bool ScopeIterator::DeclaresLocals(Mode mode) const {
+ }
+ 
+ bool ScopeIterator::HasContext() const {
++  // In rare cases we pause in a scope that doesn't have its context pushed yet.
++  // E.g. when pausing in for-of loop headers (see https://crbug.com/399002824).
++  //
++  // We can detect this by comparing the scope ID of the parsed scope and the
++  // runtime scope.
++  // We can skip this check for function scopes, those will have their context
++  // always pushed. Also, there is an oddity where parsing::ParseFunction
++  // produces function scopes with (-1, -1) as the start/end position,
++  // which messes up the unique ID.
++  if (current_scope_ && !current_scope_->is_function_scope() &&
++      NeedsContext() &&
++      current_scope_->UniqueIdInScript() !=
++          context_->scope_info()->UniqueIdInScript()) {
++    return false;
++  }
++
+   return !InInnerScope() || NeedsContext();
+ }
+ 
+@@ -475,7 +491,7 @@ void ScopeIterator::AdvanceScope() {
+   DCHECK(InInnerScope());
+ 
+   do {
+-    if (NeedsContext()) {
++    if (NeedsAndHasContext()) {
+       // current_scope_ needs a context so moving one scope up requires us to
+       // also move up one context.
+       AdvanceOneContext();
+@@ -538,6 +554,11 @@ void ScopeIterator::Next() {
+   MaybeCollectAndStoreLocalBlocklists();
+   UnwrapEvaluationContext();
+ 
++  DCHECK_IMPLIES(current_scope_ && !current_scope_->is_function_scope() &&
++                     NeedsAndHasContext(),
++                 current_scope_->UniqueIdInScript() ==
++                     context_->scope_info()->UniqueIdInScript());
++
+   if (leaving_closure) function_ = Handle<JSFunction>();
+ }
+ 
+@@ -547,32 +568,33 @@ ScopeIterator::ScopeType ScopeIterator::Type() const {
+   if (InInnerScope()) {
+     switch (current_scope_->scope_type()) {
+       case FUNCTION_SCOPE:
+-        DCHECK_IMPLIES(NeedsContext(), context_->IsFunctionContext() ||
+-                                           context_->IsDebugEvaluateContext());
++        DCHECK_IMPLIES(NeedsAndHasContext(),
++                       context_->IsFunctionContext() ||
++                           context_->IsDebugEvaluateContext());
+         return ScopeTypeLocal;
+       case MODULE_SCOPE:
+-        DCHECK_IMPLIES(NeedsContext(), context_->IsModuleContext());
++        DCHECK_IMPLIES(NeedsAndHasContext(), context_->IsModuleContext());
+         return ScopeTypeModule;
+       case SCRIPT_SCOPE:
+       case REPL_MODE_SCOPE:
+-        DCHECK_IMPLIES(NeedsContext(), context_->IsScriptContext() ||
+-                                           IsNativeContext(*context_));
++        DCHECK_IMPLIES(NeedsAndHasContext(), context_->IsScriptContext() ||
++                                                 IsNativeContext(*context_));
+         return ScopeTypeScript;
+       case WITH_SCOPE:
+-        DCHECK_IMPLIES(NeedsContext(), context_->IsWithContext());
++        DCHECK_IMPLIES(NeedsAndHasContext(), context_->IsWithContext());
+         return ScopeTypeWith;
+       case CATCH_SCOPE:
+         DCHECK(context_->IsCatchContext());
+         return ScopeTypeCatch;
+       case BLOCK_SCOPE:
+       case CLASS_SCOPE:
+-        DCHECK_IMPLIES(NeedsContext(), context_->IsBlockContext());
++        DCHECK_IMPLIES(NeedsAndHasContext(), context_->IsBlockContext());
+         return ScopeTypeBlock;
+       case EVAL_SCOPE:
+-        DCHECK_IMPLIES(NeedsContext(), context_->IsEvalContext());
++        DCHECK_IMPLIES(NeedsAndHasContext(), context_->IsEvalContext());
+         return ScopeTypeEval;
+       case SHADOW_REALM_SCOPE:
+-        DCHECK_IMPLIES(NeedsContext(), IsNativeContext(*context_));
++        DCHECK_IMPLIES(NeedsAndHasContext(), IsNativeContext(*context_));
+         // TODO(v8:11989): New ScopeType for ShadowRealms?
+         return ScopeTypeScript;
+     }
+@@ -956,6 +978,12 @@ bool ScopeIterator::VisitLocals(const Visitor& visitor, Mode mode,
+ 
+       case VariableLocation::CONTEXT:
+         if (mode == Mode::STACK) continue;
++        if (!HasContext()) {
++          // If the context was not yet pushed we report the variable as
++          // unavailable.
++          value = isolate_->factory()->the_hole_value();
++          break;
++        }
+         DCHECK(var->IsContextSlot());
+ 
+         // We know of at least one open bug where the context and scope chain
+diff --git a/src/debug/debug-scopes.h b/src/debug/debug-scopes.h
+index e02f1b73702e2b115765d3067d9d44f367b4d5e4..f5736220f6bc0e6c129664dac3f48c63daee4c47 100644
+--- a/src/debug/debug-scopes.h
++++ b/src/debug/debug-scopes.h
+@@ -106,6 +106,7 @@ class V8_EXPORT_PRIVATE ScopeIterator {
+   bool InInnerScope() const { return !function_.is_null(); }
+   bool HasContext() const;
+   bool NeedsContext() const;
++  bool NeedsAndHasContext() const { return NeedsContext() && HasContext(); }
+   Handle<Context> CurrentContext() const {
+     DCHECK(HasContext());
+     return context_;
+diff --git a/test/inspector/regress/regress-crbug-399002824-expected.txt b/test/inspector/regress/regress-crbug-399002824-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f94e3c7abebffcddf28d99830e04d93b27500db6
+--- /dev/null
++++ b/test/inspector/regress/regress-crbug-399002824-expected.txt
+@@ -0,0 +1,5 @@
++Don't crash when pausing on the iterator ".next" call
++  function crashMe() {
++    for (const #e of iter()) {
++      () => e;   // Context allocate e.
++
+diff --git a/test/inspector/regress/regress-crbug-399002824.js b/test/inspector/regress/regress-crbug-399002824.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..45c06e7d5d81740a28eca67c8e4e52b6df985248
+--- /dev/null
++++ b/test/inspector/regress/regress-crbug-399002824.js
+@@ -0,0 +1,35 @@
++// Copyright 2025 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++const { session, Protocol, contextGroup } =
++  InspectorTest.start('Don\'t crash when pausing on the iterator ".next" call');
++
++session.setupScriptMap();
++contextGroup.addScript(`
++  function *iter() {
++    yield 1;
++    debugger;
++    yield 2;
++  }
++
++  function crashMe() {
++    for (const e of iter()) {
++      () => e;   // Context allocate e.
++    }
++  }
++`);
++
++Protocol.Debugger.enable();
++
++(async () => {
++  let pausedPromise = Protocol.Debugger.oncePaused();
++  Protocol.Runtime.evaluate({ expression: 'crashMe()' });
++
++  let { params: { callFrames } } = await pausedPromise;
++  await session.logSourceLocation(callFrames[1].location);
++
++  Protocol.Debugger.resume();
++
++  InspectorTest.completeTest();
++})();
