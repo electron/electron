@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Simon=20Z=C3=BCnd?= <szuend@chromium.org>
 Date: Fri, 2 May 2025 10:44:42 +0000
-Subject: [debug] Fix crash when pausing in for-of loop header
+Subject: Fix crash when pausing in for-of loop header
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Simon=20Z=C3=BCnd?= <szuend@chromium.org>
 Date: Mon, 5 May 2025 07:59:53 +0000
-Subject: [parser] Set start/end on materialized scopes
+Subject: Set start/end on materialized scopes
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
