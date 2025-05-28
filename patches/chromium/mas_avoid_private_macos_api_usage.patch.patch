@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 275f4e0ece8c5bd8cee239c61fdb965eef524650..4726c37e6fc70133af5e2152ec4d0774f2ddfcaa 100644
+index 5b41b3d8052c439d22b4ceada50d2acaa8c57e4a..a5c4e643b8244b83ac71d08c6aef76c80393769b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1048,6 +1048,7 @@ component("base") {
@@ -477,7 +477,7 @@ index ff96d22a11051391423f4a49c7b1478b8176baf8..c7e640e968f8ef183d48a226d43cdac8
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 15297546aa2641af1a249ff99bcf51764b107dbd..3c43af49c5d6d5f604c71e9a9dc1f7afe9aaf0f7 100644
+index 6ef547e06cd130f549b1ac903ab23af2d2c390a1..9f83b5e1a857231854fa97747d43f2b364aeb3ad 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -385,6 +385,7 @@ viz_component("service") {
@@ -488,7 +488,7 @@ index 15297546aa2641af1a249ff99bcf51764b107dbd..3c43af49c5d6d5f604c71e9a9dc1f7af
    }
  
    if (is_ios) {
-@@ -699,6 +700,7 @@ viz_source_set("unit_tests") {
+@@ -698,6 +699,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -582,7 +582,7 @@ index d83f420d25e2c108ad400ebecae02b1ac327c058..77852c5c315ac09dddb7227adf3b840e
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3f6fb6a8653f1d087cf28396361fc77d98668db9..0603b350939376c6e3499de7f19980b7cd274735 100644
+index 6d414afa34803b997ccd363f45fab073c736a5ff..5e31cf33f58efe376396f8d178e0f9930832466a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
@@ -797,10 +797,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 1403a31f878228d835772bffd9b37eea3b742599..5a013396c0990cb3f49a659d4398e9cbe64e0283 100644
+index d7cea6b7efd840d942b4a858e8db3af94a458507..16a7f545d83646ce142825b28a5bdb63ae4dc64a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -665,6 +665,7 @@ static_library("test_support") {
+@@ -668,6 +668,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -808,7 +808,7 @@ index 1403a31f878228d835772bffd9b37eea3b742599..5a013396c0990cb3f49a659d4398e9cb
    ]
  
    data_deps = [
-@@ -1121,6 +1122,7 @@ static_library("browsertest_support") {
+@@ -1124,6 +1125,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -816,7 +816,7 @@ index 1403a31f878228d835772bffd9b37eea3b742599..5a013396c0990cb3f49a659d4398e9cb
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1964,6 +1966,7 @@ test("content_browsertests") {
+@@ -1967,6 +1969,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 1403a31f878228d835772bffd9b37eea3b742599..5a013396c0990cb3f49a659d4398e9cb
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3297,6 +3300,7 @@ test("content_unittests") {
+@@ -3300,6 +3303,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1028,7 +1028,7 @@ index 70d5665ad7b9ef62370497636af919ede2508ad4..f4dc3e2b8053cdb3e8c439ab1a1d6369
    }
  
 diff --git a/sandbox/mac/BUILD.gn b/sandbox/mac/BUILD.gn
-index 453e2185fc85fcb29fa7af3f94cce5bda8118b0c..1c383675bb9113b5b1df9280b8ee994123794dfc 100644
+index 7a69c5d3732cdf14173286c92dc2f7655a791ccf..d4e63015ddc1614179f85a5d9d86d5d5523724fa 100644
 --- a/sandbox/mac/BUILD.gn
 +++ b/sandbox/mac/BUILD.gn
 @@ -25,6 +25,7 @@ component("seatbelt") {
@@ -1092,10 +1092,10 @@ index 950cf7cfee4e11766dccf5c0bf3f15a8562f0f1e..a5adaaabdbbd91fedbc4cb679c865bc3
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/sandbox_serializer.cc b/sandbox/mac/sandbox_serializer.cc
-index 899f231e9bc8e1c76682972dd3f41d4cc38f4868..1da42104cc82cbabfd0c14fdd7025d6963aa50d6 100644
+index ea1627bdd872f89056e97e486feb2d44587a894e..95e298393afbe10a168954d887483e5531824c51 100644
 --- a/sandbox/mac/sandbox_serializer.cc
 +++ b/sandbox/mac/sandbox_serializer.cc
-@@ -7,6 +7,7 @@
+@@ -8,6 +8,7 @@
  #include <string>
  #include <vector>
  
@@ -1103,7 +1103,7 @@ index 899f231e9bc8e1c76682972dd3f41d4cc38f4868..1da42104cc82cbabfd0c14fdd7025d69
  #include "sandbox/mac/sandbox_logging.h"
  #include "sandbox/mac/seatbelt.h"
  
-@@ -31,6 +32,7 @@ void EncodeVarInt(uint64_t from, std::string* into) {
+@@ -32,6 +33,7 @@ void EncodeVarInt(uint64_t from, std::string* into) {
    } while (from);
  }
  
@@ -1111,7 +1111,7 @@ index 899f231e9bc8e1c76682972dd3f41d4cc38f4868..1da42104cc82cbabfd0c14fdd7025d69
  bool DecodeVarInt(std::string_view* from, uint64_t* into) {
    std::string_view::const_iterator it = from->begin();
    int shift = 0;
-@@ -49,12 +51,12 @@ bool DecodeVarInt(std::string_view* from, uint64_t* into) {
+@@ -50,12 +52,12 @@ bool DecodeVarInt(std::string_view* from, uint64_t* into) {
    from->remove_prefix(it - from->begin());
    return true;
  }
@@ -1126,7 +1126,7 @@ index 899f231e9bc8e1c76682972dd3f41d4cc38f4868..1da42104cc82cbabfd0c14fdd7025d69
  bool DecodeString(std::string_view* slice, std::string* value) {
    uint64_t length;
    if (!DecodeVarInt(slice, &length) || length < 0) {
-@@ -69,7 +71,7 @@ bool DecodeString(std::string_view* slice, std::string* value) {
+@@ -70,7 +72,7 @@ bool DecodeString(std::string_view* slice, std::string* value) {
    slice->remove_prefix(size);
    return true;
  }
@@ -1135,17 +1135,17 @@ index 899f231e9bc8e1c76682972dd3f41d4cc38f4868..1da42104cc82cbabfd0c14fdd7025d69
  }  // namespace
  
  SandboxSerializer::SandboxSerializer(Target mode) : mode_(mode) {
-@@ -140,6 +142,7 @@ bool SandboxSerializer::SerializePolicy(std::string& serialized_policy,
+@@ -197,6 +199,7 @@ SandboxSerializer::DeserializePolicy(const std::string& serialized_policy,
  // static
  bool SandboxSerializer::ApplySerializedPolicy(
      const std::string& serialized_policy) {
 +#if !IS_MAS_BUILD()
-   std::string_view policy = serialized_policy;
-   uint64_t mode;
-   if (!DecodeVarInt(&policy, &mode)) {
-@@ -201,6 +204,9 @@ bool SandboxSerializer::ApplySerializedPolicy(
+   std::string error;
+   std::optional<DeserializedPolicy> deserialized_policy =
+       DeserializePolicy(serialized_policy, error);
+@@ -227,6 +230,9 @@ bool SandboxSerializer::ApplySerializedPolicy(
+       break;
    }
- 
    return true;
 +#else
 +  return true;
@@ -1448,10 +1448,10 @@ index bae0728aa1b2d8416e815862fd5d4aceb165ee44..a1a653bb5ec345f07027d19110717925
  
    if (is_mac) {
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index 8e0ca95409bf8d350658effa26c53453e2d434a0..373e3b8f9522be27ab78448557139054e98ad589 100644
+index c771cee7be34f36521de34ef893ee578b648a8c8..b0bd447b848bfdb7a9ff9cd98ba95574cb846cc2 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
-@@ -364,10 +364,14 @@ blink_core_sources_editing = [
+@@ -362,10 +362,14 @@ blink_core_sources_editing = [
  if (is_mac) {
    blink_core_sources_editing += [
      "commands/smart_replace_cf.cc",
@@ -1678,10 +1678,10 @@ index 6846060ef9622d8fc8d1d6c8da16e2f1b785e6bd..05c22db87e882b246bd7034e027cf149
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index b5456d6483b35efd929aa772be65b68bc03aabc4..2d1bd535d66c2fab0209e5adc957d827d9182737 100644
+index eb8a8d2a275c4499d2f6097651a6a6d90ff63cb0..844ff9140783a95d91cdb9fbdaea304347439525 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -365,6 +365,13 @@ component("base") {
+@@ -367,6 +367,13 @@ component("base") {
      ]
    }
  
@@ -1695,7 +1695,7 @@ index b5456d6483b35efd929aa772be65b68bc03aabc4..2d1bd535d66c2fab0209e5adc957d827
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -511,6 +518,12 @@ component("base") {
+@@ -513,6 +520,12 @@ component("base") {
      "//url",
    ]
  
@@ -1848,10 +1848,10 @@ index 033ebc0036bcd373b011ca829d255e8c83701a6d..ad06707f31872c58217d2d034f050c55
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 073269d426f55591e2daeff32782d957624d11d4..c6fe49958fd3e0b556352fda5cc35b9455792002 100644
+index 66307a0b27577865f95b37c80dccf2e02bd46029..f8cd4adc73a29610b5a92e276117484d0f580d4b 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -337,6 +337,12 @@ component("gfx") {
+@@ -338,6 +338,12 @@ component("gfx") {
      "//ui/base:ui_data_pack",
    ]
  
