@@ -80,10 +80,10 @@ index 801db538979ba62facdcf3a472dade56723ca639..7abac9a5b13b393713534ae51664c2e5
   private:
    const std::string service_interface_name_;
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 1e4cac4ad98531ac016c664dd2956f050d04d242..46c9d83cf9711de396e41a6dfda9e4ebb4116e1a 100644
+index 9d6c67c66576058723a6fb0a5abb279f05f15f4f..d692bc5929bce7801d0a91cb99ab9c5f07ba5d7b 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -613,7 +613,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
+@@ -609,7 +609,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
    // Take ownership of |client_| so the destructor doesn't notify it of
    // termination.
    auto client = std::move(client_);
@@ -93,7 +93,7 @@ index 1e4cac4ad98531ac016c664dd2956f050d04d242..46c9d83cf9711de396e41a6dfda9e4eb
  
  std::optional<std::string> UtilityProcessHost::GetServiceName() {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index 8a51f0712cce67fcec55bb59ff7edb0aeb104473..94ac6d532ac7e016bed7a7ac7871ab28b150ffe3 100644
+index 55379fbe9233ba96f6e4729e2b7d534c0c6884a0..850592294efd2c0a0fdc253b7b3fb6441b91d730 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
 @@ -68,7 +68,7 @@ class CONTENT_EXPORT UtilityProcessHost
