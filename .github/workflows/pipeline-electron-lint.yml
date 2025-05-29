@@ -62,6 +62,9 @@ jobs:
         curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/buildtools/DEPS?format=TEXT" | base64 -d > src/buildtools/DEPS
 
         gclient sync --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
+    - name: Add ESLint problem matcher
+      shell: bash
+      run: echo "::add-matcher::src/electron/.github/problem-matchers/eslint-stylish.json"
     - name: Run Lint
       shell: bash
       run: |
