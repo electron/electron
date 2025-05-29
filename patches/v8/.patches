@@ -2,3 +2,5 @@ chore_allow_customizing_microtask_policy_per_context.patch
 deps_add_v8_object_setinternalfieldfornodecore.patch
 enable_--perf-prof_flag_on_macos.patch
 cherry-pick-22ac8acf3508.patch
+debug_fix_crash_when_pausing_in_for-of_loop_header.patch
+parser_set_start_end_on_materialized_scopes.patch
