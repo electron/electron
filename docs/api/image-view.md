@@ -14,6 +14,7 @@ Note that `ImageView` is experimental and may be changed or removed in the futur
 
 ```js
 const { BaseWindow, ImageView, nativeImage, WebContentsView } = require('electron')
+
 const path = require('node:path')
 
 const win = new BaseWindow({ width: 800, height: 600 })
