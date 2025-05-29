@@ -165,54 +165,49 @@ index 0791b5317fc6846389f65f93734ae5e816d04623..48948b409d6da58ade72c60ed848df49
                           FinishStartSandboxedProcessOnLauncherThread,
                       this));
 diff --git a/content/browser/service_host/service_process_host_impl.cc b/content/browser/service_host/service_process_host_impl.cc
-index d9c14f91747bde0e76056d7f2f2ada166e67f994..9f67e6e6331ecea8764c1e097b9dd6eb7138f690 100644
+index d9c14f91747bde0e76056d7f2f2ada166e67f994..53be16879777a3b9bef58ead5f7e420c1bf6acbe 100644
 --- a/content/browser/service_host/service_process_host_impl.cc
 +++ b/content/browser/service_host/service_process_host_impl.cc
-@@ -69,6 +69,19 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
+@@ -69,6 +69,17 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
      utility_options.WithGpuClientAllowed();
    }
  
 +#if BUILDFLAG(IS_WIN)
-+  utility_options.WithStdioHandles(std::move(options.stdout_handle),
-+                                   std::move(options.stderr_handle));
-+  utility_options.WithFeedbackCursorOff(options.feedback_cursor_off);
++  utility_options.WithStdioHandles(std::move(service_options.stdout_handle),
++                                   std::move(service_options.stderr_handle));
++  utility_options.WithFeedbackCursorOff(service_options.feedback_cursor_off);
 +#elif BUILDFLAG(IS_POSIX)
-+  utility_options.WithAdditionalFds(std::move(options.fds_to_remap));
++  utility_options.WithAdditionalFds(std::move(service_options.fds_to_remap));
 +#endif
-+  utility_options.WithCurrentDirectory(options.current_directory);
-+  utility_options.WithEnvironment(options.environment);
-+  if (options.clear_environment) {
-+    utility_options.WithClearEnvironment();
-+  }
++  utility_options.WithCurrentDirectory(service_options.current_directory);
++  utility_options.WithEnvironment(service_options.environment,
++                                  service_options.clear_environment);
 +
    utility_options.WithBoundServiceInterfaceOnChildProcess(std::move(receiver));
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 7db71d28fa05458bf88f468e67446ccde8a4b964..1e4cac4ad98531ac016c664dd2956f050d04d242 100644
+index 7db71d28fa05458bf88f468e67446ccde8a4b964..9d6c67c66576058723a6fb0a5abb279f05f15f4f 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -244,13 +244,17 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
+@@ -244,13 +244,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
  }
  #endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
  
 -#if BUILDFLAG(IS_POSIX)
  UtilityProcessHost::Options& UtilityProcessHost::Options::WithEnvironment(
-     const base::EnvironmentMap& env) {
+-    const base::EnvironmentMap& env) {
++    const base::EnvironmentMap& env,
++    bool new_environment) {
    env_ = env;
++  inherit_environment_ = !new_environment;
    return *this;
  }
 -#endif
-+
-+UtilityProcessHost::Options&
-+UtilityProcessHost::Options::WithClearEnvironment() {
-+  inherit_environment_ = false;
-+  return *this;
-+}
  
  #if BUILDFLAG(USE_ZYGOTE)
  UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
-@@ -260,6 +264,36 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
+@@ -260,6 +260,36 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -249,7 +244,7 @@ index 7db71d28fa05458bf88f468e67446ccde8a4b964..1e4cac4ad98531ac016c664dd2956f05
  UtilityProcessHost::Options&
  UtilityProcessHost::Options::WithBoundReceiverOnChildProcessForTesting(
      mojo::GenericPendingReceiver receiver) {
-@@ -521,9 +555,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -521,9 +551,26 @@ bool UtilityProcessHost::StartProcess() {
    }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
@@ -268,8 +263,8 @@ index 7db71d28fa05458bf88f468e67446ccde8a4b964..1e4cac4ad98531ac016c664dd2956f05
    std::unique_ptr<UtilitySandboxedProcessLauncherDelegate> delegate =
        std::make_unique<UtilitySandboxedProcessLauncherDelegate>(
 -          options_.sandbox_type_, options_.env_, *cmd_line);
-+          options_.sandbox_type_, options_.env_, *cmd_line,
-+          options_.inherit_environment_);
++          options_.sandbox_type_, options_.env_, options_.current_directory_,
++          *cmd_line, options_.inherit_environment_);
 +
 +#if BUILDFLAG(IS_WIN)
 +  delegate->SetFeedbackCursorOff(options_.feedback_cursor_off_);
@@ -278,7 +273,7 @@ index 7db71d28fa05458bf88f468e67446ccde8a4b964..1e4cac4ad98531ac016c664dd2956f05
  #if BUILDFLAG(IS_WIN)
    if (!options_.preload_libraries_.empty()) {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index 4335d7ff718c3d7de92320ba11c39c3957303788..8a51f0712cce67fcec55bb59ff7edb0aeb104473 100644
+index 4335d7ff718c3d7de92320ba11c39c3957303788..55379fbe9233ba96f6e4729e2b7d534c0c6884a0 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
 @@ -29,6 +29,10 @@
@@ -292,18 +287,18 @@ index 4335d7ff718c3d7de92320ba11c39c3957303788..8a51f0712cce67fcec55bb59ff7edb0a
  namespace base {
  class Thread;
  }  // namespace base
-@@ -111,14 +115,32 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -111,14 +115,31 @@ class CONTENT_EXPORT UtilityProcessHost
          std::variant<base::FilePath, base::ScopedFD> file);
  #endif
  
 -#if BUILDFLAG(IS_POSIX)
-+    // Set/Unset environment variables.
-     Options& WithEnvironment(const base::EnvironmentMap& env);
+-    Options& WithEnvironment(const base::EnvironmentMap& env);
 -#endif
-+
-+    // Clear the environment for the new process before processing
-+    // changes from SetEnv.
-+    Options& WithClearEnvironment();
++    // Specifies the environment that should be applied to the process.
++    // |new_environment| controls whether the process should inherit
++    // environment from the parent process.
++    Options& WithEnvironment(const base::EnvironmentMap& env,
++                             bool new_environment);
  
  #if BUILDFLAG(USE_ZYGOTE)
      Options& WithZygoteForTesting(ZygoteCommunication* handle);
@@ -327,7 +322,7 @@ index 4335d7ff718c3d7de92320ba11c39c3957303788..8a51f0712cce67fcec55bb59ff7edb0a
      // Requests that the process bind a receiving pipe targeting the interface
      // named by `receiver`. Calls to this method generally end up in
      // `ChildThreadImpl::OnBindReceiver()` and the option is used for testing
-@@ -162,6 +184,27 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -162,6 +183,27 @@ class CONTENT_EXPORT UtilityProcessHost
      std::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
