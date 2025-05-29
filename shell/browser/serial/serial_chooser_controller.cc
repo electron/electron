@@ -11,6 +11,7 @@
 #include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/stringprintf.h"
 #include "chrome/browser/serial/serial_blocklist.h"
 #include "content/public/browser/console_message.h"
 #include "content/public/browser/web_contents.h"
