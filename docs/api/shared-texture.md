@@ -13,6 +13,7 @@ The `sharedTexture` module has the following methods:
 ### `sharedTexture.importSharedTexture(options)` _Experimental_
 
 * `options` Object - The information of shared texture to import.
+  * `copy` boolean | Function (optional) - Defaults to `true`. If `true`, when importing, the shared texture will be copied to a new texture, allowing you to release the original native texture early. Otherwise, you have to manually manage the lifetime and wait for all transferred object's `release(callback)` callbacks are invoked, before releasing the original native texture, as the underlying buffer does not copy and may become flaky if lifetime handled poorly. If a function is provided, it will be called when the copy is completed, you can use this event to release the original native texture early.
   * `pixelFormat` string - The pixel format of the texture. Can be `rgba` or `bgra`.
   * `colorSpace` [ColorSpace](structures/color-space.md) (optional) - The color space of the texture.
   * `codedSize` [Size](structures/size.md) - The full dimensions of the shared texture.
@@ -38,7 +39,7 @@ Returns [`SharedTextureImported`](structures/shared-texture-imported.md) - The i
 * `importedSharedTexture` [SharedTextureImported](structures/shared-texture-imported.md) - The imported shared texture.
 * `...args` any[] - Additional arguments to pass to the renderer process.
 
-Send the imported shared texture to a renderer process. You must register receiver at renderer process before calling this method. This method has 200ms timeout.
+Send the imported shared texture to a renderer process. You must register receiver at renderer process before calling this method. This method has a timeout.
 
 > [!NOTE]
 > This method is only available in the main process.

@@ -1,8 +1,8 @@
-const sharedTextureNative = process._linkedBinding('electron_common_shared_texture');
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import * as ipcMainInternalUtils from '@electron/internal/browser/ipc-main-internal-utils';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-const TRANSFER_TIMEOUT = 200;
+const sharedTextureNative = process._linkedBinding('electron_common_shared_texture');
+const transferTimeout = 1000;
 
 const sharedTexture = {
   importSharedTexture: sharedTextureNative.importSharedTexture,
@@ -19,10 +19,10 @@ const sharedTexture = {
       ...args
     );
 
-    const timeoutPromise = new Promise<never>((_, reject) => {
+    const timeoutPromise = new Promise<never>((resolve, reject) => {
       timeoutHandle = setTimeout(() => {
-        reject(new Error(`transfer shared texture timed out after ${TRANSFER_TIMEOUT}ms, ensure you have registered receiver at renderer process.`));
-      }, TRANSFER_TIMEOUT);
+        reject(new Error(`transfer shared texture timed out after ${transferTimeout}ms, ensure you have registered receiver at renderer process.`));
+      }, transferTimeout);
     });
 
     try {
@@ -34,6 +34,6 @@ const sharedTexture = {
       }
     }
   }
-}
+};
 
 export default sharedTexture;
