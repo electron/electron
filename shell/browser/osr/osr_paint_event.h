@@ -77,11 +77,15 @@ struct OffscreenSharedTextureValue {
   // In OSR case, it is the same with `dirtyRect` that needs to be painted.
   gfx::Rect content_rect;
 
+  // Color space of the video frame.
+  gfx::ColorSpace color_space;
+
   // Extra metadata for the video frame.
   // See comments in src\media\base\video_frame_metadata.h for more details.
   std::optional<gfx::Rect> capture_update_rect;
   std::optional<gfx::Size> source_size;
   std::optional<gfx::Rect> region_capture_rect;
+  bool is_webgpu_compatible;
 
   // The capture timestamp, microseconds since capture start
   int64_t timestamp;
@@ -99,6 +103,7 @@ struct OffscreenSharedTextureValue {
 #elif BUILDFLAG(IS_LINUX)
   std::vector<OffscreenNativePixmapPlaneInfo> planes;
   uint64_t modifier;
+  bool supports_zero_copy_webgpu_import;
 #endif
 };
 
