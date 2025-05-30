@@ -95,6 +95,22 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window,
 }
 #endif
 
+[[nodiscard]] bool GetHasTitlebarOverlay(const gin_helper::Dictionary& opts) {
+  if (bool flag; opts.Get(options::ktitleBarOverlay, &flag))
+    return flag;
+  gin_helper::Dictionary dict;
+  return opts.Get(options::ktitleBarOverlay, &dict);
+}
+
+[[nodiscard]] std::optional<int> GetTitlebarOverlayHeight(
+    const gin_helper::Dictionary& opts) {
+  if (gin_helper::Dictionary dict; opts.Get(options::ktitleBarOverlay, &dict)) {
+    if (int height; dict.Get(options::kOverlayHeight, &height))
+      return height;
+  }
+  return {};
+}
+
 }  // namespace
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
@@ -107,28 +123,14 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
       is_modal_{parent != nullptr && options.ValueOrDefault("modal", false)},
       has_frame_{options.ValueOrDefault(options::kFrame, true) &&
                  title_bar_style_ == TitleBarStyle::kNormal},
+      titlebar_overlay_{GetHasTitlebarOverlay(options)},
+      titlebar_overlay_height_{GetTitlebarOverlayHeight(options).value_or(0)},
       parent_{parent} {
 #if BUILDFLAG(IS_WIN)
   options.Get(options::kBackgroundMaterial, &background_material_);
 #elif BUILDFLAG(IS_MAC)
   options.Get(options::kVibrancyType, &vibrancy_);
 #endif
-
-  v8::Local<v8::Value> titlebar_overlay;
-  if (options.Get(options::ktitleBarOverlay, &titlebar_overlay)) {
-    if (titlebar_overlay->IsBoolean()) {
-      options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
-    } else if (titlebar_overlay->IsObject()) {
-      titlebar_overlay_ = true;
-
-      auto titlebar_overlay_dict =
-          gin_helper::Dictionary::CreateEmpty(options.isolate());
-      options.Get(options::ktitleBarOverlay, &titlebar_overlay_dict);
-      int height;
-      if (titlebar_overlay_dict.Get(options::kOverlayHeight, &height))
-        titlebar_overlay_height_ = height;
-    }
-  }
 
   WindowList::AddWindow(this);
 }

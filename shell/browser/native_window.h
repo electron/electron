@@ -502,6 +502,9 @@ class NativeWindow : public base::SupportsUserData,
   // Whether window has standard frame.
   const bool has_frame_;
 
+  // The boolean parsing of the "titleBarOverlay" option
+  const bool titlebar_overlay_ = false;
+
   // The content view, weak ref.
   raw_ptr<views::View> content_view_ = nullptr;
 
@@ -511,9 +514,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // The windows has been closed.
   bool is_closed_ = false;
-
-  // The boolean parsing of the "titleBarOverlay" option
-  bool titlebar_overlay_ = false;
 
   // Used to display sheets at the appropriate horizontal and vertical offsets
   // on macOS.
