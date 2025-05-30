@@ -473,11 +473,6 @@ class NativeWindow : public base::SupportsUserData,
   // on HiDPI displays on some environments.
   std::optional<extensions::SizeConstraints> content_size_constraints_;
 
-  base::queue<bool> pending_transitions_;
-
-  FullScreenTransitionType fullscreen_transition_type_ =
-      FullScreenTransitionType::kNone;
-
   std::list<NativeWindow*> child_windows_;
 
  private:
@@ -545,6 +540,11 @@ class NativeWindow : public base::SupportsUserData,
   std::string background_material_;
 
   gfx::Rect overlay_rect_;
+
+  base::queue<bool> pending_transitions_;
+
+  FullScreenTransitionType fullscreen_transition_type_ =
+      FullScreenTransitionType::kNone;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };
