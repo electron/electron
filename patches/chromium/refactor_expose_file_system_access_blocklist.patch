@@ -269,7 +269,7 @@ index 5b543e82abb17cbb91bf37fa6bac016b6053eb93..117b6b05b3a1c39183a45830b97255ca
  
  void ChromeFileSystemAccessPermissionContext::SetOriginExtendedPermissionByUser(
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 5e1aa12c6337e8d0dee9f24d7ec233a894763053..e1e6a8163be4c95031a464481f55357af253cfb2 100644
+index f647100981fd98d8511d07a6d7e100910e38a0f2..14e1b3c8ec78429f5a845f54cc973e7c77ea8bc4 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -9,10 +9,13 @@
@@ -294,9 +294,9 @@ index 5e1aa12c6337e8d0dee9f24d7ec233a894763053..e1e6a8163be4c95031a464481f55357a
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -399,6 +403,183 @@ class ChromeFileSystemAccessPermissionContext
-   // This is needed when updating path with ScopedPathOverride.
-   void ResetBlockPathsForTesting();
+@@ -403,6 +407,183 @@ class ChromeFileSystemAccessPermissionContext
+     return is_block_path_rules_init_complete_;
+   }
  
 +  // Sentinel used to indicate that no PathService key is specified for a path in
 +  // the struct below.

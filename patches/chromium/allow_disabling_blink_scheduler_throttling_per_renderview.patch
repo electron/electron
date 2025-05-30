@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index b9e7ef002a8d7842b4e97dbcaa59aa289ba652a1..81bd39f47d8411da53824d47e053b39f8fa24721 100644
+index 74e94044c3e18f513eb2ffa051039270f9bd56a1..f824ec4005b6640bdd3d35382f4dddf975893ea9 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 @@ -167,6 +167,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
@@ -23,10 +23,10 @@ index b9e7ef002a8d7842b4e97dbcaa59aa289ba652a1..81bd39f47d8411da53824d47e053b39f
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 1654ffbb2184cc1db6c0b862cc745ba2e467b740..567f5279d943a58e451a78fb506606cf17a0ef79 100644
+index a0335fef252b46976ea2caf95e1bf3ef7d52585d..0a97013b60fcfeb8fac55d686b107b1175c9be04 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -761,6 +761,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -760,6 +760,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  

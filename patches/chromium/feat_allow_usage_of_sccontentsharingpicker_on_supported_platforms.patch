@@ -356,7 +356,7 @@ index 23b19cc8405293aa44c4f2c20f715f8443fcd151..21c0c84dc6e3128b641fac682e3069a0
                               kMaxNumberOfBuffers, std::move(receiver),
                               std::move(receiver_on_io_thread)),
 diff --git a/content/public/browser/desktop_media_id.h b/content/public/browser/desktop_media_id.h
-index 415156d403a59bf426cf4561a9d58ecdb27524b4..78aa7b2359c684d5305bf6352751dfbb7ca00d29 100644
+index 294b5f79955ba72976f8ba127fd19556c81e322c..27553e51b281575c5cb7a4ba4dab06d19704388e 100644
 --- a/content/public/browser/desktop_media_id.h
 +++ b/content/public/browser/desktop_media_id.h
 @@ -27,6 +27,8 @@ struct CONTENT_EXPORT DesktopMediaID {

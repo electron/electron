@@ -233,12 +233,12 @@ index 7c99a9512e6f65713fe8483cef7b7c9b494b4491..8fb6cf252961c9773d1a6a09d47bec6a
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index 8dcb54b4c48cde0d11e682cc23dacbec9c4814df..c55f4d02691ec3b2255c47e89491fa76d8b996ea 100644
+index e5fec5227be7aa05b9fb5ec9f77f66129b8a9639..d639895ba47a66d3b689094d32b4b9572c7aa9ff 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
-@@ -308,6 +308,14 @@ BASE_FEATURE(kIOSurfaceCapturer,
-              base::FEATURE_ENABLED_BY_DEFAULT);
- #endif
+@@ -319,6 +319,14 @@ BASE_FEATURE_PARAM(size_t,
+                    42u);
+ #endif  // BUILDFLAG(IS_ANDROID)
  
 +// Feature that controls whether WebContentsOcclusionChecker should handle
 +// occlusion notifications.
@@ -252,12 +252,12 @@ index 8dcb54b4c48cde0d11e682cc23dacbec9c4814df..c55f4d02691ec3b2255c47e89491fa76
  // invalidated upon notifications sent by base::SystemMonitor. If disabled, the
  // cache is considered invalid on every enumeration request.
 diff --git a/content/common/features.h b/content/common/features.h
-index 6ffc0e6c10c190b410c9f7269a6146447a38c800..bba9eb2e3291539a4565b306f4c2c687b7d27541 100644
+index ccc1ab3f83c6c0e2e8e2d993705bb72a60981ba8..9c52d679c17f690abf1a38f04432a0c14a28af4f 100644
 --- a/content/common/features.h
 +++ b/content/common/features.h
-@@ -101,6 +101,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
- #if BUILDFLAG(IS_MAC)
- CONTENT_EXPORT BASE_DECLARE_FEATURE(kIOSurfaceCapturer);
+@@ -105,6 +105,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kRendererProcessLimitOnAndroid);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE_PARAM(size_t,
+                                           kRendererProcessLimitOnAndroidCount);
  #endif
 +#if BUILDFLAG(IS_MAC)
 +CONTENT_EXPORT BASE_DECLARE_FEATURE(kMacWebContentsOcclusion);
