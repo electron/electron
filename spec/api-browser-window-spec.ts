@@ -327,8 +327,7 @@ describe('BrowserWindow module', () => {
       w.show();
       await shown;
 
-      // @ts-expect-error This is a private API
-      expect(w._isContentProtected()).to.equal(true);
+      expect(w.isContentProtected()).to.equal(true);
     });
   });
 
