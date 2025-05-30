@@ -25,6 +25,7 @@ auto_filenames = {
     "docs/api/extensions-api.md",
     "docs/api/extensions.md",
     "docs/api/global-shortcut.md",
+    "docs/api/image-view.md",
     "docs/api/in-app-purchase.md",
     "docs/api/incoming-message.md",
     "docs/api/ipc-main-service-worker.md",
