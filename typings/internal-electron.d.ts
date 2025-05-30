@@ -172,6 +172,7 @@ declare namespace Electron {
     setToolTip(index: number, tooltip: string): void;
     setIcon(index: number, image: string | NativeImage): void;
     setRole(index: number, role: string): void;
+    setCustomType(index: number, customType: string): void;
     insertItem(index: number, commandId: number, label: string): void;
     insertCheckItem(index: number, commandId: number, label: string): void;
     insertRadioItem(index: number, commandId: number, label: string, groupId: number): void;
