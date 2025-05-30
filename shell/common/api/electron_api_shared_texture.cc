@@ -8,10 +8,11 @@
 #include "base/command_line.h"
 #include "base/numerics/byte_conversions.h"
 #include "base/strings/string_number_conversions_internal.h"
+#include "command_buffer/client/raster_interface.h"
 #include "components/viz/common/resources/shared_image_format_utils.h"
 #include "content/browser/compositor/image_transport_factory.h"  // nogncheck
+#include "gpu/GLES2/gl2extchromium.h"
 #include "gpu/command_buffer/client/context_support.h"
-#include "gpu/command_buffer/service/shared_image/shared_image_factory.h"
 #include "gpu/ipc/client/client_shared_image_interface.h"
 #include "gpu/ipc/client/gpu_channel_host.h"
 #include "gpu/ipc/common/exported_shared_image.mojom-shared.h"
@@ -73,6 +74,63 @@ gpu::SharedImageInterface* GetSharedImageInterface() {
   }
 }
 
+gpu::raster::RasterInterface* GetRasterInterface() {
+  if (IsBrowserProcess()) {
+    auto* factory = content::ImageTransportFactory::GetInstance();
+    return factory->GetContextFactory()
+        ->SharedMainThreadRasterContextProvider()
+        ->RasterInterface();
+  } else {
+    return blink::SharedGpuContext::ContextProviderWrapper()
+        ->ContextProvider()
+        .RasterInterface();
+  }
+}
+
+std::string GetBase64StringFromSyncToken(gpu::SyncToken& sync_token) {
+  if (!sync_token.verified_flush()) {
+    auto* sii = GetSharedImageInterface();
+    sii->VerifySyncToken(sync_token);
+  }
+
+  auto sync_token_data = base::Base64Encode(UNSAFE_BUFFERS(
+      base::span(reinterpret_cast<uint8_t*>(sync_token.GetData()),
+                 sizeof(gpu::SyncToken))));
+
+  return sync_token_data;
+}
+
+gpu::SyncToken GetSyncTokenFromBase64String(
+    const std::string& sync_token_data) {
+  if (sync_token_data.empty()) {
+    LOG(ERROR) << "Sync token data is empty.";
+    return {};
+  }
+
+  auto sync_token_bytes = base::Base64Decode(sync_token_data);
+  if (!sync_token_bytes.has_value()) {
+    LOG(ERROR) << "Failed to decode sync token from base64 string.";
+    return {};
+  }
+
+  if (sync_token_bytes->size() != sizeof(gpu::SyncToken)) {
+    LOG(ERROR) << "Invalid sync token size: " << sync_token_bytes->size();
+    return {};
+  }
+
+  auto* sync_token_source =
+      reinterpret_cast<const gpu::SyncToken*>(sync_token_bytes->data());
+  gpu::SyncToken sync_token(sync_token_source->namespace_id(),
+                            sync_token_source->command_buffer_id(),
+                            sync_token_source->release_count());
+
+  if (sync_token_source->verified_flush()) {
+    sync_token.SetVerifyFlush();
+  }
+
+  return sync_token;
+}
+
 std::string TransferVideoPixelFormatToString(media::VideoPixelFormat format) {
   switch (format) {
     case media::PIXEL_FORMAT_ARGB:
@@ -99,7 +157,6 @@ struct ImportedSharedTexture {
   base::OnceClosure release_callback;
 
   void UpdateReleaseSyncToken(const gpu::SyncToken& token);
-  void CreateReleaseSyncTokenIfEmpty();
   void SetupReleaseSyncTokenCallback();
 
   // Create VideoFrame from the shared image.
@@ -151,9 +208,7 @@ void ImportedSharedTexture::Release() {
     return;
   }
 
-  CreateReleaseSyncTokenIfEmpty();
   SetupReleaseSyncTokenCallback();
-
   client_shared_image.reset();
 }
 
@@ -198,6 +253,10 @@ v8::Local<v8::Value> ImportedSharedTexture::StartTransferSharedTexture(
   gin::Dictionary root(isolate, v8::Object::New(isolate));
   root.Set("transfer", encoded);
 
+  auto sync_token =
+      GetBase64StringFromSyncToken(this->frame_creation_sync_token);
+  root.Set("syncToken", sync_token);
+
   root.Set("pixelFormat", TransferVideoPixelFormatToString(this->pixel_format));
   root.Set("codedSize", this->coded_size);
   root.Set("visibleRect", this->visible_rect);
@@ -208,12 +267,11 @@ v8::Local<v8::Value> ImportedSharedTexture::StartTransferSharedTexture(
 
 v8::Local<v8::Value> ImportedSharedTexture::GetFrameCreationSyncToken(
     v8::Isolate* isolate) {
-  auto encoded = base::Base64Encode(UNSAFE_BUFFERS(base::span(
-      reinterpret_cast<uint8_t*>(this->frame_creation_sync_token.GetData()),
-      sizeof(gpu::SyncToken))));
-
   gin::Dictionary root(isolate, v8::Object::New(isolate));
-  root.Set("syncToken", encoded);
+
+  auto sync_token =
+      GetBase64StringFromSyncToken(this->frame_creation_sync_token);
+  root.Set("syncToken", sync_token);
 
   return gin::ConvertToV8(isolate, root);
 }
@@ -223,19 +281,8 @@ void ImportedSharedTexture::SetReleaseSyncToken(v8::Isolate* isolate,
   std::string sync_token_data;
   gin::Dictionary dict(isolate, options.As<v8::Object>());
   dict.Get("syncToken", &sync_token_data);
-  auto sync_token_bytes = base::Base64Decode(sync_token_data);
 
-  gpu::SyncToken* sync_token_source =
-      reinterpret_cast<gpu::SyncToken*>(sync_token_bytes.value().data());
-
-  gpu::SyncToken sync_token(sync_token_source->namespace_id(),
-                            sync_token_source->command_buffer_id(),
-                            sync_token_source->release_count());
-
-  if (sync_token_source->verified_flush()) {
-    sync_token.SetVerifyFlush();
-  }
-
+  auto sync_token = GetSyncTokenFromBase64String(sync_token_data);
   UpdateReleaseSyncToken(sync_token);
 }
 
@@ -243,8 +290,10 @@ void ImportedSharedTexture::UpdateReleaseSyncToken(
     const gpu::SyncToken& token) {
   base::AutoLock locker(release_sync_token_lock_);
 
+  auto* sii = GetSharedImageInterface();
   if (this->release_sync_token.HasData()) {
-    auto* sii = GetSharedImageInterface();
+    // If we already have a release sync token, we need to wait for it
+    // to be signaled before we can set the new one.
     sii->WaitSyncToken(this->release_sync_token);
   }
 
@@ -252,17 +301,13 @@ void ImportedSharedTexture::UpdateReleaseSyncToken(
   this->release_sync_token = token;
 }
 
-void ImportedSharedTexture::CreateReleaseSyncTokenIfEmpty() {
-  base::AutoLock locker(release_sync_token_lock_);
-
-  if (!this->release_sync_token.HasData()) {
-    auto* sii = GetSharedImageInterface();
-    this->release_sync_token = sii->GenVerifiedSyncToken();
-  }
-}
-
 void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
   base::AutoLock locker(release_sync_token_lock_);
+
+  auto* sii = GetSharedImageInterface();
+  if (!this->release_sync_token.HasData()) {
+    this->release_sync_token = sii->GenUnverifiedSyncToken();
+  }
 
   this->client_shared_image->UpdateDestructionSyncToken(
       this->release_sync_token);
@@ -280,11 +325,10 @@ void PersistentCallbackPass2(
   std::call_once(flag, [] {
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
         FROM_HERE, base::BindOnce([] {
-          electron::util::EmitWarning(
-              "SharedTextureImported was garbage collected before calling "
-              "`release()`. You have to manually release the resource once "
-              "you're done with it.",
-              "SharedTextureForgetToRelease");
+          LOG(ERROR)
+              << "SharedTextureImported was garbage collected before calling "
+                 "`release()`. You have to manually release the resource once "
+                 "you're done with it.";
         }));
   });
 }
@@ -640,6 +684,24 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   media::VideoPixelFormat pixel_format = shared_texture.pixel_format;
   gfx::ColorSpace color_space = shared_texture.color_space;
 
+  // Extra properties
+  bool copy = true;
+  base::OnceClosure copy_finish_cb;
+  v8::Local<v8::Value> copy_object;
+
+  gin::Dictionary dict(isolate, options.As<v8::Object>());
+  if (dict.Get("copy", &copy_object)) {
+    if (copy_object->IsBoolean()) {
+      copy = copy_object->BooleanValue(isolate);
+    } else if (copy_object->IsFunction()) {
+      gin::ConvertFromV8(isolate, copy_object, &copy_finish_cb);
+    } else {
+      gin_helper::ErrorThrower(isolate).ThrowTypeError(
+          "Expected a boolean or function for `copy` option");
+      return v8::Null(isolate);
+    }
+  }
+
   auto buffer_format = media::VideoPixelFormatToGfxBufferFormat(pixel_format);
   if (!buffer_format.has_value()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
@@ -650,13 +712,11 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   auto* sii = GetSharedImageInterface();
   gpu::SharedImageUsageSet shared_image_usage =
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_APPLE)
-      gpu::SHARED_IMAGE_USAGE_SCANOUT | gpu::SHARED_IMAGE_USAGE_GLES2_READ |
-      gpu::SHARED_IMAGE_USAGE_RASTER_READ |
+      gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_RASTER_READ |
       gpu::SHARED_IMAGE_USAGE_DISPLAY_READ |
       gpu::SHARED_IMAGE_USAGE_WEBGPU_READ;
 #else
-      gpu::SHARED_IMAGE_USAGE_SCANOUT | gpu::SHARED_IMAGE_USAGE_GLES2_READ |
-      gpu::SHARED_IMAGE_USAGE_RASTER_READ |
+      gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_RASTER_READ |
       gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
 #endif
 
@@ -666,13 +726,69 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
                               shared_image_usage, "SharedTextureVideoFrame"},
                              std::move(gmb_handle));
 
+  auto creation_sync_token = si->creation_sync_token();
+
+  if (copy) {
+    // Copy the shared image to a new one, so that the source native handle
+    // can be released, easing the resource management.
+    auto dst_si = sii->CreateSharedImage(
+        {si_format, coded_size, color_space,
+         shared_image_usage | gpu::SHARED_IMAGE_USAGE_RASTER_WRITE,
+         "SharedTextureVideoFrameCopy"},
+        gpu::kNullSurfaceHandle);
+
+    auto* ri = GetRasterInterface();
+    std::unique_ptr<gpu::RasterScopedAccess> src_ri_access =
+        si->BeginRasterAccess(ri, si->creation_sync_token(), true);
+    std::unique_ptr<gpu::RasterScopedAccess> dst_ri_access =
+        dst_si->BeginRasterAccess(ri, dst_si->creation_sync_token(), false);
+
+    ri->CopySharedImage(si->mailbox(), dst_si->mailbox(),
+                        /*xoffset=*/0, /*yoffset=*/0, /*x=*/0, /*y=*/0,
+                        coded_size.width(), coded_size.height());
+
+    gpu::RasterScopedAccess::EndAccess(std::move(dst_ri_access));
+    auto ri_st = gpu::RasterScopedAccess::EndAccess(std::move(src_ri_access));
+    sii->WaitSyncToken(ri_st);
+
+    // Hold |si| until copy complete.
+    unsigned query_id = 0;
+    ri->GenQueriesEXT(1, &query_id);
+    DCHECK(query_id);
+    ri->BeginQueryEXT(GL_COMMANDS_COMPLETED_CHROMIUM, query_id);
+    ri->EndQueryEXT(GL_COMMANDS_COMPLETED_CHROMIUM);
+
+    // |on_query_done_cb| will keep |video_frame| alive.
+    auto on_query_done_cb = base::BindOnce(
+        [](scoped_refptr<gpu::ClientSharedImage> si,
+           gpu::raster::RasterInterface* ri, unsigned query_id,
+           base::OnceClosure cb) {
+          ri->DeleteQueriesEXT(1, &query_id);
+          if (cb) {
+            std::move(cb).Run();
+          }
+        },
+        si, ri, query_id, std::move(copy_finish_cb));
+
+    auto* context_support = GetContextSupport();
+    context_support->SignalQuery(query_id, std::move(on_query_done_cb));
+
+    // Replace with dest shared image.
+    creation_sync_token = sii->GenUnverifiedSyncToken();
+    si = std::move(dst_si);
+  }
+
   ImportedSharedTexture* imported = new ImportedSharedTexture();
   imported->pixel_format = shared_texture.pixel_format;
   imported->coded_size = shared_texture.coded_size;
   imported->visible_rect = shared_texture.visible_rect;
   imported->timestamp = shared_texture.timestamp;
-  imported->frame_creation_sync_token = si->creation_sync_token();
+  imported->frame_creation_sync_token = creation_sync_token;
   imported->client_shared_image = std::move(si);
+
+  if (copy) {
+    imported->UpdateReleaseSyncToken(creation_sync_token);
+  }
 
   return CreateImportedSharedTextureFromSharedImage(isolate, imported);
 }
@@ -683,8 +799,12 @@ v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
   gin::ConvertFromV8(isolate, options, &partial);
 
   std::string transfer;
+  std::string sync_token_data;
+
   gin::Dictionary dict(isolate, options.As<v8::Object>());
   dict.Get("transfer", &transfer);
+  dict.Get("syncToken", &sync_token_data);
+
   auto transfer_data = base::Base64Decode(transfer);
 
   // Use mojo to deserialize the exported shared image.
@@ -703,12 +823,15 @@ v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
   auto* sii = GetSharedImageInterface();
   auto si = sii->ImportSharedImage(std::move(exported));
 
+  auto source_st = GetSyncTokenFromBase64String(sync_token_data);
+  sii->WaitSyncToken(source_st);
+
   ImportedSharedTexture* imported = new ImportedSharedTexture();
   imported->pixel_format = partial.pixel_format;
   imported->coded_size = partial.coded_size;
   imported->visible_rect = partial.visible_rect;
   imported->timestamp = partial.timestamp;
-  imported->frame_creation_sync_token = sii->GenVerifiedSyncToken();
+  imported->frame_creation_sync_token = sii->GenUnverifiedSyncToken();
   imported->client_shared_image = std::move(si);
 
   return CreateImportedSharedTextureFromSharedImage(isolate, imported);
