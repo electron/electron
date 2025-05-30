@@ -146,6 +146,26 @@ struct Converter<blink::WebMouseEvent::Button> {
         });
     return FromV8WithLowerLookup(isolate, val, Lookup, out);
   }
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::WebMouseEvent::Button& in) {
+    switch (in) {
+      case blink::WebMouseEvent::Button::kLeft:
+        return StringToV8(isolate, "left");
+      case blink::WebMouseEvent::Button::kMiddle:
+        return StringToV8(isolate, "middle");
+      case blink::WebMouseEvent::Button::kRight:
+        return StringToV8(isolate, "right");
+      case blink::WebMouseEvent::Button::kNoButton:
+        return StringToV8(isolate, "none");
+      case blink::WebMouseEvent::Button::kBack:
+        return StringToV8(isolate, "back");
+      case blink::WebMouseEvent::Button::kForward:
+        return StringToV8(isolate, "forward");
+      case blink::WebMouseEvent::Button::kEraser:
+        return StringToV8(isolate, "eraser");
+    }
+    return v8::Null(isolate);
+  }
 };
 
 // clang-format off
@@ -246,6 +266,9 @@ v8::Local<v8::Value> Converter<blink::WebInputEvent>::ToV8(
   if (blink::WebInputEvent::IsKeyboardEventType(in.GetType()))
     return gin::ConvertToV8(isolate,
                             *static_cast<const blink::WebKeyboardEvent*>(&in));
+  else if (blink::WebInputEvent::IsMouseEventType(in.GetType()))
+    return gin::ConvertToV8(isolate,
+                            *static_cast<const blink::WebMouseEvent*>(&in));
   return gin::DataObjectBuilder(isolate)
       .Set("type", in.GetType())
       .Set("modifiers", ModifiersToArray(in.GetModifiers()))
@@ -377,6 +400,28 @@ bool Converter<blink::WebMouseEvent>::FromV8(v8::Isolate* isolate,
   dict.Get("movementY", &out->movement_y);
   dict.Get("clickCount", &out->click_count);
   return true;
+}
+
+v8::Local<v8::Value> Converter<blink::WebMouseEvent>::ToV8(
+    v8::Isolate* isolate,
+    const blink::WebMouseEvent& in) {
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+
+  dict.Set("type", in.GetType());
+  dict.Set("clickCount", in.ClickCount());
+  dict.Set("movementX", in.movement_x);
+  dict.Set("movementY", in.movement_y);
+  dict.Set("button", in.button);
+
+  gfx::PointF position_in_screen = in.PositionInScreen();
+  dict.Set("globalX", position_in_screen.x());
+  dict.Set("globalY", position_in_screen.y());
+
+  gfx::PointF position_in_widget = in.PositionInWidget();
+  dict.Set("x", position_in_widget.x());
+  dict.Set("y", position_in_widget.y());
+
+  return dict.GetHandle();
 }
 
 bool Converter<blink::WebMouseWheelEvent>::FromV8(
