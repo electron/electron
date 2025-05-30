@@ -385,6 +385,8 @@ class NativeWindow : public base::SupportsUserData,
     return title_bar_style_;
   }
 
+  [[nodiscard]] bool has_titlebar_overlay() const { return titlebar_overlay_; }
+
   bool IsWindowControlsOverlayEnabled() const {
     bool valid_titlebar_style = title_bar_style() == TitleBarStyle::kHidden
 #if BUILDFLAG(IS_MAC)
@@ -392,7 +394,7 @@ class NativeWindow : public base::SupportsUserData,
                                 title_bar_style() == TitleBarStyle::kHiddenInset
 #endif
         ;
-    return valid_titlebar_style && titlebar_overlay_;
+    return valid_titlebar_style && has_titlebar_overlay();
   }
 
   int titlebar_overlay_height() const { return titlebar_overlay_height_; }
@@ -463,9 +465,6 @@ class NativeWindow : public base::SupportsUserData,
   static inline constexpr base::cstring_view kNativeWindowKey =
       "__ELECTRON_NATIVE_WINDOW__";
 
-  // The boolean parsing of the "titleBarOverlay" option
-  bool titlebar_overlay_ = false;
-
   // Minimum and maximum size.
   std::optional<extensions::SizeConstraints> size_constraints_;
   // Same as above but stored as content size, we are storing 2 types of size
@@ -512,6 +511,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // The windows has been closed.
   bool is_closed_ = false;
+
+  // The boolean parsing of the "titleBarOverlay" option
+  bool titlebar_overlay_ = false;
 
   // Used to display sheets at the appropriate horizontal and vertical offsets
   // on macOS.
