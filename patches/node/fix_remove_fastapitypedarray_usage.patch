@@ -48,7 +48,7 @@ index 867a1c4aca54b9d41490d23a5eb55088b7e941cc..09f4c65a18efea262b1f854f993c6f18
  
  static v8::CFunction fast_equal(v8::CFunction::Make(FastTimingSafeEqual));
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 10659fbf57e4535736fc001c0dbdd9b93e8f60f1..c0bd975bae23d1c05ace42fd8c9846ee4d8ef8f0 100644
+index 5bdffc0a4d7f8f643343593a543f2064b670c1b9..6931404b75dbe17bf3c7b561430b8d7c0921d085 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -44,6 +44,14 @@
@@ -74,7 +74,7 @@ index 10659fbf57e4535736fc001c0dbdd9b93e8f60f1..c0bd975bae23d1c05ace42fd8c9846ee
  using v8::FunctionCallbackInfo;
  using v8::Global;
  using v8::HandleScope;
-@@ -586,19 +593,24 @@ void SlowCopy(const FunctionCallbackInfo<Value>& args) {
+@@ -584,19 +591,24 @@ void SlowCopy(const FunctionCallbackInfo<Value>& args) {
  
  // Assume caller has properly validated args.
  uint32_t FastCopy(Local<Value> receiver,
@@ -107,7 +107,7 @@ index 10659fbf57e4535736fc001c0dbdd9b93e8f60f1..c0bd975bae23d1c05ace42fd8c9846ee
    return to_copy;
  }
  
-@@ -867,19 +879,17 @@ void Compare(const FunctionCallbackInfo<Value> &args) {
+@@ -865,19 +877,17 @@ void Compare(const FunctionCallbackInfo<Value> &args) {
  }
  
  int32_t FastCompare(v8::Local<v8::Value>,
@@ -135,7 +135,7 @@ index 10659fbf57e4535736fc001c0dbdd9b93e8f60f1..c0bd975bae23d1c05ace42fd8c9846ee
  }
  
  static v8::CFunction fast_compare(v8::CFunction::Make(FastCompare));
-@@ -1150,14 +1160,13 @@ void SlowIndexOfNumber(const FunctionCallbackInfo<Value>& args) {
+@@ -1148,14 +1158,13 @@ void SlowIndexOfNumber(const FunctionCallbackInfo<Value>& args) {
  }
  
  int32_t FastIndexOfNumber(v8::Local<v8::Value>,
@@ -153,7 +153,7 @@ index 10659fbf57e4535736fc001c0dbdd9b93e8f60f1..c0bd975bae23d1c05ace42fd8c9846ee
  }
  
  static v8::CFunction fast_index_of_number(
-@@ -1511,21 +1520,31 @@ void SlowWriteString(const FunctionCallbackInfo<Value>& args) {
+@@ -1495,21 +1504,31 @@ void SlowWriteString(const FunctionCallbackInfo<Value>& args) {
  
  template <encoding encoding>
  uint32_t FastWriteString(Local<Value> receiver,
@@ -192,7 +192,7 @@ index 10659fbf57e4535736fc001c0dbdd9b93e8f60f1..c0bd975bae23d1c05ace42fd8c9846ee
 +      std::min<uint32_t>(dst_size - offset, max_length));
  }
  
- static v8::CFunction fast_write_string_ascii(
+ static const v8::CFunction fast_write_string_ascii(
 diff --git a/src/node_external_reference.h b/src/node_external_reference.h
 index bb007dbdcce486659afeed07b78103e44b00307b..314a4ded6908a94107de1ae1e550b7d46afdce75 100644
 --- a/src/node_external_reference.h
@@ -246,10 +246,10 @@ index bb007dbdcce486659afeed07b78103e44b00307b..314a4ded6908a94107de1ae1e550b7d4
  // This class manages the external references from the V8 heap
  // to the C++ addresses in Node.js.
 diff --git a/src/util.h b/src/util.h
-index 48d3c7b8a304049cdb4d4ab2c027b300dc533dc0..f9d5a5b36701b3c65fda65ed8920521ff68e32cd 100644
+index a77332f583402af956cc886fd5b9771390cc4827..f0d7571caa458a3f9a9c252a95f72eb5fbddd06d 100644
 --- a/src/util.h
 +++ b/src/util.h
-@@ -59,6 +59,7 @@
+@@ -60,6 +60,7 @@
  namespace node {
  
  constexpr char kPathSeparator = std::filesystem::path::preferred_separator;
@@ -257,7 +257,7 @@ index 48d3c7b8a304049cdb4d4ab2c027b300dc533dc0..f9d5a5b36701b3c65fda65ed8920521f
  
  #ifdef _WIN32
  /* MAX_PATH is in characters, not bytes. Make sure we have enough headroom. */
-@@ -584,6 +585,16 @@ class BufferValue : public MaybeStackBuffer<char> {
+@@ -585,6 +586,16 @@ class BufferValue : public MaybeStackBuffer<char> {
        static_cast<char*>(name->Buffer()->Data()) + name##_offset;              \
    if (name##_length > 0) CHECK_NE(name##_data, nullptr);
  

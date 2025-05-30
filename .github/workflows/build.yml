@@ -251,7 +251,7 @@ jobs:
 
   linux-x64:
     permissions:
-      contents: read
+      contents: write
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml

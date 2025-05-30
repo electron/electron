@@ -47,6 +47,5 @@ fix_ensure_traverseparent_bails_on_resource_path_exit.patch
 cli_move_--trace-atomics-wait_to_eol.patch
 fix_cppgc_initializing_twice.patch
 fix_task_starvation_in_inspector_context_test.patch
-zlib_fix_pointer_alignment.patch
 fix_expose_readfilesync_override_for_modules.patch
 test_force_slow_json_stringify_path_for_overflow.patch
