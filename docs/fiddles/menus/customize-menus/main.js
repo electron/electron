@@ -11,25 +11,53 @@ const {
 } = require('electron/main')
 const path = require('node:path')
 
-// Custom context menu
 const contextMenu = new Menu()
-contextMenu.append(new MenuItem({ label: 'Hello' }))
+contextMenu.append(new MenuItem({ label: 'Undo', role: 'undo' }))
+contextMenu.append(new MenuItem({ label: 'Redo', role: 'redo' }))
 contextMenu.append(new MenuItem({ type: 'separator' }))
-contextMenu.append(
-  new MenuItem({ label: 'Electron', type: 'checkbox', checked: true })
-)
+contextMenu.append(new MenuItem({ label: 'Cut', role: 'cut' }))
+contextMenu.append(new MenuItem({ label: 'Copy', role: 'copy' }))
+contextMenu.append(new MenuItem({ label: 'Paste', role: 'paste' }))
+contextMenu.append(new MenuItem({ type: 'separator' }))
+contextMenu.append(new MenuItem({ label: 'Select All', role: 'selectall' }))
 
 const template = [
   {
     label: 'Edit',
     submenu: [
-      { label: 'Undo', accelerator: 'CmdOrCtrl+Z', role: 'undo' },
-      { label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', role: 'redo' },
-      { type: 'separator' },
-      { label: 'Cut', accelerator: 'CmdOrCtrl+X', role: 'cut' },
-      { label: 'Copy', accelerator: 'CmdOrCtrl+C', role: 'copy' },
-      { label: 'Paste', accelerator: 'CmdOrCtrl+V', role: 'paste' },
-      { label: 'Select All', accelerator: 'CmdOrCtrl+A', role: 'selectall' }
+      {
+        label: 'Undo',
+        accelerator: 'CmdOrCtrl+Z',
+        role: 'undo'
+      },
+      {
+        label: 'Redo',
+        accelerator: 'Shift+CmdOrCtrl+Z',
+        role: 'redo'
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Cut',
+        accelerator: 'CmdOrCtrl+X',
+        role: 'cut'
+      },
+      {
+        label: 'Copy',
+        accelerator: 'CmdOrCtrl+C',
+        role: 'copy'
+      },
+      {
+        label: 'Paste',
+        accelerator: 'CmdOrCtrl+V',
+        role: 'paste'
+      },
+      {
+        label: 'Select All',
+        accelerator: 'CmdOrCtrl+A',
+        role: 'selectall'
+      }
     ]
   },
   {
@@ -40,6 +68,8 @@ const template = [
         accelerator: 'CmdOrCtrl+R',
         click: (item, focusedWindow) => {
           if (focusedWindow) {
+            // on reload, start fresh and close any old
+            // open secondary windows
             if (focusedWindow.id === 1) {
               for (const win of BrowserWindow.getAllWindows()) {
                 if (win.id > 1) win.close()
@@ -51,7 +81,13 @@ const template = [
       },
       {
         label: 'Toggle Full Screen',
-        accelerator: process.platform === 'darwin' ? 'Ctrl+Command+F' : 'F11',
+        accelerator: (() => {
+          if (process.platform === 'darwin') {
+            return 'Ctrl+Command+F'
+          } else {
+            return 'F11'
+          }
+        })(),
         click: (item, focusedWindow) => {
           if (focusedWindow) {
             focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
@@ -60,25 +96,34 @@ const template = [
       },
       {
         label: 'Toggle Developer Tools',
-        accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+        accelerator: (() => {
+          if (process.platform === 'darwin') {
+            return 'Alt+Command+I'
+          } else {
+            return 'Ctrl+Shift+I'
+          }
+        })(),
         click: (item, focusedWindow) => {
           if (focusedWindow) {
             focusedWindow.webContents.toggleDevTools()
           }
         }
       },
-      { type: 'separator' },
+      {
+        type: 'separator'
+      },
       {
         label: 'App Menu Demo',
-        click: (item, focusedWindow) => {
+        click: function (item, focusedWindow) {
           if (focusedWindow) {
             const options = {
               type: 'info',
               title: 'Application Menu Demo',
               buttons: ['Ok'],
-              message: 'This demo is for the Menu section, showing how to create a clickable menu item in the application menu.'
+              message:
+                'This demo is for the Menu section, showing how to create a clickable menu item in the application menu.'
             }
-            dialog.showMessageBox(focusedWindow, options)
+            dialog.showMessageBox(focusedWindow, options, function () {})
           }
         }
       }
@@ -88,9 +133,19 @@ const template = [
     label: 'Window',
     role: 'window',
     submenu: [
-      { label: 'Minimize', accelerator: 'CmdOrCtrl+M', role: 'minimize' },
-      { label: 'Close', accelerator: 'CmdOrCtrl+W', role: 'close' },
-      { type: 'separator' },
+      {
+        label: 'Minimize',
+        accelerator: 'CmdOrCtrl+M',
+        role: 'minimize'
+      },
+      {
+        label: 'Close',
+        accelerator: 'CmdOrCtrl+W',
+        role: 'close'
+      },
+      {
+        type: 'separator'
+      },
       {
         label: 'Reopen Window',
         accelerator: 'CmdOrCtrl+Shift+T',
@@ -116,45 +171,57 @@ const template = [
   }
 ]
 
-function addUpdateMenuItems(items, position) {
+function addUpdateMenuItems (items, position) {
   if (process.mas) return
 
   const version = app.getVersion()
   const updateItems = [
-    { label: `Version ${version}`, enabled: false },
-    { label: 'Checking for Update', enabled: false, key: 'checkingForUpdate' },
+    {
+      label: `Version ${version}`,
+      enabled: false
+    },
+    {
+      label: 'Checking for Update',
+      enabled: false,
+      key: 'checkingForUpdate'
+    },
     {
       label: 'Check for Update',
-      visible: true,
+      visible: false,
       key: 'checkForUpdate',
-      click: () => autoUpdater.checkForUpdates()
+      click: () => {
+        autoUpdater.checkForUpdates()
+      }
     },
     {
       label: 'Restart and Install Update',
       enabled: true,
       visible: false,
       key: 'restartToUpdate',
-      click: () => autoUpdater.quitAndInstall()
+      click: () => {
+        autoUpdater.quitAndInstall()
+      }
     }
   ]
 
   items.splice.apply(items, [position, 0].concat(updateItems))
 }
 
-function findReopenMenuItem() {
+function findReopenMenuItem () {
   const menu = Menu.getApplicationMenu()
   if (!menu) return
 
+  let reopenMenuItem
   for (const item of menu.items) {
     if (item.submenu) {
       for (const subitem of item.submenu.items) {
         if (subitem.key === 'reopenMenuItem') {
-          return subitem
+          reopenMenuItem = subitem
         }
       }
     }
   }
-  return null
+  return reopenMenuItem
 }
 
 if (process.platform === 'darwin') {
@@ -162,25 +229,57 @@ if (process.platform === 'darwin') {
   template.unshift({
     label: name,
     submenu: [
-      { label: `About ${name}`, role: 'about' },
-      { type: 'separator' },
-      { label: 'Services', role: 'services', submenu: [] },
-      { type: 'separator' },
-      { label: `Hide ${name}`, accelerator: 'Command+H', role: 'hide' },
-      { label: 'Hide Others', accelerator: 'Command+Alt+H', role: 'hideothers' },
-      { label: 'Show All', role: 'unhide' },
-      { type: 'separator' },
+      {
+        label: `About ${name}`,
+        role: 'about'
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Services',
+        role: 'services',
+        submenu: []
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: `Hide ${name}`,
+        accelerator: 'Command+H',
+        role: 'hide'
+      },
+      {
+        label: 'Hide Others',
+        accelerator: 'Command+Alt+H',
+        role: 'hideothers'
+      },
+      {
+        label: 'Show All',
+        role: 'unhide'
+      },
+      {
+        type: 'separator'
+      },
       {
         label: 'Quit',
         accelerator: 'Command+Q',
-        click: () => app.quit()
+        click: () => {
+          app.quit()
+        }
       }
     ]
   })
 
+  // Window menu.
   template[3].submenu.push(
-    { type: 'separator' },
-    { label: 'Bring All to Front', role: 'front' }
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Bring All to Front',
+      role: 'front'
+    }
   )
 
   addUpdateMenuItems(template[0].submenu, 1)
@@ -191,9 +290,12 @@ if (process.platform === 'win32') {
   addUpdateMenuItems(helpMenu, 0)
 }
 
+// Keep a global reference of the window object, if you don't, the window will
+// be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
 
-function createWindow() {
+function createWindow () {
+  // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -202,27 +304,38 @@ function createWindow() {
     }
   })
 
+  // and load the index.html of the app.
   mainWindow.loadFile('index.html')
 
+  // Open the DevTools.
   // mainWindow.webContents.openDevTools()
 
-  mainWindow.on('closed', () => {
+  // Emitted when the window is closed.
+  mainWindow.on('closed', function () {
+    // Dereference the window object, usually you would store windows
+    // in an array if your app supports multi windows, this is the time
+    // when you should delete the corresponding element.
     mainWindow = null
   })
 
+  // Open external links in the default browser
   mainWindow.webContents.on('will-navigate', (event, url) => {
     event.preventDefault()
     shell.openExternal(url)
   })
 }
 
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow()
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
+  const appMenu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(appMenu)
 })
 
-app.on('window-all-closed', () => {
+// Quit when all windows are closed.
+app.on('window-all-closed', function () {
   const reopenMenuItem = findReopenMenuItem()
   if (reopenMenuItem) reopenMenuItem.enabled = true
 
@@ -231,7 +344,7 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.on('activate', () => {
+app.on('activate', function () {
   if (mainWindow === null) {
     createWindow()
   }
@@ -242,15 +355,14 @@ app.on('browser-window-created', (event, win) => {
   if (reopenMenuItem) reopenMenuItem.enabled = false
 
   win.webContents.on('context-menu', (e, params) => {
-    contextMenu.popup({
-      window: win,
-      x: params.x,
-      y: params.y
-    })
+    contextMenu.popup(win, params.x, params.y)
   })
 })
 
 ipcMain.on('show-context-menu', event => {
   const win = BrowserWindow.fromWebContents(event.sender)
-  contextMenu.popup({ window: win })
+  contextMenu.popup(win)
 })
+
+// In this file you can include the rest of your app's specific main process
+// code. You can also put them in separate files and require them here.
