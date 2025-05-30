@@ -50,7 +50,7 @@ ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
       pdf_extension_util::AddStrings(
           pdf_extension_util::PdfViewerContext::kPdfViewer, &dict);
-      pdf_extension_util::AddAdditionalData(true, false, &dict);
+      pdf_extension_util::AddAdditionalData(browser_context(), &dict);
 #endif
       break;
     case api::resources_private::Component::kIdentity:
