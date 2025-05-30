@@ -74,7 +74,7 @@ Our package.json should look like this:
 }
 ```
 
-## 2) Setting Up the Build Configuration
+## 2) Setting up the build configuration
 
 For a Linux-specific addon using GTK3, we need to configure our `binding.gyp` file correctly to ensure our addon is only compiled on Linux systems - doing ideally nothing on other platforms. This involves using conditional compilation flags, leveraging `pkg-config` to automatically locate and include the GTK3 libraries and header paths on the user's system, and setting appropriate compiler flags to enable features like exception handling and threading support. The configuration will ensure that our native code can properly interface with both the Node.js/Electron runtime and the GTK3 libraries that provide the native GUI capabilities.
 
@@ -1063,7 +1063,7 @@ namespace cpp_code
 } // namespace cpp_code
 ```
 
-## 5) Creating the Node.js Addon Bridge
+## 5) Creating the Node.js addon bridge
 
 Now let's implement the bridge between our C++ code and Node.js in `src/cpp_addon.cc`. Let's start by creating a basic skeleton for our addon:
 
