@@ -1578,3 +1578,27 @@ group("copy_node_headers") {
 group("node_headers") {
   public_deps = [ ":tar_node_headers" ]
 }
+
+if (is_win) {
+  test("electron_browser_unittests_win") {
+    testonly = true
+    sources = [ "shell/browser/native_window_views_win_unittest.cc" ]
+
+    deps = [
+      ":electron_lib",
+      "//base",
+      "//content/public/test:test_support",
+      "//testing/gmock",
+      "//testing/gtest",
+      "//ui/views:test_support",
+      "//ui/gfx:test_support",
+      # Add other necessary dependencies based on includes in the unittest file
+      "//shell/common:mojo", # For gin_helper::Dictionary if used by NativeWindowViews constructor
+      "//v8", # For v8::Isolate if directly used, though usually comes via gin
+      "//gin", # For gin_helper
+    ]
+
+    # Ensure proper configurations for tests, e.g., test_config
+    configs += [ "//build/config/gtest_config:gtest_config" ]
+  }
+}

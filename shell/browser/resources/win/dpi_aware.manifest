@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <asmv3:application xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
-    <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">
-      <!-- See: https://docs.microsoft.com/en-us/windows/desktop/sbscs/application-manifests#dpiAware -->
-      <dpiAware>true/pm</dpiAware>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+  <asmv3:application>
+    <asmv3:windowsSettings>
+      <!-- Specifies the application is DPI-aware per monitor (V2). -->
+      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2, System</dpiAwareness>
+      <!-- Fallback for older Windows versions that don't understand PerMonitorV2 -->
+      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
     </asmv3:windowsSettings>
   </asmv3:application>
 </assembly>

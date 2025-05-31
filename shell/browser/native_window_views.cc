@@ -12,6 +12,7 @@
 #include "shell/browser/native_window_views.h"
 
 #if BUILDFLAG(IS_WIN)
+#include <windows.h> // For WM_DPICHANGED, LOWORD, RECT, SetWindowPos, etc. and USER_DEFAULT_SCREEN_DPI
 #include <dwmapi.h>
 #include <wrl/client.h>
 #endif
@@ -306,6 +307,13 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   widget()->Init(std::move(params));
   widget()->SetNativeWindowProperty(kNativeWindowKey.c_str(), this);
   SetCanResize(resizable_);
+
+#if BUILDFLAG(IS_WIN)
+  current_dpi_ = display::win::GetDPIForHWND(GetAcceleratedWidget());
+  if (current_dpi_ == 0) { // DPI functions return 0 on error or if HWND is not DPI-aware yet.
+    current_dpi_ = USER_DEFAULT_SCREEN_DPI;
+  }
+#endif
 
   const bool fullscreen = options.ValueOrDefault(options::kFullscreen, false);
 
@@ -1931,5 +1939,47 @@ std::unique_ptr<NativeWindow> NativeWindow::Create(
     NativeWindow* parent) {
   return std::make_unique<NativeWindowViews>(options, parent);
 }
+
+#if BUILDFLAG(IS_WIN)
+bool NativeWindowViews::PreHandleMSG(UINT message,
+                                     WPARAM w_param,
+                                     LPARAM l_param,
+                                     LRESULT* result) {
+  if (message == WM_DPICHANGED) {
+    WORD new_dpi_y = LOWORD(w_param);
+    RECT* const prcNewWindow = reinterpret_cast<RECT*>(l_param);
+
+    ::SetWindowPos(GetAcceleratedWidget(),
+                   nullptr,
+                   prcNewWindow->left,
+                   prcNewWindow->top,
+                   prcNewWindow->right - prcNewWindow->left,
+                   prcNewWindow->bottom - prcNewWindow->top,
+                   SWP_NOZORDER | SWP_NOACTIVATE);
+
+    OnHostDpiChanged(new_dpi_y);
+    *result = 0;
+    return true;
+  }
+  // TODO(bridiver) handle other messages here
+  return false;
+}
+
+void NativeWindowViews::OnHostDpiChanged(int new_dpi) {
+  current_dpi_ = new_dpi;
+
+  if (widget()) {
+    widget()->UpdateWindowIcon();
+
+    if (widget()->non_client_view() && widget()->non_client_view()->frame_view()) {
+      widget()->non_client_view()->frame_view()->InvalidateLayout();
+      widget()->non_client_view()->frame_view()->SchedulePaint();
+    }
+
+    widget()->GetRootView()->Layout();
+    widget()->GetRootView()->SchedulePaint();
+  }
+}
+#endif
 
 }  // namespace electron
