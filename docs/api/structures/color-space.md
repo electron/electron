@@ -1,4 +1,4 @@
-﻿# ColorSpace Object
+# ColorSpace Object
 
 * `primaries` string - The color primaries of the color space. Can be one of the following values:
   * `bt709` - BT709 primaries (also used for sRGB)
@@ -69,7 +69,7 @@
 
 ### Standard Color Spaces
 
-* **sRGB**:
+**sRGB**:
 
   ```js
   const cs = {
@@ -80,7 +80,7 @@
   }
   ```
 
-* **Display P3**:
+**Display P3**:
 
   ```js
   const cs = {
@@ -91,7 +91,7 @@
   }
   ```
 
-* **XYZ D50**:
+**XYZ D50**:
 
   ```js
   const cs = {
@@ -104,7 +104,7 @@
 
 ### HDR Color Spaces
 
-* **Extended sRGB** (extends sRGB to all real values):
+**Extended sRGB** (extends sRGB to all real values):
 
   ```js
   const cs = {
@@ -115,7 +115,7 @@
   }
   ```
 
-* **scRGB Linear** (linear transfer function for all real values):
+**scRGB Linear** (linear transfer function for all real values):
 
   ```js
   const cs = {
@@ -126,7 +126,7 @@
   }
   ```
 
-* **scRGB Linear 80 Nits** (with an SDR white level of 80 nits):
+**scRGB Linear 80 Nits** (with an SDR white level of 80 nits):
 
   ```js
   const cs = {
@@ -137,7 +137,7 @@
   }
   ```
 
-* **HDR10** (BT.2020 primaries with PQ transfer function):
+**HDR10** (BT.2020 primaries with PQ transfer function):
 
   ```js
   const cs = {
@@ -148,7 +148,7 @@
   }
   ```
 
-* **HLG** (BT.2020 primaries with HLG transfer function):
+**HLG** (BT.2020 primaries with HLG transfer function):
 
   ```js
   const cs = {
@@ -161,7 +161,7 @@
 
 ### Video Color Spaces
 
-* **Rec. 601** (SDTV):
+**Rec. 601** (SDTV):
 
   ```js
   const cs = {
@@ -172,7 +172,7 @@
   }
   ```
 
-* **Rec. 709** (HDTV):
+**Rec. 709** (HDTV):
 
   ```js
   const cs = {
@@ -183,7 +183,7 @@
   }
   ```
 
-* **JPEG** (typical color space for JPEG images):
+**JPEG** (typical color space for JPEG images):
 
   ```js
   const cs = {
