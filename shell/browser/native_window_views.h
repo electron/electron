@@ -171,6 +171,7 @@ class NativeWindowViews : public NativeWindow,
                     LPARAM l_param,
                     LRESULT* result);
   void SetIcon(HICON small_icon, HICON app_icon);
+  void OnHostDpiChanged(int new_dpi);
 #elif BUILDFLAG(IS_LINUX)
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
@@ -324,6 +325,10 @@ class NativeWindowViews : public NativeWindow,
   // reset our thumbar buttons.
   UINT taskbar_created_message_ = 0;
 
+ protected:
+  int current_dpi_ = USER_DEFAULT_SCREEN_DPI;
+
+ private:
   std::unique_ptr<content::ScopedAccessibilityMode> scoped_accessibility_mode_;
 #endif
 
