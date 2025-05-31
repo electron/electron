@@ -269,8 +269,10 @@ Let's break down this code:
 
 Now, let's create a JavaScript wrapper to make the addon easier to use. Create `js/index.js`:
 
+<!-- eslint-disable import/newline-after-import,import/order -->
+
 ```js title='js/index.js' @ts-expect-error=[5]
-const EventEmitter = require('events')
+const EventEmitter = require('node:events')
 
 // Load the native addon using the 'bindings' module
 // This will look for the compiled .node file in various places
@@ -362,6 +364,7 @@ To use this addon in an Electron application, you would:
 ```js @ts-expect-error=[2]
 // In your main process
 const myAddon = require('my-native-addon')
+
 console.log(myAddon.helloWorld('Electron'))
 ```
 

@@ -42,6 +42,16 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
     return cp.spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args);
   };
 
+  const launchAppSandboxed = (appPath: string, profilePath: string, args: string[] = []) => {
+    return spawn('/usr/bin/sandbox-exec', [
+      '-f',
+      profilePath,
+      path.resolve(appPath, 'Contents/MacOS/Electron'),
+      ...args,
+      '--no-sandbox'
+    ]);
+  };
+
   const getRunningShipIts = async (appPath: string) => {
     const processes = await psList();
     const activeShipIts = processes.filter(p => p.cmd?.includes('Squirrel.framework/Resources/ShipIt com.github.Electron.ShipIt') && p.cmd!.startsWith(appPath));
@@ -731,6 +741,41 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
           expect(launchResult).to.have.property('code', 1);
           expect(launchResult.out).to.include('Code signature at URL');
           expect(launchResult.out).to.include(' main executable failed strict validation');
+          expect(requests).to.have.lengthOf(2);
+          expect(requests[0]).to.have.property('url', '/update-check');
+          expect(requests[1]).to.have.property('url', '/update-file');
+          expect(requests[0].header('user-agent')).to.include('Electron/');
+          expect(requests[1].header('user-agent')).to.include('Electron/');
+        });
+      });
+    });
+
+    it('should hit the download endpoint when an update is available and fail when the zip extraction process fails to launch', async () => {
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update',
+        endFixture: 'update'
+      }, async (appPath, updateZipPath) => {
+        server.get('/update-file', (req, res) => {
+          res.download(updateZipPath);
+        });
+        server.get('/update-check', (req, res) => {
+          res.json({
+            url: `http://localhost:${port}/update-file`,
+            name: 'My Release Name',
+            notes: 'Theses are some release notes innit',
+            pub_date: (new Date()).toString()
+          });
+        });
+        const launchResult = await launchAppSandboxed(
+          appPath,
+          path.resolve(__dirname, 'fixtures/auto-update/sandbox/block-ditto.sb'),
+          [`http://localhost:${port}/update-check`]
+        );
+        logOnError(launchResult, () => {
+          expect(launchResult).to.have.property('code', 1);
+          expect(launchResult.out).to.include('Starting ditto task failed with error:');
+          expect(launchResult.out).to.include('SQRLZipArchiverErrorDomain');
           expect(requests).to.have.lengthOf(2);
           expect(requests[0]).to.have.property('url', '/update-check');
           expect(requests[1]).to.have.property('url', '/update-file');

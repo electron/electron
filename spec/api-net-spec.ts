@@ -1,15 +1,19 @@
-import { net, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
+import { net, session, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
 
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import * as fs from 'node:fs';
 import * as http from 'node:http';
+import * as http2 from 'node:http2';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { collectStreamBody, collectStreamBodyBuffer, getResponse, kOneKiloByte, kOneMegaByte, randomBuffer, randomString, respondNTimes, respondOnce } from './lib/net-helpers';
+import { listen, defer } from './lib/spec-helpers';
 
 const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
+const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 async function itUtility (name: string, fn?: Function, args?: {[key:string]: any}) {
   it(`${name} in utility process`, async () => {
@@ -44,6 +48,34 @@ describe('net module', () => {
         throw new Error('Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error');
       }
     }
+  });
+
+  let http2URL: string;
+
+  const certPath = path.join(fixturesPath, 'certificates');
+  const h2server = http2.createSecureServer({
+    key: fs.readFileSync(path.join(certPath, 'server.key')),
+    cert: fs.readFileSync(path.join(certPath, 'server.pem'))
+  }, async (req, res) => {
+    if (req.method === 'POST') {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      res.end(Buffer.concat(chunks).toString('utf8'));
+    } else if (req.method === 'GET' && req.headers[':path'] === '/get') {
+      res.end(JSON.stringify({
+        headers: req.headers
+      }));
+    } else {
+      res.end('<html></html>');
+    }
+  });
+
+  before(async () => {
+    http2URL = (await listen(h2server)).url + '/';
+  });
+
+  after(() => {
+    h2server.close();
   });
 
   for (const test of [itIgnoringArgs, itUtility]) {
@@ -1613,6 +1645,47 @@ describe('net module', () => {
         await expect(net.resolveHost('notfound.localhost2'))
           .to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
       });
+    });
+  }
+
+  for (const test of [itIgnoringArgs]) {
+    describe('ClientRequest API', () => {
+      for (const [priorityName, urgency] of Object.entries({
+        throttled: 'u=5',
+        idle: 'u=4',
+        lowest: '',
+        low: 'u=2',
+        medium: 'u=1',
+        highest: 'u=0'
+      })) {
+        for (const priorityIncremental of [true, false]) {
+          test(`should set priority to ${priorityName}/${priorityIncremental} if requested`, async () => {
+            // Priority header is available on HTTP/2, which is only
+            // supported over TLS, so...
+            session.defaultSession.setCertificateVerifyProc((req, cb) => cb(0));
+            defer(() => {
+              session.defaultSession.setCertificateVerifyProc(null);
+            });
+
+            const urlRequest = net.request({
+              url: `${http2URL}get`,
+              priority: priorityName as any,
+              priorityIncremental
+            });
+            const response = await getResponse(urlRequest);
+            const data = JSON.parse(await collectStreamBody(response));
+            let expectedPriority = urgency;
+            if (priorityIncremental) {
+              expectedPriority = expectedPriority ? expectedPriority + ', i' : 'i';
+            }
+            if (expectedPriority === '') {
+              expect(data.headers.priority).to.be.undefined();
+            } else {
+              expect(data.headers.priority).to.be.a('string').and.equal(expectedPriority);
+            }
+          }, { priorityName, urgency, priorityIncremental });
+        }
+      }
     });
   }
 });
