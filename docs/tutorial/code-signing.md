@@ -78,6 +78,8 @@ See the [Mac App Store Guide][].
 
 ## Signing Windows builds
 
+### Using traditional certificates
+
 Before you can code sign your application, you need to acquire a code signing
 certificate. Unlike Apple, Microsoft allows developers to purchase those
 certificates on the open market. They are usually sold by the same companies
@@ -117,13 +119,13 @@ expose configuration options through a `windowsSign` property. You can either us
 to sign files directly - or use the same `windowsSign` configuration across Electron
 Forge, [`@electron/packager`][], [`electron-winstaller`][], and [`electron-wix-msi`][].
 
-### Using Electron Forge
+#### Using Electron Forge
 
 Electron Forge is the recommended way to sign your app as well as your `Squirrel.Windows`
 and `WiX MSI` installers. Detailed instructions on how to configure your application can
 be found in the [Electron Forge Code Signing Tutorial](https://www.electronforge.io/guides/code-signing/code-signing-windows).
 
-### Using Electron Packager
+#### Using Electron Packager
 
 If you're not using an integrated build pipeline like Forge, you
 are likely using [`@electron/packager`][], which includes [`@electron/windows-sign`][].
@@ -146,7 +148,7 @@ packager({
 })
 ```
 
-### Using electron-winstaller (Squirrel.Windows)
+#### Using electron-winstaller (Squirrel.Windows)
 
 [`electron-winstaller`][] is a package that can generate Squirrel.Windows installers for your
 Electron app. This is the tool used under the hood by Electron Forge's
@@ -178,7 +180,7 @@ try {
 
 For full configuration options, check out the [`electron-winstaller`][] repository!
 
-### Using electron-wix-msi (WiX MSI)
+#### Using electron-wix-msi (WiX MSI)
 
 [`electron-wix-msi`][] is a package that can generate MSI installers for your
 Electron app. This is the tool used under the hood by Electron Forge's [MSI Maker][maker-msi].
@@ -221,10 +223,31 @@ await msiCreator.compile()
 
 For full configuration options, check out the [`electron-wix-msi`][] repository!
 
-### Using Electron Builder
+#### Using Electron Builder
 
 Electron Builder comes with a custom solution for signing your application. You
 can find [its documentation here](https://www.electron.build/code-signing).
+
+### Using Azure Trusted Signing
+
+[Azure Trusted Signing][] is Microsoft's modern cloud-based alternative to EV certificates.
+It is the cheapest option for code signing on Windows, and it gets rid of SmartScreen warnings.
+
+As of May 2025, Azure Trusted Signing is [available][trusted-signing-availability] to US and
+Canada-based organizations with 3+ years of verifiable business history. Microsoft is looking
+to make the program more widely available. If you're reading this at a later point, it could
+make sense to check if the eligibility criteria have changed.
+
+#### Using Electron Forge
+
+Electron Forge is the recommended way to sign your app as well as your `Squirrel.Windows`
+and `WiX MSI` installers. Instructions for Azure Trusted Signing can be found
+[here][forge-trusted-signing].
+
+#### Using Electron Builder
+
+The Electron Builder documentation for Azure Trusted Signing can be found
+[here][builder-trusted-signing].
 
 ### Signing Windows Store applications
 
@@ -243,3 +266,7 @@ See the [Windows Store Guide][].
 [windows store guide]: ./windows-store-guide.md
 [maker-squirrel]: https://www.electronforge.io/config/makers/squirrel.windows
 [maker-msi]: https://www.electronforge.io/config/makers/wix-msi
+[azure trusted signing]: https://azure.microsoft.com/en-us/products/trusted-signing
+[trusted-signing-availability]: https://techcommunity.microsoft.com/blog/microsoft-security-blog/trusted-signing-public-preview-update/4399713
+[forge-trusted-signing]: https://www.electronforge.io/guides/code-signing/code-signing-windows#using-azure-trusted-signing
+[builder-trusted-signing]: https://www.electron.build/code-signing-win#using-azure-trusted-signing-beta
