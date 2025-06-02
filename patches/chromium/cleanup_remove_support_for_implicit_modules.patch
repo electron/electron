@@ -1,0 +1,838 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matt Stark <msta@google.com>
+Date: Thu, 29 May 2025 21:07:05 -0700
+Subject: Cleanup: Remove support for implicit modules.
+
+They are not compatible with RBE, and are thus currently a maintenance burden.
+
+BUG: b:40440396
+
+Change-Id: I0582ba6b74318188c473b0b639158234fc6dbb8c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6588576
+Reviewed-by: Junji Watanabe <jwata@google.com>
+Reviewed-by: Takuto Ikuta <tikuta@chromium.org>
+Commit-Queue: Matt Stark <msta@google.com>
+Auto-Submit: Matt Stark <msta@google.com>
+Cr-Commit-Position: refs/heads/main@{#1467302}
+
+diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
+index 285f8a5b20214e90309d5201cb7444ab0eccc932..15fa7fc87bf440e6352968400638bf4807422d2d 100644
+--- a/build/config/BUILDCONFIG.gn
++++ b/build/config/BUILDCONFIG.gn
+@@ -158,6 +158,13 @@ declare_args() {
+   # True when compiling native code for use with robolectric_binary().
+   is_robolectric = false
+ 
++  # Use explicit Clang header modules for libc++.
++  # This is experimental only (see crbug.com/543704).
++  # For details on the current state of modules in Chromium see
++  # https://chromium.googlesource.com/chromium/src/+/main/docs/modules.md
++  # We explicitly need this flag in this file because it's read by this file.
++  use_libcxx_modules = false
++
+   # DON'T ADD MORE FLAGS HERE. Read the comment above.
+ }
+ 
+@@ -603,7 +610,7 @@ foreach(_target_type,
+         deps = []
+       }
+ 
+-      _use_libcxx_modules = true
++      _use_libcxx_modules = use_libcxx_modules
+       if (defined(invoker.use_libcxx_modules)) {
+         _use_libcxx_modules = invoker.use_libcxx_modules
+       }
+@@ -719,7 +726,7 @@ foreach(_target_type,
+         deps += [ "//build/config:${_target_type}_deps" ]
+       }
+ 
+-      _use_libcxx_modules = true
++      _use_libcxx_modules = use_libcxx_modules
+       if (defined(invoker.use_libcxx_modules)) {
+         _use_libcxx_modules = invoker.use_libcxx_modules
+       }
+diff --git a/build/config/c++/c++.gni b/build/config/c++/c++.gni
+index 3e7a300016abd57141513c497e890d88df82a007..57824eb3d9394db530819ff3029e620db22c0d2c 100644
+--- a/build/config/c++/c++.gni
++++ b/build/config/c++/c++.gni
+@@ -43,18 +43,6 @@ declare_args() {
+   # defaults to off.
+   enable_iterator_debugging = false
+ 
+-  # Use explicit Clang header modules for libc++.
+-  # This is experimental only (see crbug.com/543704).
+-  # For details on the current state of modules in Chromium see
+-  # https://chromium.googlesource.com/chromium/src/+/main/docs/modules.md
+-  use_libcxx_modules = false
+-
+-  # Use implicit Clang header modules for libc++.
+-  # This is experimental only (see crbug.com/543704).
+-  # For details on the current state of modules in Chromium see
+-  # https://chromium.googlesource.com/chromium/src/+/main/docs/modules.md
+-  use_implicit_libcxx_modules = false
+-
+   # Build atomic support from in-tree compiler-rt.
+   #
+   # Apple platforms provide the intrinsics from a different library, and the
+@@ -65,15 +53,6 @@ declare_args() {
+   use_llvm_libatomic = !is_apple && !is_nacl && !use_libfuzzer
+ }
+ 
+-if (use_implicit_libcxx_modules) {
+-  use_libcxx_modules = true
+-}
+-
+-use_explicit_libcxx_modules = use_libcxx_modules && !use_implicit_libcxx_modules
+-
+-assert(!use_implicit_libcxx_modules || !use_remoteexec,
+-       "Implicit Clang header modules don't work with remote execution.")
+-
+ use_custom_libcxx =
+     use_custom_libcxx || (use_custom_libcxx_for_host && !is_a_target_toolchain)
+ use_custom_libcxx = use_custom_libcxx && !is_nacl
+@@ -123,7 +102,7 @@ if (is_android && export_libcxxabi_from_executables) {
+   libcxx_is_shared = true
+ }
+ 
+-if (use_explicit_libcxx_modules) {
++if (use_libcxx_modules) {
+   libcxx_prefix = "${root_gen_dir}/third_party/libc++/src"
+   libcxx_modulemap_in =
+       read_file("//third_party/libc++/src/include/module.modulemap.in",
+diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
+index 59942a3cf6f01a24ad195b6929f15e92bd2e7772..d8bbfb4b1c37910e262978c5c540d102062a7b4c 100644
+--- a/build/config/compiler/BUILD.gn
++++ b/build/config/compiler/BUILD.gn
+@@ -1836,6 +1836,7 @@ config("libcxx_module") {
+       "-fbuiltin-module-map",
+       "-fmodule-map-file=" + sysroot_modulemap,
+       "-fno-implicit-module-maps",
++      "-fno-implicit-modules",
+ 
+       "-Xclang",
+       "-fmodules-local-submodule-visibility",  # required for builtins
+@@ -1849,22 +1850,10 @@ config("libcxx_module") {
+       # Needed to allow using builtin modules when the headers are
+       # unnecessarily using extern "C".
+       "-Wno-module-import-in-extern-c",
+-    ]
+-
+-    if (use_explicit_libcxx_modules) {
+-      cflags_cc += [
+-        "-fno-implicit-modules",
+ 
+-        # This is for exception handling mismatch.
+-        "-Wno-module-file-config-mismatch",
+-      ]
+-    } else {
+-      cflags_cc += [
+-        "-fbuiltin-module-map",
+-        "-fmodules-cache-path=" +
+-            rebase_path("$libcxx_module_prefix/module_cache", root_build_dir),
+-      ]
+-    }
++      # This is for exception handling mismatch.
++      "-Wno-module-file-config-mismatch",
++    ]
+   }
+ }
+ 
+diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
+index bc7e4e534ff74f51a4b45f532a369189f10af777..9018ef032221a91f09838f5154957edc3827e40c 100644
+--- a/buildtools/third_party/libc++/BUILD.gn
++++ b/buildtools/third_party/libc++/BUILD.gn
+@@ -57,11 +57,11 @@ configs_to_remove = [
+   "//build/config/coverage:default_coverage",
+ ]
+ 
+-template("sysroot_modules") {
+-  source_set(target_name) {
+-    use_libcxx_modules = false
+-    deps = []
+-    if (use_explicit_libcxx_modules) {
++if (use_libcxx_modules) {
++  template("sysroot_modules") {
++    source_set(target_name) {
++      use_libcxx_modules = false
++      deps = []
+       if (is_linux) {
+         sources = [ "//build/linux/amd64/module.modulemap" ]
+       }
+@@ -69,139 +69,135 @@ template("sysroot_modules") {
+         ":copy_custom_headers",
+         ":copy_libcxx_headers",
+       ]
+-    }
+ 
+-    configs -= configs_to_remove
+-    configs += configs_to_add
+-    if (defined(invoker.deps)) {
+-      deps += invoker.deps
+-    } else {
+-      not_needed(invoker, "*")
++      configs -= configs_to_remove
++      configs += configs_to_add
++      if (defined(invoker.deps)) {
++        deps += invoker.deps
++      } else {
++        not_needed(invoker, "*")
++      }
+     }
+   }
+-}
+ 
+-sysroot_modules("sysroot_features") {
+-}
++  sysroot_modules("sysroot_features") {
++  }
+ 
+-sysroot_modules("sysroot_bits") {
+-  deps = [
+-    ":sysroot_features",
+-    ":sysroot_time",
+-  ]
+-}
++  sysroot_modules("sysroot_bits") {
++    deps = [
++      ":sysroot_features",
++      ":sysroot_time",
++    ]
++  }
+ 
+-sysroot_modules("sysroot_time") {
+-  deps = [ ":sysroot_features" ]
+-}
++  sysroot_modules("sysroot_time") {
++    deps = [ ":sysroot_features" ]
++  }
+ 
+-sysroot_modules("sysroot_types") {
+-  deps = [
+-    ":_Builtin_stddef",
+-    ":std_config",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-  ]
+-}
++  sysroot_modules("sysroot_types") {
++    deps = [
++      ":_Builtin_stddef",
++      ":std_config",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++    ]
++  }
+ 
+-template("builtin_modules") {
+-  # This is a template to build clang builtin's module file.
+-  source_set(target_name) {
+-    use_libcxx_modules = false
+-    if (use_explicit_libcxx_modules) {
++  template("builtin_modules") {
++    # This is a template to build clang builtin's module file.
++    source_set(target_name) {
++      use_libcxx_modules = false
+       sources = [ "${clang_base_path}/lib/clang/${clang_version}/include/module.modulemap" ]
+-    }
+ 
+-    configs -= configs_to_remove
+-    configs += configs_to_add
++      configs -= configs_to_remove
++      configs += configs_to_add
+ 
+-    deps = []
+-    if (defined(invoker.deps)) {
+-      deps += invoker.deps
+-    } else {
+-      not_needed(invoker, "*")
++      deps = []
++      if (defined(invoker.deps)) {
++        deps += invoker.deps
++      } else {
++        not_needed(invoker, "*")
++      }
+     }
+   }
+-}
+ 
+-builtin_modules("_Builtin_float") {
+-}
++  builtin_modules("_Builtin_float") {
++  }
+ 
+-builtin_modules("_Builtin_intrinsics") {
+-  deps = [
+-    ":_Builtin_limits",
+-    ":_Builtin_stddef",
+-    ":std_config",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-    ":sysroot_types",
+-  ]
+-}
++  builtin_modules("_Builtin_intrinsics") {
++    deps = [
++      ":_Builtin_limits",
++      ":_Builtin_stddef",
++      ":std_config",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++      ":sysroot_types",
++    ]
++  }
+ 
+-builtin_modules("_Builtin_inttypes") {
+-  deps = [
+-    ":_Builtin_stdarg",
+-    ":_Builtin_stddef",
+-    ":_Builtin_stdint",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-  ]
+-}
++  builtin_modules("_Builtin_inttypes") {
++    deps = [
++      ":_Builtin_stdarg",
++      ":_Builtin_stddef",
++      ":_Builtin_stdint",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++    ]
++  }
+ 
+-builtin_modules("_Builtin_limits") {
+-  deps = [ ":sysroot_features" ]
+-}
++  builtin_modules("_Builtin_limits") {
++    deps = [ ":sysroot_features" ]
++  }
+ 
+-builtin_modules("_Builtin_stdalign") {
+-}
++  builtin_modules("_Builtin_stdalign") {
++  }
+ 
+-builtin_modules("_Builtin_stdarg") {
+-}
++  builtin_modules("_Builtin_stdarg") {
++  }
+ 
+-builtin_modules("_Builtin_stdatomic") {
+-  deps = [
+-    ":_Builtin_stddef",
+-    ":_Builtin_stdint",
+-    ":std_config",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-  ]
+-}
++  builtin_modules("_Builtin_stdatomic") {
++    deps = [
++      ":_Builtin_stddef",
++      ":_Builtin_stdint",
++      ":std_config",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++    ]
++  }
+ 
+-builtin_modules("_Builtin_stdbool") {
+-}
++  builtin_modules("_Builtin_stdbool") {
++  }
+ 
+-builtin_modules("_Builtin_stddef") {
+-}
++  builtin_modules("_Builtin_stddef") {
++  }
+ 
+-builtin_modules("_Builtin_stdint") {
+-  deps = [
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-  ]
+-  if (is_mac) {
+-    deps += [
+-      ":_Builtin_stdarg",
+-      ":_Builtin_stddef",
++  builtin_modules("_Builtin_stdint") {
++    deps = [
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
+     ]
++    if (is_mac) {
++      deps += [
++        ":_Builtin_stdarg",
++        ":_Builtin_stddef",
++      ]
++    }
+   }
+-}
+ 
+-builtin_modules("_Builtin_unwind") {
+-  deps = [
+-    ":_Builtin_stdint",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-  ]
+-}
++  builtin_modules("_Builtin_unwind") {
++    deps = [
++      ":_Builtin_stdint",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++    ]
++  }
+ 
+-if (use_explicit_libcxx_modules) {
+   # We need to have libc++ headers, __assertion_handler and __config_site in the
+   # same directory for clang modules build.
+   copy("copy_libcxx_headers") {
+@@ -218,202 +214,200 @@ if (use_explicit_libcxx_modules) {
+       "${root_gen_dir}/third_party/libc++/src/include/{{source_file_part}}",
+     ]
+   }
+-}
+ 
+-template("libcxx_modules") {
+-  # This is a template to build libc++'s module file.
+-  source_set(target_name) {
+-    use_libcxx_modules = false
+-    deps = []
+-    if (use_explicit_libcxx_modules) {
++  template("libcxx_modules") {
++    # This is a template to build libc++'s module file.
++    source_set(target_name) {
++      use_libcxx_modules = false
++      deps = []
+       sources =
+           [ "${root_gen_dir}/third_party/libc++/src/include/module.modulemap" ]
+       deps += [
+         ":copy_custom_headers",
+         ":copy_libcxx_headers",
+       ]
+-    }
+ 
+-    configs -= configs_to_remove
+-    configs += configs_to_add
++      configs -= configs_to_remove
++      configs += configs_to_add
+ 
+-    if (defined(invoker.deps)) {
+-      deps += invoker.deps
+-    } else {
+-      not_needed(invoker, "*")
++      if (defined(invoker.deps)) {
++        deps += invoker.deps
++      } else {
++        not_needed(invoker, "*")
++      }
+     }
+   }
+-}
+ 
+-libcxx_modules("std") {
+-  deps = [
+-    ":_Builtin_float",
+-    ":_Builtin_inttypes",
+-    ":_Builtin_limits",
+-    ":_Builtin_stdalign",
+-    ":_Builtin_stdarg",
+-    ":_Builtin_stddef",
+-    ":_Builtin_stdint",
+-    ":std_config",
+-    ":std_core",
+-    ":std_ctype_h",
+-    ":std_errno_h",
+-    ":std_fenv_h",
+-    ":std_float_h",
+-    ":std_inttypes_h",
+-    ":std_math_h",
+-    ":std_private_mbstate_t",
+-    ":std_string_h",
+-    ":std_uchar_h",
+-    ":std_wctype_h",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-    ":sysroot_types",
+-  ]
+-}
++  libcxx_modules("std") {
++    deps = [
++      ":_Builtin_float",
++      ":_Builtin_inttypes",
++      ":_Builtin_limits",
++      ":_Builtin_stdalign",
++      ":_Builtin_stdarg",
++      ":_Builtin_stddef",
++      ":_Builtin_stdint",
++      ":std_config",
++      ":std_core",
++      ":std_ctype_h",
++      ":std_errno_h",
++      ":std_fenv_h",
++      ":std_float_h",
++      ":std_inttypes_h",
++      ":std_math_h",
++      ":std_private_mbstate_t",
++      ":std_string_h",
++      ":std_uchar_h",
++      ":std_wctype_h",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++      ":sysroot_types",
++    ]
++  }
+ 
+-libcxx_modules("std_config") {
+-  deps = [ ":sysroot_features" ]
+-}
++  libcxx_modules("std_config") {
++    deps = [ ":sysroot_features" ]
++  }
+ 
+-libcxx_modules("std_core") {
+-  deps = [
+-    ":_Builtin_stdarg",
+-    ":_Builtin_stddef",
+-    ":_Builtin_stdint",
+-    ":std_config",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-  ]
+-}
++  libcxx_modules("std_core") {
++    deps = [
++      ":_Builtin_stdarg",
++      ":_Builtin_stddef",
++      ":_Builtin_stdint",
++      ":std_config",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++    ]
++  }
+ 
+-libcxx_modules("std_ctype_h") {
+-  deps = [
+-    ":_Builtin_stdarg",
+-    ":_Builtin_stddef",
+-    ":std_config",
+-    ":sysroot_features",
+-  ]
+-}
++  libcxx_modules("std_ctype_h") {
++    deps = [
++      ":_Builtin_stdarg",
++      ":_Builtin_stddef",
++      ":std_config",
++      ":sysroot_features",
++    ]
++  }
+ 
+-libcxx_modules("std_errno_h") {
+-  deps = [
+-    ":std_config",
+-    ":sysroot_features",
+-  ]
+-}
++  libcxx_modules("std_errno_h") {
++    deps = [
++      ":std_config",
++      ":sysroot_features",
++    ]
++  }
+ 
+-libcxx_modules("std_fenv_h") {
+-  deps = [
+-    ":std_config",
+-    ":sysroot_features",
+-  ]
+-}
++  libcxx_modules("std_fenv_h") {
++    deps = [
++      ":std_config",
++      ":sysroot_features",
++    ]
++  }
+ 
+-libcxx_modules("std_float_h") {
+-  deps = [
+-    ":_Builtin_float",
+-    ":std_config",
+-    ":sysroot_features",
+-  ]
+-}
++  libcxx_modules("std_float_h") {
++    deps = [
++      ":_Builtin_float",
++      ":std_config",
++      ":sysroot_features",
++    ]
++  }
+ 
+-libcxx_modules("std_inttypes_h") {
+-  deps = [
+-    ":_Builtin_inttypes",
+-    ":_Builtin_stdarg",
+-    ":_Builtin_stddef",
+-    ":_Builtin_stdint",
+-    ":std_config",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-  ]
+-}
++  libcxx_modules("std_inttypes_h") {
++    deps = [
++      ":_Builtin_inttypes",
++      ":_Builtin_stdarg",
++      ":_Builtin_stddef",
++      ":_Builtin_stdint",
++      ":std_config",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++    ]
++  }
+ 
+-libcxx_modules("std_math_h") {
+-  deps = [
+-    ":_Builtin_limits",
+-    ":_Builtin_stdarg",
+-    ":_Builtin_stddef",
+-    ":_Builtin_stdint",
+-    ":std_config",
+-    ":std_core",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-    ":sysroot_types",
+-  ]
+-}
++  libcxx_modules("std_math_h") {
++    deps = [
++      ":_Builtin_limits",
++      ":_Builtin_stdarg",
++      ":_Builtin_stddef",
++      ":_Builtin_stdint",
++      ":std_config",
++      ":std_core",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++      ":sysroot_types",
++    ]
++  }
+ 
+-libcxx_modules("std_private_mbstate_t") {
+-  deps = [
+-    ":_Builtin_stdarg",
+-    ":_Builtin_stddef",
+-    ":std_config",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-    ":sysroot_types",
+-  ]
+-}
++  libcxx_modules("std_private_mbstate_t") {
++    deps = [
++      ":_Builtin_stdarg",
++      ":_Builtin_stddef",
++      ":std_config",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++      ":sysroot_types",
++    ]
++  }
+ 
+-libcxx_modules("std_stdatomic_h") {
+-  deps = [
+-    ":_Builtin_stdatomic",
+-    ":_Builtin_stddef",
+-    ":_Builtin_stdint",
+-    ":std_config",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-  ]
+-}
++  libcxx_modules("std_stdatomic_h") {
++    deps = [
++      ":_Builtin_stdatomic",
++      ":_Builtin_stddef",
++      ":_Builtin_stdint",
++      ":std_config",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++    ]
++  }
+ 
+-libcxx_modules("std_stdbool_h") {
+-  deps = [
+-    ":_Builtin_stdbool",
+-    ":std_config",
+-    ":sysroot_features",
+-  ]
+-}
++  libcxx_modules("std_stdbool_h") {
++    deps = [
++      ":_Builtin_stdbool",
++      ":std_config",
++      ":sysroot_features",
++    ]
++  }
+ 
+-libcxx_modules("std_stddef_h") {
+-}
++  libcxx_modules("std_stddef_h") {
++  }
+ 
+-libcxx_modules("std_string_h") {
+-  deps = [
+-    ":_Builtin_stdarg",
+-    ":_Builtin_stddef",
+-    ":std_config",
+-    ":sysroot_features",
+-  ]
+-}
++  libcxx_modules("std_string_h") {
++    deps = [
++      ":_Builtin_stdarg",
++      ":_Builtin_stddef",
++      ":std_config",
++      ":sysroot_features",
++    ]
++  }
+ 
+-libcxx_modules("std_uchar_h") {
+-  deps = [
+-    ":_Builtin_stddef",
+-    ":std_config",
+-    ":sysroot_bits",
+-    ":sysroot_features",
+-    ":sysroot_time",
+-    ":sysroot_types",
+-  ]
+-  if (is_mac) {
+-    deps += [ ":std_private_mbstate_t" ]
++  libcxx_modules("std_uchar_h") {
++    deps = [
++      ":_Builtin_stddef",
++      ":std_config",
++      ":sysroot_bits",
++      ":sysroot_features",
++      ":sysroot_time",
++      ":sysroot_types",
++    ]
++    if (is_mac) {
++      deps += [ ":std_private_mbstate_t" ]
++    }
+   }
+-}
+ 
+-libcxx_modules("std_wctype_h") {
+-  deps = [
+-    ":_Builtin_stddef",
+-    ":std_config",
+-    ":sysroot_features",
+-  ]
+-  if (is_mac) {
+-    deps += [ ":std_ctype_h" ]
++  libcxx_modules("std_wctype_h") {
++    deps = [
++      ":_Builtin_stddef",
++      ":std_config",
++      ":sysroot_features",
++    ]
++    if (is_mac) {
++      deps += [ ":std_ctype_h" ]
++    }
+   }
+ }
+ 
+diff --git a/docs/modules.md b/docs/modules.md
+index ab41c494cfb2e409296d5987ef83f6b4720bfda4..abed944c01c88ae365855b052726c2bc48945fa2 100644
+--- a/docs/modules.md
++++ b/docs/modules.md
+@@ -18,53 +18,23 @@ their code bases with large performance wins.
+ the build system.
+ 
+ We're currently experimenting with modules for libc++ and they can be enabled
+-with the GN arg `use_libcxx_modules` and `use_implicit_libcxx_modules`. Using
+-this arg is not currently recommended, due to the limitations mentioned below.
++with the GN arg `use_libcxx_modules. Using this arg is not currently
++recommended, due to the limitations mentioned below.
+ It is only interesting to people working on the feature.
+ 
+ ## Current limitations
+ 
+-### Implicit vs explicit modules
+-
+-`use_implicit_libcxx_modules` is using implicit modules, which are created
+-on-the-fly when Clang doesn't see them in the module cache. This doesn't work
+-with remote execution since the cached modules aren't known to the build system.
+-
+-The module cache is set to `<outdir>/gen/libcxx/module_cache`. Since the modules
+-aren't known to ninja they aren't cleaned with `ninja -t clean` and need to be
+-manually deleted for a clean build.
+-
+-We will eventually switch to explicit modules to address these issues, which
+-will require support in GN and has been partially implemented
+-([CL1](https://gn-review.googlesource.com/c/gn/+/9601),
+-[CL2](https://gn-review.googlesource.com/c/gn/+/9602),
+-[CL3](https://gn-review.googlesource.com/c/gn/+/9680), and
+-[crbug.com/gn/373](https://crbug.com/gn/373)).
+-
+-`use_libcxx_modules` enables explicit modules using existing features.
+-
+-### Duplicate modules
+-
+-Multiple pcm files are created per module. For correctness, Clang header modules
+-default to using a hash of command line args in the module path. For compiling
+-`base`, we have 19 different flag combinations and ~700 pcm files are created
+-per flag combination for 13483 total pcms.
+-
+-Some flag combinations produce incompatible modules, like whether RTTI is turned
+-on or off. For most others, we expect that the resulting modules from slight
+-flag variations (e.g. setting include preprocessor defines unrelated to libc++)
+-are compatible with each other and can be reused.
+-
+ ### Performance
+ 
+ With Chrome's Clang plugins turned on, modules perform worse than without
+-modules even if fully cached ([crbug.com/351909443](https://crbug.com/351909443)).
++modules ([crbug.com/351909443](https://crbug.com/351909443)).
++
++### Configurations
+ 
+-Building with modules and a cold module cache is much slower than without
+-modules. This seems unexpected since Clang should still be doing less work.
++Clang modules don't play nice with code with RTTI / exceptions depending on
++code without, and vice versa. Work is ongoing to fix this, but for now, it
++remains a problem ([crbug.com/403415459](https://crbug.com/403415459)).
+ 
+ ### Correctness
+ 
+-When the module cache is cold, there are occasional build failures when ninja
+-parallelism is high enough. I don't see it with 20 jobs but see it with 130 jobs
+-([crbug.com/351865290](https://crbug.com/351865290)).
++The configurations issue above can cause unexpected build failures.
