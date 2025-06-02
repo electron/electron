@@ -33,7 +33,7 @@ index 49aacb6262502ced54e817f99dd596db85b9659c..f9f065bb743275e9b2ce71375e6a9f06
    if (!loaded) {
      module = new CJSModule(filename);
 diff --git a/lib/internal/modules/run_main.js b/lib/internal/modules/run_main.js
-index ab4783a7982b9feb8fa85b62e3e3b181f93309bd..34f91026451d7347ae278712d083e4fe281e50f3 100644
+index 02ba43adc2c8e92a78942bbb04023a16f5870ee9..bbf1ab69b884a9325bebdd07b2c4fd354eee946b 100644
 --- a/lib/internal/modules/run_main.js
 +++ b/lib/internal/modules/run_main.js
 @@ -2,6 +2,7 @@

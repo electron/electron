@@ -18,10 +18,10 @@ This can be removed when Node.js upgrades to a version of V8 containing CLs
 from the above issue.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 7f4f233b26425493a58ce71dfc0c3a92b7c0bef8..c3f422c6b212bf737a906d2a89df85b63c218617 100644
+index 5b7f6e0609c8414c686d2d5ca603ea5c8bc484d0..6c9c81ff3c08fc28dc35578229a785521322b5dc 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -312,6 +312,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+@@ -313,6 +313,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
                      MultiIsolatePlatform* platform,
                      const SnapshotData* snapshot_data,
                      const IsolateSettings& settings) {
@@ -32,7 +32,7 @@ index 7f4f233b26425493a58ce71dfc0c3a92b7c0bef8..c3f422c6b212bf737a906d2a89df85b6
    Isolate* isolate = Isolate::Allocate();
    if (isolate == nullptr) return nullptr;
  
-@@ -355,9 +359,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
+@@ -356,9 +360,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
                      uv_loop_t* event_loop,
                      MultiIsolatePlatform* platform,
                      const EmbedderSnapshotData* snapshot_data,
@@ -102,36 +102,44 @@ index 9f1c7ef45b6df10f811936a78ea6d9fcc13fef4f..c429eecd937d1df32a2ff90bc0a22a2e
    worker::Worker* worker_context_ = nullptr;
    PerIsolateWrapperData* wrapper_data_;
 diff --git a/src/node.cc b/src/node.cc
-index 8da5f5344051663f92d72848fbac9d041ac4fac3..2f58a6fa69069dabb99b5ddb8011991b07fa5f02 100644
+index 092b1c525c7d4d50a09f99dc088d0698afcaf8a6..6f8f6386d0db8aef1e2e0126cc9064101cbe6112 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -1222,10 +1222,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1258,6 +1258,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      result->platform_ = per_process::v8_platform.Platform();
    }
  
--  if (!(flags & ProcessInitializationFlags::kNoInitializeV8)) {
--    V8::Initialize();
--  }
--
-   if (!(flags & ProcessInitializationFlags::kNoInitializeCppgc)) {
-     v8::PageAllocator* allocator = nullptr;
-     if (result->platform_ != nullptr) {
-@@ -1234,6 +1230,10 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
-     cppgc::InitializeProcess(allocator);
-   }
- 
-+  if (!(flags & ProcessInitializationFlags::kNoInitializeV8)) {
-+    V8::Initialize();
++  if (!(flags & ProcessInitializationFlags::kNoInitializeCppgc)) {
++    v8::PageAllocator* allocator = nullptr;
++    if (result->platform_ != nullptr) {
++      allocator = result->platform_->GetPageAllocator();
++    }
++    cppgc::InitializeProcess(allocator);
 +  }
 +
+   if (!(flags & ProcessInitializationFlags::kNoInitializeV8)) {
+     V8::Initialize();
+ 
+@@ -1267,14 +1275,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+     absl::SetMutexDeadlockDetectionMode(absl::OnDeadlockCycle::kIgnore);
+   }
+ 
+-  if (!(flags & ProcessInitializationFlags::kNoInitializeCppgc)) {
+-    v8::PageAllocator* allocator = nullptr;
+-    if (result->platform_ != nullptr) {
+-      allocator = result->platform_->GetPageAllocator();
+-    }
+-    cppgc::InitializeProcess(allocator);
+-  }
+-
  #if NODE_USE_V8_WASM_TRAP_HANDLER
    bool use_wasm_trap_handler =
        !per_process::cli_options->disable_wasm_trap_handler;
 diff --git a/src/node.h b/src/node.h
-index 98ad0ea649eaef43d1f5231f7bc4044e100e08d7..c295cce8f5c7965cce4d2e4c0614dbe076986a4c 100644
+index 42d55d24bd0770795ae0c0e19241d25a6350ae08..4335c7cf53b7e08c95dcee3461384ac12c8ebe41 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -589,7 +589,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
+@@ -590,7 +590,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
      struct uv_loop_s* event_loop,
      MultiIsolatePlatform* platform,
      const EmbedderSnapshotData* snapshot_data = nullptr,
@@ -166,7 +174,7 @@ index 4119ac1b002681d39711eac810ca2fcc2702ffc7..790347056cde949ffe6cf8498a7eca0c
  
  ExitCode NodeMainInstance::Run() {
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 1fc3774948dae3c0aae7d2aef563e18ecd4243a3..9d35cbf3dff538f38e8d5b8660d40c1fbaa56474 100644
+index 9d56d8f793ef48a79867f465530554ae0226f2cd..842eb999c6ef0cb877cc2ee4acf75bb597a117da 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
 @@ -162,6 +162,9 @@ class WorkerThreadData {
@@ -195,7 +203,7 @@ index 1fc3774948dae3c0aae7d2aef563e18ecd4243a3..9d35cbf3dff538f38e8d5b8660d40c1f
        // Wait until the platform has cleaned up all relevant resources.
        while (!platform_finished) {
 diff --git a/src/util.cc b/src/util.cc
-index 3e9dfb4392fb3e3deaab5506771f01be65bc5dda..416e0479ddf740c6d3e2d4ea9466ac060b038294 100644
+index 0c01d338b9d1ced7f173ac862239315f91326791..5ca32f026f9f001ddadc14965705fe005600eddd 100644
 --- a/src/util.cc
 +++ b/src/util.cc
 @@ -726,8 +726,8 @@ RAIIIsolateWithoutEntering::RAIIIsolateWithoutEntering(const SnapshotData* data)
