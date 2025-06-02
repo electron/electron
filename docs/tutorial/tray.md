@@ -52,8 +52,8 @@ into the [`tray.setContextMenu`](../api/tray.md#traysetcontextmenumenu) function
 > for you (although various click-related events exist on the API for advanced use cases).
 
 ```js title='Creating a Tray menu that can quit the app'
-const { app, Tray, Menu } = require('electron/main')
 const { nativeImage } = require('electron/common')
+const { app, Tray, Menu } = require('electron/main')
 
 // save a reference to the Tray object globally to avoid garbage collection
 let tray
