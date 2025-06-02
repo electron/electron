@@ -83,6 +83,18 @@ runs:
   - name: Add patch conflict problem matcher
     shell: bash
     run: echo "::add-matcher::src/electron/.github/problem-matchers/patch-conflict.json"
+  - name: Restore gitcache
+    if: steps.check-cache.outputs.cache_exists == 'false'
+    shell: bash
+    run: |
+      GIT_CACHE_TAR="$CACHE_DRIVE/gitcache.tar"
+      if [ ! -f "$GIT_CACHE_TAR" ]; then
+        echo "Git cache tar file does not exist, skipping restore"
+        exit 0
+      fi
+      echo "Restoring git cache from $GIT_CACHE_TAR to $GIT_CACHE_PATH"
+      mkdir -p $GIT_CACHE_PATH
+      tar -xf $GIT_CACHE_TAR -C $GIT_CACHE_PATH
   - name: Gclient Sync
     if: steps.check-cache.outputs.cache_exists == 'false'
     shell: bash
