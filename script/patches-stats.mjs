@@ -57,7 +57,7 @@ async function main () {
                 value: patchCount
               }
             ],
-            type: 1 // COUNT
+            type: 3 // GAUGE
           },
           {
             metric: 'electron.patches.lineCount',
@@ -67,7 +67,7 @@ async function main () {
                 value: patchesLineCount
               }
             ],
-            type: 1 // COUNT
+            type: 3 // GAUGE
           }
         ]
       })
