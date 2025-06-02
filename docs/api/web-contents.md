@@ -841,9 +841,10 @@ Emitted when a bluetooth device needs to be selected when a call to
 the `deviceId` of the device to be selected.  Passing an empty string to
 `callback` will cancel the request.
 
-If an event listener is not added for this event, or if `event.preventDefault`
-is not called when handling this event, the first available device will be
-automatically selected.
+If no event listener is added for this event, all bluetooth requests will be cancelled.
+
+If `event.preventDefault` is not called when handling this event, the first available
+device will be automatically selected.
 
 Due to the nature of bluetooth, scanning for devices when
 `navigator.bluetooth.requestDevice` is called may take time and will cause
