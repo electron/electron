@@ -548,7 +548,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index d83f420d25e2c108ad400ebecae02b1ac327c058..77852c5c315ac09dddb7227adf3b840ee9d93928 100644
+index 9405f9262f01eb17bf47565641319aaea033fd30..33e53db9f4669ccc107c3d93adc0f64c9a4e6c1f 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -36,6 +36,7 @@
@@ -559,7 +559,7 @@ index d83f420d25e2c108ad400ebecae02b1ac327c058..77852c5c315ac09dddb7227adf3b840e
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2147,15 +2148,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2141,15 +2142,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -937,10 +937,10 @@ index f89dbdfb0c4e8e31d387d1ce2e5304277ac4df26..7b75bfeba59345d63f4ac81153697941
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 4f663e28aa078bd2e692a79d06dbdde055287f3c..8588214d7f30384cc37aaf0062c941a854d4bba5 100644
+index fb7cfb12b0d4109d93471d694a381a3d7be1ea84..fe566147ddb364a7b632afc45feef034fbe1ae06 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -198,6 +198,7 @@ source_set("audio") {
+@@ -202,6 +202,7 @@ source_set("audio") {
        "CoreMedia.framework",
      ]
      weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0
