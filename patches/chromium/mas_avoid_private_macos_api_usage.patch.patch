@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 01c19144731d186d857dda72c3ac002a9ae2e911..14faff7dd8f32437f849011df222a37744f379d5 100644
+index 4174518abd148e820af94ec35ffcd814a32f7866..20ece46126aa202c123e0ff7b04c3cb1d794864d 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1046,6 +1046,7 @@ component("base") {
+@@ -1048,6 +1048,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -208,7 +208,7 @@ index ff1e356ff696d3830d02644969c36a71fdf32ff6..b39c716c52524b95f2d3417a98e60c0c
      sources += [ "os_crypt_win.cc" ]
      deps += [ "//components/version_info" ]
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index 6b936d228cf71d33025769430afbe6fe322ed186..3d388a85aaf52acdcc2b7aaea56f5a24b2435bff 100644
+index 6567e6f2d3b1dc859408666dd3c15c4a9e1238b0..77409051c67a5a7bd3826a7063666954a38a86f0 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
 @@ -15,6 +15,7 @@
@@ -216,9 +216,9 @@ index 6b936d228cf71d33025769430afbe6fe322ed186..3d388a85aaf52acdcc2b7aaea56f5a24
  #include "build/branding_buildflags.h"
  #include "crypto/apple_keychain.h"
 +#include "electron/mas.h"
+ #include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
  
  using crypto::AppleKeychain;
- 
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
 index ad40ddbbcb0fcfa070833ea6c0d01432bbb67768..df632da340c132f469f4f35738514763437e67fc 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
@@ -582,7 +582,7 @@ index d83f420d25e2c108ad400ebecae02b1ac327c058..77852c5c315ac09dddb7227adf3b840e
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 1006244a7ed861fdd58bfb3af926a69af2061322..4074a0429ce78963d4406f957c96382333d760ed 100644
+index 5e4216c5c88197b90dced7138c1634740cb002f9..493392b136c9a6739d11931e13a722602c95050e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
@@ -715,10 +715,10 @@ index da0e8c7260391805fa6950125c797565a2812521..8e8b093cd142326010445e9b2aae7c20
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 7424d33cc34ca44b1949260215b2f0a44a2d393e..80e284ca761069e5d544b5a056b13df32d509d00 100644
+index b8fd955057ebdbf910c81f5d79d7a7ca47601ac7..aa232a7d02f353d83fd2862416b0c3b8ebbccc52 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -327,6 +327,7 @@ target(link_target_type, "renderer") {
+@@ -321,6 +321,7 @@ target(link_target_type, "renderer") {
      "//ui/surface",
      "//url",
      "//v8",
@@ -797,10 +797,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 5544ddc8faae9cc4a75c812227a94df4ad4f5e53..d6fa2a588fec9895101dc4c308eb84b015a908aa 100644
+index 94330a7d66b2d127705b95f9f85200ec84de5d42..8463246ad7d36dd1933e36b6ddaaf37249326af8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -664,6 +664,7 @@ static_library("test_support") {
+@@ -665,6 +665,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -808,7 +808,7 @@ index 5544ddc8faae9cc4a75c812227a94df4ad4f5e53..d6fa2a588fec9895101dc4c308eb84b0
    ]
  
    data_deps = [
-@@ -1120,6 +1121,7 @@ static_library("browsertest_support") {
+@@ -1121,6 +1122,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -816,7 +816,7 @@ index 5544ddc8faae9cc4a75c812227a94df4ad4f5e53..d6fa2a588fec9895101dc4c308eb84b0
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1963,6 +1965,7 @@ test("content_browsertests") {
+@@ -1964,6 +1966,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 5544ddc8faae9cc4a75c812227a94df4ad4f5e53..d6fa2a588fec9895101dc4c308eb84b0
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3293,6 +3296,7 @@ test("content_unittests") {
+@@ -3295,6 +3298,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -903,7 +903,7 @@ index 6431af67ab634cf23729b9102c189b2181cfd2cf..22040e1bfb96d810a2d8e62e44e4afbc
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 2ef64102137f543ec8c4d88bd6718264d1c52691..7e2c450a44b4bddf7cb3e2d3482ec04c5b750e02 100644
+index 237bff815a69c786a9ae31437c6df1c933e4963b..215c9affd67ebddc81415eefc12ee5727ab07aee 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
 @@ -131,6 +131,7 @@ component("service") {
@@ -1436,7 +1436,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 1b5e616ebd3c610739a9dcf3fd6694f1e442d783..8449d7eb65687fa82db0f23c7627807ef26e34f3 100644
+index bae0728aa1b2d8416e815862fd5d4aceb165ee44..a1a653bb5ec345f07027d1911071792510c5da6f 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -414,6 +414,7 @@ component("core") {
@@ -1678,7 +1678,7 @@ index 6846060ef9622d8fc8d1d6c8da16e2f1b785e6bd..05c22db87e882b246bd7034e027cf149
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index d2bd63f57da9b3ff84ebe36053ec18978d86c9f3..a6261be96e00548af7eba8a5fc7461586b9dbf53 100644
+index b5456d6483b35efd929aa772be65b68bc03aabc4..2d1bd535d66c2fab0209e5adc957d827d9182737 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -365,6 +365,13 @@ component("base") {
@@ -1848,7 +1848,7 @@ index 033ebc0036bcd373b011ca829d255e8c83701a6d..ad06707f31872c58217d2d034f050c55
    // Query the display's refresh rate.
    if (@available(macos 12.0, *)) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index af66f53bbec8e3cf9b1e2e69e602173725958706..381498a4d51b32a30a206d9ec3878d9ab3109386 100644
+index 073269d426f55591e2daeff32782d957624d11d4..c6fe49958fd3e0b556352fda5cc35b9455792002 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -337,6 +337,12 @@ component("gfx") {
