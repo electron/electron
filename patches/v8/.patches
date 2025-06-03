@@ -5,3 +5,4 @@ cherry-pick-22ac8acf3508.patch
 debug_fix_crash_when_pausing_in_for-of_loop_header.patch
 parser_set_start_end_on_materialized_scopes.patch
 cherry-pick-7bc0a67ebfbf.patch
+cherry-pick-45eb42cd398e.patch
