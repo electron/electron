@@ -216,6 +216,12 @@ void View::AddChildViewAt(gin::Handle<View> child,
   if (!view_)
     return;
 
+  if (!child->view()) {
+    gin_helper::ErrorThrower(isolate()).ThrowError(
+        "Can't add a destroyed child view to a parent view");
+    return;
+  }
+
   // This will CHECK and crash in View::AddChildViewAtImpl if not handled here.
   if (view_ == child->view()) {
     gin_helper::ErrorThrower(isolate()).ThrowError(
