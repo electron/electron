@@ -35,10 +35,10 @@ index cbbe0fbdd25a0f7859b113fdb3dcd9ce57e597d6..1345bb5008e1b4fc3a450f7e353d52ec
    // from the worker thread.
    virtual void WillDestroyWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index d9deae4ffb30dc3b22c2c1bc8fc53ff9c64b1183..3a0bb8b4d8eba3d67e444541b06326b9a3440eee 100644
+index dd11bc6ff48f72228158239ad9dda426ede9c6b8..f9438122223fcdf7249eda0a5cbaa65250eb12dc 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -915,6 +915,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
+@@ -914,6 +914,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
        worker);
  }
  
@@ -52,7 +52,7 @@ index d9deae4ffb30dc3b22c2c1bc8fc53ff9c64b1183..3a0bb8b4d8eba3d67e444541b06326b9
      const blink::WebSecurityOrigin& script_origin) {
    return GetContentClient()->renderer()->AllowScriptExtensionForServiceWorker(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 549fdfb451ad72c5058cb0bc3be481aaff713769..52a575f593ef6f59fb6f0d85f12164f02541a5ab 100644
+index c05d4f3c8bc44396cc0415934d12c53e918c527f..84fff89368318b525f9e7aad6aeaf061c0cd76a1 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
 @@ -197,6 +197,8 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
@@ -65,10 +65,10 @@ index 549fdfb451ad72c5058cb0bc3be481aaff713769..52a575f593ef6f59fb6f0d85f12164f0
    bool AllowScriptExtensionForServiceWorker(
        const blink::WebSecurityOrigin& script_origin) override;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 7f3e3d7fa01d3d6cb7142ed1cd168268043052f7..00682c4fe82ec77f79a4d9e70c6e7f5788083f25 100644
+index 3648f1be362dc4c13071e73fed478454af7518ca..4c4e92cc0ec5c132418691a56c13e59c29281718 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -671,6 +671,8 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -670,6 +670,8 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}

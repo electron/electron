@@ -954,20 +954,19 @@ bool ElectronBrowserClient::HandleExternalProtocol(
 
 void ElectronBrowserClient::CreateThrottlesForNavigation(
     content::NavigationThrottleRegistry& registry) {
-  content::NavigationHandle* handle = &registry.GetNavigationHandle();
   registry.MaybeAddThrottle(
-      std::make_unique<ElectronNavigationThrottle>(handle));
+      std::make_unique<ElectronNavigationThrottle>(registry));
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   registry.MaybeAddThrottle(
-      std::make_unique<extensions::ExtensionNavigationThrottle>(handle));
+      std::make_unique<extensions::ExtensionNavigationThrottle>(registry));
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   registry.MaybeAddThrottle(
-      std::make_unique<PDFIFrameNavigationThrottle>(handle));
+      std::make_unique<PDFIFrameNavigationThrottle>(registry));
   registry.MaybeAddThrottle(std::make_unique<pdf::PdfNavigationThrottle>(
-      handle, std::make_unique<ChromePdfStreamDelegate>()));
+      registry, std::make_unique<ChromePdfStreamDelegate>()));
 #endif
 }
 
