@@ -4,3 +4,4 @@ revert_fastapi_promote_deprecation_of_fastapitypedarray.patch
 cherry-pick-2b4812d502b2.patch
 cherry-pick-91343bb45c78.patch
 cherry-pick-22ac8acf3508.patch
+cherry-pick-7bc0a67ebfbf.patch
