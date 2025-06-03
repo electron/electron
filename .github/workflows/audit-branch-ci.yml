@@ -64,7 +64,8 @@ jobs:
                       annotation_level === "failure" &&
                       !message.startsWith("Process completed with exit code") &&
                       !message.startsWith("Response status code does not indicate success"),
-                      !message.endsWith("Unable to make request: ECONNRESET"),
+                      !/Unable to make request/.test(message),
+                      !/The requested URL returned error/.test(message),
                   )
                 ) {
                   checkRun.hasErrorAnnotations = true;
