@@ -15,10 +15,10 @@ We also need to ensure that an initial paint is scheduled when
 the compositor is unsuspended in headles mode.
 
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index b51482ecbb8eaed649ae0ea9dd9c7c71125b51a2..0180a182a8b55df4e515d77f696fa442ab31ae01 100644
+index 48dfca966a594f54523c129fa49d2a561cb41dec..049cf4f1adcf4f64cd8692f6e6eda7418008e799 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -663,9 +663,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -664,9 +664,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // case it will never become visible but we want its compositor to produce
    // frames for screenshooting and screencasting.
    UpdateCompositorProperties();
@@ -31,10 +31,10 @@ index b51482ecbb8eaed649ae0ea9dd9c7c71125b51a2..0180a182a8b55df4e515d77f696fa442
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index dfe785f5d0a540086884a925d7340cbf5f48cd92..5023f7f738b4ca227690411a270a58a0faae01b2 100644
+index d147e6ed099820c8b3a6c9ae1af7aa41dac4a8e0..3d363428a9fbb3768eeb1968409aa8fb07ec2cd3 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
-@@ -1242,6 +1242,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1245,6 +1245,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // True if widget was created in headless mode.
    bool is_headless() const { return is_headless_; }
  

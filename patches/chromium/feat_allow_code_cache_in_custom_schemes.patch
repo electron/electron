@@ -140,10 +140,10 @@ index 94602e2319d3f7ed557da98e0598c9f96d986260..0a9a856d8bd9d702eb49e45a54c141a3
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index 8faec12f8a618d587964c1ffaf868dc104fa7311..6294358f6d28864e761d31a1497f96f8cc454788 100644
+index a2a19b975ddd8799917ec674b53368ab1b123232..3ff87e391f744cd17c26945fa7dcfde59d80b573 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
-@@ -12,17 +12,22 @@
+@@ -15,17 +15,22 @@
  #include "base/time/time.h"
  #include "content/browser/code_cache/generated_code_cache_context.h"
  #include "content/browser/renderer_host/code_cache_host_impl.h"
@@ -166,7 +166,7 @@ index 8faec12f8a618d587964c1ffaf868dc104fa7311..6294358f6d28864e761d31a1497f96f8
  #include "net/base/features.h"
  #include "net/dns/mock_host_resolver.h"
  #include "third_party/blink/public/common/features.h"
-@@ -32,6 +37,8 @@ namespace content {
+@@ -36,6 +41,8 @@ namespace content {
  
  namespace {
  
@@ -175,7 +175,7 @@ index 8faec12f8a618d587964c1ffaf868dc104fa7311..6294358f6d28864e761d31a1497f96f8
  bool SupportsSharedWorker() {
  #if BUILDFLAG(IS_ANDROID)
    // SharedWorkers are not enabled on Android. https://crbug.com/154571
-@@ -955,4 +962,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
+@@ -1048,4 +1055,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
    }
  }
  
@@ -411,10 +411,10 @@ index cf71655553cf510e1309ac47bdd5ddab08e52672..0a02d17d06e080f40bf12bb2e48f51ad
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index e09d63ee585919842b2b92f9a53b85f67da90531..9e844e2ac9da41dd711497412d03e9b313726162 100644
+index 6f9cd069d790f3a9db501f35cad8e871f4d95bfc..cd9ac7f5a6fc23531f1f96a9b9124b45f5d7030d 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
-@@ -135,6 +135,9 @@ struct SchemeRegistry {
+@@ -136,6 +136,9 @@ struct SchemeRegistry {
        kMaterializedViewScheme,
    };
  
@@ -424,7 +424,7 @@ index e09d63ee585919842b2b92f9a53b85f67da90531..9e844e2ac9da41dd711497412d03e9b3
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -717,6 +720,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -722,6 +725,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
@@ -441,7 +441,7 @@ index e09d63ee585919842b2b92f9a53b85f67da90531..9e844e2ac9da41dd711497412d03e9b3
    DoAddSchemeWithHandler(
        new_scheme, handler,
 diff --git a/url/url_util.h b/url/url_util.h
-index e39a44057cebce7cdf90bcb02a7463e88bd271b4..e80b81d2ddeb2ec201b143d86bec6ee54ca49afc 100644
+index 50c273fe9c2007ec5ac6675726ce0ae9811af9e2..5f7352ff5eba9c548aaaea63f75e9551c81ce305 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();

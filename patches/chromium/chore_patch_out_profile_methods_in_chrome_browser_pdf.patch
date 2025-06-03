@@ -9,7 +9,7 @@ Electron does not support Profiles, so this Profile::FromBrowserContext()
 call is not needed and will not link. This change patches it out.
 
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 8967bad0bc644d7a1541fdf86fa9d65c0b2c5dd0..25f75dd808e56dbcb3f6a4e284f7485427507e7e 100644
+index e7badbe6add4865001e1c0a43ab0aa3fcdbe5043..9748c20048363cb349229cd2315f22da1da56395 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -245,10 +245,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {

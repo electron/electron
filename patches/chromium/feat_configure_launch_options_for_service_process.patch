@@ -187,7 +187,7 @@ index d9c14f91747bde0e76056d7f2f2ada166e67f994..53be16879777a3b9bef58ead5f7e420c
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 7db71d28fa05458bf88f468e67446ccde8a4b964..9d6c67c66576058723a6fb0a5abb279f05f15f4f 100644
+index 9c88b20e11b4c946fd101b633bf93836070946d8..c9d2b451c8d07c915051fd50ca0b079aaed48199 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
 @@ -244,13 +244,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(

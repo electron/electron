@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 9f83b5e1a857231854fa97747d43f2b364aeb3ad..6e5ecc97eff9d532a4a3dcaaf23f23fe8389304c 100644
+index 2483d87b6163145ccfe32eee3697d2ae2d0a42e4..1d3b9e246bffcbe199839938d3e294db5e843e18 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -176,6 +176,8 @@ viz_component("service") {
@@ -522,7 +522,7 @@ index f0aca972c4a81c3dfb536e14244daafae21ee716..a15afbc1a3519e657121b4952444d2f4
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 8a80035fe2fc16a7bb42621605be94c7634b4aa7..0e7337b0c3fa7153d9cfcbaf68ce4d29c5c829d3 100644
+index ab6be2d175a1e7d083ab96e56f3fb63f7e8ceb3d..679cbbb52c8c6fc42552266da30ffb06c14dd977 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -130,7 +130,8 @@ RootCompositorFrameSinkImpl::Create(
