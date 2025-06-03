@@ -202,7 +202,7 @@ index 5b543e82abb17cbb91bf37fa6bac016b6053eb93..2c927f5f8e36fe08579eeb2ca49d1433
  // The BlockType of the nearest ancestor of a path to check is what
  // ultimately determines if a path is blocked or not. If a blocked path is a
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index f647100981fd98d8511d07a6d7e100910e38a0f2..13a53ac15f20adfbe35f785245d85d409329a14c 100644
+index f647100981fd98d8511d07a6d7e100910e38a0f2..790af0e11f7556f02365d695c245ec70ac709dd2 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -22,7 +22,7 @@
@@ -223,10 +223,10 @@ index f647100981fd98d8511d07a6d7e100910e38a0f2..13a53ac15f20adfbe35f785245d85d40
  #include "components/enterprise/common/files_scan_data.h"
  #endif
  
-@@ -401,6 +401,167 @@ class ChromeFileSystemAccessPermissionContext
- 
+@@ -402,6 +402,168 @@ class ChromeFileSystemAccessPermissionContext
    bool GetIsBlockPathRulesInitCompleteForTesting() {
      return is_block_path_rules_init_complete_;
+   }
 +  
 +  // Sentinel used to indicate that no PathService key is specified for a path in
 +  // the struct below.
@@ -388,10 +388,11 @@ index f647100981fd98d8511d07a6d7e100910e38a0f2..13a53ac15f20adfbe35f785245d85d40
 +    }
 +
 +    return block_path_rules;
-   }
++  }
  
   protected:
-@@ -422,7 +583,7 @@ class ChromeFileSystemAccessPermissionContext
+   SEQUENCE_CHECKER(sequence_checker_);
+@@ -422,7 +584,7 @@ class ChromeFileSystemAccessPermissionContext
  
    void PermissionGrantDestroyed(PermissionGrantImpl* grant);
  
