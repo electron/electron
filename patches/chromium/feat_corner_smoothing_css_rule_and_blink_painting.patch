@@ -75,7 +75,7 @@ index f8361faf6151210d65a597562c533aaa0a5235df..328238c34a9381fbbeb5970af3de721c
    // used for canvas noising.
    uint64 canvas_noise_token = 0;
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-index 32e70a4fa70ac2fc41d95813590fe9a7120eecde..54d292d737748302fa0369b73d876d84f1fec1d4 100644
+index 8e1737f9d205c511ae8e4103278a2650166f3915..ced3d02fdf338e3e2a07e93a4d22b2f9398c2267 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 +++ b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 @@ -48,6 +48,7 @@ enum CSSSampleId {
@@ -112,10 +112,10 @@ index 6e991652d242795e292cea4c94cff59aaea078fa..b6834c78575520bb6e584dd2ce3333ac
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 2d5e3d0396b13e90b04ea4b4dce56721d1fc35cd..5a5488eb09019f63e29ac0a24233fba8d2e17c87 100644
+index 63fff5e26a00d65818e5a05ae4f3285162521574..23cbe424b6c9de4f66cf1c2ce91682bf706d6f90 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8808,6 +8808,24 @@
+@@ -8824,6 +8824,24 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -141,10 +141,10 @@ index 2d5e3d0396b13e90b04ea4b4dce56721d1fc35cd..5a5488eb09019f63e29ac0a24233fba8
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index 936bd39e77a5a181a94a48129e38efc9c8c82847..75d332ef497018e4c863a47d4491d25da365206a 100644
+index 11c153b01a111efed101ae53d2148b7f523a66f5..7a3547a2aa70ef7699bf9022a15199d499e8a802 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
-@@ -346,6 +346,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
+@@ -348,6 +348,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
        return a.DominantBaseline() == b.DominantBaseline();
      case CSSPropertyID::kDynamicRangeLimit:
        return a.GetDynamicRangeLimit() == b.GetDynamicRangeLimit();
@@ -154,10 +154,10 @@ index 936bd39e77a5a181a94a48129e38efc9c8c82847..75d332ef497018e4c863a47d4491d25d
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 31142a3cff295f34ed1fa9f96b0f4923a15859f6..3e6bcdd57642ccd8f0e0f68fbc1b8819d223e169 100644
+index db463eb084f96e661a271be0646d6dbc84913ee2..336564df6f1266d6f186a56efd1836cfba951c72 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12119,5 +12119,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12143,5 +12143,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -184,10 +184,10 @@ index 31142a3cff295f34ed1fa9f96b0f4923a15859f6..3e6bcdd57642ccd8f0e0f68fbc1b8819
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index a1d89ff23f71259fcd0c623610974f624babae79..2d41422ebb7e32708d3bc4a0ed6e8f75fcd237e6 100644
+index ae5470212b28d47f8b79799d1ef52757fcd5cbae..667ba05f2595048bcadab0b394c52540f8bceaf1 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -3912,4 +3912,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
+@@ -3913,4 +3913,12 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
    return PositionArea(span[0], span[1], span[2], span[3]);
  }
  

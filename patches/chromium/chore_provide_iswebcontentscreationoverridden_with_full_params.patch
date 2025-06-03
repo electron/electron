@@ -222,10 +222,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2c4fd0adc24622fd0ce042a418ba4554795e6baf..f1a05097a45aae35e9be358e6edac1b5ff914cdd 100644
+index 6eaa7d566058fdcc9ebfa10f0420c3a234cb0483..bbbc07e36e6de11169f8317c64558b8c4d1699d5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5039,8 +5039,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5187,8 +5187,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,

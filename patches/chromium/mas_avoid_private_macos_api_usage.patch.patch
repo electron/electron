@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 1e014503051ad9824aa91bc4939fbbbd4cf44708..ebb2acac00275a01788edc3fbf74a0500d3d19d5 100644
+index 275f4e0ece8c5bd8cee239c61fdb965eef524650..4726c37e6fc70133af5e2152ec4d0774f2ddfcaa 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1048,6 +1048,7 @@ component("base") {
@@ -548,7 +548,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 9405f9262f01eb17bf47565641319aaea033fd30..33e53db9f4669ccc107c3d93adc0f64c9a4e6c1f 100644
+index d83f420d25e2c108ad400ebecae02b1ac327c058..77852c5c315ac09dddb7227adf3b840ee9d93928 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -36,6 +36,7 @@
@@ -559,7 +559,7 @@ index 9405f9262f01eb17bf47565641319aaea033fd30..33e53db9f4669ccc107c3d93adc0f64c
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2141,15 +2142,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2147,15 +2148,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -937,7 +937,7 @@ index f89dbdfb0c4e8e31d387d1ce2e5304277ac4df26..7b75bfeba59345d63f4ac81153697941
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index fb7cfb12b0d4109d93471d694a381a3d7be1ea84..fe566147ddb364a7b632afc45feef034fbe1ae06 100644
+index 6192d8fdc48be430b2d2eac0e1c97c88df11e196..b2aa0735896f58155667546d05937bd96a0dcfca 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -202,6 +202,7 @@ source_set("audio") {
@@ -1584,10 +1584,10 @@ index dcf493d62990018040a3f84b6f875af737bd2214..3d1c4dcc9ee0bbfdac15f40d9c74e9f3
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 349a50ce687d5594296ce3c302938424be2e739b..0c5313b8f31a97747ae28f2c188e0fb591e5cc36 100644
+index 09b5f1a0165cacb9826cdb1ffb8ab4645cddfdf4..713678ce99b9d3bd46d1ef662a9fe1e7e8fc43ab 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -296,6 +296,7 @@ component("platform") {
+@@ -297,6 +297,7 @@ component("platform") {
          "AppKit.framework",
          "Foundation.framework",
        ]
