@@ -18,7 +18,7 @@ vars = {
 
   'pyyaml_version': '3.12',
 
-  'chromium_git': 'https://chromium.googlesource.com',
+  'chromium_git': 'https://github.com/chromium',
   'electron_git': 'https://github.com/electron',
   'nodejs_git': 'https://github.com/nodejs',
   'yaml_git': 'https://github.com/yaml',
@@ -76,7 +76,7 @@ vars = {
 
 deps = {
   'src': {
-    'url': (Var("chromium_git")) + '/chromium/src.git@' + (Var("chromium_version")),
+    'url': (Var("chromium_git")) + '/chromium.git@' + (Var("chromium_version")),
     'condition': 'checkout_chromium and process_deps',
   },
   'src/third_party/nan': {
