@@ -27,8 +27,7 @@
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 
-#if BUILDFLAG(IS_LINUX) && \
-     (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
+#if BUILDFLAG(IS_LINUX) && (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
 #define ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX
 #include "components/crash/core/app/crashpad.h"
 #include "content/public/common/content_switches.h"
@@ -248,14 +247,13 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
 }
 
 void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
-
 // See CL:5372409 - copied from ShellContentRendererClient.
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
   // Mac and Windows use the default implementation (where the default v8 trap
   // handler gets set up).
   ContentRendererClient::SetUpWebAssemblyTrapHandler();
   return;
-#else
+#elif defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
   const bool crash_reporter_enabled =
       crash_reporter::GetHandlerSocket(nullptr, nullptr);
 
@@ -267,10 +265,9 @@ void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
     return;
   }
 
-#if defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
   const bool use_v8_default_handler =
       base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kDisableInProcessStackTraces);
+          ::switches::kDisableInProcessStackTraces);
 
   if (use_v8_default_handler) {
     // There is no signal handler yet, but it's okay if v8 registers one.
@@ -289,7 +286,6 @@ void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
   // As the registration of the callback failed, we don't enable trap
   // handlers.
 #endif  // defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
-#endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
 }
 
 node::Environment* ElectronRendererClient::GetEnvironment(
