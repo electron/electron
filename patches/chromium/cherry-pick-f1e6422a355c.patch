@@ -1,7 +1,7 @@
-From f1e6422a355c016e5f2c22619181f7f121d1f511 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
 Date: Wed, 21 May 2025 23:25:12 -0700
-Subject: [PATCH] Enforce SharedWorker::Terminate() procedure order
+Subject: Enforce SharedWorker::Terminate() procedure order
 
 During the investigation of crbug.com/409059706, we observed that
 PerformShutdownOnWorkerThread() is called during the status is
@@ -50,13 +50,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6543412
 Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
 Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1463892}
----
 
 diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
-index 2d13943f..0440e931 100644
+index 30b8bf535393a015e670acb64816c0e784dd92b0..1f53af0024ccf442053ed0605c684441ab240244 100644
 --- a/third_party/blink/common/features.cc
 +++ b/third_party/blink/common/features.cc
-@@ -2816,6 +2816,13 @@
+@@ -2830,6 +2830,13 @@ BASE_FEATURE(kWebviewAccelerateSmallCanvases,
               "WebviewAccelerateSmallCanvases",
               base::FEATURE_DISABLED_BY_DEFAULT);
  
@@ -71,10 +70,10 @@ index 2d13943f..0440e931 100644
               "NoReferrerForPreloadFromSubresource",
               base::FEATURE_ENABLED_BY_DEFAULT);
 diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
-index 7e3c024e..97923fb 100644
+index 360512748cbcc0321cb1c54d4c7f87753e182bd4..f9dee34cb9f7b9f4c43f8cad9548ca3a8fe39a4f 100644
 --- a/third_party/blink/public/common/features.h
 +++ b/third_party/blink/public/common/features.h
-@@ -1827,6 +1827,8 @@
+@@ -1834,6 +1834,8 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebUSBTransferSizeLimit);
  
  BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebviewAccelerateSmallCanvases);
  
@@ -84,10 +83,10 @@ index 7e3c024e..97923fb 100644
  BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kNoReferrerForPreloadFromSubresource);
  
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index e4d70bc..ba5aa4c 100644
+index 2449348f956f81845bf314558fa5b7268500adeb..618e21302aa1ab61247a5803c830c117e81fc897 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
-@@ -263,9 +263,10 @@
+@@ -279,9 +279,10 @@ void WorkerThread::Terminate() {
    DCHECK_CALLED_ON_VALID_THREAD(parent_thread_checker_);
    {
      base::AutoLock locker(lock_);
@@ -100,7 +99,7 @@ index e4d70bc..ba5aa4c 100644
    }
  
    // Schedule a task to forcibly terminate the script execution in case that the
-@@ -281,10 +282,33 @@
+@@ -297,10 +298,33 @@ void WorkerThread::Terminate() {
        *task_runner, FROM_HERE,
        CrossThreadBindOnce(&WorkerThread::PrepareForShutdownOnWorkerThread,
                            CrossThreadUnretained(this)));
@@ -138,7 +137,7 @@ index e4d70bc..ba5aa4c 100644
  }
  
  void WorkerThread::TerminateForTesting() {
-@@ -421,20 +445,48 @@
+@@ -438,20 +462,48 @@ scoped_refptr<base::SingleThreadTaskRunner> WorkerThread::GetTaskRunner(
  
  void WorkerThread::ChildThreadStartedOnWorkerThread(WorkerThread* child) {
    DCHECK(IsCurrentThread());
@@ -192,7 +191,7 @@ index e4d70bc..ba5aa4c 100644
  }
  
  WorkerThread::WorkerThread(WorkerReportingProxy& worker_reporting_proxy)
-@@ -772,18 +824,32 @@
+@@ -792,18 +844,32 @@ void WorkerThread::PerformShutdownOnWorkerThread() {
    DCHECK(IsCurrentThread());
    {
      base::AutoLock locker(lock_);
@@ -232,7 +231,7 @@ index e4d70bc..ba5aa4c 100644
  
    inspector_task_runner_->Dispose();
    if (worker_inspector_controller_) {
-@@ -839,7 +905,7 @@
+@@ -859,7 +925,7 @@ void WorkerThread::SetExitCode(ExitCode exit_code) {
  
  bool WorkerThread::CheckRequestedToTerminate() {
    base::AutoLock locker(lock_);
@@ -242,10 +241,10 @@ index e4d70bc..ba5aa4c 100644
  
  void WorkerThread::PauseOrFreeze(mojom::blink::FrameLifecycleState state,
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.h b/third_party/blink/renderer/core/workers/worker_thread.h
-index 49a7ac5..f48f05b7 100644
+index 23895d9ab78b4abfcf0cd70af4bfc0096975da36..cdf6796325cf2b8150c8d5cc875e71c3c7ef1f36 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.h
 +++ b/third_party/blink/renderer/core/workers/worker_thread.h
-@@ -319,6 +319,13 @@
+@@ -321,6 +321,13 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
      kTerminationUnnecessary,
    };
  
@@ -259,7 +258,7 @@ index 49a7ac5..f48f05b7 100644
    // Returns true if we should synchronously terminate the script execution so
    // that a shutdown task can be handled by the thread event loop.
    TerminationState ShouldTerminateScriptExecution()
-@@ -419,8 +426,10 @@
+@@ -417,8 +424,10 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
    // A unique identifier among all WorkerThreads.
    const int worker_thread_id_;
  
