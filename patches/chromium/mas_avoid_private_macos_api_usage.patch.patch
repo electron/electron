@@ -548,7 +548,7 @@ index dbf334caa3a6d10017b69ad76802e389a011436b..da828823e8195cc9e497866363c9af93
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 4c7047a61ccc124f60153bdf0c094cbc1aa8db49..36ee4cc9ef009a61cb50bee7be00cb9a32d5a661 100644
+index 24bf36e990dad8416839459f104267e9605fcd7f..e3965cfca04065b180421d2d36ba1d44848127ab 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -37,6 +37,7 @@
@@ -559,7 +559,7 @@ index 4c7047a61ccc124f60153bdf0c094cbc1aa8db49..36ee4cc9ef009a61cb50bee7be00cb9a
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2148,15 +2149,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2115,15 +2116,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -797,10 +797,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 1083856cf469c4c258057b52f987eee524d82ed2..af224c3f371973d229c2945ad53bef331aa072a1 100644
+index 3814759218cd05d62424451a933a710fba95bc39..b3d4dd1bec7545e4420e2b3d41946c14cf4c29b2 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -668,6 +668,7 @@ static_library("test_support") {
+@@ -667,6 +667,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -808,7 +808,7 @@ index 1083856cf469c4c258057b52f987eee524d82ed2..af224c3f371973d229c2945ad53bef33
    ]
  
    data_deps = [
-@@ -1127,6 +1128,7 @@ static_library("browsertest_support") {
+@@ -1126,6 +1127,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -816,7 +816,7 @@ index 1083856cf469c4c258057b52f987eee524d82ed2..af224c3f371973d229c2945ad53bef33
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1984,6 +1986,7 @@ test("content_browsertests") {
+@@ -1983,6 +1985,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 1083856cf469c4c258057b52f987eee524d82ed2..af224c3f371973d229c2945ad53bef33
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3319,6 +3322,7 @@ test("content_unittests") {
+@@ -3318,6 +3321,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
