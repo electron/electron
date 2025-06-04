@@ -1,7 +1,7 @@
-From 45eb42cd398ea2a0fd6d145a6c36d57f71498d34 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
 Date: Tue, 27 May 2025 21:34:45 +0200
-Subject: [PATCH] [turbofan] Convert Smi to Word64 using zero extension
+Subject: Convert Smi to Word64 using zero extension
 
 ... when a known type range contains only positive values.
 
@@ -11,13 +11,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6594731
 Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
 Commit-Queue: Igor Sheludko <ishell@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#100538}
----
 
 diff --git a/src/compiler/representation-change.cc b/src/compiler/representation-change.cc
-index a05b47e..116dcb6 100644
+index f0d4f59c7625103a3fed789bfc1d08c407e00c08..8ce36e6a0f4a4a119a35c61dedcb22d2f55fa982 100644
 --- a/src/compiler/representation-change.cc
 +++ b/src/compiler/representation-change.cc
-@@ -1394,7 +1394,12 @@
+@@ -1323,7 +1323,12 @@ Node* RepresentationChanger::GetWord64RepresentationFor(
      }
    } else if (output_rep == MachineRepresentation::kTaggedSigned) {
      if (output_type.Is(Type::SignedSmall())) {
