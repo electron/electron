@@ -1,7 +1,7 @@
-From 7bc0a67ebfbf44e7adab47fc2bbbe308660e27f4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Leszek Swirski <leszeks@chromium.org>
 Date: Tue, 27 May 2025 20:33:19 +0200
-Subject: [PATCH] [turbofan] Weaken alias analysis in store-store elimination
+Subject: Weaken alias analysis in store-store elimination
 
 Bug: 420636529
 Change-Id: I7c5a8f47960708cecbb27d811eedc7f754933deb
@@ -10,13 +10,12 @@ Reviewed-by: Shu-yu Guo <syg@chromium.org>
 Auto-Submit: Leszek Swirski <leszeks@chromium.org>
 Commit-Queue: Leszek Swirski <leszeks@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#100530}
----
 
 diff --git a/src/compiler/turboshaft/store-store-elimination-reducer-inl.h b/src/compiler/turboshaft/store-store-elimination-reducer-inl.h
-index 45654a0..e058a41 100644
+index 45654a022fbaa67634d68d7d6e9dab7a5a50cb28..e058a41f23e29bbe4f5098608b340ccfef50bf98 100644
 --- a/src/compiler/turboshaft/store-store-elimination-reducer-inl.h
 +++ b/src/compiler/turboshaft/store-store-elimination-reducer-inl.h
-@@ -325,10 +325,11 @@
+@@ -325,10 +325,11 @@ class RedundantStoreAnalysis {
            // TODO(nicohartmann@): Use the new effect flags to distinguish heap
            // access once available.
            const bool is_on_heap_store = store.kind.tagged_base;
@@ -31,7 +30,7 @@ index 45654a0..e058a41 100644
              bool is_eliminable_store = false;
              switch (table_.GetObservability(store.base(), store.offset, size)) {
                case StoreObservability::kUnobservable:
-@@ -415,11 +416,16 @@
+@@ -415,11 +416,16 @@ class RedundantStoreAnalysis {
            // TODO(nicohartmann@): Use the new effect flags to distinguish heap
            // access once available.
            const bool is_on_heap_load = load.kind.tagged_base;
