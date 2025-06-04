@@ -1726,6 +1726,12 @@ When a custom `pageSize` is passed, Chromium attempts to validate platform speci
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings for printing.
 
+Some possible `failureReason`s for print failure include:
+
+* "Invalid printer settings"
+* "Print job canceled"
+* "Print job failed"
+
 Use `page-break-before: always;` CSS style to force to print to a new page.
 
 Example usage:
