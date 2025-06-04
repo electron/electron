@@ -125,10 +125,10 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context, render_frame);
 
-  std::vector<v8::Local<v8::String>> sandbox_preload_bundle_params = {
-      node::FIXED_ONE_BYTE_STRING(isolate, "binding")};
+  v8::LocalVector<v8::String> sandbox_preload_bundle_params(
+      isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "binding")});
 
-  std::vector<v8::Local<v8::Value>> sandbox_preload_bundle_args = {binding};
+  v8::LocalVector<v8::Value> sandbox_preload_bundle_args(isolate, {binding});
 
   util::CompileAndCall(
       isolate->GetCurrentContext(), "electron/js2c/sandbox_bundle",

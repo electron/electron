@@ -7,10 +7,10 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 88c2c932a6b045317c83c911b1cd8267b60d9334..7f4f233b26425493a58ce71dfc0c3a92b7c0bef8 100644
+index df5fb942aa893c22d14d7eb21a5211a46a472a5f..5b7f6e0609c8414c686d2d5ca603ea5c8bc484d0 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -102,6 +102,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -103,6 +103,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
    return result;
  }
  
@@ -156,7 +156,7 @@ index 1592134716da2de40de4ba028ee937b765423e37..8f3ba65f1fef2c066d6df6087a08ba71
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index 3465454e4de4a78912b81e7eca0de395fbe89911..c8ae863460107c69dd77d67c76c11843114e99c4 100644
+index f616223cfb0f6e10f7cf57ada9704316bde2797e..eb6dad44a49d997097c8fb5009eeb60a7305da27 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
 @@ -167,6 +167,19 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
@@ -229,10 +229,10 @@ index ea7810e41e2667713a896250dc1b904b0a7cf198..865b3128c1edfe7074769f25a0b87878
  
  constexpr const char* EncodingName(const enum encoding encoding) {
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 382df89a2312f76b5293412a8d51969ae5d9fa9c..1c90da9bbcb9547ab36de4d01088c03f3350b787 100644
+index 275534285ec28f02b46639142ab4195b24267476..5f9d123f9d4b9feb7bc0b627b1e6309fdbd6e30d 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -117,7 +117,9 @@ v8::Maybe<void> InitializePrimordials(v8::Local<v8::Context> context);
+@@ -120,7 +120,9 @@ v8::MaybeLocal<v8::Object> InitializePrivateSymbols(
  
  class NodeArrayBufferAllocator : public ArrayBufferAllocator {
   public:
@@ -243,7 +243,7 @@ index 382df89a2312f76b5293412a8d51969ae5d9fa9c..1c90da9bbcb9547ab36de4d01088c03f
  
    void* Allocate(size_t size) override;  // Defined in src/node.cc
    void* AllocateUninitialized(size_t size) override;
-@@ -135,7 +137,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+@@ -138,7 +140,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
    }
  
   private:

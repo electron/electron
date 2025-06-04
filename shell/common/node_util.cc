@@ -23,8 +23,8 @@ namespace electron::util {
 v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::Local<v8::Context> context,
     const char* id,
-    std::vector<v8::Local<v8::String>>* parameters,
-    std::vector<v8::Local<v8::Value>>* arguments) {
+    v8::LocalVector<v8::String>* parameters,
+    v8::LocalVector<v8::Value>* arguments) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::TryCatch try_catch(isolate);
 
