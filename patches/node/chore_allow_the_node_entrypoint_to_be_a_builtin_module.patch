@@ -8,10 +8,10 @@ they use themselves as the entry point. We should try to upstream some form
 of this.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index d1c05d1717cdc825c4e48885c963c9ed65bcf51c..278665921c5160ff10b3178db27d4df319fab6b3 100644
+index 4e7be0594ca1e1ceaf1963debbce46783893ed77..a6df0672bf6ae6e9a74ebbb0e4debff63599cc99 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -243,12 +243,14 @@ function patchProcessObject(expandArgv1) {
+@@ -245,12 +245,14 @@ function patchProcessObject(expandArgv1) {
    // the entry point.
    if (expandArgv1 && process.argv[1] && process.argv[1][0] !== '-') {
      // Expand process.argv[1] into a full path.
