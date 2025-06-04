@@ -1090,7 +1090,7 @@ describe('webContents module', () => {
     it('has the correct properties', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-      const testBeforeMouse = async (opts: any) => {
+      const testBeforeMouse = async (opts: Electron.MouseInputEvent) => {
         const p = once(w.webContents, 'before-mouse-event');
         w.webContents.sendInputEvent({
           type: opts.type,
