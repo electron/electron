@@ -477,10 +477,10 @@ index ff96d22a11051391423f4a49c7b1478b8176baf8..c7e640e968f8ef183d48a226d43cdac8
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 6ef547e06cd130f549b1ac903ab23af2d2c390a1..9f83b5e1a857231854fa97747d43f2b364aeb3ad 100644
+index ccee45644b385f40a5c7dcbac1d92ba74e72c647..7f53771dbebb480e5d10fd6926e86120f020b1ee 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -385,6 +385,7 @@ viz_component("service") {
+@@ -387,6 +387,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -488,7 +488,7 @@ index 6ef547e06cd130f549b1ac903ab23af2d2c390a1..9f83b5e1a857231854fa97747d43f2b3
    }
  
    if (is_ios) {
-@@ -698,6 +699,7 @@ viz_source_set("unit_tests") {
+@@ -701,6 +702,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -582,7 +582,7 @@ index d83f420d25e2c108ad400ebecae02b1ac327c058..77852c5c315ac09dddb7227adf3b840e
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6d414afa34803b997ccd363f45fab073c736a5ff..5e31cf33f58efe376396f8d178e0f9930832466a 100644
+index 933abcca124aed9d1d621ff02533b2f7cc71c7d7..1f77801262614d36b7803837ce43ef2a499a7a97 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
