@@ -533,6 +533,8 @@ class WebContents final : public ExclusiveAccessContext,
                            const input::NativeWebKeyboardEvent& event) override;
   bool PlatformHandleKeyboardEvent(content::WebContents* source,
                                    const input::NativeWebKeyboardEvent& event);
+  bool PreHandleMouseEvent(content::WebContents* source,
+                           const blink::WebMouseEvent& event) override;
   content::KeyboardEventProcessingResult PreHandleKeyboardEvent(
       content::WebContents* source,
       const input::NativeWebKeyboardEvent& event) override;

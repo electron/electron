@@ -1071,6 +1071,76 @@ describe('webContents module', () => {
     });
   });
 
+  describe('before-mouse-event event', () => {
+    afterEach(closeAllWindows);
+    it('can prevent document mouse events', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'mouse-events.html'));
+      const mouseDown = new Promise(resolve => {
+        ipcMain.once('mousedown', (event, button) => resolve(button));
+      });
+      w.webContents.once('before-mouse-event', (event, input) => {
+        if (input.button === 'left') event.preventDefault();
+      });
+      w.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', x: 100, y: 100 });
+      w.webContents.sendInputEvent({ type: 'mouseDown', button: 'right', x: 100, y: 100 });
+      expect(await mouseDown).to.equal(2); // Right button is 2
+    });
+
+    it('has the correct properties', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      const testBeforeMouse = async (opts: Electron.MouseInputEvent) => {
+        const p = once(w.webContents, 'before-mouse-event');
+        w.webContents.sendInputEvent({
+          type: opts.type,
+          button: opts.button,
+          x: opts.x,
+          y: opts.y,
+          globalX: opts.globalX,
+          globalY: opts.globalY,
+          clickCount: opts.clickCount
+        });
+        const [, input] = await p;
+
+        expect(input.type).to.equal(opts.type);
+        expect(input.button).to.equal(opts.button);
+        expect(input.x).to.equal(opts.x);
+        expect(input.y).to.equal(opts.y);
+        expect(input.globalX).to.equal(opts.globalX);
+        expect(input.globalY).to.equal(opts.globalY);
+        expect(input.clickCount).to.equal(opts.clickCount);
+      };
+      await testBeforeMouse({
+        type: 'mouseDown',
+        button: 'left',
+        x: 100,
+        y: 100,
+        globalX: 200,
+        globalY: 200,
+        clickCount: 1
+      });
+      await testBeforeMouse({
+        type: 'mouseUp',
+        button: 'right',
+        x: 150,
+        y: 150,
+        globalX: 250,
+        globalY: 250,
+        clickCount: 2
+      });
+      await testBeforeMouse({
+        type: 'mouseMove',
+        button: 'middle',
+        x: 200,
+        y: 200,
+        globalX: 300,
+        globalY: 300,
+        clickCount: 0
+      });
+    });
+  });
+
   describe('before-input-event event', () => {
     afterEach(closeAllWindows);
     it('can prevent document keyboard events', async () => {

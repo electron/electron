@@ -536,14 +536,55 @@ To only prevent the menu shortcuts, use
 [`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore):
 
 ```js
-const { BrowserWindow } = require('electron')
+const { app, BrowserWindow } = require('electron')
 
-const win = new BrowserWindow({ width: 800, height: 600 })
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
 
-win.webContents.on('before-input-event', (event, input) => {
-  // For example, only enable application menu keyboard shortcuts when
-  // Ctrl/Cmd are down.
-  win.webContents.setIgnoreMenuShortcuts(!input.control && !input.meta)
+  win.webContents.on('before-input-event', (event, input) => {
+    // Enable application menu keyboard shortcuts when Ctrl/Cmd are down.
+    win.webContents.setIgnoreMenuShortcuts(!input.control && !input.meta)
+  })
+})
+```
+
+#### Event: 'before-mouse-event'
+
+Returns:
+
+* `event` Event
+* `mouse` [MouseInputEvent](structures/mouse-input-event.md)
+
+Emitted before dispatching mouse events in the page.
+
+Calling `event.preventDefault` will prevent the page mouse events.
+
+```js
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
+
+  win.webContents.on('before-mouse-event', (event, mouse) => {
+    // Prevent mouseDown events.
+    if (mouse.type === 'mouseDown') {
+      console.log(mouse)
+      /*
+      {
+        type: 'mouseDown',
+        clickCount: 1,
+        movementX: 0,
+        movementY: 0,
+        button: 'left',
+        x: 632.359375,
+        y: 480.6875,
+        globalX: 168.359375,
+        globalY: 193.6875
+      }
+      */
+      event.preventDefault()
+    }
+  })
 })
 ```
 
