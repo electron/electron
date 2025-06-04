@@ -4,6 +4,7 @@
 
 #include "shell/services/node/node_service.h"
 
+#include <cstdlib>
 #include <sstream>
 #include <utility>
 
@@ -149,10 +150,14 @@ void NodeService::Initialize(
         // Destroy node platform.
         env->set_trace_sync_io(false);
         ParentPort::GetInstance()->Close();
+        if (g_client_remote.is_bound()) {
+          g_client_remote.reset();
+        }
         js_env_->DestroyMicrotasksRunner();
         node::Stop(env, node::StopFlags::kDoNotTerminateIsolate);
         node_env_stopped_ = true;
         receiver_.ResetWithReason(exit_code, "process_exit_termination");
+        std::exit(exit_code);
       });
 
   node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
