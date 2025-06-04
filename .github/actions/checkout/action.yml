@@ -20,8 +20,8 @@ runs:
       echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
   - name: Install Dependencies
     uses: ./src/electron/.github/actions/install-dependencies
-  - name: Set Chromium Git Helper
-    uses: ./src/electron/.github/actions/set-chromium-git-helper
+  - name: Set Chromium Git Cookie
+    uses: ./src/electron/.github/actions/set-chromium-cookie
   - name: Install Build Tools
     uses: ./src/electron/.github/actions/install-build-tools
   - name: Generate DEPS Hash
