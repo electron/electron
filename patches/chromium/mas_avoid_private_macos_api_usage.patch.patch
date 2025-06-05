@@ -1092,7 +1092,7 @@ index 950cf7cfee4e11766dccf5c0bf3f15a8562f0f1e..a5adaaabdbbd91fedbc4cb679c865bc3
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/sandbox_serializer.cc b/sandbox/mac/sandbox_serializer.cc
-index ea1627bdd872f89056e97e486feb2d44587a894e..95e298393afbe10a168954d887483e5531824c51 100644
+index ea1627bdd872f89056e97e486feb2d44587a894e..2ed0e03b5253b6ab4fa064abfaf64c60d29cae32 100644
 --- a/sandbox/mac/sandbox_serializer.cc
 +++ b/sandbox/mac/sandbox_serializer.cc
 @@ -8,6 +8,7 @@
@@ -1135,7 +1135,23 @@ index ea1627bdd872f89056e97e486feb2d44587a894e..95e298393afbe10a168954d887483e55
  }  // namespace
  
  SandboxSerializer::SandboxSerializer(Target mode) : mode_(mode) {
-@@ -197,6 +199,7 @@ SandboxSerializer::DeserializePolicy(const std::string& serialized_policy,
+@@ -147,6 +149,7 @@ bool SandboxSerializer::SerializePolicy(std::string& serialized_policy,
+ std::optional<SandboxSerializer::DeserializedPolicy>
+ SandboxSerializer::DeserializePolicy(const std::string& serialized_policy,
+                                      std::string& error) {
++#if !IS_MAS_BUILD()
+   std::string_view remaining_serialized_policy = serialized_policy;
+   uint64_t mode;
+   if (!DecodeVarInt(&remaining_serialized_policy, &mode)) {
+@@ -192,11 +195,15 @@ SandboxSerializer::DeserializePolicy(const std::string& serialized_policy,
+       break;
+   }
+   return deserialized_policy;
++#else
++  return std::nullopt;
++#endif
+ }
+ 
  // static
  bool SandboxSerializer::ApplySerializedPolicy(
      const std::string& serialized_policy) {
@@ -1143,7 +1159,7 @@ index ea1627bdd872f89056e97e486feb2d44587a894e..95e298393afbe10a168954d887483e55
    std::string error;
    std::optional<DeserializedPolicy> deserialized_policy =
        DeserializePolicy(serialized_policy, error);
-@@ -227,6 +230,9 @@ bool SandboxSerializer::ApplySerializedPolicy(
+@@ -227,6 +234,9 @@ bool SandboxSerializer::ApplySerializedPolicy(
        break;
    }
    return true;
