@@ -1092,7 +1092,7 @@ index 950cf7cfee4e11766dccf5c0bf3f15a8562f0f1e..a5adaaabdbbd91fedbc4cb679c865bc3
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/sandbox_serializer.cc b/sandbox/mac/sandbox_serializer.cc
-index ea1627bdd872f89056e97e486feb2d44587a894e..95e298393afbe10a168954d887483e5531824c51 100644
+index ea1627bdd872f89056e97e486feb2d44587a894e..26f339e40bcbd8963585765e20e49955f49263aa 100644
 --- a/sandbox/mac/sandbox_serializer.cc
 +++ b/sandbox/mac/sandbox_serializer.cc
 @@ -8,6 +8,7 @@
@@ -1103,39 +1103,7 @@ index ea1627bdd872f89056e97e486feb2d44587a894e..95e298393afbe10a168954d887483e55
  #include "sandbox/mac/sandbox_logging.h"
  #include "sandbox/mac/seatbelt.h"
  
-@@ -32,6 +33,7 @@ void EncodeVarInt(uint64_t from, std::string* into) {
-   } while (from);
- }
- 
-+#if !IS_MAS_BUILD()
- bool DecodeVarInt(std::string_view* from, uint64_t* into) {
-   std::string_view::const_iterator it = from->begin();
-   int shift = 0;
-@@ -50,12 +52,12 @@ bool DecodeVarInt(std::string_view* from, uint64_t* into) {
-   from->remove_prefix(it - from->begin());
-   return true;
- }
--
-+#endif
- void EncodeString(const std::string& value, std::string* into) {
-   EncodeVarInt(value.length(), into);
-   into->append(value);
- }
--
-+#if !IS_MAS_BUILD()
- bool DecodeString(std::string_view* slice, std::string* value) {
-   uint64_t length;
-   if (!DecodeVarInt(slice, &length) || length < 0) {
-@@ -70,7 +72,7 @@ bool DecodeString(std::string_view* slice, std::string* value) {
-   slice->remove_prefix(size);
-   return true;
- }
--
-+#endif
- }  // namespace
- 
- SandboxSerializer::SandboxSerializer(Target mode) : mode_(mode) {
-@@ -197,6 +199,7 @@ SandboxSerializer::DeserializePolicy(const std::string& serialized_policy,
+@@ -197,6 +198,7 @@ SandboxSerializer::DeserializePolicy(const std::string& serialized_policy,
  // static
  bool SandboxSerializer::ApplySerializedPolicy(
      const std::string& serialized_policy) {
@@ -1143,7 +1111,7 @@ index ea1627bdd872f89056e97e486feb2d44587a894e..95e298393afbe10a168954d887483e55
    std::string error;
    std::optional<DeserializedPolicy> deserialized_policy =
        DeserializePolicy(serialized_policy, error);
-@@ -227,6 +230,9 @@ bool SandboxSerializer::ApplySerializedPolicy(
+@@ -227,6 +229,9 @@ bool SandboxSerializer::ApplySerializedPolicy(
        break;
    }
    return true;
