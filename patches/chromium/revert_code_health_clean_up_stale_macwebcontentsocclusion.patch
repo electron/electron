@@ -58,7 +58,7 @@ index 32523e6a6f800de3917d18825f94c66ef4ea4388..634d68b9a2840d7c9e7c3b5e23d8b1b8
  
  // Alternative implementation of orderWindow:relativeTo:. Replaces
 diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-index 7c99a9512e6f65713fe8483cef7b7c9b494b4491..8fb6cf252961c9773d1a6a09d47bec6aacf38f08 100644
+index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7cef78ca4ee 100644
 --- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 @@ -29,6 +29,7 @@
@@ -69,9 +69,9 @@ index 7c99a9512e6f65713fe8483cef7b7c9b494b4491..8fb6cf252961c9773d1a6a09d47bec6a
  using remote_cocoa::mojom::DraggingInfo;
  using remote_cocoa::mojom::SelectionDirection;
  
-@@ -126,12 +127,15 @@ @implementation WebContentsViewCocoa {
- 
-   gfx::Rect _windowControlsOverlayRect;
+@@ -124,12 +125,15 @@ @implementation WebContentsViewCocoa {
+   WebDragSource* __strong _dragSource;
+   NSDragOperation _dragOperation;
  
 +  BOOL _inFullScreenTransition;
    BOOL _willSetWebContentsOccludedAfterDelay;
@@ -87,7 +87,7 @@ index 7c99a9512e6f65713fe8483cef7b7c9b494b4491..8fb6cf252961c9773d1a6a09d47bec6a
  }
  
  - (instancetype)initWithViewsHostableView:(ui::ViewsHostableView*)v {
-@@ -442,6 +446,7 @@ - (void)updateWebContentsVisibility:
+@@ -440,6 +444,7 @@ - (void)updateWebContentsVisibility:
      (remote_cocoa::mojom::Visibility)visibility {
    using remote_cocoa::mojom::Visibility;
  
@@ -95,7 +95,7 @@ index 7c99a9512e6f65713fe8483cef7b7c9b494b4491..8fb6cf252961c9773d1a6a09d47bec6a
    if (!_host)
      return;
  
-@@ -487,6 +492,20 @@ - (void)updateWebContentsVisibility {
+@@ -485,6 +490,20 @@ - (void)updateWebContentsVisibility {
    [self updateWebContentsVisibility:visibility];
  }
  
@@ -116,7 +116,7 @@ index 7c99a9512e6f65713fe8483cef7b7c9b494b4491..8fb6cf252961c9773d1a6a09d47bec6a
  - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
    // Subviews do not participate in auto layout unless the the size this view
    // changes. This allows RenderWidgetHostViewMac::SetBounds(..) to select a
-@@ -509,11 +528,39 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+@@ -507,11 +526,39 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
  
    NSWindow* oldWindow = [self window];
  
@@ -160,7 +160,7 @@ index 7c99a9512e6f65713fe8483cef7b7c9b494b4491..8fb6cf252961c9773d1a6a09d47bec6a
    }
  
    if (newWindow) {
-@@ -521,26 +568,66 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+@@ -519,26 +566,66 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
                             selector:@selector(windowChangedOcclusionState:)
                                 name:NSWindowDidChangeOcclusionStateNotification
                               object:newWindow];
