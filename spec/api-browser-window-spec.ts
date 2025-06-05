@@ -300,8 +300,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('can set content protection', async () => {
       const w = new BrowserWindow({ show: false });
-      // @ts-expect-error This is a private API
-      expect(w._isContentProtected()).to.equal(false);
+      expect(w.isContentProtected()).to.equal(false);
 
       const shown = once(w, 'show');
 
@@ -309,8 +308,7 @@ describe('BrowserWindow module', () => {
       await shown;
 
       w.setContentProtection(true);
-      // @ts-expect-error This is a private API
-      expect(w._isContentProtected()).to.equal(true);
+      expect(w.isContentProtected()).to.equal(true);
     });
 
     it('does not remove content protection after the window is hidden and shown', async () => {
@@ -329,8 +327,7 @@ describe('BrowserWindow module', () => {
       w.show();
       await shown;
 
-      // @ts-expect-error This is a private API
-      expect(w._isContentProtected()).to.equal(true);
+      expect(w.isContentProtected()).to.equal(true);
     });
   });
 
