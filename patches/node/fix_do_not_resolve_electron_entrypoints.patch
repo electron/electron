@@ -5,19 +5,6 @@ Subject: fix: do not resolve electron entrypoints
 
 This wastes fs cycles and can result in strange behavior if this path actually exists on disk
 
-diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index c9d4a3536d0f60375ae623b48ca2fa7095c88d42..d818320fbbc430d06a0c2852e4723981d6e1a844 100644
---- a/lib/internal/modules/esm/load.js
-+++ b/lib/internal/modules/esm/load.js
-@@ -109,7 +109,7 @@ async function defaultLoad(url, context = kEmptyObject) {
-     source = null;
-     format ??= 'builtin';
-   } else if (format !== 'commonjs' || defaultType === 'module') {
--    if (source == null) {
-+    if (format !== 'electron' && source == null) {
-       ({ responseURL, source } = await getSource(urlInstance, context));
-       context = { __proto__: context, source };
-     }
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
 index 49aacb6262502ced54e817f99dd596db85b9659c..f9f065bb743275e9b2ce71375e6a9f06e00c0f36 100644
 --- a/lib/internal/modules/esm/translators.js
