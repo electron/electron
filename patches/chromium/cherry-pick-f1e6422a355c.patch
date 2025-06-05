@@ -1,0 +1,273 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Date: Wed, 21 May 2025 23:25:12 -0700
+Subject: Enforce SharedWorker::Terminate() procedure order
+
+During the investigation of crbug.com/409059706, we observed that
+PerformShutdownOnWorkerThread() is called during the status is
+running.
+
+I suppose the root cause is race condition between `Terminate()`
+procedure and a child process termination procedure in different
+thread.  WorkerThread can be terminated if two conditions are met;
+`Terminate()` is called and all child worker threads have been
+terminated.  Both `Terminate()` and the child process termination
+procedure may call `PerformShutdownOnWorkerThread()`, and former
+is executed regardless of two conditions are met.  The latter
+is called if `Terminate()` is called and no child processes.
+To be clear, "`Terminate()` is called" does not mean
+`PrepareForShutdownOnWorkerThread()` is executed.  `Terminate()`
+queues it after the flag to tell `Terminate()` call.  And, when
+the issue happen, I am quite sure the flag is set but,
+`PrepareForShutdownOnWorkerThread()` won't be executed yet.
+
+The fix is that:
+1. The "Terminate() is called" flag to be multi staged.
+   The flag is used for two purpose; a. avoid re-enter of
+  `Terminate()`, and b. `PrepareForShutdownOnWorkerThread()` is
+  in flight. The CL changed the flag to enum to represent
+  the stage properly.
+2. `PerformShutdownOnWorkerThread()` is queued even if it is
+   called within the child process termination procedure.
+   It avoid the execution order flip between
+   `PrepareForShutdownOnWorkerThread()` and
+   `PerformShutdownOnWorkerThread()`.
+
+In addition, this change ensures `PerformShutdownOnWorkerThread()`
+is called once.  While `PerformShutdownOnWorkerThread()` touches
+fields inside, the fields must not be touched at some point within
+the function, the function is actually not re-entrant when it reaches
+to the end.  Upon mikt@ suggestion, I made
+`PerformShutdownOnWorkerThread()` is called only when two conditions
+are fulfilled. i.e. `Terminate()` is called and the number of child
+threads is 0.  Also, the CL uses the enum to show
+`PerformShutdownOnWorkerThread()` is in-flight to avoid re-entrance
+in this level.
+
+Bug: 409059706
+Change-Id: I81a1c3b1a34e827fa75ec2d1a9b37023965dbe27
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6543412
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1463892}
+
+diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
+index 30b8bf535393a015e670acb64816c0e784dd92b0..1f53af0024ccf442053ed0605c684441ab240244 100644
+--- a/third_party/blink/common/features.cc
++++ b/third_party/blink/common/features.cc
+@@ -2830,6 +2830,13 @@ BASE_FEATURE(kWebviewAccelerateSmallCanvases,
+              "WebviewAccelerateSmallCanvases",
+              base::FEATURE_DISABLED_BY_DEFAULT);
+ 
++// WorkerThread termination procedure (prepare and shutdown) runs sequentially
++// in the same task without calling another cross thread post task.
++// Kill switch for crbug.com/409059706.
++BASE_FEATURE(kWorkerThreadSequentialShutdown,
++             "WorkerThreadSequentialShutdown",
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ BASE_FEATURE(kNoReferrerForPreloadFromSubresource,
+              "NoReferrerForPreloadFromSubresource",
+              base::FEATURE_ENABLED_BY_DEFAULT);
+diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
+index 360512748cbcc0321cb1c54d4c7f87753e182bd4..f9dee34cb9f7b9f4c43f8cad9548ca3a8fe39a4f 100644
+--- a/third_party/blink/public/common/features.h
++++ b/third_party/blink/public/common/features.h
+@@ -1834,6 +1834,8 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebUSBTransferSizeLimit);
+ 
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWebviewAccelerateSmallCanvases);
+ 
++BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWorkerThreadSequentialShutdown);
++
+ // Kill switch for https://crbug.com/415810136.
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kNoReferrerForPreloadFromSubresource);
+ 
+diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
+index 2449348f956f81845bf314558fa5b7268500adeb..618e21302aa1ab61247a5803c830c117e81fc897 100644
+--- a/third_party/blink/renderer/core/workers/worker_thread.cc
++++ b/third_party/blink/renderer/core/workers/worker_thread.cc
+@@ -279,9 +279,10 @@ void WorkerThread::Terminate() {
+   DCHECK_CALLED_ON_VALID_THREAD(parent_thread_checker_);
+   {
+     base::AutoLock locker(lock_);
+-    if (requested_to_terminate_)
++    if (termination_progress_ != TerminationProgress::kNotRequested) {
+       return;
+-    requested_to_terminate_ = true;
++    }
++    termination_progress_ = TerminationProgress::kRequested;
+   }
+ 
+   // Schedule a task to forcibly terminate the script execution in case that the
+@@ -297,10 +298,33 @@ void WorkerThread::Terminate() {
+       *task_runner, FROM_HERE,
+       CrossThreadBindOnce(&WorkerThread::PrepareForShutdownOnWorkerThread,
+                           CrossThreadUnretained(this)));
+-  PostCrossThreadTask(
+-      *task_runner, FROM_HERE,
+-      CrossThreadBindOnce(&WorkerThread::PerformShutdownOnWorkerThread,
+-                          CrossThreadUnretained(this)));
++
++  if (!base::FeatureList::IsEnabled(
++          blink::features::kWorkerThreadSequentialShutdown)) {
++    PostCrossThreadTask(
++        *task_runner, FROM_HERE,
++        CrossThreadBindOnce(&WorkerThread::PerformShutdownOnWorkerThread,
++                            CrossThreadUnretained(this)));
++    return;
++  }
++
++  bool perform_shutdown = false;
++  {
++    base::AutoLock locker(lock_);
++    CHECK_EQ(TerminationProgress::kRequested, termination_progress_);
++    termination_progress_ = TerminationProgress::kPrepared;
++    if (num_child_threads_ == 0) {
++      termination_progress_ = TerminationProgress::kPerforming;
++      perform_shutdown = true;
++    }
++  }
++
++  if (perform_shutdown) {
++    PostCrossThreadTask(
++        *task_runner, FROM_HERE,
++        CrossThreadBindOnce(&WorkerThread::PerformShutdownOnWorkerThread,
++                            CrossThreadUnretained(this)));
++  }
+ }
+ 
+ void WorkerThread::TerminateForTesting() {
+@@ -438,20 +462,48 @@ scoped_refptr<base::SingleThreadTaskRunner> WorkerThread::GetTaskRunner(
+ 
+ void WorkerThread::ChildThreadStartedOnWorkerThread(WorkerThread* child) {
+   DCHECK(IsCurrentThread());
+-#if DCHECK_IS_ON()
++  child_threads_.insert(child);
+   {
+     base::AutoLock locker(lock_);
+     DCHECK_EQ(ThreadState::kRunning, thread_state_);
++    CHECK_EQ(TerminationProgress::kNotRequested, termination_progress_);
++    if (base::FeatureList::IsEnabled(
++            blink::features::kWorkerThreadSequentialShutdown)) {
++      ++num_child_threads_;
++      CHECK_EQ(child_threads_.size(), num_child_threads_);
++    }
+   }
+-#endif
+-  child_threads_.insert(child);
+ }
+ 
+ void WorkerThread::ChildThreadTerminatedOnWorkerThread(WorkerThread* child) {
+   DCHECK(IsCurrentThread());
+   child_threads_.erase(child);
+-  if (child_threads_.empty() && CheckRequestedToTerminate())
+-    PerformShutdownOnWorkerThread();
++  if (!base::FeatureList::IsEnabled(
++          blink::features::kWorkerThreadSequentialShutdown)) {
++    if (child_threads_.empty() && CheckRequestedToTerminate()) {
++      PerformShutdownOnWorkerThread();
++    }
++    return;
++  }
++
++  bool perform_shutdown = false;
++  {
++    base::AutoLock locker(lock_);
++    --num_child_threads_;
++    CHECK_EQ(child_threads_.size(), num_child_threads_);
++    if (num_child_threads_ == 0 &&
++        termination_progress_ == TerminationProgress::kPrepared) {
++      termination_progress_ = TerminationProgress::kPerforming;
++      perform_shutdown = true;
++    }
++  }
++  if (perform_shutdown) {
++    scoped_refptr<base::SingleThreadTaskRunner> task_runner =
++        GetWorkerBackingThread().BackingThread().GetTaskRunner();
++    GetWorkerBackingThread().BackingThread().GetTaskRunner()->PostTask(
++        FROM_HERE, WTF::BindOnce(&WorkerThread::PerformShutdownOnWorkerThread,
++                                 WTF::Unretained(this)));
++  }
+ }
+ 
+ WorkerThread::WorkerThread(WorkerReportingProxy& worker_reporting_proxy)
+@@ -792,18 +844,32 @@ void WorkerThread::PerformShutdownOnWorkerThread() {
+   DCHECK(IsCurrentThread());
+   {
+     base::AutoLock locker(lock_);
+-    DCHECK(requested_to_terminate_);
++    if (!base::FeatureList::IsEnabled(
++            blink::features::kWorkerThreadSequentialShutdown)) {
++      DCHECK_NE(TerminationProgress::kNotRequested, termination_progress_);
++    } else {
++      DCHECK_EQ(TerminationProgress::kPerforming, termination_progress_);
++    }
+     DCHECK_EQ(ThreadState::kReadyToShutdown, thread_state_);
+     if (exit_code_ == ExitCode::kNotTerminated)
+       SetExitCode(ExitCode::kGracefullyTerminated);
+   }
+ 
+-  // When child workers are present, wait for them to shutdown before shutting
+-  // down this thread. ChildThreadTerminatedOnWorkerThread() is responsible
+-  // for completing shutdown on the worker thread after the last child shuts
+-  // down.
+-  if (!child_threads_.empty())
+-    return;
++  if (!base::FeatureList::IsEnabled(
++          blink::features::kWorkerThreadSequentialShutdown)) {
++    // When child workers are present, wait for them to shutdown before shutting
++    // down this thread. ChildThreadTerminatedOnWorkerThread() is responsible
++    // for completing shutdown on the worker thread after the last child shuts
++    // down.
++    if (!child_threads_.empty()) {
++      return;
++    }
++  } else {
++    // Child workers must not exist when `PerformShutdownOnWorkerThread()`
++    // is called because it has already been checked before calling the
++    // function.
++    CHECK(child_threads_.empty());
++  }
+ 
+   inspector_task_runner_->Dispose();
+   if (worker_inspector_controller_) {
+@@ -859,7 +925,7 @@ void WorkerThread::SetExitCode(ExitCode exit_code) {
+ 
+ bool WorkerThread::CheckRequestedToTerminate() {
+   base::AutoLock locker(lock_);
+-  return requested_to_terminate_;
++  return termination_progress_ != TerminationProgress::kNotRequested;
+ }
+ 
+ void WorkerThread::PauseOrFreeze(mojom::blink::FrameLifecycleState state,
+diff --git a/third_party/blink/renderer/core/workers/worker_thread.h b/third_party/blink/renderer/core/workers/worker_thread.h
+index 23895d9ab78b4abfcf0cd70af4bfc0096975da36..cdf6796325cf2b8150c8d5cc875e71c3c7ef1f36 100644
+--- a/third_party/blink/renderer/core/workers/worker_thread.h
++++ b/third_party/blink/renderer/core/workers/worker_thread.h
+@@ -321,6 +321,13 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+     kTerminationUnnecessary,
+   };
+ 
++  enum class TerminationProgress {
++    kNotRequested,
++    kRequested,
++    kPrepared,
++    kPerforming,
++  };
++
+   // Returns true if we should synchronously terminate the script execution so
+   // that a shutdown task can be handled by the thread event loop.
+   TerminationState ShouldTerminateScriptExecution()
+@@ -417,8 +424,10 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+   // A unique identifier among all WorkerThreads.
+   const int worker_thread_id_;
+ 
+-  // Set on the parent thread.
+-  bool requested_to_terminate_ GUARDED_BY(lock_) = false;
++  // Represents progress after the Terminate() call.
++  TerminationProgress termination_progress_ GUARDED_BY(lock_) =
++      TerminationProgress::kNotRequested;
++  size_t num_child_threads_ GUARDED_BY(lock_) = 0;
+ 
+   ThreadState thread_state_ GUARDED_BY(lock_) = ThreadState::kNotStarted;
+   ExitCode exit_code_ GUARDED_BY(lock_) = ExitCode::kNotTerminated;
