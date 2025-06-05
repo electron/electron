@@ -18,9 +18,18 @@ index 9519f947b8dfdc69808839948c9cb8434a0acf0e..23ce72d479f638c33edffcea7c35f5da
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 5ba13096b98047ff33e4d44167c2a069ccc5e69d..a00b5979e3b5deb4ba315b4635c7e5d2801c376e 100644
+index 5ba13096b98047ff33e4d44167c2a069ccc5e69d..09a332c0999086b30fd952d9456f788925240e27 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
+@@ -106,7 +106,7 @@ async function defaultLoad(url, context = kEmptyObject) {
+ 
+   throwIfUnsupportedURLScheme(urlInstance);
+ 
+-  if (urlInstance.protocol === 'node:') {
++  if (urlInstance.protocol === 'node:' || format === 'electron') {
+     source = null;
+     format ??= 'builtin';
+   } else if (format !== 'commonjs' || defaultType === 'module') {
 @@ -119,7 +119,7 @@ async function defaultLoad(url, context = kEmptyObject) {
        // Now that we have the source for the module, run `defaultGetFormat` to detect its format.
        format = await defaultGetFormat(urlInstance, context);
@@ -30,6 +39,15 @@ index 5ba13096b98047ff33e4d44167c2a069ccc5e69d..a00b5979e3b5deb4ba315b4635c7e5d2
          // For backward compatibility reasons, we need to discard the source in
          // order for the CJS loader to re-fetch it.
          source = null;
+@@ -167,7 +167,7 @@ function defaultLoadSync(url, context = kEmptyObject) {
+ 
+   throwIfUnsupportedURLScheme(urlInstance, false);
+ 
+-  if (urlInstance.protocol === 'node:') {
++  if (urlInstance.protocol === 'node:' || format === 'electron') {
+     source = null;
+   } else if (source == null) {
+     ({ responseURL, source } = getSourceSync(urlInstance, context));
 @@ -200,12 +200,13 @@ function throwIfUnsupportedURLScheme(parsed) {
      protocol !== 'file:' &&
      protocol !== 'data:' &&
@@ -45,6 +63,19 @@ index 5ba13096b98047ff33e4d44167c2a069ccc5e69d..a00b5979e3b5deb4ba315b4635c7e5d2
      throw new ERR_UNSUPPORTED_ESM_URL_SCHEME(parsed, schemes);
    }
  }
+diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
+index ae03073aff8140b11c63b6c05d831ba573568dba..b70c7cfe40e2eaaeea7b5ad6fcf0aaee87276aa1 100644
+--- a/lib/internal/modules/esm/loader.js
++++ b/lib/internal/modules/esm/loader.js
+@@ -492,7 +492,7 @@ class ModuleLoader {
+     }
+ 
+     const cjsModule = wrap[imported_cjs_symbol];
+-    if (cjsModule) {
++    if (cjsModule && finalFormat !== 'electron') {
+       assert(finalFormat === 'commonjs-sync');
+       // Check if the ESM initiating import CJS is being required by the same CJS module.
+       if (cjsModule?.[kIsExecuting]) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
 index bfd9bd3d127404de1cbb6f30c43ab0342590759d..9e7d8ef0adef3b68a3ec186e4b218f591aa69266 100644
 --- a/lib/internal/modules/esm/resolve.js
