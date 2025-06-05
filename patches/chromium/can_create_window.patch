@@ -21,10 +21,10 @@ index 00ef9bece14622bea7107b1dc219a1f70e446f31..7436927877366928f4a7f229b748cfd7
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2ed76c9f3915ee784828cdc42a2739517773275c..df8631c2788b7e18b2bb4391bf2e07d08eec83c0 100644
+index 8ba352a573d67f53a5f9121aecdc7fc42e1ffc09..aefb8a1fff63c9b0bad0678064a170f50f36ef6b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5293,6 +5293,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5294,6 +5294,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -37,7 +37,7 @@ index 2ed76c9f3915ee784828cdc42a2739517773275c..df8631c2788b7e18b2bb4391bf2e07d0
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5334,12 +5340,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5335,12 +5341,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
