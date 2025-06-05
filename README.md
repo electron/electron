@@ -44,29 +44,17 @@ Each Electron release provides binaries for macOS, Windows, and Linux.
   * Fedora 32 and newer
   * Debian 10 and newer
 
-## Quick start & Electron Fiddle
+## Electron Fiddle
 
 Use [`Electron Fiddle`](https://github.com/electron/fiddle)
 to build, run, and package small Electron experiments, to see code examples for all of Electron's APIs, and
 to try out different versions of Electron. It's designed to make the start of your journey with
 Electron easier.
 
-Alternatively, clone and run the
-[electron/electron-quick-start](https://github.com/electron/electron-quick-start)
-repository to see a minimal Electron app in action:
-
-```sh
-git clone https://github.com/electron/electron-quick-start
-cd electron-quick-start
-npm install
-npm start
-```
-
 ## Resources for learning Electron
 
 * [electronjs.org/docs](https://electronjs.org/docs) - All of Electron's documentation
 * [electron/fiddle](https://github.com/electron/fiddle) - A tool to build, run, and package small Electron experiments
-* [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - A very basic starter Electron app
 * [electronjs.org/community#boilerplates](https://electronjs.org/community#boilerplates) - Sample starter apps created by the community
 
 ## Programmatic usage
