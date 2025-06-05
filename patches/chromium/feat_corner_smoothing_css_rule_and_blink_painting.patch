@@ -87,10 +87,10 @@ index a96527c653d2108de572d1e94c3ce703b45f2830..f8eb2af2c97f888307f2be588c336d42
      // This CSSSampleId represents page load for CSS histograms. It is recorded once
      // per page visit for each CSS histogram being logged on the blink side and the
 diff --git a/third_party/blink/public/web/web_settings.h b/third_party/blink/public/web/web_settings.h
-index a53b4901dde0dc83dce6c9b56616eef0d02d94a5..b419672af985f673f375fbb63b4d2b2c419e3e03 100644
+index c37f784a1309da14354881d48a5a76a965930926..bffd221d2b3f3701710025103fa564c233e203d1 100644
 --- a/third_party/blink/public/web/web_settings.h
 +++ b/third_party/blink/public/web/web_settings.h
-@@ -285,6 +285,7 @@ class WebSettings {
+@@ -287,6 +287,7 @@ class WebSettings {
    virtual void SetRequireTransientActivationAndAuthorizationForSubAppsAPIs(
        bool) = 0;
    virtual void SetRootScrollbarThemeColor(std::optional<SkColor>) = 0;
@@ -112,10 +112,10 @@ index 6e991652d242795e292cea4c94cff59aaea078fa..b6834c78575520bb6e584dd2ce3333ac
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index b1108aa08020ae483f5612f66283144f39557ffe..0b09974dcfa00fb4e45e0f21dc6bf76fbbc95205 100644
+index 5619eae5a36f63627df605eeff049866ea846477..50bad85a916e5bb097d687cbc4d1721ecefa6c39 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8865,6 +8865,24 @@
+@@ -8866,6 +8866,24 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -214,10 +214,10 @@ index 7104b5866a9bac0cdd26518eddcf80322280ad92..692b186f302130155fbb1b163bb195c0
  
  template <typename T>
 diff --git a/third_party/blink/renderer/core/exported/web_settings_impl.cc b/third_party/blink/renderer/core/exported/web_settings_impl.cc
-index 4a29a2200eaab5084078e928a68c862296c6ff91..fcd879deec0e68b3b6988402d19570cf0065daa2 100644
+index 90692da7bddd9e26e58cb26d8b29dbddf958fbca..6bcd9d736edab85572e405ab74d57adc0fcce921 100644
 --- a/third_party/blink/renderer/core/exported/web_settings_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_settings_impl.cc
-@@ -816,4 +816,8 @@ void WebSettingsImpl::SetRootScrollbarThemeColor(
+@@ -820,4 +820,8 @@ void WebSettingsImpl::SetRootScrollbarThemeColor(
    settings_->SetRootScrollbarThemeColor(theme_color);
  }
  
@@ -227,10 +227,10 @@ index 4a29a2200eaab5084078e928a68c862296c6ff91..fcd879deec0e68b3b6988402d19570cf
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/exported/web_settings_impl.h b/third_party/blink/renderer/core/exported/web_settings_impl.h
-index 5e8d2bfbccd0625c2598544a9cba3d71373eded2..e68a97ee75754fc7196f11cf5c731550b5a12276 100644
+index aa8b248b94ea7f6c0e04dc66e976dc7923ff3a98..868630ed2adb8f40fb7f002d45b260c0881ef10f 100644
 --- a/third_party/blink/renderer/core/exported/web_settings_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_settings_impl.h
-@@ -237,6 +237,7 @@ class CORE_EXPORT WebSettingsImpl final : public WebSettings {
+@@ -238,6 +238,7 @@ class CORE_EXPORT WebSettingsImpl final : public WebSettings {
    void SetRequireTransientActivationAndAuthorizationForSubAppsAPIs(
        bool) override;
    void SetRootScrollbarThemeColor(std::optional<SkColor>) override;
@@ -239,10 +239,10 @@ index 5e8d2bfbccd0625c2598544a9cba3d71373eded2..e68a97ee75754fc7196f11cf5c731550
    bool RenderVSyncNotificationEnabled() const {
      return render_v_sync_notification_enabled_;
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 15a6b41cacb7b66d95e6dc2cff8148c3d6c8c28b..88bb3d17a4ca0784f1f28fde14b9fa58e15b5c44 100644
+index f8fae134e122a223440530bd696db899dce2fe56..cec68a428fbf63932066ceb296c3db3eb9e34166 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3577,6 +3577,9 @@ void WebViewImpl::UpdateRendererPreferences(
+@@ -3579,6 +3579,9 @@ void WebViewImpl::UpdateRendererPreferences(
        renderer_preferences_.view_source_line_wrap_enabled);
  
    MaybePreloadSystemFonts(GetPage());
@@ -253,10 +253,10 @@ index 15a6b41cacb7b66d95e6dc2cff8148c3d6c8c28b..88bb3d17a4ca0784f1f28fde14b9fa58
  
  void WebViewImpl::SetHistoryIndexAndLength(int32_t history_index,
 diff --git a/third_party/blink/renderer/core/frame/settings.json5 b/third_party/blink/renderer/core/frame/settings.json5
-index f4cdee12ea4352067f5de3e074e43d51ef56d2e5..6377e4b1ea8aa46b0bf69f8420b6c439bea70dba 100644
+index c96100f7d26c14b8be1329cdb4d8a007b14d9c00..8b2429d5ac958f9a2c7aae546b44da903def8e69 100644
 --- a/third_party/blink/renderer/core/frame/settings.json5
 +++ b/third_party/blink/renderer/core/frame/settings.json5
-@@ -1261,5 +1261,10 @@
+@@ -1265,5 +1265,10 @@
        initial: false,
        type: "bool"
      },
