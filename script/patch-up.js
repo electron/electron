@@ -2,7 +2,6 @@ const { appCredentialsFromString, getAuthOptionsForRepo } = require('@electron/g
 
 const { Octokit } = require('@octokit/rest');
 
-const cp = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -38,19 +37,11 @@ async function getAllPatchFiles (dir) {
 }
 
 function getCurrentCommitSha () {
-  const result = cp.spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' });
-  if (result.status !== 0) {
-    throw new Error('Failed to get current commit SHA');
-  }
-  return result.stdout.trim();
+  return process.env.GITHUB_SHA;
 }
 
 function getCurrentBranch () {
-  const result = cp.spawnSync('git', ['symbolic-ref', '--short', 'HEAD'], { encoding: 'utf8' });
-  if (result.status !== 0) {
-    throw new Error('Failed to get current branch');
-  }
-  return result.stdout.trim();
+  return process.env.GITHUB_REF;
 }
 
 async function main () {
