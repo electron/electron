@@ -294,7 +294,6 @@ class ClearDataTask : public gin_helper::CleanedUpAtExit {
   explicit ClearDataTask(gin_helper::Promise<void> promise)
       : promise_(std::move(promise)) {}
 
-  ~ClearDataTask() override { operations_.clear(); }
 
   static void StartOperation(
       ClearDataTask* task,
