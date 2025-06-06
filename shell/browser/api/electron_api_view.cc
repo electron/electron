@@ -185,7 +185,11 @@ class JSLayoutManager : public views::LayoutManagerBase {
       const views::SizeBounds& size_bounds) const override {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    return layout_callback_.Run(size_bounds);
+    views::ProposedLayout proposed_layout = layout_callback_.Run(size_bounds);
+    LOG(ERROR) << "JSLayoutManager::CalculateProposedLayout: "
+               << "size_bounds: " << size_bounds.ToString()
+               << ", proposed_layout: " << proposed_layout.ToString();
+    return proposed_layout;
   }
 
  private:
