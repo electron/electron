@@ -1088,7 +1088,7 @@ NODE_API_MODULE(swift_addon, Init)
 You're so close! We now have working Objective-C, Swift, and thread-safe ways to expose methods and events to JavaScript. In this final step, let's create a JavaScript wrapper in `js/index.js` to provide a more friendly API:
 
 ```js title='js/index.js' @ts-expect-error=[10]
-const EventEmitter = require('events')
+const EventEmitter = require('node:events')
 
 class SwiftAddon extends EventEmitter {
   constructor () {
