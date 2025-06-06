@@ -57,13 +57,15 @@ jobs:
                   repo: "electron",
                   check_run_id: checkRun.id,
                 })).data ?? [];
-                console.log(checkRun);
-                console.log(annotations);
 
                 if (
                   annotations.find(
                     ({ annotation_level, message }) =>
-                      annotation_level === 'failure' && !message.startsWith("Process completed with exit code")
+                      annotation_level === "failure" &&
+                      !message.startsWith("Process completed with exit code") &&
+                      !message.startsWith("Response status code does not indicate success"),
+                      !/Unable to make request/.test(message),
+                      !/The requested URL returned error/.test(message),
                   )
                 ) {
                   checkRun.hasErrorAnnotations = true;
