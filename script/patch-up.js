@@ -47,6 +47,7 @@ function getCurrentCommitSha () {
 
 function getCurrentBranch () {
   const result = cp.spawnSync('git', ['symbolic-ref', '--short', 'HEAD'], { encoding: 'utf8' });
+  console.log(result);
   if (result.status !== 0) {
     throw new Error('Failed to get current branch');
   }
