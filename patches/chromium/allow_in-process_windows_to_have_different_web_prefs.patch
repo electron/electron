@@ -8,10 +8,10 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index b3e72c9d198a350a164d4abc37fcb19024f43c57..909ac417f24c0e104cba286b6420d8c820784d31 100644
+index 96bb1f2205a4f81b78626f8c277c0b82a048895b..881e6fa91b25758a3b3523119360bd92b5fc5802 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-@@ -149,6 +149,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -151,6 +151,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
    out->v8_cache_options = data.v8_cache_options();
    out->record_whole_document = data.record_whole_document();
    out->stylus_handwriting_enabled = data.stylus_handwriting_enabled();
@@ -32,7 +32,7 @@ index b3e72c9d198a350a164d4abc37fcb19024f43c57..909ac417f24c0e104cba286b6420d8c8
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 1ee685e777e27a56da50d38ae7710abb240699a1..7f0ed7e9b0c4c0077eaa733e81ebc421f0ddd02a 100644
+index 5c29a554f51023e63948bb7b28fcfdfa02089d66..ce0a19a2a848ac7c3543651a2b4de99dcfc66475 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@
@@ -43,7 +43,7 @@ index 1ee685e777e27a56da50d38ae7710abb240699a1..7f0ed7e9b0c4c0077eaa733e81ebc421
  #include "build/build_config.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -450,6 +451,20 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -452,6 +453,20 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    // WebView and by `kWebPayments` feature flag everywhere.
    bool payment_request_enabled = false;
  
@@ -65,7 +65,7 @@ index 1ee685e777e27a56da50d38ae7710abb240699a1..7f0ed7e9b0c4c0077eaa733e81ebc421
    // chrome, except for the cases where it would require lots of extra work for
    // the embedder to use the same default value.
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 36a5fb0b42be57e9602c0709b6abb55385f48666..306838bbf7c6d5cddd95e09d703e41d1deac21ab 100644
+index ce4074d601eca1d9ca6b30a8b5904366a47d0595..08cd7f1858a63d0d33fee5d345fefce19d2add93 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -8,6 +8,7 @@
@@ -76,7 +76,7 @@ index 36a5fb0b42be57e9602c0709b6abb55385f48666..306838bbf7c6d5cddd95e09d703e41d1
  #include "mojo/public/cpp/bindings/struct_traits.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -438,6 +439,52 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -443,6 +444,52 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
      return r.stylus_handwriting_enabled;
    }
  
@@ -130,7 +130,7 @@ index 36a5fb0b42be57e9602c0709b6abb55385f48666..306838bbf7c6d5cddd95e09d703e41d1
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 9de5f6dafc754b6ee8d894ccd9747a18b8c8efde..dbdf9f48beaa7b5dcc528906d7bfec66c2ebb89f 100644
+index 3d0dcedeb104f72a5b7022c990ed9c9fa1989cf6..2963bb74ecdceaf340a00ee984b9a3a65c25cfc9 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -8,9 +8,11 @@ import "third_party/blink/public/mojom/css/preferred_color_scheme.mojom";
@@ -145,7 +145,7 @@ index 9de5f6dafc754b6ee8d894ccd9747a18b8c8efde..dbdf9f48beaa7b5dcc528906d7bfec66
  enum PointerType {
    kPointerNone                              = 1,             // 1 << 0
    kPointerFirstType                         = kPointerNone,
-@@ -218,6 +220,19 @@ struct WebPreferences {
+@@ -219,6 +221,19 @@ struct WebPreferences {
    // If true, stylus handwriting recognition to text input will be available in
    // editable input fields which are non-password type.
    bool stylus_handwriting_enabled;

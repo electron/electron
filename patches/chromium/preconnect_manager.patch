@@ -10,10 +10,10 @@ in favor of defining PreconnectRequest in this file since we don't build
 the header.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index 037b624807fbf34843c450876aae70529df5f7da..a8208563f7d339d486d973caf7b29aba40c91ad0 100644
+index 05c0aa8ca2a480b7477a4b877a34855f8beb997b..46f693e6a7ba906baccf4d4d12bca36e80e7387e 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
-@@ -15,9 +15,11 @@
+@@ -14,9 +14,11 @@
  #include "base/types/optional_util.h"
  #include "chrome/browser/predictors/predictors_features.h"
  #include "chrome/browser/predictors/predictors_traffic_annotations.h"
@@ -25,7 +25,7 @@ index 037b624807fbf34843c450876aae70529df5f7da..a8208563f7d339d486d973caf7b29aba
  #include "content/public/browser/browser_context.h"
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
-@@ -30,6 +32,20 @@ namespace predictors {
+@@ -29,6 +31,20 @@ namespace predictors {
  
  const bool kAllowCredentialsOnPreconnectByDefault = true;
  
@@ -63,7 +63,7 @@ index 037b624807fbf34843c450876aae70529df5f7da..a8208563f7d339d486d973caf7b29aba
  
  void PreconnectManager::Start(const GURL& url,
 diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
-index 7ffcb5226bed84e0ecf23d0562a0b61db9a0b835..e2314d0328c265353f7cb6fdb9bfd3b937f25444 100644
+index 666d9fb646cf337cf4c6145358fe3ea822220b0e..591ec08e40541058b61628e50ced35b00ff91b5d 100644
 --- a/chrome/browser/predictors/preconnect_manager.h
 +++ b/chrome/browser/predictors/preconnect_manager.h
 @@ -17,7 +17,9 @@
@@ -75,7 +75,7 @@ index 7ffcb5226bed84e0ecf23d0562a0b61db9a0b835..e2314d0328c265353f7cb6fdb9bfd3b9
 +#endif
  #include "content/public/browser/storage_partition_config.h"
  #include "net/base/network_anonymization_key.h"
- #include "services/network/public/mojom/reconnect_event_observer.mojom.h"
+ #include "services/network/public/mojom/connection_change_observer_client.mojom.h"
 @@ -35,7 +37,28 @@ class NetworkContext;
  
  namespace predictors {

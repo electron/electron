@@ -412,5 +412,5 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
           std::pair<size_t, std::unique_ptr<os_crypt_async::KeyProvider>>>());
 
   // Trigger async initialization of OSCrypt key providers.
-  std::ignore = os_crypt_async_->GetInstance(base::DoNothing());
+  os_crypt_async_->GetInstance(base::DoNothing());
 }
