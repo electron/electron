@@ -8,10 +8,10 @@ an API override to replace the native `ReadFileSync` in the `modules`
 binding.
 
 diff --git a/src/env_properties.h b/src/env_properties.h
-index ba8c80ff2842c63f16cae51cfa8084617bb35bf5..820aebd18d22bcef4992b09ffc8924e9b758fd3e 100644
+index cbb7eab2df0416087cd3e6fb80eef2079143d9c8..7e9f5e977506149d69c6015e85d031770325e1da 100644
 --- a/src/env_properties.h
 +++ b/src/env_properties.h
-@@ -485,6 +485,7 @@
+@@ -501,6 +501,7 @@
    V(maybe_cache_generated_source_map, v8::Function)                            \
    V(messaging_deserialize_create_object, v8::Function)                         \
    V(message_port, v8::Object)                                                  \
@@ -20,7 +20,7 @@ index ba8c80ff2842c63f16cae51cfa8084617bb35bf5..820aebd18d22bcef4992b09ffc8924e9
    V(performance_entry_callback, v8::Function)                                  \
    V(prepare_stack_trace_callback, v8::Function)                                \
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 4e9f70a1c41b44d2a1863b778d4f1e37279178d9..c56a32885b8debbd5b95a2c11f3838d4088e05ac 100644
+index c06779dea471b6f6a8dd29d4657162ef0faec043..6204986dc97686a248d6ae483f3a413ee5c51e47 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -21,6 +21,7 @@ namespace modules {
@@ -31,7 +31,7 @@ index 4e9f70a1c41b44d2a1863b778d4f1e37279178d9..c56a32885b8debbd5b95a2c11f3838d4
  using v8::FunctionCallbackInfo;
  using v8::HandleScope;
  using v8::Isolate;
-@@ -88,6 +89,7 @@ Local<Array> BindingData::PackageConfig::Serialize(Realm* realm) const {
+@@ -89,6 +90,7 @@ Local<Array> BindingData::PackageConfig::Serialize(Realm* realm) const {
  
  const BindingData::PackageConfig* BindingData::GetPackageJSON(
      Realm* realm, std::string_view path, ErrorContext* error_context) {
@@ -39,7 +39,7 @@ index 4e9f70a1c41b44d2a1863b778d4f1e37279178d9..c56a32885b8debbd5b95a2c11f3838d4
    auto binding_data = realm->GetBindingData<BindingData>();
  
    auto cache_entry = binding_data->package_configs_.find(path.data());
-@@ -97,8 +99,36 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+@@ -98,8 +100,36 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
  
    PackageConfig package_config{};
    package_config.file_path = path;
@@ -77,7 +77,7 @@ index 4e9f70a1c41b44d2a1863b778d4f1e37279178d9..c56a32885b8debbd5b95a2c11f3838d4
      return nullptr;
    }
    // In some systems, std::string is annotated to generate an
-@@ -248,6 +278,12 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+@@ -249,6 +279,12 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
    return &cached.first->second;
  }
  
@@ -90,7 +90,7 @@ index 4e9f70a1c41b44d2a1863b778d4f1e37279178d9..c56a32885b8debbd5b95a2c11f3838d4
  void BindingData::ReadPackageJSON(const FunctionCallbackInfo<Value>& args) {
    CHECK_GE(args.Length(), 1);  // path, [is_esm, base, specifier]
    CHECK(args[0]->IsString());  // path
-@@ -556,6 +592,8 @@ void GetCompileCacheDir(const FunctionCallbackInfo<Value>& args) {
+@@ -643,6 +679,8 @@ void InitImportMetaPathHelpers(const FunctionCallbackInfo<Value>& args) {
  void BindingData::CreatePerIsolateProperties(IsolateData* isolate_data,
                                               Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
@@ -99,7 +99,7 @@ index 4e9f70a1c41b44d2a1863b778d4f1e37279178d9..c56a32885b8debbd5b95a2c11f3838d4
    SetMethod(isolate, target, "readPackageJSON", ReadPackageJSON);
    SetMethod(isolate,
              target,
-@@ -595,6 +633,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -685,6 +723,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
  
  void BindingData::RegisterExternalReferences(
      ExternalReferenceRegistry* registry) {
@@ -109,7 +109,7 @@ index 4e9f70a1c41b44d2a1863b778d4f1e37279178d9..c56a32885b8debbd5b95a2c11f3838d4
    registry->Register(GetNearestParentPackageJSONType);
    registry->Register(GetNearestParentPackageJSON);
 diff --git a/src/node_modules.h b/src/node_modules.h
-index 17909b2270454b3275c7bf2e50d4b9b35673ecc8..3d5b0e3ac65524adfe221bfd6f85360dee1f0bee 100644
+index eb2900d8f8385238f89a6dcc972a28e5fcb1d288..e28f38d98f4f8749048af135f0dcbe55aa69c4fe 100644
 --- a/src/node_modules.h
 +++ b/src/node_modules.h
 @@ -54,6 +54,8 @@ class BindingData : public SnapshotableObject {
