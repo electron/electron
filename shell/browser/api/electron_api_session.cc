@@ -199,8 +199,9 @@ std::vector<std::string> GetDataTypesFromMask(
 
 // Represents a task to clear browsing data for the `clearData` API method.
 //
-// This type manages its own lifetime through gin_helper::CleanedUpAtExit,
-// ensuring it's destroyed before the node environment shuts down.
+// This type manages its own lifetime,
+// 1) deleting itself once all the operations created by this task are completed.
+// 2) through gin_helper::CleanedUpAtExit, ensuring it's destroyed before the node environment shuts down.
 class ClearDataTask : public gin_helper::CleanedUpAtExit {
  public:
   // Starts running a task. This function will return before the task is
