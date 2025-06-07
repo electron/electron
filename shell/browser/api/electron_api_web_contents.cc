@@ -2956,12 +2956,15 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
     print_settings.Set(printing::kSettingDpiVertical, dpi.height());
   }
 
-  auto* print_view_manager =
-      PrintViewManagerElectron::FromWebContents(web_contents.get());
+  content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents.get());
+  if (!rfh)
+    return;
+
+  auto* print_view_manager = PrintViewManagerElectron::FromWebContents(
+      content::WebContents::FromRenderFrameHost(rfh));
   if (!print_view_manager)
     return;
 
-  content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents.get());
   print_view_manager->PrintNow(rfh, std::move(print_settings),
                                std::move(print_callback));
 }
@@ -3007,12 +3010,15 @@ void WebContents::Print(gin::Arguments* args) {
   }
 
   if (options.IsEmptyObject()) {
-    auto* print_view_manager =
-        PrintViewManagerElectron::FromWebContents(web_contents());
+    content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
+    if (!rfh)
+      return;
+
+    auto* print_view_manager = PrintViewManagerElectron::FromWebContents(
+        content::WebContents::FromRenderFrameHost(rfh));
     if (!print_view_manager)
       return;
 
-    content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
     print_view_manager->PrintNow(rfh, std::move(settings), std::move(callback));
     return;
   }
