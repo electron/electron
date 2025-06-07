@@ -1,6 +1,6 @@
 ---
 title: 'Building your First App'
-description: 'This guide will step you through the process of creating a barebones Hello World app in Electron, similar to electron/electron-quick-start.'
+description: 'This guide will step you through the process of creating a barebones Hello World app in Electron, similar to electron/minimal-repro.'
 slug: tutorial-first-app
 hide_title: false
 ---

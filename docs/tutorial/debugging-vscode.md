@@ -9,8 +9,8 @@ This guide goes over how to set up VSCode debugging for both your own Electron p
 #### 1. Open an Electron project in VSCode.
 
 ```sh
-$ git clone git@github.com:electron/electron-quick-start.git
-$ code electron-quick-start
+$ git clone git@github.com:electron/minimal-repro.git
+$ code minimal-repro
 ```
 
 #### 2. Add a file `.vscode/launch.json` with the following configuration:
@@ -52,8 +52,8 @@ For those unsure where to acquire this code or how to build it, [Electron's Buil
 #### 1. Open an Electron project in VSCode.
 
 ```sh
-$ git clone git@github.com:electron/electron-quick-start.git
-$ code electron-quick-start
+$ git clone git@github.com:electron/minimal-repro.git
+$ code minimal-repro
 ```
 
 #### 2. Add a file `.vscode/launch.json` with the following configuration:
@@ -92,7 +92,7 @@ $ code electron-quick-start
   * `Testing`: If you are using the default settings of [Electron's Build-Tools](https://github.com/electron/build-tools) or the default instructions when [building from source](../development/build-instructions-gn.md#building).
   * `Release`: If you built a Release build rather than a Testing build.
   * `your-directory-name`: If you modified this during your build process from the default, this will be whatever you specified.
-* The `args` array string `"your-electron-project-path"` should be the absolute path to either the directory or `main.js` file of the Electron project you are using for testing. In this example, it should be your path to `electron-quick-start`.
+* The `args` array string `"your-electron-project-path"` should be the absolute path to either the directory or `main.js` file of the Electron project you are using for testing. In this example, it should be your path to `minimal-repro`.
 
 #### 3. Debugging
 
