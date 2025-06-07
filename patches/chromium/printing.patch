@@ -666,7 +666,7 @@ index 6809c4576c71bc1e1a6ad4e0a37707272a9a10f4..3aad10424a6a31dab2ca393d00149ec6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 774392650ad07ee56cb931db7d1a46eaedb1eaa1..d42afb1a744113af660aadc832c71244b8918090 100644
+index 774392650ad07ee56cb931db7d1a46eaedb1eaa1..348ba6b23e3dc83196137ef07dc2543830471584 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -52,6 +52,7 @@
@@ -744,7 +744,7 @@ index 774392650ad07ee56cb931db7d1a46eaedb1eaa1..d42afb1a744113af660aadc832c71244
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS)
-@@ -2075,17 +2081,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2075,17 +2081,25 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -759,6 +759,12 @@ index 774392650ad07ee56cb931db7d1a46eaedb1eaa1..d42afb1a744113af660aadc832c71244
    FrameReference frame_ref(frame);
  
 -  if (!InitPrintSettings(frame, node)) {
++  // If we're silently printing a PDF, we bypass settings logic
++  // that sets modifiability to false so ensure it's set here.
++  if (silent && IsPrintingPdfFrame(frame, node)) {
++    settings.Set(kSettingPreviewModifiable, false);
++  }
++
 +  if (!InitPrintSettings(frame, node, std::move(settings))) {
      // Browser triggered this code path. It already knows about the failure.
      notify_browser_of_print_failure_ = false;
@@ -767,7 +773,7 @@ index 774392650ad07ee56cb931db7d1a46eaedb1eaa1..d42afb1a744113af660aadc832c71244
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2106,8 +2114,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2106,8 +2120,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -784,7 +790,7 @@ index 774392650ad07ee56cb931db7d1a46eaedb1eaa1..d42afb1a744113af660aadc832c71244
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2375,29 +2390,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2375,29 +2396,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
