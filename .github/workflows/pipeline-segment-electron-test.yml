@@ -36,8 +36,8 @@ permissions:
   pull-requests: read
 
 env:
-  CHROMIUM_GIT_AUTH: ${{ secrets.CHROMIUM_GIT_AUTH }}
-  CHROMIUM_GIT_USER: ${{ secrets.CHROMIUM_GIT_USER }}
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+  CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
@@ -123,8 +123,8 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
-    - name: Set Chromium Git Helper
-      uses: ./src/electron/.github/actions/set-chromium-git-helper
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
