@@ -204,8 +204,9 @@ std::vector<std::string> GetDataTypesFromMask(
 // Represents a task to clear browsing data for the `clearData` API method.
 //
 // This type manages its own lifetime,
-// 1) deleting itself once all the operations created by this task are completed.
-// 2) through gin_helper::CleanedUpAtExit, ensuring it's destroyed before the node environment shuts down.
+// 1) deleting itself once all the operations created by this task are
+// completed. 2) through gin_helper::CleanedUpAtExit, ensuring it's destroyed
+// before the node environment shuts down.
 class ClearDataTask : public gin_helper::CleanedUpAtExit {
  public:
   // Starts running a task. This function will return before the task is
@@ -298,7 +299,6 @@ class ClearDataTask : public gin_helper::CleanedUpAtExit {
   explicit ClearDataTask(gin_helper::Promise<void> promise)
       : promise_(std::move(promise)) {}
 
-
   static void StartOperation(
       ClearDataTask* task,
       BrowsingDataRemover* remover,
@@ -307,8 +307,8 @@ class ClearDataTask : public gin_helper::CleanedUpAtExit {
     // Track this operation
     task->operations_running_ += 1;
 
-    auto operation = std::make_unique<ClearDataOperation>(task, remover);
-    task->operations_.push_back(std::move(operation));
+    auto& operation = task->operations_.emplace_back(
+        std::make_unique<ClearDataOperation>(task, remover));
     operation->Start(remover, data_type_mask, std::move(filter_builder));
   }
 
