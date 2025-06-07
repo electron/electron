@@ -31,8 +31,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
-  CHROMIUM_GIT_AUTH: ${{ secrets.CHROMIUM_GIT_AUTH }}
-  CHROMIUM_GIT_USER: ${{ secrets.CHROMIUM_GIT_USER }}
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
@@ -52,8 +51,8 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
-    - name: Set Chromium Git Helper
-      uses: ./src/electron/.github/actions/set-chromium-git-helper
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
@@ -106,8 +105,8 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
-    - name: Set Chromium Git Helper
-      uses: ./src/electron/.github/actions/set-chromium-git-helper
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
