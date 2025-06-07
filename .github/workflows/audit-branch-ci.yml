@@ -17,6 +17,7 @@ jobs:
     steps:
       - run: npm install @actions/cache @electron/fiddle-core
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        id: audit-errors
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -52,6 +53,10 @@ jobs:
 
               // Check for runs which had error annotations
               for (const checkRun of Array.from(latestCheckRuns.values())) {
+                if (checkRun.name === "Audit CI on Branches") {
+                  continue; // Skip the audit workflow itself
+                }
+
                 const annotations = (await github.rest.checks.listAnnotations({
                   owner: "electron",
                   repo: "electron",
@@ -63,8 +68,8 @@ jobs:
                     ({ annotation_level, message }) =>
                       annotation_level === "failure" &&
                       !message.startsWith("Process completed with exit code") &&
-                      !message.startsWith("Response status code does not indicate success"),
-                      !/Unable to make request/.test(message),
+                      !message.startsWith("Response status code does not indicate success") &&
+                      !/Unable to make request/.test(message) &&
                       !/The requested URL returned error/.test(message),
                   )
                 ) {
@@ -96,6 +101,7 @@ jobs:
             }
 
             if (runsWithErrors.length > 0) {
+              core.setOutput('errorsFound', true);
               core.summary.addHeading('⚠️ Runs with Errors');
               core.summary.addTable([
                 [
@@ -130,7 +136,7 @@ jobs:
 
             await core.summary.write();
       - name: Send Slack message if errors
-        if: failure()
+        if: ${{ steps.audit-errors.outputs.errorsFound && github.ref == 'refs/heads/main' }}
         uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
         with:
           payload: |
