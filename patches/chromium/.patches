@@ -143,5 +143,3 @@ fix_enable_wrap_iter_in_string_view_and_array.patch
 fix_linter_error.patch
 chore_grandfather_in_electron_views_and_delegates.patch
 refactor_patch_electron_permissiontypes_into_blink.patch
-revert_webgl_add_stub_webgl_2_renderingcontextwebgpu.patch
-cherry-pick-f1e6422a355c.patch

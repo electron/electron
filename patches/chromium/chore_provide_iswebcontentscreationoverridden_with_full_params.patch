@@ -80,7 +80,7 @@ index b6582b4013d9682d32bd524b4053b443a4df00f8..afcbce72e0f247b4d5a637b27c9f25d9
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 875c7a37c48ce50b5439a51df5e505e1bbcd5155..035432c70a6b65a2520f130e0db8a91f20e92770 100644
+index 8c5e577eb89cf1ee85e76fea6385f7a18a60143b..2ae70471cfa301570d696662182773e868054143 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -2392,8 +2392,7 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -103,10 +103,10 @@ index 875c7a37c48ce50b5439a51df5e505e1bbcd5155..035432c70a6b65a2520f130e0db8a91f
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 9dfba94b0aaa3f27f363bd50b489cae9e0e3cda6..3867e5d5741103ee0b65533dae4b80906b393f59 100644
+index 1de7f9596b2f8f545ad5da7db51a35e5e0fc8592..0db8f52ef8375970f966fe8a2e3e06a8b2eeac02 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -1037,8 +1037,7 @@ class Browser : public TabStripModelObserver,
+@@ -1026,8 +1026,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -222,10 +222,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6eaa7d566058fdcc9ebfa10f0420c3a234cb0483..bbbc07e36e6de11169f8317c64558b8c4d1699d5 100644
+index 33abfcd326148f32eff2266a4545345e4a561a4e..4bb69438947fff73a6905a1ecc1b711986a89124 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5187,8 +5187,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5196,8 +5196,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,
