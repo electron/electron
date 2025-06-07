@@ -1,0 +1,3 @@
+import("testing.gn")
+v8_enable_sandbox = false
+v8_enable_pointer_compression = false
