@@ -1,0 +1,74 @@
+name: Build Git Cache
+# This workflow updates git cache on the cross-instance cache volumes
+# It runs daily at midnight.
+
+on:  
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  build-git-cache-linux:
+    runs-on: electron-arc-linux-amd64-32core
+    container:
+      image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}      
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Build Git Cache
+      uses: ./src/electron/.github/actions/build-git-cache
+      with:
+        target-platform: linux
+
+  build-git-cache-windows:
+    runs-on: electron-arc-linux-amd64-32core
+    container:
+      image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
+      options: --user root --device /dev/fuse --cap-add SYS_ADMIN
+      volumes:
+        - /mnt/win-cache:/mnt/win-cache
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
+      TARGET_OS: 'win'
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Build Git Cache
+      uses: ./src/electron/.github/actions/build-git-cache
+      with:
+        target-platform: win
+
+  build-git-cache-macos:
+    runs-on: electron-arc-linux-amd64-32core
+    # This job updates the same git cache as linux, so it needs to run after the linux one.
+    needs: build-git-cache-linux
+    container:
+      image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Build Git Cache
+      uses: ./src/electron/.github/actions/build-git-cache
+      with:
+        target-platform: macos
