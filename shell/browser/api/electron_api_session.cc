@@ -304,8 +304,8 @@ class ClearDataTask : public gin_helper::CleanedUpAtExit {
     task->operations_running_ += 1;
 
     auto operation = std::make_unique<ClearDataOperation>(task, remover);
-    operation->Start(remover, data_type_mask, std::move(filter_builder));
     task->operations_.push_back(std::move(operation));
+    operation->Start(remover, data_type_mask, std::move(filter_builder));
   }
 
   void OnOperationFinished(
