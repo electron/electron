@@ -37,7 +37,7 @@ async function getAllPatchFiles (dir) {
 }
 
 function getCurrentCommitSha () {
-  return process.enf.GITHUB_SHA;
+  return process.env.GITHUB_SHA;
 }
 
 function getCurrentBranch () {
