@@ -1,0 +1,58 @@
+name: 'Set Chromium Git Cookie'
+description: 'Sets an authenticated cookie from Chromium to allow for a higher request limit'
+runs:
+  using: "composite"
+  steps:
+  - name: Set the git cookie from chromium.googlesource.com (Unix)
+    if: ${{ runner.os != 'Windows' }}
+    shell: bash
+    run: |
+      if [[ -z "${{ env.CHROMIUM_GIT_COOKIE }}" ]]; then
+        echo "CHROMIUM_GIT_COOKIE is not set - cannot authenticate."
+        exit 0
+      fi
+
+      eval 'set +o history' 2>/dev/null || setopt HIST_IGNORE_SPACE 2>/dev/null
+      touch ~/.gitcookies
+      chmod 0600 ~/.gitcookies
+
+      git config --global http.cookiefile ~/.gitcookies
+
+      tr , \\t <<\__END__ >>~/.gitcookies
+      ${{ env.CHROMIUM_GIT_COOKIE }}
+      __END__
+      eval 'set -o history' 2>/dev/null || unsetopt HIST_IGNORE_SPACE 2>/dev/null
+
+      RESPONSE=$(curl -s -b ~/.gitcookies https://chromium-review.googlesource.com/a/accounts/self)
+      if [[ $RESPONSE == ")]}'"* ]]; then
+        # Extract account email for verification
+        EMAIL=$(echo "$RESPONSE" | tail -c +5 | jq -r '.email // "No email found"')
+        echo "Cookie authentication successful - authenticated as: $EMAIL"
+      else
+        echo "Cookie authentication failed - ensure CHROMIUM_GIT_COOKIE is set correctly"
+        echo $RESPONSE
+      fi
+  - name: Set the git cookie from chromium.googlesource.com (Windows)
+    if: ${{ runner.os == 'Windows' }}
+    shell: cmd
+    run: |
+      if "%CHROMIUM_GIT_COOKIE_WINDOWS_STRING%"=="" (
+        echo CHROMIUM_GIT_COOKIE_WINDOWS_STRING is not set - cannot authenticate.
+        exit /b 0
+      )
+
+      git config --global http.cookiefile "%USERPROFILE%\.gitcookies"
+      powershell -noprofile -nologo -command Write-Output "${{ env.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}" >>"%USERPROFILE%\.gitcookies"
+
+      curl -s -b "%USERPROFILE%\.gitcookies" https://chromium-review.googlesource.com/a/accounts/self > response.txt
+
+      findstr /B /C:")]}'" response.txt > nul
+      if %ERRORLEVEL% EQU 0 (
+        echo Cookie authentication successful
+        powershell -NoProfile -Command "& {$content = Get-Content -Raw response.txt; $content = $content.Substring(4); try { $json = ConvertFrom-Json $content; if($json.email) { Write-Host 'Authenticated as:' $json.email } else { Write-Host 'No email found in response' } } catch { Write-Host 'Error parsing JSON:' $_ }}"
+      ) else (
+        echo Cookie authentication failed - ensure CHROMIUM_GIT_COOKIE_WINDOWS_STRING is set correctly
+        type response.txt
+      )
+
+      del response.txt
