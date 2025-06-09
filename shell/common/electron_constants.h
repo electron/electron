@@ -26,12 +26,15 @@ inline constexpr std::string_view kLeft = "left";
 inline constexpr std::string_view kTop = "top";
 inline constexpr std::string_view kRight = "right";
 inline constexpr std::string_view kBottom = "bottom";
+
 inline constexpr std::string_view kMaximized = "maximized";
 inline constexpr std::string_view kFullscreen = "fullscreen";
+
 inline constexpr std::string_view kWorkAreaLeft = "work_area_left";
 inline constexpr std::string_view kWorkAreaTop = "work_area_top";
 inline constexpr std::string_view kWorkAreaRight = "work_area_right";
 inline constexpr std::string_view kWorkAreaBottom = "work_area_bottom";
+
 inline constexpr std::string_view kWindowStates = "electron.window_states";
 
 inline constexpr base::cstring_view kRunAsNode = "ELECTRON_RUN_AS_NODE";
