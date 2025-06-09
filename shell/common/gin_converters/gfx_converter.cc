@@ -287,7 +287,7 @@ v8::Local<v8::Value> Converter<gfx::ColorSpace>::ToV8(
     case gfx::ColorSpace::PrimaryID::EBU_3213_E:
       primaries = "ebu-3213-e";
       break;
-    default:
+    case gfx::ColorSpace::PrimaryID::INVALID:
       primaries = "invalid";
       break;
   }
@@ -367,7 +367,7 @@ v8::Local<v8::Value> Converter<gfx::ColorSpace>::ToV8(
     case gfx::ColorSpace::TransferID::SCRGB_LINEAR_80_NITS:
       transfer = "scrgb-linear-80-nits";
       break;
-    default:
+    case gfx::ColorSpace::TransferID::INVALID:
       transfer = "invalid";
       break;
   }
@@ -405,7 +405,7 @@ v8::Local<v8::Value> Converter<gfx::ColorSpace>::ToV8(
     case gfx::ColorSpace::MatrixID::GBR:
       matrix = "gbr";
       break;
-    default:
+    case gfx::ColorSpace::MatrixID::INVALID:
       matrix = "invalid";
       break;
   }
@@ -422,7 +422,7 @@ v8::Local<v8::Value> Converter<gfx::ColorSpace>::ToV8(
     case gfx::ColorSpace::RangeID::DERIVED:
       range = "derived";
       break;
-    default:
+    case gfx::ColorSpace::RangeID::INVALID:
       range = "invalid";
       break;
   }
@@ -482,7 +482,11 @@ bool Converter<gfx::ColorSpace>::FromV8(v8::Isolate* isolate,
       primaries = gfx::ColorSpace::PrimaryID::WIDE_GAMUT_COLOR_SPIN;
     else if (primaries_str == "ebu-3213-e")
       primaries = gfx::ColorSpace::PrimaryID::EBU_3213_E;
-    else if (primaries_str != "custom")  // Skip CUSTOM primaries
+    else if (primaries_str == "custom") {
+      gin_helper::ErrorThrower(isolate).ThrowTypeError(
+          "'custom' not supported.");
+      return false;
+    } else
       primaries = gfx::ColorSpace::PrimaryID::INVALID;
   }
 
@@ -532,8 +536,11 @@ bool Converter<gfx::ColorSpace>::FromV8(v8::Isolate* isolate,
       transfer = gfx::ColorSpace::TransferID::LINEAR_HDR;
     else if (transfer_str == "scrgb-linear-80-nits")
       transfer = gfx::ColorSpace::TransferID::SCRGB_LINEAR_80_NITS;
-    else if (transfer_str != "custom" &&
-             transfer_str != "custom-hdr")  // Skip CUSTOM and CUSTOM_HDR
+    else if (transfer_str == "custom" || transfer_str == "custom-hdr") {
+      gin_helper::ErrorThrower(isolate).ThrowTypeError(
+          "'custom', 'custom-hdr' not supported.");
+      return false;
+    } else
       transfer = gfx::ColorSpace::TransferID::INVALID;
   }
 
