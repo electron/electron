@@ -116,10 +116,10 @@ index f5d921fb5de6d5decc53815d959d91f8c7e8c5dc..3cca9aec9ccb02dbaf29298d89e5c862
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index ec09f6b08be9ee4c42d0443ba59e59564f8ec40d..20beed69e9c73b743180cbf2572fe961e538217a 100644
+index bdb3af6d16e9a6403361a98d233e7c3924f0fabc..5e0df4263d176b699e940f20d79e90e5b3259014 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2459,6 +2459,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2487,6 +2487,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index ec09f6b08be9ee4c42d0443ba59e59564f8ec40d..20beed69e9c73b743180cbf2572fe961
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -3953,10 +3957,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3981,10 +3985,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -155,7 +155,7 @@ index ec09f6b08be9ee4c42d0443ba59e59564f8ec40d..20beed69e9c73b743180cbf2572fe961
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index f0c5408c9688da6a10cbb8154c1264af958953a0..a7ccf21ad9dbc7f4a423f4346339b891d1d52b82 100644
+index 607f8b3db1be6ff04434a42399f153e2da0f0127..50df538a2aef851b6cb4a06b24b1e22627a71c7b 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -443,6 +443,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,

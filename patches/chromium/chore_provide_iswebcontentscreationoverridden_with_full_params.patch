@@ -80,10 +80,10 @@ index b6582b4013d9682d32bd524b4053b443a4df00f8..afcbce72e0f247b4d5a637b27c9f25d9
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index ebd7e0f4a0a7bcb279fc3565c4d686ccc11a1c92..b69302d6acefb84957e675ac30c3a01dcfc1fdce 100644
+index 0b1727f60624c654769e6a433d84a21396423711..578f7815d6c61f18ff5cdec018101c0c35dcd01c 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2380,8 +2380,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2376,8 +2376,7 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -93,7 +93,7 @@ index ebd7e0f4a0a7bcb279fc3565c4d686ccc11a1c92..b69302d6acefb84957e675ac30c3a01d
    if (IsActorCoordinatorActingOnTab(
            profile(), content::WebContents::FromRenderFrameHost(opener))) {
      // If an ActorCoordinator is acting on the opener, prevent it from creating
-@@ -2393,7 +2392,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2389,7 +2388,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -103,7 +103,7 @@ index ebd7e0f4a0a7bcb279fc3565c4d686ccc11a1c92..b69302d6acefb84957e675ac30c3a01d
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index fb4e08d76541e0dd79338416f8314cbd3b6276d3..70b6bb7b55ed334f05deb21fdd62a3e1a375b4e0 100644
+index 0c04fe0deb5a165775f0f257258c670a5e0b9c37..3a8298867e4530c32ab26a967893b648ff8b6e4b 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -999,8 +999,7 @@ class Browser : public TabStripModelObserver,

@@ -666,7 +666,7 @@ index 6809c4576c71bc1e1a6ad4e0a37707272a9a10f4..3aad10424a6a31dab2ca393d00149ec6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 774392650ad07ee56cb931db7d1a46eaedb1eaa1..348ba6b23e3dc83196137ef07dc2543830471584 100644
+index 91c3d7e0e6ddf959d1fbb73c61613dd7c40266e2..cd0c10fd517f2d7fc60944bea825e38601066fd7 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -52,6 +52,7 @@
@@ -744,7 +744,7 @@ index 774392650ad07ee56cb931db7d1a46eaedb1eaa1..348ba6b23e3dc83196137ef07dc25438
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS)
-@@ -2075,17 +2081,25 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2079,17 +2085,25 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -773,7 +773,7 @@ index 774392650ad07ee56cb931db7d1a46eaedb1eaa1..348ba6b23e3dc83196137ef07dc25438
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2106,8 +2120,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2110,8 +2124,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -790,7 +790,7 @@ index 774392650ad07ee56cb931db7d1a46eaedb1eaa1..348ba6b23e3dc83196137ef07dc25438
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2375,29 +2396,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2379,29 +2400,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -887,10 +887,10 @@ index 97cb6458bc9eec767db89b56abfc5f4b4136ff7b..d9a0b343158b8464b5c9aa8e0e655c0b
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 5e31cf33f58efe376396f8d178e0f9930832466a..4468d19c0a2587dc678873aef949f54fdf4cb27f 100644
+index f6db062aa59351efe1bd1359b222a000e1373d67..3549301af9ac209fa906450e30fb0b95311725f2 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -3173,8 +3173,9 @@ source_set("browser") {
+@@ -3184,8 +3184,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 9211e19b0516e8cbfb552ca0c1372b56cb0d7b5f..3fd0349e86cb8227a3365c64e71155781fcdfad7 100644
+index b0c34d20cb0659f0c6e2ed073f7eea1520990df5..c74942d7a396636dfd597a61215f38f16fdb00a3 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1050,6 +1050,7 @@ component("base") {
+@@ -1054,6 +1054,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -81,13 +81,13 @@ index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..f328fbb49c45991f44a9c75325491d08
  
  }  // namespace base
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index 29e6d750c5c688f1673a8495156a4b7bcd0ddb44..45a3f6e74221be7498f0ebb8133abbbd4dea10ed 100644
+index 116f4b86b816756e3a777585d4c863f423b19baf..5bd0273e7cc6a725247a0b94f85f47e2ad5336f4 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -21,6 +21,10 @@
  #include "base/threading/scoped_blocking_call.h"
  #include "base/threading/thread_restrictions.h"
- #include "base/trace_event/base_tracing.h"
+ #include "base/trace_event/trace_event.h"
 +#include "electron/mas.h"
 +#if IS_MAS_BUILD()
 +#include <sys/syscall.h>
@@ -208,11 +208,11 @@ index ff1e356ff696d3830d02644969c36a71fdf32ff6..b39c716c52524b95f2d3417a98e60c0c
      sources += [ "os_crypt_win.cc" ]
      deps += [ "//components/version_info" ]
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index 6567e6f2d3b1dc859408666dd3c15c4a9e1238b0..77409051c67a5a7bd3826a7063666954a38a86f0 100644
+index 8af38247c46dc85f95bb15a03f2eb141d0bbf65a..eda4d2956225cbb9400ab5462db70d95ff3b0958 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
-@@ -15,6 +15,7 @@
- #include "base/rand_util.h"
+@@ -16,6 +16,7 @@
+ #include "base/strings/string_view_util.h"
  #include "build/branding_buildflags.h"
  #include "crypto/apple_keychain.h"
 +#include "electron/mas.h"
@@ -357,7 +357,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..149de0175c2ec0e41e3ba40caad7019c
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 127a2829fafa04bfbab0b883304dfb815d7e1c22..61d7946e52862f3586b1e098d7d44a125656de81 100644
+index 71158ca9a7101911bb76f0c1b5300b0ff0e326b3..1441b9d4f9560c8b26d4beffe31449ed2a1eed40 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -9,6 +9,7 @@
@@ -385,7 +385,7 @@ index 127a2829fafa04bfbab0b883304dfb815d7e1c22..61d7946e52862f3586b1e098d7d44a12
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 6c809d75b1de626fb080de8006542ea0937b10d0..dec84d06112d55456c5cba1bbbfcb0c97653bf32 100644
+index 4239df450ee5e01261baa0440813bbda49efc712..7e69b4668b781d40373f29d083f98e2ff2d18304 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -26,6 +26,7 @@
@@ -452,7 +452,7 @@ index 6c809d75b1de626fb080de8006542ea0937b10d0..dec84d06112d55456c5cba1bbbfcb0c9
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index ff96d22a11051391423f4a49c7b1478b8176baf8..c7e640e968f8ef183d48a226d43cdac8a50dbf3d 100644
+index acc9537464c2a54ffc22956873dbdba74500c20b..b0b7d98e20ed0cc63a38d6a2ce462ac63e183ed9 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -582,7 +582,7 @@ index 8c7402feafed747510f49f424be8d5be4a9be73c..4b8a28e18aff4848073b3ab381033193
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6d414afa34803b997ccd363f45fab073c736a5ff..5e31cf33f58efe376396f8d178e0f9930832466a 100644
+index c7adbd86024632cfa865a000cbaeb4cc5f64b3d0..f6db062aa59351efe1bd1359b222a000e1373d67 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
@@ -703,7 +703,7 @@ index e38279e46d8fe621db24b4d94f5811459b4ca6b5..26592c97be3474a24f294d3cf2e74627
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index da0e8c7260391805fa6950125c797565a2812521..8e8b093cd142326010445e9b2aae7c20866b9060 100644
+index ea493573a2c8c149f8dd944f8ca4edaa44e675ca..91dc4ce9f5fc7449340e1957e7ee3375a57a9fc7 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -283,6 +283,7 @@ source_set("common") {
@@ -715,7 +715,7 @@ index da0e8c7260391805fa6950125c797565a2812521..8e8b093cd142326010445e9b2aae7c20
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index b8fd955057ebdbf910c81f5d79d7a7ca47601ac7..aa232a7d02f353d83fd2862416b0c3b8ebbccc52 100644
+index 9620316b26f81413ecce711ec5889299ec7d1690..772472a3741ce653efff82707d94c0274685f59b 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -321,6 +321,7 @@ target(link_target_type, "renderer") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3814759218cd05d62424451a933a710fba95bc39..b3d4dd1bec7545e4420e2b3d41946c14cf4c29b2 100644
+index 9917216802256d7699685d805fef997c4ad7c352..97feda51acda53cc7835eb9d03f58876bbe404b8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -667,6 +667,7 @@ static_library("test_support") {
@@ -937,7 +937,7 @@ index f89dbdfb0c4e8e31d387d1ce2e5304277ac4df26..7b75bfeba59345d63f4ac81153697941
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 99b419322dfa22cbc0c4cb72a67470dde5cc80e2..bca7a830f0a4d717493502a4fcfbc9b24c04715d 100644
+index 5d862c7223f3b376b79765592a17c4d72ca482a2..9f0e6ac84557d022e27a9b378d3b1f2fded1a1e5 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -202,6 +202,7 @@ source_set("audio") {
@@ -949,7 +949,7 @@ index 99b419322dfa22cbc0c4cb72a67470dde5cc80e2..bca7a830f0a4d717493502a4fcfbc9b2
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 098f383475c5958adf02fa3e30c2ba0dcf0a4252..59c958af92ef85bcc329bf0aa69095ca8d2f1d6a 100644
+index 0f7c441ba44fe22b1bf4913ae8e61a8bb7ef7fe7..2311fdbbfa566e76b4709059b707ac4d4ff195d9 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
 @@ -29,6 +29,7 @@
@@ -985,10 +985,10 @@ index 098f383475c5958adf02fa3e30c2ba0dcf0a4252..59c958af92ef85bcc329bf0aa69095ca
  }  // namespace
  #endif
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 543b8ae16c1ddc33b3602adc7216a1756681f5fe..21b2898f8b1f40a85d60145bfdff3aa1d7e9b154 100644
+index 618bd3b91278836bb249614b301452b3053051a8..4e53d2d23593de5afaa97a5ad68de78f5c646ffd 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
-@@ -189,6 +189,8 @@ source_set("dns") {
+@@ -193,6 +193,8 @@ source_set("dns") {
      ":host_resolver_manager",
      ":mdns_client",
    ]
@@ -1871,7 +1871,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index ee65ebfb327e12603d39fcf3228f18bc0da42f65..97ba3be587dc1fc19e210068c987d195a1c3d3fa 100644
+index 56183d613869aecda06a7140fba89f40ff9681ca..9fda22a52c52622a6f4ac9371e2fdb0f997a2526 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -715,6 +715,8 @@ component("views") {
@@ -1883,7 +1883,7 @@ index ee65ebfb327e12603d39fcf3228f18bc0da42f65..97ba3be587dc1fc19e210068c987d195
    }
  
    if (is_win) {
-@@ -1144,6 +1146,8 @@ source_set("test_support") {
+@@ -1146,6 +1148,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
