@@ -5,6 +5,12 @@ name: Build Git Cache
 on:  
   schedule:
     - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      branch-name:
+        description: Branch name (e.g. `36-x-y`)
+        required: true
+        type: string    
 
 jobs:
   build-git-cache-linux:
@@ -23,6 +29,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.inputs.branch-name || '' }}
     - name: Build Git Cache
       uses: ./src/electron/.github/actions/build-git-cache
       with:
@@ -45,6 +52,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.inputs.branch-name || '' }}
     - name: Build Git Cache
       uses: ./src/electron/.github/actions/build-git-cache
       with:
@@ -68,6 +76,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.inputs.branch-name || '' }}
     - name: Build Git Cache
       uses: ./src/electron/.github/actions/build-git-cache
       with:
