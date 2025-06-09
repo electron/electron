@@ -12,10 +12,10 @@ We attempt to migrate the safe storage key from the old account, if that migrati
 Existing apps that aren't built for the app store should be unimpacted, there is one edge case where a user uses BOTH an AppStore and a darwin build of the same app only one will keep it's access to the safestorage key as during the migration we delete the old account.  This is an acceptable edge case as no one should be actively using two versions of the same app.
 
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index eda4d2956225cbb9400ab5462db70d95ff3b0958..cd972a4a9b16f0aabb7e901cd97e515ffc9f5d53 100644
+index 77409051c67a5a7bd3826a7063666954a38a86f0..397c5a17f0dc4d662f6413234ddc430b680fb0b3 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
-@@ -27,6 +27,12 @@
+@@ -26,6 +26,12 @@
  using KeychainNameContainerType = const base::NoDestructor<std::string>;
  #endif
  
@@ -28,7 +28,7 @@ index eda4d2956225cbb9400ab5462db70d95ff3b0958..cd972a4a9b16f0aabb7e901cd97e515f
  namespace {
  
  // These two strings ARE indeed user facing.  But they are used to access
-@@ -96,11 +102,49 @@
+@@ -95,11 +101,49 @@
                                    uma_result);
    };
  

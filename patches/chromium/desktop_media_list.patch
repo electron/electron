@@ -82,10 +82,10 @@ index 786c526588d81b8b5b1b5dd3760719a53e005995..f66b7d0b4dfcbb8ed3dde5a9ff463ae2
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 024d7d74547e248ca685dc2fa8d0cdeb66b42c55..fc90627d0f733d49903325bb2f70b9980dd37184 100644
+index bd2b565158f807d872d4c9205012b91fc37c2290..312882d656f9f6b3d3fd98128131cea63f818e0d 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-@@ -216,9 +216,13 @@ content::DesktopMediaID::Id GetUpdatedWindowId(
+@@ -215,9 +215,13 @@ content::DesktopMediaID::Id GetUpdatedWindowId(
      }
    }
  #elif BUILDFLAG(IS_MAC)
@@ -99,7 +99,7 @@ index 024d7d74547e248ca685dc2fa8d0cdeb66b42c55..fc90627d0f733d49903325bb2f70b998
  #endif
  
    return window_id;
-@@ -321,7 +325,7 @@ class NativeDesktopMediaList::Worker
+@@ -320,7 +324,7 @@ class NativeDesktopMediaList::Worker
    base::WeakPtr<NativeDesktopMediaList> media_list_;
  
    DesktopMediaID::Type source_type_;
@@ -108,7 +108,7 @@ index 024d7d74547e248ca685dc2fa8d0cdeb66b42c55..fc90627d0f733d49903325bb2f70b998
    const ThumbnailCapturer::FrameDeliveryMethod frame_delivery_method_;
    const bool add_current_process_windows_;
    const bool auto_show_delegated_source_list_;
-@@ -603,6 +607,12 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
+@@ -602,6 +606,12 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
        FROM_HERE,
        base::BindOnce(&NativeDesktopMediaList::UpdateNativeThumbnailsFinished,
                       media_list_));
@@ -121,7 +121,7 @@ index 024d7d74547e248ca685dc2fa8d0cdeb66b42c55..fc90627d0f733d49903325bb2f70b998
  }
  
  void NativeDesktopMediaList::Worker::OnCaptureResult(
-@@ -1010,6 +1020,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+@@ -1009,6 +1019,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
                                    base::Unretained(worker_.get()),
                                    std::move(native_ids), thumbnail_size_));
