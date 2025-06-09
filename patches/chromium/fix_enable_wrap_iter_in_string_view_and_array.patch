@@ -8,14 +8,14 @@ Refs https://github.com/electron/electron/issues/45810#issuecomment-2691417213
 Patch can be removed when build_make_libcxx_abi_unstable_false_for_electron.patch is removed.
 
 diff --git a/buildtools/third_party/libc++/__config_site b/buildtools/third_party/libc++/__config_site
-index e240ff6fff94a6cebf8662996712fe7eb22e5fff..ddf1693002aa171b3d91aa4ef08f5b360e4adddc 100644
+index e240ff6fff94a6cebf8662996712fe7eb22e5fff..21dc561ecbaac57fc38de98be1a17b16ea304e46 100644
 --- a/buildtools/third_party/libc++/__config_site
 +++ b/buildtools/third_party/libc++/__config_site
 @@ -19,6 +19,8 @@
  #define _LIBCPP_ABI_NAMESPACE __Cr
  
  #define _LIBCPP_ABI_VERSION 1
-+#define _LIBCPP_ABI_USE_WRAP_ITER_IN_STD_ARRAY
++#define _LIBCPP_ABI_BOUNDED_ITERATORS_IN_STD_ARRAY
 +#define _LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW
  
  #define _LIBCPP_ABI_FORCE_ITANIUM 0
