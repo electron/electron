@@ -18,6 +18,7 @@
 #include "base/observer_list.h"
 #include "base/strings/cstring_view.h"
 #include "base/supports_user_data.h"
+#include "components/prefs/pref_service.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
@@ -426,6 +427,8 @@ class NativeWindow : public base::SupportsUserData,
   // throttling, then throttling in the `ui::Compositor` will be disabled.
   void UpdateBackgroundThrottlingState();
 
+  void SaveWindowState();
+
  protected:
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
@@ -545,6 +548,9 @@ class NativeWindow : public base::SupportsUserData,
   std::string background_material_;
 
   gfx::Rect overlay_rect_;
+
+  raw_ptr<PrefService> prefs_ = nullptr;
+  std::string window_state_id_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };

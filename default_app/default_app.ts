@@ -57,6 +57,12 @@ async function createWindow (backgroundColor?: string) {
       sandbox: true,
       nodeIntegration: false
     },
+    // @ts-ignore
+    windowStateRestoreOptions: {
+      stateId: 'first-main-window',
+      bounds: true,
+      displayMode: true
+    },
     useContentSize: true,
     show: false
   };
