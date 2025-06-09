@@ -34,10 +34,10 @@ index 39b5a8fdd165efd74b00256552b51b5413107958..bfc4ef4f50efff4a77f2aef64335bb7e
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 3c273b08e3a0cb1a249334b06244bb6b89fde27f..20fcbe09d9fe9104cbe791e03b02f8e2e5064c2d 100644
+index b687c8505f1afc918fc4994dd6fbb8b6520e3e8a..d8168622ee2e0d42f8d4486d8f9391b4508aff54 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1382,6 +1382,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
+@@ -1360,6 +1360,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
    window()->SetProperty(aura::client::kHeadlessBoundsKey, bounds);
  }
  
@@ -49,7 +49,7 @@ index 3c273b08e3a0cb1a249334b06244bb6b89fde27f..20fcbe09d9fe9104cbe791e03b02f8e2
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index dab595aacaeca4f6f735fd04004c27a4949278d2..177134d439866db9dbbde657ff358a761ad7f39d 100644
+index 28cbd63261275e252381d88c13c1a3b4067d197f..45e47bae0e8b3369072c6e179206aa6d222e0ec5 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 @@ -272,6 +272,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin

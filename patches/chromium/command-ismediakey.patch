@@ -95,10 +95,10 @@ index 9e63dd9d33abc89a7bbef75992925356470ebb26..9071afc9bb01db832164909a202effaf
  
    bool is_listening_ = false;
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
-index 034ccea0cda4265abbfc889178f4cba4f3bd7eb8..384f0968aca07cde1fe6434a318e5334f6ecbe9e 100644
+index d3838460df1f61dbcee1cc6586632cb218fec97a..4351cfeea03b8adc5da8500db1faf6d8b8811454 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
-@@ -67,6 +67,8 @@ void GlobalAcceleratorListenerWin::OnWndProc(HWND hwnd,
+@@ -66,6 +66,8 @@ void GlobalAcceleratorListenerWin::OnWndProc(HWND hwnd,
    modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
@@ -107,7 +107,7 @@ index 034ccea0cda4265abbfc889178f4cba4f3bd7eb8..384f0968aca07cde1fe6434a318e5334
    ui::Accelerator accelerator(ui::KeyboardCodeForWindowsKeyCode(key_code),
                                modifiers);
  
-@@ -97,6 +99,7 @@ bool GlobalAcceleratorListenerWin::StartListeningForAccelerator(
+@@ -96,6 +98,7 @@ bool GlobalAcceleratorListenerWin::StartListeningForAccelerator(
    modifiers |= accelerator.IsShiftDown() ? MOD_SHIFT : 0;
    modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
    modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;
