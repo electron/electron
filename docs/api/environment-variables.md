@@ -104,7 +104,7 @@ you would when running the normal Node.js executable, with the exception of the 
 These flags are disabled owing to the fact that Electron uses BoringSSL instead of OpenSSL when building Node.js'
 `crypto` module, and so will not work as designed.
 
-If the [`runAsNode` fuse](../tutorial/fuses.md#L13) is disabled, `ELECTRON_RUN_AS_NODE` will be ignored.
+If the [`runAsNode` fuse](../tutorial/fuses.md#runasnode) is disabled, `ELECTRON_RUN_AS_NODE` will be ignored.
 
 ### `ELECTRON_NO_ATTACH_CONSOLE` _Windows_
 
