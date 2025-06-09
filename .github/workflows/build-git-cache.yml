@@ -5,7 +5,6 @@ name: Build Git Cache
 on:  
   schedule:
     - cron: "0 0 * * *"
-  pull_request:
 
 jobs:
   build-git-cache-linux:
@@ -24,7 +23,6 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
     - name: Build Git Cache
       uses: ./src/electron/.github/actions/build-git-cache
       with:
@@ -47,7 +45,6 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
     - name: Build Git Cache
       uses: ./src/electron/.github/actions/build-git-cache
       with:
@@ -71,7 +68,6 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
     - name: Build Git Cache
       uses: ./src/electron/.github/actions/build-git-cache
       with:
