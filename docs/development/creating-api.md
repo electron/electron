@@ -148,7 +148,8 @@ In your [`shell/common/node_bindings.cc`](https://github.com/electron/electron/b
   V(electron_browser_{api_name})
 ```
 
-> Note: More technical details on how Node links with Electron can be found on [our blog](https://www.electronjs.org/blog/electron-internals-using-node-as-a-library#link-node-with-electron).
+> [!NOTE]
+> More technical details on how Node links with Electron can be found on [our blog](https://www.electronjs.org/blog/electron-internals-using-node-as-a-library#link-node-with-electron).
 
 ## Expose your API to TypeScript
 
@@ -164,8 +165,10 @@ An example of the contents of this file can be found [here](https://github.com/e
 
 Add your module to the module list found at `"lib/browser/api/module-list.ts"` like so:
 
+<!-- eslint-disable semi -->
+
 ```ts title='lib/browser/api/module-list.ts' @ts-nocheck
 export const browserModuleList: ElectronInternal.ModuleEntry[] = [
-  { name: 'apiName', loader: () => require('./api-name') },
+  { name: 'apiName', loader: () => require('./api-name') }
 ];
 ```

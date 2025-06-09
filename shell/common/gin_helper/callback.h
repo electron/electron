@@ -12,8 +12,8 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/locker.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "v8/include/v8-function.h"
+#include "v8/include/v8-microtask-queue.h"
 // Implements safe conversions between JS functions and base::RepeatingCallback.
 
 namespace gin_helper {
@@ -50,8 +50,8 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
       return v8::Null(isolate);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->GetCreationContextChecked();
-    gin_helper::MicrotasksScope microtasks_scope{
-        context, true, v8::MicrotasksScope::kRunMicrotasks};
+    v8::MicrotasksScope microtasks_scope(context,
+                                         v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(context);
     std::array<v8::Local<v8::Value>, sizeof...(raw)> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
@@ -75,8 +75,8 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
       return;
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->GetCreationContextChecked();
-    gin_helper::MicrotasksScope microtasks_scope{
-        context, true, v8::MicrotasksScope::kRunMicrotasks};
+    v8::MicrotasksScope microtasks_scope(context,
+                                         v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(context);
     std::array<v8::Local<v8::Value>, sizeof...(raw)> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
@@ -99,8 +99,8 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
       return ret;
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->GetCreationContextChecked();
-    gin_helper::MicrotasksScope microtasks_scope{
-        context, true, v8::MicrotasksScope::kRunMicrotasks};
+    v8::MicrotasksScope microtasks_scope(context,
+                                         v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(context);
     std::array<v8::Local<v8::Value>, sizeof...(raw)> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};

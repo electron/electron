@@ -7,23 +7,10 @@ Build libc++ as static library to compile and pass
 nan tests
 
 diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
-index f411f2d51a397db52ba28eb7ed430f6f16c5396d..219e99e56cbf35aac8e18cff96601143f9f44ebf 100644
+index 73c197f3cecd7ff34e97326cbf615e7c78919a54..1e93e7ce444cd5c31ddeac86fb1549c648a9a5c0 100644
 --- a/buildtools/third_party/libc++/BUILD.gn
 +++ b/buildtools/third_party/libc++/BUILD.gn
-@@ -295,7 +295,11 @@ libcxx_modules("std_wctype_h") {
- if (libcxx_is_shared) {
-   _libcxx_target_type = "shared_library"
- } else {
--  _libcxx_target_type = "source_set"
-+  if (is_win) {
-+    _libcxx_target_type = "source_set"
-+  } else {
-+    _libcxx_target_type = "static_library"
-+  }
- }
- 
- target(_libcxx_target_type, "libc++") {
-@@ -304,6 +308,7 @@ target(_libcxx_target_type, "libc++") {
+@@ -298,6 +298,7 @@ target(libcxx_target_type, "libc++") {
    # need to explicitly depend on libc++.
    visibility = [
      "//build/config:common_deps",
@@ -31,16 +18,3 @@ index f411f2d51a397db52ba28eb7ed430f6f16c5396d..219e99e56cbf35aac8e18cff96601143
      "//third_party/catapult/devil:devil",
    ]
    if (is_linux) {
-diff --git a/buildtools/third_party/libc++abi/BUILD.gn b/buildtools/third_party/libc++abi/BUILD.gn
-index 331ea447ea15e9f439396d4c7d41832de60adf4a..b96a994c43ac2ed0b0d5ec599f907ea0b501156e 100644
---- a/buildtools/third_party/libc++abi/BUILD.gn
-+++ b/buildtools/third_party/libc++abi/BUILD.gn
-@@ -6,7 +6,7 @@ import("//build/config/android/config.gni")
- import("//build/config/c++/c++.gni")
- import("//build/config/unwind.gni")
- 
--source_set("libc++abi") {
-+static_library("libc++abi") {
-   if (export_libcxxabi_from_executables) {
-     visibility = [ "//build/config:executable_deps" ]
-   } else {

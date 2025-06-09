@@ -12,6 +12,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
+#include "services/device/public/mojom/usb_device.mojom.h"
 #include "services/device/public/mojom/usb_enumeration_options.mojom.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
@@ -27,7 +28,6 @@
 #include "extensions/browser/guest_view/web_view/web_view_guest.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
-#include "services/device/public/mojom/usb_device.mojom.h"
 #endif
 
 namespace {
@@ -102,19 +102,19 @@ class ElectronUsbDelegate::ContextObservation
 
   // UsbChooserContext::DeviceObserver:
   void OnDeviceAdded(const device::mojom::UsbDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceAdded(device_info);
+    observer_list_.Notify(&content::UsbDelegate::Observer::OnDeviceAdded,
+                          device_info);
   }
 
   void OnDeviceRemoved(
       const device::mojom::UsbDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceRemoved(device_info);
+    observer_list_.Notify(&content::UsbDelegate::Observer::OnDeviceRemoved,
+                          device_info);
   }
 
   void OnDeviceManagerConnectionError() override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceManagerConnectionError();
+    observer_list_.Notify(
+        &content::UsbDelegate::Observer::OnDeviceManagerConnectionError);
   }
 
   void OnBrowserContextShutdown() override {

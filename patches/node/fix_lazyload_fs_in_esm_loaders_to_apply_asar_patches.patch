@@ -6,7 +6,7 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index a00b5979e3b5deb4ba315b4635c7e5d2801c376e..c9d4a3536d0f60375ae623b48ca2fa7095c88d42 100644
+index 09a332c0999086b30fd952d9456f788925240e27..910ac85cdc86e7fb3f850f7edf0b95ea09d464dc 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -10,7 +10,7 @@ const {
@@ -60,7 +60,7 @@ index 9e7d8ef0adef3b68a3ec186e4b218f591aa69266..2879e5cf541fb4d226cfd7cc0fe367ca
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 1b94d923b6d83cc7806d793497a4f9f978c5938c..0caba80bb213e0edfb1f834250f895ccc05d0d1c 100644
+index 4445bcc4c4c6c6f87ac45e693012a18a93739f9b..49aacb6262502ced54e817f99dd596db85b9659c 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -24,7 +24,7 @@ const {
@@ -69,10 +69,10 @@ index 1b94d923b6d83cc7806d793497a4f9f978c5938c..0caba80bb213e0edfb1f834250f895cc
  const assert = require('internal/assert');
 -const { readFileSync } = require('fs');
 +const fs = require('fs');
- const { dirname, extname, isAbsolute } = require('path');
+ const { dirname, extname } = require('path');
  const {
    assertBufferSource,
-@@ -268,7 +268,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
+@@ -272,7 +272,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
  
    try {
      // We still need to read the FS to detect the exports.
@@ -81,12 +81,3 @@ index 1b94d923b6d83cc7806d793497a4f9f978c5938c..0caba80bb213e0edfb1f834250f895cc
    } catch {
      // Continue regardless of error.
    }
-@@ -335,7 +335,7 @@ function cjsPreparseModuleExports(filename, source) {
-       isAbsolute(resolved)) {
-         // TODO: this should be calling the `load` hook chain to get the source
-         // (and fallback to reading the FS only if the source is nullish).
--        const source = readFileSync(resolved, 'utf-8');
-+        const source = fs.readFileSync(resolved, 'utf-8');
-         const { exportNames: reexportNames } = cjsPreparseModuleExports(resolved, source);
-         for (const name of reexportNames) {
-           exportNames.add(name);

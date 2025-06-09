@@ -26,7 +26,7 @@ index 3d8ccc77b5952a999c5fe48792259d32b402c460..867a1c4aca54b9d41490d23a5eb55088
    }
  
 diff --git a/src/histogram.cc b/src/histogram.cc
-index 0f0cde7be431dcb80c5314b1a9da49886c436d1c..f6d2bd439cad8b9f91c9d9a6cdb302e64130a5e2 100644
+index 5641990e0bac455c33ddf7b9a865deba871516e7..bd757f42e02391abbeec007d9c4cea60bcdfa6a4 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
 @@ -195,7 +195,8 @@ void HistogramBase::FastRecord(Local<Value> unused,
@@ -40,10 +40,10 @@ index 0f0cde7be431dcb80c5314b1a9da49886c436d1c..f6d2bd439cad8b9f91c9d9a6cdb302e6
    }
    HistogramBase* histogram;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 3d7e303741a73134e140152bed637fe5ae8bc1db..5e744bc34b9dc364e8f20adfd37ee41d76451170 100644
+index 5aea65d6800494def62829432ee48f9c06e65d63..80cf6648ed99241eea8c176c5c958d76fe33aa14 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -1061,13 +1061,8 @@ static int32_t FastInternalModuleStat(
+@@ -1071,13 +1071,8 @@ static int32_t FastInternalModuleStat(
      // NOLINTNEXTLINE(runtime/references) This is V8 api.
      FastApiCallbackOptions& options) {
    // This needs a HandleScope which needs an isolate.
@@ -60,10 +60,10 @@ index 3d7e303741a73134e140152bed637fe5ae8bc1db..5e744bc34b9dc364e8f20adfd37ee41d
    auto path = std::filesystem::path(input.data, input.data + input.length);
  
 diff --git a/src/node_wasi.cc b/src/node_wasi.cc
-index 468c2e59903fefe58d9c178d3afac3ef5b09f611..23a376e52e08a8af49dd47c47488552e01287426 100644
+index 090866960beb8f1759c99e95536924b8b61fb723..3f91b651b83a20e70d5b368e012f5ee4b9d16092 100644
 --- a/src/node_wasi.cc
 +++ b/src/node_wasi.cc
-@@ -251,17 +251,19 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
+@@ -275,17 +275,19 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
      return EinvalError<R>();
    }
  

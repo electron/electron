@@ -488,6 +488,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   // content::WebContentsDelegate:
   bool IsWebContentsCreationOverridden(
+      content::RenderFrameHost* opener,
       content::SiteInstance* source_site_instance,
       content::mojom::WindowContainerType window_container_type,
       const GURL& opener_url,
@@ -532,6 +533,8 @@ class WebContents final : public ExclusiveAccessContext,
                            const input::NativeWebKeyboardEvent& event) override;
   bool PlatformHandleKeyboardEvent(content::WebContents* source,
                                    const input::NativeWebKeyboardEvent& event);
+  bool PreHandleMouseEvent(content::WebContents* source,
+                           const blink::WebMouseEvent& event) override;
   content::KeyboardEventProcessingResult PreHandleKeyboardEvent(
       content::WebContents* source,
       const input::NativeWebKeyboardEvent& event) override;

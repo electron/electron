@@ -35,15 +35,16 @@ Using the [React Developer Tools][react-devtools] as an example:
 
    ```js
    const { app, session } = require('electron')
-   const path = require('node:path')
+   
    const os = require('node:os')
-
+   const path = require('node:path')
+   
    // on macOS
    const reactDevToolsPath = path.join(
      os.homedir(),
      '/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/4.9.0_0'
    )
-
+   
    app.whenReady().then(async () => {
      await session.defaultSession.loadExtension(reactDevToolsPath)
    })

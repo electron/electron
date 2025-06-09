@@ -31,6 +31,7 @@ class FilePath;
 namespace content {
 class ClientCertificateDelegate;
 class PlatformNotificationService;
+class NavigationThrottleRegistry;
 class QuotaPermissionContext;
 }  // namespace content
 
@@ -75,8 +76,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
                               base::OnceCallback<void(bool, bool)> callback);
 
   // content::NavigatorDelegate
-  std::vector<std::unique_ptr<content::NavigationThrottle>>
-  CreateThrottlesForNavigation(content::NavigationHandle* handle) override;
+  void CreateThrottlesForNavigation(
+      content::NavigationThrottleRegistry& registry) override;
 
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;

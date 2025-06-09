@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/common/index.js b/test/common/index.js
-index 92c7294e6f6298f511b5a289e1e0e3a4be68cc77..63a350c5ed912a785b042a238c064c98ed423af4 100644
+index 8f5af57a83dc6b426f1b11bd2e3a8c6c0f2d9a85..f6e00c9f3f3ac4b42662eed6c8d190586f92ab99 100644
 --- a/test/common/index.js
 +++ b/test/common/index.js
 @@ -56,6 +56,8 @@ const hasCrypto = Boolean(process.versions.openssl) &&
@@ -23,7 +23,7 @@ index 92c7294e6f6298f511b5a289e1e0e3a4be68cc77..63a350c5ed912a785b042a238c064c98
  function parseTestFlags(filename = process.argv[1]) {
    // The copyright notice is relatively big and the flags could come afterwards.
    const bytesToRead = 1500;
-@@ -889,6 +891,7 @@ const common = {
+@@ -901,6 +903,7 @@ const common = {
    mustNotMutateObjectDeep,
    mustSucceed,
    nodeProcessAborted,
@@ -46,10 +46,10 @@ index d033cd204b3200cdd736b581abe027d6e46e4ff3..73fec107a36c3db4af6f492137d0ca17
  largeBuffer.toString('utf8', threshold, threshold + 20);
 +}
 diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
-index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..29149838ca76986928c7649a5f60a0f5e22a0705 100644
+index b35dd08e6c49796418cd9d10eb5cc9d02b39961e..a49fdde82ea4cbadd60307cdc99439be892ef5a6 100644
 --- a/test/parallel/test-crypto-async-sign-verify.js
 +++ b/test/parallel/test-crypto-async-sign-verify.js
-@@ -88,6 +88,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
+@@ -89,6 +89,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
  // ED25519
  test('ed25519_public.pem', 'ed25519_private.pem', undefined, true);
  // ED448
@@ -57,7 +57,7 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..29149838ca76986928c7649a5f60a0f5
  test('ed448_public.pem', 'ed448_private.pem', undefined, true);
  
  // ECDSA w/ der signature encoding
-@@ -109,6 +110,7 @@ test('dsa_public.pem', 'dsa_private.pem', 'sha256',
+@@ -110,6 +111,7 @@ test('dsa_public.pem', 'dsa_private.pem', 'sha256',
  // DSA w/ ieee-p1363 signature encoding
  test('dsa_public.pem', 'dsa_private.pem', 'sha256', false,
       { dsaEncoding: 'ieee-p1363' });
@@ -65,6 +65,27 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..29149838ca76986928c7649a5f60a0f5
  
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
+@@ -150,8 +152,10 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
+   const data = crypto.randomBytes(32);
+   const signature = crypto.randomBytes(16);
+ 
+-  const expected = hasOpenSSL3 ?
+-    /operation not supported for this keytype/ : /no default digest/;
++  let expected = /no default digest/;
++  if (hasOpenSSL3 || common.openSSLIsBoringSSL) {
++    expected = /operation[\s_]not[\s_]supported[\s_]for[\s_]this[\s_]keytype/i;
++  }
+ 
+   crypto.verify(undefined, data, untrustedKey, signature, common.mustCall((err) => {
+     assert.ok(err);
+@@ -165,6 +169,6 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
+   });
+   crypto.sign('sha512', 'message', privateKey, common.mustCall((err) => {
+     assert.ok(err);
+-    assert.match(err.message, /digest too big for rsa key/);
++    assert.match(err.message, /digest[\s_]too[\s_]big[\s_]for[\s_]rsa[\s_]key/i);
+   }));
+ }
 diff --git a/test/parallel/test-crypto-certificate.js b/test/parallel/test-crypto-certificate.js
 index 4a5f1f149fe6c739f7f1d2ee17df6e61a942d621..b3287f428ce6b3fde11d449c601a57ff5e3843f9 100644
 --- a/test/parallel/test-crypto-certificate.js
@@ -294,24 +315,6 @@ index 48cd1ed4df61aaddeee8785cb90f83bdd9628187..a18aeb2bdffcc7a7e9ef12328b849994
  });
  
  // No-pad encrypted string should return the same:
-diff --git a/test/parallel/test-crypto-prime.js b/test/parallel/test-crypto-prime.js
-index 5ffdc1394282be046150e3759f82f8787f5604f7..e1c7a7b4824a2df20a405355696022398216fa4f 100644
---- a/test/parallel/test-crypto-prime.js
-+++ b/test/parallel/test-crypto-prime.js
-@@ -259,11 +259,11 @@ for (const checks of [-(2 ** 31), -1, 2 ** 31, 2 ** 32 - 1, 2 ** 32, 2 ** 50]) {
-   bytes[0] = 0x1;
-   assert.throws(() => checkPrime(bytes, common.mustNotCall()), {
-     code: 'ERR_OSSL_BN_BIGNUM_TOO_LONG',
--    message: /bignum too long/
-+    message: /bignum[_ ]too[_ ]long/i
-   });
-   assert.throws(() => checkPrimeSync(bytes), {
-     code: 'ERR_OSSL_BN_BIGNUM_TOO_LONG',
--    message: /bignum too long/
-+    message: /bignum[_ ]too[_ ]long/i
-   });
- }
- 
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
 index dcd5045daaf58c60e27c1e2f7941033302241339..6ac75565792b92a97c622baba73f821d754b8d01 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
@@ -353,10 +356,10 @@ index dcd5045daaf58c60e27c1e2f7941033302241339..6ac75565792b92a97c622baba73f821d
  
    // DSA signatures vary across runs so there is no static string to verify
 diff --git a/test/parallel/test-crypto-scrypt.js b/test/parallel/test-crypto-scrypt.js
-index 338a19b0e88ad6f08d2f6b6a5d38b9980996ce11..a4ee215575d072450ba66c558ddca88bfb23d85f 100644
+index 03a18c7522531c7317f12705550117dc389a0245..2f0f46f2c6ddc62de89877cfa0ca80949a0f4c5e 100644
 --- a/test/parallel/test-crypto-scrypt.js
 +++ b/test/parallel/test-crypto-scrypt.js
-@@ -178,7 +178,7 @@ for (const options of bad) {
+@@ -176,7 +176,7 @@ for (const options of bad) {
  
  for (const options of toobig) {
    const expected = {
@@ -599,6 +602,49 @@ index 6f88e81e9ff29defe73800fc038b0d96d1ebd846..c0b92e2bdf86d3d2638c973f8be3110d
  };
  
  // Create TLS1.2 server
+diff --git a/test/parallel/test-tls-alert-handling.js b/test/parallel/test-tls-alert-handling.js
+index cba5bebaa29b6f8ac4fd0fcedaadb2f7bb3eb321..019d95df499892b14ab088f99013ee32c432779c 100644
+--- a/test/parallel/test-tls-alert-handling.js
++++ b/test/parallel/test-tls-alert-handling.js
+@@ -35,7 +35,7 @@ let iter = 0;
+ 
+ const errorHandler = common.mustCall((err) => {
+   let expectedErrorCode = 'ERR_SSL_WRONG_VERSION_NUMBER';
+-  let expectedErrorReason = 'wrong version number';
++  let expectedErrorReason = /wrong[\s_]version[\s_]number/i;
+   if (hasOpenSSL(3, 2)) {
+     expectedErrorCode = 'ERR_SSL_PACKET_LENGTH_TOO_LONG';
+     expectedErrorReason = 'packet length too long';
+@@ -43,8 +43,8 @@ const errorHandler = common.mustCall((err) => {
+ 
+   assert.strictEqual(err.code, expectedErrorCode);
+   assert.strictEqual(err.library, 'SSL routines');
+-  if (!hasOpenSSL3) assert.strictEqual(err.function, 'ssl3_get_record');
+-  assert.strictEqual(err.reason, expectedErrorReason);
++  if (!hasOpenSSL3 && !common.openSSLIsBoringSSL) assert.strictEqual(err.function, 'ssl3_get_record');
++  assert.match(err.reason, expectedErrorReason);
+   errorReceived = true;
+   if (canCloseServer())
+     server.close();
+@@ -98,15 +98,15 @@ function sendBADTLSRecord() {
+   }));
+   client.on('error', common.mustCall((err) => {
+     let expectedErrorCode = 'ERR_SSL_TLSV1_ALERT_PROTOCOL_VERSION';
+-    let expectedErrorReason = 'tlsv1 alert protocol version';
++    let expectedErrorReason = /tlsv1[\s_]alert[\s_]protocol[\s_]version/i;
+     if (hasOpenSSL(3, 2)) {
+       expectedErrorCode = 'ERR_SSL_TLSV1_ALERT_RECORD_OVERFLOW';
+       expectedErrorReason = 'tlsv1 alert record overflow';
+     }
+     assert.strictEqual(err.code, expectedErrorCode);
+     assert.strictEqual(err.library, 'SSL routines');
+-    if (!hasOpenSSL3)
++    if (!hasOpenSSL3 && !common.openSSLIsBoringSSL)
+       assert.strictEqual(err.function, 'ssl3_read_bytes');
+-    assert.strictEqual(err.reason, expectedErrorReason);
++    assert.match(err.reason, expectedErrorReason);
+   }));
+ }
 diff --git a/test/parallel/test-tls-getprotocol.js b/test/parallel/test-tls-getprotocol.js
 index b1eab88fd6517e3698934dea17752ef2bb8d8d54..3ad6db20316baa8490e3787dd55903b58a54ad06 100644
 --- a/test/parallel/test-tls-getprotocol.js

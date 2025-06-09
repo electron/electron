@@ -254,7 +254,7 @@ void BaseWindow::OnWindowRestore() {
 }
 
 void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
-                                    const gfx::ResizeEdge& edge,
+                                    const gfx::ResizeEdge edge,
                                     bool* prevent_default) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
@@ -362,8 +362,7 @@ void BaseWindow::SetContentView(gin::Handle<View> view) {
 }
 
 void BaseWindow::CloseImmediately() {
-  if (!window_->IsClosed())
-    window_->CloseImmediately();
+  window_->CloseImmediately();
 }
 
 void BaseWindow::Close() {
@@ -685,7 +684,7 @@ double BaseWindow::GetOpacity() const {
 }
 
 void BaseWindow::SetShape(const std::vector<gfx::Rect>& rects) {
-  window_->widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
+  window_->SetShape(rects);
 }
 
 void BaseWindow::SetRepresentedFilename(const std::string& filename) {
@@ -1094,70 +1093,10 @@ bool BaseWindow::IsSnapped() const {
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
 void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
                                     gin_helper::Arguments* args) {
-  // Ensure WCO is already enabled on this window
-  if (!window_->IsWindowControlsOverlayEnabled()) {
-    args->ThrowError("Titlebar overlay is not enabled");
-    return;
-  }
-
-  auto* window = static_cast<NativeWindowViews*>(window_.get());
-  bool updated = false;
-
-  // Check and update the button color
-  std::string btn_color;
-  if (options.Get(options::kOverlayButtonColor, &btn_color)) {
-    // Parse the string as a CSS color
-    SkColor color;
-    if (!content::ParseCssColorString(btn_color, &color)) {
-      args->ThrowError("Could not parse color as CSS color");
-      return;
-    }
-
-    // Update the view
-    window->set_overlay_button_color(color);
-    updated = true;
-  }
-
-  // Check and update the symbol color
-  std::string symbol_color;
-  if (options.Get(options::kOverlaySymbolColor, &symbol_color)) {
-    // Parse the string as a CSS color
-    SkColor color;
-    if (!content::ParseCssColorString(symbol_color, &color)) {
-      args->ThrowError("Could not parse symbol color as CSS color");
-      return;
-    }
-
-    // Update the view
-    window->set_overlay_symbol_color(color);
-    updated = true;
-  }
-
-  // Check and update the height
-  int height = 0;
-  if (options.Get(options::kOverlayHeight, &height)) {
-    window->set_titlebar_overlay_height(height);
-    updated = true;
-  }
-
-  if (!updated)
-    return;
-
-  // If anything was updated, ensure the overlay is repainted.
-#if BUILDFLAG(IS_WIN)
-  auto* frame_view = static_cast<WinFrameView*>(
-      window->widget()->non_client_view()->frame_view());
-#else
-  auto* frame_view = static_cast<OpaqueFrameView*>(
-      window->widget()->non_client_view()->frame_view());
-#endif
-  frame_view->InvalidateCaptionButtons();
+  static_cast<NativeWindowViews*>(window_.get())
+      ->SetTitleBarOverlay(options, args);
 }
 #endif
-
-int32_t BaseWindow::GetID() const {
-  return weak_map_id();
-}
 
 void BaseWindow::RemoveFromParentChildWindows() {
   if (parent_window_.IsEmpty())
@@ -1265,7 +1204,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isDocumentEdited", &BaseWindow::IsDocumentEdited)
       .SetMethod("setIgnoreMouseEvents", &BaseWindow::SetIgnoreMouseEvents)
       .SetMethod("setContentProtection", &BaseWindow::SetContentProtection)
-      .SetMethod("_isContentProtected", &BaseWindow::IsContentProtected)
+      .SetMethod("isContentProtected", &BaseWindow::IsContentProtected)
       .SetMethod("setFocusable", &BaseWindow::SetFocusable)
       .SetMethod("isFocusable", &BaseWindow::IsFocusable)
       .SetMethod("setMenu", &BaseWindow::SetMenu)

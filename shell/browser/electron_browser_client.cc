@@ -36,6 +36,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/login_delegate.h"
+#include "content/public/browser/navigation_throttle_registry.h"
 #include "content/public/browser/overlay_window.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -411,7 +412,6 @@ void ElectronBrowserClient::OverrideWebPreferences(
   prefs->javascript_can_access_clipboard = false;
   prefs->allow_scripts_to_close_windows = true;
   prefs->local_storage_enabled = true;
-  prefs->databases_enabled = true;
   prefs->allow_universal_access_from_file_urls =
       electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled();
   prefs->allow_file_access_from_file_urls =
@@ -600,8 +600,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
 // attempt to get api key from env
 std::string ElectronBrowserClient::GetGeolocationApiKey() {
   auto env = base::Environment::Create();
-  std::string api_key;
-  env->GetVar("GOOGLE_API_KEY", &api_key);
+  std::string api_key = env->GetVar("GOOGLE_API_KEY").value_or("");
   return api_key;
 }
 
@@ -953,24 +952,22 @@ bool ElectronBrowserClient::HandleExternalProtocol(
   return true;
 }
 
-std::vector<std::unique_ptr<content::NavigationThrottle>>
-ElectronBrowserClient::CreateThrottlesForNavigation(
-    content::NavigationHandle* handle) {
-  std::vector<std::unique_ptr<content::NavigationThrottle>> throttles;
-  throttles.push_back(std::make_unique<ElectronNavigationThrottle>(handle));
+void ElectronBrowserClient::CreateThrottlesForNavigation(
+    content::NavigationThrottleRegistry& registry) {
+  registry.MaybeAddThrottle(
+      std::make_unique<ElectronNavigationThrottle>(registry));
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  throttles.push_back(
-      std::make_unique<extensions::ExtensionNavigationThrottle>(handle));
+  registry.MaybeAddThrottle(
+      std::make_unique<extensions::ExtensionNavigationThrottle>(registry));
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  throttles.push_back(std::make_unique<PDFIFrameNavigationThrottle>(handle));
-  throttles.push_back(std::make_unique<pdf::PdfNavigationThrottle>(
-      handle, std::make_unique<ChromePdfStreamDelegate>()));
+  registry.MaybeAddThrottle(
+      std::make_unique<PDFIFrameNavigationThrottle>(registry));
+  registry.MaybeAddThrottle(std::make_unique<pdf::PdfNavigationThrottle>(
+      registry, std::make_unique<ChromePdfStreamDelegate>()));
 #endif
-
-  return throttles;
 }
 
 content::MediaObserver* ElectronBrowserClient::GetMediaObserver() {

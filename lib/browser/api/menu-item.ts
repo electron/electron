@@ -71,7 +71,7 @@ const MenuItem = function (this: any, options: any) {
   };
 };
 
-MenuItem.types = ['normal', 'separator', 'submenu', 'checkbox', 'radio'];
+MenuItem.types = ['normal', 'separator', 'submenu', 'checkbox', 'radio', 'header', 'palette'];
 
 MenuItem.prototype.getDefaultRoleAccelerator = function () {
   return roles.getDefaultAccelerator(this.role);

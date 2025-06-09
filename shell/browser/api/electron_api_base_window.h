@@ -71,7 +71,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowMinimize() override;
   void OnWindowRestore() override;
   void OnWindowWillResize(const gfx::Rect& new_bounds,
-                          const gfx::ResizeEdge& edge,
+                          gfx::ResizeEdge edge,
                           bool* prevent_default) override;
   void OnWindowResize() override;
   void OnWindowResized() override;
@@ -261,7 +261,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetTitleBarOverlay(const gin_helper::Dictionary& options,
                           gin_helper::Arguments* args);
 #endif
-  int32_t GetID() const;
+  [[nodiscard]] constexpr int32_t GetID() const { return weak_map_id(); }
 
  private:
   // Helpers.

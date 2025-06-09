@@ -7,6 +7,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { stripVTControlCharacters } from 'node:util';
 
 const runFixture = async (appPath: string, args: string[] = []) => {
   const result = cp.spawn(process.execPath, [appPath, ...args], {
@@ -27,8 +28,8 @@ const runFixture = async (appPath: string, args: string[] = []) => {
   return {
     code,
     signal,
-    stdout: Buffer.concat(stdout).toString().trim(),
-    stderr: Buffer.concat(stderr).toString().trim()
+    stdout: stripVTControlCharacters(Buffer.concat(stdout).toString().trim()),
+    stderr: stripVTControlCharacters(Buffer.concat(stderr).toString().trim())
   };
 };
 

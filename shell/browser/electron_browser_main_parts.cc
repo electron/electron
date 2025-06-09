@@ -308,9 +308,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   auto env = base::Environment::Create();
   std::optional<std::string> lc_all;
   if (!locale.empty()) {
-    std::string str;
-    if (env->GetVar("LC_ALL", &str))
-      lc_all.emplace(std::move(str));
+    lc_all = env->GetVar("LC_ALL");
     env->SetVar("LC_ALL", locale);
   }
 #endif
@@ -440,6 +438,7 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // BrowserContextKeyedAPIServiceFactories require an ExtensionsBrowserClient.
   extensions_browser_client_ =
       std::make_unique<ElectronExtensionsBrowserClient>();
+  extensions_browser_client_->Init();
   extensions::ExtensionsBrowserClient::Set(extensions_browser_client_.get());
 
   extensions::EnsureBrowserContextKeyedServiceFactoriesBuilt();

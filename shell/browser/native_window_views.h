@@ -20,12 +20,18 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_gdi_object.h"
+#include "content/public/browser/scoped_accessibility_mode.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 #endif
+
+namespace gin_helper {
+class Arguments;
+}  // namespace gin_helper
 
 namespace electron {
 
 #if BUILDFLAG(IS_LINUX)
+class ClientFrameViewLinux;
 class GlobalMenuBarX11;
 #endif
 
@@ -47,8 +53,8 @@ class NativeWindowViews : public NativeWindow,
 
   // NativeWindow:
   void SetContentView(views::View* view) override;
-  void Close() override;
-  void CloseImmediately() override;
+  void CloseImpl() override;
+  void CloseImmediatelyImpl() override;
   void Focus(bool focus) override;
   bool IsFocused() const override;
   void Show() override;
@@ -98,8 +104,7 @@ class NativeWindowViews : public NativeWindow,
   ui::ZOrderLevel GetZOrderLevel() const override;
   void Center() override;
   void Invalidate() override;
-  void SetTitle(const std::string& title) override;
-  std::string GetTitle() const override;
+  [[nodiscard]] bool IsActive() const override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
   void SetExcludedFromShownWindowsMenu(bool excluded) override {}
@@ -151,6 +156,9 @@ class NativeWindowViews : public NativeWindow,
   void IncrementChildModals();
   void DecrementChildModals();
 
+  void SetTitleBarOverlay(const gin_helper::Dictionary& options,
+                          gin_helper::Arguments* args);
+
 #if BUILDFLAG(IS_WIN)
   // Catch-all message handling and filtering. Called before
   // HWNDMessageHandler's built-in handling, which may preempt some
@@ -173,15 +181,22 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   SkColor overlay_button_color() const { return overlay_button_color_; }
+  SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
+
+#if BUILDFLAG(IS_LINUX)
+  // returns the ClientFrameViewLinux iff that is our NonClientFrameView type,
+  // nullptr otherwise.
+  ClientFrameViewLinux* GetClientFrameViewLinux();
+#endif
+
+ private:
   void set_overlay_button_color(SkColor color) {
     overlay_button_color_ = color;
   }
-  SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
   void set_overlay_symbol_color(SkColor color) {
     overlay_symbol_color_ = color;
   }
 
- private:
   // views::WidgetObserver:
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
   void OnWidgetBoundsChanged(views::Widget* widget,
@@ -193,7 +208,6 @@ class NativeWindowViews : public NativeWindow,
   views::View* GetInitiallyFocusedView() override;
   bool CanMaximize() const override;
   bool CanMinimize() const override;
-  std::u16string GetWindowTitle() const override;
   views::View* GetContentsView() override;
   bool ShouldDescendIntoChildForEventHandling(
       gfx::NativeView child,
@@ -289,6 +303,9 @@ class NativeWindowViews : public NativeWindow,
   HWND legacy_window_ = nullptr;
   bool layered_ = false;
 
+  // This value is determined when the window is created.
+  bool rounded_corner_ = true;
+
   // Set to true if the window is always on top and behind the task bar.
   bool behind_task_bar_ = false;
 
@@ -306,6 +323,8 @@ class NativeWindowViews : public NativeWindow,
   // The message ID of the "TaskbarCreated" message, sent to us when we need to
   // reset our thumbar buttons.
   UINT taskbar_created_message_ = 0;
+
+  std::unique_ptr<content::ScopedAccessibilityMode> scoped_accessibility_mode_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
@@ -326,7 +345,6 @@ class NativeWindowViews : public NativeWindow,
   bool maximizable_ = true;
   bool minimizable_ = true;
   bool fullscreenable_ = true;
-  std::string title_;
   gfx::Size widget_size_;
   double opacity_ = 1.0;
   bool widget_destroyed_ = false;

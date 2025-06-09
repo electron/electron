@@ -64,7 +64,8 @@ const contents = win.webContents
 console.log(contents)
 ```
 
-> Note: A renderer process is also created for [web embeds][web-embed] such as the
+> [!NOTE]
+> A renderer process is also created for [web embeds][web-embed] such as the
 > `BrowserView` module. The `webContents` object is also accessible for embedded
 > web content.
 
@@ -241,8 +242,8 @@ These aliases have no impact on runtime, but can be used for typechecking
 and autocomplete.
 
 ```js title="Usage example"
-const { app } = require('electron/main')
 const { shell } = require('electron/common')
+const { app } = require('electron/main')
 ```
 
 [window-mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Window

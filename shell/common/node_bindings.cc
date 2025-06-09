@@ -36,7 +36,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -212,18 +211,19 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
   return node::AllowWasmCodeGenerationCallback(context, source);
 }
 
-v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
+v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
     v8::Local<v8::Context> context,
     v8::Local<v8::Data> v8_host_defined_options,
     v8::Local<v8::Value> v8_referrer_resource_url,
     v8::Local<v8::String> v8_specifier,
-    v8::Local<v8::FixedArray> v8_import_assertions) {
+    v8::ModuleImportPhase import_phase,
+    v8::Local<v8::FixedArray> v8_import_attributes) {
   if (node::Environment::GetCurrent(context) == nullptr) {
     if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
       return {};
-    return blink::V8Initializer::HostImportModuleDynamically(
+    return blink::V8Initializer::HostImportModuleWithPhaseDynamically(
         context, v8_host_defined_options, v8_referrer_resource_url,
-        v8_specifier, v8_import_assertions);
+        v8_specifier, import_phase, v8_import_attributes);
   }
 
   // If we're running with contextIsolation enabled in the renderer process,
@@ -233,15 +233,29 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
         blink::WebLocalFrame::FrameForContext(context);
     if (!frame || frame->GetScriptContextWorldId(context) !=
                       electron::WorldIDs::ISOLATED_WORLD_ID) {
-      return blink::V8Initializer::HostImportModuleDynamically(
+      return blink::V8Initializer::HostImportModuleWithPhaseDynamically(
           context, v8_host_defined_options, v8_referrer_resource_url,
-          v8_specifier, v8_import_assertions);
+          v8_specifier, import_phase, v8_import_attributes);
     }
   }
 
+  // TODO: Switch to node::loader::ImportModuleDynamicallyWithPhase
+  // once we land the Node.js version that has it in upstream.
+  CHECK(import_phase == v8::ModuleImportPhase::kEvaluation);
   return node::loader::ImportModuleDynamically(
       context, v8_host_defined_options, v8_referrer_resource_url, v8_specifier,
-      v8_import_assertions);
+      v8_import_attributes);
+}
+
+v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::Data> v8_host_defined_options,
+    v8::Local<v8::Value> v8_referrer_resource_url,
+    v8::Local<v8::String> v8_specifier,
+    v8::Local<v8::FixedArray> v8_import_attributes) {
+  return HostImportModuleWithPhaseDynamically(
+      context, v8_host_defined_options, v8_referrer_resource_url, v8_specifier,
+      v8::ModuleImportPhase::kEvaluation, v8_import_attributes);
 }
 
 void HostInitializeImportMetaObject(v8::Local<v8::Context> context,
@@ -316,8 +330,8 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   node::Environment* env = node::Environment::GetCurrent(isolate);
   if (env) {
-    gin_helper::MicrotasksScope microtasks_scope(
-        env->context(), false, v8::MicrotasksScope::kDoNotRunMicrotasks);
+    v8::MicrotasksScope microtasks_scope(
+        env->context(), v8::MicrotasksScope::kDoNotRunMicrotasks);
     // Emit the after() hooks now that the exception has been handled.
     // Analogous to node/lib/internal/process/execution.js#L176-L180
     if (env->async_hooks()->fields()[node::AsyncHooks::kAfter]) {
@@ -349,6 +363,7 @@ bool IsAllowedOption(const std::string_view option) {
           "--inspect-brk-node",
           "--inspect-port",
           "--inspect-publish-uid",
+          "--experimental-network-inspection",
       });
 
   // This should be aligned with what's possible to set via the process object.
@@ -359,6 +374,7 @@ bool IsAllowedOption(const std::string_view option) {
       "--throw-deprecation",
       "--trace-deprecation",
       "--trace-warnings",
+      "--no-experimental-global-navigator",
   });
 
   if (debug_options.contains(option))
@@ -394,9 +410,8 @@ void SetNodeOptions(base::Environment* env) {
 
   if (env->HasVar("NODE_OPTIONS")) {
     if (electron::fuses::IsNodeOptionsEnabled()) {
-      std::string options;
       std::string result_options;
-      env->GetVar("NODE_OPTIONS", &options);
+      std::string options = env->GetVar("NODE_OPTIONS").value();
       const std::vector<std::string_view> parts = base::SplitStringPiece(
           options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
@@ -780,6 +795,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   node::SetIsolateUpForNode(context->GetIsolate(), is);
   context->GetIsolate()->SetHostImportModuleDynamicallyCallback(
       HostImportModuleDynamically);
+  context->GetIsolate()->SetHostImportModuleWithPhaseDynamicallyCallback(
+      HostImportModuleWithPhaseDynamically);
   context->GetIsolate()->SetHostInitializeImportMetaObjectCallback(
       HostInitializeImportMetaObject);
 
@@ -910,28 +927,22 @@ void NodeBindings::UvRunOnce() {
   // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
 
-  // Node.js expects `kExplicit` microtasks policy and will run microtasks
-  // checkpoints after every call into JavaScript. Since we use a different
-  // policy in the renderer - switch to `kExplicit` and then drop back to the
-  // previous policy value.
-  v8::MicrotaskQueue* microtask_queue = env->context()->GetMicrotaskQueue();
-  auto old_policy = microtask_queue->microtasks_policy();
-  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
-  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
+  {
+    util::ExplicitMicrotasksScope microtasks_scope(
+        env->context()->GetMicrotaskQueue());
 
-  if (browser_env_ != BrowserEnvironment::kBrowser)
-    TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
+    if (browser_env_ != BrowserEnvironment::kBrowser)
+      TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
 
-  // Deal with uv events.
-  int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
+    // Deal with uv events.
+    int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
 
-  if (browser_env_ != BrowserEnvironment::kBrowser)
-    TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
+    if (browser_env_ != BrowserEnvironment::kBrowser)
+      TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
 
-  microtask_queue->set_microtasks_policy(old_policy);
-
-  if (r == 0)
-    base::RunLoop().QuitWhenIdle();  // Quit from uv.
+    if (r == 0)
+      base::RunLoop().QuitWhenIdle();  // Quit from uv.
+  }
 
   // Tell the worker thread to continue polling.
   uv_sem_post(&embed_sem_);
@@ -991,11 +1002,10 @@ void OnNodePreload(node::Environment* env,
   }
 
   // Execute lib/node/init.ts.
-  std::vector<v8::Local<v8::String>> bundle_params = {
-      node::FIXED_ONE_BYTE_STRING(env->isolate(), "process"),
-      node::FIXED_ONE_BYTE_STRING(env->isolate(), "require"),
-  };
-  std::vector<v8::Local<v8::Value>> bundle_args = {process, require};
+  v8::LocalVector<v8::String> bundle_params(
+      env->isolate(), {node::FIXED_ONE_BYTE_STRING(env->isolate(), "process"),
+                       node::FIXED_ONE_BYTE_STRING(env->isolate(), "require")});
+  v8::LocalVector<v8::Value> bundle_args(env->isolate(), {process, require});
   electron::util::CompileAndCall(env->context(), "electron/js2c/node_init",
                                  &bundle_params, &bundle_args);
 }

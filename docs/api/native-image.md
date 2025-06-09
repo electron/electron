@@ -86,6 +86,7 @@ images/
 
 ```js title='Main Process'
 const { Tray } = require('electron')
+
 const appTray = new Tray('/Users/somebody/images/icon.png')
 ```
 
@@ -134,7 +135,8 @@ Creates an empty `NativeImage` instance.
 
 Returns `Promise<NativeImage>` - fulfilled with the file's thumbnail preview image, which is a [NativeImage](native-image.md).
 
-Note: The Windows implementation will ignore `size.height` and scale the height according to `size.width`.
+> [!NOTE]
+> Windows implementation will ignore `size.height` and scale the height according to `size.width`.
 
 ### `nativeImage.createFromPath(path)`
 
@@ -142,8 +144,8 @@ Note: The Windows implementation will ignore `size.height` and scale the height 
 
 Returns `NativeImage`
 
-Creates a new `NativeImage` instance from a file located at `path`. This method
-returns an empty image if the `path` does not exist, cannot be read, or is not
+Creates a new `NativeImage` instance from an image file (e.g., PNG or JPEG) located at `path`.
+This method returns an empty image if the `path` does not exist, cannot be read, or is not
 a valid image.
 
 ```js

@@ -7,7 +7,7 @@ Allows embedders to get a handle to the gdk_pixbuf
 library already loaded in the process.
 
 diff --git a/ui/gtk/gtk_compat.cc b/ui/gtk/gtk_compat.cc
-index f28cf275db0205186fe6143b7e1550b6c30a4435..346992e202c507eeac454d657507e1bd336175fc 100644
+index 37bb48273cf4833c88622f1158aebfee9423d085..2009a095abfae3207d73c47245e061ff3f9cef80 100644
 --- a/ui/gtk/gtk_compat.cc
 +++ b/ui/gtk/gtk_compat.cc
 @@ -69,11 +69,6 @@ void* GetLibGio() {
@@ -22,7 +22,7 @@ index f28cf275db0205186fe6143b7e1550b6c30a4435..346992e202c507eeac454d657507e1bd
  void* GetLibGdk3() {
    static void* libgdk3 = DlOpen("libgdk-3.so.0");
    return libgdk3;
-@@ -150,6 +145,11 @@ gfx::Insets InsetsFromGtkBorder(const GtkBorder& border) {
+@@ -169,6 +164,11 @@ gfx::Insets InsetsFromGtkBorder(const GtkBorder& border) {
  
  }  // namespace
  

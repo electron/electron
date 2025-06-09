@@ -9,8 +9,9 @@ module is emitted.
 
 `screen` is an [EventEmitter][event-emitter].
 
-**Note:** In the renderer / DevTools, `window.screen` is a reserved DOM
-property, so writing `let { screen } = require('electron')` will not work.
+> [!NOTE]
+> In the renderer / DevTools, `window.screen` is a reserved DOM
+> property, so writing `let { screen } = require('electron')` will not work.
 
 An example of creating a window that fills the whole screen:
 
@@ -57,6 +58,14 @@ app.whenReady().then(() => {
 })
 ```
 
+> [!NOTE]
+> Screen coordinates used by this module are [`Point`](structures/point.md) structures.
+> There are two kinds of coordinates available to the process:
+>
+> * **Physical screen points** are raw hardware pixels on a display.
+> * **Device-independent pixel (DIP) points** are virtualized screen points scaled based on the DPI
+>   (dots per inch) of the display.
+
 ## Events
 
 The `screen` module emits the following events:
@@ -101,7 +110,8 @@ Returns [`Point`](structures/point.md)
 
 The current absolute position of the mouse pointer.
 
-**Note:** The return value is a DIP point, not a screen physical point.
+> [!NOTE]
+> The return value is a DIP point, not a screen physical point.
 
 ### `screen.getPrimaryDisplay()`
 
@@ -124,7 +134,7 @@ Returns [`Display`](structures/display.md) - The display nearest the specified p
 Returns [`Display`](structures/display.md) - The display that most closely
 intersects the provided bounds.
 
-### `screen.screenToDipPoint(point)` _Windows_
+### `screen.screenToDipPoint(point)` _Windows_ _Linux_
 
 * `point` [Point](structures/point.md)
 
@@ -133,7 +143,10 @@ Returns [`Point`](structures/point.md)
 Converts a screen physical point to a screen DIP point.
 The DPI scale is performed relative to the display containing the physical point.
 
-### `screen.dipToScreenPoint(point)` _Windows_
+Not currently supported on Wayland - if used there it will return the point passed
+in with no changes.
+
+### `screen.dipToScreenPoint(point)` _Windows_ _Linux_
 
 * `point` [Point](structures/point.md)
 
@@ -141,6 +154,8 @@ Returns [`Point`](structures/point.md)
 
 Converts a screen DIP point to a screen physical point.
 The DPI scale is performed relative to the display containing the DIP point.
+
+Not currently supported on Wayland.
 
 ### `screen.screenToDipRect(window, rect)` _Windows_
 

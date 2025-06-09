@@ -34,10 +34,10 @@ index 411eab8136d5957ae8a491bc38ffbdc88e59f5da..63c93b5be09692d0d4b6bfbb214b173b
  let kResistStopPropagation;
  
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 4f1ed661e9c432f3b50f2e7e348ad9794ff773d0..16c95348ee254061d5c48f405968c1b0ee33bf82 100644
+index d637faac88875bfa110e2b8d1f53962061d98279..e0b58c4d0ac5640a677c22d710f88f1b318378d7 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -34,6 +34,7 @@ using v8::Value;
+@@ -35,6 +35,7 @@ using v8::Value;
  BuiltinLoader::BuiltinLoader()
      : config_(GetConfig()), code_cache_(std::make_shared<BuiltinCodeCache>()) {
    LoadJavaScriptSource();
@@ -46,7 +46,7 @@ index 4f1ed661e9c432f3b50f2e7e348ad9794ff773d0..16c95348ee254061d5c48f405968c1b0
    AddExternalizedBuiltin(
        "internal/deps/cjs-module-lexer/lexer",
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index 7ac5291be093773ee7efd39e77e01bf5d5ce5247..c3c987d535285be84026ad0c633650bd2067d22d 100644
+index 302030f610965f07dd6998d282275c1bdf738009..35cb7766eeccc62dd2f0ce9484a2f1ec7beccc05 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -138,6 +138,7 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {

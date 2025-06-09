@@ -29,7 +29,7 @@
 
 @interface PopUpButtonHandler : NSObject
 
-@property(nonatomic, assign) NSSavePanel* savePanel;
+@property(nonatomic, weak) NSSavePanel* savePanel;
 @property(nonatomic, strong) NSArray* contentTypesList;
 
 - (instancetype)initWithPanel:(NSSavePanel*)panel
@@ -131,10 +131,6 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
     [file_types_list addObject:content_types_set];
   }
 
-  // Don't add file format picker.
-  if ([file_types_list count] <= 1)
-    return;
-
   NSArray* content_types = [file_types_list objectAtIndex:0];
 
   __block BOOL allowAllFiles = NO;
@@ -147,6 +143,10 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
       }];
 
   [dialog setAllowedContentTypes:allowAllFiles ? @[] : content_types];
+
+  // Don't add file format picker.
+  if ([file_types_list count] <= 1)
+    return;
 
   // Add file format picker.
   ElectronAccessoryView* accessoryView = [[ElectronAccessoryView alloc]
@@ -318,9 +318,10 @@ void ReadDialogPathsWithBookmarks(NSOpenPanel* dialog,
       BOOL exists =
           [[NSFileManager defaultManager] fileExistsAtPath:path
                                                isDirectory:&is_directory];
-      BOOL is_package =
-          [[NSWorkspace sharedWorkspace] isFilePackageAtPath:path];
-      if (!exists || !is_directory || is_package)
+      BOOL is_package_as_directory =
+          [[NSWorkspace sharedWorkspace] isFilePackageAtPath:path] &&
+          [dialog treatsFilePackagesAsDirectories];
+      if (!exists || !(is_directory || is_package_as_directory))
         continue;
     }
 

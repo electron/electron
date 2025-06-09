@@ -286,9 +286,8 @@ v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
 
   if (!deprecated_warning_issued) {
     deprecated_warning_issued = true;
-    util::EmitWarning(isolate_,
-                      "getBitmap() is deprecated, use toBitmap() instead.",
-                      "DeprecationWarning");
+    util::EmitDeprecationWarning(
+        isolate_, "getBitmap() is deprecated, use toBitmap() instead.");
   }
 
   return ToBitmap(args);
@@ -383,12 +382,9 @@ gin::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
 }
 
 void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
-  int width = 0;
-  int height = 0;
-  float scale_factor = 1.0f;
-  options.Get("width", &width);
-  options.Get("height", &height);
-  options.Get("scaleFactor", &scale_factor);
+  const int width = options.ValueOrDefault("width", 0);
+  const int height = options.ValueOrDefault("height", 0);
+  const float scale_factor = options.ValueOrDefault("scaleFactor", 1.0F);
 
   bool skia_rep_added = false;
   gfx::ImageSkia image_skia = image_.AsImageSkia();
@@ -516,8 +512,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
   bitmap.allocN32Pixels(width, height, false);
   bitmap.writePixels({info, buffer_data.data(), bitmap.rowBytes()});
 
-  float scale_factor = 1.0F;
-  options.Get("scaleFactor", &scale_factor);
+  const float scale_factor = options.ValueOrDefault("scaleFactor", 1.0F);
   gfx::ImageSkia image_skia =
       gfx::ImageSkia::CreateFromBitmap(bitmap, scale_factor);
 

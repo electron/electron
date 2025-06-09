@@ -4,10 +4,9 @@
 
 #include "shell/browser/electron_browser_main_parts.h"
 
-#include <string_view>
-
 #include "base/command_line.h"
 #include "base/environment.h"
+#include "base/strings/cstring_view.h"
 #include "ui/base/ozone_buildflags.h"
 #include "ui/ozone/public/ozone_switches.h"
 
@@ -22,7 +21,7 @@ namespace electron {
 
 namespace {
 
-constexpr std::string_view kElectronOzonePlatformHint{
+constexpr base::cstring_view kElectronOzonePlatformHint{
     "ELECTRON_OZONE_PLATFORM_HINT"};
 
 #if BUILDFLAG(IS_OZONE_WAYLAND)
@@ -30,20 +29,15 @@ constexpr std::string_view kElectronOzonePlatformHint{
 constexpr char kPlatformWayland[] = "wayland";
 
 bool HasWaylandDisplay(base::Environment* env) {
-  std::string wayland_display;
-  const bool has_wayland_display =
-      env->GetVar("WAYLAND_DISPLAY", &wayland_display) &&
-      !wayland_display.empty();
-  if (has_wayland_display)
+  if (std::optional<std::string> wayland_display =
+          env->GetVar("WAYLAND_DISPLAY")) {
     return true;
+  }
 
-  std::string xdg_runtime_dir;
-  const bool has_xdg_runtime_dir =
-      env->GetVar("XDG_RUNTIME_DIR", &xdg_runtime_dir) &&
-      !xdg_runtime_dir.empty();
-  if (has_xdg_runtime_dir) {
+  if (std::optional<std::string> xdg_runtime_dir =
+          env->GetVar("XDG_RUNTIME_DIR")) {
     auto wayland_server_pipe =
-        base::FilePath(xdg_runtime_dir).Append("wayland-0");
+        base::FilePath(*xdg_runtime_dir).Append("wayland-0");
     // Normally, this should happen exactly once, at the startup of the main
     // process.
     electron::ScopedAllowBlockingForElectron allow_blocking;
@@ -77,12 +71,9 @@ std::string MaybeFixPlatformName(const std::string& ozone_platform_hint) {
       ozone_platform_hint == "auto") {
     auto env(base::Environment::Create());
 
-    std::string xdg_session_type;
-    const bool has_xdg_session_type =
-        env->GetVar(base::nix::kXdgSessionTypeEnvVar, &xdg_session_type) &&
-        !xdg_session_type.empty();
-
-    if ((has_xdg_session_type && xdg_session_type == "wayland") ||
+    std::optional<std::string> xdg_session_type =
+        env->GetVar(base::nix::kXdgSessionTypeEnvVar);
+    if ((xdg_session_type.has_value() && *xdg_session_type == "wayland") ||
         (ozone_platform_hint == kPlatformWayland &&
          HasWaylandDisplay(env.get()))) {
       return kPlatformWayland;
@@ -127,7 +118,8 @@ void ElectronBrowserMainParts::DetectOzonePlatform() {
     auto ozone_platform_hint =
         command_line->GetSwitchValueASCII(switches::kOzonePlatformHint);
     if (ozone_platform_hint.empty()) {
-      env->GetVar(kElectronOzonePlatformHint, &ozone_platform_hint);
+      ozone_platform_hint =
+          env->GetVar(kElectronOzonePlatformHint).value_or("");
     }
     if (!ozone_platform_hint.empty()) {
       command_line->AppendSwitchASCII(
@@ -135,9 +127,9 @@ void ElectronBrowserMainParts::DetectOzonePlatform() {
     }
   }
 
-  std::string desktop_startup_id;
-  if (env->GetVar("DESKTOP_STARTUP_ID", &desktop_startup_id))
-    command_line->AppendSwitchASCII("desktop-startup-id", desktop_startup_id);
+  if (std::optional<std::string> desktop_startup_id =
+          env->GetVar("DESKTOP_STARTUP_ID"))
+    command_line->AppendSwitchASCII("desktop-startup-id", *desktop_startup_id);
 }
 
 }  // namespace electron

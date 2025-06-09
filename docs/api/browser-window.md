@@ -40,6 +40,7 @@ the window after this event will have no visual flash:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({ show: false })
 win.once('ready-to-show', () => {
   win.show()
@@ -158,7 +159,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 
 Objects created with `new BrowserWindow` emit the following events:
 
-**Note:** Some events are only available on specific operating systems and are
+> [!NOTE]
+> Some events are only available on specific operating systems and are
 labeled as such.
 
 #### Event: 'page-title-updated'
@@ -200,7 +202,11 @@ window.onbeforeunload = (e) => {
 }
 ```
 
-_**Note**: There is a subtle difference between the behaviors of `window.onbeforeunload = handler` and `window.addEventListener('beforeunload', handler)`. It is recommended to always set the `event.returnValue` explicitly, instead of only returning a value, as the former works more consistently within Electron._
+> [!NOTE]
+> There is a subtle difference between the behaviors of `window.onbeforeunload = handler` and
+> `window.addEventListener('beforeunload', handler)`. It is recommended to always set the
+> `event.returnValue` explicitly, instead of only returning a value, as the former works more
+> consistently within Electron.
 
 #### Event: 'closed'
 
@@ -323,7 +329,8 @@ Emitted when the window is being moved to a new position.
 
 Emitted once when the window is moved to a new position.
 
-**Note**: On macOS this event is an alias of `move`.
+> [!NOTE]
+> On macOS, this event is an alias of `move`.
 
 #### Event: 'enter-full-screen'
 
@@ -367,6 +374,7 @@ e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 win.on('app-command', (e, cmd) => {
   // Navigate the window back when the user hits their mouse back button
@@ -435,7 +443,7 @@ as `-webkit-app-region: drag` in a frameless window.
 
 Calling `event.preventDefault()` will prevent the menu from being displayed.
 
-To convert `point` to DIP, use [`screen.screenToDipPoint(point)`](./screen.md#screenscreentodippointpoint-windows).
+To convert `point` to DIP, use [`screen.screenToDipPoint(point)`](./screen.md#screenscreentodippointpoint-windows-linux).
 
 ### Static Methods
 
@@ -460,7 +468,7 @@ or `null` if the contents are not owned by a window.
 
 * `browserView` [BrowserView](browser-view.md)
 
-> **Note**
+> [!NOTE]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -499,7 +507,7 @@ A `Integer` property representing the unique ID of the window. Each ID is unique
 
 A `string` (optional) property that is equal to the `tabbingIdentifier` passed to the `BrowserWindow` constructor or `undefined` if none was set.
 
-#### `win.autoHideMenuBar`
+#### `win.autoHideMenuBar` _Linux_ _Windows_
 
 A `boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
 
@@ -522,7 +530,8 @@ A `boolean` property that determines whether the window is focusable.
 
 A `boolean` property that determines whether the window is visible on all workspaces.
 
-**Note:** Always returns false on Windows.
+> [!NOTE]
+> Always returns false on Windows.
 
 #### `win.shadow`
 
@@ -532,7 +541,8 @@ A `boolean` property that determines whether the window has a shadow.
 
 A `boolean` property that determines whether the menu bar should be visible.
 
-**Note:** If the menu bar is auto-hide, users can still bring up the menu bar by pressing the single `Alt` key.
+> [!NOTE]
+> If the menu bar is auto-hide, users can still bring up the menu bar by pressing the single `Alt` key.
 
 #### `win.kiosk`
 
@@ -553,7 +563,8 @@ and the icon of the file will show in window's title bar.
 
 A `string` property that determines the title of the native window.
 
-**Note:** The title of the web page can be different from the title of the native window.
+> [!NOTE]
+> The title of the web page can be different from the title of the native window.
 
 #### `win.minimizable` _macOS_ _Windows_
 
@@ -621,8 +632,9 @@ A `boolean` property that indicates whether the window is arranged via [Snap.](h
 
 Objects created with `new BrowserWindow` have the following instance methods:
 
-**Note:** Some methods are only available on specific operating systems and are
-labeled as such.
+> [!NOTE]
+> Some methods are only available on specific operating systems and are
+> labeled as such.
 
 #### `win.destroy()`
 
@@ -704,13 +716,15 @@ Returns `boolean` - Whether the window is minimized.
 
 Sets whether the window should be in fullscreen mode.
 
-**Note:** On macOS, fullscreen transitions take place asynchronously. If further actions depend on the fullscreen state, use the ['enter-full-screen'](browser-window.md#event-enter-full-screen) or ['leave-full-screen'](browser-window.md#event-leave-full-screen) events.
+> [!NOTE]
+> On macOS, fullscreen transitions take place asynchronously. If further actions depend on the fullscreen state, use the ['enter-full-screen'](browser-window.md#event-enter-full-screen) or ['leave-full-screen'](browser-window.md#event-leave-full-screen) events.
 
 #### `win.isFullScreen()`
 
 Returns `boolean` - Whether the window is in fullscreen mode.
 
-**Note:** On macOS, fullscreen transitions take place asynchronously. When querying for a BrowserWindow's fullscreen status, you should ensure that either the ['enter-full-screen'](browser-window.md#event-enter-full-screen) or ['leave-full-screen'](browser-window.md#event-leave-full-screen) events have been emitted.
+> [!NOTE]
+> On macOS, fullscreen transitions take place asynchronously. When querying for a BrowserWindow's fullscreen status, you should ensure that either the ['enter-full-screen'](browser-window.md#event-enter-full-screen) or ['leave-full-screen'](browser-window.md#event-leave-full-screen) events have been emitted.
 
 #### `win.setSimpleFullScreen(flag)` _macOS_
 
@@ -808,6 +822,7 @@ Resizes and moves the window to the supplied bounds. Any properties that are not
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 // set all bounds properties
@@ -820,13 +835,15 @@ win.setBounds({ width: 100 })
 console.log(win.getBounds())
 ```
 
-**Note:** On macOS, the y-coordinate value cannot be smaller than the [Tray](tray.md) height. The tray height has changed over time and depends on the operating system, but is between 20-40px. Passing a value lower than the tray height will result in a window that is flush to the tray.
+> [!NOTE]
+> On macOS, the y-coordinate value cannot be smaller than the [Tray](tray.md) height. The tray height has changed over time and depends on the operating system, but is between 20-40px. Passing a value lower than the tray height will result in a window that is flush to the tray.
 
 #### `win.getBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
 
-**Note:** On macOS, the y-coordinate value returned will be at minimum the [Tray](tray.md) height. For example, calling `win.setBounds({ x: 25, y: 20, width: 800, height: 600 })` with a tray height of 38 means that `win.getBounds()` will return `{ x: 25, y: 38, width: 800, height: 600 }`.
+> [!NOTE]
+> On macOS, the y-coordinate value returned will be at minimum the [Tray](tray.md) height. For example, calling `win.setBounds({ x: 25, y: 20, width: 800, height: 600 })` with a tray height of 38 means that `win.getBounds()` will return `{ x: 25, y: 38, width: 800, height: 600 }`.
 
 #### `win.getBackgroundColor()`
 
@@ -834,7 +851,8 @@ Returns `string` - Gets the background color of the window in Hex (`#RRGGBB`) fo
 
 See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
 
-**Note:** The alpha value is _not_ returned alongside the red, green, and blue values.
+> [!NOTE]
+> The alpha value is _not_ returned alongside the red, green, and blue values.
 
 #### `win.setContentBounds(bounds[, animate])`
 
@@ -852,7 +870,8 @@ Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window's cl
 
 Returns [`Rectangle`](structures/rectangle.md) - Contains the window bounds of the normal state
 
-**Note:** whatever the current state of the window : maximized, minimized or in fullscreen, this function always returns the position and size of the window in normal state. In normal state, getBounds and getNormalBounds returns the same [`Rectangle`](structures/rectangle.md).
+> [!NOTE]
+> Whatever the current state of the window (maximized, minimized or in fullscreen), this function always returns the position and size of the window in normal state. In normal state, `getBounds` and `getNormalBounds` return the same [`Rectangle`](structures/rectangle.md).
 
 #### `win.setEnabled(enable)`
 
@@ -1049,8 +1068,9 @@ Changes the title of native window to `title`.
 
 Returns `string` - The title of the native window.
 
-**Note:** The title of the web page can be different from the title of the native
-window.
+> [!NOTE]
+> The title of the web page can be different from the title of the native
+> window.
 
 #### `win.setSheetOffset(offsetY[, offsetX])` _macOS_
 
@@ -1063,6 +1083,7 @@ a HTML-rendered toolbar. For example:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 const toolbarRect = document.getElementById('toolbar').getBoundingClientRect()
@@ -1215,9 +1236,10 @@ method:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
-const url = require('url').format({
+const url = require('node:url').format({
   protocol: 'file',
   slashes: true,
   pathname: require('node:path').join(__dirname, 'index.html')
@@ -1231,6 +1253,7 @@ the following:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 win.loadURL('http://localhost:8000/post', {
@@ -1409,8 +1432,9 @@ in the taskbar.
 
 Sets the properties for the window's taskbar button.
 
-**Note:** `relaunchCommand` and `relaunchDisplayName` must always be set
-together. If one of those properties is not set, then neither will be used.
+> [!NOTE]
+> `relaunchCommand` and `relaunchDisplayName` must always be set
+> together. If one of those properties is not set, then neither will be used.
 
 #### `win.showDefinitionForSelection()` _macOS_
 
@@ -1474,13 +1498,15 @@ maximize button, or by dragging it to the edges of the screen.
 
 Sets whether the window should be visible on all workspaces.
 
-**Note:** This API does nothing on Windows.
+> [!NOTE]
+> This API does nothing on Windows.
 
 #### `win.isVisibleOnAllWorkspaces()` _macOS_ _Linux_
 
 Returns `boolean` - Whether the window is visible on all workspaces.
 
-**Note:** This API always returns false on Windows.
+> [!NOTE]
+> This API always returns false on Windows.
 
 #### `win.setIgnoreMouseEvents(ignore[, options])`
 
@@ -1507,6 +1533,10 @@ On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
 On Windows it calls SetWindowDisplayAffinity with `WDA_EXCLUDEFROMCAPTURE`.
 For Windows 10 version 2004 and up the window will be removed from capture entirely,
 older Windows versions behave as if `WDA_MONITOR` is applied capturing a black window.
+
+#### `win.isContentProtected()` _macOS_ _Windows_
+
+Returns `boolean` - whether or not content protection is currently enabled.
 
 #### `win.setFocusable(focusable)` _macOS_ _Windows_
 
@@ -1601,7 +1631,8 @@ This method sets the browser window's system-drawn background material, includin
 
 See the [Windows documentation](https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwm_systembackdrop_type) for more details.
 
-**Note:** This method is only supported on Windows 11 22H2 and up.
+> [!NOTE]
+> This method is only supported on Windows 11 22H2 and up.
 
 #### `win.setWindowButtonPosition(position)` _macOS_
 
@@ -1623,8 +1654,9 @@ Sets the touchBar layout for the current window. Specifying `null` or
 `undefined` clears the touch bar. This method only has an effect if the
 machine has a touch bar.
 
-**Note:** The TouchBar API is currently experimental and may change or be
-removed in future Electron releases.
+> [!NOTE]
+> The TouchBar API is currently experimental and may change or be
+> removed in future Electron releases.
 
 #### `win.setBrowserView(browserView)` _Experimental_ _Deprecated_
 
@@ -1632,7 +1664,7 @@ removed in future Electron releases.
 If there are other `BrowserView`s attached, they will be removed from
 this window.
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -1641,7 +1673,7 @@ this window.
 Returns `BrowserView | null` - The `BrowserView` attached to `win`. Returns `null`
 if one is not attached. Throws an error if multiple `BrowserView`s are attached.
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -1651,7 +1683,7 @@ if one is not attached. Throws an error if multiple `BrowserView`s are attached.
 
 Replacement API for setBrowserView supporting work with multi browser views.
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -1659,7 +1691,7 @@ Replacement API for setBrowserView supporting work with multi browser views.
 
 * `browserView` [BrowserView](browser-view.md)
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -1670,7 +1702,7 @@ Replacement API for setBrowserView supporting work with multi browser views.
 Raises `browserView` above other `BrowserView`s attached to `win`.
 Throws an error if `browserView` is not attached to `win`.
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -1679,7 +1711,7 @@ Throws an error if `browserView` is not attached to `win`.
 Returns `BrowserView[]` - a sorted by z-index array of all BrowserViews that have been attached
 with `addBrowserView` or `setBrowserView`. The top-most BrowserView is the last element of the array.
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 

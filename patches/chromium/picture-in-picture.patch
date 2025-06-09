@@ -38,7 +38,7 @@ index 8168b4cfbafd42fa93a5aa9a3691c2552fabfb86..ba49212bd76d209f99c1cee649fc1466
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index c65308ac3bec1e6399c74f5d0bcf59364db4e997..5012789f084113a9289e8d198eed2f021953bef9 100644
+index cb0704f2f21e105aebf566366a2359874eed1c3a..4ef685a3cdf981d876550d17c3df997ed5d97191 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -19,9 +19,11 @@
@@ -53,7 +53,7 @@ index c65308ac3bec1e6399c74f5d0bcf59364db4e997..5012789f084113a9289e8d198eed2f02
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
-@@ -72,7 +74,7 @@
+@@ -73,7 +75,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -62,7 +62,7 @@ index c65308ac3bec1e6399c74f5d0bcf59364db4e997..5012789f084113a9289e8d198eed2f02
  #include "chrome/browser/shell_integration_win.h"
  #include "content/public/browser/render_widget_host_view.h"
  #include "ui/aura/window.h"
-@@ -396,7 +398,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -397,7 +399,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
@@ -71,3 +71,16 @@ index c65308ac3bec1e6399c74f5d0bcf59364db4e997..5012789f084113a9289e8d198eed2f02
    std::wstring app_user_model_id;
    Browser* browser = chrome::FindBrowserWithTab(controller->GetWebContents());
    if (browser) {
+@@ -1092,10 +1094,12 @@ void VideoOverlayWindowViews::SetUpViews() {
+         l10n_util::GetStringUTF16(
+             IDS_PICTURE_IN_PICTURE_LIVE_CAPTION_CONTROL_TEXT));
+     live_caption_button->SetSize(kActionButtonSize);
++#if 0
+     live_caption_dialog = std::make_unique<OverlayWindowLiveCaptionDialog>(
+         Profile::FromBrowserContext(
+             controller_->GetWebContents()->GetBrowserContext()));
+     live_caption_dialog->SetVisible(false);
++#endif
+     toggle_microphone_button =
+         std::make_unique<ToggleMicrophoneButton>(base::BindRepeating(
+             [](VideoOverlayWindowViews* overlay) {

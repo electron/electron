@@ -34,17 +34,6 @@
                            selector:@selector(onScreenUnlocked:)
                                name:@"com.apple.screenIsUnlocked"
                              object:nil];
-    // A notification that the workspace posts before the machine goes to sleep.
-    [distributed_center addObserver:self
-                           selector:@selector(isSuspending:)
-                               name:NSWorkspaceWillSleepNotification
-                             object:nil];
-    // A notification that the workspace posts when the machine wakes from
-    // sleep.
-    [distributed_center addObserver:self
-                           selector:@selector(isResuming:)
-                               name:NSWorkspaceDidWakeNotification
-                             object:nil];
 
     NSNotificationCenter* shared_center =
         [[NSWorkspace sharedWorkspace] notificationCenter];
@@ -71,18 +60,6 @@
 
 - (void)addEmitter:(electron::api::PowerMonitor*)monitor_ {
   self->emitters.push_back(monitor_);
-}
-
-- (void)isSuspending:(NSNotification*)notify {
-  for (auto* emitter : self->emitters) {
-    emitter->Emit("suspend");
-  }
-}
-
-- (void)isResuming:(NSNotification*)notify {
-  for (auto* emitter : self->emitters) {
-    emitter->Emit("resume");
-  }
 }
 
 - (void)onScreenLocked:(NSNotification*)notification {

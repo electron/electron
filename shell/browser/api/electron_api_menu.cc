@@ -213,6 +213,10 @@ void Menu::SetRole(int index, const std::u16string& role) {
   model_->SetRole(index, role);
 }
 
+void Menu::SetCustomType(int index, const std::u16string& customType) {
+  model_->SetCustomType(index, customType);
+}
+
 void Menu::Clear() {
   model_->Clear();
 }
@@ -286,6 +290,7 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setSublabel", &Menu::SetSublabel)
       .SetMethod("setToolTip", &Menu::SetToolTip)
       .SetMethod("setRole", &Menu::SetRole)
+      .SetMethod("setCustomType", &Menu::SetCustomType)
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("getItemCount", &Menu::GetItemCount)

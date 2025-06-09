@@ -11,10 +11,10 @@ This patch can be removed when we upgrade to a V8 version that
 contains the above CL.
 
 diff --git a/src/node.cc b/src/node.cc
-index f4365c0eda7330bd02a921608951902f41004f77..b2b10ffb572f010992f221de752618fd56b5d50e 100644
+index 0fbcd55d674b1d0cae88f04fe337cfcca702255f..092b1c525c7d4d50a09f99dc088d0698afcaf8a6 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -808,7 +808,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
+@@ -814,7 +814,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
    }
    // TODO(nicolo-ribaudo): remove this once V8 doesn't enable it by default
    // anymore.

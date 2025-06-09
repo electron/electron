@@ -12,6 +12,7 @@
 #include "base/containers/flat_map.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/app/chrome_command_ids.h"
+#include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/gtk_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/accelerators/accelerator.h"
@@ -60,27 +61,21 @@ GdkModifierType GetGdkModifierForAccelerator(
 
 }  // namespace
 
-GtkWidget* BuildMenuItemWithImage(const std::string& label, GtkWidget* image) {
-// GTK4 removed support for image menu items.
+GtkWidget* BuildMenuItemWithImage(const std::string& label,
+                                  const gfx::Image& icon) {
+// GTK4 removed support for menuitem icons.
 #if GTK_CHECK_VERSION(3, 90, 0)
   return gtk_menu_item_new_with_mnemonic(label.c_str());
 #else
   G_GNUC_BEGIN_IGNORE_DEPRECATIONS;
   GtkWidget* menu_item = gtk_image_menu_item_new_with_mnemonic(label.c_str());
+  GdkPixbuf* pixbuf = gtk_util::GdkPixbufFromSkBitmap(*icon.ToSkBitmap());
+  GtkWidget* image = gtk_image_new_from_pixbuf(pixbuf);
   gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image);
+  g_object_unref(pixbuf);
   G_GNUC_END_IGNORE_DEPRECATIONS;
   return menu_item;
 #endif
-}
-
-GtkWidget* BuildMenuItemWithImage(const std::string& label,
-                                  const gfx::Image& icon) {
-  GdkPixbuf* pixbuf = gtk_util::GdkPixbufFromSkBitmap(*icon.ToSkBitmap());
-
-  GtkWidget* menu_item =
-      BuildMenuItemWithImage(label, gtk_image_new_from_pixbuf(pixbuf));
-  g_object_unref(pixbuf);
-  return menu_item;
 }
 
 GtkWidget* BuildMenuItemWithLabel(const std::string& label) {
@@ -219,9 +214,7 @@ void BuildSubmenuFromModel(ui::MenuModel* model,
       connect_to_activate = false;
     }
 
-    if (ui::OzonePlatform::GetInstance()
-            ->GetPlatformProperties()
-            .electron_can_call_x11) {
+    if (x11_util::IsX11()) {
       ui::Accelerator accelerator;
       if (model->GetAcceleratorAt(i, &accelerator)) {
         gtk_widget_add_accelerator(menu_item, "activate", nullptr,

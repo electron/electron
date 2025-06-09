@@ -12,18 +12,19 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
 #include "gin/converter.h"
-#include "gin/dictionary.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
+#include "third_party/electron_node/src/node_process-inl.h"
 
 namespace electron::util {
 
 v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::Local<v8::Context> context,
     const char* id,
-    std::vector<v8::Local<v8::String>>* parameters,
-    std::vector<v8::Local<v8::Value>>* arguments) {
+    v8::LocalVector<v8::String>* parameters,
+    v8::LocalVector<v8::Value>* arguments) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::TryCatch try_catch(isolate);
 
@@ -65,14 +66,22 @@ void EmitWarning(const std::string_view warning_msg,
 void EmitWarning(v8::Isolate* isolate,
                  const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  v8::HandleScope scope{isolate};
-  gin::Dictionary process{
-      isolate, node::Environment::GetCurrent(isolate)->process_object()};
-  base::RepeatingCallback<void(std::string_view, std::string_view,
-                               std::string_view)>
-      emit_warning;
-  process.Get("emitWarning", &emit_warning);
-  emit_warning.Run(warning_msg, warning_type, "");
+  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
+                                  warning_msg, warning_type);
+}
+
+void EmitDeprecationWarning(const std::string_view warning_msg,
+                            const std::string_view deprecation_code) {
+  EmitDeprecationWarning(JavascriptEnvironment::GetIsolate(), warning_msg,
+                         deprecation_code);
+}
+
+void EmitDeprecationWarning(v8::Isolate* isolate,
+                            const std::string_view warning_msg,
+                            const std::string_view deprecation_code) {
+  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
+                                  warning_msg, "DeprecationWarning",
+                                  deprecation_code);
 }
 
 node::Environment* CreateEnvironment(v8::Isolate* isolate,
@@ -120,6 +129,26 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
   }
 
   return env;
+}
+
+ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)
+    : microtask_queue_(queue), original_policy_(queue->microtasks_policy()) {
+  // In browser-like processes, some nested run loops (macOS usually) may
+  // re-enter. This is safe because we expect the policy was explicit in the
+  // first place for those processes. However, in renderer processes, there may
+  // be unexpected behavior if this code is triggered within a pending microtask
+  // scope.
+  if (electron::IsBrowserProcess() || electron::IsUtilityProcess()) {
+    DCHECK_EQ(original_policy_, v8::MicrotasksPolicy::kExplicit);
+  } else {
+    DCHECK_EQ(microtask_queue_->GetMicrotasksScopeDepth(), 0);
+  }
+
+  microtask_queue_->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
+}
+
+ExplicitMicrotasksScope::~ExplicitMicrotasksScope() {
+  microtask_queue_->set_microtasks_policy(original_policy_);
 }
 
 }  // namespace electron::util

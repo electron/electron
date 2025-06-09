@@ -30,8 +30,10 @@ rendered.
 Unlike an `iframe`, the `webview` runs in a separate process than your
 app. It doesn't have the same permissions as your web page and all interactions
 between your app and embedded content will be asynchronous. This keeps your app
-safe from the embedded content. **Note:** Most methods called on the
-webview from the host page require a synchronous call to the main process.
+safe from the embedded content.
+
+> [!NOTE]
+> Most methods called on the webview from the host page require a synchronous call to the main process.
 
 ## Example
 
@@ -252,7 +254,8 @@ The full list of supported feature strings can be found in the
 
 The `webview` tag has the following methods:
 
-**Note:** The webview element must be loaded before using the methods.
+> [!NOTE]
+> The webview element must be loaded before using the methods.
 
 **Example**
 
@@ -679,7 +682,8 @@ increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively. The formula for this is
 `scale := 1.2 ^ level`.
 
-> **NOTE**: The zoom policy at the Chromium level is same-origin, meaning that the
+> [!NOTE]
+> The zoom policy at the Chromium level is same-origin, meaning that the
 > zoom level for a specific domain propagates across all instances of windows with
 > the same domain. Differentiating the window URLs will make zoom work per-window.
 
@@ -983,6 +987,7 @@ webview.send('ping')
 ```js
 // In guest page.
 const { ipcRenderer } = require('electron')
+
 ipcRenderer.on('ping', () => {
   ipcRenderer.sendToHost('pong')
 })
