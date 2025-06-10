@@ -257,11 +257,11 @@ std::optional<base::FilePath> ShowSaveDialogSync(
 void ShowSaveDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
   auto done = [](gin_helper::Promise<gin_helper::Dictionary> promise,
-                 bool success, base::FilePath result) {
+                 std::optional<base::FilePath> result) {
     v8::HandleScope handle_scope(promise.isolate());
     auto dict = gin::Dictionary::CreateEmpty(promise.isolate());
-    dict.Set("canceled", !success);
-    dict.Set("filePath", result);
+    dict.Set("canceled", !result.has_value());
+    dict.Set("filePath", result.value_or(base::FilePath{}));
     promise.Resolve(dict);
   };
   dialog_thread::Run(base::BindOnce(ShowSaveDialogSync, settings),
