@@ -152,6 +152,14 @@ The effect is visible only on (some?) LCD screens. Even if you don't see a diffe
 
 Notice that just setting the background in the CSS does not have the desired effect.
 
+## Class inheritance does not work with Electron built-in modules
+
+Electron classes cannot be subclassed with the [`extends`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/extends)
+keyword (also known as class inheritance). This feature was never implemented in Electron due
+to the added complexity it would add to C++/JavaScript interop in Electron's internals.
+
+For more information, see [electron/electron#23](https://github.com/electron/electron/issues/23).
+
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [closures]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Closures
 [storage]: https://developer.mozilla.org/en-US/docs/Web/API/Storage

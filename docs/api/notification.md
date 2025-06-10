@@ -4,12 +4,9 @@
 
 Process: [Main](../glossary.md#main-process)
 
-:::info Renderer process notifications
-
-If you want to show notifications from a renderer process you should use the
-[web Notifications API](../tutorial/notifications.md)
-
-:::
+> [!NOTE]
+> If you want to show notifications from a renderer process you should use the
+> [web Notifications API](../tutorial/notifications.md)
 
 ## Class: Notification
 
@@ -20,6 +17,10 @@ Process: [Main](../glossary.md#main-process)
 `Notification` is an [EventEmitter][event-emitter].
 
 It creates a new `Notification` with native properties as set by the `options`.
+
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
 
 ### Static Methods
 
