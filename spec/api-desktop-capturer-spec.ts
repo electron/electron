@@ -46,11 +46,11 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
 
   // Linux doesn't return any window sources.
   ifit(process.platform !== 'linux')('returns an empty display_id for window sources', async () => {
-    const w = new BrowserWindow({ width: 200, height: 200 });
-    await w.loadURL('about:blank');
+    const w2 = new BrowserWindow({ width: 200, height: 200 });
+    await w2.loadURL('about:blank');
 
     const sources = await desktopCapturer.getSources({ types: ['window'] });
-    w.destroy();
+    w2.destroy();
     expect(sources).to.be.an('array').that.is.not.empty();
     for (const { display_id: displayId } of sources) {
       expect(displayId).to.be.a('string').and.be.empty();
@@ -100,20 +100,20 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
   });
 
   it('getMediaSourceId should match DesktopCapturerSource.id', async function () {
-    const w = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
-    const wShown = once(w, 'show');
-    const wFocused = once(w, 'focus');
-    w.show();
-    w.focus();
+    const w2 = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
+    const wShown = once(w2, 'show');
+    const wFocused = once(w2, 'focus');
+    w2.show();
+    w2.focus();
     await wShown;
     await wFocused;
 
-    const mediaSourceId = w.getMediaSourceId();
+    const mediaSourceId = w2.getMediaSourceId();
     const sources = await desktopCapturer.getSources({
       types: ['window'],
       thumbnailSize: { width: 0, height: 0 }
     });
-    w.destroy();
+    w2.destroy();
 
     // TODO(julien.isorce): investigate why |sources| is empty on the linux
     // bots while it is not on my workstation, as expected, with and without
@@ -131,17 +131,17 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
   });
 
   it('getSources should not incorrectly duplicate window_id', async function () {
-    const w = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
-    const wShown = once(w, 'show');
-    const wFocused = once(w, 'focus');
-    w.show();
-    w.focus();
+    const w2 = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
+    const wShown = once(w2, 'show');
+    const wFocused = once(w2, 'focus');
+    w2.show();
+    w2.focus();
     await wShown;
     await wFocused;
 
     // ensure window_id isn't duplicated in getMediaSourceId,
     // which uses a different method than getSources
-    const mediaSourceId = w.getMediaSourceId();
+    const mediaSourceId = w2.getMediaSourceId();
     const ids = mediaSourceId.split(':');
     expect(ids[1]).to.not.equal(ids[2]);
 
@@ -149,7 +149,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
       types: ['window'],
       thumbnailSize: { width: 0, height: 0 }
     });
-    w.destroy();
+    w2.destroy();
 
     // TODO(julien.isorce): investigate why |sources| is empty on the linux
     // bots while it is not on my workstation, as expected, with and without
