@@ -75,7 +75,7 @@ index f8361faf6151210d65a597562c533aaa0a5235df..328238c34a9381fbbeb5970af3de721c
    // used for canvas noising.
    uint64 canvas_noise_token = 0;
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-index 6ac5f320755cdf83ce8a473e9699c9c70ce88b96..d8982a1bb6ee3747e0632ff3fde22c93507e498c 100644
+index b78fc51a5f73f40adfd6ddd9e91275116e947e26..caa609f18c95dc6e89d35a4c2b05bd6d5542c4b7 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 +++ b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 @@ -48,6 +48,7 @@ enum CSSSampleId {
@@ -99,7 +99,7 @@ index c37f784a1309da14354881d48a5a76a965930926..bffd221d2b3f3701710025103fa564c2
   protected:
    ~WebSettings() = default;
 diff --git a/third_party/blink/renderer/build/scripts/core/css/css_properties.py b/third_party/blink/renderer/build/scripts/core/css/css_properties.py
-index 6e991652d242795e292cea4c94cff59aaea078fa..b6834c78575520bb6e584dd2ce3333ac17299fef 100755
+index b676bfa20ea69286b845776218cb38cd53747dfb..9a548b1c7b9aa030defbc9a0a95f1631bee9dd89 100755
 --- a/third_party/blink/renderer/build/scripts/core/css/css_properties.py
 +++ b/third_party/blink/renderer/build/scripts/core/css/css_properties.py
 @@ -314,7 +314,7 @@ class CSSProperties(object):
@@ -112,10 +112,10 @@ index 6e991652d242795e292cea4c94cff59aaea078fa..b6834c78575520bb6e584dd2ce3333ac
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 44386093fe58416a2363146b524d4b5b49087373..dc3e74306b987be1f1999e7eaec953af1b5e0ab9 100644
+index 9b26546e97912d7966008ee994b752149fd5bdc7..9fd00224a0a833a59b9b88eee2f049451a16c513 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8871,6 +8871,24 @@
+@@ -8897,6 +8897,24 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -141,7 +141,7 @@ index 44386093fe58416a2363146b524d4b5b49087373..dc3e74306b987be1f1999e7eaec953af
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index 0f2c6174169d5d5506c35da32edd99860ee9fad9..51bf2fda9abf2e7ef6c90d46d0eaa61b63727c09 100644
+index 5e5363653c2b9cae51013c566656a28d900dd1f1..a83b9822163f1f23d7f932a0ea009693527c7a8e 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
 @@ -348,6 +348,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
@@ -154,10 +154,10 @@ index 0f2c6174169d5d5506c35da32edd99860ee9fad9..51bf2fda9abf2e7ef6c90d46d0eaa61b
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 9077d78ba64df6357446cd26e5a56d6a9b8b2059..fa4d7d431909ab127b8641340695e9447dd28a85 100644
+index 1bf128384f440ca9c1e1446857b0639339e6361b..790f5ff453041be6cf91c107ba3c2403f83dcc11 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12185,5 +12185,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12193,5 +12193,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -216,10 +216,10 @@ index 7104b5866a9bac0cdd26518eddcf80322280ad92..8c1140d107a3144cd8d067577f355647
  };
  
 diff --git a/third_party/blink/renderer/core/exported/web_settings_impl.cc b/third_party/blink/renderer/core/exported/web_settings_impl.cc
-index 90692da7bddd9e26e58cb26d8b29dbddf958fbca..6bcd9d736edab85572e405ab74d57adc0fcce921 100644
+index 3d700ee623a3fd95463c3757c9c6d3cddd67752e..49c82f61dd1f96d575f79f7ab0bac510e6024a0d 100644
 --- a/third_party/blink/renderer/core/exported/web_settings_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_settings_impl.cc
-@@ -820,4 +820,8 @@ void WebSettingsImpl::SetRootScrollbarThemeColor(
+@@ -821,4 +821,8 @@ void WebSettingsImpl::SetRootScrollbarThemeColor(
    settings_->SetRootScrollbarThemeColor(theme_color);
  }
  
@@ -241,10 +241,10 @@ index aa8b248b94ea7f6c0e04dc66e976dc7923ff3a98..868630ed2adb8f40fb7f002d45b260c0
    bool RenderVSyncNotificationEnabled() const {
      return render_v_sync_notification_enabled_;
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 40d67cfda7740a5c1c0ed811fa71681a36f09fce..0672068891793403b6674533f8fc6fce58b43ac9 100644
+index d9125c7905cb4e5dd00c3d5c05c87d45079cca94..caa6b25d2346353cee5688e99aac2a6e3528e3b1 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3579,6 +3579,9 @@ void WebViewImpl::UpdateRendererPreferences(
+@@ -3597,6 +3597,9 @@ void WebViewImpl::UpdateRendererPreferences(
        renderer_preferences_.view_source_line_wrap_enabled);
  
    MaybePreloadSystemFonts(GetPage());
