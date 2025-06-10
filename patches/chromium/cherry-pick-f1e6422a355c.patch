@@ -52,7 +52,7 @@ Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1463892}
 
 diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
-index 720c38313bd132a12b8465a4a2ca1bc32cf6f569..c2c8ee137a4b3a500954dcc9eaf3dea003613876 100644
+index b6f2e57224c8a50ffa65b70b30cf0eda77691613..68ac835c14901a22cd8ae1b55470e4b0a3d9dea8 100644
 --- a/third_party/blink/common/features.cc
 +++ b/third_party/blink/common/features.cc
 @@ -2828,6 +2828,13 @@ BASE_FEATURE(kWebviewAccelerateSmallCanvases,
