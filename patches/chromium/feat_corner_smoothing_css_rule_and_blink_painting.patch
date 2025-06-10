@@ -241,7 +241,7 @@ index aa8b248b94ea7f6c0e04dc66e976dc7923ff3a98..868630ed2adb8f40fb7f002d45b260c0
    bool RenderVSyncNotificationEnabled() const {
      return render_v_sync_notification_enabled_;
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index a765b2d1e97f0017f5cd1daf625ec2451eea9d27..412e6658d5cb4f7b04f93223a84c694412a28c4f 100644
+index d9125c7905cb4e5dd00c3d5c05c87d45079cca94..caa6b25d2346353cee5688e99aac2a6e3528e3b1 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3597,6 +3597,9 @@ void WebViewImpl::UpdateRendererPreferences(
