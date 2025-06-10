@@ -2164,9 +2164,12 @@ void WebContents::DevToolsOpened() {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   DCHECK(inspectable_web_contents_);
-  DCHECK(inspectable_web_contents_->GetDevToolsWebContents());
-  auto handle = FromOrCreate(
-      isolate, inspectable_web_contents_->GetDevToolsWebContents());
+
+  content::WebContents* const dtwc = GetDevToolsWebContents();
+  if (!dtwc)
+    return;
+
+  auto handle = FromOrCreate(isolate, dtwc);
   devtools_web_contents_.Reset(isolate, handle.ToV8());
 
   // Set inspected tabID.
@@ -2174,12 +2177,11 @@ void WebContents::DevToolsOpened() {
       "DevToolsAPI", "setInspectedTabId", base::Value(ID()));
 
   // Inherit owner window in devtools when it doesn't have one.
-  auto* devtools = inspectable_web_contents_->GetDevToolsWebContents();
-  bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
+  bool has_window = dtwc->GetUserData(NativeWindowRelay::UserDataKey());
   if (owner_window_ && !has_window) {
     DCHECK(!owner_window_.WasInvalidated());
     DCHECK_EQ(handle->owner_window(), nullptr);
-    handle->SetOwnerWindow(devtools, owner_window());
+    handle->SetOwnerWindow(dtwc, owner_window());
   }
 
   Emit("devtools-opened");
@@ -2862,7 +2864,7 @@ void WebContents::InspectElement(int x, int y) {
   if (!enable_devtools_ || !inspectable_web_contents_)
     return;
 
-  if (!inspectable_web_contents_->GetDevToolsWebContents())
+  if (!GetDevToolsWebContents())
     OpenDevTools(nullptr);
   inspectable_web_contents_->InspectElement(x, y);
 }
