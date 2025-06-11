@@ -81,7 +81,11 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
 
 void Debugger::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
                                       content::RenderFrameHost* new_rfh) {
-  if (agent_host_) {
+  // ConnectWebContents uses the primary main frame of the webContents,
+  // so if the new_rfh is not the primary main frame, we don't want to
+  // reconnect otherwise we'll end up trying to reconnect to a RenderFrameHost
+  // that already has a DevToolsAgentHost associated with it.
+  if (agent_host_ && new_rfh->IsInPrimaryMainFrame()) {
     agent_host_->DisconnectWebContents();
     auto* web_contents = content::WebContents::FromRenderFrameHost(new_rfh);
     agent_host_->ConnectWebContents(web_contents);
