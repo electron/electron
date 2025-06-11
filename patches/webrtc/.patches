@@ -1,1 +1,2 @@
 fix_handle_pipewire_capturer_initialization_and_management.patch
+chore_debug_x_error_trap_dcheck.patch
