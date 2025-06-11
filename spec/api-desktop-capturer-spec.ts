@@ -9,15 +9,6 @@ import { ifdescribe, ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
-  let w: BrowserWindow;
-
-  before(async () => {
-    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-    await w.loadURL('about:blank');
-  });
-
-  after(closeAllWindows);
-
   it('should return a non-empty array of sources', async () => {
     const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] });
     expect(sources).to.be.an('array').that.is.not.empty();
@@ -168,6 +159,8 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
 
   // Regression test - see https://github.com/electron/electron/issues/43002
   it('does not affect window resizable state', async () => {
+    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+    await w.loadURL('about:blank');
     w.resizable = false;
 
     const wShown = once(w, 'show');
@@ -178,6 +171,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     expect(sources).to.be.an('array').that.is.not.empty();
 
     expect(w.resizable).to.be.false();
+    await closeAllWindows();
   });
 
   it('moveAbove should move the window at the requested place', async function () {
