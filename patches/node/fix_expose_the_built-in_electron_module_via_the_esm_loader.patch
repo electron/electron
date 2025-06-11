@@ -64,10 +64,10 @@ index 5ba13096b98047ff33e4d44167c2a069ccc5e69d..09a332c0999086b30fd952d9456f7889
    }
  }
 diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
-index fdecd0c926c953d33117d3d05366261ccf034a21..2e1ddd821ea6254fe00c52292620c3a58a62c046 100644
+index aff686577df3c366f06f90666e23a03fc376cf53..e8857a151428acd6f8ece74d92774a18accc1e13 100644
 --- a/lib/internal/modules/esm/loader.js
 +++ b/lib/internal/modules/esm/loader.js
-@@ -426,7 +426,7 @@ class ModuleLoader {
+@@ -492,7 +492,7 @@ class ModuleLoader {
      }
  
      const cjsModule = wrap[imported_cjs_symbol];
