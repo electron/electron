@@ -11,6 +11,7 @@ project as well as the native Electron codebase.
 
 ```sh
 $ npx create-electron-app@latest my-app
+$ code my-app
 ```
 
 #### 2. Add a file `.vscode/launch.json` with the following configuration:
@@ -60,6 +61,7 @@ you can instead use these [build instructions](../development/build-instructions
 
 ```sh
 $ npx create-electron-app@latest my-app
+$ code my-app
 ```
 
 #### 2. Add a file `.vscode/launch.json` with the following configuration:
