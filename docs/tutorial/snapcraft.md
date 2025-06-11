@@ -82,8 +82,14 @@ snap(options)
 ## Using `snapcraft` with `@electron/packager`
 
 ### Step 1: Create Sample Snapcraft Project
+```sh
+$ npx create-electron-app@latest my-app
+```
 
-Create your project directory and add the following to `snap/snapcraft.yaml`:
+### Step 2: Create Sample Snapcraft Project
+
+Create a `snap` directory in your project root and add the following to
+`snap/snapcraft.yaml`:
 
 ```yaml
 name: electron-packager-hello-world
@@ -97,7 +103,7 @@ grade: stable
 
 apps:
   electron-packager-hello-world:
-    command: minimal-repro/minimal-repro --no-sandbox
+    command: my-app/my-app --no-sandbox
     extensions: [gnome]
     plugs:
     - browser-support
@@ -109,13 +115,13 @@ apps:
       TMPDIR: $XDG_RUNTIME_DIR
 
 parts:
-  minimal-repro:
+  my-app:
     plugin: nil
-    source: https://github.com/electron/minimal-repro.git
+    source: .
     override-build: |
         npm install electron @electron/packager
         npx electron-packager . --overwrite --platform=linux --output=release-build --prune=true
-        cp -rv ./minimal-repro-linux-* $SNAPCRAFT_PART_INSTALL/minimal-repro
+        cp -rv ./my-app-linux-* $SNAPCRAFT_PART_INSTALL/my-app
     build-snaps:
     - node/14/stable
     build-packages:
@@ -125,12 +131,10 @@ parts:
     - libnspr4
 ```
 
-If you want to apply this example to an existing project:
+If you want to apply this example to an existing project, replace all instances
+of `my-app` with your project's name.
 
-- Replace `source: https://github.com/electron/minimal-repro.git` with `source: .`.
-- Replace all instances of `minimal-repro` with your project's name.
-
-### Step 2: Build the snap
+### Step 3: Build the snap
 
 ```sh
 $ snapcraft
@@ -139,13 +143,13 @@ $ snapcraft
 Snapped electron-packager-hello-world_0.1_amd64.snap
 ```
 
-### Step 3: Install the snap
+### Step 4: Install the snap
 
 ```sh
 sudo snap install electron-packager-hello-world_0.1_amd64.snap --dangerous
 ```
 
-### Step 4: Run the snap
+### Step 5: Run the snap
 
 ```sh
 electron-packager-hello-world
