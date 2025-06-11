@@ -1,0 +1,257 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Wed, 11 Jun 2025 17:50:00 -0400
+Subject: Revert "Use content::Create*Capturer in DesktopCaptureDevice."
+
+This reverts commit ef0cdc8095dac7d12b178ed7908d162f1edbb139.
+
+diff --git a/chrome/browser/glic/host/context/glic_screenshot_capturer.cc b/chrome/browser/glic/host/context/glic_screenshot_capturer.cc
+index 04f82469682d6ed8cfacbcf615dc4c9f7865273c..388e1516b982313ee02076587bd0085af57cdf4e 100644
+--- a/chrome/browser/glic/host/context/glic_screenshot_capturer.cc
++++ b/chrome/browser/glic/host/context/glic_screenshot_capturer.cc
+@@ -138,9 +138,7 @@ void GlicScreenshotCapturer::OnSourceSelected(const std::string& err,
+ }
+ 
+ void GlicScreenshotCapturer::OnCaptureStarted(content::DesktopMediaID id) {
+-  desktop_capturer_ = content::desktop_capture::CreateScreenCapturer(
+-      content::desktop_capture::CreateDesktopCaptureOptions(),
+-      /*for_snapshot=*/true);
++  desktop_capturer_ = content::desktop_capture::CreateScreenCapturer();
+   desktop_capturer_->Start(this);
+   if (!desktop_capturer_->SelectSource(id.id)) {
+     SignalError(glic::mojom::CaptureScreenshotErrorReason::kUnknown);
+diff --git a/chrome/browser/media/webrtc/chrome_screen_enumerator.cc b/chrome/browser/media/webrtc/chrome_screen_enumerator.cc
+index 7482fa0c3aa2f1467c9203eb6774fc657cd01426..7d36597e23d81c98126f58bdb12a917127fcee6b 100644
+--- a/chrome/browser/media/webrtc/chrome_screen_enumerator.cc
++++ b/chrome/browser/media/webrtc/chrome_screen_enumerator.cc
+@@ -90,9 +90,7 @@ blink::mojom::StreamDevicesSetPtr EnumerateScreens(
+   std::unique_ptr<webrtc::DesktopCapturer> capturer =
+       (g_desktop_capturer_for_testing.IsCreated())
+           ? std::move(g_desktop_capturer_for_testing.Get())
+-          : content::desktop_capture::CreateScreenCapturer(
+-                content::desktop_capture::CreateDesktopCaptureOptions(),
+-                /*for_snapshot=*/true);
++          : content::desktop_capture::CreateScreenCapturer();
+   if (!capturer) {
+     return stream_devices_set;
+   }
+diff --git a/chrome/browser/media/webrtc/desktop_media_picker_factory_impl.cc b/chrome/browser/media/webrtc/desktop_media_picker_factory_impl.cc
+index a7e56fde2083a2a9f108a080f99993788e7f70ec..2f548343ae1c85805079202000af778c805ddefc 100644
+--- a/chrome/browser/media/webrtc/desktop_media_picker_factory_impl.cc
++++ b/chrome/browser/media/webrtc/desktop_media_picker_factory_impl.cc
+@@ -32,9 +32,7 @@ std::unique_ptr<ThumbnailCapturer> MakeScreenCapturer() {
+ #endif  // BUILDFLAG(IS_MAC)
+ 
+   std::unique_ptr<webrtc::DesktopCapturer> desktop_capturer =
+-      content::desktop_capture::CreateScreenCapturer(
+-          content::desktop_capture::CreateDesktopCaptureOptions(),
+-          /*for_snapshot=*/true);
++      content::desktop_capture::CreateScreenCapturer();
+   return desktop_capturer ? std::make_unique<DesktopCapturerWrapper>(
+                                 std::move(desktop_capturer))
+                           : nullptr;
+@@ -48,8 +46,7 @@ std::unique_ptr<ThumbnailCapturer> MakeWindowCapturer() {
+ #endif  // BUILDFLAG(IS_MAC)
+ 
+   std::unique_ptr<webrtc::DesktopCapturer> desktop_capturer =
+-      content::desktop_capture::CreateWindowCapturer(
+-          content::desktop_capture::CreateDesktopCaptureOptions());
++      content::desktop_capture::CreateWindowCapturer();
+   return desktop_capturer ? std::make_unique<DesktopCapturerWrapper>(
+                                 std::move(desktop_capturer))
+                           : nullptr;
+diff --git a/chrome/browser/media/webrtc/media_stream_focus_delegate.cc b/chrome/browser/media/webrtc/media_stream_focus_delegate.cc
+index 97213d9a40c47d3d33978583bd7c4691ed725717..7901a0471abd1312f4910095952bc6e4bc7fec5c 100644
+--- a/chrome/browser/media/webrtc/media_stream_focus_delegate.cc
++++ b/chrome/browser/media/webrtc/media_stream_focus_delegate.cc
+@@ -167,7 +167,7 @@ void MediaStreamFocusDelegate::FocusWindow(
+   std::unique_ptr<webrtc::DesktopCapturer> window_capturer =
+       window_capturer_for_testing_ != nullptr
+           ? std::move(window_capturer_for_testing_)
+-          : content::desktop_capture::CreateWindowCapturer(
++          : webrtc::DesktopCapturer::CreateWindowCapturer(
+                 content::desktop_capture::CreateDesktopCaptureOptions());
+   if (window_capturer && window_capturer->SelectSource(media_id.id)) {
+     window_capturer->FocusOnSelectedSource();
+diff --git a/chrome/browser/support_tool/screenshot_data_collector.cc b/chrome/browser/support_tool/screenshot_data_collector.cc
+index 92a4c0ac04a820b12b7c0e701ac2a5c2e2575667..9ea39d8ab52c261e0c0385ee2f7f2e10b10e7488 100644
+--- a/chrome/browser/support_tool/screenshot_data_collector.cc
++++ b/chrome/browser/support_tool/screenshot_data_collector.cc
+@@ -243,14 +243,11 @@ void ScreenshotDataCollector::OnSourceSelected(const std::string& err,
+       return;
+     }
+     case content::DesktopMediaID::Type::TYPE_WINDOW: {
+-      desktop_capturer_ = content::desktop_capture::CreateWindowCapturer(
+-          content::desktop_capture::CreateDesktopCaptureOptions());
++      desktop_capturer_ = content::desktop_capture::CreateWindowCapturer();
+       break;
+     }
+     case content::DesktopMediaID::Type::TYPE_SCREEN: {
+-      desktop_capturer_ = content::desktop_capture::CreateScreenCapturer(
+-          content::desktop_capture::CreateDesktopCaptureOptions(),
+-          /*for_snapshot=*/true);
++      desktop_capturer_ = content::desktop_capture::CreateScreenCapturer();
+       break;
+     }
+     default:
+diff --git a/chrome/test/base/save_desktop_snapshot.cc b/chrome/test/base/save_desktop_snapshot.cc
+index b7f4927ab200163edd2e67ed6bdea403da69026f..e318c0450e32095c9615a61a86b0f2e8f3b5c1ff 100644
+--- a/chrome/test/base/save_desktop_snapshot.cc
++++ b/chrome/test/base/save_desktop_snapshot.cc
+@@ -59,9 +59,7 @@ class FrameHolder : public webrtc::DesktopCapturer::Callback {
+ // error.
+ SkBitmap CaptureScreen() {
+   std::unique_ptr<webrtc::DesktopCapturer> capturer =
+-      content::desktop_capture::CreateScreenCapturer(
+-          content::desktop_capture::CreateDesktopCaptureOptions(),
+-          /*for_snapshot=*/true);
++      content::desktop_capture::CreateScreenCapturer();
+   if (!capturer) {
+     LOG(ERROR) << "Failed to create a screen capturer.";
+     return SkBitmap();
+diff --git a/components/eye_dropper/eye_dropper_view.cc b/components/eye_dropper/eye_dropper_view.cc
+index 7dbfa91f2532ff45b4ddd572a13312ebaf68d134..0f1d12dade7f665161e8ac0a6b7de0cb3a145667 100644
+--- a/components/eye_dropper/eye_dropper_view.cc
++++ b/components/eye_dropper/eye_dropper_view.cc
+@@ -101,7 +101,7 @@ class EyeDropperView::ScreenCapturer
+ 
+ EyeDropperView::ScreenCapturer::ScreenCapturer(EyeDropperView* owner)
+     : owner_(owner) {
+-  static bool allow_wgc_screen_capturer =
++  static bool allow_wgc_screen_capture =
+ #if BUILDFLAG(IS_WIN)
+       // Allow WGC screen capture if Windows version is greater or equal
+       // than 10.0.20348.0, as the following API, which controls if a border is
+@@ -111,21 +111,13 @@ EyeDropperView::ScreenCapturer::ScreenCapturer(EyeDropperView* owner)
+       base::win::GetVersion() >= base::win::Version::SERVER_2022 &&
+ #endif  // BUILDFLAG(IS_WIN)
+       base::FeatureList::IsEnabled(features::kAllowEyeDropperWGCScreenCapture);
+-  auto options = content::desktop_capture::CreateDesktopCaptureOptions();
+-
+-#if defined(RTC_ENABLE_WIN_WGC)
+-  if (allow_wgc_screen_capturer) {
+-    options.set_allow_wgc_screen_capturer(true);
+-  }
+-#endif  // defined(RTC_ENABLE_WIN_WGC)
+-
+   // TODO(iopopesc): Update the captured frame after a period of time to match
+   // latest content on screen.
+-  capturer_ = content::desktop_capture::CreateScreenCapturer(
+-      options, /*for_snapshot=*/true);
++  capturer_ =
++      content::desktop_capture::CreateScreenCapturer(allow_wgc_screen_capture);
+   if (capturer_) {
+     capturer_->Start(this);
+-    if (allow_wgc_screen_capturer) {
++    if (allow_wgc_screen_capture) {
+       capturer_->SelectSource(webrtc::kFullDesktopScreenId);
+     }
+   }
+diff --git a/content/browser/media/capture/desktop_capture_device.cc b/content/browser/media/capture/desktop_capture_device.cc
+index dd30268a7726a409916f42d8a54fd3c75875ab40..a6a63ac98221f2a5c240eab2a437a3279c18cda6 100644
+--- a/content/browser/media/capture/desktop_capture_device.cc
++++ b/content/browser/media/capture/desktop_capture_device.cc
+@@ -956,8 +956,7 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
+   switch (source.type) {
+     case DesktopMediaID::TYPE_SCREEN: {
+       std::unique_ptr<webrtc::DesktopCapturer> screen_capturer(
+-          desktop_capture::CreateScreenCapturer(options,
+-                                                /*for_snapshot=*/false));
++          webrtc::DesktopCapturer::CreateScreenCapturer(options));
+       if (screen_capturer && screen_capturer->SelectSource(source.id)) {
+         capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(
+             std::move(screen_capturer), options);
+@@ -971,7 +970,7 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
+ 
+     case DesktopMediaID::TYPE_WINDOW: {
+       std::unique_ptr<webrtc::DesktopCapturer> window_capturer =
+-          desktop_capture::CreateWindowCapturer(options);
++          webrtc::DesktopCapturer::CreateWindowCapturer(options);
+       if (window_capturer && window_capturer->SelectSource(source.id)) {
+         capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(
+             std::move(window_capturer), options);
+diff --git a/content/browser/media/capture/desktop_capture_device_unittest.cc b/content/browser/media/capture/desktop_capture_device_unittest.cc
+index 90191ad415cde0dc0cf0ba409c7c8e44d0f0703c..031581a10398065984fb6e7297cd47eba362499b 100644
+--- a/content/browser/media/capture/desktop_capture_device_unittest.cc
++++ b/content/browser/media/capture/desktop_capture_device_unittest.cc
+@@ -32,11 +32,11 @@
+ #include "base/time/tick_clock.h"
+ #include "base/time/time.h"
+ #include "build/build_config.h"
+-#include "content/public/browser/desktop_capture.h"
+ #include "media/capture/video/mock_video_capture_device_client.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
++#include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
+ #include "third_party/webrtc/modules/desktop_capture/desktop_frame.h"
+ #include "third_party/webrtc/modules/desktop_capture/desktop_geometry.h"
+ #include "ui/base/ozone_buildflags.h"
+@@ -327,9 +327,8 @@ class DesktopCaptureDeviceTest : public testing::Test {
+ #if !BUILDFLAG(IS_FUCHSIA)
+ TEST_F(DesktopCaptureDeviceTest, Capture) {
+   std::unique_ptr<webrtc::DesktopCapturer> capturer(
+-      desktop_capture::CreateScreenCapturer(
+-          webrtc::DesktopCaptureOptions::CreateDefault(),
+-          /*for_snapshot=*/false));
++      webrtc::DesktopCapturer::CreateScreenCapturer(
++          webrtc::DesktopCaptureOptions::CreateDefault()));
+ 
+ #if (BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)) && !BUILDFLAG(IS_OZONE_X11)
+   // webrtc::DesktopCapturer is only supported on Ozone X11 by default.
+diff --git a/content/public/browser/desktop_capture.cc b/content/public/browser/desktop_capture.cc
+index d208b6e865fadd32d091ff2fe96e701cd27239f2..400190ee5869cd09740f23f50bcd0fb38c948974 100644
+--- a/content/public/browser/desktop_capture.cc
++++ b/content/public/browser/desktop_capture.cc
+@@ -84,22 +84,25 @@ webrtc::DesktopCaptureOptions CreateDesktopCaptureOptions() {
+ }
+ 
+ std::unique_ptr<webrtc::DesktopCapturer> CreateScreenCapturer(
+-    webrtc::DesktopCaptureOptions options,
+-    bool for_snapshot) {
++    bool allow_wgc_screen_capturer) {
+ #if BUILDFLAG(IS_CHROMEOS)
+-  if (for_snapshot) {
+-    return std::make_unique<DesktopCapturerAsh>();
++  return std::make_unique<DesktopCapturerAsh>();
++#else
++  auto options = desktop_capture::CreateDesktopCaptureOptions();
++#if defined(RTC_ENABLE_WIN_WGC)
++  if (allow_wgc_screen_capturer) {
++    options.set_allow_wgc_screen_capturer(true);
+   }
+-#endif  // BUILDFLAG(IS_CHROMEOS)
++#endif  // defined(RTC_ENABLE_WIN_WGC)
+   return webrtc::DesktopCapturer::CreateScreenCapturer(options);
++#endif
+ }
+ 
+-std::unique_ptr<webrtc::DesktopCapturer> CreateWindowCapturer(
+-    webrtc::DesktopCaptureOptions options) {
++std::unique_ptr<webrtc::DesktopCapturer> CreateWindowCapturer() {
++  auto options = desktop_capture::CreateDesktopCaptureOptions();
+ #if defined(RTC_ENABLE_WIN_WGC)
+   options.set_allow_wgc_capturer_fallback(true);
+-#endif  // defined(RTC_ENABLE_WIN_WGC)
+-
++#endif
+   return webrtc::DesktopCapturer::CreateWindowCapturer(options);
+ }
+ 
+diff --git a/content/public/browser/desktop_capture.h b/content/public/browser/desktop_capture.h
+index cc25e5c2a44efdbe5f77651082ed3878f0589c6d..cd40119707887bcadcedd81316733a64f8f57e3c 100644
+--- a/content/public/browser/desktop_capture.h
++++ b/content/public/browser/desktop_capture.h
+@@ -18,10 +18,8 @@ CONTENT_EXPORT webrtc::DesktopCaptureOptions CreateDesktopCaptureOptions();
+ 
+ // Creates specific DesktopCapturer with required settings.
+ CONTENT_EXPORT std::unique_ptr<webrtc::DesktopCapturer> CreateScreenCapturer(
+-    webrtc::DesktopCaptureOptions options,
+-    bool for_snapshot);
+-CONTENT_EXPORT std::unique_ptr<webrtc::DesktopCapturer> CreateWindowCapturer(
+-    webrtc::DesktopCaptureOptions options);
++    bool allow_wgc_screen_capturer = false);
++CONTENT_EXPORT std::unique_ptr<webrtc::DesktopCapturer> CreateWindowCapturer();
+ 
+ // Returns whether we can use PipeWire capturer based on:
+ // 1) We run Linux Wayland session
