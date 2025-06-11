@@ -6,10 +6,18 @@ Subject: chore: debug x_error_trap dcheck
 Try to figure out why this dcheck is firing.
 
 diff --git a/modules/desktop_capture/linux/x11/x_error_trap.cc b/modules/desktop_capture/linux/x11/x_error_trap.cc
-index 9199a99177c105cdf70957c25af187fcb42cb06b..0cb49be869dae253ff9b050a4497dd09c3162c83 100644
+index 9199a99177c105cdf70957c25af187fcb42cb06b..d7dfeaa062642faf245aaeb8ae4118fd2d077d4a 100644
 --- a/modules/desktop_capture/linux/x11/x_error_trap.cc
 +++ b/modules/desktop_capture/linux/x11/x_error_trap.cc
-@@ -31,7 +31,13 @@ Mutex* AcquireMutex() {
+@@ -8,6 +8,7 @@
+  *  be found in the AUTHORS file in the root of the source tree.
+  */
+ 
++#include "base/logging.h"
+ #include "modules/desktop_capture/linux/x11/x_error_trap.h"
+ 
+ #include <X11/Xlib.h>
+@@ -31,7 +32,13 @@ Mutex* AcquireMutex() {
  }
  
  int XServerErrorHandler(Display* display, XErrorEvent* error_event) {
