@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 3481539cd28559e85f624d5e7ee3d31983a23a1a..9dbef97d2f3119871b91edfd9ce53760d512ff8d 100644
+index 3481539cd28559e85f624d5e7ee3d31983a23a1a..26d5ee5a67ff35f66a9f598891a444aaa9e21eaf 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -164,6 +164,11 @@
@@ -22,7 +22,7 @@ index 3481539cd28559e85f624d5e7ee3d31983a23a1a..9dbef97d2f3119871b91edfd9ce53760
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -618,6 +623,99 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
+@@ -618,6 +623,111 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
  
  }  // namespace
  
@@ -80,6 +80,18 @@ index 3481539cd28559e85f624d5e7ee3d31983a23a1a..9dbef97d2f3119871b91edfd9ce53760
 +    return upstream_->Verify(params, verify_result, std::move(callback2), out_req, net_log);
 +  }
 +
++  void Verify2QwacBinding(
++      const std::string& binding,
++      const std::string& hostname,
++      const scoped_refptr<net::X509Certificate>& tls_cert,
++      base::OnceCallback<void(const scoped_refptr<net::X509Certificate>&)> callback,
++      const net::NetLogWithSource& net_log) override {
++    // 2-QWAC binding verification isn't cached.  This isn't performance
++    // critical and if we wanted to cache, it would make more sense to do at
++    // the 2-QWAC link header processing layer.
++    upstream_->Verify2QwacBinding(binding, hostname, tls_cert,
++                                  std::move(callback), net_log);
++  }
 +
 +  void SetConfig(const Config& config) override {
 +    upstream_->SetConfig(config);
@@ -122,7 +134,7 @@ index 3481539cd28559e85f624d5e7ee3d31983a23a1a..9dbef97d2f3119871b91edfd9ce53760
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1021,6 +1119,13 @@ void NetworkContext::SetClient(
+@@ -1021,6 +1131,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +148,7 @@ index 3481539cd28559e85f624d5e7ee3d31983a23a1a..9dbef97d2f3119871b91edfd9ce53760
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2655,6 +2760,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2655,6 +2772,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
