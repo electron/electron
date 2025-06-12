@@ -233,20 +233,25 @@ void ShowOpenDialog(const DialogSettings& settings,
   dialog->RunOpenDialog(std::move(promise), settings);
 }
 
-bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
-  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  auto cb = base::BindOnce(
-      [](base::RepeatingClosure cb, base::FilePath* file_path,
-         gin_helper::Dictionary result) {
-        result.Get("filePath", file_path);
-        std::move(cb).Run();
-      },
-      run_loop.QuitClosure(), path);
+std::optional<base::FilePath> ShowSaveDialogSync(
+    const DialogSettings& settings) {
+  std::optional<base::FilePath> path;
 
-  FileChooserDialog* dialog = new FileChooserDialog();
-  dialog->RunSaveDialog(std::move(cb), settings);
+  base::RunLoop run_loop{base::RunLoop::Type::kNestableTasksAllowed};
+  auto on_chooser_dialog_done = base::BindOnce(
+      [](base::RepeatingClosure run_loop_closure,
+         std::optional<base::FilePath>* path, gin_helper::Dictionary result) {
+        if (base::FilePath val; result.Get("filePath", &val))
+          *path = std::move(val);
+        std::move(run_loop_closure).Run();
+      },
+      run_loop.QuitClosure(), &path);
+
+  auto* const dialog = new FileChooserDialog{};
+  dialog->RunSaveDialog(std::move(on_chooser_dialog_done), settings);
   run_loop.Run();
-  return !path->empty();
+
+  return path;
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
