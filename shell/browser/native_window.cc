@@ -122,21 +122,13 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 #endif
 
   // Initialize prefs_ to save/restore window bounds
-  auto* browser_context =
-      electron::ElectronBrowserContext::GetDefaultBrowserContext();
-  if (browser_context)
+  if (auto* browser_context = electron::ElectronBrowserContext::GetDefaultBrowserContext())
     prefs_ = browser_context->prefs();
 
-  v8::Local<v8::Value> window_state_restore_options;
-  if (options.Get(options::kWindowStateRestoreOptions,
-                  &window_state_restore_options)) {
-    if (window_state_restore_options->IsObject()) {
-      auto restore_options =
-          gin_helper::Dictionary::CreateEmpty(options.isolate());
-      options.Get(options::kWindowStateRestoreOptions, &restore_options);
-      // Initialize window_state_id_
-      restore_options.Get(options::kStateId, &window_state_id_);
-    }
+  if (gin_helper::Dictionary restore_options;
+      options.Get(options::kWindowStateRestoreOptions, &restore_options)) {
+    // Initialize window_state_id_
+    restore_options.Get(options::kStateId, &window_state_id_);
   }
 
   v8::Local<v8::Value> titlebar_overlay;
@@ -870,8 +862,8 @@ void NativeWindow::SaveWindowState() {
   window_preferences.Set(electron::kMaximized, IsMaximized());
   window_preferences.Set(electron::kFullscreen, IsFullscreen());
 
-  display::Screen* screen = display::Screen::GetScreen();
-  display::Display display = screen->GetDisplayMatching(bounds);
+  const display::Screen* screen = display::Screen::GetScreen();
+  const display::Display display = screen->GetDisplayMatching(bounds);
   gfx::Rect work_area = display.work_area();
 
   window_preferences.Set(electron::kWorkAreaLeft, work_area.x());
