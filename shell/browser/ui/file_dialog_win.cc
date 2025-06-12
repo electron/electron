@@ -233,11 +233,12 @@ void ShowOpenDialog(const DialogSettings& settings,
                      base::BindOnce(done, std::move(promise)));
 }
 
-bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
+std::optional<base::FilePath> ShowSaveDialogSync(
+    const DialogSettings& settings) {
   ATL::CComPtr<IFileSaveDialog> file_save_dialog;
   HRESULT hr = file_save_dialog.CoCreateInstance(CLSID_FileSaveDialog);
   if (FAILED(hr))
-    return false;
+    return {};
 
   DWORD options = FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT;
   if (settings.properties & SAVE_DIALOG_SHOW_HIDDEN_FILES)
@@ -250,22 +251,21 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   hr = ShowFileDialog(file_save_dialog, settings);
 
   if (FAILED(hr))
-    return false;
+    return {};
 
   CComPtr<IShellItem> pItem;
   hr = file_save_dialog->GetResult(&pItem);
   if (FAILED(hr))
-    return false;
+    return {};
 
   PWSTR result_path = nullptr;
   hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &result_path);
   if (!SUCCEEDED(hr))
-    return false;
+    return {};
 
-  *path = base::FilePath(result_path);
+  auto path = base::FilePath{result_path};
   CoTaskMemFree(result_path);
-
-  return true;
+  return path;
 }
 
 void ShowSaveDialog(const DialogSettings& settings,

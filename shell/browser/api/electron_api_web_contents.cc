@@ -18,6 +18,7 @@
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/flat_set.h"
 #include "base/containers/id_map.h"
+#include "base/containers/map_util.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
@@ -4024,30 +4025,35 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
                                      const std::string& content,
                                      bool save_as,
                                      bool is_base64) {
-  base::FilePath path;
-  auto it = saved_files_.find(url);
-  if (it != saved_files_.end() && !save_as) {
-    path = it->second;
-  } else {
+  const base::FilePath* path = nullptr;
+
+  if (!save_as)
+    base::FindOrNull(saved_files_, url);
+
+  if (path == nullptr) {
     file_dialog::DialogSettings settings;
     settings.parent_window = owner_window();
     settings.force_detached = offscreen_;
     settings.title = url;
     settings.default_path = base::FilePath::FromUTF8Unsafe(url);
-    if (!file_dialog::ShowSaveDialogSync(settings, &path)) {
-      inspectable_web_contents_->CallClientFunction(
-          "DevToolsAPI", "canceledSaveURL", base::Value(url));
-      return;
+    if (auto new_path = file_dialog::ShowSaveDialogSync(settings)) {
+      auto [iter, _] = saved_files_.try_emplace(url, std::move(*new_path));
+      path = &iter->second;
     }
   }
 
-  saved_files_[url] = path;
+  if (path == nullptr) {
+    inspectable_web_contents_->CallClientFunction(
+        "DevToolsAPI", "canceledSaveURL", base::Value{url});
+    return;
+  }
+
   // Notify DevTools.
   inspectable_web_contents_->CallClientFunction(
-      "DevToolsAPI", "savedURL", base::Value(url),
-      base::Value(path.AsUTF8Unsafe()));
+      "DevToolsAPI", "savedURL", base::Value{url},
+      base::Value{path->AsUTF8Unsafe()});
   file_task_runner_->PostTask(
-      FROM_HERE, base::BindOnce(&WriteToFile, path, content, is_base64));
+      FROM_HERE, base::BindOnce(&WriteToFile, *path, content, is_base64));
 }
 
 void WebContents::DevToolsAppendToFile(const std::string& url,
