@@ -13,6 +13,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "include/core/SkColor.h"
@@ -122,7 +123,8 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 #endif
 
   // Initialize prefs_ to save/restore window bounds
-  if (auto* browser_context = electron::ElectronBrowserContext::GetDefaultBrowserContext())
+  if (auto* browser_context =
+          electron::ElectronBrowserContext::GetDefaultBrowserContext())
     prefs_ = browser_context->prefs();
 
   if (gin_helper::Dictionary restore_options;

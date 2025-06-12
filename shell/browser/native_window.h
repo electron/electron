@@ -18,7 +18,6 @@
 #include "base/observer_list.h"
 #include "base/strings/cstring_view.h"
 #include "base/supports_user_data.h"
-#include "components/prefs/pref_service.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
@@ -28,6 +27,7 @@
 
 class SkRegion;
 class DraggableRegionProvider;
+class PrefService;
 
 namespace input {
 struct NativeWebKeyboardEvent;
