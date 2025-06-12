@@ -82,6 +82,7 @@ snap(options)
 ## Using `snapcraft` with `@electron/packager`
 
 ### Step 1: Create Sample Snapcraft Project
+
 ```sh
 $ npx create-electron-app@latest my-app
 ```
