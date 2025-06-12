@@ -70,6 +70,8 @@ static_library("chrome") {
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.h",
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager_uma_helper.cc",
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager_uma_helper.h",
+    "//chrome/browser/ui/views/picture_in_picture/picture_in_picture_tucker.cc",
+    "//chrome/browser/ui/views/picture_in_picture/picture_in_picture_tucker.h",
     "//chrome/browser/picture_in_picture/scoped_picture_in_picture_occlusion_observation.cc",
     "//chrome/browser/picture_in_picture/scoped_picture_in_picture_occlusion_observation.h",
     "//chrome/browser/platform_util.cc",
