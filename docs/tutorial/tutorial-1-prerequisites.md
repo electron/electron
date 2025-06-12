@@ -1,6 +1,6 @@
 ---
 title: 'Prerequisites'
-description: 'This guide will step you through the process of creating a barebones Hello World app in Electron, similar to electron/minimal-repro.'
+description: 'This guide will step you through the process of creating a barebones Hello World app in Electron.'
 slug: tutorial-prerequisites
 hide_title: false
 ---
