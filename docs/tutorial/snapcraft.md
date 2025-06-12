@@ -5,7 +5,8 @@ for any Snapcraft environment, including the Ubuntu Software Center.
 
 ## Background and Requirements
 
-Together with the broader Linux community, Canonical aims to address common software installation issues through the [`snapcraft`](https://snapcraft.io/)
+Together with the broader Linux community, Canonical aims to address common
+software installation issues through the [`snapcraft`](https://snapcraft.io/)
 project. Snaps are containerized software packages that include required
 dependencies, auto-update, and work on all major Linux distributions without
 system modification.
