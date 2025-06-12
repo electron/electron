@@ -421,19 +421,18 @@ void ShowOpenDialog(const DialogSettings& settings,
   }
 }
 
-bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
-  DCHECK(path);
+std::optional<base::FilePath> ShowSaveDialogSync(
+    const DialogSettings& settings) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, settings);
   SetupSaveDialogForProperties(dialog, settings.properties);
 
-  int chosen = RunModalDialog(dialog, settings);
+  const int chosen = RunModalDialog(dialog, settings);
   if (chosen == NSModalResponseCancel || ![[dialog URL] isFileURL])
-    return false;
+    return {};
 
-  *path = base::FilePath(base::SysNSStringToUTF8([[dialog URL] path]));
-  return true;
+  return base::FilePath{base::SysNSStringToUTF8([[dialog URL] path])};
 }
 
 void SaveDialogCompletion(int chosen,
