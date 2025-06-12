@@ -5,8 +5,7 @@ for any Snapcraft environment, including the Ubuntu Software Center.
 
 ## Background and Requirements
 
-Together with the broader Linux community, Canonical aims to fix many of the
-common software installation problems with the [`snapcraft`](https://snapcraft.io/)
+Together with the broader Linux community, Canonical aims to address common software installation issues through the [`snapcraft`](https://snapcraft.io/)
 project. Snaps are containerized software packages that include required
 dependencies, auto-update, and work on all major Linux distributions without
 system modification.
@@ -97,7 +96,7 @@ grade: stable
 
 apps:
   electron-packager-hello-world:
-    command: electron-quick-start/electron-quick-start --no-sandbox
+    command: minimal-repro/minimal-repro --no-sandbox
     extensions: [gnome]
     plugs:
     - browser-support
@@ -109,13 +108,13 @@ apps:
       TMPDIR: $XDG_RUNTIME_DIR
 
 parts:
-  electron-quick-start:
+  minimal-repro:
     plugin: nil
-    source: https://github.com/electron/electron-quick-start.git
+    source: https://github.com/electron/minimal-repro.git
     override-build: |
         npm install electron @electron/packager
         npx electron-packager . --overwrite --platform=linux --output=release-build --prune=true
-        cp -rv ./electron-quick-start-linux-* $SNAPCRAFT_PART_INSTALL/electron-quick-start
+        cp -rv ./minimal-repro-linux-* $SNAPCRAFT_PART_INSTALL/minimal-repro
     build-snaps:
     - node/14/stable
     build-packages:
@@ -127,8 +126,8 @@ parts:
 
 If you want to apply this example to an existing project:
 
-- Replace `source: https://github.com/electron/electron-quick-start.git` with `source: .`.
-- Replace all instances of `electron-quick-start` with your project's name.
+- Replace `source: https://github.com/electron/minimal-repro.git` with `source: .`.
+- Replace all instances of `minimal-repro` with your project's name.
 
 ### Step 2: Build the snap
 
