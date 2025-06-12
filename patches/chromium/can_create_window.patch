@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 0e80034f454e8a8b75116cf1cd59e4a606586d8e..5cc89cbf1c72e3ad2c23ab0c58de7e500ab159ac 100644
+index 3ca0412e044cada62fabc142aaa2416ed976b89d..7a3a108d9bcc2836e3098a07790d4fc9f9275a40 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9750,6 +9750,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9747,6 +9747,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index 0e80034f454e8a8b75116cf1cd59e4a606586d8e..5cc89cbf1c72e3ad2c23ab0c58de7e50
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 8ba352a573d67f53a5f9121aecdc7fc42e1ffc09..aefb8a1fff63c9b0bad0678064a170f50f36ef6b 100644
+index 4d5ea127056b25e8bf02b6015a858d72172213e8..c9642742bec29806e60f9c772e28d664e3df731c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5294,6 +5294,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -100,7 +100,7 @@ index 128688fd5da53388736803e3e223d853e351dc85..45ae911d7a4ddf7e5b90ce65cfb7b052
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index f42be2a1cc5ba3ccb52e48985e0532a34675e826..f6ab6ab2b036c7621b429181c3ff89d9f1ff77f9 100644
+index ca92e2ddf78d8f386b5ab23a09876d3b44e21334..33be50ce93dd998df5244f9ade391943f06978ad 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -32,6 +32,17 @@ namespace content {
@@ -210,7 +210,7 @@ index 82e9d3dfb5f7da76d89fe15ae61d379fa46e177d..fd035512099a54dff6cc951a2226c23a
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 028e8ffba334a07a29064795321a2f79d3519fd0..0b2ff3b9206652cdd535ca81bd2925ecd463b4cb 100644
+index 8a10582431bd988d4644b7c3f9e41912b1ef23ca..71eb0bb1e9ddd5cc6bd4523fc8e3b3b537752c25 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2317,6 +2317,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

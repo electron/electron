@@ -38,10 +38,10 @@ index 8168b4cfbafd42fa93a5aa9a3691c2552fabfb86..ba49212bd76d209f99c1cee649fc1466
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 190ae88b509a58c764eaff85f8d88592f20297bb..e97083adbea4081c4bb1c703cf861b58d958714b 100644
+index 314cb1aeaeb0efeddcd2006b0c04b985f6291ec4..2b4682cd5a7885f0faf81e26daa7a2897e2e4513 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -19,9 +19,11 @@
+@@ -20,9 +20,11 @@
  #include "build/build_config.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
@@ -62,7 +62,7 @@ index 190ae88b509a58c764eaff85f8d88592f20297bb..e97083adbea4081c4bb1c703cf861b58
  #include "chrome/browser/shell_integration_win.h"
  #include "content/public/browser/render_widget_host_view.h"
  #include "ui/aura/window.h"
-@@ -397,7 +399,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -399,7 +401,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
@@ -71,7 +71,7 @@ index 190ae88b509a58c764eaff85f8d88592f20297bb..e97083adbea4081c4bb1c703cf861b58
    std::wstring app_user_model_id;
    Browser* browser = chrome::FindBrowserWithTab(controller->GetWebContents());
    if (browser) {
-@@ -1092,10 +1094,12 @@ void VideoOverlayWindowViews::SetUpViews() {
+@@ -1108,10 +1110,12 @@ void VideoOverlayWindowViews::SetUpViews() {
          l10n_util::GetStringUTF16(
              IDS_PICTURE_IN_PICTURE_LIVE_CAPTION_CONTROL_TEXT));
      live_caption_button->SetSize(kActionButtonSize);

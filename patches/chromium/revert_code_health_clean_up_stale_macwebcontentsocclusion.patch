@@ -233,10 +233,10 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index e5fec5227be7aa05b9fb5ec9f77f66129b8a9639..d639895ba47a66d3b689094d32b4b9572c7aa9ff 100644
+index 3f96b9cd69c657f24d6112b402878553537765b0..617045210acbd93c996050e1293533f27df0c319 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
-@@ -319,6 +319,14 @@ BASE_FEATURE_PARAM(size_t,
+@@ -318,6 +318,14 @@ BASE_FEATURE_PARAM(size_t,
                     42u);
  #endif  // BUILDFLAG(IS_ANDROID)
  

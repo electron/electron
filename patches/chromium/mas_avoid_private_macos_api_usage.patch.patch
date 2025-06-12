@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b0c34d20cb0659f0c6e2ed073f7eea1520990df5..c74942d7a396636dfd597a61215f38f16fdb00a3 100644
+index d9fa3f084b4e91bbbf95c3d683e66fba3eb8a174..2a2a31c82e8c62855eb4eee194ccee71484ea378 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1054,6 +1054,7 @@ component("base") {
@@ -548,7 +548,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 8c7402feafed747510f49f424be8d5be4a9be73c..4b8a28e18aff4848073b3ab381033193fd36237c 100644
+index 33f073f65f91184e4dd8d0b69c7f3d8823aa84fb..f651f6868b7fe31e7f0bec6c1b9b1bec8c7b0213 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -37,6 +37,7 @@
@@ -559,7 +559,7 @@ index 8c7402feafed747510f49f424be8d5be4a9be73c..4b8a28e18aff4848073b3ab381033193
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2086,15 +2087,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2089,15 +2090,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -582,10 +582,10 @@ index 8c7402feafed747510f49f424be8d5be4a9be73c..4b8a28e18aff4848073b3ab381033193
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c7adbd86024632cfa865a000cbaeb4cc5f64b3d0..f6db062aa59351efe1bd1359b222a000e1373d67 100644
+index e503df625f2b9319e80cadd22562215ab7985271..8b79d4eba145096803c4f5a6ae1d70dcceba40fc 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -342,6 +342,7 @@ source_set("browser") {
+@@ -341,6 +341,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -703,10 +703,10 @@ index e38279e46d8fe621db24b4d94f5811459b4ca6b5..26592c97be3474a24f294d3cf2e74627
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index ea493573a2c8c149f8dd944f8ca4edaa44e675ca..91dc4ce9f5fc7449340e1957e7ee3375a57a9fc7 100644
+index dbf1eacd02c21e78e450e008bd4cb0e43685f699..fb518fbc3ddb7c707f5c655fe6c5a960070a76ea 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -283,6 +283,7 @@ source_set("common") {
+@@ -282,6 +282,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -715,10 +715,10 @@ index ea493573a2c8c149f8dd944f8ca4edaa44e675ca..91dc4ce9f5fc7449340e1957e7ee3375
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 9620316b26f81413ecce711ec5889299ec7d1690..772472a3741ce653efff82707d94c0274685f59b 100644
+index 11746ecfd78d4e87ec6bc1816a89405b158dd44d..8dc194d71638b1b7dad4d2a0bef46cf1cbad8ad9 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -321,6 +321,7 @@ target(link_target_type, "renderer") {
+@@ -320,6 +320,7 @@ target(link_target_type, "renderer") {
      "//ui/surface",
      "//url",
      "//v8",
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 9917216802256d7699685d805fef997c4ad7c352..97feda51acda53cc7835eb9d03f58876bbe404b8 100644
+index 583ab172581703e59bc1b67e65eac9f3a8dbbb9d..e67ec3ddf19e215e2eb873930e08a4d2f4518117 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -667,6 +667,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 9917216802256d7699685d805fef997c4ad7c352..97feda51acda53cc7835eb9d03f58876
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1983,6 +1985,7 @@ test("content_browsertests") {
+@@ -1982,6 +1984,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 9917216802256d7699685d805fef997c4ad7c352..97feda51acda53cc7835eb9d03f58876
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3318,6 +3321,7 @@ test("content_unittests") {
+@@ -3317,6 +3320,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -833,10 +833,10 @@ index 9917216802256d7699685d805fef997c4ad7c352..97feda51acda53cc7835eb9d03f58876
  
    if (enable_nocompile_tests) {
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 4323345095787487539143e196675d89f2ff05eb..3ee3b0ebbc6c85275338cac1e7e1ebe973d757c9 100644
+index 80c0fc9ddd50af37625f52ef9700a6a77de6eeb9..beb18b34231e6e68c77e47c1033881a7c0f4c1bc 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
-@@ -232,6 +232,7 @@ static_library("web_test_browser") {
+@@ -231,6 +231,7 @@ static_library("web_test_browser") {
      "//ui/gl",
      "//ui/shell_dialogs:shell_dialogs",
      "//url",
@@ -1404,7 +1404,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 9bf14181e4ffb6da2ac01ad530b4ebbcd3e358bb..2f808c34005519e4184fc3b9f6b41065e205a7c5 100644
+index 89dbaa5f5a3aeb994c42bb1a8a8d581ff7eff85e..612b22ec11eb012aefa695aa2f02e44418ffc422 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -419,6 +419,7 @@ component("core") {
@@ -1564,7 +1564,7 @@ index 2d982e757d94976ec68863726db8e8a85b1034e5..d2ec88c6f923e9f7147d33ccd53c3659
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index c0bba5f4c92dd972d9487335bc49ee6b74a0bdb8..a8ec78ed0c0912f50a9cf4f050a4f518575f2c19 100644
+index 3e38738c71e4ff827ecaf19774be0eeca58587d8..a5fc095a498ca31ba7d0b223d605419c1dbd6399 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 @@ -14,6 +14,7 @@
@@ -1816,7 +1816,7 @@ index f2c37178ab7f303cf8d5239dbdca1df470c219d2..90e6ede794de507b05af4ff6dd4dca5d
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index ef7d7072a0eedaff91f8d4a120b426fe9cceb4e9..5a6524861d7a83535500805c567f012f8bee966b 100644
+index eb08dfc0de4b3181a5a3d252f6e2f864a62f176d..dafd18146a6b1ecc37ed70ab65aef52ce01b9a2a 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -340,6 +340,12 @@ component("gfx") {
@@ -1871,10 +1871,10 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 56183d613869aecda06a7140fba89f40ff9681ca..9fda22a52c52622a6f4ac9371e2fdb0f997a2526 100644
+index 6d6e4b217aca7619302e7a16ca25417338095377..1f53280447d7d0cecba77130d8b45ed93a10ed80 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -715,6 +715,8 @@ component("views") {
+@@ -716,6 +716,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1883,7 +1883,7 @@ index 56183d613869aecda06a7140fba89f40ff9681ca..9fda22a52c52622a6f4ac9371e2fdb0f
    }
  
    if (is_win) {
-@@ -1146,6 +1148,8 @@ source_set("test_support") {
+@@ -1144,6 +1146,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  

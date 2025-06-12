@@ -90,7 +90,7 @@ index 392d697a8d1573815bf08e37b1bcc5c0c7493116..cf9915b9322487734b27a1776e721440
    // a cookie. If this is set to non-null, the observer passed to
    // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 99bf736ebe303d46ab1ced924ba929a0cd258909..e10c8782d2704ff9cff8062d201a433935b66964 100644
+index c1774435cf594b5b3c07a60d11c379c61a828dec..4a59df2ce679c9af10b0e3bf630d615bf82e3c8a 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -14,6 +14,7 @@ import "services/network/public/mojom/encoded_body_length.mojom";
@@ -112,7 +112,7 @@ index 99bf736ebe303d46ab1ced924ba929a0cd258909..e10c8782d2704ff9cff8062d201a4339
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 769517e6f1342f7474e6d0fc4d7828ca44158178..c510293aace3f540fbee3de0628ad0b45fdeb525 100644
+index eae4f4bd9228ca34d5299afdf78dd0679f013c74..6659eb030a67f23297cd4165a309bae7af3bc7ba 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -389,6 +389,9 @@ URLLoader::URLLoader(
@@ -155,10 +155,10 @@ index 769517e6f1342f7474e6d0fc4d7828ca44158178..c510293aace3f540fbee3de0628ad0b4
  
    ad_auction_event_record_request_helper_.HandleResponse(
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 56d9131f7d1c3ecb666c16466cb55ae5adec89d0..395b9142516ceae5dee6ad8b3c56bc1854371486 100644
+index 147f6acb3d70a531646f334c20fbe6ae76079087..bbe1fbed561e256b15244439353e805040325b86 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -604,6 +604,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -613,6 +613,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

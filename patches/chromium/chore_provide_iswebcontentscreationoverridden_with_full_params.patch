@@ -80,7 +80,7 @@ index b6582b4013d9682d32bd524b4053b443a4df00f8..afcbce72e0f247b4d5a637b27c9f25d9
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 0b1727f60624c654769e6a433d84a21396423711..578f7815d6c61f18ff5cdec018101c0c35dcd01c 100644
+index c17611694523f6930fbdbd5080c032fba6e3db02..6a8c56ee5e1405b42ceae0f4f8c68ab897698a66 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -2376,8 +2376,7 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -90,9 +90,9 @@ index 0b1727f60624c654769e6a433d84a21396423711..578f7815d6c61f18ff5cdec018101c0c
 -    const std::string& frame_name,
 -    const GURL& target_url) {
 +    const content::mojom::CreateNewWindowParams& params) {
-   if (IsActorCoordinatorActingOnTab(
+   if (IsActorExecutionEngineActingOnTab(
            profile(), content::WebContents::FromRenderFrameHost(opener))) {
-     // If an ActorCoordinator is acting on the opener, prevent it from creating
+     // If an ExecutionEngine is acting on the opener, prevent it from creating
 @@ -2389,7 +2388,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
@@ -222,7 +222,7 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c5f4adb7e9d23a6f1f182fccce9080e103b1777a..cae944a1aa59ae7979a082192532e78c007c6cdb 100644
+index b390472eb4d7dfc89801f03168904739a6c565fa..73b8dae8608c1a963e652526c98c66b016b99d46 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5173,8 +5173,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -236,7 +236,7 @@ index c5f4adb7e9d23a6f1f182fccce9080e103b1777a..cae944a1aa59ae7979a082192532e78c
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index f6ab6ab2b036c7621b429181c3ff89d9f1ff77f9..d151ba757ae81c6f023ee08328ab155405b0fb95 100644
+index 33be50ce93dd998df5244f9ade391943f06978ad..3bb9baf76d331351d23d59fc2b9eb82d42b36b11 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -160,8 +160,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -384,7 +384,7 @@ index 756d4192271d6a65cfe8e1511737c565b543cb1f..5688f6f745056565c3c01947f741c4d1
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index b8f48c883d7adfd765b1561fd00e563ab54d20f5..0b3d8eef0ed0021d3546ff963e721eae277dcb1b 100644
+index cb6c4637aab67a4a51c4afd584733e70d3f1041e..f8ef39e6af24b75daec9392d5932e6eab0c510c6 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -207,8 +207,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
