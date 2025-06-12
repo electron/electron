@@ -27,6 +27,7 @@
 
 class SkRegion;
 class DraggableRegionProvider;
+class PrefService;
 
 namespace input {
 struct NativeWebKeyboardEvent;
@@ -426,6 +427,8 @@ class NativeWindow : public base::SupportsUserData,
   // throttling, then throttling in the `ui::Compositor` will be disabled.
   void UpdateBackgroundThrottlingState();
 
+  void SaveWindowState();
+
  protected:
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
@@ -545,6 +548,9 @@ class NativeWindow : public base::SupportsUserData,
   std::string background_material_;
 
   gfx::Rect overlay_rect_;
+
+  raw_ptr<PrefService> prefs_ = nullptr;
+  std::string window_state_id_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };
