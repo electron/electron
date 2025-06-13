@@ -780,5 +780,33 @@ describe('utilityProcess module', () => {
       expect(stat.size).to.be.greaterThan(0);
       await fs.rm(tmpDir, { recursive: true });
     });
+
+    it('supports --no-experimental-global-navigator flag', async () => {
+      {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'navigator.js'), [], {
+          stdio: 'ignore'
+        });
+        await once(child, 'spawn');
+        const [data] = await once(child, 'message');
+        expect(data).to.be.true();
+        const exit = once(child, 'exit');
+        expect(child.kill()).to.be.true();
+        await exit;
+      }
+      {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'navigator.js'), [], {
+          stdio: 'ignore',
+          execArgv: [
+            '--no-experimental-global-navigator'
+          ]
+        });
+        await once(child, 'spawn');
+        const [data] = await once(child, 'message');
+        expect(data).to.be.false();
+        const exit = once(child, 'exit');
+        expect(child.kill()).to.be.true();
+        await exit;
+      }
+    });
   });
 });
