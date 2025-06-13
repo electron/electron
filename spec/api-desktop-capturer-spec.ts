@@ -11,6 +11,7 @@ import { closeAllWindows } from './lib/window-helpers';
 ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
   it('should return a non-empty array of sources', async () => {
     const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] });
+    console.log('sources are: ', sources);
     expect(sources).to.be.an('array').that.is.not.empty();
   });
 
@@ -21,9 +22,11 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
 
   it('does not throw an error when called more than once (regression)', async () => {
     const sources1 = await desktopCapturer.getSources({ types: ['window', 'screen'] });
+    console.log('sources1 are: ', sources1);
     expect(sources1).to.be.an('array').that.is.not.empty();
 
     const sources2 = await desktopCapturer.getSources({ types: ['window', 'screen'] });
+    console.log('sources2 are: ', sources2);
     expect(sources2).to.be.an('array').that.is.not.empty();
   });
 
