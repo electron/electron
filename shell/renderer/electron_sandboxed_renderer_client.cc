@@ -170,14 +170,14 @@ void ElectronSandboxedRendererClient::EmitProcessEvent(
   InvokeEmitProcessEvent(context, event_name);
 }
 
-void ElectronSandboxedRendererClient::WillEvaluateServiceWorkerOnWorkerThread(
+void ElectronSandboxedRendererClient::WillPrepareForEvaluationOnWorkerThread(
     blink::WebServiceWorkerContextProxy* context_proxy,
     v8::Local<v8::Context> v8_context,
     int64_t service_worker_version_id,
     const GURL& service_worker_scope,
     const GURL& script_url,
     const blink::ServiceWorkerToken& service_worker_token) {
-  RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread(
+  RendererClientBase::WillPrepareForEvaluationOnWorkerThread(
       context_proxy, v8_context, service_worker_version_id,
       service_worker_scope, script_url, service_worker_token);
 
