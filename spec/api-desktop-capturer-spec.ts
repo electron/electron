@@ -8,10 +8,16 @@ import { setTimeout } from 'node:timers/promises';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
+function getSourceTypes (): ('window' | 'screen')[] {
+  if (process.platform === 'linux') {
+    return ['screen'];
+  }
+  return ['window', 'screen'];
+}
+
 ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
   it('should return a non-empty array of sources', async () => {
-    const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] });
-    console.log('sources are: ', sources);
+    const sources = await desktopCapturer.getSources({ types: getSourceTypes() });
     expect(sources).to.be.an('array').that.is.not.empty();
   });
 
@@ -21,16 +27,15 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
   });
 
   it('does not throw an error when called more than once (regression)', async () => {
-    const sources1 = await desktopCapturer.getSources({ types: ['window', 'screen'] });
-    console.log('sources1 are: ', sources1);
+    const sources1 = await desktopCapturer.getSources({ types: getSourceTypes() });
     expect(sources1).to.be.an('array').that.is.not.empty();
 
-    const sources2 = await desktopCapturer.getSources({ types: ['window', 'screen'] });
-    console.log('sources2 are: ', sources2);
+    const sources2 = await desktopCapturer.getSources({ types: getSourceTypes() });
     expect(sources2).to.be.an('array').that.is.not.empty();
   });
 
-  it('responds to subsequent calls of different options', async () => {
+  // Linux doesn't return any window sources.
+  ifit(process.platform !== 'linux')('responds to subsequent calls of different options', async () => {
     const promise1 = desktopCapturer.getSources({ types: ['window'] });
     await expect(promise1).to.eventually.be.fulfilled();
 
@@ -68,7 +73,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     await wShown;
 
     const isNonEmpties: boolean[] = (await desktopCapturer.getSources({
-      types: ['window', 'screen'],
+      types: getSourceTypes(),
       thumbnailSize: { width: 100, height: 100 }
     })).map(s => s.thumbnail.constructor.name === 'NativeImage' && !s.thumbnail.isEmpty());
 
@@ -84,7 +89,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     await wShown;
 
     const isEmpties: boolean[] = (await desktopCapturer.getSources({
-      types: ['window', 'screen'],
+      types: getSourceTypes(),
       thumbnailSize: { width: 0, height: 0 }
     })).map(s => s.thumbnail.constructor.name === 'NativeImage' && s.thumbnail.isEmpty());
 
@@ -93,7 +98,8 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     expect(isEmpties.every(e => e === true)).to.be.true();
   });
 
-  it('getMediaSourceId should match DesktopCapturerSource.id', async function () {
+  // Linux doesn't return any window sources.
+  ifit(process.platform !== 'linux')('getMediaSourceId should match DesktopCapturerSource.id', async function () {
     const w2 = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
     const wShown = once(w2, 'show');
     const wFocused = once(w2, 'focus');
@@ -109,14 +115,6 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     });
     w2.destroy();
 
-    // TODO(julien.isorce): investigate why |sources| is empty on the linux
-    // bots while it is not on my workstation, as expected, with and without
-    // the --ci parameter.
-    if (process.platform === 'linux' && sources.length === 0) {
-      this.skip();
-      return;
-    }
-
     expect(sources).to.be.an('array').that.is.not.empty();
     const foundSource = sources.find((source) => {
       return source.id === mediaSourceId;
@@ -124,7 +122,8 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     expect(mediaSourceId).to.equal(foundSource!.id);
   });
 
-  it('getSources should not incorrectly duplicate window_id', async function () {
+  // Linux doesn't return any window sources.
+  ifit(process.platform !== 'linux')('getSources should not incorrectly duplicate window_id', async function () {
     const w2 = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
     const wShown = once(w2, 'show');
     const wFocused = once(w2, 'focus');
@@ -145,14 +144,6 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     });
     w2.destroy();
 
-    // TODO(julien.isorce): investigate why |sources| is empty on the linux
-    // bots while it is not on my workstation, as expected, with and without
-    // the --ci parameter.
-    if (process.platform === 'linux' && sources.length === 0) {
-      this.skip();
-      return;
-    }
-
     expect(sources).to.be.an('array').that.is.not.empty();
     for (const source of sources) {
       const sourceIds = source.id.split(':');
@@ -170,14 +161,15 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     w.show();
     await wShown;
 
-    const sources = await desktopCapturer.getSources({ types: ['window', 'screen'] });
+    const sources = await desktopCapturer.getSources({ types: getSourceTypes() });
     expect(sources).to.be.an('array').that.is.not.empty();
 
     expect(w.resizable).to.be.false();
     await closeAllWindows();
   });
 
-  it('moveAbove should move the window at the requested place', async function () {
+  // Linux doesn't return any window sources.
+  ifit(process.platform !== 'linux')('moveAbove should move the window at the requested place', async function () {
     // DesktopCapturer.getSources() is guaranteed to return in the correct
     // z-order from foreground to background.
     const MAX_WIN = 4;
@@ -216,15 +208,6 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
         types: ['window'],
         thumbnailSize: { width: 0, height: 0 }
       });
-
-      // TODO(julien.isorce): investigate why |sources| is empty on the linux
-      // bots while it is not on my workstation, as expected, with and without
-      // the --ci parameter.
-      if (process.platform === 'linux' && sources.length === 0) {
-        destroyWindows();
-        this.skip();
-        return;
-      }
 
       expect(sources).to.be.an('array').that.is.not.empty();
       expect(sources.length).to.gte(MAX_WIN);
