@@ -6,6 +6,8 @@ runs:
     - name: Free Space on MacOS
       shell: bash
       run: |
+        xcodebuild -version
+        du -d1 -h /Applications
         sudo mkdir -p $TMPDIR/del-target
 
         tmpify() {
