@@ -83,6 +83,7 @@ auto_filenames = {
     "docs/api/structures/browser-window-options.md",
     "docs/api/structures/certificate-principal.md",
     "docs/api/structures/certificate.md",
+    "docs/api/structures/color-space.md",
     "docs/api/structures/cookie.md",
     "docs/api/structures/cpu-usage.md",
     "docs/api/structures/crash-report.md",
