@@ -482,12 +482,14 @@ bool Converter<gfx::ColorSpace>::FromV8(v8::Isolate* isolate,
       primaries = gfx::ColorSpace::PrimaryID::WIDE_GAMUT_COLOR_SPIN;
     else if (primaries_str == "ebu-3213-e")
       primaries = gfx::ColorSpace::PrimaryID::EBU_3213_E;
-    else if (primaries_str == "custom") {
+
+    if (primaries_str == "custom") {
       gin_helper::ErrorThrower(isolate).ThrowTypeError(
           "'custom' not supported.");
       return false;
-    } else
+    } else {
       primaries = gfx::ColorSpace::PrimaryID::INVALID;
+    }
   }
 
   // Get transfer
@@ -536,12 +538,14 @@ bool Converter<gfx::ColorSpace>::FromV8(v8::Isolate* isolate,
       transfer = gfx::ColorSpace::TransferID::LINEAR_HDR;
     else if (transfer_str == "scrgb-linear-80-nits")
       transfer = gfx::ColorSpace::TransferID::SCRGB_LINEAR_80_NITS;
-    else if (transfer_str == "custom" || transfer_str == "custom-hdr") {
+
+    if (transfer_str == "custom" || transfer_str == "custom-hdr") {
       gin_helper::ErrorThrower(isolate).ThrowTypeError(
           "'custom', 'custom-hdr' not supported.");
       return false;
-    } else
-      transfer = gfx::ColorSpace::TransferID::INVALID;
+    } else {
+      primaries = gfx::ColorSpace::PrimaryID::INVALID;
+    }
   }
 
   // Get matrix
