@@ -11,7 +11,7 @@ ServiceProcessHost::Observer functions, but we need to pass the exit code to
 the observer.
 
 diff --git a/content/browser/service_host/service_process_tracker.cc b/content/browser/service_host/service_process_tracker.cc
-index 594629e45acd6cac9deba2d02c682a523c80e2fb..61be7804bbf370df3d2925880804866a631d35fa 100644
+index e900841900325dd090b04f85151dc7b2f04a6613..e402bcf07aa0704c113ce472db547ffcfb04a4bf 100644
 --- a/content/browser/service_host/service_process_tracker.cc
 +++ b/content/browser/service_host/service_process_tracker.cc
 @@ -48,12 +48,14 @@ void ServiceProcessTracker::NotifyTerminated(ServiceProcessId id) {
@@ -22,7 +22,7 @@ index 594629e45acd6cac9deba2d02c682a523c80e2fb..61be7804bbf370df3d2925880804866a
 +void ServiceProcessTracker::NotifyCrashed(ServiceProcessId id, int exit_code) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    auto iter = processes_.find(id);
-   CHECK(iter != processes_.end(), base::NotFatalUntil::M130);
+   CHECK(iter != processes_.end());
    for (auto& observer : observers_) {
 -    observer.OnServiceProcessCrashed(iter->second.Duplicate());
 +    auto params = iter->second.Duplicate();
@@ -80,10 +80,10 @@ index 801db538979ba62facdcf3a472dade56723ca639..7abac9a5b13b393713534ae51664c2e5
   private:
    const std::string service_interface_name_;
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 51f8ff9b8424d098979a24c2e8628cdf7c4b758d..19d8ed89211402e93632c4d83dbf452d4194a14c 100644
+index c9d2b451c8d07c915051fd50ca0b079aaed48199..91300d58014883122cebf60fa93634638207f051 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -541,7 +541,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
+@@ -609,7 +609,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
    // Take ownership of |client_| so the destructor doesn't notify it of
    // termination.
    auto client = std::move(client_);
@@ -93,10 +93,10 @@ index 51f8ff9b8424d098979a24c2e8628cdf7c4b758d..19d8ed89211402e93632c4d83dbf452d
  
  std::optional<std::string> UtilityProcessHost::GetServiceName() {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index 1164da12ee71a8575c17bf1b84a505e8a32b96b3..4cbc30fc4b57440d06a0a0f642cc44c5c755e7f9 100644
+index 55379fbe9233ba96f6e4729e2b7d534c0c6884a0..850592294efd2c0a0fdc253b7b3fb6441b91d730 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
-@@ -79,7 +79,7 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -68,7 +68,7 @@ class CONTENT_EXPORT UtilityProcessHost
  
      virtual void OnProcessLaunched(const base::Process& process) {}
      virtual void OnProcessTerminatedNormally() {}
@@ -104,7 +104,7 @@ index 1164da12ee71a8575c17bf1b84a505e8a32b96b3..4cbc30fc4b57440d06a0a0f642cc44c5
 +    virtual void OnProcessCrashed(int exit_code) {}
    };
  
-   // This class is self-owned. It must be instantiated using new, and shouldn't
+   struct CONTENT_EXPORT Options {
 diff --git a/content/public/browser/service_process_info.h b/content/public/browser/service_process_info.h
 index 1a8656aef341cd3b23af588fb00569b79d6cd100..6af523eb27a8c1e5529721c029e5b3ba0708b9fc 100644
 --- a/content/public/browser/service_process_info.h
