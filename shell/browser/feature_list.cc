@@ -60,6 +60,12 @@ void InitializeFeatureList() {
       // Delayed spellcheck initialization is causing the
       // 'custom dictionary word list API' spec to crash.
       std::string(",") + spellcheck::kWinDelaySpellcheckServiceInit.name;
+  // Refs https://issues.chromium.org/issues/401996981
+  // TODO(deepak1556): Remove this once test added in
+  // https://github.com/electron/electron/pull/12904
+  // can work without this feature.
+  enable_features += std::string(",") +
+                     views::features::kEnableTransparentHwndEnlargement.name;
 #endif
 
 #if BUILDFLAG(IS_MAC)
