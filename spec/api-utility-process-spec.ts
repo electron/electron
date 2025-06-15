@@ -129,6 +129,20 @@ describe('utilityProcess module', () => {
       expect(code).to.equal(exitCode);
     });
 
+    it('does not run JS after process.exit is called', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'no-js-after-exit.js'), [], {
+        stdio: 'pipe'
+      });
+      expect(child.stdout).to.not.be.null();
+      let log = '';
+      child.stdout!.on('data', (chunk) => {
+        log += chunk.toString('utf8');
+      });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
+      expect(log).to.be.empty();
+    });
+
     // 32-bit system will not have V8 Sandbox enabled.
     // WoA testing does not have VS toolchain configured to build native addons.
     ifit(process.arch !== 'ia32' && process.arch !== 'arm' && !isWindowsOnArm)('emits \'error\' when fatal error is triggered from V8', async () => {
