@@ -28,7 +28,9 @@
 #include "third_party/blink/public/web/web_blob.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/renderer/bindings/modules/v8/v8_video_frame.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
+#include "third_party/blink/renderer/modules/webcodecs/video_frame.h"  // nogncheck
 
 namespace features {
 BASE_FEATURE(kContextBridgeMutability,
@@ -416,6 +418,17 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
       v8::Context::Scope destination_context_scope(destination_context);
       return v8::MaybeLocal<v8::Value>(
           blob.ToV8Value(destination_context->GetIsolate()));
+    }
+
+    // Custom logic to "clone" VideoFrame references
+    blink::VideoFrame* video_frame =
+        blink::V8VideoFrame::ToWrappable(source_context->GetIsolate(), value);
+    if (video_frame != nullptr) {
+      blink::ScriptState* script_state = blink::ScriptState::ForCurrentRealm(
+          destination_context->GetIsolate());
+      return v8::MaybeLocal<v8::Value>(
+          blink::ToV8Traits<blink::VideoFrame>::ToV8(script_state,
+                                                     video_frame));
     }
   }
 
