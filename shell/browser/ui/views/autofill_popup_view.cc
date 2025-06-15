@@ -10,6 +10,7 @@
 
 #include "base/functional/bind.h"
 #include "base/i18n/rtl.h"
+#include "base/task/single_thread_task_runner.h"
 #include "cc/paint/skia_paint_canvas.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"

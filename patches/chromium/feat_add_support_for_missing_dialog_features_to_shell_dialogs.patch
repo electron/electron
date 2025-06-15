@@ -262,10 +262,10 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index b23d357d4e21f10be82f0ea37b1ec3e959fc2c0b..e768afc05b42d4d026c88f1516d4e9db84e8dff6 100644
+index 8dafba0690d9cde3506b60a21ba36c49394d9125..03fdd2d86e776d4be60c52790dcb2946e9341954 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -28,6 +28,7 @@
+@@ -29,6 +29,7 @@
  #include "dbus/message.h"
  #include "dbus/object_path.h"
  #include "dbus/object_proxy.h"
@@ -273,7 +273,7 @@ index b23d357d4e21f10be82f0ea37b1ec3e959fc2c0b..e768afc05b42d4d026c88f1516d4e9db
  #include "ui/aura/window_tree_host.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/native_widget_types.h"
-@@ -99,7 +100,7 @@ void OnGetPropertyReply(dbus::Response* response) {
+@@ -100,7 +101,7 @@ void OnGetPropertyReply(dbus::Response* response) {
                                 : ServiceAvailability::kNotAvailable;
  }
  
@@ -282,7 +282,7 @@ index b23d357d4e21f10be82f0ea37b1ec3e959fc2c0b..e768afc05b42d4d026c88f1516d4e9db
    if (!service_started.value_or(false)) {
      g_service_availability = ServiceAvailability::kNotAvailable;
      return;
-@@ -166,18 +167,24 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
+@@ -167,18 +168,24 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
  
    GetMainTaskRunner() = base::SequencedTaskRunner::GetCurrentDefault();
  
@@ -307,7 +307,7 @@ index b23d357d4e21f10be82f0ea37b1ec3e959fc2c0b..e768afc05b42d4d026c88f1516d4e9db
  }
  
  bool SelectFileDialogLinuxPortal::IsRunning(
-@@ -382,11 +389,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -383,11 +390,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
    DbusDictionary dict;
  
@@ -325,7 +325,7 @@ index b23d357d4e21f10be82f0ea37b1ec3e959fc2c0b..e768afc05b42d4d026c88f1516d4e9db
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -399,6 +409,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -400,6 +410,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  
@@ -333,6 +333,6 @@ index b23d357d4e21f10be82f0ea37b1ec3e959fc2c0b..e768afc05b42d4d026c88f1516d4e9db
 +    dict.PutAs(kFileChooserOptionAcceptLabel, DbusString(accept_label));
 +  }
 +
-   if (!default_path.empty()) {
+   if (!default_path.empty() && base::IsStringUTF8(default_path.value())) {
      if (default_path_exists) {
        // If this is an existing directory, navigate to that directory, with no
