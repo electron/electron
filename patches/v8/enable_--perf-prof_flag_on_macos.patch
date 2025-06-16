@@ -274,10 +274,10 @@ index 84f669ca3f98690264e1ee05bfe6842c47bbcbd0..e95c3bb6fe0f445904df9dff3e6fe357
  
  #endif  // V8_DIAGNOSTICS_PERF_JIT_H_
 diff --git a/src/flags/flag-definitions.h b/src/flags/flag-definitions.h
-index dd713090c674585c23f9b9574df7ed258c0cd23e..8c12e97c4e256fb8bc6ef51c7abd6a926df7b008 100644
+index 3d10e605750752f54e6947de05ffd5c8d02cb492..d61124b328296668a1ee2e9d8ddb2c97b70eae48 100644
 --- a/src/flags/flag-definitions.h
 +++ b/src/flags/flag-definitions.h
-@@ -3262,7 +3262,7 @@ DEFINE_IMPLICATION(prof, log_code)
+@@ -3264,7 +3264,7 @@ DEFINE_IMPLICATION(prof, log_code)
  
  DEFINE_BOOL(ll_prof, false, "Enable low-level linux profiler.")
  
@@ -286,7 +286,7 @@ index dd713090c674585c23f9b9574df7ed258c0cd23e..8c12e97c4e256fb8bc6ef51c7abd6a92
  #define DEFINE_PERF_PROF_BOOL(nam, cmt) DEFINE_BOOL(nam, false, cmt)
  #define DEFINE_PERF_PROF_IMPLICATION DEFINE_IMPLICATION
  #else
-@@ -3279,7 +3279,7 @@ DEFINE_BOOL(ll_prof, false, "Enable low-level linux profiler.")
+@@ -3281,7 +3281,7 @@ DEFINE_BOOL(ll_prof, false, "Enable low-level linux profiler.")
  #endif
  
  DEFINE_PERF_PROF_BOOL(perf_basic_prof,
@@ -295,7 +295,7 @@ index dd713090c674585c23f9b9574df7ed258c0cd23e..8c12e97c4e256fb8bc6ef51c7abd6a92
  DEFINE_NEG_IMPLICATION(perf_basic_prof, compact_code_space)
  DEFINE_STRING(perf_basic_prof_path, DEFAULT_PERF_BASIC_PROF_PATH,
                "directory to write perf-<pid>.map symbol file to")
-@@ -3288,8 +3288,8 @@ DEFINE_PERF_PROF_BOOL(
+@@ -3290,8 +3290,8 @@ DEFINE_PERF_PROF_BOOL(
      "Only report function code ranges to perf (i.e. no stubs).")
  DEFINE_PERF_PROF_IMPLICATION(perf_basic_prof_only_functions, perf_basic_prof)
  
