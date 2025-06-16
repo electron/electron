@@ -80,10 +80,10 @@ index b6582b4013d9682d32bd524b4053b443a4df00f8..afcbce72e0f247b4d5a637b27c9f25d9
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 875c7a37c48ce50b5439a51df5e505e1bbcd5155..035432c70a6b65a2520f130e0db8a91f20e92770 100644
+index 8d904b4690fc21d85683296667698a12a26e3ff2..1dd8f9932adb4683b6ab488baf66e76811da39af 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2392,8 +2392,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2387,8 +2387,7 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -93,7 +93,7 @@ index 875c7a37c48ce50b5439a51df5e505e1bbcd5155..035432c70a6b65a2520f130e0db8a91f
    if (IsActorCoordinatorActingOnTab(
            profile(), content::WebContents::FromRenderFrameHost(opener))) {
      // If an ActorCoordinator is acting on the opener, prevent it from creating
-@@ -2405,7 +2404,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2400,7 +2399,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -103,10 +103,10 @@ index 875c7a37c48ce50b5439a51df5e505e1bbcd5155..035432c70a6b65a2520f130e0db8a91f
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 9dfba94b0aaa3f27f363bd50b489cae9e0e3cda6..3867e5d5741103ee0b65533dae4b80906b393f59 100644
+index d6c08306e2413f8c40887ff5d01fa51332a71f9f..ae35953d1895a9481fc3eef69cd5905e1dcc8b79 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -1037,8 +1037,7 @@ class Browser : public TabStripModelObserver,
+@@ -1011,8 +1011,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -145,10 +145,10 @@ index 3fc06be01f20e8cd314d95d73a3f58c2f0742fe9..c07910ae59a185442f37ea6e7b96fdf3
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index 1c30afe192809d85ced6af595347353ec3cb5364..af48bb2755c33f6c372be6b51048b3cf3fd0be0b 100644
+index 2ca71613df0709a5cbee51f8be3eb37a66f9522c..6acba954a655321a161b9b66e1db5138d034489d 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-@@ -101,8 +101,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+@@ -103,8 +103,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -222,10 +222,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6eaa7d566058fdcc9ebfa10f0420c3a234cb0483..bbbc07e36e6de11169f8317c64558b8c4d1699d5 100644
+index 04edc6c4b0eb218cecbaafac6916dee407a4797b..8f57a368af60d99421e22797abf6802678924ac4 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5187,8 +5187,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5172,8 +5172,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,

@@ -11,10 +11,10 @@ actions in the non-client caption area.
 draggable regions to allow events to propagate to the underlying renderer.
 
 diff --git a/ui/events/event.h b/ui/events/event.h
-index 39b5a8fdd165efd74b00256552b51b5413107958..bfc4ef4f50efff4a77f2aef64335bb7e34c69f34 100644
+index 2dc44d4787d5198cff7be2cf98ad5acf2d3a9a0b..27a0335aac2bd4239616cf71f5d015c931db2294 100644
 --- a/ui/events/event.h
 +++ b/ui/events/event.h
-@@ -587,6 +587,9 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
+@@ -588,6 +588,9 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
  
    const PointerDetails& pointer_details() const { return pointer_details_; }
  
@@ -24,7 +24,7 @@ index 39b5a8fdd165efd74b00256552b51b5413107958..bfc4ef4f50efff4a77f2aef64335bb7e
    // Event:
    std::string ToString() const override;
    std::unique_ptr<Event> Clone() const override;
-@@ -619,6 +622,8 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
+@@ -620,6 +623,8 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
  
    // Structure for holding pointer details for implementing PointerEvents API.
    PointerDetails pointer_details_;
@@ -34,11 +34,11 @@ index 39b5a8fdd165efd74b00256552b51b5413107958..bfc4ef4f50efff4a77f2aef64335bb7e
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 3c273b08e3a0cb1a249334b06244bb6b89fde27f..20fcbe09d9fe9104cbe791e03b02f8e2e5064c2d 100644
+index 4cd6e6b9e1b7669314b6731f07b237f161c84fcc..d9890692f7a9e30ac0da244a62c45835177296c9 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1382,6 +1382,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
-   window()->SetProperty(aura::client::kHeadlessBoundsKey, bounds);
+@@ -1327,6 +1327,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
+   return background_paint_brush_;
  }
  
 +bool DesktopWindowTreeHostWin::HandleMouseEventForCaption(UINT message) const {
@@ -49,22 +49,22 @@ index 3c273b08e3a0cb1a249334b06244bb6b89fde27f..20fcbe09d9fe9104cbe791e03b02f8e2
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index dab595aacaeca4f6f735fd04004c27a4949278d2..177134d439866db9dbbde657ff358a761ad7f39d 100644
+index ca92a9a815f646a5628acbb736dfc96b0e8d4c9e..071e5682da9558e721fa32f168a239c16a459a08 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -272,6 +272,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
-   void HandleWindowSizeUnchanged() override;
+@@ -273,6 +273,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    void HandleWindowScaleFactorChanged(float window_scale_factor) override;
    void HandleHeadlessWindowBoundsChanged(const gfx::Rect& bounds) override;
+   HBRUSH GetBackgroundPaintBrush() override;
 +  bool HandleMouseEventForCaption(UINT message) const override;
  
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 418dc47b6d4df097e8f0cfd61de8485af2a8d2c2..8c13b9db078e690240eca0a48a7c546dcdac3c11 100644
+index 4d657ba98c87679a7397c8a3ff14d61073eb29af..0f1f6b5fcd8ba81a086efd9dca899f3c6de87a72 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3171,15 +3171,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3174,15 +3174,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      }
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.
@@ -86,7 +86,7 @@ index 418dc47b6d4df097e8f0cfd61de8485af2a8d2c2..8c13b9db078e690240eca0a48a7c546d
        return 0;
      }
    }
-@@ -3202,6 +3206,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3205,6 +3209,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      // handle alt-space, or in the frame itself.
      is_right_mouse_pressed_on_caption_ = false;
      ReleaseCapture();
@@ -94,7 +94,7 @@ index 418dc47b6d4df097e8f0cfd61de8485af2a8d2c2..8c13b9db078e690240eca0a48a7c546d
      // |point| is in window coordinates, but WM_NCHITTEST and TrackPopupMenu()
      // expect screen coordinates.
      POINT screen_point = CR_POINT_INITIALIZER_FROM_LPARAM(l_param);
-@@ -3209,7 +3214,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3212,7 +3217,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      w_param = static_cast<WPARAM>(SendMessage(
          hwnd(), WM_NCHITTEST, 0, MAKELPARAM(screen_point.x, screen_point.y)));
      if (w_param == HTCAPTION || w_param == HTSYSMENU) {
@@ -114,12 +114,12 @@ index 418dc47b6d4df097e8f0cfd61de8485af2a8d2c2..8c13b9db078e690240eca0a48a7c546d
      }
    } else if (message == WM_NCLBUTTONDOWN &&
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 252d7ce78ad49596fb030160cb69d9bf3dc0951f..5e7975cf5cb3435b844fda58d7582d54cb583a72 100644
+index 780b1b217fc25b6dfdee75f2e9de3944e087fa10..0b3a9b282f8137f238c9462a5661f8b7d5a5168e 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
-@@ -255,6 +255,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
-   // Called when the headless window bounds has changed.
-   virtual void HandleHeadlessWindowBoundsChanged(const gfx::Rect& bounds) = 0;
+@@ -259,6 +259,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
+   // if the default should be used.
+   virtual HBRUSH GetBackgroundPaintBrush() = 0;
  
 +  // Called when synthetic mouse event is generated for touch event on
 +  // caption buttons.

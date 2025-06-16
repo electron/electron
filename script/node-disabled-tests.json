@@ -44,6 +44,7 @@
   "parallel/test-process-get-builtin",
   "parallel/test-repl",
   "parallel/test-repl-underscore",
+  "parallel/test-tls-securepair-leak",
   "parallel/test-single-executable-blob-config",
   "parallel/test-single-executable-blob-config-errors",
   "parallel/test-shadow-realm-custom-loaders",

@@ -1,0 +1,291 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Sat, 14 Jun 2025 16:21:07 -0400
+Subject: Revert "[views] Remove DesktopWindowTreeHostWin::window_enlargement_"
+
+This reverts commit 1771dbae6961e7bb7c22bbc6c77f84d90ef2be46.
+
+Electron needs this patch to allow windows smaller than 64x64
+on Windows.  We should refactor our code so that this patch isn't
+necessary.
+
+diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
+index 3647a19f360fa4bccd07bd3e9d8f6156342e5397..ca67574aa8e86a3350b03ec379be95178a8a8b57 100644
+--- a/testing/variations/fieldtrial_testing_config.json
++++ b/testing/variations/fieldtrial_testing_config.json
+@@ -24228,6 +24228,21 @@
+             ]
+         }
+     ],
++    "TransparentHwndEnlargement": [
++        {
++            "platforms": [
++                "windows"
++            ],
++            "experiments": [
++                {
++                    "name": "DisableTransparentHwndEnlargement",
++                    "disable_features": [
++                        "EnableTransparentHwndEnlargement"
++                    ]
++                }
++            ]
++        }
++    ],
+     "TransportSecurityFileWriterScheduleAndroid": [
+         {
+             "platforms": [
+diff --git a/ui/views/views_features.cc b/ui/views/views_features.cc
+index d56ac1f6c64e6991dabfa65aec4e7790fe081812..4c6ae8ff792ff6c7d1128f9fe9592802c7914f87 100644
+--- a/ui/views/views_features.cc
++++ b/ui/views/views_features.cc
+@@ -30,6 +30,14 @@ BASE_FEATURE(kEnableTouchDragCursorSync,
+              "EnableTouchDragCursorSync",
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ 
++// Enables enlargement of HWNDs to a minimum size of 64x64 to handle reported
++// graphical glitches on certain hardware.
++// TODO(crbug.com/401996981): Remove this once enlargement is confirmed to no
++// longer be needed.
++BASE_FEATURE(kEnableTransparentHwndEnlargement,
++             "EnableTransparentHwndEnlargement",
++             base::FEATURE_DISABLED_BY_DEFAULT);
++
+ // Used to enable keyboard-accessible tooltips in Views UI, as opposed
+ // to kKeyboardAccessibleTooltip in //ui/base/ui_base_features.cc.
+ BASE_FEATURE(kKeyboardAccessibleTooltipInViews,
+diff --git a/ui/views/views_features.h b/ui/views/views_features.h
+index 58063f2452dc484a97c79b382067d9b34875e344..d586436498263c595a17454f54644d2deb05f308 100644
+--- a/ui/views/views_features.h
++++ b/ui/views/views_features.h
+@@ -15,6 +15,7 @@ namespace views::features {
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kAnnounceTextAdditionalAttributes);
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnablePlatformHighContrastInkDrop);
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTouchDragCursorSync);
++VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTransparentHwndEnlargement);
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kKeyboardAccessibleTooltipInViews);
+ 
+ }  // namespace views::features
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index d9890692f7a9e30ac0da244a62c45835177296c9..5b115c53625ba811b71d769184a4bba69c19640a 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -82,6 +82,23 @@ namespace {
+ // This constant controls how many pixels wide that border is.
+ const int kMouseCaptureRegionBorder = 5;
+ 
++gfx::Size GetExpandedWindowSize(bool is_translucent, gfx::Size size) {
++  if (!base::FeatureList::IsEnabled(
++          features::kEnableTransparentHwndEnlargement) ||
++      !is_translucent) {
++    return size;
++  }
++
++  // Some AMD drivers can't display windows that are less than 64x64 pixels,
++  // so expand them to be at least that size. http://crbug.com/286609
++  gfx::Size expanded(std::max(size.width(), 64), std::max(size.height(), 64));
++  return expanded;
++}
++
++void InsetBottomRight(gfx::Rect* rect, const gfx::Vector2d& vector) {
++  rect->Inset(gfx::Insets::TLBR(0, 0, vector.y(), vector.x()));
++}
++
+ // Updates the cursor clip region. Used for mouse locking.
+ void UpdateMouseLockRegion(aura::Window* window, bool locked) {
+   if (!locked) {
+@@ -299,9 +316,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
+ }
+ 
+ void DesktopWindowTreeHostWin::SetSize(const gfx::Size& size) {
+-  const gfx::Size size_in_pixels =
++  gfx::Size size_in_pixels =
+       display::win::GetScreenWin()->DIPToScreenSize(GetHWND(), size);
+-  message_handler_->SetSize(size_in_pixels);
++  gfx::Size expanded =
++      GetExpandedWindowSize(message_handler_->is_translucent(), size_in_pixels);
++  window_enlargement_ =
++      gfx::Vector2d(expanded.width() - size_in_pixels.width(),
++                    expanded.height() - size_in_pixels.height());
++  message_handler_->SetSize(expanded);
+ }
+ 
+ void DesktopWindowTreeHostWin::StackAbove(aura::Window* window) {
+@@ -316,30 +338,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
+ }
+ 
+ void DesktopWindowTreeHostWin::CenterWindow(const gfx::Size& size) {
+-  const gfx::Size size_in_pixels =
++  gfx::Size size_in_pixels =
+       display::win::GetScreenWin()->DIPToScreenSize(GetHWND(), size);
+-  message_handler_->CenterWindow(size_in_pixels);
++  gfx::Size expanded_size;
++  expanded_size =
++      GetExpandedWindowSize(message_handler_->is_translucent(), size_in_pixels);
++  window_enlargement_ =
++      gfx::Vector2d(expanded_size.width() - size_in_pixels.width(),
++                    expanded_size.height() - size_in_pixels.height());
++  message_handler_->CenterWindow(expanded_size);
+ }
+ 
+ void DesktopWindowTreeHostWin::GetWindowPlacement(
+     gfx::Rect* bounds,
+     ui::mojom::WindowShowState* show_state) const {
+   message_handler_->GetWindowPlacement(bounds, show_state);
++  InsetBottomRight(bounds, window_enlargement_);
+   *bounds = display::win::GetScreenWin()->ScreenToDIPRect(GetHWND(), *bounds);
+ }
+ 
+ gfx::Rect DesktopWindowTreeHostWin::GetWindowBoundsInScreen() const {
+   gfx::Rect pixel_bounds = message_handler_->GetWindowBoundsInScreen();
++  InsetBottomRight(&pixel_bounds, window_enlargement_);
+   return display::win::GetScreenWin()->ScreenToDIPRect(GetHWND(), pixel_bounds);
+ }
+ 
+ gfx::Rect DesktopWindowTreeHostWin::GetClientAreaBoundsInScreen() const {
+   gfx::Rect pixel_bounds = message_handler_->GetClientAreaBoundsInScreen();
++  InsetBottomRight(&pixel_bounds, window_enlargement_);
+   return display::win::GetScreenWin()->ScreenToDIPRect(GetHWND(), pixel_bounds);
+ }
+ 
+ gfx::Rect DesktopWindowTreeHostWin::GetRestoredBounds() const {
+   gfx::Rect pixel_bounds = message_handler_->GetRestoredBounds();
++  InsetBottomRight(&pixel_bounds, window_enlargement_);
+   return display::win::GetScreenWin()->ScreenToDIPRect(GetHWND(), pixel_bounds);
+ }
+ 
+@@ -648,37 +680,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
+ // other get/set methods work in DIP.
+ 
+ gfx::Rect DesktopWindowTreeHostWin::GetBoundsInPixels() const {
+-  const gfx::Rect bounds_px(message_handler_->GetClientAreaBounds());
++  gfx::Rect bounds(message_handler_->GetClientAreaBounds());
+   // If the window bounds were expanded we need to return the original bounds
+   // To achieve this we do the reverse of the expansion, i.e. add the
+   // window_expansion_top_left_delta_ to the origin and subtract the
+   // window_expansion_bottom_right_delta_ from the width and height.
+-  const gfx::Rect without_expansion_bounds_px(
+-      bounds_px.x() + window_expansion_top_left_delta_.x(),
+-      bounds_px.y() + window_expansion_top_left_delta_.y(),
+-      bounds_px.width() - window_expansion_bottom_right_delta_.x(),
+-      bounds_px.height() - window_expansion_bottom_right_delta_.y());
+-  return without_expansion_bounds_px;
++  gfx::Rect without_expansion(
++      bounds.x() + window_expansion_top_left_delta_.x(),
++      bounds.y() + window_expansion_top_left_delta_.y(),
++      bounds.width() - window_expansion_bottom_right_delta_.x() -
++          window_enlargement_.x(),
++      bounds.height() - window_expansion_bottom_right_delta_.y() -
++          window_enlargement_.y());
++  return without_expansion;
+ }
+ 
+-void DesktopWindowTreeHostWin::SetBoundsInPixels(
+-    const gfx::Rect& bounds_in_pixels) {
++void DesktopWindowTreeHostWin::SetBoundsInPixels(const gfx::Rect& bounds) {
+   // If the window bounds have to be expanded we need to subtract the
+   // window_expansion_top_left_delta_ from the origin and add the
+   // window_expansion_bottom_right_delta_ to the width and height
+-  const gfx::Size old_content_size_px = GetBoundsInPixels().size();
+-
+-  const gfx::Rect expanded_bounds_px(
+-      bounds_in_pixels.x() - window_expansion_top_left_delta_.x(),
+-      bounds_in_pixels.y() - window_expansion_top_left_delta_.y(),
+-      bounds_in_pixels.width() + window_expansion_bottom_right_delta_.x(),
+-      bounds_in_pixels.height() + window_expansion_bottom_right_delta_.y());
+-
+-  // When `expanded_bounds_px` causes the window to be moved to a display with a
++  gfx::Size old_content_size = GetBoundsInPixels().size();
++
++  gfx::Rect expanded(
++      bounds.x() - window_expansion_top_left_delta_.x(),
++      bounds.y() - window_expansion_top_left_delta_.y(),
++      bounds.width() + window_expansion_bottom_right_delta_.x(),
++      bounds.height() + window_expansion_bottom_right_delta_.y());
++
++  gfx::Rect new_expanded(
++      expanded.origin(),
++      GetExpandedWindowSize(message_handler_->is_translucent(),
++                            expanded.size()));
++  window_enlargement_ =
++      gfx::Vector2d(new_expanded.width() - expanded.width(),
++                    new_expanded.height() - expanded.height());
++  // When |new_expanded| causes the window to be moved to a display with a
+   // different DSF, HWNDMessageHandler::OnDpiChanged() will be called and the
+   // window size will be scaled automatically.
+-  message_handler_->SetBounds(expanded_bounds_px,
+-                              old_content_size_px != bounds_in_pixels.size());
++  message_handler_->SetBounds(new_expanded, old_content_size != bounds.size());
+ }
+ 
+ gfx::Rect
+@@ -888,21 +927,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
+ 
+ void DesktopWindowTreeHostWin::GetWindowMask(const gfx::Size& size_px,
+                                              SkPath* path) {
+-  Widget* widget = GetWidget();
+-  if (!widget || !widget->non_client_view()) {
+-    return;
+-  }
++  // Request the window mask for hwnd of `size_px`. The hwnd size must be
++  // adjusted by `window_enlargement` to return to the client-expected window
++  // size (see crbug.com/41047830).
++  const gfx::Size adjusted_size_in_px =
++      size_px - gfx::Size(window_enlargement_.x(), window_enlargement_.y());
+ 
+-  widget->non_client_view()->GetWindowMask(
+-      display::win::GetScreenWin()->ScreenToDIPSize(GetHWND(), size_px), path);
+-  // Convert path in DIPs to pixels.
+-  if (!path->isEmpty()) {
+-    const float scale =
+-        display::win::GetScreenWin()->GetScaleFactorForHWND(GetHWND());
+-    SkScalar sk_scale = SkFloatToScalar(scale);
+-    SkMatrix matrix;
+-    matrix.setScale(sk_scale, sk_scale);
+-    path->transform(matrix);
++  if (Widget* widget = GetWidget(); widget && widget->non_client_view()) {
++    widget->non_client_view()->GetWindowMask(
++        display::win::GetScreenWin()->ScreenToDIPSize(GetHWND(),
++                                                      adjusted_size_in_px),
++        path);
++    // Convert path in DIPs to pixels.
++    if (!path->isEmpty()) {
++      const float scale =
++          display::win::GetScreenWin()->GetScaleFactorForHWND(GetHWND());
++      SkScalar sk_scale = SkFloatToScalar(scale);
++      SkMatrix matrix;
++      matrix.setScale(sk_scale, sk_scale);
++      path->transform(matrix);
++    }
++  } else if (!window_enlargement_.IsZero()) {
++    path->addRect(SkRect::MakeXYWH(0, 0, adjusted_size_in_px.width(),
++                                   adjusted_size_in_px.height()));
+   }
+ }
+ 
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+index 071e5682da9558e721fa32f168a239c16a459a08..2ad691376187d607d115102ff1aef8a1bb820dc2 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+@@ -176,7 +176,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+   void ShowImpl() override;
+   void HideImpl() override;
+   gfx::Rect GetBoundsInPixels() const override;
+-  void SetBoundsInPixels(const gfx::Rect& bounds_in_pixels) override;
++  void SetBoundsInPixels(const gfx::Rect& bounds) override;
+   gfx::Rect GetBoundsInAcceleratedWidgetPixelCoordinates() override;
+   gfx::Point GetLocationOnScreenInPixels() const override;
+   void SetCapture() override;
+@@ -327,6 +327,12 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+   gfx::Vector2d window_expansion_top_left_delta_;
+   gfx::Vector2d window_expansion_bottom_right_delta_;
+ 
++  // Windows are enlarged to be at least 64x64 pixels, so keep track of the
++  // extra added here.
++  // TODO(crbug.com/401996981): This is likely no longer necessary and should be
++  // removed.
++  gfx::Vector2d window_enlargement_;
++
+   // Whether the window close should be converted to a hide, and then actually
+   // closed on the completion of the hide animation. This is cached because
+   // the property is set on the contained window which has a shorter lifetime.

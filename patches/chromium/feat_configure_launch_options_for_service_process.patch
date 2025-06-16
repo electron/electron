@@ -165,111 +165,118 @@ index 0791b5317fc6846389f65f93734ae5e816d04623..48948b409d6da58ade72c60ed848df49
                           FinishStartSandboxedProcessOnLauncherThread,
                       this));
 diff --git a/content/browser/service_host/service_process_host_impl.cc b/content/browser/service_host/service_process_host_impl.cc
-index 96c9563aac5847e742de5d9c9236f78bcb6cfd9c..73c9d585579ad5bdc407687b8becd0b7f2d704af 100644
+index d9c14f91747bde0e76056d7f2f2ada166e67f994..53be16879777a3b9bef58ead5f7e420c1bf6acbe 100644
 --- a/content/browser/service_host/service_process_host_impl.cc
 +++ b/content/browser/service_host/service_process_host_impl.cc
-@@ -66,6 +66,17 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
-       options.allow_gpu_client.value()) {
-     host->SetAllowGpuClient();
+@@ -69,6 +69,17 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
+     utility_options.WithGpuClientAllowed();
    }
-+
+ 
 +#if BUILDFLAG(IS_WIN)
-+  host->SetStdioHandles(std::move(options.stdout_handle), std::move(options.stderr_handle));
-+  host->SetFeedbackCursorOff(options.feedback_cursor_off);
++  utility_options.WithStdioHandles(std::move(service_options.stdout_handle),
++                                   std::move(service_options.stderr_handle));
++  utility_options.WithFeedbackCursorOff(service_options.feedback_cursor_off);
 +#elif BUILDFLAG(IS_POSIX)
-+  host->SetAdditionalFds(std::move(options.fds_to_remap));
++  utility_options.WithAdditionalFds(std::move(service_options.fds_to_remap));
 +#endif
-+  host->SetCurrentDirectory(options.current_directory);
-+  host->SetEnv(options.environment);
-+  if (options.clear_environment)
-+    host->ClearEnvironment();
-   host->Start();
-   host->GetChildProcess()->BindServiceInterface(std::move(receiver));
- }
++  utility_options.WithCurrentDirectory(service_options.current_directory);
++  utility_options.WithEnvironment(service_options.environment,
++                                  service_options.clear_environment);
++
+   utility_options.WithBoundServiceInterfaceOnChildProcess(std::move(receiver));
+ 
+   UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index e2c72b43f75b57ef1f49b82d3ecdfb425f8596de..51f8ff9b8424d098979a24c2e8628cdf7c4b758d 100644
+index 9c88b20e11b4c946fd101b633bf93836070946d8..c9d2b451c8d07c915051fd50ca0b079aaed48199 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -190,11 +190,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
-   return process_->GetData();
+@@ -244,13 +244,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
  }
+ #endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
  
 -#if BUILDFLAG(IS_POSIX)
- void UtilityProcessHost::SetEnv(const base::EnvironmentMap& env) {
+ UtilityProcessHost::Options& UtilityProcessHost::Options::WithEnvironment(
+-    const base::EnvironmentMap& env) {
++    const base::EnvironmentMap& env,
++    bool new_environment) {
    env_ = env;
++  inherit_environment_ = !new_environment;
+   return *this;
  }
 -#endif
-+
-+void UtilityProcessHost::ClearEnvironment() {
-+  inherit_environment_ = false;
-+}
  
- bool UtilityProcessHost::Start() {
-   return StartProcess();
-@@ -241,6 +243,30 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+ #if BUILDFLAG(USE_ZYGOTE)
+ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
+@@ -260,6 +260,36 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
 +#if BUILDFLAG(IS_WIN)
-+void UtilityProcessHost::SetStdioHandles(
++UtilityProcessHost::Options& UtilityProcessHost::Options::WithStdioHandles(
 +    base::win::ScopedHandle stdout_handle,
 +    base::win::ScopedHandle stderr_handle) {
 +  stdout_handle_ = std::move(stdout_handle);
 +  stderr_handle_ = std::move(stderr_handle);
++  return *this;
 +}
 +#elif BUILDFLAG(IS_POSIX)
-+void UtilityProcessHost::SetAdditionalFds(base::FileHandleMappingVector mapping) {
++UtilityProcessHost::Options& UtilityProcessHost::Options::WithAdditionalFds(
++    base::FileHandleMappingVector mapping) {
 +  fds_to_remap_ = std::move(mapping);
++  return *this;
 +}
 +#endif
 +
-+void UtilityProcessHost::SetCurrentDirectory(
++UtilityProcessHost::Options& UtilityProcessHost::Options::WithCurrentDirectory(
 +    const base::FilePath& cwd) {
 +  current_directory_ = cwd;
++  return *this;
 +}
 +
 +#if BUILDFLAG(IS_WIN)
-+void UtilityProcessHost::SetFeedbackCursorOff(bool feedback_cursor_off) {
++UtilityProcessHost::Options& UtilityProcessHost::Options::WithFeedbackCursorOff(
++    bool feedback_cursor_off) {
 +  feedback_cursor_off_ = feedback_cursor_off;
++  return *this;
 +}
 +#endif  // BUILDFLAG(IS_WIN)
 +
- mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
-   return static_cast<ChildProcessHostImpl*>(process_->GetHost())
-       ->child_process();
-@@ -456,9 +482,26 @@ bool UtilityProcessHost::StartProcess() {
-     }
+ UtilityProcessHost::Options&
+ UtilityProcessHost::Options::WithBoundReceiverOnChildProcessForTesting(
+     mojo::GenericPendingReceiver receiver) {
+@@ -521,9 +551,26 @@ bool UtilityProcessHost::StartProcess() {
+   }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
 +#if BUILDFLAG(IS_WIN)
-+    file_data_->stdout_handle = std::move(stdout_handle_);
-+    file_data_->stderr_handle = std::move(stderr_handle_);
++  options_.file_data_->stdout_handle = std::move(options_.stdout_handle_);
++  options_.file_data_->stderr_handle = std::move(options_.stderr_handle_);
 +#elif BUILDFLAG(IS_POSIX)
-+    if (!fds_to_remap_.empty()) {
-+      for (const auto& remapped_fd : fds_to_remap_) {
-+        file_data_->additional_remapped_fds.emplace(
-+            remapped_fd.second, remapped_fd.first);
-+      }
++  if (!options_.fds_to_remap_.empty()) {
++    for (const auto& remapped_fd : options_.fds_to_remap_) {
++      options_.file_data_->additional_remapped_fds.emplace(remapped_fd.second,
++                                                           remapped_fd.first);
 +    }
++  }
 +#endif
 +
-     std::unique_ptr<UtilitySandboxedProcessLauncherDelegate> delegate =
-         std::make_unique<UtilitySandboxedProcessLauncherDelegate>(
--            sandbox_type_, env_, *cmd_line);
-+            sandbox_type_, env_, current_directory_, *cmd_line,
-+            inherit_environment_);
+   std::unique_ptr<UtilitySandboxedProcessLauncherDelegate> delegate =
+       std::make_unique<UtilitySandboxedProcessLauncherDelegate>(
+-          options_.sandbox_type_, options_.env_, *cmd_line);
++          options_.sandbox_type_, options_.env_, options_.current_directory_,
++          *cmd_line, options_.inherit_environment_);
 +
 +#if BUILDFLAG(IS_WIN)
-+    delegate->SetFeedbackCursorOff(feedback_cursor_off_);
++  delegate->SetFeedbackCursorOff(options_.feedback_cursor_off_);
 +#endif  // BUILDFLAG(IS_WIN)
  
  #if BUILDFLAG(IS_WIN)
-     if (!preload_libraries_.empty()) {
+   if (!options_.preload_libraries_.empty()) {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index d13e6db4857242480591bff040709532d16f513d..1164da12ee71a8575c17bf1b84a505e8a32b96b3 100644
+index 4335d7ff718c3d7de92320ba11c39c3957303788..55379fbe9233ba96f6e4729e2b7d534c0c6884a0 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
-@@ -30,6 +30,10 @@
+@@ -29,6 +29,10 @@
  #include "content/public/common/zygote/zygote_handle.h"
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -280,72 +287,69 @@ index d13e6db4857242480591bff040709532d16f513d..1164da12ee71a8575c17bf1b84a505e8
  namespace base {
  class Thread;
  }  // namespace base
-@@ -99,9 +103,13 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -111,14 +115,31 @@ class CONTENT_EXPORT UtilityProcessHost
+         std::variant<base::FilePath, base::ScopedFD> file);
+ #endif
  
-   // Returns information about the utility child process.
-   const ChildProcessData& GetData();
 -#if BUILDFLAG(IS_POSIX)
-+
-+  // Set/Unset environment variables.
-   void SetEnv(const base::EnvironmentMap& env);
+-    Options& WithEnvironment(const base::EnvironmentMap& env);
 -#endif
-+
-+  // Clear the environment for the new process before processing
-+  // changes from SetEnv.
-+  void ClearEnvironment();
++    // Specifies the environment that should be applied to the process.
++    // |new_environment| controls whether the process should inherit
++    // environment from the parent process.
++    Options& WithEnvironment(const base::EnvironmentMap& env,
++                             bool new_environment);
  
-   // Starts the utility process.
-   bool Start();
-@@ -139,6 +147,21 @@ class CONTENT_EXPORT UtilityProcessHost
-   void SetZygoteForTesting(ZygoteCommunication* handle);
+ #if BUILDFLAG(USE_ZYGOTE)
+     Options& WithZygoteForTesting(ZygoteCommunication* handle);
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
 +#if BUILDFLAG(IS_WIN)
-+  void SetStdioHandles(base::win::ScopedHandle stdout_handle,
-+                       base::win::ScopedHandle stderr_handle);
++    Options& WithStdioHandles(base::win::ScopedHandle stdout_handle,
++                              base::win::ScopedHandle stderr_handle);
 +#elif BUILDFLAG(IS_POSIX)
-+  void SetAdditionalFds(base::FileHandleMappingVector mapping);
++    Options& WithAdditionalFds(base::FileHandleMappingVector mapping);
 +#endif
 +
-+  // Sets the working directory of the process.
-+  void SetCurrentDirectory(const base::FilePath& cwd);
++    // Sets the working directory of the process.
++    Options& WithCurrentDirectory(const base::FilePath& cwd);
 +
 +#if BUILDFLAG(IS_WIN)
-+  // Specifies if the process should trigger mouse cursor feedback.
-+  void SetFeedbackCursorOff(bool feedback_cursor_off);
++    // Specifies if the process should trigger mouse cursor feedback.
++    Options& WithFeedbackCursorOff(bool feedback_cursor_off);
 +#endif  // BUILDFLAG(IS_WIN)
 +
-   // Returns a control interface for the running child process.
-   mojom::ChildProcess* GetChildProcess();
- 
-@@ -192,6 +215,27 @@ class CONTENT_EXPORT UtilityProcessHost
-   std::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
+     // Requests that the process bind a receiving pipe targeting the interface
+     // named by `receiver`. Calls to this method generally end up in
+     // `ChildThreadImpl::OnBindReceiver()` and the option is used for testing
+@@ -162,6 +183,27 @@ class CONTENT_EXPORT UtilityProcessHost
+     std::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
 +#if BUILDFLAG(IS_WIN)
-+  // Specifies the handles for redirection of stdout and stderr.
-+  base::win::ScopedHandle stdout_handle_;
-+  base::win::ScopedHandle stderr_handle_;
++    // Specifies the handles for redirection of stdout and stderr.
++    base::win::ScopedHandle stdout_handle_;
++    base::win::ScopedHandle stderr_handle_;
 +#elif BUILDFLAG(IS_POSIX)
-+  // Specifies file descriptors to propagate into the child process
-+  // based on the mapping.
-+  base::FileHandleMappingVector fds_to_remap_;
++    // Specifies file descriptors to propagate into the child process
++    // based on the mapping.
++    base::FileHandleMappingVector fds_to_remap_;
 +#endif
 +
-+  // If not empty, change to this directory before executing the new process.
-+  base::FilePath current_directory_;
++    // If not empty, change to this directory before executing the new process.
++    base::FilePath current_directory_;
 +
-+  // Inherit enviroment from parent process.
-+  bool inherit_environment_ = true;
++    // Inherit enviroment from parent process.
++    bool inherit_environment_ = true;
 +
 +#if BUILDFLAG(IS_WIN)
-+  // Specifies if the process should trigger mouse cursor feedback.
-+  bool feedback_cursor_off_ = false;
++    // Specifies if the process should trigger mouse cursor feedback.
++    bool feedback_cursor_off_ = false;
 +#endif  // BUILDFLAG(IS_WIN)
 +
-   // Indicates whether the process has been successfully launched yet, or if
-   // launch failed.
-   enum class LaunchState {
+ #if BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE)
+     // Whether or not to bind viz::mojom::Gpu to the utility process.
+     bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
 index 5ff3c5dcb972eb635107557ea7c26eb1f3331d22..5b1939226dcb84a61b09eefe69ab24a5ad595e1b 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc

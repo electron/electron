@@ -15,39 +15,43 @@ capturer was window or screen-specific, as the IDs remain valid for
 generic capturer as well.
 
 diff --git a/content/browser/media/capture/desktop_capture_device.cc b/content/browser/media/capture/desktop_capture_device.cc
-index a6a63ac98221f2a5c240eab2a437a3279c18cda6..259791f19d5940161887cd455e200b5185d4cbda 100644
+index dd30268a7726a409916f42d8a54fd3c75875ab40..1c910c8ed1aa65efc3fbf207f73ad15242b75803 100644
 --- a/content/browser/media/capture/desktop_capture_device.cc
 +++ b/content/browser/media/capture/desktop_capture_device.cc
-@@ -955,8 +955,14 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
+@@ -955,9 +955,16 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
  
    switch (source.type) {
      case DesktopMediaID::TYPE_SCREEN: {
 -      std::unique_ptr<webrtc::DesktopCapturer> screen_capturer(
--          webrtc::DesktopCapturer::CreateScreenCapturer(options));
+-          desktop_capture::CreateScreenCapturer(options,
+-                                                /*for_snapshot=*/false));
 +      std::unique_ptr<webrtc::DesktopCapturer> screen_capturer;
 +      if (auto generic_capturer =
 +              webrtc::DesktopCapturer::CreateGenericCapturer(options);
-+          generic_capturer && generic_capturer->GetDelegatedSourceListController()) {
++          generic_capturer &&
++          generic_capturer->GetDelegatedSourceListController()) {
 +        screen_capturer = std::move(generic_capturer);
 +      } else {
-+        screen_capturer = webrtc::DesktopCapturer::CreateScreenCapturer(options);
++        screen_capturer = desktop_capture::CreateScreenCapturer(
++            options, /*for_snapshot=*/false);
 +      }
        if (screen_capturer && screen_capturer->SelectSource(source.id)) {
          capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(
              std::move(screen_capturer), options);
-@@ -969,8 +975,14 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
+@@ -970,8 +977,15 @@ std::unique_ptr<media::VideoCaptureDevice> DesktopCaptureDevice::Create(
      }
  
      case DesktopMediaID::TYPE_WINDOW: {
 -      std::unique_ptr<webrtc::DesktopCapturer> window_capturer =
--          webrtc::DesktopCapturer::CreateWindowCapturer(options);
+-          desktop_capture::CreateWindowCapturer(options);
 +      std::unique_ptr<webrtc::DesktopCapturer> window_capturer;
 +      if (auto generic_capturer =
 +              webrtc::DesktopCapturer::CreateGenericCapturer(options);
-+          generic_capturer && generic_capturer->GetDelegatedSourceListController()) {
++          generic_capturer &&
++          generic_capturer->GetDelegatedSourceListController()) {
 +        window_capturer = std::move(generic_capturer);
 +      } else {
-+        window_capturer = webrtc::DesktopCapturer::CreateWindowCapturer(options);
++        window_capturer = desktop_capture::CreateWindowCapturer(options);
 +      }
        if (window_capturer && window_capturer->SelectSource(source.id)) {
          capturer = std::make_unique<webrtc::DesktopAndCursorComposer>(
