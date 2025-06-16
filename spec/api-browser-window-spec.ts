@@ -6983,4 +6983,131 @@ describe('BrowserWindow module', () => {
       expect(startPos).to.not.deep.equal(endPos);
     });
   });
+
+  describe('windowStateRestoreOptions', () => {
+    describe('save window state', () => {
+      const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'window-state-save');
+      const sharedUserDataPath = path.join(os.tmpdir(), 'electron-window-state-test');
+      const sharedPreferencesPath = path.join(sharedUserDataPath, 'Preferences');
+
+      const getWindowStateFromDisk = (stateId: string, preferencesPath: string) => {
+        if (!fs.existsSync(preferencesPath)) {
+          throw new Error(`Preferences file does not exist at path: ${preferencesPath}. Window state was not saved to disk.`);
+        }
+        const prefsContent = fs.readFileSync(preferencesPath, 'utf8');
+        const prefs = JSON.parse(prefsContent);
+        return prefs?.electron?.window_states?.[stateId] || null;
+      };
+
+      // Clean up before each test
+      beforeEach(() => {
+        if (fs.existsSync(sharedUserDataPath)) {
+          fs.rmSync(sharedUserDataPath, { recursive: true, force: true });
+        }
+      });
+
+      describe('state saving after window operations', () => {
+        it('should save window state with required properties', async () => {
+          const appPath = path.join(fixturesPath, 'schema-check');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-window-state-schema', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with id "test-window-state-schema" does not exist');
+          expect(savedState).to.have.property('left');
+          expect(savedState).to.have.property('top');
+          expect(savedState).to.have.property('right');
+          expect(savedState).to.have.property('bottom');
+          expect(savedState).to.have.property('maximized');
+          expect(savedState).to.have.property('fullscreen');
+          expect(savedState).to.have.property('work_area_left');
+          expect(savedState).to.have.property('work_area_top');
+          expect(savedState).to.have.property('work_area_right');
+          expect(savedState).to.have.property('work_area_bottom');
+        });
+
+        it('should save window state after window is closed and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'close-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-close-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with id "test-close-save" does not exist');
+          expect(savedState.right - savedState.left).to.equal(400);
+          expect(savedState.bottom - savedState.top).to.equal(300);
+          expect(savedState.maximized).to.equal(false);
+          expect(savedState.fullscreen).to.equal(false);
+        });
+
+        it('should save window state after window is resized and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'resize-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-resize-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with id "test-resize-save" does not exist');
+          expect(savedState.right - savedState.left).to.equal(500);
+          expect(savedState.bottom - savedState.top).to.equal(400);
+          expect(savedState.maximized).to.equal(false);
+          expect(savedState.fullscreen).to.equal(false);
+        });
+
+        it('should save window state after window is moved and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'move-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-move-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with id "test-move-save" does not exist');
+          expect(savedState.left).to.equal(100);
+          expect(savedState.top).to.equal(150);
+          expect(savedState.maximized).to.equal(false);
+          expect(savedState.fullscreen).to.equal(false);
+        });
+
+        it('should save window state after window is fullscreened and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'fullscreen-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-fullscreen-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with id "test-fullscreen-save" does not exist');
+          expect(savedState.fullscreen).to.equal(true);
+          expect(savedState.maximized).to.equal(false);
+        });
+
+        it('should save window state after window is maximized and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'maximize-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-maximize-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with id "test-maximize-save" does not exist');
+          expect(savedState.maximized).to.equal(true);
+          expect(savedState.fullscreen).to.equal(false);
+        });
+
+        it('should save window state if in a minimized state and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'minimize-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-minimize-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with id "test-minimize-save" does not exist');
+          // Should save the bounds from before minimizing
+          expect(savedState.right - savedState.left).to.equal(400);
+          expect(savedState.bottom - savedState.top).to.equal(300);
+          expect(savedState.maximized).to.equal(false);
+          expect(savedState.fullscreen).to.equal(false);
+        });
+      });
+    });
+  });
 });
