@@ -130,17 +130,19 @@ describe('utilityProcess module', () => {
     });
 
     it('does not run JS after process.exit is called', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'no-js-after-exit.js'), [], {
-        stdio: 'pipe'
-      });
-      expect(child.stdout).to.not.be.null();
-      let log = '';
-      child.stdout!.on('data', (chunk) => {
-        log += chunk.toString('utf8');
-      });
+      const file = path.join(os.tmpdir(), `no-js-after-exit-log-${Math.random()}`);
+      const child = utilityProcess.fork(path.join(fixturesPath, 'no-js-after-exit.js'), [`--testPath=${file}`]);
       const [code] = await once(child, 'exit');
       expect(code).to.equal(1);
-      expect(log).to.be.empty();
+      let handle = null;
+      try {
+        handle = await fs.open(file);
+        for await (const line of handle.readLines()) {
+          expect(line).to.not.contain('after exit');
+        }
+      } finally {
+        await handle?.close();
+      }
     });
 
     // 32-bit system will not have V8 Sandbox enabled.
