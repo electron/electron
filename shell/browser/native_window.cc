@@ -287,7 +287,9 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   std::string title(Browser::Get()->GetName());
   options.Get(options::kTitle, &title);
   SetTitle(title);
-
+  // TODO(nilayarya): Save window state after restoration logic is implemented
+  // here.
+  SaveWindowState();
   // Then show it.
   if (options.ValueOrDefault(options::kShow, true))
     Show();
