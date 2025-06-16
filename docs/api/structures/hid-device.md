@@ -6,7 +6,7 @@
 * `productId` Integer - The USB product ID.
 * `serialNumber` string (optional) - The USB device serial number.
 * `guid` string (optional) - Unique identifier for the HID interface.  A device may have multiple HID interfaces.
-* `collections` Object[] - an array of report formats. See [Documentation](https://developer.mozilla.org/en-US/docs/Web/API/HIDDevice/collections) for more.
+* `collections` Object[] - an array of report formats. See [MDN documentation](https://developer.mozilla.org/en-US/docs/Web/API/HIDDevice/collections) for more.
   * `usage` Integer - An integer representing the usage ID component of the HID usage associated with this collection.
   * `usagePage` Integer - An integer representing the usage page component of the HID usage associated with this collection.
   * `type` Integer - An 8-bit value representing the collection type, which describes a different relationship between the grouped items.
