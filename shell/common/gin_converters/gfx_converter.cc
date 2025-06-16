@@ -11,6 +11,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "ui/gfx/color_space.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/point_f.h"
@@ -227,6 +228,354 @@ bool Converter<WrappedSkColor>::FromV8(v8::Isolate* isolate,
   if (!gin::ConvertFromV8(isolate, val, &str))
     return false;
   *out = electron::ParseCSSColor(str);
+  return true;
+}
+
+v8::Local<v8::Value> Converter<gfx::ColorSpace>::ToV8(
+    v8::Isolate* isolate,
+    const gfx::ColorSpace& val) {
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+
+  // Convert primaries to string
+  std::string primaries;
+  switch (val.GetPrimaryID()) {
+    case gfx::ColorSpace::PrimaryID::BT709:
+      primaries = "bt709";
+      break;
+    case gfx::ColorSpace::PrimaryID::BT470M:
+      primaries = "bt470m";
+      break;
+    case gfx::ColorSpace::PrimaryID::BT470BG:
+      primaries = "bt470bg";
+      break;
+    case gfx::ColorSpace::PrimaryID::SMPTE170M:
+      primaries = "smpte170m";
+      break;
+    case gfx::ColorSpace::PrimaryID::SMPTE240M:
+      primaries = "smpte240m";
+      break;
+    case gfx::ColorSpace::PrimaryID::FILM:
+      primaries = "film";
+      break;
+    case gfx::ColorSpace::PrimaryID::BT2020:
+      primaries = "bt2020";
+      break;
+    case gfx::ColorSpace::PrimaryID::SMPTEST428_1:
+      primaries = "smptest428-1";
+      break;
+    case gfx::ColorSpace::PrimaryID::SMPTEST431_2:
+      primaries = "smptest431-2";
+      break;
+    case gfx::ColorSpace::PrimaryID::P3:
+      primaries = "p3";
+      break;
+    case gfx::ColorSpace::PrimaryID::XYZ_D50:
+      primaries = "xyz-d50";
+      break;
+    case gfx::ColorSpace::PrimaryID::ADOBE_RGB:
+      primaries = "adobe-rgb";
+      break;
+    case gfx::ColorSpace::PrimaryID::APPLE_GENERIC_RGB:
+      primaries = "apple-generic-rgb";
+      break;
+    case gfx::ColorSpace::PrimaryID::WIDE_GAMUT_COLOR_SPIN:
+      primaries = "wide-gamut-color-spin";
+      break;
+    case gfx::ColorSpace::PrimaryID::CUSTOM:
+      primaries = "custom";
+      break;
+    case gfx::ColorSpace::PrimaryID::EBU_3213_E:
+      primaries = "ebu-3213-e";
+      break;
+    default:
+      primaries = "invalid";
+      break;
+  }
+
+  // Convert transfer function to string
+  std::string transfer;
+  switch (val.GetTransferID()) {
+    case gfx::ColorSpace::TransferID::BT709:
+      transfer = "bt709";
+      break;
+    case gfx::ColorSpace::TransferID::BT709_APPLE:
+      transfer = "bt709-apple";
+      break;
+    case gfx::ColorSpace::TransferID::GAMMA18:
+      transfer = "gamma18";
+      break;
+    case gfx::ColorSpace::TransferID::GAMMA22:
+      transfer = "gamma22";
+      break;
+    case gfx::ColorSpace::TransferID::GAMMA24:
+      transfer = "gamma24";
+      break;
+    case gfx::ColorSpace::TransferID::GAMMA28:
+      transfer = "gamma28";
+      break;
+    case gfx::ColorSpace::TransferID::SMPTE170M:
+      transfer = "smpte170m";
+      break;
+    case gfx::ColorSpace::TransferID::SMPTE240M:
+      transfer = "smpte240m";
+      break;
+    case gfx::ColorSpace::TransferID::LINEAR:
+      transfer = "linear";
+      break;
+    case gfx::ColorSpace::TransferID::LOG:
+      transfer = "log";
+      break;
+    case gfx::ColorSpace::TransferID::LOG_SQRT:
+      transfer = "log-sqrt";
+      break;
+    case gfx::ColorSpace::TransferID::IEC61966_2_4:
+      transfer = "iec61966-2-4";
+      break;
+    case gfx::ColorSpace::TransferID::BT1361_ECG:
+      transfer = "bt1361-ecg";
+      break;
+    case gfx::ColorSpace::TransferID::SRGB:
+      transfer = "srgb";
+      break;
+    case gfx::ColorSpace::TransferID::BT2020_10:
+      transfer = "bt2020-10";
+      break;
+    case gfx::ColorSpace::TransferID::BT2020_12:
+      transfer = "bt2020-12";
+      break;
+    case gfx::ColorSpace::TransferID::PQ:
+      transfer = "pq";
+      break;
+    case gfx::ColorSpace::TransferID::SMPTEST428_1:
+      transfer = "smptest428-1";
+      break;
+    case gfx::ColorSpace::TransferID::HLG:
+      transfer = "hlg";
+      break;
+    case gfx::ColorSpace::TransferID::SRGB_HDR:
+      transfer = "srgb-hdr";
+      break;
+    case gfx::ColorSpace::TransferID::LINEAR_HDR:
+      transfer = "linear-hdr";
+      break;
+    case gfx::ColorSpace::TransferID::CUSTOM:
+      transfer = "custom";
+      break;
+    case gfx::ColorSpace::TransferID::CUSTOM_HDR:
+      transfer = "custom-hdr";
+      break;
+    case gfx::ColorSpace::TransferID::SCRGB_LINEAR_80_NITS:
+      transfer = "scrgb-linear-80-nits";
+      break;
+    default:
+      transfer = "invalid";
+      break;
+  }
+
+  // Convert matrix to string
+  std::string matrix;
+  switch (val.GetMatrixID()) {
+    case gfx::ColorSpace::MatrixID::RGB:
+      matrix = "rgb";
+      break;
+    case gfx::ColorSpace::MatrixID::BT709:
+      matrix = "bt709";
+      break;
+    case gfx::ColorSpace::MatrixID::FCC:
+      matrix = "fcc";
+      break;
+    case gfx::ColorSpace::MatrixID::BT470BG:
+      matrix = "bt470bg";
+      break;
+    case gfx::ColorSpace::MatrixID::SMPTE170M:
+      matrix = "smpte170m";
+      break;
+    case gfx::ColorSpace::MatrixID::SMPTE240M:
+      matrix = "smpte240m";
+      break;
+    case gfx::ColorSpace::MatrixID::YCOCG:
+      matrix = "ycocg";
+      break;
+    case gfx::ColorSpace::MatrixID::BT2020_NCL:
+      matrix = "bt2020-ncl";
+      break;
+    case gfx::ColorSpace::MatrixID::YDZDX:
+      matrix = "ydzdx";
+      break;
+    case gfx::ColorSpace::MatrixID::GBR:
+      matrix = "gbr";
+      break;
+    default:
+      matrix = "invalid";
+      break;
+  }
+
+  // Convert range to string
+  std::string range;
+  switch (val.GetRangeID()) {
+    case gfx::ColorSpace::RangeID::LIMITED:
+      range = "limited";
+      break;
+    case gfx::ColorSpace::RangeID::FULL:
+      range = "full";
+      break;
+    case gfx::ColorSpace::RangeID::DERIVED:
+      range = "derived";
+      break;
+    default:
+      range = "invalid";
+      break;
+  }
+
+  dict.Set("primaries", primaries);
+  dict.Set("transfer", transfer);
+  dict.Set("matrix", matrix);
+  dict.Set("range", range);
+
+  return dict.GetHandle();
+}
+
+bool Converter<gfx::ColorSpace>::FromV8(v8::Isolate* isolate,
+                                        v8::Local<v8::Value> val,
+                                        gfx::ColorSpace* out) {
+  gin::Dictionary dict(isolate);
+  if (!gin::ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  std::string primaries_str, transfer_str, matrix_str, range_str;
+
+  // Default values if not specified
+  gfx::ColorSpace::PrimaryID primaries = gfx::ColorSpace::PrimaryID::BT709;
+  gfx::ColorSpace::TransferID transfer = gfx::ColorSpace::TransferID::SRGB;
+  gfx::ColorSpace::MatrixID matrix = gfx::ColorSpace::MatrixID::RGB;
+  gfx::ColorSpace::RangeID range = gfx::ColorSpace::RangeID::FULL;
+
+  // Get primaries
+  if (dict.Get("primaries", &primaries_str)) {
+    if (primaries_str == "bt709")
+      primaries = gfx::ColorSpace::PrimaryID::BT709;
+    else if (primaries_str == "bt470m")
+      primaries = gfx::ColorSpace::PrimaryID::BT470M;
+    else if (primaries_str == "bt470bg")
+      primaries = gfx::ColorSpace::PrimaryID::BT470BG;
+    else if (primaries_str == "smpte170m")
+      primaries = gfx::ColorSpace::PrimaryID::SMPTE170M;
+    else if (primaries_str == "smpte240m")
+      primaries = gfx::ColorSpace::PrimaryID::SMPTE240M;
+    else if (primaries_str == "film")
+      primaries = gfx::ColorSpace::PrimaryID::FILM;
+    else if (primaries_str == "bt2020")
+      primaries = gfx::ColorSpace::PrimaryID::BT2020;
+    else if (primaries_str == "smptest428-1")
+      primaries = gfx::ColorSpace::PrimaryID::SMPTEST428_1;
+    else if (primaries_str == "smptest431-2")
+      primaries = gfx::ColorSpace::PrimaryID::SMPTEST431_2;
+    else if (primaries_str == "p3")
+      primaries = gfx::ColorSpace::PrimaryID::P3;
+    else if (primaries_str == "xyz-d50")
+      primaries = gfx::ColorSpace::PrimaryID::XYZ_D50;
+    else if (primaries_str == "adobe-rgb")
+      primaries = gfx::ColorSpace::PrimaryID::ADOBE_RGB;
+    else if (primaries_str == "apple-generic-rgb")
+      primaries = gfx::ColorSpace::PrimaryID::APPLE_GENERIC_RGB;
+    else if (primaries_str == "wide-gamut-color-spin")
+      primaries = gfx::ColorSpace::PrimaryID::WIDE_GAMUT_COLOR_SPIN;
+    else if (primaries_str == "ebu-3213-e")
+      primaries = gfx::ColorSpace::PrimaryID::EBU_3213_E;
+    else if (primaries_str != "custom")  // Skip CUSTOM primaries
+      primaries = gfx::ColorSpace::PrimaryID::INVALID;
+  }
+
+  // Get transfer
+  if (dict.Get("transfer", &transfer_str)) {
+    if (transfer_str == "bt709")
+      transfer = gfx::ColorSpace::TransferID::BT709;
+    else if (transfer_str == "bt709-apple")
+      transfer = gfx::ColorSpace::TransferID::BT709_APPLE;
+    else if (transfer_str == "gamma18")
+      transfer = gfx::ColorSpace::TransferID::GAMMA18;
+    else if (transfer_str == "gamma22")
+      transfer = gfx::ColorSpace::TransferID::GAMMA22;
+    else if (transfer_str == "gamma24")
+      transfer = gfx::ColorSpace::TransferID::GAMMA24;
+    else if (transfer_str == "gamma28")
+      transfer = gfx::ColorSpace::TransferID::GAMMA28;
+    else if (transfer_str == "smpte170m")
+      transfer = gfx::ColorSpace::TransferID::SMPTE170M;
+    else if (transfer_str == "smpte240m")
+      transfer = gfx::ColorSpace::TransferID::SMPTE240M;
+    else if (transfer_str == "linear")
+      transfer = gfx::ColorSpace::TransferID::LINEAR;
+    else if (transfer_str == "log")
+      transfer = gfx::ColorSpace::TransferID::LOG;
+    else if (transfer_str == "log-sqrt")
+      transfer = gfx::ColorSpace::TransferID::LOG_SQRT;
+    else if (transfer_str == "iec61966-2-4")
+      transfer = gfx::ColorSpace::TransferID::IEC61966_2_4;
+    else if (transfer_str == "bt1361-ecg")
+      transfer = gfx::ColorSpace::TransferID::BT1361_ECG;
+    else if (transfer_str == "srgb")
+      transfer = gfx::ColorSpace::TransferID::SRGB;
+    else if (transfer_str == "bt2020-10")
+      transfer = gfx::ColorSpace::TransferID::BT2020_10;
+    else if (transfer_str == "bt2020-12")
+      transfer = gfx::ColorSpace::TransferID::BT2020_12;
+    else if (transfer_str == "pq")
+      transfer = gfx::ColorSpace::TransferID::PQ;
+    else if (transfer_str == "smptest428-1")
+      transfer = gfx::ColorSpace::TransferID::SMPTEST428_1;
+    else if (transfer_str == "hlg")
+      transfer = gfx::ColorSpace::TransferID::HLG;
+    else if (transfer_str == "srgb-hdr")
+      transfer = gfx::ColorSpace::TransferID::SRGB_HDR;
+    else if (transfer_str == "linear-hdr")
+      transfer = gfx::ColorSpace::TransferID::LINEAR_HDR;
+    else if (transfer_str == "scrgb-linear-80-nits")
+      transfer = gfx::ColorSpace::TransferID::SCRGB_LINEAR_80_NITS;
+    else if (transfer_str != "custom" &&
+             transfer_str != "custom-hdr")  // Skip CUSTOM and CUSTOM_HDR
+      transfer = gfx::ColorSpace::TransferID::INVALID;
+  }
+
+  // Get matrix
+  if (dict.Get("matrix", &matrix_str)) {
+    if (matrix_str == "rgb")
+      matrix = gfx::ColorSpace::MatrixID::RGB;
+    else if (matrix_str == "bt709")
+      matrix = gfx::ColorSpace::MatrixID::BT709;
+    else if (matrix_str == "fcc")
+      matrix = gfx::ColorSpace::MatrixID::FCC;
+    else if (matrix_str == "bt470bg")
+      matrix = gfx::ColorSpace::MatrixID::BT470BG;
+    else if (matrix_str == "smpte170m")
+      matrix = gfx::ColorSpace::MatrixID::SMPTE170M;
+    else if (matrix_str == "smpte240m")
+      matrix = gfx::ColorSpace::MatrixID::SMPTE240M;
+    else if (matrix_str == "ycocg")
+      matrix = gfx::ColorSpace::MatrixID::YCOCG;
+    else if (matrix_str == "bt2020-ncl")
+      matrix = gfx::ColorSpace::MatrixID::BT2020_NCL;
+    else if (matrix_str == "ydzdx")
+      matrix = gfx::ColorSpace::MatrixID::YDZDX;
+    else if (matrix_str == "gbr")
+      matrix = gfx::ColorSpace::MatrixID::GBR;
+    else
+      matrix = gfx::ColorSpace::MatrixID::INVALID;
+  }
+
+  // Get range
+  if (dict.Get("range", &range_str)) {
+    if (range_str == "limited")
+      range = gfx::ColorSpace::RangeID::LIMITED;
+    else if (range_str == "full")
+      range = gfx::ColorSpace::RangeID::FULL;
+    else if (range_str == "derived")
+      range = gfx::ColorSpace::RangeID::DERIVED;
+    else
+      range = gfx::ColorSpace::RangeID::INVALID;
+  }
+
+  *out = gfx::ColorSpace(primaries, transfer, matrix, range);
   return true;
 }
 
