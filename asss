@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ali's Panel</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="25" cy="25" r="3" fill="%23222"/><circle cx="75" cy="75" r="3" fill="%23222"/></svg>') repeat;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .panel {
+      background: linear-gradient(145deg, #1c1c1c, #2a2a2a);
+      padding: 25px;
+      border-radius: 16px;
+      width: 340px;
+      box-shadow: 0 0 40px rgba(255, 0, 79, 0.4), 0 0 20px rgba(255, 0, 79, 0.2);
+      text-align: center;
+      border: 1px solid rgba(255, 0, 79, 0.1);
+    }
+
+    .panel h1 {
+      font-size: 28px;
+      color: #ff004f;
+      margin-bottom: 25px;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 10px rgba(255, 0, 79, 0.6);
+    }
+
+    .option {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 15px 0;
+      padding: 10px 15px;
+      background: #2a2a2a;
+      border-radius: 12px;
+      transition: background 0.3s ease, transform 0.2s ease;
+      cursor: pointer;
+      border: 1px solid #333;
+    }
+
+    .option:hover {
+      background: #3a3a3a;
+      transform: translateY(-2px);
+    }
+
+    .option label {
+      font-size: 16px;
+      color: #eee;
+    }
+
+    .toggle {
+      width: 50px;
+      height: 28px;
+      background: #555;
+      border-radius: 14px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+    }
+
+    .toggle::before {
+      content: "";
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #fff;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.3s ease, background 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .toggle.active {
+      background: #ff004f;
+    }
+
+    .toggle.active::before {
+      transform: translateX(22px);
+      background: #fff;
+    }
+
+    .slider-container {
+      text-align: left;
+      margin-top: 20px;
+      padding: 10px 0;
+      border-top: 1px solid #333;
+      padding-top: 20px;
+    }
+
+    .slider-container label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 16px;
+      color: #eee;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #ff004f;
+      -webkit-appearance: none;
+      height: 8px;
+      border-radius: 5px;
+      background: #444;
+      outline: none;
+      opacity: 0.7;
+      transition: opacity .2s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #ff004f;
+      cursor: pointer;
+      box-shadow: 0 0 5px rgba(255, 0, 79, 0.6);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #ff004f;
+      cursor: pointer;
+      box-shadow: 0 0 5px rgba(255, 0, 79, 0.6);
+    }
+
+    /* Social Media Section */
+    .social-media {
+      margin-top: 30px;
+      text-align: center;
+      border-top: 1px solid #333;
+      padding-top: 20px;
+    }
+
+    .social-media p {
+      font-size: 15px;
+      color: #aaa;
+      margin-bottom: 15px;
+    }
+
+    .social-media a {
+      margin: 0 12px;
+      font-size: 20px;
+      color: #ff004f;
+      text-decoration: none;
+      transition: color 0.3s ease, transform 0.2s ease;
+    }
+
+    .social-media a:hover {
+      color: #fff;
+      transform: translateY(-3px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="panel">
+    <h1>Ali's Panel ✨</h1>
+
+    <!-- Panel Options -->
+    <div class="option">
+      <label for="godmode">God Mode</label>
+      <div class="toggle" id="godmode"></div>
+    </div>
+    <div class="option">
+      <label for="infinitehealth">Infinite Health</label>
+      <div class="toggle" id="infinitehealth"></div>
+    </div>
+    <div class="option">
+      <label for="speedboost">Speed Boost</label>
+      <div class="toggle" id="speedboost"></div>
+    </div>
+    <div class="option">
+      <label for="nocooldown">No Cooldown</label>
+      <div class="toggle" id="nocooldown"></div>
+    }
+    <div class="option">
+      <label for="antistun">Anti Stun</label>
+      <div class="toggle" id="antistun"></div>
+    </div>
+    <div class="option">
+      <label for="wallhack">Wall Hack</label>
+      <div class="toggle" id="wallhack"></div>
+    </div>
+
+    <div class="slider-container">
+      <label for="reflex">Reflex Speed</label>
+      <input type="range" id="reflex" min="1" max="10" step="1" value="5">
+    </div>
+
+   
+
+  <script>
+    const toggles = document.querySelectorAll('.toggle');
+    toggles.forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        toggle.classList.toggle('active');
+      });
+    });
+  </script>
+
+</body>
+</html>
