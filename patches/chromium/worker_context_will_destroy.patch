@@ -10,10 +10,10 @@ An attempt to upstream this was made, but rejected:
 https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 7a2d251ba2d13d0a34df176111e6524a27b87f55..cbbe0fbdd25a0f7859b113fdb3dcd9ce57e597d6 100644
+index f58a8706fafd0e86a8f4bf8527c57905e4b5bc6e..f0c7bdb1c7c1fd6c50bd9a263e98ba918374be1a 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -417,6 +417,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -420,6 +420,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -55,10 +55,10 @@ index 2b6f49b635456283daf1b6ccf8919330dcf117c8..c05d4f3c8bc44396cc0415934d12c53e
        const blink::WebSecurityOrigin& script_origin) override;
    blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel(
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 54e25fb12f680eb4bbe0d51f162e227610065345..3648f1be362dc4c13071e73fed478454af7518ca 100644
+index 22272e6f09b2719287e8363f6bf5712f57a731c9..eefb93a200880b067606b282c13394159125764c 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -670,6 +670,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -672,6 +672,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}

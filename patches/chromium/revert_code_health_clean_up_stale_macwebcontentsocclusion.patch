@@ -47,7 +47,7 @@ index 32523e6a6f800de3917d18825f94c66ef4ea4388..634d68b9a2840d7c9e7c3b5e23d8b1b8
  namespace {
  
  NSString* const kWindowDidChangePositionInWindowList =
-@@ -127,7 +133,8 @@ bool IsBrowserProcess() {
+@@ -127,7 +133,8 @@ - (void)dealloc {
  
  - (BOOL)isManualOcclusionDetectionEnabled {
    return [WebContentsOcclusionCheckerMac
@@ -69,7 +69,7 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  using remote_cocoa::mojom::DraggingInfo;
  using remote_cocoa::mojom::SelectionDirection;
  
-@@ -124,12 +125,15 @@ STATIC_ASSERT_ENUM(NSDragOperationMove, ui::DragDropTypes::DRAG_MOVE);
+@@ -124,12 +125,15 @@ @implementation WebContentsViewCocoa {
    WebDragSource* __strong _dragSource;
    NSDragOperation _dragOperation;
  
@@ -87,7 +87,7 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  }
  
  - (instancetype)initWithViewsHostableView:(ui::ViewsHostableView*)v {
-@@ -440,6 +444,7 @@ STATIC_ASSERT_ENUM(NSDragOperationMove, ui::DragDropTypes::DRAG_MOVE);
+@@ -440,6 +444,7 @@ - (void)updateWebContentsVisibility:
      (remote_cocoa::mojom::Visibility)visibility {
    using remote_cocoa::mojom::Visibility;
  
@@ -95,7 +95,7 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
    if (!_host)
      return;
  
-@@ -485,6 +490,20 @@ STATIC_ASSERT_ENUM(NSDragOperationMove, ui::DragDropTypes::DRAG_MOVE);
+@@ -485,6 +490,20 @@ - (void)updateWebContentsVisibility {
    [self updateWebContentsVisibility:visibility];
  }
  
@@ -116,7 +116,7 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
    // Subviews do not participate in auto layout unless the the size this view
    // changes. This allows RenderWidgetHostViewMac::SetBounds(..) to select a
-@@ -507,11 +526,39 @@ STATIC_ASSERT_ENUM(NSDragOperationMove, ui::DragDropTypes::DRAG_MOVE);
+@@ -507,11 +526,39 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
  
    NSWindow* oldWindow = [self window];
  
@@ -160,7 +160,7 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
    }
  
    if (newWindow) {
-@@ -519,26 +566,66 @@ STATIC_ASSERT_ENUM(NSDragOperationMove, ui::DragDropTypes::DRAG_MOVE);
+@@ -519,26 +566,66 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
                             selector:@selector(windowChangedOcclusionState:)
                                 name:NSWindowDidChangeOcclusionStateNotification
                               object:newWindow];
