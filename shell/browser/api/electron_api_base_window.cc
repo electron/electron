@@ -267,11 +267,11 @@ void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
 }
 
 void BaseWindow::OnWindowResize() {
+  window_->SaveWindowState();
   Emit("resize");
 }
 
 void BaseWindow::OnWindowResized() {
-  window_->SaveWindowState();
   Emit("resized");
 }
 
@@ -283,11 +283,11 @@ void BaseWindow::OnWindowWillMove(const gfx::Rect& new_bounds,
 }
 
 void BaseWindow::OnWindowMove() {
+  window_->SaveWindowState();
   Emit("move");
 }
 
 void BaseWindow::OnWindowMoved() {
-  window_->SaveWindowState();
   Emit("moved");
 }
 
