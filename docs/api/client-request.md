@@ -25,6 +25,11 @@ following properties:
     with which the request is associated. Defaults to the empty string. The
     `session` option supersedes `partition`. Thus if a `session` is explicitly
     specified, `partition` is ignored.
+  * `bypassCustomProtocolHandlers` boolean (optional) - When set to `true`,
+    custom protocol handlers registered for the request's URL scheme will not be
+    called. This allows forwarding an intercepted request to the built-in
+    handler. [webRequest](web-request.md) handlers will still be triggered
+    when bypassing custom protocols. Defaults to `false`.
   * `credentials` string (optional) - Can be `include`, `omit` or
     `same-origin`. Whether to send
     [credentials](https://fetch.spec.whatwg.org/#credentials) with this
