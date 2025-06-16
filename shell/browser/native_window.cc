@@ -279,6 +279,10 @@ NativeWindow* NativeWindow::FromWidget(const views::Widget* widget) {
       widget->GetNativeWindowProperty(kNativeWindowKey.c_str()));
 }
 
+bool NativeWindow::IsClosed() const {
+  return is_closed_;
+}
+
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
   SetBounds(gfx::Rect(GetPosition(), size), animate);
 }
@@ -516,23 +520,8 @@ void NativeWindow::NotifyWindowCloseButtonClicked() {
   CloseImmediately();
 }
 
-void NativeWindow::Close() {
-  if (!IsClosable()) {
-    WindowList::WindowCloseCancelled(this);
-    return;
-  }
-
-  if (!is_closed())
-    CloseImpl();
-}
-
-void NativeWindow::CloseImmediately() {
-  if (!is_closed())
-    CloseImmediatelyImpl();
-}
-
 void NativeWindow::NotifyWindowClosed() {
-  if (is_closed())
+  if (is_closed_)
     return;
 
   is_closed_ = true;
