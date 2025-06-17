@@ -25,6 +25,10 @@ app.whenReady().then(() => {
 })
 ```
 
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
+
 **Platform Considerations**
 
 **Linux**
@@ -176,7 +180,8 @@ Returns:
 
 Emitted when the mouse is released from clicking the tray icon.
 
-Note: This will not be emitted if you have set a context menu for your Tray using `tray.setContextMenu`, as a result of macOS-level constraints.
+> [!NOTE]
+> This will not be emitted if you have set a context menu for your Tray using `tray.setContextMenu`, as a result of macOS-level constraints.
 
 #### Event: 'mouse-down' _macOS_
 

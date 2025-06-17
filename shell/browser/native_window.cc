@@ -75,10 +75,12 @@ namespace electron {
 namespace {
 
 #if BUILDFLAG(IS_WIN)
-gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
+gfx::Size GetExpandedWindowSize(const NativeWindow* window,
+                                bool transparent,
+                                gfx::Size size) {
   if (!base::FeatureList::IsEnabled(
           views::features::kEnableTransparentHwndEnlargement) ||
-      !window->transparent()) {
+      !transparent) {
     return size;
   }
 
@@ -97,11 +99,15 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : widget_(std::make_unique<views::Widget>()), parent_(parent) {
-  options.Get(options::kFrame, &has_frame_);
-  options.Get(options::kTransparent, &transparent_);
-  options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
-  options.Get(options::kTitleBarStyle, &title_bar_style_);
+    : title_bar_style_{options.ValueOrDefault(options::kTitleBarStyle,
+                                              TitleBarStyle::kNormal)},
+      transparent_{options.ValueOrDefault(options::kTransparent, false)},
+      enable_larger_than_screen_{
+          options.ValueOrDefault(options::kEnableLargerThanScreen, false)},
+      is_modal_{parent != nullptr && options.ValueOrDefault("modal", false)},
+      has_frame_{options.ValueOrDefault(options::kFrame, true) &&
+                 title_bar_style_ == TitleBarStyle::kNormal},
+      parent_{parent} {
 #if BUILDFLAG(IS_WIN)
   options.Get(options::kBackgroundMaterial, &background_material_);
 #elif BUILDFLAG(IS_MAC)
@@ -123,20 +129,6 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
         titlebar_overlay_height_ = height;
     }
   }
-
-  if (parent)
-    options.Get("modal", &is_modal_);
-
-#if defined(USE_OZONE)
-  // Ozone X11 likes to prefer custom frames, but we don't need them unless
-  // on Wayland.
-  if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
-      !ui::OzonePlatform::GetInstance()
-           ->GetPlatformRuntimeProperties()
-           .supports_server_side_window_decorations) {
-    has_client_frame_ = true;
-  }
-#endif
 
   WindowList::AddWindow(this);
 }
@@ -289,6 +281,14 @@ NativeWindow* NativeWindow::FromWidget(const views::Widget* widget) {
       widget->GetNativeWindowProperty(kNativeWindowKey.c_str()));
 }
 
+void NativeWindow::SetShape(const std::vector<gfx::Rect>& rects) {
+  widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
+}
+
+bool NativeWindow::IsClosed() const {
+  return is_closed_;
+}
+
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
   SetBounds(gfx::Rect(GetPosition(), size), animate);
 }
@@ -413,14 +413,15 @@ gfx::Size NativeWindow::GetContentMinimumSize() const {
 }
 
 gfx::Size NativeWindow::GetContentMaximumSize() const {
-  gfx::Size maximum_size = GetContentSizeConstraints().GetMaximumSize();
+  const auto size_constraints = GetContentSizeConstraints();
+  gfx::Size maximum_size = size_constraints.GetMaximumSize();
+
 #if BUILDFLAG(IS_WIN)
-  return GetContentSizeConstraints().HasMaximumSize()
-             ? GetExpandedWindowSize(this, maximum_size)
-             : maximum_size;
-#else
-  return maximum_size;
+  if (size_constraints.HasMaximumSize())
+    maximum_size = GetExpandedWindowSize(this, transparent(), maximum_size);
 #endif
+
+  return maximum_size;
 }
 
 void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {
@@ -526,23 +527,8 @@ void NativeWindow::NotifyWindowCloseButtonClicked() {
   CloseImmediately();
 }
 
-void NativeWindow::Close() {
-  if (!IsClosable()) {
-    WindowList::WindowCloseCancelled(this);
-    return;
-  }
-
-  if (!is_closed())
-    CloseImpl();
-}
-
-void NativeWindow::CloseImmediately() {
-  if (!is_closed())
-    CloseImmediatelyImpl();
-}
-
 void NativeWindow::NotifyWindowClosed() {
-  if (is_closed())
+  if (is_closed_)
     return;
 
   is_closed_ = true;
@@ -718,7 +704,7 @@ int NativeWindow::NonClientHitTest(const gfx::Point& point) {
 
   // This is to disable dragging in HTML5 full screen mode.
   // Details: https://github.com/electron/electron/issues/41002
-  if (GetWidget()->IsFullscreen())
+  if (widget()->IsFullscreen())
     return HTNOWHERE;
 
   for (auto* provider : draggable_region_providers_) {
@@ -758,7 +744,7 @@ void NativeWindow::RemoveBackgroundThrottlingSource(
 }
 
 void NativeWindow::UpdateBackgroundThrottlingState() {
-  if (!GetWidget() || !GetWidget()->GetCompositor()) {
+  if (!widget() || !widget()->GetCompositor()) {
     return;
   }
   bool enable_background_throttling = true;
@@ -769,7 +755,7 @@ void NativeWindow::UpdateBackgroundThrottlingState() {
       break;
     }
   }
-  GetWidget()->GetCompositor()->SetBackgroundThrottling(
+  widget()->GetCompositor()->SetBackgroundThrottling(
       enable_background_throttling);
 }
 
@@ -831,6 +817,22 @@ bool NativeWindow::IsTranslucent() const {
 #endif
 
   return false;
+}
+
+// static
+bool NativeWindow::PlatformHasClientFrame() {
+#if defined(USE_OZONE)
+  // Ozone X11 likes to prefer custom frames,
+  // but we don't need them unless on Wayland.
+  static const bool has_client_frame =
+      base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
+      !ui::OzonePlatform::GetInstance()
+           ->GetPlatformRuntimeProperties()
+           .supports_server_side_window_decorations;
+  return has_client_frame;
+#else
+  return false;
+#endif
 }
 
 // static

@@ -152,7 +152,8 @@ std::unique_ptr<ThumbnailCapturer> MakeWindowCapturer() {
 #endif  // BUILDFLAG(IS_MAC)
 
   std::unique_ptr<webrtc::DesktopCapturer> window_capturer =
-      content::desktop_capture::CreateWindowCapturer();
+      content::desktop_capture::CreateWindowCapturer(
+          content::desktop_capture::CreateDesktopCaptureOptions());
   return window_capturer ? std::make_unique<DesktopCapturerWrapper>(
                                std::move(window_capturer))
                          : nullptr;
@@ -166,7 +167,9 @@ std::unique_ptr<ThumbnailCapturer> MakeScreenCapturer() {
 #endif  // BUILDFLAG(IS_MAC)
 
   std::unique_ptr<webrtc::DesktopCapturer> screen_capturer =
-      content::desktop_capture::CreateScreenCapturer();
+      content::desktop_capture::CreateScreenCapturer(
+          content::desktop_capture::CreateDesktopCaptureOptions(),
+          /*for_snapshot=*/false);
   return screen_capturer ? std::make_unique<DesktopCapturerWrapper>(
                                std::move(screen_capturer))
                          : nullptr;

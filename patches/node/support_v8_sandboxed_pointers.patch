@@ -7,10 +7,10 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 88c2c932a6b045317c83c911b1cd8267b60d9334..7f4f233b26425493a58ce71dfc0c3a92b7c0bef8 100644
+index df5fb942aa893c22d14d7eb21a5211a46a472a5f..5b7f6e0609c8414c686d2d5ca603ea5c8bc484d0 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -102,6 +102,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -103,6 +103,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
    return result;
  }
  
@@ -26,7 +26,7 @@ index 88c2c932a6b045317c83c911b1cd8267b60d9334..7f4f233b26425493a58ce71dfc0c3a92
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 5387d9625a28bb7d11f7f0f05a5f07d1fee2c216..1b3b8c7b70073926f8dbf02759c2e1af5d938679 100644
+index f23cedf4f2449d8edc9a8de1b70332e75d693cdd..976653dd1e9363e046788fc3419a9b649ceb2ea4 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -55,13 +55,32 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
@@ -143,7 +143,7 @@ index 6346f8f7199cf7b7d3736c59571606fff102fbb6..7eea2eaefcad5780663a6b87985925ae
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index b85c8daeb464097c2e93bdc7ffdfcfe16b76234b..470a0c4adadcd092dd0105c384e87917ac6fe69a 100644
+index 1592134716da2de40de4ba028ee937b765423e37..8f3ba65f1fef2c066d6df6087a08ba71100d1090 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
 @@ -242,7 +242,7 @@ class ByteSource {
@@ -156,7 +156,7 @@ index b85c8daeb464097c2e93bdc7ffdfcfe16b76234b..470a0c4adadcd092dd0105c384e87917
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index 3465454e4de4a78912b81e7eca0de395fbe89911..c8ae863460107c69dd77d67c76c11843114e99c4 100644
+index f616223cfb0f6e10f7cf57ada9704316bde2797e..eb6dad44a49d997097c8fb5009eeb60a7305da27 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
 @@ -167,6 +167,19 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
@@ -229,10 +229,10 @@ index ea7810e41e2667713a896250dc1b904b0a7cf198..865b3128c1edfe7074769f25a0b87878
  
  constexpr const char* EncodingName(const enum encoding encoding) {
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 382df89a2312f76b5293412a8d51969ae5d9fa9c..1c90da9bbcb9547ab36de4d01088c03f3350b787 100644
+index 275534285ec28f02b46639142ab4195b24267476..5f9d123f9d4b9feb7bc0b627b1e6309fdbd6e30d 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -117,7 +117,9 @@ v8::Maybe<void> InitializePrimordials(v8::Local<v8::Context> context);
+@@ -120,7 +120,9 @@ v8::MaybeLocal<v8::Object> InitializePrivateSymbols(
  
  class NodeArrayBufferAllocator : public ArrayBufferAllocator {
   public:
@@ -243,7 +243,7 @@ index 382df89a2312f76b5293412a8d51969ae5d9fa9c..1c90da9bbcb9547ab36de4d01088c03f
  
    void* Allocate(size_t size) override;  // Defined in src/node.cc
    void* AllocateUninitialized(size_t size) override;
-@@ -135,7 +137,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+@@ -138,7 +140,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
    }
  
   private:

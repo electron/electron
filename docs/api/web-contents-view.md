@@ -9,6 +9,7 @@ module is emitted.
 
 ```js
 const { BaseWindow, WebContentsView } = require('electron')
+
 const win = new BaseWindow({ width: 800, height: 400 })
 
 const view1 = new WebContentsView()
@@ -32,6 +33,10 @@ Process: [Main](../glossary.md#main-process)
 
 `WebContentsView` is an [EventEmitter][event-emitter].
 
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
+
 ### `new WebContentsView([options])`
 
 * `options` Object (optional)
@@ -52,6 +57,7 @@ Use this to interact with the `WebContents`, for instance to load a URL.
 
 ```js
 const { WebContentsView } = require('electron')
+
 const view = new WebContentsView()
 view.webContents.loadURL('https://electronjs.org/')
 ```

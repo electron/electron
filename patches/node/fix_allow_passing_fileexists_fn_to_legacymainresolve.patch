@@ -53,7 +53,7 @@ index 2879e5cf541fb4d226cfd7cc0fe367ca448fb926..03082f0ec4f91382933eec48e77331cd
    const maybeMain = resolvedOption <= legacyMainResolveExtensionsIndexes.kResolvedByMainIndexNode ?
      packageConfig.main || './' : '';
 diff --git a/src/node_file.cc b/src/node_file.cc
-index a492b3aa113c4e1d50cc42721bd5eb58380a6264..c7915e2c8161a5d0fa05ccce368ce9c44345c05d 100644
+index 49816349d8bab37fea1d84e5326ee5a11acad7a2..5aea65d6800494def62829432ee48f9c06e65d63 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -3237,13 +3237,25 @@ static void CpSyncCheckPaths(const FunctionCallbackInfo<Value>& args) {

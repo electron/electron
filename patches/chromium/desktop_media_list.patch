@@ -41,7 +41,7 @@ index a82e0b1a7e999817c8ee420ceddeb7ca9ee78caf..e07f4ded61a7a64983da1b6d07315aee
  
  int DesktopMediaListBase::GetSourceCount() const {
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
-index 9368d56f2b434b1a7101f28908f070ad9908be7e..804eb2c7ede137b8c9d0cf43042ff7f20dad5b91 100644
+index de56c9b94f92e9abf69b1d4894e5d386cad6d3cd..f8955ef7cc43b1854b29841ed65260a1966a4b19 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.h
 @@ -39,7 +39,7 @@ class DesktopMediaListBase : public DesktopMediaList {

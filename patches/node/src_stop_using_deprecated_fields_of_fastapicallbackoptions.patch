@@ -26,7 +26,7 @@ index 3d8ccc77b5952a999c5fe48792259d32b402c460..867a1c4aca54b9d41490d23a5eb55088
    }
  
 diff --git a/src/histogram.cc b/src/histogram.cc
-index 0f0cde7be431dcb80c5314b1a9da49886c436d1c..f6d2bd439cad8b9f91c9d9a6cdb302e64130a5e2 100644
+index 5641990e0bac455c33ddf7b9a865deba871516e7..bd757f42e02391abbeec007d9c4cea60bcdfa6a4 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
 @@ -195,7 +195,8 @@ void HistogramBase::FastRecord(Local<Value> unused,
@@ -40,7 +40,7 @@ index 0f0cde7be431dcb80c5314b1a9da49886c436d1c..f6d2bd439cad8b9f91c9d9a6cdb302e6
    }
    HistogramBase* histogram;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index c7915e2c8161a5d0fa05ccce368ce9c44345c05d..23347379328794467a497c86cbae0b428b7ba791 100644
+index 5aea65d6800494def62829432ee48f9c06e65d63..80cf6648ed99241eea8c176c5c958d76fe33aa14 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -1071,13 +1071,8 @@ static int32_t FastInternalModuleStat(

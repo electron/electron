@@ -129,6 +129,7 @@ jobs:
         - /var/run/sas:/var/run/sas
     env:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
       PATCH_UP_APP_CREDS: ${{ secrets.PATCH_UP_APP_CREDS }}
     outputs:
@@ -142,6 +143,8 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
+      with:
+        target-platform: linux
 
   checkout-windows:
     needs: setup

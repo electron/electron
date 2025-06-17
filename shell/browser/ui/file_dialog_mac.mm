@@ -29,7 +29,7 @@
 
 @interface PopUpButtonHandler : NSObject
 
-@property(nonatomic, assign) NSSavePanel* savePanel;
+@property(nonatomic, weak) NSSavePanel* savePanel;
 @property(nonatomic, strong) NSArray* contentTypesList;
 
 - (instancetype)initWithPanel:(NSSavePanel*)panel
@@ -318,9 +318,10 @@ void ReadDialogPathsWithBookmarks(NSOpenPanel* dialog,
       BOOL exists =
           [[NSFileManager defaultManager] fileExistsAtPath:path
                                                isDirectory:&is_directory];
-      BOOL is_package =
-          [[NSWorkspace sharedWorkspace] isFilePackageAtPath:path];
-      if (!exists || !is_directory || is_package)
+      BOOL is_package_as_directory =
+          [[NSWorkspace sharedWorkspace] isFilePackageAtPath:path] &&
+          [dialog treatsFilePackagesAsDirectories];
+      if (!exists || !(is_directory || is_package_as_directory))
         continue;
     }
 
@@ -435,19 +436,18 @@ void ShowOpenDialog(const DialogSettings& settings,
   }
 }
 
-bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
-  DCHECK(path);
+std::optional<base::FilePath> ShowSaveDialogSync(
+    const DialogSettings& settings) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, settings);
   SetupSaveDialogForProperties(dialog, settings.properties);
 
-  int chosen = RunModalDialog(dialog, settings);
+  const int chosen = RunModalDialog(dialog, settings);
   if (chosen == NSModalResponseCancel || ![[dialog URL] isFileURL])
-    return false;
+    return {};
 
-  *path = base::FilePath(base::SysNSStringToUTF8([[dialog URL] path]));
-  return true;
+  return base::FilePath{base::SysNSStringToUTF8([[dialog URL] path])};
 }
 
 void SaveDialogCompletion(int chosen,

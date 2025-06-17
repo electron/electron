@@ -38,6 +38,8 @@ class ElectronRendererClient : public RendererClientBase {
   void UndeferLoad(content::RenderFrame* render_frame);
 
   // content::ContentRendererClient:
+  void PostIOThreadCreated(
+      base::SingleThreadTaskRunner* io_thread_task_runner) override;
   void RenderFrameCreated(content::RenderFrame*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
@@ -45,6 +47,7 @@ class ElectronRendererClient : public RendererClientBase {
       v8::Local<v8::Context> context) override;
   void WillDestroyWorkerContextOnWorkerThread(
       v8::Local<v8::Context> context) override;
+  void SetUpWebAssemblyTrapHandler() override;
 
   node::Environment* GetEnvironment(content::RenderFrame* frame) const;
 
