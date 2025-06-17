@@ -7168,6 +7168,146 @@ describe('BrowserWindow module', () => {
           expect(savedState.bottom).to.be.lessThanOrEqual(savedState.work_area_bottom);
         });
       });
+
+      describe('asynchronous batching behavior', () => {
+        let w: BrowserWindow;
+        const stateId = 'test-batching-behavior';
+        const preferencesPath = path.join(app.getPath('userData'), 'Preferences');
+
+        // Helper to get preferences file modification time
+        const getPrefsModTime = (): Date => {
+          try {
+            return fs.statSync(preferencesPath).mtime;
+          } catch {
+            throw new Error(`Test requires preferences file to exist at path: ${preferencesPath}.`);
+          }
+        };
+
+        // Helper to wait for file modification with 20 second default timeout
+        const waitForPrefsUpdate = async (initialModTime: Date, timeoutMs: number = 20000): Promise<void> => {
+          const startTime = Date.now();
+
+          while (true) {
+            const currentModTime = getPrefsModTime();
+
+            if (currentModTime > initialModTime) {
+              return;
+            }
+
+            if (Date.now() - startTime > timeoutMs) {
+              throw new Error(`Window state was not flushed to disk within ${timeoutMs}ms`);
+            }
+            // Wait for 1 second before checking again
+            await setTimeout(1000);
+          }
+        };
+
+        beforeEach(() => {
+          w = new BrowserWindow({
+            show: false,
+            width: 400,
+            height: 300,
+            // @ts-ignore: remove this once the type definition is added
+            windowStateRestoreOptions: {
+              stateId
+            }
+          });
+        });
+
+        afterEach(closeAllWindows);
+
+        it('should not immediately save window state to disk when window is moved/resized', async () => {
+          const initialModTime = getPrefsModTime();
+
+          const moved = once(w, 'move');
+          w.setPosition(150, 200);
+          await moved;
+          // Wait for any potential save to occur from the move operation
+          await setTimeout(1000);
+
+          const resized = once(w, 'resize');
+          w.setSize(500, 400);
+          await resized;
+          // Wait for any potential save to occur from the resize operation
+          await setTimeout(1000);
+
+          const afterMoveModTime = getPrefsModTime();
+
+          expect(afterMoveModTime.getTime()).to.equal(initialModTime.getTime());
+        });
+
+        it('should eventually flush window state to disk after batching period', async () => {
+          const initialModTime = getPrefsModTime();
+
+          const resized = once(w, 'resize');
+          w.setSize(500, 400);
+          await resized;
+
+          await waitForPrefsUpdate(initialModTime);
+
+          const savedState = getWindowStateFromDisk(stateId, preferencesPath);
+          expect(savedState).to.not.be.null('window state with id "test-batching-behavior" does not exist');
+          expect(savedState.right - savedState.left).to.equal(500);
+          expect(savedState.bottom - savedState.top).to.equal(400);
+        });
+
+        it('should batch multiple window operations and save final state', async () => {
+          const initialModTime = getPrefsModTime();
+
+          const resize1 = once(w, 'resize');
+          w.setSize(500, 400);
+          await resize1;
+          // Wait for any potential save to occur
+          await setTimeout(1000);
+
+          const afterFirstResize = getPrefsModTime();
+
+          const resize2 = once(w, 'resize');
+          w.setSize(600, 500);
+          await resize2;
+          // Wait for any potential save to occur
+          await setTimeout(1000);
+
+          const afterSecondResize = getPrefsModTime();
+
+          const resize3 = once(w, 'resize');
+          w.setSize(700, 600);
+          await resize3;
+          // Wait for any potential save to occur
+          await setTimeout(1000);
+
+          const afterThirdResize = getPrefsModTime();
+
+          await waitForPrefsUpdate(initialModTime);
+
+          const savedState = getWindowStateFromDisk(stateId, preferencesPath);
+          expect(savedState).to.not.be.null('window state with id "test-batching-behavior" does not exist');
+
+          [afterFirstResize, afterSecondResize, afterThirdResize].forEach(time => {
+            expect(time.getTime()).to.equal(initialModTime.getTime());
+          });
+
+          expect(savedState.right - savedState.left).to.equal(700);
+          expect(savedState.bottom - savedState.top).to.equal(600);
+        });
+
+        it('should not save window bounds when main thread is busy', async () => {
+          const initialModTime = getPrefsModTime();
+
+          const moved = once(w, 'move');
+          w.setPosition(100, 100);
+          await moved;
+
+          const startTime = Date.now();
+
+          // Keep main thread busy for 25 seconds
+          while (Date.now() - startTime < 25000);
+
+          const finalModTime = getPrefsModTime();
+
+          expect(finalModTime.getTime()).to.equal(initialModTime.getTime());
+        });
+      });
     });
   });
 });
