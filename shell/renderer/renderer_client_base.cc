@@ -485,7 +485,7 @@ void RendererClientBase::DidInitializeServiceWorkerContextOnWorkerThread(
 #endif
 }
 
-void RendererClientBase::WillPrepareForEvaluationOnWorkerThread(
+void RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread(
     blink::WebServiceWorkerContextProxy* context_proxy,
     v8::Local<v8::Context> v8_context,
     int64_t service_worker_version_id,
@@ -494,16 +494,9 @@ void RendererClientBase::WillPrepareForEvaluationOnWorkerThread(
     const blink::ServiceWorkerToken& service_worker_token) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_renderer_client_->dispatcher()
-      ->WillPrepareForEvaluationOnWorkerThread(
+      ->WillEvaluateServiceWorkerOnWorkerThread(
           context_proxy, v8_context, service_worker_version_id,
           service_worker_scope, script_url, service_worker_token);
-#endif
-}
-
-void RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread() {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_renderer_client_->dispatcher()
-      ->WillEvaluateServiceWorkerOnWorkerThread();
 #endif
 }
 
