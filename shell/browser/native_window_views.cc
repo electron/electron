@@ -31,6 +31,7 @@
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_view_manager.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -478,11 +479,16 @@ void NativeWindowViews::SetContentView(views::View* view) {
   root_view_.GetMainView()->DeprecatedLayoutImmediately();
 }
 
-void NativeWindowViews::CloseImpl() {
+void NativeWindowViews::Close() {
+  if (!IsClosable()) {
+    WindowList::WindowCloseCancelled(this);
+    return;
+  }
+
   widget()->Close();
 }
 
-void NativeWindowViews::CloseImmediatelyImpl() {
+void NativeWindowViews::CloseImmediately() {
   widget()->CloseNow();
 }
 
