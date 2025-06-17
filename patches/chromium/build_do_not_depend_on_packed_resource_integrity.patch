@@ -33,10 +33,10 @@ index 72c637f9f3ba48bb7ab06678fe833f33d2cfddc8..e9c8ae3cdb7ba400c59cc469a1a80b50
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index efb9b948aca15ae8b4d6257fa685e758d2e3acc1..0e14d0eb15bfcd86831599678eb0f76fe0a803cc 100644
+index 36fe07a692e9be5b99f9e59157b90963a6485f8b..d8cf68e953213f309537e74d954d874950ede24a 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4716,7 +4716,7 @@ static_library("browser") {
+@@ -4715,7 +4715,7 @@ static_library("browser") {
            [ "//chrome/browser/ui/webui/signin:profile_impl" ]
      }
  
