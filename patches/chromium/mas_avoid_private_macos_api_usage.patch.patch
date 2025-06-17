@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 33c4ce8dd13096e5df94303f9e8fa87194ae6c79..606f8516e75b01c00afc8970f8deb16892c92510 100644
+index b1793c06e39faa6fa38c5288d38a265dd5d8ff7f..7a702aed683af0409ddf903e5580d7a7f2383b94 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -667,6 +667,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 33c4ce8dd13096e5df94303f9e8fa87194ae6c79..606f8516e75b01c00afc8970f8deb168
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1983,6 +1985,7 @@ test("content_browsertests") {
+@@ -1985,6 +1987,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 33c4ce8dd13096e5df94303f9e8fa87194ae6c79..606f8516e75b01c00afc8970f8deb168
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3314,6 +3317,7 @@ test("content_unittests") {
+@@ -3316,6 +3319,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1564,7 +1564,7 @@ index 2d982e757d94976ec68863726db8e8a85b1034e5..d2ec88c6f923e9f7147d33ccd53c3659
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index 3e38738c71e4ff827ecaf19774be0eeca58587d8..a5fc095a498ca31ba7d0b223d605419c1dbd6399 100644
+index 7dd52ce4181579b5aec872f5fe34aa441e2b917f..cb3c8fb948841efab374c122fef59908bed21234 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 @@ -14,6 +14,7 @@
@@ -1601,7 +1601,7 @@ index 3e38738c71e4ff827ecaf19774be0eeca58587d8..a5fc095a498ca31ba7d0b223d605419c
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -668,6 +673,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -670,6 +675,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -1609,7 +1609,7 @@ index 3e38738c71e4ff827ecaf19774be0eeca58587d8..a5fc095a498ca31ba7d0b223d605419c
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -696,6 +702,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -698,6 +704,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
