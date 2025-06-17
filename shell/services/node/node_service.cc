@@ -100,9 +100,7 @@ NodeService::~NodeService() {
     ParentPort::GetInstance()->Close();
     js_env_->DestroyMicrotasksRunner();
     node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
-    if (g_client_remote.is_bound()) {
-      g_client_remote.reset();
-    }
+    g_client_remote.reset();
   }
 }
 
@@ -151,9 +149,7 @@ void NodeService::Initialize(
         node_env_stopped_ = true;
         ParentPort::GetInstance()->Close();
         js_env_->DestroyMicrotasksRunner();
-        if (g_client_remote.is_bound()) {
-          g_client_remote.reset();
-        }
+        g_client_remote.reset();
         receiver_.ResetWithReason(exit_code, "process_exit_termination");
         node::DefaultProcessExitHandler(env, exit_code);
       });
