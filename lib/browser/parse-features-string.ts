@@ -91,6 +91,12 @@ export function parseFeatures (features: string) {
     delete parsed[key];
   }
 
+  // Per spec - https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-open-dev
+  // windows are always resizable.
+  if (parsed.resizable !== undefined) {
+    delete parsed.resizable;
+  }
+
   if (parsed.left !== undefined) parsed.x = parsed.left;
   if (parsed.top !== undefined) parsed.y = parsed.top;
 
