@@ -7,10 +7,10 @@ Subject: feat: allow embedders to add observers on created hunspell
 This patch is used by Electron to implement spellchecker events.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index c2dd0fdc774a939dfe489180e019718ba4b192f1..910534aac947890b16b176b10ac8eae9857bd2d7 100644
+index 3928d6fdbda8aac5fb89ab148adaa18218e135f8..4c52386f9ddf13f1453903cda3954b6c596028f2 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -477,6 +477,8 @@ void SpellcheckService::LoadDictionaries() {
+@@ -478,6 +478,8 @@ void SpellcheckService::LoadDictionaries() {
          std::make_unique<SpellcheckHunspellDictionary>(
              dictionary, platform_spellcheck_language, context_, this));
      hunspell_dictionaries_.back()->AddObserver(this);
@@ -19,7 +19,7 @@ index c2dd0fdc774a939dfe489180e019718ba4b192f1..910534aac947890b16b176b10ac8eae9
      hunspell_dictionaries_.back()->Load();
    }
  
-@@ -531,6 +533,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
+@@ -532,6 +534,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
           (!hunspell_dictionaries_.empty() || enable_if_uninitialized);
  }
  

@@ -9,6 +9,10 @@ Process: [Main](../glossary.md#main-process)
 > [!TIP]
 > See also: [A detailed guide about how to implement menus in your application](../tutorial/menus.md).
 
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
+
 ### `new Menu()`
 
 Creates a new menu.

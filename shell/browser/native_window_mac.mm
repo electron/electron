@@ -33,6 +33,7 @@
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "shell/browser/ui/cocoa/window_buttons_proxy.h"
 #include "shell/browser/ui/drag_util.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_util.h"
@@ -336,7 +337,12 @@ void NativeWindowMac::SetContentView(views::View* view) {
   root_view->DeprecatedLayoutImmediately();
 }
 
-void NativeWindowMac::CloseImpl() {
+void NativeWindowMac::Close() {
+  if (!IsClosable()) {
+    WindowList::WindowCloseCancelled(this);
+    return;
+  }
+
   if (is_transitioning_fullscreen()) {
     SetHasDeferredWindowClose(true);
     return;
@@ -372,7 +378,7 @@ void NativeWindowMac::CloseImpl() {
   }
 }
 
-void NativeWindowMac::CloseImmediatelyImpl() {
+void NativeWindowMac::CloseImmediately() {
   // Ensure we're detached from the parent window before closing.
   RemoveChildFromParentWindow();
 
@@ -1686,7 +1692,7 @@ bool NativeWindowMac::IsActive() const {
 }
 
 void NativeWindowMac::Cleanup() {
-  DCHECK(!is_closed());
+  DCHECK(!IsClosed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
   display::Screen::GetScreen()->RemoveObserver(this);
   [window_ cleanup];
