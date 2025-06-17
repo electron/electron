@@ -536,14 +536,55 @@ To only prevent the menu shortcuts, use
 [`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore):
 
 ```js
-const { BrowserWindow } = require('electron')
+const { app, BrowserWindow } = require('electron')
 
-const win = new BrowserWindow({ width: 800, height: 600 })
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
 
-win.webContents.on('before-input-event', (event, input) => {
-  // For example, only enable application menu keyboard shortcuts when
-  // Ctrl/Cmd are down.
-  win.webContents.setIgnoreMenuShortcuts(!input.control && !input.meta)
+  win.webContents.on('before-input-event', (event, input) => {
+    // Enable application menu keyboard shortcuts when Ctrl/Cmd are down.
+    win.webContents.setIgnoreMenuShortcuts(!input.control && !input.meta)
+  })
+})
+```
+
+#### Event: 'before-mouse-event'
+
+Returns:
+
+* `event` Event
+* `mouse` [MouseInputEvent](structures/mouse-input-event.md)
+
+Emitted before dispatching mouse events in the page.
+
+Calling `event.preventDefault` will prevent the page mouse events.
+
+```js
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
+
+  win.webContents.on('before-mouse-event', (event, mouse) => {
+    // Prevent mouseDown events.
+    if (mouse.type === 'mouseDown') {
+      console.log(mouse)
+      /*
+      {
+        type: 'mouseDown',
+        clickCount: 1,
+        movementX: 0,
+        movementY: 0,
+        button: 'left',
+        x: 632.359375,
+        y: 480.6875,
+        globalX: 168.359375,
+        globalY: 193.6875
+      }
+      */
+      event.preventDefault()
+    }
+  })
 })
 ```
 
@@ -841,9 +882,10 @@ Emitted when a bluetooth device needs to be selected when a call to
 the `deviceId` of the device to be selected.  Passing an empty string to
 `callback` will cancel the request.
 
-If an event listener is not added for this event, or if `event.preventDefault`
-is not called when handling this event, the first available device will be
-automatically selected.
+If no event listener is added for this event, all bluetooth requests will be cancelled.
+
+If `event.preventDefault` is not called when handling this event, the first available
+device will be automatically selected.
 
 Due to the nature of bluetooth, scanning for devices when
 `navigator.bluetooth.requestDevice` is called may take time and will cause
@@ -1724,6 +1766,12 @@ When a custom `pageSize` is passed, Chromium attempts to validate platform speci
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings for printing.
+
+Some possible `failureReason`s for print failure include:
+
+* "Invalid printer settings"
+* "Print job canceled"
+* "Print job failed"
 
 Use `page-break-before: always;` CSS style to force to print to a new page.
 

@@ -100,8 +100,7 @@ jobs:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas
     env:
-      CHROMIUM_GIT_AUTH: ${{ secrets.CHROMIUM_GIT_AUTH }}
-      CHROMIUM_GIT_USER: ${{ secrets.CHROMIUM_GIT_USER }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     outputs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
@@ -129,8 +128,7 @@ jobs:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas
     env:
-      CHROMIUM_GIT_AUTH: ${{ secrets.CHROMIUM_GIT_AUTH }}
-      CHROMIUM_GIT_USER: ${{ secrets.CHROMIUM_GIT_USER }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
       PATCH_UP_APP_CREDS: ${{ secrets.PATCH_UP_APP_CREDS }}
@@ -159,8 +157,8 @@ jobs:
         - /mnt/win-cache:/mnt/win-cache
         - /var/run/sas:/var/run/sas
     env:
-      CHROMIUM_GIT_AUTH: ${{ secrets.CHROMIUM_GIT_AUTH }}
-      CHROMIUM_GIT_USER: ${{ secrets.CHROMIUM_GIT_USER }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
       TARGET_OS: 'win'
       ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
