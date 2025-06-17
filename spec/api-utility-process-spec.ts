@@ -135,14 +135,18 @@ describe('utilityProcess module', () => {
       const [code] = await once(child, 'exit');
       expect(code).to.equal(1);
       let handle = null;
+      const lines = [];
       try {
         handle = await fs.open(file);
         for await (const line of handle.readLines()) {
-          expect(line).to.not.contain('after exit');
+          lines.push(line);
         }
       } finally {
         await handle?.close();
+        await fs.rm(file, { force: true });
       }
+      expect(lines.length).to.equal(1);
+      expect(lines[0]).to.equal('before exit');
     });
 
     // 32-bit system will not have V8 Sandbox enabled.
