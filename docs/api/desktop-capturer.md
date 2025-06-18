@@ -100,7 +100,9 @@ Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`Desktop
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
 
-## System Audio Capture (macOS 12.3+)
+## macOS Caveats
+
+### System Audio Capture (macOS 12.3+)
 
  On macOS 12.3+, `navigator.mediaDevices.getDisplayMedia` can be used to capture system audio
  if the [`setDisplayMediaRequestHandler`](./session.md#sessetdisplaymediarequesthandlerhandler-opts) `callback` 
@@ -115,7 +117,7 @@ Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`Desktop
 > app.commandLine.appendSwitch('enable-features', 'MacSckSystemAudioLoopbackOverride');
 > ```
 
-## System Audio Capture (before macOS 12.3)
+### System Audio Capture (before macOS 12.3)
 
 On macOS 12.3 or lower, system audio capture is not supported due to a fundamental limitation whereby 
 apps that want to access the system's audio require a [signed kernel extension](https://developer.apple.com/library/archive/documentation/Security/ConceptualSystem_Integrity_Protection_Guide/KernelExtensions/KernelExtensions.html). 
