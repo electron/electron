@@ -5,7 +5,7 @@
 
 Process: [Main](../glossary.md#main-process)
 
-The following example shows how to capture video and system audio (if supported) of the current desktop:
+The following example shows how to capture video and system audio of the first screen found:
 
 ```js
 // main.js
@@ -17,6 +17,7 @@ app.whenReady().then(() => {
   session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
     desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
       // Grant access to the first screen found.
+      // Capture system audio if supported.
       callback({ video: sources[0], audio: 'loopback' })
     })
     // If true, use the system picker if available.
@@ -61,7 +62,7 @@ stopButton.addEventListener('click', () => {
   <body>
     <button id="startButton" class="button">Start</button>
     <button id="stopButton" class="button">Stop</button>
-    <video width="320" height="240" autoplay></video>
+    <video width="320" height="240" autoplay controls></video>
     <script src="renderer.js"></script>
   </body>
 </html>
@@ -99,22 +100,23 @@ Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`Desktop
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
 
-## Loopback Audio on macOS 13/14/15
+## System Audio Capture (macOS 13+)
 
-On macOS 13 and macOS 14, `navigator.mediaDevices.getDisplayMedia` may be used to capture loopback audio if the [`setDisplayMediaRequestHandler`](./session.md#sessetdisplaymediarequesthandlerhandler-opts) callback is returned with `audio: 'loopback'`.
-
-For macOS 15+, loopback audio is only supported if the following experimental command line switches are appended:
-
-```js
-// main.js
-app.commandLine.appendSwitch('enable-features', 'MacLoopbackAudioForScreenShare,MacSckSystemAudioLoopbackOverride');
-```
+ On macOS 13+, `navigator.mediaDevices.getDisplayMedia` can be used to capture system audio
+ if the [`setDisplayMediaRequestHandler`](./session.md#sessetdisplaymediarequesthandlerhandler-opts) `callback` 
+ is passed a stream that has `audio: 'loopback'`. See the [example](./desktop-capturer.md) above.
 
 > [!NOTE]
-> Loopback audio is not supported on any macOS version in `navigator.mediaDevices.getUserMedia`.
+> Due to ongoing changes in Chromium, capturing system audio is experimental on macOS 15+ and requires the 
+> following command line switch to be appended:
+>
+> ```js
+> // main.js
+> app.commandLine.appendSwitch('enable-features', 'MacSckSystemAudioLoopbackOverride');
+> ```
 
-## Caveats
+## System Audio Capture (macOS 12.3 or lower)
 
-`navigator.mediaDevices.getUserMedia` does not work on macOS for audio capture due to a fundamental limitation whereby apps that want to access the system's audio require a [signed kernel extension](https://developer.apple.com/library/archive/documentation/Security/Conceptual/System_Integrity_Protection_Guide/KernelExtensions/KernelExtensions.html). Chromium, and by extension Electron, does not provide this.
+On macOS 12.3 or lower, `navigator.mediaDevices.getUserMedia` does not work for system audio capture due to a fundamental limitation whereby apps that want to access the system's audio require a [signed kernel extension](https://developer.apple.com/library/archive/documentation/Security/Conceptual/System_Integrity_Protection_Guide/KernelExtensions/KernelExtensions.html). Chromium, and by extension Electron, does not provide this.
 
 It is possible to circumvent this limitation by capturing system audio with another macOS app like Soundflower and passing it through a virtual audio input device. This virtual device can then be queried with `navigator.mediaDevices.getUserMedia`.
