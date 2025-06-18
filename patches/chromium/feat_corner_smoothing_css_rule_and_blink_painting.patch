@@ -184,10 +184,10 @@ index 70443bdb44feaa04503b37cf386f15076cc4f417..4a3236899aef3617cf8460a51b568038
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 2e393bbdd61b07ce14e0fe08c9f93043b3366b83..1460c5ba475f47c913f687c365f909be1cc038aa 100644
+index cc37a18790398ec8076c3f9c520ade59e0ef28f5..ef805e4cc432acb7a326c89a72b9170f555ec273 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -3929,6 +3929,15 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
+@@ -3928,6 +3928,15 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
    return PositionArea(span[0], span[1], span[2], span[3]);
  }
  
@@ -309,7 +309,7 @@ index ec80337fdac36fa1636f5142c3827d3bbc81644c..634db12dfb443acabde79e9faf59cb84
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 8e39d4fb60aa93087335982f7a85f46779c6958a..a21824e2ff76f6c77be251bb4f71ac368bd57d85 100644
+index 65f405e696dcd6783c84815622d3cc2039057c7e..dd245d0f1215689badebf2ec78f50f7550aa2e9e 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1650,6 +1650,8 @@ component("platform") {

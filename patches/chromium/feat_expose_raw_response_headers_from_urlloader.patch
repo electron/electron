@@ -17,10 +17,10 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 0becf4f37532fb7acfdf4d516a72f7048e98c550..0a267234eff1684fe2e6231584ccd1b5c9ed03e3 100644
+index 9488b2b775cf9cf98e7700f71c0424c6263d5bbd..0bb94028fd307915455cc429df28402ecf988b73 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -178,6 +178,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
+@@ -179,6 +179,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
    allow_cookies_from_browser = other.allow_cookies_from_browser;
    include_request_cookies_with_response =
        other.include_request_cookies_with_response;
@@ -28,7 +28,7 @@ index 0becf4f37532fb7acfdf4d516a72f7048e98c550..0a267234eff1684fe2e6231584ccd1b5
    cookie_observer =
        Clone(&const_cast<mojo::PendingRemote<mojom::CookieAccessObserver>&>(
            other.cookie_observer));
-@@ -212,6 +213,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
+@@ -213,6 +214,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
      const TrustedParams& other) const {
    return isolation_info.IsEqualForTesting(other.isolation_info) &&
           disable_secure_dns == other.disable_secure_dns &&
@@ -37,10 +37,10 @@ index 0becf4f37532fb7acfdf4d516a72f7048e98c550..0a267234eff1684fe2e6231584ccd1b5
           allow_cookies_from_browser == other.allow_cookies_from_browser &&
           include_request_cookies_with_response ==
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index df29c7cb739a488684c0c50bc5343df101911a31..86b5576c9c10e5544347117e4f6b09d7692caffa 100644
+index 95592f8b8145f6c8e852f85fdb431cb7b0be9ff7..4c92030c94c2f3ca277a576d7776975695031e74 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
-@@ -78,6 +78,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
+@@ -79,6 +79,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
      bool has_user_activation = false;
      bool allow_cookies_from_browser = false;
      bool include_request_cookies_with_response = false;

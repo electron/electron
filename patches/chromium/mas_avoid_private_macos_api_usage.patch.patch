@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 8a71f4ead99fdc7e753fa86c35a784e936efab78..98243ae07e9a23f67500ce404d9d1290c5d55672 100644
+index b2ac71ed714e1d11d4257cdafc5825c666c91bff..4ac6b6116eeae59c6ec24aed462fdf69ed44bc0a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1053,6 +1053,7 @@ component("base") {
@@ -477,7 +477,7 @@ index acc9537464c2a54ffc22956873dbdba74500c20b..b0b7d98e20ed0cc63a38d6a2ce462ac6
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 60e850a173d66b9d22a521ed49620c496b5a5e8d..c4d5498c61b246d04b654d775a4a4919d0a9c65a 100644
+index 9f18a00af5ce726a4b338689ae75a0196b1a1dba..e0a9427743c283aec398b4bf3f09f95a09346e55 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -383,6 +383,7 @@ viz_component("service") {
@@ -488,7 +488,7 @@ index 60e850a173d66b9d22a521ed49620c496b5a5e8d..c4d5498c61b246d04b654d775a4a4919
    }
  
    if (is_ios) {
-@@ -697,6 +698,7 @@ viz_source_set("unit_tests") {
+@@ -705,6 +706,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -582,7 +582,7 @@ index 8563eb9aa5b5dca04e45d55a3bdd32a135232f00..587bafc4fa1f73c9ac8403757b21bfed
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e503df625f2b9319e80cadd22562215ab7985271..8b79d4eba145096803c4f5a6ae1d70dcceba40fc 100644
+index 6ebaf4161109f40a13ee4b5ac00c22dcf767f76b..7c05c3bdd4fdc497ff3f08767fb35f75170664e9 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -341,6 +341,7 @@ source_set("browser") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index b1793c06e39faa6fa38c5288d38a265dd5d8ff7f..7a702aed683af0409ddf903e5580d7a7f2383b94 100644
+index b3ba38b1a469b3a9bfbe0f6853a2ef3353a17c38..06080b9965dd0481944de9635bc8ff96bdfcae39 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -667,6 +667,7 @@ static_library("test_support") {
@@ -824,7 +824,7 @@ index b1793c06e39faa6fa38c5288d38a265dd5d8ff7f..7a702aed683af0409ddf903e5580d7a7
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3316,6 +3319,7 @@ test("content_unittests") {
+@@ -3317,6 +3320,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1871,7 +1871,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 831f34b981ec4dad7fbe8d0dd0e63a978f3ccc3c..7b61559e9f38119dd1ec7c5070208de59c38af27 100644
+index a755b8c0aeab9daab1809395e3f65d45175b01f6..68e7d006badf072104afad166b9033bb610eafef 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -718,6 +718,8 @@ component("views") {
@@ -1883,7 +1883,7 @@ index 831f34b981ec4dad7fbe8d0dd0e63a978f3ccc3c..7b61559e9f38119dd1ec7c5070208de5
    }
  
    if (is_win) {
-@@ -1146,6 +1148,8 @@ source_set("test_support") {
+@@ -1147,6 +1149,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
