@@ -100,23 +100,27 @@ Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`Desktop
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
 
-## System Audio Capture (macOS 13+)
+## System Audio Capture (macOS 12.3+)
 
- On macOS 13+, `navigator.mediaDevices.getDisplayMedia` can be used to capture system audio
+ On macOS 12.3+, `navigator.mediaDevices.getDisplayMedia` can be used to capture system audio
  if the [`setDisplayMediaRequestHandler`](./session.md#sessetdisplaymediarequesthandlerhandler-opts) `callback` 
- is passed a stream that has `audio: 'loopback'`. See the [example](./desktop-capturer.md) above.
+ is passed a `streams` object that has `audio: 'loopback'`. See the example above.
 
 > [!NOTE]
 > Due to ongoing changes in Chromium, capturing system audio is experimental on macOS 15+ and requires the 
-> following command line switch to be appended:
+> following [command line switch](./command-line-switches.md) to be appended. Please note that you may experience bugs.
 >
 > ```js
 > // main.js
 > app.commandLine.appendSwitch('enable-features', 'MacSckSystemAudioLoopbackOverride');
 > ```
 
-## System Audio Capture (macOS 12.3 or lower)
+## System Audio Capture (before macOS 12.3)
 
-On macOS 12.3 or lower, system audio capture is not supported due to a fundamental limitation whereby apps that want to access the system's audio require a [signed kernel extension](https://developer.apple.com/library/archive/documentation/Security/Conceptual/System_Integrity_Protection_Guide/KernelExtensions/KernelExtensions.html). Chromium, and by extension Electron, does not provide this.
+On macOS 12.3 or lower, system audio capture is not supported due to a fundamental limitation whereby 
+apps that want to access the system's audio require a [signed kernel extension](https://developer.apple.com/library/archive/documentation/Security/ConceptualSystem_Integrity_Protection_Guide/KernelExtensions/KernelExtensions.html). 
+Chromium, and by extension Electron, does not provide this.
 
-It is possible to circumvent this limitation by capturing system audio with another macOS app like Soundflower and passing it through a virtual audio input device. This virtual device can then be queried with `navigator.mediaDevices.getUserMedia`.
+It is possible to circumvent this limitation by capturing system audio with another macOS app like 
+Soundflower and passing it through a virtual audio input device. This virtual device can then be 
+queried with `navigator.mediaDevices.getUserMedia`.
