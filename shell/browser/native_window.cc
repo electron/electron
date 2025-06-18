@@ -31,14 +31,13 @@
 #include "shell/common/options_switches.h"
 #include "ui/base/hit_test.h"
 #include "ui/compositor/compositor.h"
+#include "ui/display/display.h"
+#include "ui/display/screen.h"
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
 #include "shell/browser/ui/views/frameless_view.h"
 #endif
-
-#include "ui/display/display.h"
-#include "ui/display/screen.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "ui/display/win/screen_win.h"
