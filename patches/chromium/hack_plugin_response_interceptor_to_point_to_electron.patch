@@ -8,7 +8,7 @@ require a largeish patch to get working, so just redirect it to our
 implementation instead.
 
 diff --git a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
-index 9562a4c81714b98df30d2180689eff29f0beca31..5506740f0bfcc1b0692ac014bc628e1208ab3fe0 100644
+index 18fb39fba6e1a6245d22120ba129abf4e5b42b96..62e79cba8161f2acc3ff9e9e20953179ded4ef4e 100644
 --- a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 +++ b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 @@ -12,8 +12,8 @@
