@@ -5,8 +5,7 @@
 
 Process: [Main](../glossary.md#main-process)
 
-The following example shows how to capture video from a desktop window whose
-title is `Electron`:
+The following example shows how to capture video and system audio (if supported) of the current desktop:
 
 ```js
 // main.js
@@ -99,6 +98,20 @@ Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`Desktop
 
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
+
+## Loopback Audio on macOS 13/14/15
+
+On macOS 13 and macOS 14, `navigator.mediaDevices.getDisplayMedia` may be used to capture loopback audio if the [`setDisplayMediaRequestHandler`](./session.md#sessetdisplaymediarequesthandlerhandler-opts) callback is returned with `audio: 'loopback'`.
+
+For macOS 15+, loopback audio is only supported if the following experimental command line switches are appended:
+
+```js
+// main.js
+app.commandLine.appendSwitch('enable-features', 'MacLoopbackAudioForScreenShare,MacSckSystemAudioLoopbackOverride');
+```
+
+> [!NOTE]
+> Loopback audio is not supported on any macOS version in `navigator.mediaDevices.getUserMedia`.
 
 ## Caveats
 
