@@ -10,22 +10,29 @@
 
 #include "base/containers/contains.h"
 #include "base/memory/ptr_util.h"
+#include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "components/prefs/pref_service.h"
+#include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "include/core/SkColor.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/draggable_region_provider.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
 #include "ui/base/hit_test.h"
 #include "ui/compositor/compositor.h"
+#include "ui/display/display.h"
+#include "ui/display/screen.h"
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
@@ -113,6 +120,17 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 #elif BUILDFLAG(IS_MAC)
   options.Get(options::kVibrancyType, &vibrancy_);
 #endif
+
+  // Initialize prefs_ to save/restore window bounds
+  if (auto* browser_context =
+          electron::ElectronBrowserContext::GetDefaultBrowserContext())
+    prefs_ = browser_context->prefs();
+
+  if (gin_helper::Dictionary restore_options;
+      options.Get(options::kWindowStateRestoreOptions, &restore_options)) {
+    // Initialize window_state_id_
+    restore_options.Get(options::kStateId, &window_state_id_);
+  }
 
   v8::Local<v8::Value> titlebar_overlay;
   if (options.Get(options::ktitleBarOverlay, &titlebar_overlay)) {
@@ -268,7 +286,9 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   std::string title(Browser::Get()->GetName());
   options.Get(options::kTitle, &title);
   SetTitle(title);
-
+  // TODO(nilayarya): Save window state after restoration logic is implemented
+  // here.
+  SaveWindowState();
   // Then show it.
   if (options.ValueOrDefault(options::kShow, true))
     Show();
@@ -283,6 +303,10 @@ NativeWindow* NativeWindow::FromWidget(const views::Widget* widget) {
 
 void NativeWindow::SetShape(const std::vector<gfx::Rect>& rects) {
   widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
+}
+
+bool NativeWindow::IsClosed() const {
+  return is_closed_;
 }
 
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
@@ -523,23 +547,8 @@ void NativeWindow::NotifyWindowCloseButtonClicked() {
   CloseImmediately();
 }
 
-void NativeWindow::Close() {
-  if (!IsClosable()) {
-    WindowList::WindowCloseCancelled(this);
-    return;
-  }
-
-  if (!is_closed())
-    CloseImpl();
-}
-
-void NativeWindow::CloseImmediately() {
-  if (!is_closed())
-    CloseImmediatelyImpl();
-}
-
 void NativeWindow::NotifyWindowClosed() {
-  if (is_closed())
+  if (is_closed_)
     return;
 
   is_closed_ = true;
@@ -828,6 +837,34 @@ bool NativeWindow::IsTranslucent() const {
 #endif
 
   return false;
+}
+
+void NativeWindow::SaveWindowState() {
+  if (!prefs_ || window_state_id_.empty())
+    return;
+
+  gfx::Rect bounds = GetBounds();
+
+  base::Value::Dict window_preferences;
+  window_preferences.Set(electron::kLeft, bounds.x());
+  window_preferences.Set(electron::kTop, bounds.y());
+  window_preferences.Set(electron::kRight, bounds.right());
+  window_preferences.Set(electron::kBottom, bounds.bottom());
+
+  window_preferences.Set(electron::kMaximized, IsMaximized());
+  window_preferences.Set(electron::kFullscreen, IsFullscreen());
+
+  const display::Screen* screen = display::Screen::GetScreen();
+  const display::Display display = screen->GetDisplayMatching(bounds);
+  gfx::Rect work_area = display.work_area();
+
+  window_preferences.Set(electron::kWorkAreaLeft, work_area.x());
+  window_preferences.Set(electron::kWorkAreaTop, work_area.y());
+  window_preferences.Set(electron::kWorkAreaRight, work_area.right());
+  window_preferences.Set(electron::kWorkAreaBottom, work_area.bottom());
+
+  ScopedDictPrefUpdate update(prefs_, electron::kWindowStates);
+  update->Set(window_state_id_, std::move(window_preferences));
 }
 
 // static

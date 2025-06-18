@@ -71,9 +71,8 @@ v8::Local<v8::Promise> ShowOpenDialog(
 
 void ShowSaveDialogSync(const file_dialog::DialogSettings& settings,
                         gin::Arguments* args) {
-  base::FilePath path;
-  if (file_dialog::ShowSaveDialogSync(settings, &path))
-    args->Return(path);
+  if (const auto path = file_dialog::ShowSaveDialogSync(settings))
+    args->Return(*path);
 }
 
 v8::Local<v8::Promise> ShowSaveDialog(

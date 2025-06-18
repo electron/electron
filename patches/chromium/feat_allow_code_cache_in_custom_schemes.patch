@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index d6ddb79521290790aeb8fbd997117cf3c6157c75..52a9536f4187418327f980fd3dd68211d8103374 100644
+index 1673dd4966365f31f1073a4c90743e6fe73880b6..cb3d3da5bc9da99c950521d18f28aa438467fdf4 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -8,6 +8,7 @@
@@ -20,7 +20,7 @@ index d6ddb79521290790aeb8fbd997117cf3c6157c75..52a9536f4187418327f980fd3dd68211
  #include "base/feature_list.h"
  #include "base/functional/bind.h"
  #include "base/functional/callback_helpers.h"
-@@ -32,6 +33,7 @@
+@@ -31,6 +32,7 @@
  #include "net/http/http_cache.h"
  #include "third_party/blink/public/common/scheme_registry.h"
  #include "url/gurl.h"
@@ -28,7 +28,7 @@ index d6ddb79521290790aeb8fbd997117cf3c6157c75..52a9536f4187418327f980fd3dd68211
  
  using storage::BigIOBuffer;
  
-@@ -44,7 +46,7 @@ constexpr char kSeparator[] = " \n";
+@@ -43,7 +45,7 @@ constexpr char kSeparator[] = " \n";
  
  // We always expect to receive valid URLs that can be used as keys to the code
  // cache. The relevant checks (for ex: resource_url is valid, origin_lock is
@@ -37,7 +37,7 @@ index d6ddb79521290790aeb8fbd997117cf3c6157c75..52a9536f4187418327f980fd3dd68211
  //
  // This function doesn't enforce anything in the production code. It is here
  // to make the assumptions explicit and to catch any errors when DCHECKs are
-@@ -54,33 +56,55 @@ void CheckValidKeys(const GURL& resource_url,
+@@ -53,33 +55,55 @@ void CheckValidKeys(const GURL& resource_url,
                      GeneratedCodeCache::CodeCacheType cache_type) {
    // If the resource url is invalid don't cache the code.
    DCHECK(resource_url.is_valid());
@@ -117,10 +117,10 @@ index d6ddb79521290790aeb8fbd997117cf3c6157c75..52a9536f4187418327f980fd3dd68211
  
  // Generates the cache key for the given |resource_url|, |origin_lock| and
 diff --git a/content/browser/code_cache/generated_code_cache.h b/content/browser/code_cache/generated_code_cache.h
-index c5fb0546fb8724a6ba34b55d8d52b2f70ad5bc0c..883c4022aa58e5eb5345ec4e8815a1374160d96c 100644
+index 94602e2319d3f7ed557da98e0598c9f96d986260..0a9a856d8bd9d702eb49e45a54c141a39f5ec622 100644
 --- a/content/browser/code_cache/generated_code_cache.h
 +++ b/content/browser/code_cache/generated_code_cache.h
-@@ -52,12 +52,14 @@ class CONTENT_EXPORT GeneratedCodeCache {
+@@ -51,12 +51,14 @@ class CONTENT_EXPORT GeneratedCodeCache {
    // Cache type. Used for collecting statistics for JS and Wasm in separate
    // buckets.
    enum CodeCacheType {
@@ -140,10 +140,10 @@ index c5fb0546fb8724a6ba34b55d8d52b2f70ad5bc0c..883c4022aa58e5eb5345ec4e8815a137
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index c810c580efea05ba9b3b41a90b289224220bb203..55864eed550b09ba41732c706a81a122594949d6 100644
+index a2a19b975ddd8799917ec674b53368ab1b123232..3ff87e391f744cd17c26945fa7dcfde59d80b573 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
-@@ -11,17 +11,22 @@
+@@ -15,17 +15,22 @@
  #include "base/time/time.h"
  #include "content/browser/code_cache/generated_code_cache_context.h"
  #include "content/browser/renderer_host/code_cache_host_impl.h"
@@ -166,7 +166,7 @@ index c810c580efea05ba9b3b41a90b289224220bb203..55864eed550b09ba41732c706a81a122
  #include "net/base/features.h"
  #include "net/dns/mock_host_resolver.h"
  #include "third_party/blink/public/common/features.h"
-@@ -31,6 +36,8 @@ namespace content {
+@@ -36,6 +41,8 @@ namespace content {
  
  namespace {
  
@@ -175,7 +175,7 @@ index c810c580efea05ba9b3b41a90b289224220bb203..55864eed550b09ba41732c706a81a122
  bool SupportsSharedWorker() {
  #if BUILDFLAG(IS_ANDROID)
    // SharedWorkers are not enabled on Android. https://crbug.com/154571
-@@ -875,4 +882,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
+@@ -1048,4 +1055,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
    }
  }
  
@@ -411,10 +411,10 @@ index cf71655553cf510e1309ac47bdd5ddab08e52672..0a02d17d06e080f40bf12bb2e48f51ad
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index e09d63ee585919842b2b92f9a53b85f67da90531..9e844e2ac9da41dd711497412d03e9b313726162 100644
+index f77ce7f6de0a183debfdf272aa17c35c8307c480..54cbc57dc5217447cdf2895d6918e27001a39b7e 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
-@@ -135,6 +135,9 @@ struct SchemeRegistry {
+@@ -136,6 +136,9 @@ struct SchemeRegistry {
        kMaterializedViewScheme,
    };
  
@@ -424,7 +424,7 @@ index e09d63ee585919842b2b92f9a53b85f67da90531..9e844e2ac9da41dd711497412d03e9b3
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -717,6 +720,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -694,6 +697,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
@@ -441,7 +441,7 @@ index e09d63ee585919842b2b92f9a53b85f67da90531..9e844e2ac9da41dd711497412d03e9b3
    DoAddSchemeWithHandler(
        new_scheme, handler,
 diff --git a/url/url_util.h b/url/url_util.h
-index e39a44057cebce7cdf90bcb02a7463e88bd271b4..e80b81d2ddeb2ec201b143d86bec6ee54ca49afc 100644
+index 50c273fe9c2007ec5ac6675726ce0ae9811af9e2..5f7352ff5eba9c548aaaea63f75e9551c81ce305 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();

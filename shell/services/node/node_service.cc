@@ -9,6 +9,7 @@
 
 #include "base/command_line.h"
 #include "base/no_destructor.h"
+#include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
 #include "electron/mas.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
@@ -99,8 +100,6 @@ NodeService::~NodeService() {
     ParentPort::GetInstance()->Close();
     js_env_->DestroyMicrotasksRunner();
     node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
-  }
-  if (g_client_remote.is_bound()) {
     g_client_remote.reset();
   }
 }
@@ -147,12 +146,12 @@ void NodeService::Initialize(
   node::SetProcessExitHandler(
       node_env_.get(), [this](node::Environment* env, int exit_code) {
         // Destroy node platform.
-        env->set_trace_sync_io(false);
+        node_env_stopped_ = true;
         ParentPort::GetInstance()->Close();
         js_env_->DestroyMicrotasksRunner();
-        node::Stop(env, node::StopFlags::kDoNotTerminateIsolate);
-        node_env_stopped_ = true;
+        g_client_remote.reset();
         receiver_.ResetWithReason(exit_code, "process_exit_termination");
+        node::DefaultProcessExitHandler(env, exit_code);
       });
 
   node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);

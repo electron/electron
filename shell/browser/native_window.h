@@ -27,6 +27,7 @@
 
 class SkRegion;
 class DraggableRegionProvider;
+class PrefService;
 
 namespace input {
 struct NativeWebKeyboardEvent;
@@ -81,10 +82,9 @@ class NativeWindow : public base::SupportsUserData,
 
   virtual void SetContentView(views::View* view) = 0;
 
-  // wrapper around CloseImpl that checks that window_ can be closed
-  void Close();
-  // wrapper around CloseImmediatelyImpl that checks that window_ can be closed
-  void CloseImmediately();
+  virtual void Close() = 0;
+  virtual void CloseImmediately() = 0;
+  virtual bool IsClosed() const;
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() const = 0;
   virtual void Show() = 0;
@@ -426,7 +426,11 @@ class NativeWindow : public base::SupportsUserData,
   // throttling, then throttling in the `ui::Compositor` will be disabled.
   void UpdateBackgroundThrottlingState();
 
+  void SaveWindowState();
+
  protected:
+  friend class api::BrowserView;
+
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   void set_titlebar_overlay_height(int height) {
@@ -456,9 +460,6 @@ class NativeWindow : public base::SupportsUserData,
   const views::Widget* GetWidget() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
-
-  virtual void CloseImpl() = 0;
-  virtual void CloseImmediatelyImpl() = 0;
 
   static inline constexpr base::cstring_view kNativeWindowKey =
       "__ELECTRON_NATIVE_WINDOW__";
@@ -545,6 +546,9 @@ class NativeWindow : public base::SupportsUserData,
   std::string background_material_;
 
   gfx::Rect overlay_rect_;
+
+  raw_ptr<PrefService> prefs_ = nullptr;
+  std::string window_state_id_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };
