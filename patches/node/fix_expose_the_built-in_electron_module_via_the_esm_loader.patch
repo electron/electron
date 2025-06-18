@@ -64,7 +64,7 @@ index 5ba13096b98047ff33e4d44167c2a069ccc5e69d..09a332c0999086b30fd952d9456f7889
    }
  }
 diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
-index ae03073aff8140b11c63b6c05d831ba573568dba..b70c7cfe40e2eaaeea7b5ad6fcf0aaee87276aa1 100644
+index aff686577df3c366f06f90666e23a03fc376cf53..e8857a151428acd6f8ece74d92774a18accc1e13 100644
 --- a/lib/internal/modules/esm/loader.js
 +++ b/lib/internal/modules/esm/loader.js
 @@ -492,7 +492,7 @@ class ModuleLoader {

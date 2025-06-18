@@ -44,10 +44,10 @@ index 59b5a16f1309a5e4055bccfdb7a529045ad30402..bfdaf6211466a01b64b7942f7b16c480
    let filename = call.getFileName();
    const line = call.getLineNumber() - 1;
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 23cb558a22b4462f5ce4f74833d25c7f712f8139..b22fbb0a285f6f323779d6ebb2b027a3990b031e 100644
+index 8be78889e8234eb3100f309829bf7470db544dcd..bb1e80ece4158dfed1b8bab7dc6d00dd56505aac 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1535,14 +1535,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
+@@ -1557,14 +1557,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
    }
    Isolate* isolate = args.GetIsolate();
  
