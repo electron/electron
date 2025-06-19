@@ -49,7 +49,7 @@ index df29c7cb739a488684c0c50bc5343df101911a31..86b5576c9c10e5544347117e4f6b09d7
      mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
      mojo::PendingRemote<mojom::URLLoaderNetworkServiceObserver>
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 1fbe54bda8198423b42cb5eba291d7346a76873c..71b58ec4e11317a4da1c89d9407ab439ff1629c3 100644
+index 088517d1a9800de0d09c745bbe1ef2fe416c3425..2303ede53f1ee7a827befec560069d97601c2b80 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
 @@ -50,6 +50,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
@@ -61,7 +61,7 @@ index 1fbe54bda8198423b42cb5eba291d7346a76873c..71b58ec4e11317a4da1c89d9407ab439
        mojo::PendingRemote<network::mojom::CookieAccessObserver>>();
    out->trust_token_observer = data.TakeTrustTokenObserver<
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 1d6f7cb0347c2d1156052f43b82f22130c4750aa..ef6625a9148107772f94d2f62478914fc84d6b89 100644
+index 45defbfca47574ed002052a2ba2b1517a3ea89f4..a4f7a0cc7346b2e413cec1f56ec1d0484f94ed34 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
 @@ -72,6 +72,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
