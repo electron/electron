@@ -279,7 +279,7 @@ declare module NodeJS {
 interface ContextMenuItem {
   id: number;
   label: string;
-  type: 'normal' | 'separator' | 'subMenu' | 'checkbox';
+  type: 'normal' | 'separator' | 'subMenu' | 'checkbox' | 'header' | 'palette';
   checked: boolean;
   enabled: boolean;
   subItems: ContextMenuItem[];
