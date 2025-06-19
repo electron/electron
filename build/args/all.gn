@@ -76,3 +76,7 @@ enterprise_cloud_content_analysis = false
 # TODO: remove dependency on legacy ipc
 # https://issues.chromium.org/issues/40943039
 content_enable_legacy_ipc = true
+
+# Disable siso until we are ready to use it.
+# https://chromium-review.googlesource.com/c/chromium/src/+/6638830
+use_siso = false
