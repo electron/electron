@@ -605,10 +605,10 @@ index 4b1775f4a882fbabfe65df7784baebe6d8bee788..5a3e71dc3894fa96ac7a6b93b3552a90
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/printer_query_oop.cc b/chrome/browser/printing/printer_query_oop.cc
-index e271d17b3261c47f3dbeaf9be0b3c4229ee27181..ed19764250d9125915f0f948896acd7eae7911a6 100644
+index 68465045179c9bbe747679509453d8a802176568..eac20bd0ab74891ad9f38d43ee5b6ca51b5cff48 100644
 --- a/chrome/browser/printing/printer_query_oop.cc
 +++ b/chrome/browser/printing/printer_query_oop.cc
-@@ -127,7 +127,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
+@@ -128,7 +128,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
      std::unique_ptr<PrintSettings> new_settings,
      mojom::ResultCode result) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -887,7 +887,7 @@ index 97cb6458bc9eec767db89b56abfc5f4b4136ff7b..d9a0b343158b8464b5c9aa8e0e655c0b
    ScriptingThrottler scripting_throttler_;
  
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 7c05c3bdd4fdc497ff3f08767fb35f75170664e9..f218e90a731e84ff2290ab46cad28d44d47b1607 100644
+index 8db5717055ed9eb979967495b23f098171bb417a..c5bf8bb8536a8c281e81ab2fe37a2804e54c155d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -3192,8 +3192,9 @@ source_set("browser") {

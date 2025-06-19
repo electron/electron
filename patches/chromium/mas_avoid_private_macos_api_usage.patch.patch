@@ -582,7 +582,7 @@ index 8563eb9aa5b5dca04e45d55a3bdd32a135232f00..587bafc4fa1f73c9ac8403757b21bfed
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6ebaf4161109f40a13ee4b5ac00c22dcf767f76b..7c05c3bdd4fdc497ff3f08767fb35f75170664e9 100644
+index de41df34b64c4a74eb79557b2541db165bff8ad0..8db5717055ed9eb979967495b23f098171bb417a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -341,6 +341,7 @@ source_set("browser") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index b3ba38b1a469b3a9bfbe0f6853a2ef3353a17c38..06080b9965dd0481944de9635bc8ff96bdfcae39 100644
+index 41ced951e5483021ae04d3fe9a3598a0b15eacd0..73add5abcc8ce1e9c3a26c81ff5f5adb559ab1c7 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -667,6 +667,7 @@ static_library("test_support") {
