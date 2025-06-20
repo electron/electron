@@ -114,20 +114,12 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   options.Get(options::kVibrancyType, &vibrancy_);
 #endif
 
-  v8::Local<v8::Value> titlebar_overlay;
-  if (options.Get(options::ktitleBarOverlay, &titlebar_overlay)) {
-    if (titlebar_overlay->IsBoolean()) {
-      options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
-    } else if (titlebar_overlay->IsObject()) {
-      titlebar_overlay_ = true;
-
-      auto titlebar_overlay_dict =
-          gin_helper::Dictionary::CreateEmpty(options.isolate());
-      options.Get(options::ktitleBarOverlay, &titlebar_overlay_dict);
-      int height;
-      if (titlebar_overlay_dict.Get(options::kOverlayHeight, &height))
-        titlebar_overlay_height_ = height;
-    }
+  if (gin_helper::Dictionary dict;
+      options.Get(options::ktitleBarOverlay, &dict)) {
+    titlebar_overlay_ = true;
+    titlebar_overlay_height_ = dict.ValueOrDefault(options::kOverlayHeight, 0);
+  } else if (bool flag; options.Get(options::ktitleBarOverlay, &flag)) {
+    titlebar_overlay_ = flag;
   }
 
   WindowList::AddWindow(this);
