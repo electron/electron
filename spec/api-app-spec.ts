@@ -1068,6 +1068,20 @@ describe('app module', () => {
       expect(paths).to.deep.equal([true, true, true]);
     });
 
+    if (process.platform === 'darwin') {
+      it('returns an assets path that is identical to the resources path', () => {
+        const assetsPath = app.getPath('assets');
+        expect(fs.existsSync(assetsPath)).to.be.true();
+        expect(assetsPath).to.equal(process.resourcesPath);
+      });
+    } else {
+      it('returns an assets path that is identical to the module path', () => {
+        const assetsPath = app.getPath('assets');
+        expect(fs.existsSync(assetsPath)).to.be.true();
+        expect(assetsPath).to.equal(path.dirname(app.getPath('module')));
+      });
+    }
+
     it('throws an error when the name is invalid', () => {
       expect(() => {
         app.getPath('does-not-exist' as any);
