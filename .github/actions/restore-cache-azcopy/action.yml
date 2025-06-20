@@ -8,14 +8,14 @@ runs:
   steps:
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@d4323d4df104b026a6aa633fdb11d772146be0bf
+    uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
     with:
       path: sas-token
       key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-1
       enableCrossOsArchive: true
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@d4323d4df104b026a6aa633fdb11d772146be0bf
+    uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
     with:
       path: sas-token
       key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-${{ github.run_attempt }}
@@ -32,7 +32,7 @@ runs:
       shell: bash
       command: |
         sas_token=$(cat sas-token)
-        if [ -z $sas-token ]; then
+        if [ -z "$sas_token" ]; then
           echo "SAS Token not found; exiting src cache download early..."
           exit 1
         else
