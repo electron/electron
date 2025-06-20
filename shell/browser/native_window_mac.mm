@@ -1833,7 +1833,7 @@ void NativeWindowMac::SetForwardMouseMessages(bool forward) {
 }
 
 std::optional<gfx::Rect> NativeWindowMac::GetWindowControlsOverlayRect() {
-  if (!titlebar_overlay_)
+  if (!has_titlebar_overlay())
     return std::nullopt;
 
   // On macOS, when in fullscreen mode, window controls (the menu bar, title

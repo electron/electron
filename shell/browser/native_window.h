@@ -384,6 +384,8 @@ class NativeWindow : public base::SupportsUserData,
     return title_bar_style_;
   }
 
+  [[nodiscard]] bool has_titlebar_overlay() const { return titlebar_overlay_; }
+
   bool IsWindowControlsOverlayEnabled() const {
     bool valid_titlebar_style = title_bar_style() == TitleBarStyle::kHidden
 #if BUILDFLAG(IS_MAC)
@@ -391,7 +393,7 @@ class NativeWindow : public base::SupportsUserData,
                                 title_bar_style() == TitleBarStyle::kHiddenInset
 #endif
         ;
-    return valid_titlebar_style && titlebar_overlay_;
+    return valid_titlebar_style && has_titlebar_overlay();
   }
 
   int titlebar_overlay_height() const { return titlebar_overlay_height_; }
@@ -461,20 +463,12 @@ class NativeWindow : public base::SupportsUserData,
   static inline constexpr base::cstring_view kNativeWindowKey =
       "__ELECTRON_NATIVE_WINDOW__";
 
-  // The boolean parsing of the "titleBarOverlay" option
-  bool titlebar_overlay_ = false;
-
   // Minimum and maximum size.
   std::optional<extensions::SizeConstraints> size_constraints_;
   // Same as above but stored as content size, we are storing 2 types of size
   // constraints because converting between them will cause rounding errors
   // on HiDPI displays on some environments.
   std::optional<extensions::SizeConstraints> content_size_constraints_;
-
-  base::queue<bool> pending_transitions_;
-
-  FullScreenTransitionType fullscreen_transition_type_ =
-      FullScreenTransitionType::kNone;
 
   std::list<NativeWindow*> child_windows_;
 
@@ -505,6 +499,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Whether window has standard frame.
   const bool has_frame_;
+
+  // The boolean parsing of the "titleBarOverlay" option
+  const bool titlebar_overlay_ = false;
 
   // The content view, weak ref.
   raw_ptr<views::View> content_view_ = nullptr;
@@ -543,6 +540,11 @@ class NativeWindow : public base::SupportsUserData,
   std::string background_material_;
 
   gfx::Rect overlay_rect_;
+
+  base::queue<bool> pending_transitions_;
+
+  FullScreenTransitionType fullscreen_transition_type_ =
+      FullScreenTransitionType::kNone;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };
