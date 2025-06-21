@@ -60,7 +60,7 @@ jobs:
               // It's possible for multiple versions to be listed -
               // for now check for comma or space separated version.
               const versions = electronVersion.split(/, | /);
-              let hasUnsupportedVersion = false;
+              let hasSupportedVersion = false;
 
               for (const version of versions) {
                 const major = semver.coerce(version, { loose: true })?.major;
@@ -82,16 +82,15 @@ jobs:
                   const validVersions = [...electronVersions.supportedMajors, ...electronVersions.prereleaseMajors];
 
                   if (validVersions.includes(major)) {
+                    hasSupportedVersion = true;
                     if (labelExists) {
                       labels.push(versionLabel);
                     }
-                  } else {
-                    hasUnsupportedVersion = true;
                   }
                 }
               }
 
-              if (hasUnsupportedVersion) {
+              if (!hasSupportedVersion) {
                 core.setOutput('unsupportedMajor', true);
                 labels.push('blocked/need-info ❌');
               }
