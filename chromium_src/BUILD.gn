@@ -272,6 +272,10 @@ static_library("chrome") {
       "//chrome/browser/permissions/system/media_authorization_wrapper_mac.h",
       "//chrome/browser/platform_util_mac.mm",
       "//chrome/browser/process_singleton_mac.mm",
+      "//chrome/browser/renderer_host/chrome_render_widget_host_view_mac_history_swiper.h",
+      "//chrome/browser/renderer_host/chrome_render_widget_host_view_mac_history_swiper.mm",
+      "//chrome/browser/renderer_host/chrome_render_widget_host_view_mac_delegate.h",
+      "//chrome/browser/renderer_host/chrome_render_widget_host_view_mac_delegate.mm",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.mm",
     ]

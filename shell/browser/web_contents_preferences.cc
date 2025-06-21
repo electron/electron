@@ -489,4 +489,11 @@ void WebContentsPreferences::OverrideWebkitPrefs(
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences);
 
+#if BUILDFLAG(IS_MAC)
+bool WebContentsPreferences::ShouldEnableTwoFingerSwipe() const {
+  return enable_two_finger_swipe_;
+}
+#endif
+
+
 }  // namespace electron
