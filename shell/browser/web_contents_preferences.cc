@@ -153,6 +153,7 @@ void WebContentsPreferences::Clear() {
 
 #if BUILDFLAG(IS_MAC)
   scroll_bounce_ = false;
+  enable_two_finger_swipe_ = false;
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   spellcheck_ = true;
@@ -254,6 +255,7 @@ void WebContentsPreferences::SetFromDictionary(
 
 #if BUILDFLAG(IS_MAC)
   web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
+  web_preferences.Get(options::kEnableTwoFingerSwipe, &enable_two_finger_swipe_);
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)

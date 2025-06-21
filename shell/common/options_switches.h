@@ -220,6 +220,9 @@ inline constexpr std::string_view kEnableDeprecatedPaste =
 // Whether the -electron-corner-smoothing CSS rule is enabled.
 inline constexpr std::string_view kEnableCornerSmoothingCSS =
     "enableCornerSmoothingCSS";
+
+// Whether to enable two-finger swipe navigation.
+inline constexpr std::string_view kEnableTwoFingerSwipe = "enableTwoFingerSwipe";
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.
