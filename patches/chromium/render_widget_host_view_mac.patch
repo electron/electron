@@ -8,10 +8,10 @@ respond to the first mouse click in their window, which is desirable for some
 kinds of utility windows. Similarly for `disableAutoHideCursor`.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index e71a9ed8cd3aab776926521e785445aabf87b9bb..24bf36e990dad8416839459f104267e9605fcd7f 100644
+index 97e95c04030206d244766ee10df2640b32b519aa..8563eb9aa5b5dca04e45d55a3bdd32a135232f00 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -172,6 +172,15 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -171,6 +171,15 @@ void ExtractUnderlines(NSAttributedString* string,
  
  }  // namespace
  
@@ -27,17 +27,17 @@ index e71a9ed8cd3aab776926521e785445aabf87b9bb..24bf36e990dad8416839459f104267e9
  // RenderWidgetHostViewCocoa ---------------------------------------------------
  
  // Private methods:
-@@ -786,6 +795,9 @@ - (AcceptMouseEventsOption)acceptsMouseEventsOption {
+@@ -785,6 +794,9 @@ - (AcceptMouseEvents)acceptsMouseEventsOption {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
 +  if ([self.window respondsToSelector:@selector(acceptsFirstMouse)] &&
 +      [self.window acceptsFirstMouse])
 +    return YES;
-   // Enable "click-through" if mouse clicks are accepted in inactive windows
-   return [self acceptsMouseEventsOption] > kAcceptMouseEventsInActiveWindow;
- }
-@@ -931,6 +943,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
+   // Enable "click-through" if mouse clicks are accepted in inactive windows.
+   return
+       [self acceptsMouseEventsOption] > AcceptMouseEvents::kWhenInActiveWindow;
+@@ -937,6 +949,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
    // its parent view.
    BOOL hitSelf = NO;
    while (view) {
@@ -48,7 +48,7 @@ index e71a9ed8cd3aab776926521e785445aabf87b9bb..24bf36e990dad8416839459f104267e9
      if (view == self)
        hitSelf = YES;
      if ([view isKindOfClass:[self class]] && ![view isEqual:self] &&
-@@ -1265,6 +1281,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -1271,6 +1287,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSEventTypeKeyDown &&
                                !(modifierFlags & NSEventModifierFlagCommand);
  

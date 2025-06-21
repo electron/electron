@@ -27,7 +27,7 @@ index e3b9f14a4cf2167064ce6716053e663adffa1542..65f13a4607c8145858fd47d81cb9960c
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index e7badbe6add4865001e1c0a43ab0aa3fcdbe5043..9748c20048363cb349229cd2315f22da1da56395 100644
+index ecacb93a2eb0765e43ac984498b72a5d0900e669..dc9870130befc742287475cf05b4caa00413d6f3 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -245,10 +245,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {

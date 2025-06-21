@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index 3647a19f360fa4bccd07bd3e9d8f6156342e5397..ca67574aa8e86a3350b03ec379be95178a8a8b57 100644
+index 5e1109bbe232fca3b738ee8ebca399b0c677c743..3e28cc6c51d1cf26de965e3906407e8d35ed6006 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -24228,6 +24228,21 @@
+@@ -24680,6 +24680,21 @@
              ]
          }
      ],
@@ -67,7 +67,7 @@ index 58063f2452dc484a97c79b382067d9b34875e344..d586436498263c595a17454f54644d2d
  
  }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index d9890692f7a9e30ac0da244a62c45835177296c9..5b115c53625ba811b71d769184a4bba69c19640a 100644
+index 6c3ecc8623c10c19f5c7ff9a0d07b06ef472c9f4..7ecfddc2fdb0a70b327bd7530a892436542b7a57 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -82,6 +82,23 @@ namespace {
@@ -264,7 +264,7 @@ index d9890692f7a9e30ac0da244a62c45835177296c9..5b115c53625ba811b71d769184a4bba6
  }
  
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 071e5682da9558e721fa32f168a239c16a459a08..2ad691376187d607d115102ff1aef8a1bb820dc2 100644
+index 27082e5e2066c33c987764fbebbfe0c6684dd36f..c1c2f086b7abf6c9e30870cd33ca1b49ca1fd12f 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 @@ -176,7 +176,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
