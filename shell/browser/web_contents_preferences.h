@@ -72,6 +72,9 @@ class WebContentsPreferences
   bool ShouldDisableHtmlFullscreenWindowResize() const {
     return disable_html_fullscreen_window_resize_;
   }
+#if BUILDFLAG(IS_MAC)
+  bool ShouldEnableTwoFingerSwipe() const { return enable_two_finger_swipe_; }
+#endif
   bool AllowsNodeIntegrationInSubFrames() const {
     return node_integration_in_sub_frames_;
   }
@@ -138,6 +141,7 @@ class WebContentsPreferences
 
 #if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;
+  bool enable_two_finger_swipe_;
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   bool spellcheck_;

@@ -52,6 +52,7 @@
   Default is `false`.
 * `scrollBounce` boolean (optional) _macOS_ - Enables scroll bounce
   (rubber banding) effect on macOS. Default is `false`.
+* `enableTwoFingerSwipe` boolean (optional) _macOS_ - Enables two-finger swipe navigation on macOS. Default is `false`.
 * `enableBlinkFeatures` string (optional) - A list of feature strings separated by `,`, like
   `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
   strings can be found in the [RuntimeEnabledFeatures.json5][runtime-enabled-features]

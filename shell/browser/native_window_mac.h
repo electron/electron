@@ -218,6 +218,9 @@ class NativeWindowMac : public NativeWindow,
     default_frame_for_zoom_ = frame;
   }
 
+  // Check if two-finger swipe navigation is enabled via WebPreferences
+  bool ShouldEnableTwoFingerSwipe() const;
+
  protected:
   // views::WidgetDelegate:
   views::View* GetContentsView() override;

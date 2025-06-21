@@ -73,14 +73,37 @@ MouseDownImpl g_nsnextstepframe_mousedown;
     electron::NativeWindowMac* shell =
         (electron::NativeWindowMac*)[(id)self.window shell];
     if (shell) {
-      if (event.deltaY == 1.0) {
-        shell->NotifyWindowSwipe("up");
-      } else if (event.deltaX == -1.0) {
-        shell->NotifyWindowSwipe("right");
-      } else if (event.deltaY == -1.0) {
-        shell->NotifyWindowSwipe("down");
-      } else if (event.deltaX == 1.0) {
-        shell->NotifyWindowSwipe("left");
+      // Check if this is a two-finger or three-finger swipe
+      // Two-finger swipes have phase information, three-finger swipes have deltaX/deltaY = ±1.0
+      bool is_two_finger_swipe = (event.phase != NSEventPhaseNone || event.momentumPhase != NSEventPhaseNone) &&
+                                 (fabs(event.deltaX) != 1.0 && fabs(event.deltaY) != 1.0);
+      bool is_three_finger_swipe = (event.deltaY == 1.0 || event.deltaX == -1.0 || 
+                                   event.deltaY == -1.0 || event.deltaX == 1.0);
+      
+      if (is_two_finger_swipe) {
+        // Check if two-finger swipe is enabled via WebPreferences
+        if (shell->ShouldEnableTwoFingerSwipe()) {
+          if (event.deltaY > 0.5) {
+            shell->NotifyWindowSwipe("up");
+          } else if (event.deltaX < -0.5) {
+            shell->NotifyWindowSwipe("right");
+          } else if (event.deltaY < -0.5) {
+            shell->NotifyWindowSwipe("down");
+          } else if (event.deltaX > 0.5) {
+            shell->NotifyWindowSwipe("left");
+          }
+        }
+      }else if (is_three_finger_swipe) {
+        // Existing three-finger swipe logic
+        if (event.deltaY == 1.0) {
+          shell->NotifyWindowSwipe("up");
+        } else if (event.deltaX == -1.0) {
+          shell->NotifyWindowSwipe("right");
+        } else if (event.deltaY == -1.0) {
+          shell->NotifyWindowSwipe("down");
+        } else if (event.deltaX == 1.0) {
+          shell->NotifyWindowSwipe("left");
+        }
       }
     }
   }

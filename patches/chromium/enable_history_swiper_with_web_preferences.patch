@@ -1,0 +1,84 @@
+diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
+index 1111111111111111111111111111111111111111..2222222222222222222222222222222222222222 100644
+--- a/content/browser/renderer_host/render_widget_host_view_mac.h
++++ b/content/browser/renderer_host/render_widget_host_view_mac.h
+@@ -50,6 +50,11 @@ class ScopedPasswordInputEnabler;
+ class WebCursor;
+ }  // namespace content
+ 
++#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
++class HistorySwiper;
++namespace electron { class WebContentsPreferences; }
++#endif
++
+ @class RenderWidgetHostViewCocoa;
+ 
+ namespace content {
+@@ -400,6 +405,12 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+   void SetActive(bool active) override;
+   void SpeakSelection() override;
+   void SetWindowFrameInScreen(const gfx::Rect& rect) override;
++
++#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
++  // Check if two-finger swipe navigation should be enabled via WebPreferences
++  bool ShouldEnableHistorySwiper() const;
++  std::unique_ptr<HistorySwiper> history_swiper_;
++#endif
+ 
+  private:
+   friend class RenderWidgetHostViewMacTest;
+diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
+index 1111111111111111111111111111111111111111..2222222222222222222222222222222222222222 100644
+--- a/content/browser/renderer_host/render_widget_host_view_mac.mm
++++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
+@@ -90,6 +90,11 @@
+ #include "ui/base/cocoa/secure_password_input.h"
+ #include "ui/base/cocoa/text_services_context_menu.h"
+ 
++#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
++#include "chrome/browser/renderer_host/chrome_render_widget_host_view_mac_history_swiper.h"
++#include "shell/browser/web_contents_preferences.h"
++#endif
++
+ using blink::DragOperationsMask;
+ using blink::WebInputEvent;
+ using blink::WebMouseEvent;
+@@ -1234,6 +1239,21 @@ void RenderWidgetHostViewMac::SetActive(bool active) {
+   if (host_->is_hidden())
+     return;
+ 
++#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
++  // Initialize history swiper if enabled via WebPreferences
++  if (ShouldEnableHistorySwiper() && !history_swiper_) {
++    history_swiper_ = std::make_unique<HistorySwiper>(
++        this, cocoa_view_, 
++        base::BindRepeating(&RenderWidgetHostViewMac::NavigateToHistoryOffset,
++                           base::Unretained(this)));
++  } else if (!ShouldEnableHistorySwiper() && history_swiper_) {
++    // Disable history swiper if preference is turned off
++    history_swiper_.reset();
++  }
++#endif
++
+   if (HasFocus())
+     host_->Focus();
+   else
+@@ -1242,6 +1262,19 @@ void RenderWidgetHostViewMac::SetActive(bool active) {
+   host_->SetActive(active);
+ }
+ 
++#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
++bool RenderWidgetHostViewMac::ShouldEnableHistorySwiper() const {
++  if (auto* web_contents = content::WebContents::FromRenderViewHost(
++          host_->render_view_host())) {
++    if (auto* preferences = electron::WebContentsPreferences::From(web_contents)) {
++      return preferences->ShouldEnableTwoFingerSwipe();
++    }
++  }
++  return false;
++}
++#endif
++
+ void RenderWidgetHostViewMac::SpeakSelection() {
+   RenderWidgetHostView::SpeakSelection();
+ }

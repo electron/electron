@@ -33,7 +33,9 @@
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "shell/browser/ui/cocoa/window_buttons_proxy.h"
 #include "shell/browser/ui/drag_util.h"
+#include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
+#include "content/public/browser/web_contents.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_util.h"
@@ -325,6 +327,29 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 }
 
 NativeWindowMac::~NativeWindowMac() = default;
+
+bool NativeWindowMac::ShouldEnableTwoFingerSwipe() const {
+  // Find the WebContents associated with this window through the NativeWindowRelay
+  // We need to iterate through all WebContents to find the one that has this window as owner
+  auto* browser_context = Browser::Get()->browser_context();
+  if (!browser_context)
+    return false;
+    
+  // Get all WebContents and check which one has this window as owner
+  auto web_contents_list = content::WebContents::GetAllWebContents();
+  for (auto* web_contents : web_contents_list) {
+    auto* relay = NativeWindowRelay::FromWebContents(web_contents);
+    if (relay && relay->GetNativeWindow() == this) {
+      // Found the WebContents for this window, now check preferences
+      auto* web_preferences = WebContentsPreferences::From(web_contents);
+      if (web_preferences) {
+        return web_preferences->ShouldEnableTwoFingerSwipe();
+      }
+    }
+  }
+  
+  return false; // Default to disabled if no preferences found
+}
 
 void NativeWindowMac::SetContentView(views::View* view) {
   views::View* root_view = GetContentsView();
