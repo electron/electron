@@ -132,7 +132,6 @@ UtilityProcessWrapper::UtilityProcessWrapper(
                       OPEN_EXISTING, 0, nullptr);
       if (handle == INVALID_HANDLE_VALUE) {
         PLOG(ERROR) << "Failed to create null handle";
-        CloseHandle(handle);
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -144,7 +143,6 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       int devnull = open("/dev/null", O_WRONLY);
       if (devnull < 0) {
         PLOG(ERROR) << "failed to open /dev/null";
-        close(devnull);
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
