@@ -52,7 +52,7 @@
 #include "ui/wm/core/window_util.h"
 
 #if BUILDFLAG(IS_LINUX)
-#include "base/strings/string_util.h"
+#include "base/notimplemented.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/linux/unity_service.h"
 #include "shell/browser/linux/x11_util.h"
@@ -86,7 +86,7 @@
 #include "ui/gfx/win/msg_util.h"
 #endif
 
-namespace electron {
+       namespace electron {
 
 #if BUILDFLAG(IS_WIN)
 

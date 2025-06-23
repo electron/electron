@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/no_destructor.h"
+#include "base/notimplemented.h"
 #include "components/version_info/version_info.h"
 #include "extensions/common/core_extensions_api_provider.h"
 #include "extensions/common/extension_urls.h"
