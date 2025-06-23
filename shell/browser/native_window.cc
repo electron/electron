@@ -843,7 +843,25 @@ void NativeWindow::SaveWindowState() {
   if (!prefs_ || window_state_id_.empty())
     return;
 
+  ScopedDictPrefUpdate update(prefs_, electron::kWindowStates);
+  const base::Value::Dict* existing_prefs = update->FindDict(window_state_id_);
+
   gfx::Rect bounds = GetBounds();
+  // When the window is in a special display mode (fullscreen, kiosk, or
+  // maximized), save the previously stored window bounds instead of
+  // the current bounds. This ensures that when the window is restored, it can
+  // be restored to its original position and size if display mode is not
+  // preserved via windowStateRestoreOptions.
+  if (!IsNormal() && existing_prefs) {
+    std::optional<int> left = existing_prefs->FindInt(electron::kLeft);
+    std::optional<int> top = existing_prefs->FindInt(electron::kTop);
+    std::optional<int> right = existing_prefs->FindInt(electron::kRight);
+    std::optional<int> bottom = existing_prefs->FindInt(electron::kBottom);
+
+    if (left && top && right && bottom) {
+      bounds = gfx::Rect(*left, *top, *right - *left, *bottom - *top);
+    }
+  }
 
   base::Value::Dict window_preferences;
   window_preferences.Set(electron::kLeft, bounds.x());
