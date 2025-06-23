@@ -35,17 +35,17 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b2ac71ed714e1d11d4257cdafc5825c666c91bff..4ac6b6116eeae59c6ec24aed462fdf69ed44bc0a 100644
+index 17963f87b8bea4073066c7e78eaaa5ffdfb07d0e..7457549d644cf926c71d117e4ddc98a5e6a0acdc 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1053,6 +1053,7 @@ component("base") {
+@@ -1047,6 +1047,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
 +    "//electron/build/config:generate_mas_config",
    ]
-   if (!is_nacl) {
-     # Used by metrics/crc32, except on NaCl builds.
+ 
+   # Used by metrics/crc32
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
 index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..f328fbb49c45991f44a9c75325491d0873746b61 100644
 --- a/base/enterprise_util_mac.mm
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 41ced951e5483021ae04d3fe9a3598a0b15eacd0..73add5abcc8ce1e9c3a26c81ff5f5adb559ab1c7 100644
+index 76e9ac745ea4fd4d6491a9167f2075bf64a9975b..b74d104912dc6d559862df62d990116204eefe4c 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -667,6 +667,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 41ced951e5483021ae04d3fe9a3598a0b15eacd0..73add5abcc8ce1e9c3a26c81ff5f5adb
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1985,6 +1987,7 @@ test("content_browsertests") {
+@@ -1992,6 +1994,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 41ced951e5483021ae04d3fe9a3598a0b15eacd0..73add5abcc8ce1e9c3a26c81ff5f5adb
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3317,6 +3320,7 @@ test("content_unittests") {
+@@ -3324,6 +3327,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -857,10 +857,10 @@ index e69ef178a08ef322764809e6afeffa20ffc0cd13..d2e182ed0dad5aeecb48e5a39771880b
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index bec1f2e2ab199d070a3a54b4157363bf8606211b..f1b779a8cfe694ab7a1c42bc3be6f9658dacd3a2 100644
+index f300e8d331057e894b43b74944e5052c39206844..4ff5277d550485cd79c5b5316d89c730ba709254 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -38,7 +38,9 @@
+@@ -39,7 +39,9 @@
  #include "device/bluetooth/bluetooth_discovery_session_outcome.h"
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
@@ -870,7 +870,7 @@ index bec1f2e2ab199d070a3a54b4157363bf8606211b..f1b779a8cfe694ab7a1c42bc3be6f965
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -52,6 +54,7 @@
+@@ -53,6 +55,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -878,7 +878,7 @@ index bec1f2e2ab199d070a3a54b4157363bf8606211b..f1b779a8cfe694ab7a1c42bc3be6f965
  
  // A simple helper class that forwards any Bluetooth device connect notification
  // to its wrapped |_adapter|.
-@@ -161,8 +164,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -162,8 +165,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -889,7 +889,7 @@ index bec1f2e2ab199d070a3a54b4157363bf8606211b..f1b779a8cfe694ab7a1c42bc3be6f965
        device_paired_status_callback_(
            base::BindRepeating(&IsDeviceSystemPaired)) {
  }
-@@ -313,8 +318,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -314,8 +319,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -1786,10 +1786,10 @@ index 491b8006c83c8602122a77d60e161c2167744756..abbf5248199598eadb57af99c3e3dc4c
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index f2c37178ab7f303cf8d5239dbdca1df470c219d2..90e6ede794de507b05af4ff6dd4dca5d64af468b 100644
+index 85d9170ae8de43ec0fa18c033d66c0583c26ec2f..c4f76301818404ce853583adf01af85cddd6a6e5 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
-@@ -32,6 +32,7 @@
+@@ -33,6 +33,7 @@
  #include "base/trace_event/trace_event.h"
  #include "build/build_config.h"
  #include "components/device_event_log/device_event_log.h"
@@ -1797,7 +1797,7 @@ index f2c37178ab7f303cf8d5239dbdca1df470c219d2..90e6ede794de507b05af4ff6dd4dca5d
  #include "ui/display/display.h"
  #include "ui/display/display_change_notifier.h"
  #include "ui/display/mac/screen_mac_headless.h"
-@@ -181,7 +182,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
+@@ -182,7 +183,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
      display.set_color_depth(Display::kDefaultBitsPerPixel);
      display.set_depth_per_component(Display::kDefaultBitsPerComponent);
    }
@@ -1816,10 +1816,10 @@ index f2c37178ab7f303cf8d5239dbdca1df470c219d2..90e6ede794de507b05af4ff6dd4dca5d
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 191068f05be0917e82624797e05f2b0e8778fcd4..5ec561d57877086765e77ba1590a2cc7b4946618 100644
+index 0f403e2f5b3be54c5947e98fb8872fd1a59b3eb7..2ae71dc6a2325b3d60a427391678feb9b2eb3baf 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -341,6 +341,12 @@ component("gfx") {
+@@ -339,6 +339,12 @@ component("gfx") {
      "//ui/base:ui_data_pack",
    ]
  
