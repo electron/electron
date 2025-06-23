@@ -29,6 +29,7 @@ inline constexpr std::string_view kBottom = "bottom";
 
 inline constexpr std::string_view kMaximized = "maximized";
 inline constexpr std::string_view kFullscreen = "fullscreen";
+inline constexpr std::string_view kKiosk = "kiosk";
 
 inline constexpr std::string_view kWorkAreaLeft = "work_area_left";
 inline constexpr std::string_view kWorkAreaTop = "work_area_top";

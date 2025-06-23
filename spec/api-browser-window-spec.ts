@@ -7021,6 +7021,7 @@ describe('BrowserWindow module', () => {
           expect(savedState).to.have.property('bottom');
           expect(savedState).to.have.property('maximized');
           expect(savedState).to.have.property('fullscreen');
+          expect(savedState).to.have.property('kiosk');
           expect(savedState).to.have.property('work_area_left');
           expect(savedState).to.have.property('work_area_top');
           expect(savedState).to.have.property('work_area_right');
@@ -7039,6 +7040,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.bottom - savedState.top).to.equal(300);
           expect(savedState.maximized).to.equal(false);
           expect(savedState.fullscreen).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
         });
 
         it('should save window state after window is resized and app exit', async () => {
@@ -7053,6 +7055,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.bottom - savedState.top).to.equal(400);
           expect(savedState.maximized).to.equal(false);
           expect(savedState.fullscreen).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
         });
 
         it('should save window state after window is moved and app exit', async () => {
@@ -7067,6 +7070,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.top).to.equal(150);
           expect(savedState.maximized).to.equal(false);
           expect(savedState.fullscreen).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
         });
 
         it('should save window state after window is fullscreened and app exit', async () => {
@@ -7079,6 +7083,7 @@ describe('BrowserWindow module', () => {
           expect(savedState).to.not.be.null('window state with id "test-fullscreen-save" does not exist');
           expect(savedState.fullscreen).to.equal(true);
           expect(savedState.maximized).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
         });
 
         it('should save window state after window is maximized and app exit', async () => {
@@ -7091,6 +7096,7 @@ describe('BrowserWindow module', () => {
           expect(savedState).to.not.be.null('window state with id "test-maximize-save" does not exist');
           expect(savedState.maximized).to.equal(true);
           expect(savedState.fullscreen).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
         });
 
         it('should save window state if in a minimized state and app exit', async () => {
@@ -7106,6 +7112,20 @@ describe('BrowserWindow module', () => {
           expect(savedState.bottom - savedState.top).to.equal(300);
           expect(savedState.maximized).to.equal(false);
           expect(savedState.fullscreen).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
+        });
+
+        it('should save window state after window is kiosked and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'kiosk-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-kiosk-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with id "test-kiosk-save" does not exist');
+          expect(savedState.kiosk).to.equal(true);
+          expect(savedState.fullscreen).to.equal(true);
+          expect(savedState.maximized).to.equal(false);
         });
       });
 
@@ -7202,7 +7222,8 @@ describe('BrowserWindow module', () => {
           }
         };
 
-        beforeEach(() => {
+        beforeEach(async () => {
+          await setTimeout(2000);
           w = new BrowserWindow({
             show: false,
             width: 400,

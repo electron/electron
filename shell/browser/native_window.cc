@@ -871,6 +871,7 @@ void NativeWindow::SaveWindowState() {
 
   window_preferences.Set(electron::kMaximized, IsMaximized());
   window_preferences.Set(electron::kFullscreen, IsFullscreen());
+  window_preferences.Set(electron::kKiosk, IsKiosk());
 
   const display::Screen* screen = display::Screen::GetScreen();
   const display::Display display = screen->GetDisplayMatching(bounds);
@@ -881,7 +882,6 @@ void NativeWindow::SaveWindowState() {
   window_preferences.Set(electron::kWorkAreaRight, work_area.right());
   window_preferences.Set(electron::kWorkAreaBottom, work_area.bottom());
 
-  ScopedDictPrefUpdate update(prefs_, electron::kWindowStates);
   update->Set(window_state_id_, std::move(window_preferences));
 }
 
