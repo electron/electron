@@ -1729,10 +1729,11 @@ class NativeAppWindowFrameViewMacClient
 
 std::unique_ptr<views::NonClientFrameView>
 NativeWindowMac::CreateNonClientFrameView(views::Widget* widget) {
-  std::unique_ptr<NativeAppWindowFrameViewMacClient> frame_view_client =
+  CHECK(!frame_view_client_);
+  frame_view_client_ =
       std::make_unique<NativeAppWindowFrameViewMacClient>(widget, this);
   return std::make_unique<views::NativeFrameViewMac>(widget,
-                                                     frame_view_client.get());
+                                                     frame_view_client_.get());
 }
 
 bool NativeWindowMac::HasStyleMask(NSUInteger flag) const {
