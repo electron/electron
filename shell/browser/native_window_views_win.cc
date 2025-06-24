@@ -7,6 +7,7 @@
 #include <wrl/client.h>
 
 #include "base/win/atl.h"  // Must be before UIAutomationCore.h
+#include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
 #include "base/win/windows_version.h"
 #include "content/public/browser/browser_accessibility_state.h"
@@ -45,31 +46,31 @@ void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color) {
     LOG(WARNING) << "Failed to set border color";
 }
 
-DWORD GetAccentColor() {
-  DWORD accent_color = 0;
-  DWORD color_size = sizeof(accent_color);
+std::optional<DWORD> GetAccentColor() {
+  base::win::RegKey key;
+  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
+               KEY_READ) != ERROR_SUCCESS) {
+    return std::nullopt;
+  }
 
-  HKEY key;
-  if (RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM", 0,
-                   KEY_READ, &key) == ERROR_SUCCESS) {
-    RegQueryValueEx(key, L"AccentColor", NULL, NULL, (LPBYTE)&accent_color,
-                    &color_size);
-    RegCloseKey(key);
+  DWORD accent_color = 0;
+  if (key.ReadValueDW(L"AccentColor", &accent_color) != ERROR_SUCCESS) {
+    return std::nullopt;
   }
 
   return accent_color;
 }
 
 bool IsAccentColorOnTitleBarsEnabled() {
-  DWORD enabled = 0;
-  DWORD size = sizeof(enabled);
+  base::win::RegKey key;
+  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
+               KEY_READ) != ERROR_SUCCESS) {
+    return false;
+  }
 
-  HKEY key;
-  if (RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM", 0,
-                   KEY_READ, &key) == ERROR_SUCCESS) {
-    RegQueryValueEx(key, L"ColorPrevalence", NULL, NULL, (LPBYTE)&enabled,
-                    &size);
-    RegCloseKey(key);
+  DWORD enabled = 0;
+  if (key.ReadValueDW(L"ColorPrevalence", &enabled) != ERROR_SUCCESS) {
+    return false;
   }
 
   return enabled != 0;
@@ -571,13 +572,27 @@ void NativeWindowViews::UpdateWindowAccentColor() {
   if (base::win::GetVersion() < base::win::Version::WIN11)
     return;
 
-  // Chromium correctly updates accent color for framed windows.
-  if (has_frame() || !IsAccentColorOnTitleBarsEnabled())
+  if (!IsAccentColorOnTitleBarsEnabled())
     return;
 
-  DWORD accent_color = GetAccentColor();
-  COLORREF border_color = RGB(GetRValue(accent_color), GetGValue(accent_color),
-                              GetBValue(accent_color));
+  COLORREF border_color;
+  if (std::holds_alternative<bool>(accent_color_)) {
+    // Don't set accent color if the user has disabled it.
+    if (!std::get<bool>(accent_color_))
+      return;
+
+    std::optional<DWORD> accent_color = GetAccentColor();
+    if (!accent_color.has_value())
+      return;
+
+    border_color =
+        RGB(GetRValue(accent_color.value()), GetGValue(accent_color.value()),
+            GetBValue(accent_color.value()));
+  } else {
+    SkColor color = std::get<SkColor>(accent_color_);
+    border_color =
+        RGB(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color));
+  }
 
   SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), border_color);
 }
