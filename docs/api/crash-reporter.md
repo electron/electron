@@ -63,7 +63,7 @@ The `crashReporter` module has the following methods:
   * `extra` Record\<string, string\> (optional) - Extra string key/value
     annotations that will be sent along with crash reports that are generated
     in the main process. Only string values are supported. Crashes generated in
-    child processes will not include these extra parameters. 
+    child processes will not include these extra parameters.
     To add them, call [`addExtraParameter`](#crashreporteraddextraparameterkey-value) from the
     child process.
   * `globalExtra` Record\<string, string\> (optional) - Extra string key/value
