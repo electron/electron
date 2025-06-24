@@ -29,6 +29,53 @@ namespace electron {
 
 namespace {
 
+void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color) {
+  if (base::win::GetVersion() < base::win::Version::WIN11)
+    return;
+
+  HRESULT result =
+      DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &color, sizeof(color));
+
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set caption color";
+
+  result =
+      DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color, sizeof(color));
+
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set border color";
+}
+
+DWORD GetAccentColor() {
+  DWORD accent_color = 0;
+  DWORD color_size = sizeof(accent_color);
+
+  HKEY key;
+  if (RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM", 0,
+                   KEY_READ, &key) == ERROR_SUCCESS) {
+    RegQueryValueEx(key, L"AccentColor", NULL, NULL, (LPBYTE)&accent_color,
+                    &color_size);
+    RegCloseKey(key);
+  }
+
+  return accent_color;
+}
+
+bool IsAccentColorOnTitleBarsEnabled() {
+  DWORD enabled = 0;
+  DWORD size = sizeof(enabled);
+
+  HKEY key;
+  if (RegOpenKeyEx(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM", 0,
+                   KEY_READ, &key) == ERROR_SUCCESS) {
+    RegQueryValueEx(key, L"ColorPrevalence", NULL, NULL, (LPBYTE)&enabled,
+                    &size);
+    RegCloseKey(key);
+  }
+
+  return enabled != 0;
+}
+
 // Convert Win32 WM_QUERYENDSESSIONS to strings.
 const std::vector<std::string> EndSessionToStringVec(LPARAM end_session_id) {
   std::vector<std::string> params;
@@ -449,6 +496,19 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       }
       return false;
     }
+    case WM_DWMCOLORIZATIONCOLORCHANGED: {
+      UpdateWindowAccentColor();
+      return false;
+    }
+    case WM_SETTINGCHANGE: {
+      if (l_param) {
+        const wchar_t* setting_name = reinterpret_cast<const wchar_t*>(l_param);
+        std::wstring setting_str(setting_name);
+        if (setting_str == L"ImmersiveColorSet")
+          UpdateWindowAccentColor();
+      }
+      return false;
+    }
     default: {
       return false;
     }
@@ -506,6 +566,21 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       break;
     }
   }
+}
+
+void NativeWindowViews::UpdateWindowAccentColor() {
+  if (base::win::GetVersion() < base::win::Version::WIN11)
+    return;
+
+  // Chromium correctly updates accent color for framed windows.
+  if (has_frame() || !IsAccentColorOnTitleBarsEnabled())
+    return;
+
+  DWORD accent_color = GetAccentColor();
+  COLORREF border_color = RGB(GetRValue(accent_color), GetGValue(accent_color),
+                              GetBValue(accent_color));
+
+  SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), border_color);
 }
 
 void NativeWindowViews::ResetWindowControls() {
