@@ -160,7 +160,7 @@ jobs:
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
     - name: Init Build Tools
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
+        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --remote-build siso
     - name: Run Electron Only Hooks
       run: |
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
