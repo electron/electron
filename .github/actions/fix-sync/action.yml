@@ -20,6 +20,7 @@ runs:
   using: "composite"
   steps:
     - name: Fix llvm toolchain
+      if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
       run : |
         rm -rf src/third_party/llvm-build
@@ -27,6 +28,7 @@ runs:
         # Refs https://chromium-review.googlesource.com/c/chromium/src/+/6667681
         python3 src/tools/clang/scripts/update.py --package objdump
     - name: Fix esbuild
+      if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
       with:
         cipd-root-prefix-path: src/third_party/devtools-frontend/src/
@@ -36,6 +38,7 @@ runs:
         target-platform: ${{ inputs.target-platform }}
         package: infra/3pp/tools/esbuild/${platform}
     - name: Fix rustc
+      if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
       run : |
         rm -rf src/third_party/rust-toolchain
@@ -59,6 +62,7 @@ runs:
         target-platform: ${{ inputs.target-platform }}
         package: gn/gn/windows-amd64
     - name: Fix reclient
+      if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
       with:
         dependency: reclient
@@ -67,6 +71,7 @@ runs:
         target-platform: ${{ inputs.target-platform }}
         package: infra/rbe/client/${platform}
     - name: Configure reclient configs
+      if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
       run : |
         python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
@@ -84,6 +89,7 @@ runs:
           python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
         fi
     - name: Fix ninja
+      if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
       with:
         dependency: ninja
@@ -92,10 +98,20 @@ runs:
         target-platform: ${{ inputs.target-platform }}
         package: infra/3pp/tools/ninja/${platform}
     - name: Set ninja in path
+      if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
       run : |
         echo "$(pwd)/src/third_party/ninja" >> $GITHUB_PATH
+    - name: Fix siso
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: siso
+        deps-file: src/DEPS
+        installation-dir: src/third_party/siso/cipd
+        target-platform: ${{ inputs.target-platform }}
+        package: infra/build/siso/${platform}
     - name: Fixup angle git
+      if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
       run : |
         cd src/third_party/angle
