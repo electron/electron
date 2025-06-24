@@ -93,6 +93,14 @@ runs:
       shell: bash
       run : |
         echo "$(pwd)/src/third_party/ninja" >> $GITHUB_PATH
+    - name: Fix siso
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: siso
+        deps-file: src/DEPS
+        installation-dir: src/third_party/siso/cipd
+        target-platform: ${{ inputs.target-platform }}
+        package: infra/build/siso/${platform}
     - name: Fixup angle git
       shell: bash
       run : |
