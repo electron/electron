@@ -79,6 +79,7 @@
 #include "base/win/windows_version.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
+#include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/color_utils.h"
@@ -214,6 +215,14 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
   overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
+
+  bool accent_color = true;
+  std::string accent_color_string;
+  if (options.Get(options::kAccentColor, &accent_color_string)) {
+    accent_color_ = ParseCSSColor(accent_color_string);
+  } else if (options.Get(options::kAccentColor, &accent_color)) {
+    accent_color_ = accent_color;
+  }
 #endif
 
   v8::Local<v8::Value> titlebar_overlay;
