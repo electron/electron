@@ -41,12 +41,18 @@ function getCurrentCommitSha () {
 }
 
 function getCurrentBranch () {
-  return process.env.GITHUB_REF;
+  return process.env.GITHUB_HEAD_REF;
 }
 
 async function main () {
   if (!PATCH_UP_APP_CREDS) {
     throw new Error('PATCH_UP_APP_CREDS environment variable not set');
+  }
+
+  const currentBranch = getCurrentBranch();
+
+  if (!currentBranch) {
+    throw new Error('GITHUB_HEAD_REF environment variable not set. Patch Up only works in PR workflows currently.');
   }
 
   const octokit = new Octokit({
@@ -60,7 +66,6 @@ async function main () {
 
   // Get current git state
   const currentCommitSha = getCurrentCommitSha();
-  const currentBranch = getCurrentBranch();
 
   // Get the tree SHA from the current commit
   const currentCommit = await octokit.git.getCommit({
