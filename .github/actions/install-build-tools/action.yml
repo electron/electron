@@ -13,6 +13,7 @@ runs:
         git config --global core.fscache true
         git config --global core.longpaths true
         git config --global core.preloadindex true
+        git config --global core.longpaths true
       fi
       export BUILD_TOOLS_SHA=274cba0474f0d1e4e6adbb66c1da48556cb0add5
       npm i -g @electron/build-tools
