@@ -359,6 +359,7 @@ bool IsAllowedOption(const std::string_view option) {
       "--throw-deprecation",
       "--trace-deprecation",
       "--trace-warnings",
+      "--no-experimental-global-navigator",
   });
 
   if (debug_options.contains(option))
