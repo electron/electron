@@ -123,6 +123,8 @@ inline constexpr std::string_view kRoundedCorners = "roundedCorners";
 
 inline constexpr std::string_view ktitleBarOverlay = "titleBarOverlay";
 
+inline constexpr std::string_view kAccentColor = "accentColor";
+
 // The color to use as the theme and symbol colors respectively for Window
 // Controls Overlay if enabled on Windows.
 inline constexpr std::string_view kOverlayButtonColor = "color";
