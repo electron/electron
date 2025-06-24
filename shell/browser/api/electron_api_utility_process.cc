@@ -78,6 +78,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   base::FileHandleMappingVector fds_to_remap;
 #endif
   for (const auto& [io_handle, io_type] : stdio) {
+    if (io_handle == IOHandle::STDIN)
+      continue;
+
     if (io_type == IOType::IO_PIPE) {
 #if BUILDFLAG(IS_WIN)
       HANDLE read = nullptr;
@@ -129,6 +132,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
                       OPEN_EXISTING, 0, nullptr);
       if (handle == INVALID_HANDLE_VALUE) {
         PLOG(ERROR) << "Failed to create null handle";
+        CloseHandle(handle);
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -140,6 +144,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       int devnull = open("/dev/null", O_WRONLY);
       if (devnull < 0) {
         PLOG(ERROR) << "failed to open /dev/null";
+        close(devnull);
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
