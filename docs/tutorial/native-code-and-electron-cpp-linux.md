@@ -1579,7 +1579,7 @@ With all files in place, you can build the addon:
 npm run build
 ```
 
-If the build completes, you can now add the addon to your Electron app and simply `import` or `require` it there.
+If the build completes, you can now add the addon to your Electron app and `import` or `require` it there.
 
 ## Conclusion
 
