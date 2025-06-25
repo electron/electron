@@ -653,8 +653,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
-  std::wstring keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-  base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
+  base::win::RegKey key(HKEY_CURRENT_USER, Run.data(), KEY_ALL_ACCESS);
   std::wstring keyVal;
 
   // keep old openAtLogin behaviour
@@ -670,10 +669,9 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
   // set executable_will_launch_at_login to 'true'.
   boolean executable_will_launch_at_login = false;
   std::vector<LaunchItem> launch_items;
-  base::win::RegistryValueIterator hkcu_iterator(HKEY_CURRENT_USER,
-                                                 keyPath.c_str());
+  base::win::RegistryValueIterator hkcu_iterator(HKEY_CURRENT_USER, Run.data());
   base::win::RegistryValueIterator hklm_iterator(HKEY_LOCAL_MACHINE,
-                                                 keyPath.c_str());
+                                                 Run.data());
 
   launch_items = GetLoginItemSettingsHelper(
       &hkcu_iterator, &executable_will_launch_at_login, L"user", options);
