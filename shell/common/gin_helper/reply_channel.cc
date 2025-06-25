@@ -42,8 +42,8 @@ void ReplyChannel::SendError(const std::string& msg) {
   v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   // If there's no current context, it means we're shutting down, so we
   // don't need to send an event.
+  v8::HandleScope scope(isolate);
   if (!isolate->GetCurrentContext().IsEmpty()) {
-    v8::HandleScope scope(isolate);
     auto message = gin::DataObjectBuilder(isolate).Set("error", msg).Build();
     SendReply(isolate, message);
   }

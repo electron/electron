@@ -510,7 +510,7 @@ GURL ResolvePossiblyRelativeURL(const std::string& url_string,
                                 const Extension* extension) {
   GURL url = GURL(url_string);
   if (!url.is_valid() && extension)
-    url = extension->GetResourceURL(url_string);
+    url = extension->ResolveExtensionURL(url_string);
 
   return url;
 }
