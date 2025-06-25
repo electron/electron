@@ -1153,7 +1153,7 @@ The constructor initializes:
 
 The destructor properly cleans up the thread-safe function when the object is garbage collected.
 
-### Implement Basic Functionality - HelloWorld
+### Implement basic functionality - HelloWorld
 
 Next, we'll add our two main methods, `HelloWorld()` and `HelloGui()`. We'll add these to our `private` scope, right where we have a comment reading "Method implementations will go here".
 
@@ -1203,7 +1203,7 @@ You might be wondering what `Napi::CallbackInfo` is or where it comes from. This
 
 This class is fundamental to the Node.js native addon development as it serves as the bridge between JavaScript function calls and C++ method implementations. Every native method that can be called from JavaScript receives a `CallbackInfo` object as its parameter, allowing the C++ code to access and validate the JavaScript arguments before processing them. You can see us using it in `HelloWorld()` to get function parameters and other information about the function call. Our `HelloGui()` function doesn't use it, but if it did, it'd follow the same pattern.
 
-### Setting Up the Event System
+### Setting up the event system
 
 Now we'll tackle the tricky part of native development: setting up the event system. Previously, we added native callbacks to our `cpp_code.cc` code - and in our bridge code in `cpp_addon.cc`, we'll need to find a way to have those callbacks ultimately trigger a JavaScript method.
 
