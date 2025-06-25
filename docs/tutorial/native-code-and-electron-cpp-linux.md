@@ -9,7 +9,7 @@ Specifically, we'll be using GTK3 for our GUI interface, which provides:
 * Integration with the native theming and accessibility features of Linux desktops
 
 > [!NOTE]
-> We specifically use GTK3 because that's what Chromium (and by extension, Electron) uses internally. Using GTK4 would cause runtime conflicts since both GTK3 and GTK4 would be loaded in the same process. If and when Chromium upgrades to GTK3, you will likely be able to easily upgrade your native code to GTK4, too.
+> We specifically use GTK3 because that's what Chromium (and by extension, Electron) uses internally. Using GTK4 would cause runtime conflicts since both GTK3 and GTK4 would be loaded in the same process. If and when Chromium upgrades to GTK4, you will likely be able to easily upgrade your native code to GTK4, too.
 
 This tutorial will be most useful to those who already have some familiarity with GTK development on Linux. You should have experience with basic GTK concepts like widgets, signals, and the main event loop. In the interest of brevity, we're not spending too much time explaining the individual GTK elements we're using or the code we're writing for them. This allows this tutorial to be really helpful for those who already know GTK development and want to use their skills with Electron - without having to also be an entire GTK documentation.
 
@@ -21,7 +21,7 @@ This tutorial will be most useful to those who already have some familiarity wit
 Just like our general introduction to Native Code and Electron, this tutorial assumes you have Node.js and npm installed, as well as the basic tools necessary for compiling native code. Since this tutorial discusses writing native code that interacts with GTK3, you'll need:
 
 * A Linux distribution with GTK3 development files installed
-* The pkg-config tool
+* The [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/) tool
 * G++ compiler and build tools
 
 On Ubuntu/Debian, you can install these with:
@@ -126,9 +126,9 @@ For a Linux-specific addon using GTK3, we need to configure our `binding.gyp` fi
 
 Let's examine the key parts of this configuration, starting with the `pkg-config` integration. The `<!@` syntax in a `binding.gyp` file is a command expansion operator. It executes the command inside the parentheses and uses the command's output as the value at that position. So, wherever you see `<!@` with `pkg-config` inside, know that we're calling a `pkg-config` command and using the output as our value. The `sed` command strips the `-I` prefix from the include paths to make them compatible with GYP's format.
 
-## 3) Defining the C++ Interface
+## 3) Defining the C++ interface
 
-Let's define our header in `include/cpp_code.h`:'
+Let's define our header in `include/cpp_code.h`:
 
 ```cpp title='include/cpp_code.h'
 #pragma once
@@ -230,7 +230,7 @@ The `toJson()` method is particularly important as it's what allows our C++ obje
 
 Notably, we haven't actually added any user interface yet - which we'll do in the next step. GTK code tends to be verbose, so bear with us - despite the length.
 
-### Global State and Forward Declarations
+### Global state and forward declarations
 
 Below the code already in your `src/cpp_code.cc`, add the following:
 
@@ -335,7 +335,7 @@ These helper functions are crucial for our application:
   * A calendar widget for selecting the date
   * Appropriate buttons for saving or canceling
 
-### Event Handlers
+### Event handlers
 
 Our native user interface has events - and those events must be handled. The only Electron-specific thing in this code is that we're notifying our JS callbacks.
 
@@ -471,7 +471,7 @@ These event handlers manage user interactions:
 
 `on_row_activated`: Shows a popup menu when a todo is clicked, with options to edit or delete.
 
-### GTK Application Setup
+### GTK application setup
 
 Now, we'll need to setup our GTK application. This might be counter-intuitive, given that we already have a GTK application running. The activation code here is necessary because this is native C++ code running alongside Electron, not within it. While Electron does have its own main process and renderer processes, this GTK application operates as a native OS window that's launched from the Electron application but runs in its own process or thread. The `hello_gui()` function specifically starts the GTK application with its own thread (`g_gtk_thread`), application loop, and UI context.
 
@@ -577,7 +577,7 @@ Let's take a closer look at the code above:
 
 The UI layout is defined inline using XML, which is a common pattern in GTK applications. It creates a main window, input controls (text entry, calendar, and add button), a list box for displaying todos, and proper layout containers and scrolling.
 
-### Main GUI Function and Thread Management
+### Main GUI function and thread management
 
 Now that we have everything wired, up, we can add our two core GUI functions: `hello_gui()` (which we'll call from JavaScript) and `cleanup_gui()` to get rid of everything. You'll be hopefully delighted to hear that our careful setup of GTK app, context, and threads makes this straightforward:
 
@@ -643,7 +643,7 @@ These functions manage the GTK application lifecycle:
 
 Running GTK in a separate thread is crucial for Electron integration, as it prevents the GTK main loop from blocking Node.js's event loop.
 
-### Callback Management
+### Callback management
 
 Previously, we setup global variables to hold our callbacks. Now, we'll add functions that assign those callbacks. These callbacks form the bridge between our native GTK code and JavaScript, allowing bidirectional communication.
 
@@ -1084,7 +1084,7 @@ NODE_API_MODULE(cpp_addon, Init)
 
 This is the minimal structure required for a Node.js addon using `node-addon-api`. The `Init` function is called when the addon is loaded, and the `NODE_API_MODULE` macro registers our initializer. This basic skeleton doesn't do anything yet, but it provides the entry point for Node.js to load our native code.
 
-### Create a Class to Wrap Our C++ Code
+### Create a class to wrap our C++ code
 
 Let's create a class that will wrap our C++ code and expose it to JavaScript. In our previous step, we've added a comment reading "Class to wrap our C++ code will go here" - replace it with the code below.
 
@@ -1194,7 +1194,7 @@ void HelloGui(const Napi::CallbackInfo &info)
 * Returns nothing (void) as the function just launches the UI
 * These methods form the direct bridge between JavaScript calls and our native C++ functions.
 
-You might be wondering what `Napi::CallbackInfo` is or where it comes from. This is a class provided by the Node-API (N-API) C++ wrapper, specifically from the `node-addon-api` package. It encapsulates all the information about a JavaScript function call, including:
+You might be wondering what `Napi::CallbackInfo` is or where it comes from. This is a class provided by the Node-API (N-API) C++ wrapper, specifically from the [`node-addon-api`](https://github.com/nodejs/node-addon-api) package. It encapsulates all the information about a JavaScript function call, including:
 
 * The arguments passed from JavaScript
 * The JavaScript execution environment (via `info.Env()`)
@@ -1205,9 +1205,9 @@ This class is fundamental to the Node.js native addon development as it serves a
 
 ### Setting Up the Event System
 
-Now we'll tackle the tricky part of native development: Setting up the event system. Previously, we added native callbacks to our `cpp_code.cc` code - and in our bridge code in `cpp_addon.cc`, we'll need to find a way to have those callbacks ultimately trigger a JavaScript method.
+Now we'll tackle the tricky part of native development: setting up the event system. Previously, we added native callbacks to our `cpp_code.cc` code - and in our bridge code in `cpp_addon.cc`, we'll need to find a way to have those callbacks ultimately trigger a JavaScript method.
 
-Let's start with the `On()` method, which we'll call from JavaScript. In our previously written code, you'll find a comment reading "On() method implementation will go here". Replace it with the following method:
+Let's start with the `On()` method, which we'll call from JavaScript. In our previously written code, you'll find a comment reading `On() method implementation will go here`. Replace it with the following method:
 
 ```cpp title='src/cpp_addon.cc'
 Napi::Value On(const Napi::CallbackInfo &info)
@@ -1227,7 +1227,7 @@ Napi::Value On(const Napi::CallbackInfo &info)
 
 This method allows JavaScript to register callbacks for different event types and stores the JavaScript function in our `callbacks` map for later use. So far, so good - but now we need to let `cpp_code.cc` know about these callbacks. We also need to figure out a way to coordinate our threads, because the actual `cpp_code.cc` will be doing most of its work on its own thread.
 
-In our code, find the section where we're declaring the constructor `CppAddon(const Napi::CallbackInfo &info)`, which you'll find in the `public` section. It should have a comment reading "We'll implement the constructor together with a callback struct later". Then, replace that part with the following code:
+In our code, find the section where we're declaring the constructor `CppAddon(const Napi::CallbackInfo &info)`, which you'll find in the `public` section. It should have a comment reading `We'll implement the constructor together with a callback struct later`. Then, replace that part with the following code:
 
 ```cpp title='src/cpp_addon.cc'
   struct CallbackData
@@ -1314,7 +1314,7 @@ In our code, find the section where we're declaring the constructor `CppAddon(co
   }
 ```
 
-This is the most complex part of our bridge, implementing bidirectional communication. There are a few things worth noting going on here, so let's take them step by step:
+This is the most complex part of our bridge: implementing bidirectional communication. There are a few things worth noting going on here, so let's take them step by step:
 
 `CallbackData` struct:
 
@@ -1330,12 +1330,12 @@ In the constructor:
 Let's talk about `napi_create_threadsafe_function`. The orchestration of different threads is maybe the most difficult part about native addon development - and in our experience, the place where developers are most likely to give up. `napi_create_threadsafe_function` is provided by the N-API and allows you to safely call JavaScript functions from any thread. This is essential when working with GUI frameworks like GTK3 that run on their own thread. Here's why it's important:
 
 1. **Thread Safety**: JavaScript in Electron runs on a single thread (exceptions apply, but this is a generally useful rule). Without thread-safe functions, calling JavaScript from another thread would cause crashes or race conditions.
-2. **Queue Management**: It automatically queues function calls and executes them on the JavaScript thread.
-3. **Resource Management**: It handles proper reference counting to ensure objects aren't garbage collected while still needed.
+1. **Queue Management**: It automatically queues function calls and executes them on the JavaScript thread.
+1. **Resource Management**: It handles proper reference counting to ensure objects aren't garbage collected while still needed.
 
 In our code, we're using it to bridge the gap between GTK3's event loop and Node.js's event loop, allowing events from our GUI to safely trigger JavaScript callbacks.
 
-For developers wanting to learn more, you can refer to the [official N-API documentation](https://nodejs.org/api/n-api.html#n_api_napi_create_threadsafe_function) for detailed information about threadsafe functions, the [node-addon-api wrapper documentation](https://github.com/nodejs/node-addon-api/blob/main/doc/threadsafe_function.md) for the C++ wrapper implementation, and the [Node.js Threading Model article](https://nodejs.org/en/docs/guides/dont-block-the-event-loop/) to understand how Node.js handles concurrency and why threadsafe functions are necessary.
+For developers wanting to learn more, you can refer to the [official N-API documentation](https://nodejs.org/api/n-api.html#n_api_napi_create_threadsafe_function) for detailed information about thread-safe functions, the [node-addon-api wrapper documentation](https://github.com/nodejs/node-addon-api/blob/main/doc/threadsafe_function.md) for the C++ wrapper implementation, and the [Node.js Threading Model article](https://nodejs.org/en/docs/guides/dont-block-the-event-loop/) to understand how Node.js handles concurrency and why thread-safe functions are necessary.
 
 ### Putting `cpp_addon.cc` together
 
@@ -1507,7 +1507,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
 NODE_API_MODULE(cpp_addon, Init)
 ```
 
-## 6) Creating a JavaScript Wrapper
+## 6) Creating a JavaScript wrapper
 
 Let's finish things off by adding a JavaScript wrapper in `js/index.js`. As we could all see, C++ requires a lot of boilerplate code that might be easier or faster to write in JavaScript - and you will find that many production applications end up transforming data or requests in JavaScript before invoking native code. We, for instance, turn our timestamp into a proper JavaScript date.
 
@@ -1571,7 +1571,7 @@ This wrapper:
 * Provides clean methods to call into C++
 * Converts JSON data into proper JavaScript objects
 
-## 7) Building and Testing the Addon
+## 7) Building and testing the addon
 
 With all files in place, you can build the addon:
 
@@ -1586,10 +1586,10 @@ If the build completes, you can now add the addon to your Electron app and `impo
 You've now built a complete native Node.js addon for Linux using C++ and GTK3. This addon:
 
 1. Provides a bidirectional bridge between JavaScript and C++
-2. Creates a native GTK3 GUI that runs in its own thread
-3. Implements a simple Todo application with add functionality
-4. Uses GTK3, which is compatible with Electron's Chromium runtime
-5. Handles callbacks from C++ to JavaScript safely
+1. Creates a native GTK3 GUI that runs in its own thread
+1. Implements a simple Todo application with add functionality
+1. Uses GTK3, which is compatible with Electron's Chromium runtime
+1. Handles callbacks from C++ to JavaScript safely
 
 This foundation can be extended to implement more complex Linux-specific features in your Electron applications. You can access system features, integrate with Linux-specific libraries, or create performant native UIs while maintaining the flexibility and ease of development that Electron provides.
 For more information on GTK3 development, refer to the [GTK3 Documentation](https://docs.gtk.org/gtk3/) and the [GLib/GObject documentation](https://docs.gtk.org/gobject/). You may also find the [Node.js N-API documentation](https://nodejs.org/api/n-api.html) and [node-addon-api](https://github.com/nodejs/node-addon-api) helpful for extending your native addons.
