@@ -7228,7 +7228,6 @@ describe('BrowserWindow module', () => {
             show: false,
             width: 400,
             height: 300,
-            // @ts-expect-error: remove this once the type definition is added
             windowStateRestoreOptions: {
               stateId
             }
