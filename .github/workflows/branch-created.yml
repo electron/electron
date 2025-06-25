@@ -94,7 +94,7 @@ jobs:
             }))
       - name: Create Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/copy-project@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
+        uses: dsanders11/project-actions/copy-project@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
         id: create-release-board
         with:
           drafts: true
@@ -114,14 +114,15 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
       - name: Find Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/find-project@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
+        uses: dsanders11/project-actions/find-project@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
         id: find-prev-release-board
         with:
+          fail-if-project-not-found: false
           title: ${{ steps.generate-project-metadata.outputs.prev-prev-major }}-x-y
           token: ${{ steps.generate-token.outputs.token }}
       - name: Close Previous Release Project Board
-        if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/close-project@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
+        if: ${{ steps.find-prev-release-board.outputs.number }}
+        uses: dsanders11/project-actions/close-project@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
         with:
           project-number: ${{ steps.find-prev-release-board.outputs.number }}
           token: ${{ steps.generate-token.outputs.token }}

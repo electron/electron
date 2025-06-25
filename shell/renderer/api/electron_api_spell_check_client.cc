@@ -8,11 +8,9 @@
 #include <memory>
 #include <set>
 #include <string_view>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/strings/utf_string_conversion_utils.h"
@@ -20,7 +18,7 @@
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/function_template.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/blink/public/web/web_text_checking_completion.h"
 #include "third_party/blink/public/web/web_text_checking_result.h"
 #include "third_party/icu/source/common/unicode/uscript.h"
@@ -32,7 +30,9 @@ namespace {
 
 bool HasWordCharacters(const std::u16string& text, size_t index) {
   base_icu::UChar32 code;
-  while (base::ReadUnicodeCharacter(text.c_str(), text.size(), &index, &code)) {
+  while (index < text.size() &&
+         base::ReadUnicodeCharacter(text.c_str(), text.size(), &index, &code)) {
+    ++index;
     UErrorCode error = U_ZERO_ERROR;
     if (uscript_getScript(code, &error) != USCRIPT_COMMON)
       return true;
@@ -181,20 +181,20 @@ void SpellCheckClient::SpellCheckText() {
 
 void SpellCheckClient::OnSpellCheckDone(
     const std::vector<std::u16string>& misspelled_words) {
+  const absl::flat_hash_set<std::u16string> misspelled{misspelled_words.begin(),
+                                                       misspelled_words.end()};
   std::vector<blink::WebTextCheckingResult> results;
-  std::unordered_set<std::u16string> misspelled(misspelled_words.begin(),
-                                                misspelled_words.end());
 
   auto& word_list = pending_request_param_->wordlist();
 
   for (const auto& word : word_list) {
-    if (base::Contains(misspelled, word.text)) {
+    if (misspelled.contains(word.text)) {
       // If this is a contraction, iterate through parts and accept the word
       // if none of them are misspelled
       if (!word.contraction_words.empty()) {
         auto all_correct = true;
         for (const auto& contraction_word : word.contraction_words) {
-          if (base::Contains(misspelled, contraction_word)) {
+          if (misspelled.contains(contraction_word)) {
             all_correct = false;
             break;
           }
@@ -214,9 +214,8 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
   DCHECK(!scope.spell_check_.IsEmpty());
 
   auto context = isolate_->GetCurrentContext();
-  gin_helper::MicrotasksScope microtasks_scope{
-      isolate_, context->GetMicrotaskQueue(), false,
-      v8::MicrotasksScope::kDoNotRunMicrotasks};
+  v8::MicrotasksScope microtasks_scope(
+      context, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate_, base::BindRepeating(&SpellCheckClient::OnSpellCheckDone,

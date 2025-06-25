@@ -87,6 +87,7 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   management_policy_ = std::make_unique<ManagementPolicy>();
 }
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 namespace {
 
 std::unique_ptr<base::Value::Dict> ParseManifest(
@@ -103,10 +104,11 @@ std::unique_ptr<base::Value::Dict> ParseManifest(
 }
 
 }  // namespace
+#endif  // if BUILDFLAG(ENABLE_PDF_VIEWER)
 
 void ElectronExtensionSystem::LoadComponentExtensions() {
-  std::string utf8_error;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
+  std::string utf8_error;
   std::string pdf_manifest_string = pdf_extension_util::GetManifest();
   std::unique_ptr<base::Value::Dict> pdf_manifest =
       ParseManifest(pdf_manifest_string);
@@ -187,12 +189,6 @@ void ElectronExtensionSystem::InstallUpdate(
     const base::FilePath& temp_dir,
     bool install_immediately,
     InstallUpdateCallback install_update_callback) {
-  NOTREACHED();
-}
-
-bool ElectronExtensionSystem::FinishDelayedInstallationIfReady(
-    const std::string& extension_id,
-    bool install_immediately) {
   NOTREACHED();
 }
 

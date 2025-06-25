@@ -7,31 +7,13 @@ This allows embedders to tell Node.js what the first "real" file is  when
 they use themselves as the entry point. We should try to upstream some form
 of this.
 
-diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index d49941881e6cfd8647a6d44a57e0daaf1c874702..f696fb263b356a76b87cd4b6c4b1a0fd60a84afd 100644
---- a/lib/internal/modules/cjs/loader.js
-+++ b/lib/internal/modules/cjs/loader.js
-@@ -1518,6 +1518,13 @@ Module.prototype._compile = function(content, filename, format) {
-   if (getOptionValue('--inspect-brk') && process._eval == null) {
-     if (!resolvedArgv) {
-       // We enter the repl if we're not given a filename argument.
-+      // process._firstFileName is used by Embedders to tell node what
-+      // the first "real" file is when they use themselves as the entry
-+      // point
-+      if (process._firstFileName) {
-+        resolvedArgv = process._firstFileName
-+        delete process._firstFileName
-+      } else
-       if (process.argv[1]) {
-         try {
-           resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index cb96fd1bc4fcdce750ce241ee5f47f2ae39cfdc6..c46b270109697f7cc1683f8f9f463575e5040216 100644
+index 4e7be0594ca1e1ceaf1963debbce46783893ed77..a6df0672bf6ae6e9a74ebbb0e4debff63599cc99 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -243,12 +243,14 @@ function patchProcessObject(expandArgv1) {
-   if (expandArgv1 && process.argv[1] &&
-       !StringPrototypeStartsWith(process.argv[1], '-')) {
+@@ -245,12 +245,14 @@ function patchProcessObject(expandArgv1) {
+   // the entry point.
+   if (expandArgv1 && process.argv[1] && process.argv[1][0] !== '-') {
      // Expand process.argv[1] into a full path.
 -    const path = require('path');
 -    try {

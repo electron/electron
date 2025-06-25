@@ -6,10 +6,10 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 605e812d515fc467001e4ab88fc15b4af3fd4aa2..463e76cb1abc0c2fdddba4db2ca2e00f7c591e12 100644
+index 09a332c0999086b30fd952d9456f788925240e27..910ac85cdc86e7fb3f850f7edf0b95ea09d464dc 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
-@@ -8,7 +8,7 @@ const { kEmptyObject } = require('internal/util');
+@@ -10,7 +10,7 @@ const {
  const { defaultGetFormat } = require('internal/modules/esm/get_format');
  const { validateAttributes, emitImportAssertionWarning } = require('internal/modules/esm/assert');
  const { getOptionValue } = require('internal/options');
@@ -18,7 +18,7 @@ index 605e812d515fc467001e4ab88fc15b4af3fd4aa2..463e76cb1abc0c2fdddba4db2ca2e00f
  
  const defaultType =
    getOptionValue('--experimental-default-type');
-@@ -40,8 +40,7 @@ async function getSource(url, context) {
+@@ -38,8 +38,7 @@ async function getSource(url, context) {
    const responseURL = href;
    let source;
    if (protocol === 'file:') {
@@ -28,7 +28,7 @@ index 605e812d515fc467001e4ab88fc15b4af3fd4aa2..463e76cb1abc0c2fdddba4db2ca2e00f
    } else if (protocol === 'data:') {
      const result = dataURLProcessor(url);
      if (result === 'failure') {
-@@ -65,7 +64,7 @@ function getSourceSync(url, context) {
+@@ -63,7 +62,7 @@ function getSourceSync(url, context) {
    const responseURL = href;
    let source;
    if (protocol === 'file:') {
@@ -38,11 +38,11 @@ index 605e812d515fc467001e4ab88fc15b4af3fd4aa2..463e76cb1abc0c2fdddba4db2ca2e00f
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index f05c6f99c0037193c5802024be46a967d6cf47a0..f3dad958b2ec275992554477b9344214c8c1e2c8 100644
+index 9e7d8ef0adef3b68a3ec186e4b218f591aa69266..2879e5cf541fb4d226cfd7cc0fe367ca448fb926 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -24,7 +24,7 @@ const {
- } = primordials;
+@@ -25,7 +25,7 @@ const {
+ const assert = require('internal/assert');
  const internalFS = require('internal/fs/utils');
  const { BuiltinModule } = require('internal/bootstrap/realm');
 -const { realpathSync } = require('fs');
@@ -50,7 +50,7 @@ index f05c6f99c0037193c5802024be46a967d6cf47a0..f3dad958b2ec275992554477b9344214
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
  const { sep, posix: { relative: relativePosixPath }, resolve } = require('path');
-@@ -259,7 +259,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -277,7 +277,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {
@@ -60,19 +60,19 @@ index f05c6f99c0037193c5802024be46a967d6cf47a0..f3dad958b2ec275992554477b9344214
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index d182eedf5e96039e0029d36e51f40b75c6fb2a39..06b31af80ebbfbf35ec787a94f345775eb512ebf 100644
+index 4445bcc4c4c6c6f87ac45e693012a18a93739f9b..49aacb6262502ced54e817f99dd596db85b9659c 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -34,7 +34,7 @@ const {
+@@ -24,7 +24,7 @@ const {
  
  const { BuiltinModule } = require('internal/bootstrap/realm');
  const assert = require('internal/assert');
 -const { readFileSync } = require('fs');
 +const fs = require('fs');
- const { dirname, extname, isAbsolute } = require('path');
+ const { dirname, extname } = require('path');
  const {
-   loadBuiltinModule,
-@@ -335,7 +335,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+   assertBufferSource,
+@@ -272,7 +272,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
  
    try {
      // We still need to read the FS to detect the exports.
@@ -81,12 +81,3 @@ index d182eedf5e96039e0029d36e51f40b75c6fb2a39..06b31af80ebbfbf35ec787a94f345775
    } catch {
      // Continue regardless of error.
    }
-@@ -403,7 +403,7 @@ function cjsPreparseModuleExports(filename, source) {
-       isAbsolute(resolved)) {
-         // TODO: this should be calling the `load` hook chain to get the source
-         // (and fallback to reading the FS only if the source is nullish).
--        const source = readFileSync(resolved, 'utf-8');
-+        const source = fs.readFileSync(resolved, 'utf-8');
-         const { exportNames: reexportNames } = cjsPreparseModuleExports(resolved, source);
-         for (const name of reexportNames) {
-           exportNames.add(name);

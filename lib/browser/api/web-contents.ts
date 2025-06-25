@@ -1,14 +1,12 @@
 import { openGuestWindow, makeWebPreferences, parseContentTypeFormat } from '@electron/internal/browser/guest-window-manager';
 import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
-import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
-import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import * as deprecate from '@electron/internal/common/deprecate';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-import { app, ipcMain, session, webFrameMain, dialog } from 'electron/main';
-import type { BrowserWindowConstructorOptions, MessageBoxOptions } from 'electron/main';
+import { app, session, webFrameMain, dialog } from 'electron/main';
+import type { BrowserWindowConstructorOptions, MessageBoxOptions, NavigationEntry } from 'electron/main';
 
 import * as path from 'path';
 import * as url from 'url';
@@ -17,8 +15,6 @@ import * as url from 'url';
 // before the webContents module.
 // eslint-disable-next-line no-unused-expressions
 session;
-
-const webFrameMainBinding = process._linkedBinding('electron_browser_web_frame_main');
 
 let nextId = 0;
 const getNextId = function () {
@@ -267,8 +263,17 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
     throw new TypeError('webContents.print(): Invalid print settings specified.');
   }
 
-  const pageSize = options.pageSize ?? 'A4';
-  if (typeof pageSize === 'object') {
+  const { pageSize } = options;
+  if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
+    const mediaSize = PDFPageSizes[pageSize];
+    options.mediaSize = {
+      ...mediaSize,
+      imageable_area_left_microns: 0,
+      imageable_area_bottom_microns: 0,
+      imageable_area_right_microns: mediaSize.width_microns,
+      imageable_area_top_microns: mediaSize.height_microns
+    };
+  } else if (typeof pageSize === 'object') {
     if (!pageSize.height || !pageSize.width) {
       throw new Error('height and width properties are required for pageSize');
     }
@@ -290,16 +295,7 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
       imageable_area_right_microns: width,
       imageable_area_top_microns: height
     };
-  } else if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
-    const mediaSize = PDFPageSizes[pageSize];
-    options.mediaSize = {
-      ...mediaSize,
-      imageable_area_left_microns: 0,
-      imageable_area_bottom_microns: 0,
-      imageable_area_right_microns: mediaSize.width_microns,
-      imageable_area_top_microns: mediaSize.height_microns
-    };
-  } else {
+  } else if (pageSize !== undefined) {
     throw new Error(`Unsupported pageSize: ${pageSize}`);
   }
 
@@ -343,8 +339,8 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
 
 type LoadError = { errorCode: number, errorDescription: string, url: string };
 
-WebContents.prototype.loadURL = function (url, options) {
-  const p = new Promise<void>((resolve, reject) => {
+function _awaitNextLoad (this: Electron.WebContents, navigationUrl: string) {
+  return new Promise<void>((resolve, reject) => {
     const resolveAndCleanup = () => {
       removeListeners();
       resolve();
@@ -402,7 +398,7 @@ WebContents.prototype.loadURL = function (url, options) {
       // the only one is with a bad scheme, perhaps ERR_INVALID_ARGUMENT
       // would be more appropriate.
       if (!error) {
-        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url };
+        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url: navigationUrl };
       }
       finishListener();
     };
@@ -426,6 +422,10 @@ WebContents.prototype.loadURL = function (url, options) {
     this.on('did-stop-loading', stopLoadingListener);
     this.on('destroyed', stopLoadingListener);
   });
+};
+
+WebContents.prototype.loadURL = function (url, options) {
+  const p = _awaitNextLoad.call(this, url);
   // Add a no-op rejection handler to silence the unhandled rejection error.
   p.catch(() => {});
   this._loadURL(url, options ?? {});
@@ -476,24 +476,6 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
   }
 };
 
-const addReplyToEvent = (event: Electron.IpcMainEvent) => {
-  const { processId, frameId } = event;
-  event.reply = (channel: string, ...args: any[]) => {
-    event.sender.sendToFrame([processId, frameId], channel, ...args);
-  };
-};
-
-const addSenderToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent, sender: Electron.WebContents) => {
-  event.sender = sender;
-};
-
-const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
-  Object.defineProperty(event, 'returnValue', {
-    set: (value) => event._replyChannel.sendReply(value),
-    get: () => {}
-  });
-};
-
 const commandLine = process._linkedBinding('electron_common_command_line');
 const environment = process._linkedBinding('electron_common_environment');
 
@@ -514,9 +496,9 @@ WebContents.prototype.canGoForward = function () {
 };
 
 const canGoToOffsetDeprecated = deprecate.warnOnce('webContents.canGoToOffset', 'webContents.navigationHistory.canGoToOffset');
-WebContents.prototype.canGoToOffset = function () {
+WebContents.prototype.canGoToOffset = function (index: number) {
   canGoToOffsetDeprecated();
-  return this._canGoToOffset();
+  return this._canGoToOffset(index);
 };
 
 const clearHistoryDeprecated = deprecate.warnOnce('webContents.clearHistory', 'webContents.navigationHistory.clear');
@@ -573,28 +555,6 @@ WebContents.prototype._init = function () {
     enumerable: true
   });
 
-  /**
-   * Cached IPC emitters sorted by dispatch priority.
-   * Caching is used to avoid frequent array allocations.
-   *
-   * 0: WebFrameMain ipc
-   * 1: WebContents ipc
-   * 2: ipcMain
-   */
-  const cachedIpcEmitters: (ElectronInternal.IpcMainInternal | undefined)[] = [undefined, ipc, ipcMain];
-
-  // Get list of relevant IPC emitters for dispatch.
-  const getIpcEmittersForEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent): (ElectronInternal.IpcMainInternal | undefined)[] => {
-    // Lookup by FrameTreeNode ID to ensure IPCs received after a frame swap are
-    // always received. This occurs when a RenderFrame sends an IPC while it's
-    // unloading and its internal state is pending deletion.
-    const { frameTreeNodeId } = event;
-    const webFrameByFtn = frameTreeNodeId ? webFrameMainBinding._fromFtnIdIfExists(frameTreeNodeId) : undefined;
-    cachedIpcEmitters[0] = webFrameByFtn?.ipc;
-
-    return cachedIpcEmitters;
-  };
-
   // Add navigationHistory property which handles session history,
   // maintaining a list of navigation entries for backward and forward navigation.
   Object.defineProperty(this, 'navigationHistory', {
@@ -611,75 +571,30 @@ WebContents.prototype._init = function () {
       length: this._historyLength.bind(this),
       getEntryAtIndex: this._getNavigationEntryAtIndex.bind(this),
       removeEntryAtIndex: this._removeNavigationEntryAtIndex.bind(this),
-      getAllEntries: this._getHistory.bind(this)
+      getAllEntries: this._getHistory.bind(this),
+      restore: ({ index, entries }: { index?: number, entries: NavigationEntry[] }) => {
+        if (index === undefined) {
+          index = entries.length - 1;
+        }
+
+        if (index < 0 || !entries[index]) {
+          throw new Error('Invalid index. Index must be a positive integer and within the bounds of the entries length.');
+        }
+
+        const p = _awaitNextLoad.call(this, entries[index].url);
+        p.catch(() => {});
+
+        try {
+          this._restoreHistory(index, entries);
+        } catch (error) {
+          return Promise.reject(error);
+        }
+
+        return p;
+      }
     },
     writable: false,
     enumerable: true
-  });
-
-  // Dispatch IPC messages to the ipc module.
-  this.on('-ipc-message', function (this: Electron.WebContents, event, internal, channel, args) {
-    addSenderToEvent(event, this);
-    if (internal) {
-      ipcMainInternal.emit(channel, event, ...args);
-    } else {
-      addReplyToEvent(event);
-      this.emit('ipc-message', event, channel, ...args);
-      for (const ipcEmitter of getIpcEmittersForEvent(event)) {
-        ipcEmitter?.emit(channel, event, ...args);
-      }
-    }
-  });
-
-  this.on('-ipc-invoke', async function (this: Electron.WebContents, event, internal, channel, args) {
-    addSenderToEvent(event, this);
-    const replyWithResult = (result: any) => event._replyChannel.sendReply({ result });
-    const replyWithError = (error: Error) => {
-      console.error(`Error occurred in handler for '${channel}':`, error);
-      event._replyChannel.sendReply({ error: error.toString() });
-    };
-    const targets: (ElectronInternal.IpcMainInternal | undefined)[] = internal ? [ipcMainInternal] : getIpcEmittersForEvent(event);
-    const target = targets.find(target => (target as any)?._invokeHandlers.has(channel));
-    if (target) {
-      const handler = (target as any)._invokeHandlers.get(channel);
-      try {
-        replyWithResult(await Promise.resolve(handler(event, ...args)));
-      } catch (err) {
-        replyWithError(err as Error);
-      }
-    } else {
-      replyWithError(new Error(`No handler registered for '${channel}'`));
-    }
-  });
-
-  this.on('-ipc-message-sync', function (this: Electron.WebContents, event, internal, channel, args) {
-    addSenderToEvent(event, this);
-    addReturnValueToEvent(event);
-    if (internal) {
-      ipcMainInternal.emit(channel, event, ...args);
-    } else {
-      addReplyToEvent(event);
-      const ipcEmitters = getIpcEmittersForEvent(event);
-      if (
-        this.listenerCount('ipc-message-sync') === 0 &&
-        ipcEmitters.every(emitter => !emitter || emitter.listenerCount(channel) === 0)
-      ) {
-        console.warn(`WebContents #${this.id} called ipcRenderer.sendSync() with '${channel}' channel without listeners.`);
-      }
-      this.emit('ipc-message-sync', event, channel, ...args);
-      for (const ipcEmitter of ipcEmitters) {
-        ipcEmitter?.emit(channel, event, ...args);
-      }
-    }
-  });
-
-  this.on('-ipc-ports', function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
-    addSenderToEvent(event, this);
-    event.ports = ports.map(p => new MessagePortMain(p));
-    const ipcEmitters = getIpcEmittersForEvent(event);
-    for (const ipcEmitter of ipcEmitters) {
-      ipcEmitter?.emit(channel, event, message);
-    }
   });
 
   this.on('render-process-gone', (event, details) => {

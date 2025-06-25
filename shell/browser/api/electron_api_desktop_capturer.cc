@@ -15,6 +15,7 @@
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "chrome/browser/media/webrtc/thumbnail_capturer_mac.h"
 #include "chrome/browser/media/webrtc/window_icon_util.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_capture.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
@@ -151,7 +152,8 @@ std::unique_ptr<ThumbnailCapturer> MakeWindowCapturer() {
 #endif  // BUILDFLAG(IS_MAC)
 
   std::unique_ptr<webrtc::DesktopCapturer> window_capturer =
-      content::desktop_capture::CreateWindowCapturer();
+      content::desktop_capture::CreateWindowCapturer(
+          content::desktop_capture::CreateDesktopCaptureOptions());
   return window_capturer ? std::make_unique<DesktopCapturerWrapper>(
                                std::move(window_capturer))
                          : nullptr;
@@ -165,7 +167,9 @@ std::unique_ptr<ThumbnailCapturer> MakeScreenCapturer() {
 #endif  // BUILDFLAG(IS_MAC)
 
   std::unique_ptr<webrtc::DesktopCapturer> screen_capturer =
-      content::desktop_capture::CreateScreenCapturer();
+      content::desktop_capture::CreateScreenCapturer(
+          content::desktop_capture::CreateDesktopCaptureOptions(),
+          /*for_snapshot=*/false);
   return screen_capturer ? std::make_unique<DesktopCapturerWrapper>(
                                std::move(screen_capturer))
                          : nullptr;
@@ -252,7 +256,8 @@ void DesktopCapturer::DesktopListListener::OnSourceThumbnailChanged(int index) {
 }
 
 void DesktopCapturer::DesktopListListener::OnDelegatedSourceListDismissed() {
-  std::move(failure_callback_).Run();
+  content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                               std::move(failure_callback_));
 }
 
 void DesktopCapturer::StartHandling(bool capture_window,
@@ -286,7 +291,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
       capture_screen_ = false;
       capture_window_ = capture_window;
       window_capturer_ = std::make_unique<NativeDesktopMediaList>(
-          DesktopMediaList::Type::kWindow, std::move(capturer));
+          DesktopMediaList::Type::kWindow, std::move(capturer), true, true);
       window_capturer_->SetThumbnailSize(thumbnail_size);
 
       OnceCallback update_callback = base::BindOnce(
@@ -322,12 +327,13 @@ void DesktopCapturer::StartHandling(bool capture_window,
       auto capturer = MakeWindowCapturer();
       if (capturer) {
         window_capturer_ = std::make_unique<NativeDesktopMediaList>(
-            DesktopMediaList::Type::kWindow, std::move(capturer));
+            DesktopMediaList::Type::kWindow, std::move(capturer), true, true);
         window_capturer_->SetThumbnailSize(thumbnail_size);
 #if BUILDFLAG(IS_MAC)
         window_capturer_->skip_next_refresh_ =
-            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow) ? 2
-                                                                           : 0;
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow)
+                ? thumbnail_size.IsEmpty() ? 1 : 2
+                : 0;
 #endif
 
         OnceCallback update_callback = base::BindOnce(
@@ -356,8 +362,9 @@ void DesktopCapturer::StartHandling(bool capture_window,
         screen_capturer_->SetThumbnailSize(thumbnail_size);
 #if BUILDFLAG(IS_MAC)
         screen_capturer_->skip_next_refresh_ =
-            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen) ? 2
-                                                                           : 0;
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen)
+                ? thumbnail_size.IsEmpty() ? 1 : 2
+                : 0;
 #endif
 
         OnceCallback update_callback = base::BindOnce(

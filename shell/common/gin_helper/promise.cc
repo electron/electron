@@ -7,7 +7,6 @@
 
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/process_util.h"
 #include "v8/include/v8-context.h"
@@ -17,11 +16,14 @@ namespace gin_helper {
 PromiseBase::SettleScope::SettleScope(const PromiseBase& base)
     : handle_scope_{base.isolate()},
       context_{base.GetContext()},
-      microtasks_scope_{base.isolate(), context_->GetMicrotaskQueue(), false,
-                        v8::MicrotasksScope::kRunMicrotasks},
+      microtasks_scope_(context_, v8::MicrotasksScope::kRunMicrotasks),
       context_scope_{context_} {}
 
-PromiseBase::SettleScope::~SettleScope() = default;
+PromiseBase::SettleScope::~SettleScope() {
+  if (electron::IsBrowserProcess()) {
+    context_->GetMicrotaskQueue()->PerformCheckpoint(context_->GetIsolate());
+  }
+}
 
 PromiseBase::PromiseBase(v8::Isolate* isolate)
     : PromiseBase(isolate,

@@ -7,10 +7,10 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 5fc1b6f2446d7c786024eb60800e2edab613dcd1..f59abcb21d64b910d8d42eb23c03109f62558813 100644
+index df5fb942aa893c22d14d7eb21a5211a46a472a5f..5b7f6e0609c8414c686d2d5ca603ea5c8bc484d0 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -101,6 +101,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -103,6 +103,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
    return result;
  }
  
@@ -26,13 +26,13 @@ index 5fc1b6f2446d7c786024eb60800e2edab613dcd1..f59abcb21d64b910d8d42eb23c03109f
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 33ffbbb85d05f5356183e3aa1ca23707c5629b5d..008d212ebe25b0022020379aa08963c12828940c 100644
+index f23cedf4f2449d8edc9a8de1b70332e75d693cdd..976653dd1e9363e046788fc3419a9b649ceb2ea4 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -51,6 +51,25 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+@@ -55,13 +55,32 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+ 
  namespace {
- MaybeLocal<Value> DataPointerToBuffer(Environment* env,
-                                       ncrypto::DataPointer&& data) {
+ MaybeLocal<Value> DataPointerToBuffer(Environment* env, DataPointer&& data) {
 +#if defined(V8_ENABLE_SANDBOX)
 +  std::unique_ptr<v8::BackingStore> backing;
 +  if (data.size() > 0) {
@@ -55,19 +55,19 @@ index 33ffbbb85d05f5356183e3aa1ca23707c5629b5d..008d212ebe25b0022020379aa08963c1
    auto backing = ArrayBuffer::NewBackingStore(
        data.get(),
        data.size(),
-@@ -59,6 +78,7 @@ MaybeLocal<Value> DataPointerToBuffer(Environment* env,
-       },
+       [](void* data, size_t len, void* ptr) { DataPointer free_me(data, len); },
        nullptr);
    data.release();
+-
 +#endif
- 
    auto ab = ArrayBuffer::New(env->isolate(), std::move(backing));
    return Buffer::New(env, ab, 0, ab->ByteLength()).FromMaybe(Local<Value>());
+ }
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index ee81048caab4ccfe26ea9e677782c9c955d162a9..643c9d31dc2737faa2ec51684ffceb35a1014a58 100644
+index 6346f8f7199cf7b7d3736c59571606fff102fbb6..7eea2eaefcad5780663a6b87985925ae5d70a5f9 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -326,10 +326,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
+@@ -359,10 +359,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
    return *this;
  }
  
@@ -104,7 +104,7 @@ index ee81048caab4ccfe26ea9e677782c9c955d162a9..643c9d31dc2737faa2ec51684ffceb35
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
        size(),
-@@ -341,10 +366,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
+@@ -374,10 +399,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
    data_ = nullptr;
    size_ = 0;
    return ptr;
@@ -117,7 +117,7 @@ index ee81048caab4ccfe26ea9e677782c9c955d162a9..643c9d31dc2737faa2ec51684ffceb35
    return ArrayBuffer::New(env->isolate(), std::move(store));
  }
  
-@@ -641,6 +667,16 @@ namespace {
+@@ -674,6 +700,16 @@ namespace {
  // in which case this has the same semantics as
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
@@ -134,7 +134,7 @@ index ee81048caab4ccfe26ea9e677782c9c955d162a9..643c9d31dc2737faa2ec51684ffceb35
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
-@@ -662,6 +698,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -695,6 +731,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
@@ -143,10 +143,10 @@ index ee81048caab4ccfe26ea9e677782c9c955d162a9..643c9d31dc2737faa2ec51684ffceb35
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 922e77091d72172ed6cfc5e8477901e3608396c5..16a236c69caed6d60248c7973531a95adc8f2edb 100644
+index 1592134716da2de40de4ba028ee937b765423e37..8f3ba65f1fef2c066d6df6087a08ba71100d1090 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -268,7 +268,7 @@ class ByteSource {
+@@ -242,7 +242,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.
@@ -156,10 +156,10 @@ index 922e77091d72172ed6cfc5e8477901e3608396c5..16a236c69caed6d60248c7973531a95a
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index af2f953f0388dbce326b0c519de3883552f8f009..7fb34057a486914dd886ec4d3d23be90cccb4fea 100644
+index f616223cfb0f6e10f7cf57ada9704316bde2797e..eb6dad44a49d997097c8fb5009eeb60a7305da27 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
-@@ -174,6 +174,19 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
+@@ -167,6 +167,19 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
  MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
    if (bio == nullptr || !*bio) return {};
    BUF_MEM* mem = *bio;
@@ -179,7 +179,7 @@ index af2f953f0388dbce326b0c519de3883552f8f009..7fb34057a486914dd886ec4d3d23be90
    auto backing = ArrayBuffer::NewBackingStore(
        mem->data,
        mem->length,
-@@ -181,6 +194,8 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+@@ -174,6 +187,8 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
          BIOPointer free_me(static_cast<BIO*>(data));
        },
        bio->release());
@@ -189,10 +189,10 @@ index af2f953f0388dbce326b0c519de3883552f8f009..7fb34057a486914dd886ec4d3d23be90
    Local<Value> ret;
    if (!Buffer::New(env, ab, 0, ab->ByteLength()).ToLocal(&ret)) return {};
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index 43bb68351bf0a68285e464601013bbdbd5d5df5f..4126bbff080548c91154a6dcc437359c82a6c771 100644
+index ea7810e41e2667713a896250dc1b904b0a7cf198..865b3128c1edfe7074769f25a0b87878ca094f31 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
-@@ -107,7 +107,7 @@ namespace {
+@@ -104,7 +104,7 @@ namespace {
  
  template <typename T>
  MaybeLocal<Object> ToBufferEndian(Environment* env, MaybeStackBuffer<T>* buf) {
@@ -201,7 +201,7 @@ index 43bb68351bf0a68285e464601013bbdbd5d5df5f..4126bbff080548c91154a6dcc437359c
    if (ret.IsEmpty())
      return ret;
  
-@@ -184,7 +184,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
+@@ -181,7 +181,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
      return {};
    }
  
@@ -210,7 +210,7 @@ index 43bb68351bf0a68285e464601013bbdbd5d5df5f..4126bbff080548c91154a6dcc437359c
  }
  
  MaybeLocal<Object> TranscodeFromUcs2(Environment* env,
-@@ -229,7 +229,7 @@ MaybeLocal<Object> TranscodeUcs2FromUtf8(Environment* env,
+@@ -226,7 +226,7 @@ MaybeLocal<Object> TranscodeUcs2FromUtf8(Environment* env,
      return {};
    }
  
@@ -219,7 +219,7 @@ index 43bb68351bf0a68285e464601013bbdbd5d5df5f..4126bbff080548c91154a6dcc437359c
  }
  
  MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
-@@ -253,7 +253,7 @@ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
+@@ -250,7 +250,7 @@ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
      return {};
    }
  
@@ -229,10 +229,10 @@ index 43bb68351bf0a68285e464601013bbdbd5d5df5f..4126bbff080548c91154a6dcc437359c
  
  constexpr const char* EncodingName(const enum encoding encoding) {
 diff --git a/src/node_internals.h b/src/node_internals.h
-index fe2d25decd883085e4c3f368ab4acc01a7f66f6e..bcd5c87afcff9c56429443363c63fc8079521451 100644
+index 275534285ec28f02b46639142ab4195b24267476..5f9d123f9d4b9feb7bc0b627b1e6309fdbd6e30d 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -117,7 +117,9 @@ v8::Maybe<bool> InitializePrimordials(v8::Local<v8::Context> context);
+@@ -120,7 +120,9 @@ v8::MaybeLocal<v8::Object> InitializePrivateSymbols(
  
  class NodeArrayBufferAllocator : public ArrayBufferAllocator {
   public:
@@ -243,7 +243,7 @@ index fe2d25decd883085e4c3f368ab4acc01a7f66f6e..bcd5c87afcff9c56429443363c63fc80
  
    void* Allocate(size_t size) override;  // Defined in src/node.cc
    void* AllocateUninitialized(size_t size) override;
-@@ -135,7 +137,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+@@ -138,7 +140,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
    }
  
   private:
@@ -253,10 +253,10 @@ index fe2d25decd883085e4c3f368ab4acc01a7f66f6e..bcd5c87afcff9c56429443363c63fc80
  
    // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index 7a70997bc024efa4f3ff4cabe30d5e88dcc7bc78..438d6e581a2ee55216f9a9945204b07824fc28a0 100644
+index c55a2e28066147ae5ca5def10ec76ccc03c634b4..c54183c72944989219b6437c9e571a3f7f3f8dd5 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
-@@ -29,6 +29,11 @@ using v8::ValueSerializer;
+@@ -29,6 +29,26 @@ using v8::ValueSerializer;
  
  namespace serdes {
  
@@ -265,10 +265,25 @@ index 7a70997bc024efa4f3ff4cabe30d5e88dcc7bc78..438d6e581a2ee55216f9a9945204b078
 +  return allocator;
 +}
 +
++void* Reallocate(void* data, size_t old_length,
++                 size_t new_length) {
++  if (old_length == new_length) return data;
++  uint8_t* new_data =
++      reinterpret_cast<uint8_t*>(GetAllocator()->AllocateUninitialized(new_length));
++  if (new_data == nullptr) return nullptr;
++  size_t bytes_to_copy = std::min(old_length, new_length);
++  memcpy(new_data, data, bytes_to_copy);
++  if (new_length > bytes_to_copy) {
++    memset(new_data + bytes_to_copy, 0, new_length - bytes_to_copy);
++  }
++  GetAllocator()->Free(data, old_length);
++  return new_data;
++}
++
  class SerializerContext : public BaseObject,
                            public ValueSerializer::Delegate {
   public:
-@@ -37,10 +42,15 @@ class SerializerContext : public BaseObject,
+@@ -37,10 +57,15 @@ class SerializerContext : public BaseObject,
  
    ~SerializerContext() override = default;
  
@@ -284,7 +299,7 @@ index 7a70997bc024efa4f3ff4cabe30d5e88dcc7bc78..438d6e581a2ee55216f9a9945204b078
  
    static void SetTreatArrayBufferViewsAsHostObjects(
        const FunctionCallbackInfo<Value>& args);
-@@ -61,6 +71,7 @@ class SerializerContext : public BaseObject,
+@@ -61,6 +86,7 @@ class SerializerContext : public BaseObject,
  
   private:
    ValueSerializer serializer_;
@@ -292,7 +307,7 @@ index 7a70997bc024efa4f3ff4cabe30d5e88dcc7bc78..438d6e581a2ee55216f9a9945204b078
  };
  
  class DeserializerContext : public BaseObject,
-@@ -144,6 +155,24 @@ Maybe<uint32_t> SerializerContext::GetSharedArrayBufferId(
+@@ -144,6 +170,24 @@ Maybe<uint32_t> SerializerContext::GetSharedArrayBufferId(
    return id.ToLocalChecked()->Uint32Value(env()->context());
  }
  
@@ -301,7 +316,7 @@ index 7a70997bc024efa4f3ff4cabe30d5e88dcc7bc78..438d6e581a2ee55216f9a9945204b078
 +                                                size_t* new_length) {
 +  *new_length = std::max(static_cast<size_t>(4096), requested_size);
 +  if (old_buffer) {
-+    void* ret = GetAllocator()->Reallocate(old_buffer, last_length_, *new_length);
++    void* ret = Reallocate(old_buffer, last_length_, *new_length);
 +    last_length_ = *new_length;
 +    return ret;
 +  } else {
@@ -317,7 +332,7 @@ index 7a70997bc024efa4f3ff4cabe30d5e88dcc7bc78..438d6e581a2ee55216f9a9945204b078
  Maybe<bool> SerializerContext::WriteHostObject(Isolate* isolate,
                                                 Local<Object> input) {
    MaybeLocal<Value> ret;
-@@ -209,9 +238,14 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -209,9 +253,14 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
    // Note: Both ValueSerializer and this Buffer::New() variant use malloc()
    // as the underlying allocator.
    std::pair<uint8_t*, size_t> ret = ctx->serializer_.Release();
@@ -369,3 +384,18 @@ index 9787b14352753c5e0f8dc2b90093680e7cd10f1a..31af9e62396368af1b81f8841a705fd3
    auto ab = ArrayBuffer::New(isolate, std::move(bs));
    v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
  
+diff --git a/test/parallel/test-buffer-tostring-range.js b/test/parallel/test-buffer-tostring-range.js
+index 73fec107a36c3db4af6f492137d0ca174f2d0547..a1153ec381f7b12a1640b611073f6997e1ec5696 100644
+--- a/test/parallel/test-buffer-tostring-range.js
++++ b/test/parallel/test-buffer-tostring-range.js
+@@ -102,8 +102,8 @@ assert.throws(() => {
+ // Must not throw when start and end are within kMaxLength
+ // Cannot test on 32bit machine as we are testing the case
+ // when start and end are above the threshold
+-if (!common.openSSLIsBoringSSL) {
++/*
+ const threshold = 0xFFFFFFFF;
+ const largeBuffer = Buffer.alloc(threshold + 20);
+ largeBuffer.toString('utf8', threshold, threshold + 20);
+-}
++*/

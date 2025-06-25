@@ -8,25 +8,35 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/uuid.h"
+#include "base/task/sequenced_task_runner.h"
+#include "base/values.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
+#include "mojo/public/cpp/bindings/receiver.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "net/base/filename_util.h"
 #include "net/http/http_request_headers.h"
 #include "net/http/http_status_code.h"
 #include "net/url_request/redirect_util.h"
+#include "services/network/public/cpp/resource_request.h"
+#include "services/network/public/cpp/shared_url_loader_factory.h"
+#include "services/network/public/cpp/simple_url_loader.h"
+#include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
+#include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
+#include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/net/node_stream_loader.h"
-#include "shell/browser/net/url_pipe_loader.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -114,8 +124,8 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
     return head;
   }
 
-  int status_code = net::HTTP_OK;
-  dict.Get("statusCode", &status_code);
+  const int status_code =
+      dict.ValueOrDefault("statusCode", static_cast<int>(net::HTTP_OK));
   head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
       absl::StrFormat("HTTP/1.1 %d %s", status_code,
                       net::GetHttpReasonPhrase(
@@ -178,6 +188,122 @@ void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
   }
   write_data->client->OnComplete(status);
 }
+
+// Read data from URL and pipe it to NetworkService.
+//
+// Different from creating a new loader for the URL directly, protocol handlers
+// using this loader can work around CORS restrictions.
+//
+// This class manages its own lifetime and should delete itself when the
+// connection is lost or finished.
+class URLPipeLoader : public network::mojom::URLLoader,
+                      public network::SimpleURLLoaderStreamConsumer {
+ public:
+  URLPipeLoader(scoped_refptr<network::SharedURLLoaderFactory> factory,
+                std::unique_ptr<network::ResourceRequest> request,
+                mojo::PendingReceiver<network::mojom::URLLoader> loader,
+                mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+                const net::NetworkTrafficAnnotationTag& annotation,
+                base::Value::Dict upload_data)
+      : url_loader_(this, std::move(loader)), client_(std::move(client)) {
+    url_loader_.set_disconnect_handler(
+        base::BindOnce(&URLPipeLoader::NotifyComplete, base::Unretained(this),
+                       net::ERR_FAILED));
+
+    // PostTask since it might destruct.
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(&URLPipeLoader::Start, weak_factory_.GetWeakPtr(),
+                       factory, std::move(request), annotation,
+                       std::move(upload_data)));
+  }
+
+  // disable copy
+  URLPipeLoader(const URLPipeLoader&) = delete;
+  URLPipeLoader& operator=(const URLPipeLoader&) = delete;
+
+ private:
+  ~URLPipeLoader() override = default;
+
+  void Start(scoped_refptr<network::SharedURLLoaderFactory> factory,
+             std::unique_ptr<network::ResourceRequest> request,
+             const net::NetworkTrafficAnnotationTag& annotation,
+             base::Value::Dict upload_data) {
+    loader_ = network::SimpleURLLoader::Create(std::move(request), annotation);
+    loader_->SetOnResponseStartedCallback(base::BindOnce(
+        &URLPipeLoader::OnResponseStarted, weak_factory_.GetWeakPtr()));
+
+    // TODO(zcbenz): The old protocol API only supports string as upload data,
+    // we should seek to support more types in future.
+    std::string* content_type = upload_data.FindString("contentType");
+    std::string* data = upload_data.FindString("data");
+    if (content_type && data)
+      loader_->AttachStringForUpload(*data, *content_type);
+
+    loader_->DownloadAsStream(factory.get(), this);
+  }
+
+  void NotifyComplete(int result) {
+    client_->OnComplete(network::URLLoaderCompletionStatus(result));
+    delete this;
+  }
+
+  void OnResponseStarted(const GURL& final_url,
+                         const network::mojom::URLResponseHead& response_head) {
+    mojo::ScopedDataPipeProducerHandle producer;
+    mojo::ScopedDataPipeConsumerHandle consumer;
+    MojoResult rv = mojo::CreateDataPipe(nullptr, producer, consumer);
+    if (rv != MOJO_RESULT_OK) {
+      NotifyComplete(net::ERR_INSUFFICIENT_RESOURCES);
+      return;
+    }
+
+    producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(producer));
+
+    client_->OnReceiveResponse(response_head.Clone(), std::move(consumer),
+                               std::nullopt);
+  }
+
+  void OnWrite(base::OnceClosure resume, MojoResult result) {
+    if (result == MOJO_RESULT_OK)
+      std::move(resume).Run();
+    else
+      NotifyComplete(net::ERR_FAILED);
+  }
+
+  // SimpleURLLoaderStreamConsumer:
+  void OnDataReceived(std::string_view string_view,
+                      base::OnceClosure resume) override {
+    producer_->Write(
+        std::make_unique<mojo::StringDataSource>(
+            string_view, mojo::StringDataSource::AsyncWritingMode::
+                             STRING_MAY_BE_INVALIDATED_BEFORE_COMPLETION),
+        base::BindOnce(&URLPipeLoader::OnWrite, weak_factory_.GetWeakPtr(),
+                       std::move(resume)));
+  }
+
+  void OnComplete(bool success) override {
+    NotifyComplete(loader_->NetError());
+  }
+  void OnRetry(base::OnceClosure start_retry) override { NOTREACHED(); }
+
+  // URLLoader:
+  void FollowRedirect(
+      const std::vector<std::string>& removed_headers,
+      const net::HttpRequestHeaders& modified_headers,
+      const net::HttpRequestHeaders& modified_cors_exempt_headers,
+      const std::optional<GURL>& new_url) override {}
+  void SetPriority(net::RequestPriority priority,
+                   int32_t intra_priority_value) override {}
+
+  mojo::Receiver<network::mojom::URLLoader> url_loader_;
+  mojo::Remote<network::mojom::URLLoaderClient> client_;
+
+  std::unique_ptr<mojo::DataPipeProducer> producer_;
+  std::unique_ptr<network::SimpleURLLoader> loader_;
+
+  base::WeakPtrFactory<URLPipeLoader> weak_factory_{this};
+};
 
 }  // namespace
 
@@ -544,21 +670,11 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
       request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);
 
-  ElectronBrowserContext* browser_context =
-      ElectronBrowserContext::From("", false);
-  v8::Local<v8::Value> value;
-  if (dict.Get("session", &value)) {
-    if (value->IsNull()) {
-      browser_context = ElectronBrowserContext::From(
-          base::Uuid::GenerateRandomV4().AsLowercaseString(), true);
-    } else {
-      gin::Handle<api::Session> session;
-      if (gin::ConvertFromV8(dict.isolate(), value, &session) &&
-          !session.IsEmpty()) {
-        browser_context = session->browser_context();
-      }
-    }
-  }
+  gin::Handle<api::Session> session;
+  auto* browser_context =
+      dict.Get("session", &session) && !session.IsEmpty()
+          ? session->browser_context()
+          : ElectronBrowserContext::GetDefaultBrowserContext();
 
   new URLPipeLoader(
       browser_context->GetURLLoaderFactory(), std::move(request),

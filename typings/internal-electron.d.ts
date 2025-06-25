@@ -63,8 +63,23 @@ declare namespace Electron {
       overrideGlobalValueFromIsolatedWorld(keys: string[], value: any): void;
       overrideGlobalValueWithDynamicPropsFromIsolatedWorld(keys: string[], value: any): void;
       overrideGlobalPropertyFromIsolatedWorld(keys: string[], getter: Function, setter?: Function): void;
-      isInMainWorld(): boolean;
     }
+  }
+
+  interface ServiceWorkers {
+    _getWorkerFromVersionIDIfExists(versionId: number): Electron.ServiceWorkerMain | undefined;
+    _stopAllWorkers(): Promise<void>;
+  }
+
+  interface ServiceWorkerMain {
+    _send(internal: boolean, channel: string, args: any): void;
+    _startExternalRequest(hasTimeout: boolean): { id: string, ok: boolean };
+    _finishExternalRequest(uuid: string): void;
+    _countExternalRequests(): number;
+  }
+
+  interface Session {
+    _init(): void;
   }
 
   interface TouchBar {
@@ -72,11 +87,12 @@ declare namespace Electron {
   }
 
   interface WebContents {
+    _awaitNextLoad(expectedUrl: string): Promise<void>;
     _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
     _getProcessMemoryInfo(): Electron.ProcessMemoryInfo;
-    _getPreloadPaths(): string[];
+    _getPreloadScript(): Electron.PreloadScript | null;
     equal(other: WebContents): boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
     _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
@@ -93,13 +109,14 @@ declare namespace Electron {
     _historyLength(): number;
     _canGoBack(): boolean;
     _canGoForward(): boolean;
-    _canGoToOffset(): boolean;
+    _canGoToOffset(index: number): boolean;
     _goBack(): void;
     _goForward(): void;
     _goToOffset(index: number): void;
     _goToIndex(index: number): void;
     _removeNavigationEntryAtIndex(index: number): boolean;
     _getHistory(): Electron.NavigationEntry[];
+    _restoreHistory(index: number, entries: Electron.NavigationEntry[]): void
     _clearHistory():void
     canGoToIndex(index: number): boolean;
     destroy(): void;
@@ -115,6 +132,7 @@ declare namespace Electron {
     _send(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
+    _lifecycleStateForTesting: string;
   }
 
   interface WebFrame {
@@ -148,12 +166,13 @@ declare namespace Electron {
     commandsMap: Record<string, MenuItem>;
     groupsMap: Record<string, MenuItem[]>;
     getItemCount(): number;
-    popupAt(window: BaseWindow, x: number, y: number, positioning: number, sourceType: Required<Electron.PopupOptions>['sourceType'], callback: () => void): void;
+    popupAt(window: BaseWindow, frame: WebFrameMain | undefined, x: number, y: number, positioning: number, sourceType: Required<Electron.PopupOptions>['sourceType'], callback: () => void): void;
     closePopupAt(id: number): void;
     setSublabel(index: number, label: string): void;
     setToolTip(index: number, tooltip: string): void;
     setIcon(index: number, image: string | NativeImage): void;
     setRole(index: number, role: string): void;
+    setCustomType(index: number, customType: string): void;
     insertItem(index: number, commandId: number, label: string): void;
     insertCheckItem(index: number, commandId: number, label: string): void;
     insertRadioItem(index: number, commandId: number, label: string, groupId: number): void;
@@ -183,6 +202,14 @@ declare namespace Electron {
   interface IpcMainInvokeEvent {
     _replyChannel: ReplyChannel;
     frameTreeNodeId?: number;
+  }
+
+  interface IpcMainServiceWorkerEvent {
+    _replyChannel: ReplyChannel;
+  }
+
+  interface IpcMainServiceWorkerInvokeEvent {
+    _replyChannel: ReplyChannel;
   }
 
   // Deprecated / undocumented BrowserWindow methods
@@ -260,11 +287,11 @@ declare namespace ElectronInternal {
     invoke<T>(channel: string, ...args: any[]): Promise<T>;
   }
 
-  interface IpcMainInternalEvent extends Omit<Electron.IpcMainEvent, 'reply'> {
-  }
+  type IpcMainInternalEvent = Omit<Electron.IpcMainEvent, 'reply'> | Omit<Electron.IpcMainServiceWorkerEvent, 'reply'>;
+  type IpcMainInternalInvokeEvent = Electron.IpcMainInvokeEvent | Electron.IpcMainServiceWorkerInvokeEvent;
 
   interface IpcMainInternal extends NodeJS.EventEmitter {
-    handle(channel: string, listener: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => Promise<any> | any): void;
+    handle(channel: string, listener: (event: IpcMainInternalInvokeEvent, ...args: any[]) => Promise<any> | any): void;
     on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
   }
@@ -329,6 +356,11 @@ declare namespace ElectronInternal {
 
   class WebContents extends Electron.WebContents {
     static create(opts?: Electron.WebPreferences): Electron.WebContents;
+  }
+
+  interface PreloadScript extends Electron.PreloadScript {
+    contents?: string;
+    error?: Error;
   }
 }
 

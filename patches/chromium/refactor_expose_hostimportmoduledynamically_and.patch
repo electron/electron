@@ -7,21 +7,28 @@ Subject: refactor: expose HostImportModuleDynamically and
 This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 0479bf92c2f15eb5ebb08cccea9a0271675e3200..430bac5f5fd5c22637fbcea6ebf99622044965d1 100644
+index 76eafc4c2efed7db29cac73ebe111f9b35edd167..1df9632bffc27acef6643380eccc1b069cf82acb 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -648,7 +648,9 @@ bool WasmJSPromiseIntegrationEnabledCallback(v8::Local<v8::Context> context) {
+@@ -633,7 +633,9 @@ bool WasmJSPromiseIntegrationEnabledCallback(v8::Local<v8::Context> context) {
        execution_context);
  }
  
--v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
-+}
+-v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
++}  // namespace
 +
-+v8::MaybeLocal<v8::Promise> V8Initializer::HostImportModuleDynamically(
++v8::MaybeLocal<v8::Promise> V8Initializer::HostImportModuleWithPhaseDynamically(
      v8::Local<v8::Context> context,
      v8::Local<v8::Data> v8_host_defined_options,
      v8::Local<v8::Value> v8_referrer_resource_url,
-@@ -726,7 +728,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
+@@ -718,13 +720,13 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
+     v8::Local<v8::Value> v8_referrer_resource_url,
+     v8::Local<v8::String> v8_specifier,
+     v8::Local<v8::FixedArray> v8_import_attributes) {
+-  return HostImportModuleWithPhaseDynamically(
++  return V8Initializer::HostImportModuleWithPhaseDynamically(
+       context, v8_host_defined_options, v8_referrer_resource_url, v8_specifier,
+       v8::ModuleImportPhase::kEvaluation, v8_import_attributes);
  }
  
  // https://html.spec.whatwg.org/C/#hostgetimportmetaproperties
@@ -30,7 +37,7 @@ index 0479bf92c2f15eb5ebb08cccea9a0271675e3200..430bac5f5fd5c22637fbcea6ebf99622
                                   v8::Local<v8::Module> module,
                                   v8::Local<v8::Object> meta) {
    v8::Isolate* isolate = context->GetIsolate();
-@@ -769,9 +771,6 @@ std::ostream& operator<<(std::ostream& os, const PrintV8OOM& oom_details) {
+@@ -771,9 +773,6 @@ std::ostream& operator<<(std::ostream& os, const PrintV8OOM& oom_details) {
    return os;
  }
  
@@ -40,31 +47,32 @@ index 0479bf92c2f15eb5ebb08cccea9a0271675e3200..430bac5f5fd5c22637fbcea6ebf99622
  void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
    // Set up garbage collection before setting up anything else as V8 may trigger
    // GCs during Blink setup.
-@@ -791,9 +790,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
-   isolate->SetWasmJSPIEnabledCallback(WasmJSPromiseIntegrationEnabledCallback);
-   isolate->SetSharedArrayBufferConstructorEnabledCallback(
+@@ -795,9 +794,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
        SharedArrayBufferConstructorEnabledCallback);
--  isolate->SetHostImportModuleDynamicallyCallback(HostImportModuleDynamically);
-+  isolate->SetHostImportModuleDynamicallyCallback(V8Initializer::HostImportModuleDynamically);
+   isolate->SetHostImportModuleDynamicallyCallback(HostImportModuleDynamically);
+   isolate->SetHostImportModuleWithPhaseDynamicallyCallback(
+-      HostImportModuleWithPhaseDynamically);
++      V8Initializer::HostImportModuleWithPhaseDynamically);
    isolate->SetHostInitializeImportMetaObjectCallback(
 -      HostGetImportMetaProperties);
 +      V8Initializer::HostGetImportMetaProperties);
+   isolate->SetIsJSApiWrapperNativeErrorCallback(IsDOMExceptionWrapper);
    isolate->SetMetricsRecorder(std::make_shared<V8MetricsRecorder>(isolate));
  
- #if BUILDFLAG(IS_WIN)
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
-index be5df8f98c3f7e308d79d43c1811a16c644b6158..5c25a3bb7f04ea74ee8587b158e125f4aa651912 100644
+index be5df8f98c3f7e308d79d43c1811a16c644b6158..599121e3dabecf1a8192ba410ff447dcb540376c 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
-@@ -85,6 +85,17 @@ class CORE_EXPORT V8Initializer {
+@@ -85,6 +85,18 @@ class CORE_EXPORT V8Initializer {
    static void PromiseRejectHandlerInMainThread(v8::PromiseRejectMessage data);
    static void ExceptionPropagationCallback(v8::ExceptionPropagationMessage);
  
-+  static v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
++  static v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
 +    v8::Local<v8::Context> context,
 +    v8::Local<v8::Data> v8_host_defined_options,
 +    v8::Local<v8::Value> v8_referrer_resource_url,
 +    v8::Local<v8::String> v8_specifier,
++    v8::ModuleImportPhase import_phase,
 +    v8::Local<v8::FixedArray> v8_import_assertions);
 +
 +  static void HostGetImportMetaProperties(v8::Local<v8::Context> context,

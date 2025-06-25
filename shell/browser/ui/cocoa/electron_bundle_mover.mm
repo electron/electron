@@ -30,7 +30,7 @@ struct Converter<electron::BundlerMoverConflictType> {
       case electron::BundlerMoverConflictType::kExistsAndRunning:
         return gin::StringToV8(isolate, "existsAndRunning");
       default:
-        return gin::StringToV8(isolate, "");
+        return v8::String::Empty(isolate);
     }
   }
 };
@@ -179,7 +179,7 @@ bool AuthorizedInstall(NSString* srcPath, NSString* dstPath, bool* canceled) {
     // longer accessible. If Apple removes the function entirely this will fail
     // gracefully. If they keep the function and throw some sort of exception,
     // this won't fail gracefully, but that's a risk we'll have to take for now.
-    security_AuthorizationExecuteWithPrivileges = (OSStatus(*)(
+    security_AuthorizationExecuteWithPrivileges = (OSStatus (*)(
         AuthorizationRef, const char*, AuthorizationFlags, char* const*,
         FILE**))dlsym(RTLD_DEFAULT, "AuthorizationExecuteWithPrivileges");
   }

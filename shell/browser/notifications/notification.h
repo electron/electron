@@ -15,6 +15,8 @@
 
 namespace electron {
 
+extern const bool debug_notifications;
+
 class NotificationDelegate;
 class NotificationPresenter;
 

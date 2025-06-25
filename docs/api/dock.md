@@ -9,7 +9,8 @@ The following example shows how to bounce your icon on the dock.
 
 ```js
 const { app } = require('electron')
-app.dock.bounce()
+
+app.dock?.bounce()
 ```
 
 ### Instance Methods
@@ -28,7 +29,8 @@ When `informational` is passed, the dock icon will bounce for one second.
 However, the request remains active until either the application becomes active
 or the request is canceled.
 
-**Note:** This method can only be used while the app is not focused; when the app is focused it will return -1.
+> [!NOTE]
+> This method can only be used while the app is not focused; when the app is focused it will return -1.
 
 #### `dock.cancelBounce(id)` _macOS_
 

@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 17 Feb 2025 20:57:05 +0900
+Subject: build: option to use custom inspector_protocol path
+
+This allows building against //third_party/inspector_protocol
+which would align us when building with chromium shared dependencies.
+
+The span changes will be auto-removed when Node.js bumps their
+protocol deps to contain https://chromium-review.googlesource.com/c/v8/v8/+/5996636
+
+Rest of the changes can be upstreamed.
+
+diff --git a/node.gni b/node.gni
+index 203b4abbc44df9e58083c819f61f9025104abdc6..73bf3839866a2652ca660f1117e8f249d33fa46a 100644
+--- a/node.gni
++++ b/node.gni
+@@ -16,6 +16,9 @@ declare_args() {
+   # The location of simdutf - use the one from node's deps by default.
+   node_simdutf_path = "//third_party/simdutf"
+ 
++  # The location of inspector_protocol - use the one from node's deps by default.
++  node_inspector_protocol_path = "//third_party/inspector_protocol"
++
+   # The NODE_MODULE_VERSION defined in node_version.h.
+   node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")
+ 
+diff --git a/src/inspector/node_json.cc b/src/inspector/node_json.cc
+index d8aacbdf1a8fc858c792ad3ce17ca2f46baebe7e..4625008c048532c2c3340130670647d2877430bd 100644
+--- a/src/inspector/node_json.cc
++++ b/src/inspector/node_json.cc
+@@ -72,7 +72,7 @@ class ValueParserHandler : public ParserHandler {
+ 
+   void HandleBinary(span<uint8_t> bytes) override {
+     AddValueToParent(
+-        BinaryValue::create(Binary::fromSpan(bytes.data(), bytes.size())));
++        BinaryValue::create(Binary::fromSpan(bytes)));
+   }
+ 
+   void HandleDouble(double value) override {
+diff --git a/src/inspector/node_string.h b/src/inspector/node_string.h
+index b2f67c224acc7b3a3b867867e251a7c62833f46e..33e93ce5bf7dda7e30b7b1b198ff3b53ccfac22a 100644
+--- a/src/inspector/node_string.h
++++ b/src/inspector/node_string.h
+@@ -66,7 +66,7 @@ class Binary {
+   static Binary fromBase64(const std::string_view base64, bool* success) {
+     UNREACHABLE();
+   }
+-  static Binary fromSpan(const uint8_t* data, size_t size) { UNREACHABLE(); }
++  static Binary fromSpan(crdtp::span<const uint8_t> data) { UNREACHABLE(); }
+ };
+ 
+ }  // namespace protocol
+diff --git a/src/inspector/unofficial.gni b/src/inspector/unofficial.gni
+index 3d7aa148678b2646b88fa7c32abec91791b02b82..4810d93eb971b253f7dadff7011a632f6dbe6a2b 100644
+--- a/src/inspector/unofficial.gni
++++ b/src/inspector/unofficial.gni
+@@ -13,7 +13,7 @@ template("inspector_gn_build") {
+   }
+ 
+   node_gen_dir = get_label_info("../..", "target_gen_dir")
+-  protocol_tool_path = "../../deps/inspector_protocol"
++  protocol_tool_path = "$node_inspector_protocol_path"
+ 
+   gypi_values = exec_script(
+       "../../tools/gypi_to_gn.py",
+diff --git a/unofficial.gni b/unofficial.gni
+index d591dfc99fdea4f830008502786ee44d863a31fc..9e26399482d6a1cdb843efb72c152d5cdd5e08ea 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -214,13 +214,14 @@ template("node_gn_build") {
+     }
+     if (node_enable_inspector) {
+       deps += [
+-        "src/inspector:crdtp",
++        "$node_inspector_protocol_path:crdtp",
+         "src/inspector:node_protocol_generated_sources",
+         "src/inspector:v8_inspector_compress_protocol_json",
+       ]
+       include_dirs = [
+         "$target_gen_dir/src",
+         "$target_gen_dir/src/inspector",
++        "$node_inspector_protocol_path",
+       ]
+       node_inspector = exec_script(
+           "./tools/gypi_to_gn.py",

@@ -6,7 +6,6 @@
 
 #include <map>
 
-#include "base/containers/contains.h"
 #include "base/containers/to_vector.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
@@ -14,6 +13,7 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/process_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
@@ -44,8 +44,8 @@ std::vector<std::u16string> Clipboard::AvailableFormats(
 bool Clipboard::Has(const std::string& format_string,
                     gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  ui::ClipboardFormatType format(
-      ui::ClipboardFormatType::GetType(format_string));
+  ui::ClipboardFormatType format =
+      ui::ClipboardFormatType::CustomPlatformType(format_string);
   if (format.GetName().empty())
     format = ui::ClipboardFormatType::CustomPlatformType(format_string);
   return clipboard->IsFormatAvailable(format, GetClipboardBuffer(args),
@@ -76,7 +76,7 @@ std::string Clipboard::Read(const std::string& format_string) {
       clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kCopyPaste,
                                             /* data_dst = */ nullptr);
 #if BUILDFLAG(IS_LINUX)
-  if (!base::Contains(custom_format_names, format_string)) {
+  if (!custom_format_names.contains(format_string)) {
     custom_format_names =
         clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kSelection,
                                               /* data_dst = */ nullptr);
@@ -84,7 +84,7 @@ std::string Clipboard::Read(const std::string& format_string) {
 #endif
 
   ui::ClipboardFormatType format;
-  if (base::Contains(custom_format_names, format_string)) {
+  if (custom_format_names.contains(format_string)) {
     format =
         ui::ClipboardFormatType(ui::ClipboardFormatType::CustomPlatformType(
             custom_format_names[format_string]));
@@ -100,8 +100,7 @@ std::string Clipboard::Read(const std::string& format_string) {
 v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
                                            gin_helper::Arguments* args) {
   std::string data = Read(format_string);
-  return node::Buffer::Copy(args->isolate(), data.data(), data.length())
-      .ToLocalChecked();
+  return electron::Buffer::Copy(args->isolate(), data).ToLocalChecked();
 }
 
 void Clipboard::WriteBuffer(const std::string& format,

@@ -28,7 +28,7 @@ class TrackableObjectBase : public CleanedUpAtExit {
   TrackableObjectBase& operator=(const TrackableObjectBase&) = delete;
 
   // The ID in weak map.
-  int32_t weak_map_id() const { return weak_map_id_; }
+  [[nodiscard]] constexpr int32_t weak_map_id() const { return weak_map_id_; }
 
   // Wrap TrackableObject into a class that SupportsUserData.
   void AttachAsUserData(base::SupportsUserData* wrapped);
@@ -42,10 +42,11 @@ class TrackableObjectBase : public CleanedUpAtExit {
   // Returns a closure that can destroy the native class.
   base::OnceClosure GetDestroyClosure();
 
-  int32_t weak_map_id_ = 0;
-
  private:
   void Destroy();
+
+  static inline int32_t next_id_ = 0;
+  const int32_t weak_map_id_ = ++next_id_;
 
   base::WeakPtrFactory<TrackableObjectBase> weak_factory_{this};
 };
@@ -111,25 +112,20 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
   }
 
  protected:
-  TrackableObject() { weak_map_id_ = ++next_id_; }
-
+  TrackableObject() = default;
   ~TrackableObject() override { RemoveFromWeakMap(); }
 
   void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override {
     if (!weak_map_) {
       weak_map_ = new electron::KeyWeakMap<int32_t>;
     }
-    weak_map_->Set(isolate, weak_map_id_, wrapper);
+    weak_map_->Set(isolate, weak_map_id(), wrapper);
     gin_helper::WrappableBase::InitWith(isolate, wrapper);
   }
 
  private:
-  static int32_t next_id_;
   static electron::KeyWeakMap<int32_t>* weak_map_;  // leaked on purpose
 };
-
-template <typename T>
-int32_t TrackableObject<T>::next_id_ = 0;
 
 template <typename T>
 electron::KeyWeakMap<int32_t>* TrackableObject<T>::weak_map_ = nullptr;

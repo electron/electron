@@ -58,6 +58,9 @@ class Tray final : public gin::Wrappable<Tray>,
   static gin::WrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
+
   // disable copy
   Tray(const Tray&) = delete;
   Tray& operator=(const Tray&) = delete;

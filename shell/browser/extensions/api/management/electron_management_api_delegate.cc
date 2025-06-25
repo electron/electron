@@ -44,10 +44,6 @@ class ManagementSetEnabledFunctionInstallPromptDelegate
       const ManagementSetEnabledFunctionInstallPromptDelegate&) = delete;
   ManagementSetEnabledFunctionInstallPromptDelegate& operator=(
       const ManagementSetEnabledFunctionInstallPromptDelegate&) = delete;
-
- private:
-  base::WeakPtrFactory<ManagementSetEnabledFunctionInstallPromptDelegate>
-      weak_factory_{this};
 };
 
 class ManagementUninstallFunctionUninstallDialogDelegate
@@ -214,7 +210,7 @@ GURL ElectronManagementAPIDelegate::GetEffectiveUpdateURL(
     const extensions::Extension& extension,
     content::BrowserContext* context) const {
   // TODO(codebytere): we do not currently support ExtensionManagement.
-  return GURL::EmptyGURL();
+  return {};
 }
 
 void ElectronManagementAPIDelegate::ShowMv2DeprecationReEnableDialog(

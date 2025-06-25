@@ -24,20 +24,6 @@
   "action.setBadgeTextColor": {
     "channel": "stable"
   },
-  "tabs": {
-    "channel": "stable",
-    "extension_types": ["extension"],
-    "contexts": ["privileged_extension"]
-  },
-  "tabs.executeScript": {
-    "max_manifest_version": 2
-  },
-  "tabs.insertCSS": {
-    "max_manifest_version": 2
-  },
-  "tabs.removeCSS": {
-    "max_manifest_version": 2
-  },
   "extension": {
     "channel": "stable",
     "extension_types": ["extension"],
@@ -58,12 +44,6 @@
       "content_script"
     ],
     "max_manifest_version": 2
-  },
-  "i18n": {
-    "channel": "stable",
-    "extension_types": ["extension"],
-    "contexts": ["privileged_extension", "unprivileged_extension", "content_script"],
-    "disallow_for_service_workers": true
   },
   "mimeHandlerViewGuestInternal": {
     "internal": true,
@@ -93,5 +73,19 @@
     "channel": "trunk",
     "dependencies": ["permission:scripting"],
     "contexts": ["content_script"]
+  },
+  "tabs": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "contexts": ["privileged_extension"]
+  },
+  "tabs.executeScript": {
+    "max_manifest_version": 2
+  },
+  "tabs.insertCSS": {
+    "max_manifest_version": 2
+  },
+  "tabs.removeCSS": {
+    "max_manifest_version": 2
   }
 }

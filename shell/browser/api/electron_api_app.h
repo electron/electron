@@ -16,10 +16,12 @@
 #include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/scoped_accessibility_mode.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
+#include "net/base/features.h"
 #include "net/ssl/client_cert_identity.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
@@ -32,10 +34,6 @@
 
 namespace base {
 class FilePath;
-}
-
-namespace gfx {
-class Image;
 }
 
 namespace gin {
@@ -65,9 +63,6 @@ class App final : public ElectronBrowserClient::Delegate,
                   private content::GpuDataManagerObserver,
                   private content::BrowserChildProcessObserver {
  public:
-  using FileIconCallback =
-      base::RepeatingCallback<void(v8::Local<v8::Value>, const gfx::Image&)>;
-
   static gin::Handle<App> Create(v8::Isolate* isolate);
   static App* Get();
 
@@ -186,11 +181,11 @@ class App final : public ElectronBrowserClient::Delegate,
 
   void SetAppPath(const base::FilePath& app_path);
   void ChildProcessLaunched(int process_type,
-                            int pid,
+                            content::ChildProcessId pid,
                             base::ProcessHandle handle,
                             const std::string& service_name = std::string(),
                             const std::string& name = std::string());
-  void ChildProcessDisconnected(int pid);
+  void ChildProcessDisconnected(content::ChildProcessId pid);
 
   void SetAppLogsPath(gin_helper::ErrorThrower thrower,
                       std::optional<base::FilePath> custom_path);
@@ -275,11 +270,15 @@ class App final : public ElectronBrowserClient::Delegate,
   base::FilePath app_path_;
 
   // pid -> electron::ProcessMetric
-  base::flat_map<int, std::unique_ptr<electron::ProcessMetric>> app_metrics_;
+  base::flat_map<content::ChildProcessId,
+                 std::unique_ptr<electron::ProcessMetric>>
+      app_metrics_;
 
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;
   bool watch_singleton_socket_on_ready_ = false;
+
+  std::unique_ptr<content::ScopedAccessibilityMode> scoped_accessibility_mode_;
 };
 
 }  // namespace api

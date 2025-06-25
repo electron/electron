@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents } from 'electron/main';
+import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents, BaseWindow, WebContentsView } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -13,7 +13,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
@@ -63,6 +63,7 @@ describe('webContents module', () => {
   });
 
   describe('fromFrame()', () => {
+    afterEach(cleanupWebContents);
     it('returns WebContents for mainFrame', () => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create();
       expect(webContents.fromFrame(contents.mainFrame)).to.equal(contents);
@@ -85,6 +86,7 @@ describe('webContents module', () => {
   });
 
   describe('fromDevToolsTargetId()', () => {
+    afterEach(closeAllWindows);
     it('returns WebContents for attached DevTools target', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
@@ -103,7 +105,10 @@ describe('webContents module', () => {
   });
 
   describe('will-prevent-unload event', function () {
-    afterEach(closeAllWindows);
+    afterEach(async () => {
+      await closeAllWindows();
+      await cleanupWebContents();
+    });
     it('does not emit if beforeunload returns undefined in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', () => {
@@ -305,11 +310,13 @@ describe('webContents module', () => {
       ]);
       let w: BrowserWindow;
 
-      before(async () => {
+      beforeEach(async () => {
         w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false } });
         await w.loadURL('about:blank');
       });
-      after(closeAllWindows);
+      afterEach(async () => {
+        await closeAllWindows();
+      });
 
       it('resolves the returned promise with the result', async () => {
         const result = await w.webContents.executeJavaScript(code);
@@ -380,6 +387,8 @@ describe('webContents module', () => {
       await w.loadURL('about:blank');
     });
 
+    after(() => w.close());
+
     it('resolves the returned promise with the result', async () => {
       await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X = 123' }]);
       const isolatedResult = await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X' }]);
@@ -391,6 +400,14 @@ describe('webContents module', () => {
 
   describe('loadURL() promise API', () => {
     let w: BrowserWindow;
+    let s: http.Server;
+
+    afterEach(() => {
+      if (s) {
+        s.close();
+        s = null as unknown as http.Server;
+      }
+    });
 
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
@@ -494,19 +511,18 @@ describe('webContents module', () => {
     });
 
     it('rejects if the load is aborted', async () => {
-      const s = http.createServer(() => { /* never complete the request */ });
+      s = http.createServer(() => { /* never complete the request */ });
       const { port } = await listen(s);
       const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).to.eventually.be.rejectedWith(Error, /ERR_ABORTED/);
       // load a different file before the first load completes, causing the
       // first load to be aborted.
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
       await p;
-      s.close();
     });
 
     it("doesn't reject when a subframe fails to load", async () => {
       let resp = null as unknown as http.ServerResponse;
-      const s = http.createServer((req, res) => {
+      s = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.write('<iframe src="http://err.name.not.resolved"></iframe>');
         resp = res;
@@ -524,12 +540,11 @@ describe('webContents module', () => {
       await p;
       resp.end();
       await main;
-      s.close();
     });
 
     it("doesn't resolve when a subframe loads", async () => {
       let resp = null as unknown as http.ServerResponse;
-      const s = http.createServer((req, res) => {
+      s = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.write('<iframe src="about:blank"></iframe>');
         resp = res;
@@ -548,7 +563,6 @@ describe('webContents module', () => {
       resp.destroy(); // cause the main request to fail
       await expect(main).to.eventually.be.rejected()
         .and.have.property('errno', -355); // ERR_INCOMPLETE_CHUNKED_ENCODING
-      s.close();
     });
 
     it('subsequent load failures reject each time', async () => {
@@ -617,6 +631,17 @@ describe('webContents module', () => {
         w.webContents.navigationHistory.goBack();
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
       });
+
+      it('should have the same window title if navigating back within the page', async () => {
+        const title = 'Test';
+        w.webContents.on('did-finish-load', () => {
+          w.setTitle(title);
+          w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html#next`);
+        });
+        await w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html`);
+        w.webContents.navigationHistory.goBack();
+        expect(w.getTitle()).to.equal(title);
+      });
     });
 
     describe('navigationHistory.canGoForward and navigationHistory.goForward API', () => {
@@ -638,6 +663,16 @@ describe('webContents module', () => {
         expect(w.webContents.navigationHistory.canGoForward()).to.be.true();
         w.webContents.navigationHistory.goForward();
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(1);
+      });
+
+      it('should have the same window title if navigating forward within the page', async () => {
+        const title = 'Test';
+        w.webContents.on('did-finish-load', () => {
+          w.setTitle(title);
+          w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html#next`);
+        });
+        await w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html`);
+        expect(w.getTitle()).to.equal(title);
       });
     });
 
@@ -685,12 +720,14 @@ describe('webContents module', () => {
     describe('navigationHistory.getEntryAtIndex(index) API ', () => {
       it('should fetch default navigation entry when no urls are loaded', async () => {
         const result = w.webContents.navigationHistory.getEntryAtIndex(0);
-        expect(result).to.deep.equal({ url: '', title: '' });
+        expect(result.url).to.equal('');
+        expect(result.title).to.equal('');
       });
       it('should fetch navigation entry given a valid index', async () => {
         await w.loadURL(urlPage1);
         const result = w.webContents.navigationHistory.getEntryAtIndex(0);
-        expect(result).to.deep.equal({ url: urlPage1, title: 'Page 1' });
+        expect(result.url).to.equal(urlPage1);
+        expect(result.title).to.equal('Page 1');
       });
       it('should return null given an invalid index larger than history length', async () => {
         await w.loadURL(urlPage1);
@@ -749,7 +786,10 @@ describe('webContents module', () => {
         await w.loadURL(urlPage1);
         await w.loadURL(urlPage2);
         await w.loadURL(urlPage3);
-        const entries = w.webContents.navigationHistory.getAllEntries();
+        const entries = w.webContents.navigationHistory.getAllEntries().map(entry => ({
+          url: entry.url,
+          title: entry.title
+        }));
         expect(entries.length).to.equal(3);
         expect(entries[0]).to.deep.equal({ url: urlPage1, title: 'Page 1' });
         expect(entries[1]).to.deep.equal({ url: urlPage2, title: 'Page 2' });
@@ -760,6 +800,117 @@ describe('webContents module', () => {
         const entries = w.webContents.navigationHistory.getAllEntries();
         expect(entries.length).to.equal(0);
       });
+
+      it('should create a NavigationEntry with PageState that can be serialized/deserialized with JSON', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+
+        const entries = w.webContents.navigationHistory.getAllEntries();
+        const serialized = JSON.stringify(entries);
+        const deserialized = JSON.parse(serialized);
+        expect(deserialized).to.deep.equal(entries);
+      });
+    });
+
+    describe('navigationHistory.restore({ index, entries }) API', () => {
+      let server: http.Server;
+      let serverUrl: string;
+
+      before(async () => {
+        server = http.createServer((req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          res.end('<html><head><title>Form</title></head><body><form><input type="text" value="value" /></form></body></html>');
+        });
+        serverUrl = (await listen(server)).url;
+      });
+
+      after(async () => {
+        if (server) await new Promise(resolve => server.close(resolve));
+        server = null as any;
+      });
+
+      it('should restore navigation history with PageState', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(serverUrl);
+
+        // Fill out the form on the page
+        await w.webContents.executeJavaScript('document.querySelector("input").value = "Hi!";');
+
+        // PageState is committed:
+        // 1) When the page receives an unload event
+        // 2) During periodic serialization of page state
+        // To not wait randomly for the second option, we'll trigger another load
+        await w.loadURL(urlPage3);
+
+        // Save the navigation state
+        const entries = w.webContents.navigationHistory.getAllEntries();
+
+        // Close the window, make a new one
+        w.close();
+        w = new BrowserWindow();
+
+        const formValue = await new Promise<string>(resolve => {
+          w.webContents.once('dom-ready', () => resolve(w.webContents.executeJavaScript('document.querySelector("input").value')));
+
+          // Restore the navigation history
+          return w.webContents.navigationHistory.restore({ index: 2, entries });
+        });
+
+        expect(formValue).to.equal('Hi!');
+      });
+
+      it('should handle invalid base64 pageState', async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+
+        const brokenEntries = w.webContents.navigationHistory.getAllEntries().map(entry => ({
+          ...entry,
+          pageState: 'invalid base64'
+        }));
+
+        // Close the window, make a new one
+        w.close();
+        w = new BrowserWindow();
+        await w.webContents.navigationHistory.restore({ index: 2, entries: brokenEntries });
+
+        const entries = w.webContents.navigationHistory.getAllEntries();
+
+        // Check that we used the original url and titles but threw away the broken
+        // pageState
+        entries.forEach((entry, index) => {
+          expect(entry.url).to.equal(brokenEntries[index].url);
+          expect(entry.title).to.equal(brokenEntries[index].title);
+          expect(entry.pageState?.length).to.be.greaterThanOrEqual(100);
+        });
+      });
+    });
+
+    it('should restore an overridden user agent', async () => {
+      const partition = 'persist:wcvtest';
+      const testUA = 'MyCustomUA';
+
+      const ses = session.fromPartition(partition);
+      ses.setUserAgent(testUA);
+
+      const wcv = new WebContentsView({
+        webPreferences: { partition }
+      });
+
+      wcv.webContents.navigationHistory.restore({
+        entries: [{
+          url: urlPage1,
+          title: 'url1'
+        }],
+        index: 0
+      });
+
+      const ua = wcv.webContents.getUserAgent();
+      const wcvua = await wcv.webContents.executeJavaScript('navigator.userAgent');
+
+      expect(ua).to.equal(wcvua);
     });
   });
 
@@ -820,6 +971,7 @@ describe('webContents module', () => {
   });
 
   describe('isFocused() API', () => {
+    afterEach(closeAllWindows);
     it('returns false when the window is hidden', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
@@ -916,6 +1068,76 @@ describe('webContents module', () => {
       expect(w.webContents.isDevToolsOpened()).to.be.true();
       w.webContents.setDevToolsTitle('newTitle');
       expect(w.webContents.getDevToolsTitle()).to.equal('newTitle');
+    });
+  });
+
+  describe('before-mouse-event event', () => {
+    afterEach(closeAllWindows);
+    it('can prevent document mouse events', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'mouse-events.html'));
+      const mouseDown = new Promise(resolve => {
+        ipcMain.once('mousedown', (event, button) => resolve(button));
+      });
+      w.webContents.once('before-mouse-event', (event, input) => {
+        if (input.button === 'left') event.preventDefault();
+      });
+      w.webContents.sendInputEvent({ type: 'mouseDown', button: 'left', x: 100, y: 100 });
+      w.webContents.sendInputEvent({ type: 'mouseDown', button: 'right', x: 100, y: 100 });
+      expect(await mouseDown).to.equal(2); // Right button is 2
+    });
+
+    it('has the correct properties', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      const testBeforeMouse = async (opts: Electron.MouseInputEvent) => {
+        const p = once(w.webContents, 'before-mouse-event');
+        w.webContents.sendInputEvent({
+          type: opts.type,
+          button: opts.button,
+          x: opts.x,
+          y: opts.y,
+          globalX: opts.globalX,
+          globalY: opts.globalY,
+          clickCount: opts.clickCount
+        });
+        const [, input] = await p;
+
+        expect(input.type).to.equal(opts.type);
+        expect(input.button).to.equal(opts.button);
+        expect(input.x).to.equal(opts.x);
+        expect(input.y).to.equal(opts.y);
+        expect(input.globalX).to.equal(opts.globalX);
+        expect(input.globalY).to.equal(opts.globalY);
+        expect(input.clickCount).to.equal(opts.clickCount);
+      };
+      await testBeforeMouse({
+        type: 'mouseDown',
+        button: 'left',
+        x: 100,
+        y: 100,
+        globalX: 200,
+        globalY: 200,
+        clickCount: 1
+      });
+      await testBeforeMouse({
+        type: 'mouseUp',
+        button: 'right',
+        x: 150,
+        y: 150,
+        globalX: 250,
+        globalY: 250,
+        clickCount: 2
+      });
+      await testBeforeMouse({
+        type: 'mouseMove',
+        button: 'middle',
+        x: 200,
+        y: 200,
+        globalX: 300,
+        globalY: 300,
+        clickCount: 0
+      });
     });
   });
 
@@ -1177,6 +1399,7 @@ describe('webContents module', () => {
   });
 
   describe('startDrag({file, icon})', () => {
+    afterEach(closeAllWindows);
     it('throws errors for a missing file or a missing/empty icon', () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
@@ -1281,6 +1504,7 @@ describe('webContents module', () => {
   });
 
   describe('userAgent APIs', () => {
+    afterEach(closeAllWindows);
     it('is not empty by default', () => {
       const w = new BrowserWindow({ show: false });
       const userAgent = w.webContents.getUserAgent();
@@ -1311,6 +1535,7 @@ describe('webContents module', () => {
   });
 
   describe('audioMuted APIs', () => {
+    afterEach(closeAllWindows);
     it('can set the audio mute level (functions)', () => {
       const w = new BrowserWindow({ show: false });
 
@@ -1526,6 +1751,9 @@ describe('webContents module', () => {
           res.end();
         });
       });
+      defer(() => {
+        server.close();
+      });
       listen(server).then(({ url }) => {
         const content = `<iframe src=${url}></iframe>`;
         w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
@@ -1538,8 +1766,6 @@ describe('webContents module', () => {
               done();
             } catch (e) {
               done(e);
-            } finally {
-              server.close();
             }
           }
         });
@@ -1712,6 +1938,38 @@ describe('webContents module', () => {
       }())`, true);
       const [childWindow] = await childPromise;
       expect(childWindow.webContents.opener).to.be.null();
+    });
+  });
+
+  describe('focusedFrame api', () => {
+    const focusFrame = (frame: Electron.WebFrameMain) => {
+      // There has to be a better way to do this...
+      return frame.executeJavaScript(`(${() => {
+        const input = document.createElement('input');
+        document.body.appendChild(input);
+        input.onfocus = () => input.remove();
+        input.focus();
+      }})()`, true);
+    };
+
+    it('is null before a url is committed', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.webContents.focusedFrame).to.be.null();
+    });
+
+    it('is set when main frame is focused', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      w.webContents.focus();
+      await waitUntil(() => w.webContents.focusedFrame === w.webContents.mainFrame);
+    });
+
+    it('is set to child frame when focused', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadFile(path.join(fixturesPath, 'sub-frames', 'frame-with-frame-container.html'));
+      const childFrame = w.webContents.mainFrame.frames[0];
+      await focusFrame(childFrame);
+      await waitUntil(() => w.webContents.focusedFrame === childFrame);
     });
   });
 
@@ -2023,11 +2281,12 @@ describe('webContents module', () => {
             return done();
           } catch (e) {
             return done(e);
-          } finally {
-            server.close();
           }
         }
         res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>');
+      });
+      defer(() => {
+        server.close();
       });
       listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
@@ -2054,6 +2313,9 @@ describe('webContents module', () => {
           }
         }
         res.end('');
+      });
+      defer(() => {
+        server.close();
       });
       listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
@@ -2273,6 +2535,7 @@ describe('webContents module', () => {
   });
 
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
+    let server: http.Server | null;
     const readPDF = async (data: any) => {
       const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'e-spec-printtopdf-'));
       const pdfPath = path.resolve(tmpDir, 'test.pdf');
@@ -2316,7 +2579,12 @@ describe('webContents module', () => {
       });
     });
 
-    afterEach(closeAllWindows);
+    afterEach(() => {
+      closeAllWindows();
+      if (server) {
+        server.close();
+      }
+    });
 
     it('rejects on incorrectly typed parameters', async () => {
       const badTypes = {
@@ -2475,6 +2743,32 @@ describe('webContents module', () => {
       const data = await w.webContents.printToPDF({});
       const pdfInfo = await readPDF(data);
       expect(pdfInfo.markInfo).to.be.null();
+    });
+
+    it('can print same-origin iframes', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-same-origin.html'));
+
+      const data = await w.webContents.printToPDF({});
+      const pdfInfo = await readPDF(data);
+      expect(containsText(pdfInfo.textContent, /Virtual member functions/)).to.be.true();
+    });
+
+    // TODO(codebytere): OOPIF printing is disabled on Linux at the moment due to crashes.
+    ifit(process.platform !== 'linux')('can print cross-origin iframes', async () => {
+      server = http.createServer((_, res) => {
+        res.writeHead(200);
+        res.end(`
+          <title>cross-origin iframe</title>
+          <p>This page is displayed in an iframe.</p>
+        `);
+      });
+      const { port } = await listen(server);
+
+      await w.loadURL(`data:text/html,<iframe src="http://localhost:${port}"></iframe>`);
+
+      const data = await w.webContents.printToPDF({});
+      const pdfInfo = await readPDF(data);
+      expect(containsText(pdfInfo.textContent, /This page is displayed in an iframe./)).to.be.true();
     });
 
     it('can generate tag data for PDFs', async () => {
@@ -2731,8 +3025,84 @@ describe('webContents module', () => {
       expect(params.y).to.be.a('number');
     });
 
+    // Skipping due to lack of native click support.
+    it.skip('emits the correct number of times when right-clicked in page', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+
+      let contextMenuEmitCount = 0;
+
+      w.webContents.on('context-menu', () => {
+        contextMenuEmitCount++;
+      });
+
+      // TODO(samuelmaddock): Perform native right-click. We've tried then
+      // dropped robotjs and nutjs so for now this is a manual test.
+
+      await once(w.webContents, 'context-menu');
+      await setTimeout(100);
+      expect(contextMenuEmitCount).to.equal(1);
+    });
+
     it('emits when right-clicked in page in a draggable region', async () => {
       const w = new BrowserWindow({ show: false });
+
+      if (process.platform === 'win32') {
+        w.on('system-context-menu', (event) => { event.preventDefault(); });
+      }
+
+      await w.loadFile(path.join(fixturesPath, 'pages', 'draggable-page.html'));
+
+      const promise = once(w.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
+
+      // Simulate right-click to create context-menu event.
+      const midPoint = w.getBounds().width / 2;
+      const opts = { x: midPoint, y: midPoint, button: 'right' as const };
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
+
+      const [, params] = await promise;
+
+      expect(params.pageURL).to.equal(w.webContents.getURL());
+      expect(params.frame).to.be.an('object');
+      expect(params.x).to.be.a('number');
+      expect(params.y).to.be.a('number');
+    });
+
+    it('emits when right clicked in a WebContentsView', async () => {
+      const w = new BaseWindow({ show: false });
+
+      const mainView = new WebContentsView({
+        webPreferences: {
+          preload: path.join(__dirname, 'preload.js')
+        }
+      });
+
+      const draggablePage = path.join(fixturesPath, 'pages', 'draggable-page.html');
+      await mainView.webContents.loadFile(draggablePage);
+
+      w.contentView.addChildView(mainView);
+
+      const { width, height } = w.getContentBounds();
+      mainView.setBounds({ x: 0, y: 0, width, height });
+
+      const promise = once(mainView.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
+
+      // Simulate right-click to create context-menu event.
+      const opts = { x: 0, y: 0, button: 'right' as const };
+      mainView.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
+      mainView.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
+
+      const [, params] = await promise;
+
+      expect(params.pageURL).to.equal(mainView.webContents.getURL());
+      expect(params.frame).to.be.an('object');
+      expect(params.x).to.be.a('number');
+      expect(params.y).to.be.a('number');
+    });
+
+    it('emits when right clicked in a BrowserWindow with vibrancy', async () => {
+      const w = new BrowserWindow({ show: false, vibrancy: 'titlebar' });
       await w.loadFile(path.join(fixturesPath, 'pages', 'draggable-page.html'));
 
       const promise = once(w.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
@@ -2752,7 +3122,10 @@ describe('webContents module', () => {
   });
 
   describe('close() method', () => {
-    afterEach(closeAllWindows);
+    afterEach(async () => {
+      await closeAllWindows();
+      await cleanupWebContents();
+    });
 
     it('closes when close() is called', async () => {
       const w = (webContents as typeof ElectronInternal.WebContents).create();

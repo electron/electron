@@ -5,8 +5,7 @@
 #ifndef ELECTRON_SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 #define ELECTRON_SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 
-#include <unordered_map>
-
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "v8/include/v8-local-handle.h"
 #include "v8/include/v8-object.h"
 
@@ -35,7 +34,7 @@ class ObjectCache final {
   };
 
   // from_object ==> proxy_value
-  std::unordered_map<v8::Local<v8::Object>, v8::Local<v8::Value>, Hash>
+  absl::flat_hash_map<v8::Local<v8::Object>, v8::Local<v8::Value>, Hash>
       proxy_map_;
 };
 

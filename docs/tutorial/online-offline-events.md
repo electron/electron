@@ -57,10 +57,7 @@ Finally, create a `main.js` file for main process that creates the window.
 const { app, BrowserWindow } = require('electron')
 
 const createWindow = () => {
-  const onlineStatusWindow = new BrowserWindow({
-    width: 400,
-    height: 100
-  })
+  const onlineStatusWindow = new BrowserWindow()
 
   onlineStatusWindow.loadFile('index.html')
 }
@@ -86,4 +83,5 @@ After launching the Electron application, you should see the notification:
 
 ![Connection status](../images/connection-status.png)
 
-> Note: If you need to communicate the connection status to the main process, use the [IPC renderer](../api/ipc-renderer.md) API.
+> [!NOTE]
+> If you need to communicate the connection status to the main process, use the [IPC renderer](../api/ipc-renderer.md) API.

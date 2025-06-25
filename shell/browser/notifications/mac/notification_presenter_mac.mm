@@ -30,7 +30,7 @@ CocoaNotification* NotificationPresenterMac::GetNotification(
       return native_notification;
   }
 
-  if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
+  if (electron::debug_notifications) {
     LOG(INFO) << "Could not find notification for "
               << [ns_notification.identifier UTF8String];
   }

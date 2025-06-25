@@ -96,18 +96,18 @@ void AutofillAgent::TextFieldDidEndEditing(const blink::WebInputElement&) {
   HidePopup();
 }
 
-void AutofillAgent::TextFieldDidChange(
+void AutofillAgent::TextFieldValueChanged(
     const blink::WebFormControlElement& element) {
   if (!IsUserGesture() && !render_frame()->IsPasting())
     return;
 
   weak_ptr_factory_.InvalidateWeakPtrs();
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE, base::BindOnce(&AutofillAgent::TextFieldDidChangeImpl,
+      FROM_HERE, base::BindOnce(&AutofillAgent::TextFieldValueChangedImpl,
                                 weak_ptr_factory_.GetWeakPtr(), element));
 }
 
-void AutofillAgent::TextFieldDidChangeImpl(
+void AutofillAgent::TextFieldValueChangedImpl(
     const blink::WebFormControlElement& element) {
   ShowSuggestions(element, {.requires_caret_at_end = true});
 }

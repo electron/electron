@@ -14,7 +14,11 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
+
+// workaround for base/strings/strcat.h(18,9): error: 'StrCat' macro redefined
+// [-Werror,-Wmacro-redefined]
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmacro-redefined"
 
 #include "base/at_exit.h"
 #include "base/debug/alias.h"
@@ -38,6 +42,8 @@
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
 #include "third_party/crashpad/crashpad/util/win/initial_client_data.h"
+
+#pragma clang diagnostic pop
 
 namespace {
 

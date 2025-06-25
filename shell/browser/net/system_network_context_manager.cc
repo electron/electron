@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "base/command_line.h"
 #include "base/memory/raw_ptr.h"
@@ -196,8 +195,7 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
 void SystemNetworkContextManager::ConfigureDefaultNetworkContextParams(
     network::mojom::NetworkContextParams* network_context_params) {
   network_context_params->enable_brotli = true;
-  network_context_params->enable_zstd =
-      base::FeatureList::IsEnabled(net::features::kZstdContentEncoding);
+  network_context_params->enable_zstd = true;
 
   network_context_params->enable_referrers = true;
 
@@ -273,6 +271,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
       base::FeatureList::IsEnabled(net::features::kAsyncDns),
+      base::FeatureList::IsEnabled(net::features::kHappyEyeballsV3),
       default_secure_dns_mode, doh_config, additional_dns_query_types_enabled);
 
   // The OSCrypt keys are process bound, so if network service is out of

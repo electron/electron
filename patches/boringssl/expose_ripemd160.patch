@@ -9,11 +9,11 @@ with node.js that allows exposing additional digests without patching,
 this patch is required to provide ripemd160 support in the nodejs crypto
 module.
 
-diff --git a/crypto/digest_extra/digest_extra.c b/crypto/digest_extra/digest_extra.c
-index 7033d9c9cc2a2e11c5d6b4bc8575b1f6d271170c..97107c022f6997c56581317feee230bd6b1ed542 100644
---- a/crypto/digest_extra/digest_extra.c
-+++ b/crypto/digest_extra/digest_extra.c
-@@ -87,6 +87,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
+diff --git a/crypto/digest/digest_extra.cc b/crypto/digest/digest_extra.cc
+index 4cbfa1f53bb669c24c7f055f4fee7f144f72115a..120cb84e07e0539c038bca059b794d8f9f932a51 100644
+--- a/crypto/digest/digest_extra.cc
++++ b/crypto/digest/digest_extra.cc
+@@ -45,6 +45,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
      {NID_sha512, EVP_sha512, SN_sha512, LN_sha512},
      {NID_sha512_256, EVP_sha512_256, SN_sha512_256, LN_sha512_256},
      {NID_md5_sha1, EVP_md5_sha1, SN_md5_sha1, LN_md5_sha1},
@@ -21,32 +21,32 @@ index 7033d9c9cc2a2e11c5d6b4bc8575b1f6d271170c..97107c022f6997c56581317feee230bd
      // As a remnant of signing |EVP_MD|s, OpenSSL returned the corresponding
      // hash function when given a signature OID. To avoid unintended lax parsing
      // of hash OIDs, this is no longer supported for lookup by OID or NID.
-diff --git a/crypto/fipsmodule/digest/digests.c.inc b/crypto/fipsmodule/digest/digests.c.inc
-index 9ead2c65c43f6f4899fa84d095c025b2b7c0bedc..1644bba5c1b87037b681372db89d93c2e637ebf2 100644
---- a/crypto/fipsmodule/digest/digests.c.inc
-+++ b/crypto/fipsmodule/digest/digests.c.inc
-@@ -60,6 +60,7 @@
+diff --git a/crypto/fipsmodule/digest/digests.cc.inc b/crypto/fipsmodule/digest/digests.cc.inc
+index 3c1bfac504c8f41788e429f23606a02e87ad03ae..c3a371029cd9e871ebffae5396cc2f8ae773409f 100644
+--- a/crypto/fipsmodule/digest/digests.cc.inc
++++ b/crypto/fipsmodule/digest/digests.cc.inc
+@@ -18,6 +18,7 @@
  #include <string.h>
  
  #include <openssl/nid.h>
 +#include <openssl/ripemd.h>
  
- #include "internal.h"
- #include "../delocate.h"
-@@ -215,4 +216,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_sha512_256) {
+ #include "../../internal.h"
+ #include "../bcm_interface.h"
+@@ -175,4 +176,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_sha512_256) {
    out->ctx_size = sizeof(SHA512_CTX);
  }
  
 +static void ripemd160_init(EVP_MD_CTX *ctx) {
-+  CHECK(RIPEMD160_Init(ctx->md_data));
++  CHECK(RIPEMD160_Init(reinterpret_cast<RIPEMD160_CTX *>(ctx->md_data)));
 +}
 +
 +static void ripemd160_update(EVP_MD_CTX *ctx, const void *data, size_t count) {
-+  CHECK(RIPEMD160_Update(ctx->md_data, data, count));
++  CHECK(RIPEMD160_Update(reinterpret_cast<RIPEMD160_CTX *>(ctx->md_data), data, count));
 +}
 +
 +static void ripemd160_final(EVP_MD_CTX *ctx, uint8_t *md) {
-+  CHECK(RIPEMD160_Final(md, ctx->md_data));
++  CHECK(RIPEMD160_Final(md, reinterpret_cast<RIPEMD160_CTX *>(ctx->md_data)));
 +}
 +
 +DEFINE_METHOD_FUNCTION(EVP_MD, EVP_ripemd160) {
@@ -61,10 +61,10 @@ index 9ead2c65c43f6f4899fa84d095c025b2b7c0bedc..1644bba5c1b87037b681372db89d93c2
 +}
 +
  #undef CHECK
-diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
-index a3fb077b9b9e66d1bc524fd7987622e73aa4776a..852b76bea69988e0b3ac76a17b603128f239dde0 100644
---- a/decrepit/evp/evp_do_all.c
-+++ b/decrepit/evp/evp_do_all.c
+diff --git a/decrepit/evp/evp_do_all.cc b/decrepit/evp/evp_do_all.cc
+index e04b80cd6a1a215fc87f8fd8d750c3d258c3974f..8fdf1c624794f568bfc77b7b6b0c510b23905a4d 100644
+--- a/decrepit/evp/evp_do_all.cc
++++ b/decrepit/evp/evp_do_all.cc
 @@ -79,6 +79,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
    callback(EVP_sha384(), "SHA384", NULL, arg);
    callback(EVP_sha512(), "SHA512", NULL, arg);
@@ -82,10 +82,10 @@ index a3fb077b9b9e66d1bc524fd7987622e73aa4776a..852b76bea69988e0b3ac76a17b603128
  
  void EVP_MD_do_all(void (*callback)(const EVP_MD *cipher, const char *name,
 diff --git a/include/openssl/digest.h b/include/openssl/digest.h
-index 6e889993edc1caa7e10670529dd270c337b5ae4c..f61f7e5009a9b4f5630cda2c3a5a21b44e5b88d8 100644
+index b5f76c34efea47fb52f1642c8ca7e8a78c1ae678..b2420a9614453de35e1918d65d42ff95fbf9cf9e 100644
 --- a/include/openssl/digest.h
 +++ b/include/openssl/digest.h
-@@ -90,6 +90,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_blake2b256(void);
+@@ -48,6 +48,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_blake2b256(void);
  // MD5 and SHA-1, as used in TLS 1.1 and below.
  OPENSSL_EXPORT const EVP_MD *EVP_md5_sha1(void);
  

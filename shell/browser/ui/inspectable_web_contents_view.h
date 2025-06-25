@@ -9,13 +9,9 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
-#include "build/build_config.h"
-
-#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
-#include "ui/views/view.h"
-#else
+#include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "ui/gfx/native_widget_types.h"
-#endif
+#include "ui/views/view.h"
 
 class DevToolsContentsResizingStrategy;
 
@@ -23,23 +19,22 @@ namespace gfx {
 class RoundedCornersF;
 }  // namespace gfx
 
-#if defined(TOOLKIT_VIEWS)
 namespace views {
-class View;
 class WebView;
+class Widget;
+class WidgetDelegate;
 }  // namespace views
-#endif
 
 namespace electron {
 
 class InspectableWebContents;
 class InspectableWebContentsViewDelegate;
 
-class InspectableWebContentsView {
+class InspectableWebContentsView : public views::View {
  public:
   explicit InspectableWebContentsView(
       InspectableWebContents* inspectable_web_contents);
-  virtual ~InspectableWebContentsView();
+  ~InspectableWebContentsView() override;
 
   InspectableWebContents* inspectable_web_contents() {
     return inspectable_web_contents_;
@@ -51,32 +46,40 @@ class InspectableWebContentsView {
   }
   InspectableWebContentsViewDelegate* GetDelegate() const { return delegate_; }
 
-#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
-  // Returns the container control, which has devtools view attached.
-  virtual views::View* GetView() = 0;
-#else
-  virtual gfx::NativeView GetNativeView() const = 0;
-#endif
+  void SetCornerRadii(const gfx::RoundedCornersF& corner_radii);
 
-  virtual void ShowDevTools(bool activate) = 0;
-  virtual void SetCornerRadii(const gfx::RoundedCornersF& corner_radii) = 0;
-  // Hide the DevTools view.
-  virtual void CloseDevTools() = 0;
-  virtual bool IsDevToolsViewShowing() = 0;
-  virtual bool IsDevToolsViewFocused() = 0;
-  virtual void SetIsDocked(bool docked, bool activate) = 0;
-  virtual void SetContentsResizingStrategy(
-      const DevToolsContentsResizingStrategy& strategy) = 0;
-  virtual void SetTitle(const std::u16string& title) = 0;
-  virtual const std::u16string GetTitle() = 0;
+  void ShowDevTools(bool activate);
+  void CloseDevTools();
+  bool IsDevToolsViewShowing();
+  bool IsDevToolsViewFocused();
+  void SetIsDocked(bool docked, bool activate);
+  void SetContentsResizingStrategy(
+      const DevToolsContentsResizingStrategy& strategy);
+  void SetTitle(const std::u16string& title);
+  const std::u16string GetTitle();
 
- protected:
+  // views::View:
+  void Layout(PassKey) override;
+
+ private:
+  views::View* GetContentsView() const;
+
   // Owns us.
   raw_ptr<InspectableWebContents> inspectable_web_contents_;
 
- private:
   raw_ptr<InspectableWebContentsViewDelegate> delegate_ =
       nullptr;  // weak references.
+
+  std::unique_ptr<views::Widget> devtools_window_;
+  raw_ptr<views::WebView> devtools_window_web_view_ = nullptr;
+  raw_ptr<views::WebView> contents_web_view_ = nullptr;
+  raw_ptr<views::View> no_contents_view_ = nullptr;
+  raw_ptr<views::WebView> devtools_web_view_ = nullptr;
+
+  DevToolsContentsResizingStrategy strategy_;
+  bool devtools_visible_ = false;
+  raw_ptr<views::WidgetDelegate> devtools_window_delegate_ = nullptr;
+  std::u16string title_;
 };
 
 }  // namespace electron

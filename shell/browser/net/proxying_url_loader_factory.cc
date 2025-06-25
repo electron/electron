@@ -222,16 +222,6 @@ void ProxyingURLLoaderFactory::InProgressRequest::SetPriority(
     target_loader_->SetPriority(priority, intra_priority_value);
 }
 
-void ProxyingURLLoaderFactory::InProgressRequest::PauseReadingBodyFromNet() {
-  if (target_loader_.is_bound())
-    target_loader_->PauseReadingBodyFromNet();
-}
-
-void ProxyingURLLoaderFactory::InProgressRequest::ResumeReadingBodyFromNet() {
-  if (target_loader_.is_bound())
-    target_loader_->ResumeReadingBodyFromNet();
-}
-
 void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveEarlyHints(
     network::mojom::EarlyHintsPtr early_hints) {
   target_client_->OnReceiveEarlyHints(std::move(early_hints));
@@ -893,9 +883,9 @@ void ProxyingURLLoaderFactory::OnLoaderForCorsPreflightCreated(
   // sending request headers is very difficult.
   const uint64_t web_request_id = ++(*request_id_generator_);
 
-  auto result = requests_.insert(std::make_pair(
+  auto result = requests_.try_emplace(
       web_request_id, std::make_unique<InProgressRequest>(
-                          this, web_request_id, frame_routing_id_, request)));
+                          this, web_request_id, frame_routing_id_, request));
 
   result.first->second->OnLoaderCreated(std::move(receiver));
   result.first->second->Restart();

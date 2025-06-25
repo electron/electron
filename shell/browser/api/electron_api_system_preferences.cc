@@ -60,9 +60,7 @@ gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
                  &SystemPreferences::GetMediaAccessStatus)
 #endif
 
-#if BUILDFLAG(IS_WIN)
-      .SetMethod("isAeroGlassEnabled", &SystemPreferences::IsAeroGlassEnabled)
-#elif BUILDFLAG(IS_MAC)
+#if BUILDFLAG(IS_MAC)
       .SetMethod("postNotification", &SystemPreferences::PostNotification)
       .SetMethod("subscribeNotification",
                  &SystemPreferences::SubscribeNotification)

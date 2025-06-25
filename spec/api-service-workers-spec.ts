@@ -27,8 +27,9 @@ describe('session.serviceWorkers', () => {
     const uuid = v4();
 
     server = http.createServer((req, res) => {
+      const url = new URL(req.url!, `http://${req.headers.host}`);
       // /{uuid}/{file}
-      const file = req.url!.split('/')[2]!;
+      const file = url.pathname!.split('/')[2]!;
 
       if (file.endsWith('.js')) {
         res.setHeader('Content-Type', 'application/javascript');
@@ -76,7 +77,7 @@ describe('session.serviceWorkers', () => {
   describe('console-message event', () => {
     it('should correctly keep the source, message and level', async () => {
       const messages: Record<string, Electron.MessageDetails> = {};
-      w.loadURL(`${baseUrl}/logs.html`);
+      w.loadURL(`${baseUrl}/index.html?scriptUrl=sw-logs.js`);
       for await (const [, details] of on(ses.serviceWorkers, 'console-message')) {
         messages[details.message] = details;
         expect(details).to.have.property('source', 'console-api');

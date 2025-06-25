@@ -33,7 +33,10 @@ struct TranslatorHolder {
 };
 
 // Cached JavaScript version of |CallTranslator|.
-v8::Persistent<v8::FunctionTemplate> g_call_translator;
+// v8::Persistent handles are bound to a specific v8::Isolate. Require
+// initializing per-thread to avoid using the wrong isolate from service
+// worker preload scripts.
+thread_local v8::Persistent<v8::FunctionTemplate> g_call_translator;
 
 void CallTranslator(v8::Local<v8::External> external,
                     v8::Local<v8::Object> state,
@@ -51,8 +54,7 @@ void CallTranslator(v8::Local<v8::External> external,
       args->ThrowTypeError("One-time callback was called more than once");
       return;
     } else {
-      state->Set(context, called_symbol, v8::Boolean::New(isolate, true))
-          .ToChecked();
+      state->Set(context, called_symbol, v8::True(isolate)).ToChecked();
     }
   }
 
@@ -72,8 +74,7 @@ struct DeleteOnUIThread {
   static void Destruct(const T* x) {
     if (electron::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
-                                         x);
+      content::GetUIThreadTaskRunner({})->DeleteSoon(FROM_HERE, x);
     } else {
       delete x;
     }

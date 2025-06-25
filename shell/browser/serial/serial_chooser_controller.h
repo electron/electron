@@ -12,8 +12,11 @@
 #include "base/scoped_observation.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/serial_chooser.h"
+#include "content/public/browser/weak_document_ptr.h"
+#include "device/bluetooth/bluetooth_adapter.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
 #include "shell/browser/serial/serial_chooser_context.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/serial/serial.mojom-forward.h"
 
 namespace content {
@@ -31,7 +34,8 @@ class ElectronSerialDelegate;
 
 // SerialChooserController provides data for the Serial API permission prompt.
 class SerialChooserController final
-    : private SerialChooserContext::PortObserver {
+    : private SerialChooserContext::PortObserver,
+      private device::BluetoothAdapter::Observer {
  public:
   SerialChooserController(
       content::RenderFrameHost* render_frame_host,
@@ -55,18 +59,30 @@ class SerialChooserController final
   void OnPermissionRevoked(const url::Origin& origin) override {}
   void OnSerialChooserContextShutdown() override;
 
+  // BluetoothAdapter::Observer
+  void AdapterPoweredChanged(device::BluetoothAdapter* adapter,
+                             bool powered) override;
+
  private:
   api::Session* GetSession();
+  void GetDevices();
   void OnGetDevices(std::vector<device::mojom::SerialPortInfoPtr> ports);
   bool DisplayDevice(const device::mojom::SerialPortInfo& port) const;
+  void AddMessageToConsole(blink::mojom::ConsoleMessageLevel level,
+                           const std::string& message) const;
   void RunCallback(device::mojom::SerialPortInfoPtr port);
   void OnDeviceChosen(const std::string& port_id);
+  void OnGetAdapter(base::OnceClosure callback,
+                    scoped_refptr<device::BluetoothAdapter> adapter);
+  // Whether it will only show ports from bluetooth devices.
+  [[nodiscard]] bool IsWirelessSerialPortOnly() const;
 
   base::WeakPtr<content::WebContents> web_contents_;
 
   std::vector<blink::mojom::SerialPortFilterPtr> filters_;
   std::vector<::device::BluetoothUUID> allowed_bluetooth_service_class_ids_;
   content::SerialChooser::Callback callback_;
+  content::WeakDocumentPtr initiator_document_;
   url::Origin origin_;
 
   base::WeakPtr<SerialChooserContext> chooser_context_;
@@ -77,8 +93,12 @@ class SerialChooserController final
 
   std::vector<device::mojom::SerialPortInfoPtr> ports_;
 
-  base::WeakPtr<ElectronSerialDelegate> serial_delegate_;
+  scoped_refptr<device::BluetoothAdapter> adapter_;
+  base::ScopedObservation<device::BluetoothAdapter,
+                          device::BluetoothAdapter::Observer>
+      adapter_observation_{this};
 
+  base::WeakPtr<ElectronSerialDelegate> serial_delegate_;
   content::GlobalRenderFrameHostId render_frame_host_id_;
 
   base::WeakPtrFactory<SerialChooserController> weak_factory_{this};

@@ -114,6 +114,7 @@ A `string` representing the current process's type, can be:
 
 * `browser` - The main process
 * `renderer` - A renderer process
+* `service-worker` - In a service worker
 * `worker` - In a web worker
 * `utility` - In a node process launched as a service
 
@@ -232,7 +233,8 @@ console.log(version)
 // On Linux -> '4.15.0-45-generic'
 ```
 
-**Note:** It returns the actual operating system version instead of kernel version on macOS unlike `os.release()`.
+> [!NOTE]
+> It returns the actual operating system version instead of kernel version on macOS unlike `os.release()`.
 
 ### `process.takeHeapSnapshot(filePath)`
 

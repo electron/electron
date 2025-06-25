@@ -5,6 +5,8 @@ import { expect } from 'chai';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
@@ -127,6 +129,26 @@ describe('utilityProcess module', () => {
       expect(code).to.equal(exitCode);
     });
 
+    it('does not run JS after process.exit is called', async () => {
+      const file = path.join(os.tmpdir(), `no-js-after-exit-log-${Math.random()}`);
+      const child = utilityProcess.fork(path.join(fixturesPath, 'no-js-after-exit.js'), [`--testPath=${file}`]);
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
+      let handle = null;
+      const lines = [];
+      try {
+        handle = await fs.open(file);
+        for await (const line of handle.readLines()) {
+          lines.push(line);
+        }
+      } finally {
+        await handle?.close();
+        await fs.rm(file, { force: true });
+      }
+      expect(lines.length).to.equal(1);
+      expect(lines[0]).to.equal('before exit');
+    });
+
     // 32-bit system will not have V8 Sandbox enabled.
     // WoA testing does not have VS toolchain configured to build native addons.
     ifit(process.arch !== 'ia32' && process.arch !== 'arm' && !isWindowsOnArm)('emits \'error\' when fatal error is triggered from V8', async () => {
@@ -226,7 +248,6 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(fixtureFile, [], {
         stdio: 'pipe'
       });
-      await once(child, 'spawn');
       expect(child.stdout).to.not.be.null();
       let log = '';
       child.stdout!.on('data', (chunk) => {
@@ -291,7 +312,6 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
         stdio: 'pipe'
       });
-      await once(child, 'spawn');
       expect(child.stdout).to.not.be.null();
       let log = '';
       child.stdout!.on('data', (chunk) => {
@@ -324,7 +344,6 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
         stdio: ['ignore', 'pipe', 'pipe']
       });
-      await once(child, 'spawn');
       expect(child.stderr).to.not.be.null();
       let log = '';
       child.stderr!.on('data', (chunk) => {
@@ -759,6 +778,55 @@ describe('utilityProcess module', () => {
       expect(statusCode).to.equal(200);
       expect(loginAuthInfo!.realm).to.equal('Foo');
       expect(loginAuthInfo!.scheme).to.equal('basic');
+    });
+
+    it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', async () => {
+      const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-utility-oom-'));
+      const child = utilityProcess.fork(path.join(fixturesPath, 'oom-grow.js'), [], {
+        stdio: 'ignore',
+        execArgv: [
+          `--diagnostic-dir=${tmpDir}`,
+          '--js-flags=--max-old-space-size=50'
+        ],
+        env: {
+          NODE_DEBUG_NATIVE: 'diagnostic'
+        }
+      });
+      await once(child, 'spawn');
+      await once(child, 'exit');
+      const files = (await fs.readdir(tmpDir)).filter((file) => file.endsWith('.heapsnapshot'));
+      expect(files.length).to.be.equal(1);
+      const stat = await fs.stat(path.join(tmpDir, files[0]));
+      expect(stat.size).to.be.greaterThan(0);
+      await fs.rm(tmpDir, { recursive: true });
+    });
+
+    it('supports --no-experimental-global-navigator flag', async () => {
+      {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'navigator.js'), [], {
+          stdio: 'ignore'
+        });
+        await once(child, 'spawn');
+        const [data] = await once(child, 'message');
+        expect(data).to.be.true();
+        const exit = once(child, 'exit');
+        expect(child.kill()).to.be.true();
+        await exit;
+      }
+      {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'navigator.js'), [], {
+          stdio: 'ignore',
+          execArgv: [
+            '--no-experimental-global-navigator'
+          ]
+        });
+        await once(child, 'spawn');
+        const [data] = await once(child, 'message');
+        expect(data).to.be.false();
+        const exit = once(child, 'exit');
+        expect(child.kill()).to.be.true();
+        await exit;
+      }
     });
   });
 });

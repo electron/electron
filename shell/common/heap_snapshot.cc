@@ -7,6 +7,7 @@
 #include "base/containers/span.h"
 #include "base/files/file.h"
 #include "base/memory/raw_ptr.h"
+#include "base/numerics/safe_conversions.h"
 #include "v8/include/v8-profiler.h"
 #include "v8/include/v8.h"
 
@@ -25,12 +26,11 @@ class HeapSnapshotOutputStream : public v8::OutputStream {
   void EndOfStream() override { is_complete_ = true; }
 
   v8::OutputStream::WriteResult WriteAsciiChunk(char* data, int size) override {
-    const uint8_t* udata = reinterpret_cast<const uint8_t*>(data);
-    const size_t usize = static_cast<size_t>(std::max(0, size));
     // SAFETY: since WriteAsciiChunk() only gives us data + size, our
     // UNSAFE_BUFFERS macro call is unavoidable here. It can be removed
     // if/when v8 changes WriteAsciiChunk() to pass a v8::MemorySpan.
-    const auto data_span = UNSAFE_BUFFERS(base::span(udata, usize));
+    const auto data_span = base::as_bytes(
+        UNSAFE_BUFFERS(base::span{data, base::saturated_cast<size_t>(size)}));
     return file_->WriteAtCurrentPosAndCheck(data_span) ? kContinue : kAbort;
   }
 

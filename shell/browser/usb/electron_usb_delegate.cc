@@ -7,12 +7,12 @@
 #include <string_view>
 #include <utility>
 
-#include "base/containers/contains.h"
 #include "base/observer_list.h"
 #include "base/scoped_observation.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
+#include "services/device/public/mojom/usb_device.mojom.h"
 #include "services/device/public/mojom/usb_enumeration_options.mojom.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
@@ -28,7 +28,6 @@
 #include "extensions/browser/guest_view/web_view/web_view_guest.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
-#include "services/device/public/mojom/usb_device.mojom.h"
 #endif
 
 namespace {
@@ -72,7 +71,7 @@ bool IsDevicePermissionAutoGranted(
   // Note: The `DeviceHasInterfaceWithClass()` call is made after checking the
   // origin, since that method call is expensive.
   if (origin.scheme() == extensions::kExtensionScheme &&
-      base::Contains(kSmartCardPrivilegedExtensionIds, origin.host()) &&
+      kSmartCardPrivilegedExtensionIds.contains(origin.host()) &&
       DeviceHasInterfaceWithClass(device_info,
                                   device::mojom::kUsbSmartCardClass)) {
     return true;
@@ -103,19 +102,19 @@ class ElectronUsbDelegate::ContextObservation
 
   // UsbChooserContext::DeviceObserver:
   void OnDeviceAdded(const device::mojom::UsbDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceAdded(device_info);
+    observer_list_.Notify(&content::UsbDelegate::Observer::OnDeviceAdded,
+                          device_info);
   }
 
   void OnDeviceRemoved(
       const device::mojom::UsbDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceRemoved(device_info);
+    observer_list_.Notify(&content::UsbDelegate::Observer::OnDeviceRemoved,
+                          device_info);
   }
 
   void OnDeviceManagerConnectionError() override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceManagerConnectionError();
+    observer_list_.Notify(
+        &content::UsbDelegate::Observer::OnDeviceManagerConnectionError);
   }
 
   void OnBrowserContextShutdown() override {
@@ -183,9 +182,7 @@ bool ElectronUsbDelegate::CanRequestDevicePermission(
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context->GetPermissionControllerDelegate());
   return permission_manager->CheckPermissionWithDetails(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::USB),
-      nullptr, origin.GetURL(), std::move(details));
+      blink::PermissionType::USB, nullptr, origin.GetURL(), std::move(details));
 }
 
 void ElectronUsbDelegate::RevokeDevicePermissionWebInitiated(
@@ -269,7 +266,7 @@ ElectronUsbDelegate::ContextObservation*
 ElectronUsbDelegate::GetContextObserver(
     content::BrowserContext* browser_context) {
   CHECK(browser_context);
-  if (!base::Contains(observations_, browser_context)) {
+  if (!observations_.contains(browser_context)) {
     observations_.emplace(browser_context, std::make_unique<ContextObservation>(
                                                this, browser_context));
   }
@@ -280,9 +277,7 @@ bool ElectronUsbDelegate::IsServiceWorkerAllowedForOrigin(
     const url::Origin& origin) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebUSB is only available on extension service workers for now.
-  if (base::FeatureList::IsEnabled(
-          features::kEnableWebUsbOnExtensionServiceWorker) &&
-      origin.scheme() == extensions::kExtensionScheme) {
+  if (origin.scheme() == extensions::kExtensionScheme) {
     return true;
   }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -304,8 +299,7 @@ UsbChooserController* ElectronUsbDelegate::AddControllerForFrame(
   auto controller = std::make_unique<UsbChooserController>(
       render_frame_host, std::move(options), std::move(callback), web_contents,
       weak_factory_.GetWeakPtr());
-  controller_map_.insert(
-      std::make_pair(render_frame_host, std::move(controller)));
+  controller_map_.try_emplace(render_frame_host, std::move(controller));
   return ControllerForFrame(render_frame_host);
 }
 

@@ -7,9 +7,16 @@
 #include <algorithm>
 #include <utility>
 
+#include "base/command_line.h"
 #include "base/containers/contains.h"
 #include "base/functional/bind.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/stringprintf.h"
+#include "chrome/browser/serial/serial_blocklist.h"
+#include "content/public/browser/console_message.h"
 #include "content/public/browser/web_contents.h"
+#include "device/bluetooth/bluetooth_adapter.h"
+#include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/public/cpp/bluetooth_uuid.h"
 #include "services/device/public/cpp/bluetooth/bluetooth_utils.h"
 #include "services/device/public/mojom/serial.mojom.h"
@@ -21,7 +28,6 @@
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
-#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace gin {
@@ -38,10 +44,10 @@ struct Converter<device::mojom::SerialPortInfoPtr> {
       dict.Set("displayName", *port->display_name);
     }
     if (port->has_vendor_id) {
-      dict.Set("vendorId", absl::StrFormat("%u", port->vendor_id));
+      dict.Set("vendorId", base::NumberToString(port->vendor_id));
     }
     if (port->has_product_id) {
-      dict.Set("productId", absl::StrFormat("%u", port->product_id));
+      dict.Set("productId", base::NumberToString(port->product_id));
     }
     if (port->serial_number && !port->serial_number->empty()) {
       dict.Set("serialNumber", *port->serial_number);
@@ -65,6 +71,8 @@ namespace electron {
 
 namespace {
 
+using ::device::BluetoothAdapter;
+using ::device::BluetoothAdapterFactory;
 using ::device::mojom::SerialPortType;
 
 bool FilterMatchesPort(const blink::mojom::SerialPortFilter& filter,
@@ -116,16 +124,18 @@ SerialChooserController::SerialChooserController(
       allowed_bluetooth_service_class_ids_(
           std::move(allowed_bluetooth_service_class_ids)),
       callback_(std::move(callback)),
-      serial_delegate_(serial_delegate),
-      render_frame_host_id_(render_frame_host->GetGlobalId()) {
+      initiator_document_(render_frame_host->GetWeakDocumentPtr()) {
   origin_ = web_contents_->GetPrimaryMainFrame()->GetLastCommittedOrigin();
 
   chooser_context_ = SerialChooserContextFactory::GetForBrowserContext(
                          web_contents_->GetBrowserContext())
                          ->AsWeakPtr();
   DCHECK(chooser_context_);
-  chooser_context_->GetPortManager()->GetDevices(base::BindOnce(
-      &SerialChooserController::OnGetDevices, weak_factory_.GetWeakPtr()));
+
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(&SerialChooserController::GetDevices,
+                                weak_factory_.GetWeakPtr()));
+
   observation_.Observe(chooser_context_.get());
 }
 
@@ -138,6 +148,29 @@ api::Session* SerialChooserController::GetSession() {
     return nullptr;
   }
   return api::Session::FromBrowserContext(web_contents_->GetBrowserContext());
+}
+
+void SerialChooserController::GetDevices() {
+  if (IsWirelessSerialPortOnly()) {
+    if (!adapter_) {
+      BluetoothAdapterFactory::Get()->GetAdapter(base::BindOnce(
+          &SerialChooserController::OnGetAdapter, weak_factory_.GetWeakPtr(),
+          base::BindOnce(&SerialChooserController::GetDevices,
+                         weak_factory_.GetWeakPtr())));
+      return;
+    }
+  }
+
+  chooser_context_->GetPortManager()->GetDevices(base::BindOnce(
+      &SerialChooserController::OnGetDevices, weak_factory_.GetWeakPtr()));
+}
+
+void SerialChooserController::AdapterPoweredChanged(BluetoothAdapter* adapter,
+                                                    bool powered) {
+  // TODO(codebytere): maybe emit an event here?
+  if (powered) {
+    GetDevices();
+  }
 }
 
 void SerialChooserController::OnPortAdded(
@@ -180,7 +213,7 @@ void SerialChooserController::OnDeviceChosen(const std::string& port_id) {
       return ptr->token.ToString() == port_id;
     });
     if (it != ports_.end()) {
-      auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
+      auto* rfh = initiator_document_.AsRenderFrameHostIfValid();
       chooser_context_->GrantPortPermission(origin_, *it->get(), rfh);
       RunCallback(it->Clone());
     } else {
@@ -196,6 +229,7 @@ void SerialChooserController::OnGetDevices(
     return port1->path.BaseName() < port2->path.BaseName();
   });
 
+  ports_.clear();
   for (auto& port : ports) {
     if (DisplayDevice(*port))
       ports_.push_back(std::move(port));
@@ -215,6 +249,34 @@ void SerialChooserController::OnGetDevices(
 
 bool SerialChooserController::DisplayDevice(
     const device::mojom::SerialPortInfo& port) const {
+  bool blocklist_disabled = base::CommandLine::ForCurrentProcess()->HasSwitch(
+      kDisableSerialBlocklist);
+  if (!blocklist_disabled && SerialBlocklist::Get().IsExcluded(port)) {
+    if (port.has_vendor_id && port.has_product_id) {
+      AddMessageToConsole(
+          blink::mojom::ConsoleMessageLevel::kInfo,
+          base::StringPrintf(
+              "Skipping a port blocked by "
+              "the Serial blocklist: vendorId=%d, "
+              "productId=%d, name='%s', serial='%s'",
+              port.vendor_id, port.product_id,
+              port.display_name ? port.display_name.value().c_str() : "",
+              port.serial_number ? port.serial_number.value().c_str() : ""));
+    } else if (port.bluetooth_service_class_id) {
+      AddMessageToConsole(
+          blink::mojom::ConsoleMessageLevel::kInfo,
+          base::StringPrintf(
+              "Skipping a port blocked by "
+              "the Serial blocklist: bluetoothServiceClassId=%s, "
+              "name='%s'",
+              port.bluetooth_service_class_id->value().c_str(),
+              port.display_name ? port.display_name.value().c_str() : ""));
+    } else {
+      NOTREACHED();
+    }
+    return false;
+  }
+
   if (filters_.empty()) {
     return BluetoothPortIsAllowed(allowed_bluetooth_service_class_ids_, port);
   }
@@ -229,11 +291,48 @@ bool SerialChooserController::DisplayDevice(
   return false;
 }
 
+void SerialChooserController::AddMessageToConsole(
+    blink::mojom::ConsoleMessageLevel level,
+    const std::string& message) const {
+  if (content::RenderFrameHost* rfh =
+          initiator_document_.AsRenderFrameHostIfValid()) {
+    rfh->AddMessageToConsole(level, message);
+  }
+}
+
 void SerialChooserController::RunCallback(
     device::mojom::SerialPortInfoPtr port) {
   if (callback_) {
     std::move(callback_).Run(std::move(port));
   }
+}
+void SerialChooserController::OnGetAdapter(
+    base::OnceClosure callback,
+    scoped_refptr<BluetoothAdapter> adapter) {
+  CHECK(adapter);
+  adapter_ = std::move(adapter);
+  adapter_observation_.Observe(adapter_.get());
+  std::move(callback).Run();
+}
+
+bool SerialChooserController::IsWirelessSerialPortOnly() const {
+  if (allowed_bluetooth_service_class_ids_.empty()) {
+    return false;
+  }
+
+  // The system's wired and wireless serial ports can be shown if there is no
+  // filter.
+  if (filters_.empty()) {
+    return false;
+  }
+
+  // Check if all the filters are meant for serial port from Bluetooth device.
+  for (const auto& filter : filters_) {
+    if (!filter->bluetooth_service_class_id) {
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace electron

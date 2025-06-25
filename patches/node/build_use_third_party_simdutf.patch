@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Mon, 9 Dec 2024 11:18:51 -0600
+Subject: build: use third_party/simdutf
+
+use the Chromium version of simdutf to avoid duplicate symbols
+
+diff --git a/node.gni b/node.gni
+index 56a554175b805c1703f13d62041f8c80d6e94dd9..203b4abbc44df9e58083c819f61f9025104abdc6 100644
+--- a/node.gni
++++ b/node.gni
+@@ -14,7 +14,7 @@ declare_args() {
+   node_openssl_path = "//third_party/boringssl"
+ 
+   # The location of simdutf - use the one from node's deps by default.
+-  node_simdutf_path = "$node_path/deps/simdutf"
++  node_simdutf_path = "//third_party/simdutf"
+ 
+   # The NODE_MODULE_VERSION defined in node_version.h.
+   node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")

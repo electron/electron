@@ -4,7 +4,6 @@
 
 #include "shell/browser/ui/devtools_ui_bundle_data_source.h"
 
-#include <memory>
 #include <string>
 #include <utility>
 

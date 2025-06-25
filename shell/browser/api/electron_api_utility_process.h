@@ -43,7 +43,7 @@ class UtilityProcessWrapper final
     : public gin::Wrappable<UtilityProcessWrapper>,
       public gin_helper::Pinnable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,
-      public mojo::MessageReceiver,
+      private mojo::MessageReceiver,
       public node::mojom::NodeServiceClient,
       public content::ServiceProcessHost::Observer {
  public:

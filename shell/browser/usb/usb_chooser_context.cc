@@ -8,10 +8,11 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/contains.h"
+#include "base/command_line.h"
 #include "base/functional/bind.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
+#include "chrome/browser/usb/usb_blocklist.h"
 #include "components/content_settings/core/common/content_settings.h"
 #include "content/public/browser/device_service.h"
 #include "services/device/public/cpp/usb/usb_ids.h"
@@ -104,10 +105,8 @@ void UsbChooserContext::InitDeviceList(
     std::vector<device::mojom::UsbDeviceInfoPtr> devices) {
   for (auto& device_info : devices) {
     DCHECK(device_info);
-    if (ShouldExposeDevice(*device_info)) {
-      devices_.insert(
-          std::make_pair(device_info->guid, std::move(device_info)));
-    }
+    if (ShouldExposeDevice(*device_info))
+      devices_.try_emplace(device_info->guid, std::move(device_info));
   }
   is_initialized_ = true;
 
@@ -158,7 +157,7 @@ UsbChooserContext::~UsbChooserContext() {
 void UsbChooserContext::RevokeDevicePermissionWebInitiated(
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device) {
-  DCHECK(base::Contains(devices_, device.guid));
+  DCHECK(devices_.contains(device.guid));
   RevokeObjectPermissionInternal(origin, DeviceInfoToValue(device),
                                  /*revoked_by_website=*/true);
 }
@@ -174,9 +173,7 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
     permission_manager->RevokeDevicePermission(
-        static_cast<blink::PermissionType>(
-            WebContentsPermissionHelper::PermissionType::USB),
-        origin, object, browser_context_);
+        blink::PermissionType::USB, origin, object, browser_context_);
   } else {
     const std::string* guid = object_dict->FindString(kDeviceIdKey);
     auto it = ephemeral_devices_.find(origin);
@@ -205,9 +202,8 @@ void UsbChooserContext::GrantDevicePermission(
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
     permission_manager->GrantDevicePermission(
-        static_cast<blink::PermissionType>(
-            WebContentsPermissionHelper::PermissionType::USB),
-        origin, DeviceInfoToValue(device_info), browser_context_);
+        blink::PermissionType::USB, origin, DeviceInfoToValue(device_info),
+        browser_context_);
   } else {
     ephemeral_devices_[origin].insert(device_info.guid);
   }
@@ -216,9 +212,14 @@ void UsbChooserContext::GrantDevicePermission(
 bool UsbChooserContext::HasDevicePermission(
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device_info) {
+  bool blocklist_disabled =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(kDisableUSBBlocklist);
+  if (!blocklist_disabled && UsbBlocklist::Get().IsExcluded(device_info)) {
+    return false;
+  }
+
   auto it = ephemeral_devices_.find(origin);
-  if (it != ephemeral_devices_.end() &&
-      base::Contains(it->second, device_info.guid)) {
+  if (it != ephemeral_devices_.end() && it->second.contains(device_info.guid)) {
     return true;
   }
 
@@ -226,9 +227,8 @@ bool UsbChooserContext::HasDevicePermission(
       browser_context_->GetPermissionControllerDelegate());
 
   return permission_manager->CheckDevicePermission(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::USB),
-      origin, DeviceInfoToValue(device_info), browser_context_);
+      blink::PermissionType::USB, origin, DeviceInfoToValue(device_info),
+      browser_context_);
 }
 
 void UsbChooserContext::GetDevices(
@@ -284,14 +284,13 @@ void UsbChooserContext::OnDeviceAdded(
     device::mojom::UsbDeviceInfoPtr device_info) {
   DCHECK(device_info);
   // Update the device list.
-  DCHECK(!base::Contains(devices_, device_info->guid));
+  DCHECK(!devices_.contains(device_info->guid));
   if (!ShouldExposeDevice(*device_info))
     return;
-  devices_.insert(std::make_pair(device_info->guid, device_info->Clone()));
+  devices_.try_emplace(device_info->guid, device_info->Clone());
 
   // Notify all observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceAdded(*device_info);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceAdded, *device_info);
 }
 
 void UsbChooserContext::OnDeviceRemoved(
@@ -299,17 +298,16 @@ void UsbChooserContext::OnDeviceRemoved(
   DCHECK(device_info);
 
   if (!ShouldExposeDevice(*device_info)) {
-    DCHECK(!base::Contains(devices_, device_info->guid));
+    DCHECK(!devices_.contains(device_info->guid));
     return;
   }
 
   // Update the device list.
-  DCHECK(base::Contains(devices_, device_info->guid));
-  devices_.erase(device_info->guid);
+  const size_t n_erased = devices_.erase(device_info->guid);
+  DCHECK_EQ(n_erased, 1U);
 
   // Notify all device observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceRemoved(*device_info);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceRemoved, *device_info);
 
   // If the device was persistent, return. Otherwise, notify all permission
   // observers that its permissions were revoked.
@@ -331,8 +329,7 @@ void UsbChooserContext::OnDeviceManagerConnectionError() {
   ephemeral_devices_.clear();
 
   // Notify all device observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceManagerConnectionError();
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceManagerConnectionError);
 }
 
 }  // namespace electron

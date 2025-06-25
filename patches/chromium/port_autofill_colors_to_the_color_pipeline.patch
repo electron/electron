@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index c98a2d313f3d38290a561e46ae78c57b17b2e2e9..507df603b69796bf3bd5ecf231a64f9175cfeeec 100644
+index 88b3f33d71d9f89eae3b828e793a83341dc9b4cb..424940fb5065eaf1cea0a05f6f8d7e91d74333a8 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -405,6 +405,10 @@
+@@ -430,6 +430,10 @@
    E_CPONLY(kColorRadioButtonForegroundUnchecked) \
    E_CPONLY(kColorRadioButtonForegroundDisabled) \
    E_CPONLY(kColorRadioButtonForegroundChecked) \
@@ -22,7 +22,7 @@ index c98a2d313f3d38290a561e46ae78c57b17b2e2e9..507df603b69796bf3bd5ecf231a64f91
    E_CPONLY(kColorSegmentedButtonBorder) \
    E_CPONLY(kColorSegmentedButtonFocus) \
    E_CPONLY(kColorSegmentedButtonForegroundChecked) \
-@@ -510,6 +514,7 @@
+@@ -538,6 +542,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,10 +31,10 @@ index c98a2d313f3d38290a561e46ae78c57b17b2e2e9..507df603b69796bf3bd5ecf231a64f91
    /* ui::NativeThemeBase::ControlColorId. */ \
    E_CPONLY(kColorWebNativeControlAccent) \
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 4e5eeb0dd92829bc58576b4d4d216fb0700fd2ca..1c5b929b97a97b97b9787e54ca35d2da96abd11b 100644
+index f606d2a058ed9ebf86b5f020b6897be718a40b68..003e95ca8bb6364fb6b937871b2c78b9ec798bd0 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -181,6 +181,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
+@@ -180,6 +180,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
    mixer[kColorProgressBarPaused] = {kColorDisabledForeground};
    mixer[kColorRadioButtonForegroundChecked] = {kColorButtonForeground};
    mixer[kColorRadioButtonForegroundUnchecked] = {kColorSecondaryForeground};

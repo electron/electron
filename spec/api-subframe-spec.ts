@@ -217,6 +217,40 @@ describe('renderer nodeIntegrationInSubFrames', () => {
   });
 });
 
+describe('subframe with non-standard schemes', () => {
+  it('should not crash when changing subframe src to about:blank and back', async () => {
+    const w = new BrowserWindow({ show: false, width: 400, height: 400 });
+
+    const fwfPath = path.resolve(__dirname, 'fixtures/sub-frames/frame-with-frame.html');
+    await w.loadFile(fwfPath);
+
+    const originalSrc = await w.webContents.executeJavaScript(`
+      const iframe = document.querySelector('iframe');
+      iframe.src;
+    `);
+
+    const updatedSrc = await w.webContents.executeJavaScript(`
+      new Promise((resolve, reject) => {
+        const iframe = document.querySelector('iframe');
+        iframe.src = 'about:blank';
+        resolve(iframe.src);
+      })
+    `);
+
+    expect(updatedSrc).to.equal('about:blank');
+
+    const restoredSrc = await w.webContents.executeJavaScript(`
+      new Promise((resolve, reject) => {
+        const iframe = document.querySelector('iframe');
+        iframe.src = '${originalSrc}';
+        resolve(iframe.src);
+      })
+    `);
+
+    expect(restoredSrc).to.equal(originalSrc);
+  });
+});
+
 // app.getAppMetrics() does not return sandbox information on Linux.
 ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
   let server: http.Server;

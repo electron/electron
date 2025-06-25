@@ -102,7 +102,8 @@ bool IsTemplateFilename(const base::FilePath& path) {
 #endif
 
 #if BUILDFLAG(IS_WIN)
-base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
+base::win::ScopedGDIObject<HICON> ReadICOFromPath(int size,
+                                                  const base::FilePath& path) {
   // If file is in asar archive, we extract it to a temp file so LoadImage can
   // load it.
   base::FilePath asar_path, relative_path;
@@ -115,11 +116,15 @@ base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
   }
 
   // Load the icon from file.
-  return base::win::ScopedHICON(
+  return base::win::ScopedGDIObject<HICON>(
       static_cast<HICON>(LoadImage(nullptr, image_path.value().c_str(),
                                    IMAGE_ICON, size, size, LR_LOADFROMFILE)));
 }
 #endif
+
+[[nodiscard]] v8::Local<v8::Value> NewEmptyBuffer(v8::Isolate* isolate) {
+  return node::Buffer::New(isolate, 0).ToLocalChecked();
+}
 
 }  // namespace
 
@@ -225,57 +230,48 @@ HICON NativeImage::GetHICON(int size) {
 #endif
 
 v8::Local<v8::Value> NativeImage::ToPNG(gin::Arguments* args) {
+  v8::Isolate* const isolate = args->isolate();
   float scale_factor = GetScaleFactorFromOptions(args);
 
   if (scale_factor == 1.0f) {
     // Use raw 1x PNG bytes when available
-    scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
-    if (png->size() > 0) {
-      const char* data = reinterpret_cast<const char*>(png->front());
-      size_t size = png->size();
-      return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
-    }
+    const scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+    const base::span<const uint8_t> png_span = *png;
+    if (!png_span.empty())
+      return electron::Buffer::Copy(isolate, png_span).ToLocalChecked();
   }
 
   const SkBitmap bitmap =
       image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
-  std::optional<std::vector<uint8_t>> encoded =
+  const std::optional<std::vector<uint8_t>> encoded =
       gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false);
   if (!encoded.has_value())
-    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
-  const char* data = reinterpret_cast<char*>(encoded->data());
-  size_t size = encoded->size();
-  return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
+    return NewEmptyBuffer(isolate);
+
+  return electron::Buffer::Copy(isolate, *encoded).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
-  float scale_factor = GetScaleFactorFromOptions(args);
+  v8::Isolate* const isolate = args->isolate();
 
-  const SkBitmap bitmap =
-      image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
+  const float scale = GetScaleFactorFromOptions(args);
+  const auto src = image_.AsImageSkia().GetRepresentation(scale).GetBitmap();
 
-  SkImageInfo info =
-      SkImageInfo::MakeN32Premul(bitmap.width(), bitmap.height());
+  const auto dst_info = SkImageInfo::MakeN32Premul(src.dimensions());
+  const size_t dst_n_bytes = dst_info.computeMinByteSize();
+  auto dst_buf = v8::ArrayBuffer::New(isolate, dst_n_bytes);
 
-  auto array_buffer =
-      v8::ArrayBuffer::New(args->isolate(), info.computeMinByteSize());
-  if (bitmap.readPixels(info, array_buffer->Data(), info.minRowBytes(), 0, 0)) {
-    return node::Buffer::New(args->isolate(), array_buffer, 0,
-                             info.computeMinByteSize())
-        .ToLocalChecked();
-  }
-  return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
+  if (!src.readPixels(dst_info, dst_buf->Data(), dst_info.minRowBytes(), 0, 0))
+    return NewEmptyBuffer(isolate);
+  return node::Buffer::New(isolate, dst_buf, 0, dst_n_bytes).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
-  std::optional<std::vector<uint8_t>> encoded_image =
+  const std::optional<std::vector<uint8_t>> encoded_image =
       gfx::JPEG1xEncodedDataFromImage(image_, quality);
-  if (!encoded_image.has_value())
-    return node::Buffer::New(isolate, 0).ToLocalChecked();
-  return node::Buffer::Copy(
-             isolate, reinterpret_cast<const char*>(&encoded_image->front()),
-             encoded_image->size())
-      .ToLocalChecked();
+  if (!encoded_image)
+    return NewEmptyBuffer(isolate);
+  return electron::Buffer::Copy(isolate, *encoded_image).ToLocalChecked();
 }
 
 std::string NativeImage::ToDataURL(gin::Arguments* args) {
@@ -286,32 +282,30 @@ std::string NativeImage::ToDataURL(gin::Arguments* args) {
 }
 
 v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
-  float scale_factor = GetScaleFactorFromOptions(args);
+  static bool deprecated_warning_issued = false;
 
-  const SkBitmap bitmap =
-      image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
-  SkPixelRef* ref = bitmap.pixelRef();
-  if (!ref)
-    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
-  return node::Buffer::Copy(args->isolate(),
-                            reinterpret_cast<char*>(ref->pixels()),
-                            bitmap.computeByteSize())
-      .ToLocalChecked();
+  if (!deprecated_warning_issued) {
+    deprecated_warning_issued = true;
+    util::EmitDeprecationWarning(
+        isolate_, "getBitmap() is deprecated, use toBitmap() instead.");
+  }
+
+  return ToBitmap(args);
 }
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(
     gin_helper::ErrorThrower thrower) {
+  v8::Isolate* const isolate = thrower.isolate();
 #if BUILDFLAG(IS_MAC)
   if (IsEmpty())
-    return node::Buffer::New(thrower.isolate(), 0).ToLocalChecked();
+    return NewEmptyBuffer(isolate);
 
   NSImage* ptr = image_.AsNSImage();
-  return node::Buffer::Copy(thrower.isolate(), reinterpret_cast<char*>(ptr),
-                            sizeof(void*))
+  return electron::Buffer::Copy(isolate, base::byte_span_from_ref(ptr))
       .ToLocalChecked();
 #else
   thrower.ThrowError("Not implemented");
-  return v8::Undefined(thrower.isolate());
+  return v8::Undefined(isolate);
 #endif
 }
 
@@ -388,12 +382,9 @@ gin::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
 }
 
 void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
-  int width = 0;
-  int height = 0;
-  float scale_factor = 1.0f;
-  options.Get("width", &width);
-  options.Get("height", &height);
-  options.Get("scaleFactor", &scale_factor);
+  const int width = options.ValueOrDefault("width", 0);
+  const int height = options.ValueOrDefault("height", 0);
+  const float scale_factor = options.ValueOrDefault("scaleFactor", 1.0F);
 
   bool skia_rep_added = false;
   gfx::ImageSkia image_skia = image_.AsImageSkia();
@@ -402,7 +393,7 @@ void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
   GURL url;
   if (options.Get("buffer", &buffer) && node::Buffer::HasInstance(buffer)) {
     skia_rep_added = electron::util::AddImageSkiaRepFromBuffer(
-        &image_skia, electron::util::as_byte_span(buffer), width, height,
+        &image_skia, electron::Buffer::as_byte_span(buffer), width, height,
         scale_factor);
   } else if (options.Get("dataURL", &url)) {
     std::string mime_type, charset, data;
@@ -511,7 +502,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
   auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
   auto size_bytes = info.computeMinByteSize();
 
-  const auto buffer_data = electron::util::as_byte_span(buffer);
+  const auto buffer_data = electron::Buffer::as_byte_span(buffer);
   if (size_bytes != buffer_data.size()) {
     thrower.ThrowError("invalid buffer size");
     return {};
@@ -521,8 +512,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
   bitmap.allocN32Pixels(width, height, false);
   bitmap.writePixels({info, buffer_data.data(), bitmap.rowBytes()});
 
-  float scale_factor = 1.0F;
-  options.Get("scaleFactor", &scale_factor);
+  const float scale_factor = options.ValueOrDefault("scaleFactor", 1.0F);
   gfx::ImageSkia image_skia =
       gfx::ImageSkia::CreateFromBitmap(bitmap, scale_factor);
 
@@ -552,7 +542,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBuffer(
 
   gfx::ImageSkia image_skia;
   electron::util::AddImageSkiaRepFromBuffer(
-      &image_skia, electron::util::as_byte_span(buffer), width, height,
+      &image_skia, electron::Buffer::as_byte_span(buffer), width, height,
       scale_factor);
   return Create(args->isolate(), gfx::Image(image_skia));
 }

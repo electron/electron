@@ -13,7 +13,7 @@ messages in the legacy window handle layer.
 These conditions are regularly hit with WCO-enabled windows on Windows.
 
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-index e63c2f637828d426e1c8fb16774a08722bfc9fcc..bfc5254ec692fc5cfbd93fabae7969adeb644393 100644
+index 48b91785925ba2d3712560a209fe07799df0face..99b06250fa5cf939bd66155f595796baf8cf9755 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
 @@ -325,12 +325,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
@@ -31,23 +31,23 @@ index e63c2f637828d426e1c8fb16774a08722bfc9fcc..bfc5254ec692fc5cfbd93fabae7969ad
        tme.hwndTrack = hwnd();
        tme.dwHoverTime = 0;
        TrackMouseEvent(&tme);
-@@ -361,7 +361,10 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
-     // out of the picture.
-     if (!handled &&
-         (message >= WM_NCMOUSEMOVE && message <= WM_NCXBUTTONDBLCLK)) {
--      ret = ::DefWindowProc(GetParent(), message, w_param, l_param);
-+      // Send WM_NCMOUSEMOVE messages using the LegacyRenderWidgetHostHWND's
-+      // handle so mouse tracking on non-client areas doesn't break.
-+      HWND target = message == WM_NCMOUSEMOVE ? hwnd() : GetParent();
-+      ret = ::DefWindowProc(target, message, w_param, l_param);
-       handled = TRUE;
-     }
+@@ -363,7 +363,10 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
+   // the picture.
+   if (!handled &&
+       (message >= WM_NCMOUSEMOVE && message <= WM_NCXBUTTONDBLCLK)) {
+-    ret = ::DefWindowProc(GetParent(), message, w_param, l_param);
++    // Send WM_NCMOUSEMOVE messages using the LegacyRenderWidgetHostHWND's
++    // handle so mouse tracking on non-client areas doesn't break.
++    HWND target = message == WM_NCMOUSEMOVE ? hwnd() : GetParent();
++    ret = ::DefWindowProc(target, message, w_param, l_param);
+     handled = TRUE;
    }
+   return ret;
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
-index aad10a91356b8b13e15fac0488d25187af23ce36..f9a3db0c54831ad0a1c9946a98a6d7154776ae51 100644
+index 17952b4b6ab559ba1c9076b100b060a7011edeec..1eda20e67d3b3184bec154f24c4259bb4a49b099 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.h
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.h
-@@ -103,6 +103,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
+@@ -105,6 +105,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
      MESSAGE_HANDLER_EX(WM_VSCROLL, OnScroll)
      MESSAGE_HANDLER_EX(WM_NCHITTEST, OnNCHitTest)
      MESSAGE_RANGE_HANDLER(WM_NCMOUSEMOVE, WM_NCXBUTTONDBLCLK, OnMouseRange)

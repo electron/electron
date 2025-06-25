@@ -1,0 +1,120 @@
+name: 'Fix Sync'
+description: 'Ensures proper binaries are in place'
+# This action is required to correct for differences between "gclient sync"
+# on Linux and the expected state on macOS/windows. This requires:
+# 1. Fixing Clang Install (wrong binary)
+# 2. Fixing esbuild (wrong binary)
+# 3. Fixing rustc (wrong binary)
+# 4. Fixing gn (wrong binary)
+# 5. Fix reclient (wrong binary)
+# 6. Fixing dsymutil (wrong binary)
+# 7. Ensuring we are using the correct ninja and adding it to PATH
+# 8. Fixing angle (wrong remote)
+# 9. Install windows toolchain on Windows
+# 10. Fix node binary on Windows
+# 11. Fix rc binary on Windows
+inputs:
+  target-platform:
+    description: 'Target platform, should be linux, win, macos'
+runs:
+  using: "composite"
+  steps:
+    - name: Fix clang
+      shell: bash
+      run : |
+        rm -rf src/third_party/llvm-build
+        python3 src/tools/clang/scripts/update.py
+    - name: Fix esbuild
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        cipd-root-prefix-path: src/third_party/devtools-frontend/src/
+        dependency: esbuild
+        deps-file: src/third_party/devtools-frontend/src/DEPS
+        installation-dir: third_party/esbuild
+        target-platform: ${{ inputs.target-platform }}
+        package: infra/3pp/tools/esbuild/${platform}
+    - name: Fix rustc
+      shell: bash
+      run : |
+        rm -rf src/third_party/rust-toolchain
+        python3 src/tools/rust/update_rust.py
+    - name: Fix gn (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: gn
+        deps-file: src/DEPS
+        installation-dir: src/buildtools/mac
+        target-platform: ${{ inputs.target-platform }}
+        package: gn/gn/mac-${arch}
+    - name: Fix gn (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: gn
+        deps-file: src/DEPS
+        installation-dir: src/buildtools/win 
+        target-platform: ${{ inputs.target-platform }}
+        package: gn/gn/windows-amd64
+    - name: Fix reclient
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: reclient
+        deps-file: src/DEPS
+        installation-dir: src/buildtools/reclient
+        target-platform: ${{ inputs.target-platform }}
+        package: infra/rbe/client/${platform}
+    - name: Configure reclient configs
+      shell: bash
+      run : |
+        python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
+    - name: Fix dsymutil (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      shell: bash
+      run : |
+        # Fix dsymutil
+        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+          if  [ "${{ env.TARGET_ARCH }}" == "arm64" ]; then
+            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
+          else
+            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.x64.sha1
+          fi
+          python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
+        fi
+    - name: Fix ninja
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: ninja
+        deps-file: src/DEPS
+        installation-dir: src/third_party/ninja
+        target-platform: ${{ inputs.target-platform }}
+        package: infra/3pp/tools/ninja/${platform}
+    - name: Set ninja in path
+      shell: bash
+      run : |
+        echo "$(pwd)/src/third_party/ninja" >> $GITHUB_PATH
+    - name: Fixup angle git
+      shell: bash
+      run : |
+        cd src/third_party/angle
+        rm -f .git/objects/info/alternates
+        git remote set-url origin https://chromium.googlesource.com/angle/angle.git
+        cp .git/config .git/config.backup
+        git remote remove origin
+        mv .git/config.backup .git/config
+        git fetch
+    - name: Get Windows toolchain
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: e d vpython3 src\build\vs_toolchain.py update --force
+    - name: Download nodejs
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        $nodedeps = e d gclient getdep --deps-file=src/DEPS -r src/third_party/node/win | ConvertFrom-JSON
+        python3 src\third_party\depot_tools\download_from_google_storage.py --no_resume --no_auth --bucket chromium-nodejs -o src\third_party\node\win\node.exe $nodedeps.object_name
+    - name: Install rc
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: bash
+      run: |
+        python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang/rc -s src/build/toolchain/win/rc/win/rc.exe.sha1

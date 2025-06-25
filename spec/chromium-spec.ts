@@ -104,6 +104,7 @@ describe('focus handling', () => {
 
   beforeEach(async () => {
     w = new BrowserWindow({
+      alwaysOnTop: true,
       show: true,
       webPreferences: {
         nodeIntegration: true,
@@ -653,7 +654,7 @@ describe('chromium features', () => {
       expect(size).to.be.a('number');
     });
 
-    it('should lock the keyboard', async () => {
+    ifit(process.platform !== 'darwin')('should lock the keyboard', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
 
@@ -670,8 +671,11 @@ describe('chromium features', () => {
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await setTimeout(1000);
-      const openAfter1 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
-      expect(openAfter1).to.be.true();
+      await expect(waitUntil(async () => {
+        return await w.webContents.executeJavaScript(
+          'document.getElementById(\'favDialog\').open'
+        );
+      })).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.false();
 
       // Test that with lock, with ESC:
@@ -681,7 +685,6 @@ describe('chromium features', () => {
       await w.webContents.executeJavaScript(`
         document.body.requestFullscreen();
       `, true);
-
       await enterFS2;
 
       // Request keyboard lock after window has gone fullscreen
@@ -696,8 +699,12 @@ describe('chromium features', () => {
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await setTimeout(1000);
-      const openAfter2 = await w.webContents.executeJavaScript('document.getElementById(\'favDialog\').open');
-      expect(openAfter2).to.be.false();
+      await expect(waitUntil(async () => {
+        const openAfter2 = await w.webContents.executeJavaScript(
+          'document.getElementById(\'favDialog\').open'
+        );
+        return (openAfter2 === false);
+      })).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.true();
     });
   });
@@ -1450,6 +1457,41 @@ describe('chromium features', () => {
         return { eventData: e.data }
       })()`);
       expect(eventData).to.equal('size: 350 450');
+    });
+
+    it('window opened with innerWidth option has the same innerWidth', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      const windowUrl = `file://${fixturesPath}/pages/window-open-size-inner.html`;
+      const windowCreatedPromise = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
+      const eventDataPromise = w.webContents.executeJavaScript(`(async () => {
+        const message = new Promise(resolve => window.addEventListener('message', resolve, { once: true }));
+        b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no,innerWidth=400,height=450');
+        const e = await message;
+        b.close();
+        return e.data;
+      })()`);
+      const [[, newWindow], eventData] = await Promise.all([windowCreatedPromise, eventDataPromise]);
+
+      expect(newWindow.getContentSize().toString()).to.equal('400,450');
+      expect(eventData).to.equal('size: 400 450');
+    });
+    it('window opened with innerHeight option has the same innerHeight', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      const windowUrl = `file://${fixturesPath}/pages/window-open-size-inner.html`;
+      const windowCreatedPromise = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
+      const eventDataPromise = w.webContents.executeJavaScript(`(async () => {
+        const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
+        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no,width=350,innerHeight=400')
+        const e = await message;
+        b.close();
+        return e.data;
+      })()`);
+      const [[, newWindow], eventData] = await Promise.all([windowCreatedPromise, eventDataPromise]);
+
+      expect(newWindow.getContentSize().toString()).to.equal('350,400');
+      expect(eventData).to.equal('size: 350 400');
     });
 
     it('loads preload script after setting opener to null', async () => {
@@ -2528,6 +2570,7 @@ describe('chromium features', () => {
   describe('websockets', () => {
     it('has user agent', async () => {
       const server = http.createServer();
+      defer(() => server.close());
       const { port } = await listen(server);
       const wss = new ws.Server({ server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
@@ -2916,7 +2959,7 @@ describe('font fallback', () => {
     } else if (process.platform === 'darwin') {
       expect(fonts[0].familyName).to.equal('Helvetica');
     } else if (process.platform === 'linux') {
-      expect(fonts[0].familyName).to.equal('DejaVu Sans');
+      expect(fonts[0].familyName).to.equal('DejaVu Sans (Fontations)');
     } // I think this depends on the distro? We don't specify a default.
   });
 
@@ -2987,12 +3030,12 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
       "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
     );
 
-    await setTimeout(500);
-
-    const width = await w.webContents.executeJavaScript(
-      "document.querySelector('iframe').offsetWidth"
-    );
-    expect(width).to.equal(0);
+    await expect(waitUntil(async () => {
+      const width = await w.webContents.executeJavaScript(
+        "document.querySelector('iframe').offsetWidth"
+      );
+      return width === 0;
+    })).to.eventually.be.fulfilled();
   });
 
   ifit(process.platform === 'darwin')('can fullscreen from out-of-process iframes (macOS)', async () => {
@@ -3024,8 +3067,9 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await once(w, 'leave-full-screen');
   });
 
-  // TODO(jkleinsc) fix this flaky test on WOA
-  ifit(process.platform !== 'win32' || process.arch !== 'arm64')('can fullscreen from in-process iframes', async () => {
+  // TODO: Re-enable for windows on GitHub Actions,
+  // fullscreen tests seem to hang on GHA specifically
+  it('can fullscreen from in-process iframes', async () => {
     if (process.platform === 'darwin') await once(w, 'enter-full-screen');
 
     const fullscreenChange = once(ipcMain, 'fullscreenChange');
@@ -3313,6 +3357,153 @@ describe('navigator.clipboard.write', () => {
     });
     const clipboard = await writeClipboard();
     expect(clipboard).to.be.undefined();
+  });
+});
+
+describe('paste execCommand', () => {
+  const readClipboard: any = (w: BrowserWindow) => {
+    return w.webContents.executeJavaScript(`
+      new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          resolve('');
+        }, 2000);
+        document.addEventListener('paste', (event) => {
+          clearTimeout(timeout);
+          event.preventDefault();
+          let paste = event.clipboardData.getData("text");
+          resolve(paste);
+        });
+        document.execCommand('paste');
+      });
+    `, true);
+  };
+
+  let ses: Electron.Session;
+  beforeEach(() => {
+    ses = session.fromPartition(`paste-execCommand-${Math.random()}`);
+  });
+
+  afterEach(() => {
+    ses.setPermissionCheckHandler(null);
+    closeAllWindows();
+  });
+
+  it('is disabled by default', async () => {
+    const w: BrowserWindow = new BrowserWindow({});
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    const text = 'Sync Clipboard Disabled by default';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.be.empty();
+    expect(clipboard.readText()).to.equal(text);
+  });
+
+  it('does not execute with default permissions', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        enableDeprecatedPaste: true,
+        session: ses
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    const text = 'Sync Clipboard Disabled by default permissions';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.be.empty();
+    expect(clipboard.readText()).to.equal(text);
+  });
+
+  it('does not execute with permission denied', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        enableDeprecatedPaste: true,
+        session: ses
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    ses.setPermissionCheckHandler((webContents, permission) => {
+      if (permission === 'deprecated-sync-clipboard-read') {
+        return false;
+      }
+      return true;
+    });
+    const text = 'Sync Clipboard Disabled by permission denied';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.be.empty();
+    expect(clipboard.readText()).to.equal(text);
+  });
+
+  it('can trigger paste event when permission is granted', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        enableDeprecatedPaste: true,
+        session: ses
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    ses.setPermissionCheckHandler((webContents, permission) => {
+      if (permission === 'deprecated-sync-clipboard-read') {
+        return true;
+      }
+      return false;
+    });
+    const text = 'Sync Clipboard Test';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(w);
+    expect(paste).to.equal(text);
+  });
+
+  it('can trigger paste event when permission is granted for child windows', async () => {
+    const w: BrowserWindow = new BrowserWindow({
+      webPreferences: {
+        session: ses
+      }
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    w.webContents.setWindowOpenHandler(details => {
+      if (details.url === 'about:blank') {
+        return {
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            webPreferences: {
+              enableDeprecatedPaste: true,
+              session: ses
+            }
+          }
+        };
+      } else {
+        return {
+          action: 'deny'
+        };
+      }
+    });
+    ses.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+      if (requestingOrigin === `${webContents?.opener?.origin}/` &&
+          details.requestingUrl === 'about:blank' &&
+          permission === 'deprecated-sync-clipboard-read') {
+        return true;
+      }
+      return false;
+    });
+    const childPromise = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
+    w.webContents.executeJavaScript('window.open("about:blank")', true);
+    const [childWindow] = await childPromise;
+    expect(childWindow.webContents.opener).to.equal(w.webContents.mainFrame);
+    const text = 'Sync Clipboard Test for Child Window';
+    clipboard.write({
+      text
+    });
+    const paste = await readClipboard(childWindow);
+    expect(paste).to.equal(text);
   });
 });
 
@@ -3700,13 +3891,6 @@ describe('navigator.usb', () => {
     });
 
     await sesWin.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-    server = http.createServer((req, res) => {
-      res.setHeader('Content-Type', 'text/html');
-      res.end('<body>');
-    });
-
-    serverUrl = (await listen(server)).url;
-
     const devices = await getDevices();
     expect(devices).to.be.an('array').that.is.empty();
   });

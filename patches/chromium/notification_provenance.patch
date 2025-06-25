@@ -7,10 +7,10 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index 8cf25ad02f187b60c72d3fc82f17ff7076f63fb7..2143ca591f3d1c389a95ae9ed388ff6070b3d557 100644
+index fb563ef26eb218ffb4115284b048b71101219363..eaf2541cef53b864cf7a986226c40621063c826d 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
-@@ -221,6 +221,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
+@@ -247,6 +247,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
  
  // TODO(awdf): Rename to DisplayNonPersistentNotification (Similar for Close)
  void PlatformNotificationServiceImpl::DisplayNotification(
@@ -19,7 +19,7 @@ index 8cf25ad02f187b60c72d3fc82f17ff7076f63fb7..2143ca591f3d1c389a95ae9ed388ff60
      const GURL& origin,
      const GURL& document_url,
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.h b/chrome/browser/notifications/platform_notification_service_impl.h
-index c173f8a6cde9ab519075987fa451afb63c6580a9..4a1f128d9252a4a858d5ba8c6991bb183de7f064 100644
+index ec5ca87810d590fc95eda2006b8653bb12711b8e..203cd9645523c4f0adf90e78fa3d8f3d0aad54dc 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.h
 +++ b/chrome/browser/notifications/platform_notification_service_impl.h
 @@ -57,6 +57,7 @@ class PlatformNotificationServiceImpl
@@ -31,10 +31,10 @@ index c173f8a6cde9ab519075987fa451afb63c6580a9..4a1f128d9252a4a858d5ba8c6991bb18
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index 027ba5088355441ed2dd1abe563277df7c1d3737..65837dcf0c2cd0bcc0c000fc3fe5eb2ddd6f7b5f 100644
+index 1b3d77e66432b1f7b8c6f87634644776cd9ccb5b..147da7ad0c830c2c8e0f62f9df0e365a14764280 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
-@@ -87,12 +87,14 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
+@@ -85,12 +85,14 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
      BrowserContext* browser_context,
      scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
      RenderProcessHost* render_process_host,
@@ -48,8 +48,8 @@ index 027ba5088355441ed2dd1abe563277df7c1d3737..65837dcf0c2cd0bcc0c000fc3fe5eb2d
 +      render_frame_host_(render_frame_host),
        browser_context_(browser_context),
        service_worker_context_(std::move(service_worker_context)),
-       render_process_host_id_(render_process_host->GetID()),
-@@ -184,7 +186,7 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
+       render_process_host_id_(render_process_host->GetDeprecatedID()),
+@@ -182,7 +184,7 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
        creator_type_);
  
    browser_context_->GetPlatformNotificationService()->DisplayNotification(
@@ -79,10 +79,10 @@ index e7cc73f375ada7ee8715d331c3d372e0f59a0cdf..c0a142bea4a9a30c10dbb30c72fedce9
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index fe56b0bde4480765e5dffe5afb6ddf73ca8d63c8..93de0ace3dabf526d737897d42df35a5c2accab2 100644
+index 49a60e0a0df9785410db8e9ddacaf4b42f60f9f6..8538a06785d8627a1e20e6edeadc7442676ff43a 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-@@ -132,7 +132,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
+@@ -134,7 +134,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
      notification_service_ = std::make_unique<BlinkNotificationServiceImpl>(
          notification_context_.get(), &browser_context_,
          embedded_worker_helper_->context_wrapper(), &render_process_host_,
@@ -92,10 +92,10 @@ index fe56b0bde4480765e5dffe5afb6ddf73ca8d63c8..93de0ace3dabf526d737897d42df35a5
          contents_.get()->GetPrimaryMainFrame()->GetWeakDocumentPtr(),
          RenderProcessHost::NotificationServiceCreatorType::kDocument,
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index a5db92c83aa43375d4b1cdae77c2d5a78f13be29..a8c39d1153bae98259039cebfc1817436f951423 100644
+index b09a71544475f5810e26006d9a2f975176b28bb8..e6c77f27d6a71d1d065e292963072186a257aca6 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
-@@ -282,6 +282,7 @@ void PlatformNotificationContextImpl::Shutdown() {
+@@ -281,6 +281,7 @@ void PlatformNotificationContextImpl::Shutdown() {
  
  void PlatformNotificationContextImpl::CreateService(
      RenderProcessHost* render_process_host,
@@ -103,7 +103,7 @@ index a5db92c83aa43375d4b1cdae77c2d5a78f13be29..a8c39d1153bae98259039cebfc181743
      const blink::StorageKey& storage_key,
      const GURL& document_url,
      const WeakDocumentPtr& weak_document_ptr,
-@@ -290,7 +291,7 @@ void PlatformNotificationContextImpl::CreateService(
+@@ -289,7 +290,7 @@ void PlatformNotificationContextImpl::CreateService(
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    services_.push_back(std::make_unique<BlinkNotificationServiceImpl>(
        this, browser_context_, service_worker_context_, render_process_host,
@@ -113,7 +113,7 @@ index a5db92c83aa43375d4b1cdae77c2d5a78f13be29..a8c39d1153bae98259039cebfc181743
  }
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 05d3a12dd84c7005d46cc73b312f97ef418d96f5..4765de982802541b3efc7211d106acc72518fd0a 100644
+index 5be62a3fb27e37f3c1db6b811172f6dfebe18f61..34349f9832fe4b9a3d48db613a789afb87cb2a68 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -47,6 +47,7 @@ class PlatformNotificationServiceProxy;
@@ -133,10 +133,10 @@ index 05d3a12dd84c7005d46cc73b312f97ef418d96f5..4765de982802541b3efc7211d106acc7
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index f399a33a55a2432f70ab1ca0e3b02e09bda8b130..ffcaf056c52aa7138475bfa72f6bf2180d22f767 100644
+index 0304cc8517039c0ccb63e9aab9532b234ef995f1..b2d6afe09a4c6395a18bee4ea97fa524a51aac85 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2107,7 +2107,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2237,7 +2237,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      case RenderProcessHost::NotificationServiceCreatorType::kSharedWorker:
      case RenderProcessHost::NotificationServiceCreatorType::kDedicatedWorker: {
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -145,7 +145,7 @@ index f399a33a55a2432f70ab1ca0e3b02e09bda8b130..ffcaf056c52aa7138475bfa72f6bf218
            creator_type, std::move(receiver));
        break;
      }
-@@ -2115,7 +2115,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2245,7 +2245,7 @@ void RenderProcessHostImpl::CreateNotificationService(
        CHECK(rfh);
  
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

@@ -7,8 +7,11 @@
 #include <wrl/client.h>
 
 #include "base/win/atl.h"  // Must be before UIAutomationCore.h
+#include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
+#include "base/win/windows_version.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/root_view.h"
@@ -17,7 +20,6 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/resize_utils.h"
-#include "ui/views/widget/native_widget_private.h"
 
 // Must be included after other Windows headers.
 #include <UIAutomationClient.h>
@@ -26,6 +28,53 @@
 namespace electron {
 
 namespace {
+
+void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color) {
+  if (base::win::GetVersion() < base::win::Version::WIN11)
+    return;
+
+  HRESULT result =
+      DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &color, sizeof(color));
+
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set caption color";
+
+  result =
+      DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color, sizeof(color));
+
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set border color";
+}
+
+std::optional<DWORD> GetAccentColor() {
+  base::win::RegKey key;
+  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
+               KEY_READ) != ERROR_SUCCESS) {
+    return std::nullopt;
+  }
+
+  DWORD accent_color = 0;
+  if (key.ReadValueDW(L"AccentColor", &accent_color) != ERROR_SUCCESS) {
+    return std::nullopt;
+  }
+
+  return accent_color;
+}
+
+bool IsAccentColorOnTitleBarsEnabled() {
+  base::win::RegKey key;
+  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
+               KEY_READ) != ERROR_SUCCESS) {
+    return false;
+  }
+
+  DWORD enabled = 0;
+  if (key.ReadValueDW(L"ColorPrevalence", &enabled) != ERROR_SUCCESS) {
+    return false;
+  }
+
+  return enabled != 0;
+}
 
 // Convert Win32 WM_QUERYENDSESSIONS to strings.
 const std::vector<std::string> EndSessionToStringVec(LPARAM end_session_id) {
@@ -222,27 +271,7 @@ bool IsScreenReaderActive() {
 
 }  // namespace
 
-std::set<NativeWindowViews*> NativeWindowViews::forwarding_windows_;
 HHOOK NativeWindowViews::mouse_hook_ = nullptr;
-
-void NativeWindowViews::Maximize() {
-  // Only use Maximize() when window is NOT transparent style
-  if (!transparent()) {
-    if (IsVisible()) {
-      widget()->Maximize();
-    } else {
-      widget()->native_widget_private()->Show(
-          ui::mojom::WindowShowState::kMaximized, gfx::Rect());
-      NotifyWindowShow();
-    }
-  } else {
-    restore_bounds_ = GetBounds();
-    auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
-        GetNativeWindow());
-    SetBounds(display.work_area(), false);
-    NotifyWindowMaximize();
-  }
-}
 
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   const auto command_name = AppCommandToString(command_id);
@@ -299,20 +328,18 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       checked_for_a11y_support_ = true;
 
       auto* const axState = content::BrowserAccessibilityState::GetInstance();
-      if (axState && !axState->IsAccessibleBrowser()) {
-        axState->OnScreenReaderDetected();
+      if (axState && axState->GetAccessibilityMode() != ui::kAXModeComplete) {
+        scoped_accessibility_mode_ =
+            content::BrowserAccessibilityState::GetInstance()
+                ->CreateScopedModeForProcess(ui::kAXModeComplete);
         Browser::Get()->OnAccessibilitySupportChanged();
       }
 
       return false;
     }
     case WM_RBUTTONUP: {
-      if (!has_frame()) {
-        bool prevent_default = false;
-        NotifyWindowSystemContextMenu(GET_X_LPARAM(l_param),
-                                      GET_Y_LPARAM(l_param), &prevent_default);
-        return prevent_default;
-      }
+      if (!has_frame())
+        electron::api::WebContents::SetDisableDraggableRegions(false);
       return false;
     }
     case WM_GETMINMAXINFO: {
@@ -438,10 +465,16 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       return false;
     }
     case WM_CONTEXTMENU: {
-      bool prevent_default = false;
-      NotifyWindowSystemContextMenu(GET_X_LPARAM(l_param),
-                                    GET_Y_LPARAM(l_param), &prevent_default);
-      return prevent_default;
+      // We don't want to trigger system-context-menu here if we have a
+      // frameless window as it'll already be emitted in
+      // ElectronDesktopWindowTreeHostWin::HandleMouseEvent.
+      if (has_frame()) {
+        bool prevent_default = false;
+        NotifyWindowSystemContextMenu(GET_X_LPARAM(l_param),
+                                      GET_Y_LPARAM(l_param), &prevent_default);
+        return prevent_default;
+      }
+      return false;
     }
     case WM_SYSCOMMAND: {
       // Mask is needed to account for double clicking title bar to maximize
@@ -462,6 +495,19 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         EnableMenuItem(menu, SC_RESTORE,
                        MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
         return true;
+      }
+      return false;
+    }
+    case WM_DWMCOLORIZATIONCOLORCHANGED: {
+      UpdateWindowAccentColor();
+      return false;
+    }
+    case WM_SETTINGCHANGE: {
+      if (l_param) {
+        const wchar_t* setting_name = reinterpret_cast<const wchar_t*>(l_param);
+        std::wstring setting_str(setting_name);
+        if (setting_str == L"ImmersiveColorSet")
+          UpdateWindowAccentColor();
       }
       return false;
     }
@@ -524,6 +570,35 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   }
 }
 
+void NativeWindowViews::UpdateWindowAccentColor() {
+  if (base::win::GetVersion() < base::win::Version::WIN11)
+    return;
+
+  if (!IsAccentColorOnTitleBarsEnabled())
+    return;
+
+  COLORREF border_color;
+  if (std::holds_alternative<bool>(accent_color_)) {
+    // Don't set accent color if the user has disabled it.
+    if (!std::get<bool>(accent_color_))
+      return;
+
+    std::optional<DWORD> accent_color = GetAccentColor();
+    if (!accent_color.has_value())
+      return;
+
+    border_color =
+        RGB(GetRValue(accent_color.value()), GetGValue(accent_color.value()),
+            GetBValue(accent_color.value()));
+  } else {
+    SkColor color = std::get<SkColor>(accent_color_);
+    border_color =
+        RGB(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color));
+  }
+
+  SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), border_color);
+}
+
 void NativeWindowViews::ResetWindowControls() {
   // If a given window was minimized and has since been
   // unminimized (restored/maximized), ensure the WCO buttons
@@ -533,6 +608,24 @@ void NativeWindowViews::ResetWindowControls() {
     auto* frame_view = static_cast<WinFrameView*>(ncv->frame_view());
     frame_view->caption_button_container()->ResetWindowControls();
   }
+}
+
+// Windows with |backgroundMaterial| expand to the same dimensions and
+// placement as the display to approximate maximization - unless we remove
+// rounded corners there will be a gap between the window and the display
+// at the corners noticable to users.
+void NativeWindowViews::SetRoundedCorners(bool rounded) {
+  // DWMWA_WINDOW_CORNER_PREFERENCE is supported after Windows 11 Build 22000.
+  if (base::win::GetVersion() < base::win::Version::WIN11)
+    return;
+
+  DWM_WINDOW_CORNER_PREFERENCE round_pref =
+      rounded ? DWMWCP_ROUND : DWMWCP_DONOTROUND;
+  HRESULT result = DwmSetWindowAttribute(GetAcceleratedWidget(),
+                                         DWMWA_WINDOW_CORNER_PREFERENCE,
+                                         &round_pref, sizeof(round_pref));
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set rounded corners to " << rounded;
 }
 
 void NativeWindowViews::SetForwardMouseMessages(bool forward) {

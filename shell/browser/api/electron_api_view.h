@@ -21,8 +21,6 @@ class Handle;
 
 namespace electron::api {
 
-using ChildPair = std::pair<raw_ptr<views::View>, v8::Global<v8::Object>>;
-
 class View : public gin_helper::EventEmitter<View>,
              private views::ViewObserver {
  public:
@@ -39,18 +37,13 @@ class View : public gin_helper::EventEmitter<View>,
   void RemoveChildView(gin::Handle<View> child);
 
   void SetBounds(const gfx::Rect& bounds);
-  gfx::Rect GetBounds();
+  gfx::Rect GetBounds() const;
   void SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value);
   std::vector<v8::Local<v8::Value>> GetChildren();
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
   void SetVisible(bool visible);
-
-  // views::ViewObserver
-  void OnViewBoundsChanged(views::View* observed_view) override;
-  void OnViewIsDeleting(views::View* observed_view) override;
-  void OnChildViewRemoved(views::View* observed_view,
-                          views::View* child) override;
+  bool GetVisible() const;
 
   views::View* view() const { return view_; }
   std::optional<int> border_radius() const { return border_radius_; }
@@ -68,6 +61,14 @@ class View : public gin_helper::EventEmitter<View>,
   void set_delete_view(bool should) { delete_view_ = should; }
 
  private:
+  using ChildPair = std::pair<raw_ptr<views::View>, v8::Global<v8::Object>>;
+
+  // views::ViewObserver
+  void OnViewBoundsChanged(views::View* observed_view) override;
+  void OnViewIsDeleting(views::View* observed_view) override;
+  void OnChildViewRemoved(views::View* observed_view,
+                          views::View* child) override;
+
   void ApplyBorderRadius();
   void ReorderChildView(gin::Handle<View> child, size_t index);
 

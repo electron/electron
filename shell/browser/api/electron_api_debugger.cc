@@ -8,6 +8,7 @@
 #include <string_view>
 #include <utility>
 
+#include "base/containers/span.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
@@ -44,8 +45,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  std::string_view message_str(reinterpret_cast<const char*>(message.data()),
-                               message.size());
+  const std::string_view message_str = base::as_string_view(message);
   std::optional<base::Value> parsed_message = base::JSONReader::Read(
       message_str, base::JSON_REPLACE_INVALID_CHARACTERS);
   if (!parsed_message || !parsed_message->is_dict())
@@ -81,7 +81,11 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
 
 void Debugger::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
                                       content::RenderFrameHost* new_rfh) {
-  if (agent_host_) {
+  // ConnectWebContents uses the primary main frame of the webContents,
+  // so if the new_rfh is not the primary main frame, we don't want to
+  // reconnect otherwise we'll end up trying to reconnect to a RenderFrameHost
+  // that already has a DevToolsAgentHost associated with it.
+  if (agent_host_ && new_rfh->IsInPrimaryMainFrame()) {
     agent_host_->DisconnectWebContents();
     auto* web_contents = content::WebContents::FromRenderFrameHost(new_rfh);
     agent_host_->ConnectWebContents(web_contents);
@@ -162,8 +166,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
   }
 
   const auto json_args = base::WriteJson(request).value_or("");
-  agent_host_->DispatchProtocolMessage(
-      this, base::as_bytes(base::make_span(json_args)));
+  agent_host_->DispatchProtocolMessage(this, base::as_byte_span(json_args));
 
   return handle;
 }

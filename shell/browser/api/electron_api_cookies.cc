@@ -4,10 +4,12 @@
 
 #include "shell/browser/api/electron_api_cookies.h"
 
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
 
+#include "base/containers/fixed_flat_map.h"
 #include "base/time/time.h"
 #include "base/values.h"
 #include "content/public/browser/browser_context.h"
@@ -100,27 +102,6 @@ namespace electron::api {
 
 namespace {
 
-// Returns whether |domain| matches |filter|.
-bool MatchesDomain(std::string filter, const std::string& domain) {
-  // Add a leading '.' character to the filter domain if it doesn't exist.
-  if (net::cookie_util::DomainIsHostOnly(filter))
-    filter.insert(0, ".");
-
-  std::string sub_domain(domain);
-  // Strip any leading '.' character from the input cookie domain.
-  if (!net::cookie_util::DomainIsHostOnly(sub_domain))
-    sub_domain = sub_domain.substr(1);
-
-  // Now check whether the domain argument is a subdomain of the filter domain.
-  for (sub_domain.insert(0, "."); sub_domain.length() >= filter.length();) {
-    if (sub_domain == filter)
-      return true;
-    const size_t next_dot = sub_domain.find('.', 1);  // Skip over leading dot.
-    sub_domain.erase(0, next_dot);
-  }
-  return false;
-}
-
 // Returns whether |cookie| matches |filter|.
 bool MatchesCookie(const base::Value::Dict& filter,
                    const net::CanonicalCookie& cookie) {
@@ -129,8 +110,7 @@ bool MatchesCookie(const base::Value::Dict& filter,
     return false;
   if ((str = filter.FindString("path")) && *str != cookie.Path())
     return false;
-  if ((str = filter.FindString("domain")) &&
-      !MatchesDomain(*str, cookie.Domain()))
+  if ((str = filter.FindString("domain")) && !cookie.IsDomainMatch(*str))
     return false;
   std::optional<bool> secure_filter = filter.FindBool("secure");
   if (secure_filter && *secure_filter != cookie.SecureAttribute())
@@ -176,94 +156,98 @@ base::Time ParseTimeProperty(const std::optional<double>& value) {
 
 const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
   // See net/cookies/cookie_inclusion_status.h for cookie error descriptions.
-  constexpr std::array<
-      std::pair<net::CookieInclusionStatus::ExclusionReason, std::string_view>,
-      net::CookieInclusionStatus::ExclusionReason::NUM_EXCLUSION_REASONS>
-      exclusion_reasons = {
-          {{net::CookieInclusionStatus::EXCLUDE_HTTP_ONLY,
+  using Reason = net::CookieInclusionStatus::ExclusionReason;
+  static constexpr auto Reasons =
+      base::MakeFixedFlatMap<Reason, std::string_view>(
+          {{Reason::EXCLUDE_UNKNOWN_ERROR, "Unknown error"},
+           {Reason::EXCLUDE_HTTP_ONLY,
             "The cookie was HttpOnly, but the attempted access was through a "
             "non-HTTP API."},
-           {net::CookieInclusionStatus::EXCLUDE_SECURE_ONLY,
+           {Reason::EXCLUDE_SECURE_ONLY,
             "The cookie was Secure, but the URL was not allowed to access "
             "Secure cookies."},
-           {net::CookieInclusionStatus::EXCLUDE_DOMAIN_MISMATCH,
+           {Reason::EXCLUDE_DOMAIN_MISMATCH,
             "The cookie's domain attribute did not match the domain of the URL "
             "attempting access."},
-           {net::CookieInclusionStatus::EXCLUDE_NOT_ON_PATH,
+           {Reason::EXCLUDE_NOT_ON_PATH,
             "The cookie's path attribute did not match the path of the URL "
             "attempting access."},
-           {net::CookieInclusionStatus::EXCLUDE_SAMESITE_STRICT,
+           {Reason::EXCLUDE_SAMESITE_STRICT,
             "The cookie had SameSite=Strict, and the attempted access did not "
             "have an appropriate SameSiteCookieContext"},
-           {net::CookieInclusionStatus::EXCLUDE_SAMESITE_LAX,
+           {Reason::EXCLUDE_SAMESITE_LAX,
             "The cookie had SameSite=Lax, and the attempted access did not "
             "have "
             "an appropriate SameSiteCookieContext"},
-           {net::CookieInclusionStatus::
-                EXCLUDE_SAMESITE_UNSPECIFIED_TREATED_AS_LAX,
+           {Reason::EXCLUDE_SAMESITE_UNSPECIFIED_TREATED_AS_LAX,
             "The cookie did not specify a SameSite attribute, and therefore "
-            "was "
-            "treated as if it were SameSite=Lax, and the attempted access did "
-            "not have an appropriate SameSiteCookieContext."},
-           {net::CookieInclusionStatus::EXCLUDE_SAMESITE_NONE_INSECURE,
+            "was treated as if it were SameSite=Lax, and the attempted "
+            "access did not have an appropriate SameSiteCookieContext."},
+           {Reason::EXCLUDE_SAMESITE_NONE_INSECURE,
             "The cookie specified SameSite=None, but it was not Secure."},
-           {net::CookieInclusionStatus::EXCLUDE_USER_PREFERENCES,
+           {Reason::EXCLUDE_USER_PREFERENCES,
             "Caller did not allow access to the cookie."},
-           {net::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE,
+           {Reason::EXCLUDE_FAILURE_TO_STORE,
             "The cookie was malformed and could not be stored"},
-           {net::CookieInclusionStatus::EXCLUDE_NONCOOKIEABLE_SCHEME,
+           {Reason::EXCLUDE_NONCOOKIEABLE_SCHEME,
             "Attempted to set a cookie from a scheme that does not support "
             "cookies."},
-           {net::CookieInclusionStatus::EXCLUDE_OVERWRITE_SECURE,
+           {Reason::EXCLUDE_OVERWRITE_SECURE,
             "The cookie would have overwritten a Secure cookie, and was not "
             "allowed to do so."},
-           {net::CookieInclusionStatus::EXCLUDE_OVERWRITE_HTTP_ONLY,
+           {Reason::EXCLUDE_OVERWRITE_HTTP_ONLY,
             "The cookie would have overwritten an HttpOnly cookie, and was not "
             "allowed to do so."},
-           {net::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN,
+           {Reason::EXCLUDE_INVALID_DOMAIN,
             "The cookie was set with an invalid Domain attribute."},
-           {net::CookieInclusionStatus::EXCLUDE_INVALID_PREFIX,
+           {Reason::EXCLUDE_INVALID_PREFIX,
             "The cookie was set with an invalid __Host- or __Secure- prefix."},
-           {net::CookieInclusionStatus::EXCLUDE_INVALID_PARTITIONED,
+           {Reason::EXCLUDE_INVALID_PARTITIONED,
             "Cookie was set with an invalid Partitioned attribute, which is "
             "only valid if the cookie has a __Host- prefix."},
-           {net::CookieInclusionStatus::
-                EXCLUDE_NAME_VALUE_PAIR_EXCEEDS_MAX_SIZE,
+           {Reason::EXCLUDE_NAME_VALUE_PAIR_EXCEEDS_MAX_SIZE,
             "The cookie exceeded the name/value pair size limit."},
-           {net::CookieInclusionStatus::
-                EXCLUDE_ATTRIBUTE_VALUE_EXCEEDS_MAX_SIZE,
+           {Reason::EXCLUDE_ATTRIBUTE_VALUE_EXCEEDS_MAX_SIZE,
             "Cookie exceeded the attribute size limit."},
-           {net::CookieInclusionStatus::EXCLUDE_DOMAIN_NON_ASCII,
+           {Reason::EXCLUDE_DOMAIN_NON_ASCII,
             "The cookie was set with a Domain attribute containing non ASCII "
             "characters."},
-           {net::CookieInclusionStatus::
-                EXCLUDE_THIRD_PARTY_BLOCKED_WITHIN_FIRST_PARTY_SET,
+           {Reason::EXCLUDE_THIRD_PARTY_BLOCKED_WITHIN_FIRST_PARTY_SET,
             "The cookie is blocked by third-party cookie blocking but the two "
             "sites are in the same First-Party Set"},
-           {net::CookieInclusionStatus::EXCLUDE_PORT_MISMATCH,
+           {Reason::EXCLUDE_PORT_MISMATCH,
             "The cookie's source_port did not match the port of the request."},
-           {net::CookieInclusionStatus::EXCLUDE_SCHEME_MISMATCH,
+           {Reason::EXCLUDE_SCHEME_MISMATCH,
             "The cookie's source_scheme did not match the scheme of the "
             "request."},
-           {net::CookieInclusionStatus::EXCLUDE_SHADOWING_DOMAIN,
+           {Reason::EXCLUDE_SHADOWING_DOMAIN,
             "The cookie is a domain cookie and has the same name as an origin "
             "cookie on this origin."},
-           {net::CookieInclusionStatus::EXCLUDE_DISALLOWED_CHARACTER,
+           {Reason::EXCLUDE_DISALLOWED_CHARACTER,
             "The cookie contains ASCII control characters"},
-           {net::CookieInclusionStatus::EXCLUDE_THIRD_PARTY_PHASEOUT,
+           {Reason::EXCLUDE_THIRD_PARTY_PHASEOUT,
             "The cookie is blocked for third-party cookie phaseout."},
-           {net::CookieInclusionStatus::EXCLUDE_NO_COOKIE_CONTENT,
-            "The cookie contains no content or only whitespace."}}};
+           {Reason::EXCLUDE_NO_COOKIE_CONTENT,
+            "The cookie contains no content or only whitespace."},
+           {Reason::EXCLUDE_ANONYMOUS_CONTEXT,
+            "The cookie is unpartitioned and being accessed from an anonymous "
+            "context."}});
+  static_assert(
+      Reasons.size() ==
+          net::CookieInclusionStatus::ExclusionReasonBitset::kValueCount,
+      "Please ensure all ExclusionReason variants are enumerated in "
+      "GetDebugString");
 
-  std::string reason = "Failed to set cookie - ";
-  for (const auto& [val, str] : exclusion_reasons) {
+  std::ostringstream reason;
+  reason << "Failed to set cookie - ";
+  for (const auto& [val, str] : Reasons) {
     if (status.HasExclusionReason(val)) {
-      reason += str;
+      reason << str;
     }
   }
 
-  reason += status.GetDebugString();
-  return reason;
+  reason << status.GetDebugString();
+  return reason.str();
 }
 
 std::string StringToCookieSameSite(const std::string* str_ptr,
@@ -385,9 +369,11 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
 
   GURL url(url_string ? *url_string : "");
   if (!url.is_valid()) {
+    net::CookieInclusionStatus cookie_inclusion_status;
+    cookie_inclusion_status.AddExclusionReason(
+        net::CookieInclusionStatus::ExclusionReason::EXCLUDE_INVALID_DOMAIN);
     promise.RejectWithErrorMessage(
-        InclusionStatusToString(net::CookieInclusionStatus(
-            net::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN)));
+        InclusionStatusToString(cookie_inclusion_status));
     return handle;
   }
 
@@ -401,11 +387,11 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       &status);
 
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
+    net::CookieInclusionStatus cookie_inclusion_status;
+    cookie_inclusion_status.AddExclusionReason(
+        net::CookieInclusionStatus::ExclusionReason::EXCLUDE_FAILURE_TO_STORE);
     promise.RejectWithErrorMessage(InclusionStatusToString(
-        !status.IsInclude()
-            ? status
-            : net::CookieInclusionStatus(
-                  net::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE)));
+        !status.IsInclude() ? status : cookie_inclusion_status));
     return handle;
   }
 

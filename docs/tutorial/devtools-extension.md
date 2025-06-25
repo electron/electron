@@ -35,15 +35,16 @@ Using the [React Developer Tools][react-devtools] as an example:
 
    ```js
    const { app, session } = require('electron')
-   const path = require('node:path')
+   
    const os = require('node:os')
-
+   const path = require('node:path')
+   
    // on macOS
    const reactDevToolsPath = path.join(
      os.homedir(),
      '/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/4.9.0_0'
    )
-
+   
    app.whenReady().then(async () => {
      await session.defaultSession.loadExtension(reactDevToolsPath)
    })
@@ -96,9 +97,9 @@ of the extension is not working as expected.
 [devtools-extension]: https://developer.chrome.com/extensions/devtools
 [session]: ../api/session.md
 [react-devtools]: https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi
-[load-extension]: ../api/session.md#sesloadextensionpath-options
+[load-extension]: ../api/extensions-api.md#extensionsloadextensionpath-options
 [extension-structure]: ../api/structures/extension.md
-[remove-extension]: ../api/session.md#sesremoveextensionextensionid
+[remove-extension]: ../api/extensions-api.md#extensionsremoveextensionextensionid
 [electron-devtools-installer]: https://github.com/MarshallOfSound/electron-devtools-installer
 [supported-extension-apis]: ../api/extensions.md
 [issue-tracker]: https://github.com/electron/electron/issues

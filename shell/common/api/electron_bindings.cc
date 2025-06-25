@@ -22,7 +22,6 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/locker.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
@@ -235,13 +234,11 @@ void ElectronBindings::DidReceiveMemoryDump(
     base::ProcessId target_pid,
     bool success,
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
+  DCHECK(electron::IsBrowserProcess());
   v8::Isolate* isolate = promise.isolate();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> local_context =
       v8::Local<v8::Context>::New(isolate, context);
-  gin_helper::MicrotasksScope microtasks_scope{
-      isolate, local_context->GetMicrotaskQueue(), true,
-      v8::MicrotasksScope::kRunMicrotasks};
   v8::Context::Scope context_scope(local_context);
 
   if (!success) {

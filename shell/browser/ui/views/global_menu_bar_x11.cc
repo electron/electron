@@ -9,7 +9,6 @@
 
 #include "base/functional/bind.h"
 #include "base/strings/utf_string_conversions.h"
-#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/global_menu_bar_registrar_x11.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
@@ -29,23 +28,23 @@ using dbusmenu_menuitem_new_func = DbusmenuMenuitem* (*)();
 using dbusmenu_menuitem_new_with_id_func = DbusmenuMenuitem* (*)(int id);
 
 using dbusmenu_menuitem_get_id_func = int (*)(DbusmenuMenuitem* item);
-using dbusmenu_menuitem_get_children_func = GList* (*)(DbusmenuMenuitem* item);
+using dbusmenu_menuitem_get_children_func = GList* (*)(DbusmenuMenuitem * item);
 using dbusmenu_menuitem_child_append_func =
-    DbusmenuMenuitem* (*)(DbusmenuMenuitem* parent, DbusmenuMenuitem* child);
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * parent, DbusmenuMenuitem* child);
 using dbusmenu_menuitem_property_set_func =
-    DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
                           const char* property,
                           const char* value);
 using dbusmenu_menuitem_property_set_variant_func =
-    DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
                           const char* property,
                           GVariant* value);
 using dbusmenu_menuitem_property_set_bool_func =
-    DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
                           const char* property,
                           bool value);
 using dbusmenu_menuitem_property_set_int_func =
-    DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
                           const char* property,
                           int value);
 
@@ -173,10 +172,8 @@ std::string GetMenuModelStatus(ElectronMenuModel* model) {
 
 }  // namespace
 
-GlobalMenuBarX11::GlobalMenuBarX11(NativeWindowViews* window)
-    : window_(window),
-      xwindow_(static_cast<x11::Window>(
-          window_->GetNativeWindow()->GetHost()->GetAcceleratedWidget())) {
+GlobalMenuBarX11::GlobalMenuBarX11(gfx::AcceleratedWidget accelerated_widget)
+    : xwindow_(static_cast<x11::Window>(accelerated_widget)) {
   EnsureMethodsLoaded();
   if (server_new)
     InitServer(xwindow_);

@@ -44,7 +44,7 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
   void SetListeningForShutdown(bool);
 #endif
 
-  // Called by native calles.
+  // Called by native callers.
   bool ShouldShutdown();
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)

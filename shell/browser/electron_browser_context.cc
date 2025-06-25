@@ -12,6 +12,7 @@
 #include "base/barrier_closure.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
+#include "base/containers/to_vector.h"
 #include "base/files/file_path.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
@@ -49,6 +50,7 @@
 #include "shell/browser/electron_download_manager_delegate.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/file_system_access/file_system_access_permission_context_factory.h"
+#include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/serial/serial_chooser_context.h"
@@ -250,12 +252,8 @@ std::string MakePartitionName(const std::string& input) {
 bool DoesDeviceMatch(const base::Value& device,
                      const base::Value& device_to_compare,
                      const blink::PermissionType permission_type) {
-  if (permission_type ==
-          static_cast<blink::PermissionType>(
-              WebContentsPermissionHelper::PermissionType::HID) ||
-      permission_type ==
-          static_cast<blink::PermissionType>(
-              WebContentsPermissionHelper::PermissionType::USB)) {
+  if (permission_type == blink::PermissionType::HID ||
+      permission_type == blink::PermissionType::USB) {
     if (device.GetDict().FindInt(kDeviceVendorIdKey) !=
             device_to_compare.GetDict().FindInt(kDeviceVendorIdKey) ||
         device.GetDict().FindInt(kDeviceProductIdKey) !=
@@ -271,9 +269,7 @@ bool DoesDeviceMatch(const base::Value& device,
     if (serial_number && device_serial_number &&
         *device_serial_number == *serial_number)
       return true;
-  } else if (permission_type ==
-             static_cast<blink::PermissionType>(
-                 WebContentsPermissionHelper::PermissionType::SERIAL)) {
+  } else if (permission_type == blink::PermissionType::SERIAL) {
 #if BUILDFLAG(IS_WIN)
     const auto* instance_id = device.GetDict().FindString(kDeviceInstanceIdKey);
     const auto* port_instance_id =
@@ -308,14 +304,53 @@ bool DoesDeviceMatch(const base::Value& device,
   return false;
 }
 
+// partition_id => browser_context
+struct PartitionKey {
+  PartitionKey(const std::string_view partition, bool in_memory)
+      : type_{Type::Partition}, location_{partition}, in_memory_{in_memory} {}
+
+  explicit PartitionKey(const base::FilePath& file_path)
+      : type_{Type::Path},
+        location_{file_path.AsUTF8Unsafe()},
+        in_memory_{false} {}
+
+  friend auto operator<=>(const PartitionKey&, const PartitionKey&) = default;
+
+ private:
+  enum class Type { Partition, Path };
+
+  Type type_;
+  std::string location_;
+  bool in_memory_;
+};
+
+[[nodiscard]] auto& ContextMap() {
+  static base::NoDestructor<
+      std::map<PartitionKey, std::unique_ptr<ElectronBrowserContext>>>
+      map;
+  return *map;
+}
+
 }  // namespace
 
 // static
-ElectronBrowserContext::BrowserContextMap&
-ElectronBrowserContext::browser_context_map() {
-  static base::NoDestructor<ElectronBrowserContext::BrowserContextMap>
-      browser_context_map;
-  return *browser_context_map;
+std::vector<ElectronBrowserContext*> ElectronBrowserContext::BrowserContexts() {
+  return base::ToVector(ContextMap(),
+                        [](auto& iter) { return iter.second.get(); });
+}
+
+bool ElectronBrowserContext::IsValidContext(const void* context) {
+  return std::ranges::any_of(ContextMap(), [context](const auto& iter) {
+    return iter.second.get() == context;
+  });
+}
+
+// static
+void ElectronBrowserContext::DestroyAllContexts() {
+  auto& map = ContextMap();
+  // Avoid UAF by destroying the default context last. See ba629e3 for info.
+  const auto extracted = map.extract(PartitionKey{"", false});
+  map.clear();
 }
 
 ElectronBrowserContext::ElectronBrowserContext(
@@ -365,10 +400,10 @@ ElectronBrowserContext::ElectronBrowserContext(
     BrowserContextDependencyManager::GetInstance()
         ->CreateBrowserContextServices(this);
 
-    extension_system_ = static_cast<extensions::ElectronExtensionSystem*>(
+    auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
         extensions::ExtensionSystem::Get(this));
-    extension_system_->InitForRegularProfile(true /* extensions_enabled */);
-    extension_system_->FinishInitialization();
+    extension_system->InitForRegularProfile(true /* extensions_enabled */);
+    extension_system->FinishInitialization();
   }
 #endif
 }
@@ -376,11 +411,6 @@ ElectronBrowserContext::ElectronBrowserContext(
 ElectronBrowserContext::~ElectronBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   NotifyWillBeDestroyed();
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // the DestroyBrowserContextServices() call below frees this.
-  extension_system_ = nullptr;
-#endif
 
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
@@ -458,6 +488,10 @@ void ElectronBrowserContext::InitPrefs() {
     }
   }
 #endif
+
+  // Unique uuid for global shortcuts.
+  registry->RegisterStringPref(electron::kElectronGlobalShortcutsUuid,
+                               std::string());
 }
 
 void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {
@@ -689,8 +723,8 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
       blink::MediaStreamDevice video_device(
           request.video_type,
-          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
-                                             rfh->GetRoutingID())
+          content::WebContentsMediaCaptureId(
+              rfh->GetProcess()->GetDeprecatedID(), rfh->GetRoutingID())
               .ToString(),
           base::UTF16ToUTF8(web_contents->GetTitle()));
       video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
@@ -724,15 +758,15 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &rfh)) {
-      bool enable_local_echo = false;
-      result_dict.Get("enableLocalEcho", &enable_local_echo);
-      bool disable_local_echo = !enable_local_echo;
+      const bool enable_local_echo =
+          result_dict.ValueOrDefault("enableLocalEcho", false);
+      const bool disable_local_echo = !enable_local_echo;
       auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
       blink::MediaStreamDevice audio_device(
           request.audio_type,
-          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
-                                             rfh->GetRoutingID(),
-                                             disable_local_echo)
+          content::WebContentsMediaCaptureId(
+              rfh->GetProcess()->GetDeprecatedID(), rfh->GetRoutingID(),
+              disable_local_echo)
               .ToString(),
           "Tab audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
@@ -834,34 +868,29 @@ ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
     base::Value::Dict options) {
-  PartitionKey key(partition, in_memory);
-  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
-  if (browser_context) {
-    return browser_context;
+  auto& context = ContextMap()[PartitionKey(partition, in_memory)];
+  if (!context) {
+    context.reset(new ElectronBrowserContext{std::cref(partition), in_memory,
+                                             std::move(options)});
   }
+  return context.get();
+}
 
-  auto* new_context = new ElectronBrowserContext(std::cref(partition),
-                                                 in_memory, std::move(options));
-  browser_context_map()[key] =
-      std::unique_ptr<ElectronBrowserContext>(new_context);
-  return new_context;
+// static
+ElectronBrowserContext* ElectronBrowserContext::GetDefaultBrowserContext(
+    base::Value::Dict options) {
+  return ElectronBrowserContext::From("", false, std::move(options));
 }
 
 ElectronBrowserContext* ElectronBrowserContext::FromPath(
     const base::FilePath& path,
     base::Value::Dict options) {
-  PartitionKey key(path);
-
-  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
-  if (browser_context) {
-    return browser_context;
+  auto& context = ContextMap()[PartitionKey(path)];
+  if (!context) {
+    context.reset(
+        new ElectronBrowserContext{std::cref(path), false, std::move(options)});
   }
-
-  auto* new_context =
-      new ElectronBrowserContext(std::cref(path), false, std::move(options));
-  browser_context_map()[key] =
-      std::unique_ptr<ElectronBrowserContext>(new_context);
-  return new_context;
+  return context.get();
 }
 
 }  // namespace electron

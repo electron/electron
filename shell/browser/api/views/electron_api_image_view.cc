@@ -14,13 +14,13 @@
 namespace electron::api {
 
 ImageView::ImageView() : View(new views::ImageView()) {
-  view()->set_owned_by_client();
+  view()->set_owned_by_client(views::View::OwnedByClientPassKey{});
 }
 
 ImageView::~ImageView() = default;
 
 void ImageView::SetImage(const gfx::Image& image) {
-  image_view()->SetImage(image.AsImageSkia());
+  image_view()->SetImage(ui::ImageModel::FromImage(image));
 }
 
 // static

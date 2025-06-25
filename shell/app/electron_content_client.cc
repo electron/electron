@@ -6,7 +6,6 @@
 
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 #include "base/command_line.h"
@@ -25,8 +24,6 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "url/url_constants.h"
-// In SHARED_INTERMEDIATE_DIR.
-#include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
 #if BUILDFLAG(ENABLE_WIDEVINE)
 #include "base/native_library.h"

@@ -428,6 +428,47 @@ describe('webFrameMain module', () => {
       crossOriginPromise = w.webContents.loadURL(server.crossOriginUrl);
       await expect(unloadPromise).to.eventually.be.fulfilled();
     });
+
+    // Skip test as we don't have an offline repro yet
+    it.skip('should not crash due to dangling frames', async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(subframesPath, 'preload.js')
+        }
+      });
+
+      // Persist frame references so WebFrameMain is initialized for each
+      const frames: Electron.WebFrameMain[] = [];
+      w.webContents.on('frame-created', (_event, details) => {
+        console.log('frame-created');
+        frames.push(details.frame!);
+      });
+      w.webContents.on('will-frame-navigate', (event) => {
+        console.log('will-frame-navigate', event);
+        frames.push(event.frame!);
+      });
+
+      // Load document with several speculative subframes
+      await w.webContents.loadURL('https://www.ezcater.com/delivery/pizza-catering');
+
+      // Test that no frame will crash due to a dangling render frame host
+      const crashTest = () => {
+        for (const frame of frames) {
+          expect(frame._lifecycleStateForTesting).to.not.equal('Speculative');
+          try {
+            expect(frame.url).to.be.a('string');
+          } catch {
+            // Exceptions from non-dangling frames are expected
+          }
+        }
+      };
+
+      crashTest();
+      w.webContents.destroy();
+      await setTimeout(1);
+      crashTest();
+    });
   });
 
   describe('webFrameMain.fromId', () => {
@@ -495,6 +536,9 @@ describe('webFrameMain module', () => {
 
     it('is not emitted upon cross-origin navigation', async () => {
       const server = await createServer();
+      defer(() => {
+        server.server.close();
+      });
 
       const w = new BrowserWindow({ show: false });
       await w.webContents.loadURL(server.url);

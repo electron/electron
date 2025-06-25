@@ -155,7 +155,7 @@ class JSLayoutManager : public views::LayoutManagerBase {
  public:
   explicit JSLayoutManager(LayoutCallback layout_callback)
       : layout_callback_(std::move(layout_callback)) {}
-  ~JSLayoutManager() override {}
+  ~JSLayoutManager() override = default;
 
   // views::LayoutManagerBase
   views::ProposedLayout CalculateProposedLayout(
@@ -170,7 +170,7 @@ class JSLayoutManager : public views::LayoutManagerBase {
 };
 
 View::View(views::View* view) : view_(view) {
-  view_->set_owned_by_client();
+  view_->set_owned_by_client(views::View::OwnedByClientPassKey{});
   view_->AddObserver(this);
 }
 
@@ -215,6 +215,12 @@ void View::AddChildViewAt(gin::Handle<View> child,
   // has a View, possibly a wrapper view around the underlying platform View.
   if (!view_)
     return;
+
+  if (!child->view()) {
+    gin_helper::ErrorThrower(isolate()).ThrowError(
+        "Can't add a destroyed child view to a parent view");
+    return;
+  }
 
   // This will CHECK and crash in View::AddChildViewAtImpl if not handled here.
   if (view_ == child->view()) {
@@ -280,7 +286,7 @@ void View::SetBounds(const gfx::Rect& bounds) {
   view_->SetBoundsRect(bounds);
 }
 
-gfx::Rect View::GetBounds() {
+gfx::Rect View::GetBounds() const {
   if (!view_)
     return {};
   return view_->bounds();
@@ -346,7 +352,8 @@ std::vector<v8::Local<v8::Value>> View::GetChildren() {
 void View::SetBackgroundColor(std::optional<WrappedSkColor> color) {
   if (!view_)
     return;
-  view_->SetBackground(color ? views::CreateSolidBackground(*color) : nullptr);
+  view_->SetBackground(color ? views::CreateSolidBackground({*color})
+                             : nullptr);
 }
 
 void View::SetBorderRadius(int radius) {
@@ -385,6 +392,10 @@ void View::SetVisible(bool visible) {
   if (!view_)
     return;
   view_->SetVisible(visible);
+}
+
+bool View::GetVisible() const {
+  return view_ ? view_->GetVisible() : false;
 }
 
 void View::OnViewBoundsChanged(views::View* observed_view) {
@@ -445,7 +456,8 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBackgroundColor", &View::SetBackgroundColor)
       .SetMethod("setBorderRadius", &View::SetBorderRadius)
       .SetMethod("setLayout", &View::SetLayout)
-      .SetMethod("setVisible", &View::SetVisible);
+      .SetMethod("setVisible", &View::SetVisible)
+      .SetMethod("getVisible", &View::GetVisible);
 }
 
 }  // namespace electron::api

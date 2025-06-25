@@ -10,6 +10,7 @@ PLATFORM = {
   'linux': 'linux',
   'linux2': 'linux',
   'win32': 'win32',
+  'win': 'win32',
 }[sys.platform]
 
 verbose_mode = False
@@ -26,6 +27,8 @@ def get_target_arch():
   arch = os.environ.get('TARGET_ARCH')
   if arch is None:
     return 'x64'
+  if arch == 'x86':
+    return 'ia32'
   return arch
 
 def set_verbose_mode(mode):

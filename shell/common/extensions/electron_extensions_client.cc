@@ -9,7 +9,6 @@
 
 #include "base/no_destructor.h"
 #include "components/version_info/version_info.h"
-#include "content/public/common/user_agent.h"
 #include "extensions/common/core_extensions_api_provider.h"
 #include "extensions/common/extension_urls.h"
 #include "extensions/common/features/simple_feature.h"
@@ -48,8 +47,7 @@ class ElectronPermissionMessageProvider
       const extensions::PermissionSet& requested_permissions,
       extensions::Manifest::Type extension_type) const override {
     // Ensure we implement this before shipping.
-    CHECK(false);
-    return false;
+    NOTREACHED();
   }
 
   [[nodiscard]] extensions::PermissionIDSet GetAllPermissionIDs(

@@ -11,6 +11,7 @@
 #include "base/at_exit.h"
 #include "base/command_line.h"
 #include "base/i18n/icu_util.h"
+#include "base/notreached.h"
 #include "content/public/app/content_main.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_main_delegate.h"
@@ -37,8 +38,7 @@ int ElectronMain(int argc, char* argv[]) {
 
 int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
   if (!electron::fuses::IsRunAsNodeEnabled()) {
-    CHECK(false) << "run_as_node fuse is disabled";
-    return 1;
+    NOTREACHED() << "run_as_node fuse is disabled";
   }
 
   argv = uv_setup_args(argc, argv);

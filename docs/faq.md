@@ -67,6 +67,7 @@ code from this:
 
 ```js
 const { app, Tray } = require('electron')
+
 app.whenReady().then(() => {
   const tray = new Tray('/path/to/icon.png')
   tray.setTitle('hello world')
@@ -77,6 +78,7 @@ to this:
 
 ```js
 const { app, Tray } = require('electron')
+
 let tray = null
 app.whenReady().then(() => {
   tray = new Tray('/path/to/icon.png')
@@ -95,6 +97,7 @@ To solve this, you can turn off node integration in Electron:
 ```js
 // In the main process.
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
@@ -143,6 +146,7 @@ To achieve this goal, set the background in the constructor for [BrowserWindow][
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({
   backgroundColor: '#fff'
 })
@@ -151,6 +155,14 @@ const win = new BrowserWindow({
 The effect is visible only on (some?) LCD screens. Even if you don't see a difference, some of your users may. It is best to always set the background this way, unless you have reasons not to do so.
 
 Notice that just setting the background in the CSS does not have the desired effect.
+
+## Class inheritance does not work with Electron built-in modules
+
+Electron classes cannot be subclassed with the [`extends`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/extends)
+keyword (also known as class inheritance). This feature was never implemented in Electron due
+to the added complexity it would add to C++/JavaScript interop in Electron's internals.
+
+For more information, see [electron/electron#23](https://github.com/electron/electron/issues/23).
 
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [closures]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Closures

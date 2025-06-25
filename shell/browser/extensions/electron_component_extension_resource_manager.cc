@@ -7,7 +7,6 @@
 #include <string>
 #include <utility>
 
-#include "base/containers/contains.h"
 #include "base/path_service.h"
 #include "base/values.h"
 #include "chrome/common/chrome_paths.h"
@@ -32,7 +31,6 @@ ElectronComponentExtensionResourceManager::
   base::Value::Dict pdf_strings;
   pdf_extension_util::AddStrings(
       pdf_extension_util::PdfViewerContext::kPdfViewer, &pdf_strings);
-  pdf_extension_util::AddAdditionalData(false, true, &pdf_strings);
 
   ui::TemplateReplacements pdf_viewer_replacements;
   ui::TemplateReplacementsFromDictionaryValue(pdf_strings,
@@ -85,12 +83,14 @@ void ElectronComponentExtensionResourceManager::AddComponentResourceEntries(
   gen_folder_path = gen_folder_path.NormalizePathSeparators();
 
   for (const auto& entry : entries) {
+    const int id = entry.id;
     base::FilePath resource_path = base::FilePath().AppendASCII(entry.path);
     resource_path = resource_path.NormalizePathSeparators();
 
     if (!gen_folder_path.IsParent(resource_path)) {
-      DCHECK(!base::Contains(path_to_resource_id_, resource_path));
-      path_to_resource_id_[resource_path] = entry.id;
+      const auto [_, inserted] =
+          path_to_resource_id_.try_emplace(std::move(resource_path), id);
+      DCHECK(inserted);
     } else {
       // If the resource is a generated file, strip the generated folder's path,
       // so that it can be served from a normal URL (as if it were not
@@ -98,8 +98,9 @@ void ElectronComponentExtensionResourceManager::AddComponentResourceEntries(
       base::FilePath effective_path =
           base::FilePath().AppendASCII(resource_path.AsUTF8Unsafe().substr(
               gen_folder_path.value().length()));
-      DCHECK(!base::Contains(path_to_resource_id_, effective_path));
-      path_to_resource_id_[effective_path] = entry.id;
+      const auto [_, inserted] =
+          path_to_resource_id_.try_emplace(std::move(effective_path), id);
+      DCHECK(inserted);
     }
   }
 }

@@ -297,7 +297,7 @@ views::Button* OpaqueFrameView::CreateButton(
     int ht_component,
     const gfx::VectorIcon& icon_image,
     views::Button::PressedCallback callback) {
-  views::FrameCaptionButton* button = new views::FrameCaptionButton(
+  auto button = std::make_unique<views::FrameCaptionButton>(
       views::Button::PressedCallback(), icon_type, ht_component);
   button->SetImage(button->GetIcon(), views::FrameCaptionButton::Animate::kNo,
                    icon_image);
@@ -306,12 +306,11 @@ views::Button* OpaqueFrameView::CreateButton(
   button->SetCallback(std::move(callback));
   button->SetAccessibleName(l10n_util::GetStringUTF16(accessibility_string_id));
   button->SetID(view_id);
-  AddChildView(button);
 
   button->SetPaintToLayer();
   button->layer()->SetFillsBoundsOpaquely(false);
 
-  return button;
+  return AddChildView(std::move(button));
 }
 
 gfx::Insets OpaqueFrameView::FrameBorderInsets(bool restored) const {

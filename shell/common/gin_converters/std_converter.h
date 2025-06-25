@@ -5,10 +5,12 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
 
+#include <array>
 #include <cstddef>
 #include <functional>
 #include <map>
 #include <set>
+#include <span>
 #include <type_traits>
 #include <utility>
 
@@ -27,6 +29,33 @@ v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
   return Converter<typename std::remove_reference<T>::type>::ToV8(
       isolate, std::forward<T>(input));
 }
+
+template <typename T>
+struct Converter<std::span<T>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const std::span<const T>& span) {
+    int idx = 0;
+    auto context = isolate->GetCurrentContext();
+    auto result = v8::Array::New(isolate, static_cast<int>(span.size()));
+    for (const auto& val : span) {
+      v8::MaybeLocal<v8::Value> maybe = Converter<T>::ToV8(isolate, val);
+      v8::Local<v8::Value> element;
+      if (!maybe.ToLocal(&element))
+        return {};
+      if (!result->Set(context, idx++, element).FromMaybe(false))
+        NOTREACHED() << "CreateDataProperty should always succeed here.";
+    }
+    return result;
+  }
+};
+
+template <typename T, size_t N>
+struct Converter<std::array<T, N>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const std::array<T, N>& array) {
+    return Converter<std::span<T>>::ToV8(isolate, std::span{array});
+  }
+};
 
 #if !BUILDFLAG(IS_LINUX)
 template <>
@@ -215,7 +244,7 @@ bool FromV8WithLookup(v8::Isolate* isolate,
   if (key_transform)
     key_transform(key);
 
-  if (const auto* iter = table.find(key); iter != table.end()) {
+  if (auto iter = table.find(key); iter != table.end()) {
     *out = iter->second;
     return true;
   }

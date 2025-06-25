@@ -29,6 +29,7 @@ class ElectronDesktopWindowTreeHostLinux
  public:
   ElectronDesktopWindowTreeHostLinux(
       NativeWindowViews* native_window_view,
+      views::Widget* widget,
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
   ~ElectronDesktopWindowTreeHostLinux() override;
 
@@ -60,9 +61,12 @@ class ElectronDesktopWindowTreeHostLinux
 
   // views::DesktopWindowTreeHostLinux:
   void UpdateFrameHints() override;
+  void DispatchEvent(ui::Event* event) override;
 
  private:
   void UpdateWindowState(ui::PlatformWindowState new_state);
+
+  bool IsShowingFrame() const;
 
   raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
 

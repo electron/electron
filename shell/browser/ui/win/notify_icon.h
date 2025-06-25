@@ -76,7 +76,7 @@ class NotifyIcon : public TrayIcon {
   base::WeakPtr<NotifyIcon> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
  private:
-  void InitIconData(NOTIFYICONDATA* icon_data);
+  NOTIFYICONDATA InitIconData() const;
 
   // The tray that owns us.  Weak.
   raw_ptr<NotifyIconHost> host_;
@@ -91,7 +91,7 @@ class NotifyIcon : public TrayIcon {
   UINT message_id_;
 
   // The currently-displayed icon for the window.
-  base::win::ScopedHICON icon_;
+  base::win::ScopedGDIObject<HICON> icon_;
 
   // The context menu.
   raw_ptr<ElectronMenuModel> menu_model_ = nullptr;

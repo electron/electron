@@ -29,7 +29,7 @@ namespace electron {
 // A non-blink version of blink::MessagePort.
 class MessagePort final : public gin::Wrappable<MessagePort>,
                           public gin_helper::CleanedUpAtExit,
-                          public mojo::MessageReceiver {
+                          private mojo::MessageReceiver {
  public:
   ~MessagePort() override;
   static gin::Handle<MessagePort> Create(v8::Isolate* isolate);
@@ -60,6 +60,9 @@ class MessagePort final : public gin::Wrappable<MessagePort>,
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
+
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
 
  private:
   MessagePort();

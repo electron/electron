@@ -11,6 +11,7 @@
 
 #include "base/containers/span.h"
 #include "base/memory/memory_pressure_listener.h"
+#include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
 #include "components/spellcheck/renderer/spellcheck.h"
 #include "content/public/renderer/render_frame.h"
@@ -31,6 +32,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/web_contents_utility.mojom.h"
 #include "shell/renderer/api/context_bridge/object_cache.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
@@ -39,6 +41,7 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
+#include "third_party/blink/public/platform/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/platform/web_cache.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/web_custom_element.h"
@@ -150,13 +153,11 @@ class ScriptExecutionCallback {
         "An unknown exception occurred while getting the result of the script";
     {
       v8::TryCatch try_catch(isolate);
-      context_bridge::ObjectCache object_cache;
       v8::Local<v8::Context> source_context =
           result->GetCreationContextChecked();
-      maybe_result =
-          PassValueToOtherContext(source_context, promise_.GetContext(), result,
-                                  source_context->Global(), &object_cache,
-                                  false, 0, BridgeErrorTarget::kSource);
+      maybe_result = PassValueToOtherContext(
+          source_context, promise_.GetContext(), result,
+          source_context->Global(), false, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }
@@ -188,7 +189,7 @@ class ScriptExecutionCallback {
     }
   }
 
-  void Completed(const blink::WebVector<v8::Local<v8::Value>>& result) {
+  void Completed(const std::vector<v8::Local<v8::Value>>& result) {
     v8::Isolate* isolate = promise_.isolate();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
@@ -410,8 +411,8 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
                            content::RenderFrame** render_frame_ptr) {
     auto* frame = render_frame();
     if (!frame) {
-      *error_msg = base::ToString("Render frame was torn down before webFrame.",
-                                  method_name, " could be executed");
+      *error_msg = base::StrCat({"Render frame was torn down before webFrame.",
+                                 method_name, " could be executed"});
       return false;
     }
     *render_frame_ptr = frame;
@@ -442,25 +443,34 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
     if (!MaybeGetRenderFrame(isolate, "setZoomLevel", &render_frame))
       return;
 
+    // Update the zoom controller.
     mojo::AssociatedRemote<mojom::ElectronWebContentsUtility>
         web_contents_utility_remote;
     render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
         &web_contents_utility_remote);
     web_contents_utility_remote->SetTemporaryZoomLevel(level);
+
+    // Update the local web frame for coherence with synchronous calls to
+    // |GetZoomLevel|.
+    if (blink::WebFrameWidget* web_frame =
+            render_frame->GetWebFrame()->LocalRoot()->FrameWidget()) {
+      web_frame->SetZoomLevel(level);
+    }
   }
 
   double GetZoomLevel(v8::Isolate* isolate) {
-    double result = 0.0;
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(isolate, "getZoomLevel", &render_frame))
-      return result;
+    if (!MaybeGetRenderFrame(isolate, "getZoomLevel", &render_frame)) {
+      return 0.0f;
+    }
 
-    mojo::AssociatedRemote<mojom::ElectronWebContentsUtility>
-        web_contents_utility_remote;
-    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
-        &web_contents_utility_remote);
-    web_contents_utility_remote->DoGetZoomLevel(&result);
-    return result;
+    blink::WebFrameWidget* web_frame =
+        render_frame->GetWebFrame()->LocalRoot()->FrameWidget();
+    if (!web_frame) {
+      return 0.0f;
+    }
+
+    return web_frame->GetZoomLevel();
   }
 
   void SetZoomFactor(gin_helper::ErrorThrower thrower, double factor) {
@@ -576,8 +586,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
           ->FrameWidget()
           ->GetActiveWebInputMethodController()
           ->CommitText(blink::WebString::FromUTF8(text),
-                       blink::WebVector<ui::ImeTextSpan>(), blink::WebRange(),
-                       0);
+                       std::vector<ui::ImeTextSpan>(), blink::WebRange(), 0);
     }
   }
 
@@ -736,7 +745,7 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
                                              std::move(completion_callback));
 
     render_frame->GetWebFrame()->RequestExecuteScript(
-        world_id, base::make_span(sources),
+        world_id, base::span(sources),
         has_user_gesture ? blink::mojom::UserActivationOption::kActivate
                          : blink::mojom::UserActivationOption::kDoNotActivate,
         script_execution_type, load_blocking_option, base::NullCallback(),

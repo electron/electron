@@ -2,7 +2,7 @@ is_electron_build = true
 root_extra_deps = [ "//electron" ]
 
 # Registry of NMVs --> https://github.com/nodejs/node/blob/main/doc/abi_version_registry.json
-node_module_version = 132
+node_module_version = 139
 
 v8_promise_internal_field_count = 1
 v8_embedder_string = "-electron.0"
@@ -14,8 +14,8 @@ v8_enable_snapshot_native_code_counters = false
 v8_enable_javascript_promise_hooks = true
 
 enable_cdm_host_verification = false
-proprietary_codecs = true
 ffmpeg_branding = "Chrome"
+proprietary_codecs = true
 
 enable_printing = true
 
@@ -48,7 +48,8 @@ enable_cet_shadow_stack = false
 is_cfi = false
 
 # TODO: fix this once sysroots have been updated.
-use_qt = false
+use_qt5 = false
+use_qt6 = false
 
 # Disables the builtins PGO for V8
 v8_builtins_profiling_log_file = ""
@@ -65,11 +66,6 @@ v8_enable_private_mapping_fork_optimization = true
 # Expose public V8 symbols for native modules.
 v8_expose_public_symbols = true
 
-# Disables unsafe-buffers-usage plugin due to incompatibilities with our reclient implementation
-# Ref: https://chromium-review.googlesource.com/c/chromium/src/+/5426599
-# Ref: https://github.com/electron/electron/commit/8e20f16ea35eeaeb149ae63bad3703d782665f6a
-clang_unsafe_buffers_paths = ""
-
 # Disable snapshotting a page when printing for its content to be analyzed for
 # sensitive content by enterprise users.
 enterprise_cloud_content_analysis = false
@@ -77,6 +73,3 @@ enterprise_cloud_content_analysis = false
 # TODO: remove dependency on legacy ipc
 # https://issues.chromium.org/issues/40943039
 content_enable_legacy_ipc = true
-
-# Electron has its own unsafe-buffers enforcement directories.
-clang_unsafe_buffers_paths = "//electron/electron_unsafe_buffers_paths.txt"

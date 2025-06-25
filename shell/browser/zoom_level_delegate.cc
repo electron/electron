@@ -4,7 +4,6 @@
 
 #include "shell/browser/zoom_level_delegate.h"
 
-#include <functional>
 #include <utility>
 #include <vector>
 

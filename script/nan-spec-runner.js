@@ -31,9 +31,9 @@ async function main () {
   const outDir = utils.getOutDir({ shouldLog: true });
   const nodeDir = path.resolve(BASE, 'out', outDir, 'gen', 'node_headers');
   const env = {
+    npm_config_msvs_version: '2022',
     ...process.env,
     npm_config_nodedir: nodeDir,
-    npm_config_msvs_version: '2022',
     npm_config_arch: process.env.NPM_CONFIG_ARCH,
     npm_config_yes: 'true'
   };
@@ -131,7 +131,10 @@ async function main () {
     'nannew-test.js',
     'buffer-test.js',
     // we can't patch this test because it uses CRLF line endings
-    'methodswithdata-test.js'
+    'methodswithdata-test.js',
+    // these two are incompatible with crrev.com/c/4733273
+    'weak-test.js',
+    'weak2-test.js'
   ]);
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
     .filter(test => !DISABLED_TESTS.has(test))

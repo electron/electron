@@ -5,10 +5,10 @@ inputs:
     description: 'Target arch'
     required: true
   target-platform:
-    description: 'Target platform'
+    description: 'Target platform, should be linux, win, macos'
     required: true
   artifact-platform:
-    description: 'Artifact platform, should be linux, darwin or mas'
+    description: 'Artifact platform, should be linux, win, darwin or mas'
     required: true
   step-suffix:
     description: 'Suffix for build steps'
@@ -38,6 +38,9 @@ runs:
       run: |
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"x64\" v8_snapshot_toolchain=\"//build/toolchain/mac:clang_x64\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
+    - name: Add Clang problem matcher
+      shell: bash
+      run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Build Electron ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -69,9 +72,9 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES -d explain
         if [ "${{ inputs.is-asan }}" != "true" ]; then
-          target_os=${{ inputs.target-platform == 'linux' && 'linux' || 'mac'}}
+          target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
             target_os="${target_os}_mas"
           fi
@@ -82,7 +85,7 @@ runs:
       run: |
         cd src
         e build --target electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
-        gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         # Remove unused args from mksnapshot_args
         SEDOPTION="-i"
         if [ "`uname`" = "Darwin" ]; then
@@ -91,7 +94,7 @@ runs:
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
 
-        if [ "`uname`" = "Linux" ]; then
+        if [ "${{ inputs.target-platform }}" = "linux" ]; then
           if [ "${{ inputs.target-arch }}" = "arm" ]; then
             electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
             electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/v8_context_snapshot_generator
@@ -105,7 +108,15 @@ runs:
         fi
 
         e build --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
-        (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
+          cd out/Default
+          powershell Compress-Archive -update mksnapshot_args mksnapshot.zip
+          powershell mkdir mktmp\\gen\\v8
+          powershell Copy-Item gen\\v8\\embedded.S mktmp\\gen\\v8
+          powershell Compress-Archive -update -Path mktmp\\gen mksnapshot.zip
+        else
+          (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+        fi
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
@@ -137,6 +148,25 @@ runs:
       run: |
         cd src
         e build --target electron:node_headers
+    - name: Create installed_software.json ${{ inputs.step-suffix }}
+      shell: powershell
+      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
+      run: |
+        cd src
+        Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
+    - name: Profile Windows Toolchain ${{ inputs.step-suffix }}
+      shell: bash
+      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
+      run: |
+        cd src
+        python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
+    - name: Add msdia140.dll to Path ${{ inputs.step-suffix }}
+      shell: bash
+      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
+      run: |
+        # Needed for msdia140.dll on 64-bit windows
+        cd src
+        export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
     - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -172,6 +202,9 @@ runs:
         e build --target electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Remove Clang problem matcher
+      shell: bash
+      run: echo "::remove-matcher owner=clang::"
     - name: Generate TypeScript Definitions ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
       shell: bash

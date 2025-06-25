@@ -13,7 +13,6 @@
 #include <shlobj.h>
 #include <wrl\wrappers\corewrappers.h>
 
-#include "base/environment.h"
 #include "base/hash/hash.h"
 #include "base/logging.h"
 #include "base/strings/strcat.h"
@@ -66,7 +65,7 @@ namespace {
 constexpr wchar_t kGroup[] = L"Notifications";
 
 void DebugLog(std::string_view log_msg) {
-  if (base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS"))
+  if (electron::debug_notifications)
     LOG(INFO) << log_msg;
 }
 

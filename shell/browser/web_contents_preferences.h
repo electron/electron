@@ -85,7 +85,8 @@ class WebContentsPreferences
   friend class ElectronBrowserClient;
 
   // Get WebContents according to process ID.
-  static content::WebContents* GetWebContentsFromProcessID(int process_id);
+  static content::WebContents* GetWebContentsFromProcessID(
+      content::ChildProcessId process_id);
 
   void Clear();
   void SaveLastPreferences();
@@ -132,6 +133,8 @@ class WebContentsPreferences
   blink::mojom::ImageAnimationPolicy image_animation_policy_;
   std::optional<base::FilePath> preload_path_;
   blink::mojom::V8CacheOptions v8_cache_options_;
+  bool deprecated_paste_enabled_ = false;
+  bool corner_smoothing_css_;
 
 #if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;

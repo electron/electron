@@ -30,7 +30,7 @@ LoginHandler::LoginHandler(
     const GURL& url,
     scoped_refptr<net::HttpResponseHeaders> response_headers,
     bool first_auth_attempt,
-    LoginAuthRequiredCallback auth_required_callback)
+    content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback)
     : auth_required_callback_(std::move(auth_required_callback)) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 

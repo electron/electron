@@ -148,7 +148,6 @@ bool Converter<blink::mojom::PermissionStatus>::FromV8(
 v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
     v8::Isolate* isolate,
     const blink::PermissionType& val) {
-  using PermissionType = electron::WebContentsPermissionHelper::PermissionType;
   // Based on mappings from content/browser/devtools/protocol/browser_handler.cc
   // Not all permissions are currently used by Electron but this will future
   // proof these conversions.
@@ -223,26 +222,30 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "speaker-selection");
     case blink::PermissionType::WEB_APP_INSTALLATION:
       return StringToV8(isolate, "web-app-installation");
+    case blink::PermissionType::LOCAL_NETWORK_ACCESS:
+      return StringToV8(isolate, "local-network-access");
+
+    // Permissions added by Electron
+    case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+      return StringToV8(isolate, "deprecated-sync-clipboard-read");
+    case blink::PermissionType::FILE_SYSTEM:
+      return StringToV8(isolate, "fileSystem");
+    case blink::PermissionType::ELECTRON_FULLSCREEN:
+      return StringToV8(isolate, "fullscreen");
+    case blink::PermissionType::HID:
+      return StringToV8(isolate, "hid");
+    case blink::PermissionType::OPEN_EXTERNAL:
+      return StringToV8(isolate, "openExternal");
+    case blink::PermissionType::SERIAL:
+      return StringToV8(isolate, "serial");
+    case blink::PermissionType::USB:
+      return StringToV8(isolate, "usb");
+
     case blink::PermissionType::NUM:
       break;
   }
 
-  switch (static_cast<PermissionType>(val)) {
-    case PermissionType::FULLSCREEN:
-      return StringToV8(isolate, "fullscreen");
-    case PermissionType::OPEN_EXTERNAL:
-      return StringToV8(isolate, "openExternal");
-    case PermissionType::SERIAL:
-      return StringToV8(isolate, "serial");
-    case PermissionType::HID:
-      return StringToV8(isolate, "hid");
-    case PermissionType::USB:
-      return StringToV8(isolate, "usb");
-    case PermissionType::FILE_SYSTEM:
-      return StringToV8(isolate, "fileSystem");
-    default:
-      return StringToV8(isolate, "unknown");
-  }
+  return StringToV8(isolate, "unknown");
 }
 
 // static

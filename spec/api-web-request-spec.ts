@@ -101,11 +101,47 @@ describe('webRequest module', () => {
       await expect(ajax(defaultURL)).to.eventually.be.rejected();
     });
 
+    it('matches all requests when no filters are defined', async () => {
+      ses.webRequest.onBeforeRequest(cancel);
+      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}nofilter2/test`)).to.eventually.be.rejected();
+    });
+
     it('can filter URLs', async () => {
       const filter = { urls: [defaultURL + 'filter/*'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
       const { data } = await ajax(`${defaultURL}nofilter/test`);
       expect(data).to.equal('/nofilter/test');
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+    });
+
+    it('can filter all URLs with syntax <all_urls>', async () => {
+      const filter = { urls: ['<all_urls>'] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
+    });
+
+    it('can filter URLs with overlapping patterns of urls and excludeUrls', async () => {
+      // If filter matches both urls and excludeUrls, it should be excluded.
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/test'] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
+      const { data } = await ajax(`${defaultURL}filter/test`);
+      expect(data).to.equal('/filter/test');
+    });
+
+    it('can filter URLs with multiple excludeUrls patterns', async () => {
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/exclude1/*', defaultURL + 'filter/exclude2/*'] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
+      expect((await ajax(`${defaultURL}filter/exclude1/test`)).data).to.equal('/filter/exclude1/test');
+      expect((await ajax(`${defaultURL}filter/exclude2/test`)).data).to.equal('/filter/exclude2/test');
+      // expect non-excluded URL to pass filter
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+    });
+
+    it('can filter URLs with empty excludeUrls', async () => {
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
       await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
     });
 
@@ -120,6 +156,21 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest(filter2, cancel);
       expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
       expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
+    });
+
+    it('can filter URLs, excludeUrls and types', async () => {
+      const filter1: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['xhr'] };
+      ses.webRequest.onBeforeRequest(filter1, cancel);
+
+      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
+      expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+
+      const filter2: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['stylesheet'] };
+      ses.webRequest.onBeforeRequest(filter2, cancel);
+      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
+      expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
+      expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
     });
 
     it('receives details object', async () => {
@@ -589,12 +640,12 @@ describe('webRequest module', () => {
     it('can be proxyed', async () => {
       // Setup server.
       const reqHeaders : { [key: string] : any } = {};
-      const server = http.createServer((req, res) => {
+      let server = http.createServer((req, res) => {
         reqHeaders[req.url!] = req.headers;
         res.setHeader('foo1', 'bar1');
         res.end('ok');
       });
-      const wss = new WebSocket.Server({ noServer: true });
+      let wss = new WebSocket.Server({ noServer: true });
       wss.on('connection', function connection (ws) {
         ws.on('message', function incoming (message) {
           if (message === 'foo') {
@@ -660,9 +711,12 @@ describe('webRequest module', () => {
       });
 
       // Cleanup.
-      after(() => {
+      defer(() => {
         contents.destroy();
         server.close();
+        server = null as unknown as http.Server;
+        wss.close();
+        wss = null as unknown as WebSocket.Server;
         ses.webRequest.onBeforeRequest(null);
         ses.webRequest.onBeforeSendHeaders(null);
         ses.webRequest.onHeadersReceived(null);

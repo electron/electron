@@ -6,7 +6,8 @@ Process: [Main](../glossary.md#main-process), [Utility](../glossary.md#utility-p
 
 ```js
 const { systemPreferences } = require('electron')
-console.log(systemPreferences.isAeroGlassEnabled())
+
+console.log(systemPreferences.getEffectiveAppearance())
 ```
 
 ## Events
@@ -180,38 +181,6 @@ Some popular `key` and `type`s are:
 
 Removes the `key` in `NSUserDefaults`. This can be used to restore the default
 or global value of a `key` previously set with `setUserDefault`.
-
-### `systemPreferences.isAeroGlassEnabled()` _Windows_
-
-Returns `boolean` - `true` if [DWM composition][dwm-composition] (Aero Glass) is
-enabled, and `false` otherwise.
-
-An example of using it to determine if you should create a transparent window or
-not (transparent windows won't work correctly when DWM composition is disabled):
-
-```js
-const { BrowserWindow, systemPreferences } = require('electron')
-const browserOptions = { width: 1000, height: 800 }
-
-// Make the window transparent only if the platform supports it.
-if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
-  browserOptions.transparent = true
-  browserOptions.frame = false
-}
-
-// Create the window.
-const win = new BrowserWindow(browserOptions)
-
-// Navigate.
-if (browserOptions.transparent) {
-  win.loadFile('index.html')
-} else {
-  // No transparency, so we load a fallback that uses basic styles.
-  win.loadFile('fallback.html')
-}
-```
-
-[dwm-composition]: https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw
 
 ### `systemPreferences.getAccentColor()` _Windows_ _macOS_
 

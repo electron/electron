@@ -6,10 +6,10 @@ Subject: build: allow electron to use exec_script
 This is similar to the //build usecase so we're OK adding ourselves here
 
 diff --git a/.gn b/.gn
-index 44a11ec90ec9b67cf22b6d529c6843e6b6af12bc..3e880eed02ca57db10d734d6a7566e0a977433a5 100644
+index ae58a0b0a64ae1fdb3f9cd8587041d71a121c6b9..0ed56526002b12deb6d29f3dd23a0d74d8e7473c 100644
 --- a/.gn
 +++ b/.gn
-@@ -172,4 +172,27 @@ exec_script_whitelist =
+@@ -167,4 +167,27 @@ exec_script_allowlist =
  
        "//tools/grit/grit_rule.gni",
        "//tools/gritsettings/BUILD.gn",
@@ -30,10 +30,10 @@ index 44a11ec90ec9b67cf22b6d529c6843e6b6af12bc..3e880eed02ca57db10d734d6a7566e0a
 +      "//third_party/electron_node/deps/nghttp2/unofficial.gni",
 +      "//third_party/electron_node/deps/ngtcp2/unofficial.gni",
 +      "//third_party/electron_node/deps/openssl/unofficial.gni",
-+      "//third_party/electron_node/deps/simdutf/unofficial.gni",
 +      "//third_party/electron_node/deps/simdjson/unofficial.gni",
 +      "//third_party/electron_node/deps/sqlite/unofficial.gni",
 +      "//third_party/electron_node/deps/uv/unofficial.gni",
 +      "//third_party/electron_node/deps/uvwasi/unofficial.gni",
++      "//third_party/electron_node/deps/zstd/unofficial.gni",
 +      "//third_party/electron_node/src/inspector/unofficial.gni",
      ]

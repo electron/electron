@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "base/auto_reset.h"
+#include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
@@ -15,17 +16,17 @@
 #include "base/task/sequenced_task_runner.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/time/time.h"
+#include "content/public/browser/browser_context.h"
 #include "extensions/browser/extension_file_task_runner.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/pref_names.h"
+#include "extensions/common/constants.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/file_util.h"
 #include "extensions/common/manifest_constants.h"
 
 namespace extensions {
-
-using LoadErrorBehavior = ExtensionRegistrar::LoadErrorBehavior;
 
 namespace {
 
@@ -94,7 +95,12 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
 ElectronExtensionLoader::ElectronExtensionLoader(
     content::BrowserContext* browser_context)
     : browser_context_(browser_context),
-      extension_registrar_(browser_context, this) {}
+      extension_registrar_(ExtensionRegistrar::Get(browser_context)) {
+  extension_registrar_->Init(
+      this, /*extensions_enabled=*/true, base::CommandLine::ForCurrentProcess(),
+      browser_context_->GetPath().AppendASCII(kInstallDirectoryName),
+      browser_context_->GetPath().AppendASCII(kUnpackedInstallDirectoryName));
+}
 
 ElectronExtensionLoader::~ElectronExtensionLoader() = default;
 
@@ -119,7 +125,7 @@ void ElectronExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
   DCHECK_EQ(false, did_schedule_reload_);
   base::AutoReset<bool> reset_did_schedule_reload(&did_schedule_reload_, false);
 
-  extension_registrar_.ReloadExtension(extension_id, LoadErrorBehavior::kQuiet);
+  extension_registrar_->ReloadExtensionWithQuietFailure(extension_id);
   if (did_schedule_reload_)
     return;
 }
@@ -127,7 +133,7 @@ void ElectronExtensionLoader::ReloadExtension(const ExtensionId& extension_id) {
 void ElectronExtensionLoader::UnloadExtension(
     const ExtensionId& extension_id,
     extensions::UnloadedExtensionReason reason) {
-  extension_registrar_.RemoveExtension(extension_id, reason);
+  extension_registrar_->RemoveExtension(extension_id, reason);
 }
 
 void ElectronExtensionLoader::FinishExtensionLoad(
@@ -135,7 +141,7 @@ void ElectronExtensionLoader::FinishExtensionLoad(
     std::pair<scoped_refptr<const Extension>, std::string> result) {
   scoped_refptr<const Extension> extension = result.first;
   if (extension) {
-    extension_registrar_.AddExtension(extension);
+    extension_registrar_->AddExtension(extension);
 
     // Write extension install time to ExtensionPrefs. This is required by
     // WebRequestAPI which calls extensions::ExtensionPrefs::GetInstallTime.
@@ -163,7 +169,7 @@ void ElectronExtensionLoader::FinishExtensionReload(
     std::pair<scoped_refptr<const Extension>, std::string> result) {
   scoped_refptr<const Extension> extension = result.first;
   if (extension) {
-    extension_registrar_.AddExtension(extension);
+    extension_registrar_->AddExtension(extension);
   }
 }
 
@@ -175,17 +181,8 @@ void ElectronExtensionLoader::PreAddExtension(const Extension* extension,
   // The extension might be disabled if a previous reload attempt failed. In
   // that case, we want to remove that disable reason.
   ExtensionPrefs* extension_prefs = ExtensionPrefs::Get(browser_context_);
-  if (extension_prefs->IsExtensionDisabled(extension->id()) &&
-      extension_prefs->HasDisableReason(extension->id(),
-                                        disable_reason::DISABLE_RELOAD)) {
-    extension_prefs->RemoveDisableReason(extension->id(),
-                                         disable_reason::DISABLE_RELOAD);
-    // Only re-enable the extension if there are no other disable reasons.
-    if (extension_prefs->GetDisableReasons(extension->id()) ==
-        disable_reason::DISABLE_NONE) {
-      extension_prefs->SetExtensionEnabled(extension->id());
-    }
-  }
+  extension_prefs->RemoveDisableReason(extension->id(),
+                                       disable_reason::DISABLE_RELOAD);
 }
 
 void ElectronExtensionLoader::PostActivateExtension(
@@ -194,10 +191,16 @@ void ElectronExtensionLoader::PostActivateExtension(
 void ElectronExtensionLoader::PostDeactivateExtension(
     scoped_refptr<const Extension> extension) {}
 
-void ElectronExtensionLoader::LoadExtensionForReload(
+void ElectronExtensionLoader::PreUninstallExtension(
+    scoped_refptr<const Extension> extension) {}
+
+void ElectronExtensionLoader::PostUninstallExtension(
+    scoped_refptr<const Extension> extension,
+    base::OnceClosure done_callback) {}
+
+void ElectronExtensionLoader::DoLoadExtensionForReload(
     const ExtensionId& extension_id,
-    const base::FilePath& path,
-    LoadErrorBehavior load_error_behavior) {
+    const base::FilePath& path) {
   CHECK(!path.empty());
 
   // TODO(nornagon): we should save whether file access was granted
@@ -211,6 +214,22 @@ void ElectronExtensionLoader::LoadExtensionForReload(
   did_schedule_reload_ = true;
 }
 
+void ElectronExtensionLoader::LoadExtensionForReload(
+    const ExtensionId& extension_id,
+    const base::FilePath& path) {
+  DoLoadExtensionForReload(extension_id, path);
+}
+
+void ElectronExtensionLoader::LoadExtensionForReloadWithQuietFailure(
+    const ExtensionId& extension_id,
+    const base::FilePath& path) {
+  DoLoadExtensionForReload(extension_id, path);
+}
+
+void ElectronExtensionLoader::ShowExtensionDisabledError(
+    const Extension* extension,
+    bool is_remote_install) {}
+
 bool ElectronExtensionLoader::CanEnableExtension(const Extension* extension) {
   return true;
 }
@@ -220,8 +239,9 @@ bool ElectronExtensionLoader::CanDisableExtension(const Extension* extension) {
   return false;
 }
 
-bool ElectronExtensionLoader::ShouldBlockExtension(const Extension* extension) {
-  return false;
+void ElectronExtensionLoader::GrantActivePermissions(
+    const Extension* extension) {
+  NOTIMPLEMENTED();
 }
 
 }  // namespace extensions

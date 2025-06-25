@@ -5,7 +5,7 @@ on:
     inputs:
       target-platform:
         type: string
-        description: 'Platform to run on, can be macos or linux'
+        description: 'Platform to run on, can be macos, win or linux.'
         required: true
       target-arch:
         type: string
@@ -14,10 +14,6 @@ on:
       build-runs-on:
         type: string
         description: 'What host to run the build'
-        required: true
-      check-runs-on:
-        type: string
-        description: 'What host to run the gn-check'
         required: true
       test-runs-on:
         type: string
@@ -60,8 +56,8 @@ on:
         default: false
 
 concurrency:
-  group: electron-build-and-test-and-nan-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
+  group: electron-build-and-test-and-nan-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
 
 jobs:
   build:
@@ -75,16 +71,6 @@ jobs:
       gn-build-type: ${{ inputs.gn-build-type }}
       generate-symbols: ${{ inputs.generate-symbols }}
       upload-to-storage: ${{ inputs.upload-to-storage }}
-    secrets: inherit
-  gn-check:
-    uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
-    with:
-      target-platform: ${{ inputs.target-platform }}
-      target-arch: ${{ inputs.target-arch }}
-      check-runs-on: ${{ inputs.check-runs-on }}
-      check-container: ${{ inputs.build-container }}
-      gn-build-type: ${{ inputs.gn-build-type }}
-      is-asan: ${{ inputs.is-asan }}
     secrets: inherit
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml

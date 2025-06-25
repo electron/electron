@@ -6,6 +6,10 @@
 
 Process: [Main](../glossary.md#main-process)
 
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
+
 ### `new Menu()`
 
 Creates a new menu.
@@ -32,16 +36,18 @@ In order to escape the `&` character in an item name, add a proceeding `&`. For 
 Passing `null` will suppress the default menu. On Windows and Linux,
 this has the additional effect of removing the menu bar from the window.
 
-**Note:** The default menu will be created automatically if the app does not set one.
-It contains standard items such as `File`, `Edit`, `View`, `Window` and `Help`.
+> [!NOTE]
+> The default menu will be created automatically if the app does not set one.
+> It contains standard items such as `File`, `Edit`, `View`, `Window` and `Help`.
 
 #### `Menu.getApplicationMenu()`
 
 Returns `Menu | null` - The application menu, if set, or `null`, if not set.
 
-**Note:** The returned `Menu` instance doesn't support dynamic addition or
-removal of menu items. [Instance properties](#instance-properties) can still
-be dynamically modified.
+> [!NOTE]
+> The returned `Menu` instance doesn't support dynamic addition or
+> removal of menu items. [Instance properties](#instance-properties) can still
+> be dynamically modified.
 
 #### `Menu.sendActionToFirstResponder(action)` _macOS_
 
@@ -72,7 +78,9 @@ The `menu` object has the following instance methods:
 #### `menu.popup([options])`
 
 * `options` Object (optional)
-  * `window` [BrowserWindow](browser-window.md) (optional) - Default is the focused window.
+  * `window` [BaseWindow](base-window.md) (optional) - Default is the focused window.
+  * `frame` [WebFrameMain](web-frame-main.md) (optional) - Provide the relevant frame
+    if you want certain OS-level features such as Writing Tools on macOS to function correctly. Typically, this should be `params.frame` from the [`context-menu` event](web-contents.md#event-context-menu) on a WebContents, or the [`focusedFrame` property](web-contents.md#contentsfocusedframe-readonly) of a WebContents.
   * `x` number (optional) - Default is the current mouse cursor position.
     Must be declared if `y` is declared.
   * `y` number (optional) - Default is the current mouse cursor position.
@@ -86,13 +94,13 @@ The `menu` object has the following instance methods:
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
   * `callback` Function (optional) - Called when menu is closed.
 
-Pops up this menu as a context menu in the [`BrowserWindow`](browser-window.md).
+Pops up this menu as a context menu in the [`BaseWindow`](base-window.md).
 
-#### `menu.closePopup([browserWindow])`
+#### `menu.closePopup([window])`
 
-* `browserWindow` [BrowserWindow](browser-window.md) (optional) - Default is the focused window.
+* `window` [BaseWindow](base-window.md) (optional) - Default is the focused window.
 
-Closes the context menu in the `browserWindow`.
+Closes the context menu in the `window`.
 
 #### `menu.append(menuItem)`
 
@@ -117,8 +125,9 @@ Inserts the `menuItem` to the `pos` position of the menu.
 
 Objects created with `new Menu` or returned by `Menu.buildFromTemplate` emit the following events:
 
-**Note:** Some events are only available on specific operating systems and are
-labeled as such.
+> [!NOTE]
+> Some events are only available on specific operating systems and are
+> labeled as such.
 
 #### Event: 'menu-will-show'
 
@@ -326,6 +335,27 @@ name, no matter what label you set. To change it, modify your app bundle's
 `Info.plist` file. See
 [About Information Property List Files][AboutInformationPropertyListFiles]
 for more information.
+
+### Menu Sublabels
+
+Menu sublabels, or [subtitles](https://developer.apple.com/documentation/appkit/nsmenuitem/subtitle?language=objc), can be added to menu items using the `sublabel` option. Below is an example based on the renderer example above:
+
+```js @ts-expect-error=[12]
+// main
+ipcMain.on('show-context-menu', (event) => {
+  const template = [
+    {
+      label: 'Menu Item 1',
+      sublabel: 'Subtitle 1',
+      click: () => { event.sender.send('context-menu-command', 'menu-item-1') }
+    },
+    { type: 'separator' },
+    { label: 'Menu Item 2', sublabel: 'Subtitle 2', type: 'checkbox', checked: true }
+  ]
+  const menu = Menu.buildFromTemplate(template)
+  menu.popup({ window: BrowserWindow.fromWebContents(event.sender) })
+})
+```
 
 ## Setting Menu for Specific Browser Window (_Linux_ _Windows_)
 

@@ -51,6 +51,7 @@ class ElectronExtensionsBrowserClient
       const ElectronExtensionsBrowserClient&) = delete;
 
   // ExtensionsBrowserClient overrides:
+  void Init() override;
   bool IsShuttingDown() override;
   bool AreExtensionsDisabled(const base::CommandLine& command_line,
                              content::BrowserContext* context) override;
@@ -140,7 +141,6 @@ class ElectronExtensionsBrowserClient
       content::WebContents* web_contents) override;
   extensions::KioskDelegate* GetKioskDelegate() override;
   std::string GetApplicationLocale() override;
-  std::string GetUserAgent() const override;
   void RegisterBrowserInterfaceBindersForFrame(
       mojo::BinderMapWithContext<content::RenderFrameHost*>* map,
       content::RenderFrameHost* render_frame_host,

@@ -1,0 +1,265 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marco Ippolito <marcoippolito54@gmail.com>
+Date: Wed, 1 May 2024 14:24:48 +0200
+Subject: cli: move --trace-atomics-wait to eol
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+PR-URL: https://github.com/nodejs/node/pull/52747
+Fixes: https://github.com/nodejs/node/issues/42982
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+Reviewed-By: Rafael Gonzaga <rafael.nunu@hotmail.com>
+Reviewed-By: Michaël Zasso <targos@protonmail.com>
+Reviewed-By: Benjamin Gruenbaum <benjamingr@gmail.com>
+Reviewed-By: Yagiz Nizipli <yagiz.nizipli@sentry.io>
+
+diff --git a/doc/api/cli.md b/doc/api/cli.md
+index 121d8f2bbd2b1d93067a06a902b1e7b986bcdb49..3460ad33c6186dcc3aa3281d80b723a1cc1d50dd 100644
+--- a/doc/api/cli.md
++++ b/doc/api/cli.md
+@@ -3367,7 +3367,6 @@ one is included in the list below.
+ * `--tls-min-v1.1`
+ * `--tls-min-v1.2`
+ * `--tls-min-v1.3`
+-* `--trace-atomics-wait`
+ * `--trace-deprecation`
+ * `--trace-env-js-stack`
+ * `--trace-env-native-stack`
+diff --git a/doc/node.1 b/doc/node.1
+index 663d123ac728f097e8a76c94cf10c53d059983d7..497f5a61182beafbaa26b945181056353674cfc3 100644
+--- a/doc/node.1
++++ b/doc/node.1
+@@ -539,11 +539,6 @@ but the option is supported for compatibility with older Node.js versions.
+ Set default minVersion to 'TLSv1.3'. Use to disable support for TLSv1.2 in
+ favour of TLSv1.3, which is more secure.
+ .
+-.It Fl -trace-atomics-wait
+-Print short summaries of calls to
+-.Sy Atomics.wait() .
+-.
+-This flag is deprecated.
+ .It Fl -trace-deprecation
+ Print stack traces for deprecations.
+ .
+diff --git a/src/node.cc b/src/node.cc
+index 6f8f6386d0db8aef1e2e0126cc9064101cbe6112..bc670a6c8b5027417cdc35e1cd94a60f63fd342d 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -232,44 +232,6 @@ void Environment::WaitForInspectorFrontendByOptions() {
+ }
+ #endif  // HAVE_INSPECTOR
+ 
+-#define ATOMIC_WAIT_EVENTS(V)                                               \
+-  V(kStartWait,           "started")                                        \
+-  V(kWokenUp,             "was woken up by another thread")                 \
+-  V(kTimedOut,            "timed out")                                      \
+-  V(kTerminatedExecution, "was stopped by terminated execution")            \
+-  V(kAPIStopped,          "was stopped through the embedder API")           \
+-  V(kNotEqual,            "did not wait because the values mismatched")     \
+-
+-static void AtomicsWaitCallback(Isolate::AtomicsWaitEvent event,
+-                                Local<v8::SharedArrayBuffer> array_buffer,
+-                                size_t offset_in_bytes, int64_t value,
+-                                double timeout_in_ms,
+-                                Isolate::AtomicsWaitWakeHandle* stop_handle,
+-                                void* data) {
+-  Environment* env = static_cast<Environment*>(data);
+-
+-  const char* message = "(unknown event)";
+-  switch (event) {
+-#define V(key, msg)                         \
+-    case Isolate::AtomicsWaitEvent::key:    \
+-      message = msg;                        \
+-      break;
+-    ATOMIC_WAIT_EVENTS(V)
+-#undef V
+-  }
+-
+-  fprintf(stderr,
+-          "(node:%d) [Thread %" PRIu64 "] Atomics.wait(%p + %zx, %" PRId64
+-          ", %.f) %s\n",
+-          static_cast<int>(uv_os_getpid()),
+-          env->thread_id(),
+-          array_buffer->Data(),
+-          offset_in_bytes,
+-          value,
+-          timeout_in_ms,
+-          message);
+-}
+-
+ void Environment::InitializeDiagnostics() {
+   isolate_->GetHeapProfiler()->AddBuildEmbedderGraphCallback(
+       Environment::BuildEmbedderGraph, this);
+@@ -278,17 +240,6 @@ void Environment::InitializeDiagnostics() {
+   }
+   if (options_->trace_uncaught)
+     isolate_->SetCaptureStackTraceForUncaughtExceptions(true);
+-  if (options_->trace_atomics_wait) {
+-    ProcessEmitDeprecationWarning(
+-        Environment::GetCurrent(isolate_),
+-        "The flag --trace-atomics-wait is deprecated.",
+-        "DEP0165");
+-    isolate_->SetAtomicsWaitCallback(AtomicsWaitCallback, this);
+-    AddCleanupHook([](void* data) {
+-      Environment* env = static_cast<Environment*>(data);
+-      env->isolate()->SetAtomicsWaitCallback(nullptr, nullptr);
+-    }, this);
+-  }
+   if (options_->trace_promises) {
+     isolate_->SetPromiseHook(TracePromises);
+   }
+diff --git a/src/node_options.cc b/src/node_options.cc
+index a9500716f2a955fc591628a969c5fba40783a2e7..b153d2c6a771e80bcdf5ed6adbc1cd225b3bf97e 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -770,10 +770,6 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
+             "throw an exception on deprecations",
+             &EnvironmentOptions::throw_deprecation,
+             kAllowedInEnvvar);
+-  AddOption("--trace-atomics-wait",
+-            "(deprecated) trace Atomics.wait() operations",
+-            &EnvironmentOptions::trace_atomics_wait,
+-            kAllowedInEnvvar);
+   AddOption("--trace-deprecation",
+             "show stack traces on deprecations",
+             &EnvironmentOptions::trace_deprecation,
+diff --git a/src/node_options.h b/src/node_options.h
+index 60068b008b2e2a034c3f0c58b947a8d04d55e3b2..d821bc6a9adf28ea312a9c446f8acfc8ed586ae3 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -203,7 +203,6 @@ class EnvironmentOptions : public Options {
+   std::vector<std::string> coverage_include_pattern;
+   std::vector<std::string> coverage_exclude_pattern;
+   bool throw_deprecation = false;
+-  bool trace_atomics_wait = false;
+   bool trace_deprecation = false;
+   bool trace_exit = false;
+   bool trace_sync_io = false;
+diff --git a/test/parallel/test-trace-atomic-deprecation.js b/test/parallel/test-trace-atomic-deprecation.js
+deleted file mode 100644
+index 8aeddb28e938d23e646d882cfe24b2e2311f9ab2..0000000000000000000000000000000000000000
+--- a/test/parallel/test-trace-atomic-deprecation.js
++++ /dev/null
+@@ -1,14 +0,0 @@
+-'use strict';
+-
+-const common = require('../common');
+-const assert = require('node:assert');
+-const { test } = require('node:test');
+-
+-test('should emit deprecation warning DEP0165', async () => {
+-  const { code, stdout, stderr } = await common.spawnPromisified(
+-    process.execPath, ['--trace-atomics-wait', '-e', '{}']
+-  );
+-  assert.match(stderr, /\[DEP0165\] DeprecationWarning:/);
+-  assert.strictEqual(stdout, '');
+-  assert.strictEqual(code, 0);
+-});
+diff --git a/test/parallel/test-trace-atomics-wait.js b/test/parallel/test-trace-atomics-wait.js
+deleted file mode 100644
+index 6449a2be2b47e0758090dc13d136877b1874c635..0000000000000000000000000000000000000000
+--- a/test/parallel/test-trace-atomics-wait.js
++++ /dev/null
+@@ -1,101 +0,0 @@
+-'use strict';
+-require('../common');
+-const assert = require('assert');
+-const child_process = require('child_process');
+-const { Worker } = require('worker_threads');
+-
+-if (process.argv[2] === 'child') {
+-  const i32arr = new Int32Array(new SharedArrayBuffer(8));
+-  assert.strictEqual(Atomics.wait(i32arr, 0, 1), 'not-equal');
+-  assert.strictEqual(Atomics.wait(i32arr, 0, 0, 10), 'timed-out');
+-
+-  new Worker(`
+-  const i32arr = require('worker_threads').workerData;
+-  Atomics.store(i32arr, 1, -1);
+-  Atomics.notify(i32arr, 1);
+-  Atomics.wait(i32arr, 1, -1);
+-  `, { eval: true, workerData: i32arr });
+-
+-  Atomics.wait(i32arr, 1, 0);
+-  assert.strictEqual(Atomics.load(i32arr, 1), -1);
+-  Atomics.store(i32arr, 1, 0);
+-  Atomics.notify(i32arr, 1);
+-  return;
+-}
+-
+-const proc = child_process.spawnSync(
+-  process.execPath,
+-  [ '--disable-warning=DEP0165', '--trace-atomics-wait', __filename, 'child' ],
+-  { encoding: 'utf8', stdio: [ 'inherit', 'inherit', 'pipe' ] });
+-
+-if (proc.status !== 0) console.log(proc);
+-assert.strictEqual(proc.status, 0);
+-
+-const SABAddress = proc.stderr.match(/Atomics\.wait\((?<SAB>.+) \+/).groups.SAB;
+-const actualTimeline = proc.stderr
+-  .replace(new RegExp(SABAddress, 'g'), '<address>')
+-  .replace(new RegExp(`\\(node:${proc.pid}\\) `, 'g'), '')
+-  .replace(/\binf(inity)?\b/gi, 'inf')
+-  .replace(/\r/g, '')
+-  .trim();
+-console.log('+++ normalized stdout +++');
+-console.log(actualTimeline);
+-console.log('--- normalized stdout ---');
+-
+-const begin =
+-`[Thread 0] Atomics.wait(<address> + 0, 1, inf) started
+-[Thread 0] Atomics.wait(<address> + 0, 1, inf) did not wait because the \
+-values mismatched
+-[Thread 0] Atomics.wait(<address> + 0, 0, 10) started
+-[Thread 0] Atomics.wait(<address> + 0, 0, 10) timed out`;
+-
+-const expectedTimelines = [
+-  `${begin}
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) started
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) started
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) was woken up by another thread
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) was woken up by another thread`,
+-  `${begin}
+-[Thread 1] Atomics.wait(<address> + 4, 0, inf) started
+-[Thread 0] Atomics.wait(<address> + 4, -1, inf) started
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) was woken up by another thread
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) was woken up by another thread`,
+-  `${begin}
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) started
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) was woken up by another thread
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) started
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) was woken up by another thread`,
+-  `${begin}
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) started
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) was woken up by another thread
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) started
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) did not wait because the \
+-values mismatched`,
+-  `${begin}
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) started
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) started
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) was woken up by another thread
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) did not wait because the \
+-values mismatched`,
+-  `${begin}
+-[Thread 1] Atomics.wait(<address> + 4, 0, inf) started
+-[Thread 0] Atomics.wait(<address> + 4, -1, inf) started
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) was woken up by another thread
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) did not wait because the \
+-values mismatched`,
+-  `${begin}
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) started
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) did not wait because the \
+-values mismatched
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) started
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) did not wait because the \
+-values mismatched`,
+-  `${begin}
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) started
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) started
+-[Thread 0] Atomics.wait(<address> + 4, 0, inf) did not wait because the \
+-values mismatched
+-[Thread 1] Atomics.wait(<address> + 4, -1, inf) was woken up by another thread`,
+-];
+-
+-assert(expectedTimelines.includes(actualTimeline));

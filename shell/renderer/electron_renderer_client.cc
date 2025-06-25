@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/containers/contains.h"
 #include "base/debug/stack_trace.h"
@@ -16,6 +17,7 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
@@ -24,6 +26,13 @@
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
+
+#if BUILDFLAG(IS_LINUX) && (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
+#define ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX
+#include "components/crash/core/app/crashpad.h"
+#include "content/public/common/content_switches.h"
+#include "v8/include/v8-wasm-trap-handler-posix.h"
+#endif
 
 namespace electron {
 
@@ -34,6 +43,14 @@ ElectronRendererClient::ElectronRendererClient()
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {}
 
 ElectronRendererClient::~ElectronRendererClient() = default;
+
+void ElectronRendererClient::PostIOThreadCreated(
+    base::SingleThreadTaskRunner* io_thread_task_runner) {
+  // Freezing flags after init conflicts with node in the renderer.
+  // We do this here in order to avoid having to patch the ctor in
+  // content/renderer/render_process_impl.cc.
+  v8::V8::SetFlagsFromString("--no-freeze-flags-after-init");
+}
 
 void ElectronRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
@@ -92,8 +109,10 @@ void ElectronRendererClient::DidCreateScriptContext(
   }
 
   // Setup node tracing controller.
-  if (!node::tracing::TraceEventHelper::GetAgent())
-    node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
+  if (!node::tracing::TraceEventHelper::GetAgent()) {
+    auto* tracing_agent = new node::tracing::Agent();
+    node::tracing::TraceEventHelper::SetAgent(tracing_agent);
+  }
 
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
@@ -107,7 +126,7 @@ void ElectronRendererClient::DidCreateScriptContext(
       blink::LoaderFreezeMode::kStrict);
 
   std::shared_ptr<node::Environment> env = node_bindings_->CreateEnvironment(
-      renderer_context, nullptr,
+      renderer_context, nullptr, 0,
       base::BindRepeating(&ElectronRendererClient::UndeferLoad,
                           base::Unretained(this), render_frame));
 
@@ -176,19 +195,12 @@ void ElectronRendererClient::WillReleaseScriptContext(
   if (env == node_bindings_->uv_env())
     node_bindings_->set_uv_env(nullptr);
 
-  // Destroying the node environment will also run the uv loop,
-  // Node.js expects `kExplicit` microtasks policy and will run microtasks
-  // checkpoints after every call into JavaScript. Since we use a different
-  // policy in the renderer - switch to `kExplicit` and then drop back to the
-  // previous policy value.
-  v8::MicrotaskQueue* microtask_queue = context->GetMicrotaskQueue();
-  auto old_policy = microtask_queue->microtasks_policy();
-  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
-  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
-
-  environments_.erase(iter);
-
-  microtask_queue->set_microtasks_policy(old_policy);
+  // Destroying the node environment will also run the uv loop.
+  {
+    util::ExplicitMicrotasksScope microtasks_scope(
+        context->GetMicrotaskQueue());
+    environments_.erase(iter);
+  }
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);
@@ -234,9 +246,51 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
   }
 }
 
+void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
+// See CL:5372409 - copied from ShellContentRendererClient.
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
+  // Mac and Windows use the default implementation (where the default v8 trap
+  // handler gets set up).
+  ContentRendererClient::SetUpWebAssemblyTrapHandler();
+  return;
+#elif defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
+  const bool crash_reporter_enabled =
+      crash_reporter::GetHandlerSocket(nullptr, nullptr);
+
+  if (crash_reporter_enabled) {
+    // If either --enable-crash-reporter or --enable-crash-reporter-for-testing
+    // is enabled it should take care of signal handling for us, use the default
+    // implementation which doesn't register an additional handler.
+    ContentRendererClient::SetUpWebAssemblyTrapHandler();
+    return;
+  }
+
+  const bool use_v8_default_handler =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          ::switches::kDisableInProcessStackTraces);
+
+  if (use_v8_default_handler) {
+    // There is no signal handler yet, but it's okay if v8 registers one.
+    v8::V8::EnableWebAssemblyTrapHandler(/*use_v8_signal_handler=*/true);
+    return;
+  }
+
+  if (base::debug::SetStackDumpFirstChanceCallback(
+          v8::TryHandleWebAssemblyTrapPosix)) {
+    // Crashpad and Breakpad are disabled, but the in-process stack dump
+    // handlers are enabled, so set the callback on the stack dump handlers.
+    v8::V8::EnableWebAssemblyTrapHandler(/*use_v8_signal_handler=*/false);
+    return;
+  }
+
+  // As the registration of the callback failed, we don't enable trap
+  // handlers.
+#endif  // defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
+}
+
 node::Environment* ElectronRendererClient::GetEnvironment(
     content::RenderFrame* render_frame) const {
-  if (!base::Contains(injected_frames_, render_frame))
+  if (!injected_frames_.contains(render_frame))
     return nullptr;
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   auto context =

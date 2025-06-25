@@ -4,10 +4,14 @@
 
 #include "shell/browser/notifications/notification.h"
 
+#include "base/environment.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 
 namespace electron {
+
+const bool debug_notifications =
+    base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
 
 NotificationOptions::NotificationOptions() = default;
 NotificationOptions::~NotificationOptions() = default;

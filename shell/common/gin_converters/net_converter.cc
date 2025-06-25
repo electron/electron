@@ -34,6 +34,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
 
 namespace gin {
@@ -43,7 +44,7 @@ namespace {
 bool CertFromData(const std::string& data,
                   scoped_refptr<net::X509Certificate>* out) {
   auto cert_list = net::X509Certificate::CreateCertificateListFromBytes(
-      base::as_bytes(base::make_span(data)),
+      base::as_byte_span(data),
       net::X509Certificate::FORMAT_SINGLE_CERTIFICATE);
   if (cert_list.empty())
     return false;
@@ -524,11 +525,11 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
       }
       case network::mojom::DataElement::Tag::kBytes: {
         upload_data.Set("type", "rawData");
-        const auto& bytes = element.As<network::DataElementBytes>().bytes();
-        const char* data = reinterpret_cast<const char*>(bytes.data());
         upload_data.Set(
             "bytes",
-            node::Buffer::Copy(isolate, data, bytes.size()).ToLocalChecked());
+            electron::Buffer::Copy(
+                isolate, element.As<network::DataElementBytes>().bytes())
+                .ToLocalChecked());
         break;
       }
       case network::mojom::DataElement::Tag::kDataPipe: {
@@ -595,9 +596,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
     if (!type)
       return false;
     if (*type == "rawData") {
-      const base::Value::BlobStorage* bytes = dict.FindBlob("bytes");
-      (*out)->AppendBytes(reinterpret_cast<const char*>(bytes->data()),
-                          base::checked_cast<int>(bytes->size()));
+      (*out)->AppendBytes(std::move(*dict.Find("bytes")).TakeBlob());
     } else if (*type == "file") {
       const std::string* file = dict.FindString("filePath");
       if (!file)

@@ -30,9 +30,10 @@ jobs:
           org: electron
       - name: Set status
         if: ${{ steps.check-for-blocked-labels.outputs.NOT_BLOCKED }}
-        uses: dsanders11/project-actions/edit-item@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
+        uses: dsanders11/project-actions/edit-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 90
           field: Status
           field-value: 📥 Was Blocked
+          fail-if-item-not-found: false

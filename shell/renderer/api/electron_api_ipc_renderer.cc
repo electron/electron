@@ -6,6 +6,7 @@
 
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
+#include "content/public/renderer/worker_thread.h"
 #include "gin/dictionary.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
@@ -14,15 +15,20 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
+#include "shell/renderer/preload_realm_context.h"
+#include "shell/renderer/service_worker_data.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
+#include "third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
+#include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 
 using blink::WebLocalFrame;
 using content::RenderFrame;
@@ -40,50 +46,23 @@ RenderFrame* GetCurrentRenderFrame() {
   return RenderFrame::FromWebFrame(frame);
 }
 
-class IPCRenderer final : public gin::Wrappable<IPCRenderer>,
-                          private content::RenderFrameObserver {
+// Thread identifier for the main renderer thread (as opposed to a service
+// worker thread).
+inline constexpr int kMainThreadId = 0;
+
+bool IsWorkerThread() {
+  return content::WorkerThread::GetCurrentId() != kMainThreadId;
+}
+
+template <typename T>
+class IPCBase : public gin::Wrappable<T> {
  public:
   static gin::WrapperInfo kWrapperInfo;
 
-  static gin::Handle<IPCRenderer> Create(v8::Isolate* isolate) {
-    return gin::CreateHandle(isolate, new IPCRenderer(isolate));
+  static gin::Handle<T> Create(v8::Isolate* isolate) {
+    return gin::CreateHandle(isolate, new T(isolate));
   }
 
-  explicit IPCRenderer(v8::Isolate* isolate)
-      : content::RenderFrameObserver(GetCurrentRenderFrame()) {
-    RenderFrame* render_frame = GetCurrentRenderFrame();
-    DCHECK(render_frame);
-    weak_context_ =
-        v8::Global<v8::Context>(isolate, isolate->GetCurrentContext());
-    weak_context_.SetWeak();
-
-    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
-        &electron_ipc_remote_);
-  }
-
-  void OnDestruct() override { electron_ipc_remote_.reset(); }
-
-  void WillReleaseScriptContext(v8::Local<v8::Context> context,
-                                int32_t world_id) override {
-    if (weak_context_.IsEmpty() ||
-        weak_context_.Get(context->GetIsolate()) == context)
-      electron_ipc_remote_.reset();
-  }
-
-  // gin::Wrappable:
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override {
-    return gin::Wrappable<IPCRenderer>::GetObjectTemplateBuilder(isolate)
-        .SetMethod("send", &IPCRenderer::SendMessage)
-        .SetMethod("sendSync", &IPCRenderer::SendSync)
-        .SetMethod("sendToHost", &IPCRenderer::SendToHost)
-        .SetMethod("invoke", &IPCRenderer::Invoke)
-        .SetMethod("postMessage", &IPCRenderer::PostMessage);
-  }
-
-  const char* GetTypeName() override { return "IPCRenderer"; }
-
- private:
   void SendMessage(v8::Isolate* isolate,
                    gin_helper::ErrorThrower thrower,
                    bool internal,
@@ -202,18 +181,95 @@ class IPCRenderer final : public gin::Wrappable<IPCRenderer>,
     return electron::DeserializeV8Value(isolate, result);
   }
 
-  v8::Global<v8::Context> weak_context_;
+  // gin::Wrappable:
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override {
+    return gin::Wrappable<T>::GetObjectTemplateBuilder(isolate)
+        .SetMethod("send", &T::SendMessage)
+        .SetMethod("sendSync", &T::SendSync)
+        .SetMethod("sendToHost", &T::SendToHost)
+        .SetMethod("invoke", &T::Invoke)
+        .SetMethod("postMessage", &T::PostMessage);
+  }
+
+ protected:
   mojo::AssociatedRemote<electron::mojom::ElectronApiIPC> electron_ipc_remote_;
 };
 
-gin::WrapperInfo IPCRenderer::kWrapperInfo = {gin::kEmbedderNativeGin};
+class IPCRenderFrame : public IPCBase<IPCRenderFrame>,
+                       private content::RenderFrameObserver {
+ public:
+  explicit IPCRenderFrame(v8::Isolate* isolate)
+      : content::RenderFrameObserver(GetCurrentRenderFrame()) {
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    blink::ExecutionContext* execution_context =
+        blink::ExecutionContext::From(context);
+
+    if (execution_context->IsWindow()) {
+      RenderFrame* render_frame = GetCurrentRenderFrame();
+      DCHECK(render_frame);
+      render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
+          &electron_ipc_remote_);
+    } else {
+      NOTREACHED();
+    }
+
+    weak_context_ =
+        v8::Global<v8::Context>(isolate, isolate->GetCurrentContext());
+    weak_context_.SetWeak();
+  }
+
+  void OnDestruct() override { electron_ipc_remote_.reset(); }
+
+  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+                                int32_t world_id) override {
+    if (weak_context_.IsEmpty() ||
+        weak_context_.Get(context->GetIsolate()) == context) {
+      OnDestruct();
+    }
+  }
+
+  const char* GetTypeName() override { return "IPCRenderFrame"; }
+
+ private:
+  v8::Global<v8::Context> weak_context_;
+};
+
+template <>
+gin::WrapperInfo IPCBase<IPCRenderFrame>::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
+
+class IPCServiceWorker : public IPCBase<IPCServiceWorker>,
+                         public content::WorkerThread::Observer {
+ public:
+  explicit IPCServiceWorker(v8::Isolate* isolate) {
+    DCHECK(IsWorkerThread());
+    content::WorkerThread::AddObserver(this);
+
+    electron::ServiceWorkerData* service_worker_data =
+        electron::preload_realm::GetServiceWorkerData(
+            isolate->GetCurrentContext());
+    DCHECK(service_worker_data);
+    service_worker_data->proxy()->GetRemoteAssociatedInterface(
+        electron_ipc_remote_.BindNewEndpointAndPassReceiver());
+  }
+
+  void WillStopCurrentWorkerThread() override { electron_ipc_remote_.reset(); }
+
+  const char* GetTypeName() override { return "IPCServiceWorker"; }
+};
+
+template <>
+gin::WrapperInfo IPCBase<IPCServiceWorker>::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin::Dictionary dict(context->GetIsolate(), exports);
-  dict.Set("ipc", IPCRenderer::Create(context->GetIsolate()));
+  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  dict.SetMethod("createForRenderFrame", &IPCRenderFrame::Create);
+  dict.SetMethod("createForServiceWorker", &IPCServiceWorker::Create);
 }
 
 }  // namespace

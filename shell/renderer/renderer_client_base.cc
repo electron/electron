@@ -72,7 +72,6 @@
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/common/constants.h"  // nogncheck
 #include "components/pdf/common/pdf_util.h"   // nogncheck
-#include "components/pdf/renderer/pdf_internal_plugin_delegate.h"
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
@@ -119,25 +118,6 @@ std::vector<std::string> ParseSchemesCLISwitch(
   return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);
 }
-
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-class ChromePdfInternalPluginDelegate final
-    : public pdf::PdfInternalPluginDelegate {
- public:
-  ChromePdfInternalPluginDelegate() = default;
-  ChromePdfInternalPluginDelegate(const ChromePdfInternalPluginDelegate&) =
-      delete;
-  ChromePdfInternalPluginDelegate& operator=(
-      const ChromePdfInternalPluginDelegate&) = delete;
-  ~ChromePdfInternalPluginDelegate() override = default;
-
-  // `pdf::PdfInternalPluginDelegate`:
-  [[nodiscard]] bool IsAllowedOrigin(const url::Origin& origin) const override {
-    return origin.scheme() == extensions::kExtensionScheme &&
-           origin.host() == extension_misc::kPdfExtensionId;
-  }
-};
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 // static
 RendererClientBase* g_renderer_client_base = nullptr;
@@ -239,7 +219,7 @@ void RendererClientBase::RenderThreadStarted() {
                                                      true);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions_client_.reset(CreateExtensionsClient());
+  extensions_client_ = std::make_unique<ElectronExtensionsClient>();
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
   extensions_renderer_client_ =
@@ -385,9 +365,7 @@ bool RendererClientBase::OverrideCreatePlugin(
     blink::WebPlugin** plugin) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   if (params.mime_type.Utf8() == pdf::kInternalPluginMimeType) {
-    *plugin = pdf::CreateInternalPlugin(
-        std::move(params), render_frame,
-        std::make_unique<ChromePdfInternalPluginDelegate>());
+    *plugin = pdf::CreateInternalPlugin(std::move(params), render_frame, {});
     return true;
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -425,7 +403,7 @@ bool RendererClientBase::IsPluginHandledExternally(
 
   if (plugin_info->actual_mime_type == pdf::kInternalPluginMimeType) {
     if (IsPdfInternalPluginAllowedOrigin(
-            render_frame->GetWebFrame()->GetSecurityOrigin())) {
+            render_frame->GetWebFrame()->GetSecurityOrigin(), {})) {
       return true;
     }
   }
@@ -565,12 +543,6 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
     return frame->MainWorldScriptContext();
 }
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-extensions::ExtensionsClient* RendererClientBase::CreateExtensionsClient() {
-  return new ElectronExtensionsClient;
-}
-#endif
-
 bool RendererClientBase::IsWebViewFrame(
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) const {
@@ -617,20 +589,19 @@ void RendererClientBase::SetupMainWorldOverrides(
 
   v8::Local<v8::Value> guest_view_internal;
   if (global.GetHidden("guestViewInternal", &guest_view_internal)) {
-    api::context_bridge::ObjectCache object_cache;
     auto result = api::PassValueToOtherContext(
         source_context, context, guest_view_internal, source_context->Global(),
-        &object_cache, false, 0, api::BridgeErrorTarget::kSource);
+        false, api::BridgeErrorTarget::kSource);
     if (!result.IsEmpty()) {
       isolated_api.Set("guestViewInternal", result.ToLocalChecked());
     }
   }
 
-  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
-      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedApi")};
+  v8::LocalVector<v8::String> isolated_bundle_params(
+      isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "isolatedApi")});
 
-  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      isolated_api.GetHandle()};
+  v8::LocalVector<v8::Value> isolated_bundle_args(isolate,
+                                                  {isolated_api.GetHandle()});
 
   util::CompileAndCall(context, "electron/js2c/isolated_bundle",
                        &isolated_bundle_params, &isolated_bundle_args);

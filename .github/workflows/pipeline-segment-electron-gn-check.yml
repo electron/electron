@@ -5,11 +5,11 @@ on:
     inputs:
       target-platform:
         type: string
-        description: 'Platform to run on, can be macos or linux'
+        description: 'Platform to run on, can be macos, win or linux'
         required: true
-      target-arch:
+      target-archs:
         type: string
-        description: 'Arch to build for, can be x64, arm64 or arm'
+        description: 'Archs to check for, can be x64, x86, arm64 or arm space separated'
         required: true
       check-runs-on:
         type: string
@@ -25,35 +25,30 @@ on:
         required: true
         type: string
         default: testing
-      is-asan: 
-        description: 'Building the Address Sanitizer (ASan) Linux build'
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
-  group: electron-gn-check-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref }}
+  group: electron-gn-check-${{ inputs.target-platform }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
+  GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || (inputs.target-platform == 'linux' && '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' || '--custom-var=checkout_win=True') }}
   ELECTRON_OUT_DIR: Default
-  TARGET_ARCH: ${{ inputs.target-arch }}
 
 jobs:
   gn-check:
-    # TODO(codebytere): Change this to medium VM
+    defaults:
+      run:
+        shell: bash
     runs-on: ${{ inputs.check-runs-on }}
     container: ${{ fromJSON(inputs.check-container) }}
-    env:
-      TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
     - name: Checkout Electron
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Cleanup disk space on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       shell: bash
@@ -70,61 +65,49 @@ jobs:
         sudo rm -rf $TMPDIR/del-target
     - name: Check disk space after freeing up space
       if: ${{ inputs.target-platform == 'macos' }}
-      run: df -h        
+      run: df -h
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
-    - name: Init Build Tools
+    - name: Enable windows toolchain
+      if: ${{ inputs.target-platform == 'win' }}
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
-    - name: Get Depot Tools
-      timeout-minutes: 5
-      run: |
-        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-
-        SEDOPTION="-i"
-        if [ "`uname`" = "Darwin" ]; then
-          SEDOPTION="-i ''"
-        fi
-
-        # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-        sed $SEDOPTION '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-
-        # Ensure depot_tools does not update.
-        test -d depot_tools && cd depot_tools
-        if [ "`uname`" = "Linux" ]; then
-          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-        fi
-        touch .disable_auto_update
-    - name: Add Depot Tools to PATH
-      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
-    - name: Set GN_EXTRA_ARGS for Linux
-      if: ${{ inputs.target-platform == 'linux' }}
-      run: |
-        if [ "${{ inputs.target-arch  }}" = "arm" ]; then
-          GN_EXTRA_ARGS='build_tflite_with_xnnpack=false'
-        elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
-          GN_EXTRA_ARGS='fatal_linker_warnings=false enable_linux_installer=false'
-        fi
-        echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
+        echo "ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=1" >> $GITHUB_ENV
     - name: Generate DEPS Hash
       run: |
-        node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
-        DEPSHASH=v1-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
+        node src/electron/script/generate-deps-hash.js
+        DEPSHASH=v1-src-cache-$(cat src/electron/.depshash)
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Restore src cache via AZCopy
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
+      with:
+        target-platform: ${{ inputs.target-platform }}      
     - name: Restore src cache via AKS
-      if: ${{ inputs.target-platform == 'linux' }}
+      if: ${{ inputs.target-platform == 'linux' || inputs.target-platform == 'win' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
+      with:
+        target-platform: ${{ inputs.target-platform }}
     - name: Run Electron Only Hooks
       run: |
-        gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+        echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
+          echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False,'install_sysroot':False,'checkout_win':True},'managed':False}]" > tmpgclient
+          echo "target_os=['win']" >> tmpgclient
+        fi
+        e d gclient runhooks --gclientfile=tmpgclient
+
+        # Fix VS Toolchain
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
+          rm -rf src/third_party/depot_tools/win_toolchain/vs_files
+          e d python3 src/build/vs_toolchain.py update --force
+        fi
     - name: Regenerate DEPS Hash
       run: |
-        (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js && cat src/electron/.depshash-target
-        echo "DEPSHASH=$(shasum src/electron/.depshash | cut -f1 -d' ')" >> $GITHUB_ENV
+        (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
+        echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
     - name: Checkout Electron
@@ -132,30 +115,46 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
-      run: |
-        cd src/electron
-        node script/yarn install --frozen-lockfile
+      uses: ./src/electron/.github/actions/install-dependencies
     - name: Default GN gen
       run: |
         cd src/electron
         git pack-refs
-        cd ..
-
-        e build --only-gen
-    - name: Run GN Check
+    - name: Run GN Check for ${{ inputs.target-archs }}
       run: |
-        cd src
-        gn check out/Default //electron:electron_lib
-        gn check out/Default //electron:electron_app
-        gn check out/Default //electron/shell/common:mojo
-        gn check out/Default //electron/shell/common:plugin
+        for target_cpu in ${{ inputs.target-archs }}
+        do
+          e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu $target_cpu
+          cd src
+          export GN_EXTRA_ARGS="target_cpu=\"$target_cpu\""
+          if [ "${{ inputs.target-platform }}" = "linux" ]; then
+            if [ "$target_cpu" = "arm" ]; then
+              export GN_EXTRA_ARGS="$GN_EXTRA_ARGS build_tflite_with_xnnpack=false"
+            elif [ "$target_cpu" = "arm64" ]; then
+              export GN_EXTRA_ARGS="$GN_EXTRA_ARGS fatal_linker_warnings=false enable_linux_installer=false"
+            fi
+          fi
+          if [ "${{ inputs.target-platform }}" = "win" ]; then
+            export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
+          fi
 
-        # Check the hunspell filenames
-        node electron/script/gen-hunspell-filenames.js --check
-        node electron/script/gen-libc++-filenames.js --check
+          e build --only-gen
+
+          e d gn check out/Default //electron:electron_lib
+          e d gn check out/Default //electron:electron_app
+          e d gn check out/Default //electron/shell/common:mojo
+          e d gn check out/Default //electron/shell/common:plugin
+
+          # Check the hunspell filenames
+          node electron/script/gen-hunspell-filenames.js --check
+          node electron/script/gen-libc++-filenames.js --check
+          cd ..
+        done
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
+      shell: bash
       run: |
         while [ -f /var/.ssh-lock ]
         do

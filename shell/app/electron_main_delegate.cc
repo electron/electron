@@ -18,6 +18,7 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/path_service.h"
+#include "base/strings/cstring_view.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
@@ -81,8 +82,9 @@ namespace {
 
 constexpr std::string_view kRelauncherProcess = "relauncher";
 
-constexpr std::string_view kElectronDisableSandbox{"ELECTRON_DISABLE_SANDBOX"};
-constexpr std::string_view kElectronEnableStackDumping{
+constexpr base::cstring_view kElectronDisableSandbox{
+    "ELECTRON_DISABLE_SANDBOX"};
+constexpr base::cstring_view kElectronEnableStackDumping{
     "ELECTRON_ENABLE_STACK_DUMPING"};
 
 // Returns true if this subprocess type needs the ResourceBundle initialized
@@ -455,8 +457,7 @@ ElectronMainDelegate::CreateContentUtilityClient() {
   return utility_client_.get();
 }
 
-absl::variant<int, content::MainFunctionParams>
-ElectronMainDelegate::RunProcess(
+std::variant<int, content::MainFunctionParams> ElectronMainDelegate::RunProcess(
     const std::string& process_type,
     content::MainFunctionParams main_function_params) {
   if (process_type == kRelauncherProcess)
@@ -466,7 +467,7 @@ ElectronMainDelegate::RunProcess(
 }
 
 bool ElectronMainDelegate::ShouldCreateFeatureList(InvokedIn invoked_in) {
-  return absl::holds_alternative<InvokedInChildProcess>(invoked_in);
+  return std::holds_alternative<InvokedInChildProcess>(invoked_in);
 }
 
 bool ElectronMainDelegate::ShouldInitializeMojo(InvokedIn invoked_in) {

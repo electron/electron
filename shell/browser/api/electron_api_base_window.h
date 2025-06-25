@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 
+#include <array>
 #include <map>
 #include <memory>
 #include <optional>
@@ -41,7 +42,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  NativeWindow* window() const { return window_.get(); }
+  const NativeWindow* window() const { return window_.get(); }
+  NativeWindow* window() { return window_.get(); }
 
  protected:
   // Common constructor.
@@ -69,7 +71,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowMinimize() override;
   void OnWindowRestore() override;
   void OnWindowWillResize(const gfx::Rect& new_bounds,
-                          const gfx::ResizeEdge& edge,
+                          gfx::ResizeEdge edge,
                           bool* prevent_default) override;
   void OnWindowResize() override;
   void OnWindowResized() override;
@@ -119,17 +121,17 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetBounds(const gfx::Rect& bounds, gin_helper::Arguments* args);
   gfx::Rect GetBounds() const;
   void SetSize(int width, int height, gin_helper::Arguments* args);
-  std::vector<int> GetSize() const;
+  std::array<int, 2U> GetSize() const;
   void SetContentSize(int width, int height, gin_helper::Arguments* args);
-  std::vector<int> GetContentSize() const;
+  std::array<int, 2U> GetContentSize() const;
   void SetContentBounds(const gfx::Rect& bounds, gin_helper::Arguments* args);
   gfx::Rect GetContentBounds() const;
   bool IsNormal() const;
   gfx::Rect GetNormalBounds() const;
   void SetMinimumSize(int width, int height);
-  std::vector<int> GetMinimumSize() const;
+  std::array<int, 2U> GetMinimumSize() const;
   void SetMaximumSize(int width, int height);
-  std::vector<int> GetMaximumSize() const;
+  std::array<int, 2U> GetMaximumSize() const;
   void SetSheetOffset(double offsetY, gin_helper::Arguments* args);
   void SetResizable(bool resizable);
   bool IsResizable() const;
@@ -149,7 +151,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsAlwaysOnTop() const;
   void Center();
   void SetPosition(int x, int y, gin_helper::Arguments* args);
-  std::vector<int> GetPosition() const;
+  std::array<int, 2U> GetPosition() const;
   void SetTitle(const std::string& title);
   std::string GetTitle() const;
   void SetAccessibleTitle(const std::string& title);
@@ -177,6 +179,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsDocumentEdited() const;
   void SetIgnoreMouseEvents(bool ignore, gin_helper::Arguments* args);
   void SetContentProtection(bool enable);
+  bool IsContentProtected() const;
   void SetFocusable(bool focusable);
   bool IsFocusable() const;
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
@@ -251,14 +254,16 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool SetThumbnailClip(const gfx::Rect& region);
   bool SetThumbnailToolTip(const std::string& tooltip);
   void SetAppDetails(const gin_helper::Dictionary& options);
+  bool IsSnapped() const;
 #endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   void SetTitleBarOverlay(const gin_helper::Dictionary& options,
                           gin_helper::Arguments* args);
 #endif
-  int32_t GetID() const;
+  [[nodiscard]] constexpr int32_t GetID() const { return weak_map_id(); }
 
+ private:
   // Helpers.
 
   // Remove this window from parent window's |child_windows_|.
@@ -287,7 +292,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Reference to JS wrapper to prevent garbage collection.
   v8::Global<v8::Value> self_ref_;
 
- private:
   base::WeakPtrFactory<BaseWindow> weak_factory_{this};
 };
 

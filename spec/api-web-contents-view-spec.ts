@@ -9,7 +9,11 @@ import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
-  afterEach(closeAllWindows);
+  afterEach(async () => {
+    await closeAllWindows();
+    const existingWCS = webContents.getAllWebContents();
+    existingWCS.forEach((contents) => contents.close());
+  });
 
   it('can be instantiated with no arguments', () => {
     // eslint-disable-next-line no-new
@@ -49,6 +53,20 @@ describe('WebContentsView', () => {
     expect(() => new WebContentsView({
       webContents: webContentsView.webContents
     })).to.throw('options.webContents is already attached to a window');
+  });
+
+  it('should throw an error when adding a destroyed child view to the parent view', async () => {
+    const browserWindow = new BrowserWindow();
+
+    const webContentsView = new WebContentsView();
+    webContentsView.webContents.loadURL('about:blank');
+    webContentsView.webContents.destroy();
+
+    const destroyed = once(webContentsView.webContents, 'destroyed');
+    await destroyed;
+    expect(() => browserWindow.contentView.addChildView(webContentsView)).to.throw(
+      'Can\'t add a destroyed child view to a parent view'
+    );
   });
 
   it('should throw error when created with already attached webContents to other WebContentsView', () => {

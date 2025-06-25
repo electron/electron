@@ -9,7 +9,6 @@
 #include <string_view>
 #include <utility>
 
-#include "base/containers/contains.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/raw_ptr.h"
 #include "base/task/sequenced_task_runner.h"
@@ -33,6 +32,7 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/node_util.h"
 
 static constexpr auto ResourceTypes =
     base::MakeFixedFlatMap<std::string_view,
@@ -80,7 +80,7 @@ struct UserData : public base::SupportsUserData::Data {
 };
 
 extensions::WebRequestResourceType ParseResourceType(std::string_view value) {
-  if (const auto* iter = ResourceTypes.find(value); iter != ResourceTypes.end())
+  if (auto iter = ResourceTypes.find(value); iter != ResourceTypes.end())
     return iter->second;
 
   return extensions::WebRequestResourceType::OTHER;
@@ -211,15 +211,23 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
 gin::WrapperInfo WebRequest::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 WebRequest::RequestFilter::RequestFilter(
-    std::set<URLPattern> url_patterns,
+    std::set<URLPattern> include_url_patterns,
+    std::set<URLPattern> exclude_url_patterns,
     std::set<extensions::WebRequestResourceType> types)
-    : url_patterns_(std::move(url_patterns)), types_(std::move(types)) {}
+    : include_url_patterns_(std::move(include_url_patterns)),
+      exclude_url_patterns_(std::move(exclude_url_patterns)),
+      types_(std::move(types)) {}
 WebRequest::RequestFilter::RequestFilter(const RequestFilter&) = default;
 WebRequest::RequestFilter::RequestFilter() = default;
 WebRequest::RequestFilter::~RequestFilter() = default;
 
-void WebRequest::RequestFilter::AddUrlPattern(URLPattern pattern) {
-  url_patterns_.emplace(std::move(pattern));
+void WebRequest::RequestFilter::AddUrlPattern(URLPattern pattern,
+                                              bool is_match_pattern) {
+  if (is_match_pattern) {
+    include_url_patterns_.emplace(std::move(pattern));
+  } else {
+    exclude_url_patterns_.emplace(std::move(pattern));
+  }
 }
 
 void WebRequest::RequestFilter::AddType(
@@ -227,11 +235,13 @@ void WebRequest::RequestFilter::AddType(
   types_.insert(type);
 }
 
-bool WebRequest::RequestFilter::MatchesURL(const GURL& url) const {
-  if (url_patterns_.empty())
-    return true;
+bool WebRequest::RequestFilter::MatchesURL(
+    const GURL& url,
+    const std::set<URLPattern>& patterns) const {
+  if (patterns.empty())
+    return false;
 
-  for (const auto& pattern : url_patterns_) {
+  for (const auto& pattern : patterns) {
     if (pattern.MatchesURL(url))
       return true;
   }
@@ -240,12 +250,34 @@ bool WebRequest::RequestFilter::MatchesURL(const GURL& url) const {
 
 bool WebRequest::RequestFilter::MatchesType(
     extensions::WebRequestResourceType type) const {
-  return types_.empty() || base::Contains(types_, type);
+  return types_.empty() || types_.contains(type);
 }
 
 bool WebRequest::RequestFilter::MatchesRequest(
     extensions::WebRequestInfo* info) const {
-  return MatchesURL(info->url) && MatchesType(info->web_request_type);
+  // Matches URL and type, and does not match exclude URL.
+  return MatchesURL(info->url, include_url_patterns_) &&
+         !MatchesURL(info->url, exclude_url_patterns_) &&
+         MatchesType(info->web_request_type);
+}
+
+void WebRequest::RequestFilter::AddUrlPatterns(
+    const std::set<std::string>& filter_patterns,
+    RequestFilter* filter,
+    gin::Arguments* args,
+    bool is_match_pattern) {
+  for (const std::string& filter_pattern : filter_patterns) {
+    URLPattern pattern(URLPattern::SCHEME_ALL);
+    const URLPattern::ParseResult result = pattern.Parse(filter_pattern);
+    if (result == URLPattern::ParseResult::kSuccess) {
+      filter->AddUrlPattern(std::move(pattern), is_match_pattern);
+    } else {
+      const char* error_type = URLPattern::GetParseResultString(result);
+      args->ThrowTypeError("Invalid url pattern " + filter_pattern + ": " +
+                           error_type);
+      return;
+    }
+  }
 }
 
 struct WebRequest::BlockedRequest {
@@ -315,7 +347,7 @@ gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
 }
 
 const char* WebRequest::GetTypeName() {
-  return "WebRequest";
+  return GetClassName();
 }
 
 bool WebRequest::HasListener() const {
@@ -617,37 +649,43 @@ void WebRequest::SetListener(Event event,
                              gin::Arguments* args) {
   v8::Local<v8::Value> arg;
 
-  // { urls, types }.
-  std::set<std::string> filter_patterns, filter_types;
+  // { urls, excludeUrls, types }.
+  std::set<std::string> filter_include_patterns, filter_exclude_patterns,
+      filter_types;
+  RequestFilter filter;
+
   gin::Dictionary dict(args->isolate());
   if (args->GetNext(&arg) && !arg->IsFunction()) {
     // Note that gin treats Function as Dictionary when doing conversions, so we
     // have to explicitly check if the argument is Function before trying to
     // convert it to Dictionary.
     if (gin::ConvertFromV8(args->isolate(), arg, &dict)) {
-      if (!dict.Get("urls", &filter_patterns)) {
+      if (!dict.Get("urls", &filter_include_patterns)) {
         args->ThrowTypeError("Parameter 'filter' must have property 'urls'.");
         return;
       }
+
+      if (filter_include_patterns.empty()) {
+        util::EmitDeprecationWarning(
+            "The urls array in WebRequestFilter is empty, which is deprecated. "
+            "Please use '<all_urls>' to match all URLs.");
+        filter_include_patterns.insert("<all_urls>");
+      }
+
+      dict.Get("excludeUrls", &filter_exclude_patterns);
       dict.Get("types", &filter_types);
       args->GetNext(&arg);
     }
+  } else {
+    // If no filter is defined, create one with <all_urls> so it matches all
+    // requests
+    dict = gin::Dictionary::CreateEmpty(args->isolate());
+    filter_include_patterns.insert("<all_urls>");
+    dict.Set("urls", filter_include_patterns);
   }
 
-  RequestFilter filter;
-
-  for (const std::string& filter_pattern : filter_patterns) {
-    URLPattern pattern(URLPattern::SCHEME_ALL);
-    const URLPattern::ParseResult result = pattern.Parse(filter_pattern);
-    if (result == URLPattern::ParseResult::kSuccess) {
-      filter.AddUrlPattern(std::move(pattern));
-    } else {
-      const char* error_type = URLPattern::GetParseResultString(result);
-      args->ThrowTypeError("Invalid url pattern " + filter_pattern + ": " +
-                           error_type);
-      return;
-    }
-  }
+  filter.AddUrlPatterns(filter_include_patterns, &filter, args);
+  filter.AddUrlPatterns(filter_exclude_patterns, &filter, args, false);
 
   for (const std::string& filter_type : filter_types) {
     auto type = ParseResourceType(filter_type);

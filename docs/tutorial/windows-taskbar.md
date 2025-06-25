@@ -57,7 +57,7 @@ To set user tasks for your application, you can use
 ##### Set user tasks
 
 Starting with a working application from the
-[Quick Start Guide](quick-start.md), update the `main.js` file with the
+[tutorial starter code][tutorial-starter-code], update the `main.js` file with the
 following lines:
 
 ```js
@@ -121,11 +121,12 @@ To set thumbnail toolbar in your application, you need to use
 ##### Set thumbnail toolbar
 
 Starting with a working application from the
-[Quick Start Guide](quick-start.md), update the `main.js` file with the
+[tutorial starter code][tutorial-starter-code], update the `main.js` file with the
 following lines:
 
 ```js
 const { BrowserWindow, nativeImage } = require('electron')
+
 const path = require('node:path')
 
 const win = new BrowserWindow()
@@ -185,7 +186,7 @@ To set the overlay icon for a window, you need to use the
 #### Example
 
 Starting with a working application from the
-[Quick Start Guide](quick-start.md), update the `main.js` file with the
+[tutorial starter code][tutorial-starter-code], update the `main.js` file with the
 following lines:
 
 ```js
@@ -214,7 +215,7 @@ To flash the BrowserWindow taskbar button, you need to use the
 #### Example
 
 Starting with a working application from the
-[Quick Start Guide](quick-start.md), update the `main.js` file with the
+[tutorial starter code][tutorial-starter-code], update the `main.js` file with the
 following lines:
 
 ```js
@@ -231,10 +232,10 @@ In the above example, it is called when the window comes into focus,
 but you might use a timeout or some other event to disable it.
 
 [msdn-flash-frame]: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-flashwindow#remarks
-
 [setthumbarbuttons]: ../api/browser-window.md#winsetthumbarbuttonsbuttons-windows
 [setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows
 [setoverlayicon]: ../api/browser-window.md#winsetoverlayiconoverlay-description-windows
 [flashframe]: ../api/browser-window.md#winflashframeflag
 [recent-documents]: ./recent-documents.md
 [progress-bar]: ./progress-bar.md
+[tutorial-starter-code]: ../tutorial/tutorial-2-first-app.md#final-starter-code

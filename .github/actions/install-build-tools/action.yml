@@ -6,6 +6,25 @@ runs:
   - name: Install Build Tools
     shell: bash
     run: |
-      export BUILD_TOOLS_SHA=eeb1a11392e4cec08fd926c93b31ab556dc0c23b
+      if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
+        git config --global core.filemode false
+        git config --global core.autocrlf false
+        git config --global branch.autosetuprebase always
+        git config --global core.fscache true
+        git config --global core.preloadindex true
+      fi
+      export BUILD_TOOLS_SHA=0a7f6bef9453ceee45612442660ca16d2c40171b
       npm i -g @electron/build-tools
+      # Update depot_tools to ensure python
+      e d update_depot_tools
       e auto-update disable
+      # Disable further updates of depot_tools
+      e d auto-update disable
+      if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
+        e d cipd.bat --version
+        cp "C:\Python311\python.exe" "C:\Python311\python3.exe"
+        echo "C:\Users\ContainerAdministrator\.electron_build_tools\third_party\depot_tools" >> $GITHUB_PATH
+      else
+        echo "$HOME/.electron_build_tools/third_party/depot_tools" >> $GITHUB_PATH
+        echo "$HOME/.electron_build_tools/third_party/depot_tools/python-bin" >> $GITHUB_PATH
+      fi

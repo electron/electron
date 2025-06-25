@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
 #include "content/public/browser/frame_tree_node_id.h"
@@ -72,7 +71,11 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   static gin::WrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
-  content::RenderFrameHost* render_frame_host() const { return render_frame_; }
+  content::RenderFrameHost* render_frame_host() const;
+
+  base::WeakPtr<WebFrameMain> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
   // disable copy
   WebFrameMain(const WebFrameMain&) = delete;
@@ -101,8 +104,12 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   void TeardownMojoConnection();
   void OnRendererConnectionError();
 
-  // WebFrameMain can outlive its RenderFrameHost pointer so we need to check
-  // whether its been disposed of prior to accessing it.
+  [[nodiscard]] bool HasRenderFrame() const;
+
+  // Throws a JS error if HasRenderFrame() is false.
+  // WebFrameMain can outlive its RenderFrameHost pointer,
+  // so we need to check whether its been disposed of
+  // prior to accessing it.
   bool CheckRenderFrame() const;
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
@@ -122,7 +129,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   content::FrameTreeNodeId FrameTreeNodeID() const;
   std::string Name() const;
   base::ProcessId OSProcessID() const;
-  int ProcessID() const;
+  int32_t ProcessID() const;
   int RoutingID() const;
   GURL URL() const;
   std::string Origin() const;
@@ -132,6 +139,8 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   content::RenderFrameHost* Parent() const;
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
+
+  std::string_view LifecycleStateForTesting() const;
 
   v8::Local<v8::Promise> CollectDocumentJSCallStack(gin::Arguments* args);
   void CollectedJavaScriptCallStack(
@@ -146,8 +155,6 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
 
   content::FrameTreeNodeId frame_tree_node_id_;
   content::GlobalRenderFrameHostToken frame_token_;
-
-  raw_ptr<content::RenderFrameHost> render_frame_ = nullptr;
 
   // Whether the RenderFrameHost has been removed and that it should no longer
   // be accessed.

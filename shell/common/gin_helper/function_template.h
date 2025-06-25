@@ -16,9 +16,9 @@
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-external.h"
+#include "v8/include/v8-microtask-queue.h"
 #include "v8/include/v8-template.h"
 
 // This file is forked from gin/function_template.h with 2 differences:
@@ -262,15 +262,15 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
       : ArgumentHolder<indices, ArgTypes>(args, invoker_options)...,
         args_(args) {}
 
-  bool IsOK() { return And(ArgumentHolder<indices, ArgTypes>::ok...); }
+  [[nodiscard]] bool IsOK() const {
+    return (... && ArgumentHolder<indices, ArgTypes>::ok);
+  }
 
   template <typename ReturnType>
   void DispatchToCallback(
       base::RepeatingCallback<ReturnType(ArgTypes...)> callback) {
-    gin_helper::MicrotasksScope microtasks_scope{
-        args_->isolate(),
-        args_->GetHolderCreationContext()->GetMicrotaskQueue(), true,
-        v8::MicrotasksScope::kRunMicrotasks};
+    v8::MicrotasksScope microtasks_scope(args_->GetHolderCreationContext(),
+                                         v8::MicrotasksScope::kRunMicrotasks);
     args_->Return(
         callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
   }
@@ -279,20 +279,12 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
   // expression to foo. As a result, we must specialize the case of Callbacks
   // that have the void return type.
   void DispatchToCallback(base::RepeatingCallback<void(ArgTypes...)> callback) {
-    gin_helper::MicrotasksScope microtasks_scope{
-        args_->isolate(),
-        args_->GetHolderCreationContext()->GetMicrotaskQueue(), true,
-        v8::MicrotasksScope::kRunMicrotasks};
+    v8::MicrotasksScope microtasks_scope(args_->GetHolderCreationContext(),
+                                         v8::MicrotasksScope::kRunMicrotasks);
     callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 
  private:
-  static bool And() { return true; }
-  template <typename... T>
-  static bool And(bool arg1, T... args) {
-    return arg1 && And(args...);
-  }
-
   raw_ptr<gin::Arguments> args_;
 };
 

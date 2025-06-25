@@ -1,0 +1,145 @@
+name: Audit CI on Branches
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run every 2 hours
+    - cron: '0 */2 * * *'
+
+permissions: {}
+
+jobs:
+  audit_branch_ci:
+    name: Audit CI on Branches
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - run: npm install @actions/cache @electron/fiddle-core
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        id: audit-errors
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const cache = require('@actions/cache');
+            const { ElectronVersions } = require('@electron/fiddle-core');
+
+            const runsWithErrors = [];
+
+            // Only want the most recent workflow run that wasn't skipped or cancelled
+            const isValidWorkflowRun = (run) => !['skipped', 'cancelled'].includes(run.conclusion);
+
+            const versions = await ElectronVersions.create(undefined, { ignoreCache: true });
+            const branches = versions.supportedMajors.map((branch) => `${branch}-x-y`);
+
+            for (const branch of ["main", ...branches]) {
+              const latestCheckRuns = new Map();
+              const allCheckRuns = await github.paginate(github.rest.checks.listForRef, {
+                owner: "electron",
+                repo: "electron",
+                ref: branch,
+                status: 'completed',
+              });
+
+              // Sort the check runs by completed_at so that multiple check runs on the
+              // same ref (like a scheduled workflow) only looks at the most recent one
+              for (const checkRun of allCheckRuns.filter(
+                (run) => !['skipped', 'cancelled'].includes(run.conclusion),
+              ).sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at))) {
+                if (!latestCheckRuns.has(checkRun.name)) {
+                  latestCheckRuns.set(checkRun.name, checkRun);
+                }
+              }
+
+              // Check for runs which had error annotations
+              for (const checkRun of Array.from(latestCheckRuns.values())) {
+                if (checkRun.name === "Audit CI on Branches") {
+                  continue; // Skip the audit workflow itself
+                }
+
+                const annotations = (await github.rest.checks.listAnnotations({
+                  owner: "electron",
+                  repo: "electron",
+                  check_run_id: checkRun.id,
+                })).data ?? [];
+
+                if (
+                  annotations.find(
+                    ({ annotation_level, message }) =>
+                      annotation_level === "failure" &&
+                      !message.startsWith("Process completed with exit code") &&
+                      !message.startsWith("Response status code does not indicate success") &&
+                      !/Unable to make request/.test(message) &&
+                      !/The requested URL returned error/.test(message),
+                  )
+                ) {
+                  checkRun.hasErrorAnnotations = true;
+                } else {
+                  continue;
+                }
+
+                // Check if this is a known failure from a previous audit run
+                const cacheKey = `check-run-error-annotations-${checkRun.id}`;
+                const cacheHit =
+                  (await cache.restoreCache(['/dev/null'], cacheKey, undefined, {
+                    lookupOnly: true,
+                  })) !== undefined;
+
+                if (cacheHit) {
+                  checkRun.isStale = true;
+                }
+
+                checkRun.branch = branch;
+                runsWithErrors.push(checkRun);
+  
+                // Create a cache entry (only the name matters) to keep track of
+                // failures we've seen from previous runs to mark them as stale
+                if (!cacheHit) {
+                  await cache.saveCache(['/dev/null'], cacheKey);
+                }
+              }
+            }
+
+            if (runsWithErrors.length > 0) {
+              core.setOutput('errorsFound', true);
+              core.summary.addHeading('⚠️ Runs with Errors');
+              core.summary.addTable([
+                [
+                  { data: 'Branch', header: true },
+                  { data: 'Workflow Run', header: true },
+                  { data: 'Status', header: true },
+                ],
+                ...runsWithErrors
+                  .sort(
+                    (a, b) =>
+                      a.branch.localeCompare(b.branch) ||
+                      a.name.localeCompare(b.name),
+                  )
+                  .map((run) => [
+                    run.branch,
+                    `<a href="${run.html_url}">${run.name}</a>`,
+                    run.isStale
+                      ? '📅 Stale'
+                      : run.hasErrorAnnotations
+                      ? '⚠️ Errors'
+                      : '✅ Succeeded',
+                  ]),
+              ]);
+
+              // Set this as failed so it's easy to scan runs to find failures
+              if (runsWithErrors.find((run) => !run.isStale)) {
+                process.exitCode = 1;
+              }
+            } else {
+              core.summary.addRaw('🎉 No runs with errors');
+            }
+
+            await core.summary.write();
+      - name: Send Slack message if errors
+        if: ${{ always() && steps.audit-errors.outputs.errorsFound && github.ref == 'refs/heads/main' }}
+        uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
+        with:
+          payload: |
+            link: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          webhook: ${{ secrets.CI_ERRORS_SLACK_WEBHOOK_URL }}
+          webhook-type: webhook-trigger

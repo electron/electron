@@ -13,6 +13,7 @@
 
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
+#include "base/containers/map_util.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -54,6 +55,7 @@
 #include "net/http/http_util.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/cpp/request_destination.h"
 #include "services/network/public/mojom/clear_data_filter.mojom.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_cookies.h"
@@ -79,8 +81,10 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -95,9 +99,7 @@
 #include "url/origin.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "extensions/browser/extension_registry.h"
-#include "shell/browser/extensions/electron_extension_system.h"
-#include "shell/common/gin_converters/extension_converter.h"
+#include "shell/browser/api/electron_api_extensions.h"
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -139,9 +141,8 @@ uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
 
   uint32_t storage_mask = 0;
   for (const auto& it : storage_types) {
-    auto type = base::ToLowerASCII(it);
-    if (Lookup.contains(type))
-      storage_mask |= Lookup.at(type);
+    if (const uint32_t* val = base::FindOrNull(Lookup, base::ToLowerASCII(it)))
+      storage_mask |= *val;
   }
   return storage_mask;
 }
@@ -152,13 +153,12 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
     auto type = base::ToLowerASCII(it);
     if (type == "temporary")
       quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_TEMPORARY;
-    else if (type == "syncable")
-      quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_SYNCABLE;
   }
   return quota_mask;
 }
 
-constexpr BrowsingDataRemover::DataType kClearDataTypeAll = ~0ULL;
+constexpr BrowsingDataRemover::DataType kClearDataTypeAll =
+    ~0ULL & ~BrowsingDataRemover::DATA_TYPE_AVOID_CLOSING_CONNECTIONS;
 constexpr BrowsingDataRemover::OriginType kClearOriginTypeAll =
     BrowsingDataRemover::ORIGIN_TYPE_UNPROTECTED_WEB |
     BrowsingDataRemover::ORIGIN_TYPE_PROTECTED_WEB;
@@ -180,9 +180,8 @@ BrowsingDataRemover::DataType GetDataTypeMask(
     const std::vector<std::string>& data_types) {
   BrowsingDataRemover::DataType mask = 0u;
   for (const auto& type : data_types) {
-    if (kDataTypeLookup.contains(type)) {
-      mask |= kDataTypeLookup.at(type);
-    }
+    if (const auto* val = base::FindOrNull(kDataTypeLookup, type))
+      mask |= *val;
   }
   return mask;
 }
@@ -200,9 +199,11 @@ std::vector<std::string> GetDataTypesFromMask(
 
 // Represents a task to clear browsing data for the `clearData` API method.
 //
-// This type manages its own lifetime, deleting itself once the task finishes
-// completely.
-class ClearDataTask {
+// This type manages its own lifetime,
+// 1) deleting itself once all the operations created by this task are
+// completed. 2) through gin_helper::CleanedUpAtExit, ensuring it's destroyed
+// before the node environment shuts down.
+class ClearDataTask : public gin_helper::CleanedUpAtExit {
  public:
   // Starts running a task. This function will return before the task is
   // finished, but will resolve or reject the |promise| when it finishes.
@@ -213,7 +214,7 @@ class ClearDataTask {
       std::vector<url::Origin> origins,
       BrowsingDataFilterBuilder::Mode filter_mode,
       BrowsingDataFilterBuilder::OriginMatchingMode origin_matching_mode) {
-    std::shared_ptr<ClearDataTask> task(new ClearDataTask(std::move(promise)));
+    auto* task = new ClearDataTask(std::move(promise));
 
     // This method counts as an operation. This is important so we can call
     // `OnOperationFinished` at the end of this method as a fallback if all the
@@ -257,42 +258,36 @@ class ClearDataTask {
     }
 
     // This static method counts as an operation.
-    task->OnOperationFinished(std::nullopt);
+    task->OnOperationFinished(nullptr, std::nullopt);
   }
 
  private:
   // An individual |content::BrowsingDataRemover::Remove...| operation as part
-  // of a full |ClearDataTask|. This class manages its own lifetime, cleaning
-  // itself up after the operation completes and notifies the task of the
-  // result.
+  // of a full |ClearDataTask|. This class is owned by ClearDataTask and cleaned
+  // up either when the operation completes or when ClearDataTask is destroyed.
   class ClearDataOperation : private BrowsingDataRemover::Observer {
    public:
-    static void Run(std::shared_ptr<ClearDataTask> task,
-                    BrowsingDataRemover* remover,
-                    BrowsingDataRemover::DataType data_type_mask,
-                    std::unique_ptr<BrowsingDataFilterBuilder> filter_builder) {
-      auto* operation = new ClearDataOperation(task, remover);
+    ClearDataOperation(ClearDataTask* task, BrowsingDataRemover* remover)
+        : task_(task) {
+      observation_.Observe(remover);
+    }
 
+    void Start(BrowsingDataRemover* remover,
+               BrowsingDataRemover::DataType data_type_mask,
+               std::unique_ptr<BrowsingDataFilterBuilder> filter_builder) {
       remover->RemoveWithFilterAndReply(base::Time::Min(), base::Time::Max(),
                                         data_type_mask, kClearOriginTypeAll,
-                                        std::move(filter_builder), operation);
+                                        std::move(filter_builder), this);
     }
 
     // BrowsingDataRemover::Observer:
     void OnBrowsingDataRemoverDone(
         BrowsingDataRemover::DataType failed_data_types) override {
-      task_->OnOperationFinished(failed_data_types);
-      delete this;
+      task_->OnOperationFinished(this, failed_data_types);
     }
 
    private:
-    ClearDataOperation(std::shared_ptr<ClearDataTask> task,
-                       BrowsingDataRemover* remover)
-        : task_(task) {
-      observation_.Observe(remover);
-    }
-
-    std::shared_ptr<ClearDataTask> task_;
+    raw_ptr<ClearDataTask> task_;
     base::ScopedObservation<BrowsingDataRemover, BrowsingDataRemover::Observer>
         observation_{this};
   };
@@ -301,24 +296,36 @@ class ClearDataTask {
       : promise_(std::move(promise)) {}
 
   static void StartOperation(
-      std::shared_ptr<ClearDataTask> task,
+      ClearDataTask* task,
       BrowsingDataRemover* remover,
       BrowsingDataRemover::DataType data_type_mask,
       std::unique_ptr<BrowsingDataFilterBuilder> filter_builder) {
     // Track this operation
     task->operations_running_ += 1;
 
-    ClearDataOperation::Run(task, remover, data_type_mask,
-                            std::move(filter_builder));
+    auto& operation = task->operations_.emplace_back(
+        std::make_unique<ClearDataOperation>(task, remover));
+    operation->Start(remover, data_type_mask, std::move(filter_builder));
   }
 
   void OnOperationFinished(
+      ClearDataOperation* operation,
       std::optional<BrowsingDataRemover::DataType> failed_data_types) {
     DCHECK_GT(operations_running_, 0);
     operations_running_ -= 1;
 
     if (failed_data_types.has_value()) {
       failed_data_types_ |= failed_data_types.value();
+    }
+
+    if (operation) {
+      operations_.erase(
+          std::remove_if(
+              operations_.begin(), operations_.end(),
+              [operation](const std::unique_ptr<ClearDataOperation>& op) {
+                return op.get() == operation;
+              }),
+          operations_.end());
     }
 
     // If this is the last operation, then the task is finished
@@ -348,11 +355,14 @@ class ClearDataTask {
 
       promise_.Reject(error);
     }
+
+    delete this;
   }
 
   int operations_running_ = 0;
   BrowsingDataRemover::DataType failed_data_types_ = 0ULL;
   gin_helper::Promise<void> promise_;
+  std::vector<std::unique_ptr<ClearDataOperation>> operations_;
 };
 
 base::Value::Dict createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
@@ -554,7 +564,9 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
   SessionPreferences::CreateForBrowserContext(browser_context);
 
-  protocol_.Reset(isolate, Protocol::Create(isolate, browser_context).ToV8());
+  protocol_.Reset(
+      isolate,
+      Protocol::Create(isolate, browser_context->protocol_registry()).ToV8());
 
   browser_context->SetUserData(
       kElectronApiSessionKey,
@@ -566,10 +578,6 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     service->SetHunspellObserver(this);
   }
 #endif
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::ExtensionRegistry::Get(browser_context)->AddObserver(this);
-#endif
 }
 
 Session::~Session() {
@@ -580,10 +588,6 @@ Session::~Session() {
           SpellcheckServiceFactory::GetForContext(browser_context())) {
     service->SetHunspellObserver(nullptr);
   }
-#endif
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::ExtensionRegistry::Get(browser_context())->RemoveObserver(this);
 #endif
 }
 
@@ -710,14 +714,13 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
   ClearStorageDataOptions options;
   args->GetNext(&options);
 
-  auto* storage_partition = browser_context()->GetStoragePartition(nullptr);
   if (options.storage_types & StoragePartition::REMOVE_DATA_MASK_COOKIES) {
     // Reset media device id salt when cookies are cleared.
     // https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-deviceid
     MediaDeviceIDSalt::Reset(browser_context()->prefs());
   }
 
-  storage_partition->ClearData(
+  browser_context()->GetDefaultStoragePartition()->ClearData(
       options.storage_types, options.quota_types, options.storage_key,
       base::Time(), base::Time::Max(),
       base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
@@ -726,8 +729,7 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
 }
 
 void Session::FlushStorageData() {
-  auto* storage_partition = browser_context()->GetStoragePartition(nullptr);
-  storage_partition->Flush();
+  browser_context()->GetDefaultStoragePartition()->Flush();
 }
 
 v8::Local<v8::Promise> Session::SetProxy(gin::Arguments* args) {
@@ -1062,114 +1064,244 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
       base::Time::FromSecondsSinceUnixEpoch(start_time)));
 }
 
-void Session::SetPreloads(const std::vector<base::FilePath>& preloads) {
+std::string Session::RegisterPreloadScript(
+    gin_helper::ErrorThrower thrower,
+    const PreloadScript& new_preload_script) {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
-  prefs->set_preloads(preloads);
+
+  auto& preload_scripts = prefs->preload_scripts();
+
+  auto it = std::find_if(preload_scripts.begin(), preload_scripts.end(),
+                         [&new_preload_script](const PreloadScript& script) {
+                           return script.id == new_preload_script.id;
+                         });
+
+  if (it != preload_scripts.end()) {
+    thrower.ThrowError(
+        absl::StrFormat("Cannot register preload script with existing ID '%s'",
+                        new_preload_script.id));
+    return "";
+  }
+
+  if (!new_preload_script.file_path.IsAbsolute()) {
+    // Deprecated preload scripts logged error without throwing.
+    if (new_preload_script.deprecated) {
+      LOG(ERROR) << "preload script must have absolute path: "
+                 << new_preload_script.file_path;
+    } else {
+      thrower.ThrowError(
+          absl::StrFormat("Preload script must have absolute path: %s",
+                          new_preload_script.file_path.value()));
+      return "";
+    }
+  }
+
+  preload_scripts.push_back(new_preload_script);
+  return new_preload_script.id;
 }
 
-std::vector<base::FilePath> Session::GetPreloads() const {
+void Session::UnregisterPreloadScript(gin_helper::ErrorThrower thrower,
+                                      const std::string& script_id) {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
-  return prefs->preloads();
+
+  auto& preload_scripts = prefs->preload_scripts();
+
+  // Find the preload script by its ID
+  auto it = std::find_if(preload_scripts.begin(), preload_scripts.end(),
+                         [&script_id](const PreloadScript& script) {
+                           return script.id == script_id;
+                         });
+
+  // If the script is found, erase it from the vector
+  if (it != preload_scripts.end()) {
+    preload_scripts.erase(it);
+    return;
+  }
+
+  // If the script is not found, throw an error
+  thrower.ThrowError(absl::StrFormat(
+      "Cannot unregister preload script with non-existing ID '%s'", script_id));
 }
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-v8::Local<v8::Promise> Session::LoadExtension(
-    const base::FilePath& extension_path,
-    gin::Arguments* args) {
-  gin_helper::Promise<const extensions::Extension*> promise(isolate_);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
+std::vector<PreloadScript> Session::GetPreloadScripts() const {
+  auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
+  DCHECK(prefs);
+  return prefs->preload_scripts();
+}
 
-  if (!extension_path.IsAbsolute()) {
+/**
+ * Exposes the network service's ClearSharedDictionaryCacheForIsolationKey
+ * method, allowing clearing the Shared Dictionary cache for a given isolation
+ * key. Details about the feature available at
+ * https://developer.chrome.com/blog/shared-dictionary-compression
+ */
+v8::Local<v8::Promise> Session::ClearSharedDictionaryCacheForIsolationKey(
+    const gin_helper::Dictionary& options) {
+  gin_helper::Promise<void> promise(isolate_);
+  auto handle = promise.GetHandle();
+
+  GURL frame_origin_url, top_frame_site_url;
+  if (!options.Get("frameOrigin", &frame_origin_url) ||
+      !options.Get("topFrameSite", &top_frame_site_url)) {
     promise.RejectWithErrorMessage(
-        "The path to the extension in 'loadExtension' must be absolute");
+        "Must provide frameOrigin and topFrameSite strings to "
+        "`clearSharedDictionaryCacheForIsolationKey`");
     return handle;
   }
 
-  if (browser_context()->IsOffTheRecord()) {
+  if (!frame_origin_url.is_valid() || !top_frame_site_url.is_valid()) {
     promise.RejectWithErrorMessage(
-        "Extensions cannot be loaded in a temporary session");
+        "Invalid URLs provided for frameOrigin or topFrameSite");
     return handle;
   }
 
-  int load_flags = extensions::Extension::FOLLOW_SYMLINKS_ANYWHERE;
-  gin_helper::Dictionary options;
-  if (args->GetNext(&options)) {
-    bool allowFileAccess = false;
-    options.Get("allowFileAccess", &allowFileAccess);
-    if (allowFileAccess)
-      load_flags |= extensions::Extension::ALLOW_FILE_ACCESS;
+  url::Origin frame_origin = url::Origin::Create(frame_origin_url);
+  net::SchemefulSite top_frame_site(top_frame_site_url);
+  net::SharedDictionaryIsolationKey isolation_key(frame_origin, top_frame_site);
+
+  browser_context_->GetDefaultStoragePartition()
+      ->GetNetworkContext()
+      ->ClearSharedDictionaryCacheForIsolationKey(
+          isolation_key,
+          base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
+                         std::move(promise)));
+
+  return handle;
+}
+
+/**
+ * Exposes the network service's ClearSharedDictionaryCache
+ * method, allowing clearing the Shared Dictionary cache.
+ * https://developer.chrome.com/blog/shared-dictionary-compression
+ */
+v8::Local<v8::Promise> Session::ClearSharedDictionaryCache() {
+  gin_helper::Promise<void> promise(isolate_);
+  auto handle = promise.GetHandle();
+
+  browser_context_->GetDefaultStoragePartition()
+      ->GetNetworkContext()
+      ->ClearSharedDictionaryCache(
+          base::Time(), base::Time::Max(),
+          nullptr /*mojom::ClearDataFilterPtr*/,
+          base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
+                         std::move(promise)));
+
+  return handle;
+}
+
+/**
+ * Exposes the network service's GetSharedDictionaryInfo method, allowing
+ * inspection of Shared Dictionary information. Details about the feature
+ * available at https://developer.chrome.com/blog/shared-dictionary-compression
+ */
+v8::Local<v8::Promise> Session::GetSharedDictionaryInfo(
+    const gin_helper::Dictionary& options) {
+  gin_helper::Promise<std::vector<gin_helper::Dictionary>> promise(isolate_);
+  auto handle = promise.GetHandle();
+
+  GURL frame_origin_url, top_frame_site_url;
+  if (!options.Get("frameOrigin", &frame_origin_url) ||
+      !options.Get("topFrameSite", &top_frame_site_url)) {
+    promise.RejectWithErrorMessage(
+        "Must provide frameOrigin and topFrameSite strings");
+    return handle;
   }
 
-  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
-      extensions::ExtensionSystem::Get(browser_context()));
-  extension_system->LoadExtension(
-      extension_path, load_flags,
-      base::BindOnce(
-          [](gin_helper::Promise<const extensions::Extension*> promise,
-             const extensions::Extension* extension,
-             const std::string& error_msg) {
-            if (extension) {
-              if (!error_msg.empty())
-                util::EmitWarning(promise.isolate(), error_msg,
-                                  "ExtensionLoadWarning");
-              promise.Resolve(extension);
-            } else {
-              promise.RejectWithErrorMessage(error_msg);
+  if (!frame_origin_url.is_valid() || !top_frame_site_url.is_valid()) {
+    promise.RejectWithErrorMessage(
+        "Invalid URLs provided for frameOrigin or topFrameSite");
+    return handle;
+  }
+
+  url::Origin frame_origin = url::Origin::Create(frame_origin_url);
+  net::SchemefulSite top_frame_site(top_frame_site_url);
+  net::SharedDictionaryIsolationKey isolation_key(frame_origin, top_frame_site);
+
+  browser_context_->GetDefaultStoragePartition()
+      ->GetNetworkContext()
+      ->GetSharedDictionaryInfo(
+          isolation_key,
+          base::BindOnce(
+              [](gin_helper::Promise<std::vector<gin_helper::Dictionary>>
+                     promise,
+                 std::vector<network::mojom::SharedDictionaryInfoPtr> info) {
+                v8::Isolate* isolate = promise.isolate();
+                v8::HandleScope handle_scope(isolate);
+
+                std::vector<gin_helper::Dictionary> result;
+                result.reserve(info.size());
+
+                for (const auto& item : info) {
+                  gin_helper::Dictionary dict =
+                      gin_helper::Dictionary::CreateEmpty(isolate);
+                  dict.Set("match", item->match);
+
+                  // Convert RequestDestination enum values to strings
+                  std::vector<std::string> destinations;
+                  for (const auto& dest : item->match_dest) {
+                    destinations.push_back(
+                        network::RequestDestinationToString(dest));
+                  }
+                  dict.Set("matchDestinations", destinations);
+                  dict.Set("id", item->id);
+                  dict.Set("dictionaryUrl", item->dictionary_url.spec());
+                  dict.Set("lastFetchTime", item->last_fetch_time);
+                  dict.Set("responseTime", item->response_time);
+                  dict.Set("expirationDuration",
+                           item->expiration.InMillisecondsF());
+                  dict.Set("lastUsedTime", item->last_used_time);
+                  dict.Set("size", item->size);
+                  dict.Set("hash", net::HashValue(item->hash).ToString());
+
+                  result.push_back(dict);
+                }
+
+                promise.Resolve(result);
+              },
+              std::move(promise)));
+
+  return handle;
+}
+
+/**
+ * Exposes the network service's GetSharedDictionaryUsageInfo method, allowing
+ * inspection of Shared Dictionary information. Details about the feature
+ * available at https://developer.chrome.com/blog/shared-dictionary-compression
+ */
+v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo() {
+  gin_helper::Promise<std::vector<gin_helper::Dictionary>> promise(isolate_);
+  auto handle = promise.GetHandle();
+
+  browser_context_->GetDefaultStoragePartition()
+      ->GetNetworkContext()
+      ->GetSharedDictionaryUsageInfo(base::BindOnce(
+          [](gin_helper::Promise<std::vector<gin_helper::Dictionary>> promise,
+             const std::vector<net::SharedDictionaryUsageInfo>& info) {
+            v8::Isolate* isolate = promise.isolate();
+            v8::HandleScope handle_scope(isolate);
+
+            std::vector<gin_helper::Dictionary> result;
+            result.reserve(info.size());
+
+            for (const auto& item : info) {
+              gin_helper::Dictionary dict =
+                  gin_helper::Dictionary::CreateEmpty(isolate);
+              dict.Set("frameOrigin",
+                       item.isolation_key.frame_origin().Serialize());
+              dict.Set("topFrameSite",
+                       item.isolation_key.top_frame_site().Serialize());
+              dict.Set("totalSizeBytes", item.total_size_bytes);
+              result.push_back(dict);
             }
+
+            promise.Resolve(result);
           },
           std::move(promise)));
 
   return handle;
 }
-
-void Session::RemoveExtension(const std::string& extension_id) {
-  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
-      extensions::ExtensionSystem::Get(browser_context()));
-  extension_system->RemoveExtension(extension_id);
-}
-
-v8::Local<v8::Value> Session::GetExtension(const std::string& extension_id) {
-  auto* registry = extensions::ExtensionRegistry::Get(browser_context());
-  const extensions::Extension* extension =
-      registry->GetInstalledExtension(extension_id);
-  if (extension) {
-    return gin::ConvertToV8(isolate_, extension);
-  } else {
-    return v8::Null(isolate_);
-  }
-}
-
-v8::Local<v8::Value> Session::GetAllExtensions() {
-  auto* registry = extensions::ExtensionRegistry::Get(browser_context());
-  const extensions::ExtensionSet extensions =
-      registry->GenerateInstalledExtensionsSet();
-  std::vector<const extensions::Extension*> extensions_vector;
-  for (const auto& extension : extensions) {
-    if (extension->location() !=
-        extensions::mojom::ManifestLocation::kComponent)
-      extensions_vector.emplace_back(extension.get());
-  }
-  return gin::ConvertToV8(isolate_, extensions_vector);
-}
-
-void Session::OnExtensionLoaded(content::BrowserContext* browser_context,
-                                const extensions::Extension* extension) {
-  Emit("extension-loaded", extension);
-}
-
-void Session::OnExtensionUnloaded(content::BrowserContext* browser_context,
-                                  const extensions::Extension* extension,
-                                  extensions::UnloadedExtensionReason reason) {
-  Emit("extension-unloaded", extension);
-}
-
-void Session::OnExtensionReady(content::BrowserContext* browser_context,
-                               const extensions::Extension* extension) {
-  Emit("extension-ready", extension);
-}
-#endif
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   if (cookies_.IsEmpty()) {
@@ -1177,6 +1309,17 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
     cookies_.Reset(isolate, handle.ToV8());
   }
   return cookies_.Get(isolate);
+}
+
+v8::Local<v8::Value> Session::Extensions(v8::Isolate* isolate) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  if (extensions_.IsEmpty()) {
+    v8::Local<v8::Value> handle;
+    handle = Extensions::Create(isolate, browser_context()).ToV8();
+    extensions_.Reset(isolate, handle);
+  }
+#endif
+  return extensions_.Get(isolate);
 }
 
 v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
@@ -1292,7 +1435,7 @@ v8::Local<v8::Promise> Session::ClearCodeCaches(
   if (options.Get("urls", &url_list) && !url_list.empty()) {
     url_matcher = base::BindRepeating(
         [](const std::set<GURL>& url_list, const GURL& url) {
-          return base::Contains(url_list, url);
+          return url_list.contains(url);
         },
         url_list);
   }
@@ -1531,6 +1674,12 @@ gin::Handle<Session> Session::CreateFrom(
   // to use partition strings, instead of using the Session object directly.
   handle->Pin(isolate);
 
+  v8::TryCatch try_catch(isolate);
+  gin_helper::CallMethod(isolate, handle.get(), "_init");
+  if (try_catch.HasCaught()) {
+    node::errors::TriggerUncaughtException(isolate, try_catch);
+  }
+
   App::Get()->EmitWithoutEvent("session-created", handle);
 
   return handle;
@@ -1543,7 +1692,7 @@ gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
   ElectronBrowserContext* browser_context;
   if (partition.empty()) {
     browser_context =
-        ElectronBrowserContext::From("", false, std::move(options));
+        ElectronBrowserContext::GetDefaultBrowserContext(std::move(options));
   } else if (partition.starts_with(kPersistPrefix)) {
     std::string name = partition.substr(8);
     browser_context =
@@ -1625,14 +1774,16 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("downloadURL", &Session::DownloadURL)
       .SetMethod("createInterruptedDownload",
                  &Session::CreateInterruptedDownload)
-      .SetMethod("setPreloads", &Session::SetPreloads)
-      .SetMethod("getPreloads", &Session::GetPreloads)
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-      .SetMethod("loadExtension", &Session::LoadExtension)
-      .SetMethod("removeExtension", &Session::RemoveExtension)
-      .SetMethod("getExtension", &Session::GetExtension)
-      .SetMethod("getAllExtensions", &Session::GetAllExtensions)
-#endif
+      .SetMethod("registerPreloadScript", &Session::RegisterPreloadScript)
+      .SetMethod("unregisterPreloadScript", &Session::UnregisterPreloadScript)
+      .SetMethod("getPreloadScripts", &Session::GetPreloadScripts)
+      .SetMethod("getSharedDictionaryUsageInfo",
+                 &Session::GetSharedDictionaryUsageInfo)
+      .SetMethod("getSharedDictionaryInfo", &Session::GetSharedDictionaryInfo)
+      .SetMethod("clearSharedDictionaryCache",
+                 &Session::ClearSharedDictionaryCache)
+      .SetMethod("clearSharedDictionaryCacheForIsolationKey",
+                 &Session::ClearSharedDictionaryCacheForIsolationKey)
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
       .SetMethod("getSpellCheckerLanguages", &Session::GetSpellCheckerLanguages)
       .SetMethod("setSpellCheckerLanguages", &Session::SetSpellCheckerLanguages)
@@ -1658,6 +1809,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("clearCodeCaches", &Session::ClearCodeCaches)
       .SetMethod("clearData", &Session::ClearData)
       .SetProperty("cookies", &Session::Cookies)
+      .SetProperty("extensions", &Session::Extensions)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("serviceWorkers", &Session::ServiceWorkerContext)
@@ -1668,6 +1820,10 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
 
 const char* Session::GetTypeName() {
   return GetClassName();
+}
+
+void Session::WillBeDestroyed() {
+  ClearWeak();
 }
 
 }  // namespace electron::api

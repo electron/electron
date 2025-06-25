@@ -48,9 +48,7 @@ WebContentsZoomController::WebContentsZoomController(
 
 WebContentsZoomController::~WebContentsZoomController() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  for (auto& observer : observers_) {
-    observer.OnZoomControllerDestroyed(this);
-  }
+  observers_.Notify(&WebContentsZoomObserver::OnZoomControllerDestroyed, this);
 }
 
 void WebContentsZoomController::AddObserver(WebContentsZoomObserver* observer) {
@@ -72,9 +70,6 @@ void WebContentsZoomController::SetEmbedderZoomController(
 
 bool WebContentsZoomController::SetZoomLevel(double level) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  content::NavigationEntry* entry =
-      web_contents()->GetController().GetLastCommittedEntry();
-
   // Cannot zoom in disabled mode. Also, don't allow changing zoom level on
   // a crashed tab, an error page or an interstitial page.
   if (zoom_mode_ == ZOOM_MODE_DISABLED ||
@@ -93,8 +88,8 @@ bool WebContentsZoomController::SetZoomLevel(double level) {
     ZoomChangedEventData zoom_change_data(web_contents(), old_zoom_level,
                                           zoom_level_, true /* temporary */,
                                           zoom_mode_);
-    for (auto& observer : observers_)
-      observer.OnZoomChanged(zoom_change_data);
+    observers_.Notify(&WebContentsZoomObserver::OnZoomChanged,
+                      zoom_change_data);
 
     return true;
   }
@@ -113,17 +108,17 @@ bool WebContentsZoomController::SetZoomLevel(double level) {
     zoom_map->SetTemporaryZoomLevel(rfh_id, level);
     ZoomChangedEventData zoom_change_data(web_contents(), zoom_level_, level,
                                           true /* temporary */, zoom_mode_);
-    for (auto& observer : observers_)
-      observer.OnZoomChanged(zoom_change_data);
+    observers_.Notify(&WebContentsZoomObserver::OnZoomChanged,
+                      zoom_change_data);
   } else {
-    if (!entry) {
+    const GURL url = content::HostZoomMap::GetURLForRenderFrameHost(rfh_id);
+    if (url.is_empty()) {
       // If we exit without triggering an update, we should clear event_data_,
       // else we may later trigger a DCHECK(event_data_).
       event_data_.reset();
       return false;
     }
-    std::string host =
-        net::GetHostOrSpecFromURL(content::HostZoomMap::GetURLFromEntry(entry));
+    std::string host = net::GetHostOrSpecFromURL(url);
     zoom_map->SetZoomLevelForHost(host, level);
   }
 
@@ -151,8 +146,7 @@ void WebContentsZoomController::SetTemporaryZoomLevel(double level) {
   // Notify observers of zoom level changes.
   ZoomChangedEventData zoom_change_data(web_contents(), zoom_level_, level,
                                         true /* temporary */, zoom_mode_);
-  for (auto& observer : observers_)
-    observer.OnZoomChanged(zoom_change_data);
+  observers_.Notify(&WebContentsZoomObserver::OnZoomChanged, zoom_change_data);
 }
 
 bool WebContentsZoomController::UsesTemporaryZoomLevel() {
@@ -181,11 +175,9 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
 
   switch (new_mode) {
     case ZOOM_MODE_DEFAULT: {
-      content::NavigationEntry* entry =
-          web_contents()->GetController().GetLastCommittedEntry();
+      const GURL url = content::HostZoomMap::GetURLForRenderFrameHost(rfh_id);
 
-      if (entry) {
-        GURL url = content::HostZoomMap::GetURLFromEntry(entry);
+      if (!url.is_empty()) {
         const std::string host = net::GetHostOrSpecFromURL(url);
         const std::string scheme = url.scheme();
 
@@ -218,8 +210,8 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
       } else {
         // When we don't call any HostZoomMap set functions, we send the event
         // manually.
-        for (auto& observer : observers_)
-          observer.OnZoomChanged(*event_data_);
+        observers_.Notify(&WebContentsZoomObserver::OnZoomChanged,
+                          *event_data_);
         event_data_.reset();
       }
       break;
@@ -234,8 +226,8 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
       } else {
         // When we don't call any HostZoomMap set functions, we send the event
         // manually.
-        for (auto& observer : observers_)
-          observer.OnZoomChanged(*event_data_);
+        observers_.Notify(&WebContentsZoomObserver::OnZoomChanged,
+                          *event_data_);
         event_data_.reset();
       }
       break;
@@ -308,9 +300,7 @@ void WebContentsZoomController::WebContentsDestroyed() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   // At this point we should no longer be sending any zoom events with this
   // WebContents.
-  for (auto& observer : observers_) {
-    observer.OnZoomControllerDestroyed(this);
-  }
+  observers_.Notify(&WebContentsZoomObserver::OnZoomControllerDestroyed, this);
 
   embedder_zoom_controller_ = nullptr;
 }
@@ -376,14 +366,15 @@ void WebContentsZoomController::OnZoomLevelChanged(
 
 void WebContentsZoomController::UpdateState(const std::string& host) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  auto* rfh = web_contents()->GetPrimaryMainFrame();
   // If |host| is empty, all observers should be updated.
   if (!host.empty()) {
-    // Use the navigation entry's URL instead of the WebContents' so virtual
-    // URLs work (e.g. chrome://settings). http://crbug.com/153950
-    content::NavigationEntry* entry =
-        web_contents()->GetController().GetLastCommittedEntry();
-    if (!entry || host != net::GetHostOrSpecFromURL(
-                              content::HostZoomMap::GetURLFromEntry(entry))) {
+    // Get the (non-virtual) url to be tracked by the HostZoomMap. Getting urls
+    // directly from a WebContents may result in a virtual url, so prefer using
+    // the value from the `rfh` instead, per https://crbug.com/40290372.
+    const GURL url =
+        content::HostZoomMap::GetURLForRenderFrameHost(rfh->GetGlobalId());
+    if (url.is_empty() || host != net::GetHostOrSpecFromURL(url)) {
       return;
     }
   }
@@ -393,14 +384,14 @@ void WebContentsZoomController::UpdateState(const std::string& host) {
     // the change should be sent.
     ZoomChangedEventData zoom_change_data = *event_data_;
     event_data_.reset();
-    for (auto& observer : observers_)
-      observer.OnZoomChanged(zoom_change_data);
+    observers_.Notify(&WebContentsZoomObserver::OnZoomChanged,
+                      zoom_change_data);
   } else {
     double zoom_level = GetZoomLevel();
     ZoomChangedEventData zoom_change_data(web_contents(), zoom_level,
                                           zoom_level, false, zoom_mode_);
-    for (auto& observer : observers_)
-      observer.OnZoomChanged(zoom_change_data);
+    observers_.Notify(&WebContentsZoomObserver::OnZoomChanged,
+                      zoom_change_data);
   }
 }
 

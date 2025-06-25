@@ -5,10 +5,12 @@
 #include "shell/browser/ui/views/autofill_popup_view.h"
 
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include "base/functional/bind.h"
 #include "base/i18n/rtl.h"
+#include "base/task/single_thread_task_runner.h"
 #include "cc/paint/skia_paint_canvas.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -27,20 +29,19 @@
 
 namespace electron {
 
-void AutofillPopupChildView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->role = ax::mojom::Role::kMenuItem;
-  node_data->SetName(suggestion_);
-}
-
 BEGIN_METADATA(AutofillPopupChildView)
 END_METADATA
 
 AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
                                      views::Widget* parent_widget)
-    : popup_(popup), parent_widget_(parent_widget) {
+    : views::WidgetDelegateView(CreatePassKey()),
+      popup_(popup),
+      parent_widget_(parent_widget) {
   CreateChildViews();
   SetFocusBehavior(FocusBehavior::ALWAYS);
   set_drag_controller(this);
+  SetAccessibleRole(ax::mojom::Role::kMenu);
+  SetAccessibleName(u"Autofill Menu");
 }
 
 AutofillPopupView::~AutofillPopupView() {
@@ -76,7 +77,9 @@ void AutofillPopupView::Show() {
     // a weak pointer to hold the reference and don't have to worry about
     // deletion.
     auto* widget = new views::Widget;
-    views::Widget::InitParams params(views::Widget::InitParams::TYPE_POPUP);
+    views::Widget::InitParams params{
+        views::Widget::InitParams::NATIVE_WIDGET_OWNS_WIDGET,
+        views::Widget::InitParams::TYPE_POPUP};
     params.delegate = this;
     params.parent = parent_widget_->GetNativeView();
     params.z_order = ui::ZOrderLevel::kFloatingUIElement;
@@ -103,7 +106,7 @@ void AutofillPopupView::Show() {
   auto* host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
   host->AddKeyPressEventCallback(keypress_callback_);
 
-  NotifyAccessibilityEvent(ax::mojom::Event::kMenuStart, true);
+  NotifyAccessibilityEventDeprecated(ax::mojom::Event::kMenuStart, true);
 }
 
 void AutofillPopupView::Hide() {
@@ -114,7 +117,7 @@ void AutofillPopupView::Hide() {
   }
 
   RemoveObserver();
-  NotifyAccessibilityEvent(ax::mojom::Event::kMenuEnd, true);
+  NotifyAccessibilityEventDeprecated(ax::mojom::Event::kMenuEnd, true);
 
   if (GetWidget()) {
     GetWidget()->Close();
@@ -157,7 +160,7 @@ void AutofillPopupView::OnSelectedRowChanged(
     int selected = current_row_selection.value_or(-1);
     if (selected == -1 || static_cast<size_t>(selected) >= children().size())
       return;
-    children().at(selected)->NotifyAccessibilityEvent(
+    children().at(selected)->NotifyAccessibilityEventDeprecated(
         ax::mojom::Event::kSelection, true);
   }
 }
@@ -215,9 +218,10 @@ void AutofillPopupView::CreateChildViews() {
   RemoveAllChildViews();
 
   for (int i = 0; i < popup_->line_count(); ++i) {
-    auto* child_view = new AutofillPopupChildView(popup_->value_at(i));
+    auto child_view =
+        std::make_unique<AutofillPopupChildView>(popup_->value_at(i));
     child_view->set_drag_controller(this);
-    AddChildView(child_view);
+    AddChildView(std::move(child_view));
   }
 }
 
@@ -238,36 +242,34 @@ void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
 void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   if (!popup_ || static_cast<size_t>(popup_->line_count()) != children().size())
     return;
-  gfx::Canvas* draw_canvas = canvas;
-  SkBitmap bitmap;
 
-  std::unique_ptr<cc::SkiaPaintCanvas> paint_canvas;
-  if (view_proxy_.get()) {
-    bitmap.allocN32Pixels(popup_->popup_bounds_in_view().width(),
-                          popup_->popup_bounds_in_view().height(), true);
-    paint_canvas = std::make_unique<cc::SkiaPaintCanvas>(bitmap);
-    draw_canvas = new gfx::Canvas(paint_canvas.get(), 1.0);
+  gfx::Rect offscreen_bounds;
+  SkBitmap offscreen_bitmap;
+  std::optional<cc::SkiaPaintCanvas> offscreen_paint_canvas;
+  std::optional<gfx::Canvas> offscreen_draw_canvas;
+  if (view_proxy_) {
+    offscreen_bounds = popup_->popup_bounds_in_view();
+    offscreen_bitmap.allocN32Pixels(offscreen_bounds.width(),
+                                    offscreen_bounds.height(), true);
+    offscreen_paint_canvas.emplace(offscreen_bitmap);
+    offscreen_draw_canvas.emplace(&offscreen_paint_canvas.value(), 1.0);
+    canvas = &offscreen_draw_canvas.value();
   }
 
-  draw_canvas->DrawColor(
+  canvas->DrawColor(
       GetColorProvider()->GetColor(ui::kColorResultsTableNormalBackground));
-  OnPaintBorder(draw_canvas);
+  OnPaintBorder(canvas);
 
   for (int i = 0; i < popup_->line_count(); ++i) {
     gfx::Rect line_rect = popup_->GetRowBounds(i);
 
-    DrawAutofillEntry(draw_canvas, i, line_rect);
+    DrawAutofillEntry(canvas, i, line_rect);
   }
 
-  if (view_proxy_.get()) {
-    view_proxy_->SetBounds(popup_->popup_bounds_in_view());
-    view_proxy_->SetBitmap(bitmap);
+  if (view_proxy_) {
+    view_proxy_->SetBounds(offscreen_bounds);
+    view_proxy_->SetBitmap(offscreen_bitmap);
   }
-}
-
-void AutofillPopupView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->role = ax::mojom::Role::kMenu;
-  node_data->SetName("Autofill Menu");
 }
 
 void AutofillPopupView::OnMouseCaptureLost() {

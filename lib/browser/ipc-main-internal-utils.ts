@@ -19,7 +19,7 @@ export function invokeInWebContents<T> (sender: Electron.WebContents, command: s
     const requestId = ++nextId;
     const channel = `${command}_RESPONSE_${requestId}`;
     ipcMainInternal.on(channel, function handler (event, error: Error, result: any) {
-      if (event.sender !== sender) {
+      if (event.type === 'frame' && event.sender !== sender) {
         console.error(`Reply to ${command} sent by unexpected WebContents (${event.sender.id})`);
         return;
       }

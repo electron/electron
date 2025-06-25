@@ -57,6 +57,9 @@ class Notification final : public gin::Wrappable<Notification>,
   static gin::WrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
+
   // disable copy
   Notification(const Notification&) = delete;
   Notification& operator=(const Notification&) = delete;

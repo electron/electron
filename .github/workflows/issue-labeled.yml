@@ -20,12 +20,13 @@ jobs:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
       - name: Set status
-        uses: dsanders11/project-actions/edit-item@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
+        uses: dsanders11/project-actions/edit-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 90
           field: Status
           field-value: ✅ Triaged
+          fail-if-item-not-found: false
   issue-labeled-blocked:
     name: blocked/* label added
     if: startsWith(github.event.label.name, 'blocked/')
@@ -38,12 +39,13 @@ jobs:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
       - name: Set status
-        uses: dsanders11/project-actions/edit-item@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
+        uses: dsanders11/project-actions/edit-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 90
           field: Status
           field-value: 🛑 Blocked
+          fail-if-item-not-found: false
   issue-labeled-blocked-need-repro:
     name: blocked/need-repro label added
     if: github.event.label.name == 'blocked/need-repro'

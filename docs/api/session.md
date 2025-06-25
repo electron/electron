@@ -79,6 +79,7 @@ You can create a `Session` object in the `session` module:
 
 ```js
 const { session } = require('electron')
+
 const ses = session.fromPartition('persist:name')
 console.log(ses.getUserAgent())
 ```
@@ -100,8 +101,9 @@ Emitted when Electron is about to download `item` in `webContents`.
 Calling `event.preventDefault()` will cancel the download and `item` will not be
 available from next tick of the process.
 
-```js @ts-expect-error=[4]
+```js @ts-expect-error=[5]
 const { session } = require('electron')
+
 session.defaultSession.on('will-download', (event, item, webContents) => {
   event.preventDefault()
   require('got')(item.getURL()).then((response) => {
@@ -651,7 +653,7 @@ Clears the session’s HTTP cache.
     `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
     specified, clear all storage types.
   * `quotas` string[] (optional) - The types of quotas to clear, can be
-    `temporary`, `syncable`. If not specified, clear all quotas.
+    `temporary`. If not specified, clear all quotas.
 
 Returns `Promise<void>` - resolves when the storage data has been cleared.
 
@@ -762,7 +764,8 @@ Preconnects the given number of sockets to an origin.
 
 Returns `Promise<void>` - Resolves when all connections are closed.
 
-**Note:** It will terminate / fail all requests currently in flight.
+> [!NOTE]
+> It will terminate / fail all requests currently in flight.
 
 #### `ses.fetch(input[, init])`
 
@@ -851,6 +854,7 @@ verify proc.
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 win.webContents.session.setCertificateVerifyProc((request, callback) => {
@@ -902,6 +906,7 @@ Most web APIs do a permission check and then make a permission request if the ch
 
 ```js
 const { session } = require('electron')
+
 session.fromPartition('some-partition').setPermissionRequestHandler((webContents, permission, callback) => {
   if (webContents.getURL() === 'some-host' && permission === 'notifications') {
     return callback(false) // denied.
@@ -933,6 +938,7 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
+    * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
@@ -950,7 +956,9 @@ To clear the handler, call `setPermissionCheckHandler(null)`.
 
 ```js
 const { session } = require('electron')
-const url = require('url')
+
+const url = require('node:url')
+
 session.fromPartition('some-partition').setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
   if (new URL(requestingOrigin).hostname === 'some-host' && permission === 'notifications') {
     return true // granted
@@ -1187,6 +1195,7 @@ automatically.  To clear the handler, call `setBluetoothPairingHandler(null)`.
 
 ```js
 const { app, BrowserWindow, session } = require('electron')
+
 const path = require('node:path')
 
 function createWindow () {
@@ -1304,8 +1313,9 @@ Initiates a download of the resource at `url`.
 The API will generate a [DownloadItem](download-item.md) that can be accessed
 with the [will-download](#event-will-download) event.
 
-**Note:** This does not perform any security checks that relate to a page's origin,
-unlike [`webContents.downloadURL`](web-contents.md#contentsdownloadurlurl-options).
+> [!NOTE]
+> This does not perform any security checks that relate to a page's origin,
+> unlike [`webContents.downloadURL`](web-contents.md#contentsdownloadurlurl-options).
 
 #### `ses.createInterruptedDownload(options)`
 
@@ -1330,17 +1340,42 @@ the initial state will be `interrupted`. The download will start only when the
 
 Returns `Promise<void>` - resolves when the session’s HTTP authentication cache has been cleared.
 
-#### `ses.setPreloads(preloads)`
+#### `ses.setPreloads(preloads)` _Deprecated_
 
 * `preloads` string[] - An array of absolute path to preload scripts
 
 Adds scripts that will be executed on ALL web contents that are associated with
 this session just before normal `preload` scripts run.
 
-#### `ses.getPreloads()`
+**Deprecated:** Use the new `ses.registerPreloadScript` API.
+
+#### `ses.getPreloads()` _Deprecated_
 
 Returns `string[]` an array of paths to preload scripts that have been
 registered.
+
+**Deprecated:** Use the new `ses.getPreloadScripts` API. This will only return preload script paths
+for `frame` context types.
+
+#### `ses.registerPreloadScript(script)`
+
+* `script` [PreloadScriptRegistration](structures/preload-script-registration.md) - Preload script
+
+Registers preload script that will be executed in its associated context type in this session. For
+`frame` contexts, this will run prior to any preload defined in the web preferences of a
+WebContents.
+
+Returns `string` - The ID of the registered preload script.
+
+#### `ses.unregisterPreloadScript(id)`
+
+* `id` string - Preload script ID
+
+Unregisters script.
+
+#### `ses.getPreloadScripts()`
+
+Returns [`PreloadScript[]`](structures/preload-script.md): An array of paths to preload scripts that have been registered.
 
 #### `ses.setCodeCachePath(path)`
 
@@ -1360,6 +1395,36 @@ specified when registering the protocol.
 
 Returns `Promise<void>` - resolves when the code cache clear operation is complete.
 
+#### `ses.getSharedDictionaryUsageInfo()`
+
+Returns `Promise<SharedDictionaryUsageInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+Shared dictionaries are used to power advanced compression of data sent over the wire, specifically with Brotli and ZStandard. You don't need to call any of the shared dictionary APIs in Electron to make use of this advanced web feature, but if you do, they allow deeper control and inspection of the shared dictionaries used during decompression.
+
+To get detailed information about a specific shared dictionary entry, call `getSharedDictionaryInfo(options)`.
+
+#### `ses.getSharedDictionaryInfo(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<SharedDictionaryInfo[]>` - an array of shared dictionary information entries in Chromium's networking service's storage.
+
+To get information about all present shared dictionaries, call `getSharedDictionaryUsageInfo()`.
+
+#### `ses.clearSharedDictionaryCache()`
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared, both in memory and on disk.
+
+#### `ses.clearSharedDictionaryCacheForIsolationKey(options)`
+
+* `options` Object
+  * `frameOrigin` string - The origin of the frame where the request originates. It’s specific to the individual frame making the request and is defined by its scheme, host, and port. In practice, will look like a URL.
+  * `topFrameSite` string - The site of the top-level browsing context (the main frame or tab that contains the request). It’s less granular than `frameOrigin` and focuses on the broader "site" scope. In practice, will look like a URL.
+
+Returns `Promise<void>` - resolves when the dictionary cache has been cleared for the specified isolation key, both in memory and on disk.
+
 #### `ses.setSpellCheckerEnabled(enable)`
 
 * `enable` boolean
@@ -1378,7 +1443,8 @@ The built in spellchecker does not automatically detect what language a user is 
 spell checker to correctly check their words you must call this API with an array of language codes.  You can
 get the list of supported language codes with the `ses.availableSpellCheckerLanguages` property.
 
-**Note:** On macOS the OS spellchecker is used and will detect your language automatically.  This API is a no-op on macOS.
+> [!NOTE]
+> On macOS, the OS spellchecker is used and will detect your language automatically. This API is a no-op on macOS.
 
 #### `ses.getSpellCheckerLanguages()`
 
@@ -1386,7 +1452,8 @@ Returns `string[]` - An array of language codes the spellchecker is enabled for.
 will fallback to using `en-US`.  By default on launch if this setting is an empty list Electron will try to populate this
 setting with the current OS locale.  This setting is persisted across restarts.
 
-**Note:** On macOS the OS spellchecker is used and has its own list of languages. On macOS, this API will return whichever languages have been configured by the OS.
+> [!NOTE]
+> On macOS, the OS spellchecker is used and has its own list of languages. On macOS, this API will return whichever languages have been configured by the OS.
 
 #### `ses.setSpellCheckerDictionaryDownloadURL(url)`
 
@@ -1404,7 +1471,8 @@ If the files present in `hunspell_dictionaries.zip` are available at `https://ex
 then you should call this api with `ses.setSpellCheckerDictionaryDownloadURL('https://example.com/dictionaries/')`.  Please
 note the trailing slash.  The URL to the dictionaries is formed as `${url}${filename}`.
 
-**Note:** On macOS the OS spellchecker is used and therefore we do not download any dictionary files.  This API is a no-op on macOS.
+> [!NOTE]
+> On macOS, the OS spellchecker is used and therefore we do not download any dictionary files. This API is a no-op on macOS.
 
 #### `ses.listWordsInSpellCheckerDictionary()`
 
@@ -1418,7 +1486,8 @@ Resolves when the full dictionary is loaded from disk.
 Returns `boolean` - Whether the word was successfully written to the custom dictionary. This API
 will not work on non-persistent (in-memory) sessions.
 
-**Note:** On macOS and Windows 10 this word will be written to the OS custom dictionary as well
+> [!NOTE]
+> On macOS and Windows, this word will be written to the OS custom dictionary as well.
 
 #### `ses.removeWordFromSpellCheckerDictionary(word)`
 
@@ -1427,9 +1496,10 @@ will not work on non-persistent (in-memory) sessions.
 Returns `boolean` - Whether the word was successfully removed from the custom dictionary. This API
 will not work on non-persistent (in-memory) sessions.
 
-**Note:** On macOS and Windows 10 this word will be removed from the OS custom dictionary as well
+> [!NOTE]
+> On macOS and Windows, this word will be removed from the OS custom dictionary as well.
 
-#### `ses.loadExtension(path[, options])`
+#### `ses.loadExtension(path[, options])` _Deprecated_
 
 * `path` string - Path to a directory containing an unpacked Chrome extension
 * `options` Object (optional)
@@ -1455,6 +1525,7 @@ extension to be loaded.
 
 ```js
 const { app, session } = require('electron')
+
 const path = require('node:path')
 
 app.whenReady().then(async () => {
@@ -1470,36 +1541,49 @@ app.whenReady().then(async () => {
 
 This API does not support loading packed (.crx) extensions.
 
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
+> [!NOTE]
+> This API cannot be called before the `ready` event of the `app` module
+> is emitted.
 
-**Note:** Loading extensions into in-memory (non-persistent) sessions is not
-supported and will throw an error.
+> [!NOTE]
+> Loading extensions into in-memory (non-persistent) sessions is not
+> supported and will throw an error.
 
-#### `ses.removeExtension(extensionId)`
+**Deprecated:** Use the new `ses.extensions.loadExtension` API.
+
+#### `ses.removeExtension(extensionId)` _Deprecated_
 
 * `extensionId` string - ID of extension to remove
 
 Unloads an extension.
 
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
+> [!NOTE]
+> This API cannot be called before the `ready` event of the `app` module
+> is emitted.
 
-#### `ses.getExtension(extensionId)`
+**Deprecated:** Use the new `ses.extensions.removeExtension` API.
+
+#### `ses.getExtension(extensionId)` _Deprecated_
 
 * `extensionId` string - ID of extension to query
 
 Returns `Extension | null` - The loaded extension with the given ID.
 
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
+> [!NOTE]
+> This API cannot be called before the `ready` event of the `app` module
+> is emitted.
 
-#### `ses.getAllExtensions()`
+**Deprecated:** Use the new `ses.extensions.getExtension` API.
+
+#### `ses.getAllExtensions()` _Deprecated_
 
 Returns `Extension[]` - A list of all loaded extensions.
 
-**Note:** This API cannot be called before the `ready` event of the `app` module
-is emitted.
+> [!NOTE]
+> This API cannot be called before the `ready` event of the `app` module
+> is emitted.
+
+**Deprecated:** Use the new `ses.extensions.getAllExtensions` API.
 
 #### `ses.getStoragePath()`
 
@@ -1535,7 +1619,11 @@ Clears various different types of data.
 This method clears more types of data and is more thorough than the
 `clearStorageData` method.
 
-**Note:** Cookies are stored at a broader scope than origins. When removing cookies and filtering by `origins` (or `excludeOrigins`), the cookies will be removed at the [registrable domain](https://url.spec.whatwg.org/#host-registrable-domain) level. For example, clearing cookies for the origin `https://really.specific.origin.example.com/` will end up clearing all cookies for `example.com`. Clearing cookies for the origin `https://my.website.example.co.uk/` will end up clearing all cookies for `example.co.uk`.
+> [!NOTE]
+> Cookies are stored at a broader scope than origins. When removing cookies and filtering by `origins` (or `excludeOrigins`), the cookies will be removed at the [registrable domain](https://url.spec.whatwg.org/#host-registrable-domain) level. For example, clearing cookies for the origin `https://really.specific.origin.example.com/` will end up clearing all cookies for `example.com`. Clearing cookies for the origin `https://my.website.example.co.uk/` will end up clearing all cookies for `example.co.uk`.
+
+> [!NOTE]
+> Clearing cache data will also clear the shared dictionary cache. This means that any dictionaries used for compression may be reloaded after clearing the cache. If you wish to clear the shared dictionary cache but leave other cached data intact, you may want to use the `clearSharedDictionaryCache` method.
 
 For more information, refer to Chromium's [`BrowsingDataRemover` interface][browsing-data-remover].
 
@@ -1561,6 +1649,10 @@ session is persisted on disk.  For in memory sessions this returns `null`.
 
 A [`Cookies`](cookies.md) object for this session.
 
+#### `ses.extensions` _Readonly_
+
+A [`Extensions`](extensions-api.md) object for this session.
+
 #### `ses.serviceWorkers` _Readonly_
 
 A [`ServiceWorkers`](service-workers.md) object for this session.
@@ -1575,6 +1667,7 @@ A [`Protocol`](protocol.md) object for this session.
 
 ```js
 const { app, session } = require('electron')
+
 const path = require('node:path')
 
 app.whenReady().then(() => {

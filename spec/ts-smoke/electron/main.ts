@@ -230,11 +230,12 @@ const dockMenu = Menu.buildFromTemplate([
     ]
   }
 ]);
-app.dock.setMenu(dockMenu);
-app.dock.setBadge('foo');
-const dockid = app.dock.bounce('informational');
-app.dock.cancelBounce(dockid);
-app.dock.setIcon('/path/to/icon.png');
+
+app.dock?.setMenu(dockMenu);
+app.dock?.setBadge('foo');
+const dockid = app.dock?.bounce('informational');
+app.dock?.cancelBounce(dockid);
+app.dock?.setIcon('/path/to/icon.png');
 
 app.setBadgeCount(app.getBadgeCount() + 1);
 
@@ -359,15 +360,9 @@ app.commandLine.appendSwitch('vmodule', 'console=0');
 const browserOptions = {
   width: 1000,
   height: 800,
-  transparent: false,
-  frame: true
+  transparent: true,
+  frame: false
 };
-
-// Make the window transparent only if the platform supports it.
-if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
-  browserOptions.transparent = true;
-  browserOptions.frame = false;
-}
 
 if (process.platform === 'win32') {
   systemPreferences.on('color-changed', () => { console.log('color changed'); });
@@ -376,6 +371,8 @@ if (process.platform === 'win32') {
   // @ts-expect-error Removed API
   systemPreferences.on('high-contrast-color-scheme-changed', (_, highContrast) => console.log(highContrast ? 'high contrast' : 'not high contrast'));
   console.log('Color for menu is', systemPreferences.getColor('menu'));
+  // @ts-expect-error Removed API
+  systemPreferences.isAeroGlassEnabled();
 }
 
 if (process.platform === 'darwin') {
@@ -1181,7 +1178,7 @@ session.defaultSession.clearStorageData({ storages: ['shadercache', 'cachestorag
 // @ts-expect-error Invalid type value
 session.defaultSession.clearStorageData({ storages: ['wrong_path'] });
 
-session.defaultSession.clearStorageData({ quotas: ['syncable', 'temporary'] });
+session.defaultSession.clearStorageData({ quotas: ['temporary'] });
 // @ts-expect-error Invalid type value
 session.defaultSession.clearStorageData({ quotas: ['bad_type'] });
 
@@ -1294,7 +1291,7 @@ const win4 = new BrowserWindow({
 });
 
 win4.webContents.on('paint', (event, dirty, _image) => {
-  console.log(dirty, _image.getBitmap());
+  console.log(dirty, _image.toBitmap());
 });
 
 win4.webContents.on('devtools-open-url', (event, url) => {

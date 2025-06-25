@@ -6,9 +6,8 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "electron/mas.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_mac.h"
-#include "shell/browser/ui/cocoa/delayed_native_view_host.h"
-#include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
@@ -16,6 +15,8 @@
 
 #import <objc/message.h>
 #import <objc/runtime.h>
+
+using namespace std::string_view_literals;
 
 namespace electron {
 
@@ -112,6 +113,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
                            method_getImplementation(new_swipe_with_event));
 }
 #endif
+
 }  // namespace
 
 @implementation ElectronNSWindow
@@ -140,19 +142,14 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     if (styleMask & NSWindowStyleMaskTitled) {
       if (!g_nsthemeframe_mousedown) {
         NSView* theme_frame = [[self contentView] superview];
-        DCHECK(strcmp(class_getName([theme_frame class]), "NSThemeFrame") == 0)
-            << "Expected NSThemeFrame but was "
-            << class_getName([theme_frame class]);
+        DCHECK_EQ("NSThemeFrame"sv, class_getName([theme_frame class]));
         SwizzleMouseDown(theme_frame, @selector(swiz_nsthemeframe_mouseDown:),
                          &g_nsthemeframe_mousedown);
       }
     } else {
       if (!g_nsnextstepframe_mousedown) {
         NSView* nextstep_frame = [[self contentView] superview];
-        DCHECK(strcmp(class_getName([nextstep_frame class]),
-                      "NSNextStepFrame") == 0)
-            << "Expected NSNextStepFrame but was "
-            << class_getName([nextstep_frame class]);
+        DCHECK_EQ("NSNextStepFrame"sv, class_getName([nextstep_frame class]));
         SwizzleMouseDown(nextstep_frame,
                          @selector(swiz_nsnextstepframe_mouseDown:),
                          &g_nsnextstepframe_mousedown);
@@ -165,6 +162,10 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     shell_ = shell;
   }
   return self;
+}
+
+- (void)cleanup {
+  shell_ = nullptr;
 }
 
 - (electron::NativeWindowMac*)shell {
@@ -193,38 +194,23 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 
 - (void)sendEvent:(NSEvent*)event {
   // Draggable regions only respond to left-click dragging, but the system will
-  // still suppress right-clicks in a draggable region. Forwarding right-clicks
-  // and ctrl+left-clicks allows the underlying views to respond to right-click
-  // to potentially bring up a frame context menu. WebContentsView is now a
-  // sibling view of the NSWindow contentView, so we need to intercept the event
-  // here as NativeWidgetMacNSWindow won't forward it to the WebContentsView
-  // anymore.
-  if (event.type == NSEventTypeRightMouseDown ||
-      (event.type == NSEventTypeLeftMouseDown &&
-       ([event modifierFlags] & NSEventModifierFlagControl))) {
-    // The WebContentsView is added a sibling of BaseWindow's contentView at
-    // index 0 before it in the paint order - see
-    // https://github.com/electron/electron/pull/41256.
-    const auto& children = shell_->GetContentsView()->children();
-    if (children.empty())
-      return;
+  // still suppress right-clicks in a draggable region. Temporarily disabling
+  // draggable regions allows the underlying views to respond to right-click
+  // to potentially bring up a frame context menu.
+  BOOL shouldDisableDraggable =
+      (event.type == NSEventTypeRightMouseDown ||
+       (event.type == NSEventTypeLeftMouseDown &&
+        ([event modifierFlags] & NSEventModifierFlagControl)));
 
-    auto* wcv = children.front().get();
-    if (!wcv)
-      return;
-
-    auto ns_view = static_cast<electron::DelayedNativeViewHost*>(wcv)
-                       ->GetNativeView()
-                       .GetNativeNSView();
-    if (!ns_view)
-      return;
-
-    [static_cast<ElectronInspectableWebContentsView*>(ns_view)
-        redispatchContextMenuEvent:base::apple::OwnedNSEvent(event)];
-    return;
+  if (shouldDisableDraggable) {
+    electron::api::WebContents::SetDisableDraggableRegions(true);
   }
 
   [super sendEvent:event];
+
+  if (shouldDisableDraggable) {
+    electron::api::WebContents::SetDisableDraggableRegions(false);
+  }
 }
 
 - (void)rotateWithEvent:(NSEvent*)event {
@@ -232,7 +218,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (NSRect)contentRectForFrameRect:(NSRect)frameRect {
-  if (shell_->has_frame())
+  if (shell_ && shell_->has_frame())
     return [super contentRectForFrameRect:frameRect];
   else
     return frameRect;
@@ -267,6 +253,11 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   // the frame directly when resize is disabled
   if (!electron::ScopedDisableResize::IsResizeDisabled())
     [super setFrame:windowFrame display:displayViews];
+}
+
+- (void)orderWindow:(NSWindowOrderingMode)place relativeTo:(NSInteger)otherWin {
+  [self disableHeadlessMode];
+  [super orderWindow:place relativeTo:otherWin];
 }
 
 - (id)accessibilityAttributeValue:(NSString*)attribute {
@@ -325,6 +316,16 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     return [self cornerMask];
   } else {
     return [super _cornerMask];
+  }
+}
+
+- (void)disableHeadlessMode {
+  if (shell_) {
+    // We initialize the window in headless mode to allow painting before it is
+    // shown, but we don't want the headless behavior of allowing the window to
+    // be placed unconstrained.
+    self.isHeadless = false;
+    shell_->widget()->DisableHeadlessMode();
   }
 }
 

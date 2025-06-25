@@ -6,7 +6,7 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'bc2f48b2415a670de18d13605b1cf0eb5fdbaae1'
+        default: '424eedbf277ad9749ffa9219068aa72ed4a5e373'
       upload-to-storage:
         description: 'Uploads to Azure storage'
         required: false
@@ -27,6 +27,7 @@ jobs:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas
     env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron

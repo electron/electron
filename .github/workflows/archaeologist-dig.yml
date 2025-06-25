@@ -13,9 +13,9 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Node.js/npm
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: 20.11.x
+          node-version: 20.19.x
       - name: Setting Up Dig Site
         run: |
           echo "remote: ${{ github.event.pull_request.head.repo.clone_url }}"
@@ -41,7 +41,7 @@ jobs:
           sha-file: .dig-old
           filename: electron.old.d.ts
       - name: Upload artifacts
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: artifacts
           path: electron/artifacts

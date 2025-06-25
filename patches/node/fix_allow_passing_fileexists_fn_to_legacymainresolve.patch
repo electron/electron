@@ -1,0 +1,129 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sat, 17 Feb 2024 22:17:13 -0800
+Subject: fix: allow passing fileExists fn to legacyMainResolve
+
+This switch to native legacyMainResolve doesn't take asar into account, and can
+cause errors when a project using ESM and asar tries to load a dependency which
+uses commonJS.
+
+We can fix this by allowing the C++ implementation of legacyMainResolve to use
+a fileExists function that does take Asar into account.
+
+diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
+index 2879e5cf541fb4d226cfd7cc0fe367ca448fb926..03082f0ec4f91382933eec48e77331cdf6f04943 100644
+--- a/lib/internal/modules/esm/resolve.js
++++ b/lib/internal/modules/esm/resolve.js
+@@ -28,14 +28,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
+ const fs = require('fs');
+ const { getOptionValue } = require('internal/options');
+ // Do not eagerly grab .manifest, it may be in TDZ
+-const { sep, posix: { relative: relativePosixPath }, resolve } = require('path');
++const { sep, posix: { relative: relativePosixPath }, toNamespacedPath, resolve } = require('path');
+ const preserveSymlinks = getOptionValue('--preserve-symlinks');
+ const preserveSymlinksMain = getOptionValue('--preserve-symlinks-main');
+ const inputTypeFlag = getOptionValue('--input-type');
+-const { URL, pathToFileURL, fileURLToPath, isURL, URLParse } = require('internal/url');
++const { URL, pathToFileURL, fileURLToPath, isURL, URLParse, toPathIfFileURL } = require('internal/url');
+ const { getCWDURL, setOwnProperty } = require('internal/util');
+ const { canParse: URLCanParse } = internalBinding('url');
+-const { legacyMainResolve: FSLegacyMainResolve } = internalBinding('fs');
+ const {
+   ERR_INPUT_TYPE_NOT_ALLOWED,
+   ERR_INVALID_ARG_TYPE,
+@@ -183,6 +182,11 @@ const legacyMainResolveExtensionsIndexes = {
+   kResolvedByPackageAndNode: 9,
+ };
+ 
++function fileExists(url) {
++  const namespaced = toNamespacedPath(toPathIfFileURL(url));
++  return internalFsBinding.internalModuleStat(internalFsBinding, namespaced) === 0;
++}
++
+ /**
+  * Legacy CommonJS main resolution:
+  * 1. let M = pkg_url + (json main field)
+@@ -201,7 +205,7 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
+ 
+   const baseStringified = isURL(base) ? base.href : base;
+ 
+-  const resolvedOption = FSLegacyMainResolve(pkgPath, packageConfig.main, baseStringified);
++  const resolvedOption = internalFsBinding.legacyMainResolve(pkgPath, packageConfig.main, baseStringified, fileExists);
+ 
+   const maybeMain = resolvedOption <= legacyMainResolveExtensionsIndexes.kResolvedByMainIndexNode ?
+     packageConfig.main || './' : '';
+diff --git a/src/node_file.cc b/src/node_file.cc
+index 49816349d8bab37fea1d84e5326ee5a11acad7a2..5aea65d6800494def62829432ee48f9c06e65d63 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -3237,13 +3237,25 @@ static void CpSyncCheckPaths(const FunctionCallbackInfo<Value>& args) {
+ }
+ 
+ BindingData::FilePathIsFileReturnType BindingData::FilePathIsFile(
+-    Environment* env, const std::string& file_path) {
++    Environment* env, const std::string& file_path, v8::Local<v8::Function> is_file_function) {
+   THROW_IF_INSUFFICIENT_PERMISSIONS(
+       env,
+       permission::PermissionScope::kFileSystemRead,
+       file_path,
+       BindingData::FilePathIsFileReturnType::kThrowInsufficientPermissions);
+ 
++  if (!is_file_function.IsEmpty()) {
++    v8::Local<v8::Value> argv[] = {v8::String::NewFromUtf8(
++        env->isolate(), file_path.c_str(), v8::NewStringType::kNormal)
++                                       .ToLocalChecked()};
++    MaybeLocal<Value> maybe_is_file = is_file_function->Call(env->context(), v8::Undefined(env->isolate()), 1, argv);
++    if (!maybe_is_file.IsEmpty()) {
++      bool is_file = maybe_is_file.ToLocalChecked()->BooleanValue(env->isolate());
++      return is_file ? BindingData::FilePathIsFileReturnType::kIsFile
++                    : BindingData::FilePathIsFileReturnType::kIsNotFile;
++    }
++  }
++
+   uv_fs_t req;
+ 
+   int rc = uv_fs_stat(env->event_loop(), &req, file_path.c_str(), nullptr);
+@@ -3301,6 +3313,11 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+   std::optional<std::string> initial_file_path;
+   std::string file_path;
+ 
++  v8::Local<v8::Function> is_file_function;
++  if (args.Length() >= 3 && args[3]->IsFunction()) {
++    is_file_function = args[3].As<v8::Function>();
++  }
++
+   if (args.Length() >= 2 && args[1]->IsString()) {
+     auto package_config_main = Utf8Value(isolate, args[1]).ToString();
+ 
+@@ -3321,7 +3338,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+       BufferValue buff_file_path(isolate, local_file_path);
+       ToNamespacedPath(env, &buff_file_path);
+ 
+-      switch (FilePathIsFile(env, buff_file_path.ToString())) {
++      switch (FilePathIsFile(env, buff_file_path.ToString(), is_file_function)) {
+         case BindingData::FilePathIsFileReturnType::kIsFile:
+           return args.GetReturnValue().Set(i);
+         case BindingData::FilePathIsFileReturnType::kIsNotFile:
+@@ -3358,7 +3375,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+     BufferValue buff_file_path(isolate, local_file_path);
+     ToNamespacedPath(env, &buff_file_path);
+ 
+-    switch (FilePathIsFile(env, buff_file_path.ToString())) {
++    switch (FilePathIsFile(env, buff_file_path.ToString(), is_file_function)) {
+       case BindingData::FilePathIsFileReturnType::kIsFile:
+         return args.GetReturnValue().Set(i);
+       case BindingData::FilePathIsFileReturnType::kIsNotFile:
+diff --git a/src/node_file.h b/src/node_file.h
+index bdad1ae25f4892cbbfd8cc30c4d8b4a6f600edbc..099488319f53bc7718313d6e30df2237cad6771d 100644
+--- a/src/node_file.h
++++ b/src/node_file.h
+@@ -101,7 +101,8 @@ class BindingData : public SnapshotableObject {
+   InternalFieldInfo* internal_field_info_ = nullptr;
+ 
+   static FilePathIsFileReturnType FilePathIsFile(Environment* env,
+-                                                 const std::string& file_path);
++                                                 const std::string& file_path,
++                                                 v8::Local<v8::Function> is_file_function = v8::Local<v8::Function>());
+ };
+ 
+ // structure used to store state during a complex operation, e.g., mkdirp.

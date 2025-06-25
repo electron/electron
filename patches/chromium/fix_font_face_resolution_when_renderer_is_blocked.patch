@@ -11,7 +11,7 @@ while the renderer is blocked. This Cl takes an approach similar to that taken i
 MediaQueryList in order to enable the promise to be resolved.
 
 diff --git a/third_party/blink/renderer/core/css/font_face_set_document.cc b/third_party/blink/renderer/core/css/font_face_set_document.cc
-index a477f3364122643cd79305adf86bb3cbbbded37e..479778c0118c7813ab424f4adb4f424f89ce3596 100644
+index 79d15ae4d9de6350429b9b907d5136266d02c579..7e26808b3ef4437940ee6745d2651037c1bba9a2 100644
 --- a/third_party/blink/renderer/core/css/font_face_set_document.cc
 +++ b/third_party/blink/renderer/core/css/font_face_set_document.cc
 @@ -27,6 +27,7 @@

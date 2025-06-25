@@ -5,12 +5,10 @@
 #ifndef ELECTRON_SHELL_BROWSER_ELECTRON_WEB_CONTENTS_UTILITY_HANDLER_IMPL_H_
 #define ELECTRON_SHELL_BROWSER_ELECTRON_WEB_CONTENTS_UTILITY_HANDLER_IMPL_H_
 
-#include <vector>
-
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "electron/shell/common/api/api.mojom.h"
+#include "electron/shell/common/web_contents_utility.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 
@@ -42,7 +40,10 @@ class ElectronWebContentsUtilityHandlerImpl
   // mojom::ElectronWebContentsUtility:
   void OnFirstNonEmptyLayout() override;
   void SetTemporaryZoomLevel(double level) override;
-  void DoGetZoomLevel(DoGetZoomLevelCallback callback) override;
+  void CanAccessClipboardDeprecated(
+      mojom::PermissionName name,
+      const blink::LocalFrameToken& frame_token,
+      CanAccessClipboardDeprecatedCallback callback) override;
 
   base::WeakPtr<ElectronWebContentsUtilityHandlerImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -52,13 +53,13 @@ class ElectronWebContentsUtilityHandlerImpl
   ~ElectronWebContentsUtilityHandlerImpl() override;
 
   // content::WebContentsObserver:
-  void WebContentsDestroyed() override;
+  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
 
   void OnConnectionError();
 
   content::RenderFrameHost* GetRenderFrameHost();
 
-  content::GlobalRenderFrameHostId render_frame_host_id_;
+  content::GlobalRenderFrameHostToken render_frame_host_token_;
 
   mojo::AssociatedReceiver<mojom::ElectronWebContentsUtility> receiver_{this};
 

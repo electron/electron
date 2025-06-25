@@ -45,7 +45,7 @@ def windows_profile():
     win_sdk_dir = SetEnvironmentAndGetSDKDir()
     path = NormalizePath(os.environ['GYP_MSVS_OVERRIDE_PATH'])
 
-    # since current windows executable are symbols path dependant,
+    # since current windows executable are symbols path dependent,
     # profile the current directory too
     return {
         'pwd': os.getcwd(),

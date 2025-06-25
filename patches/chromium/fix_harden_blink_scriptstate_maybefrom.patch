@@ -40,20 +40,20 @@ accessing uninitialized lower indexes can return garbage values that cannot be n
 Refer to v8::EmbedderDataSlot::store_aligned_pointer for context.
 
 diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
-index 8d7c5631fd8f1499c67384286f0e3c4037673b32..99b2e2f63be8a46c5546dd53bc9b05e8c54e857c 100644
+index 8d7c5631fd8f1499c67384286f0e3c4037673b32..2b7bdfbac06a42e6bc51eb65e023c3673e6eb885 100644
 --- a/gin/public/gin_embedders.h
 +++ b/gin/public/gin_embedders.h
-@@ -18,6 +18,8 @@ namespace gin {
- enum GinEmbedder : uint16_t {
-   kEmbedderNativeGin,
+@@ -20,6 +20,8 @@ enum GinEmbedder : uint16_t {
    kEmbedderBlink,
-+  kEmbedderElectron,
-+  kEmbedderBlinkTag,
    kEmbedderPDFium,
    kEmbedderFuchsia,
++  kEmbedderElectron,
++  kEmbedderBlinkTag,
  };
+ 
+ }  // namespace gin
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.cc b/third_party/blink/renderer/platform/bindings/script_state.cc
-index e4a27a24c83dd1a478b2ada8b6c8220076790791..c76dc818f38a62fff63852dbecbc85e304ac731d 100644
+index 58aa3d5b24355a4346c9d6992e6090d28cad513f..96c28c190f98c76c0defeaabda092ebdf6fb44c6 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.cc
 +++ b/third_party/blink/renderer/platform/bindings/script_state.cc
 @@ -13,6 +13,10 @@ namespace blink {
@@ -76,7 +76,7 @@ index e4a27a24c83dd1a478b2ada8b6c8220076790791..c76dc818f38a62fff63852dbecbc85e3
    RendererResourceCoordinator::Get()->OnScriptStateCreated(this,
                                                             execution_context);
  }
-@@ -79,6 +85,8 @@ void ScriptState::DissociateContext() {
+@@ -80,6 +86,8 @@ void ScriptState::DissociateContext() {
    // Cut the reference from V8 context to ScriptState.
    GetContext()->SetAlignedPointerInEmbedderData(kV8ContextPerContextDataIndex,
                                                  nullptr);
@@ -86,7 +86,7 @@ index e4a27a24c83dd1a478b2ada8b6c8220076790791..c76dc818f38a62fff63852dbecbc85e3
  
    // Cut the reference from ScriptState to V8 context.
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
-index b3cc8d819b06108386aed9465cab4f27a28b675f..a1757901e52360a9c2ec3c573adb20d03cd6ecae 100644
+index b3cc8d819b06108386aed9465cab4f27a28b675f..9c8818f10de59fdd2a3fd44d9cd23d40a93b53a7 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.h
 +++ b/third_party/blink/renderer/platform/bindings/script_state.h
 @@ -185,7 +185,12 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
@@ -112,14 +112,13 @@ index b3cc8d819b06108386aed9465cab4f27a28b675f..a1757901e52360a9c2ec3c573adb20d0
    static constexpr int kV8ContextPerContextDataIndex =
        static_cast<int>(gin::kPerContextDataStartIndex) +
        static_cast<int>(gin::kEmbedderBlink);
-@@ -271,6 +278,11 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+@@ -271,6 +278,10 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
    // internals.idl.
    String last_compiled_script_file_name_;
    bool last_compiled_script_used_code_cache_ = false;
 +
 +  static constexpr int kV8ContextPerContextDataTagIndex =
 +      static_cast<int>(gin::kPerContextDataStartIndex) +
-+      static_cast<int>(gin::kEmbedderBlink) +
 +      static_cast<int>(gin::kEmbedderBlinkTag);
  };
  

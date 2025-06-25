@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_FILE_DIALOG_H_
 #define ELECTRON_SHELL_BROWSER_UI_FILE_DIALOG_H_
 
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -72,10 +73,21 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 void ShowOpenDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise);
 
-bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path);
+std::optional<base::FilePath> ShowSaveDialogSync(
+    const DialogSettings& settings);
 
 void ShowSaveDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise);
+
+#if BUILDFLAG(IS_LINUX)
+// Rewrite of SelectFileDialogLinuxPortal equivalent functions with primary
+// difference being that dbus_thread_linux::GetSharedSessionBus is not used
+// so that version detection can be initiated and compeleted on the dbus thread
+// Refs https://github.com/electron/electron/issues/46652
+void StartPortalAvailabilityTestInBackground();
+bool IsPortalAvailable();
+uint32_t GetPortalVersion();
+#endif
 
 }  // namespace file_dialog
 

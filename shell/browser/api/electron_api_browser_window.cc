@@ -36,7 +36,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
     web_preferences.SetHidden(options::kBackgroundColor, color);
-  } else if (window_->IsTranslucent()) {
+  } else if (window()->IsTranslucent()) {
     // If the BrowserWindow is transparent or a vibrancy type has been set,
     // also propagate transparency to the WebContents unless a separate
     // backgroundColor has been set.
@@ -47,7 +47,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   // Copy the show setting to webContents, but only if we don't want to paint
   // when initially hidden
   bool paint_when_initially_hidden = true;
-  options.Get("paintWhenInitiallyHidden", &paint_when_initially_hidden);
+  options.Get(options::kPaintWhenInitiallyHidden, &paint_when_initially_hidden);
   if (!paint_when_initially_hidden) {
     bool show = true;
     options.Get(options::kShow, &show);
@@ -67,7 +67,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   gin::Handle<WebContentsView> web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
   DCHECK(web_contents_view.get());
-  window_->AddDraggableRegionProvider(web_contents_view.get());
+  window()->AddDraggableRegionProvider(web_contents_view.get());
   web_contents_view_.Reset(isolate, web_contents_view.ToV8());
 
   // Save a reference of the WebContents.
@@ -132,7 +132,7 @@ void BrowserWindow::OnActivateContents() {
 void BrowserWindow::OnPageTitleUpdated(const std::u16string& title,
                                        bool explicit_set) {
   // Change window title to page title.
-  auto self = GetWeakPtr();
+  auto self = weak_factory_.GetWeakPtr();
   if (!Emit("page-title-updated", title, explicit_set)) {
     // |this| might be deleted, or marked as destroyed by close().
     if (self && !IsDestroyed())
@@ -209,7 +209,7 @@ void BrowserWindow::UpdateWindowControlsOverlay(
 void BrowserWindow::CloseImmediately() {
   // Close all child windows before closing current window.
   v8::HandleScope handle_scope(isolate());
-  for (v8::Local<v8::Value> value : child_windows_.Values(isolate())) {
+  for (v8::Local<v8::Value> value : GetChildWindows()) {
     gin::Handle<BrowserWindow> child;
     if (gin::ConvertFromV8(isolate(), value, &child) && !child.IsEmpty())
       child->window()->CloseImmediately();
@@ -219,14 +219,14 @@ void BrowserWindow::CloseImmediately() {
 }
 
 void BrowserWindow::Focus() {
-  if (api_web_contents_->IsOffScreen())
+  if (api_web_contents_ && api_web_contents_->IsOffScreen())
     FocusOnWebView();
   else
     BaseWindow::Focus();
 }
 
 void BrowserWindow::Blur() {
-  if (api_web_contents_->IsOffScreen())
+  if (api_web_contents_ && api_web_contents_->IsOffScreen())
     BlurWebView();
   else
     BaseWindow::Blur();

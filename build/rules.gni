@@ -29,7 +29,7 @@ template("compile_ib_files") {
 
     _output_extension = invoker.output_extension
 
-    script = "//build/config/ios/compile_ib_files.py"
+    script = "//build/config/apple/compile_ib_files.py"
     sources = invoker.sources
     outputs = [
       "$target_gen_dir/$target_name/{{source_name_part}}.$_output_extension",

@@ -260,6 +260,165 @@ describe('session module', () => {
     });
   });
 
+  describe('domain matching', () => {
+    let testSession: Electron.Session;
+
+    beforeEach(() => {
+      testSession = session.fromPartition(`cookies-domain-test-${Date.now()}`);
+    });
+
+    afterEach(async () => {
+      // Clear cookies after each test
+      await testSession.clearStorageData({ storages: ['cookies'] });
+    });
+
+    // Helper to set a cookie and then test if it's retrieved with a domain filter
+    async function testDomainMatching (setCookieOpts: Electron.CookiesSetDetails,
+      domain: string,
+      expectMatch: boolean) {
+      await testSession.cookies.set(setCookieOpts);
+      const cookies = await testSession.cookies.get({ domain });
+
+      if (expectMatch) {
+        expect(cookies).to.have.lengthOf(1);
+        expect(cookies[0].name).to.equal(setCookieOpts.name);
+        expect(cookies[0].value).to.equal(setCookieOpts.value);
+      } else {
+        expect(cookies).to.have.lengthOf(0);
+      }
+    }
+
+    it('should match exact domain', async () => {
+      await testDomainMatching({
+        url: 'http://example.com',
+        name: 'exactMatch',
+        value: 'value1',
+        domain: 'example.com'
+      }, 'example.com', true);
+    });
+
+    it('should match subdomain when filter has leading dot', async () => {
+      await testDomainMatching({
+        url: 'http://sub.example.com',
+        name: 'subdomainMatch',
+        value: 'value2',
+        domain: '.example.com'
+      }, 'sub.example.com', true);
+    });
+
+    it('should match subdomain when filter has no leading dot (host-only normalization)', async () => {
+      await testDomainMatching({
+        url: 'http://sub.example.com',
+        name: 'hostOnlyNormalization',
+        value: 'value3',
+        domain: 'example.com'
+      }, 'sub.example.com', true);
+    });
+
+    it('should not match unrelated domain', async () => {
+      await testDomainMatching({
+        url: 'http://example.com',
+        name: 'noMatch',
+        value: 'value4',
+        domain: 'example.com'
+      }, 'other.com', false);
+    });
+
+    it('should match domain with a leading dot in both cookie and filter', async () => {
+      await testDomainMatching({
+        url: 'http://example.com',
+        name: 'leadingDotBoth',
+        value: 'value5',
+        domain: '.example.com'
+      }, '.example.com', true);
+    });
+
+    it('should handle case insensitivity in domain', async () => {
+      await testDomainMatching({
+        url: 'http://example.com',
+        name: 'caseInsensitive',
+        value: 'value7',
+        domain: 'Example.com'
+      }, 'example.com', true);
+    });
+
+    it('should handle IP address matching', async () => {
+      await testDomainMatching({
+        url: 'http://127.0.0.1',
+        name: 'ipExactMatch',
+        value: 'value8',
+        domain: '127.0.0.1'
+      }, '127.0.0.1', true);
+    });
+
+    it('should not match different IP addresses', async () => {
+      await testDomainMatching({
+        url: 'http://127.0.0.1',
+        name: 'ipMismatch',
+        value: 'value9',
+        domain: '127.0.0.1'
+      }, '127.0.0.2', false);
+    });
+
+    it('should handle complex subdomain matching properly', async () => {
+      // Set a cookie with domain .example.com
+      await testSession.cookies.set({
+        url: 'http://a.b.example.com',
+        name: 'complexSubdomain',
+        value: 'value11',
+        domain: '.example.com'
+      });
+
+      // This should match the cookie
+      const cookies1 = await testSession.cookies.get({ domain: 'a.b.example.com' });
+      expect(cookies1).to.have.lengthOf(1);
+      expect(cookies1[0].name).to.equal('complexSubdomain');
+
+      // This should also match
+      const cookies2 = await testSession.cookies.get({ domain: 'b.example.com' });
+      expect(cookies2).to.have.lengthOf(1);
+
+      // This should also match
+      const cookies3 = await testSession.cookies.get({ domain: 'example.com' });
+      expect(cookies3).to.have.lengthOf(1);
+
+      // This should not match
+      const cookies4 = await testSession.cookies.get({ domain: 'otherexample.com' });
+      expect(cookies4).to.have.lengthOf(0);
+    });
+
+    it('should handle multiple cookies with different domains', async () => {
+      // Set two cookies with different domains
+      await testSession.cookies.set({
+        url: 'http://example.com',
+        name: 'cookie1',
+        value: 'domain1',
+        domain: 'example.com'
+      });
+
+      await testSession.cookies.set({
+        url: 'http://other.com',
+        name: 'cookie2',
+        value: 'domain2',
+        domain: 'other.com'
+      });
+
+      // Filter for the first domain
+      const cookies1 = await testSession.cookies.get({ domain: 'example.com' });
+      expect(cookies1).to.have.lengthOf(1);
+      expect(cookies1[0].name).to.equal('cookie1');
+
+      // Filter for the second domain
+      const cookies2 = await testSession.cookies.get({ domain: 'other.com' });
+      expect(cookies2).to.have.lengthOf(1);
+      expect(cookies2[0].name).to.equal('cookie2');
+
+      // Get all cookies
+      const allCookies = await testSession.cookies.get({});
+      expect(allCookies).to.have.lengthOf(2);
+    });
+  });
+
   describe('ses.clearStorageData(options)', () => {
     afterEach(closeAllWindows);
     it('clears localstorage data', async () => {
@@ -274,6 +433,106 @@ describe('session module', () => {
         // The storage clear isn't instantly visible to the renderer, so keep
         // trying until it is.
       }
+    });
+  });
+
+  describe('shared dictionary APIs', () => {
+    // Shared dictionaries can only be created from real https websites, which we
+    // lack the APIs to fake in CI. If you're working on this code, you can run
+    // the real-internet tests below by uncommenting the `skip` below.
+    // In CI, we'll run simple tests here that ensure that the code in question doesn't
+    // crash, even if we expect it to not return any real dictionaries.
+    it('can get shared dictionary usage info', async () => {
+      expect(await session.defaultSession.getSharedDictionaryUsageInfo()).to.deep.equal([]);
+    });
+
+    it('can get shared dictionary info', async () => {
+      expect(await session.defaultSession.getSharedDictionaryInfo({
+        frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+        topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me'
+      })).to.deep.equal([]);
+    });
+
+    it('can clear shared dictionary cache', async () => {
+      await session.defaultSession.clearSharedDictionaryCache();
+    });
+
+    it('can clear shared dictionary cache for isolation key', async () => {
+      await session.defaultSession.clearSharedDictionaryCacheForIsolationKey({
+        frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+        topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me'
+      });
+    });
+  });
+
+  describe.skip('shared dictionary APIs (using a real website with real dictionaries)', () => {
+    const appPath = path.join(fixtures, 'api', 'shared-dictionary');
+    const runApp = (command: 'getSharedDictionaryInfo' | 'getSharedDictionaryUsageInfo' | 'clearSharedDictionaryCache' | 'clearSharedDictionaryCacheForIsolationKey') => {
+      return new Promise((resolve) => {
+        let output = '';
+
+        const appProcess = ChildProcess.spawn(
+          process.execPath,
+          [appPath, command]
+        );
+
+        appProcess.stdout.on('data', data => { output += data; });
+        appProcess.on('exit', () => {
+          const trimmedOutput = output.replaceAll(/(\r\n|\n|\r)/gm, '');
+
+          try {
+            resolve(JSON.parse(trimmedOutput));
+          } catch (e) {
+            console.error(`Error trying to deserialize ${trimmedOutput}`);
+            throw e;
+          }
+        });
+      });
+    };
+
+    afterEach(() => {
+      fs.rmSync(path.join(fixtures, 'api', 'shared-dictionary', 'user-data-dir'), { recursive: true });
+    });
+
+    it('can get shared dictionary usage info', async () => {
+      // In our fixture, this calls session.defaultSession.getSharedDictionaryUsageInfo()
+      expect(await runApp('getSharedDictionaryUsageInfo')).to.deep.equal([{
+        frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+        topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+        totalSizeBytes: 1198641
+      }]);
+    });
+
+    it('can get shared dictionary info', async () => {
+      // In our fixture, this calls session.defaultSession.getSharedDictionaryInfo({
+      //   frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+      //   topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me'
+      // })
+      const sharedDictionaryInfo = await runApp('getSharedDictionaryInfo') as Electron.SharedDictionaryInfo[];
+
+      expect(sharedDictionaryInfo).to.have.lengthOf(1);
+      expect(sharedDictionaryInfo[0].match).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].hash).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].lastFetchTime).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].responseTime).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].expirationDuration).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].lastUsedTime).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].size).to.not.be.undefined();
+    });
+
+    it('can clear shared dictionary cache', async () => {
+      // In our fixture, this calls session.defaultSession.clearSharedDictionaryCache()
+      // followed by session.defaultSession.getSharedDictionaryUsageInfo()
+      expect(await runApp('clearSharedDictionaryCache')).to.deep.equal([]);
+    });
+
+    it('can clear shared dictionary cache for isolation key', async () => {
+      // In our fixture, this calls session.defaultSession.clearSharedDictionaryCacheForIsolationKey({
+      //   frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+      //   topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me'
+      // })
+      // followed by session.defaultSession.getSharedDictionaryUsageInfo()
+      expect(await runApp('clearSharedDictionaryCacheForIsolationKey')).to.deep.equal([]);
     });
   });
 
@@ -758,6 +1017,9 @@ describe('session module', () => {
           res.end('authenticated');
         }
       });
+      defer(() => {
+        server.close();
+      });
       const { port } = await listen(server);
       const fetch = (url: string) => new Promise((resolve, reject) => {
         const request = net.request({ url, session: ses });
@@ -841,6 +1103,13 @@ describe('session module', () => {
     };
 
     describe('session.downloadURL', () => {
+      let server: http.Server;
+      afterEach(() => {
+        if (server) {
+          server.close();
+          server = null as unknown as http.Server;
+        }
+      });
       it('can perform a download', async () => {
         const willDownload = once(session.defaultSession, 'will-download');
         session.defaultSession.downloadURL(`${url}:${port}`);
@@ -851,7 +1120,7 @@ describe('session module', () => {
       });
 
       it('can perform a download with a valid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -913,7 +1182,7 @@ describe('session module', () => {
       });
 
       it('correctly handles a download with an invalid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -957,6 +1226,13 @@ describe('session module', () => {
     });
 
     describe('webContents.downloadURL', () => {
+      let server: http.Server;
+      afterEach(() => {
+        if (server) {
+          server.close();
+          server = null as unknown as http.Server;
+        }
+      });
       it('can perform a download', async () => {
         const w = new BrowserWindow({ show: false });
         const willDownload = once(w.webContents.session, 'will-download');
@@ -968,7 +1244,7 @@ describe('session module', () => {
       });
 
       it('can perform a download with a valid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -1024,7 +1300,7 @@ describe('session module', () => {
       });
 
       it('correctly handles a download and an invalid auth header', async () => {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           const { authorization } = req.headers;
           if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
             res.statusCode = 401;
@@ -1214,6 +1490,9 @@ describe('session module', () => {
         const options = { root: fixtures };
         send(req, req.url!, options)
           .on('error', (error: any) => { throw error; }).pipe(res);
+      });
+      defer(() => {
+        rangeServer.close();
       });
       try {
         const { url } = await listen(rangeServer);

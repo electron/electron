@@ -6,6 +6,7 @@
 
 #include "base/win/windows_version.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/win/dark_mode.h"
@@ -15,12 +16,26 @@ namespace electron {
 
 ElectronDesktopWindowTreeHostWin::ElectronDesktopWindowTreeHostWin(
     NativeWindowViews* native_window_view,
+    views::Widget* widget,
     views::DesktopNativeWidgetAura* desktop_native_widget_aura)
-    : views::DesktopWindowTreeHostWin(native_window_view->widget(),
-                                      desktop_native_widget_aura),
-      native_window_view_(native_window_view) {}
+    : views::DesktopWindowTreeHostWin{widget, desktop_native_widget_aura},
+      native_window_view_{native_window_view} {}
 
 ElectronDesktopWindowTreeHostWin::~ElectronDesktopWindowTreeHostWin() = default;
+
+bool ElectronDesktopWindowTreeHostWin::ShouldUpdateWindowTransparency() const {
+  // If transparency is updated for an opaque window before widget init is
+  // completed, the window flickers white before the background color is applied
+  // and we don't want that. We do, however, want translucent windows to be
+  // properly transparent, so ensure it gets updated in that case.
+  if (!widget_init_done_ && !native_window_view_->IsTranslucent())
+    return false;
+  return views::DesktopWindowTreeHostWin::ShouldUpdateWindowTransparency();
+}
+
+void ElectronDesktopWindowTreeHostWin::OnWidgetInitDone() {
+  widget_init_done_ = true;
+}
 
 bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
                                                     WPARAM w_param,
@@ -67,7 +82,7 @@ bool ElectronDesktopWindowTreeHostWin::GetDwmFrameInsetsInPixels(
 
 bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
     gfx::Insets* insets,
-    HMONITOR monitor) const {
+    int frame_thickness) const {
   // Windows by default extends the maximized window slightly larger than
   // current workspace, for frameless window since the standard frame has been
   // removed, the client area would then be drew outside current workspace.
@@ -99,13 +114,62 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEventForCaption(
   // Chromium lets the OS handle caption buttons for FrameMode::SYSTEM_DRAWN but
   // again this does not generate the SC_MINIMIZE, SC_MAXIMIZE, SC_RESTORE
   // commands when Non-client mouse events are generated for HTCLOSE,
-  // HTMINBUTTON, HTMAXBUTTON. To workaround this issue, wit this delegate we
+  // HTMINBUTTON, HTMAXBUTTON. To workaround this issue, with this delegate we
   // let chromium handle the mouse events via
   // HWNDMessageHandler::HandleMouseInputForCaption instead of the OS and this
   // will generate the necessary system commands to perform caption button
   // actions due to the DefWindowProc call.
   // https://source.chromium.org/chromium/chromium/src/+/main:ui/views/win/hwnd_message_handler.cc;l=3611
   return native_window_view_->IsWindowControlsOverlayEnabled();
+}
+
+bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
+  if (event->is_system_menu() && !native_window_view_->has_frame()) {
+    bool prevent_default = false;
+    native_window_view_->NotifyWindowSystemContextMenu(event->x(), event->y(),
+                                                       &prevent_default);
+    // If the user prevents default behavior, emit contextmenu event to
+    // allow bringing up the custom menu.
+    if (prevent_default) {
+      electron::api::WebContents::SetDisableDraggableRegions(true);
+      views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
+    }
+    return prevent_default;
+  }
+
+  return views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
+}
+
+void ElectronDesktopWindowTreeHostWin::HandleVisibilityChanged(bool visible) {
+  if (native_window_view_->widget())
+    native_window_view_->widget()->OnNativeWidgetVisibilityChanged(visible);
+
+  if (visible)
+    UpdateAllowScreenshots();
+}
+
+void ElectronDesktopWindowTreeHostWin::SetAllowScreenshots(bool allow) {
+  if (allow_screenshots_ == allow)
+    return;
+
+  allow_screenshots_ = allow;
+
+  // If the window is not visible, do not set the window display affinity
+  // because `SetWindowDisplayAffinity` will attempt to compose the window,
+  if (!IsVisible())
+    return;
+
+  UpdateAllowScreenshots();
+}
+
+void ElectronDesktopWindowTreeHostWin::UpdateAllowScreenshots() {
+  bool allowed = views::DesktopWindowTreeHostWin::AreScreenshotsAllowed();
+  if (allowed == allow_screenshots_)
+    return;
+
+  ::SetWindowDisplayAffinity(
+      GetAcceleratedWidget(),
+      allow_screenshots_ ? WDA_NONE : WDA_EXCLUDEFROMCAPTURE);
 }
 
 void ElectronDesktopWindowTreeHostWin::OnNativeThemeUpdated(

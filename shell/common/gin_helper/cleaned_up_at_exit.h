@@ -19,6 +19,8 @@ class CleanedUpAtExit {
   CleanedUpAtExit();
   virtual ~CleanedUpAtExit();
 
+  virtual void WillBeDestroyed();
+
   static void DoCleanup();
 };
 

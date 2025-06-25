@@ -20,7 +20,7 @@ namespace electron {
 // Defines the interface for WebRequest API, implemented by api::WebRequestNS.
 class WebRequestAPI {
  public:
-  virtual ~WebRequestAPI() {}
+  virtual ~WebRequestAPI() = default;
 
   using BeforeSendHeadersCallback =
       base::OnceCallback<void(const std::set<std::string>& removed_headers,

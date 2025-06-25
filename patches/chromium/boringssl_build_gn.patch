@@ -6,7 +6,7 @@ Subject: boringssl BUILD.gn
 Build BoringSSL with some extra functions that nodejs needs.
 
 diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
-index 12b2fb63dd3ff8c3d29d915a7d0f84a9d26c6e0a..f7eb3fe3d0cf5198316dbde0ab95bbcc4e4d210b 100644
+index b962901a7db8e6e50155dabbb1371124b12f9b26..b01e197ae2e411a376ffa28b9058d62a16abf23b 100644
 --- a/third_party/boringssl/BUILD.gn
 +++ b/third_party/boringssl/BUILD.gn
 @@ -48,6 +48,21 @@ all_sources = bcm_internal_headers + bcm_sources + crypto_internal_headers +
@@ -16,15 +16,15 @@ index 12b2fb63dd3ff8c3d29d915a7d0f84a9d26c6e0a..f7eb3fe3d0cf5198316dbde0ab95bbcc
 +if (is_electron_build) {
 +  # Needed to build a nodejs-compatible boringssl.
 +  all_sources += [
-+    "decrepit/evp/evp_do_all.c",
-+    "decrepit/xts/xts.c",
++    "decrepit/evp/evp_do_all.cc",
++    "decrepit/xts/xts.cc",
 +  ]
 +
 +  all_sources += [
-+    "decrepit/blowfish/blowfish.c",
-+    "decrepit/cfb/cfb.c",
++    "decrepit/blowfish/blowfish.cc",
++    "decrepit/cfb/cfb.cc",
 +    "decrepit/ripemd/internal.h",
-+    "decrepit/ripemd/ripemd.c",
++    "decrepit/ripemd/ripemd.cc",
 +  ]
 +}
 +

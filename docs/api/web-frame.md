@@ -41,7 +41,8 @@ Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively.
 
-> **NOTE**: The zoom policy at the Chromium level is same-origin, meaning that the
+> [!NOTE]
+> The zoom policy at the Chromium level is same-origin, meaning that the
 > zoom level for a specific domain propagates across all instances of windows with
 > the same domain. Differentiating the window URLs will make zoom work per-window.
 
@@ -56,13 +57,15 @@ Returns `number` - The current zoom level.
 
 Sets the maximum and minimum pinch-to-zoom level.
 
-> **NOTE**: Visual zoom is disabled by default in Electron. To re-enable it, call:
+> [!NOTE]
+> Visual zoom is disabled by default in Electron. To re-enable it, call:
 >
 > ```js
 > webFrame.setVisualZoomLevelLimits(1, 3)
 > ```
 
-> **NOTE**: Visual zoom only applies to pinch-to-zoom behavior. Cmd+/-/0 zoom shortcuts are
+> [!NOTE]
+> Visual zoom only applies to pinch-to-zoom behavior. Cmd+/-/0 zoom shortcuts are
 > controlled by the 'zoomIn', 'zoomOut', and 'resetZoom' MenuItem roles in the application
 > Menu. To disable shortcuts, manually [define the Menu](./menu.md#examples) and omit zoom roles
 > from the definition.
@@ -96,9 +99,11 @@ with an array of misspelt words when complete.
 
 An example of using [node-spellchecker][spellchecker] as provider:
 
-```js @ts-expect-error=[2,6]
+```js @ts-expect-error=[3,8]
 const { webFrame } = require('electron')
+
 const spellChecker = require('spellchecker')
+
 webFrame.setSpellCheckProvider('en-US', {
   spellCheck (words, callback) {
     setTimeout(() => {
@@ -189,7 +194,9 @@ dispatch errors of isolated worlds to foreign worlds.
   * `name` string (optional) - Name for isolated world. Useful in devtools.
 
 Set the security origin, content security policy and name of the isolated world.
-Note: If the `csp` is specified, then the `securityOrigin` also has to be specified.
+
+> [!NOTE]
+> If the `csp` is specified, then the `securityOrigin` also has to be specified.
 
 ### `webFrame.getResourceUsage()`
 
@@ -207,10 +214,13 @@ caches.
 
 ```js
 const { webFrame } = require('electron')
+
 console.log(webFrame.getResourceUsage())
 ```
 
 This will generate:
+
+<!-- eslint-skip -->
 
 ```js
 {
