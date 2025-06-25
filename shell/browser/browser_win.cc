@@ -614,11 +614,8 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   std::wstring key_path = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, key_path.c_str(), KEY_ALL_ACCESS);
 
-  std::wstring startup_approved_key_path =
-      L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved"
-      L"\\Run";
   base::win::RegKey startup_approved_key(
-      HKEY_CURRENT_USER, startup_approved_key_path.c_str(), KEY_ALL_ACCESS);
+      HKEY_CURRENT_USER, StartupApprovedRun.data(), KEY_ALL_ACCESS);
   PCWSTR key_name =
       !settings.name.empty() ? settings.name.c_str() : GetAppUserModelID();
 
@@ -631,9 +628,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
         startup_approved_key.DeleteValue(key_name);
       } else {
         HKEY hard_key;
-        LPCTSTR path = TEXT(
-            "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApp"
-            "roved\\Run");
+        constexpr LPCTSTR path = StartupApprovedRun.data();
         LONG res =
             RegOpenKeyEx(HKEY_CURRENT_USER, path, 0, KEY_ALL_ACCESS, &hard_key);
 
