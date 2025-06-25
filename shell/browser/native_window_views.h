@@ -208,6 +208,7 @@ class NativeWindowViews : public NativeWindow,
   void ResetWindowControls();
   void SetRoundedCorners(bool rounded);
   void SetForwardMouseMessages(bool forward);
+  void UpdateWindowAccentColor();
   static LRESULT CALLBACK SubclassProc(HWND hwnd,
                                        UINT msg,
                                        WPARAM w_param,
@@ -303,6 +304,8 @@ class NativeWindowViews : public NativeWindow,
 
   // Whether the window is currently being moved.
   bool is_moving_ = false;
+
+  std::variant<bool, SkColor> accent_color_ = true;
 
   std::optional<gfx::Rect> pending_bounds_change_;
 

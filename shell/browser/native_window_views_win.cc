@@ -7,6 +7,7 @@
 #include <wrl/client.h>
 
 #include "base/win/atl.h"  // Must be before UIAutomationCore.h
+#include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
 #include "base/win/windows_version.h"
 #include "content/public/browser/browser_accessibility_state.h"
@@ -27,6 +28,53 @@
 namespace electron {
 
 namespace {
+
+void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color) {
+  if (base::win::GetVersion() < base::win::Version::WIN11)
+    return;
+
+  HRESULT result =
+      DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &color, sizeof(color));
+
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set caption color";
+
+  result =
+      DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color, sizeof(color));
+
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set border color";
+}
+
+std::optional<DWORD> GetAccentColor() {
+  base::win::RegKey key;
+  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
+               KEY_READ) != ERROR_SUCCESS) {
+    return std::nullopt;
+  }
+
+  DWORD accent_color = 0;
+  if (key.ReadValueDW(L"AccentColor", &accent_color) != ERROR_SUCCESS) {
+    return std::nullopt;
+  }
+
+  return accent_color;
+}
+
+bool IsAccentColorOnTitleBarsEnabled() {
+  base::win::RegKey key;
+  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
+               KEY_READ) != ERROR_SUCCESS) {
+    return false;
+  }
+
+  DWORD enabled = 0;
+  if (key.ReadValueDW(L"ColorPrevalence", &enabled) != ERROR_SUCCESS) {
+    return false;
+  }
+
+  return enabled != 0;
+}
 
 // Convert Win32 WM_QUERYENDSESSIONS to strings.
 const std::vector<std::string> EndSessionToStringVec(LPARAM end_session_id) {
@@ -448,6 +496,19 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       }
       return false;
     }
+    case WM_DWMCOLORIZATIONCOLORCHANGED: {
+      UpdateWindowAccentColor();
+      return false;
+    }
+    case WM_SETTINGCHANGE: {
+      if (l_param) {
+        const wchar_t* setting_name = reinterpret_cast<const wchar_t*>(l_param);
+        std::wstring setting_str(setting_name);
+        if (setting_str == L"ImmersiveColorSet")
+          UpdateWindowAccentColor();
+      }
+      return false;
+    }
     default: {
       return false;
     }
@@ -505,6 +566,35 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       break;
     }
   }
+}
+
+void NativeWindowViews::UpdateWindowAccentColor() {
+  if (base::win::GetVersion() < base::win::Version::WIN11)
+    return;
+
+  if (!IsAccentColorOnTitleBarsEnabled())
+    return;
+
+  COLORREF border_color;
+  if (std::holds_alternative<bool>(accent_color_)) {
+    // Don't set accent color if the user has disabled it.
+    if (!std::get<bool>(accent_color_))
+      return;
+
+    std::optional<DWORD> accent_color = GetAccentColor();
+    if (!accent_color.has_value())
+      return;
+
+    border_color =
+        RGB(GetRValue(accent_color.value()), GetGValue(accent_color.value()),
+            GetBValue(accent_color.value()));
+  } else {
+    SkColor color = std::get<SkColor>(accent_color_);
+    border_color =
+        RGB(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color));
+  }
+
+  SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), border_color);
 }
 
 void NativeWindowViews::ResetWindowControls() {
