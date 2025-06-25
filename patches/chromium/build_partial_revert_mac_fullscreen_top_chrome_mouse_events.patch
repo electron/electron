@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Wed, 25 Jun 2025 10:21:31 -0400
+Subject: build: partially revert Mac fullscreen top-chrome mouse events
+
+Reverts "mac: fix missing mouse up and down event in fullscreen top-chrome".
+This CL caused all interactions to fail when loading a page via loadURL
+on Mac. This patch can be removed when upstream is fixed, or when a better
+solution is put in place.
+
+This reverts commit 8c004781dde7d42d9a3fed8cafcaa4929943dd69.
+
+diff --git a/components/remote_cocoa/app_shim/bridged_content_view.mm b/components/remote_cocoa/app_shim/bridged_content_view.mm
+index 18eaf31d8ecd65ada39746ba7e7194b82cddca36..152cccc1896a2bad8b944e8c9a37c5a2edf6f6f3 100644
+--- a/components/remote_cocoa/app_shim/bridged_content_view.mm
++++ b/components/remote_cocoa/app_shim/bridged_content_view.mm
+@@ -301,14 +301,6 @@ - (NSView*)hitTest:(NSPoint)point {
+     return nil;
+   }
+ 
+-  // Send event to views::RootView.
+-  if (hitTestResult == remote_cocoa::mojom::HitTestResult::kRootView) {
+-    // Most commonly this NSView is NSWindow's contentView. However in immersive
+-    // fullscreen, the view may be a subview of another AppKit-owned view in the
+-    // titlebar.
+-    return self;
+-  }
+-
+   return [super hitTest:point];
+ }
+ 
