@@ -337,7 +337,7 @@ There isn't a documented list of all Chromium switches, but there are a few ways
 
 The easiest way is through Chromium's flags page, which you can access at `about://flags`. These flags don't directly match switch names, but they show up in the process's command-line arguments.
 
-To see these arguments, enable a flag in` about://flags`, then go to `about://version` in Chromium. You'll find a list of command-line arguments, including `--flag-switches-begin --your --list --flag-switches-end`, which contains the list of your flag enabled switches.
+To see these arguments, enable a flag in `about://flags`, then go to `about://version` in Chromium. You'll find a list of command-line arguments, including `--flag-switches-begin --your --list --flag-switches-end`, which contains the list of your flag enabled switches.
 
 Most flags are included as part of `--enable-features=`, but some are standalone switches, like `--enable-experimental-web-platform-features`.
 
