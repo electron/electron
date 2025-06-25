@@ -17,11 +17,12 @@ def init(ctx):
             rule["inputs"] = []
           rule["inputs"].append("buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper")
           rule["inputs"].append("third_party/llvm-build/Release+Asserts_linux/bin/clang")
-          if runtime.os == "windows":
-            if "executables" not in rule:
-              rule["executables"] = []
-            rule["executables"].append("buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper")
-            rule["executables"].append("third_party/llvm-build/Release+Asserts_linux/bin/clang")
+
+    if runtime.os == "windows":
+      if "executables" not in step_config:
+        step_config["executables"] = []
+      step_config["executables"].append("buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper")
+      step_config["executables"].append("third_party/llvm-build/Release+Asserts_linux/bin/clang")
 
     return module(
       "config",
