@@ -55,9 +55,11 @@ namespace electron {
 
 namespace {
 
+// specifies what should run at user login
 constexpr base::wcstring_view Run =
     LR"(Software\Microsoft\Windows\CurrentVersion\Run)";
 
+// controls whether each Run entry is enabled or disabled
 constexpr base::wcstring_view StartupApprovedRun =
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run)";
 
