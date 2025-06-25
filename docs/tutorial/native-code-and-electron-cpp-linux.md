@@ -226,7 +226,7 @@ In this section:
   * A method to convert to JSON for sending to JavaScript
   * A static helper to format dates for display
 
-The `toJson()` method is particularly important as it's what allows our C++ objects to be serialized for transmission to JavaScript. There are probably better ways to do that, but this tutorial is about combining C++ for native Linux UI development with Electron, so we'll give ourselves a pass for not writing better JSON serialization code here.
+The `toJson()` method is particularly important as it's what allows our C++ objects to be serialized for transmission to JavaScript. There are probably better ways to do that, but this tutorial is about combining C++ for native Linux UI development with Electron, so we'll give ourselves a pass for not writing better JSON serialization code here. There are many libraries to work with JSON in C++ with different trade-offs. See https://www.json.org/json-en.html for a list.
 
 Notably, we haven't actually added any user interface yet - which we'll do in the next step. GTK code tends to be verbose, so bear with us - despite the length.
 
@@ -1580,6 +1580,49 @@ npm run build
 ```
 
 If the build completes, you can now add the addon to your Electron app and `import` or `require` it there.
+
+## Usage Example
+
+Once you've built the addon, you can use it in your Electron application. Here's a complete example:
+
+```js @ts-expect-error=[2]
+// In your Electron main process or renderer process
+import cppLinux from 'cpp-linux'
+
+// Test the basic functionality
+console.log(cppLinux.helloWorld('Hi!'))
+// Output: "Hello from C++! You said: Hi!"
+
+// Set up event listeners for GTK GUI interactions
+cppLinux.on('todoAdded', (todo) => {
+  console.log('New todo added:', todo)
+  // todo: { id: "uuid-string", text: "Todo text", date: Date object }
+})
+
+cppLinux.on('todoUpdated', (todo) => {
+  console.log('Todo updated:', todo)
+})
+
+cppLinux.on('todoDeleted', (todo) => {
+  console.log('Todo deleted:', todo)
+})
+
+// Launch the native GTK GUI
+cppLinux.helloGui()
+```
+
+When you run this code:
+
+1. The `helloWorld()` call will return a greeting from C++
+2. The event listeners will be triggered when users interact with the GTK3 GUI
+3. The `helloGui()` call will open a native GTK3 window with:
+   * A text entry field for todo items
+   * A calendar widget for selecting dates
+   * An "Add" button to create new todos
+   * A scrollable list showing all todos
+   * Right-click context menus for editing and deleting todos
+
+All interactions with the native GTK3 interface will trigger the corresponding JavaScript events, allowing your Electron application to respond to native GUI actions in real-time.
 
 ## Conclusion
 
