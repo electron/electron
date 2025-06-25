@@ -12,7 +12,7 @@ def init(ctx):
     if runtime.os != "linux":
       for rule in step_config["rules"]:
         if rule["name"].startswith("clang/") or rule["name"].startswith("clang-cl/"):
-          rule["remote_wrapper"] = "../../buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper"
+          rule["remote_wrapper"] = "/bin/bash ../../buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper"
           if "inputs" not in rule:
             rule["inputs"] = []
           rule["inputs"].append("buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper")
