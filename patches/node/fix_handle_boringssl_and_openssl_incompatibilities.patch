@@ -183,7 +183,7 @@ index 245a43920c7baf000ba63192a84a4c3fd219be7d..56a554175b805c1703f13d62041f8c80
 +  node_openssl_path = "//third_party/boringssl"
  
    # The location of simdutf - use the one from node's deps by default.
-   node_simdutf_path = "$node_path/deps/simdutf"
+   node_simdutf_path = "//third_party/simdutf"
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
 index 2176fb6982484e2c42538478eeb4dd81c9d50ee1..c00d3616e08b00b1e0a3a29b2dbb5278e1e14fcc 100644
 --- a/src/crypto/crypto_cipher.cc
