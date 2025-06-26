@@ -38,19 +38,3 @@ index 128bda296c91eac5f0c2fcfeed0c553deb5514dd..f1e33d36810dba80a42608655beb27c6
 +        sys.exit(r)
 +
 +    print('done')
-diff --git a/buildtools/reclient_cfgs/nacl/rewrapper_linux.cfg b/buildtools/reclient_cfgs/nacl/rewrapper_linux.cfg
-deleted file mode 100644
-index 0a0771da2d7ab44f13037c95f8b948cf9b8c663f..0000000000000000000000000000000000000000
---- a/buildtools/reclient_cfgs/nacl/rewrapper_linux.cfg
-+++ /dev/null
-@@ -1,10 +0,0 @@
--# use the same platform container image as build/config/siso/main.star
--platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:ef35d347f4a4a2d32b76fd908e66e96f59bf8ba7379fd5626548244c45343b2b,label:action_default=1
--server_address=unix:///tmp/reproxy.sock
--labels=type=compile,compiler=nacl,lang=cpp
--exec_strategy=racing
--inputs=native_client/toolchain/linux_x86/saigo_newlib/lib
--dial_timeout=10m
--canonicalize_working_dir=true
--exec_timeout=2m
--reclient_timeout=4m

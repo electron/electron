@@ -75,7 +75,7 @@ index f8361faf6151210d65a597562c533aaa0a5235df..328238c34a9381fbbeb5970af3de721c
    // used for canvas noising.
    uint64 canvas_noise_token = 0;
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-index e44c760b37315cf618ff86307ee767fab715f78e..1289813c7fe6ff8839b04a5d21cf85e58cc645f5 100644
+index 917d5ec778658f3890366bbc0cbbe38807089265..3e2c0f0d4632c6d202649ca8f87980b7ee9e9e40 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 +++ b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 @@ -48,6 +48,7 @@ enum CSSSampleId {
@@ -87,10 +87,10 @@ index e44c760b37315cf618ff86307ee767fab715f78e..1289813c7fe6ff8839b04a5d21cf85e5
      // This CSSSampleId represents page load for CSS histograms. It is recorded once
      // per page visit for each CSS histogram being logged on the blink side and the
 diff --git a/third_party/blink/public/web/web_settings.h b/third_party/blink/public/web/web_settings.h
-index c37f784a1309da14354881d48a5a76a965930926..bffd221d2b3f3701710025103fa564c233e203d1 100644
+index 7fdc9866c9db5838ac8852ba156f2f04eb238bf5..56551d8190b3672d7c00c9bc722cf7e3aed255a6 100644
 --- a/third_party/blink/public/web/web_settings.h
 +++ b/third_party/blink/public/web/web_settings.h
-@@ -287,6 +287,7 @@ class WebSettings {
+@@ -285,6 +285,7 @@ class WebSettings {
    virtual void SetRequireTransientActivationAndAuthorizationForSubAppsAPIs(
        bool) = 0;
    virtual void SetRootScrollbarThemeColor(std::optional<SkColor>) = 0;
@@ -112,7 +112,7 @@ index bc33eaeaff56b3f0e12d87e078e329c35ff4ecb2..bf970892ea846e9e48bf01f9151cb3de
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 7ffd0e07cfb85aef69d20a55701f3877ad921b6f..7e4aabee8aeba284ec802942b8df2a3e3d7f1f4a 100644
+index b0d51efeabca3169fc1fffce3a7d6721554a5233..07c11fb1ee66cf17b15ce31617d964cfca4f0b4b 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
 @@ -8939,6 +8939,24 @@
@@ -141,7 +141,7 @@ index 7ffd0e07cfb85aef69d20a55701f3877ad921b6f..7e4aabee8aeba284ec802942b8df2a3e
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index ce5533208bb78d6129293606a48b82bd81d1d2c3..d2855ca4ef717e32262fff3c1656261b641c7222 100644
+index a84a3aa2881787f1a9450b977672f339927ce4dd..a78960d5270b52a462feb2858804690612d2feaf 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
 @@ -350,6 +350,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
@@ -154,7 +154,7 @@ index ce5533208bb78d6129293606a48b82bd81d1d2c3..d2855ca4ef717e32262fff3c1656261b
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 0144eb731cfed4f874189900e093333c82015d04..cfa448c678013c5cbb73521812191b7b62c86547 100644
+index 01ff7488c1cc67dbcdbc372be9c72516cbf9ad29..fd6e883b6e18010974aa5d8ea3051354c6080a73 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 @@ -12156,5 +12156,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
@@ -216,10 +216,10 @@ index 960771a0ccdc14abb30d9c72d3f29dc9821d4f4a..9e0a08288a3f4e68c3940104d9c22b76
  };
  
 diff --git a/third_party/blink/renderer/core/exported/web_settings_impl.cc b/third_party/blink/renderer/core/exported/web_settings_impl.cc
-index 3d700ee623a3fd95463c3757c9c6d3cddd67752e..49c82f61dd1f96d575f79f7ab0bac510e6024a0d 100644
+index 5a291913e020a785d0e9a1d07dd3bc88d223cc62..f01b25c7af9111596c53dadc5c08c4f1c031fc86 100644
 --- a/third_party/blink/renderer/core/exported/web_settings_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_settings_impl.cc
-@@ -821,4 +821,8 @@ void WebSettingsImpl::SetRootScrollbarThemeColor(
+@@ -817,4 +817,8 @@ void WebSettingsImpl::SetRootScrollbarThemeColor(
    settings_->SetRootScrollbarThemeColor(theme_color);
  }
  
@@ -229,10 +229,10 @@ index 3d700ee623a3fd95463c3757c9c6d3cddd67752e..49c82f61dd1f96d575f79f7ab0bac510
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/exported/web_settings_impl.h b/third_party/blink/renderer/core/exported/web_settings_impl.h
-index aa8b248b94ea7f6c0e04dc66e976dc7923ff3a98..868630ed2adb8f40fb7f002d45b260c0881ef10f 100644
+index a9fa6e94716bd5e53bc550d0a8d5e200bf0242af..b8d9d99edc8310eda762c83a6a95a43246792b20 100644
 --- a/third_party/blink/renderer/core/exported/web_settings_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_settings_impl.h
-@@ -238,6 +238,7 @@ class CORE_EXPORT WebSettingsImpl final : public WebSettings {
+@@ -237,6 +237,7 @@ class CORE_EXPORT WebSettingsImpl final : public WebSettings {
    void SetRequireTransientActivationAndAuthorizationForSubAppsAPIs(
        bool) override;
    void SetRootScrollbarThemeColor(std::optional<SkColor>) override;
@@ -241,10 +241,10 @@ index aa8b248b94ea7f6c0e04dc66e976dc7923ff3a98..868630ed2adb8f40fb7f002d45b260c0
    bool RenderVSyncNotificationEnabled() const {
      return render_v_sync_notification_enabled_;
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 3c304d94f744a8bb468dbdd0ed4a88ffd710f1a0..479b04073108a434a89b108a659f5a859f47afe6 100644
+index 7163be14508786f67c3ea01cff9bc70c3692acac..cf477007d90a2c3b9b15ab8a7cd1d0a165c874d7 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3601,6 +3601,9 @@ void WebViewImpl::UpdateRendererPreferences(
+@@ -3599,6 +3599,9 @@ void WebViewImpl::UpdateRendererPreferences(
        renderer_preferences_.view_source_line_wrap_enabled);
  
    MaybePreloadSystemFonts(GetPage());
@@ -255,10 +255,10 @@ index 3c304d94f744a8bb468dbdd0ed4a88ffd710f1a0..479b04073108a434a89b108a659f5a85
  
  void WebViewImpl::SetHistoryIndexAndLength(int32_t history_index,
 diff --git a/third_party/blink/renderer/core/frame/settings.json5 b/third_party/blink/renderer/core/frame/settings.json5
-index c96100f7d26c14b8be1329cdb4d8a007b14d9c00..8b2429d5ac958f9a2c7aae546b44da903def8e69 100644
+index 9f68384d71136da79de5fbf7e3feac2a13b7dbec..2bd6f597974c9bdf05b743c8c00182432c8e8dba 100644
 --- a/third_party/blink/renderer/core/frame/settings.json5
 +++ b/third_party/blink/renderer/core/frame/settings.json5
-@@ -1265,5 +1265,10 @@
+@@ -1261,5 +1261,10 @@
        initial: false,
        type: "bool"
      },
@@ -309,10 +309,10 @@ index ec80337fdac36fa1636f5142c3827d3bbc81644c..634db12dfb443acabde79e9faf59cb84
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index c2a772c477b970f40978920c5f0d48664c4fbdcf..a1922caeea09ba74406878572dd85450bd7c44f9 100644
+index e6105a54e2534d613943bb56c4c311f35ac69651..e44a985b078ac18c5bc5a05b784f67d156a2dd57 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1651,6 +1651,8 @@ component("platform") {
+@@ -1650,6 +1650,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -322,7 +322,7 @@ index c2a772c477b970f40978920c5f0d48664c4fbdcf..a1922caeea09ba74406878572dd85450
  
    sources -= blink_platform_avx_files
 diff --git a/third_party/blink/renderer/platform/geometry/contoured_rect.h b/third_party/blink/renderer/platform/geometry/contoured_rect.h
-index 591dee90a2565d9869ab26a370854058dc967e3d..7a52cfa51f48c77bacb5c7356f7897116dfe959b 100644
+index 59031b23d3c50aa87db48a5c5a66c5ab04a8103a..1f83cf0dff83d748bf1caafd3685202c14a3aaed 100644
 --- a/third_party/blink/renderer/platform/geometry/contoured_rect.h
 +++ b/third_party/blink/renderer/platform/geometry/contoured_rect.h
 @@ -52,19 +52,29 @@ class PLATFORM_EXPORT ContouredRect {
@@ -375,7 +375,7 @@ index 591dee90a2565d9869ab26a370854058dc967e3d..7a52cfa51f48c77bacb5c7356f789711
  
    // A Corner is a axis-aligned quad, with the points ordered (start, outer,
 diff --git a/third_party/blink/renderer/platform/geometry/path_builder.cc b/third_party/blink/renderer/platform/geometry/path_builder.cc
-index a245bd97555446bb5959295fe37bfe495cd4fb74..4a3fee5ed3335288c31cb6977565c4a99cb81114 100644
+index ba1be7bc8070c2b97f343298261d597df70dfdaf..fe6e2adafe49082ae266c049c655a13e296ade17 100644
 --- a/third_party/blink/renderer/platform/geometry/path_builder.cc
 +++ b/third_party/blink/renderer/platform/geometry/path_builder.cc
 @@ -4,6 +4,7 @@
