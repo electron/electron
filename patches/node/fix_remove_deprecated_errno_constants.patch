@@ -13,14 +13,15 @@ diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
 index f75a496071ac3396cbc6dec819eaab7294609deb..30f9a05f2f508b55a7d7ae036612660068c8400e 100644
 --- a/deps/uv/include/uv.h
 +++ b/deps/uv/include/uv.h
-@@ -155,7 +155,6 @@ struct uv__queue {
+@@ -156,7 +156,6 @@ struct uv__queue {
    XX(EFTYPE, "inappropriate file type or format")                             \
    XX(EILSEQ, "illegal byte sequence")                                         \
    XX(ESOCKTNOSUPPORT, "socket type not supported")                            \
 -  XX(ENODATA, "no data available")                                            \
    XX(EUNATCH, "protocol driver not attached")                                 \
+   XX(ENOEXEC, "exec format error")                                            \
  
- #define UV_HANDLE_TYPE_MAP(XX)                                                \
+                                          \
 diff --git a/deps/uv/include/uv/errno.h b/deps/uv/include/uv/errno.h
 index 127278ef916161a96e23e645927d16bedfdaca5b..b36da3daa5744e6f994e32d9d82aaef689008a5f 100644
 --- a/deps/uv/include/uv/errno.h
