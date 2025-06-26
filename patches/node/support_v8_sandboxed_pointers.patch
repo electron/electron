@@ -384,18 +384,3 @@ index 9787b14352753c5e0f8dc2b90093680e7cd10f1a..31af9e62396368af1b81f8841a705fd3
    auto ab = ArrayBuffer::New(isolate, std::move(bs));
    v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
  
-diff --git a/test/parallel/test-buffer-tostring-range.js b/test/parallel/test-buffer-tostring-range.js
-index 73fec107a36c3db4af6f492137d0ca174f2d0547..a1153ec381f7b12a1640b611073f6997e1ec5696 100644
---- a/test/parallel/test-buffer-tostring-range.js
-+++ b/test/parallel/test-buffer-tostring-range.js
-@@ -102,8 +102,8 @@ assert.throws(() => {
- // Must not throw when start and end are within kMaxLength
- // Cannot test on 32bit machine as we are testing the case
- // when start and end are above the threshold
--if (!common.openSSLIsBoringSSL) {
-+/*
- const threshold = 0xFFFFFFFF;
- const largeBuffer = Buffer.alloc(threshold + 20);
- largeBuffer.toString('utf8', threshold, threshold + 20);
--}
-+*/
