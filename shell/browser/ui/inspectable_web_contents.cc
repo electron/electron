@@ -139,16 +139,14 @@ double GetNextZoomLevel(double level, bool out) {
 }
 
 GURL GetRemoteBaseURL() {
-  return GURL(
-      absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
-                      kChromeUIDevToolsRemoteFrontendPath,
-                      embedder_support::GetChromiumGitRevision().c_str()));
+  return GURL(absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
+                              kChromeUIDevToolsRemoteFrontendPath,
+                              embedder_support::GetChromiumGitRevision()));
 }
 
 GURL GetDevToolsURL(bool can_dock) {
-  auto url_string =
-      absl::StrFormat(kChromeUIDevToolsURL, GetRemoteBaseURL().spec().c_str(),
-                      can_dock ? "true" : "");
+  auto url_string = absl::StrFormat(
+      kChromeUIDevToolsURL, GetRemoteBaseURL().spec(), can_dock ? "true" : "");
   return GURL(url_string);
 }
 
@@ -630,8 +628,7 @@ void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
   if (managed_devtools_web_contents_) {
     if (devtools_title_.empty()) {
-      view_->SetTitle(
-          base::UTF8ToUTF16(absl::StrFormat(kTitleFormat, url.c_str())));
+      view_->SetTitle(base::UTF8ToUTF16(absl::StrFormat(kTitleFormat, url)));
     }
   }
 }
@@ -1023,9 +1020,9 @@ void InspectableWebContents::DidFinishNavigation(
   // most likely bug in chromium.
   base::ReplaceFirstSubstringAfterOffset(&it->second, 0, "var chrome",
                                          "var chrome = window.chrome ");
-  auto script = absl::StrFormat(
-      "%s(\"%s\")", it->second.c_str(),
-      base::Uuid::GenerateRandomV4().AsLowercaseString().c_str());
+  auto script =
+      absl::StrFormat("%s(\"%s\")", it->second,
+                      base::Uuid::GenerateRandomV4().AsLowercaseString());
   // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);
   // should be enough, but it seems to be a noop currently.
   frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script),
