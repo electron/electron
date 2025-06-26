@@ -185,8 +185,8 @@ RendererClientBase* RendererClientBase::Get() {
 void RendererClientBase::BindProcess(v8::Isolate* isolate,
                                      gin_helper::Dictionary* process,
                                      content::RenderFrame* render_frame) {
-  auto context_id = absl::StrFormat("%s-%" PRId64, renderer_client_id_.c_str(),
-                                    ++next_context_id_);
+  auto context_id =
+      absl::StrFormat("%s-%" PRId64, renderer_client_id_, ++next_context_id_);
 
   process->SetReadOnly("isMainFrame", render_frame->IsMainFrame());
   process->SetReadOnly("contextIsolated",

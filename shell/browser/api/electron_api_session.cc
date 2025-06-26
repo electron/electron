@@ -1499,9 +1499,8 @@ v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
 
         // Opaque origins cannot be used with this API
         if (origin.opaque()) {
-          thrower.ThrowError(
-              absl::StrFormat("Invalid origin: '%s'",
-                              origin_url.possibly_invalid_spec().c_str()));
+          thrower.ThrowError(absl::StrFormat(
+              "Invalid origin: '%s'", origin_url.possibly_invalid_spec()));
           return v8::Undefined(isolate);
         }
 
