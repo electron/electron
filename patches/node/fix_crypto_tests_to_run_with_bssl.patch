@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
-index b35dd08e6c49796418cd9d10eb5cc9d02b39961e..c5d701f6464694456813d2aadff2fe9ec0b0acd5 100644
+index b35dd08e6c49796418cd9d10eb5cc9d02b39961e..97bcd79b331db140d157e6b1faf92625597edc98 100644
 --- a/test/parallel/test-crypto-async-sign-verify.js
 +++ b/test/parallel/test-crypto-async-sign-verify.js
 @@ -89,6 +89,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
@@ -37,7 +37,7 @@ index b35dd08e6c49796418cd9d10eb5cc9d02b39961e..c5d701f6464694456813d2aadff2fe9e
 -  const expected = hasOpenSSL3 ?
 -    /operation not supported for this keytype/ : /no default digest/;
 +  let expected = /no default digest/;
-+  if (hasOpenSSL3 || !process.features.openssl_is_boringssl) {
++  if (hasOpenSSL3 || process.features.openssl_is_boringssl) {
 +    expected = /operation[\s_]not[\s_]supported[\s_]for[\s_]this[\s_]keytype/i;
 +  }
  
@@ -109,23 +109,29 @@ index 81a469c226c261564dee1e0b06b6571b18a41f1f..58b66045dba4201b7ebedd78b129420f
  
  const availableCurves = new Set(crypto.getCurves());
 diff --git a/test/parallel/test-crypto-dh-errors.js b/test/parallel/test-crypto-dh-errors.js
-index 0af4db0310750cea9350ecff7fc44404c6df6c83..85ab03f6019989ad4fe93b779c3b4772ce1f5130 100644
+index 0af4db0310750cea9350ecff7fc44404c6df6c83..b14b4bbf88b902b6de916b92e3d48335c01df911 100644
 --- a/test/parallel/test-crypto-dh-errors.js
 +++ b/test/parallel/test-crypto-dh-errors.js
-@@ -33,9 +33,9 @@ for (const bits of [-1, 0, 1]) {
-     });
-   } else {
+@@ -27,7 +27,7 @@ assert.throws(() => crypto.createDiffieHellman('abcdef', 13.37), {
+ for (const bits of [-1, 0, 1]) {
+   if (hasOpenSSL3) {
      assert.throws(() => crypto.createDiffieHellman(bits), {
--      code: 'ERR_OSSL_BN_BITS_TOO_SMALL',
-+      code: /ERR_OSSL_BN_BITS_TOO_SMALL|ERR_OSSL_DH_MODULUS_TOO_LARGE/,
+-      code: 'ERR_OSSL_DH_MODULUS_TOO_SMALL',
++      code: 'ERR_OSSL_BN_BITS_TOO_SMALL',
+       name: 'Error',
+       message: /modulus too small/,
+     });
+@@ -35,7 +35,7 @@ for (const bits of [-1, 0, 1]) {
+     assert.throws(() => crypto.createDiffieHellman(bits), {
+       code: 'ERR_OSSL_BN_BITS_TOO_SMALL',
        name: 'Error',
 -      message: /bits too small/,
-+      message: /bits too small|BITS_TOO_SMALL|MODULUS_TOO_LARGE/,
++      message: /bits[\s_]too[\s_]small/i,
      });
    }
  }
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index d7ffbe5eca92734aa2380f482c7f9bfe7e2a36c7..21ab2333431ea70bdf98dde43624e0b712566395 100644
+index d7ffbe5eca92734aa2380f482c7f9bfe7e2a36c7..b4e7002d862907d2af3b4f8e985700bd03300809 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
 @@ -60,18 +60,17 @@ const {
@@ -136,10 +142,10 @@ index d7ffbe5eca92734aa2380f482c7f9bfe7e2a36c7..21ab2333431ea70bdf98dde43624e0b7
 -      code: 'ERR_OSSL_WRONG_FINAL_BLOCK_LENGTH',
 -      library: 'Provider routines',
 -      reason: 'wrong final block length'
-+      message: /error:1C80006B:Provider routines::wrong final block length|error:1e00007b:Cipher functions:OPENSSL_internal:WRONG_FINAL_BLOCK_LENGTH/,
++      message: /wrong[\s_]final[\s_]block[\s_]length/i,
 +      code: /ERR_OSSL_(EVP_)?WRONG_FINAL_BLOCK_LENGTH/,
-+      library: /digital envelope routines|Cipher functions/,
-+      reason: /wrong final block length|WRONG_FINAL_BLOCK_LENGTH/
++      library: /Provider routines|Cipher functions/,
++      reason: /wrong[\s_]final[\s_]block[\s_]length/i,
      };
    } else {
      wrongBlockLength = {
@@ -148,10 +154,10 @@ index d7ffbe5eca92734aa2380f482c7f9bfe7e2a36c7..21ab2333431ea70bdf98dde43624e0b7
 -      code: 'ERR_OSSL_EVP_WRONG_FINAL_BLOCK_LENGTH',
 -      library: 'digital envelope routines',
 -      reason: 'wrong final block length'
-+      message: /error:0606506D:digital envelope routines:EVP_DecryptFinal_ex:wrong final block length|error:1e00007b:Cipher functions:OPENSSL_internal:WRONG_FINAL_BLOCK_LENGTH/,
++      message: /wrong[\s_]final[\s_]block[\s_]length/i,
 +      code: /ERR_OSSL_(EVP_)?WRONG_FINAL_BLOCK_LENGTH/,
 +      library: /digital envelope routines|Cipher functions/,
-+      reason: /wrong final block length|WRONG_FINAL_BLOCK_LENGTH/
++      reason: /wrong[\s_]final[\s_]block[\s_]length/i,
      };
    }
  
@@ -217,33 +223,46 @@ index 61145aee0727fbe0b9781acdb3eeb641e7010729..51693e637b310981f76f23c2f35d43e4
    if (!hasOpenSSL(3, 4)) {
      assert.strictEqual(crypto.createHash('shake128').digest('hex'),
 diff --git a/test/parallel/test-crypto-padding.js b/test/parallel/test-crypto-padding.js
-index 48cd1ed4df61aaddeee8785cb90f83bdd9628187..a18aeb2bdffcc7a7e9ef12328b849994e39d6c27 100644
+index 48cd1ed4df61aaddeee8785cb90f83bdd9628187..d09e01712c617597833bb1320a32a967bcf1d318 100644
 --- a/test/parallel/test-crypto-padding.js
 +++ b/test/parallel/test-crypto-padding.js
-@@ -88,10 +88,9 @@ assert.throws(function() {
-   code: 'ERR_OSSL_WRONG_FINAL_BLOCK_LENGTH',
-   reason: 'wrong final block length',
+@@ -84,14 +84,13 @@ assert.throws(function() {
+   // Input must have block length %.
+   enc(ODD_LENGTH_PLAIN, false);
+ }, hasOpenSSL3 ? {
+-  message: 'error:1C80006B:Provider routines::wrong final block length',
+-  code: 'ERR_OSSL_WRONG_FINAL_BLOCK_LENGTH',
+-  reason: 'wrong final block length',
++  message: /wrong[\s_]final[\s_]block[\s_]length/i,
++  code: /ERR_OSSL(_EVP)?_DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
++  message: /wrong[\s_]final[\s_]block[\s_]length/i,
  } : {
 -  message: 'error:0607F08A:digital envelope routines:EVP_EncryptFinal_ex:' +
 -    'data not multiple of block length',
 -  code: 'ERR_OSSL_EVP_DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH',
 -  reason: 'data not multiple of block length',
-+  message: /error:0607F08A:digital envelope routines:EVP_EncryptFinal_ex:data not multiple of block length|error:1e00006a:Cipher functions:OPENSSL_internal:DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
++  message: /data[\s_]not[\s_]multiple[\s_]of[\s_]block[\s_]length/i,
 +  code: /ERR_OSSL(_EVP)?_DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
-+  reason: /data not multiple of block length|DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
++  reason: /data[\s_]not[\s_]multiple[\s_]of[\s_]block[\s_]length/i,
  }
  );
  
-@@ -115,10 +114,9 @@ assert.throws(function() {
-   reason: 'bad decrypt',
-   code: 'ERR_OSSL_BAD_DECRYPT',
- } : {
+@@ -110,15 +109,10 @@ assert.strictEqual(dec(EVEN_LENGTH_ENCRYPTED, false).length, 48);
+ assert.throws(function() {
+   // Must have at least 1 byte of padding (PKCS):
+   assert.strictEqual(dec(EVEN_LENGTH_ENCRYPTED_NOPAD, true), EVEN_LENGTH_PLAIN);
+-}, hasOpenSSL3 ? {
+-  message: 'error:1C800064:Provider routines::bad decrypt',
+-  reason: 'bad decrypt',
+-  code: 'ERR_OSSL_BAD_DECRYPT',
+-} : {
 -  message: 'error:06065064:digital envelope routines:EVP_DecryptFinal_ex:' +
 -    'bad decrypt',
 -  reason: 'bad decrypt',
 -  code: 'ERR_OSSL_EVP_BAD_DECRYPT',
-+  message: /error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt|error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT/,
-+  reason: /bad decrypt|BAD_DECRYPT/,
++}, {
++  message: /bad[\s_]decrypt/i,
++  reason: /bad[\s_]decrypt/i,
 +  code: /ERR_OSSL(_EVP)?_BAD_DECRYPT/,
  });
  
@@ -358,6 +377,23 @@ index 0589d60736e377f24dc8550f87a6b7624173fc44..113003826fc47a589cf2334f7345e33d
  
    for (const [file, length] of keys) {
      const privKey = fixtures.readKey(file);
+diff --git a/test/parallel/test-crypto-stream.js b/test/parallel/test-crypto-stream.js
+index 747af780469c22eb8e4c6c35424043e868f75c3d..ed0916b036a9af23d805007ebd609973ee954473 100644
+--- a/test/parallel/test-crypto-stream.js
++++ b/test/parallel/test-crypto-stream.js
+@@ -73,9 +73,9 @@ const cipher = crypto.createCipheriv('aes-128-cbc', key, iv);
+ const decipher = crypto.createDecipheriv('aes-128-cbc', badkey, iv);
+ 
+ cipher.pipe(decipher)
+-  .on('error', common.expectsError(hasOpenSSL3 ? {
+-    message: /bad[\s_]decrypt/,
+-    library: 'Provider routines',
++  .on('error', common.expectsError((hasOpenSSL3 || process.features.openssl_is_boringssl) ? {
++    message: /bad[\s_]decrypt/i,
++    library: /Provider routines|Cipher functions/,
+     reason: /bad[\s_]decrypt/i,
+   } : {
+     message: /bad[\s_]decrypt/i,
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 84111740cd9ef6425b747e24e984e66e46b0b2ef..b1621d310536fae3fdec91a6a9d275ec8fc99a98 100644
 --- a/test/parallel/test-crypto.js
@@ -415,6 +451,29 @@ index 84111740cd9ef6425b747e24e984e66e46b0b2ef..b1621d310536fae3fdec91a6a9d275ec
  // Make sure memory isn't released before being returned
  console.log(crypto.randomBytes(16));
  
+diff --git a/test/parallel/test-tls-alert-handling.js b/test/parallel/test-tls-alert-handling.js
+index 7bd42bbe721c4c9442410d524c5ca740078fc72c..de49dbdc2b75517f497af353a6b24b1beb11ed69 100644
+--- a/test/parallel/test-tls-alert-handling.js
++++ b/test/parallel/test-tls-alert-handling.js
+@@ -43,7 +43,8 @@ const errorHandler = common.mustCall((err) => {
+ 
+   assert.strictEqual(err.code, expectedErrorCode);
+   assert.strictEqual(err.library, 'SSL routines');
+-  if (!hasOpenSSL3) assert.strictEqual(err.function, 'ssl3_get_record');
++  if (!hasOpenSSL3 && !process.features.openssl_is_boringssl)
++    assert.strictEqual(err.function, 'ssl3_get_record');
+   assert.match(err.reason, expectedErrorReason);
+   errorReceived = true;
+   if (canCloseServer())
+@@ -105,7 +106,7 @@ function sendBADTLSRecord() {
+     }
+     assert.strictEqual(err.code, expectedErrorCode);
+     assert.strictEqual(err.library, 'SSL routines');
+-    if (!hasOpenSSL3)
++    if (!hasOpenSSL3 && !process.features.openssl_is_boringssl)
+       assert.strictEqual(err.function, 'ssl3_read_bytes');
+     assert.match(err.reason, expectedErrorReason);
+   }));
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index d1ca571af4be713082d32093bfb8a65f2aef9800..57b8df2ce18df58ff54b2d828af67e3c2e082fe0 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
