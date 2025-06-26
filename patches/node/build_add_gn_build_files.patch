@@ -11,7 +11,7 @@ really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
 diff --git a/node.gni b/node.gni
-index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3fd219be7d 100644
+index 35ccd0487f20cece033d58827ecb7ed016908ee4..b4450e3dd17994d1eaf59eb5cff5912545e89793 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -5,10 +5,10 @@
@@ -55,10 +55,10 @@ index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3f
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index defb657a62a0316224a02b68505ac1142fd89d03..d637faac88875bfa110e2b8d1f53962061d98279 100644
+index 092341dbfbabe15b15ed43057d399f754505f6fd..f14b45850e42585f5686b7201e2b8281ed8c24e1 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -785,6 +785,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -788,6 +788,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -80,10 +80,10 @@ index f9426599f2d5dc6ad061407f0c4eb2c9203a4433..302030f610965f07dd6998d282275c1b
  // Handles compilation and caching of built-in JavaScript modules and
  // bootstrap scripts, whose source are bundled into the binary as static data.
 diff --git a/tools/install.py b/tools/install.py
-index 17515720ba9c85d533465365188021074a8d30f4..92f83a83be67aafc9ead6923b868dbb0de39db34 100755
+index 8797b59e59c85a8877b977fa3281e50165e6f6b2..0af01e075616195f38fb242626dcab770ec1eb57 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -212,6 +212,7 @@ def headers(options, action):
+@@ -222,6 +222,7 @@ def headers(options, action):
        'include/cppgc/internal/caged-heap-local-data.h',
        'include/cppgc/internal/caged-heap.h',
        'include/cppgc/internal/compiler-specific.h',
@@ -91,7 +91,7 @@ index 17515720ba9c85d533465365188021074a8d30f4..92f83a83be67aafc9ead6923b868dbb0
        'include/cppgc/internal/finalizer-trait.h',
        'include/cppgc/internal/gc-info.h',
        'include/cppgc/internal/logging.h',
-@@ -291,6 +292,7 @@ def headers(options, action):
+@@ -301,6 +302,7 @@ def headers(options, action):
        'include/v8-promise.h',
        'include/v8-proxy.h',
        'include/v8-regexp.h',

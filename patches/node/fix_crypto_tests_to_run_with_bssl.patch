@@ -359,7 +359,7 @@ index 0589d60736e377f24dc8550f87a6b7624173fc44..547f22cdc130cf0c68d117f92068e3ac
    for (const [file, length] of keys) {
      const privKey = fixtures.readKey(file);
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
-index 93644e016de447d2aadc519123f18cd72b7a5750..8b16c83cd47bd8969654242296c987ecc97ccaeb 100644
+index 84111740cd9ef6425b747e24e984e66e46b0b2ef..900fc06ebc3181b47e3efbbfc7c9c961c0b981d2 100644
 --- a/test/parallel/test-crypto.js
 +++ b/test/parallel/test-crypto.js
 @@ -62,7 +62,7 @@ assert.throws(() => {
