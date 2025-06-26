@@ -12,7 +12,8 @@ app.whenReady().then(() => {
     height: 300,
     windowStateRestoreOptions: {
       stateId: 'test-window-state-schema'
-    }
+    },
+    show: false
   });
 
   w.close();

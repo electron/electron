@@ -12,7 +12,8 @@ app.whenReady().then(() => {
     height: 300,
     windowStateRestoreOptions: {
       stateId: 'test-move-save'
-    }
+    },
+    show: false
   });
 
   w.setPosition(100, 150);

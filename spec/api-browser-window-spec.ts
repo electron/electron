@@ -7073,7 +7073,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        it('should save window state after window is fullscreened and app exit', async () => {
+        ifit(hasCapturableScreen())('should save window state after window is fullscreened and app exit', async () => {
           const appPath = path.join(fixturesPath, 'fullscreen-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7086,7 +7086,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        it('should save window state after window is maximized and app exit', async () => {
+        ifit(hasCapturableScreen())('should save window state after window is maximized and app exit', async () => {
           const appPath = path.join(fixturesPath, 'maximize-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7099,7 +7099,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        it('should save window state if in a minimized state and app exit', async () => {
+        ifit(hasCapturableScreen())('should save window state if in a minimized state and app exit', async () => {
           const appPath = path.join(fixturesPath, 'minimize-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7115,7 +7115,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        it('should save window state after window is kiosked and app exit', async () => {
+        ifit(hasCapturableScreen())('should save window state after window is kiosked and app exit', async () => {
           const appPath = path.join(fixturesPath, 'kiosk-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7130,7 +7130,7 @@ describe('BrowserWindow module', () => {
       });
 
       describe('work area tests', () => {
-        it('should save valid work area bounds', async () => {
+        ifit(hasCapturableScreen())('should save valid work area bounds', async () => {
           const appPath = path.join(fixturesPath, 'schema-check');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7148,7 +7148,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.work_area_top).to.be.lessThan(savedState.work_area_bottom);
         });
 
-        it('should save work area bounds that contain the window bounds on primary display', async () => {
+        ifit(hasCapturableScreen())('should save work area bounds that contain the window bounds on primary display', async () => {
           // Fixture will center the window on the primary display
           const appPath = path.join(fixturesPath, 'work-area-primary');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);

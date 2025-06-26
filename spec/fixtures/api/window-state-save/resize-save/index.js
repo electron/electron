@@ -12,7 +12,8 @@ app.whenReady().then(async () => {
     height: 300,
     windowStateRestoreOptions: {
       stateId: 'test-resize-save'
-    }
+    },
+    show: false
   });
 
   w.setSize(500, 400);

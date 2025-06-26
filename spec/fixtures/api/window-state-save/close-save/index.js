@@ -12,7 +12,8 @@ app.whenReady().then(() => {
     height: 300,
     windowStateRestoreOptions: {
       stateId: 'test-close-save'
-    }
+    },
+    show: false
   });
 
   w.on('close', () => {
