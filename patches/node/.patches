@@ -47,3 +47,4 @@ fix_cppgc_initializing_twice.patch
 fix_task_starvation_in_inspector_context_test.patch
 fix_expose_readfilesync_override_for_modules.patch
 chore_remove_protocol_maybe_from_node_string.patch
+fix_-wmismatched-new-delete_in_debug_utils_cc.patch
