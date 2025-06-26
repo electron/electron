@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 26 Jun 2025 09:20:43 +0000
+Subject: chore: remove protocol::Maybe from node_string
+
+It was removed upstream in https://chromium-review.googlesource.com/c/chromium/src/+/6049967.
+
+This should be upstreamed.
+
+diff --git a/src/inspector/node_string.h b/src/inspector/node_string.h
+index 94ec9b2301998c4c5aad9ca3dae72ecf323fa0bb..bcdedaa2ae4ab1d3267d7a1347f15e0405261277 100644
+--- a/src/inspector/node_string.h
++++ b/src/inspector/node_string.h
+@@ -6,7 +6,6 @@
+ #include <cstring>
+ #include <sstream>
+ #include <string>
+-#include "crdtp/maybe.h"
+ #include "crdtp/protocol_core.h"
+ #include "util.h"
+ #include "v8-inspector.h"
+@@ -31,11 +30,6 @@ struct ProtocolTypeTraits<node::inspector::protocol::Binary> {
+                         std::vector<uint8_t>* bytes);
+ };
+ 
+-template <>
+-struct detail::MaybeTypedef<node::inspector::protocol::Binary> {
+-  typedef ValueMaybe<node::inspector::protocol::Binary> type;
+-};
+-
+ }  // namespace crdtp
+ 
+ namespace node {
