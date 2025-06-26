@@ -7028,7 +7028,7 @@ describe('BrowserWindow module', () => {
           expect(savedState).to.have.property('work_area_bottom');
         });
 
-        it('should save window state after window is closed and app exit', async () => {
+        ifit(hasCapturableScreen())('should save window state after window is closed and app exit', async () => {
           const appPath = path.join(fixturesPath, 'close-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7043,7 +7043,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        it('should save window state after window is resized and app exit', async () => {
+        ifit(hasCapturableScreen())('should save window state after window is resized and app exit', async () => {
           const appPath = path.join(fixturesPath, 'resize-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7058,7 +7058,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        it('should save window state after window is moved and app exit', async () => {
+        ifit(hasCapturableScreen())('should save window state after window is moved and app exit', async () => {
           const appPath = path.join(fixturesPath, 'move-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
