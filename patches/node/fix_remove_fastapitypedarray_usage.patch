@@ -48,7 +48,7 @@ index 867a1c4aca54b9d41490d23a5eb55088b7e941cc..09f4c65a18efea262b1f854f993c6f18
  
  static v8::CFunction fast_equal(v8::CFunction::Make(FastTimingSafeEqual));
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 5bdffc0a4d7f8f643343593a543f2064b670c1b9..6931404b75dbe17bf3c7b561430b8d7c0921d085 100644
+index b8021c079ca6b141ea99a4abbc828430da9d3093..98ade40ec7a6bc805acb579c8a51dcd5468c2893 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -44,6 +44,14 @@
@@ -194,7 +194,7 @@ index 5bdffc0a4d7f8f643343593a543f2064b670c1b9..6931404b75dbe17bf3c7b561430b8d7c
  
  static const v8::CFunction fast_write_string_ascii(
 diff --git a/src/node_external_reference.h b/src/node_external_reference.h
-index bb007dbdcce486659afeed07b78103e44b00307b..314a4ded6908a94107de1ae1e550b7d46afdce75 100644
+index 3bc7b2cab5a12e281058b79a7d0f734eb527986c..4218eaf365c739a4c04ca94e29d6d2a33a637d44 100644
 --- a/src/node_external_reference.h
 +++ b/src/node_external_reference.h
 @@ -43,16 +43,16 @@ using CFunctionCallbackWithStrings =
@@ -219,7 +219,7 @@ index bb007dbdcce486659afeed07b78103e44b00307b..314a4ded6908a94107de1ae1e550b7d4
                  uint32_t,
                  int64_t,
                  bool);
-@@ -71,18 +71,20 @@ using CFunctionWithBool = void (*)(v8::Local<v8::Value>,
+@@ -73,18 +73,20 @@ using CFunctionWithBool = void (*)(v8::Local<v8::Value>,
  
  using CFunctionWriteString =
      uint32_t (*)(v8::Local<v8::Value> receiver,
@@ -246,7 +246,7 @@ index bb007dbdcce486659afeed07b78103e44b00307b..314a4ded6908a94107de1ae1e550b7d4
  // This class manages the external references from the V8 heap
  // to the C++ addresses in Node.js.
 diff --git a/src/util.h b/src/util.h
-index a77332f583402af956cc886fd5b9771390cc4827..f0d7571caa458a3f9a9c252a95f72eb5fbddd06d 100644
+index 6376cf4f81113cdb2e3c179b800f1c79b51ab762..cc7ad99f981f564fba0395159d9d8b39901050ff 100644
 --- a/src/util.h
 +++ b/src/util.h
 @@ -60,6 +60,7 @@
