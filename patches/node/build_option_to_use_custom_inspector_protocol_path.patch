@@ -25,32 +25,6 @@ index 203b4abbc44df9e58083c819f61f9025104abdc6..73bf3839866a2652ca660f1117e8f249
    # The NODE_MODULE_VERSION defined in node_version.h.
    node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")
  
-diff --git a/src/inspector/node_json.cc b/src/inspector/node_json.cc
-index d8aacbdf1a8fc858c792ad3ce17ca2f46baebe7e..4625008c048532c2c3340130670647d2877430bd 100644
---- a/src/inspector/node_json.cc
-+++ b/src/inspector/node_json.cc
-@@ -72,7 +72,7 @@ class ValueParserHandler : public ParserHandler {
- 
-   void HandleBinary(span<uint8_t> bytes) override {
-     AddValueToParent(
--        BinaryValue::create(Binary::fromSpan(bytes.data(), bytes.size())));
-+        BinaryValue::create(Binary::fromSpan(bytes)));
-   }
- 
-   void HandleDouble(double value) override {
-diff --git a/src/inspector/node_string.h b/src/inspector/node_string.h
-index b2f67c224acc7b3a3b867867e251a7c62833f46e..33e93ce5bf7dda7e30b7b1b198ff3b53ccfac22a 100644
---- a/src/inspector/node_string.h
-+++ b/src/inspector/node_string.h
-@@ -66,7 +66,7 @@ class Binary {
-   static Binary fromBase64(const std::string_view base64, bool* success) {
-     UNREACHABLE();
-   }
--  static Binary fromSpan(const uint8_t* data, size_t size) { UNREACHABLE(); }
-+  static Binary fromSpan(crdtp::span<const uint8_t> data) { UNREACHABLE(); }
- };
- 
- }  // namespace protocol
 diff --git a/src/inspector/unofficial.gni b/src/inspector/unofficial.gni
 index 3d7aa148678b2646b88fa7c32abec91791b02b82..4810d93eb971b253f7dadff7011a632f6dbe6a2b 100644
 --- a/src/inspector/unofficial.gni
