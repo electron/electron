@@ -189,7 +189,7 @@ index f616223cfb0f6e10f7cf57ada9704316bde2797e..eb6dad44a49d997097c8fb5009eeb60a
    Local<Value> ret;
    if (!Buffer::New(env, ab, 0, ab->ByteLength()).ToLocal(&ret)) return {};
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index ea7810e41e2667713a896250dc1b904b0a7cf198..865b3128c1edfe7074769f25a0b87878ca094f31 100644
+index 61b6ecd240c9500f21f683065a2f920af3afb502..ad2b1c76325cb5c8f18a618c5a85ae87b6a7bbe7 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -104,7 +104,7 @@ namespace {

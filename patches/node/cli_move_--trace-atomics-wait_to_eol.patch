@@ -15,10 +15,10 @@ Reviewed-By: Benjamin Gruenbaum <benjamingr@gmail.com>
 Reviewed-By: Yagiz Nizipli <yagiz.nizipli@sentry.io>
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index 121d8f2bbd2b1d93067a06a902b1e7b986bcdb49..3460ad33c6186dcc3aa3281d80b723a1cc1d50dd 100644
+index d924287df3ca29681cf71e2fbd402314ce8edd97..f2f4d25a838b9758234cd667b0fb537d0d0fcced 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -3367,7 +3367,6 @@ one is included in the list below.
+@@ -3386,7 +3386,6 @@ one is included in the list below.
  * `--tls-min-v1.1`
  * `--tls-min-v1.2`
  * `--tls-min-v1.3`
@@ -43,7 +43,7 @@ index 663d123ac728f097e8a76c94cf10c53d059983d7..497f5a61182beafbaa26b94518105635
  Print stack traces for deprecations.
  .
 diff --git a/src/node.cc b/src/node.cc
-index 6f8f6386d0db8aef1e2e0126cc9064101cbe6112..bc670a6c8b5027417cdc35e1cd94a60f63fd342d 100644
+index 0c2a4d344c991c2ca0d9d90934cf7921abf2a629..19d9fb77f1aaf003e43b7d7016f45e6c35df06b3 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -232,44 +232,6 @@ void Environment::WaitForInspectorFrontendByOptions() {
@@ -110,10 +110,10 @@ index 6f8f6386d0db8aef1e2e0126cc9064101cbe6112..bc670a6c8b5027417cdc35e1cd94a60f
      isolate_->SetPromiseHook(TracePromises);
    }
 diff --git a/src/node_options.cc b/src/node_options.cc
-index a9500716f2a955fc591628a969c5fba40783a2e7..b153d2c6a771e80bcdf5ed6adbc1cd225b3bf97e 100644
+index 9829b0b2b2d013b93ac14d3ec6d46c35abcc4635..5fb2e713a50185b997935cb15fddd7b8b65a5b82 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -770,10 +770,6 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
+@@ -773,10 +773,6 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
              "throw an exception on deprecations",
              &EnvironmentOptions::throw_deprecation,
              kAllowedInEnvvar);
@@ -125,10 +125,10 @@ index a9500716f2a955fc591628a969c5fba40783a2e7..b153d2c6a771e80bcdf5ed6adbc1cd22
              "show stack traces on deprecations",
              &EnvironmentOptions::trace_deprecation,
 diff --git a/src/node_options.h b/src/node_options.h
-index 60068b008b2e2a034c3f0c58b947a8d04d55e3b2..d821bc6a9adf28ea312a9c446f8acfc8ed586ae3 100644
+index eb18fdd617fd19e5b97cd67f351e70c28fee3e75..216c0f92167bd131e5ef2ea96ad47425ff51c3f7 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
-@@ -203,7 +203,6 @@ class EnvironmentOptions : public Options {
+@@ -204,7 +204,6 @@ class EnvironmentOptions : public Options {
    std::vector<std::string> coverage_include_pattern;
    std::vector<std::string> coverage_exclude_pattern;
    bool throw_deprecation = false;

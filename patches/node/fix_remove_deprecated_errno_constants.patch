@@ -10,7 +10,7 @@ This change removes the usage of these constants to fix a compilation failure du
 See: https://github.com/llvm/llvm-project/pull/80542
 
 diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
-index f75a496071ac3396cbc6dec819eaab7294609deb..30f9a05f2f508b55a7d7ae036612660068c8400e 100644
+index 0295eeddbb4eb1cffd9dbcd02e037907fadc1b7e..7c2f9d2a8b13584ff6b33cd3ff4745e9fb3c4170 100644
 --- a/deps/uv/include/uv.h
 +++ b/deps/uv/include/uv.h
 @@ -156,7 +156,6 @@ struct uv__queue {
@@ -21,9 +21,8 @@ index f75a496071ac3396cbc6dec819eaab7294609deb..30f9a05f2f508b55a7d7ae0366126600
    XX(EUNATCH, "protocol driver not attached")                                 \
    XX(ENOEXEC, "exec format error")                                            \
  
-                                          \
 diff --git a/deps/uv/include/uv/errno.h b/deps/uv/include/uv/errno.h
-index 127278ef916161a96e23e645927d16bedfdaca5b..b36da3daa5744e6f994e32d9d82aaef689008a5f 100644
+index ac00778cfc59fb55e361b24fc81a965a5e8f97e7..f0c4d6dfc9f03bee59e656b2da9ac325bced7b69 100644
 --- a/deps/uv/include/uv/errno.h
 +++ b/deps/uv/include/uv/errno.h
 @@ -456,18 +456,6 @@
@@ -46,7 +45,7 @@ index 127278ef916161a96e23e645927d16bedfdaca5b..b36da3daa5744e6f994e32d9d82aaef6
  # define UV__EUNATCH UV__ERR(EUNATCH)
  #else
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 13263149c111beede83b7063fa54f56655aea54c..99068098e1867af4846e18a5d039a25689722a4a 100644
+index 8c44e32381a44675792ca0922e47df1adda48e41..d193725ea9a3270ed9affea12d11467fb14efdf8 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
 @@ -241,10 +241,6 @@ void DefineErrnoConstants(Local<Object> target) {

@@ -47,7 +47,7 @@ index 5b7f6e0609c8414c686d2d5ca603ea5c8bc484d0..6c9c81ff3c08fc28dc35578229a78552
                      event_loop,
                      platform,
 diff --git a/src/env.cc b/src/env.cc
-index ddf82c8a18c29c355641e33974c1e5e67867379d..ae43803d8c2de90fb191a8e10605f6f3b18816ed 100644
+index 400ff494f4e153408a2fce343d7b156d7ccefc7b..cac2d97323d131451eab4ca68ce771cb936447e4 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -577,14 +577,6 @@ IsolateData::IsolateData(Isolate* isolate,
@@ -82,7 +82,7 @@ index ddf82c8a18c29c355641e33974c1e5e67867379d..ae43803d8c2de90fb191a8e10605f6f3
  void SetCppgcReference(Isolate* isolate,
                         Local<Object> object,
 diff --git a/src/env.h b/src/env.h
-index 9f1c7ef45b6df10f811936a78ea6d9fcc13fef4f..c429eecd937d1df32a2ff90bc0a22a2e58df3a3d 100644
+index 1079e3beb02e5f5d71a15fd2db65cb93ebd175d6..a7be609c3ab9093cec5145367b95ae6859936a24 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -155,7 +155,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
@@ -102,10 +102,10 @@ index 9f1c7ef45b6df10f811936a78ea6d9fcc13fef4f..c429eecd937d1df32a2ff90bc0a22a2e
    worker::Worker* worker_context_ = nullptr;
    PerIsolateWrapperData* wrapper_data_;
 diff --git a/src/node.cc b/src/node.cc
-index 092b1c525c7d4d50a09f99dc088d0698afcaf8a6..6f8f6386d0db8aef1e2e0126cc9064101cbe6112 100644
+index a43d36c731693b9d2ed1ba13f6b4bb33bf6c4ca4..0c2a4d344c991c2ca0d9d90934cf7921abf2a629 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -1258,6 +1258,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1257,6 +1257,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      result->platform_ = per_process::v8_platform.Platform();
    }
  
@@ -120,7 +120,7 @@ index 092b1c525c7d4d50a09f99dc088d0698afcaf8a6..6f8f6386d0db8aef1e2e0126cc906410
    if (!(flags & ProcessInitializationFlags::kNoInitializeV8)) {
      V8::Initialize();
  
-@@ -1267,14 +1275,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1266,14 +1274,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      absl::SetMutexDeadlockDetectionMode(absl::OnDeadlockCycle::kIgnore);
    }
  
