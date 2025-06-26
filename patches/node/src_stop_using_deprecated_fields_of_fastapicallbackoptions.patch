@@ -40,10 +40,10 @@ index 5641990e0bac455c33ddf7b9a865deba871516e7..bd757f42e02391abbeec007d9c4cea60
    }
    HistogramBase* histogram;
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 5aea65d6800494def62829432ee48f9c06e65d63..80cf6648ed99241eea8c176c5c958d76fe33aa14 100644
+index 37172158d318d6569194fd3c5441d107e155e54c..41498615a37945111348e22b18214c3bcc9533a0 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -1071,13 +1071,8 @@ static int32_t FastInternalModuleStat(
+@@ -1074,13 +1074,8 @@ static int32_t FastInternalModuleStat(
      // NOLINTNEXTLINE(runtime/references) This is V8 api.
      FastApiCallbackOptions& options) {
    // This needs a HandleScope which needs an isolate.
