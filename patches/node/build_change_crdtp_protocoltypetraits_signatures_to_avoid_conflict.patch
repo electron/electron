@@ -38,10 +38,10 @@ index 8521730bd03cdfce47e9b5d0f5d68a568bc3de8c..28f4598aa7ea0e93350f79566c06d0f0
  }
  
 diff --git a/src/inspector/node_string.h b/src/inspector/node_string.h
-index bcdedaa2ae4ab1d3267d7a1347f15e0405261277..ddedca4a5b9b35258050f8b4cb446ceeba956896 100644
+index 94ec9b2301998c4c5aad9ca3dae72ecf323fa0bb..a0d19a592d7bf9b00d6b98ef1ae931626ebb945c 100644
 --- a/src/inspector/node_string.h
 +++ b/src/inspector/node_string.h
-@@ -18,8 +18,8 @@ namespace crdtp {
+@@ -19,8 +19,8 @@ namespace crdtp {
  
  template <>
  struct ProtocolTypeTraits<std::string> {
