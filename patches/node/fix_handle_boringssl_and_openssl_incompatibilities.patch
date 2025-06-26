@@ -550,7 +550,7 @@ index 6032bbd10f41da7bae44828a8e908c1bec0ea0b6..8597f1d6972ea111ea7e53a3199c1b4e
  #include "util-inl.h"
  
 +#if HAVE_OPENSSL
-+#include <openssl/base.h> 
++#include <openssl/base.h>
 +#endif
 +
  namespace node {
