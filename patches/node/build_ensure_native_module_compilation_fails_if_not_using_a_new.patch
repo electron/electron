@@ -19,10 +19,12 @@ index d9c0b721fe0a629a30efb3c4e04905176ca0a7f5..f3476a91e4c3cda7cecf49e07bb594a1
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -293,6 +295,7 @@
-     # Defines these mostly for node-gyp to pickup.
-     'defines': [
+@@ -297,7 +297,8 @@
        '_GLIBCXX_USE_CXX11_ABI=1',
+       # This help forks when building Node.js on a 32-bit arch as
+       # libuv is always compiled with _FILE_OFFSET_BITS=64
+-      '_FILE_OFFSET_BITS=64'
++      '_FILE_OFFSET_BITS=64',
 +      'ELECTRON_ENSURE_CONFIG_GYPI',
      ],
  
