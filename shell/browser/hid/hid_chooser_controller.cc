@@ -280,8 +280,8 @@ bool HidChooserController::DisplayDevice(
         absl::StrFormat(
             "Chooser dialog is not displaying a FIDO HID device: vendorId=%d, "
             "productId=%d, name='%s', serial='%s'",
-            device.vendor_id, device.product_id, device.product_name.c_str(),
-            device.serial_number.c_str()));
+            device.vendor_id, device.product_id, device.product_name,
+            device.serial_number));
     return false;
   }
 
@@ -292,8 +292,7 @@ bool HidChooserController::DisplayDevice(
                         "the HID blocklist: vendorId=%d, "
                         "productId=%d, name='%s', serial='%s'",
                         device.vendor_id, device.product_id,
-                        device.product_name.c_str(),
-                        device.serial_number.c_str()));
+                        device.product_name, device.serial_number));
     return false;
   }
 
