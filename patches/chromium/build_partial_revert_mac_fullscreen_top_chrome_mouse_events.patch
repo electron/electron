@@ -11,10 +11,10 @@ solution is put in place.
 This reverts commit 8c004781dde7d42d9a3fed8cafcaa4929943dd69.
 
 diff --git a/components/remote_cocoa/app_shim/bridged_content_view.mm b/components/remote_cocoa/app_shim/bridged_content_view.mm
-index 18eaf31d8ecd65ada39746ba7e7194b82cddca36..152cccc1896a2bad8b944e8c9a37c5a2edf6f6f3 100644
+index 8f572c0822f95176bb35c25c7c8971bf4fe6139b..4b657e55f3782e951706b5edbe0dcf6974d236ab 100644
 --- a/components/remote_cocoa/app_shim/bridged_content_view.mm
 +++ b/components/remote_cocoa/app_shim/bridged_content_view.mm
-@@ -301,14 +301,6 @@ - (NSView*)hitTest:(NSPoint)point {
+@@ -305,14 +305,6 @@ - (NSView*)hitTest:(NSPoint)point {
      return nil;
    }
  
