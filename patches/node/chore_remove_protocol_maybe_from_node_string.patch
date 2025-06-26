@@ -8,7 +8,7 @@ It was removed upstream in https://chromium-review.googlesource.com/c/chromium/s
 This should be upstreamed.
 
 diff --git a/src/inspector/node_string.h b/src/inspector/node_string.h
-index 94ec9b2301998c4c5aad9ca3dae72ecf323fa0bb..bcdedaa2ae4ab1d3267d7a1347f15e0405261277 100644
+index a0d19a592d7bf9b00d6b98ef1ae931626ebb945c..ddedca4a5b9b35258050f8b4cb446ceeba956896 100644
 --- a/src/inspector/node_string.h
 +++ b/src/inspector/node_string.h
 @@ -6,7 +6,6 @@
