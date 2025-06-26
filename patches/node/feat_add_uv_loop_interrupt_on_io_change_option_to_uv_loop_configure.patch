@@ -38,15 +38,15 @@ diff --git a/deps/uv/src/unix/async.c b/deps/uv/src/unix/async.c
 index 0ff2669e30a628dbb2df9e28ba14b38cf14114e5..117190ef26338944b78dbed7380c631de8057223 100644
 --- a/deps/uv/src/unix/async.c
 +++ b/deps/uv/src/unix/async.c
-@@ -38,7 +38,6 @@
- #include <sys/eventfd.h>
+@@ -66,7 +66,6 @@ static void uv__kqueue_runtime_detection(void) {
+ }
  #endif
  
 -static void uv__async_send(uv_loop_t* loop);
  static int uv__async_start(uv_loop_t* loop);
  static void uv__cpu_relax(void);
  
-@@ -78,7 +77,7 @@ int uv_async_send(uv_async_t* handle) {
+@@ -106,7 +105,7 @@ int uv_async_send(uv_async_t* handle) {
  
    /* Wake up the other thread's event loop. */
    if (atomic_exchange(pending, 1) == 0)
@@ -55,7 +55,7 @@ index 0ff2669e30a628dbb2df9e28ba14b38cf14114e5..117190ef26338944b78dbed7380c631d
  
    /* Set the loop to not-busy. */
    atomic_fetch_add(busy, -1);
-@@ -178,39 +177,6 @@ static void uv__async_io(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -210,50 +209,6 @@ static void uv__async_io(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
  }
  
  
@@ -75,6 +75,17 @@ index 0ff2669e30a628dbb2df9e28ba14b38cf14114e5..117190ef26338944b78dbed7380c631d
 -    buf = &val;
 -    len = sizeof(val);
 -    fd = loop->async_io_watcher.fd;  /* eventfd */
+-  }
+-#elif UV__KQUEUE_EVFILT_USER
+-  struct kevent ev;
+-
+-  if (kqueue_evfilt_user_support) {
+-    fd = loop->async_io_watcher.fd; /* magic number for EVFILT_USER */
+-    EV_SET(&ev, fd, EVFILT_USER, 0, NOTE_TRIGGER, 0, 0);
+-    r = kevent(loop->backend_fd, &ev, 1, NULL, 0, NULL);
+-    if (r == 0)
+-      return;
+-    abort();
 -  }
 -#endif
 -
@@ -99,17 +110,17 @@ diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
 index 0c52ccf2ad7b2dcae77a7bc4b3af9d1a1346ce18..13cd33a7d3031c5e19c9418a18217d1e4158c82e 100644
 --- a/deps/uv/src/unix/core.c
 +++ b/deps/uv/src/unix/core.c
-@@ -937,6 +937,9 @@ void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
-     loop->watchers[w->fd] = w;
+@@ -944,6 +944,9 @@ int uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
      loop->nfds++;
    }
-+
+ 
 +  if (uv__get_internal_fields(loop)->flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE)
 +    uv__loop_interrupt(loop);
++
+   return 0;
  }
  
- 
-@@ -968,6 +971,9 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -993,6 +996,9 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
    }
    else if (uv__queue_empty(&w->watcher_queue))
      uv__queue_insert_tail(&loop->watcher_queue, &w->watcher_queue);
