@@ -277,7 +277,7 @@ void OnCreatePreloadableV8Context(
   blink::V8DOMWrapper::SetNativeInfo(isolate, global_proxy,
                                      shadow_realm_global_scope);
   v8::Local<v8::Object> global_object =
-      global_proxy->GetPrototype().As<v8::Object>();
+      global_proxy->GetPrototypeV2().As<v8::Object>();
   blink::V8DOMWrapper::SetNativeInfo(isolate, global_object,
                                      shadow_realm_global_scope);
 
