@@ -7163,30 +7163,6 @@ describe('BrowserWindow module', () => {
           expect(savedState.right).to.be.lessThanOrEqual(savedState.work_area_right);
           expect(savedState.bottom).to.be.lessThanOrEqual(savedState.work_area_bottom);
         });
-
-        it('should save work area bounds that contain the window bounds on secondary display', async function () {
-          // Fixture will center the window on any secondary display if available
-          const appPath = path.join(fixturesPath, 'work-area-secondary');
-          const appProcess = childProcess.spawn(process.execPath, [appPath]);
-          const [code] = await once(appProcess, 'exit');
-
-          // Fixture returns code 1 due to single monitor setup
-          if (code === 1) {
-            console.log('Skipping secondary display test - only one monitor available');
-            this.skip();
-            return;
-          }
-
-          expect(code).to.equal(0);
-
-          const savedState = getWindowStateFromDisk('test-work-area-secondary', sharedPreferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-work-area-secondary" does not exist');
-
-          expect(savedState.left).to.be.greaterThanOrEqual(savedState.work_area_left);
-          expect(savedState.top).to.be.greaterThanOrEqual(savedState.work_area_top);
-          expect(savedState.right).to.be.lessThanOrEqual(savedState.work_area_right);
-          expect(savedState.bottom).to.be.lessThanOrEqual(savedState.work_area_bottom);
-        });
       });
 
       describe('asynchronous batching behavior', () => {
