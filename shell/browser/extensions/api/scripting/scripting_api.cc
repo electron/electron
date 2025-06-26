@@ -215,7 +215,7 @@ bool CollectFramesForInjection(const api::scripting::InjectionTarget& target,
           ExtensionApiFrameIdMap::DocumentIdFromString(id);
 
       if (!document_id) {
-        *error_out = absl::StrFormat("Invalid document id %s", id.c_str());
+        *error_out = absl::StrFormat("Invalid document id %s", id);
         return false;
       }
 
@@ -227,7 +227,7 @@ bool CollectFramesForInjection(const api::scripting::InjectionTarget& target,
       // request.
       if (!frame || content::WebContents::FromRenderFrameHost(frame) != tab) {
         *error_out = absl::StrFormat("No document with id %s in tab with id %d",
-                                     id.c_str(), target.tab_id);
+                                     id, target.tab_id);
         return false;
       }
 
@@ -499,8 +499,8 @@ ExtensionFunction::ResponseAction ScriptingExecuteScriptFunction::Run() {
     args_expression = base::JoinString(string_args, ",");
   }
 
-  std::string code_to_execute = absl::StrFormat(
-      "(%s)(%s)", injection_.func->c_str(), args_expression.c_str());
+  std::string code_to_execute =
+      absl::StrFormat("(%s)(%s)", *injection_.func, args_expression);
 
   std::vector<mojom::JSSourcePtr> sources;
   sources.push_back(mojom::JSSource::New(std::move(code_to_execute), GURL()));
