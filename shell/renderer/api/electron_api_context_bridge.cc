@@ -42,7 +42,7 @@ content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
 
 namespace api {
 
-namespace context_bridge {
+namespace {
 
 constexpr std::string_view kProxyFunctionPrivateKey =
     "electron_contextBridge_proxy_fn";
@@ -52,10 +52,6 @@ constexpr std::string_view kSupportsDynamicPropertiesPrivateKey =
     "electron_contextBridge_supportsDynamicProperties";
 constexpr std::string_view kOriginalFunctionPrivateKey =
     "electron_contextBridge_original_fn";
-
-}  // namespace context_bridge
-
-namespace {
 
 static int kMaxRecursion = 1000;
 
@@ -194,8 +190,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
   // the global handle at the right time.
   if (value->IsFunction()) {
     auto func = value.As<v8::Function>();
-    v8::MaybeLocal<v8::Value> maybe_original_fn = GetPrivate(
-        source_context, func, context_bridge::kOriginalFunctionPrivateKey);
+    v8::MaybeLocal<v8::Value> maybe_original_fn =
+        GetPrivate(source_context, func, kOriginalFunctionPrivateKey);
 
     {
       v8::Context::Scope destination_scope(destination_context);
@@ -216,13 +212,11 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
 
       v8::Local<v8::Object> state =
           v8::Object::New(destination_context->GetIsolate());
-      SetPrivate(destination_context, state,
-                 context_bridge::kProxyFunctionPrivateKey, func);
-      SetPrivate(destination_context, state,
-                 context_bridge::kProxyFunctionReceiverPrivateKey,
+      SetPrivate(destination_context, state, kProxyFunctionPrivateKey, func);
+      SetPrivate(destination_context, state, kProxyFunctionReceiverPrivateKey,
                  parent_value);
       SetPrivate(destination_context, state,
-                 context_bridge::kSupportsDynamicPropertiesPrivateKey,
+                 kSupportsDynamicPropertiesPrivateKey,
                  gin::ConvertToV8(destination_context->GetIsolate(),
                                   support_dynamic_properties));
 
@@ -230,7 +224,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
                .ToLocal(&proxy_func))
         return {};
       SetPrivate(destination_context, proxy_func.As<v8::Object>(),
-                 context_bridge::kOriginalFunctionPrivateKey, func);
+                 kOriginalFunctionPrivateKey, func);
       object_cache->CacheProxiedObject(value, proxy_func);
       return v8::MaybeLocal<v8::Value>(proxy_func);
     }
@@ -488,12 +482,11 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
   // Pull the original function and its context off of the data private key
   v8::MaybeLocal<v8::Value> sdp_value =
-      GetPrivate(calling_context, data,
-                 context_bridge::kSupportsDynamicPropertiesPrivateKey);
-  v8::MaybeLocal<v8::Value> maybe_func = GetPrivate(
-      calling_context, data, context_bridge::kProxyFunctionPrivateKey);
-  v8::MaybeLocal<v8::Value> maybe_recv = GetPrivate(
-      calling_context, data, context_bridge::kProxyFunctionReceiverPrivateKey);
+      GetPrivate(calling_context, data, kSupportsDynamicPropertiesPrivateKey);
+  v8::MaybeLocal<v8::Value> maybe_func =
+      GetPrivate(calling_context, data, kProxyFunctionPrivateKey);
+  v8::MaybeLocal<v8::Value> maybe_recv =
+      GetPrivate(calling_context, data, kProxyFunctionReceiverPrivateKey);
   v8::Local<v8::Value> func_value;
   if (sdp_value.IsEmpty() || maybe_func.IsEmpty() || maybe_recv.IsEmpty() ||
       !gin::ConvertFromV8(args.isolate(), sdp_value.ToLocalChecked(),
