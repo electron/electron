@@ -542,7 +542,7 @@ index c42493ad958508f650917bf5ca92088714a5056c..07accfbcca491966c6c8ad9c20e146db
    // We declare another alias here to avoid having to include crypto_util.h
    using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
 diff --git a/src/node_config.cc b/src/node_config.cc
-index 6032bbd10f41da7bae44828a8e908c1bec0ea0b6..8597f1d6972ea111ea7e53a3199c1b4e86de166f 100644
+index 6032bbd10f41da7bae44828a8e908c1bec0ea0b6..2013de54f0f6a036e8378deefbff8d7cb5f7cfb2 100644
 --- a/src/node_config.cc
 +++ b/src/node_config.cc
 @@ -7,6 +7,10 @@
