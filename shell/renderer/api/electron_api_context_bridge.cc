@@ -44,12 +44,14 @@ namespace api {
 
 namespace context_bridge {
 
-const char kProxyFunctionPrivateKey[] = "electron_contextBridge_proxy_fn";
-const char kProxyFunctionReceiverPrivateKey[] =
+const std::string_view kProxyFunctionPrivateKey =
+    "electron_contextBridge_proxy_fn";
+const std::string_view kProxyFunctionReceiverPrivateKey =
     "electron_contextBridge_proxy_fn_receiver";
-const char kSupportsDynamicPropertiesPrivateKey[] =
+const std::string_view kSupportsDynamicPropertiesPrivateKey =
     "electron_contextBridge_supportsDynamicProperties";
-const char kOriginalFunctionPrivateKey[] = "electron_contextBridge_original_fn";
+const std::string_view kOriginalFunctionPrivateKey =
+    "electron_contextBridge_original_fn";
 
 }  // namespace context_bridge
 
