@@ -55,6 +55,9 @@ namespace electron {
 
 namespace {
 
+constexpr base::wcstring_view Run =
+    LR"(Software\Microsoft\Windows\CurrentVersion\Run)";
+
 constexpr base::wcstring_view StartupApprovedRun =
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run)";
 
@@ -611,8 +614,7 @@ void Browser::UpdateBadgeContents(
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-  std::wstring key_path = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-  base::win::RegKey key(HKEY_CURRENT_USER, key_path.c_str(), KEY_ALL_ACCESS);
+  base::win::RegKey key(HKEY_CURRENT_USER, Run.data(), KEY_ALL_ACCESS);
 
   base::win::RegKey startup_approved_key(
       HKEY_CURRENT_USER, StartupApprovedRun.data(), KEY_ALL_ACCESS);
