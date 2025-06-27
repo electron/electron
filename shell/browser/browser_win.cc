@@ -20,6 +20,7 @@
 #include "base/files/file_path.h"
 #include "base/logging.h"
 #include "base/path_service.h"
+#include "base/strings/cstring_view.h"
 #include "base/strings/strcat_win.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -53,6 +54,9 @@
 namespace electron {
 
 namespace {
+
+constexpr base::wcstring_view StartupApprovedRun =
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run)";
 
 bool GetProcessExecPath(std::wstring* exe) {
   base::FilePath path;
@@ -193,19 +197,11 @@ std::vector<LaunchItem> GetLoginItemSettingsHelper(
 
         // attempt to update launch_item.enabled if there is a matching key
         // value entry in the StartupApproved registry
+        const HKEY scope_key =
+            scope == L"user" ? HKEY_CURRENT_USER : HKEY_LOCAL_MACHINE;
         HKEY hkey;
-        // StartupApproved registry path
-        LPCTSTR path = TEXT(
-            "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApp"
-            "roved\\Run");
-        LONG res;
-        if (scope == L"user") {
-          res =
-              RegOpenKeyEx(HKEY_CURRENT_USER, path, 0, KEY_QUERY_VALUE, &hkey);
-        } else {
-          res =
-              RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, KEY_QUERY_VALUE, &hkey);
-        }
+        LONG res = RegOpenKeyEx(scope_key, StartupApprovedRun.data(), 0,
+                                KEY_QUERY_VALUE, &hkey);
         if (res == ERROR_SUCCESS) {
           DWORD type, size;
           wchar_t startup_binary[12];
