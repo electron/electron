@@ -205,7 +205,7 @@ std::vector<LaunchItem> GetLoginItemSettingsHelper(
         const HKEY scope_key =
             scope == L"user" ? HKEY_CURRENT_USER : HKEY_LOCAL_MACHINE;
         HKEY hkey;
-        LONG res = RegOpenKeyEx(scope_key, StartupApprovedRun.data(), 0,
+        LONG res = RegOpenKeyEx(scope_key, StartupApprovedRun.c_str(), 0,
                                 KEY_QUERY_VALUE, &hkey);
         if (res == ERROR_SUCCESS) {
           DWORD type, size;
@@ -616,10 +616,10 @@ void Browser::UpdateBadgeContents(
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-  base::win::RegKey key(HKEY_CURRENT_USER, Run.data(), KEY_ALL_ACCESS);
+  base::win::RegKey key(HKEY_CURRENT_USER, Run.c_str(), KEY_ALL_ACCESS);
 
   base::win::RegKey startup_approved_key(
-      HKEY_CURRENT_USER, StartupApprovedRun.data(), KEY_ALL_ACCESS);
+      HKEY_CURRENT_USER, StartupApprovedRun.c_str(), KEY_ALL_ACCESS);
   PCWSTR key_name =
       !settings.name.empty() ? settings.name.c_str() : GetAppUserModelID();
 
@@ -632,7 +632,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
         startup_approved_key.DeleteValue(key_name);
       } else {
         HKEY hard_key;
-        constexpr LPCTSTR path = StartupApprovedRun.data();
+        constexpr LPCTSTR path = StartupApprovedRun.c_str();
         LONG res =
             RegOpenKeyEx(HKEY_CURRENT_USER, path, 0, KEY_ALL_ACCESS, &hard_key);
 
@@ -655,7 +655,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
-  base::win::RegKey key(HKEY_CURRENT_USER, Run.data(), KEY_ALL_ACCESS);
+  base::win::RegKey key(HKEY_CURRENT_USER, Run.c_str(), KEY_ALL_ACCESS);
   std::wstring keyVal;
 
   // keep old openAtLogin behaviour
@@ -671,9 +671,10 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
   // set executable_will_launch_at_login to 'true'.
   boolean executable_will_launch_at_login = false;
   std::vector<LaunchItem> launch_items;
-  base::win::RegistryValueIterator hkcu_iterator(HKEY_CURRENT_USER, Run.data());
+  base::win::RegistryValueIterator hkcu_iterator(HKEY_CURRENT_USER,
+                                                 Run.c_str());
   base::win::RegistryValueIterator hklm_iterator(HKEY_LOCAL_MACHINE,
-                                                 Run.data());
+                                                 Run.c_str());
 
   launch_items = GetLoginItemSettingsHelper(
       &hkcu_iterator, &executable_will_launch_at_login, L"user", options);
