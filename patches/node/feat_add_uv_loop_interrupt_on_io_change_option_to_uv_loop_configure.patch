@@ -35,9 +35,18 @@ index 938e998fdc54d17c8d0d4b1949087b968044829f..0295eeddbb4eb1cffd9dbcd02e037907
  #define UV_LOOP_USE_IO_URING_SQPOLL UV_LOOP_USE_IO_URING_SQPOLL
  } uv_loop_option;
 diff --git a/deps/uv/src/unix/async.c b/deps/uv/src/unix/async.c
-index 538ae7876f2b2463716459b179d74843383295be..b5bdd1c9943e5c4bdf3bf135fb1741fcfdbfa901 100644
+index 538ae7876f2b2463716459b179d74843383295be..6ce53f12834c7a34241ea0865bda99af0541ea5f 100644
 --- a/deps/uv/src/unix/async.c
 +++ b/deps/uv/src/unix/async.c
+@@ -40,7 +40,7 @@
+ 
+ #if UV__KQUEUE_EVFILT_USER
+ static uv_once_t kqueue_runtime_detection_guard = UV_ONCE_INIT;
+-static int kqueue_evfilt_user_support = 1;
++int kqueue_evfilt_user_support = 1;
+ 
+ 
+ static void uv__kqueue_runtime_detection(void) {
 @@ -66,7 +66,6 @@ static void uv__kqueue_runtime_detection(void) {
  }
  #endif
@@ -140,8 +149,21 @@ index bd51b69b8120e878f3342c2812fb1f4c0fd35071..4c005360c8d83955b727bde3c0ff0bc3
  }
  
  
+diff --git a/deps/uv/src/unix/internal.h b/deps/uv/src/unix/internal.h
+index a1d7d4366308acb6ba8d2b84b7a2be4b89abe2ce..a86505eba1243a8c89d77a1d036d16ac8313a785 100644
+--- a/deps/uv/src/unix/internal.h
++++ b/deps/uv/src/unix/internal.h
+@@ -523,6 +523,8 @@ int uv__get_constrained_cpu(long long* quota);
+  * people will be directed here if this number gets printed due to some
+  * kqueue error and they google for help. */
+ #define UV__KQUEUE_EVFILT_USER_IDENT 0x1e7e7711
++/* Global variable to cache kqueue EVFILT_USER support detection result */
++extern int kqueue_evfilt_user_support;
+ #else
+ #define UV__KQUEUE_EVFILT_USER 0
+ #endif
 diff --git a/deps/uv/src/unix/loop.c b/deps/uv/src/unix/loop.c
-index 5d3f0c7a348b334e5651bf8682fe29b355ec0cb9..926a79d23eb40fefc863aff76eb554564f04c6c4 100644
+index 5d3f0c7a348b334e5651bf8682fe29b355ec0cb9..d0b8686783d009365e89731366afee1878a6757b 100644
 --- a/deps/uv/src/unix/loop.c
 +++ b/deps/uv/src/unix/loop.c
 @@ -228,6 +228,10 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap) {
@@ -155,7 +177,7 @@ index 5d3f0c7a348b334e5651bf8682fe29b355ec0cb9..926a79d23eb40fefc863aff76eb55456
  
    if (option != UV_LOOP_BLOCK_SIGNAL)
      return UV_ENOSYS;
-@@ -238,3 +242,40 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap) {
+@@ -238,3 +242,51 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap) {
    loop->flags |= UV_LOOP_BLOCK_SIGPROF;
    return 0;
  }
@@ -177,6 +199,17 @@ index 5d3f0c7a348b334e5651bf8682fe29b355ec0cb9..926a79d23eb40fefc863aff76eb55456
 +    buf = &val;
 +    len = sizeof(val);
 +    fd = loop->async_io_watcher.fd;  /* eventfd */
++  }
++#elif UV__KQUEUE_EVFILT_USER
++  struct kevent ev;
++
++  if (kqueue_evfilt_user_support) {
++    fd = loop->async_io_watcher.fd; /* magic number for EVFILT_USER */
++    EV_SET(&ev, fd, EVFILT_USER, 0, NOTE_TRIGGER, 0, 0);
++    r = kevent(loop->backend_fd, &ev, 1, NULL, 0, NULL);
++    if (r == 0)
++      return;
++    abort();
 +  }
 +#endif
 +
