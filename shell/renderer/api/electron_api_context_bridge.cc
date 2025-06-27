@@ -115,7 +115,7 @@ bool IsPlainArray(const v8::Local<v8::Value>& arr) {
 
 void SetPrivate(v8::Local<v8::Context> context,
                 v8::Local<v8::Object> target,
-                const std::string& key,
+                const std::string_view key,
                 v8::Local<v8::Value> value) {
   target
       ->SetPrivate(
@@ -128,7 +128,7 @@ void SetPrivate(v8::Local<v8::Context> context,
 
 v8::MaybeLocal<v8::Value> GetPrivate(v8::Local<v8::Context> context,
                                      v8::Local<v8::Object> target,
-                                     const std::string& key) {
+                                     const std::string_view key) {
   return target->GetPrivate(
       context,
       v8::Private::ForApi(context->GetIsolate(),
