@@ -26,6 +26,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/color_parser.h"
+#include "shell/browser/api/electron_api_system_preferences.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/views/root_view.h"
@@ -1725,6 +1726,28 @@ void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
 #endif
 
 #if BUILDFLAG(IS_WIN)
+void NativeWindowViews::SetAccentColor(
+    std::variant<bool, std::string> accent_color) {
+  if (std::holds_alternative<std::string>(accent_color)) {
+    accent_color_ = ParseCSSColor(std::get<std::string>(accent_color));
+  } else if (std::holds_alternative<bool>(accent_color)) {
+    accent_color_ = std::get<bool>(accent_color);
+  }
+
+  UpdateWindowAccentColor();
+}
+
+std::variant<bool, std::string> NativeWindowViews::GetAccentColor() const {
+  if (std::holds_alternative<SkColor>(accent_color_))
+    return ToRGBHex(std::get<SkColor>(accent_color_));
+
+  std::string accent_color = electron::api::SystemPreferences::GetAccentColor();
+  if (accent_color.empty())
+    return false;
+  else
+    return accent_color;
+}
+
 void NativeWindowViews::UpdateThickFrame() {
   if (!thick_frame_)
     return;

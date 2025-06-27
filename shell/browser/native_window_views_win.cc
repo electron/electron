@@ -46,7 +46,7 @@ void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color) {
     LOG(WARNING) << "Failed to set border color";
 }
 
-std::optional<DWORD> GetAccentColor() {
+std::optional<DWORD> GetSystemAccentColor() {
   base::win::RegKey key;
   if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
                KEY_READ) != ERROR_SUCCESS) {
@@ -583,7 +583,7 @@ void NativeWindowViews::UpdateWindowAccentColor() {
     if (!std::get<bool>(accent_color_))
       return;
 
-    std::optional<DWORD> accent_color = GetAccentColor();
+    std::optional<DWORD> accent_color = GetSystemAccentColor();
     if (!accent_color.has_value())
       return;
 
