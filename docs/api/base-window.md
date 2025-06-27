@@ -1260,6 +1260,19 @@ Sets the properties for the window's taskbar button.
 > `relaunchCommand` and `relaunchDisplayName` must always be set
 > together. If one of those properties is not set, then neither will be used.
 
+#### `win.setAccentColor(accentColor)` _Windows_
+
+* `accentColor` boolean | string - The accent color for the window. By default, follows user preference in System Settings. Set to `false` to explicitly disable, or set the color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha values will be ignored.
+
+Sets the system accent color and highlighting of active window border.
+
+#### `win.getAccentColor()` _Windows_
+
+Returns `string | null` - the system accent color and highlighting of active window border in RGB format.
+
+If a color has been set for the window that differs from the system accent color, the window accent color will
+be returned. Otherwise, the system accent color will be returned, if one is enabled.
+
 #### `win.setIcon(icon)` _Windows_ _Linux_
 
 * `icon` [NativeImage](native-image.md) | string

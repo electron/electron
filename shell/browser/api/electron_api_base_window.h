@@ -255,6 +255,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool SetThumbnailToolTip(const std::string& tooltip);
   void SetAppDetails(const gin_helper::Dictionary& options);
   bool IsSnapped() const;
+  void SetAccentColor(gin_helper::Arguments* args);
+  v8::Local<v8::Value> GetAccentColor() const;
 #endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
