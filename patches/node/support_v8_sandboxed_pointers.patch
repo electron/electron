@@ -189,7 +189,7 @@ index f616223cfb0f6e10f7cf57ada9704316bde2797e..eb6dad44a49d997097c8fb5009eeb60a
    Local<Value> ret;
    if (!Buffer::New(env, ab, 0, ab->ByteLength()).ToLocal(&ret)) return {};
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index ea7810e41e2667713a896250dc1b904b0a7cf198..865b3128c1edfe7074769f25a0b87878ca094f31 100644
+index 61b6ecd240c9500f21f683065a2f920af3afb502..ad2b1c76325cb5c8f18a618c5a85ae87b6a7bbe7 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -104,7 +104,7 @@ namespace {
@@ -384,18 +384,3 @@ index 9787b14352753c5e0f8dc2b90093680e7cd10f1a..31af9e62396368af1b81f8841a705fd3
    auto ab = ArrayBuffer::New(isolate, std::move(bs));
    v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
  
-diff --git a/test/parallel/test-buffer-tostring-range.js b/test/parallel/test-buffer-tostring-range.js
-index 73fec107a36c3db4af6f492137d0ca174f2d0547..a1153ec381f7b12a1640b611073f6997e1ec5696 100644
---- a/test/parallel/test-buffer-tostring-range.js
-+++ b/test/parallel/test-buffer-tostring-range.js
-@@ -102,8 +102,8 @@ assert.throws(() => {
- // Must not throw when start and end are within kMaxLength
- // Cannot test on 32bit machine as we are testing the case
- // when start and end are above the threshold
--if (!common.openSSLIsBoringSSL) {
-+/*
- const threshold = 0xFFFFFFFF;
- const largeBuffer = Buffer.alloc(threshold + 20);
- largeBuffer.toString('utf8', threshold, threshold + 20);
--}
-+*/
