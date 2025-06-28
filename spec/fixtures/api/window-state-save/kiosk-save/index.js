@@ -16,7 +16,9 @@ app.whenReady().then(() => {
   });
 
   w.on('enter-full-screen', () => {
-    app.quit();
+    setTimeout(() => {
+      app.quit();
+    }, 1000);
   });
 
   w.setKiosk(true);

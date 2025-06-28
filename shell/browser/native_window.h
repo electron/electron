@@ -18,6 +18,7 @@
 #include "base/observer_list.h"
 #include "base/strings/cstring_view.h"
 #include "base/supports_user_data.h"
+#include "base/timer/timer.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
@@ -427,6 +428,7 @@ class NativeWindow : public base::SupportsUserData,
   void UpdateBackgroundThrottlingState();
 
   void SaveWindowState();
+  void DoSaveWindowState();
 
  protected:
   friend class api::BrowserView;
@@ -549,6 +551,7 @@ class NativeWindow : public base::SupportsUserData,
 
   raw_ptr<PrefService> prefs_ = nullptr;
   std::string window_state_id_;
+  base::OneShotTimer save_window_state_timer_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };

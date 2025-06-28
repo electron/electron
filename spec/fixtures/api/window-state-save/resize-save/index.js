@@ -18,5 +18,7 @@ app.whenReady().then(async () => {
 
   w.setSize(500, 400);
 
-  app.quit();
+  setTimeout(() => {
+    app.quit();
+  }, 1000);
 });

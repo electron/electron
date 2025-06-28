@@ -18,5 +18,7 @@ app.whenReady().then(() => {
 
   w.setPosition(100, 150);
 
-  app.quit();
+  setTimeout(() => {
+    app.quit();
+  }, 1000);
 });

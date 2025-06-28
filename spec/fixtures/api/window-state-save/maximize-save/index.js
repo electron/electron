@@ -16,7 +16,9 @@ app.whenReady().then(() => {
   });
 
   w.on('maximize', () => {
-    app.quit();
+    setTimeout(() => {
+      app.quit();
+    }, 1000);
   });
 
   w.maximize();

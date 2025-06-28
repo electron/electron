@@ -178,7 +178,7 @@ void BaseWindow::OnWindowClosed() {
   // We can not call Destroy here because we need to call Emit first, but we
   // also do not want any method to be used, so just mark as destroyed here.
   MarkDestroyed();
-  window_->SaveWindowState();
+  window_->DoSaveWindowState();
   Emit("closed");
 
   RemoveFromParentChildWindows();
