@@ -137,6 +137,20 @@ new Promise<string>((resolve, reject) => {
     return release;
   })
   .then(async (release) => {
+    const gnArgs = await fs.promises.readFile(path.resolve(ELECTRON_DIR, 'build/args/all.gn'), 'utf8');
+
+    const abiVersionLine = gnArgs.split('\n').find((line) => line.startsWith('node_module_version = '));
+    const abiVersion = abiVersionLine ? abiVersionLine.split('=')[1].trim() : null;
+    if (!abiVersion) {
+      throw new Error('Could not find node_module_version in GN args');
+    }
+
+    const abiVersionFile = path.join(tempDir, 'abi_version');
+    await fs.promises.writeFile(abiVersionFile, abiVersion);
+
+    return release;
+  })
+  .then(async (release) => {
     const currentBranch = await getCurrentBranch();
 
     if (isNightlyElectronVersion) {
