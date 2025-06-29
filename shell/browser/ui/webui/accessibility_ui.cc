@@ -268,7 +268,7 @@ std::string RecursiveDumpAXPlatformNodeAsString(
   std::string line = node->GetDelegate()->GetData().ToString();
   std::vector<std::string> attributes = base::SplitString(
       line, " ", base::KEEP_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-  for (std::string attribute : attributes) {
+  for (const std::string& attribute : attributes) {
     if (ui::AXTreeFormatter::MatchesPropertyFilters(property_filters, attribute,
                                                     false)) {
       str += attribute + " ";
