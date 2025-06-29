@@ -748,7 +748,7 @@ void Browser::ShowAboutPanel() {
       "applicationName", "applicationVersion", "copyright", "credits"};
 
   const std::string* str;
-  for (std::string opt : stringOptions) {
+  for (const std::string& opt : stringOptions) {
     if ((str = dict.FindString(opt))) {
       aboutMessage.append(*str).append("\r\n");
     }
