@@ -136,19 +136,17 @@ NativeWindow::~NativeWindow() {
 
 void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   // Setup window from options.
-  int x = -1, y = -1;
-  bool center;
-  if (options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
-    SetPosition(gfx::Point(x, y));
+  if (int x, y; options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
+    SetPosition(gfx::Point{x, y});
 
 #if BUILDFLAG(IS_WIN)
     // FIXME(felixrieseberg): Dirty, dirty workaround for
     // https://github.com/electron/electron/issues/10862
     // Somehow, we need to call `SetBounds` twice to get
     // usable results. The root cause is still unknown.
-    SetPosition(gfx::Point(x, y));
+    SetPosition(gfx::Point{x, y});
 #endif
-  } else if (options.Get(options::kCenter, &center) && center) {
+  } else if (bool center; options.Get(options::kCenter, &center) && center) {
     Center();
   }
 
@@ -187,27 +185,21 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     SetSizeConstraints(size_constraints);
   }
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
-  bool closable;
-  if (options.Get(options::kClosable, &closable)) {
-    SetClosable(closable);
-  }
+  if (bool val; options.Get(options::kClosable, &val))
+    SetClosable(val);
 #endif
-  bool movable;
-  if (options.Get(options::kMovable, &movable)) {
-    SetMovable(movable);
-  }
-  bool has_shadow;
-  if (options.Get(options::kHasShadow, &has_shadow)) {
-    SetHasShadow(has_shadow);
-  }
-  double opacity;
-  if (options.Get(options::kOpacity, &opacity)) {
-    SetOpacity(opacity);
-  }
-  bool top;
-  if (options.Get(options::kAlwaysOnTop, &top) && top) {
+
+  if (bool val; options.Get(options::kMovable, &val))
+    SetMovable(val);
+
+  if (bool val; options.Get(options::kHasShadow, &val))
+    SetHasShadow(val);
+
+  if (double val; options.Get(options::kOpacity, &val))
+    SetOpacity(val);
+
+  if (bool val; options.Get(options::kAlwaysOnTop, &val) && val)
     SetAlwaysOnTop(ui::ZOrderLevel::kFloatingWindow);
-  }
 
   bool fullscreenable = true;
   bool fullscreen = false;
@@ -224,29 +216,21 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (fullscreen)
     SetFullScreen(true);
 
-  bool resizable;
-  if (options.Get(options::kResizable, &resizable)) {
-    SetResizable(resizable);
-  }
+  if (bool val; options.Get(options::kResizable, &val))
+    SetResizable(val);
 
-  bool skip;
-  if (options.Get(options::kSkipTaskbar, &skip)) {
-    SetSkipTaskbar(skip);
-  }
-  bool kiosk;
-  if (options.Get(options::kKiosk, &kiosk) && kiosk) {
-    SetKiosk(kiosk);
-  }
+  if (bool val; options.Get(options::kSkipTaskbar, &val))
+    SetSkipTaskbar(val);
+
+  if (bool val; options.Get(options::kKiosk, &val) && val)
+    SetKiosk(val);
+
 #if BUILDFLAG(IS_MAC)
-  std::string type;
-  if (options.Get(options::kVibrancyType, &type)) {
-    SetVibrancy(type, 0);
-  }
+  if (std::string val; options.Get(options::kVibrancyType, &val))
+    SetVibrancy(val, 0);
 #elif BUILDFLAG(IS_WIN)
-  std::string material;
-  if (options.Get(options::kBackgroundMaterial, &material)) {
-    SetBackgroundMaterial(material);
-  }
+  if (std::string val; options.Get(options::kBackgroundMaterial, &val))
+    SetBackgroundMaterial(val);
 #endif
 
   SkColor background_color = SK_ColorWHITE;
@@ -257,9 +241,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   }
   SetBackgroundColor(background_color);
 
-  std::string title(Browser::Get()->GetName());
-  options.Get(options::kTitle, &title);
-  SetTitle(title);
+  SetTitle(options.ValueOrDefault(options::kTitle, Browser::Get()->GetName()));
 
   // Then show it.
   if (options.ValueOrDefault(options::kShow, true))
