@@ -31,10 +31,10 @@ inline constexpr std::string_view kMaximized = "maximized";
 inline constexpr std::string_view kFullscreen = "fullscreen";
 inline constexpr std::string_view kKiosk = "kiosk";
 
-inline constexpr std::string_view kWorkAreaLeft = "work_area_left";
-inline constexpr std::string_view kWorkAreaTop = "work_area_top";
-inline constexpr std::string_view kWorkAreaRight = "work_area_right";
-inline constexpr std::string_view kWorkAreaBottom = "work_area_bottom";
+inline constexpr std::string_view kWorkAreaLeft = "workAreaLeft";
+inline constexpr std::string_view kWorkAreaTop = "workAreaTop";
+inline constexpr std::string_view kWorkAreaRight = "workAreaRight";
+inline constexpr std::string_view kWorkAreaBottom = "workAreaBottom";
 
 inline constexpr std::string_view kWindowStates = "electron.window_states";
 

@@ -7022,10 +7022,10 @@ describe('BrowserWindow module', () => {
           expect(savedState).to.have.property('maximized');
           expect(savedState).to.have.property('fullscreen');
           expect(savedState).to.have.property('kiosk');
-          expect(savedState).to.have.property('work_area_left');
-          expect(savedState).to.have.property('work_area_top');
-          expect(savedState).to.have.property('work_area_right');
-          expect(savedState).to.have.property('work_area_bottom');
+          expect(savedState).to.have.property('workAreaLeft');
+          expect(savedState).to.have.property('workAreaTop');
+          expect(savedState).to.have.property('workAreaRight');
+          expect(savedState).to.have.property('workAreaBottom');
         });
 
         ifit(hasCapturableScreen())('should save window state after window is closed and app exit', async () => {
@@ -7139,13 +7139,13 @@ describe('BrowserWindow module', () => {
           const savedState = getWindowStateFromDisk('test-window-state-schema', sharedPreferencesPath);
 
           expect(savedState).to.not.be.null('window state with id "test-window-state-schema" does not exist');
-          expect(savedState.work_area_left).to.be.a('number');
-          expect(savedState.work_area_top).to.be.a('number');
-          expect(savedState.work_area_right).to.be.a('number');
-          expect(savedState.work_area_bottom).to.be.a('number');
+          expect(savedState.workAreaLeft).to.be.a('number');
+          expect(savedState.workAreaTop).to.be.a('number');
+          expect(savedState.workAreaRight).to.be.a('number');
+          expect(savedState.workAreaBottom).to.be.a('number');
 
-          expect(savedState.work_area_left).to.be.lessThan(savedState.work_area_right);
-          expect(savedState.work_area_top).to.be.lessThan(savedState.work_area_bottom);
+          expect(savedState.workAreaLeft).to.be.lessThan(savedState.workAreaRight);
+          expect(savedState.workAreaTop).to.be.lessThan(savedState.workAreaBottom);
         });
 
         ifit(hasCapturableScreen())('should save work area bounds that contain the window bounds on primary display', async () => {
@@ -7158,10 +7158,10 @@ describe('BrowserWindow module', () => {
           const savedState = getWindowStateFromDisk('test-work-area-primary', sharedPreferencesPath);
           expect(savedState).to.not.be.null('window state with id "test-work-area-primary" does not exist');
 
-          expect(savedState.left).to.be.greaterThanOrEqual(savedState.work_area_left);
-          expect(savedState.top).to.be.greaterThanOrEqual(savedState.work_area_top);
-          expect(savedState.right).to.be.lessThanOrEqual(savedState.work_area_right);
-          expect(savedState.bottom).to.be.lessThanOrEqual(savedState.work_area_bottom);
+          expect(savedState.left).to.be.greaterThanOrEqual(savedState.workAreaLeft);
+          expect(savedState.top).to.be.greaterThanOrEqual(savedState.workAreaTop);
+          expect(savedState.right).to.be.lessThanOrEqual(savedState.workAreaRight);
+          expect(savedState.bottom).to.be.lessThanOrEqual(savedState.workAreaBottom);
         });
       });
 
