@@ -55,6 +55,10 @@ const {
 } = __non_webpack_require__('internal/fs/utils');
 
 const {
+  assignFunctionName
+} = __non_webpack_require__('internal/util');
+
+const {
   validateBoolean,
   validateFunction
 } = __non_webpack_require__('internal/validators');
@@ -235,7 +239,10 @@ const overrideAPI = function (module: Record<string, any>, name: string, pathArg
   };
 
   if (old[util.promisify.custom]) {
-    module[name][util.promisify.custom] = makePromiseFunction(old[util.promisify.custom], pathArgumentIndex);
+    module[name][util.promisify.custom] = assignFunctionName(
+      name,
+      makePromiseFunction(old[util.promisify.custom], pathArgumentIndex)
+    );
   }
 
   if (module.promises && module.promises[name]) {
@@ -1238,7 +1245,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     // command as a single path to an archive.
     const { exec, execSync } = childProcess;
     childProcess.exec = invokeWithNoAsar(exec);
-    childProcess.exec[util.promisify.custom] = invokeWithNoAsar(exec[util.promisify.custom]);
+    childProcess.exec[util.promisify.custom] = assignFunctionName('exec', invokeWithNoAsar(exec[util.promisify.custom]));
     childProcess.execSync = invokeWithNoAsar(execSync);
 
     overrideAPI(childProcess, 'execFile');
