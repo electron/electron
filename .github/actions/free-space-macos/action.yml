@@ -47,6 +47,8 @@ runs:
         tmpify $(xcode-select -p)/Platforms/WatchSimulator.platform
         tmpify $(xcode-select -p)/Platforms/AppleTVSimulator.platform
         tmpify $(xcode-select -p)/Platforms/iPhoneSimulator.platform
+        tmpify $(xcode-select -p)/Platforms/XROS.platform
+        tmpify $(xcode-select -p)/Platforms/XRSimulator.platform
         tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/metal/ios
         tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift
         tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0
@@ -58,11 +60,13 @@ runs:
 
         sudo rm -rf /Applications/Safari.app
         sudo rm -rf /Applications/Xcode_16.1.app
-        sudo rm -rf /Applications/Xcode_16.3.app
         sudo rm -rf /Applications/Xcode_16.2.app
-        sudo rm -rf /Applications/Google Chrome.app
+        sudo rm -rf /Applications/Xcode_16.3.app
         sudo rm -rf /Applications/Xcode_16.4.app
+        sudo rm -rf /Applications/Google Chrome.app
         sudo rm -rf /Applications/Google Chrome for Testing.app
+        sudo rm -rf /Applications/Microsoft Edge.app
+        sudo rm -rf /Applications/Microsoft Edge Webdriver.app
         sudo rm -rf	/Applications/Firefox.app
         sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
         sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
@@ -70,7 +74,8 @@ runs:
         sudo rm -rf $JAVA_HOME_11_arm64
         sudo rm -rf $JAVA_HOME_17_arm64
         sudo rm -rf $JAVA_HOME_21_arm64
+        sudo rm -rf /Applications/Xcode_26_beta.app
 
         # lipo off some huge binaries arm64 versions to save space
         strip_universal_deep $(xcode-select -p)/../SharedFrameworks
-        # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
+        strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
