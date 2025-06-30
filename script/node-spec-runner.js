@@ -73,6 +73,7 @@ async function main () {
       process.exit(1);
     }
 
+    console.log(`All ${DISABLED_TESTS.length} disabled specs exist.`);
     process.exit(0);
   }
 
