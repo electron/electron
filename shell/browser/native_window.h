@@ -18,6 +18,7 @@
 #include "base/observer_list.h"
 #include "base/strings/cstring_view.h"
 #include "base/supports_user_data.h"
+#include "base/timer/timer.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
@@ -27,6 +28,7 @@
 
 class SkRegion;
 class DraggableRegionProvider;
+class PrefService;
 
 namespace input {
 struct NativeWebKeyboardEvent;
@@ -425,6 +427,14 @@ class NativeWindow : public base::SupportsUserData,
   // throttling, then throttling in the `ui::Compositor` will be disabled.
   void UpdateBackgroundThrottlingState();
 
+  // Saves current window state to the Local State JSON file in
+  // app.getPath('userData') via PrefService.
+  // This does NOT immediately write to disk - it updates the in-memory
+  // preference store and queues an asynchronous write operation. The actual
+  // disk write is batched and flushed later.
+  void SaveWindowState();
+  void DebouncedSaveWindowState();
+
  protected:
   friend class api::BrowserView;
 
@@ -543,6 +553,17 @@ class NativeWindow : public base::SupportsUserData,
   std::string background_material_;
 
   gfx::Rect overlay_rect_;
+
+  // PrefService is used to persist window bounds and state.
+  // Only populated when window state persistence is enabled via
+  // windowStateRestoreOptions and a valid stateId is provided.
+  raw_ptr<PrefService> prefs_ = nullptr;
+
+  // Unique identifier used for saving and restoring window state.
+  std::string window_state_id_;
+
+  // Timer to debounce window state saving operations.
+  base::OneShotTimer save_window_state_timer_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };
