@@ -19,10 +19,10 @@ that clearly establishes the worker script is ready for evaluation with the scop
 initialized.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index cbbe0fbdd25a0f7859b113fdb3dcd9ce57e597d6..1345bb5008e1b4fc3a450f7e353d52ecd59e4e6a 100644
+index f0c7bdb1c7c1fd6c50bd9a263e98ba918374be1a..3a1ce631313a163d6425a1d5802542420c63abcb 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -417,6 +417,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -420,6 +420,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -65,10 +65,10 @@ index c05d4f3c8bc44396cc0415934d12c53e918c527f..84fff89368318b525f9e7aad6aeaf061
    bool AllowScriptExtensionForServiceWorker(
        const blink::WebSecurityOrigin& script_origin) override;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 3648f1be362dc4c13071e73fed478454af7518ca..4c4e92cc0ec5c132418691a56c13e59c29281718 100644
+index eefb93a200880b067606b282c13394159125764c..b121e513fecaa0a84f9ec396a6481ac7de3dc38b 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -670,6 +670,8 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -672,6 +672,8 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
@@ -78,7 +78,7 @@ index 3648f1be362dc4c13071e73fed478454af7518ca..4c4e92cc0ec5c132418691a56c13e59c
    virtual bool AllowScriptExtensionForServiceWorker(
        const WebSecurityOrigin& script_origin) {
 diff --git a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-index 2f39a2a6094b5ffff40e9d11d97295b26aa5eaec..aaa7645b0304eb4b8b61316731a93565b950bb5f 100644
+index c65fda02e2c67f6d13ecb0d7abe53855cd6c4173..ddaf77aaec05df8e45bf61d0496ba7ad9aa73300 100644
 --- a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 @@ -300,6 +300,7 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
