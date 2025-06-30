@@ -19,8 +19,9 @@
 #include "include/core/SkColor.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/browser_process_impl.h"
 #include "shell/browser/draggable_region_provider.h"
-#include "shell/browser/electron_browser_context.h"
+#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
@@ -129,9 +130,9 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
     // Initialize prefs_ to save/restore window bounds if we have a valid
     // stateId
     if (!window_state_id_.empty()) {
-      if (auto* browser_context =
-              electron::ElectronBrowserContext::GetDefaultBrowserContext()) {
-        prefs_ = browser_context->prefs();
+      if (auto* browser_process =
+              electron::ElectronBrowserMainParts::Get()->browser_process()) {
+        prefs_ = browser_process->local_state();
       }
     }
   }

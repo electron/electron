@@ -6988,7 +6988,7 @@ describe('BrowserWindow module', () => {
     describe('save window state', () => {
       const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'window-state-save');
       const sharedUserDataPath = path.join(os.tmpdir(), 'electron-window-state-test');
-      const sharedPreferencesPath = path.join(sharedUserDataPath, 'Preferences');
+      const sharedPreferencesPath = path.join(sharedUserDataPath, 'Local State');
 
       const getWindowStateFromDisk = (stateId: string, preferencesPath: string) => {
         if (!fs.existsSync(preferencesPath)) {
@@ -7168,7 +7168,7 @@ describe('BrowserWindow module', () => {
       describe('asynchronous batching behavior', () => {
         let w: BrowserWindow;
         const stateId = 'test-batching-behavior';
-        const preferencesPath = path.join(app.getPath('userData'), 'Preferences');
+        const preferencesPath = path.join(app.getPath('userData'), 'Local State');
 
         // Helper to get preferences file modification time
         const getPrefsModTime = (): Date => {
@@ -7198,6 +7198,12 @@ describe('BrowserWindow module', () => {
           }
         };
 
+        const waitForPrefsFileCreation = async (preferencesPath: string) => {
+          while (!fs.existsSync(preferencesPath)) {
+            await setTimeout(1000);
+          }
+        };
+
         beforeEach(async () => {
           await setTimeout(2000);
           w = new BrowserWindow({
@@ -7213,6 +7219,9 @@ describe('BrowserWindow module', () => {
         afterEach(closeAllWindows);
 
         it('should not immediately save window state to disk when window is moved/resized', async () => {
+          // Wait for preferences file to be created if its the first time we're running the test
+          await waitForPrefsFileCreation(preferencesPath);
+
           const initialModTime = getPrefsModTime();
 
           const moved = once(w, 'move');
@@ -7233,6 +7242,9 @@ describe('BrowserWindow module', () => {
         });
 
         it('should eventually flush window state to disk after batching period', async () => {
+          // Wait for preferences file to be created if its the first time we're running the test
+          await waitForPrefsFileCreation(preferencesPath);
+
           const initialModTime = getPrefsModTime();
 
           const resized = once(w, 'resize');
@@ -7248,6 +7260,9 @@ describe('BrowserWindow module', () => {
         });
 
         it('should batch multiple window operations and save final state', async () => {
+          // Wait for preferences file to be created if its the first time we're running the test
+          await waitForPrefsFileCreation(preferencesPath);
+
           const initialModTime = getPrefsModTime();
 
           const resize1 = once(w, 'resize');
@@ -7288,6 +7303,9 @@ describe('BrowserWindow module', () => {
         });
 
         it('should not save window bounds when main thread is busy', async () => {
+          // Wait for preferences file to be created if its the first time we're running the test
+          await waitForPrefsFileCreation(preferencesPath);
+
           const initialModTime = getPrefsModTime();
 
           const moved = once(w, 'move');

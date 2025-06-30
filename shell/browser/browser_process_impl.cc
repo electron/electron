@@ -37,6 +37,7 @@
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/network/public/cpp/network_switches.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/thread_restrictions.h"
 
@@ -105,12 +106,12 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   OSCrypt::RegisterLocalPrefs(pref_registry.get());
 #endif
 
+  pref_registry->RegisterDictionaryPref(electron::kWindowStates);
+
   in_memory_pref_store_ = base::MakeRefCounted<ValueMapPrefStore>();
   ApplyProxyModeFromCommandLine(in_memory_pref_store());
   prefs_factory.set_command_line_prefs(in_memory_pref_store());
 
-  // Only use a persistent prefs store when cookie encryption is enabled as that
-  // is the only key that needs it
   base::FilePath prefs_path;
   CHECK(base::PathService::Get(electron::DIR_SESSION_DATA, &prefs_path));
   prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
