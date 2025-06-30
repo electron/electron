@@ -39,13 +39,13 @@ index 538ae7876f2b2463716459b179d74843383295be..6ce53f12834c7a34241ea0865bda99af
 --- a/deps/uv/src/unix/async.c
 +++ b/deps/uv/src/unix/async.c
 @@ -40,7 +40,7 @@
-
+ 
  #if UV__KQUEUE_EVFILT_USER
  static uv_once_t kqueue_runtime_detection_guard = UV_ONCE_INIT;
 -static int kqueue_evfilt_user_support = 1;
 +int kqueue_evfilt_user_support = 1;
-
-
+ 
+ 
  static void uv__kqueue_runtime_detection(void) {
 @@ -66,7 +66,6 @@ static void uv__kqueue_runtime_detection(void) {
  }
