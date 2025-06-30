@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+    <title>Dock Menu Demo</title>
+  </head>
+  <body>
+    <h1>Dock Menu Demo</h1>
+    <ul>
+      <li>Create new BrowserWindow instances via the "New Window" option</li>
+      <li>Close all BrowserWindow instances via the "Close All Windows" option</li>
+      <li>Read the docs via the "Show Electron Docs" option</li>
+    </ul>
+    <script src="./renderer.js"></script>
+  </body>
+</html>
