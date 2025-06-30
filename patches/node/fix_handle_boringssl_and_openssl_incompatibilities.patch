@@ -172,7 +172,7 @@ index e5bf2b529bf23914677e25d7468aad58a4684557..9a3c6029ff3319cce58c79782a7bd5d1
    };
    // Check to see if the given public key is suitable for this DH instance.
 diff --git a/node.gni b/node.gni
-index 245a43920c7baf000ba63192a84a4c3fd219be7d..56a554175b805c1703f13d62041f8c80d6e94dd9 100644
+index b4450e3dd17994d1eaf59eb5cff5912545e89793..203b4abbc44df9e58083c819f61f9025104abdc6 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -11,7 +11,7 @@ declare_args() {
@@ -183,7 +183,7 @@ index 245a43920c7baf000ba63192a84a4c3fd219be7d..56a554175b805c1703f13d62041f8c80
 +  node_openssl_path = "//third_party/boringssl"
  
    # The location of simdutf - use the one from node's deps by default.
-   node_simdutf_path = "$node_path/deps/simdutf"
+   node_simdutf_path = "//third_party/simdutf"
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
 index 2176fb6982484e2c42538478eeb4dd81c9d50ee1..c00d3616e08b00b1e0a3a29b2dbb5278e1e14fcc 100644
 --- a/src/crypto/crypto_cipher.cc
@@ -520,7 +520,7 @@ index 7c548d32b40365343f0e208c3aa856a1c847f4c3..6346f8f7199cf7b7d3736c59571606ff
  }  // namespace
  
 diff --git a/src/env.h b/src/env.h
-index b6bdff9b8580d2588a39f00b594c4c480157d78a..cfe917c797a6e4bb0f0284ec56be82637f840129 100644
+index c42493ad958508f650917bf5ca92088714a5056c..07accfbcca491966c6c8ad9c20e146dbd22347f0 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -50,7 +50,7 @@
@@ -532,7 +532,7 @@ index b6bdff9b8580d2588a39f00b594c4c480157d78a..cfe917c797a6e4bb0f0284ec56be8263
  #include <openssl/evp.h>
  #endif
  
-@@ -1073,7 +1073,7 @@ class Environment final : public MemoryRetainer {
+@@ -1076,7 +1076,7 @@ class Environment final : public MemoryRetainer {
      kExitInfoFieldCount
    };
  
@@ -541,8 +541,23 @@ index b6bdff9b8580d2588a39f00b594c4c480157d78a..cfe917c797a6e4bb0f0284ec56be8263
  #if OPENSSL_VERSION_MAJOR >= 3
    // We declare another alias here to avoid having to include crypto_util.h
    using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
+diff --git a/src/node_config.cc b/src/node_config.cc
+index 6032bbd10f41da7bae44828a8e908c1bec0ea0b6..2013de54f0f6a036e8378deefbff8d7cb5f7cfb2 100644
+--- a/src/node_config.cc
++++ b/src/node_config.cc
+@@ -7,6 +7,10 @@
+ #include "node_options.h"
+ #include "util-inl.h"
+ 
++#if HAVE_OPENSSL
++#include <openssl/base.h>
++#endif
++
+ namespace node {
+ 
+ using v8::Context;
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index 6f8cb433ff8059c63d5cf16c8783139ae92fbf61..603ac3dde7d1a1109afbc451b69c8d0935b81641 100644
+index 7b2072ad39c3f1a7c73101b25b69beb781141e26..d23536d88d21255d348175425a59e2424332cd19 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -6,7 +6,7 @@
@@ -555,7 +570,7 @@ index 6f8cb433ff8059c63d5cf16c8783139ae92fbf61..603ac3dde7d1a1109afbc451b69c8d09
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 3fc8194475ec0e8a9047c1f3da5d120f25d66190..8be78889e8234eb3100f309829bf7470db544dcd 100644
+index da39abf79c53fcc3d83d3431deda9dbdf3b0621e..14f7764c995e8de6582faf58c9b98a9cbe4fab73 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -7,7 +7,7 @@
@@ -568,7 +583,7 @@ index 3fc8194475ec0e8a9047c1f3da5d120f25d66190..8be78889e8234eb3100f309829bf7470
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 7d14f06370d936a3866f0d988123de9fe614ce09..60068b008b2e2a034c3f0c58b947a8d04d55e3b2 100644
+index 165950c207ca752ec942ef27a671af66cbd2b938..eb18fdd617fd19e5b97cd67f351e70c28fee3e75 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
