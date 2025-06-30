@@ -66,6 +66,8 @@ static_library("chrome") {
     "//chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h",
     "//chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker_observer.cc",
     "//chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker_observer.h",
+    "//chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator.cc",
+    "//chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator.h",
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc",
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.h",
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager_uma_helper.cc",

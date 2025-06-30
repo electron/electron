@@ -233,7 +233,7 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index 7b2bf19e7c71209dc6ddd1a72b36763854b614b7..6515d391922d6ba19c196dcece496ff560529ee9 100644
+index b1a1752607def8f303e753fca0cd32b18bbb1969..fbbc5c4a7bd0e50a541e44020365dc60a549b652 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
 @@ -300,6 +300,14 @@ BASE_FEATURE(kIOSurfaceCapturer,
@@ -248,11 +248,11 @@ index 7b2bf19e7c71209dc6ddd1a72b36763854b614b7..6515d391922d6ba19c196dcece496ff5
 +             base::FEATURE_ENABLED_BY_DEFAULT);
 +#endif
 +
- // If this feature is enabled, media-device enumerations use a cache that is
- // invalidated upon notifications sent by base::SystemMonitor. If disabled, the
- // cache is considered invalid on every enumeration request.
+ // When enabled, child process will not terminate itself when IPC is reset.
+ BASE_FEATURE(kKeepChildProcessAfterIPCReset,
+              "KeepChildProcessAfterIPCReset",
 diff --git a/content/common/features.h b/content/common/features.h
-index b92738887c4b0a977de336e3d0122bc8f53e7e31..89245df25f543c74de36d82e4c47c7ca89783347 100644
+index 98899b6a81f7e93995ac6e49de2b20996a5b7ff5..149934a614970596ccdac5991cc7b35826f4a1d4 100644
 --- a/content/common/features.h
 +++ b/content/common/features.h
 @@ -100,6 +100,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
@@ -262,6 +262,6 @@ index b92738887c4b0a977de336e3d0122bc8f53e7e31..89245df25f543c74de36d82e4c47c7ca
 +#if BUILDFLAG(IS_MAC)
 +CONTENT_EXPORT BASE_DECLARE_FEATURE(kMacWebContentsOcclusion);
 +#endif
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kKeepChildProcessAfterIPCReset);
  CONTENT_EXPORT BASE_DECLARE_FEATURE(kMediaDevicesSystemMonitorCache);
  CONTENT_EXPORT BASE_DECLARE_FEATURE(kMediaStreamTrackTransfer);
- CONTENT_EXPORT BASE_DECLARE_FEATURE(kMojoDedicatedThread);

@@ -1,0 +1,103 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 27 Jun 2025 02:34:16 +0900
+Subject: Revert "update siso-chromium image"
+
+This reverts commit b36ef7a445fca58be9a2ebead68bfbda251667ff.
+
+Reason for revert:
+* Requires deployment of new container on our rbe cluster which cannot
+happen immediately due to siso transition.
+* Helps unblock the roller PRs.
+* Image bump was to remove i686 support which doesn't affect us
+https://chromium-review.googlesource.com/c/infra/infra/+/6664079
+
+diff --git a/build/config/siso/backend_config/google.star b/build/config/siso/backend_config/google.star
+index 31b3687d2925325259f33b07754680ba350e3059..348317edc26774168732aacb0fed110c4bbec552 100644
+--- a/build/config/siso/backend_config/google.star
++++ b/build/config/siso/backend_config/google.star
+@@ -7,7 +7,7 @@
+ load("@builtin//struct.star", "module")
+ 
+ def __platform_properties(ctx):
+-    container_image = "docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:d7cb1ab14a0f20aa669c23f22c15a9dead761dcac19f43985bf9dd5f41fbef3a"
++    container_image = "docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:ef35d347f4a4a2d32b76fd908e66e96f59bf8ba7379fd5626548244c45343b2b"
+     return {
+         "default": {
+             "OSFamily": "Linux",
+diff --git a/build/config/siso/backend_config/google_cros_chroot.star b/build/config/siso/backend_config/google_cros_chroot.star
+index 2763740c7a6b80cc689e745f9af1d7c7ed664d7d..ea1855d8823e4aa31acc920d295d56939efe624d 100644
+--- a/build/config/siso/backend_config/google_cros_chroot.star
++++ b/build/config/siso/backend_config/google_cros_chroot.star
+@@ -8,7 +8,7 @@ load("@builtin//struct.star", "module")
+ 
+ def __platform_properties(ctx):
+     # LINT.IfChange
+-    container_image = "docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:d7cb1ab14a0f20aa669c23f22c15a9dead761dcac19f43985bf9dd5f41fbef3a"
++    container_image = "docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:ef35d347f4a4a2d32b76fd908e66e96f59bf8ba7379fd5626548244c45343b2b"
+ 
+     return {
+         "default": {
+diff --git a/buildtools/reclient_cfgs/linux/chromium-browser-clang/rewrapper_linux.cfg b/buildtools/reclient_cfgs/linux/chromium-browser-clang/rewrapper_linux.cfg
+index ca8e84948679c7892534fbf793afcec887009c30..6f6e1ca9a0c1385b94aa3b46be5a0a143fc57835 100644
+--- a/buildtools/reclient_cfgs/linux/chromium-browser-clang/rewrapper_linux.cfg
++++ b/buildtools/reclient_cfgs/linux/chromium-browser-clang/rewrapper_linux.cfg
+@@ -1,4 +1,4 @@
+-platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:d7cb1ab14a0f20aa669c23f22c15a9dead761dcac19f43985bf9dd5f41fbef3a,label:action_default=1
++platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:26de99218a1a8b527d4840490bcbf1690ee0b55c84316300b60776e6b3a03fe1,label:action_default=1
+ server_address=unix:///tmp/reproxy.sock
+ labels=type=compile,compiler=clang,lang=cpp
+ exec_strategy=racing
+diff --git a/buildtools/reclient_cfgs/linux/python/rewrapper_linux.cfg b/buildtools/reclient_cfgs/linux/python/rewrapper_linux.cfg
+index d1ed4fe108a4b954e0f933d12e5308170f357548..12ae5379c2fe6ff2ae9473703730d87fdcc52b3f 100644
+--- a/buildtools/reclient_cfgs/linux/python/rewrapper_linux.cfg
++++ b/buildtools/reclient_cfgs/linux/python/rewrapper_linux.cfg
+@@ -1,4 +1,4 @@
+-platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:d7cb1ab14a0f20aa669c23f22c15a9dead761dcac19f43985bf9dd5f41fbef3a,label:action_default=1
++platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:26de99218a1a8b527d4840490bcbf1690ee0b55c84316300b60776e6b3a03fe1,label:action_default=1
+ server_address=unix:///tmp/reproxy.sock
+ labels=type=tool
+ exec_strategy=remote_local_fallback
+diff --git a/buildtools/reclient_cfgs/linux_chroot/chromium-browser-clang/rewrapper_linux.cfg b/buildtools/reclient_cfgs/linux_chroot/chromium-browser-clang/rewrapper_linux.cfg
+index c6c29e29031f38ef172468ade17fde29d648d85d..e73e2e6c7a1876678c547f0f686f817ef03bfd65 100644
+--- a/buildtools/reclient_cfgs/linux_chroot/chromium-browser-clang/rewrapper_linux.cfg
++++ b/buildtools/reclient_cfgs/linux_chroot/chromium-browser-clang/rewrapper_linux.cfg
+@@ -1,5 +1,5 @@
+ # LINT.IfChange
+-platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:d7cb1ab14a0f20aa669c23f22c15a9dead761dcac19f43985bf9dd5f41fbef3a,dockerChrootPath=.,dockerRuntime=runsc,label:orchestrator=portage,label:package_accelerator=reclient,label:core_count=2
++platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:26de99218a1a8b527d4840490bcbf1690ee0b55c84316300b60776e6b3a03fe1,dockerChrootPath=.,dockerRuntime=runsc,label:orchestrator=portage,label:package_accelerator=reclient,label:core_count=2
+ # LINT.ThenChange(/build/config/siso/backend_config/google_cros_chroot.star)
+ server_address=unix:///tmp/reproxy.sock
+ labels=type=compile,compiler=clang,lang=cpp
+diff --git a/buildtools/reclient_cfgs/linux_chroot/python/rewrapper_linux.cfg b/buildtools/reclient_cfgs/linux_chroot/python/rewrapper_linux.cfg
+index 41279923537cc42505e9e47301afe0dec7095c05..918fc9cb47afc8ec8f6b7e060504da7108aa0f91 100644
+--- a/buildtools/reclient_cfgs/linux_chroot/python/rewrapper_linux.cfg
++++ b/buildtools/reclient_cfgs/linux_chroot/python/rewrapper_linux.cfg
+@@ -1,4 +1,4 @@
+-platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:d7cb1ab14a0f20aa669c23f22c15a9dead761dcac19f43985bf9dd5f41fbef3a,dockerRuntime=runsc,label:orchestrator=portage,label:package_accelerator=reclient,label:core_count=2
++platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:26de99218a1a8b527d4840490bcbf1690ee0b55c84316300b60776e6b3a03fe1,dockerRuntime=runsc,label:orchestrator=portage,label:package_accelerator=reclient,label:core_count=2
+ server_address=unix:///tmp/reproxy.sock
+ labels=type=tool
+ exec_strategy=remote_local_fallback
+diff --git a/buildtools/reclient_cfgs/linux_cros/chromium-browser-clang/rewrapper_linux.cfg b/buildtools/reclient_cfgs/linux_cros/chromium-browser-clang/rewrapper_linux.cfg
+index 237af4b723b7b269a97cdf57ecdf4a1cfcd0d76a..6eb61b9ac0d03a0983964d1334389e09d091f4d5 100644
+--- a/buildtools/reclient_cfgs/linux_cros/chromium-browser-clang/rewrapper_linux.cfg
++++ b/buildtools/reclient_cfgs/linux_cros/chromium-browser-clang/rewrapper_linux.cfg
+@@ -1,5 +1,5 @@
+ # Configuration for the ChromeOS build using Chrome's bundled toolchain.
+-platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:d7cb1ab14a0f20aa669c23f22c15a9dead761dcac19f43985bf9dd5f41fbef3a,dockerRuntime=runsc,label:orchestrator=portage,label:package_accelerator=reclient,label:core_count=2
++platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:26de99218a1a8b527d4840490bcbf1690ee0b55c84316300b60776e6b3a03fe1,dockerRuntime=runsc,label:orchestrator=portage,label:package_accelerator=reclient,label:core_count=2
+ server_address=unix:///tmp/reproxy.sock
+ labels=type=compile,compiler=clang,lang=cpp
+ exec_strategy=remote_local_fallback
+diff --git a/buildtools/reclient_cfgs/linux_cros/python/rewrapper_linux.cfg b/buildtools/reclient_cfgs/linux_cros/python/rewrapper_linux.cfg
+index b2579800ff1ae44737c1aa8034923e060999c944..f8332cd84bbc495e161193cd242302c659748596 100644
+--- a/buildtools/reclient_cfgs/linux_cros/python/rewrapper_linux.cfg
++++ b/buildtools/reclient_cfgs/linux_cros/python/rewrapper_linux.cfg
+@@ -1,5 +1,5 @@
+ # Configuration file for Python actions in the ChromeOS build.
+-platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:d7cb1ab14a0f20aa669c23f22c15a9dead761dcac19f43985bf9dd5f41fbef3a,dockerRuntime=runsc,label:orchestrator=portage,label:package_accelerator=reclient,label:core_count=2
++platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:26de99218a1a8b527d4840490bcbf1690ee0b55c84316300b60776e6b3a03fe1,dockerRuntime=runsc,label:orchestrator=portage,label:package_accelerator=reclient,label:core_count=2
+ server_address=unix:///tmp/reproxy.sock
+ labels=type=tool
+ exec_strategy=remote_local_fallback

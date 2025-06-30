@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index cf2e9f7d7e6e954893efd765a0eb45fcfdae6a98..9f4e1450082d4d7520d9ce62ab7f9aa0c737f006 100644
+index ef87899fb7569f8b7de13d63ff123e9ad245d5af..fee80a0e6036b3b73110ec495ac5546beca0585a 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -520,6 +520,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -519,6 +519,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -32,7 +32,7 @@ index cf2e9f7d7e6e954893efd765a0eb45fcfdae6a98..9f4e1450082d4d7520d9ce62ab7f9aa0
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index bc4dd4c643f2aa4cba07c0560e14f65f3c6aa291..b1c9f2d59559ed33cd32ad1f22b221029018cf0f 100644
+index 8fed0c928df594a80bebf0017d47e1bfef841c16..b9590ecbb95da6858eac104fbf69df056ccbf449 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -87,6 +87,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
@@ -91,7 +91,7 @@ index 5c82a641538802bc459782ea422a1186045b054a..c286d87043ec4cb2e51ec9d82d08e4c8
    // Always keep this at the end.
    NUM,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 02e1941c37173a1e84e5190eb396f1007a8bbc2c..e47f2089a6a187b26c981afa1ef4135ec5e6a9e7 100644
+index 66270fa219491e0b9f09113e45452cd8c2890b52..47c73522cbd7c1d12dabfecf6f55a74690ebc189 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -43,7 +43,8 @@ enum PermissionName {

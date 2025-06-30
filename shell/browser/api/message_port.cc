@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "base/containers/to_vector.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"

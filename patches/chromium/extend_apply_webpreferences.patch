@@ -15,10 +15,10 @@ Ideally we could add an embedder observer pattern here but that can be
 done in future work.
 
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 5e0df4263d176b699e940f20d79e90e5b3259014..d9125c7905cb4e5dd00c3d5c05c87d45079cca94 100644
+index 353c093d9fc15913dec6301cfc654c1a3a3fbc10..7163be14508786f67c3ea01cff9bc70c3692acac 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -1882,6 +1882,8 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
+@@ -1880,6 +1880,8 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
  #if BUILDFLAG(IS_MAC)
    web_view_impl->SetMaximumLegibleScale(
        prefs.default_maximum_page_scale_factor);

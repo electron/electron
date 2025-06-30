@@ -112,7 +112,7 @@ index c1774435cf594b5b3c07a60d11c379c61a828dec..4a59df2ce679c9af10b0e3bf630d615b
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index d4363003c4119604255c42333bd25ec2b6a81cd5..a2f069acc2b26c3ec514023ef676e315f0160a37 100644
+index 5ff81576882fa62b6b6aaaebd176fe4419644718..ec91b51969e157d3b7c8280e1b033e4c5f8e8ad3 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -389,6 +389,9 @@ URLLoader::URLLoader(
@@ -125,7 +125,7 @@ index d4363003c4119604255c42333bd25ec2b6a81cd5..a2f069acc2b26c3ec514023ef676e315
        devtools_request_id_(request.devtools_request_id),
        options_(PopulateOptions(options,
                                 factory_params_->is_orb_enabled,
-@@ -525,7 +528,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
+@@ -527,7 +530,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -134,7 +134,7 @@ index d4363003c4119604255c42333bd25ec2b6a81cd5..a2f069acc2b26c3ec514023ef676e315
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1132,6 +1135,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1134,6 +1137,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -155,10 +155,10 @@ index d4363003c4119604255c42333bd25ec2b6a81cd5..a2f069acc2b26c3ec514023ef676e315
  
    ad_auction_event_record_request_helper_.HandleResponse(
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 99ac2f1963fd78c04b8ce8f35e4e58fe6eac8f5d..7e843177ed385869ab8f0231ca282f6decd32a51 100644
+index 997503121c7b96fca5f5657ac465af0388c42715..54b3b804f8da59ef2d2f86f3a5c1effd01575d69 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -617,6 +617,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -615,6 +615,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

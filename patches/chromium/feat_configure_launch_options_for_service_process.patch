@@ -351,10 +351,10 @@ index 4335d7ff718c3d7de92320ba11c39c3957303788..55379fbe9233ba96f6e4729e2b7d534c
      // Whether or not to bind viz::mojom::Gpu to the utility process.
      bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index 5ff3c5dcb972eb635107557ea7c26eb1f3331d22..5b1939226dcb84a61b09eefe69ab24a5ad595e1b 100644
+index 68063b1f1846bac988e5b25e428666aefa3908e4..e5101df384dc320728105a6d861fc7c61662a504 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
-@@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::
+@@ -38,17 +38,19 @@ UtilitySandboxedProcessLauncherDelegate::
      UtilitySandboxedProcessLauncherDelegate(
          sandbox::mojom::Sandbox sandbox_type,
          const base::EnvironmentMap& env,
@@ -378,7 +378,7 @@ index 5ff3c5dcb972eb635107557ea7c26eb1f3331d22..5b1939226dcb84a61b09eefe69ab24a5
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -115,11 +117,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -112,11 +114,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
