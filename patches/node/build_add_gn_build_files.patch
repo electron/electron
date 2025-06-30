@@ -55,10 +55,10 @@ index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3f
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index e85860de93dd5753dd4542ecee9f0888af93898a..04eab49c368c8f86837ed2c1384bf3c63e4bde24 100644
+index defb657a62a0316224a02b68505ac1142fd89d03..d637faac88875bfa110e2b8d1f53962061d98279 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -783,6 +783,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -785,6 +785,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -67,7 +67,7 @@ index e85860de93dd5753dd4542ecee9f0888af93898a..04eab49c368c8f86837ed2c1384bf3c6
  
  }  // namespace builtins
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index a73de23a1debfdac66873e0baccf882e383bfc36..7ac5291be093773ee7efd39e77e01bf5d5ce5247 100644
+index f9426599f2d5dc6ad061407f0c4eb2c9203a4433..302030f610965f07dd6998d282275c1bdf738009 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -74,6 +74,8 @@ using BuiltinCodeCacheMap =
@@ -250,10 +250,10 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index 44641b92678ab2f28e6f5de75a92878f9f3d322d..672e97436d9220e8d5046b0c92025f50ae50a3d8 100644
+index 44641b92678ab2f28e6f5de75a92878f9f3d322d..e17e4f043af6e4047ab82723ffd83187f3c04c5c 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -142,32 +142,39 @@ template("node_gn_build") {
+@@ -142,32 +142,42 @@ template("node_gn_build") {
      public_configs = [
        ":node_external_config",
        "deps/googletest:googletest_config",
@@ -288,7 +288,10 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..672e97436d9220e8d5046b0c92025f50
        "$node_v8_path:v8_libplatform",
      ]
  
-+    cflags_cc = [ "-Wno-unguarded-availability-new" ]
++    cflags_cc = [
++      "-Wno-unguarded-availability-new",
++      "-Wno-return-stack-address"
++    ]
 +
      sources = [
 +      "src/node_snapshot_stub.cc",
@@ -296,7 +299,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..672e97436d9220e8d5046b0c92025f50
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -190,7 +197,7 @@ template("node_gn_build") {
+@@ -190,7 +200,7 @@ template("node_gn_build") {
      }
      if (node_use_openssl) {
        deps += [ "deps/ncrypto" ]
@@ -305,7 +308,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..672e97436d9220e8d5046b0c92025f50
        sources += gypi_values.node_crypto_sources
      }
      if (node_enable_inspector) {
-@@ -214,6 +221,10 @@ template("node_gn_build") {
+@@ -214,6 +224,10 @@ template("node_gn_build") {
      }
    }
  
@@ -316,7 +319,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..672e97436d9220e8d5046b0c92025f50
    executable(target_name) {
      forward_variables_from(invoker, "*")
  
-@@ -288,6 +299,7 @@ template("node_gn_build") {
+@@ -288,6 +302,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -324,7 +327,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..672e97436d9220e8d5046b0c92025f50
      deps = [
        "deps/uv",
        "$node_simdutf_path",
-@@ -298,26 +310,75 @@ template("node_gn_build") {
+@@ -298,26 +313,75 @@ template("node_gn_build") {
        "src/embedded_data.cc",
        "src/embedded_data.h",
      ]
@@ -410,7 +413,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..672e97436d9220e8d5046b0c92025f50
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -331,11 +392,11 @@ template("node_gn_build") {
+@@ -331,11 +395,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  

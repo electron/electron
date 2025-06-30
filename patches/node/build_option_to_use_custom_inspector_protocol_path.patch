@@ -65,10 +65,10 @@ index 3d7aa148678b2646b88fa7c32abec91791b02b82..4810d93eb971b253f7dadff7011a632f
    gypi_values = exec_script(
        "../../tools/gypi_to_gn.py",
 diff --git a/unofficial.gni b/unofficial.gni
-index a8ce18acfe333350f91b3e5f235db5f756b2e34a..6bcc40b282543fc40f80c5c6659de658209844b8 100644
+index d591dfc99fdea4f830008502786ee44d863a31fc..9e26399482d6a1cdb843efb72c152d5cdd5e08ea 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -211,13 +211,14 @@ template("node_gn_build") {
+@@ -214,13 +214,14 @@ template("node_gn_build") {
      }
      if (node_enable_inspector) {
        deps += [
