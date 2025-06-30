@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index d5b3b56909d57af3b576f5b1858c4dff202cdeee..0c7fd10c9930d7cf35760756f19e55842a3daaf8 100644
+index dd3bb808ce5f15d8b4235f0b9605ee98e3e8d991..b53293b37fe6d629534572b1e27ed88df873e1d9 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -24809,6 +24809,21 @@
+@@ -24736,6 +24736,21 @@
              ]
          }
      ],
@@ -36,10 +36,10 @@ index d5b3b56909d57af3b576f5b1858c4dff202cdeee..0c7fd10c9930d7cf35760756f19e5584
          {
              "platforms": [
 diff --git a/ui/views/views_features.cc b/ui/views/views_features.cc
-index d56ac1f6c64e6991dabfa65aec4e7790fe081812..4c6ae8ff792ff6c7d1128f9fe9592802c7914f87 100644
+index 52c03930806efdb180d45bb68d4b6cd72cb8bec7..8307938f271c46b57aeceb6e4faaad88f45add5e 100644
 --- a/ui/views/views_features.cc
 +++ b/ui/views/views_features.cc
-@@ -30,6 +30,14 @@ BASE_FEATURE(kEnableTouchDragCursorSync,
+@@ -31,6 +31,14 @@ BASE_FEATURE(kEnableTouchDragCursorSync,
               "EnableTouchDragCursorSync",
               base::FEATURE_ENABLED_BY_DEFAULT);
  
@@ -67,7 +67,7 @@ index 58063f2452dc484a97c79b382067d9b34875e344..d586436498263c595a17454f54644d2d
  
  }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index e1d876a5c5098ec036976c64cf7e210b16833193..9924d06cc7f7c7773fde6fc62bd7f14e89c13ae5 100644
+index e32e408e9dc4baf897669f5610b8bb3647cd8a92..068ab7f71ecb6c49e1a2894df845c508e3075b3e 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -83,6 +83,23 @@ namespace {
