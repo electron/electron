@@ -33,10 +33,10 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 06c6fea5c0b03abff8332ee200aaaaba38b60bac..794d1ff53e2a09d36f709284a43510194d75162e 100644
+index 26d5ee5a67ff35f66a9f598891a444aaa9e21eaf..170a552945b6bb10dcd626779074ec85751009e1 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1859,6 +1859,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -1870,6 +1870,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
