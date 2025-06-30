@@ -88,7 +88,7 @@
 #include "ui/gfx/win/msg_util.h"
 #endif
 
-       namespace electron {
+namespace electron {
 
 #if BUILDFLAG(IS_WIN)
 
