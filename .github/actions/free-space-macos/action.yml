@@ -78,4 +78,4 @@ runs:
 
         # lipo off some huge binaries arm64 versions to save space
         strip_universal_deep $(xcode-select -p)/../SharedFrameworks
-        strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
+        strip_universal_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
