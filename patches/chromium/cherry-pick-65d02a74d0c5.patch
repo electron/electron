@@ -1,20 +1,19 @@
-From 65d02a74d0c5538d90c707a887b76cba0ffb18c0 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <samuel.r.attard@gmail.com>
 Date: Mon, 30 Jun 2025 15:42:23 -0700
-Subject: [PATCH] build: respect SDKROOT when finding local macOS SDK
+Subject: build: respect SDKROOT when finding local macOS SDK
 
 By design xcode-select only outputs the location of xcode, whereas clang, xcodebuild, and other tools will respect SDKROOT when actually resolving the macOS SDK to use.
 
 This retains current logic but augments it with an additional `xcrun --show-sdk-path` which fails open (if it fails we ignore it) to find any SDK that is being configured via the SDKROOT variable. This allows us to use _any_ version of xcode while separately providing an absolute path to the correct SDK via the SDKROOT environment variable.
 
 Change-Id: I72b7ab557e107e7fd34968eaeaf24fb0705a9bbc
----
 
 diff --git a/build/mac/find_sdk.py b/build/mac/find_sdk.py
-index 3dcc4d5..3c38e5bb 100755
+index 3dcc4d5d36bf693cfabef963f0c544842f00a298..3c38e5bb9eb03df496edff884a1873efa76113ef 100755
 --- a/build/mac/find_sdk.py
 +++ b/build/mac/find_sdk.py
-@@ -38,9 +38,9 @@
+@@ -38,9 +38,9 @@ class SdkError(Exception):
      return repr(self.value)
  
  
@@ -27,10 +26,12 @@ index 3dcc4d5..3c38e5bb 100755
  
  
  def main():
-@@ -59,15 +59,31 @@
+@@ -59,15 +59,31 @@ def main():
      parser.error('Please specify a minimum SDK version')
    min_sdk_version = args[0]
  
+-
+-  job = subprocess.Popen(['xcode-select', '-print-path'],
 +  sdks = []
 +  # xcrun --show-sdk-path is the preferred way to get the SDK path, but
 +  # it may not be available on older versions of Xcode, so we also try
@@ -45,8 +46,7 @@ index 3dcc4d5..3c38e5bb 100755
 +      # If xcrun succeeded, we can use it to get the SDK path, otherwise
 +      # we can just ignore it and fallback to xcode-select.
 +      sdks.append(xcrun_sdk_path)
- 
--  job = subprocess.Popen(['xcode-select', '-print-path'],
++
 +  xcode_select_job = subprocess.Popen(['xcode-select', '-print-path'],
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
@@ -62,7 +62,7 @@ index 3dcc4d5..3c38e5bb 100755
    dev_dir = out.decode('UTF-8').rstrip()
    sdk_dir = os.path.join(
        dev_dir, 'Platforms/MacOSX.platform/Developer/SDKs')
-@@ -76,15 +92,16 @@
+@@ -76,15 +92,16 @@ def main():
      raise SdkError('Install Xcode, launch it, accept the license ' +
        'agreement, and run `sudo xcode-select -s /path/to/Xcode.app` ' +
        'to continue.')
