@@ -6,6 +6,7 @@
 
 #include "base/containers/adapters.h"
 #include "base/i18n/rtl.h"
+#include "chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.h"
 #include "chrome/grit/generated_resources.h"
 #include "components/strings/grit/components_strings.h"
 #include "shell/browser/native_window_views.h"
@@ -376,7 +377,7 @@ int OpaqueFrameView::DefaultCaptionButtonY(bool restored) const {
   const bool start_at_top_of_frame = !restored && IsFrameCondensed();
   return start_at_top_of_frame
              ? FrameBorderInsets(false).top()
-             : views::NonClientFrameView::kFrameShadowThickness;
+             : OpaqueBrowserFrameViewLayout::kFrameShadowThickness;
 }
 
 gfx::Insets OpaqueFrameView::FrameEdgeInsets(bool restored) const {
