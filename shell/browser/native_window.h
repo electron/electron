@@ -549,8 +549,15 @@ class NativeWindow : public base::SupportsUserData,
 
   gfx::Rect overlay_rect_;
 
+  // PrefService is used to persist window bounds and state.
+  // Only populated when window state persistence is enabled via
+  // windowStateRestoreOptions and a valid stateId is provided.
   raw_ptr<PrefService> prefs_ = nullptr;
+
+  // Unique identifier used for saving and restoring window state.
   std::string window_state_id_;
+
+  // Timer to debounce window state saving operations.
   base::OneShotTimer save_window_state_timer_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};

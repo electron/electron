@@ -121,15 +121,19 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   options.Get(options::kVibrancyType, &vibrancy_);
 #endif
 
-  // Initialize prefs_ to save/restore window bounds
-  if (auto* browser_context =
-          electron::ElectronBrowserContext::GetDefaultBrowserContext())
-    prefs_ = browser_context->prefs();
-
   if (gin_helper::Dictionary restore_options;
       options.Get(options::kWindowStateRestoreOptions, &restore_options)) {
     // Initialize window_state_id_
     restore_options.Get(options::kStateId, &window_state_id_);
+
+    // Initialize prefs_ to save/restore window bounds if we have a valid
+    // stateId
+    if (!window_state_id_.empty()) {
+      if (auto* browser_context =
+              electron::ElectronBrowserContext::GetDefaultBrowserContext()) {
+        prefs_ = browser_context->prefs();
+      }
+    }
   }
 
   if (gin_helper::Dictionary dict;
