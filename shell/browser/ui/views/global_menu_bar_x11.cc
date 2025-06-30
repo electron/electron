@@ -8,6 +8,7 @@
 #include <glib-object.h>
 
 #include "base/functional/bind.h"
+#include "base/notimplemented.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/global_menu_bar_registrar_x11.h"

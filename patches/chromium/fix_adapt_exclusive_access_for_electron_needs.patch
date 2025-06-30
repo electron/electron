@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index a6b64cc3dca3f62893e323de781b790f72924b66..7527e9d69ae0d43a00fbd5f5d5ced11af04da378 100644
+index 93a3c5d4921691f3fd0180bc1cec13f00f0e4d86..f81c1cdcb29f521074d37f324434116903251edf 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -20,12 +20,16 @@

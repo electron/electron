@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index 3647a19f360fa4bccd07bd3e9d8f6156342e5397..ca67574aa8e86a3350b03ec379be95178a8a8b57 100644
+index d5b3b56909d57af3b576f5b1858c4dff202cdeee..0c7fd10c9930d7cf35760756f19e55842a3daaf8 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -24228,6 +24228,21 @@
+@@ -24809,6 +24809,21 @@
              ]
          }
      ],
@@ -67,10 +67,10 @@ index 58063f2452dc484a97c79b382067d9b34875e344..d586436498263c595a17454f54644d2d
  
  }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index d9890692f7a9e30ac0da244a62c45835177296c9..5b115c53625ba811b71d769184a4bba69c19640a 100644
+index e1d876a5c5098ec036976c64cf7e210b16833193..9924d06cc7f7c7773fde6fc62bd7f14e89c13ae5 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -82,6 +82,23 @@ namespace {
+@@ -83,6 +83,23 @@ namespace {
  // This constant controls how many pixels wide that border is.
  const int kMouseCaptureRegionBorder = 5;
  
@@ -94,7 +94,7 @@ index d9890692f7a9e30ac0da244a62c45835177296c9..5b115c53625ba811b71d769184a4bba6
  // Updates the cursor clip region. Used for mouse locking.
  void UpdateMouseLockRegion(aura::Window* window, bool locked) {
    if (!locked) {
-@@ -299,9 +316,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
+@@ -308,9 +325,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
  }
  
  void DesktopWindowTreeHostWin::SetSize(const gfx::Size& size) {
@@ -111,7 +111,7 @@ index d9890692f7a9e30ac0da244a62c45835177296c9..5b115c53625ba811b71d769184a4bba6
  }
  
  void DesktopWindowTreeHostWin::StackAbove(aura::Window* window) {
-@@ -316,30 +338,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
+@@ -325,30 +347,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
  }
  
  void DesktopWindowTreeHostWin::CenterWindow(const gfx::Size& size) {
@@ -154,7 +154,7 @@ index d9890692f7a9e30ac0da244a62c45835177296c9..5b115c53625ba811b71d769184a4bba6
    return display::win::GetScreenWin()->ScreenToDIPRect(GetHWND(), pixel_bounds);
  }
  
-@@ -648,37 +680,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
+@@ -657,37 +689,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
  // other get/set methods work in DIP.
  
  gfx::Rect DesktopWindowTreeHostWin::GetBoundsInPixels() const {
@@ -219,7 +219,7 @@ index d9890692f7a9e30ac0da244a62c45835177296c9..5b115c53625ba811b71d769184a4bba6
  }
  
  gfx::Rect
-@@ -888,21 +927,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
+@@ -897,21 +936,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
  
  void DesktopWindowTreeHostWin::GetWindowMask(const gfx::Size& size_px,
                                               SkPath* path) {
@@ -264,10 +264,10 @@ index d9890692f7a9e30ac0da244a62c45835177296c9..5b115c53625ba811b71d769184a4bba6
  }
  
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 071e5682da9558e721fa32f168a239c16a459a08..2ad691376187d607d115102ff1aef8a1bb820dc2 100644
+index 8753821149dc870b9865884dccf1ba4dec7e29f2..4919475a7999e5136c3bf02cf21b8eff5010f2fe 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -176,7 +176,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -175,7 +175,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    void ShowImpl() override;
    void HideImpl() override;
    gfx::Rect GetBoundsInPixels() const override;
