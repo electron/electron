@@ -11,7 +11,7 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index fd17ce8695c55f8f38ed19d59960acc1a7692bc8..96754db3277b3a0445b69275368602166c6d5423 100644
+index 9d6f850f667c5186efe6855bc3d5f5af332bdaa7..8521759e20adf53024e5893dbf3cb36e1752085e 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
 @@ -30,7 +30,7 @@ const {
@@ -40,10 +40,10 @@ index fd17ce8695c55f8f38ed19d59960acc1a7692bc8..96754db3277b3a0445b6927536860216
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 912acc8da815405531d8b527383f19c3731be100..8d48f4693c3b5f0d1d94d3edadc48c4f36d1bf97 100644
+index cdd0ba00eb0cafbc79b816017423f9021ca2979d..6916497f6feb14e482cf5080b57d639ae7292d20 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -858,7 +858,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+@@ -875,7 +875,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
    return module->module_.Get(isolate);
  }
  
@@ -52,7 +52,7 @@ index 912acc8da815405531d8b527383f19c3731be100..8d48f4693c3b5f0d1d94d3edadc48c4f
      Local<Context> context,
      Local<Data> host_defined_options,
      Local<Value> resource_name,
-@@ -923,12 +923,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -947,12 +947,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Realm* realm = Realm::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -68,7 +68,7 @@ index 912acc8da815405531d8b527383f19c3731be100..8d48f4693c3b5f0d1d94d3edadc48c4f
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -970,13 +971,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+@@ -994,13 +995,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Realm* realm = Realm::GetCurrent(args);
    Isolate* isolate = realm->isolate();
  
@@ -87,7 +87,7 @@ index 912acc8da815405531d8b527383f19c3731be100..8d48f4693c3b5f0d1d94d3edadc48c4f
  
  MaybeLocal<Value> ModuleWrap::SyntheticModuleEvaluationStepsCallback(
 diff --git a/src/module_wrap.h b/src/module_wrap.h
-index 83b5793013cbc453cf92c0a006fc7be3c06ad276..90353954bc497cb4ae413dc134850f8abb4efc7c 100644
+index ef4dfd1d6b091d2b0f71b946904a47415b6435ba..862f946a75f2a2949d7eeb7f97e96289beab8078 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
 @@ -8,6 +8,7 @@
@@ -123,7 +123,7 @@ index 83b5793013cbc453cf92c0a006fc7be3c06ad276..90353954bc497cb4ae413dc134850f8a
   private:
    ModuleWrap(Realm* realm,
               v8::Local<v8::Object> object,
-@@ -129,7 +139,6 @@ class ModuleWrap : public BaseObject {
+@@ -130,7 +140,6 @@ class ModuleWrap : public BaseObject {
        v8::Local<v8::String> specifier,
        v8::Local<v8::FixedArray> import_attributes,
        v8::Local<v8::Module> referrer);

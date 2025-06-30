@@ -64,7 +64,7 @@ index 5ba13096b98047ff33e4d44167c2a069ccc5e69d..09a332c0999086b30fd952d9456f7889
    }
  }
 diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
-index aff686577df3c366f06f90666e23a03fc376cf53..e8857a151428acd6f8ece74d92774a18accc1e13 100644
+index 5a817ed0434b8bc08f9b9bd260c978bbe5ddc664..f9dba42cddb08f69e02834f76d6d80c5e47a637d 100644
 --- a/lib/internal/modules/esm/loader.js
 +++ b/lib/internal/modules/esm/loader.js
 @@ -492,7 +492,7 @@ class ModuleLoader {
@@ -101,7 +101,7 @@ index bfd9bd3d127404de1cbb6f30c43ab0342590759d..9e7d8ef0adef3b68a3ec186e4b218f59
  
    const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 7dcd7afe8ce3c25ceb314cdf15c330f3d66eb84f..4445bcc4c4c6c6f87ac45e693012a18a93739f9b 100644
+index 0695b47a8a8f78451c20c025a3d9dac7cadab686..1db58d31dad24cd2da6bdc5e45e9dd4f0b899a23 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -186,7 +186,7 @@ function createCJSModuleWrap(url, source, isMain, format, loadCJS = loadCJSModul
