@@ -446,7 +446,8 @@ void ElectronBrowserClient::RegisterPendingSiteInstance(
     content::SiteInstance* pending_site_instance) {
   // Remember the original web contents for the pending renderer process.
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
-  const auto pending_process_id = pending_site_instance->GetProcess()->GetID();
+  const auto pending_process_id =
+      pending_site_instance->GetOrCreateProcess()->GetID();
   pending_processes_[pending_process_id] = web_contents;
 
   if (rfh->GetParent())
