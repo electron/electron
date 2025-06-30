@@ -46,20 +46,23 @@ async function main () {
   const platformFlags = [];
   if (process.platform === 'darwin') {
     const sdkPath = path.resolve(BASE, 'out', outDir, 'sdk', 'xcode_links');
-    const sdks = (await fs.promises.readdir(sdkPath)).filter(fileName => fileName.endsWith('.sdk'));
-    const sdkToUse = sdks[0];
-    if (!sdkToUse) {
+    const sdks = (await fs.promises.readdir(sdkPath)).filter(f => f.endsWith('.sdk'));
+
+    if (!sdks.length) {
       console.error('Could not find an SDK to use for the NAN tests');
       process.exit(1);
     }
 
-    if (sdks.length) {
-      console.warn(`Multiple SDKs found in the xcode_links directory - using ${sdkToUse}`);
+    const sdkToUse = sdks.sort((a, b) => {
+      const getVer = s => s.match(/(\d+)\.?(\d*)/)?.[0] || '0';
+      return getVer(b).localeCompare(getVer(a), undefined, { numeric: true });
+    })[0];
+
+    if (sdks.length > 1) {
+      console.warn(`Multiple SDKs found - using ${sdkToUse}`);
     }
 
-    platformFlags.push(
-      `-isysroot ${path.resolve(sdkPath, sdkToUse)}`
-    );
+    platformFlags.push(`-isysroot ${path.resolve(sdkPath, sdkToUse)}`);
   }
 
   // TODO(ckerr) this is cribbed from read obj/electron/electron_app.ninja.
