@@ -10,6 +10,9 @@ v8_embedder_string = "-electron.0"
 # TODO: this breaks mksnapshot
 v8_enable_snapshot_native_code_counters = false
 
+# TODO: remove once https://issues.chromium.org/issues/416540976 is resolved
+v8_enable_temporal_support = false
+
 # we use this api
 v8_enable_javascript_promise_hooks = true
 
