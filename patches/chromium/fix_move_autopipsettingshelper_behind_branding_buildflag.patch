@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 90346363cee2eced7f3494bb96586db963ea525d..107ccf9704861a0f91b360381f95ba99ac6b1df9 100644
+index fdafa0e29577106277ca95a6389e3d3c29aba53b..11f7ab5870e8d3dd3efbc8e8a829c26153eec024 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -20,7 +20,7 @@ index 90346363cee2eced7f3494bb96586db963ea525d..107ccf9704861a0f91b360381f95ba99
  #include "chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/ui/browser_navigator_params.h"
-@@ -27,7 +28,9 @@
+@@ -28,7 +29,9 @@
  #include "base/task/sequenced_task_runner.h"
  // TODO(crbug.com/421608904): include auto_picture_in_picture_tab_helper for
  // Android.
@@ -30,7 +30,7 @@ index 90346363cee2eced7f3494bb96586db963ea525d..107ccf9704861a0f91b360381f95ba99
  #include "chrome/browser/picture_in_picture/picture_in_picture_window.h"
  #include "media/base/media_switches.h"
  #include "net/base/url_util.h"
-@@ -62,6 +65,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
+@@ -63,6 +66,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
  // `kMaxWindowSizeRatio`.
  constexpr double kMaxSiteRequestedWindowSizeRatio = 0.25;
  
@@ -38,7 +38,7 @@ index 90346363cee2eced7f3494bb96586db963ea525d..107ccf9704861a0f91b360381f95ba99
  // Returns true if a document picture-in-picture window should be focused upon
  // opening it.
  bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -78,6 +82,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
+@@ -79,6 +83,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
    // AutoPictureInPictureTabHelper.
    return !auto_picture_in_picture_tab_helper->IsInAutoPictureInPicture();
  }
@@ -46,7 +46,7 @@ index 90346363cee2eced7f3494bb96586db963ea525d..107ccf9704861a0f91b360381f95ba99
  
  // Returns the maximum area in pixels that the site can request a
  // picture-in-picture window to be.
-@@ -215,7 +220,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -216,7 +221,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -55,7 +55,7 @@ index 90346363cee2eced7f3494bb96586db963ea525d..107ccf9704861a0f91b360381f95ba99
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -546,7 +551,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -547,7 +552,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -64,7 +64,7 @@ index 90346363cee2eced7f3494bb96586db963ea525d..107ccf9704861a0f91b360381f95ba99
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action = ShouldFocusPictureInPictureWindow(params)
-@@ -646,6 +651,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -648,6 +653,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -72,7 +72,7 @@ index 90346363cee2eced7f3494bb96586db963ea525d..107ccf9704861a0f91b360381f95ba99
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -684,6 +690,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -686,6 +692,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
