@@ -6996,7 +6996,7 @@ describe('BrowserWindow module', () => {
         }
         const prefsContent = fs.readFileSync(preferencesPath, 'utf8');
         const prefs = JSON.parse(prefsContent);
-        return prefs?.electron?.window_states?.[stateId] || null;
+        return prefs?.windowStates?.[stateId] || null;
       };
 
       // Clean up before each test

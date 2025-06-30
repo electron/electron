@@ -36,7 +36,7 @@ inline constexpr std::string_view kWorkAreaTop = "workAreaTop";
 inline constexpr std::string_view kWorkAreaRight = "workAreaRight";
 inline constexpr std::string_view kWorkAreaBottom = "workAreaBottom";
 
-inline constexpr std::string_view kWindowStates = "electron.window_states";
+inline constexpr std::string_view kWindowStates = "windowStates";
 
 inline constexpr base::cstring_view kRunAsNode = "ELECTRON_RUN_AS_NODE";
 
