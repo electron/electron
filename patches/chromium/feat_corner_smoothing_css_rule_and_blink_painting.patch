@@ -75,7 +75,7 @@ index f8361faf6151210d65a597562c533aaa0a5235df..328238c34a9381fbbeb5970af3de721c
    // used for canvas noising.
    uint64 canvas_noise_token = 0;
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-index 4f446fbb203116cfeb40775a8581ed31e7ca1bc2..f5216e150893b1713603797869e1f97b8d6e5e34 100644
+index 5ea2484699e4c7205cbbe7e2c1a4683b6b0ce79e..e70d8898e35f5068dafbee67538999b587043fc6 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 +++ b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 @@ -48,6 +48,7 @@ enum CSSSampleId {
@@ -112,10 +112,10 @@ index b676bfa20ea69286b845776218cb38cd53747dfb..9a548b1c7b9aa030defbc9a0a95f1631
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 31e47569dd8cb2e23075ae22a1df06879f1bf307..94880bf2ce219cec2cd3983b47795c74a381faa9 100644
+index 1591fbb36a38834990af80056398539a8dea4f1d..47b3d5c70d7ac08981f46b08ff63a04415964a13 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8970,6 +8970,24 @@
+@@ -8907,6 +8907,24 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -141,7 +141,7 @@ index 31e47569dd8cb2e23075ae22a1df06879f1bf307..94880bf2ce219cec2cd3983b47795c74
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index 6a4fd370431e6d500613bad3e89a7accd5807bcc..be031bb29580d1e22b869ebbc8067a501e4e23bd 100644
+index aa88f3b6fe31087d35fbe71a02372c7b279c8130..607dbbee1f280e18528e4f4f385401ab22aaf64a 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
 @@ -348,6 +348,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
@@ -154,10 +154,10 @@ index 6a4fd370431e6d500613bad3e89a7accd5807bcc..be031bb29580d1e22b869ebbc8067a50
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 70443bdb44feaa04503b37cf386f15076cc4f417..4a3236899aef3617cf8460a51b568038a6fa032d 100644
+index 2b12c5c399693a9301c4dedf60073ff9cdfc134f..ad846c35b0fa941e745c0efbdb0cf9679ddf3cea 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12200,5 +12200,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12103,5 +12103,25 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -184,11 +184,11 @@ index 70443bdb44feaa04503b37cf386f15076cc4f417..4a3236899aef3617cf8460a51b568038
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index cc37a18790398ec8076c3f9c520ade59e0ef28f5..ef805e4cc432acb7a326c89a72b9170f555ec273 100644
+index f6f0153b2677d42af3ffc0f50c8b124901f7b15b..eced04a2eab45ad3d735fc53153cc29b6c9d8c0f 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -3928,6 +3928,15 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
-   return PositionArea(span[0], span[1], span[2], span[3]);
+@@ -3951,6 +3951,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
+   return PositionTryFallback(scoped_name, tactic_list);
  }
  
 +Length StyleBuilderConverter::ConvertCornerSmoothing(StyleResolverState& state,
@@ -204,13 +204,13 @@ index cc37a18790398ec8076c3f9c520ade59e0ef28f5..ef805e4cc432acb7a326c89a72b9170f
                                                const CSSValue& value) {
    const auto& list = To<CSSValueList>(value);
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index 7104b5866a9bac0cdd26518eddcf80322280ad92..8c1140d107a3144cd8d067577f355647ae8377d9 100644
+index 26cc0ef0f775d5b4ca893747fef5b2bb39a0a943..e20d8be8e884c4c089bf2720a8d4106c1967e615 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -421,6 +421,7 @@ class StyleBuilderConverter {
-                                                  const CSSValue&);
- 
-   static PositionArea ConvertPositionArea(StyleResolverState&, const CSSValue&);
+@@ -424,6 +424,7 @@ class StyleBuilderConverter {
+   static PositionTryFallback ConvertSinglePositionTryFallback(
+       StyleResolverState&,
+       const CSSValue&);
 +  static Length ConvertCornerSmoothing(StyleResolverState&, const CSSValue&);
    static FitText ConvertFitText(StyleResolverState&, const CSSValue&);
  };
@@ -309,7 +309,7 @@ index ec80337fdac36fa1636f5142c3827d3bbc81644c..634db12dfb443acabde79e9faf59cb84
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 65f405e696dcd6783c84815622d3cc2039057c7e..dd245d0f1215689badebf2ec78f50f7550aa2e9e 100644
+index a600d92a19e1be2f9732f87fe2753434afcd23a8..e5961355f9270af406fcb91b78708da13cce2e6f 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1650,6 +1650,8 @@ component("platform") {
@@ -322,7 +322,7 @@ index 65f405e696dcd6783c84815622d3cc2039057c7e..dd245d0f1215689badebf2ec78f50f75
  
    sources -= blink_platform_avx_files
 diff --git a/third_party/blink/renderer/platform/geometry/contoured_rect.h b/third_party/blink/renderer/platform/geometry/contoured_rect.h
-index 91ef1abd839903ba50993de74d923d913630d93f..8b57db91e5ac66f2a7ca84f76c82cab7e5963022 100644
+index 591dee90a2565d9869ab26a370854058dc967e3d..7a52cfa51f48c77bacb5c7356f7897116dfe959b 100644
 --- a/third_party/blink/renderer/platform/geometry/contoured_rect.h
 +++ b/third_party/blink/renderer/platform/geometry/contoured_rect.h
 @@ -52,19 +52,29 @@ class PLATFORM_EXPORT ContouredRect {
@@ -375,7 +375,7 @@ index 91ef1abd839903ba50993de74d923d913630d93f..8b57db91e5ac66f2a7ca84f76c82cab7
  
    // A Corner is a axis-aligned quad, with the points ordered (start, outer,
 diff --git a/third_party/blink/renderer/platform/geometry/path_builder.cc b/third_party/blink/renderer/platform/geometry/path_builder.cc
-index 1056b133bc5270dd1da0935eb16a4f17a24dabab..22e52b722b8daa6b6f05496908bea09bab7831c9 100644
+index a245bd97555446bb5959295fe37bfe495cd4fb74..4a3fee5ed3335288c31cb6977565c4a99cb81114 100644
 --- a/third_party/blink/renderer/platform/geometry/path_builder.cc
 +++ b/third_party/blink/renderer/platform/geometry/path_builder.cc
 @@ -4,6 +4,7 @@

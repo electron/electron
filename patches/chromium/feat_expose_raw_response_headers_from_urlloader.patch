@@ -112,7 +112,7 @@ index c1774435cf594b5b3c07a60d11c379c61a828dec..4a59df2ce679c9af10b0e3bf630d615b
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index bc90824d74ce6044d16805f9b8267af859505ce4..8cc9fba9518227e32d6c4d4b0c431d32b2c38b9a 100644
+index d4363003c4119604255c42333bd25ec2b6a81cd5..a2f069acc2b26c3ec514023ef676e315f0160a37 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -389,6 +389,9 @@ URLLoader::URLLoader(
@@ -134,7 +134,7 @@ index bc90824d74ce6044d16805f9b8267af859505ce4..8cc9fba9518227e32d6c4d4b0c431d32
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1134,6 +1137,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1132,6 +1135,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -155,15 +155,15 @@ index bc90824d74ce6044d16805f9b8267af859505ce4..8cc9fba9518227e32d6c4d4b0c431d32
  
    ad_auction_event_record_request_helper_.HandleResponse(
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 72fef9f62efcf3b1b1a069082caad3adcba8e7b3..3e4ba2e966abbb5b8dfb3bb2db0f98107336434d 100644
+index 99ac2f1963fd78c04b8ce8f35e4e58fe6eac8f5d..7e843177ed385869ab8f0231ca282f6decd32a51 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -613,6 +613,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -617,6 +617,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  
 +  // Whether client requested raw headers.
 +  bool report_raw_headers_ = false;
-   bool enable_reporting_raw_headers_ = false;
-   bool seen_raw_request_headers_ = false;
-   // Used for metrics.
+   scoped_refptr<const net::HttpResponseHeaders> raw_response_headers_;
+ 
+   std::unique_ptr<UploadProgressTracker> upload_progress_tracker_;
