@@ -142,6 +142,8 @@ static_library("chrome") {
     "//chrome/browser/ui/views/overlay/toggle_camera_button.h",
     "//chrome/browser/ui/views/overlay/toggle_microphone_button.cc",
     "//chrome/browser/ui/views/overlay/toggle_microphone_button.h",
+    "//chrome/browser/ui/views/overlay/video_overlay_window_native_widget_mac.h",
+    "//chrome/browser/ui/views/overlay/video_overlay_window_native_widget_mac.mm",
     "//chrome/browser/ui/views/overlay/video_overlay_window_views.cc",
     "//chrome/browser/ui/views/overlay/video_overlay_window_views.h",
     "//chrome/browser/ui/views/picture_in_picture/picture_in_picture_bounds_change_animation.cc",
