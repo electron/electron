@@ -1695,28 +1695,28 @@ void NativeWindowMac::Cleanup() {
   [window_ cleanup];
 }
 
-class NativeAppWindowFrameViewMac : public views::NativeFrameViewMac {
+class NativeAppWindowFrameViewMacClient
+    : public views::NativeFrameViewMacClient {
  public:
-  NativeAppWindowFrameViewMac(views::Widget* frame, NativeWindowMac* window)
-      : views::NativeFrameViewMac(frame), native_window_(window) {}
+  NativeAppWindowFrameViewMacClient(views::Widget* frame,
+                                    NativeWindowMac* window)
+      : frame_(frame), native_app_window_(window) {}
 
-  NativeAppWindowFrameViewMac(const NativeAppWindowFrameViewMac&) = delete;
-  NativeAppWindowFrameViewMac& operator=(const NativeAppWindowFrameViewMac&) =
+  NativeAppWindowFrameViewMacClient(const NativeAppWindowFrameViewMacClient&) =
       delete;
+  NativeAppWindowFrameViewMacClient& operator=(
+      const NativeAppWindowFrameViewMacClient&) = delete;
 
-  ~NativeAppWindowFrameViewMac() override = default;
+  ~NativeAppWindowFrameViewMacClient() override = default;
 
-  // NonClientFrameView:
-  int NonClientHitTest(const gfx::Point& point) override {
-    if (!bounds().Contains(point))
-      return HTNOWHERE;
-
-    if (GetWidget()->IsFullscreen())
+  std::optional<int> NonClientHitTest(const gfx::Point& point) override {
+    if (frame_->IsFullscreen()) {
       return HTCLIENT;
+    }
 
     // Check for possible draggable region in the client area for the frameless
     // window.
-    int contents_hit_test = native_window_->NonClientHitTest(point);
+    int contents_hit_test = native_app_window_->NonClientHitTest(point);
     if (contents_hit_test != HTNOWHERE)
       return contents_hit_test;
 
@@ -1724,13 +1724,19 @@ class NativeAppWindowFrameViewMac : public views::NativeFrameViewMac {
   }
 
  private:
-  // Weak.
-  raw_ptr<NativeWindowMac> const native_window_;
+  const raw_ptr<views::Widget> frame_;
+  // Weak. Owned by extensions::AppWindow (which manages our Widget via its
+  // WebContents).
+  const raw_ptr<NativeWindowMac, DanglingUntriaged> native_app_window_;
 };
 
 std::unique_ptr<views::NonClientFrameView>
 NativeWindowMac::CreateNonClientFrameView(views::Widget* widget) {
-  return std::make_unique<NativeAppWindowFrameViewMac>(widget, this);
+  CHECK(!frame_view_client_);
+  frame_view_client_ =
+      std::make_unique<NativeAppWindowFrameViewMacClient>(widget, this);
+  return std::make_unique<views::NativeFrameViewMac>(widget,
+                                                     frame_view_client_.get());
 }
 
 bool NativeWindowMac::HasStyleMask(NSUInteger flag) const {

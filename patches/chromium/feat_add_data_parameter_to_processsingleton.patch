@@ -180,7 +180,7 @@ index 08cbe32a258bf478f1da0a07064d3e9ef14c44a5..b9f2a43cb90fac4b031a4b4da38d6435
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index d91f58ebe3a024bc41ed72121c49172f68e0d862..7b85ba5ed8d0c2a152899ad65f275e6680a93dba 100644
+index 64ebf49c0d1b6396d1cfbe3bf91480f61b47688d..bec94d4039379400ae8b00f1adbbb16a02ccbac0 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -81,10 +81,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
@@ -262,7 +262,7 @@ index d91f58ebe3a024bc41ed72121c49172f68e0d862..7b85ba5ed8d0c2a152899ad65f275e66
        return PROCESS_NOTIFIED;
      case NotifyChromeResult::NOTIFY_FAILED:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index 019ac7e93e009a713ce56ee8bcacf467b4fe769d..283693966c041340983aa78a95f8a274db601fb4 100644
+index 6e6ba54cd2920f867d4ab82bee210f5dfcd6a63d..a8073888a3894ecf22a3f651697217b622a8eed0 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
 @@ -39,7 +39,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {

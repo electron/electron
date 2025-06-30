@@ -61,7 +61,7 @@ index f606d2a058ed9ebf86b5f020b6897be718a40b68..003e95ca8bb6364fb6b937871b2c78b9
                                               ? SkColorSetRGB(0x99, 0xC8, 0xFF)
                                               : SkColorSetRGB(0x00, 0x75, 0xFF)};
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index 075e91f94be217ce9bbd85450ff652efd9685af1..b68bb0c442919fc09ef19f8a68dfc2456d4edaef 100644
+index ebc3156ef1df8bfc9bc6e20ddddea4a0259e17e9..c5cbe13ad241564ecdef320de8a10112cda4cdfc 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
 @@ -171,6 +171,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
