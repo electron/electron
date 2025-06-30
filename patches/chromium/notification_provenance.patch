@@ -7,10 +7,10 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index e6d1155b59903b6b28cdd0a2a7403bf7c9a97b6d..16b045f633212b4140eda5ff6368e59353e901f0 100644
+index 1f1997967691cb8d712ff3b604e24f77b5ad357c..aca2866f34b8ba9c66074767a14a62f886ba6ed7 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
-@@ -247,6 +247,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
+@@ -252,6 +252,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
  
  // TODO(awdf): Rename to DisplayNonPersistentNotification (Similar for Close)
  void PlatformNotificationServiceImpl::DisplayNotification(

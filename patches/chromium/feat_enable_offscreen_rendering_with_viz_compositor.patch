@@ -8,10 +8,10 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index b84296cc7e3bb9b7d3e10e476b14a59cf57bbc41..a5c79026c44b4f2c49e322fb53d1a263e76c632b 100644
+index aed835411f5728c5685baa43eda2dd1585119b18..0e66085b1c457c1f1f6be241c7d331d735e15942 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
-@@ -48,9 +48,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
+@@ -49,9 +49,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
  }
  #endif
  
@@ -22,7 +22,7 @@ index b84296cc7e3bb9b7d3e10e476b14a59cf57bbc41..a5c79026c44b4f2c49e322fb53d1a263
    if (!NeedsToUseLayerWindow(widget_)) {
      DLOG(ERROR) << "HWND shouldn't be using a layered window";
      return;
-@@ -58,7 +58,15 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
+@@ -59,7 +59,15 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
  
    layered_window_updater_ =
        std::make_unique<LayeredWindowUpdaterImpl>(widget_, std::move(receiver));
@@ -522,10 +522,10 @@ index f0aca972c4a81c3dfb536e14244daafae21ee716..a15afbc1a3519e657121b4952444d2f4
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index e3c3ce2be6439925a31663ec1481fc7413ebc7b4..3a24cb60cdd15dd886d6ab9c761b18c439ee6494 100644
+index 34c4fa2395bad921cde5cb550f769e802b69412a..d8749b0ac72f3a1fcc3842eb1a97110a491a9e78 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -130,7 +130,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -131,7 +131,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
@@ -620,7 +620,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 0470e2804140242ddff32673c2c5836c7871440c..696341ba5acac59e2b856bc98191acc3cd1b367b 100644
+index f1a4674323d96bc6a1a291b0aaa4c2a35b20648e..682b23f083eff17bc36cdc4698e35d853beb90cc 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -87,6 +87,7 @@ class DisplayPrivate;

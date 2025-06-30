@@ -58,10 +58,10 @@ index 6c36ada80f6f225b84a8f3832405128f8ba83224..714d582d1060873765b24770b18eddcb
        NOTREACHED();
    }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 6886f5764a87dd8b41746969745e80c82b69430b..cb39508717b9ebdd30470f6d7fd7e8626cc65948 100644
+index 4dd8b8d4498cbe00b5739f620037ebe6915b6033..2d7d9e96522208835a867e0be12df4da56141ab1 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -101,6 +101,8 @@ std::string GetPermissionString(PermissionType permission) {
+@@ -102,6 +102,8 @@ std::string GetPermissionString(PermissionType permission) {
        return "WebAppInstallation";
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return "LocalNetworkAccess";
@@ -70,7 +70,7 @@ index 6886f5764a87dd8b41746969745e80c82b69430b..cb39508717b9ebdd30470f6d7fd7e862
      case PermissionType::NUM:
        NOTREACHED();
    }
-@@ -175,6 +177,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+@@ -176,6 +178,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:

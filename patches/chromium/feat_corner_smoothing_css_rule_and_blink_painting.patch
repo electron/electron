@@ -75,7 +75,7 @@ index f8361faf6151210d65a597562c533aaa0a5235df..328238c34a9381fbbeb5970af3de721c
    // used for canvas noising.
    uint64 canvas_noise_token = 0;
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-index d10c87dc044297e805be59d46f75f5209adaf16a..9da61f898c5cc20786ab7ab5096513593ea53e76 100644
+index 64614291499d720303565b15a494f35b7f8291c3..b84e3e0737472a4332402bf9528cabf12dfa47d7 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 +++ b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 @@ -48,6 +48,7 @@ enum CSSSampleId {
@@ -112,10 +112,10 @@ index bc33eaeaff56b3f0e12d87e078e329c35ff4ecb2..bf970892ea846e9e48bf01f9151cb3de
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 5dde23ce59a00523c7c953750104637eccb10e1b..7c8b0487ebad94ffdfa9d06854069306f439d006 100644
+index 21e3d8c814a80e1b99475322b95a617c765a1cc7..acbab82d5106a29a8abfe73f9ab29451f5903417 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -8904,6 +8904,24 @@
+@@ -8918,6 +8918,24 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -141,7 +141,7 @@ index 5dde23ce59a00523c7c953750104637eccb10e1b..7c8b0487ebad94ffdfa9d06854069306
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index b1cd205b51756d752549411f5bdd10cb920b42e9..a29f4d971bddf54b48bf0607fb592f85a13985ab 100644
+index 53146d929cab98cd1634cd8f4c8efe6b79d890da..d25c64389cf4563376cc0fe982880dbf1079017c 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
 @@ -348,6 +348,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
