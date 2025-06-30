@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Mon, 30 Jun 2025 15:42:23 -0700
+Subject: build: respect SDKROOT when finding local macOS SDK
+
+By design xcode-select only outputs the location of xcode, whereas clang, xcodebuild, and other tools will respect SDKROOT when actually resolving the macOS SDK to use.
+
+This retains current logic but augments it with an additional `xcrun --show-sdk-path` which fails open (if it fails we ignore it) to find any SDK that is being configured via the SDKROOT variable. This allows us to use _any_ version of xcode while separately providing an absolute path to the correct SDK via the SDKROOT environment variable.
+
+Change-Id: I72b7ab557e107e7fd34968eaeaf24fb0705a9bbc
+
+diff --git a/build/mac/find_sdk.py b/build/mac/find_sdk.py
+index 3dcc4d5d36bf693cfabef963f0c544842f00a298..00ad92130b96b8f0c9998d2355aa845c197f6747 100755
+--- a/build/mac/find_sdk.py
++++ b/build/mac/find_sdk.py
+@@ -38,9 +38,19 @@ class SdkError(Exception):
+     return repr(self.value)
+ 
+ 
+-def parse_version(version_str):
+-  """'10.6' => [10, 6]"""
+-  return [int(s) for s in re.findall(r'(\d+)', version_str)]
++def get_version_from_sdk(sdk_path):
++  system_version_plist = os.path.join(
++      sdk_path, 'System/Library/CoreServices/SystemVersion.plist')
++  with open(system_version_plist, 'rb') as f:
++    system_version_info = plistlib.load(f)
++    if 'ProductVersion' not in system_version_info:
++      return None
++    components = system_version_info['ProductVersion'].split('.')
++    # We're expecting to see X.Y here as an SDK version, anything different
++    # and we bail
++    if len(components) != 2:
++      return None
++    return [int(s) for s in components]
+ 
+ 
+ def main():
+@@ -57,18 +67,43 @@ def main():
+   options, args = parser.parse_args()
+   if len(args) != 1:
+     parser.error('Please specify a minimum SDK version')
+-  min_sdk_version = args[0]
+-
+-
+-  job = subprocess.Popen(['xcode-select', '-print-path'],
+-                         stdout=subprocess.PIPE,
+-                         stderr=subprocess.STDOUT)
+-  out, err = job.communicate()
+-  if job.returncode != 0:
+-    print(out, file=sys.stderr)
+-    print(err, file=sys.stderr)
+-    raise Exception('Error %d running xcode-select' % job.returncode)
+-  dev_dir = out.decode('UTF-8').rstrip()
++  min_sdk_version = [int(s) for s in args[0].split('.')]
++  if len(min_sdk_version) != 2:
++    raise Exception(
++        'Provided min_sdk_version does not match the expected X.Y pattern: %s',
++        args[0])
++
++  sdks = []
++  # xcrun --show-sdk-path is the preferred way to get the SDK path as it
++  # respects system standard SDKROOT.
++  xcrun_result = subprocess.run(['xcrun', '--show-sdk-path'],
++                                capture_output=True,
++                                encoding="utf-8")
++  if xcrun_result.returncode != 0:
++    print(xcrun_result.stdout, file=sys.stderr)
++    print(xcrun_result.stderr, file=sys.stderr)
++    raise Exception('Error %d running xcrun --show-sdk-path' %
++                    xcrun_result.returncode)
++
++  xcrun_sdk_path = xcrun_result.stdout.rstrip()
++  if os.path.isdir(xcrun_sdk_path):
++    # If xcrun succeeded, we can use it to get the SDK path, otherwise
++    # we can just ignore it and fallback to xcode-select.
++    sdks.append(xcrun_sdk_path)
++
++  # To maintain backwards compatibility
++  # we still scan the xcode developer directory path too.
++  xcode_select_result = subprocess.run(['xcode-select', '-print-path'],
++                                       capture_output=True,
++                                       encoding="utf-8")
++
++  if xcode_select_result.returncode != 0:
++    print(xcode_select_result.stdout, file=sys.stderr)
++    print(xcode_select_result.stderr, file=sys.stderr)
++    raise Exception('Error %d running xcode-select' %
++                    xcode_select_result.returncode)
++
++  dev_dir = xcode_select_result.stdout.rstrip()
+   sdk_dir = os.path.join(
+       dev_dir, 'Platforms/MacOSX.platform/Developer/SDKs')
+ 
+@@ -76,15 +111,24 @@ def main():
+     raise SdkError('Install Xcode, launch it, accept the license ' +
+       'agreement, and run `sudo xcode-select -s /path/to/Xcode.app` ' +
+       'to continue.')
+-  sdks = [re.findall('^MacOSX(\d+\.\d+)\.sdk$', s) for s in os.listdir(sdk_dir)]
+-  sdks = [s[0] for s in sdks if s]  # [['10.5'], ['10.6']] => ['10.5', '10.6']
+-  sdks = [s for s in sdks  # ['10.5', '10.6'] => ['10.6']
+-          if parse_version(s) >= parse_version(min_sdk_version)]
++
++  # Scan the developer directory and find every folder that
++  # looks like a macOS SDK
++  sdks.extend([
++      os.path.join(sdk_dir, s) for s in os.listdir(sdk_dir)
++      if re.match(r'^MacOSX(\d+\.\d+)\.sdk$', s)
++  ])
++
++  # Filter out folders that are not valid SDKs
++  sdks = [s for s in sdks if get_version_from_sdk(s) is not None]
++
++  # Filter out SDKs that are not a high enough version
++  sdks = [s for s in sdks if get_version_from_sdk(s) >= min_sdk_version]
++
+   if not sdks:
+-    raise Exception('No %s+ SDK found' % min_sdk_version)
+-  best_sdk = sorted(sdks, key=parse_version)[0]
+-  sdk_name = 'MacOSX' + best_sdk + '.sdk'
+-  sdk_path = os.path.join(sdk_dir, sdk_name)
++    raise Exception('No %s+ SDK found' % args[0])
++  sdk_path = sorted(sdks, key=get_version_from_sdk)[0]
++  best_sdk = '.'.join([str(s) for s in get_version_from_sdk(sdk_path)])
+ 
+   if options.print_sdk_path:
+     print(sdk_path)
