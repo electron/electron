@@ -836,13 +836,13 @@ bool NativeWindow::IsTranslucent() const {
   return false;
 }
 
-void NativeWindow::SaveWindowState() {
+void NativeWindow::DebouncedSaveWindowState() {
   save_window_state_timer_.Start(
       FROM_HERE, base::Milliseconds(200),
-      base::BindOnce(&NativeWindow::DoSaveWindowState, base::Unretained(this)));
+      base::BindOnce(&NativeWindow::SaveWindowState, base::Unretained(this)));
 }
 
-void NativeWindow::DoSaveWindowState() {
+void NativeWindow::SaveWindowState() {
   if (!prefs_ || window_state_id_.empty())
     return;
 

@@ -178,7 +178,7 @@ void BaseWindow::OnWindowClosed() {
   // We can not call Destroy here because we need to call Emit first, but we
   // also do not want any method to be used, so just mark as destroyed here.
   MarkDestroyed();
-  window_->DoSaveWindowState();
+  window_->SaveWindowState();
   Emit("closed");
 
   RemoveFromParentChildWindows();
@@ -267,7 +267,7 @@ void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
 }
 
 void BaseWindow::OnWindowResize() {
-  window_->SaveWindowState();
+  window_->DebouncedSaveWindowState();
   Emit("resize");
 }
 
@@ -283,7 +283,7 @@ void BaseWindow::OnWindowWillMove(const gfx::Rect& new_bounds,
 }
 
 void BaseWindow::OnWindowMove() {
-  window_->SaveWindowState();
+  window_->DebouncedSaveWindowState();
   Emit("move");
 }
 

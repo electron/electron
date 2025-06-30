@@ -427,8 +427,13 @@ class NativeWindow : public base::SupportsUserData,
   // throttling, then throttling in the `ui::Compositor` will be disabled.
   void UpdateBackgroundThrottlingState();
 
+  // Saves current window state to the Local State JSON file in
+  // app.getPath('userData') via PrefService.
+  // This does NOT immediately write to disk - it updates the in-memory
+  // preference store and queues an asynchronous write operation. The actual
+  // disk write is batched and flushed later.
   void SaveWindowState();
-  void DoSaveWindowState();
+  void DebouncedSaveWindowState();
 
  protected:
   friend class api::BrowserView;
