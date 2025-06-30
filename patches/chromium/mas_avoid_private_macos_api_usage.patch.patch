@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 17963f87b8bea4073066c7e78eaaa5ffdfb07d0e..7457549d644cf926c71d117e4ddc98a5e6a0acdc 100644
+index f73ed42f84ca486bc0f103370823dbaa14afa35f..14c923fe4239fd98aaa7e5cfcb301c3fa88f74cc 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1047,6 +1047,7 @@ component("base") {
@@ -582,7 +582,7 @@ index 8563eb9aa5b5dca04e45d55a3bdd32a135232f00..587bafc4fa1f73c9ac8403757b21bfed
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index de41df34b64c4a74eb79557b2541db165bff8ad0..8db5717055ed9eb979967495b23f098171bb417a 100644
+index e84b970df4f38580f999d3c11ff9db3304fb8e5d..55890a38b5d3a08d240ee42ac51ef33d2538fb2a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -341,6 +341,7 @@ source_set("browser") {
@@ -703,10 +703,10 @@ index e38279e46d8fe621db24b4d94f5811459b4ca6b5..26592c97be3474a24f294d3cf2e74627
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index dbf1eacd02c21e78e450e008bd4cb0e43685f699..fb518fbc3ddb7c707f5c655fe6c5a960070a76ea 100644
+index f0a6a88e72dda05656d987fdf7676571f4d05d8c..fa6510d2dcda2dd4691db6362427d284a84598b8 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -282,6 +282,7 @@ source_set("common") {
+@@ -278,6 +278,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -715,7 +715,7 @@ index dbf1eacd02c21e78e450e008bd4cb0e43685f699..fb518fbc3ddb7c707f5c655fe6c5a960
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 11746ecfd78d4e87ec6bc1816a89405b158dd44d..8dc194d71638b1b7dad4d2a0bef46cf1cbad8ad9 100644
+index c5a9054a7b5352602d3fd57df34f63a35b4a0bb5..3ece58548ea0d2f9cb4ab4593e487b2e94755668 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -320,6 +320,7 @@ target(link_target_type, "renderer") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 76e9ac745ea4fd4d6491a9167f2075bf64a9975b..b74d104912dc6d559862df62d990116204eefe4c 100644
+index c4dc3e7c7aafcadbe840f7f641ad95f772cf5cd1..a22d4279a578b3247c9835214c51bab84566b10b 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -667,6 +667,7 @@ static_library("test_support") {
@@ -808,7 +808,7 @@ index 76e9ac745ea4fd4d6491a9167f2075bf64a9975b..b74d104912dc6d559862df62d9901162
    ]
  
    data_deps = [
-@@ -1126,6 +1127,7 @@ static_library("browsertest_support") {
+@@ -1109,6 +1110,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -816,7 +816,7 @@ index 76e9ac745ea4fd4d6491a9167f2075bf64a9975b..b74d104912dc6d559862df62d9901162
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1992,6 +1994,7 @@ test("content_browsertests") {
+@@ -1975,6 +1977,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 76e9ac745ea4fd4d6491a9167f2075bf64a9975b..b74d104912dc6d559862df62d9901162
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3324,6 +3327,7 @@ test("content_unittests") {
+@@ -3276,6 +3279,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -833,17 +833,17 @@ index 76e9ac745ea4fd4d6491a9167f2075bf64a9975b..b74d104912dc6d559862df62d9901162
  
    if (enable_nocompile_tests) {
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 80c0fc9ddd50af37625f52ef9700a6a77de6eeb9..beb18b34231e6e68c77e47c1033881a7c0f4c1bc 100644
+index bfc8f7a2b5bc7c54dbc0157d581bb556b7c7d7a7..888876d7f770588355d9de3c0faf8f8d24243b77 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
-@@ -231,6 +231,7 @@ static_library("web_test_browser") {
+@@ -229,6 +229,7 @@ static_library("web_test_browser") {
      "//ui/gl",
      "//ui/shell_dialogs:shell_dialogs",
      "//url",
 +    "//electron/build/config:generate_mas_config"
    ]
  
-   # TODO(crbug.com/40139469): Blink test plugin must be migrated from PPAPI.
+   if (is_mac) {
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
 index e69ef178a08ef322764809e6afeffa20ffc0cd13..d2e182ed0dad5aeecb48e5a39771880bd8fb408b 100644
 --- a/device/bluetooth/BUILD.gn
@@ -1122,10 +1122,10 @@ index ea1627bdd872f89056e97e486feb2d44587a894e..26f339e40bcbd8963585765e20e49955
  
  }  // namespace sandbox
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
-index 1960e1c8771fad615a098af09ff1f9a191f67764..29b97b352d08cd1fe73b17fd80cb41cc7e58dcaa 100644
+index 789439fc28f1764bd37f6aecfb2b25fc9417862c..e25cca7f617058ea92b321639712c72838c89555 100644
 --- a/sandbox/mac/seatbelt.cc
 +++ b/sandbox/mac/seatbelt.cc
-@@ -4,12 +4,14 @@
+@@ -4,6 +4,8 @@
  
  #include "sandbox/mac/seatbelt.h"
  
@@ -1134,6 +1134,8 @@ index 1960e1c8771fad615a098af09ff1f9a191f67764..29b97b352d08cd1fe73b17fd80cb41cc
  #include <errno.h>
  #include <unistd.h>
  
+@@ -11,7 +13,7 @@
+ 
  extern "C" {
  #include <sandbox.h>
 -
@@ -1141,7 +1143,7 @@ index 1960e1c8771fad615a098af09ff1f9a191f67764..29b97b352d08cd1fe73b17fd80cb41cc
  int sandbox_init_with_parameters(const char* profile,
                                   uint64_t flags,
                                   const char* const parameters[],
-@@ -40,13 +42,13 @@ sandbox_profile_t* sandbox_compile_string(const char* data,
+@@ -42,13 +44,13 @@ sandbox_profile_t* sandbox_compile_string(const char* data,
                                            char** error);
  int sandbox_apply(sandbox_profile_t*);
  void sandbox_free_profile(sandbox_profile_t*);
@@ -1157,7 +1159,7 @@ index 1960e1c8771fad615a098af09ff1f9a191f67764..29b97b352d08cd1fe73b17fd80cb41cc
  bool HandleSandboxResult(int rv, char* errorbuf, std::string* error) {
    if (rv == 0) {
      if (error)
-@@ -74,36 +76,48 @@ bool HandleSandboxErrno(int rv, const char* message, std::string* error) {
+@@ -76,36 +78,48 @@ bool HandleSandboxErrno(int rv, const char* message, std::string* error) {
    }
    return false;
  }
@@ -1207,7 +1209,7 @@ index 1960e1c8771fad615a098af09ff1f9a191f67764..29b97b352d08cd1fe73b17fd80cb41cc
  }
  
  // Initialize the static member variables.
-@@ -114,6 +128,7 @@ const char* Seatbelt::kProfilePureComputation = kSBXProfilePureComputation;
+@@ -116,6 +130,7 @@ const char* Seatbelt::kProfilePureComputation = kSBXProfilePureComputation;
  
  // static
  bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
@@ -1215,7 +1217,7 @@ index 1960e1c8771fad615a098af09ff1f9a191f67764..29b97b352d08cd1fe73b17fd80cb41cc
  // OS X deprecated these functions, but did not provide a suitable replacement,
  // so ignore the deprecation warning.
  #pragma clang diagnostic push
-@@ -122,6 +137,9 @@ bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
+@@ -124,6 +139,9 @@ bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
    int rv = ::sandbox_init(profile, flags, &errorbuf);
    return HandleSandboxResult(rv, errorbuf, error);
  #pragma clang diagnostic pop
@@ -1225,7 +1227,7 @@ index 1960e1c8771fad615a098af09ff1f9a191f67764..29b97b352d08cd1fe73b17fd80cb41cc
  }
  
  // static
-@@ -129,16 +147,21 @@ bool Seatbelt::InitWithParams(const std::string& profile,
+@@ -131,16 +149,21 @@ bool Seatbelt::InitWithParams(const std::string& profile,
                                uint64_t flags,
                                const std::vector<std::string>& parameters,
                                std::string* error) {
@@ -1247,7 +1249,7 @@ index 1960e1c8771fad615a098af09ff1f9a191f67764..29b97b352d08cd1fe73b17fd80cb41cc
  }
  
  // static
-@@ -146,6 +169,7 @@ bool Seatbelt::Compile(const char* profile,
+@@ -148,6 +171,7 @@ bool Seatbelt::Compile(const char* profile,
                         const Seatbelt::Parameters& params,
                         std::string& compiled_profile,
                         std::string* error) {
@@ -1255,7 +1257,7 @@ index 1960e1c8771fad615a098af09ff1f9a191f67764..29b97b352d08cd1fe73b17fd80cb41cc
    char* errorbuf = nullptr;
    sandbox_profile_t* sandbox_profile =
        ::sandbox_compile_string(profile, params.params(), &errorbuf);
-@@ -155,33 +179,44 @@ bool Seatbelt::Compile(const char* profile,
+@@ -157,33 +181,44 @@ bool Seatbelt::Compile(const char* profile,
    compiled_profile.assign(reinterpret_cast<const char*>(sandbox_profile->data),
                            sandbox_profile->size);
    ::sandbox_free_profile(sandbox_profile);
@@ -1404,7 +1406,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 89dbaa5f5a3aeb994c42bb1a8a8d581ff7eff85e..612b22ec11eb012aefa695aa2f02e44418ffc422 100644
+index 520d1d438e7fd85ba9faf482e4284b467f84f4c6..70c9d77a03f8355607571fe6594c34a7b3581f76 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -419,6 +419,7 @@ component("core") {
@@ -1816,7 +1818,7 @@ index 85d9170ae8de43ec0fa18c033d66c0583c26ec2f..c4f76301818404ce853583adf01af85c
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 0f403e2f5b3be54c5947e98fb8872fd1a59b3eb7..2ae71dc6a2325b3d60a427391678feb9b2eb3baf 100644
+index 34a39420e0f5a07fbc11ef9783baef1e8b33d279..98c19c206ee75ebc9f34b82e9615aff97dc22c8f 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -339,6 +339,12 @@ component("gfx") {
@@ -1871,10 +1873,10 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index a755b8c0aeab9daab1809395e3f65d45175b01f6..68e7d006badf072104afad166b9033bb610eafef 100644
+index 5db36a904d4db82d3597bc170d09e340ffa013a6..85e63e9d7d1071202af957238d34a51dfd587987 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -718,6 +718,8 @@ component("views") {
+@@ -722,6 +722,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1883,7 +1885,7 @@ index a755b8c0aeab9daab1809395e3f65d45175b01f6..68e7d006badf072104afad166b9033bb
    }
  
    if (is_win) {
-@@ -1147,6 +1149,8 @@ source_set("test_support") {
+@@ -1152,6 +1154,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
