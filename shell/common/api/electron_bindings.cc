@@ -179,7 +179,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 #if BUILDFLAG(IS_WIN)
       mem_info.avail_phys;
 #else
-      mem_info.free;
+      mem_info.free + mem_info.file_backed + mem_info.purgeable;
 #endif
   dict.Set("free", free.InKiB());
 
