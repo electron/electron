@@ -345,7 +345,7 @@ A complete list of flags exists in [Chromium's flag metadata page](https://sourc
 
 Keep in mind that standalone switches can sometimes be split into individual features, so there's no fully complete list of switches.
 
-Finally, you'll need to ensure make sure the version of Chromium in Electron matches the version of the browser you're using to cross-reference the switches.
+Finally, you'll need to ensure that the version of Chromium in Electron matches the version of the browser you're using to cross-reference the switches.
 
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value
