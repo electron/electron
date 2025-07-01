@@ -319,7 +319,7 @@ class NativeWindowViews : public NativeWindow,
   // Whether the window is currently being moved.
   bool is_moving_ = false;
 
-  std::variant<bool, SkColor> accent_color_ = true;
+  std::variant<std::monostate, bool, SkColor> accent_color_;
 
   std::optional<gfx::Rect> pending_bounds_change_;
 
