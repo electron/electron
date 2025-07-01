@@ -8,10 +8,10 @@ RBE cluster, but all of Electron's machines are
 large so we don't specify it.
 
 diff --git a/build/config/siso/clang_windows.star b/build/config/siso/clang_windows.star
-index 9f9ad122f69857675141f680b8a14c5467e60315..aaac423b653847b140dc3e20f4c6425c8913bee3 100644
+index f1deb0e0664d5abec1d17f3a6d3942a744c4e3e8..604fa50d7e54baa037146fcbd9996a345f67f351 100644
 --- a/build/config/siso/clang_windows.star
 +++ b/build/config/siso/clang_windows.star
-@@ -43,7 +43,6 @@ def __step_config(ctx, step_config):
+@@ -42,7 +42,6 @@ def __step_config(ctx, step_config):
          # no "action_large" Windows worker pool
          use_windows_worker = True
          if reproxy_config["platform"]["OSFamily"] != "Windows":
