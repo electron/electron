@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Tue, 1 Jul 2025 18:08:10 -0400
+Subject: build: add mswsock.h to siso win_sdk
+
+This header is needed for Node as deps/uv/include/uv/win.h
+includes it.
+
+diff --git a/build/config/siso/win_sdk.star b/build/config/siso/win_sdk.star
+index 199929aca3d6079f7dc5f9616a6cdf7de46df098..6ae95ccf00b0d53ad9f4eaf7c469261dabc4723c 100644
+--- a/build/config/siso/win_sdk.star
++++ b/build/config/siso/win_sdk.star
+@@ -267,6 +267,8 @@ def __step_config(ctx, step_config):
+             # third_party/angle/src/libANGLE/renderer/d3d/d3d11/converged/CompositorNativeWindow11.h
+             # includes dispatcherqueue.h
+             path.join(win_toolchain_dir, "Windows Kits/10/Include", sdk_version, "um/dispatcherqueue.h"),
++            # third_party/electron_node/deps/uv/include/uv/win.h includes mswsock.h
++            path.join(win_toolchain_dir, "Windows Kits/10/Include", sdk_version, "um/mswsock.h"),
+         ])
+ 
+         def __extend_libs_for_case_varients(libs, cpu):

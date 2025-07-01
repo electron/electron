@@ -139,3 +139,4 @@ build_set_mac_sdk_minimum_to_10.patch
 partitionalloc_use_fewer_vmas_by_default_on_linux_systems.patch
 build_don_t_use_large_for_clang_on_windows.patch
 build_update_siso-chromium_image.patch
+build_add_mswsock_h_to_siso_win_sdk.patch
