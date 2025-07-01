@@ -504,15 +504,17 @@ source_set("chrome_spellchecker") {
   ]
 }
 
-# These sources create an object file conflict with one in |:chrome|, so they
-# must live in a separate target.
-# Conflicting sources:
-#   //chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm
-#   //chrome/browser/permissions/system/system_media_capture_permissions_mac.mm
-source_set("system_media_capture_permissions_mac_conflict") {
-  sources = [
-    "//chrome/browser/permissions/system/system_media_capture_permissions_mac.h",
-    "//chrome/browser/permissions/system/system_media_capture_permissions_mac.mm",
-  ]
-  deps = [ "//chrome/common" ]
+if (is_mac) {
+  # These sources create an object file conflict with one in |:chrome|, so they
+  # must live in a separate target.
+  # Conflicting sources:
+  #   //chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm
+  #   //chrome/browser/permissions/system/system_media_capture_permissions_mac.mm
+  source_set("system_media_capture_permissions_mac_conflict") {
+    sources = [
+      "//chrome/browser/permissions/system/system_media_capture_permissions_mac.h",
+      "//chrome/browser/permissions/system/system_media_capture_permissions_mac.mm",
+    ]
+    deps = [ "//chrome/common" ]
+  }
 }
