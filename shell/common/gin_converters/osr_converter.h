@@ -1,7 +1,6 @@
-﻿
-// Copyright (c) 2024 GitHub, Inc.
-// Use of this source code is governed by the MIT license that can be found in
-// the LICENSE file.
+﻿// Copyright (c) 2025 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
 
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_OSR_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_OSR_CONVERTER_H_
