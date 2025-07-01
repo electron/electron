@@ -20,15 +20,3 @@ index 4cf731ee0e4c77cac7786ac748012a000fcc7f63..7db20e37434cf04f733a833ae744e6de
  reclient_timeout=10m
  exec_timeout=10m
 \ No newline at end of file
-diff --git a/linux/chromium-browser-clang/rewrapper_linux.cfg b/linux/chromium-browser-clang/rewrapper_linux.cfg
-index 084d6a8cede9ca6d53f1da926d6c8066a8d238a7..78c998960059924ccffb56699e05477d367b3e01 100644
---- a/linux/chromium-browser-clang/rewrapper_linux.cfg
-+++ b/linux/chromium-browser-clang/rewrapper_linux.cfg
-@@ -1,6 +1,6 @@
- # Copy of https://source.chromium.org/chromium/chromium/src/+/main:buildtools/reclient_cfgs/linux/chromium-browser-clang/rewrapper_linux.cfg
- # Kept for the sake of old Chromium builds before the file was checked in.
--platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:26de99218a1a8b527d4840490bcbf1690ee0b55c84316300b60776e6b3a03fe1,label:action_default=1
-+platform=container-image=docker://gcr.io/chops-public-images-prod/rbe/siso-chromium/linux@sha256:ef35d347f4a4a2d32b76fd908e66e96f59bf8ba7379fd5626548244c45343b2b,label:action_default=1
- server_address=unix:///tmp/reproxy.sock
- labels=type=compile,compiler=clang,lang=cpp
- exec_strategy=remote_local_fallback
