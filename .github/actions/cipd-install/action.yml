@@ -38,10 +38,10 @@ runs:
         echo '${{ inputs.package }} ${{ inputs.dependency-version }}'  > ${{ inputs.dependency }}_ensure_file
         cat ${{ inputs.dependency }}_ensure_file
     - name: CIPD installation of ${{ inputs.dependency }} (macOS)
-      if: ${{ inputs.target-platform == 'macos' }}
+      if: ${{ inputs.target-platform != 'win' }}
       shell: bash
       run: |
-        echo "ensuring ${{ inputs.dependency }} on macOS"
+        echo "ensuring ${{ inputs.dependency }}"
         e d cipd ensure --root ${{ inputs.cipd-root-prefix-path }}${{ inputs.installation-dir }} -ensure-file ${{ inputs.dependency }}_ensure_file
     - name: CIPD installation of ${{ inputs.dependency }} (Windows)
       if: ${{ inputs.target-platform == 'win' }}
