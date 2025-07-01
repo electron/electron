@@ -47,7 +47,7 @@ jobs:
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-15-xlarge
+      build-runs-on: macos-14-xlarge
       target-platform: macos
       target-arch: x64
       target-variant: darwin
@@ -62,7 +62,7 @@ jobs:
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-15-xlarge
+      build-runs-on: macos-14-xlarge
       target-platform: macos
       target-arch: x64
       target-variant: mas
@@ -77,7 +77,7 @@ jobs:
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-15-xlarge
+      build-runs-on: macos-14-xlarge
       target-platform: macos
       target-arch: arm64
       target-variant: darwin
@@ -92,7 +92,7 @@ jobs:
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-15-xlarge
+      build-runs-on: macos-14-xlarge
       target-platform: macos
       target-arch: arm64
       target-variant: mas
