@@ -21,6 +21,23 @@ macOS 11 (Big Sur) is no longer supported by [Chromium](https://chromium-review.
 Older versions of Electron will continue to run on Big Sur, but macOS 12 (Monterey)
 or later will be required to run Electron v38.0.0 and higher.
 
+### Behavior Changed: window.open popups are always resizable
+
+Per current [WHATWG spec](https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-open-dev), the `window.open` API will now always create a resizable popup window.
+
+To restore previous behavior:
+
+```js
+webContents.setWindowOpenHandler((details) => {
+  return {
+    action: 'allow',
+    overrideBrowserWindowOptions: {
+      resizable: details.features.includes('resizable=yes')
+    }
+  }
+})
+```
+
 ## Planned Breaking API Changes (37.0)
 
 ### Utility Process unhandled rejection behavior change
