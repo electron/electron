@@ -1273,6 +1273,16 @@ describe('chromium features', () => {
       });
     }
 
+    it('is always resizable', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.webContents.executeJavaScript(`
+        { b = window.open('about:blank', '', 'resizable=no,show=no'); null }
+      `);
+      const [, popup] = await once(app, 'browser-window-created') as [any, BrowserWindow];
+      expect(popup.isResizable()).to.be.true();
+    });
+
     // FIXME(zcbenz): This test is making the spec runner hang on exit on Windows.
     ifit(process.platform !== 'win32')('disables node integration when it is disabled on the parent window', async () => {
       const windowUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'window-opener-no-node-integration.html'));
