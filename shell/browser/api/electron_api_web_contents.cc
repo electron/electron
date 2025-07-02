@@ -1820,16 +1820,6 @@ void WebContents::PrimaryMainFrameRenderProcessGone(
   Emit("render-process-gone", details);
 }
 
-void WebContents::PluginCrashed(const base::FilePath& plugin_path,
-                                base::ProcessId plugin_pid) {
-#if BUILDFLAG(ENABLE_PLUGINS)
-  content::WebPluginInfo info;
-  auto* plugin_service = content::PluginService::GetInstance();
-  plugin_service->GetPluginInfoByPath(plugin_path, &info);
-  Emit("plugin-crashed", info.name, info.version);
-#endif  // BUILDFLAG(ENABLE_PLUGINS)
-}
-
 void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
                                       const content::MediaPlayerId& id) {
   Emit("media-started-playing");
