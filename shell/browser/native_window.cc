@@ -126,12 +126,12 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
       options.Get(options::kWindowStateRestoreOptions, &restore_options)) {
     // Initialize window_state_id_
     restore_options.Get(options::kStateId, &window_state_id_);
-
     // Initialize prefs_ to save/restore window bounds if we have a valid
     // stateId
     if (!window_state_id_.empty()) {
       if (auto* browser_process =
               electron::ElectronBrowserMainParts::Get()->browser_process()) {
+        DCHECK(browser_process);
         prefs_ = browser_process->local_state();
       }
     }
