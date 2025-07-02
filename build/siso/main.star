@@ -1,7 +1,10 @@
 load("@builtin//encoding.star", "json")
+load("@builtin//path.star", "path")
 load("@builtin//runtime.star", "runtime")
 load("@builtin//struct.star", "module")
 load("@config//main.star", upstream_init = "init")
+load("@config//win_sdk.star", "win_sdk")
+load("@config//gn_logs.star", "gn_logs")
 
 def init(ctx):
     mod = upstream_init(ctx)
@@ -23,6 +26,24 @@ def init(ctx):
         step_config["executables"] = []
       step_config["executables"].append("buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper")
       step_config["executables"].append("third_party/llvm-build/Release+Asserts_linux/bin/clang")
+
+      # Add additional Windows SDK headers needed by Electron      
+      win_toolchain_dir = win_sdk.toolchain_dir(ctx)
+      if win_toolchain_dir:
+        sdk_version = gn_logs.read(ctx).get("windows_sdk_version")
+        step_config["input_deps"][win_toolchain_dir + ":headers"].extend([
+          # third_party/electron_node/deps/uv/include/uv/win.h includes mswsock.h
+          path.join(win_toolchain_dir, "Windows Kits/10/Include", sdk_version, "um/mswsock.h"),
+          # third_party/electron_node/src/debug_utils.cc includes lm.h
+          path.join(win_toolchain_dir, "Windows Kits/10/Include", sdk_version, "um/Lm.h"),          
+        ])
+      
+      # Update platforms to match our default siso config instead of reclient configs.
+      step_config["platforms"].update({
+          "clang-cl": step_config["platforms"]["default"],
+          "clang-cl_large": step_config["platforms"]["default"],
+          "lld-link": step_config["platforms"]["default"],
+      })
 
     return module(
       "config",
