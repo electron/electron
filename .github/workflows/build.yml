@@ -184,7 +184,7 @@ jobs:
     with:
       target-platform: macos
       target-archs: x64 arm64
-      check-runs-on: macos-15
+      check-runs-on: macos-14
       gn-build-type: testing
     secrets: inherit
 
@@ -219,7 +219,7 @@ jobs:
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
-      build-runs-on: macos-15-xlarge
+      build-runs-on: macos-14-xlarge
       test-runs-on: macos-13
       target-platform: macos
       target-arch: x64
@@ -237,7 +237,7 @@ jobs:
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
-      build-runs-on: macos-15-xlarge
+      build-runs-on: macos-14-xlarge
       test-runs-on: macos-14
       target-platform: macos
       target-arch: arm64
