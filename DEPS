@@ -31,7 +31,7 @@ vars = {
   'sysroots_json_path': 'electron/script/sysroots.json',
 
   # KEEP IN SYNC WITH utils.js FILE
-  'yarn_version': '1.15.2',
+  'yarn_version': '1.22.22',
 
   # To be able to build clean Chromium from sources.
   'apply_patches': True,
