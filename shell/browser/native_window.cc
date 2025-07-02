@@ -888,6 +888,14 @@ void NativeWindow::SaveWindowState() {
   update->Set(window_state_id_, std::move(window_preferences));
 }
 
+void NativeWindow::FlushWindowState() {
+  if (save_window_state_timer_.IsRunning()) {
+    save_window_state_timer_.FireNow();
+  } else {
+    SaveWindowState();
+  }
+}
+
 // static
 bool NativeWindow::PlatformHasClientFrame() {
 #if defined(USE_OZONE)

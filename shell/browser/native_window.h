@@ -434,6 +434,9 @@ class NativeWindow : public base::SupportsUserData,
   // disk write is batched and flushed later.
   void SaveWindowState();
   void DebouncedSaveWindowState();
+  // Flushes save_window_state_timer_ that was queued by
+  // DebouncedSaveWindowState. This does NOT flush the actual disk write.
+  void FlushWindowState();
 
  protected:
   friend class api::BrowserView;
