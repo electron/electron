@@ -7,10 +7,10 @@ Allows embedders to get a handle to the gdk_pixbuf
 library already loaded in the process.
 
 diff --git a/ui/gtk/gtk_compat.cc b/ui/gtk/gtk_compat.cc
-index 37bb48273cf4833c88622f1158aebfee9423d085..2009a095abfae3207d73c47245e061ff3f9cef80 100644
+index bcd86e7a9e870b274d0c6487a691f23ad1888079..4b192c90ce82ddddaedf14970919447e8f43dd7c 100644
 --- a/ui/gtk/gtk_compat.cc
 +++ b/ui/gtk/gtk_compat.cc
-@@ -69,11 +69,6 @@ void* GetLibGio() {
+@@ -68,11 +68,6 @@ void* GetLibGio() {
    return libgio;
  }
  
@@ -22,7 +22,7 @@ index 37bb48273cf4833c88622f1158aebfee9423d085..2009a095abfae3207d73c47245e061ff
  void* GetLibGdk3() {
    static void* libgdk3 = DlOpen("libgdk-3.so.0");
    return libgdk3;
-@@ -169,6 +164,11 @@ gfx::Insets InsetsFromGtkBorder(const GtkBorder& border) {
+@@ -165,6 +160,11 @@ gfx::Insets InsetsFromGtkBorder(const GtkBorder& border) {
  
  }  // namespace
  
@@ -31,14 +31,14 @@ index 37bb48273cf4833c88622f1158aebfee9423d085..2009a095abfae3207d73c47245e061ff
 +  return libgdk_pixbuf;
 +}
 +
- bool LoadGtk() {
-   static bool loaded = LoadGtkImpl();
+ bool LoadGtk(ui::LinuxUiBackend backend) {
+   static bool loaded = LoadGtkImpl(backend);
    return loaded;
 diff --git a/ui/gtk/gtk_compat.h b/ui/gtk/gtk_compat.h
-index 19f73cc179d82a3729c5fe37883460ac05f4d0c3..17aa0b95bd6158ed02c03095c1687185a057fe62 100644
+index 841e2e8fcdbe2da4aac487badd4d352476e461a2..e458df649546fa3bee10e24f0edac147186cc152 100644
 --- a/ui/gtk/gtk_compat.h
 +++ b/ui/gtk/gtk_compat.h
-@@ -41,6 +41,9 @@ using SkColor = uint32_t;
+@@ -42,6 +42,9 @@ using SkColor = uint32_t;
  
  namespace gtk {
  
@@ -46,5 +46,5 @@ index 19f73cc179d82a3729c5fe37883460ac05f4d0c3..17aa0b95bd6158ed02c03095c1687185
 +void* GetLibGdkPixbuf();
 +
  // Loads libgtk and related libraries and returns true on success.
- bool LoadGtk();
+ bool LoadGtk(ui::LinuxUiBackend backend);
  

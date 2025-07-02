@@ -259,7 +259,7 @@ index a2a19b975ddd8799917ec674b53368ab1b123232..3ff87e391f744cd17c26945fa7dcfde5
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 18a3609bfd344716ba7cd550f66d4c4700d227b0..106884585ba2c6e75053474dbd15c728c79fcac1 100644
+index d95cba73aacf4b9156e8c0c3100abd7934369fdd..1583ae512e34c29e849efc2f570e09e74b348406 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -6,6 +6,7 @@
@@ -378,10 +378,10 @@ index 18a3609bfd344716ba7cd550f66d4c4700d227b0..106884585ba2c6e75053474dbd15c728
            process_lock.lock_url().scheme())) {
      return process_lock.lock_url();
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
-index ce9644d33fe83379127b01bf9a2b1c4badc3bc7c..fd486d4637ae4766ed78571dee7f9cebbd809f38 100644
+index 225e017909b8869231b870eaaf161a0b5e93e2a0..846a5251429630b8528a84a3d67ed56cb28df5a1 100644
 --- a/content/common/url_schemes.cc
 +++ b/content/common/url_schemes.cc
-@@ -98,6 +98,14 @@ void RegisterContentSchemes(bool should_lock_registry) {
+@@ -102,6 +102,14 @@ void RegisterContentSchemes(bool should_lock_registry) {
    for (auto& scheme : schemes.empty_document_schemes)
      url::AddEmptyDocumentScheme(scheme.c_str());
  
@@ -397,7 +397,7 @@ index ce9644d33fe83379127b01bf9a2b1c4badc3bc7c..fd486d4637ae4766ed78571dee7f9ceb
    if (schemes.allow_non_standard_schemes_in_origins)
      url::EnableNonStandardSchemesForAndroidWebView();
 diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
-index cf71655553cf510e1309ac47bdd5ddab08e52672..0a02d17d06e080f40bf12bb2e48f51ad84ec17b8 100644
+index 52f16979b05b692ef72762d0cbc16bcb361b047e..b658ebeb9c572158b27d94af56331be8cbb519e6 100644
 --- a/content/public/common/content_client.h
 +++ b/content/public/common/content_client.h
 @@ -139,6 +139,9 @@ class CONTENT_EXPORT ContentClient {
