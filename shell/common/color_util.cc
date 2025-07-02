@@ -28,7 +28,7 @@ bool IsHexFormatWithAlpha(const std::string& str) {
 
 namespace electron {
 
-SkColor ParseCSSColor(const std::string& color_string) {
+std::optional<SkColor> ParseCSSColor(const std::string& color_string) {
   // ParseCssColorString expects RGBA and we historically use ARGB
   // so we need to convert before passing to ParseCssColorString.
   std::string converted_color_str;
@@ -42,7 +42,7 @@ SkColor ParseCSSColor(const std::string& color_string) {
 
   SkColor color;
   if (!content::ParseCssColorString(converted_color_str, &color))
-    color = SK_ColorWHITE;
+    return std::nullopt;
 
   return color;
 }
