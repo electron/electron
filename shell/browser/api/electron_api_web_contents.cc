@@ -242,7 +242,7 @@ template <>
 struct Converter<WindowOpenDisposition> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    WindowOpenDisposition val) {
-    std::string disposition = "other";
+    std::string_view disposition = "other";
     switch (val) {
       case WindowOpenDisposition::CURRENT_TAB:
         disposition = "default";
