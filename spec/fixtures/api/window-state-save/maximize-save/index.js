@@ -10,9 +10,8 @@ app.whenReady().then(() => {
   const w = new BrowserWindow({
     width: 400,
     height: 300,
-    windowStateRestoreOptions: {
-      stateId: 'test-maximize-save'
-    }
+    name: 'test-maximize-save',
+    windowStateRestoreOptions: true
   });
 
   w.on('maximize', () => {

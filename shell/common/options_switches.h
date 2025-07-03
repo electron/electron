@@ -111,8 +111,8 @@ inline constexpr std::string_view kWebPreferences = "webPreferences";
 inline constexpr std::string_view kWindowStateRestoreOptions =
     "windowStateRestoreOptions";
 
-// The unique identifier for the window state in preferences
-inline constexpr std::string_view kStateId = "stateId";
+// Identifier for the window provided by the application
+inline constexpr std::string_view kName = "name";
 
 // Whether to save the window bounds
 inline constexpr std::string_view kBounds = "bounds";

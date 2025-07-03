@@ -10,9 +10,8 @@ app.whenReady().then(() => {
   const w = new BrowserWindow({
     width: 400,
     height: 300,
-    windowStateRestoreOptions: {
-      stateId: 'test-move-save'
-    },
+    name: 'test-move-save',
+    windowStateRestoreOptions: true,
     show: false
   });
 

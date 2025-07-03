@@ -10,9 +10,8 @@ app.whenReady().then(() => {
   const w = new BrowserWindow({
     width: 400,
     height: 300,
-    windowStateRestoreOptions: {
-      stateId: 'test-window-state-schema'
-    },
+    name: 'test-window-state-schema',
+    windowStateRestoreOptions: true,
     show: false
   });
 

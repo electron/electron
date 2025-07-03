@@ -499,6 +499,10 @@ class NativeWindow : public base::SupportsUserData,
   static inline int32_t next_id_ = 0;
   const int32_t window_id_ = ++next_id_;
 
+  // Identifier for the window provided by the application.
+  // Used by Electron internally for features such as state persistence.
+  std::string window_name_;
+
   // The "titleBarStyle" option.
   const TitleBarStyle title_bar_style_;
 
@@ -557,13 +561,13 @@ class NativeWindow : public base::SupportsUserData,
 
   gfx::Rect overlay_rect_;
 
+  // The boolean parsing of the "windowStateRestoreOptions" option
+  bool window_state_restore_enabled_ = false;
+
   // PrefService is used to persist window bounds and state.
   // Only populated when window state persistence is enabled via
   // windowStateRestoreOptions and a valid stateId is provided.
   raw_ptr<PrefService> prefs_ = nullptr;
-
-  // Unique identifier used for saving and restoring window state.
-  std::string window_state_id_;
 
   // Timer to debounce window state saving operations.
   base::OneShotTimer save_window_state_timer_;

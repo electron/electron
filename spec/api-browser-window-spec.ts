@@ -6990,13 +6990,13 @@ describe('BrowserWindow module', () => {
       const sharedUserDataPath = path.join(os.tmpdir(), 'electron-window-state-test');
       const sharedPreferencesPath = path.join(sharedUserDataPath, 'Local State');
 
-      const getWindowStateFromDisk = (stateId: string, preferencesPath: string) => {
+      const getWindowStateFromDisk = (windowName: string, preferencesPath: string) => {
         if (!fs.existsSync(preferencesPath)) {
           throw new Error(`Preferences file does not exist at path: ${preferencesPath}. Window state was not saved to disk.`);
         }
         const prefsContent = fs.readFileSync(preferencesPath, 'utf8');
         const prefs = JSON.parse(prefsContent);
-        return prefs?.windowStates?.[stateId] || null;
+        return prefs?.windowStates?.[windowName] || null;
       };
 
       // Clean up before each test
@@ -7014,7 +7014,7 @@ describe('BrowserWindow module', () => {
           expect(code).to.equal(0);
 
           const savedState = getWindowStateFromDisk('test-window-state-schema', sharedPreferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-window-state-schema" does not exist');
+          expect(savedState).to.not.be.null('window state with window name "test-window-state-schema" does not exist');
           expect(savedState).to.have.property('left');
           expect(savedState).to.have.property('top');
           expect(savedState).to.have.property('right');
@@ -7035,7 +7035,7 @@ describe('BrowserWindow module', () => {
           expect(code).to.equal(0);
 
           const savedState = getWindowStateFromDisk('test-close-save', sharedPreferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-close-save" does not exist');
+          expect(savedState).to.not.be.null('window state with window name "test-close-save" does not exist');
           expect(savedState.right - savedState.left).to.equal(400);
           expect(savedState.bottom - savedState.top).to.equal(300);
           expect(savedState.maximized).to.equal(false);
@@ -7050,7 +7050,7 @@ describe('BrowserWindow module', () => {
           expect(code).to.equal(0);
 
           const savedState = getWindowStateFromDisk('test-resize-save', sharedPreferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-resize-save" does not exist');
+          expect(savedState).to.not.be.null('window state with window name "test-resize-save" does not exist');
           expect(savedState.right - savedState.left).to.equal(500);
           expect(savedState.bottom - savedState.top).to.equal(400);
           expect(savedState.maximized).to.equal(false);
@@ -7065,7 +7065,7 @@ describe('BrowserWindow module', () => {
           expect(code).to.equal(0);
 
           const savedState = getWindowStateFromDisk('test-move-save', sharedPreferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-move-save" does not exist');
+          expect(savedState).to.not.be.null('window state with window name "test-move-save" does not exist');
           expect(savedState.left).to.equal(100);
           expect(savedState.top).to.equal(150);
           expect(savedState.maximized).to.equal(false);
@@ -7080,7 +7080,7 @@ describe('BrowserWindow module', () => {
           expect(code).to.equal(0);
 
           const savedState = getWindowStateFromDisk('test-fullscreen-save', sharedPreferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-fullscreen-save" does not exist');
+          expect(savedState).to.not.be.null('window state with window name "test-fullscreen-save" does not exist');
           expect(savedState.fullscreen).to.equal(true);
           expect(savedState.maximized).to.equal(false);
           expect(savedState.kiosk).to.equal(false);
@@ -7093,7 +7093,7 @@ describe('BrowserWindow module', () => {
           expect(code).to.equal(0);
 
           const savedState = getWindowStateFromDisk('test-maximize-save', sharedPreferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-maximize-save" does not exist');
+          expect(savedState).to.not.be.null('window state with window name "test-maximize-save" does not exist');
           expect(savedState.maximized).to.equal(true);
           expect(savedState.fullscreen).to.equal(false);
           expect(savedState.kiosk).to.equal(false);
@@ -7106,7 +7106,7 @@ describe('BrowserWindow module', () => {
           expect(code).to.equal(0);
 
           const savedState = getWindowStateFromDisk('test-minimize-save', sharedPreferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-minimize-save" does not exist');
+          expect(savedState).to.not.be.null('window state with window name "test-minimize-save" does not exist');
           // Should save the bounds from before minimizing
           expect(savedState.right - savedState.left).to.equal(400);
           expect(savedState.bottom - savedState.top).to.equal(300);
@@ -7122,7 +7122,7 @@ describe('BrowserWindow module', () => {
           expect(code).to.equal(0);
 
           const savedState = getWindowStateFromDisk('test-kiosk-save', sharedPreferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-kiosk-save" does not exist');
+          expect(savedState).to.not.be.null('window state with window name "test-kiosk-save" does not exist');
           expect(savedState.kiosk).to.equal(true);
           expect(savedState.fullscreen).to.equal(true);
           expect(savedState.maximized).to.equal(false);
@@ -7138,7 +7138,7 @@ describe('BrowserWindow module', () => {
 
           const savedState = getWindowStateFromDisk('test-window-state-schema', sharedPreferencesPath);
 
-          expect(savedState).to.not.be.null('window state with id "test-window-state-schema" does not exist');
+          expect(savedState).to.not.be.null('window state with window name "test-window-state-schema" does not exist');
           expect(savedState.workAreaLeft).to.be.a('number');
           expect(savedState.workAreaTop).to.be.a('number');
           expect(savedState.workAreaRight).to.be.a('number');
@@ -7156,7 +7156,7 @@ describe('BrowserWindow module', () => {
           expect(code).to.equal(0);
 
           const savedState = getWindowStateFromDisk('test-work-area-primary', sharedPreferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-work-area-primary" does not exist');
+          expect(savedState).to.not.be.null('window state with window name "test-work-area-primary" does not exist');
 
           expect(savedState.left).to.be.greaterThanOrEqual(savedState.workAreaLeft);
           expect(savedState.top).to.be.greaterThanOrEqual(savedState.workAreaTop);
@@ -7167,7 +7167,7 @@ describe('BrowserWindow module', () => {
 
       describe('asynchronous batching behavior', () => {
         let w: BrowserWindow;
-        const stateId = 'test-batching-behavior';
+        const windowName = 'test-batching-behavior';
         const preferencesPath = path.join(app.getPath('userData'), 'Local State');
 
         // Helper to get preferences file modification time
@@ -7210,9 +7210,8 @@ describe('BrowserWindow module', () => {
             show: false,
             width: 400,
             height: 300,
-            windowStateRestoreOptions: {
-              stateId
-            }
+            name: windowName,
+            windowStateRestoreOptions: true
           });
         });
 
@@ -7253,8 +7252,8 @@ describe('BrowserWindow module', () => {
 
           await waitForPrefsUpdate(initialModTime);
 
-          const savedState = getWindowStateFromDisk(stateId, preferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-batching-behavior" does not exist');
+          const savedState = getWindowStateFromDisk(windowName, preferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-batching-behavior" does not exist');
           expect(savedState.right - savedState.left).to.equal(500);
           expect(savedState.bottom - savedState.top).to.equal(400);
         });
@@ -7291,8 +7290,8 @@ describe('BrowserWindow module', () => {
 
           await waitForPrefsUpdate(initialModTime);
 
-          const savedState = getWindowStateFromDisk(stateId, preferencesPath);
-          expect(savedState).to.not.be.null('window state with id "test-batching-behavior" does not exist');
+          const savedState = getWindowStateFromDisk(windowName, preferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-batching-behavior" does not exist');
 
           [afterFirstResize, afterSecondResize, afterThirdResize].forEach(time => {
             expect(time.getTime()).to.equal(initialModTime.getTime());

@@ -10,9 +10,8 @@ app.whenReady().then(() => {
   const w = new BrowserWindow({
     width: 400,
     height: 300,
-    windowStateRestoreOptions: {
-      stateId: 'test-minimize-save'
-    }
+    name: 'test-minimize-save',
+    windowStateRestoreOptions: true
   });
 
   w.on('minimize', () => {

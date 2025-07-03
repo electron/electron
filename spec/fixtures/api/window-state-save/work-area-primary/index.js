@@ -18,9 +18,8 @@ app.whenReady().then(async () => {
   const w = new BrowserWindow({
     width: windowWidth,
     height: windowHeight,
-    windowStateRestoreOptions: {
-      stateId: 'test-work-area-primary'
-    }
+    name: 'test-work-area-primary',
+    windowStateRestoreOptions: true
   });
 
   // Center the window on the primary display to prevent overflow

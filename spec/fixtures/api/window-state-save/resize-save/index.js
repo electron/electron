@@ -10,9 +10,8 @@ app.whenReady().then(async () => {
   const w = new BrowserWindow({
     width: 400,
     height: 300,
-    windowStateRestoreOptions: {
-      stateId: 'test-resize-save'
-    },
+    name: 'test-resize-save',
+    windowStateRestoreOptions: true,
     show: false
   });
 

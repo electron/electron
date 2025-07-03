@@ -122,18 +122,24 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   options.Get(options::kVibrancyType, &vibrancy_);
 #endif
 
+  options.Get(options::kName, &window_name_);
+
   if (gin_helper::Dictionary restore_options;
       options.Get(options::kWindowStateRestoreOptions, &restore_options)) {
-    // Initialize window_state_id_
-    restore_options.Get(options::kStateId, &window_state_id_);
-    // Initialize prefs_ to save/restore window bounds if we have a valid
-    // stateId
-    if (!window_state_id_.empty()) {
-      if (auto* browser_process =
-              electron::ElectronBrowserMainParts::Get()->browser_process()) {
-        DCHECK(browser_process);
-        prefs_ = browser_process->local_state();
-      }
+    // Other options will be parsed here in the future.
+    window_state_restore_enabled_ = true;
+  } else if (bool flag;
+             options.Get(options::kWindowStateRestoreOptions, &flag)) {
+    window_state_restore_enabled_ = flag;
+  }
+
+  // Initialize prefs_ to save/restore window bounds if we have a valid window
+  // name and window state persistence is enabled.
+  if (window_state_restore_enabled_ && !window_name_.empty()) {
+    if (auto* browser_process =
+            electron::ElectronBrowserMainParts::Get()->browser_process()) {
+      DCHECK(browser_process);
+      prefs_ = browser_process->local_state();
     }
   }
 
@@ -843,11 +849,11 @@ void NativeWindow::DebouncedSaveWindowState() {
 }
 
 void NativeWindow::SaveWindowState() {
-  if (!prefs_ || window_state_id_.empty())
+  if (!prefs_ || window_name_.empty())
     return;
 
   ScopedDictPrefUpdate update(prefs_, electron::kWindowStates);
-  const base::Value::Dict* existing_prefs = update->FindDict(window_state_id_);
+  const base::Value::Dict* existing_prefs = update->FindDict(window_name_);
 
   gfx::Rect bounds = GetBounds();
   // When the window is in a special display mode (fullscreen, kiosk, or
@@ -885,7 +891,7 @@ void NativeWindow::SaveWindowState() {
   window_preferences.Set(electron::kWorkAreaRight, work_area.right());
   window_preferences.Set(electron::kWorkAreaBottom, work_area.bottom());
 
-  update->Set(window_state_id_, std::move(window_preferences));
+  update->Set(window_name_, std::move(window_preferences));
 }
 
 void NativeWindow::FlushWindowState() {

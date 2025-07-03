@@ -10,9 +10,8 @@ app.whenReady().then(() => {
   const w = new BrowserWindow({
     width: 400,
     height: 300,
-    windowStateRestoreOptions: {
-      stateId: 'test-fullscreen-save'
-    }
+    name: 'test-fullscreen-save',
+    windowStateRestoreOptions: true
   });
 
   w.on('enter-full-screen', () => {
