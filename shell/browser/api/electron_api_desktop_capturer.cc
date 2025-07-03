@@ -233,7 +233,8 @@ DesktopCapturer::DesktopListListener::~DesktopListListener() = default;
 
 void DesktopCapturer::DesktopListListener::OnDelegatedSourceListSelection() {
   if (have_thumbnail_) {
-    std::move(update_callback_).Run();
+    content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                                 std::move(update_callback_));
   } else {
     have_selection_ = true;
   }
@@ -246,7 +247,8 @@ void DesktopCapturer::DesktopListListener::OnSourceThumbnailChanged(int index) {
     have_selection_ = false;
 
     // PipeWire returns a single source, so index is not relevant.
-    std::move(update_callback_).Run();
+    content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                                 std::move(update_callback_));
   } else {
     have_thumbnail_ = true;
   }
