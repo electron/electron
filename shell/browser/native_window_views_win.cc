@@ -574,28 +574,42 @@ void NativeWindowViews::UpdateWindowAccentColor() {
   if (base::win::GetVersion() < base::win::Version::WIN11)
     return;
 
-  if (!IsAccentColorOnTitleBarsEnabled())
-    return;
-
   COLORREF border_color;
+  bool should_apply_accent = false;
+
   if (std::holds_alternative<bool>(accent_color_)) {
-    // Don't set accent color if the user has disabled it.
-    if (!std::get<bool>(accent_color_))
-      return;
-
-    std::optional<DWORD> accent_color = GetAccentColor();
-    if (!accent_color.has_value())
-      return;
-
-    border_color =
-        RGB(GetRValue(accent_color.value()), GetGValue(accent_color.value()),
-            GetBValue(accent_color.value()));
-  } else {
+    bool force_accent = std::get<bool>(accent_color_);
+    if (!force_accent) {
+      should_apply_accent = false;
+    } else {
+      std::optional<DWORD> accent_color = GetAccentColor();
+      if (accent_color.has_value()) {
+        border_color = RGB(GetRValue(accent_color.value()),
+                           GetGValue(accent_color.value()),
+                           GetBValue(accent_color.value()));
+        should_apply_accent = true;
+      }
+    }
+  } else if (std::holds_alternative<SkColor>(accent_color_)) {
     SkColor color = std::get<SkColor>(accent_color_);
     border_color =
         RGB(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color));
+    should_apply_accent = true;
+  } else if (std::holds_alternative<std::monostate>(accent_color_)) {
+    if (IsAccentColorOnTitleBarsEnabled()) {
+      std::optional<DWORD> accent_color = GetAccentColor();
+      if (accent_color.has_value()) {
+        border_color = RGB(GetRValue(accent_color.value()),
+                           GetGValue(accent_color.value()),
+                           GetBValue(accent_color.value()));
+        should_apply_accent = true;
+      }
+    }
   }
 
+  // Reset to default system colors when accent color should not be applied.
+  if (!should_apply_accent)
+    border_color = DWMWA_COLOR_DEFAULT;
   SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), border_color);
 }
 
