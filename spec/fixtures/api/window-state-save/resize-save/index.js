@@ -11,7 +11,7 @@ app.whenReady().then(async () => {
     width: 400,
     height: 300,
     name: 'test-resize-save',
-    windowStateRestoreOptions: true,
+    windowStatePersistence: true,
     show: false
   });
 

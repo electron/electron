@@ -19,7 +19,7 @@ app.whenReady().then(async () => {
     width: windowWidth,
     height: windowHeight,
     name: 'test-work-area-primary',
-    windowStateRestoreOptions: true
+    windowStatePersistence: true
   });
 
   // Center the window on the primary display to prevent overflow

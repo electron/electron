@@ -11,7 +11,7 @@ app.whenReady().then(() => {
     width: 400,
     height: 300,
     name: 'test-kiosk-save',
-    windowStateRestoreOptions: true
+    windowStatePersistence: true
   });
 
   w.on('enter-full-screen', () => {

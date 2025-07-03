@@ -11,7 +11,7 @@ app.whenReady().then(() => {
     width: 400,
     height: 300,
     name: 'test-minimize-save',
-    windowStateRestoreOptions: true
+    windowStatePersistence: true
   });
 
   w.on('minimize', () => {

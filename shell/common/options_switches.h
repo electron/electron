@@ -107,9 +107,9 @@ inline constexpr std::string_view kFocusable = "focusable";
 // The WebPreferences.
 inline constexpr std::string_view kWebPreferences = "webPreferences";
 
-// Window state restore options for BrowserWindow
-inline constexpr std::string_view kWindowStateRestoreOptions =
-    "windowStateRestoreOptions";
+// Window state persistence for BaseWindow
+inline constexpr std::string_view kWindowStatePersistence =
+    "windowStatePersistence";
 
 // Identifier for the window provided by the application
 inline constexpr std::string_view kName = "name";

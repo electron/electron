@@ -124,18 +124,17 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 
   options.Get(options::kName, &window_name_);
 
-  if (gin_helper::Dictionary restore_options;
-      options.Get(options::kWindowStateRestoreOptions, &restore_options)) {
+  if (gin_helper::Dictionary persistence_options;
+      options.Get(options::kWindowStatePersistence, &persistence_options)) {
     // Other options will be parsed here in the future.
-    window_state_restore_enabled_ = true;
-  } else if (bool flag;
-             options.Get(options::kWindowStateRestoreOptions, &flag)) {
-    window_state_restore_enabled_ = flag;
+    window_state_persistence_enabled_ = true;
+  } else if (bool flag; options.Get(options::kWindowStatePersistence, &flag)) {
+    window_state_persistence_enabled_ = flag;
   }
 
   // Initialize prefs_ to save/restore window bounds if we have a valid window
   // name and window state persistence is enabled.
-  if (window_state_restore_enabled_ && !window_name_.empty()) {
+  if (window_state_persistence_enabled_ && !window_name_.empty()) {
     if (auto* browser_process =
             electron::ElectronBrowserMainParts::Get()->browser_process()) {
       DCHECK(browser_process);
@@ -860,7 +859,7 @@ void NativeWindow::SaveWindowState() {
   // maximized), save the previously stored window bounds instead of
   // the current bounds. This ensures that when the window is restored, it can
   // be restored to its original position and size if display mode is not
-  // preserved via windowStateRestoreOptions.
+  // preserved via windowStatePersistence.
   if (!IsNormal() && existing_prefs) {
     std::optional<int> left = existing_prefs->FindInt(electron::kLeft);
     std::optional<int> top = existing_prefs->FindInt(electron::kTop);

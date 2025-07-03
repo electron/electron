@@ -561,12 +561,12 @@ class NativeWindow : public base::SupportsUserData,
 
   gfx::Rect overlay_rect_;
 
-  // The boolean parsing of the "windowStateRestoreOptions" option
-  bool window_state_restore_enabled_ = false;
+  // The boolean parsing of the "windowStatePersistence" option
+  bool window_state_persistence_enabled_ = false;
 
   // PrefService is used to persist window bounds and state.
-  // Only populated when window state persistence is enabled via
-  // windowStateRestoreOptions and a valid stateId is provided.
+  // Only populated when windowStatePersistence is enabled and window has a
+  // valid name.
   raw_ptr<PrefService> prefs_ = nullptr;
 
   // Timer to debounce window state saving operations.

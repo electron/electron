@@ -6984,7 +6984,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  describe('windowStateRestoreOptions', () => {
+  describe('windowStatePersistence', () => {
     describe('save window state', () => {
       const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'window-state-save');
       const sharedUserDataPath = path.join(os.tmpdir(), 'electron-window-state-test');
@@ -7211,7 +7211,7 @@ describe('BrowserWindow module', () => {
             width: 400,
             height: 300,
             name: windowName,
-            windowStateRestoreOptions: true
+            windowStatePersistence: true
           });
         });
 

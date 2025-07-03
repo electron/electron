@@ -11,7 +11,7 @@ app.whenReady().then(() => {
     width: 400,
     height: 300,
     name: 'test-window-state-schema',
-    windowStateRestoreOptions: true,
+    windowStatePersistence: true,
     show: false
   });
 
