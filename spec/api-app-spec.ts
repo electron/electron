@@ -1110,10 +1110,10 @@ describe('app module', () => {
     });
 
     if (process.platform === 'darwin') {
-      it('returns an assets path that is identical to the resources path', () => {
-        const assetsPath = app.getPath('assets');
-        expect(fs.existsSync(assetsPath)).to.be.true();
-        expect(assetsPath).to.equal(process.resourcesPath);
+      it('throws an error when trying to get the assets path on macOS', () => {
+        expect(() => {
+          app.getPath('assets' as any);
+        }).to.throw(/Failed to get 'assets' path/);
       });
     } else {
       it('returns an assets path that is identical to the module path', () => {
