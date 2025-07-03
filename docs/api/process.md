@@ -211,6 +211,10 @@ Returns `Object`:
   system.
 * `free` Integer - The total amount of memory not being used by applications or disk
   cache.
+* `cached` Integer _macOS_ - The amount of memory that currently have been paged out to storage,
+  includes memory for file caches, network buffers, and other system services.
+* `purgeable` Integer _macOS_ - The amount of memory that are marked as "purgeable", and system can reclaim them
+  if memory pressure increases.
 * `swapTotal` Integer _Windows_ _Linux_ - The total amount of swap memory in Kilobytes available to the
   system.
 * `swapFree` Integer _Windows_ _Linux_ - The free amount of swap memory in Kilobytes available to the
