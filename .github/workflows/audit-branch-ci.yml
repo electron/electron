@@ -101,7 +101,6 @@ jobs:
             }
 
             if (runsWithErrors.length > 0) {
-              core.setOutput('errorsFound', true);
               core.summary.addHeading('⚠️ Runs with Errors');
               core.summary.addTable([
                 [
@@ -128,6 +127,7 @@ jobs:
 
               // Set this as failed so it's easy to scan runs to find failures
               if (runsWithErrors.find((run) => !run.isStale)) {
+                core.setOutput('errorsFound', true);
                 process.exitCode = 1;
               }
             } else {
