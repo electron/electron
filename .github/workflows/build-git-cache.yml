@@ -72,3 +72,6 @@ jobs:
       uses: ./src/electron/.github/actions/build-git-cache
       with:
         target-platform: macos
+        target-platform: windows
+    test: macos
+    test: windows
