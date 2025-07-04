@@ -211,7 +211,7 @@ Returns `Object`:
   system.
 * `free` Integer - The total amount of memory not being used by applications or disk
   cache.
-* `cached` Integer _macOS_ - The amount of memory that currently has been paged out to storage.
+* `fileBacked` Integer _macOS_ - The amount of memory that currently has been paged out to storage.
   Includes memory for file caches, network buffers, and other system services.
 * `purgeable` Integer _macOS_ - The amount of memory that is marked as "purgeable". The system can reclaim it
   if memory pressure increases.
