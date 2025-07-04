@@ -146,6 +146,12 @@ describe('app module', () => {
     });
   });
 
+  describe('app.isHardwareAccelerationEnabled()', () => {
+    it('should be a boolean', () => {
+      expect(app.isHardwareAccelerationEnabled()).to.be.a('boolean');
+    });
+  });
+
   describe('app.isPackaged', () => {
     it('should be false during tests', () => {
       expect(app.isPackaged).to.equal(false);
