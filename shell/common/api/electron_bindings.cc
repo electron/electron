@@ -184,7 +184,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
   dict.Set("free", free);
 
 #if BUILDFLAG(IS_MAC)
-  dict.Set("cached", mem_info.file_backed);
+  dict.Set("fileBacked", mem_info.file_backed);
   dict.Set("purgeable", mem_info.purgeable);
 #else
   // NB: These return bogus values on macOS
