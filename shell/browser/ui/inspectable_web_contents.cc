@@ -519,6 +519,12 @@ void InspectableWebContents::UpdateDevToolsZoomLevel(double level) {
 }
 
 void InspectableWebContents::ActivateWindow() {
+  if (embedder_message_dispatcher_) {
+    if (managed_devtools_web_contents_ && view_) {
+      view_->ActivateDevTools();
+    }
+  }
+
   // Set the zoom level.
   SetZoomLevelForWebContents(GetDevToolsWebContents(), GetDevToolsZoomLevel());
 }
