@@ -35,7 +35,7 @@ namespace api {
 class ServiceWorkerMain;
 
 class ServiceWorkerContext final
-    : public gin::Wrappable<ServiceWorkerContext>,
+    : public gin::DeprecatedWrappable<ServiceWorkerContext>,
       public gin_helper::EventEmitterMixin<ServiceWorkerContext>,
       private content::ServiceWorkerContextObserver {
  public:
@@ -80,7 +80,7 @@ class ServiceWorkerContext final
   void OnDestruct(content::ServiceWorkerContext* context) override;
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

@@ -79,7 +79,7 @@ struct ServiceWorkerKey {
 // StoragePartition in which they're registered. In Electron, this is always
 // the default StoragePartition for the associated BrowserContext.
 class ServiceWorkerMain final
-    : public gin::Wrappable<ServiceWorkerMain>,
+    : public gin::DeprecatedWrappable<ServiceWorkerMain>,
       public gin_helper::EventEmitterMixin<ServiceWorkerMain>,
       public gin_helper::Pinnable<ServiceWorkerMain>,
       public gin_helper::Constructible<ServiceWorkerMain> {
@@ -101,7 +101,7 @@ class ServiceWorkerMain final
   static const char* GetClassName() { return "ServiceWorkerMain"; }
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
   // disable copy

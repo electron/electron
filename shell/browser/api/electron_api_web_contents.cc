@@ -4591,7 +4591,8 @@ void WebContents::SetDisableDraggableRegions(bool disable) {
 }
 
 // static
-gin::WrapperInfo WebContents::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo WebContents::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 }  // namespace electron::api
 

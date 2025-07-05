@@ -109,7 +109,7 @@ class FrameSubscriber;
 
 // Wrapper around the content::WebContents.
 class WebContents final : public ExclusiveAccessContext,
-                          public gin::Wrappable<WebContents>,
+                          public gin::DeprecatedWrappable<WebContents>,
                           public gin_helper::EventEmitterMixin<WebContents>,
                           public gin_helper::Constructible<WebContents>,
                           public gin_helper::Pinnable<WebContents>,
@@ -172,7 +172,7 @@ class WebContents final : public ExclusiveAccessContext,
   static const char* GetClassName() { return "WebContents"; }
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
   // gin_helper::CleanedUpAtExit

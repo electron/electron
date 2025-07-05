@@ -208,7 +208,7 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
 
 }  // namespace
 
-gin::WrapperInfo WebRequest::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo WebRequest::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 WebRequest::RequestFilter::RequestFilter(
     std::set<URLPattern> include_url_patterns,
@@ -323,7 +323,7 @@ WebRequest::~WebRequest() {
 
 gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<WebRequest>::GetObjectTemplateBuilder(isolate)
+  return gin::DeprecatedWrappable<WebRequest>::GetObjectTemplateBuilder(isolate)
       .SetMethod(
           "onBeforeRequest",
           &WebRequest::SetResponseListener<ResponseEvent::kOnBeforeRequest>)

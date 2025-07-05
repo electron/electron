@@ -11,7 +11,7 @@
 namespace gin_helper {
 
 bool IsValidWrappable(const v8::Local<v8::Value>& val,
-                      const gin::WrapperInfo* wrapper_info) {
+                      const gin::DeprecatedWrapperInfo* wrapper_info) {
   if (!val->IsObject())
     return false;
 
@@ -19,8 +19,9 @@ bool IsValidWrappable(const v8::Local<v8::Value>& val,
   if (port->InternalFieldCount() != gin::kNumberOfInternalFields)
     return false;
 
-  const gin::WrapperInfo* info = static_cast<gin::WrapperInfo*>(
-      port->GetAlignedPointerFromInternalField(gin::kWrapperInfoIndex));
+  const gin::DeprecatedWrapperInfo* info =
+      static_cast<gin::DeprecatedWrapperInfo*>(
+          port->GetAlignedPointerFromInternalField(gin::kWrapperInfoIndex));
   if (info != wrapper_info)
     return false;
 

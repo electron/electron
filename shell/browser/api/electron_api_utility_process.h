@@ -40,7 +40,7 @@ class Connector;
 namespace electron::api {
 
 class UtilityProcessWrapper final
-    : public gin::Wrappable<UtilityProcessWrapper>,
+    : public gin::DeprecatedWrappable<UtilityProcessWrapper>,
       public gin_helper::Pinnable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,
       private mojo::MessageReceiver,
@@ -57,7 +57,7 @@ class UtilityProcessWrapper final
   void Shutdown(uint64_t exit_code);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

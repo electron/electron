@@ -143,7 +143,8 @@ class DataPipeReader {
 
 }  // namespace
 
-gin::WrapperInfo DataPipeHolder::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo DataPipeHolder::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 DataPipeHolder::DataPipeHolder(const network::DataElement& element)
     : id_(base::NumberToString(++g_next_id)) {

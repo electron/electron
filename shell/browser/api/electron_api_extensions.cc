@@ -23,7 +23,7 @@
 
 namespace electron::api {
 
-gin::WrapperInfo Extensions::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo Extensions::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Extensions::Extensions(v8::Isolate* isolate,
                        ElectronBrowserContext* browser_context)

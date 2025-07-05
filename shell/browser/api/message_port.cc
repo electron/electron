@@ -28,7 +28,8 @@
 
 namespace electron {
 
-gin::WrapperInfo MessagePort::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo MessagePort::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 MessagePort::MessagePort() = default;
 MessagePort::~MessagePort() {
@@ -278,7 +279,8 @@ bool MessagePort::Accept(mojo::Message* mojo_message) {
 
 gin::ObjectTemplateBuilder MessagePort::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<MessagePort>::GetObjectTemplateBuilder(isolate)
+  return gin::DeprecatedWrappable<MessagePort>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("postMessage", &MessagePort::PostMessage)
       .SetMethod("start", &MessagePort::Start)
       .SetMethod("close", &MessagePort::Close);

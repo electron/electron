@@ -257,7 +257,7 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
 namespace {
 
 class ChunkedDataPipeReadableStream final
-    : public gin::Wrappable<ChunkedDataPipeReadableStream> {
+    : public gin::DeprecatedWrappable<ChunkedDataPipeReadableStream> {
  public:
   static gin::Handle<ChunkedDataPipeReadableStream> Create(
       v8::Isolate* isolate,
@@ -270,14 +270,14 @@ class ChunkedDataPipeReadableStream final
   // gin::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::Wrappable<
+    return gin::DeprecatedWrappable<
                ChunkedDataPipeReadableStream>::GetObjectTemplateBuilder(isolate)
         .SetMethod("read", &ChunkedDataPipeReadableStream::Read);
   }
 
   const char* GetTypeName() override { return "ChunkedDataPipeReadableStream"; }
 
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
 
  private:
   ChunkedDataPipeReadableStream(
@@ -495,7 +495,7 @@ class ChunkedDataPipeReadableStream final
   gin_helper::Promise<int> promise_;
 };
 
-gin::WrapperInfo ChunkedDataPipeReadableStream::kWrapperInfo = {
+gin::DeprecatedWrapperInfo ChunkedDataPipeReadableStream::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 }  // namespace
