@@ -35,7 +35,7 @@ class ElectronBrowserContext;
 namespace api {
 
 // The code is referenced from the net_log::NetExportFileWriter class.
-class NetLog final : public gin::Wrappable<NetLog> {
+class NetLog final : public gin::DeprecatedWrappable<NetLog> {
  public:
   static gin::Handle<NetLog> Create(v8::Isolate* isolate,
                                     ElectronBrowserContext* browser_context);
@@ -46,7 +46,7 @@ class NetLog final : public gin::Wrappable<NetLog> {
   bool IsCurrentlyLogging() const;
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

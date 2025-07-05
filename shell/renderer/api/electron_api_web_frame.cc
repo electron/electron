@@ -328,10 +328,11 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
   std::unique_ptr<SpellCheckClient> spell_check_client_;
 };
 
-class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
-                               private content::RenderFrameObserver {
+class WebFrameRenderer final
+    : public gin::DeprecatedWrappable<WebFrameRenderer>,
+      private content::RenderFrameObserver {
  public:
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
 
   static gin::Handle<WebFrameRenderer> Create(
       v8::Isolate* isolate,
@@ -347,7 +348,8 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
   // gin::Wrappable:
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::Wrappable<WebFrameRenderer>::GetObjectTemplateBuilder(isolate)
+    return gin::DeprecatedWrappable<WebFrameRenderer>::GetObjectTemplateBuilder(
+               isolate)
         .SetMethod("getWebFrameId", &WebFrameRenderer::GetWebFrameId)
         .SetMethod("setName", &WebFrameRenderer::SetName)
         .SetMethod("setZoomLevel", &WebFrameRenderer::SetZoomLevel)
@@ -910,7 +912,8 @@ class WebFrameRenderer final : public gin::Wrappable<WebFrameRenderer>,
 };
 }  // namespace
 
-gin::WrapperInfo WebFrameRenderer::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo WebFrameRenderer::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 // static
 std::set<SpellCheckerHolder*> SpellCheckerHolder::instances_;

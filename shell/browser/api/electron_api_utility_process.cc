@@ -60,7 +60,7 @@ GetAllUtilityProcessWrappers() {
 
 namespace api {
 
-gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo = {
+gin::DeprecatedWrapperInfo UtilityProcessWrapper::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 UtilityProcessWrapper::UtilityProcessWrapper(

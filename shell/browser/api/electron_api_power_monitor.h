@@ -17,7 +17,7 @@
 
 namespace electron::api {
 
-class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
+class PowerMonitor final : public gin::DeprecatedWrappable<PowerMonitor>,
                            public gin_helper::EventEmitterMixin<PowerMonitor>,
                            public gin_helper::Pinnable<PowerMonitor>,
                            private base::PowerStateObserver,
@@ -27,7 +27,7 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

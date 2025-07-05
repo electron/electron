@@ -56,7 +56,7 @@ v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
 
 template <typename T, typename... Args>
 v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
-                                gin::Wrappable<T>* object,
+                                gin::DeprecatedWrappable<T>* object,
                                 const char* method_name,
                                 Args&&... args) {
   v8::EscapableHandleScope scope(isolate);
@@ -69,7 +69,7 @@ v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
 }
 
 template <typename T, typename... Args>
-v8::Local<v8::Value> CallMethod(gin::Wrappable<T>* object,
+v8::Local<v8::Value> CallMethod(gin::DeprecatedWrappable<T>* object,
                                 const char* method_name,
                                 Args&&... args) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();

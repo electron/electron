@@ -12,7 +12,7 @@
 namespace gin_helper {
 
 bool IsValidWrappable(const v8::Local<v8::Value>& obj,
-                      const gin::WrapperInfo* wrapper_info);
+                      const gin::DeprecatedWrapperInfo* wrapper_info);
 
 namespace internal {
 
@@ -69,12 +69,13 @@ class Wrappable : public WrappableBase {
   }
 
  private:
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
 };
 
 // static
 template <typename T>
-gin::WrapperInfo Wrappable<T>::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo Wrappable<T>::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 }  // namespace gin_helper
 

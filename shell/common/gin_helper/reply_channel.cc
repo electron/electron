@@ -22,7 +22,8 @@ gin::Handle<ReplyChannel> ReplyChannel::Create(v8::Isolate* isolate,
 
 gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<ReplyChannel>::GetObjectTemplateBuilder(isolate)
+  return gin::DeprecatedWrappable<ReplyChannel>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("sendReply", &ReplyChannel::SendReply);
 }
 
@@ -61,6 +62,7 @@ bool ReplyChannel::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
   return true;
 }
 
-gin::WrapperInfo ReplyChannel::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo ReplyChannel::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 }  // namespace gin_helper::internal

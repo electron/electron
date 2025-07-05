@@ -32,7 +32,7 @@ class Promise;
 
 namespace electron::api {
 
-class Debugger final : public gin::Wrappable<Debugger>,
+class Debugger final : public gin::DeprecatedWrappable<Debugger>,
                        public gin_helper::EventEmitterMixin<Debugger>,
                        public content::DevToolsAgentHostClient,
                        private content::WebContentsObserver {
@@ -41,7 +41,7 @@ class Debugger final : public gin::Wrappable<Debugger>,
                                       content::WebContents* web_contents);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

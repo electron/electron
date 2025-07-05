@@ -24,7 +24,7 @@ namespace electron::api {
 class BaseWindow;
 class WebFrameMain;
 
-class Menu : public gin::Wrappable<Menu>,
+class Menu : public gin::DeprecatedWrappable<Menu>,
              public gin_helper::EventEmitterMixin<Menu>,
              public gin_helper::Constructible<Menu>,
              public gin_helper::Pinnable<Menu>,
@@ -37,7 +37,7 @@ class Menu : public gin::Wrappable<Menu>,
   static const char* GetClassName() { return "Menu"; }
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
 #if BUILDFLAG(IS_MAC)

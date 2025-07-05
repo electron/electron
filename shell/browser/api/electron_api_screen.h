@@ -26,13 +26,13 @@ class ErrorThrower;
 
 namespace electron::api {
 
-class Screen final : public gin::Wrappable<Screen>,
+class Screen final : public gin::DeprecatedWrappable<Screen>,
                      public gin_helper::EventEmitterMixin<Screen>,
                      private display::DisplayObserver {
  public:
   static v8::Local<v8::Value> Create(gin_helper::ErrorThrower error_thrower);
 
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

@@ -31,7 +31,7 @@ class Handle;
 
 namespace electron::api {
 
-class WebRequest final : public gin::Wrappable<WebRequest>,
+class WebRequest final : public gin::DeprecatedWrappable<WebRequest>,
                          public WebRequestAPI {
  public:
   // Return the WebRequest object attached to |browser_context|, create if there
@@ -54,7 +54,7 @@ class WebRequest final : public gin::Wrappable<WebRequest>,
   static const char* GetClassName() { return "WebRequest"; }
 
   // gin::Wrappable:
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
