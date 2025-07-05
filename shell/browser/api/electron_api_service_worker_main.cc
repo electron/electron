@@ -82,7 +82,8 @@ ServiceWorkerMain* ServiceWorkerMain::FromVersionID(
   return FromServiceWorkerKey(key);
 }
 
-gin::WrapperInfo ServiceWorkerMain::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo ServiceWorkerMain::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 ServiceWorkerMain::ServiceWorkerMain(content::ServiceWorkerContext* sw_context,
                                      int64_t version_id,

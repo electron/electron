@@ -144,7 +144,8 @@ content::RenderFrameHost* WebFrameMain::render_frame_host() const {
              : content::RenderFrameHost::FromFrameToken(frame_token_);
 }
 
-gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo WebFrameMain::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
     : frame_tree_node_id_(rfh->GetFrameTreeNodeId()),

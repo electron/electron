@@ -13,7 +13,7 @@ messages in the legacy window handle layer.
 These conditions are regularly hit with WCO-enabled windows on Windows.
 
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-index 48b91785925ba2d3712560a209fe07799df0face..99b06250fa5cf939bd66155f595796baf8cf9755 100644
+index 4d01a64ad5125df5f4c476e016c7796d6d704b8f..90df1b42a021f3af659f90ee7b934c95004ac34d 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
 @@ -325,12 +325,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,

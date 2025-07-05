@@ -19,7 +19,7 @@ class Handle;
 
 namespace electron::api {
 
-class AutoUpdater final : public gin::Wrappable<AutoUpdater>,
+class AutoUpdater final : public gin::DeprecatedWrappable<AutoUpdater>,
                           public gin_helper::EventEmitterMixin<AutoUpdater>,
                           public auto_updater::Delegate,
                           private WindowListObserver {
@@ -27,7 +27,7 @@ class AutoUpdater final : public gin::Wrappable<AutoUpdater>,
   static gin::Handle<AutoUpdater> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

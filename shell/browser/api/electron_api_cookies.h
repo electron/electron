@@ -33,14 +33,14 @@ class ElectronBrowserContext;
 
 namespace api {
 
-class Cookies final : public gin::Wrappable<Cookies>,
+class Cookies final : public gin::DeprecatedWrappable<Cookies>,
                       public gin_helper::EventEmitterMixin<Cookies> {
  public:
   static gin::Handle<Cookies> Create(v8::Isolate* isolate,
                                      ElectronBrowserContext* browser_context);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

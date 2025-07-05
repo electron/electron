@@ -21,7 +21,7 @@ class Handle;
 
 namespace electron::api {
 
-class DesktopCapturer final : public gin::Wrappable<DesktopCapturer>,
+class DesktopCapturer final : public gin::DeprecatedWrappable<DesktopCapturer>,
                               public gin_helper::Pinnable<DesktopCapturer>,
                               private DesktopMediaListObserver {
  public:
@@ -44,7 +44,7 @@ class DesktopCapturer final : public gin::Wrappable<DesktopCapturer>,
                      bool fetch_window_icons);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
