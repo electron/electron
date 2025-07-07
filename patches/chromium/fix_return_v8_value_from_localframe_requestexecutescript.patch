@@ -113,8 +113,8 @@ index 2d674cef2d653ed555cd99848f37c67e29eb00fa..cbc8b8b642376959f366a03bd04eace5
            want_result_option, mojom::blink::PromiseResultOption::kDoNotWait,
 -          std::move(callback),
 +          std::move(callback), base::NullCallback(),
-           MakeGarbageCollected<V8FunctionExecutor>(
-               script_state->GetIsolate(), function, receiver, argc, argv));
+           MakeGarbageCollected<V8FunctionExecutor>(isolate, function, receiver,
+                                                    argc, argv));
    executor->Run();
 @@ -258,10 +258,11 @@ void PausableScriptExecutor::CreateAndRun(
      mojom::blink::LoadEventBlockingOption blocking_option,
