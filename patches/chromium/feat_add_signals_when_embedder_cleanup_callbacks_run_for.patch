@@ -88,20 +88,19 @@ index dc3a5b0678b9c686e241b492e2c3b5ac833611a3..32a7ba4f557e65d9525d2ca07e8597e7
    // testing.
    V8IsolateMemoryDumpProvider* isolate_memory_dump_provider_for_testing()
 diff --git a/gin/wrappable.cc b/gin/wrappable.cc
-index 938502c999f18b851596d470409f518bc646c2ab..0ff8fbc6285c9261b814fbb0c84b520905b8af8b 100644
+index 721a0f3dc2c17..d95b331ea8dc3 100644
 --- a/gin/wrappable.cc
 +++ b/gin/wrappable.cc
-@@ -13,6 +13,9 @@ namespace gin {
+@@ -53,6 +53,8 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
  DeprecatedWrappableBase::DeprecatedWrappableBase() = default;
  
  DeprecatedWrappableBase::~DeprecatedWrappableBase() {
 +  if (!wrapper_.IsEmpty()) {
 +    wrapper_.ClearWeak();
-+  }
    wrapper_.Reset();
  }
  
-@@ -28,15 +31,24 @@ const char* DeprecatedWrappableBase::GetTypeName() {
+@@ -68,9 +70,13 @@ const char* DeprecatedWrappableBase::GetTypeName() {
  void DeprecatedWrappableBase::FirstWeakCallback(
      const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
    DeprecatedWrappableBase* wrappable = data.GetParameter();
@@ -117,20 +116,21 @@ index 938502c999f18b851596d470409f518bc646c2ab..0ff8fbc6285c9261b814fbb0c84b5209
 +  }
  }
  
+ NamedPropertyInterceptor*
+@@ -80,8 +86,11 @@ DeprecatedWrappableBase::GetNamedPropertyInterceptor() {
+ 
  void DeprecatedWrappableBase::SecondWeakCallback(
      const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
 +  if (IsolateHolder::DestroyedMicrotasksRunner()) {
 +    return;
-+  }
    DeprecatedWrappableBase* wrappable = data.GetParameter();
 -  delete wrappable;
 +  if (wrappable) {
 +    delete wrappable;
-+  }
  }
  
  v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
-@@ -72,10 +84,16 @@ v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
+@@ -117,10 +126,15 @@ v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
    void* values[] = {info, this};
    wrapper->SetAlignedPointerInInternalFields(2, indices, values);
    wrapper_.Reset(isolate, wrapper);
@@ -140,9 +140,8 @@ index 938502c999f18b851596d470409f518bc646c2ab..0ff8fbc6285c9261b814fbb0c84b5209
  }
  
 +void DeprecatedWrappableBase::ClearWeak() {
-+  if (!wrapper_.IsEmpty()) {
++  if (!wrapper_.IsEmpty())
 +    wrapper_.ClearWeak();
-+  }
 +}
 +
  namespace internal {
