@@ -224,7 +224,18 @@ runs:
           echo 'Uploading Electron release distribution to GitHub releases'
           script/release/uploaders/upload.py --verbose
         fi
+    - name: Generate siso report
+      if: always() && !cancelled()
+      shell: bash
+      run: |
+        cd src
+        e d siso report -C out/Default > siso_report.txt
+        SISO_REPORT_PATH=$(grep -o '/.*siso-report-[^ ]*' siso_report.txt)
+        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $GITHUB_ENV
+        cat siso_report.txt
+        echo "SISO REPORT AT $SISO_REPORT_PATH""
     - name: Generate Artifact Key
+      if: always() && !cancelled()
       shell: bash
       run: |
         if [ "${{ inputs.is-asan }}" = "true" ]; then 
@@ -236,9 +247,11 @@ runs:
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
+      if: always() && !cancelled()
       shell: bash
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
+      if: always() && !cancelled()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
