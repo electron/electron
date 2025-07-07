@@ -225,7 +225,7 @@ runs:
           script/release/uploaders/upload.py --verbose
         fi
     - name: Generate siso report
-      if: ${{ inputs.target-platform != 'win' }} && !cancelled()
+      if: ${{ inputs.target-platform != 'win' && !cancelled() }}
       shell: bash
       run: |
         cd src
@@ -235,7 +235,7 @@ runs:
         cat siso_report.txt
         echo "SISO REPORT AT $SISO_REPORT_PATH"
     - name: Generate siso report (Windows)
-      if: ${{ inputs.target-platform == 'win' }} && !cancelled()
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
         cd src
