@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 8 Jul 2025 00:37:16 +0900
+Subject: chore: print rlimit_data for mksnapshot process
+
+For testing purpose
+
+diff --git a/src/snapshot/mksnapshot.cc b/src/snapshot/mksnapshot.cc
+index 82725510581e36d343868eac78db385a0e9b90fb..4e657967b51c5a98f663161db44e6a5a3146ca09 100644
+--- a/src/snapshot/mksnapshot.cc
++++ b/src/snapshot/mksnapshot.cc
+@@ -23,6 +23,10 @@
+ #include "src/snapshot/snapshot.h"
+ #include "src/snapshot/static-roots-gen.h"
+ 
++#ifdef V8_OS_LINUX
++#include <sys/resource.h>
++#endif
++
+ namespace {
+ 
+ class SnapshotFileWriter {
+@@ -225,6 +229,14 @@ void MaybeSetCounterFunction(v8::Isolate* isolate) {
+ int main(int argc, char** argv) {
+   v8::base::EnsureConsoleOutput();
+ 
++#ifdef V8_OS_LINUX
++  struct rlimit old_rlimit;
++  if (getrlimit(RLIMIT_DATA, &old_rlimit) == 0) {
++    i::PrintF(stdout, "soft limit:%ju; hard limit:%ju",
++              old_rlimit.rlim_cur, old_rlimit.rlim_max);
++  }
++#endif
++
+   // Make mksnapshot runs predictable to create reproducible snapshots.
+   i::v8_flags.predictable = true;
+ 
