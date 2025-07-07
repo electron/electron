@@ -88,14 +88,14 @@ index dc3a5b0678b9c686e241b492e2c3b5ac833611a3..32a7ba4f557e65d9525d2ca07e8597e7
    // testing.
    V8IsolateMemoryDumpProvider* isolate_memory_dump_provider_for_testing()
 diff --git a/gin/wrappable.cc b/gin/wrappable.cc
-index 721a0f3dc2c17..d95b331ea8dc3 100644
+index 721a0f3dc2c1714726b711b1b661907e80a9bdcc..6b954d9840f9b1798aa1778fa39c8a20cb4f34df 100644
 --- a/gin/wrappable.cc
 +++ b/gin/wrappable.cc
 @@ -53,6 +53,8 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
  DeprecatedWrappableBase::DeprecatedWrappableBase() = default;
  
  DeprecatedWrappableBase::~DeprecatedWrappableBase() {
-+  if (!wrapper_.IsEmpty()) {
++  if (!wrapper_.IsEmpty())
 +    wrapper_.ClearWeak();
    wrapper_.Reset();
  }
@@ -121,11 +121,11 @@ index 721a0f3dc2c17..d95b331ea8dc3 100644
  
  void DeprecatedWrappableBase::SecondWeakCallback(
      const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
-+  if (IsolateHolder::DestroyedMicrotasksRunner()) {
++  if (IsolateHolder::DestroyedMicrotasksRunner())
 +    return;
    DeprecatedWrappableBase* wrappable = data.GetParameter();
 -  delete wrappable;
-+  if (wrappable) {
++  if (wrappable)
 +    delete wrappable;
  }
  
@@ -148,10 +148,10 @@ index 721a0f3dc2c17..d95b331ea8dc3 100644
  
  void* FromV8Impl(v8::Isolate* isolate,
 diff --git a/gin/wrappable.h b/gin/wrappable.h
-index d4252a594dd27f8566954de7715502b562e92559..8931df4a1aece0e353fbc7abfa1e207e415116ba 100644
+index 9048c4fc9f6b0a19f0620d6eb7e35d5005381d81..566d590890ba40ca3a254c7d88c0b30817d2a5e6 100644
 --- a/gin/wrappable.h
 +++ b/gin/wrappable.h
-@@ -81,6 +81,13 @@ class GIN_EXPORT DeprecatedWrappableBase {
+@@ -172,6 +172,13 @@ class GIN_EXPORT DeprecatedWrappableBase {
        v8::Isolate* isolate,
        DeprecatedWrapperInfo* wrapper_info);
  

@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 717a221b93ecd..b8d78d1af2ea4 100644
+index 717a221b93ecd3137b61fb21811f421e575aad8d..b8d78d1af2ea435d55eb8586c92dde16ed02d7ee 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -82,11 +82,13 @@
@@ -277,7 +277,7 @@ index 717a221b93ecd..b8d78d1af2ea4 100644
  
  std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 51bec8ef2a521..89291034933a2 100644
+index 51bec8ef2a5212494625898fdeb500344525d8f4..6deb4b86b35c2ba38849e25af7691ac858dfaa3e 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -9,10 +9,13 @@
@@ -308,11 +308,11 @@ index 51bec8ef2a521..89291034933a2 100644
  
 +  // Sentinel used to indicate that no PathService key is specified for a path in
 +  // the struct below.
-+  constexpr const int kNoBasePathKey = -1;
++  static constexpr const int kNoBasePathKey = -1;
 +
 +  // A wrapper around `base::NormalizeFilePath` that returns its result instead of
 +  // using an out parameter.
-+  base::FilePath NormalizeFilePath(const base::FilePath& path) {
++  static base::FilePath NormalizeFilePath(const base::FilePath& path) {
 +    base::FilePath absolute_path = path;
 +    if (!absolute_path.IsAbsolute()) {
 +      absolute_path = base::MakeAbsoluteFilePath(absolute_path);
@@ -337,7 +337,7 @@ index 51bec8ef2a521..89291034933a2 100644
 +
 +  using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
 +
-+  std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
++  static std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
 +  GenerateBlockPaths(bool should_normalize_file_path) {
 +    static constexpr ChromeFileSystemAccessPermissionContext::BlockPath
 +        kBlockPaths[] = {

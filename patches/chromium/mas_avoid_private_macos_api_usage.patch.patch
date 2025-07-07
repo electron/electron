@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index cde64783697885862d52231d39a5501406337447..bc2fc7ab242c633de88c69e5a6136f8f47d289f6 100644
+index 08919400794cc35e0c0e41958c0b295c3fd1c2d2..ab9645ed3503a9654a19c76b68cc6534b52ebc8d 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1047,6 +1047,7 @@ component("base") {
+@@ -1048,6 +1048,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 62b821259c8ba4c90e76740d0f9b7878f0ce08d3..d72c9adeeff4b1d0b8af5ef4792676d408c01fe0 100644
+index b3286de2a30c93f9f0c92c54bf3e1dfca3593614..fbf2e7e26f069d9973ec6d44a8ce18f39a8f68d8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -667,6 +667,7 @@ static_library("test_support") {
@@ -824,7 +824,7 @@ index 62b821259c8ba4c90e76740d0f9b7878f0ce08d3..d72c9adeeff4b1d0b8af5ef4792676d4
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3276,6 +3279,7 @@ test("content_unittests") {
+@@ -3277,6 +3280,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",

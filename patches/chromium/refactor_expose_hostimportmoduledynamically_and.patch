@@ -7,7 +7,7 @@ Subject: refactor: expose HostImportModuleDynamically and
 This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 9e484f5b893b25679e5fa34d989d43e6af89a089..7d2098fdc31b6484132741839751b58d2a0ec411 100644
+index 5f3ef90d8c8f175455a663c407e574d694bfcf7b..4c7048931200a8cf09a6fba3d99b7347debda3f3 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 @@ -628,8 +628,9 @@ bool WasmJSPromiseIntegrationEnabledCallback(v8::Local<v8::Context> context) {
@@ -29,8 +29,7 @@ index 9e484f5b893b25679e5fa34d989d43e6af89a089..7d2098fdc31b6484132741839751b58d
  
 +namespace {
  v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
--    v8::Local<v8::Context> context,
-+    v8::Local<v8::Context> context,V8Initializer::
+     v8::Local<v8::Context> context,
      v8::Local<v8::Data> v8_host_defined_options,
      v8::Local<v8::Value> v8_referrer_resource_url,
      v8::Local<v8::String> v8_specifier,
