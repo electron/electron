@@ -44,8 +44,10 @@ class AutofillPopupChildView : public views::View {
   explicit AutofillPopupChildView(const std::u16string& suggestion)
       : suggestion_(suggestion) {
     SetFocusBehavior(FocusBehavior::ALWAYS);
-    SetAccessibleRole(ax::mojom::Role::kMenuItem);
-    GetViewAccessibility().SetName(suggestion);
+
+    auto& view_a11y = GetViewAccessibility();
+    view_a11y.SetRole(ax::mojom::Role::kMenuItem);
+    view_a11y.SetName(suggestion);
   }
 
   // disable copy

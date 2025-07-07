@@ -41,8 +41,10 @@ AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
   CreateChildViews();
   SetFocusBehavior(FocusBehavior::ALWAYS);
   set_drag_controller(this);
-  SetAccessibleRole(ax::mojom::Role::kMenu);
-  SGetViewAccessibility().SetName(u"Autofill Menu");
+
+  auto& view_a11y = GetViewAccessibility();
+  view_a11y.SetRole(ax::mojom::Role::kMenu);
+  view_a11y.SetName(u"Autofill Menu");
 }
 
 AutofillPopupView::~AutofillPopupView() {

@@ -44,9 +44,11 @@ MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
   SetLayoutManager(std::make_unique<views::BoxLayout>(
       views::BoxLayout::Orientation::kHorizontal));
   window_->AddObserver(this);
-  GetViewAccessibility().SetName(
-      std::u16string(), ax::mojom::NameFrom::kAttributeExplicitlyEmpty);
-  SetAccessibleRole(ax::mojom::Role::kMenuBar);
+
+  auto& view_a11y = GetViewAccessibility();
+  view_a11y.SetName(std::u16string(),
+                    ax::mojom::NameFrom::kAttributeExplicitlyEmpty);
+  view_a11y.SetRole(ax::mojom::Role::kMenuBar);
 }
 
 MenuBar::~MenuBar() {

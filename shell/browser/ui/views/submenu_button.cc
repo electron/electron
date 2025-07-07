@@ -26,7 +26,7 @@ SubmenuButton::SubmenuButton(PressedCallback callback,
   // Don't use native style border.
   SetBorder(CreateDefaultBorder());
 #endif
-  SetAccessibleRole(ax::mojom::Role::kPopUpButton);
+  GetViewAccessibility().SetRole(ax::mojom::Role::kPopUpButton);
   if (GetUnderlinePosition(title, &accelerator_, &underline_start_,
                            &underline_end_))
     gfx::Canvas::SizeStringInt(GetText(), gfx::FontList(), &text_width_,
