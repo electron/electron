@@ -17,6 +17,7 @@
 #include "ui/compositor/layer.h"
 #include "ui/gfx/font_list.h"
 #include "ui/linux/linux_ui.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
@@ -305,7 +306,8 @@ views::Button* OpaqueFrameView::CreateButton(
 
   button->SetFocusBehavior(FocusBehavior::ACCESSIBLE_ONLY);
   button->SetCallback(std::move(callback));
-  button->SetAccessibleName(l10n_util::GetStringUTF16(accessibility_string_id));
+  button->GetViewAccessibility().SetName(
+      l10n_util::GetStringUTF16(accessibility_string_id));
   button->SetID(view_id);
 
   button->SetPaintToLayer();

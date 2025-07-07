@@ -23,6 +23,7 @@
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/text_utils.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/border.h"
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/widget/widget.h"
@@ -41,7 +42,7 @@ AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
   SetFocusBehavior(FocusBehavior::ALWAYS);
   set_drag_controller(this);
   SetAccessibleRole(ax::mojom::Role::kMenu);
-  SetAccessibleName(u"Autofill Menu");
+  SGetViewAccessibility().SetName(u"Autofill Menu");
 }
 
 AutofillPopupView::~AutofillPopupView() {

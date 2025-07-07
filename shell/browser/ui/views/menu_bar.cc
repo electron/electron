@@ -11,6 +11,7 @@
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/color/color_provider.h"
 #include "ui/native_theme/common_theme.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"
 
@@ -43,8 +44,8 @@ MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
   SetLayoutManager(std::make_unique<views::BoxLayout>(
       views::BoxLayout::Orientation::kHorizontal));
   window_->AddObserver(this);
-  SetAccessibleName(std::u16string(),
-                    ax::mojom::NameFrom::kAttributeExplicitlyEmpty);
+  GetViewAccessibility().SetName(
+      std::u16string(), ax::mojom::NameFrom::kAttributeExplicitlyEmpty);
   SetAccessibleRole(ax::mojom::Role::kMenuBar);
 }
 

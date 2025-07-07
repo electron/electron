@@ -21,6 +21,7 @@
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/scoped_canvas.h"
+#include "ui/views/accessibility/view_accessibility.h"
 
 namespace electron {
 
@@ -35,7 +36,7 @@ WinCaptionButton::WinCaptionButton(PressedCallback callback,
   SetAnimateOnStateChange(true);
   // Not focusable by default, only for accessibility.
   SetFocusBehavior(FocusBehavior::ACCESSIBLE_ONLY);
-  SetAccessibleName(accessible_name);
+  GetViewAccessibility().SetName(accessible_name);
 }
 
 WinCaptionButton::~WinCaptionButton() = default;

@@ -14,6 +14,7 @@
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/drag_controller.h"
 #include "ui/views/focus/widget_focus_manager.h"
 #include "ui/views/widget/widget_delegate.h"
@@ -44,7 +45,7 @@ class AutofillPopupChildView : public views::View {
       : suggestion_(suggestion) {
     SetFocusBehavior(FocusBehavior::ALWAYS);
     SetAccessibleRole(ax::mojom::Role::kMenuItem);
-    SetAccessibleName(suggestion);
+    GetViewAccessibility().SetName(suggestion);
   }
 
   // disable copy
