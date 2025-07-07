@@ -11,7 +11,7 @@ on:
       skip-macos:
         type: boolean
         description: 'Skip macOS builds'
-        default: false
+        default: true
         required: false
       skip-linux:
         type: boolean
@@ -21,12 +21,12 @@ on:
       skip-windows:
         type: boolean
         description: 'Skip Windows builds'
-        default: false
+        default: true
         required: false
       skip-lint:
         type: boolean
         description: 'Skip lint check'
-        default: false
+        default: true
         required: false
   push:
     branches:
@@ -254,6 +254,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml
     needs: checkout-linux
+    if: ${{ !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-linux-amd64-32core
       test-runs-on: electron-arc-linux-amd64-4core
@@ -274,6 +275,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
+    if: ${{ !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-linux-amd64-32core
       test-runs-on: electron-arc-linux-amd64-4core
@@ -295,6 +297,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
+    if: ${{ !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-linux-amd64-32core
       test-runs-on: electron-arc-linux-arm64-4core

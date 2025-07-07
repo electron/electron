@@ -62,11 +62,22 @@ runs:
           ULIMIT_HD=$(ulimit -Hd)
           echo "ulimit -d: $ULIMIT_D"
           echo "ulimit -Hd: $ULIMIT_HD"
+          wget https://github.com/rr-debugger/rr/releases/download/5.9.0/rr-5.9.0-Linux-$(uname -m).deb
+          sudo dpkg -i rr-5.9.0-Linux-$(uname -m).deb
         fi
 
-        NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
-        cp out/Default/.ninja_log out/electron_ninja_log
-        node electron/script/check-symlinks.js
+        # Enable perf events for rr
+        echo 0 | sudo tee /proc/sys/kernel/perf_event_paranoid > /dev/null
+        # Enable ptrace-attach to any process. This lets us get more data when tests fail.
+        echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope > /dev/null
+        NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES --target v8:mksnapshot
+        if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+          cd out/Default && rr record ./clang_x64_v8_arm64/mksnapshot --turbo_instruction_scheduling --stress-turbo-late-spilling --target_os=linux --target_arch=arm64 --embedded_src gen/v8/embedded.S --predictable --no-use-ic --builtins-effects-src gen/v8/src/builtins/builtins-effects.cc --turbo-elide-frames --embedded_variant Default --random-seed 314159265 --startup_blob snapshot_blob.bin --no-native-code-counters --concurrent-builtin-generation --concurrent-turbofan-max-threads=0
+        else
+          cd out/Default && rr record ./mksnapshot --turbo_instruction_scheduling --stress-turbo-late-spilling --target_os=linux --target_arch=x64 --embedded_src gen/v8/embedded.S --predictable --no-use-ic --builtins-effects-src gen/v8/src/builtins/builtins-effects.cc --turbo-elide-frames --embedded_variant Default --random-seed 314159265 --startup_blob snapshot_blob.bin --no-native-code-counters --concurrent-builtin-generation --concurrent-turbofan-max-threads=0
+        fi
+        #cp out/Default/.ninja_log out/electron_ninja_log
+        #node electron/script/check-symlinks.js
     - name: Strip Electron Binaries ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.strip-binaries == 'true' }}

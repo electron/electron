@@ -4,4 +4,4 @@ is_component_build = false
 is_component_ffmpeg = true
 is_official_build = false
 dcheck_always_on = true
-symbol_level = 1
+symbol_level = 2
