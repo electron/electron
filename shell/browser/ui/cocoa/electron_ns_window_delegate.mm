@@ -299,6 +299,8 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {
   // Store resizable mask so it can be restored after exiting fullscreen.
   is_resizable_ = shell_->HasStyleMask(NSWindowStyleMaskResizable);
+  // Store borderless mask so it can be restored after exiting fullscreen.
+  is_borderless_ = !shell_->HasStyleMask(NSWindowStyleMaskTitled);
 
   shell_->set_is_transitioning_fullscreen(true);
 
@@ -306,6 +308,8 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 
   // Set resizable to true before entering fullscreen.
   shell_->SetResizable(true);
+  // Set borderless to false before entering fullscreen.
+  shell_->SetBorderless(false);
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
@@ -341,6 +345,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   shell_->set_is_transitioning_fullscreen(false);
 
   shell_->SetResizable(is_resizable_);
+  shell_->SetBorderless(is_borderless_);
   shell_->NotifyWindowLeaveFullScreen();
 
   if (shell_->HandleDeferredClose())
