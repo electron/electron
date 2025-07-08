@@ -175,6 +175,8 @@ class NativeWindowMac : public NativeWindow,
   // cleanup in destructor.
   void Cleanup();
 
+  void SetBorderless(bool borderless);
+
   void UpdateVibrancyRadii(bool fullscreen);
 
   void UpdateWindowOriginalFrame();
