@@ -128,6 +128,7 @@ class WebFrameMain final : public gin::DeprecatedWrappable<WebFrameMain>,
   bool Detached() const;
   content::FrameTreeNodeId FrameTreeNodeID() const;
   std::string Name() const;
+  std::string FrameToken() const;
   base::ProcessId OSProcessID() const;
   int32_t ProcessID() const;
   int RoutingID() const;
