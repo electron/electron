@@ -308,7 +308,7 @@ class WebContents final : public ExclusiveAccessContext,
   // Methods for creating <webview>.
   [[nodiscard]] bool is_guest() const { return type_ == Type::kWebView; }
   void AttachToIframe(content::WebContents* embedder_web_contents,
-                      int embedder_frame_id);
+                      std::string embedder_frame_token);
   void DetachFromOuterFrame();
 
   // Methods for offscreen rendering

@@ -31,6 +31,7 @@
 #include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/web_contents_utility.mojom.h"
 #include "shell/renderer/api/context_bridge/object_cache.h"
@@ -350,7 +351,6 @@ class WebFrameRenderer final
       v8::Isolate* isolate) override {
     return gin::DeprecatedWrappable<WebFrameRenderer>::GetObjectTemplateBuilder(
                isolate)
-        .SetMethod("getWebFrameId", &WebFrameRenderer::GetWebFrameId)
         .SetMethod("setName", &WebFrameRenderer::SetName)
         .SetMethod("setZoomLevel", &WebFrameRenderer::SetZoomLevel)
         .SetMethod("getZoomLevel", &WebFrameRenderer::GetZoomLevel)
@@ -381,9 +381,12 @@ class WebFrameRenderer final
         // Frame navigators
         .SetMethod("findFrameByRoutingId",
                    &WebFrameRenderer::FindFrameByRoutingId)
+        .SetMethod("findFrameByToken", &WebFrameRenderer::FindFrameByToken)
         .SetMethod("getFrameForSelector",
                    &WebFrameRenderer::GetFrameForSelector)
         .SetMethod("findFrameByName", &WebFrameRenderer::FindFrameByName)
+        .SetMethod("_findFrameByWindow", &WebFrameRenderer::FindFrameByWindow)
+        .SetProperty("frameToken", &WebFrameRenderer::GetFrameToken)
         .SetProperty("opener", &WebFrameRenderer::GetOpener)
         .SetProperty("parent", &WebFrameRenderer::GetFrameParent)
         .SetProperty("top", &WebFrameRenderer::GetTop)
@@ -528,23 +531,6 @@ class WebFrameRenderer final
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
     web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
-  }
-
-  static int GetWebFrameId(v8::Local<v8::Object> content_window) {
-    // Get the WebLocalFrame before (possibly) executing any user-space JS while
-    // getting the |params|. We track the status of the RenderFrame via an
-    // observer in case it is deleted during user code execution.
-    content::RenderFrame* render_frame = GetRenderFrame(content_window);
-    if (!render_frame)
-      return -1;
-
-    blink::WebLocalFrame* frame = render_frame->GetWebFrame();
-    // Parent must exist.
-    blink::WebFrame* parent_frame = frame->Parent();
-    DCHECK(parent_frame);
-    DCHECK(parent_frame->IsWebLocalFrame());
-
-    return render_frame->GetRoutingID();
   }
 
   void SetSpellCheckProvider(gin_helper::ErrorThrower thrower,
@@ -821,12 +807,67 @@ class WebFrameRenderer final
 
   v8::Local<v8::Value> FindFrameByRoutingId(v8::Isolate* isolate,
                                             int routing_id) {
+    // content::RenderFrame* render_frame =
+    //     content::RenderFrame::FromRoutingID(routing_id);
+    // if (render_frame)
+    //   return WebFrameRenderer::Create(isolate, render_frame).ToV8();
+    // else
+    //   return v8::Null(isolate);
+    util::EmitDeprecationWarning(isolate,
+                                 "findFrameByRoutingId() is deprecated, use "
+                                 "findFrameByToken() instead.");
+    return v8::Null(isolate);
+  }
+
+  v8::Local<v8::Value> FindFrameByToken(v8::Isolate* isolate,
+                                        std::string frame_token) {
+    auto token = base::Token::FromString(frame_token);
+    if (!token) {
+      return v8::Null(isolate);
+    }
+    auto unguessable_token =
+        base::UnguessableToken::Deserialize(token->high(), token->low());
+    if (!unguessable_token) {
+      return v8::Null(isolate);
+    }
+    auto* web_frame = blink::WebLocalFrame::FromFrameToken(
+        blink::LocalFrameToken(unguessable_token.value()));
     content::RenderFrame* render_frame =
-        content::RenderFrame::FromRoutingID(routing_id);
+        content::RenderFrame::FromWebFrame(web_frame);
     if (render_frame)
       return WebFrameRenderer::Create(isolate, render_frame).ToV8();
     else
       return v8::Null(isolate);
+  }
+
+  v8::Local<v8::Value> FindFrameByWindow(v8::Isolate* isolate,
+                                         v8::Local<v8::Object> content_window) {
+    // Get the WebLocalFrame before (possibly) executing any user-space JS while
+    // getting the |params|. We track the status of the RenderFrame via an
+    // observer in case it is deleted during user code execution.
+    content::RenderFrame* render_frame = GetRenderFrame(content_window);
+    if (!render_frame)
+      return v8::Null(isolate);
+
+    blink::WebLocalFrame* frame = render_frame->GetWebFrame();
+    // Parent must exist.
+    blink::WebFrame* parent_frame = frame->Parent();
+    DCHECK(parent_frame);
+    DCHECK(parent_frame->IsWebLocalFrame());
+
+    return WebFrameRenderer::Create(isolate, render_frame).ToV8();
+  }
+
+  std::string GetFrameToken(v8::Isolate* isolate) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "frameToken", &render_frame))
+      return "";
+
+    blink::WebLocalFrame* frame = render_frame->GetWebFrame();
+    DCHECK(frame);
+
+    // TODO: use gin serializer?
+    return frame->GetLocalFrameToken().ToString();
   }
 
   v8::Local<v8::Value> GetOpener(v8::Isolate* isolate) {
@@ -903,11 +944,9 @@ class WebFrameRenderer final
   }
 
   int GetRoutingId(v8::Isolate* isolate) {
-    content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(isolate, "routingId", &render_frame))
-      return 0;
-
-    return render_frame->GetRoutingID();
+    util::EmitDeprecationWarning(
+        isolate, "routingId is deprecated, use frameToken instead.");
+    return -1;
   }
 };
 }  // namespace

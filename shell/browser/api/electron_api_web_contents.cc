@@ -26,6 +26,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/threading/scoped_blocking_call.h"
+#include "base/unguessable_token.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/devtools/devtools_eye_dropper.h"
@@ -147,6 +148,7 @@
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/peerconnection/webrtc_ip_handling_policy.h"
+#include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
@@ -3558,10 +3560,20 @@ void WebContents::OnCursorChanged(const ui::Cursor& cursor) {
 }
 
 void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
-                                 int embedder_frame_id) {
+                                 std::string embedder_frame_token) {
+  auto token = base::Token::FromString(embedder_frame_token);
+  if (!token)
+    return;
+  auto unguessable_token =
+      base::UnguessableToken::Deserialize(token->high(), token->low());
+  if (!unguessable_token)
+    return;
+  auto frame_token = blink::LocalFrameToken(unguessable_token.value());
+
   attached_ = true;
-  if (guest_delegate_)
-    guest_delegate_->AttachToIframe(embedder_web_contents, embedder_frame_id);
+  if (guest_delegate_) {
+    guest_delegate_->AttachToIframe(embedder_web_contents, frame_token);
+  }
 }
 
 bool WebContents::IsOffScreen() const {
