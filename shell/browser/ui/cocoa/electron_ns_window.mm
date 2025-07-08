@@ -378,9 +378,6 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (BOOL)toggleFullScreenMode:(id)sender {
-  if (!shell_->has_frame() && !shell_->HasStyleMask(NSWindowStyleMaskTitled))
-    return NO;
-
   bool is_simple_fs = shell_->IsSimpleFullScreen();
   bool always_simple_fs = shell_->always_simple_fullscreen();
 
