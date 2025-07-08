@@ -240,9 +240,11 @@ runs:
       run: |
         cd src
         e d siso report -C out\Default > siso_report.txt
-        $SISO_REPORT_PATH = Select-String -Path siso_report.txt -Pattern '/.*siso-report-[^ ]*' | ForEach-Object {
-          if ($_ -match '(/.*siso-report-[^ ]*)') { $matches[1] }
+        $SISO_REPORT_PATH = Get-Content "siso_report.txt" | Select-String "report file:\s*(.+)" | ForEach-Object { 
+          $_.Matches.Groups[1].Value.Trim() 
         }
+        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH"
+        type .\siso_report.txt
         echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $env:GITHUB_ENV
     - name: Generate Artifact Key
       if: always() && !cancelled()
