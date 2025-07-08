@@ -156,7 +156,7 @@ index 414af5f3574d3fa7c45a5b809cd99d19e5202160..84ac2a68a38b0c04391941408a8f9d6c
            GetWebFrame()->IsAdScriptInStack());
  
 +  params->raw_features = features.raw_features.Utf8(
-+      WTF::Utf8ConversionMode::kStrictReplacingErrors);
++      blink::Utf8ConversionMode::kStrictReplacingErrors);
 +  params->body = GetRequestBodyForWebURLRequest(request);
 +
    // We preserve this information before sending the message since |params| is
