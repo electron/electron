@@ -1,8 +1,8 @@
 {
   "extends": "standard",
   "plugins": [
-    "markdown",
-    "unicorn"
+    "import",
+    "markdown"
   ],
   "overrides": [
     {
@@ -30,6 +30,6 @@
     "no-undef": "off",
     "no-unused-expressions": "off",
     "no-unused-vars": "off",
-    "unicorn/prefer-node-protocol": "error"
+    "import/enforce-node-protocol-usage": ["error", "always"]
   }
 }
