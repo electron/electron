@@ -262,7 +262,7 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 9853bac93511ff5f790833528829a2c0017ed505..c6daf3734679bd07a828f5c87deb0698db861046 100644
+index 9853bac93511ff5f790833528829a2c0017ed505..8fd2b4bc632bc15667e58b333a50312ae1dfda5f 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -30,6 +30,7 @@
@@ -282,16 +282,14 @@ index 9853bac93511ff5f790833528829a2c0017ed505..c6daf3734679bd07a828f5c87deb0698
    if (!service_started.value_or(false)) {
      g_service_availability = ServiceAvailability::kNotAvailable;
      return;
-@@ -174,18 +175,24 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
- 
+@@ -175,17 +176,21 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
    GetMainTaskRunner() = base::SequencedTaskRunner::GetCurrentDefault();
  
--  dbus_xdg::SetSystemdScopeUnitNameForXdgPortal(
-+#if 0
-+   dbus_xdg::SetSystemdScopeUnitNameForXdgPortal(
-       dbus_thread_linux::GetSharedSessionBus().get(),
-       base::BindOnce(&OnSystemdUnitStarted));
-+#endif
+   dbus_xdg::SetSystemdScopeUnitNameForXdgPortal(
+-      dbus_thread_linux::GetSharedSessionBus().get(),
+-      base::BindOnce(&OnSystemdUnitStarted));
++    dbus_thread_linux::GetSharedSessionBus().get(),
++    base::BindOnce(&OnSystemdUnitStarted));
 +  file_dialog::StartPortalAvailabilityTestInBackground();
  }
  
@@ -308,7 +306,7 @@ index 9853bac93511ff5f790833528829a2c0017ed505..c6daf3734679bd07a828f5c87deb0698
  }
  
  bool SelectFileDialogLinuxPortal::IsRunning(
-@@ -390,11 +397,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -390,11 +395,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
    DbusDictionary dict;
  
@@ -326,7 +324,7 @@ index 9853bac93511ff5f790833528829a2c0017ed505..c6daf3734679bd07a828f5c87deb0698
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -407,6 +417,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -407,6 +415,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  
