@@ -34,15 +34,15 @@ vars = {
   'yarn_version': '1.22.22',
 
   # To be able to build clean Chromium from sources.
-  'apply_patches': True,
+  'apply_patches': False,
 
   # To use an mtime cache for patched files to speed up builds.
   'use_mtime_cache': True,
 
   # To allow in-house builds to checkout those manually.
   'checkout_chromium': True,
-  'checkout_node': True,
-  'checkout_nan': True,
+  'checkout_node': False,
+  'checkout_nan': False,
   'checkout_pgo_profiles': True,
 
   # It's only needed to parse the native tests configurations.

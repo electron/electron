@@ -5,47 +5,9 @@
 	"onCreateCommand": ".devcontainer/on-create-command.sh",
 	"updateContentCommand": ".devcontainer/update-content-command.sh",
 	"workspaceFolder": "/workspaces/gclient/src/electron",
-	"forwardPorts": [6080, 5901],
-	"portsAttributes": {
-		"6080": {
-			"label": "VNC web client (noVNC)",
-			"onAutoForward": "silent"
-		},
-		"5901": {
-			"label": "VNC TCP port",
-			"onAutoForward": "silent"
-		}
-	},
 	"hostRequirements": {
 		"storage": "128gb",
 		"cpus": 16
 	},
-	"remoteUser": "builduser",
-	"customizations": {
-		"codespaces": {
-			"openFiles": [
-				".devcontainer/README.md"
-			]
-		},
-		"vscode": {
-			"extensions": [
-				"joeleinbinder.mojom-language",
-				"rafaelmaiolla.diff",
-				"surajbarkale.ninja",
-				"ms-vscode.cpptools",
-				"mutantdino.resourcemonitor",
-				"dsanders11.vscode-electron-build-tools",
-				"dbaeumer.vscode-eslint",
-				"shakram02.bash-beautify",
-				"marshallofsound.gnls-electron"
-			],
-			"settings": {
-				"editor.tabSize": 2,
-				"bashBeautify.tabSize": 2,
-				"typescript.tsdk": "node_modules/typescript/lib",
-				"javascript.preferences.quoteStyle": "single",
-				"typescript.preferences.quoteStyle": "single"
-			}
-		}
-	}
+	"remoteUser": "builduser"
 }
