@@ -148,7 +148,7 @@ index 4c687a84d14d5fa8cd5e376580b594ed0d116ef5..1a71f8020ba4de7bd4966bb025631552
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 414af5f3574d3fa7c45a5b809cd99d19e5202160..84ac2a68a38b0c04391941408a8f9d6cfbb168a4 100644
+index 414af5f3574d3fa7c45a5b809cd99d19e5202160..b74623455d53d109a97e6c767f56a9beeb0e87e5 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -6756,6 +6756,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
