@@ -234,7 +234,7 @@ void BrowserWindow::Blur() {
 
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   BaseWindow::SetBackgroundColor(color_name);
-  SkColor color = ParseCSSColor(color_name);
+  SkColor color = ParseCSSColor(color_name).value_or(SK_ColorWHITE);
   if (api_web_contents_) {
     api_web_contents_->SetBackgroundColor(color);
     // Also update the web preferences object otherwise the view will be reset
@@ -242,7 +242,7 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
     auto* web_preferences =
         WebContentsPreferences::From(api_web_contents_->web_contents());
     if (web_preferences) {
-      web_preferences->SetBackgroundColor(ParseCSSColor(color_name));
+      web_preferences->SetBackgroundColor(color);
     }
   }
 }
