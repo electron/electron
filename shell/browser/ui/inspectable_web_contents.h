@@ -190,6 +190,9 @@ class InspectableWebContents
   void DoAidaConversation(DispatchCallback callback,
                           const std::string& request,
                           int stream_id) override {}
+  void AidaCodeComplete(DispatchCallback callback,
+                        const std::string& request,
+                        int stream_id) override {}
   void RegisterAidaClientEvent(DispatchCallback callback,
                                const std::string& request) override {}
 
