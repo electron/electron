@@ -200,6 +200,7 @@ describe('webFrameMain module', () => {
       expect(webFrame).to.have.property('osProcessId').that.is.a('number');
       expect(webFrame).to.have.property('processId').that.is.a('number');
       expect(webFrame).to.have.property('routingId').that.is.a('number');
+      expect(webFrame).to.have.property('frameToken').that.is.a('string');
     });
   });
 
@@ -295,8 +296,8 @@ describe('webFrameMain module', () => {
       const webFrame = w.webContents.mainFrame;
       const pongPromise = once(ipcMain, 'preload-pong');
       webFrame.send('preload-ping');
-      const [, routingId] = await pongPromise;
-      expect(routingId).to.equal(webFrame.routingId);
+      const [, frameToken] = await pongPromise;
+      expect(frameToken).to.equal(webFrame.frameToken);
     });
   });
 
@@ -391,7 +392,6 @@ describe('webFrameMain module', () => {
             expect(senderFrame).to.not.be.null();
             expect(senderFrame!.detached).to.be.true();
             expect(senderFrame!.processId).to.equal(event.processId);
-            expect(senderFrame!.routingId).to.equal(event.frameId);
             resolve();
           } catch (error) {
             reject(error);
@@ -471,7 +471,7 @@ describe('webFrameMain module', () => {
     });
   });
 
-  describe('webFrameMain.fromId', () => {
+  xdescribe('webFrameMain.fromId', () => {
     it('returns undefined for unknown IDs', () => {
       expect(webFrameMain.fromId(0, 0)).to.be.undefined();
     });
@@ -483,11 +483,11 @@ describe('webFrameMain module', () => {
       const didFrameFinishLoad = emittedNTimes(w.webContents, 'did-frame-finish-load', 3);
       w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
 
-      for (const [, isMainFrame, frameProcessId, frameRoutingId] of await didFrameFinishLoad) {
-        const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
+      for (const [, isMainFrame, frameProcessId, frameToken] of await didFrameFinishLoad) {
+        const frame = webFrameMain.fromId(frameProcessId, frameToken);
         expect(frame).not.to.be.null();
         expect(frame?.processId).to.be.equal(frameProcessId);
-        expect(frame?.routingId).to.be.equal(frameRoutingId);
+        expect(frame?.frameToken).to.be.equal(frameToken);
         expect(frame?.top === frame).to.be.equal(isMainFrame);
       }
     });

@@ -807,12 +807,6 @@ class WebFrameRenderer final
 
   v8::Local<v8::Value> FindFrameByRoutingId(v8::Isolate* isolate,
                                             int routing_id) {
-    // content::RenderFrame* render_frame =
-    //     content::RenderFrame::FromRoutingID(routing_id);
-    // if (render_frame)
-    //   return WebFrameRenderer::Create(isolate, render_frame).ToV8();
-    // else
-    //   return v8::Null(isolate);
     util::EmitDeprecationWarning(isolate,
                                  "findFrameByRoutingId() is deprecated, use "
                                  "findFrameByToken() instead.");
