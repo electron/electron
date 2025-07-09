@@ -172,7 +172,7 @@ index e5bf2b529bf23914677e25d7468aad58a4684557..9a3c6029ff3319cce58c79782a7bd5d1
    };
    // Check to see if the given public key is suitable for this DH instance.
 diff --git a/node.gni b/node.gni
-index b4450e3dd17994d1eaf59eb5cff5912545e89793..203b4abbc44df9e58083c819f61f9025104abdc6 100644
+index 62cd49c6a87074912a1cb6792576c8d4f239b669..165b26a79a7f2b74d2a2252dc2350b2e10c091e6 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -11,7 +11,7 @@ declare_args() {
