@@ -53,7 +53,7 @@
 #include "ui/wm/core/window_util.h"
 
 #if BUILDFLAG(IS_LINUX)
-#include "base/strings/string_util.h"
+#include "base/notimplemented.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/linux/unity_service.h"
 #include "shell/browser/linux/x11_util.h"
@@ -80,6 +80,7 @@
 #include "base/win/windows_version.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
+#include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/color_utils.h"
@@ -198,9 +199,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (std::string val; options.Get(options::kTitle, &val))
     SetTitle(val);
 
-  bool menu_bar_autohide;
-  if (options.Get(options::kAutoHideMenuBar, &menu_bar_autohide))
-    root_view_.SetAutoHideMenuBar(menu_bar_autohide);
+  if (bool val; options.Get(options::kAutoHideMenuBar, &val))
+    root_view_.SetAutoHideMenuBar(val);
 
 #if BUILDFLAG(IS_WIN)
   // On Windows we rely on the CanResize() to indicate whether window can be
@@ -216,28 +216,23 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
   overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
+
+  if (std::string str; options.Get(options::kAccentColor, &str)) {
+    std::optional<SkColor> parsed_color = ParseCSSColor(str);
+    if (parsed_color.has_value())
+      accent_color_ = parsed_color.value();
+  } else if (bool flag; options.Get(options::kAccentColor, &flag)) {
+    accent_color_ = flag;
+  }
 #endif
 
-  v8::Local<v8::Value> titlebar_overlay;
-  if (options.Get(options::ktitleBarOverlay, &titlebar_overlay) &&
-      titlebar_overlay->IsObject()) {
-    auto titlebar_overlay_obj =
-        gin_helper::Dictionary::CreateEmpty(options.isolate());
-    options.Get(options::ktitleBarOverlay, &titlebar_overlay_obj);
-
-    std::string overlay_color_string;
-    if (titlebar_overlay_obj.Get(options::kOverlayButtonColor,
-                                 &overlay_color_string)) {
-      bool success = content::ParseCssColorString(overlay_color_string,
-                                                  &overlay_button_color_);
+  if (gin_helper::Dictionary od; options.Get(options::ktitleBarOverlay, &od)) {
+    if (std::string val; od.Get(options::kOverlayButtonColor, &val)) {
+      bool success = content::ParseCssColorString(val, &overlay_button_color_);
       DCHECK(success);
     }
-
-    std::string overlay_symbol_color_string;
-    if (titlebar_overlay_obj.Get(options::kOverlaySymbolColor,
-                                 &overlay_symbol_color_string)) {
-      bool success = content::ParseCssColorString(overlay_symbol_color_string,
-                                                  &overlay_symbol_color_);
+    if (std::string val; od.Get(options::kOverlaySymbolColor, &val)) {
+      bool success = content::ParseCssColorString(val, &overlay_symbol_color_);
       DCHECK(success);
     }
   }
@@ -279,8 +274,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (IsTranslucent() && !has_frame())
     params.shadow_type = InitParams::ShadowType::kNone;
 
-  bool focusable;
-  if (options.Get(options::kFocusable, &focusable) && !focusable)
+  if (bool val; options.Get(options::kFocusable, &val) && !val)
     params.activatable = InitParams::Activatable::kNo;
 
 #if BUILDFLAG(IS_WIN)
@@ -403,11 +397,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   // NOTE(@mlaurencin) Spec requirements can be found here:
   // https://developer.mozilla.org/en-US/docs/Web/API/Window/open#width
-  int kMinSizeReqdBySpec = 100;
-  int inner_width = 0;
-  int inner_height = 0;
-  options.Get(options::kinnerWidth, &inner_width);
-  options.Get(options::kinnerHeight, &inner_height);
+  constexpr int kMinSizeReqdBySpec = 100;
+  const int inner_width = options.ValueOrDefault(options::kinnerWidth, 0);
+  const int inner_height = options.ValueOrDefault(options::kinnerHeight, 0);
   if (inner_width || inner_height) {
     use_content_size_ = true;
     if (inner_width)
@@ -428,6 +420,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
   else
     last_window_state_ = ui::mojom::WindowShowState::kNormal;
+
+  UpdateWindowAccentColor();
 #endif
 
   // Listen to mouse events.
@@ -467,11 +461,10 @@ void NativeWindowViews::SetTitleBarOverlay(
   bool updated = false;
 
   // Check and update the button color
-  std::string btn_color;
-  if (options.Get(options::kOverlayButtonColor, &btn_color)) {
+  if (std::string val; options.Get(options::kOverlayButtonColor, &val)) {
     // Parse the string as a CSS color
     SkColor color;
-    if (!content::ParseCssColorString(btn_color, &color)) {
+    if (!content::ParseCssColorString(val, &color)) {
       args->ThrowError("Could not parse color as CSS color");
       return;
     }
@@ -482,11 +475,10 @@ void NativeWindowViews::SetTitleBarOverlay(
   }
 
   // Check and update the symbol color
-  std::string symbol_color;
-  if (options.Get(options::kOverlaySymbolColor, &symbol_color)) {
+  if (std::string val; options.Get(options::kOverlaySymbolColor, &val)) {
     // Parse the string as a CSS color
     SkColor color;
-    if (!content::ParseCssColorString(symbol_color, &color)) {
+    if (!content::ParseCssColorString(val, &color)) {
       args->ThrowError("Could not parse symbol color as CSS color");
       return;
     }
@@ -497,9 +489,8 @@ void NativeWindowViews::SetTitleBarOverlay(
   }
 
   // Check and update the height
-  int height = 0;
-  if (options.Get(options::kOverlayHeight, &height)) {
-    set_titlebar_overlay_height(height);
+  if (int val; options.Get(options::kOverlayHeight, &val)) {
+    set_titlebar_overlay_height(val);
     updated = true;
   }
 

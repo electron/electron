@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index d2547a42a942c69aab24d4b644becaa421d5f539..7357eb2dca4b2dbe24a1e689e39565dfcb5ed44b 100644
+index b19bfa46c2ca2a6feecb5471eb48d932665b1863..7bfd9b892a0e9f9fa9cbda53e98d137c7e7e8bba 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -164,6 +164,11 @@
+@@ -165,6 +165,11 @@
  #include "services/network/web_transport.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index d2547a42a942c69aab24d4b644becaa421d5f539..7357eb2dca4b2dbe24a1e689e39565df
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -603,6 +608,99 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
+@@ -619,6 +624,111 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
  
  }  // namespace
  
@@ -80,6 +80,18 @@ index d2547a42a942c69aab24d4b644becaa421d5f539..7357eb2dca4b2dbe24a1e689e39565df
 +    return upstream_->Verify(params, verify_result, std::move(callback2), out_req, net_log);
 +  }
 +
++  void Verify2QwacBinding(
++      const std::string& binding,
++      const std::string& hostname,
++      const scoped_refptr<net::X509Certificate>& tls_cert,
++      base::OnceCallback<void(const scoped_refptr<net::X509Certificate>&)> callback,
++      const net::NetLogWithSource& net_log) override {
++    // 2-QWAC binding verification isn't cached.  This isn't performance
++    // critical and if we wanted to cache, it would make more sense to do at
++    // the 2-QWAC link header processing layer.
++    upstream_->Verify2QwacBinding(binding, hostname, tls_cert,
++                                  std::move(callback), net_log);
++  }
 +
 +  void SetConfig(const Config& config) override {
 +    upstream_->SetConfig(config);
@@ -122,7 +134,7 @@ index d2547a42a942c69aab24d4b644becaa421d5f539..7357eb2dca4b2dbe24a1e689e39565df
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1006,6 +1104,13 @@ void NetworkContext::SetClient(
+@@ -1022,6 +1132,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +148,7 @@ index d2547a42a942c69aab24d4b644becaa421d5f539..7357eb2dca4b2dbe24a1e689e39565df
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2626,6 +2731,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2658,6 +2775,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
@@ -148,7 +160,7 @@ index d2547a42a942c69aab24d4b644becaa421d5f539..7357eb2dca4b2dbe24a1e689e39565df
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index fdb9d346448f39767185c076e443b2289ad1a417..a6d4eead54adf685767b38e92e77d8ab42f890d7 100644
+index 5b66827146ab36671b7b6725034efb27e3d90209..644123efb5f227b988b75938413ad769776d1592 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -115,6 +115,7 @@ class URLMatcher;
@@ -168,7 +180,7 @@ index fdb9d346448f39767185c076e443b2289ad1a417..a6d4eead54adf685767b38e92e77d8ab
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -965,6 +968,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -970,6 +973,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -178,7 +190,7 @@ index fdb9d346448f39767185c076e443b2289ad1a417..a6d4eead54adf685767b38e92e77d8ab
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index dbab92d8b3726b2c3fa620e58c231540b684c918..7e8a8342d56eec2fad4d73255bf0a6bca9d96b96 100644
+index 04512b284adff2550374665a32282330fbb20354..507a33fb865ba7413711093298201ccf050d98de 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -309,6 +309,17 @@ struct SocketBrokerRemotes {
@@ -210,7 +222,7 @@ index dbab92d8b3726b2c3fa620e58c231540b684c918..7e8a8342d56eec2fad4d73255bf0a6bc
    CreateURLLoaderFactory(
        pending_receiver<URLLoaderFactory> url_loader_factory,
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index ce35e7ae890851f79cbba3d53154dd9eccd58bcd..c4e2153b9833a7876d147913b865e7ec7410ea04 100644
+index d03bc4052a339339c9ca6157410778da8e149efb..434d9286c2bcf497365a5329f4be26ff593976a3 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -64,6 +64,8 @@ class TestNetworkContext : public mojom::NetworkContext {

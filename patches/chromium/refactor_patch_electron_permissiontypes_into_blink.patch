@@ -6,10 +6,10 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index bface283d508d1c1a3f9fd297d92e048bdd423af..5b6451a5ac484a23a20906b8c3c9b998f7b31a33 100644
+index fee80a0e6036b3b73110ec495ac5546beca0585a..3a079619f770c628e882c7e5b587171e043cfd72 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -520,7 +520,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -519,7 +519,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -28,7 +28,7 @@ index bface283d508d1c1a3f9fd297d92e048bdd423af..5b6451a5ac484a23a20906b8c3c9b998
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index b1c9f2d59559ed33cd32ad1f22b221029018cf0f..81deda95c71f025b723571ca9a6ac20bc7bb4b0c 100644
+index b9590ecbb95da6858eac104fbf69df056ccbf449..61cdfa6549c539ec73437d221ffdd82fbef39e23 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -87,7 +87,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
@@ -80,10 +80,10 @@ index 714d582d1060873765b24770b18eddcbbdcf5506..3746bafd72223a65c4183a59726601e8
        NOTREACHED();
    }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index cb39508717b9ebdd30470f6d7fd7e8626cc65948..10af1f297739d29cc96d6fd5752fca1532e6fba4 100644
+index 2d7d9e96522208835a867e0be12df4da56141ab1..3cdce77120c89631609c488d8256ab211d71ab03 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -103,6 +103,18 @@ std::string GetPermissionString(PermissionType permission) {
+@@ -104,6 +104,18 @@ std::string GetPermissionString(PermissionType permission) {
        return "LocalNetworkAccess";
      case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
        return "DeprecatedSyncClipboardRead";
@@ -102,7 +102,7 @@ index cb39508717b9ebdd30470f6d7fd7e8626cc65948..10af1f297739d29cc96d6fd5752fca15
      case PermissionType::NUM:
        NOTREACHED();
    }
-@@ -177,7 +189,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+@@ -178,7 +190,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
@@ -118,7 +118,7 @@ index cb39508717b9ebdd30470f6d7fd7e8626cc65948..10af1f297739d29cc96d6fd5752fca15
        return std::nullopt;
  
      case PermissionType::NUM:
-@@ -347,6 +367,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
+@@ -348,6 +368,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
        return PermissionType::WEB_PRINTING;
      case PermissionName::SMART_CARD:
        return PermissionType::SMART_CARD;
@@ -164,7 +164,7 @@ index c286d87043ec4cb2e51ec9d82d08e4c84f5a270c..164a2a446947dae687922363d324a6d3
    // Always keep this at the end.
    NUM,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index e47f2089a6a187b26c981afa1ef4135ec5e6a9e7..d66eb48c619dde34c59f33c5aaa0e38c1d772563 100644
+index 47c73522cbd7c1d12dabfecf6f55a74690ebc189..6b8ed935e8c440cbf655d122a398d33e3e4ad89b 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -44,7 +44,15 @@ enum PermissionName {

@@ -430,7 +430,7 @@ std::optional<std::string> GetDesktopName() {
 
 std::string GetXdgAppId() {
   if (std::optional<std::string> desktop_file_name = GetDesktopName()) {
-    const std::string kDesktopExtension{".desktop"};
+    constexpr std::string_view kDesktopExtension = ".desktop";
     if (base::EndsWith(*desktop_file_name, kDesktopExtension,
                        base::CompareCase::INSENSITIVE_ASCII)) {
       desktop_file_name->resize(desktop_file_name->size() -

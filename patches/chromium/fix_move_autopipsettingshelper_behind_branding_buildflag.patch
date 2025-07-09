@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 659e8d79766a78d261e58adab08f9abccda8390b..bc4dc2e3a93877d2e20890560f61d3f22c8b7b9a 100644
+index fdafa0e29577106277ca95a6389e3d3c29aba53b..11f7ab5870e8d3dd3efbc8e8a829c26153eec024 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -20,26 +20,33 @@ index 659e8d79766a78d261e58adab08f9abccda8390b..bc4dc2e3a93877d2e20890560f61d3f2
  #include "chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/ui/browser_navigator_params.h"
-@@ -25,7 +26,9 @@
- #include "base/metrics/histogram_functions.h"
- #include "base/numerics/checked_math.h"
+@@ -28,7 +29,9 @@
  #include "base/task/sequenced_task_runner.h"
+ // TODO(crbug.com/421608904): include auto_picture_in_picture_tab_helper for
+ // Android.
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "chrome/browser/picture_in_picture/auto_picture_in_picture_tab_helper.h"
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "chrome/browser/picture_in_picture/picture_in_picture_window.h"
  #include "media/base/media_switches.h"
  #include "net/base/url_util.h"
- #include "third_party/blink/public/common/features.h"
-@@ -53,7 +56,7 @@ constexpr gfx::Size kMinWindowSize(240, 52);
- // not apply to video Picture-in-Picture windows.
- constexpr double kMaxWindowSizeRatio = 0.8;
+@@ -63,6 +66,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
+ // `kMaxWindowSizeRatio`.
+ constexpr double kMaxSiteRequestedWindowSizeRatio = 0.25;
  
--#if !BUILDFLAG(IS_ANDROID)
-+#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  // Returns true if a document picture-in-picture window should be focused upon
  // opening it.
  bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -200,7 +203,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -79,6 +83,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
+   // AutoPictureInPictureTabHelper.
+   return !auto_picture_in_picture_tab_helper->IsInAutoPictureInPicture();
+ }
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ 
+ // Returns the maximum area in pixels that the site can request a
+ // picture-in-picture window to be.
+@@ -216,7 +221,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -48,7 +55,7 @@ index 659e8d79766a78d261e58adab08f9abccda8390b..bc4dc2e3a93877d2e20890560f61d3f2
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -415,7 +418,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -547,7 +552,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -57,7 +64,7 @@ index 659e8d79766a78d261e58adab08f9abccda8390b..bc4dc2e3a93877d2e20890560f61d3f2
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action = ShouldFocusPictureInPictureWindow(params)
-@@ -507,6 +510,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -648,6 +653,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -65,7 +72,7 @@ index 659e8d79766a78d261e58adab08f9abccda8390b..bc4dc2e3a93877d2e20890560f61d3f2
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -545,6 +549,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -686,6 +692,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -75,10 +82,10 @@ index 659e8d79766a78d261e58adab08f9abccda8390b..bc4dc2e3a93877d2e20890560f61d3f2
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index e97083adbea4081c4bb1c703cf861b58d958714b..2bcfacec8020226c4d11173432842d61331c08ec 100644
+index 6040f8fb695853169b793dedc5f644c52bb42bde..c201fe8d40bb544532663a31299b236cd2c7c418 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -432,11 +432,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -456,11 +456,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
  
  #endif  // BUILDFLAG(IS_WIN)
  

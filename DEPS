@@ -2,9 +2,9 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '139.0.7219.0',
+    '140.0.7261.0',
   'node_version':
-    'v22.16.0',
+    'v22.17.0',
   'nan_version':
     'e14bdcd1f72d62bca1d541b66da43130384ec213',
   'squirrel.mac_version':
@@ -31,7 +31,7 @@ vars = {
   'sysroots_json_path': 'electron/script/sysroots.json',
 
   # KEEP IN SYNC WITH utils.js FILE
-  'yarn_version': '1.15.2',
+  'yarn_version': '1.22.22',
 
   # To be able to build clean Chromium from sources.
   'apply_patches': True,

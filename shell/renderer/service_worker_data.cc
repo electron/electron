@@ -4,6 +4,7 @@
 
 #include "electron/shell/renderer/service_worker_data.h"
 
+#include "base/notimplemented.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/heap_snapshot.h"
