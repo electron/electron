@@ -36,7 +36,6 @@ runs:
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
-        Set-MpPreference -DisableRealtimeMonitoring $true
         sc config WinDefend start= disabled
         sc stop WinDefend
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
