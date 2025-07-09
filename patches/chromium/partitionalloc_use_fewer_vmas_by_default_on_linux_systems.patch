@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Beno=C3=AEt=20Liz=C3=A9?= <lizeb@chromium.org>
 Date: Wed, 9 Jul 2025 05:33:09 -0700
-Subject: [PartitionAlloc] Use fewer VMAs by default on Linux systems
+Subject: Use fewer VMAs by default on Linux systems
 
 Some clients of PartitionAlloc (for instance mksnapshot, part of
 Chromium's build through V8, which uses PartitionAlloc but not with
