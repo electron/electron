@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Beno=C3=AEt=20Liz=C3=A9?= <lizeb@chromium.org>
+Date: Wed, 9 Jul 2025 05:33:09 -0700
+Subject: [PartitionAlloc] Use fewer VMAs by default on Linux systems
+
+Some clients of PartitionAlloc (for instance mksnapshot, part of
+Chromium's build through V8, which uses PartitionAlloc but not with
+Chromium's config) do not use Chromium's partition_alloc_support.cc to
+configure it. As a result, they still get the default behavior which is
+creatig a lot of memory regions.
+
+This is shows to cause crashes in certain build configs on some Linux
+systems for mksnapshot. Make the new behavior default for clients that
+do not use the feature. This is temporary, the feature flag will be
+removed once we settle on what to do on all platforms.
+
+With this patch, mksnapshot succeeds with a limit of 8k VMAs (but not
+the full Chromium build, as linking requires more). Tested by running:
+
+$, sudo sh -c 'echo 8000 >  /proc/sys/vm/max_map_count
+
+$ ./mksnapshot --turbo_instruction_scheduling --stress-turbo-late-spilling
+--target_os=linux --target_arch=x64 --embedded_src gen/v8/embedded.S
+--predictable --no-use-ic --builtins-effects-src
+gen/v8/src/builtins/builtins-effects.cc --turbo-elide-frames --embedded_variant
+Default --random-seed 314159265 --startup_blob snapshot_blob.bin
+--native-code-counters --concurrent-builtin-generation
+--concurrent-turbofan-max-threads=0 --verify-heap
+
+Bug: 416540976
+Change-Id: I38639512d6b697b5d06747646d642fa2ead57dbc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6718547
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Commit-Queue: Benoit Lize <lizeb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1484268}
+
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/partition_root.h b/base/allocator/partition_allocator/src/partition_alloc/partition_root.h
+index 91bb8bb43ca2ce1be7959a1be9aa2d8d91d7482f..423fa5ac9e36360f3909535afa41371b2588c50d 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/partition_root.h
++++ b/base/allocator/partition_allocator/src/partition_alloc/partition_root.h
+@@ -187,7 +187,17 @@ struct PartitionOptions {
+   // compression ratio of freed memory inside partially allocated pages (due to
+   // fragmentation).
+   EnableToggle eventually_zero_freed_memory = kDisabled;
+-  EnableToggle fewer_memory_regions = kDisabled;
++  // Linux-based systems have a limited per-process VMA limit, be more
++  // conservative there. This matches the feature setting in
++  // partition_alloc_features.cc, but not all clients use Chromium's feature
++  // system to configure PartitionAlloc.
++  EnableToggle fewer_memory_regions =
++#if PA_BUILDFLAG(IS_LINUX) || PA_BUILDFLAG(IS_ANDROID) || \
++    PA_BUILDFLAG(IS_CHROMEOS)
++      kEnabled;
++#else
++      kDisabled;
++#endif
+ 
+   struct {
+     EnableToggle enabled = kDisabled;
