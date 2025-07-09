@@ -32,6 +32,13 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Disable Defender (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        Set-MpPreference -DisableRealtimeMonitoring $true
+        sc config WinDefend start= disabled
+        sc stop WinDefend
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
