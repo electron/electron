@@ -7,11 +7,8 @@ Follow the guidelines below for building **Electron itself** on Linux, for the p
 ## Prerequisites
 
 * At least 25GB disk space and 8GB RAM.
-* Python >= 3.7.
-* Node.js. There are various ways to install Node. You can download
-  source code from [nodejs.org](https://nodejs.org) and compile it.
-  Doing so permits installing Node on your own home directory as a standard user.
-  Or try repositories such as [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories).
+* Python >= 3.9.
+* [Node.js](https://nodejs.org/download/) >= 22.12.0
 * [clang](https://clang.llvm.org/get_started.html) 3.4 or later.
 * Development headers of GTK 3 and libnotify.
 
