@@ -140,6 +140,9 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
       DCHECK(browser_process);
       prefs_ = browser_process->local_state();
     }
+  } else if (window_state_persistence_enabled_ && window_name_.empty()) {
+    LOG(WARNING) << "Window state persistence enabled but no window name "
+                    "provided. Window state will not be persisted.";
   }
 
   if (gin_helper::Dictionary dict;
