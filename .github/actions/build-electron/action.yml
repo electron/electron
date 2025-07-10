@@ -57,6 +57,10 @@ runs:
           sudo launchctl limit maxfiles 65536 200000
         fi
 
+        if [ "${{ inputs.target-platform }}" = "linux" ]; then
+          cat /proc/sys/vm/max_map_count
+        fi
+
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
