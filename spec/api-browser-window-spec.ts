@@ -7070,4 +7070,344 @@ describe('BrowserWindow module', () => {
       expect(startPos).to.not.deep.equal(endPos);
     });
   });
+
+  describe('windowStatePersistence', () => {
+    describe('save window state', () => {
+      const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'window-state-save');
+      const sharedUserDataPath = path.join(os.tmpdir(), 'electron-window-state-test');
+      const sharedPreferencesPath = path.join(sharedUserDataPath, 'Local State');
+
+      const getWindowStateFromDisk = (windowName: string, preferencesPath: string) => {
+        if (!fs.existsSync(preferencesPath)) {
+          throw new Error(`Preferences file does not exist at path: ${preferencesPath}. Window state was not saved to disk.`);
+        }
+        const prefsContent = fs.readFileSync(preferencesPath, 'utf8');
+        const prefs = JSON.parse(prefsContent);
+        return prefs?.windowStates?.[windowName] || null;
+      };
+
+      // Clean up before each test
+      beforeEach(() => {
+        if (fs.existsSync(sharedUserDataPath)) {
+          fs.rmSync(sharedUserDataPath, { recursive: true, force: true });
+        }
+      });
+
+      describe('state saving after window operations', () => {
+        it('should save window state with required properties', async () => {
+          const appPath = path.join(fixturesPath, 'schema-check');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-window-state-schema', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-window-state-schema" does not exist');
+          expect(savedState).to.have.property('left');
+          expect(savedState).to.have.property('top');
+          expect(savedState).to.have.property('right');
+          expect(savedState).to.have.property('bottom');
+          expect(savedState).to.have.property('maximized');
+          expect(savedState).to.have.property('fullscreen');
+          expect(savedState).to.have.property('kiosk');
+          expect(savedState).to.have.property('workAreaLeft');
+          expect(savedState).to.have.property('workAreaTop');
+          expect(savedState).to.have.property('workAreaRight');
+          expect(savedState).to.have.property('workAreaBottom');
+        });
+
+        ifit(hasCapturableScreen())('should save window state after window is closed and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'close-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-close-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-close-save" does not exist');
+          expect(savedState.right - savedState.left).to.equal(400);
+          expect(savedState.bottom - savedState.top).to.equal(300);
+          expect(savedState.maximized).to.equal(false);
+          expect(savedState.fullscreen).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
+        });
+
+        ifit(hasCapturableScreen())('should save window state after window is resized and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'resize-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-resize-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-resize-save" does not exist');
+          expect(savedState.right - savedState.left).to.equal(500);
+          expect(savedState.bottom - savedState.top).to.equal(400);
+          expect(savedState.maximized).to.equal(false);
+          expect(savedState.fullscreen).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
+        });
+
+        ifit(hasCapturableScreen())('should save window state after window is moved and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'move-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-move-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-move-save" does not exist');
+          expect(savedState.left).to.equal(100);
+          expect(savedState.top).to.equal(150);
+          expect(savedState.maximized).to.equal(false);
+          expect(savedState.fullscreen).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
+        });
+
+        ifit(hasCapturableScreen())('should save window state after window is fullscreened and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'fullscreen-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-fullscreen-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-fullscreen-save" does not exist');
+          expect(savedState.fullscreen).to.equal(true);
+          expect(savedState.maximized).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
+        });
+
+        ifit(hasCapturableScreen())('should save window state after window is maximized and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'maximize-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-maximize-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-maximize-save" does not exist');
+          expect(savedState.maximized).to.equal(true);
+          expect(savedState.fullscreen).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
+        });
+
+        ifit(hasCapturableScreen())('should save window state if in a minimized state and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'minimize-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-minimize-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-minimize-save" does not exist');
+          // Should save the bounds from before minimizing
+          expect(savedState.right - savedState.left).to.equal(400);
+          expect(savedState.bottom - savedState.top).to.equal(300);
+          expect(savedState.maximized).to.equal(false);
+          expect(savedState.fullscreen).to.equal(false);
+          expect(savedState.kiosk).to.equal(false);
+        });
+
+        ifit(hasCapturableScreen())('should save window state after window is kiosked and app exit', async () => {
+          const appPath = path.join(fixturesPath, 'kiosk-save');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-kiosk-save', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-kiosk-save" does not exist');
+          expect(savedState.kiosk).to.equal(true);
+          expect(savedState.fullscreen).to.equal(true);
+          expect(savedState.maximized).to.equal(false);
+        });
+      });
+
+      describe('work area tests', () => {
+        ifit(hasCapturableScreen())('should save valid work area bounds', async () => {
+          const appPath = path.join(fixturesPath, 'schema-check');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-window-state-schema', sharedPreferencesPath);
+
+          expect(savedState).to.not.be.null('window state with window name "test-window-state-schema" does not exist');
+          expect(savedState.workAreaLeft).to.be.a('number');
+          expect(savedState.workAreaTop).to.be.a('number');
+          expect(savedState.workAreaRight).to.be.a('number');
+          expect(savedState.workAreaBottom).to.be.a('number');
+
+          expect(savedState.workAreaLeft).to.be.lessThan(savedState.workAreaRight);
+          expect(savedState.workAreaTop).to.be.lessThan(savedState.workAreaBottom);
+        });
+
+        ifit(hasCapturableScreen())('should save work area bounds that contain the window bounds on primary display', async () => {
+          // Fixture will center the window on the primary display
+          const appPath = path.join(fixturesPath, 'work-area-primary');
+          const appProcess = childProcess.spawn(process.execPath, [appPath]);
+          const [code] = await once(appProcess, 'exit');
+          expect(code).to.equal(0);
+
+          const savedState = getWindowStateFromDisk('test-work-area-primary', sharedPreferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-work-area-primary" does not exist');
+
+          expect(savedState.left).to.be.greaterThanOrEqual(savedState.workAreaLeft);
+          expect(savedState.top).to.be.greaterThanOrEqual(savedState.workAreaTop);
+          expect(savedState.right).to.be.lessThanOrEqual(savedState.workAreaRight);
+          expect(savedState.bottom).to.be.lessThanOrEqual(savedState.workAreaBottom);
+        });
+      });
+
+      describe('asynchronous batching behavior', () => {
+        let w: BrowserWindow;
+        const windowName = 'test-batching-behavior';
+        const preferencesPath = path.join(app.getPath('userData'), 'Local State');
+
+        // Helper to get preferences file modification time
+        const getPrefsModTime = (): Date => {
+          try {
+            return fs.statSync(preferencesPath).mtime;
+          } catch {
+            throw new Error(`Test requires preferences file to exist at path: ${preferencesPath}.`);
+          }
+        };
+
+        // Helper to wait for file modification with 20 second default timeout
+        const waitForPrefsUpdate = async (initialModTime: Date, timeoutMs: number = 20000): Promise<void> => {
+          const startTime = Date.now();
+
+          while (true) {
+            const currentModTime = getPrefsModTime();
+
+            if (currentModTime > initialModTime) {
+              return;
+            }
+
+            if (Date.now() - startTime > timeoutMs) {
+              throw new Error(`Window state was not flushed to disk within ${timeoutMs}ms`);
+            }
+            // Wait for 1 second before checking again
+            await setTimeout(1000);
+          }
+        };
+
+        const waitForPrefsFileCreation = async (preferencesPath: string) => {
+          while (!fs.existsSync(preferencesPath)) {
+            await setTimeout(1000);
+          }
+        };
+
+        beforeEach(async () => {
+          await setTimeout(2000);
+          w = new BrowserWindow({
+            show: false,
+            width: 400,
+            height: 300,
+            name: windowName,
+            windowStatePersistence: true
+          });
+        });
+
+        afterEach(closeAllWindows);
+
+        it('should not immediately save window state to disk when window is moved/resized', async () => {
+          // Wait for preferences file to be created if its the first time we're running the test
+          await waitForPrefsFileCreation(preferencesPath);
+
+          const initialModTime = getPrefsModTime();
+
+          const moved = once(w, 'move');
+          w.setPosition(150, 200);
+          await moved;
+          // Wait for any potential save to occur from the move operation
+          await setTimeout(1000);
+
+          const resized = once(w, 'resize');
+          w.setSize(500, 400);
+          await resized;
+          // Wait for any potential save to occur from the resize operation
+          await setTimeout(1000);
+
+          const afterMoveModTime = getPrefsModTime();
+
+          expect(afterMoveModTime.getTime()).to.equal(initialModTime.getTime());
+        });
+
+        it('should eventually flush window state to disk after batching period', async () => {
+          // Wait for preferences file to be created if its the first time we're running the test
+          await waitForPrefsFileCreation(preferencesPath);
+
+          const initialModTime = getPrefsModTime();
+
+          const resized = once(w, 'resize');
+          w.setSize(500, 400);
+          await resized;
+
+          await waitForPrefsUpdate(initialModTime);
+
+          const savedState = getWindowStateFromDisk(windowName, preferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-batching-behavior" does not exist');
+          expect(savedState.right - savedState.left).to.equal(500);
+          expect(savedState.bottom - savedState.top).to.equal(400);
+        });
+
+        it('should batch multiple window operations and save final state', async () => {
+          // Wait for preferences file to be created if its the first time we're running the test
+          await waitForPrefsFileCreation(preferencesPath);
+
+          const initialModTime = getPrefsModTime();
+
+          const resize1 = once(w, 'resize');
+          w.setSize(500, 400);
+          await resize1;
+          // Wait for any potential save to occur
+          await setTimeout(1000);
+
+          const afterFirstResize = getPrefsModTime();
+
+          const resize2 = once(w, 'resize');
+          w.setSize(600, 500);
+          await resize2;
+          // Wait for any potential save to occur
+          await setTimeout(1000);
+
+          const afterSecondResize = getPrefsModTime();
+
+          const resize3 = once(w, 'resize');
+          w.setSize(700, 600);
+          await resize3;
+          // Wait for any potential save to occur
+          await setTimeout(1000);
+
+          const afterThirdResize = getPrefsModTime();
+
+          await waitForPrefsUpdate(initialModTime);
+
+          const savedState = getWindowStateFromDisk(windowName, preferencesPath);
+          expect(savedState).to.not.be.null('window state with window name "test-batching-behavior" does not exist');
+
+          [afterFirstResize, afterSecondResize, afterThirdResize].forEach(time => {
+            expect(time.getTime()).to.equal(initialModTime.getTime());
+          });
+
+          expect(savedState.right - savedState.left).to.equal(700);
+          expect(savedState.bottom - savedState.top).to.equal(600);
+        });
+
+        it('should not save window bounds when main thread is busy', async () => {
+          // Wait for preferences file to be created if its the first time we're running the test
+          await waitForPrefsFileCreation(preferencesPath);
+
+          const initialModTime = getPrefsModTime();
+
+          const moved = once(w, 'move');
+          w.setPosition(100, 100);
+          await moved;
+
+          const startTime = Date.now();
+
+          // Keep main thread busy for 25 seconds
+          while (Date.now() - startTime < 25000);
+
+          const finalModTime = getPrefsModTime();
+
+          expect(finalModTime.getTime()).to.equal(initialModTime.getTime());
+        });
+      });
+    });
+  });
 });
