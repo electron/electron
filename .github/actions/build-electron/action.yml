@@ -59,6 +59,8 @@ runs:
 
         if [ "${{ inputs.target-platform }}" = "linux" ]; then
           cat /proc/sys/vm/max_map_count
+          echo 262144 | sudo tee /proc/sys/vm/max_map_count
+          cat /proc/sys/vm/max_map_count
         fi
 
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
