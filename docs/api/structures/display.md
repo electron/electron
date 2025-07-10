@@ -7,7 +7,7 @@
 * `depthPerComponent` number - The number of bits per color component.
 * `detected` boolean - `true` if the display is detected by the system.
 * `displayFrequency` number - The display refresh rate.
-* `id` number - Unique identifier associated with the display. A value of of -1 means the display is invalid or the correct `id` is not yet known, and a value of -10 means the display is a virtual display assigned to a unified desktop.
+* `id` number - Unique identifier associated with the display. A value of -1 means the display is invalid or the correct `id` is not yet known, and a value of -10 means the display is a virtual display assigned to a unified desktop.
 * `internal` boolean - `true` for an internal display and `false` for an external display.
 * `label` string - User-friendly label, determined by the platform.
 * `maximumCursorSize` [Size](size.md) - Maximum cursor size in native pixels.

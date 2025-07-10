@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alice Zhao <alicelovescake@anthropic.com>
+Date: Sun, 21 Dec 2025 09:58:47 -0800
+Subject: fix: suppress nodiscard warning for copy_options |= operator
+
+libc++ added [[nodiscard]] to std::filesystem::copy_options operator|=
+which causes build failures with -Werror.
+
+diff --git a/src/node_file.cc b/src/node_file.cc
+index e834325a763f7ea8f53210145b5edd134d6b67e6..5197202255bcd9345ac19c7fb6106f49c2800770 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -3453,11 +3453,11 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
+ 
+   auto file_copy_opts = std::filesystem::copy_options::recursive;
+   if (force) {
+-    file_copy_opts |= std::filesystem::copy_options::overwrite_existing;
++    (void)(file_copy_opts |= std::filesystem::copy_options::overwrite_existing);
+   } else if (error_on_exist) {
+-    file_copy_opts |= std::filesystem::copy_options::none;
++    (void)(file_copy_opts |= std::filesystem::copy_options::none);
+   } else {
+-    file_copy_opts |= std::filesystem::copy_options::skip_existing;
++    (void)(file_copy_opts |= std::filesystem::copy_options::skip_existing);
+   }
+ 
+   std::function<bool(std::filesystem::path, std::filesystem::path)>

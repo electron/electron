@@ -21,8 +21,6 @@ class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
       "videoDecodeAcceleratorSupportedProfile";
   const char* const kVideoEncodeAcceleratorSupportedProfileKey =
       "videoEncodeAcceleratorSupportedProfile";
-  const char* const kImageDecodeAcceleratorSupportedProfileKey =
-      "imageDecodeAcceleratorSupportedProfile";
   const char* const kAuxAttributesKey = "auxAttributes";
   const char* const kOverlayInfo = "overlayInfo";
 
@@ -45,18 +43,16 @@ class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
   void EndVideoDecodeAcceleratorSupportedProfile() override;
   void BeginVideoEncodeAcceleratorSupportedProfile() override;
   void EndVideoEncodeAcceleratorSupportedProfile() override;
-  void BeginImageDecodeAcceleratorSupportedProfile() override;
-  void EndImageDecodeAcceleratorSupportedProfile() override;
   void BeginAuxAttributes() override;
   void EndAuxAttributes() override;
   void BeginOverlayInfo() override;
   void EndOverlayInfo() override;
-  base::Value::Dict GetDictionary();
+  base::DictValue GetDictionary();
 
  private:
   // The stack is used to manage nested values
-  std::stack<base::Value::Dict> value_stack_;
-  base::Value::Dict current_;
+  std::stack<base::DictValue> value_stack_;
+  base::DictValue current_;
 };
 
 }  // namespace electron

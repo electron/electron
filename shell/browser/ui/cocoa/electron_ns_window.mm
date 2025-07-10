@@ -25,7 +25,6 @@ int ScopedDisableResize::disable_resize_ = 0;
 }  // namespace electron
 
 @interface NSWindow (PrivateAPI)
-- (NSImage*)_cornerMask;
 - (int64_t)_resizeDirectionForMouseLocation:(CGPoint)location;
 @end
 
@@ -35,6 +34,41 @@ int ScopedDisableResize::disable_resize_ = 0;
 @end
 
 typedef void (*MouseDownImpl)(id, SEL, NSEvent*);
+
+// Work around an Apple bug where the visual tab picker's
+// grid animation creates NSLayoutConstraints against nil layout anchors,
+// crashing in NSVisualTabPickerShadowTileView. This happens when a new tabbed
+// window is created while the tab picker is open — the "+" tile (and possibly
+// others) have broken internal state. Rather than patching individual tile
+// animation methods, short-circuit the entire grid animation by swizzling
+// NSVisualTabPickerGridView's -startGridAnimation:completionHandler: to
+// immediately invoke the completion handler without running the animation.
+typedef void (*StartGridAnimationIMP)(id, SEL, id, id);
+static StartGridAnimationIMP g_orig_startGridAnimation = nullptr;
+
+static void Patched_startGridAnimation(id self,
+                                       SEL _cmd,
+                                       id animation,
+                                       void (^completionHandler)(void)) {
+  if (completionHandler)
+    completionHandler();
+}
+
+static void SwizzleTabPickerGridAnimation() {
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    Class cls = NSClassFromString(@"NSVisualTabPickerGridView");
+    if (!cls)
+      return;
+    SEL sel = @selector(startGridAnimation:completionHandler:);
+    Method method = class_getInstanceMethod(cls, sel);
+    if (!method)
+      return;
+    g_orig_startGridAnimation =
+        (StartGridAnimationIMP)method_getImplementation(method);
+    method_setImplementation(method, (IMP)Patched_startGridAnimation);
+  });
+}
 
 namespace {
 MouseDownImpl g_nsthemeframe_mousedown;
@@ -53,8 +87,8 @@ MouseDownImpl g_nsnextstepframe_mousedown;
         (electron::NativeWindowMac*)[(id)self.window shell];
     if (shell && !shell->has_frame())
       [self cr_mouseDownOnFrameView:event];
-    g_nsthemeframe_mousedown(self, @selector(mouseDown:), event);
   }
+  g_nsthemeframe_mousedown(self, @selector(mouseDown:), event);
 }
 
 - (void)swiz_nsnextstepframe_mouseDown:(NSEvent*)event {
@@ -64,8 +98,8 @@ MouseDownImpl g_nsnextstepframe_mousedown;
     if (shell && !shell->has_frame()) {
       [self cr_mouseDownOnFrameView:event];
     }
-    g_nsnextstepframe_mousedown(self, @selector(mouseDown:), event);
   }
+  g_nsnextstepframe_mousedown(self, @selector(mouseDown:), event);
 }
 
 - (void)swiz_nsview_swipeWithEvent:(NSEvent*)event {
@@ -123,10 +157,10 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 @synthesize disableAutoHideCursor;
 @synthesize disableKeyOrMainWindow;
 @synthesize vibrantView;
-@synthesize cornerMask;
 
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask {
+  SwizzleTabPickerGridAnimation();
   if ((self = [super initWithContentRect:ui::kWindowSizeDeterminedLater
                                styleMask:styleMask
                                  backing:NSBackingStoreBuffered
@@ -287,6 +321,19 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   return base::SysUTF8ToNSString(shell_ ? shell_->GetTitle() : "");
 }
 
+- (NSString*)accessibilityDocument {
+  // Prefer representedFilename set via Electron's setRepresentedFilename API.
+  // This works around a Chromium change (https://crrev.com/c/6187085) where
+  // NativeWidgetMacNSWindow's accessibilityDocument override doesn't fall back
+  // to NSWindow's default behavior of returning the representedFilename.
+  NSString* representedFilename = [self representedFilename];
+  if (representedFilename.length > 0) {
+    return [[NSURL fileURLWithPath:representedFilename] absoluteString];
+  }
+  // Fall back to Chromium's implementation for web content URLs.
+  return [super accessibilityDocument];
+}
+
 - (BOOL)canBecomeMainWindow {
   return !self.disableKeyOrMainWindow;
 }
@@ -308,18 +355,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   return [super validateUserInterfaceItem:item];
 }
 
-// By overriding this built-in method the corners of the vibrant view (if set)
-// will be smooth.
-- (NSImage*)_cornerMask {
-  if (self.vibrantView != nil) {
-    return [self cornerMask];
-  } else {
-    return [super _cornerMask];
-  }
-}
-
 - (void)disableHeadlessMode {
-  if (shell_) {
+  if (shell_ && self.isHeadless) {
     // We initialize the window in headless mode to allow painting before it is
     // shown, but we don't want the headless behavior of allowing the window to
     // be placed unconstrained.

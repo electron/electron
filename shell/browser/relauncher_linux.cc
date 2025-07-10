@@ -11,6 +11,7 @@
 
 #include "base/files/scoped_file.h"
 #include "base/logging.h"
+#include "base/no_destructor.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/process/launch.h"
 #include "base/synchronization/waitable_event.h"
@@ -18,7 +19,10 @@
 namespace relauncher::internal {
 
 // this is global to be visible to the sa_handler
-base::WaitableEvent parentWaiter;
+auto& GetParentWaiter() {
+  static base::NoDestructor<base::WaitableEvent> parentWaiter;
+  return *parentWaiter;
+}
 
 void RelauncherSynchronizeWithParent() {
   base::ScopedFD relauncher_sync_fd(kRelauncherSyncFD);
@@ -32,7 +36,7 @@ void RelauncherSynchronizeWithParent() {
 
   // set up a signum handler
   struct sigaction action = {};
-  action.sa_handler = [](int /*signum*/) { parentWaiter.Signal(); };
+  action.sa_handler = [](int /*signum*/) { GetParentWaiter().Signal(); };
   if (sigaction(signum, &action, nullptr) != 0) {
     PLOG(ERROR) << "sigaction";
     return;
@@ -46,7 +50,7 @@ void RelauncherSynchronizeWithParent() {
   }
 
   // Wait for the parent to exit
-  parentWaiter.Wait();
+  GetParentWaiter().Wait();
 }
 
 int LaunchProgram(const StringVector& relauncher_args,

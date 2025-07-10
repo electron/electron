@@ -17,7 +17,6 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/strings/cstring_view.h"
-#include "base/supports_user_data.h"
 #include "base/timer/timer.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -52,18 +51,13 @@ namespace electron {
 class ElectronMenuModel;
 class BackgroundThrottlingSource;
 
-namespace api {
-class BrowserView;
-}
-
 #if BUILDFLAG(IS_MAC)
 using NativeWindowHandle = gfx::NativeView;
 #else
 using NativeWindowHandle = gfx::AcceleratedWidget;
 #endif
 
-class NativeWindow : public base::SupportsUserData,
-                     public views::WidgetDelegate {
+class NativeWindow : public views::WidgetDelegate {
  public:
   ~NativeWindow() override;
 
@@ -74,6 +68,7 @@ class NativeWindow : public base::SupportsUserData,
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
   static std::unique_ptr<NativeWindow> Create(
+      int32_t base_window_id,
       const gin_helper::Dictionary& options,
       NativeWindow* parent = nullptr);
 
@@ -112,9 +107,9 @@ class NativeWindow : public base::SupportsUserData,
   void SetPosition(const gfx::Point& position, bool animate = false);
   [[nodiscard]] gfx::Point GetPosition() const;
 
-  virtual void SetContentSize(const gfx::Size& size, bool animate = false);
+  void SetContentSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetContentSize() const;
-  virtual void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
+  void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
   virtual gfx::Rect GetContentBounds() const;
   virtual bool IsNormal() const;
   virtual gfx::Rect GetNormalBounds() const = 0;
@@ -344,7 +339,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowAlwaysOnTopChanged();
   void NotifyWindowExecuteAppCommand(std::string_view command_name);
   void NotifyTouchBarItemInteraction(const std::string& item_id,
-                                     base::Value::Dict details);
+                                     base::DictValue details);
   void NotifyNewWindowForTab();
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
   void NotifyLayoutWindowControlsOverlay();
@@ -459,10 +454,14 @@ class NativeWindow : public base::SupportsUserData,
   // consumes and clears the restore_display_mode_callback_.
   void FlushPendingDisplayMode();
 
+  [[nodiscard]] auto base_window_id() const { return base_window_id_; }
+
  protected:
   friend class api::BrowserView;
 
-  NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
+  NativeWindow(int32_t base_window_id,
+               const gin_helper::Dictionary& options,
+               NativeWindow* parent);
 
   void set_titlebar_overlay_height(int height) {
     titlebar_overlay_height_ = height;
@@ -523,6 +522,9 @@ class NativeWindow : public base::SupportsUserData,
   // Identifier for the window provided by the application.
   // Used by Electron internally for features such as state persistence.
   std::string window_name_;
+
+  // ID of the api::BaseWindow that owns this NativeWindow.
+  const int32_t base_window_id_;
 
   // The "titleBarStyle" option.
   const TitleBarStyle title_bar_style_;

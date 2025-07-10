@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "base/callback_list.h"
 #include "content/public/browser/browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/web_contents_preferences.h"

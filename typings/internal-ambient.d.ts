@@ -108,9 +108,19 @@ declare namespace NodeJS {
     resolveHost(host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost>;
   }
 
+  interface ActivationArgumentsInternal {
+    type: string;
+    arguments: string;
+    actionIndex?: number;
+    reply?: string;
+    userInputs?: Record<string, string>;
+  }
+
   interface NotificationBinding {
     isSupported(): boolean;
     Notification: typeof Electron.Notification;
+    // Windows-only callback for cold-start notification activation
+    handleActivation?: (callback: (details: ActivationArgumentsInternal) => void) => void;
   }
 
   interface PowerMonitorBinding extends Electron.PowerMonitor {
@@ -223,6 +233,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
+    _linkedBinding(name: 'electron_common_shared_texture'): Electron.SharedTextureSubtle;
     _linkedBinding(name: 'electron_common_net'): NetBinding;
     _linkedBinding(name: 'electron_common_shell'): Electron.Shell;
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;

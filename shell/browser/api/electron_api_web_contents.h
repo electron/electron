@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "base/containers/flat_set.h"
 #include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
@@ -24,6 +25,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/frame_tree_node_id.h"
+#include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -31,6 +33,7 @@
 #include "content/public/common/stop_find_action.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/background_throttling_source.h"
@@ -227,6 +230,7 @@ class WebContents final : public ExclusiveAccessContext,
   v8::Local<v8::Value> GetWebRTCUDPPortRange(v8::Isolate* isolate) const;
   void SetWebRTCUDPPortRange(gin::Arguments* args);
   std::string GetMediaSourceID(content::WebContents* request_web_contents);
+  std::string GetOrCreateDevToolsTargetId();
   bool IsCrashed() const;
   void ForcefullyCrashRenderer();
   void SetUserAgent(const std::string& user_agent);
@@ -266,8 +270,8 @@ class WebContents final : public ExclusiveAccessContext,
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
 
   // DevTools workspace api.
-  void AddWorkSpace(gin::Arguments* args, const base::FilePath& path);
-  void RemoveWorkSpace(gin::Arguments* args, const base::FilePath& path);
+  void AddWorkSpace(v8::Isolate* isolate, const base::FilePath& path);
+  void RemoveWorkSpace(v8::Isolate* isolate, const base::FilePath& path);
 
   // Editing commands.
   void Undo();
@@ -302,7 +306,7 @@ class WebContents final : public ExclusiveAccessContext,
   void EndFrameSubscription();
 
   // Dragging native items.
-  void StartDrag(const gin_helper::Dictionary& item, gin::Arguments* args);
+  void StartDrag(v8::Isolate* isolate, const gin_helper::Dictionary& item);
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
@@ -335,7 +339,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(
-      content::RenderFrameHost* requesting_frame,
+      const content::GlobalRenderFrameHostToken& frame_token,
       const blink::mojom::FullscreenOptions& options,
       bool allowed);
 
@@ -431,7 +435,8 @@ class WebContents final : public ExclusiveAccessContext,
 
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const content::RenderWidgetHost& rfh,
-                    const blink::WebInputEvent& event) override;
+                    const blink::WebInputEvent& event,
+                    input::InputEventSource source) override;
 
   // content::JavaScriptDialogManager:
   void RunJavaScriptDialog(content::WebContents* web_contents,
@@ -459,6 +464,9 @@ class WebContents final : public ExclusiveAccessContext,
   WebContents& operator=(const WebContents&) = delete;
 
  private:
+  // Store last emitted favicon URLs to avoid duplicate page-favicon-updated
+  // events
+  base::flat_set<GURL> last_favicon_urls_;
   // Does not manage lifetime of |web_contents|.
   WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
   // Takes over ownership of |web_contents|.
@@ -504,6 +512,8 @@ class WebContents final : public ExclusiveAccessContext,
       const GURL& opener_url,
       const std::string& frame_name,
       const GURL& target_url,
+      WindowOpenDisposition disposition,
+      const blink::mojom::WindowFeatures& window_features,
       const content::StoragePartitionConfig& partition_config,
       content::SessionStorageNamespace* session_storage_namespace) override;
   void WebContentsCreatedWithFullParams(
@@ -697,7 +707,7 @@ class WebContents final : public ExclusiveAccessContext,
   bool IsFullscreen() const override;
   void EnterFullscreen(const url::Origin& origin,
                        ExclusiveAccessBubbleType bubble_type,
-                       const int64_t display_id) override;
+                       FullscreenTabParams fullscreen_tab_params) override;
   void ExitFullscreen() override {}
   void UpdateExclusiveAccessBubble(
       const ExclusiveAccessBubbleParams& params,
@@ -770,9 +780,14 @@ class WebContents final : public ExclusiveAccessContext,
   // Update the html fullscreen flag in both browser and renderer.
   void UpdateHtmlApiFullscreen(bool fullscreen);
 
+  void OnReadAvailableTypes(
+      const content::ContextMenuParams& params,
+      content::GlobalRenderFrameHostId render_frame_host_id,
+      std::vector<std::u16string> types);
+
   cppgc::Persistent<api::Session> session_;
   v8::Global<v8::Value> devtools_web_contents_;
-  v8::Global<v8::Value> debugger_;
+  cppgc::Persistent<api::Debugger> debugger_;
 
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
@@ -816,6 +831,10 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether offscreen rendering use gpu shared texture
   bool offscreen_use_shared_texture_ = false;
+  std::string offscreen_shared_texture_pixel_format_ = "argb";
+
+  // Use 1.0f for consistent behavior.
+  float offscreen_device_scale_factor_ = 1.0f;
 
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_ = false;
@@ -842,6 +861,8 @@ class WebContents final : public ExclusiveAccessContext,
   // Note: owned by inspectable_web_contents_, so declare this *after*
   // that field to ensure the dtor destroys them in the right order.
   raw_ptr<WebContentsZoomController> zoom_controller_ = nullptr;
+
+  std::optional<GURL> pending_unload_url_ = std::nullopt;
 
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;

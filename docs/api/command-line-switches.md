@@ -49,6 +49,10 @@ Disables the disk cache for HTTP requests.
 
 Disable HTTP/2 and SPDY/3.1 protocols.
 
+### --disable-geolocation _macOS_
+
+Disables the Geolocation API. Permission requests for geolocation will be denied internally regardless of the decision made by a handler set via `session.setPermissionRequestHandler`. This functionality is currently implemented only for macOS. Has no effect on other platforms.
+
 ### --disable-renderer-backgrounding
 
 Prevents Chromium from lowering the priority of invisible pages' renderer
@@ -86,7 +90,7 @@ Field trials to be forcefully enabled or disabled.
 
 For example: `WebRTC-Audio-Red-For-Opus/Enabled/`
 
-### --host-rules=`rules`
+### --host-rules=`rules` _Deprecated_
 
 A comma-separated list of `rules` that control how hostnames are mapped.
 
@@ -104,9 +108,23 @@ These mappings apply to the endpoint host in a net request (the TCP connect
 and host resolver in a direct connection, and the `CONNECT` in an HTTP proxy
 connection, and the endpoint host in a `SOCKS` proxy connection).
 
+**Deprecated:** Use the `--host-resolver-rules` switch instead.
+
 ### --host-resolver-rules=`rules`
 
-Like `--host-rules` but these `rules` only apply to the host resolver.
+A comma-separated list of `rules` that control how hostnames are mapped.
+
+For example:
+
+* `MAP * 127.0.0.1` Forces all hostnames to be mapped to 127.0.0.1
+* `MAP *.google.com proxy` Forces all google.com subdomains to be resolved to
+  "proxy".
+* `MAP test.com [::1]:77` Forces "test.com" to resolve to IPv6 loopback. Will
+  also force the port of the resulting socket address to be 77.
+* `MAP * baz, EXCLUDE www.google.com` Remaps everything to "baz", except for
+  "www.google.com".
+
+These `rules` only apply to the host resolver.
 
 ### --ignore-certificate-errors
 
@@ -154,7 +172,7 @@ Enables net log events to be saved and writes them to `path`.
 Sets the verbosity of logging when used together with `--enable-logging`.
 `N` should be one of [Chrome's LogSeverities][severities].
 
-Note that two complimentary logging mechanisms in Chromium -- `LOG()`
+Note that two complementary logging mechanisms in Chromium -- `LOG()`
 and `VLOG()` -- are controlled by different switches. `--log-level`
 controls `LOG()` messages, while `--v` and `--vmodule` control `VLOG()`
 messages. So you may want to use a combination of these three switches
@@ -178,6 +196,11 @@ proxy server flags that are passed.
 Disables the Chromium [sandbox](https://www.chromium.org/developers/design-documents/sandbox).
 Forces renderer process and Chromium helper processes to run un-sandboxed.
 Should only be used for testing.
+
+### --no-stdio-init
+
+Disable stdio initialization during node initialization.
+Used to avoid node initialization crash when the nul device is disabled on Windows platform.
 
 ### --proxy-bypass-list=`hosts`
 
@@ -294,7 +317,7 @@ By default inspector websocket url is available in stderr and under /json/list e
 
 ### `--experimental-network-inspection`
 
-Enable support for devtools network inspector events, for visibility into requests made by the nodejs `http` and `https` modules.
+Enable support for DevTools network inspector events, for visibility into requests made by the nodejs `http` and `https` modules.
 
 ### `--no-deprecation`
 
@@ -331,6 +354,11 @@ Affects the default output directory of [v8.setHeapSnapshotNearHeapLimit](https:
 
 Disable exposition of [Navigator API][] on the global scope from Node.js.
 
+### `--experimental-transform-types`
+
+Enables the [transformation](https://nodejs.org/api/typescript.html#type-stripping)
+of TypeScript-only syntax into JavaScript code.
+
 ## Chromium Flags
 
 There isn't a documented list of all Chromium switches, but there are a few ways to find them.
@@ -346,6 +374,13 @@ A complete list of flags exists in [Chromium's flag metadata page](https://sourc
 Keep in mind that standalone switches can sometimes be split into individual features, so there's no fully complete list of switches.
 
 Finally, you'll need to ensure that the version of Chromium in Electron matches the version of the browser you're using to cross-reference the switches.
+
+### Chromium features relevant to Electron apps
+
+* `AlwaysLogLOAFURL`: enables script attribution for
+  [`long-animation-frame`](https://developer.mozilla.org/en-US/docs/Web/API/Performance_API/Long_animation_frame_timing)
+  `PerformanceObserver` events for non-http(s), non-data, non-blob URLs (such as `file:` or custom
+  protocol URLs).
 
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value

@@ -14,14 +14,15 @@
 #include "content/public/browser/browser_main_parts.h"
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "printing/buildflags/buildflags.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "printing/printing_context_linux.h"
+#endif
 
 class BrowserProcessImpl;
 class IconManager;
-
-namespace base {
-class FieldTrialList;
-}
 
 namespace display {
 class Screen;
@@ -171,7 +172,6 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<Browser> browser_;
 
   std::unique_ptr<IconManager> icon_manager_;
-  std::unique_ptr<base::FieldTrialList> field_trial_list_;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::unique_ptr<ElectronExtensionsClient> extensions_client_;
@@ -182,6 +182,11 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
 #if BUILDFLAG(IS_MAC)
   std::unique_ptr<display::ScopedNativeScreen> screen_;
+#endif
+
+#if BUILDFLAG(ENABLE_PRINTING)
+  std::unique_ptr<printing::PrintingContextLinux::PrintDialogFactory>
+      print_dialog_factory_;
 #endif
 
   static ElectronBrowserMainParts* self_;

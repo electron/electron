@@ -1,3 +1,2 @@
 expose_ripemd160.patch
-revert_track_ssl_error_zero_return_explicitly.patch
 feat_expose_several_extra_cipher_functions.patch

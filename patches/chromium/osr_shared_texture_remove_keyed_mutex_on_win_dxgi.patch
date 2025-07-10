@@ -10,11 +10,11 @@ The keyed mutex introduce extra performance cost and spikes. However, at offscre
 For resolving complex conflict please pin @reitowo
 For more reason please see: https://crrev.com/c/5465148
 
-diff --git a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-index 31543b5b018313d2e5890f599109bd48d7bc5e64..2f4003b0557ae275ee3697062fafb6428f5da010 100644
---- a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-+++ b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-@@ -166,7 +166,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
+diff --git a/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc b/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
+index 6f31a20329a7bc7cafb6384c3b8ec9ed7a11e64e..3bf92efa5c0ad0212096e61383b53095867aa62e 100644
+--- a/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
++++ b/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
+@@ -379,7 +379,8 @@ gfx::GpuMemoryBufferHandle D3DImageBackingFactory::CreateGpuMemoryBufferHandle(
    // so make sure that the usage is one that we support.
    DCHECK(usage == gfx::BufferUsage::GPU_READ ||
           usage == gfx::BufferUsage::SCANOUT ||
@@ -24,7 +24,7 @@ index 31543b5b018313d2e5890f599109bd48d7bc5e64..2f4003b0557ae275ee3697062fafb642
        << "Incorrect usage, usage=" << gfx::BufferUsageToString(usage);
  
    D3D11_TEXTURE2D_DESC desc = {
-@@ -180,7 +181,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
+@@ -393,7 +394,9 @@ gfx::GpuMemoryBufferHandle D3DImageBackingFactory::CreateGpuMemoryBufferHandle(
        D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
        0,
        D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
@@ -35,11 +35,11 @@ index 31543b5b018313d2e5890f599109bd48d7bc5e64..2f4003b0557ae275ee3697062fafb642
  
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
-diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index 4de36674acee427da3a43891f780102d7e08d9cb..d32bf712107f02991717da626b5dd25c6e6973d3 100644
---- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-+++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-@@ -209,6 +209,23 @@ bool FrameResources::Initialize(VideoPixelFormat format,
+diff --git a/media/video/renderable_mappable_shared_image_video_frame_pool.cc b/media/video/renderable_mappable_shared_image_video_frame_pool.cc
+index 36ed797edc58a6cf094a0b720bf949b3f6379890..36a4a080da38cddad645d42e5c53c840e211105e 100644
+--- a/media/video/renderable_mappable_shared_image_video_frame_pool.cc
++++ b/media/video/renderable_mappable_shared_image_video_frame_pool.cc
+@@ -211,6 +211,24 @@ bool FrameResources::Initialize(VideoPixelFormat format,
    const gfx::Size coded_size =
        GetCodedSizeForVideoPixelFormat(format, visible_size_);
  
@@ -49,7 +49,8 @@ index 4de36674acee427da3a43891f780102d7e08d9cb..d32bf712107f02991717da626b5dd25c
 +  // once the GMB is returned from CopyRequest. So there will be no race
 +  // condition on that texture. We can request a GMB without a keyed mutex to
 +  // accelerate and probably prevent some driver deadlock.
-+  if (format == PIXEL_FORMAT_ARGB || format == PIXEL_FORMAT_ABGR) {
++  if (format == PIXEL_FORMAT_ARGB || format == PIXEL_FORMAT_ABGR ||
++      format == PIXEL_FORMAT_RGBAF16) {
 +    // This value is 'borrowed', SCANOUT_VEA_CPU_READ is probably invalid
 +    // cause there's no real SCANOUT on Windows. We simply use this enum as a
 +    // flag to disable mutex in the GMBFactoryDXGI because this enum is also

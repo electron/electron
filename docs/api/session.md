@@ -66,7 +66,7 @@ The `session` module has the following properties:
 
 ### `session.defaultSession`
 
-A `Session` object, the default session object of the app.
+A `Session` object, the default session object of the app, available after `app.whenReady` is called.
 
 ## Class: Session
 
@@ -652,8 +652,6 @@ Clears the session’s HTTP cache.
     `cookies`, `filesystem`, `indexdb`, `localstorage`,
     `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
     specified, clear all storage types.
-  * `quotas` string[] (optional) - The types of quotas to clear, can be
-    `temporary`. If not specified, clear all quotas.
 
 Returns `Promise<void>` - resolves when the storage data has been cleared.
 
@@ -939,14 +937,18 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
     * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
     * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`
+    * `fileSystem` - Access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
     * `securityOrigin` string (optional) - The security origin of the `media` check.
     * `mediaType` string (optional) - The type of media access being requested, can be `video`,
-      `audio` or `unknown`
+      `audio` or `unknown`.
     * `requestingUrl` string (optional) - The last URL the requesting frame loaded.  This is not provided for cross-origin sub frames making permission checks.
-    * `isMainFrame` boolean - Whether the frame making the request is the main frame
+    * `isMainFrame` boolean - Whether the frame making the request is the main frame.
+    * `filePath` string (optional) - The path of a `fileSystem` request.
+    * `isDirectory` boolean (optional) - Whether a `fileSystem` request is a directory.
+    * `fileAccessType` string (optional) - The access type of a `fileSystem` request. Can be `writable` or `readable`.
 
 Sets the handler which can be used to respond to permission checks for the `session`.
 Returning `true` will allow the permission and `false` will reject it.  Please note that
@@ -967,6 +969,9 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
   return false // denied
 })
 ```
+
+> [!NOTE]
+> `isMainFrame` will always be `false` for a `fileSystem` request as a result of Chromium limitations.
 
 #### `ses.setDisplayMediaRequestHandler(handler[, opts])`
 
@@ -1209,7 +1214,7 @@ function createWindow () {
 
   mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
     bluetoothPinCallback = callback
-    // Send a IPC message to the renderer to prompt the user to confirm the pairing.
+    // Send an IPC message to the renderer to prompt the user to confirm the pairing.
     // Note that this will require logic in the renderer to handle this message and
     // display a prompt to the user.
     mainWindow.webContents.send('bluetooth-pairing-request', details)
@@ -1257,7 +1262,7 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 Overrides the `userAgent` and `acceptLanguages` for this session.
 
-The `acceptLanguages` must a comma separated ordered list of language codes, for
+The `acceptLanguages` must be a comma separated ordered list of language codes, for
 example `"en-US,fr,de,ko,zh-CN,ja"`.
 
 This doesn't affect existing `WebContents`, and each `WebContents` can use
@@ -1505,7 +1510,7 @@ will not work on non-persistent (in-memory) sessions.
 * `options` Object (optional)
   * `allowFileAccess` boolean - Whether to allow the extension to read local files over `file://`
     protocol and inject content scripts into `file://` pages. This is required e.g. for loading
-    devtools extensions on `file://` URLs. Defaults to false.
+    DevTools extensions on `file://` URLs. Defaults to false.
 
 Returns `Promise<Extension>` - resolves when the extension is loaded.
 
@@ -1531,7 +1536,7 @@ const path = require('node:path')
 app.whenReady().then(async () => {
   await session.defaultSession.loadExtension(
     path.join(__dirname, 'react-devtools'),
-    // allowFileAccess is required to load the devtools extension on file:// URLs.
+    // allowFileAccess is required to load the DevTools extension on file:// URLs.
     { allowFileAccess: true }
   )
   // Note that in order to use the React DevTools extension, you'll need to

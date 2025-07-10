@@ -746,7 +746,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
       context.readdirResults.push(dirent);
       if (dirent!.isDirectory() || stat === 1) {
-        context.pathsQueue.push(path.join(dirent!.path, dirent!.name));
+        context.pathsQueue.push(path.join(dirent!.parentPath, dirent!.name));
       }
     }
   }
@@ -1232,6 +1232,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   // has filesystem caching.
   overrideAPI(fs, 'copyFile');
   overrideAPISync(fs, 'copyFileSync');
+  overrideAPI(fs, 'cp');
+  overrideAPISync(fs, 'cpSync');
 
   overrideAPI(fs, 'open');
   overrideAPISync(process, 'dlopen', 1);

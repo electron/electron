@@ -17,30 +17,14 @@
 
 namespace electron::api {
 
-void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                         std::optional<base::FilePath> custom_path) {
-  if (custom_path.has_value()) {
-    if (!custom_path->IsAbsolute()) {
-      thrower.ThrowError("Path must be absolute");
-      return;
-    }
-    {
-      ScopedAllowBlockingForElectron allow_blocking;
-      base::PathService::Override(DIR_APP_LOGS, custom_path.value());
-    }
-  } else {
-    NSString* bundle_name =
-        [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
-    NSString* logs_path =
-        [NSString stringWithFormat:@"Library/Logs/%@", bundle_name];
-    NSString* library_path =
-        [NSHomeDirectory() stringByAppendingPathComponent:logs_path];
-    {
-      ScopedAllowBlockingForElectron allow_blocking;
-      base::PathService::Override(DIR_APP_LOGS,
-                                  base::FilePath([library_path UTF8String]));
-    }
-  }
+base::FilePath App::GetDefaultAppLogPath() {
+  NSString* bundle_name =
+      [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
+  NSString* logs_path =
+      [NSString stringWithFormat:@"Library/Logs/%@", bundle_name];
+  NSString* library_path =
+      [NSHomeDirectory() stringByAppendingPathComponent:logs_path];
+  return base::FilePath{[library_path UTF8String]};
 }
 
 void App::SetActivationPolicy(gin_helper::ErrorThrower thrower,

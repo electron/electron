@@ -1,4 +1,4 @@
-import { app, BrowserWindow, BaseWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain, BrowserWindowConstructorOptions } from 'electron/main';
+import { app, BrowserWindow, BaseWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, systemPreferences, WebContents, WebFrameMain, BrowserWindowConstructorOptions } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -602,6 +602,67 @@ describe('BrowserWindow module', () => {
         .loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: 'other://' })
         .catch((e) => console.log(e));
       expect(await w.webContents.executeJavaScript('window.ping')).to.equal('pong');
+    });
+
+    describe('webRequest', () => {
+      afterEach(() => {
+        session.defaultSession.webRequest.onBeforeRequest(null);
+      });
+
+      it('triggers webRequest handlers for https', async () => {
+        session.defaultSession.webRequest.onBeforeRequest((_, cb) => {
+          cb({ cancel: true });
+        });
+
+        await expect(w.loadURL('https://foo')).to.eventually.be.rejectedWith(/^ERR_BLOCKED_BY_CLIENT/);
+      });
+
+      it('triggers webRequest handlers for intercepted https', async () => {
+        session.defaultSession.webRequest.onBeforeRequest((_, cb) => {
+          cb({ cancel: true });
+        });
+
+        session.defaultSession.protocol.handle('https', () => new Response());
+        defer(() => {
+          session.defaultSession.protocol.unhandle('https');
+        });
+
+        await expect(w.loadURL('https://foo')).to.eventually.be.rejectedWith(/^ERR_BLOCKED_BY_CLIENT/);
+      });
+
+      it('triggers webRequest handlers for file urls', async () => {
+        session.defaultSession.webRequest.onBeforeRequest((_, cb) => {
+          cb({ cancel: true });
+        });
+
+        await expect(w.loadURL('file://foo')).to.eventually.be.rejectedWith(/^ERR_BLOCKED_BY_CLIENT/);
+      });
+
+      it('triggers webRequest handlers for intercepted file urls', async () => {
+        session.defaultSession.webRequest.onBeforeRequest((_, cb) => {
+          cb({ cancel: true });
+        });
+
+        session.defaultSession.protocol.handle('file', () => new Response());
+        defer(() => {
+          session.defaultSession.protocol.unhandle('file');
+        });
+
+        await expect(w.loadURL('file://foo')).to.eventually.be.rejectedWith(/^ERR_BLOCKED_BY_CLIENT/);
+      });
+
+      it('triggers webRequest handlers for registered protocols', async () => {
+        session.defaultSession.webRequest.onBeforeRequest((_, cb) => {
+          cb({ cancel: true });
+        });
+
+        session.defaultSession.protocol.handle('custom-protocol', () => new Response());
+        defer(() => {
+          session.defaultSession.protocol.unhandle('custom-protocol');
+        });
+
+        await expect(w.loadURL('custom-protocol://foo')).to.eventually.be.rejectedWith(/^ERR_BLOCKED_BY_CLIENT/);
+      });
     });
   });
 
@@ -1704,6 +1765,26 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getMinimumSize(), [100, 100]);
         expectBoundsEqual(w.getMaximumSize(), [900, 600]);
       });
+
+      it('enforces minimum size', async () => {
+        w.setMinimumSize(300, 300);
+        const resize = once(w, 'resize');
+        w.setSize(100, 100);
+        await resize;
+        const size = w.getSize();
+        expect(size[0]).to.be.at.least(300);
+        expect(size[1]).to.be.at.least(300);
+      });
+
+      it('enforces maximum size', async () => {
+        w.setMaximumSize(200, 200);
+        const resize = once(w, 'resize');
+        w.setSize(500, 500);
+        await resize;
+        const size = w.getSize();
+        expect(size[0]).to.be.at.most(200);
+        expect(size[1]).to.be.at.most(200);
+      });
     });
 
     describe('BrowserWindow.setAspectRatio(ratio)', () => {
@@ -2169,12 +2250,6 @@ describe('BrowserWindow module', () => {
             expect(w.fullScreen).to.be.true();
           });
 
-          // FIXME: this test needs to be fixed and re-enabled.
-          it.skip('does not go fullscreen if roundedCorners are enabled', async () => {
-            w = new BrowserWindow({ frame: false, roundedCorners: false, fullscreen: true });
-            expect(w.fullScreen).to.be.false();
-          });
-
           it('can be changed', () => {
             w.fullScreen = false;
             expect(w.fullScreen).to.be.false();
@@ -2596,7 +2671,23 @@ describe('BrowserWindow module', () => {
       expect(() => {
         // @ts-ignore this is wrong on purpose.
         w.setAccentColor([1, 2, 3]);
-      }).to.throw('Invalid accent color value - must be a string or boolean');
+      }).to.throw('Invalid accent color value - must be null, hex string, or boolean');
+    });
+
+    it('throws if called with an invalid parameter', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        // @ts-ignore this is wrong on purpose.
+        w.setAccentColor(new Date());
+      }).to.throw('Invalid accent color value - must be null, hex string, or boolean');
+    });
+
+    it('can be reset with null', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor('#FF0000');
+      expect(w.getAccentColor()).to.equal('#FF0000');
+      w.setAccentColor(null);
+      expect(w.getAccentColor()).to.not.equal('#FF0000');
     });
 
     it('returns the accent color after setting it to a string', () => {
@@ -2622,6 +2713,14 @@ describe('BrowserWindow module', () => {
       const accentColor = w.getAccentColor();
       expect(accentColor).to.be.a('string');
       expect(accentColor).to.match(/^#[0-9A-F]{6}$/i);
+    });
+
+    it('matches the systemPreferences system color when true', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor(true);
+      const accentColor = w.getAccentColor() as string;
+      const systemColor = systemPreferences.getAccentColor().slice(0, 6);
+      expect(accentColor).to.equal(`#${systemColor}`);
     });
 
     it('returns the correct accent color after multiple changes', () => {
@@ -3993,6 +4092,28 @@ describe('BrowserWindow module', () => {
         expect(webPreferences!.contextIsolation).to.equal(false);
       });
 
+      it('should apply zoomFactor from setWindowOpenHandler overrideBrowserWindowOptions', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true
+          }
+        });
+
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            webPreferences: {
+              zoomFactor: 2.0
+            }
+          }
+        }));
+        w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
+        const [childWindow] = await once(w.webContents, 'did-create-window') as [BrowserWindow, any];
+        await once(childWindow.webContents, 'did-finish-load');
+        expect(childWindow.webContents.getZoomFactor()).to.be.closeTo(2.0, 0.1);
+      });
+
       it('should set ipc event sender correctly', async () => {
         const w = new BrowserWindow({
           show: false,
@@ -4898,6 +5019,27 @@ describe('BrowserWindow module', () => {
       await restore;
       expect(w.isMaximized()).to.equal(true);
     });
+
+    ifit(process.platform !== 'linux')('should not break fullscreen state', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.show();
+
+      const enterFS = once(w, 'enter-full-screen');
+      w.setFullScreen(true);
+      await enterFS;
+      expect(w.isFullScreen()).to.be.true('not fullscreen');
+
+      w.restore();
+      await setTimeout(1000);
+
+      expect(w.isFullScreen()).to.be.true('not fullscreen after restore');
+      expect(w.isMinimized()).to.be.false('should not be minimized');
+
+      // Clean up fullscreen state.
+      const leaveFS = once(w, 'leave-full-screen');
+      w.setFullScreen(false);
+      await leaveFS;
+    });
   });
 
   // TODO(dsanders11): Enable once maximize event works on Linux again on CI
@@ -5435,6 +5577,20 @@ describe('BrowserWindow module', () => {
         expect(w.maximizable).to.be.true('maximizable');
       });
 
+      it('does not change window size when disabled and enabled', () => {
+        const w = new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 300,
+          frame: true
+        });
+
+        w.setResizable(false);
+        expectBoundsEqual(w.getSize(), [400, 300]);
+        w.setResizable(true);
+        expectBoundsEqual(w.getSize(), [400, 300]);
+      });
+
       ifit(process.platform !== 'darwin')('works for a window smaller than 64x64', () => {
         const w = new BrowserWindow({
           show: false,
@@ -5901,17 +6057,23 @@ describe('BrowserWindow module', () => {
     ifdescribe(process.platform !== 'darwin')('when fullscreen state is changed', () => {
       it('correctly remembers state prior to fullscreen change', async () => {
         const w = new BrowserWindow({ show: false });
+
+        // This should do nothing.
+        w.setFullScreen(false);
+
         expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
         w.setMenuBarVisibility(false);
         expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
 
         const enterFS = once(w, 'enter-full-screen');
         w.setFullScreen(true);
+        w.setFullScreen(true); // This should do nothing.
         await enterFS;
         expect(w.fullScreen).to.be.true('not fullscreen');
 
         const exitFS = once(w, 'leave-full-screen');
         w.setFullScreen(false);
+        w.setFullScreen(false); // This should do nothing.
         await exitFS;
         expect(w.fullScreen).to.be.false('not fullscreen');
 
@@ -5928,11 +6090,13 @@ describe('BrowserWindow module', () => {
 
         const enterFS = once(w, 'enter-full-screen');
         w.setFullScreen(true);
+        w.setFullScreen(true); // This should do nothing.
         await enterFS;
         expect(w.fullScreen).to.be.true('not fullscreen');
 
         const exitFS = once(w, 'leave-full-screen');
         w.setFullScreen(false);
+        w.setFullScreen(false); // This should do nothing.
         await exitFS;
         expect(w.fullScreen).to.be.false('not fullscreen');
 
@@ -5944,6 +6108,9 @@ describe('BrowserWindow module', () => {
       it('correctly remembers state prior to HTML fullscreen transition', async () => {
         const w = new BrowserWindow();
         await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+        // This should do nothing.
+        w.setFullScreen(false);
 
         expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
         expect(w.isFullScreen()).to.be.false('is fullscreen');
@@ -6738,7 +6905,7 @@ describe('BrowserWindow module', () => {
       expect(data.constructor.name).to.equal('NativeImage');
       expect(data.isEmpty()).to.be.false('data is empty');
       const size = data.getSize();
-      const { scaleFactor } = screen.getPrimaryDisplay();
+      const scaleFactor = 1;
       expect(size.width).to.be.closeTo(100 * scaleFactor, 2);
       expect(size.height).to.be.closeTo(100 * scaleFactor, 2);
     });
@@ -6830,6 +6997,114 @@ describe('BrowserWindow module', () => {
         expect(w.webContents.frameRate).to.equal(30);
       });
     });
+
+    describe('shared texture', () => {
+      const v8Util = process._linkedBinding('electron_common_v8_util');
+
+      it('does not crash when release() is called after the texture is garbage collected', async () => {
+        const sw = new BrowserWindow({
+          width: 100,
+          height: 100,
+          show: false,
+          webPreferences: {
+            backgroundThrottling: false,
+            offscreen: {
+              useSharedTexture: true
+            }
+          }
+        });
+
+        const paint = once(sw.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
+        sw.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        const [event] = await paint;
+        sw.webContents.stopPainting();
+
+        if (!event.texture) {
+          // GPU shared texture not available on this host; skip.
+          sw.destroy();
+          return;
+        }
+
+        // Keep only the release closure and drop the owning texture object.
+        const staleRelease = event.texture.release;
+        const weakTexture = new WeakRef(event.texture);
+        event.texture = undefined;
+
+        // Force GC until the texture object is collected.
+        let collected = false;
+        for (let i = 0; i < 30 && !collected; ++i) {
+          await setTimeout();
+          v8Util.requestGarbageCollectionForTesting();
+          collected = weakTexture.deref() === undefined;
+        }
+        expect(collected).to.be.true('texture should be garbage collected');
+
+        // This should return safely and not crash the main process.
+        expect(() => staleRelease()).to.not.throw();
+
+        sw.destroy();
+      });
+    });
+  });
+
+  describe('offscreen rendering with device scale factor', () => {
+    let w: BrowserWindow;
+    const scaleFactor = 1.5;
+
+    beforeEach(function () {
+      w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        show: false,
+        webPreferences: {
+          backgroundThrottling: false,
+          offscreen: {
+            deviceScaleFactor: scaleFactor
+          }
+        }
+      });
+    });
+    afterEach(closeAllWindows);
+
+    it('creates offscreen window with correct size considering device scale factor', async () => {
+      const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
+      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+      const [, , data] = await paint;
+      expect(data.constructor.name).to.equal('NativeImage');
+      expect(data.isEmpty()).to.be.false('data is empty');
+      const size = data.getSize();
+      expect(size.width).to.be.closeTo(100 * scaleFactor, 2);
+      expect(size.height).to.be.closeTo(100 * scaleFactor, 2);
+    });
+
+    it('has correct screen and window sizes', async () => {
+      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+      await once(w.webContents, 'dom-ready');
+      const sizes = await w.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          const screenSize = [screen.width, screen.height];
+          const outerSize = [window.outerWidth, window.outerHeight];
+          const dpr = window.devicePixelRatio;
+          resolve({ screenSize, outerSize, dpr });
+        });
+      `);
+      expect(sizes.screenSize).to.deep.equal([100, 100]);
+      expect(sizes.outerSize).to.deep.equal([100, 100]);
+      expect(sizes.dpr).to.be.equal(scaleFactor);
+    });
+
+    it('has correct device screen size media query result', async () => {
+      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+      await once(w.webContents, 'dom-ready');
+      const query = `(device-width: ${100}px)`;
+      const matches = await w.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          const mediaQuery = window.matchMedia('${query}');
+          resolve(mediaQuery.matches);
+        });
+      `);
+      expect(matches).to.be.true();
+    });
   });
 
   describe('"transparent" option', () => {
@@ -6888,7 +7163,7 @@ describe('BrowserWindow module', () => {
         hasShadow: false
       });
 
-      await backgroundWindow.loadURL('about:blank');
+      await backgroundWindow.loadURL('data:text/html,<html></html>');
 
       const foregroundWindow = new BrowserWindow({
         ...display.bounds,
@@ -6929,7 +7204,7 @@ describe('BrowserWindow module', () => {
         hasShadow: false
       });
 
-      await backgroundWindow.loadURL('about:blank');
+      await backgroundWindow.loadURL('data:text/html,<html></html>');
 
       const foregroundWindow = new BrowserWindow({
         ...display.bounds,
@@ -6982,7 +7257,7 @@ describe('BrowserWindow module', () => {
         backgroundColor: HexColors.BLUE
       });
 
-      w.loadURL('about:blank');
+      w.loadURL('data:text/html,<html></html>');
       await once(w, 'ready-to-show');
 
       const screenCapture = new ScreenCapture(display);

@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitchell Cohen <mitch.cohen@me.com>
+Date: Sun, 1 Mar 2026 16:22:00 -0500
+Subject: fix: set correct app id on Linux
+
+Sets the Electron app's actual XDG app ID and DBus path instead of org.chromium.Chromium..
+This avoids conflicts with portals, e.g. the global shortcut portal.
+
+diff --git a/base/version_info/nix/version_extra_utils.cc b/base/version_info/nix/version_extra_utils.cc
+index e48fbf29760fb0b6d759a82132a6693db4d09929..f6b658d01e0ddf31e8dc66b0922444ad16747ad0 100644
+--- a/base/version_info/nix/version_extra_utils.cc
++++ b/base/version_info/nix/version_extra_utils.cc
+@@ -10,8 +10,29 @@
+ #include "base/containers/fixed_flat_map.h"
+ #include "base/environment.h"
+ #include "base/strings/strcat.h"
++#include "base/strings/string_util.h"
+ #include "build/branding_buildflags.h"
+ 
++namespace {
++
++constexpr std::string_view kDesktopSuffix = ".desktop";
++std::optional<std::string> GetChromeDesktopBaseName(base::Environment& env) {
++  auto desktop = env.GetVar("CHROME_DESKTOP");
++  if (!desktop.has_value() || desktop->empty()) {
++    return std::nullopt;
++  }
++  std::string_view name = *desktop;
++  if (name.ends_with(kDesktopSuffix)) {
++    name.remove_suffix(kDesktopSuffix.size());
++  }
++  if (name.empty()) {
++    return std::nullopt;
++  }
++  return std::string(name);
++}
++
++}  // namespace
++
+ namespace version_info::nix {
+ 
+ version_info::Channel GetChannel(base::Environment& env) {
+@@ -36,6 +57,10 @@ bool IsExtendedStable(base::Environment& env) {
+ }
+ 
+ std::string GetAppName(base::Environment& env) {
++  if (auto name = GetChromeDesktopBaseName(env)) {
++    return *name;
++  }
++
+ #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   static constexpr std::string_view kAppName = "com.google.Chrome";
+ #else
+@@ -61,6 +86,16 @@ std::string GetAppName(base::Environment& env) {
+ }
+ 
+ std::string GetSessionNamePrefix(base::Environment& env) {
++  if (auto name = GetChromeDesktopBaseName(env)) {
++    // DBus object paths have stricter requirements than names.
++    for (char& c : *name) {
++      if (!base::IsAsciiAlphaNumeric(c) && c != '_') {
++        c = '_';
++      }
++    }
++    return base::ToLowerASCII(*name);
++  }
++
+ #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   static constexpr std::string_view kSessionNamePrefix = "chrome";
+ #else

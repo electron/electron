@@ -9,17 +9,19 @@
 #include <utility>
 
 #include "base/files/file_util.h"
+#include "base/logging.h"
 #include "base/path_service.h"
+#include "base/strings/string_util.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/common/chrome_paths.h"
+#include "gin/arguments.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
-#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/thread_restrictions.h"
 
 namespace electron {
@@ -69,6 +71,29 @@ void Browser::RemoveObserver(BrowserObserver* obs) {
 // static
 Browser* Browser::Get() {
   return ElectronBrowserMainParts::Get()->browser();
+}
+
+// static
+bool Browser::IsValidProtocolScheme(const std::string& scheme) {
+  // RFC 3986 Section 3.1:
+  // scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+  if (scheme.empty()) {
+    LOG(ERROR) << "Protocol scheme must not be empty";
+    return false;
+  }
+  if (!base::IsAsciiAlpha(scheme[0])) {
+    LOG(ERROR) << "Protocol scheme must start with an ASCII letter";
+    return false;
+  }
+  for (size_t i = 1; i < scheme.size(); ++i) {
+    const char c = scheme[i];
+    if (!base::IsAsciiAlpha(c) && !base::IsAsciiDigit(c) && c != '+' &&
+        c != '-' && c != '.') {
+      LOG(ERROR) << "Protocol scheme contains invalid character: '" << c << "'";
+      return false;
+    }
+  }
+  return true;
 }
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
@@ -180,7 +205,7 @@ void Browser::WillFinishLaunching() {
   observers_.Notify(&BrowserObserver::OnWillFinishLaunching);
 }
 
-void Browser::DidFinishLaunching(base::Value::Dict launch_info) {
+void Browser::DidFinishLaunching(base::DictValue launch_info) {
   // Make sure the userData directory is created.
   ScopedAllowBlockingForElectron allow_blocking;
   base::FilePath user_data;
@@ -192,9 +217,8 @@ void Browser::DidFinishLaunching(base::Value::Dict launch_info) {
   }
 
   is_ready_ = true;
-  if (ready_promise_) {
+  if (ready_promise_)
     ready_promise_->Resolve();
-  }
 
   for (BrowserObserver& observer : observers_)
     observer.OnFinishLaunching(launch_info.Clone());

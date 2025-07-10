@@ -10,7 +10,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 #include "ui/views/view.h"
 
 class DevToolsContentsResizingStrategy;
@@ -49,6 +49,7 @@ class InspectableWebContentsView : public views::View {
   void SetCornerRadii(const gfx::RoundedCornersF& corner_radii);
 
   void ShowDevTools(bool activate);
+  void ActivateDevTools();
   void CloseDevTools();
   bool IsDevToolsViewShowing();
   bool IsDevToolsViewFocused();
@@ -61,9 +62,9 @@ class InspectableWebContentsView : public views::View {
   // views::View:
   void Layout(PassKey) override;
 
- private:
   views::View* GetContentsView() const;
 
+ private:
   // Owns us.
   raw_ptr<InspectableWebContents> inspectable_web_contents_;
 

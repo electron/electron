@@ -31,6 +31,7 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'screen', loader: () => require('./screen') },
   { name: 'ServiceWorkerMain', loader: () => require('./service-worker-main') },
   { name: 'session', loader: () => require('./session') },
+  { name: 'sharedTexture', loader: () => require('./shared-texture') },
   { name: 'ShareMenu', loader: () => require('./share-menu') },
   { name: 'systemPreferences', loader: () => require('./system-preferences') },
   { name: 'TouchBar', loader: () => require('./touch-bar') },

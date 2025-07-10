@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 
+#include "base/functional/bind.h"
 #include "base/mac/scoped_sending_event.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
@@ -20,6 +21,8 @@
 #include "shell/common/keyboard_util.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/cocoa/menu_utils.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace {
 
@@ -47,9 +50,13 @@ ui::Accelerator GetAcceleratorFromKeyEquivalentAndModifierMask(
 
 namespace electron::api {
 
-MenuMac::MenuMac(gin::Arguments* args) : Menu(args) {}
+MenuMac::MenuMac(gin::Arguments* args) : Menu{args} {}
 
-MenuMac::~MenuMac() = default;
+MenuMac::~MenuMac() {
+  // Must remove observer before destroying menu_controller_, which holds
+  // a weak reference to model_
+  RemoveModelObserver();
+}
 
 void MenuMac::PopupAt(BaseWindow* window,
                       std::optional<WebFrameMain*> frame,
@@ -155,7 +162,8 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   if (rightmostMenuPoint > screenRight)
     position.x = position.x - [menu size].width;
 
-  [popup_controllers_[window_id] setCloseCallback:std::move(close_callback)];
+  [popup_controllers_[window_id]
+      setPopupCloseCallback:std::move(close_callback)];
 
   if (frame && frame->render_frame_host()) {
     auto* rfh = frame->render_frame_host()->GetOutermostMainFrameOrEmbedder();
@@ -239,6 +247,20 @@ std::u16string MenuMac::GetAcceleratorTextAtForTesting(int index) const {
   return text;
 }
 
+void Menu::SimulateSubmenuCloseSequenceForTesting() {
+  ElectronMenuController* controller =
+      [[ElectronMenuController alloc] initWithModel:model()
+                              useDefaultAccelerator:NO];
+  NSMenu* menu = [controller menu];
+  NSMenu* submenu = menu.itemArray[0].submenu;
+
+  [controller setPopupCloseCallback:base::BindOnce([] {})];
+  [controller menuWillOpen:menu];
+  [controller menuWillOpen:submenu];
+  [controller menuDidClose:submenu];
+  [controller menuDidClose:menu];
+}
+
 void MenuMac::ClosePopupOnUI(int32_t window_id) {
   auto controller = popup_controllers_.find(window_id);
   if (controller != popup_controllers_.end()) {
@@ -288,11 +310,12 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
-gin_helper::Handle<Menu> Menu::New(gin::Arguments* args) {
-  auto handle = gin_helper::CreateHandle(args->isolate(),
-                                         static_cast<Menu*>(new MenuMac(args)));
-  gin_helper::CallMethod(args->isolate(), handle.get(), "_init");
-  return handle;
+Menu* Menu::New(gin::Arguments* args) {
+  v8::Isolate* const isolate = args->isolate();
+  Menu* const menu = cppgc::MakeGarbageCollected<MenuMac>(
+      isolate->GetCppHeap()->GetAllocationHandle(), args);
+  gin_helper::CallMethod(isolate, menu, "_init");
+  return menu;
 }
 
 }  // namespace electron::api

@@ -13,7 +13,7 @@
 #include "base/memory/raw_ptr.h"
 #include "gin/arguments.h"
 #include "gin/per_isolate_data.h"
-#include "shell/common/gin_helper/arguments.h"
+#include "gin/public/gin_embedders.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "v8/include/v8-context.h"
@@ -154,15 +154,6 @@ inline bool GetNextArgument(gin::Arguments* args,
   return true;
 }
 
-// Electron-specific GetNextArgument that supports the gin_helper::Arguments.
-inline bool GetNextArgument(gin::Arguments* args,
-                            const InvokerOptions& invoker_options,
-                            bool is_first,
-                            gin_helper::Arguments** result) {
-  *result = static_cast<gin_helper::Arguments*>(args);
-  return true;
-}
-
 // For advanced use cases, we allow callers to request the unparsed Arguments
 // object and poke around in it directly.
 inline bool GetNextArgument(gin::Arguments* args,
@@ -299,8 +290,8 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
   static void DispatchToCallbackImpl(gin::Arguments* args) {
     v8::Local<v8::External> v8_holder;
     CHECK(args->GetData(&v8_holder));
-    CallbackHolderBase* holder_base =
-        reinterpret_cast<CallbackHolderBase*>(v8_holder->Value());
+    CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
+        v8_holder->Value(gin::kGinInternalCallbackHolderBaseTag));
 
     typedef CallbackHolder<ReturnType(ArgTypes...)> HolderT;
     HolderT* holder = static_cast<HolderT*>(holder_base);

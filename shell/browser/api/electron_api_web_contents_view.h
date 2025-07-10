@@ -7,7 +7,7 @@
 
 #include <optional>
 
-#include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/draggable_region_provider.h"
@@ -57,13 +57,13 @@ class WebContentsView : public View,
   void OnViewRemovedFromWidget(views::View* view) override;
 
  private:
-  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   void ApplyBorderRadius();
 
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;
-  raw_ptr<api::WebContents> api_web_contents_;
+  base::WeakPtr<api::WebContents> api_web_contents_;
 };
 
 }  // namespace electron::api

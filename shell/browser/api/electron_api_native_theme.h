@@ -11,6 +11,10 @@
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
+#if BUILDFLAG(IS_WIN)
+#include "base/win/registry.h"
+#endif
+
 namespace gin_helper {
 template <typename T>
 class Handle;
@@ -52,12 +56,20 @@ class NativeTheme final : public gin_helper::DeprecatedWrappable<NativeTheme>,
   bool ShouldUseInvertedColorScheme();
   bool InForcedColorsMode();
   bool GetPrefersReducedTransparency();
+#if BUILDFLAG(IS_MAC)
+  bool ShouldDifferentiateWithoutColor();
+#endif
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* theme) override;
   void OnNativeThemeUpdatedOnUI();
 
  private:
+#if BUILDFLAG(IS_WIN)
+  base::win::RegKey hkcu_themes_regkey_;
+#endif
+  std::optional<bool> should_use_dark_colors_for_system_integrated_ui_ =
+      std::nullopt;
   raw_ptr<ui::NativeTheme> ui_theme_;
   raw_ptr<ui::NativeTheme> web_theme_;
 };

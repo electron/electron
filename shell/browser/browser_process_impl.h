@@ -20,6 +20,7 @@
 #include "services/network/public/cpp/network_quality_tracker.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "shell/browser/net/system_network_context_manager.h"
+#include "ui/base/unowned_user_data/unowned_user_data_host.h"
 
 #if BUILDFLAG(IS_LINUX)
 #include "components/os_crypt/sync/key_storage_util_linux.h"
@@ -70,10 +71,12 @@ class BrowserProcessImpl : public BrowserProcess {
   // BrowserProcess
   BuildState* GetBuildState() override;
   GlobalFeatures* GetFeatures() override;
-  void CreateGlobalFeaturesForTesting() override {}
+  void CreateGlobalFeaturesForTesting() {}
   void EndSession() override {}
   void FlushLocalStateAndReply(base::OnceClosure reply) override {}
   bool IsShuttingDown() override;
+  ui::UnownedUserDataHost& GetUnownedUserDataHost() override;
+  const ui::UnownedUserDataHost& GetUnownedUserDataHost() const override;
 
   metrics_services_manager::MetricsServicesManager* GetMetricsServicesManager()
       override;
@@ -99,7 +102,9 @@ class BrowserProcessImpl : public BrowserProcess {
   printing::PrintPreviewDialogController* print_preview_dialog_controller()
       override;
   printing::BackgroundPrintingManager* background_printing_manager() override;
+  activity_reporter::ActivityReporter* activity_reporter() override;
   IntranetRedirectDetector* intranet_redirect_detector() override;
+  supervised_user::DeviceParentalControls& device_parental_controls() override;
   DownloadStatusUpdater* download_status_updater() override;
   DownloadRequestLimiter* download_request_limiter() override;
   BackgroundModeManager* background_mode_manager() override;
@@ -108,7 +113,6 @@ class BrowserProcessImpl : public BrowserProcess {
   subresource_filter::RulesetService* subresource_filter_ruleset_service()
       override;
   component_updater::ComponentUpdateService* component_updater() override;
-  MediaFileSystemRegistry* media_file_system_registry() override;
   WebRtcLogUploader* webrtc_log_uploader() override;
   network_time::NetworkTimeTracker* network_time_tracker() override;
   gcm::GCMDriver* gcm_driver() override;
@@ -133,8 +137,6 @@ class BrowserProcessImpl : public BrowserProcess {
   const std::string& GetApplicationLocale() override;
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
-  subresource_filter::RulesetService*
-  fingerprinting_protection_ruleset_service() override;
 
   ValueMapPrefStore* in_memory_pref_store() const {
     return in_memory_pref_store_.get();
@@ -162,6 +164,8 @@ class BrowserProcessImpl : public BrowserProcess {
   std::unique_ptr<
       network::NetworkQualityTracker::RTTAndThroughputEstimatesObserver>
       network_quality_observer_;
+  std::unique_ptr<supervised_user::DeviceParentalControls>
+      device_parental_controls_;
 
   std::unique_ptr<os_crypt_async::OSCryptAsync> os_crypt_async_;
 };

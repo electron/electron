@@ -37,6 +37,7 @@
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/command_line_util_win.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
@@ -79,13 +80,22 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
     return false;
   }
 
+  // Strip surrounding double quotes before re-quoting with AddQuoteForArg.
+  if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
+    *exe = exe->substr(1, exe->size() - 2);
+  }
+
   // Read in optional args arg
   std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty()) {
-    std::wstring joined_args = base::JoinString(launch_args, L"\" \"");
-    *exe = base::StrCat({L"\"", *exe, L"\" \"", joined_args, L"\" \"%1\""});
+    std::wstring result = electron::AddQuoteForArg(*exe);
+    for (const auto& arg : launch_args) {
+      result += L' ';
+      result += electron::AddQuoteForArg(arg);
+    }
+    *exe = base::StrCat({result, L" \"%1\""});
   } else {
-    *exe = base::StrCat({L"\"", *exe, L"\" \"%1\""});
+    *exe = base::StrCat({electron::AddQuoteForArg(*exe), L" \"%1\""});
   }
 
   return true;
@@ -106,7 +116,7 @@ bool IsValidCustomProtocol(const std::wstring& scheme) {
 // (https://docs.microsoft.com/en-us/windows/win32/api/shlwapi/ne-shlwapi-assocstr)
 // and returns the application name, icon and path that handles the protocol.
 std::wstring GetAppInfoHelperForProtocol(ASSOCSTR assoc_str, const GURL& url) {
-  const std::wstring url_scheme = base::ASCIIToWide(url.scheme_piece());
+  const std::wstring url_scheme = base::ASCIIToWide(url.scheme());
   if (!IsValidCustomProtocol(url_scheme))
     return {};
 
@@ -153,9 +163,18 @@ bool FormatCommandLineString(std::wstring* exe,
     return false;
   }
 
+  // Strip surrounding double quotes before re-quoting with AddQuoteForArg.
+  if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
+    *exe = exe->substr(1, exe->size() - 2);
+  }
+
+  *exe = electron::AddQuoteForArg(*exe);
+
   if (!launch_args.empty()) {
-    std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
-    *exe = base::StrCat({*exe, L" ", base::AsWStringView(joined_launch_args)});
+    for (const auto& arg : launch_args) {
+      *exe += L' ';
+      *exe += electron::AddQuoteForArg(std::wstring(base::AsWStringView(arg)));
+    }
   }
 
   return true;
@@ -410,7 +429,7 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
                                             gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   // Main Registry Key
@@ -489,7 +508,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
   // Software\Classes", which is inherited by "HKEY_CLASSES_ROOT"
   // anyway, and can be written by unprivileged users.
 
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   std::wstring exe;
@@ -519,7 +538,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   std::wstring exe;
@@ -780,7 +799,7 @@ void Browser::ShowEmojiPanel() {
 }
 
 void Browser::ShowAboutPanel() {
-  base::Value::Dict dict;
+  base::DictValue dict;
   std::string aboutMessage = "";
   gfx::ImageSkia image;
 
@@ -815,7 +834,7 @@ void Browser::ShowAboutPanel() {
                            base::BindOnce([](int, bool) { /* do nothing. */ }));
 }
 
-void Browser::SetAboutPanelOptions(base::Value::Dict options) {
+void Browser::SetAboutPanelOptions(base::DictValue options) {
   about_panel_options_ = std::move(options);
 }
 

@@ -11,12 +11,12 @@
 #include <string>
 
 #include "base/containers/to_vector.h"
+#include "base/task/single_thread_task_runner.h"
 #if BUILDFLAG(IS_LINUX)
 #include "base/strings/string_number_conversions.h"
 #endif
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 
@@ -29,6 +29,10 @@ std::string OsrVideoPixelFormatToString(media::VideoPixelFormat format) {
       return "bgra";
     case media::PIXEL_FORMAT_ABGR:
       return "rgba";
+    case media::PIXEL_FORMAT_RGBAF16:
+      return "rgbaf16";
+    case media::PIXEL_FORMAT_NV12:
+      return "nv12";
     default:
       NOTREACHED();
   }
@@ -85,10 +89,12 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   // GC collects the object.
   auto* monitor = new OffscreenReleaseHolderMonitor(val.releaser_holder);
 
-  auto releaserHolder = v8::External::New(isolate, monitor);
+  auto releaserHolder =
+      v8::External::New(isolate, monitor, v8::kExternalPointerTypeTagDefault);
   auto releaserFunc = [](const v8::FunctionCallbackInfo<v8::Value>& info) {
     auto* mon = static_cast<OffscreenReleaseHolderMonitor*>(
-        info.Data().As<v8::External>()->Value());
+        info.Data().As<v8::External>()->Value(
+            v8::kExternalPointerTypeTagDefault));
     // Release the shared texture, so that future frames can be generated.
     mon->ReleaseTexture();
     // Release the monitor happens at GC, don't release here.
@@ -149,9 +155,12 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   root.Set("textureInfo", ConvertToV8(isolate, dict));
   auto root_local = ConvertToV8(isolate, root);
 
-  // Create a persistent reference of the object, so that we can check the
-  // monitor again when GC collects this object.
-  auto* tex_persistent = monitor->CreatePersistent(isolate, root_local);
+  // Create a weak persistent that tracks the release function rather than the
+  // texture object. The release function holds a raw pointer to |monitor| via
+  // its v8::External data, so |monitor| must outlive it. Since the texture
+  // keeps |release| alive via its property, this also covers the case where
+  // the texture itself is leaked without calling release().
+  auto* tex_persistent = monitor->CreatePersistent(isolate, releaser);
   tex_persistent->SetWeak(
       monitor,
       [](const v8::WeakCallbackInfo<OffscreenReleaseHolderMonitor>& data) {

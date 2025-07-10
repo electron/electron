@@ -29,8 +29,8 @@ class ProtocolRegistry;
 
 namespace api {
 
-const std::vector<std::string>& GetStandardSchemes();
-const std::vector<std::string>& GetCodeCacheSchemes();
+std::vector<std::string>& GetStandardSchemes();
+std::vector<std::string>& GetCodeCacheSchemes();
 
 void AddServiceWorkerScheme(const std::string& scheme);
 
@@ -71,7 +71,7 @@ class Protocol final : public gin_helper::DeprecatedWrappable<Protocol>,
       base::RepeatingCallback<void(v8::Local<v8::Value>)>;
 
   explicit Protocol(ProtocolRegistry* protocol_registry);
-  ~Protocol() override = default;
+  ~Protocol() override;
 
   [[nodiscard]] static std::string_view ErrorCodeToString(Error error);
 
@@ -89,8 +89,8 @@ class Protocol final : public gin_helper::DeprecatedWrappable<Protocol>,
   bool IsProtocolIntercepted(const std::string& scheme);
 
   // Old async version of IsProtocolRegistered.
-  v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme,
-                                           gin::Arguments* args);
+  v8::Local<v8::Promise> IsProtocolHandled(v8::Isolate* isolate,
+                                           const std::string& scheme);
 
   // Helper for converting old registration APIs to new RegisterProtocol API.
   template <ProtocolType type>

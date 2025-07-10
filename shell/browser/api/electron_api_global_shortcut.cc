@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base/containers/map_util.h"
+#include "base/functional/bind.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/uuid.h"
 #include "components/prefs/pref_service.h"
@@ -52,9 +53,17 @@ namespace electron::api {
 gin::DeprecatedWrapperInfo GlobalShortcut::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
-GlobalShortcut::GlobalShortcut() {}
+GlobalShortcut::GlobalShortcut() = default;
 
 GlobalShortcut::~GlobalShortcut() {
+  auto* instance = ui::GlobalAcceleratorListener::GetInstance();
+  if (instance && instance->IsRegistrationHandledExternally()) {
+    // Eagerly cancel callbacks so PruneStaleCommands() can clear them before
+    // the WeakPtrFactory destructor runs.
+    weak_ptr_factory_.InvalidateWeakPtrs();
+    instance->PruneStaleCommands();
+  }
+
   UnregisterAll();
 }
 
@@ -144,7 +153,9 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
         extensions::Command::AcceleratorToString(accelerator);
     ui::CommandMap commands;
     extensions::Command command(
-        command_str, base::UTF8ToUTF16("Electron shortcut " + command_str),
+        command_str,
+        base::UTF8ToUTF16(electron::Browser::Get()->GetName() +
+                          " shortcut: " + command_str),
         /*accelerator=*/std::string(), /*global=*/true);
     command.set_accelerator(accelerator);
     commands[command_str] = command;
@@ -157,7 +168,10 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     // received by GlobalShortcut will correspond to Alt+Shift+K as our command
     // id is basically a stringified accelerator.
     const std::string fake_extension_id = command_str + "+" + profile_id;
-    instance->OnCommandsChanged(fake_extension_id, profile_id, commands, this);
+    instance->OnCommandsChanged(
+        fake_extension_id, profile_id, commands, gfx::kNullAcceleratedWidget,
+        base::BindRepeating(&GlobalShortcut::ExecuteCommand,
+                            weak_ptr_factory_.GetWeakPtr()));
     command_callback_map_[command_str] = callback;
     return true;
   } else {

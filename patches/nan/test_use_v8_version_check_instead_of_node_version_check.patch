@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <clavin@electronjs.org>
+Date: Mon, 20 Oct 2025 10:04:13 -0600
+Subject: test: use v8 version check instead of node version check
+
+A few tests use a Node.js version check to determine expected V8
+behavior, but since Electron ships with a different V8 version than
+Node.js, this can lead to incorrect test expectations. This change
+updates the tests to use the V8 version directly for more accurate
+results.
+
+The existing check was for Node.js version > 22. Node.js v22 ships with
+V8 v12.4, and Node.js v23 ships with V8 v12.9. So, the new check uses
+V8 version >= 12.9 to match the previous behavior. The actual V8
+behavior change may have occurred somewhere between those versions, so
+further work should verify the exact cutoff.
+
+This patch should be upstreamed. The only additional work is to verify
+the V8 version to check against.
+
+diff --git a/test/js/accessors-test.js b/test/js/accessors-test.js
+index 85ff490c0a23277f54ceaeae2f98ceb24f4d5727..21064e1eae8d64c79a0e77a3785945a9b49e60c4 100644
+--- a/test/js/accessors-test.js
++++ b/test/js/accessors-test.js
+@@ -9,12 +9,12 @@
+ const test     = require('tap').test
+     , testRoot = require('path').resolve(__dirname, '..')
+     , bindings = require('bindings')({ module_root: testRoot, bindings: 'accessors' });
+-const nodeVersion = parseInt(process.versions.node.split('.')[0]);
++const v8Version = process.versions.v8.split('.').map(parseInt);
+ 
+ test('accessors', function (t) {
+   var settergetter = bindings.create()
+   var derived = Object.create(settergetter)
+-  if(nodeVersion > 22){
++  if(v8Version[0] > 12 || (v8Version[0] === 12 && v8Version[1] >= 9)) {
+     t.plan(9)
+     t.equal(settergetter.prop1, 'this is property 1')
+     t.ok(settergetter.prop2 === '')
+diff --git a/test/js/methodswithdata-test.js b/test/js/methodswithdata-test.js
+index dec024a3d8b6a117d0d0a20ffa13e25088938dc9..8458272def0739c3edc111e6122f676b44e04fd7 100644
+--- a/test/js/methodswithdata-test.js
++++ b/test/js/methodswithdata-test.js
+@@ -9,7 +9,7 @@
+ const test     = require('tap').test
+     , testRoot = require('path').resolve(__dirname, '..')
+     , bindings = require('bindings')({ module_root: testRoot, bindings: 'methodswithdata' })
+-const nodeVersion = parseInt(process.versions.node.split('.')[0]);
++const v8Version = process.versions.v8.split('.').map(parseInt);
+ 
+ test('SetMethod with data', function (t) {
+   t.plan(1);
+@@ -19,7 +19,7 @@ test('SetMethod with data', function (t) {
+ test('accessors with data', function (t) {
+     var settergetter = bindings.create()
+     var derived = Object.create(settergetter)
+-    if (nodeVersion > 22) {
++    if(v8Version[0] > 12 || (v8Version[0] === 12 && v8Version[1] >= 9)) {
+         t.plan(9)
+         t.equal(settergetter.prop1, 'this is property 1')
+         t.ok(settergetter.prop2 === '')

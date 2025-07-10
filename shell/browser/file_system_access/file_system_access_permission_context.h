@@ -102,6 +102,10 @@ class FileSystemAccessPermissionContext
   void NotifyEntryMoved(const url::Origin& origin,
                         const content::PathInfo& old_path,
                         const content::PathInfo& new_path) override;
+  void NotifyEntryModified(const url::Origin& origin,
+                           const content::PathInfo& path) override;
+  void NotifyEntryRemoved(const url::Origin& origin,
+                          const content::PathInfo& path) override;
 
   void OnFileCreatedFromShowSaveFilePicker(
       const GURL& file_picker_binding_context,
@@ -136,6 +140,11 @@ class FileSystemAccessPermissionContext
 
   void PermissionGrantDestroyed(PermissionGrantImpl* grant);
 
+  // Restores the read permission for `path` if it was previously downgraded,
+  // e.g. by a `remove()` call.
+  void MaybeRestoreReadPermission(const url::Origin& origin,
+                                  const base::FilePath& path);
+
   void CheckShouldBlockAccessToPathAndReply(
       base::FilePath path,
       HandleType handle_type,
@@ -160,7 +169,7 @@ class FileSystemAccessPermissionContext
   void OnRestrictedPathResult(const base::FilePath& file_path,
                               gin::Arguments* args);
 
-  void MaybeEvictEntries(base::Value::Dict& dict);
+  void MaybeEvictEntries(base::DictValue& dict);
 
   void CleanupPermissions(const url::Origin& origin);
 
@@ -185,7 +194,7 @@ class FileSystemAccessPermissionContext
 
   const raw_ptr<const base::Clock> clock_;
 
-  std::map<url::Origin, base::Value::Dict> id_pathinfo_map_;
+  std::map<url::Origin, base::DictValue> id_pathinfo_map_;
 
   std::map<base::FilePath, base::OnceCallback<void(SensitiveEntryResult)>>
       callback_map_;

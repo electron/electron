@@ -69,14 +69,17 @@ class OffScreenRenderWidgetHostView
       public ui::CompositorDelegate,
       private OffscreenViewProxyObserver {
  public:
-  OffScreenRenderWidgetHostView(bool transparent,
-                                bool offscreen_use_shared_texture,
-                                bool painting,
-                                int frame_rate,
-                                const OnPaintCallback& callback,
-                                content::RenderWidgetHost* render_widget_host,
-                                OffScreenRenderWidgetHostView* parent_host_view,
-                                gfx::Size initial_size);
+  OffScreenRenderWidgetHostView(
+      bool transparent,
+      bool offscreen_use_shared_texture,
+      const std::string& offscreen_shared_texture_pixel_format,
+      float offscreen_device_scale_factor,
+      bool painting,
+      int frame_rate,
+      const OnPaintCallback& callback,
+      content::RenderWidgetHost* render_widget_host,
+      OffScreenRenderWidgetHostView* parent_host_view,
+      gfx::Size initial_size);
   ~OffScreenRenderWidgetHostView() override;
 
   // disable copy
@@ -141,12 +144,14 @@ class OffScreenRenderWidgetHostView
   void ShowWithVisibility(content::PageVisibilityState page_visibility) final;
   void Destroy() override;
   void UpdateTooltipUnderCursor(const std::u16string&) override {}
+  void OnUnconfirmedTapConvertedToTap() override {}
   input::CursorManager* GetCursorManager() override;
   void CopyFromSurface(
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
-      base::OnceCallback<void(const SkBitmap&)> callback) override;
-  display::ScreenInfo GetScreenInfo() const override;
+      base::TimeDelta timeout,
+      base::OnceCallback<void(const content::CopyFromSurfaceResult&)> callback)
+      override;
   void TransformPointToRootSurface(gfx::PointF* point) override {}
   gfx::Rect GetBoundsInRootWindow() override;
   std::optional<content::DisplayFeature> GetDisplayFeature() override;
@@ -166,6 +171,7 @@ class OffScreenRenderWidgetHostView
       const std::optional<std::vector<gfx::Rect>>& character_bounds) override {}
   gfx::Size GetCompositorViewportPixelSize() override;
   ui::Compositor* GetCompositor() override;
+  display::ScreenInfos GetNewScreenInfosForUpdate() override;
 
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost*,
@@ -238,6 +244,10 @@ class OffScreenRenderWidgetHostView
     return offscreen_use_shared_texture_;
   }
 
+  const std::string offscreen_shared_texture_pixel_format() const {
+    return offscreen_shared_texture_pixel_format_;
+  }
+
   ui::Layer* root_layer() const { return root_layer_.get(); }
 
   content::DelegatedFrameHost* delegated_frame_host() const {
@@ -283,6 +293,9 @@ class OffScreenRenderWidgetHostView
 
   const bool transparent_;
   const bool offscreen_use_shared_texture_;
+  const std::string offscreen_shared_texture_pixel_format_;
+  float offscreen_device_scale_factor_;
+
   OnPaintCallback callback_;
   OnPopupPaintCallback parent_callback_;
 

@@ -35,6 +35,13 @@ webContentsView.webContents.loadURL('https://electronjs.org')
 
 ## Class: ImageView extends `View`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/46760
+```
+-->
+
 > A View that displays an image.
 
 Process: [Main](../glossary.md#main-process)
@@ -49,6 +56,13 @@ Process: [Main](../glossary.md#main-process)
 
 ### `new ImageView()` _Experimental_
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/46760
+```
+-->
+
 Creates an ImageView.
 
 ### Instance Methods
@@ -57,6 +71,13 @@ The following methods are available on instances of the `ImageView` class, in
 addition to those inherited from [View](view.md):
 
 #### `image.setImage(image)` _Experimental_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/46760
+```
+-->
 
 * `image` NativeImage
 

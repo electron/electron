@@ -11,20 +11,31 @@ permissions: {}
 jobs:
   audit_branch_ci:
     name: Audit CI on Branches
+    if: github.repository == 'electron/electron'
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 22.17.x
-      - run: npm install @actions/cache@4.0.3 @electron/fiddle-core@2.0.1
-      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      - name: Sparse checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: |
+            .
+            .github
+            .yarn
+      - run: yarn workspaces focus @electron/gha-workflows
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         id: audit-errors
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { chdir } = require('node:process');
+            chdir('${{ github.workspace }}/.github/workflows');
+
             const cache = require('@actions/cache');
             const { ElectronVersions } = require('@electron/fiddle-core');
 
@@ -73,6 +84,9 @@ jobs:
                       annotation_level === "failure" &&
                       !message.startsWith("Process completed with exit code") &&
                       !message.startsWith("Response status code does not indicate success") &&
+                      !message.startsWith("The hosted runner lost communication with the server") &&
+                      !message.startsWith("Dependabot encountered an error performing the update") &&
+                      !message.startsWith("The action 'Run Electron Tests' has timed out") &&
                       !/Unable to make request/.test(message) &&
                       !/The requested URL returned error/.test(message),
                   )
@@ -141,7 +155,7 @@ jobs:
             await core.summary.write();
       - name: Send Slack message if errors
         if: ${{ always() && steps.audit-errors.outputs.errorsFound && github.ref == 'refs/heads/main' }}
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           payload: |
             link: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

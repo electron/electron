@@ -25,6 +25,12 @@ const addOnly = <T>(fn: Function): T => {
 export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
 export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
 
+export const isWayland = process.platform === 'linux' && (
+  process.env.XDG_SESSION_TYPE === 'wayland' ||
+  !!process.env.WAYLAND_DISPLAY ||
+  process.argv.includes('--ozone-platform=wayland')
+);
+
 type CleanupFunction = (() => void) | (() => Promise<void>)
 const cleanupFunctions: CleanupFunction[] = [];
 export async function runCleanupFunctions () {
@@ -226,4 +232,13 @@ export async function listen (server: http.Server | https.Server | http2.Http2Se
   const { port } = server.address() as net.AddressInfo;
   const protocol = (server instanceof http.Server) ? 'http' : 'https';
   return { port, hostname, url: url.format({ protocol, hostname, port }) };
+}
+
+export function isTestingBindingAvailable () {
+  try {
+    process._linkedBinding('electron_common_testing');
+    return true;
+  } catch {
+    return false;
+  }
 }

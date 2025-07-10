@@ -16,6 +16,7 @@
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/rect_conversions.h"
+#include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/geometry/resize_utils.h"
 #include "ui/gfx/geometry/size.h"
 
@@ -455,6 +456,12 @@ bool Converter<gfx::ColorSpace>::FromV8(v8::Isolate* isolate,
 
   // Get primaries
   if (dict.Get("primaries", &primaries_str)) {
+    if (primaries_str == "custom") {
+      gin_helper::ErrorThrower(isolate).ThrowTypeError(
+          "'custom' not supported.");
+      return false;
+    }
+
     if (primaries_str == "bt709")
       primaries = gfx::ColorSpace::PrimaryID::BT709;
     else if (primaries_str == "bt470m")
@@ -485,18 +492,18 @@ bool Converter<gfx::ColorSpace>::FromV8(v8::Isolate* isolate,
       primaries = gfx::ColorSpace::PrimaryID::WIDE_GAMUT_COLOR_SPIN;
     else if (primaries_str == "ebu-3213-e")
       primaries = gfx::ColorSpace::PrimaryID::EBU_3213_E;
-
-    if (primaries_str == "custom") {
-      gin_helper::ErrorThrower(isolate).ThrowTypeError(
-          "'custom' not supported.");
-      return false;
-    } else {
+    else
       primaries = gfx::ColorSpace::PrimaryID::INVALID;
-    }
   }
 
   // Get transfer
   if (dict.Get("transfer", &transfer_str)) {
+    if (transfer_str == "custom" || transfer_str == "custom-hdr") {
+      gin_helper::ErrorThrower(isolate).ThrowTypeError(
+          "'custom', 'custom-hdr' not supported.");
+      return false;
+    }
+
     if (transfer_str == "bt709")
       transfer = gfx::ColorSpace::TransferID::BT709;
     else if (transfer_str == "bt709-apple")
@@ -541,14 +548,8 @@ bool Converter<gfx::ColorSpace>::FromV8(v8::Isolate* isolate,
       transfer = gfx::ColorSpace::TransferID::LINEAR_HDR;
     else if (transfer_str == "scrgb-linear-80-nits")
       transfer = gfx::ColorSpace::TransferID::SCRGB_LINEAR_80_NITS;
-
-    if (transfer_str == "custom" || transfer_str == "custom-hdr") {
-      gin_helper::ErrorThrower(isolate).ThrowTypeError(
-          "'custom', 'custom-hdr' not supported.");
-      return false;
-    } else {
-      primaries = gfx::ColorSpace::PrimaryID::INVALID;
-    }
+    else
+      transfer = gfx::ColorSpace::TransferID::INVALID;
   }
 
   // Get matrix

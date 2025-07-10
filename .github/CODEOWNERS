@@ -19,6 +19,7 @@ DEPS                                    @electron/wg-upgrades
 /lib/renderer/security-warnings.ts      @electron/wg-security
 
 # Infra WG
+/.claude/                               @electron/wg-infra
 /.github/actions/                       @electron/wg-infra
 /.github/workflows/*-publish.yml        @electron/wg-infra
 /.github/workflows/build.yml            @electron/wg-infra

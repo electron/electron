@@ -196,6 +196,11 @@ inline constexpr std::string_view kOffscreen = "offscreen";
 
 inline constexpr std::string_view kUseSharedTexture = "useSharedTexture";
 
+inline constexpr std::string_view kSharedTexturePixelFormat =
+    "sharedTexturePixelFormat";
+
+inline constexpr std::string_view kDeviceScaleFactor = "deviceScaleFactor";
+
 inline constexpr std::string_view kNodeIntegrationInSubFrames =
     "nodeIntegrationInSubFrames";
 
@@ -231,6 +236,11 @@ inline constexpr std::string_view kSpellcheck = "spellcheck";
 // document.execCommand("paste").
 inline constexpr std::string_view kEnableDeprecatedPaste =
     "enableDeprecatedPaste";
+
+// Whether to focus the webContents on navigation.
+inline constexpr std::string_view kFocusOnNavigation = "focusOnNavigation";
+
+inline constexpr std::string_view kModal = "modal";
 
 }  // namespace options
 
@@ -282,10 +292,6 @@ inline constexpr base::cstring_view kAppPath = "app-path";
 // The command line switch versions of the options.
 inline constexpr base::cstring_view kScrollBounce = "scroll-bounce";
 
-// Command switch passed to renderer process to control nodeIntegration.
-inline constexpr base::cstring_view kNodeIntegrationInWorker =
-    "node-integration-in-worker";
-
 // Widevine options
 // Path to Widevine CDM binaries.
 inline constexpr base::cstring_view kWidevineCdmPath = "widevine-cdm-path";
@@ -318,6 +324,10 @@ inline constexpr base::cstring_view kDisableNTLMv2 = "disable-ntlm-v2";
 // Indicates that preloads for service workers are registered.
 inline constexpr base::cstring_view kServiceWorkerPreload =
     "service-worker-preload";
+
+// If set, flag node::ProcessInitializationFlags::kNoStdioInitialization would
+// be set for node initialization.
+inline constexpr base::cstring_view kNoStdioInit = "no-stdio-init";
 
 }  // namespace switches
 

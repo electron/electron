@@ -6,9 +6,9 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
 
 #include "base/containers/flat_map.h"
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/wake_lock.mojom.h"
-#include "shell/common/gin_helper/wrappable.h"
 
 namespace gin {
 class ObjectTemplateBuilder;
@@ -21,24 +21,24 @@ class Handle;
 
 namespace electron::api {
 
-class PowerSaveBlocker final
-    : public gin_helper::DeprecatedWrappable<PowerSaveBlocker> {
+class PowerSaveBlocker final : public gin::Wrappable<PowerSaveBlocker> {
  public:
   static gin_helper::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit PowerSaveBlocker(v8::Isolate* isolate);
+  ~PowerSaveBlocker() override;
 
   // disable copy
   PowerSaveBlocker(const PowerSaveBlocker&) = delete;
   PowerSaveBlocker& operator=(const PowerSaveBlocker&) = delete;
-
- protected:
-  explicit PowerSaveBlocker(v8::Isolate* isolate);
-  ~PowerSaveBlocker() override;
 
  private:
   void UpdatePowerSaveBlocker();

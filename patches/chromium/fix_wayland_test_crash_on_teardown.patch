@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitchell Cohen <mitch.cohen@me.com>
+Date: Sun, 22 Feb 2026 11:38:49 -0500
+Subject: fix: Wayland test crash on teardown
+
+Allows Wayland test job to teardown the connection without crashing when trying to update the pointer
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_connection.cc b/ui/ozone/platform/wayland/host/wayland_connection.cc
+index 4c44eaeebe091906a1676da106faa9072819b67e..224f6abfe06794d31fc4d876c8242dab79ba075d 100644
+--- a/ui/ozone/platform/wayland/host/wayland_connection.cc
++++ b/ui/ozone/platform/wayland/host/wayland_connection.cc
+@@ -426,7 +426,7 @@ std::vector<TouchscreenDevice> WaylandConnection::CreateTouchscreenDevices()
+ }
+ 
+ void WaylandConnection::UpdateCursor() {
+-  if (auto* pointer = seat_->pointer()) {
++  if (auto* pointer = seat_ ? seat_->pointer() : nullptr) {
+     cursor_ = std::make_unique<WaylandCursor>(pointer, this);
+     cursor_->set_listener(listener_);
+     cursor_position_ = std::make_unique<WaylandCursorPosition>();

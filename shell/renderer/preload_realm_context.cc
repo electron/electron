@@ -59,9 +59,11 @@ class PreloadRealmLifetimeController
     RegisterDebugger(initiator_execution_context);
 
     initiator_context()->SetAlignedPointerInEmbedderData(
-        kElectronContextEmbedderDataIndex, static_cast<void*>(this));
+        kElectronContextEmbedderDataIndex, static_cast<void*>(this),
+        v8::kEmbedderDataTypeTagDefault);
     realm_context()->SetAlignedPointerInEmbedderData(
-        kElectronContextEmbedderDataIndex, static_cast<void*>(this));
+        kElectronContextEmbedderDataIndex, static_cast<void*>(this),
+        v8::kEmbedderDataTypeTagDefault);
 
     metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
     RunInitScript();
@@ -74,7 +76,8 @@ class PreloadRealmLifetimeController
     }
     auto* controller = static_cast<PreloadRealmLifetimeController*>(
         context->GetAlignedPointerFromEmbedderData(
-            kElectronContextEmbedderDataIndex));
+            kElectronContextEmbedderDataIndex,
+            v8::kEmbedderDataTypeTagDefault));
     CHECK(controller);
     return controller;
   }
@@ -98,6 +101,12 @@ class PreloadRealmLifetimeController
                : v8::MaybeLocal<v8::Context>();
   }
 
+  v8::Isolate* GetInitiatorIsolate() {
+    return initiator_script_state_->ContextIsValid()
+               ? initiator_script_state_->GetIsolate()
+               : nullptr;
+  }
+
   electron::ServiceWorkerData* service_worker_data() {
     return service_worker_data_;
   }
@@ -106,7 +115,8 @@ class PreloadRealmLifetimeController
   void ContextDestroyed() override {
     v8::HandleScope handle_scope(realm_isolate());
     realm_context()->SetAlignedPointerInEmbedderData(
-        kElectronContextEmbedderDataIndex, nullptr);
+        kElectronContextEmbedderDataIndex, nullptr,
+        v8::kEmbedderDataTypeTagDefault);
 
     // See ShadowRealmGlobalScope::ContextDestroyed
     shadow_realm_script_state_->DisposePerContextData();
@@ -199,16 +209,19 @@ class PreloadRealmLifetimeController
 
 }  // namespace
 
-v8::MaybeLocal<v8::Context> GetInitiatorContext(
-    v8::Local<v8::Context> context) {
+v8::MaybeLocal<v8::Context> GetInitiatorContext(v8::Local<v8::Context> context,
+                                                v8::Isolate* target_isolate) {
   DCHECK(!context.IsEmpty());
+  DCHECK(target_isolate);
   blink::ExecutionContext* execution_context =
       blink::ExecutionContext::From(context);
   if (!execution_context->IsShadowRealmGlobalScope())
     return v8::MaybeLocal<v8::Context>();
   auto* controller = PreloadRealmLifetimeController::From(context);
-  if (controller)
+  if (controller) {
+    target_isolate = controller->GetInitiatorIsolate();
     return controller->GetInitiatorContext();
+  }
   return v8::MaybeLocal<v8::Context>();
 }
 

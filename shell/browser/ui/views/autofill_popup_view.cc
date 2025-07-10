@@ -23,6 +23,7 @@
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/text_utils.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/border.h"
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/widget/widget.h"
@@ -40,8 +41,10 @@ AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
   CreateChildViews();
   SetFocusBehavior(FocusBehavior::ALWAYS);
   set_drag_controller(this);
-  SetAccessibleRole(ax::mojom::Role::kMenu);
-  SetAccessibleName(u"Autofill Menu");
+
+  auto& view_a11y = GetViewAccessibility();
+  view_a11y.SetRole(ax::mojom::Role::kMenu);
+  view_a11y.SetName(u"Autofill Menu");
 }
 
 AutofillPopupView::~AutofillPopupView() {
@@ -64,9 +67,11 @@ AutofillPopupView::~AutofillPopupView() {
 }
 
 void AutofillPopupView::Show() {
+  if (!popup_)
+    return;
   bool visible = parent_widget_->IsVisible();
   visible = visible || view_proxy_;
-  if (!popup_ || !visible || parent_widget_->IsClosed())
+  if (!visible || parent_widget_->IsClosed())
     return;
 
   const bool initialize_widget = !GetWidget();

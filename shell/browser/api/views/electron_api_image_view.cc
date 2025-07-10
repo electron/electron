@@ -25,7 +25,7 @@ void ImageView::SetImage(const gfx::Image& image) {
 }
 
 // static
-gin_helper::WrappableBase* ImageView::New(gin_helper::Arguments* args) {
+gin_helper::WrappableBase* ImageView::New(gin::Arguments* const args) {
   // Constructor call.
   auto* view = new ImageView();
   view->InitWithArgs(args);

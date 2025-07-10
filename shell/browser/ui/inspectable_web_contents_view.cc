@@ -92,6 +92,13 @@ InspectableWebContentsView::InspectableWebContentsView(
 }
 
 InspectableWebContentsView::~InspectableWebContentsView() {
+  if (devtools_window_web_view_)
+    devtools_window_web_view_->SetWebContents(nullptr);
+  if (devtools_web_view_)
+    devtools_web_view_->SetWebContents(nullptr);
+  if (contents_web_view_)
+    contents_web_view_->SetWebContents(nullptr);
+
   if (devtools_window_)
     inspectable_web_contents()->SaveDevToolsBounds(
         devtools_window_->GetWindowBoundsInScreen());
@@ -129,6 +136,23 @@ void InspectableWebContentsView::ShowDevTools(bool activate) {
         inspectable_web_contents_->GetDevToolsWebContents());
     devtools_web_view_->RequestFocus();
     DeprecatedLayoutImmediately();
+  }
+}
+
+void InspectableWebContentsView::ActivateDevTools() {
+  if (!devtools_visible_) {
+    return;
+  }
+  if (devtools_window_) {
+    if (!devtools_window_->IsActive()) {
+      devtools_window_->Activate();
+    }
+    return;
+  }
+  if (devtools_web_view_) {
+    if (!devtools_web_view_->HasFocus()) {
+      devtools_web_view_->RequestFocus();
+    }
   }
 }
 

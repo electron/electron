@@ -351,7 +351,7 @@ app.whenReady().then(() => {
 // https://github.com/electron/electron/blob/main/docs/api/command-line-switches.md
 
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
+app.commandLine.appendSwitch('host-resolver-rules', 'MAP * 127.0.0.1');
 app.commandLine.appendSwitch('vmodule', 'console=0');
 
 // systemPreferences
@@ -1177,10 +1177,6 @@ session.defaultSession.clearStorageData({ storages: ['localstorage', 'indexdb', 
 session.defaultSession.clearStorageData({ storages: ['shadercache', 'cachestorage'] });
 // @ts-expect-error Invalid type value
 session.defaultSession.clearStorageData({ storages: ['wrong_path'] });
-
-session.defaultSession.clearStorageData({ quotas: ['temporary'] });
-// @ts-expect-error Invalid type value
-session.defaultSession.clearStorageData({ quotas: ['bad_type'] });
 
 session.defaultSession.on('will-download', (event, item, webContents) => {
   console.log('will-download', webContents.id);

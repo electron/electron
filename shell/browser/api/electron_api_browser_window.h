@@ -67,6 +67,8 @@ class BrowserWindow : public BaseWindow,
   void SetBackgroundMaterial(const std::string& material) override;
   void OnWindowShow() override;
   void OnWindowHide() override;
+  void Show() override;
+  void ShowInactive() override;
 
   // BrowserWindow APIs.
   void FocusOnWebView();
@@ -78,6 +80,7 @@ class BrowserWindow : public BaseWindow,
   // Helpers.
 
   v8::Global<v8::Value> web_contents_;
+  bool web_contents_shown_ = false;
   v8::Global<v8::Value> web_contents_view_;
   base::WeakPtr<api::WebContents> api_web_contents_;
 

@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -46,7 +47,7 @@ class ZoomLevelDelegate : public content::ZoomLevelDelegate {
   void InitHostZoomMap(content::HostZoomMap* host_zoom_map) override;
 
  private:
-  void ExtractPerHostZoomLevels(const base::Value::Dict& host_zoom_dictionary);
+  void ExtractPerHostZoomLevels(const base::DictValue& host_zoom_dictionary);
 
   // This is a callback function that receives notifications from HostZoomMap
   // when per-host zoom levels change. It is used to update the per-host

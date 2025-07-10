@@ -18,7 +18,7 @@
 #include "third_party/skia/include/core/SkImage.h"
 #include "third_party/skia/include/core/SkRRect.h"
 #include "ui/display/win/screen_win.h"
-#include "ui/gfx/icon_util.h"
+#include "ui/gfx/win/icon_util.h"
 
 namespace electron {
 

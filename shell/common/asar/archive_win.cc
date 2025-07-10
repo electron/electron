@@ -71,13 +71,14 @@ auto LoadIntegrityConfig() {
 
   // Parse integrity config payload
   std::optional<base::Value> root =
-      base::JSONReader::Read(std::string_view{res_data, res_size});
+      base::JSONReader::Read(std::string_view{res_data, res_size},
+                             base::JSON_PARSE_CHROMIUM_EXTENSIONS);
 
   if (!root.has_value()) {
     LOG(FATAL) << "Invalid integrity config: NOT a valid JSON.";
   }
 
-  const base::Value::List* file_configs = root.value().GetIfList();
+  const base::ListValue* file_configs = root.value().GetIfList();
   if (!file_configs) {
     LOG(FATAL) << "Invalid integrity config: NOT a list.";
   }
@@ -86,7 +87,7 @@ auto LoadIntegrityConfig() {
   cache.reserve(file_configs->size());
   for (size_t i = 0; i < file_configs->size(); i++) {
     // Skip invalid file configs
-    const base::Value::Dict* ele_dict = (*file_configs)[i].GetIfDict();
+    const base::DictValue* ele_dict = (*file_configs)[i].GetIfDict();
     if (!ele_dict) {
       LOG(WARNING) << "Skip config " << i << ": NOT a valid dict";
       continue;

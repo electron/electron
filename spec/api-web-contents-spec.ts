@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents, BaseWindow, WebContentsView } from 'electron/main';
 
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -109,6 +109,7 @@ describe('webContents module', () => {
       await closeAllWindows();
       await cleanupWebContents();
     });
+
     it('does not emit if beforeunload returns undefined in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', () => {
@@ -158,6 +159,35 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', event => event.preventDefault());
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      const wait = once(w, 'closed');
+      w.close();
+      await wait;
+    });
+
+    it('fails loading a subsequent page after beforeunload is not prevented', async () => {
+      const w = new BrowserWindow({ show: false });
+
+      const didFailLoad = once(w.webContents, 'did-fail-load');
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.webContents.executeJavaScript('console.log(\'gesture\')', true);
+
+      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'a.html'));
+      const [, code, , validatedURL] = await didFailLoad;
+      expect(code).to.equal(-3); // ERR_ABORTED
+      const { href: expectedURL } = url.pathToFileURL(path.join(__dirname, 'fixtures', 'pages', 'a.html'));
+      expect(validatedURL).to.equal(expectedURL);
+    });
+
+    it('allows loading a subsequent page after beforeunload is prevented', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.once('will-prevent-unload', event => event.preventDefault());
+
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.webContents.executeJavaScript('console.log(\'gesture\')', true);
+      await w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'a.html'));
+      const pageTitle = await w.webContents.executeJavaScript('document.title');
+      expect(pageTitle).to.equal('test');
+
       const wait = once(w, 'closed');
       w.close();
       await wait;
@@ -241,6 +271,12 @@ describe('webContents module', () => {
         // @ts-ignore this line is intentionally incorrect
         w.webContents.print({ pageSize: badSize });
       }).to.throw(`Unsupported pageSize: ${badSize}`);
+    });
+
+    it('throws when a user passes both pageSize and usePrinterDefaultPageSize', () => {
+      expect(() => {
+        w.webContents.print({ pageSize: 'A4', usePrinterDefaultPageSize: true });
+      }).to.throw('usePrinterDefaultPageSize cannot be combined with pageSize');
     });
 
     it('throws when an invalid callback is passed', () => {
@@ -402,6 +438,15 @@ describe('webContents module', () => {
     let w: BrowserWindow;
     let s: http.Server;
 
+    before(function () {
+      session.fromPartition('loadurl-webcontents-spec').setPermissionRequestHandler((webContents, permission, callback) => {
+        if (permission === 'openExternal') {
+          return callback(false);
+        }
+        callback(true);
+      });
+    });
+
     afterEach(() => {
       if (s) {
         s.close();
@@ -410,9 +455,18 @@ describe('webContents module', () => {
     });
 
     beforeEach(async () => {
-      w = new BrowserWindow({ show: false });
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'loadurl-webcontents-spec'
+        }
+      });
     });
     afterEach(closeAllWindows);
+
+    after(async () => {
+      session.fromPartition('loadurl-webcontents-spec').setPermissionRequestHandler(null);
+    });
 
     it('resolves when done loading', async () => {
       await expect(w.loadURL('about:blank')).to.eventually.be.fulfilled();
@@ -901,7 +955,7 @@ describe('webContents module', () => {
           return w.webContents.navigationHistory.restore({ index: 2, entries });
         });
 
-        expect(formValue).to.equal('Hi!');
+        await waitUntil(() => formValue === 'Hi!');
       });
 
       it('should handle invalid base64 pageState', async () => {
@@ -994,6 +1048,43 @@ describe('webContents module', () => {
       w.webContents.closeDevTools();
       await devToolsClosed;
       expect(() => { webContents.getFocusedWebContents(); }).to.not.throw();
+    });
+
+    it('Inspect activates detached devtools window', async () => {
+      const window = new BrowserWindow({ show: true });
+      await window.loadURL('about:blank');
+      const webContentsBeforeOpenedDevtools = webContents.getAllWebContents();
+
+      const windowWasBlurred = once(window, 'blur');
+      window.webContents.openDevTools({ mode: 'detach' });
+      await windowWasBlurred;
+
+      let devToolsWebContents = null;
+      for (const newWebContents of webContents.getAllWebContents()) {
+        const oldWebContents = webContentsBeforeOpenedDevtools.find(
+          oldWebContents => {
+            return newWebContents.id === oldWebContents.id;
+          });
+        if (oldWebContents !== null) {
+          devToolsWebContents = newWebContents;
+          break;
+        }
+      }
+      assert(devToolsWebContents !== null);
+
+      const windowFocused = once(window, 'focus');
+      const devToolsBlurred = once(devToolsWebContents, 'blur');
+      window.focus();
+      await Promise.all([windowFocused, devToolsBlurred]);
+
+      expect(devToolsWebContents.isFocused()).to.be.false();
+      const devToolsWebContentsFocused = once(devToolsWebContents, 'focus');
+      const windowBlurred = once(window, 'blur');
+      window.webContents.inspectElement(100, 100);
+      await Promise.all([devToolsWebContentsFocused, windowBlurred]);
+
+      expect(devToolsWebContents.isFocused()).to.be.true();
+      expect(window.isFocused()).to.be.false();
     });
   });
 
@@ -1525,6 +1616,35 @@ describe('webContents module', () => {
         await expect(blurPromise).to.eventually.be.fulfilled();
       });
     });
+
+    describe('focusOnNavigation webPreference', () => {
+      afterEach(closeAllWindows);
+
+      it('focuses the webContents on navigation by default', async () => {
+        const w = new BrowserWindow({ show: true });
+        await once(w, 'focus');
+        await w.loadURL('about:blank');
+        await moveFocusToDevTools(w);
+        expect(w.webContents.isFocused()).to.be.false();
+        await w.loadURL('data:text/html,<body>test</body>');
+        expect(w.webContents.isFocused()).to.be.true();
+      });
+
+      it('does not focus the webContents on navigation when focusOnNavigation is false', async () => {
+        const w = new BrowserWindow({
+          show: true,
+          webPreferences: {
+            focusOnNavigation: false
+          }
+        });
+        await once(w, 'focus');
+        await w.loadURL('about:blank');
+        await moveFocusToDevTools(w);
+        expect(w.webContents.isFocused()).to.be.false();
+        await w.loadURL('data:text/html,<body>test</body>');
+        expect(w.webContents.isFocused()).to.be.false();
+      });
+    });
   });
 
   describe('getOSProcessId()', () => {
@@ -1543,6 +1663,18 @@ describe('webContents module', () => {
     it('returns a valid stream id', () => {
       const w = new BrowserWindow({ show: false });
       expect(w.webContents.getMediaSourceId(w.webContents)).to.be.a('string').that.is.not.empty();
+    });
+  });
+
+  describe('getOrCreateDevToolsTargetId()', () => {
+    afterEach(closeAllWindows);
+    it('returns the devtools target id', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const devToolsId = w.webContents.getOrCreateDevToolsTargetId();
+      expect(devToolsId).to.be.a('string').that.is.not.empty();
+      // Verify it's the inverse of fromDevToolsTargetId
+      expect(webContents.fromDevToolsTargetId(devToolsId)).to.equal(w.webContents);
     });
   });
 
@@ -2604,7 +2736,13 @@ describe('webContents module', () => {
         const errMsg = Buffer.concat(stderr).toString().trim();
         console.error(`Error parsing PDF file, exit code was ${code}; signal was ${signal}, error: ${errMsg}`);
       }
-      return JSON.parse(Buffer.concat(stdout).toString().trim());
+      try {
+        return JSON.parse(Buffer.concat(stdout).toString().trim());
+      } catch (err) {
+        console.error('Error parsing PDF file:', err);
+        console.error('Raw output:', Buffer.concat(stdout).toString().trim());
+        throw err;
+      }
     };
 
     let w: BrowserWindow;

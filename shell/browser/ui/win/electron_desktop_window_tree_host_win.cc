@@ -142,11 +142,37 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
     if (prevent_default) {
       electron::api::WebContents::SetDisableDraggableRegions(true);
       views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
+      electron::api::WebContents::SetDisableDraggableRegions(false);
     }
     return prevent_default;
   }
 
   return views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
+}
+
+bool ElectronDesktopWindowTreeHostWin::HandleIMEMessage(UINT message,
+                                                        WPARAM w_param,
+                                                        LPARAM l_param,
+                                                        LRESULT* result) {
+  if ((message == WM_SYSCHAR) && (w_param == VK_SPACE)) {
+    if (native_window_view_->widget() &&
+        native_window_view_->widget()->non_client_view()) {
+      const auto* frame =
+          native_window_view_->widget()->non_client_view()->frame_view();
+      auto location = frame->GetSystemMenuScreenPixelLocation();
+
+      bool prevent_default = false;
+      native_window_view_->NotifyWindowSystemContextMenu(
+          location.x(), location.y(), &prevent_default);
+
+      return prevent_default ||
+             views::DesktopWindowTreeHostWin::HandleIMEMessage(message, w_param,
+                                                               l_param, result);
+    }
+  }
+
+  return views::DesktopWindowTreeHostWin::HandleIMEMessage(message, w_param,
+                                                           l_param, result);
 }
 
 void ElectronDesktopWindowTreeHostWin::HandleVisibilityChanged(bool visible) {
@@ -169,6 +195,14 @@ void ElectronDesktopWindowTreeHostWin::SetAllowScreenshots(bool allow) {
     return;
 
   UpdateAllowScreenshots();
+}
+
+// Refs https://chromium-review.googlesource.com/c/chromium/src/+/7095963
+// Chromium's fullscreen handler conflicts with ours and results in incorrect
+// restoration.
+void ElectronDesktopWindowTreeHostWin::Restore() {
+  ::SendMessage(GetAcceleratedWidget(), WM_SYSCOMMAND,
+                static_cast<WPARAM>(SC_RESTORE), 0);
 }
 
 void ElectronDesktopWindowTreeHostWin::UpdateAllowScreenshots() {

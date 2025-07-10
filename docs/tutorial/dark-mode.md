@@ -29,7 +29,7 @@ be updated accordingly.
 In macOS 10.14 Mojave, Apple introduced a new [system-wide dark mode][system-wide-dark-mode]
 for all macOS computers. If your Electron app has a dark mode, you can make it
 follow the system-wide dark mode setting using
-[the `nativeTheme` api](../api/native-theme.md).
+[the `nativeTheme` API](../api/native-theme.md).
 
 In macOS 10.15 Catalina, Apple introduced a new "automatic" dark mode option
 for all macOS computers. In order for the `nativeTheme.shouldUseDarkColors` and

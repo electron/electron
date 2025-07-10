@@ -60,16 +60,22 @@ std::u16string ElectronMenuModel::GetRoleAt(size_t index) {
   return iter == std::end(roles_) ? std::u16string() : iter->second;
 }
 
-void ElectronMenuModel::SetSecondaryLabel(size_t index,
-                                          const std::u16string& sublabel) {
-  int command_id = GetCommandIdAt(index);
-  sublabels_[command_id] = sublabel;
+std::u16string ElectronMenuModel::GetLabelAt(size_t index) const {
+  if (delegate_)
+    return delegate_->GetLabelForCommandId(GetCommandIdAt(index));
+  return std::u16string();
 }
 
 std::u16string ElectronMenuModel::GetSecondaryLabelAt(size_t index) const {
-  int command_id = GetCommandIdAt(index);
-  const auto iter = sublabels_.find(command_id);
-  return iter == std::end(sublabels_) ? std::u16string() : iter->second;
+  if (delegate_)
+    return delegate_->GetSecondaryLabelForCommandId(GetCommandIdAt(index));
+  return std::u16string();
+}
+
+ui::ImageModel ElectronMenuModel::GetIconAt(size_t index) const {
+  if (delegate_)
+    return delegate_->GetIconForCommandId(GetCommandIdAt(index));
+  return ui::ImageModel();
 }
 
 bool ElectronMenuModel::GetAcceleratorAtWithParams(

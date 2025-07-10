@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 24 Oct 2025 15:32:50 +0200
+Subject: fix: avoid external memory leak on invalid TLS protocol versions
+
+Fixes a crash caused by unbalanced external memory accounting when
+tls.createSecureContext() is called with invalid minVersion/maxVersion values:
+
+Prior to this change, _tls_common.js instantiated a native SecureContext
+which incremented V8 external memory via
+env->external_memory_accounter()->Increase(kExternalSize) in crypto_context.cc
+before protocol version validation ran in toV(), so an early
+ERR_TLS_INVALID_PROTOCOL_VERSION throw left the +1024 bytes un-decremented
+and V8 asserted in ExternalMemoryAccounter::~ExternalMemoryAccounter
+during Environment teardown.
+
+Fix this by reordering the constructor to validate minVersion/maxVersion first and
+only allocate the native SecureContext on success.
+
+This should be upstreamed to Node.js.
+
+diff --git a/lib/internal/tls/common.js b/lib/internal/tls/common.js
+index 66331d2d9999e93e59cbce9e153affb942b79946..0f7fd0747ea779f76a9e64ed37d195bd735ea2a8 100644
+--- a/lib/internal/tls/common.js
++++ b/lib/internal/tls/common.js
+@@ -82,10 +82,11 @@ function SecureContext(secureProtocol, secureOptions, minVersion, maxVersion) {
+       throw new ERR_TLS_PROTOCOL_VERSION_CONFLICT(maxVersion, secureProtocol);
+   }
+ 
++  const minV = toV('minimum', minVersion, tls.DEFAULT_MIN_VERSION);
++  const maxV = toV('maximum', maxVersion, tls.DEFAULT_MAX_VERSION);
++
+   this.context = new NativeSecureContext();
+-  this.context.init(secureProtocol,
+-                    toV('minimum', minVersion, tls.DEFAULT_MIN_VERSION),
+-                    toV('maximum', maxVersion, tls.DEFAULT_MAX_VERSION));
++  this.context.init(secureProtocol, minV, maxV);
+ 
+   if (secureOptions) {
+     validateInteger(secureOptions, 'secureOptions');
+diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
+index ca62d3001bf51193d78caac0cccd93c188a8410c..d6af2460c3745901415d4e785cf210da8a730a8d 100644
+--- a/src/crypto/crypto_context.cc
++++ b/src/crypto/crypto_context.cc
+@@ -1377,10 +1377,8 @@ SecureContext::SecureContext(Environment* env, Local<Object> wrap)
+ }
+ 
+ inline void SecureContext::Reset() {
+-  if (ctx_ != nullptr) {
+-    env()->external_memory_accounter()->Decrease(env()->isolate(),
+-                                                 kExternalSize);
+-  }
++  env()->external_memory_accounter()->Decrease(env()->isolate(),
++                                                kExternalSize);
+   ctx_.reset();
+   cert_.reset();
+   issuer_.reset();

@@ -60,7 +60,7 @@ class AutoUpdater {
   static Delegate* GetDelegate();
   static void SetDelegate(Delegate* delegate);
 
-  static std::string GetFeedURL();
+  static std::string& GetFeedURL();
   // FIXME(zcbenz): We should not do V8 in this file, this method should only
   // accept C++ struct as parameter, and atom_api_auto_updater.cc is responsible
   // for parsing the parameter from JavaScript.

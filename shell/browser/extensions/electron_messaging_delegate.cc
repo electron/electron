@@ -22,7 +22,7 @@
 #include "extensions/common/api/messaging/port_id.h"
 #include "extensions/common/extension.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 #include "url/gurl.h"
 
 namespace extensions {
@@ -39,7 +39,7 @@ ElectronMessagingDelegate::IsNativeMessagingHostAllowed(
   return PolicyPermission::DISALLOW;
 }
 
-std::optional<base::Value::Dict> ElectronMessagingDelegate::MaybeGetTabInfo(
+std::optional<base::DictValue> ElectronMessagingDelegate::MaybeGetTabInfo(
     content::WebContents* web_contents) {
   if (web_contents) {
     auto* api_contents = electron::api::WebContents::From(web_contents);

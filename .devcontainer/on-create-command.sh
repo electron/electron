@@ -48,7 +48,8 @@ if [ ! -f $buildtools/configs/evm.testing.json ]; then
             \"gen\": {
                 \"args\": [
                     \"import(\\\"//electron/build/args/testing.gn\\\")\",
-                    \"use_remoteexec = true\"
+                    \"use_remoteexec = true\",
+                    \"use_siso=true\"
                 ],
                 \"out\": \"Testing\"
             },
@@ -58,7 +59,7 @@ if [ ! -f $buildtools/configs/evm.testing.json ]; then
             },
             \"\$schema\": \"file:///home/builduser/.electron_build_tools/evm-config.schema.json\",
             \"configValidationLevel\": \"strict\",
-            \"remoteBuild\": \"reclient\",
+            \"remoteBuild\": \"siso\",
             \"preserveSDK\": 5
         }
     " >$buildtools/configs/evm.testing.json

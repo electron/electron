@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "base/command_line.h"
-#include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
@@ -106,7 +105,8 @@ bool BluetoothPortIsAllowed(
   if (*port.bluetooth_service_class_id == device::GetSerialPortProfileUUID()) {
     return true;
   }
-  return base::Contains(allowed_ids, port.bluetooth_service_class_id.value());
+  return std::ranges::contains(allowed_ids,
+                               port.bluetooth_service_class_id.value());
 }
 
 }  // namespace
@@ -125,7 +125,7 @@ SerialChooserController::SerialChooserController(
           std::move(allowed_bluetooth_service_class_ids)),
       callback_(std::move(callback)),
       initiator_document_(render_frame_host->GetWeakDocumentPtr()) {
-  origin_ = web_contents_->GetPrimaryMainFrame()->GetLastCommittedOrigin();
+  origin_ = render_frame_host->GetLastCommittedOrigin();
 
   chooser_context_ = SerialChooserContextFactory::GetForBrowserContext(
                          web_contents_->GetBrowserContext())

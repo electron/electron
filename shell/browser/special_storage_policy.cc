@@ -20,7 +20,7 @@ bool SpecialStoragePolicy::IsStorageUnlimited(const GURL& origin) {
   return true;
 }
 
-bool SpecialStoragePolicy::IsStorageDurable(const GURL& origin) {
+bool SpecialStoragePolicy::IsStoragePersistent(const GURL& origin) {
   return true;
 }
 

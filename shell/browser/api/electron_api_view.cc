@@ -20,6 +20,8 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "ui/compositor/layer.h"
+#include "ui/views/animation/animation_builder.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/layout/layout_manager_base.h"
@@ -142,6 +144,27 @@ struct Converter<views::SizeBounds> {
         .Set("width", in.width())
         .Set("height", in.height())
         .Build();
+  }
+};
+
+template <>
+struct Converter<gfx::Tween::Type> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     gfx::Tween::Type* out) {
+    std::string easing = base::ToLowerASCII(gin::V8ToString(isolate, val));
+    if (easing == "linear") {
+      *out = gfx::Tween::LINEAR;
+    } else if (easing == "ease-in") {
+      *out = gfx::Tween::EASE_IN;
+    } else if (easing == "ease-out") {
+      *out = gfx::Tween::EASE_OUT;
+    } else if (easing == "ease-in-out") {
+      *out = gfx::Tween::EASE_IN_OUT;
+    } else {
+      return false;
+    }
+    return true;
   }
 };
 }  // namespace gin
@@ -280,10 +303,116 @@ void View::RemoveChildView(gin_helper::Handle<View> child) {
   }
 }
 
-void View::SetBounds(const gfx::Rect& bounds) {
+ui::Layer* View::GetLayer() {
+  if (!view_)
+    return nullptr;
+
+  if (view_->layer())
+    return view_->layer();
+
+  view_->SetPaintToLayer();
+
+  ui::Layer* layer = view_->layer();
+
+  layer->SetFillsBoundsOpaquely(false);
+
+  return layer;
+}
+
+void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
+  bool animate = false;
+  int duration = 250;
+  gfx::Tween::Type easing = gfx::Tween::LINEAR;
+
+  gin_helper::Dictionary dict;
+  if (args->GetNext(&dict)) {
+    v8::Local<v8::Value> animate_value;
+
+    if (dict.Get("animate", &animate_value)) {
+      if (animate_value->IsBoolean()) {
+        animate = animate_value->BooleanValue(isolate());
+      } else {
+        animate = true;
+
+        gin_helper::Dictionary animate_dict;
+        if (gin::ConvertFromV8(isolate(), animate_value, &animate_dict)) {
+          animate_dict.Get("duration", &duration);
+          animate_dict.Get("easing", &easing);
+        }
+      }
+    }
+  }
+
+  if (duration < 0)
+    duration = 0;
+
   if (!view_)
     return;
-  view_->SetBoundsRect(bounds);
+
+  if (!animate) {
+    view_->SetBoundsRect(bounds);
+    return;
+  }
+
+  ui::Layer* layer = GetLayer();
+
+  gfx::Rect current_bounds = view_->bounds();
+
+  if (bounds.size() == current_bounds.size()) {
+    // If the size isn't changing, we can just animate the bounds directly.
+
+    views::AnimationBuilder()
+        .SetPreemptionStrategy(
+            ui::LayerAnimator::IMMEDIATELY_ANIMATE_TO_NEW_TARGET)
+        .OnEnded(base::BindOnce(
+            [](views::View* view, const gfx::Rect& final_bounds) {
+              view->SetBoundsRect(final_bounds);
+            },
+            view_, bounds))
+        .Once()
+        .SetDuration(base::Milliseconds(duration))
+        .SetBounds(view_, bounds, easing);
+
+    return;
+  }
+
+  gfx::Rect target_size = gfx::Rect(0, 0, bounds.width(), bounds.height());
+  gfx::Rect max_size =
+      gfx::Rect(current_bounds.x(), current_bounds.y(),
+                std::max(current_bounds.width(), bounds.width()),
+                std::max(current_bounds.height(), bounds.height()));
+
+  // if the view's size is smaller than the target size, we need to set the
+  // view's bounds immediatley to the new size (not position) and set the
+  // layer's clip rect to animate from there.
+  if (view_->width() < bounds.width() || view_->height() < bounds.height()) {
+    view_->SetBoundsRect(max_size);
+
+    if (layer) {
+      layer->SetClipRect(
+          gfx::Rect(0, 0, current_bounds.width(), current_bounds.height()));
+    }
+  }
+
+  views::AnimationBuilder()
+      .SetPreemptionStrategy(
+          ui::LayerAnimator::IMMEDIATELY_ANIMATE_TO_NEW_TARGET)
+      .OnEnded(base::BindOnce(
+          [](views::View* view, const gfx::Rect& final_bounds,
+             ui::Layer* layer) {
+            view->SetBoundsRect(final_bounds);
+            if (layer)
+              layer->SetClipRect(gfx::Rect());
+          },
+          view_, bounds, layer))
+      .Once()
+      .SetDuration(base::Milliseconds(duration))
+      .SetBounds(view_, bounds, easing)
+      .SetClipRect(
+          view_, target_size,
+          easing);  // We have to set the clip rect independently of the
+                    // bounds, because animating the bounds of the layer
+                    // will not animate the underlying view's bounds.
 }
 
 gfx::Rect View::GetBounds() const {

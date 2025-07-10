@@ -8,10 +8,10 @@ Subject: desktop_media_list.patch
 * Ensure "OnRefreshComplete()" even if there are no items in the list
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index 6fb778093f57942faebbc6a68a92967826476674..57cad85973c5cfe3a19f80fd318ec46f085ad4d0 100644
+index 9a4e06d24b829ba51bf5c925e7a7290da6fad4f0..09895ccfa99999e6e0ea24a3190d3f429ee40344 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
-@@ -107,7 +107,8 @@ class DesktopMediaList {
+@@ -108,7 +108,8 @@ class DesktopMediaList {
    // once per DesktopMediaList instance.  It should not be called after
    // StartUpdating(), and StartUpdating() should not be called until |callback|
    // has been called.
@@ -82,7 +82,7 @@ index 786c526588d81b8b5b1b5dd3760719a53e005995..f66b7d0b4dfcbb8ed3dde5a9ff463ae2
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 024d7d74547e248ca685dc2fa8d0cdeb66b42c55..fc90627d0f733d49903325bb2f70b9980dd37184 100644
+index 7c72345e20589fe078169426d9b5b5a0ae81bae8..2c86b75c43651bd78d5ff7eeb54aa366ee3228bc 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -216,9 +216,13 @@ content::DesktopMediaID::Id GetUpdatedWindowId(
@@ -121,7 +121,7 @@ index 024d7d74547e248ca685dc2fa8d0cdeb66b42c55..fc90627d0f733d49903325bb2f70b998
  }
  
  void NativeDesktopMediaList::Worker::OnCaptureResult(
-@@ -1010,6 +1020,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+@@ -1009,6 +1019,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
                                    base::Unretained(worker_.get()),
                                    std::move(native_ids), thumbnail_size_));

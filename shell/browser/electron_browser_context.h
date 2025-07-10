@@ -13,9 +13,14 @@
 #include <variant>
 #include <vector>
 
+#include "base/callback_list.h"
+#include "base/files/file_path.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "services/network/public/cpp/url_loader_factory_builder.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/ssl_config.mojom.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 
@@ -66,20 +71,20 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // Get or create the default BrowserContext.
   static ElectronBrowserContext* GetDefaultBrowserContext(
-      base::Value::Dict options = {});
+      base::DictValue options = {});
 
   // Get or create the BrowserContext according to its |partition| and
   // |in_memory|. The |options| will be passed to constructor when there is no
   // existing BrowserContext.
   static ElectronBrowserContext* From(const std::string& partition,
                                       bool in_memory,
-                                      base::Value::Dict options = {});
+                                      base::DictValue options = {});
 
   // Get or create the BrowserContext using the |path|.
   // The |options| will be passed to constructor when there is no
   // existing BrowserContext.
   static ElectronBrowserContext* FromPath(const base::FilePath& path,
-                                          base::Value::Dict options = {});
+                                          base::DictValue options = {});
 
   static void DestroyAllContexts();
 
@@ -90,11 +95,13 @@ class ElectronBrowserContext : public content::BrowserContext {
   ResolveProxyHelper* GetResolveProxyHelper();
   content::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
+  scoped_refptr<network::SharedURLLoaderFactory> InterceptURLLoaderFactory(
+      scoped_refptr<network::SharedURLLoaderFactory> factory);
 
   std::string GetMediaDeviceIDSalt();
 
   // content::BrowserContext:
-  base::FilePath GetPath() override;
+  base::FilePath GetPath() const override;
   bool IsOffTheRecord() override;
   std::unique_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
       const base::FilePath& partition_path) override;
@@ -171,17 +178,24 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   ElectronBrowserContext(const PartitionOrPath partition_location,
                          bool in_memory,
-                         base::Value::Dict options);
+                         base::DictValue options);
 
-  ElectronBrowserContext(base::FilePath partition, base::Value::Dict options);
+  ElectronBrowserContext(base::FilePath partition, base::DictValue options);
 
   static void DisplayMediaDeviceChosen(
       const content::MediaStreamRequest& request,
       content::MediaResponseCallback callback,
       gin::Arguments* args);
 
+  std::pair<network::URLLoaderFactoryBuilder,
+            mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>>
+  CreateURLLoaderFactoryBuilder();
+
   // Initialize pref registry.
   void InitPrefs();
+
+  // Called when the Network Service process crashes or restarts.
+  void OnNetworkServiceProcessGone(bool crashed);
 
   scoped_refptr<ValueMapPrefStore> in_memory_pref_store_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
@@ -206,6 +220,9 @@ class ElectronBrowserContext : public content::BrowserContext {
   // Shared URLLoaderFactory.
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
 
+  // Subscription to Network Service process gone notifications.
+  base::CallbackListSubscription network_service_gone_subscription_;
+
   network::mojom::SSLConfigPtr ssl_config_;
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
 
@@ -213,6 +230,8 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // In-memory cache that holds objects that have been granted permissions.
   DevicePermissionMap granted_devices_;
+
+  base::WeakPtrFactory<ElectronBrowserContext> weak_factory_{this};
 };
 
 }  // namespace electron

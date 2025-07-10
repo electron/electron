@@ -17,6 +17,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/notreached.h"
 #include "base/sequence_checker.h"
+#include "content/public/browser/global_request_id.h"
 #include "gin/object_template_builder.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
@@ -375,6 +376,13 @@ void SimpleURLLoaderWrapper::Start() {
 
   loader_->SetAllowHttpErrorResults(true);
   loader_->SetURLLoaderFactoryOptions(request_options_);
+  // Set a non-zero request ID so that the request can use the
+  // TrustedHeaderClient code path for webRequest header modifications.
+  // See proxying_url_loader_factory.cc for details.
+  if (electron::IsBrowserProcess()) {
+    loader_->SetRequestID(
+        content::GlobalRequestID::MakeBrowserInitiated().request_id);
+  }
   loader_->SetOnResponseStartedCallback(base::BindOnce(
       &SimpleURLLoaderWrapper::OnResponseStarted, weak_factory_.GetWeakPtr()));
   loader_->SetOnRedirectCallback(base::BindRepeating(
@@ -476,6 +484,7 @@ void SimpleURLLoaderWrapper::Clone(
 
 void SimpleURLLoaderWrapper::Cancel() {
   loader_.reset();
+  url_loader_factory_.reset();
   pinned_wrapper_.Reset();
   pinned_chunk_pipe_getter_.Reset();
   // This ensures that no further callbacks will be called, so there's no need
@@ -487,36 +496,27 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
     return URLLoaderBundle::GetInstance()->GetSharedURLLoaderFactory();
 
   CHECK(browser_context_);
-  // Explicitly handle intercepted protocols here, even though
-  // ProxyingURLLoaderFactory would handle them later on, so that we can
-  // correctly intercept file:// scheme URLs.
   if (const bool bypass = request_options_ & kBypassCustomProtocolHandlers;
       !bypass) {
-    const std::string_view scheme = url.scheme_piece();
+    const std::string_view scheme = url.scheme();
     const auto* const protocol_registry =
         ProtocolRegistry::FromBrowserContext(browser_context_);
 
     if (const auto* const protocol_handler =
-            protocol_registry->FindIntercepted(scheme)) {
-      return network::SharedURLLoaderFactory::Create(
-          std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              ElectronURLLoaderFactory::Create(protocol_handler->first,
-                                               protocol_handler->second)));
-    }
-
-    if (const auto* const protocol_handler =
             protocol_registry->FindRegistered(scheme)) {
-      return network::SharedURLLoaderFactory::Create(
-          std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              ElectronURLLoaderFactory::Create(protocol_handler->first,
-                                               protocol_handler->second)));
+      return browser_context_->InterceptURLLoaderFactory(
+          network::SharedURLLoaderFactory::Create(
+              std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+                  ElectronURLLoaderFactory::Create(protocol_handler->first,
+                                                   protocol_handler->second))));
     }
   }
 
   if (url.SchemeIsFile()) {
-    return network::SharedURLLoaderFactory::Create(
-        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-            AsarURLLoaderFactory::Create()));
+    return browser_context_->InterceptURLLoaderFactory(
+        network::SharedURLLoaderFactory::Create(
+            std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+                AsarURLLoaderFactory::Create())));
   }
 
   return browser_context_->GetURLLoaderFactory();
@@ -742,6 +742,7 @@ void SimpleURLLoaderWrapper::OnComplete(bool success) {
   // we would perform cleanup of the wrapper and we should bail out below.
   if (self) {
     loader_.reset();
+    url_loader_factory_.reset();
     pinned_wrapper_.Reset();
     pinned_chunk_pipe_getter_.Reset();
   }

@@ -51,7 +51,7 @@
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_gdi_object.h"
 #include "shell/common/asar/archive.h"
-#include "ui/gfx/icon_util.h"
+#include "ui/gfx/win/icon_util.h"
 #endif
 
 namespace electron::api {
@@ -339,7 +339,7 @@ float NativeImage::GetAspectRatio(const std::optional<float> scale_factor) {
 }
 
 gin_helper::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
-                                                    base::Value::Dict options) {
+                                                    base::DictValue options) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
   gfx::Size size = GetSize(scale_factor);

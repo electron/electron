@@ -203,7 +203,7 @@ test('launch app', async () => {
 })
 ```
 
-After that, you will access to an instance of Playwright's `ElectronApp` class. This
+After that, you will have access to an instance of Playwright's `ElectronApp` class. This
 is a powerful class that has access to main process modules for example:
 
 ```js {5-10} @ts-nocheck
@@ -237,7 +237,7 @@ test('save screenshot', async () => {
 })
 ```
 
-Putting all this together using the Playwright test-runner, let's create a `example.spec.js`
+Putting all this together using the Playwright test-runner, let's create an `example.spec.js`
 test file with a single test and assertion:
 
 ```js title='example.spec.js' @ts-nocheck
@@ -377,7 +377,7 @@ class TestDriver {
 module.exports = { TestDriver }
 ```
 
-In your app code, can then write a simple handler to receive RPC calls:
+In your app code, you can then write a simple handler to receive RPC calls:
 
 ```js title='main.js'
 const METHODS = {

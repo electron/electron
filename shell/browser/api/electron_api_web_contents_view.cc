@@ -33,7 +33,7 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
                                  gin_helper::Handle<WebContents> web_contents)
     : View(web_contents->inspectable_web_contents()->GetView()),
       web_contents_(isolate, web_contents.ToV8()),
-      api_web_contents_(web_contents.get()) {
+      api_web_contents_(web_contents->GetWeakPtr()) {
   set_delete_view(false);
   view()->SetProperty(
       views::kFlexBehaviorKey,
@@ -83,8 +83,20 @@ void WebContentsView::ApplyBorderRadius() {
 
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {
   if (api_web_contents_) {
+    auto* iwc = api_web_contents_->inspectable_web_contents();
+    if (!iwc)
+      return HTNOWHERE;
+    // Convert the point to the contents view's coordinate space rather than
+    // the InspectableWebContentsView's coordinate space, because the draggable
+    // region is relative to the web content area. When DevTools is docked
+    // (e.g. to the left), the contents view is offset within the parent,
+    // so we need to account for that offset.
+    auto* inspectable_view = iwc->GetView();
+    if (!inspectable_view)
+      return HTNOWHERE;
+    auto* contents_view = inspectable_view->GetContentsView();
     gfx::Point local_point(point);
-    views::View::ConvertPointFromWidget(view(), &local_point);
+    views::View::ConvertPointFromWidget(contents_view, &local_point);
     SkRegion* region = api_web_contents_->draggable_region();
     if (region && region->contains(local_point.x(), local_point.y()))
       return HTCAPTION;
@@ -153,36 +165,37 @@ v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
 }
 
 // static
-gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
+gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
+  v8::Isolate* const isolate = args->isolate();
   gin_helper::Dictionary web_preferences;
   v8::Local<v8::Value> existing_web_contents_value;
   {
     v8::Local<v8::Value> options_value;
     if (args->GetNext(&options_value)) {
       gin_helper::Dictionary options;
-      if (!gin::ConvertFromV8(args->isolate(), options_value, &options)) {
-        args->ThrowError("options must be an object");
+      if (!gin::ConvertFromV8(isolate, options_value, &options)) {
+        args->ThrowTypeError("options must be an object");
         return nullptr;
       }
       v8::Local<v8::Value> web_preferences_value;
       if (options.Get("webPreferences", &web_preferences_value)) {
-        if (!gin::ConvertFromV8(args->isolate(), web_preferences_value,
+        if (!gin::ConvertFromV8(isolate, web_preferences_value,
                                 &web_preferences)) {
-          args->ThrowError("options.webPreferences must be an object");
+          args->ThrowTypeError("options.webPreferences must be an object");
           return nullptr;
         }
       }
 
       if (options.Get("webContents", &existing_web_contents_value)) {
         gin_helper::Handle<WebContents> existing_web_contents;
-        if (!gin::ConvertFromV8(args->isolate(), existing_web_contents_value,
+        if (!gin::ConvertFromV8(isolate, existing_web_contents_value,
                                 &existing_web_contents)) {
-          args->ThrowError("options.webContents must be a WebContents");
+          args->ThrowTypeError("options.webContents must be a WebContents");
           return nullptr;
         }
 
         if (existing_web_contents->owner_window() != nullptr) {
-          args->ThrowError(
+          args->ThrowTypeError(
               "options.webContents is already attached to a window");
           return nullptr;
         }
@@ -191,7 +204,7 @@ gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
   }
 
   if (web_preferences.IsEmpty())
-    web_preferences = gin_helper::Dictionary::CreateEmpty(args->isolate());
+    web_preferences = gin_helper::Dictionary::CreateEmpty(isolate);
   if (!web_preferences.Has(options::kShow))
     web_preferences.Set(options::kShow, false);
 
@@ -200,10 +213,10 @@ gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
   }
 
   auto web_contents =
-      WebContents::CreateFromWebPreferences(args->isolate(), web_preferences);
+      WebContents::CreateFromWebPreferences(isolate, web_preferences);
 
   // Constructor call.
-  auto* view = new WebContentsView(args->isolate(), web_contents);
+  auto* view = new WebContentsView{isolate, web_contents};
   view->InitWithArgs(args);
   return view;
 }

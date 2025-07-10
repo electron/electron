@@ -34,19 +34,23 @@ class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView,
                                  private NativeWindowObserver {
  public:
-  OffScreenWebContentsView(bool transparent,
-                           bool offscreen_use_shared_texture,
-                           const OnPaintCallback& callback);
+  OffScreenWebContentsView(
+      bool transparent,
+      bool offscreen_use_shared_texture,
+      const std::string& offscreen_shared_texture_pixel_format,
+      float offscreen_device_scale_factor,
+      const OnPaintCallback& callback);
   ~OffScreenWebContentsView() override;
 
   void SetWebContents(content::WebContents*);
   void SetNativeWindow(NativeWindow* window);
+  void SetCallback(const OnPaintCallback& callback);
 
   // NativeWindowObserver:
   void OnWindowResize() override;
   void OnWindowClosed() override;
 
-  gfx::Size GetSize();
+  gfx::Size GetSize() const override;
 
   // content::WebContentsView:
   gfx::NativeView GetNativeView() const override;
@@ -54,6 +58,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   gfx::NativeWindow GetTopLevelNativeWindow() const override;
   gfx::Rect GetContainerBounds() const override;
   void Focus() override {}
+  void Resize(const gfx::Rect& new_bounds) override {}
   void SetInitialFocus() override {}
   void StoreFocus() override {}
   void RestoreFocus() override {}
@@ -109,6 +114,8 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
   const bool transparent_;
   const bool offscreen_use_shared_texture_;
+  const std::string offscreen_shared_texture_pixel_format_;
+  const float offscreen_device_scale_factor_;
   bool painting_ = true;
   int frame_rate_ = 60;
   OnPaintCallback callback_;

@@ -4,6 +4,8 @@ import { createReadStream } from 'fs';
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
 
+import type { ReadableStreamDefaultReader } from 'stream/web';
+
 // Global protocol APIs.
 const { registerSchemesAsPrivileged, getStandardSchemes, Protocol } = process._linkedBinding('electron_browser_protocol');
 
@@ -12,7 +14,7 @@ const ERR_UNEXPECTED = -9;
 
 const isBuiltInScheme = (scheme: string) => ['http', 'https', 'file'].includes(scheme);
 
-function makeStreamFromPipe (pipe: any): ReadableStream {
+function makeStreamFromPipe (pipe: any): ReadableStream<Uint8Array> {
   const buf = new Uint8Array(1024 * 1024 /* 1 MB */);
   return new ReadableStream({
     async pull (controller) {
@@ -38,21 +40,26 @@ function makeStreamFromFileInfo ({
   filePath: string;
   offset?: number;
   length?: number;
-}): ReadableStream {
+}): ReadableStream<Uint8Array> {
+  // Node's Readable.toWeb produces a WHATWG ReadableStream whose chunks are Uint8Array.
   return Readable.toWeb(createReadStream(filePath, {
     start: offset,
     end: length >= 0 ? offset + length : undefined
-  }));
+  })) as ReadableStream<Uint8Array>;
 }
 
 function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): RequestInit['body'] {
   if (!uploadData) return null;
   // Optimization: skip creating a stream if the request is just a single buffer.
-  if (uploadData.length === 1 && (uploadData[0] as any).type === 'rawData') return uploadData[0].bytes;
+  if (uploadData.length === 1 && (uploadData[0] as any).type === 'rawData') {
+    return uploadData[0].bytes as any;
+  }
 
-  const chunks = [...uploadData] as any[]; // TODO: types are wrong
-  let current: ReadableStreamDefaultReader | null = null;
-  return new ReadableStream({
+  const chunks = [...uploadData] as any[]; // TODO: refine ProtocolRequest types
+  // Use Node's web stream types explicitly to avoid DOM lib vs Node lib structural mismatches.
+  // Generic <Uint8Array> ensures reader.read() returns value?: Uint8Array consistent with enqueue.
+  let current: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  return new ReadableStream<Uint8Array>({
     async pull (controller) {
       if (current) {
         const { done, value } = await current.read();
@@ -67,7 +74,7 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
         if (!chunks.length) { return controller.close(); }
         const chunk = chunks.shift()!;
         if (chunk.type === 'rawData') {
-          controller.enqueue(chunk.bytes);
+          controller.enqueue(chunk.bytes as Uint8Array);
         } else if (chunk.type === 'file') {
           current = makeStreamFromFileInfo(chunk).getReader();
           return this.pull!(controller);

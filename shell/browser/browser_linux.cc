@@ -103,15 +103,18 @@ void Browser::ClearRecentDocuments() {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          gin::Arguments* args) {
+  if (!IsValidProtocolScheme(protocol))
+    return false;
+
   return SetDefaultWebClient(protocol);
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
-  auto env = base::Environment::Create();
-
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
+
+  auto env = base::Environment::Create();
 
   std::vector<std::string> argv = {kXdgSettings, "check",
                                    kXdgSettingsDefaultSchemeHandler, protocol};
@@ -134,7 +137,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   const std::vector<std::string> argv = {
       "xdg-mime", "query", "default",
-      base::StrCat({"x-scheme-handler/", url.scheme_piece()})};
+      base::StrCat({"x-scheme-handler/", url.scheme()})};
 
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }
@@ -180,7 +183,7 @@ void Browser::ShowAboutPanel() {
   GtkAboutDialog* dialog = GTK_ABOUT_DIALOG(dialogWidget);
 
   const std::string* str;
-  const base::Value::List* list;
+  const base::ListValue* list;
 
   if ((str = opts.FindString("applicationName"))) {
     gtk_about_dialog_set_program_name(dialog, str->c_str());
@@ -203,7 +206,7 @@ void Browser::ShowAboutPanel() {
     GdkPixbuf* icon =
         gdk_pixbuf_new_from_file_at_size(str->c_str(), width, height, &error);
     if (error != nullptr) {
-      g_warning("%s", error->message);
+      LOG(INFO) << error->message;
       g_clear_error(&error);
     } else {
       gtk_about_dialog_set_logo(dialog, icon);
@@ -233,7 +236,7 @@ void Browser::ShowAboutPanel() {
   gtk_widget_show_all(dialogWidget);
 }
 
-void Browser::SetAboutPanelOptions(base::Value::Dict options) {
+void Browser::SetAboutPanelOptions(base::DictValue options) {
   about_panel_options_ = std::move(options);
 }
 

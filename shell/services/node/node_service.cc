@@ -11,6 +11,7 @@
 #include "base/no_destructor.h"
 #include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
+#include "electron/fuses.h"
 #include "electron/mas.h"
 #include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
@@ -22,6 +23,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/v8_util.h"
 #include "shell/services/node/parent_port.h"
 
 #if !IS_MAS_BUILD()
@@ -30,15 +32,19 @@
 
 namespace electron {
 
-mojo::Remote<node::mojom::NodeServiceClient> g_client_remote;
+mojo::Remote<node::mojom::NodeServiceClient>& GetRemote() {
+  static base::NoDestructor<mojo::Remote<node::mojom::NodeServiceClient>>
+      instance;
+  return *instance;
+}
 
 void V8FatalErrorCallback(const char* location, const char* message) {
-  if (g_client_remote.is_bound() && g_client_remote.is_connected()) {
+  if (GetRemote().is_bound() && GetRemote().is_connected()) {
     auto* isolate = v8::Isolate::TryGetCurrent();
     std::ostringstream outstream;
     node::GetNodeReport(isolate, message, location,
                         v8::Local<v8::Object>() /* error */, outstream);
-    g_client_remote->OnV8FatalError(location, outstream.str());
+    GetRemote()->OnV8FatalError(location, outstream.str());
   }
 
 #if !IS_MAS_BUILD()
@@ -101,7 +107,7 @@ NodeService::~NodeService() {
     ParentPort::GetInstance()->Close();
     js_env_->DestroyMicrotasksRunner();
     node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
-    g_client_remote.reset();
+    GetRemote().reset();
   }
 }
 
@@ -111,20 +117,28 @@ void NodeService::Initialize(
   if (NodeBindings::IsInitialized())
     return;
 
-  g_client_remote.Bind(std::move(client_pending_remote));
-  g_client_remote.reset_on_disconnect();
+  GetRemote().Bind(std::move(client_pending_remote));
+  GetRemote().reset_on_disconnect();
 
   ParentPort::GetInstance()->Initialize(std::move(params->port));
 
-  URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
-      std::move(params->url_loader_factory),
-      mojo::Remote(std::move(params->host_resolver)),
-      params->use_network_observer_from_url_loader_factory);
+  if (params->url_loader_factory_params) {
+    UpdateURLLoaderFactory(std::move(params->url_loader_factory_params));
+  }
 
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
   v8::Isolate* const isolate = js_env_->isolate();
   v8::HandleScope scope{isolate};
+
+  // Enable trap handlers before user script execution.
+#if ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)) && \
+     defined(ARCH_CPU_X86_64)) ||                                       \
+    ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)) && defined(ARCH_CPU_ARM64))
+  if (electron::fuses::IsWasmTrapHandlersEnabled()) {
+    electron::SetUpWebAssemblyTrapHandler();
+  }
+#endif
 
   node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
 
@@ -155,7 +169,7 @@ void NodeService::Initialize(
         node_env_stopped_ = true;
         ParentPort::GetInstance()->Close();
         js_env_->DestroyMicrotasksRunner();
-        g_client_remote.reset();
+        GetRemote().reset();
         receiver_.ResetWithReason(exit_code, "process_exit_termination");
         node::DefaultProcessExitHandler(env, exit_code);
       });
@@ -191,6 +205,14 @@ void NodeService::Initialize(
   // Run entry script.
   node_bindings_->PrepareEmbedThread();
   node_bindings_->StartPolling();
+}
+
+void NodeService::UpdateURLLoaderFactory(
+    node::mojom::URLLoaderFactoryParamsPtr params) {
+  URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
+      std::move(params->url_loader_factory),
+      mojo::Remote(std::move(params->host_resolver)),
+      params->use_network_observer_from_url_loader_factory);
 }
 
 }  // namespace electron

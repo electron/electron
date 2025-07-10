@@ -4,6 +4,8 @@
 
 #include "electron/shell/renderer/electron_ipc_native.h"
 
+#include <optional>
+
 #include "base/trace_event/trace_event.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -45,10 +47,9 @@ void InvokeIpcCallback(v8::Isolate* const isolate,
 
   // Only set up the node::CallbackScope if there's a node environment.
   // Sandboxed renderers don't have a node environment.
-  std::unique_ptr<node::CallbackScope> callback_scope;
-  if (node::Environment::GetCurrent(context)) {
-    callback_scope = std::make_unique<node::CallbackScope>(
-        isolate, ipcNative, node::async_context{0, 0});
+  std::optional<node::CallbackScope> callback_scope;
+  if (auto* env = node::Environment::GetCurrent(context)) {
+    callback_scope.emplace(env, ipcNative, node::async_context{0, 0});
   }
 
   auto callback_key = gin::ConvertToV8(isolate, callback_name)

@@ -43,7 +43,7 @@ class Constructible {
       v8::Isolate* const isolate,
       v8::Local<v8::Context> context) {
     gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-    auto* wrapper_info = &T::kWrapperInfo;
+    auto* const wrapper_info = &T::kWrapperInfo;
     v8::Local<v8::FunctionTemplate> constructor =
         data->DeprecatedGetFunctionTemplate(wrapper_info);
     if (constructor.IsEmpty()) {
@@ -67,7 +67,7 @@ class Constructible {
   static v8::Local<v8::Function> GetConstructor(
       v8::Isolate* const isolate,
       v8::Local<v8::Context> context,
-      gin::WrapperInfo* wrapper_info) {
+      const gin::WrapperInfo* const wrapper_info) {
     gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
     v8::Local<v8::FunctionTemplate> constructor =
         data->GetFunctionTemplate(wrapper_info);

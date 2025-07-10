@@ -36,10 +36,10 @@ for desktop capturer. This change re-enables that fallback, which was
 previously default behavior.
 
 diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
-index ae9aba26ee56e8a0d48f81994f964b278c9019d3..758f1b44e01adb6807bc7c5f673d06fffbac5865 100644
+index 243919ba101c637887b2a964e45be0096798873b..c1597ee84a3a84a1c5e556eb31c4d3e19a6e4c84 100644
 --- a/modules/desktop_capture/desktop_capturer.cc
 +++ b/modules/desktop_capture/desktop_capturer.cc
-@@ -123,7 +123,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
+@@ -138,7 +138,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
    std::unique_ptr<DesktopCapturer> capturer;
  
  #if defined(WEBRTC_USE_PIPEWIRE)
@@ -49,10 +49,10 @@ index ae9aba26ee56e8a0d48f81994f964b278c9019d3..758f1b44e01adb6807bc7c5f673d06ff
          options, CaptureType::kAnyScreenContent);
    }
 diff --git a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
-index 361b465dad2a53f4dac774fa2d6d6d9e3fc5fc31..ef05a35bc4f2c2352b12c0af0b09193b6cd53244 100644
+index 6cb394f9430f88c5036d19587e4655b8d0760c76..613c3fa6380828dd6537e20c87aac764bfdcd6c8 100644
 --- a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
 +++ b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
-@@ -123,6 +123,7 @@ void BaseCapturerPipeWire::OnScreenCastRequestResult(RequestResponse result,
+@@ -126,6 +126,7 @@ void BaseCapturerPipeWire::OnScreenCastRequestResult(RequestResponse result,
  void BaseCapturerPipeWire::OnScreenCastSessionClosed() {
    if (!capturer_failed_) {
      options_.screencast_stream()->StopScreenCastStream();
@@ -61,10 +61,10 @@ index 361b465dad2a53f4dac774fa2d6d6d9e3fc5fc31..ef05a35bc4f2c2352b12c0af0b09193b
    capturer_failed_ = true;
  }
 diff --git a/modules/desktop_capture/screen_capturer_linux.cc b/modules/desktop_capture/screen_capturer_linux.cc
-index 94726750c5762e22b517445b23254513eb207aae..85946a6c7eef56a66c0ee2ec06bdc5f2ba49c53c 100644
+index aeab70c9f7f7511af04c4831b4d81c8a4e4261aa..ad9efad3af5b4ce21a0a2b21a783af0c4f468494 100644
 --- a/modules/desktop_capture/screen_capturer_linux.cc
 +++ b/modules/desktop_capture/screen_capturer_linux.cc
-@@ -35,11 +35,10 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateRawScreenCapturer(
+@@ -38,11 +38,10 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateRawScreenCapturer(
  #endif  // defined(WEBRTC_USE_PIPEWIRE)
  
  #if defined(WEBRTC_USE_X11)
@@ -80,10 +80,10 @@ index 94726750c5762e22b517445b23254513eb207aae..85946a6c7eef56a66c0ee2ec06bdc5f2
  
  }  // namespace webrtc
 diff --git a/modules/desktop_capture/window_capturer_linux.cc b/modules/desktop_capture/window_capturer_linux.cc
-index f621a63e72131fd8426361a078a55d1e07c0e436..91394503da5e7f6d090e2eaede02316cf51ad7b2 100644
+index 6df928913f4ef73db3d6377682f4f40bcd58c4d9..befd9f7a6a00778ebe5b3fa9da25fcbcaf91ef79 100644
 --- a/modules/desktop_capture/window_capturer_linux.cc
 +++ b/modules/desktop_capture/window_capturer_linux.cc
-@@ -35,11 +35,10 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateRawWindowCapturer(
+@@ -38,11 +38,10 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateRawWindowCapturer(
  #endif  // defined(WEBRTC_USE_PIPEWIRE)
  
  #if defined(WEBRTC_USE_X11)

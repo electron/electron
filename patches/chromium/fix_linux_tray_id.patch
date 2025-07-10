@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Damglador <vse.stopchanskyi@gmail.com>
+Date: Mon, 27 Oct 2025 23:35:43 +0100
+Subject: fix: allow setting tray id
+
+This is needed to allow setting custom tray id when initializing a tray icon.
+With current behaviour all programs get chrome_status_icon_1 as their id in tray.
+So tray can't tell apart Electron apps,
+which introduces issues like https://bugs.kde.org/show_bug.cgi?id=470840.
+
+This patch can be removed after being upstreamed. See discussion at
+https://github.com/electron/electron/pull/48675#issuecomment-3452781711
+for more info.
+
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+index 72a61f80eb5dfafe2609ec9e3f8f34c7c84f7abe..af68cc7486c450f9b9765f562fab71855686cc2e 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+@@ -133,8 +133,9 @@ int NextServiceId() {
+   return ++status_icon_count;
+ }
+ 
+-std::string PropertyIdFromId(int service_id) {
+-  return "chrome_status_icon_" + base::NumberToString(service_id);
++std::string PropertyIdFromId(int service_id, const std::string_view app_name) {
++  return base::StrCat(
++      {app_name, "_status_icon_", base::NumberToString(service_id)});
+ }
+ 
+ using DbusImage = std::tuple</*width=*/int32_t,
+@@ -224,12 +225,13 @@ base::FilePath WriteIconFile(size_t icon_file_id,
+ 
+ }  // namespace
+ 
+-StatusIconLinuxDbus::StatusIconLinuxDbus()
++StatusIconLinuxDbus::StatusIconLinuxDbus(const std::string_view app_name)
+     : bus_(dbus_thread_linux::GetSharedSessionBus()),
+       should_write_icon_to_file_(ShouldWriteIconToFile()),
+       icon_task_runner_(base::ThreadPool::CreateSequencedTaskRunner(
+           {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+-           base::TaskShutdownBehavior::BLOCK_SHUTDOWN})) {
++           base::TaskShutdownBehavior::BLOCK_SHUTDOWN})),
++      app_name_(app_name) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   CheckStatusNotifierWatcherHasOwner();
+ }
+@@ -405,7 +407,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
+   properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyCategory,
+                                 kPropertyValueCategory, false);
+   properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyId,
+-                                PropertyIdFromId(service_id_), false);
++                                PropertyIdFromId(service_id_, app_name_),
++                                false);
+   properties_->SetProperty<"s">(kInterfaceStatusNotifierItem,
+                                 kPropertyOverlayIconName, "", false);
+   properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyStatus,
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
+index 5457f98158a094a5b8768352d2868e3005afd395..13ac4e51019ea68fdccd17aac8a4855bde50964b 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
+@@ -37,7 +37,7 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+                             public ui::SimpleMenuModel::Delegate,
+                             public base::RefCounted<StatusIconLinuxDbus> {
+  public:
+-  StatusIconLinuxDbus();
++  StatusIconLinuxDbus(const std::string_view app_name = "chrome");
+ 
+   StatusIconLinuxDbus(const StatusIconLinuxDbus&) = delete;
+   StatusIconLinuxDbus& operator=(const StatusIconLinuxDbus&) = delete;
+@@ -135,6 +135,8 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+   size_t icon_file_id_ = 0;
+   base::FilePath icon_file_;
+ 
++  std::string app_name_;
++
+   base::WeakPtrFactory<StatusIconLinuxDbus> weak_factory_{this};
+ };
+ 

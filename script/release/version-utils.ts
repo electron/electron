@@ -1,5 +1,6 @@
-import { GitProcess } from 'dugite';
 import * as semver from 'semver';
+
+import { spawnSync } from 'node:child_process';
 
 import { ELECTRON_DIR } from '../lib/utils';
 
@@ -27,7 +28,11 @@ export const isStable = (v: string) => {
 
 export async function nextAlpha (v: string) {
   const next = semver.coerce(semver.clean(v));
-  const tagBlob = await GitProcess.exec(['tag', '--list', '-l', `v${next}-alpha.*`], ELECTRON_DIR);
+  const tagBlob = spawnSync('git', ['tag', '--list', '-l', `v${next}-alpha.*`], {
+    cwd: ELECTRON_DIR,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe']
+  });
   const tags = tagBlob.stdout.split('\n').filter(e => e !== '');
   tags.sort((t1, t2) => {
     const a = parseInt(t1.split('.').pop()!, 10);
@@ -41,7 +46,11 @@ export async function nextAlpha (v: string) {
 
 export async function nextBeta (v: string) {
   const next = semver.coerce(semver.clean(v));
-  const tagBlob = await GitProcess.exec(['tag', '--list', '-l', `v${next}-beta.*`], ELECTRON_DIR);
+  const tagBlob = spawnSync('git', ['tag', '--list', '-l', `v${next}-beta.*`], {
+    cwd: ELECTRON_DIR,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe']
+  });
   const tags = tagBlob.stdout.split('\n').filter(e => e !== '');
   tags.sort((t1, t2) => {
     const a = parseInt(t1.split('.').pop()!, 10);
@@ -57,7 +66,11 @@ export async function nextNightly (v: string) {
   let next = semver.valid(semver.coerce(v));
   const pre = `nightly.${getCurrentDate()}`;
 
-  const branch = (await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], ELECTRON_DIR)).stdout.trim();
+  const branch = spawnSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+    cwd: ELECTRON_DIR,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe']
+  }).stdout.trim();
   if (branch === 'main') {
     next = semver.inc(await getLastMajorForMain(), 'major');
   } else if (isStable(v)) {
@@ -69,8 +82,12 @@ export async function nextNightly (v: string) {
 
 async function getLastMajorForMain () {
   let branchNames;
-  const result = await GitProcess.exec(['branch', '-a', '--remote', '--list', 'origin/[0-9]*-x-y'], ELECTRON_DIR);
-  if (result.exitCode === 0) {
+  const result = spawnSync('git', ['branch', '-a', '--remote', '--list', 'origin/[0-9]*-x-y'], {
+    cwd: ELECTRON_DIR,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe']
+  });
+  if (result.status === 0) {
     branchNames = result.stdout.trim().split('\n');
     const filtered = branchNames.map(b => b.replace('origin/', ''));
     return getNextReleaseBranch(filtered);

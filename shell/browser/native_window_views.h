@@ -12,9 +12,11 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
+#include "base/no_destructor.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "ui/base/ozone_buildflags.h"
+#include "ui/gfx/geometry/insets.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/widget/widget_observer.h"
 
@@ -24,18 +26,19 @@
 #include "shell/browser/ui/win/taskbar_host.h"
 #endif
 
-namespace gin_helper {
+namespace gin {
 class Arguments;
-}  // namespace gin_helper
+}  // namespace gin
 
 namespace electron {
 
 #if BUILDFLAG(IS_LINUX)
 class ClientFrameViewLinux;
 class GlobalMenuBarX11;
+class LinuxFrameLayout;
 #endif
 
-#if BUILDFLAG(IS_OZONE_X11)
+#if BUILDFLAG(SUPPORTS_OZONE_X11)
 class EventDisabler;
 #endif
 
@@ -47,7 +50,8 @@ class NativeWindowViews : public NativeWindow,
                           private views::WidgetObserver,
                           private ui::EventHandler {
  public:
-  NativeWindowViews(const gin_helper::Dictionary& options,
+  NativeWindowViews(int32_t base_window_id,
+                    const gin_helper::Dictionary& options,
                     NativeWindow* parent);
   ~NativeWindowViews() override;
 
@@ -88,6 +92,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsResizable() const override;
   void SetAspectRatio(double aspect_ratio,
                       const gfx::Size& extra_size) override;
+  bool CanResize() const override;
   void SetMovable(bool movable) override;
   bool IsMovable() const override;
   void SetMinimizable(bool minimizable) override;
@@ -153,11 +158,17 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
 
+  // Translates between logical/opaque window bounds exposed to callers
+  // and the absolute bounds of the underlying widget, which can be larger to
+  // fit CSD, e.g. transparent outer regions for shadows and resize targets.
+  gfx::Rect LogicalToWidgetBounds(const gfx::Rect& bounds) const;
+  gfx::Rect WidgetToLogicalBounds(const gfx::Rect& bounds) const;
+
   void IncrementChildModals();
   void DecrementChildModals();
 
   void SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                          gin_helper::Arguments* args);
+                          gin::Arguments* args);
 
 #if BUILDFLAG(IS_WIN)
   // Catch-all message handling and filtering. Called before
@@ -189,9 +200,7 @@ class NativeWindowViews : public NativeWindow,
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
 
 #if BUILDFLAG(IS_LINUX)
-  // returns the ClientFrameViewLinux iff that is our NonClientFrameView type,
-  // nullptr otherwise.
-  ClientFrameViewLinux* GetClientFrameViewLinux();
+  LinuxFrameLayout* GetLinuxFrameLayout();
 #endif
 
  private:
@@ -201,6 +210,8 @@ class NativeWindowViews : public NativeWindow,
   void set_overlay_symbol_color(SkColor color) {
     overlay_symbol_color_ = color;
   }
+
+  gfx::Insets GetRestoredFrameBorderInsets() const;
 
   // views::WidgetObserver:
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
@@ -218,7 +229,7 @@ class NativeWindowViews : public NativeWindow,
       gfx::NativeView child,
       const gfx::Point& location) override;
   views::ClientView* CreateClientView(views::Widget* widget) override;
-  std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
+  std::unique_ptr<views::FrameView> CreateFrameView(
       views::Widget* widget) override;
   void OnWidgetMove() override;
 #if BUILDFLAG(IS_WIN)
@@ -270,7 +281,7 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
 #endif
 
-#if BUILDFLAG(IS_OZONE_X11)
+#if BUILDFLAG(SUPPORTS_OZONE_X11)
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif
@@ -302,7 +313,8 @@ class NativeWindowViews : public NativeWindow,
   base::win::ScopedGDIObject<HICON> app_icon_;
 
   // The set of windows currently forwarding mouse messages.
-  static inline absl::flat_hash_set<NativeWindowViews*> forwarding_windows_;
+  static inline base::NoDestructor<absl::flat_hash_set<NativeWindowViews*>>
+      forwarding_windows_;
   static HHOOK mouse_hook_;
   bool forwarding_mouse_messages_ = false;
   HWND legacy_window_ = nullptr;
@@ -355,6 +367,7 @@ class NativeWindowViews : public NativeWindow,
   bool maximizable_ = true;
   bool minimizable_ = true;
   bool fullscreenable_ = true;
+  bool has_shadow_ = true;
   gfx::Size widget_size_;
   double opacity_ = 1.0;
   bool widget_destroyed_ = false;

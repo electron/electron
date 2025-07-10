@@ -43,6 +43,65 @@ describe('MenuItems', () => {
       expect(item).to.have.property('role').that.is.a('string');
       expect(item).to.have.property('icon');
     });
+
+    it('should have a default accelerator for certain roles', () => {
+      const items: Record<string, Electron.MenuItem['accelerator']> = {
+        undo: 'CommandOrControl+Z',
+        redo: process.platform === 'win32' ? 'Control+Y' : 'Shift+CommandOrControl+Z',
+        cut: 'CommandOrControl+X',
+        copy: 'CommandOrControl+C',
+        paste: 'CommandOrControl+V',
+        pasteAndMatchStyle: process.platform === 'darwin' ? 'Cmd+Option+Shift+V' : 'Shift+CommandOrControl+V',
+        delete: null,
+        selectAll: 'CommandOrControl+A',
+        reload: 'CmdOrCtrl+R',
+        forceReload: 'Shift+CmdOrCtrl+R',
+        toggleDevTools: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+        resetZoom: 'CommandOrControl+0',
+        zoomIn: 'CommandOrControl+Plus',
+        zoomOut: 'CommandOrControl+-',
+        toggleSpellChecker: null,
+        togglefullscreen: process.platform === 'darwin' ? 'Control+Command+F' : 'F11',
+        window: null,
+        minimize: 'CommandOrControl+M',
+        close: 'CommandOrControl+W',
+        help: null,
+        about: null,
+        services: null,
+        hide: 'Command+H',
+        hideOthers: 'Command+Alt+H',
+        unhide: null,
+        quit: process.platform === 'win32' ? null : 'CommandOrControl+Q',
+        showSubstitutions: null,
+        toggleSmartQuotes: null,
+        toggleSmartDashes: null,
+        toggleTextReplacement: null,
+        startSpeaking: null,
+        stopSpeaking: null,
+        zoom: null,
+        front: null,
+        appMenu: null,
+        fileMenu: null,
+        editMenu: null,
+        viewMenu: null,
+        shareMenu: null,
+        recentDocuments: null,
+        toggleTabBar: null,
+        selectNextTab: null,
+        selectPreviousTab: null,
+        showAllTabs: null,
+        mergeAllWindows: null,
+        clearRecentDocuments: null,
+        moveTabToNewWindow: null,
+        windowMenu: null
+      };
+
+      for (const role in items) {
+        if (!Object.hasOwn(items, role)) continue;
+        const item = new MenuItem({ role: role as any });
+        expect(item.accelerator).to.equal(items[role]);
+      }
+    });
   });
 
   describe('MenuItem.click', () => {
@@ -480,7 +539,7 @@ describe('MenuItems', () => {
 
     it('should display modifiers correctly for simple keys', () => {
       const menu = Menu.buildFromTemplate([
-        { label: 'text', accelerator: 'CmdOrCtrl+A' },
+        { label: 'text', accelerator: 'CommandOrControl+A' },
         { label: 'text', accelerator: 'Shift+A' },
         { label: 'text', accelerator: 'Alt+A' }
       ]);
@@ -492,7 +551,7 @@ describe('MenuItems', () => {
 
     it('should display modifiers correctly for special keys', () => {
       const menu = Menu.buildFromTemplate([
-        { label: 'text', accelerator: 'CmdOrCtrl+Tab' },
+        { label: 'text', accelerator: 'CommandOrControl+Tab' },
         { label: 'text', accelerator: 'Shift+Tab' },
         { label: 'text', accelerator: 'Alt+Tab' }
       ]);

@@ -4,6 +4,12 @@
 
 Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
 
+> [!IMPORTANT]
+> If you want to call this API from a renderer process with context isolation enabled,
+> place the API call in your preload script and
+> [expose](../tutorial/context-isolation.md#after-context-isolation-enabled) it using the
+> [`contextBridge`](context-bridge.md) API.
+
 The `nativeImage` module provides a unified interface for manipulating
 system images. These can be handy if you want to provide multiple scaled
 versions of the same icon or take advantage of macOS [template images][template-image].
@@ -196,8 +202,7 @@ Creates a new `NativeImage` instance from `dataUrl`, a base 64 encoded [Data URL
 Returns `NativeImage`
 
 Creates a new `NativeImage` instance from the `NSImage` that maps to the
-given image name. See Apple's [`NSImageName`](https://developer.apple.com/documentation/appkit/nsimagename#2901388)
-documentation for a list of possible values.
+given image name. See Apple's [`NSImageName`](https://developer.apple.com/documentation/appkit/nsimagename#2901388) documentation and [SF Symbols](https://developer.apple.com/sf-symbols/) for a list of possible values.
 
 The `hslShift` is applied to the image with the following rules:
 
@@ -224,6 +229,15 @@ echo -e '#import <Cocoa/Cocoa.h>\nint main() { NSLog(@"%@", SYSTEM_IMAGE_NAME); 
 ```
 
 where `SYSTEM_IMAGE_NAME` should be replaced with any value from [this list](https://developer.apple.com/documentation/appkit/nsimagename?language=objc).
+
+For SF Symbols, usage looks as follows:
+
+```js
+const image = nativeImage.createFromNamedImage('square.and.pencil')
+```
+
+where `'square.and.pencil'` is the symbol name from the
+[SF Symbols app](https://developer.apple.com/sf-symbols/).
 
 ## Class: NativeImage
 

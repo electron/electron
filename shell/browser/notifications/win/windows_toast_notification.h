@@ -14,6 +14,8 @@
 #include <wrl/implements.h>
 #include <string>
 
+#include "base/memory/scoped_refptr.h"
+#include "base/task/single_thread_task_runner.h"
 #include "shell/browser/notifications/notification.h"
 
 using Microsoft::WRL::ClassicCom;
@@ -58,12 +60,17 @@ class WindowsToastNotification : public Notification {
   friend class ToastEventHandler;
 
   HRESULT ShowInternal(const NotificationOptions& options);
-  std::u16string GetToastXml(const std::u16string& title,
-                             const std::u16string& msg,
-                             const std::wstring& icon_path,
-                             const std::u16string& timeout_type,
-                             const bool silent);
-  HRESULT XmlDocumentFromString(
+  static std::u16string GetToastXml(
+      const std::string& notification_id,
+      const std::u16string& title,
+      const std::u16string& msg,
+      const std::wstring& icon_path,
+      const std::u16string& timeout_type,
+      const bool silent,
+      const std::vector<NotificationAction>& actions,
+      bool has_reply,
+      const std::u16string& reply_placeholder);
+  static HRESULT XmlDocumentFromString(
       const wchar_t* xmlString,
       ABI::Windows::Data::Xml::Dom::IXmlDocument** doc);
   HRESULT SetupCallbacks(
@@ -71,11 +78,44 @@ class WindowsToastNotification : public Notification {
   bool RemoveCallbacks(
       ABI::Windows::UI::Notifications::IToastNotification* toast);
 
+  // Helper methods for async Show() implementation
+  static bool CreateToastXmlDocument(
+      const NotificationOptions& options,
+      NotificationPresenter* presenter,
+      const std::string& notification_id,
+      base::WeakPtr<Notification> weak_notification,
+      scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
+      ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument>* toast_xml);
+  static void CreateToastNotificationOnBackgroundThread(
+      const NotificationOptions& options,
+      NotificationPresenter* presenter,
+      const std::string& notification_id,
+      base::WeakPtr<Notification> weak_notification,
+      scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner);
+  static bool CreateToastNotification(
+      ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> toast_xml,
+      const NotificationOptions& options,
+      const std::string& notification_id,
+      base::WeakPtr<Notification> weak_notification,
+      scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
+      ComPtr<ABI::Windows::UI::Notifications::IToastNotification>*
+          toast_notification);
+  static void SetupAndShowOnUIThread(
+      base::WeakPtr<Notification> weak_notification,
+      ComPtr<ABI::Windows::UI::Notifications::IToastNotification> notification);
+  static void PostNotificationFailedToUIThread(
+      base::WeakPtr<Notification> weak_notification,
+      const std::string& error,
+      scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner);
+
   static ComPtr<
-      ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>
+      ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>*
       toast_manager_;
-  static ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>
+  static ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>*
       toast_notifier_;
+
+  // Returns the task runner for toast operations, creating it if necessary.
+  static scoped_refptr<base::SequencedTaskRunner> GetToastTaskRunner();
 
   EventRegistrationToken activated_token_;
   EventRegistrationToken dismissed_token_;

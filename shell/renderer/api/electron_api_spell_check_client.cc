@@ -31,7 +31,7 @@ namespace {
 bool HasWordCharacters(const std::u16string& text, size_t index) {
   base_icu::UChar32 code;
   while (index < text.size() &&
-         base::ReadUnicodeCharacter(text.c_str(), text.size(), &index, &code)) {
+         base::ReadUnicodeCharacter(text, &index, &code)) {
     ++index;
     UErrorCode error = U_ZERO_ERROR;
     if (uscript_getScript(code, &error) != USCRIPT_COMMON)
@@ -90,12 +90,14 @@ SpellCheckClient::~SpellCheckClient() {
 }
 
 void SpellCheckClient::RequestCheckingOfText(
-    const blink::WebString& textToCheck,
-    std::unique_ptr<blink::WebTextCheckingCompletion> completionCallback) {
-  std::u16string text(textToCheck.Utf16());
+    const blink::WebString& text_to_check,
+    const std::vector<blink::WebSpellingMarker>& /* spelling_markers */,
+    ShouldForceRefreshTextCheckService /* should_force_refresh */,
+    std::unique_ptr<blink::WebTextCheckingCompletion> completion_callback) {
+  std::u16string text(text_to_check.Utf16());
   // Ignore invalid requests.
   if (text.empty() || !HasWordCharacters(text, 0)) {
-    completionCallback->DidCancelCheckingText();
+    completion_callback->DidCancelCheckingText();
     return;
   }
 
@@ -105,7 +107,7 @@ void SpellCheckClient::RequestCheckingOfText(
   }
 
   pending_request_param_ =
-      std::make_unique<SpellcheckRequest>(text, std::move(completionCallback));
+      std::make_unique<SpellcheckRequest>(text, std::move(completion_callback));
 
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&SpellCheckClient::SpellCheckText,

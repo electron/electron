@@ -137,16 +137,17 @@ void Browser::Focus(gin::Arguments* args) {
   gin_helper::Dictionary opts;
   bool steal_focus = false;
 
-  if (args->GetNext(&opts)) {
-    gin_helper::ErrorThrower thrower(args->isolate());
-    if (!opts.Get("steal", &steal_focus)) {
-      thrower.ThrowError(
-          "Expected options object to contain a 'steal' boolean property");
-      return;
-    }
+  if (args->GetNext(&opts) && !opts.Get("steal", &steal_focus)) {
+    args->ThrowTypeError(
+        "Expected options object to contain a 'steal' boolean property");
+    return;
   }
 
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:steal_focus];
+}
+
+bool Browser::IsActive() {
+  return [[AtomApplication sharedApplication] isActive];
 }
 
 void Browser::Hide() {
@@ -236,7 +237,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   NSString* identifier = [base::apple::MainBundle() bundleIdentifier];
@@ -252,7 +253,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   NSString* identifier = [base::apple::MainBundle() bundleIdentifier];
@@ -307,7 +308,7 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
 }
 
 void Browser::SetUserActivity(const std::string& type,
-                              base::Value::Dict user_info,
+                              base::DictValue user_info,
                               gin::Arguments* args) {
   std::string url_string;
   args->GetNext(&url_string);
@@ -333,7 +334,7 @@ void Browser::ResignCurrentActivity() {
 }
 
 void Browser::UpdateCurrentActivity(const std::string& type,
-                                    base::Value::Dict user_info) {
+                                    base::DictValue user_info) {
   [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
                withUserInfo:DictionaryValueToNSDictionary(
@@ -354,8 +355,8 @@ void Browser::DidFailToContinueUserActivity(const std::string& type,
 }
 
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   base::Value::Dict user_info,
-                                   base::Value::Dict details) {
+                                   base::DictValue user_info,
+                                   base::DictValue details) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnContinueUserActivity(&prevent_default, type, user_info.Clone(),
@@ -364,13 +365,13 @@ bool Browser::ContinueUserActivity(const std::string& type,
 }
 
 void Browser::UserActivityWasContinued(const std::string& type,
-                                       base::Value::Dict user_info) {
+                                       base::DictValue user_info) {
   for (BrowserObserver& observer : observers_)
     observer.OnUserActivityWasContinued(type, user_info.Clone());
 }
 
 bool Browser::UpdateUserActivityState(const std::string& type,
-                                      base::Value::Dict user_info) {
+                                      base::DictValue user_info) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnUpdateUserActivityState(&prevent_default, type,
@@ -546,6 +547,9 @@ v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  for (auto* const& window : WindowList::GetWindows())
+    [window->GetNativeWindow().GetNativeNSWindow() setCanHide:YES];
+
   BOOL active = [[NSRunningApplication currentApplication] isActive];
   ProcessSerialNumber psn = {0, kCurrentProcess};
   if (active) {
@@ -621,7 +625,7 @@ void Browser::ShowAboutPanel() {
       orderFrontStandardAboutPanelWithOptions:options];
 }
 
-void Browser::SetAboutPanelOptions(base::Value::Dict options) {
+void Browser::SetAboutPanelOptions(base::DictValue options) {
   about_panel_options_.clear();
 
   for (const auto pair : options) {

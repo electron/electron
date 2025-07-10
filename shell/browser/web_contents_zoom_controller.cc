@@ -179,7 +179,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
 
       if (!url.is_empty()) {
         const std::string host = net::GetHostOrSpecFromURL(url);
-        const std::string scheme = url.scheme();
+        const std::string scheme = url.GetScheme();
 
         if (zoom_map->HasZoomLevel(scheme, host)) {
           // If there are other tabs with the same origin, then set this tab's
@@ -257,7 +257,7 @@ void WebContentsZoomController::ResetZoomModeOnNavigationIfNeeded(
   zoom_level_ = zoom_map->GetDefaultZoomLevel();
   double old_zoom_level = zoom_map->GetZoomLevel(web_contents());
   double new_zoom_level = zoom_map->GetZoomLevelForHostAndScheme(
-      url.scheme(), net::GetHostOrSpecFromURL(url));
+      url.GetScheme(), net::GetHostOrSpecFromURL(url));
 
   event_data_ = std::make_unique<ZoomChangedEventData>(
       web_contents(), old_zoom_level, new_zoom_level, false, ZOOM_MODE_DEFAULT);
@@ -346,7 +346,7 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
   // then it takes precedence.
   // pref store < kZoomFactor < setZoomLevel
   std::string host = net::GetHostOrSpecFromURL(url);
-  std::string scheme = url.scheme();
+  std::string scheme = url.GetScheme();
   double zoom_factor = default_zoom_factor();
   double zoom_level = blink::ZoomFactorToZoomLevel(zoom_factor);
   if (host_zoom_map_->HasZoomLevel(scheme, host)) {

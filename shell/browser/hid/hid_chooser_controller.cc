@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "base/command_line.h"
-#include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "content/public/browser/web_contents.h"
 #include "gin/data_object_builder.h"
@@ -88,13 +87,9 @@ HidChooserController::HidChooserController(
       exclusion_filters_(std::move(exclusion_filters)),
       callback_(std::move(callback)),
       initiator_document_(render_frame_host->GetWeakDocumentPtr()),
-      origin_(content::WebContents::FromRenderFrameHost(render_frame_host)
-                  ->GetPrimaryMainFrame()
-                  ->GetLastCommittedOrigin()),
+      origin_(render_frame_host->GetLastCommittedOrigin()),
       hid_delegate_(hid_delegate),
       render_frame_host_id_(render_frame_host->GetGlobalId()) {
-  // The use above of GetMainFrame is safe as content::HidService instances are
-  // not created for fenced frames.
   DCHECK(!render_frame_host->IsNestedWithinFencedFrame());
 
   chooser_context_ = HidChooserContextFactory::GetForBrowserContext(
@@ -153,7 +148,7 @@ void HidChooserController::OnDeviceAdded(
 
 void HidChooserController::OnDeviceRemoved(
     const device::mojom::HidDeviceInfo& device) {
-  if (!base::Contains(items_, PhysicalDeviceIdFromDeviceInfo(device)))
+  if (!std::ranges::contains(items_, PhysicalDeviceIdFromDeviceInfo(device)))
     return;
 
   gin::WeakCell<api::Session>* session = GetSession();
@@ -173,7 +168,7 @@ void HidChooserController::OnDeviceRemoved(
 void HidChooserController::OnDeviceChanged(
     const device::mojom::HidDeviceInfo& device) {
   bool has_chooser_item =
-      base::Contains(items_, PhysicalDeviceIdFromDeviceInfo(device));
+      std::ranges::contains(items_, PhysicalDeviceIdFromDeviceInfo(device));
   if (!DisplayDevice(device)) {
     if (has_chooser_item)
       OnDeviceRemoved(device);
@@ -264,8 +259,8 @@ bool HidChooserController::DisplayDevice(
   // devices may be displayed if the origin is privileged or the blocklist is
   // disabled.
   const bool has_fido_collection =
-      base::Contains(device.collections, device::mojom::kPageFido,
-                     [](const auto& c) { return c->usage->usage_page; });
+      std::ranges::contains(device.collections, device::mojom::kPageFido,
+                            [](const auto& c) { return c->usage->usage_page; });
 
   if (has_fido_collection) {
     if (base::CommandLine::ForCurrentProcess()->HasSwitch(

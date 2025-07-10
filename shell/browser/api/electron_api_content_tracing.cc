@@ -45,7 +45,7 @@ struct Converter<base::trace_event::TraceConfig> {
       }
     }
 
-    base::Value::Dict memory_dump_config;
+    base::DictValue memory_dump_config;
     if (ConvertFromV8(isolate, val, &memory_dump_config)) {
       *out = base::trace_event::TraceConfig(std::move(memory_dump_config));
       return true;
@@ -98,8 +98,8 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
   }
 }
 
-v8::Local<v8::Promise> StopRecording(gin_helper::Arguments* args) {
-  gin_helper::Promise<base::FilePath> promise(args->isolate());
+v8::Local<v8::Promise> StopRecording(gin::Arguments* const args) {
+  gin_helper::Promise<base::FilePath> promise{args->isolate()};
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::FilePath path;

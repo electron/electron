@@ -27,7 +27,7 @@ namespace extensions {
 class ElectronGuestViewManagerDelegate
     : public ExtensionsGuestViewManagerDelegate {
  public:
-  ElectronGuestViewManagerDelegate() : ExtensionsGuestViewManagerDelegate() {}
+  ElectronGuestViewManagerDelegate() = default;
   ~ElectronGuestViewManagerDelegate() override = default;
 
   // disable copy

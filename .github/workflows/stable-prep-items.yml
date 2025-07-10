@@ -10,10 +10,12 @@ permissions: {}
 jobs:
   check-stable-prep-items:
     name: Check Stable Prep Items
+    if: github.repository == 'electron/electron'
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
+        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
         id: generate-token
         with:
           creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
@@ -27,7 +29,7 @@ jobs:
           PROJECT_NUMBER=$(gh project list --owner electron --format json | jq -r '.projects | map(select(.title | test("^[0-9]+-x-y$"))) | max_by(.number) | .number')
           echo "PROJECT_NUMBER=$PROJECT_NUMBER" >> "$GITHUB_OUTPUT"
       - name: Update Completed Stable Prep Items
-        uses: dsanders11/project-actions/completed-by@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
+        uses: dsanders11/project-actions/completed-by@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
         with:
           field: Prep Status
           field-value: ✅ Complete

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 import { Octokit } from '@octokit/rest';
-import { GitProcess } from 'dugite';
 
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve as _resolve } from 'node:path';
 
-import { ELECTRON_DIR } from '../../lib/utils';
+import { compareVersions, ELECTRON_DIR } from '../../lib/utils';
 import { createGitHubTokenStrategy } from '../github-token';
 import { ELECTRON_ORG, ELECTRON_REPO } from '../types';
 
@@ -105,8 +105,18 @@ class Pool {
  **/
 
 const runGit = async (dir: string, args: string[]) => {
-  const response = await GitProcess.exec(args, dir);
-  if (response.exitCode !== 0) {
+  console.log(`Running git ${args.join(' ')} in ${dir}`);
+  const response = spawnSync('git', args, {
+    cwd: dir,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe'],
+    maxBuffer: 100 * 1024 * 1024 // 100MB buffer to handle large git outputs
+  });
+  if (response.status !== 0) {
+    console.error(`Git command failed: git ${args.join(' ')}`);
+    console.error('STDERR was ' + response.stderr.trim());
+    console.error('STDOUT was ' + response.stdout.trim());
+    console.log('Response status:', response.status);
     throw new Error(response.stderr.trim());
   }
   return response.stdout.trim();
@@ -602,26 +612,6 @@ const getNotes = async (fromRef: string, toRef: string, newVersion: string) => {
   return notes;
 };
 
-const compareVersions = (v1: string, v2: string) => {
-  const [split1, split2] = [v1.split('.'), v2.split('.')];
-
-  if (split1.length !== split2.length) {
-    throw new Error(
-      `Expected version strings to have same number of sections: ${split1} and ${split2}`
-    );
-  }
-  for (let i = 0; i < split1.length; i++) {
-    const p1 = parseInt(split1[i], 10);
-    const p2 = parseInt(split2[i], 10);
-
-    if (p1 > p2) return 1;
-    else if (p1 < p2) return -1;
-    // Continue checking the value if this portion is equal
-  }
-
-  return 0;
-};
-
 const removeSupercededStackUpdates = (commits: Commit[]) => {
   const updateRegex = /^Updated ([a-zA-Z.]+) to v?([\d.]+)/;
   const notupdates = [];
@@ -684,7 +674,7 @@ function renderTrops (commit: Commit, excludeBranch: string) {
     .map(([branch, key]) => renderTrop(branch, key))
     .join(', ');
   return body
-    ? `<span style="font-size:small;">(Also in ${body})</span>`
+    ? `<sup>(Also in ${body})</sup>`
     : body;
 }
 

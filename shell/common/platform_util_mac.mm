@@ -148,6 +148,12 @@ void OpenExternal(const GURL& url,
     return;
   }
 
+  // Check this to prevent system dialog from popping up on macOS Tahoe.
+  if (![[NSWorkspace sharedWorkspace] URLForApplicationToOpenURL:ns_url]) {
+    std::move(callback).Run("No application found to open URL");
+    return;
+  }
+
   NSWorkspaceOpenConfiguration* configuration =
       [NSWorkspaceOpenConfiguration configuration];
   configuration.activates = options.activate;

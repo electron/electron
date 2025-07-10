@@ -32,7 +32,7 @@ This table gives a general overview of where ESM is supported and which ESM load
 | Main                 | Node.js    | N/A                   | <ul><li> [You must use `await` generously before the app's `ready` event](#you-must-use-await-generously-before-the-apps-ready-event) </li></ul> |
 | Renderer (Sandboxed) | Chromium   | Unsupported           | <ul><li> [Sandboxed preload scripts can't use ESM imports](#sandboxed-preload-scripts-cant-use-esm-imports) </li></ul> |
 | Renderer (Unsandboxed & Context Isolated) | Chromium | Node.js | <ul><li> [Unsandboxed ESM preload scripts will run after page load on pages with no content](#unsandboxed-esm-preload-scripts-will-run-after-page-load-on-pages-with-no-content) </li> <li>[ESM Preload Scripts must have the `.mjs` extension](#esm-preload-scripts-must-have-the-mjs-extension)</li></ul> |
-| Renderer (Unsandboxed & Non Context Isolated) | Chromium | Node.js | <ul><li>[Unsandboxed ESM preload scripts will run after page load on pages with no content](#unsandboxed-esm-preload-scripts-will-run-after-page-load-on-pages-with-no-content)</li><li>[ESM Preload Scripts must have the `.mjs` extension](#esm-preload-scripts-must-have-the-mjs-extension)</li><li>[ESM preload scripts must be context isolated to use dynamic Node.js ESM imports](#esm-preload-scripts-must-be-context-isolated-to-use-dynamic-nodejs-esm-imports)</li></ul> |
+| Renderer (Unsandboxed & Non Context Isolated) | Chromium | Node.js | <ul><li>[Unsandboxed ESM preload scripts will run after page load on pages with no content](#unsandboxed-esm-preload-scripts-will-run-after-page-load-on-pages-with-no-content)</li><li>[ESM Preload Scripts must have the `.mjs` extension](#esm-preload-scripts-must-have-the-mjs-extension)</li></ul> |
 
 ## Main process
 

@@ -25,6 +25,11 @@ following properties:
     with which the request is associated. Defaults to the empty string. The
     `session` option supersedes `partition`. Thus if a `session` is explicitly
     specified, `partition` is ignored.
+  * `bypassCustomProtocolHandlers` boolean (optional) - When set to `true`,
+    custom protocol handlers registered for the request's URL scheme will not be
+    called. This allows forwarding an intercepted request to the built-in
+    handler. [webRequest](web-request.md) handlers will still be triggered
+    when bypassing custom protocols. Defaults to `false`.
   * `credentials` string (optional) - Can be `include`, `omit` or
     `same-origin`. Whether to send
     [credentials](https://fetch.spec.whatwg.org/#credentials) with this
@@ -259,7 +264,7 @@ will not be allowed. The `finish` event is emitted just after the end operation.
 Cancels an ongoing HTTP transaction. If the request has already emitted the
 `close` event, the abort operation will have no effect. Otherwise an ongoing
 event will emit `abort` and `close` events. Additionally, if there is an ongoing
-response object,it will emit the `aborted` event.
+response object, it will emit the `aborted` event.
 
 #### `request.followRedirect()`
 

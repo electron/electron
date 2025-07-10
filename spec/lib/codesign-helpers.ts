@@ -9,7 +9,6 @@ const fixturesPath = path.resolve(__dirname, '..', 'fixtures');
 
 export const shouldRunCodesignTests =
     process.platform === 'darwin' &&
-    !(process.env.CI && process.arch === 'arm64') &&
     !process.mas &&
     !features.isComponentBuild();
 
@@ -80,4 +79,8 @@ export function spawn (cmd: string, args: string[], opts: any = {}) {
 
 export function signApp (appPath: string, identity: string) {
   return spawn('codesign', ['-s', identity, '--deep', '--force', appPath]);
+};
+
+export function unsignApp (appPath: string) {
+  return spawn('codesign', ['--remove-signature', '--deep', appPath]);
 };
