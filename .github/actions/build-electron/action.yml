@@ -256,7 +256,8 @@ runs:
       shell: powershell
       run: |
         cd src
-        Compress-Archive -Path out\Default\*.ninja -DestinationPath out\Default\ninja_files.zip
+        $ninjaFiles = Get-ChildItem -Path out\Default -Filter *.ninja -Recurse
+        Compress-Archive -Path $ninjaFiles.FullName -DestinationPath out\Default\ninja_files.zip
     - name: Generate Artifact Key
       if: always() && !cancelled()
       shell: bash
