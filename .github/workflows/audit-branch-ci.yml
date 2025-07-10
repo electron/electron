@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22.17.x
-      - run: npm install @actions/cache@4.0.3 @electron/fiddle-core@2.0.0
+      - run: npm install @actions/cache@4.0.3 @electron/fiddle-core@2.0.1
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         id: audit-errors
         with:
