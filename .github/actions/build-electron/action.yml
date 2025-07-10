@@ -46,11 +46,11 @@ runs:
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"x64\" v8_snapshot_toolchain=\"//build/toolchain/mac:clang_x64\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Add Clang problem matcher
-      if: ${{ inputs.step == '1'}}
+      if: ${{ inputs.target-platform == 'win' && inputs.step == '1'}}
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Build Electron ${{ inputs.step-suffix }}
-      if: ${{ inputs.step == '1'}}
+      if: ${{ inputs.target-platform == 'win' && inputs.step == '1'}}
       shell: bash
       run: |
         rm -rf "src/out/Default/Electron Framework.framework"
@@ -79,7 +79,7 @@ runs:
         electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.step == '2'}}
+      if: ${{ inputs.strip-binaries == 'true' && inputs.step == '2'}}
       run: |
         cd src
         e build --target electron:electron_dist_zip
@@ -91,7 +91,7 @@ runs:
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
-      if: ${{ inputs.step == '3'}}
+      if: ${{ inputs.strip-binaries == 'true' && inputs.step == '3'}}
       shell: bash
       run: |
         cd src
