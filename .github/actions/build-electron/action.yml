@@ -29,14 +29,11 @@ inputs:
   is-asan:
     description: 'The ASan Linux build'
     required: false
-  step:
-    description: 'Step to run'
-    required: true
 runs:
   using: "composite"
   steps:
     - name: Disable Defender (Windows)
-      if: ${{ inputs.target-platform == 'win' && inputs.step == '1'}}
+      if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: sc stop WinDefend
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
@@ -46,11 +43,9 @@ runs:
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"x64\" v8_snapshot_toolchain=\"//build/toolchain/mac:clang_x64\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Add Clang problem matcher
-      if: ${{ inputs.target-platform == 'win' && inputs.step == '1'}}
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Build Electron ${{ inputs.step-suffix }}
-      if: ${{ inputs.target-platform == 'win' && inputs.step == '1'}}
       shell: bash
       run: |
         rm -rf "src/out/Default/Electron Framework.framework"
@@ -71,7 +66,7 @@ runs:
         node electron/script/check-symlinks.js
     - name: Strip Electron Binaries ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.strip-binaries == 'true' && inputs.step == '1'}}
+      if: ${{ inputs.strip-binaries == 'true' }}
       run: |
         cd src
         electron/script/copy-debug-symbols.py --target-cpu="${{ inputs.target-arch }}" --out-dir=out/Default/debug --compress
@@ -79,7 +74,6 @@ runs:
         electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.strip-binaries == 'true' && inputs.step == '2'}}
       run: |
         cd src
         e build --target electron:electron_dist_zip
@@ -91,7 +85,6 @@ runs:
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
-      if: ${{ inputs.strip-binaries == 'true' && inputs.step == '3'}}
       shell: bash
       run: |
         cd src
@@ -130,7 +123,7 @@ runs:
         fi
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' && inputs.step == '3' }}
+      if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
       run: |
         cd src
         if [ "${{ inputs.target-arch }}" = "arm" ]; then
@@ -149,14 +142,12 @@ runs:
         # Clean up so that ninja does not get confused
         rm -f out/Default/libffmpeg.so
     - name: Build Chromedriver ${{ inputs.step-suffix }}
-      if: ${{ inputs.step == '4'}}
       shell: bash
       run: |
         cd src
         e build --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:electron_chromedriver_zip
     - name: Build Node.js headers ${{ inputs.step-suffix }}
-      if: ${{ inputs.step == '5'}}
       shell: bash
       run: |
         cd src
@@ -181,7 +172,6 @@ runs:
         cd src
         export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
     - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
-      if: ${{ inputs.step == '6'}}
       shell: bash
       run: |
         # Generate breakpad symbols on release builds
@@ -199,7 +189,7 @@ runs:
         fi
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.is-release == 'true' && inputs.step == '7' }}
+      if: ${{ inputs.is-release == 'true' }}
       run: |
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
@@ -211,13 +201,12 @@ runs:
         e build --target electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Libcxx ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' && inputs.step == '8' }}
+      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
         e build --target electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Remove Clang problem matcher
-      if: ${{ inputs.step == '8' }}
       shell: bash
       run: echo "::remove-matcher owner=clang::"
     - name: Generate TypeScript Definitions ${{ inputs.step-suffix }}
@@ -240,7 +229,7 @@ runs:
           script/release/uploaders/upload.py --verbose
         fi
     - name: Generate siso report
-      if: ${{ inputs.target-platform != 'win' && !cancelled() && inputs.step == '8' }}
+      if: ${{ inputs.target-platform != 'win' && !cancelled() }}
       shell: bash
       run: |
         cd src
@@ -250,7 +239,7 @@ runs:
         cat siso_report.txt
         echo "SISO REPORT AT $SISO_REPORT_PATH"
     - name: Generate siso report (Windows)
-      if: ${{ inputs.target-platform == 'win' && !cancelled() && inputs.step == '8' }}
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
         cd src
@@ -262,7 +251,7 @@ runs:
         type .\siso_report.txt
         echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $env:GITHUB_ENV
     - name: Generate Artifact Key
-      if: ${{ !cancelled() && inputs.step == '8' }}
+      if: always() && !cancelled()
       shell: bash
       run: |
         if [ "${{ inputs.is-asan }}" = "true" ]; then 
@@ -274,17 +263,16 @@ runs:
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
-      if: ${{ !cancelled() && inputs.step == '8' }}
+      if: always() && !cancelled()
       shell: bash
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
-      if: ${{ !cancelled() && inputs.step == '8' }}
+      if: always() && !cancelled()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
     - name: Upload Src Artifacts ${{ inputs.step-suffix }}
-      if: ${{ !cancelled() && inputs.step == '8' }}
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}

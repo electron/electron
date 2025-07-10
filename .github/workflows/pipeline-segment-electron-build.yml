@@ -175,7 +175,7 @@ jobs:
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
-    - name: Build Electron (step 1)
+    - name: Build Electron
       if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
       uses: ./src/electron/.github/actions/build-electron
       with:
@@ -187,113 +187,13 @@ jobs:
         strip-binaries: '${{ inputs.strip-binaries }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         is-asan: '${{ inputs.is-asan }}'
-        step: '1'
-
-    - name: Build Electron (step 2)
-      if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        strip-binaries: '${{ inputs.strip-binaries }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        is-asan: '${{ inputs.is-asan }}'
-        step: '2'
-
-    - name: Build Electron (step 3)
-      if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        strip-binaries: '${{ inputs.strip-binaries }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        is-asan: '${{ inputs.is-asan }}'
-        step: '3'
-
-    - name: Build Electron (step 4)
-      if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        strip-binaries: '${{ inputs.strip-binaries }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        is-asan: '${{ inputs.is-asan }}'
-        step: '4'
-
-    - name: Build Electron (step 5)
-      if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        strip-binaries: '${{ inputs.strip-binaries }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        is-asan: '${{ inputs.is-asan }}'
-        step: '5'
-
-    - name: Build Electron (step 6)
-      if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        strip-binaries: '${{ inputs.strip-binaries }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        is-asan: '${{ inputs.is-asan }}'
-        step: '6'
-
-    - name: Build Electron (step 7)
-      if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        strip-binaries: '${{ inputs.strip-binaries }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        is-asan: '${{ inputs.is-asan }}'
-        step: '7'
-
-    - name: Build Electron (step 8)
-      if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        strip-binaries: '${{ inputs.strip-binaries }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        is-asan: '${{ inputs.is-asan }}'
-        step: '8'
-
     - name: Set GN_EXTRA_ARGS for MAS Build
       if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
       run: |
         echo "MAS_BUILD=true" >> $GITHUB_ENV
         GN_EXTRA_ARGS='is_mas_build=true'
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
-    - name: Build Electron (MAS) (step 1)
+    - name: Build Electron (MAS)
       if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
       uses: ./src/electron/.github/actions/build-electron
       with:
@@ -304,96 +204,3 @@ jobs:
         generate-symbols: '${{ inputs.generate-symbols }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         step-suffix: '(mas)'
-        step: '1'
-
-    - name: Build Electron (MAS) (step 2)
-      if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: 'mas'
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        step-suffix: '(mas)'
-        step: '2'
-
-    - name: Build Electron (MAS) (step 3)
-      if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: 'mas'
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        step-suffix: '(mas)'
-        step: '3'
-
-    - name: Build Electron (MAS) (step 4)
-      if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: 'mas'
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        step-suffix: '(mas)'
-        step: '4'
-
-    - name: Build Electron (MAS) (step 5)
-      if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: 'mas'
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        step-suffix: '(mas)'
-        step: '5'
-
-    - name: Build Electron (MAS) (step 6)
-      if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: 'mas'
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        step-suffix: '(mas)'
-        step: '6'
-
-    - name: Build Electron (MAS) (step 7)
-      if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: 'mas'
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        step-suffix: '(mas)'
-        step: '7'
-
-    - name: Build Electron (MAS) (step 8)
-      if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
-      uses: ./src/electron/.github/actions/build-electron
-      with:
-        target-arch: ${{ inputs.target-arch }}
-        target-platform: ${{ inputs.target-platform }}
-        artifact-platform: 'mas'
-        is-release: '${{ inputs.is-release }}'
-        generate-symbols: '${{ inputs.generate-symbols }}'
-        upload-to-storage: '${{ inputs.upload-to-storage }}'
-        step-suffix: '(mas)'
-        step: '8'
-
