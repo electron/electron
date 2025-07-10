@@ -471,7 +471,7 @@ describe('webFrameMain module', () => {
     });
   });
 
-  xdescribe('webFrameMain.fromId', () => {
+  describe('webFrameMain.fromId', () => {
     it('returns undefined for unknown IDs', () => {
       expect(webFrameMain.fromId(0, 0)).to.be.undefined();
     });
@@ -483,11 +483,11 @@ describe('webFrameMain module', () => {
       const didFrameFinishLoad = emittedNTimes(w.webContents, 'did-frame-finish-load', 3);
       w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
 
-      for (const [, isMainFrame, frameProcessId, frameToken] of await didFrameFinishLoad) {
-        const frame = webFrameMain.fromId(frameProcessId, frameToken);
+      for (const [, isMainFrame, frameProcessId, frameRoutingId] of await didFrameFinishLoad) {
+        const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
         expect(frame).not.to.be.null();
         expect(frame?.processId).to.be.equal(frameProcessId);
-        expect(frame?.frameToken).to.be.equal(frameToken);
+        expect(frame?.routingId).to.be.equal(frameRoutingId);
         expect(frame?.top === frame).to.be.equal(isMainFrame);
       }
     });
