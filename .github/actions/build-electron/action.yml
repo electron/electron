@@ -61,7 +61,7 @@ runs:
           sudo launchctl limit maxfiles 65536 200000
         fi
 
-        NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
+        NINJA_SUMMARIZE_BUILD=1 e build
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
     - name: Strip Electron Binaries ${{ inputs.step-suffix }}
@@ -76,7 +76,7 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_dist_zip
+        e build -offline --target electron:electron_dist_zip
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
@@ -88,7 +88,7 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+        e build -offline --target electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         # Remove unused args from mksnapshot_args
         SEDOPTION="-i"
@@ -111,7 +111,7 @@ runs:
           fi
         fi
 
-        e build --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build -offline --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         if [ "${{ inputs.target-platform }}" = "win" ]; then
           cd out/Default
           powershell Compress-Archive -update mksnapshot_args mksnapshot.zip
@@ -145,13 +145,13 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
-        e build --target electron:electron_chromedriver_zip
+        e build -offline --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+        e build -offline --target electron:electron_chromedriver_zip
     - name: Build Node.js headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
         cd src
-        e build --target electron:node_headers
+        e build -offline --target electron:node_headers
     - name: Create installed_software.json ${{ inputs.step-suffix }}
       shell: powershell
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
@@ -176,12 +176,12 @@ runs:
       run: |
         # Generate breakpad symbols on release builds
         if [ "${{ inputs.generate-symbols }}" = "true" ]; then
-          e build --target electron:electron_symbols
+          e build -offline --target electron:electron_symbols
         fi
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
-        e build --target electron:licenses
-        e build --target electron:electron_version_file
+        e build -offline --target electron:licenses
+        e build -offline --target electron:electron_version_file
         if [ "${{ inputs.is-release }}" = "true" ]; then
           DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
         else
@@ -193,19 +193,19 @@ runs:
       run: |
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
-        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NUMBER_OF_NINJA_PROCESSES
+        e build -offline --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
-        e build --target electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build -offline --target electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Generate Libcxx ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
-        e build --target electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        e build --target electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        e build --target electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build -offline --target electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build -offline --target electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build -offline --target electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
