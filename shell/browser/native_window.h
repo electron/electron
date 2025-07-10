@@ -18,6 +18,7 @@
 #include "base/observer_list.h"
 #include "base/strings/cstring_view.h"
 #include "base/supports_user_data.h"
+#include "base/timer/timer.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
@@ -27,6 +28,7 @@
 
 class SkRegion;
 class DraggableRegionProvider;
+class PrefService;
 
 namespace input {
 struct NativeWebKeyboardEvent;
@@ -433,6 +435,17 @@ class NativeWindow : public base::SupportsUserData,
   // throttling, then throttling in the `ui::Compositor` will be disabled.
   void UpdateBackgroundThrottlingState();
 
+  // Saves current window state to the Local State JSON file in
+  // app.getPath('userData') via PrefService.
+  // This does NOT immediately write to disk - it updates the in-memory
+  // preference store and queues an asynchronous write operation. The actual
+  // disk write is batched and flushed later.
+  void SaveWindowState();
+  void DebouncedSaveWindowState();
+  // Flushes save_window_state_timer_ that was queued by
+  // DebouncedSaveWindowState. This does NOT flush the actual disk write.
+  void FlushWindowState();
+
  protected:
   friend class api::BrowserView;
 
@@ -494,6 +507,10 @@ class NativeWindow : public base::SupportsUserData,
   static inline int32_t next_id_ = 0;
   const int32_t window_id_ = ++next_id_;
 
+  // Identifier for the window provided by the application.
+  // Used by Electron internally for features such as state persistence.
+  std::string window_name_;
+
   // The "titleBarStyle" option.
   const TitleBarStyle title_bar_style_;
 
@@ -551,6 +568,17 @@ class NativeWindow : public base::SupportsUserData,
   std::string background_material_;
 
   gfx::Rect overlay_rect_;
+
+  // The boolean parsing of the "windowStatePersistence" option
+  bool window_state_persistence_enabled_ = false;
+
+  // PrefService is used to persist window bounds and state.
+  // Only populated when windowStatePersistence is enabled and window has a
+  // valid name.
+  raw_ptr<PrefService> prefs_ = nullptr;
+
+  // Timer to debounce window state saving operations.
+  base::OneShotTimer save_window_state_timer_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };

@@ -10,22 +10,30 @@
 
 #include "base/containers/contains.h"
 #include "base/memory/ptr_util.h"
+#include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "components/prefs/pref_service.h"
+#include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "include/core/SkColor.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/browser_process_impl.h"
 #include "shell/browser/draggable_region_provider.h"
+#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
 #include "ui/base/hit_test.h"
 #include "ui/compositor/compositor.h"
+#include "ui/display/display.h"
+#include "ui/display/screen.h"
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
@@ -113,6 +121,29 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 #elif BUILDFLAG(IS_MAC)
   options.Get(options::kVibrancyType, &vibrancy_);
 #endif
+
+  options.Get(options::kName, &window_name_);
+
+  if (gin_helper::Dictionary persistence_options;
+      options.Get(options::kWindowStatePersistence, &persistence_options)) {
+    // Other options will be parsed here in the future.
+    window_state_persistence_enabled_ = true;
+  } else if (bool flag; options.Get(options::kWindowStatePersistence, &flag)) {
+    window_state_persistence_enabled_ = flag;
+  }
+
+  // Initialize prefs_ to save/restore window bounds if we have a valid window
+  // name and window state persistence is enabled.
+  if (window_state_persistence_enabled_ && !window_name_.empty()) {
+    if (auto* browser_process =
+            electron::ElectronBrowserMainParts::Get()->browser_process()) {
+      DCHECK(browser_process);
+      prefs_ = browser_process->local_state();
+    }
+  } else if (window_state_persistence_enabled_ && window_name_.empty()) {
+    LOG(WARNING) << "Window state persistence enabled but no window name "
+                    "provided. Window state will not be persisted.";
+  }
 
   if (gin_helper::Dictionary dict;
       options.Get(options::ktitleBarOverlay, &dict)) {
@@ -242,7 +273,9 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   SetBackgroundColor(background_color);
 
   SetTitle(options.ValueOrDefault(options::kTitle, Browser::Get()->GetName()));
-
+  // TODO(nilayarya): Save window state after restoration logic is implemented
+  // here.
+  SaveWindowState();
   // Then show it.
   if (options.ValueOrDefault(options::kShow, true))
     Show();
@@ -791,6 +824,66 @@ bool NativeWindow::IsTranslucent() const {
 #endif
 
   return false;
+}
+
+void NativeWindow::DebouncedSaveWindowState() {
+  save_window_state_timer_.Start(
+      FROM_HERE, base::Milliseconds(200),
+      base::BindOnce(&NativeWindow::SaveWindowState, base::Unretained(this)));
+}
+
+void NativeWindow::SaveWindowState() {
+  if (!prefs_ || window_name_.empty())
+    return;
+
+  ScopedDictPrefUpdate update(prefs_, electron::kWindowStates);
+  const base::Value::Dict* existing_prefs = update->FindDict(window_name_);
+
+  gfx::Rect bounds = GetBounds();
+  // When the window is in a special display mode (fullscreen, kiosk, or
+  // maximized), save the previously stored window bounds instead of
+  // the current bounds. This ensures that when the window is restored, it can
+  // be restored to its original position and size if display mode is not
+  // preserved via windowStatePersistence.
+  if (!IsNormal() && existing_prefs) {
+    std::optional<int> left = existing_prefs->FindInt(electron::kLeft);
+    std::optional<int> top = existing_prefs->FindInt(electron::kTop);
+    std::optional<int> right = existing_prefs->FindInt(electron::kRight);
+    std::optional<int> bottom = existing_prefs->FindInt(electron::kBottom);
+
+    if (left && top && right && bottom) {
+      bounds = gfx::Rect(*left, *top, *right - *left, *bottom - *top);
+    }
+  }
+
+  base::Value::Dict window_preferences;
+  window_preferences.Set(electron::kLeft, bounds.x());
+  window_preferences.Set(electron::kTop, bounds.y());
+  window_preferences.Set(electron::kRight, bounds.right());
+  window_preferences.Set(electron::kBottom, bounds.bottom());
+
+  window_preferences.Set(electron::kMaximized, IsMaximized());
+  window_preferences.Set(electron::kFullscreen, IsFullscreen());
+  window_preferences.Set(electron::kKiosk, IsKiosk());
+
+  const display::Screen* screen = display::Screen::GetScreen();
+  const display::Display display = screen->GetDisplayMatching(bounds);
+  gfx::Rect work_area = display.work_area();
+
+  window_preferences.Set(electron::kWorkAreaLeft, work_area.x());
+  window_preferences.Set(electron::kWorkAreaTop, work_area.y());
+  window_preferences.Set(electron::kWorkAreaRight, work_area.right());
+  window_preferences.Set(electron::kWorkAreaBottom, work_area.bottom());
+
+  update->Set(window_name_, std::move(window_preferences));
+}
+
+void NativeWindow::FlushWindowState() {
+  if (save_window_state_timer_.IsRunning()) {
+    save_window_state_timer_.FireNow();
+  } else {
+    SaveWindowState();
+  }
 }
 
 // static
