@@ -58,6 +58,15 @@ body:
     label: Last Known Working Electron version
     description: What is the last version of Electron this worked in, if applicable?
     placeholder: 16.0.0
+- type: dropdown
+  attributes:
+    label: Does the issue also appear in Chromium / Google Chrome?
+    description: If it does, please report the issue in the [Chromium issue tracker](https://issues.chromium.org/issues), not against Electron. Electron will inherit the fix once Chromium resolves the issue.
+    options:
+      - "Yes"
+      - "No"
+  validations:
+    required: true
 - type: textarea
   attributes:
     label: Expected Behavior
