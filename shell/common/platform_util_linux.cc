@@ -76,14 +76,8 @@ class ShowItemHelper {
   ShowItemHelper& operator=(const ShowItemHelper&) = delete;
 
   void ShowItemInFolder(const base::FilePath& full_path) {
-    if (!bus_) {
-      // Sets up the D-Bus connection.
-      dbus::Bus::Options bus_options;
-      bus_options.bus_type = dbus::Bus::SESSION;
-      bus_options.connection_type = dbus::Bus::PRIVATE;
-      bus_options.dbus_task_runner = dbus_thread_linux::GetTaskRunner();
-      bus_ = base::MakeRefCounted<dbus::Bus>(bus_options);
-    }
+    if (!bus_)
+      bus_ = dbus_thread_linux::GetSharedSessionBus();
 
     if (!dbus_proxy_) {
       dbus_proxy_ = bus_->GetObjectProxy(DBUS_SERVICE_DBUS,
