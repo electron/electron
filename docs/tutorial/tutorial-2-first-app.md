@@ -121,10 +121,10 @@ interfaces, performing privileged operations, and managing renderer processes
 (more on that later).
 
 Before creating your first Electron app, you will first use a trivial script to ensure your
-main process entry point is configured correctly. Create a `main.js` file in the root folder
+main process entry point is configured correctly. Create a `index.js` file in the root folder
 of your project with a single line of code:
 
-```js title='main.js'
+```js title='index.js'
 console.log('Hello from Electron 👋')
 ```
 
