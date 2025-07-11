@@ -85,3 +85,15 @@ index 8c92f1c0c5028069cdad967b5be2bccf8005ed43..40217c27a4cfc43d3143c7eeb2b1e54d
  // A data source capable of loading URLs and buffering the data using an
  // in-memory sliding window.
  //
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index e0c0f0f90885f293f11ed7d58b72cb1d23d365a8..20877c949eb85e30cc17e4b571e046b9401ebc89 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -309,6 +309,7 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+       do_fail = true;
+     }
+   } else {
++    destination_url_data->set_range_supported();
+     if (content_length != kPositionNotSpecified) {
+       destination_url_data->set_length(content_length + byte_pos());
+     }
