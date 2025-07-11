@@ -182,10 +182,6 @@ runs:
       rm -rf src/electron
       mkdir -p src/electron/.github/actions/checkout
       mv action.yml src/electron/.github/actions/checkout
-      if [ "${{ inputs.target-platform }}" != "linux" ]; then
-        rm -rf src/build/linux/*-sysroot
-      fi
-  # On Windows deference symlinks to avoid Dangerous symbolic link path was ignore errors
   - name: Compress Src Directory
     if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
