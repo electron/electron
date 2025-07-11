@@ -850,8 +850,8 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate,
   window_->SetVibrancy(type, animation_duration_ms);
 }
 
-void BaseWindow::SetBackgroundMaterial(const std::string& material_type) {
-  window_->SetBackgroundMaterial(material_type);
+void BaseWindow::SetBackgroundMaterial(const std::string& material) {
+  window_->SetBackgroundMaterial(material);
 }
 
 #if BUILDFLAG(IS_MAC)

@@ -247,6 +247,21 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   }
 }
 
+void BrowserWindow::SetBackgroundMaterial(const std::string& material) {
+  BaseWindow::SetBackgroundMaterial(material);
+  const char* const materialTypes[] = {
+      "tabbed",
+      "mica",
+      "acrylic",
+  };
+
+  if (base::Contains(materialTypes, material)) {
+    SetBackgroundColor(ToRGBAHex(SK_ColorTRANSPARENT));
+  } else if (material == "none") {
+    SetBackgroundColor(ToRGBAHex(SK_ColorWHITE));
+  }
+}
+
 void BrowserWindow::FocusOnWebView() {
   web_contents()->GetRenderViewHost()->GetWidget()->Focus();
 }
