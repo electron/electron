@@ -187,7 +187,7 @@ runs:
     run: |
       echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
       if [ "${{ inputs.target-platform }}" = "win" ]; then
-        tar -chf $CACHE_FILE --warning=no-file-changed src
+        tar -chf $CACHE_FILE --ignore-failed-read src
       else
         tar -cf $CACHE_FILE src
       fi
