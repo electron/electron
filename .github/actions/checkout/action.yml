@@ -186,11 +186,7 @@ runs:
     shell: bash
     run: |
       echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
-      if [ "${{ inputs.target-platform }}" = "win" ]; then
-        tar -chf $CACHE_FILE --ignore-failed-read src
-      else
-        tar -cf $CACHE_FILE src
-      fi
+      tar -cf $CACHE_FILE src
       echo "Compressed src to $(du -sh $CACHE_FILE | cut -f1 -d' ')"
       cp ./$CACHE_FILE $CACHE_DRIVE/
   - name: Persist Src Cache
