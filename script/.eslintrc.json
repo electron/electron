@@ -1,8 +1,8 @@
 {
   "plugins": [
-    "unicorn"
+    "import"
   ],
   "rules": {
-    "unicorn/prefer-node-protocol": "error"
+    "import/enforce-node-protocol-usage": ["error", "always"]
   }
 }
