@@ -21,6 +21,18 @@ macOS 11 (Big Sur) is no longer supported by [Chromium](https://chromium-review.
 Older versions of Electron will continue to run on Big Sur, but macOS 12 (Monterey)
 or later will be required to run Electron v38.0.0 and higher.
 
+### Deprecated: webFrame.routingId
+
+The `routingId` property will be removed from `webFrame` objects.
+
+You should use `webFrame.frameToken` instead.
+
+### Deprecated: webFrame.findFrameByRoutingId(routingId)
+
+The `webFrame.findFrameByRoutingId(routingId)` function will be removed.
+
+You should use `webFrame.findFrameByToken(frameToken)` instead.
+
 ### Behavior Changed: window.open popups are always resizable
 
 Per current [WHATWG spec](https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-open-dev), the `window.open` API will now always create a resizable popup window.
