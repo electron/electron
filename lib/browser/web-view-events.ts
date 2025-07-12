@@ -22,7 +22,6 @@ export const webViewEvents: Record<string, readonly string[]> = {
   '-focus-change': ['focus'],
   close: [],
   'render-process-gone': ['details'],
-  'plugin-crashed': ['name', 'version'],
   destroyed: [],
   'page-title-updated': ['title', 'explicitSet'],
   'page-favicon-updated': ['favicons'],
