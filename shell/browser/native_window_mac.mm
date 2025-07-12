@@ -1308,44 +1308,30 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
 
   if (vibrantView != nil && !vibrancy_type_.empty()) {
     const bool no_rounded_corner = !HasStyleMask(NSWindowStyleMaskTitled);
-    const int macos_version = base::mac::MacOSMajorVersion();
-    const bool modal = is_modal();
 
-    // If the window is modal, its corners are rounded on macOS >= 11 or higher
-    // unless the user has explicitly passed noRoundedCorners.
-    bool should_round_modal =
-        !no_rounded_corner && macos_version >= 11 && modal;
+    // If the window is modal, its corners are rounded unless
+    // the user has explicitly passed |roundedCorners: false|.
+    bool should_round_modal = !no_rounded_corner && is_modal();
     // If the window is nonmodal, its corners are rounded if it is frameless and
-    // the user hasn't passed noRoundedCorners.
-    bool should_round_nonmodal = !no_rounded_corner && !modal && !has_frame();
+    // the user hasn't passed |roundedCorners: false|.
+    bool should_round_nonmodal =
+        !no_rounded_corner && !is_modal() && !has_frame();
 
     if (should_round_nonmodal || should_round_modal) {
-      CGFloat radius;
-      if (fullscreen) {
-        radius = 0.0f;
-      } else if (macos_version >= 11) {
-        radius = 9.0f;
-      } else {
-        // Smaller corner radius on versions prior to Big Sur.
-        radius = 5.0f;
-      }
-
+      CGFloat radius = fullscreen ? 0.0f : 9.0f;
       CGFloat dimension = 2 * radius + 1;
-      NSSize size = NSMakeSize(dimension, dimension);
-      NSImage* maskImage = [NSImage imageWithSize:size
-                                          flipped:NO
-                                   drawingHandler:^BOOL(NSRect rect) {
-                                     NSBezierPath* bezierPath = [NSBezierPath
-                                         bezierPathWithRoundedRect:rect
-                                                           xRadius:radius
-                                                           yRadius:radius];
-                                     [[NSColor blackColor] set];
-                                     [bezierPath fill];
-                                     return YES;
-                                   }];
+      NSImage* maskImage =
+          [NSImage imageWithSize:NSMakeSize(dimension, dimension)
+                         flipped:NO
+                  drawingHandler:^BOOL(NSRect rect) {
+                    [[NSBezierPath bezierPathWithRoundedRect:rect
+                                                     xRadius:radius
+                                                     yRadius:radius] fill];
+                    return YES;
+                  }];
 
-      [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
-      [maskImage setResizingMode:NSImageResizingModeStretch];
+      maskImage.capInsets = NSEdgeInsetsMake(radius, radius, radius, radius);
+      maskImage.resizingMode = NSImageResizingModeStretch;
       [vibrantView setMaskImage:maskImage];
       [window_ setCornerMask:maskImage];
     }
