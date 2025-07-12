@@ -46,7 +46,7 @@ class ErrorThrower;
 
 namespace electron::api {
 
-class NativeImage final : public gin::Wrappable<NativeImage> {
+class NativeImage final : public gin::DeprecatedWrappable<NativeImage> {
  public:
   NativeImage(v8::Isolate* isolate, const gfx::Image& image);
 #if BUILDFLAG(IS_WIN)
@@ -96,7 +96,7 @@ class NativeImage final : public gin::Wrappable<NativeImage> {
       OnConvertError on_error = OnConvertError::kThrow);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

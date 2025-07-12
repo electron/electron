@@ -274,7 +274,7 @@ std::string StringToCookieSameSite(const std::string* str_ptr,
 
 }  // namespace
 
-gin::WrapperInfo Cookies::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo Cookies::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Cookies::Cookies(ElectronBrowserContext* browser_context)
     : browser_context_{browser_context} {

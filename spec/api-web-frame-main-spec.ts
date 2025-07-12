@@ -200,6 +200,7 @@ describe('webFrameMain module', () => {
       expect(webFrame).to.have.property('osProcessId').that.is.a('number');
       expect(webFrame).to.have.property('processId').that.is.a('number');
       expect(webFrame).to.have.property('routingId').that.is.a('number');
+      expect(webFrame).to.have.property('frameToken').that.is.a('string');
     });
   });
 
@@ -295,8 +296,8 @@ describe('webFrameMain module', () => {
       const webFrame = w.webContents.mainFrame;
       const pongPromise = once(ipcMain, 'preload-pong');
       webFrame.send('preload-ping');
-      const [, routingId] = await pongPromise;
-      expect(routingId).to.equal(webFrame.routingId);
+      const [, frameToken] = await pongPromise;
+      expect(frameToken).to.equal(webFrame.frameToken);
     });
   });
 
@@ -391,7 +392,6 @@ describe('webFrameMain module', () => {
             expect(senderFrame).to.not.be.null();
             expect(senderFrame!.detached).to.be.true();
             expect(senderFrame!.processId).to.equal(event.processId);
-            expect(senderFrame!.routingId).to.equal(event.frameId);
             resolve();
           } catch (error) {
             reject(error);

@@ -10,7 +10,7 @@ Allows Electron to restore WER when ELECTRON_DEFAULT_ERROR_MODE is set.
 This should be upstreamed.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index 620a5f208328ba136ddeb406052797b95813da46..127552073fe61254ff89b649987255985e0959d5 100644
+index b6403600631c97100c7356265b88ed32d9d7716b..9225d26c2eb46d4a70a1e08ce34e02c32c15ea92 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
 @@ -267,6 +267,10 @@ int GpuMain(MainFunctionParams parameters) {
@@ -33,10 +33,10 @@ index 620a5f208328ba136ddeb406052797b95813da46..127552073fe61254ff89b64998725598
      client->PostSandboxInitialized();
    }
 diff --git a/content/public/gpu/content_gpu_client.h b/content/public/gpu/content_gpu_client.h
-index c89b010e7ac78e2a7246ee54fe302cd6b9299710..46fd522fb2ac2793a3a073a4f833a4425dcee941 100644
+index 47de52a1c9d34753ec27c33d976987cd2550cd27..bdc35a9d6fab02502715ed2bf27bd65990239bd6 100644
 --- a/content/public/gpu/content_gpu_client.h
 +++ b/content/public/gpu/content_gpu_client.h
-@@ -32,6 +32,10 @@ class CONTENT_EXPORT ContentGpuClient {
+@@ -35,6 +35,10 @@ class CONTENT_EXPORT ContentGpuClient {
   public:
    virtual ~ContentGpuClient() {}
  

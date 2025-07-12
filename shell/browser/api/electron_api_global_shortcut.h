@@ -22,12 +22,12 @@ class Handle;
 namespace electron::api {
 
 class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
-                             public gin::Wrappable<GlobalShortcut> {
+                             public gin::DeprecatedWrappable<GlobalShortcut> {
  public:
   static gin::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

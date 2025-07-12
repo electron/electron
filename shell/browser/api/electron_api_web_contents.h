@@ -28,6 +28,7 @@
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "content/public/common/stop_find_action.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
@@ -109,7 +110,7 @@ class FrameSubscriber;
 
 // Wrapper around the content::WebContents.
 class WebContents final : public ExclusiveAccessContext,
-                          public gin::Wrappable<WebContents>,
+                          public gin::DeprecatedWrappable<WebContents>,
                           public gin_helper::EventEmitterMixin<WebContents>,
                           public gin_helper::Constructible<WebContents>,
                           public gin_helper::Pinnable<WebContents>,
@@ -172,7 +173,7 @@ class WebContents final : public ExclusiveAccessContext,
   static const char* GetClassName() { return "WebContents"; }
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
   // gin_helper::CleanedUpAtExit
@@ -307,7 +308,7 @@ class WebContents final : public ExclusiveAccessContext,
   // Methods for creating <webview>.
   [[nodiscard]] bool is_guest() const { return type_ == Type::kWebView; }
   void AttachToIframe(content::WebContents* embedder_web_contents,
-                      int embedder_frame_id);
+                      std::string embedder_frame_token);
   void DetachFromOuterFrame();
 
   // Methods for offscreen rendering
@@ -629,8 +630,6 @@ class WebContents final : public ExclusiveAccessContext,
   void DidUpdateFaviconURL(
       content::RenderFrameHost* render_frame_host,
       const std::vector<blink::mojom::FaviconURLPtr>& urls) override;
-  void PluginCrashed(const base::FilePath& plugin_path,
-                     base::ProcessId plugin_pid) override;
   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
                            const content::MediaPlayerId& id) override;
   void MediaStoppedPlaying(

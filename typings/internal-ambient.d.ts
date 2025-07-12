@@ -147,7 +147,7 @@ declare namespace NodeJS {
 
   interface InternalWebFrame extends Electron.WebFrame {
     getWebPreference<K extends keyof InternalWebPreferences>(name: K): InternalWebPreferences[K];
-    getWebFrameId(window: Window): number;
+    _findFrameByWindow(window: Window): Electron.WebFrame | null;
     allowGuestViewElementDefinition(context: object, callback: Function): void;
   }
 

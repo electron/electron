@@ -237,6 +237,11 @@ not used again.
 
 A `string` representing the frame name.
 
+#### `frame.frameToken` _Readonly_
+
+A `string` which uniquely identifies the frame within its associated renderer
+process. This is equivalent to [`webFrame.frameToken`](web-frame.md#webframeframetoken-readonly).
+
 #### `frame.osProcessId` _Readonly_
 
 An `Integer` representing the operating system `pid` of the process which owns this frame.

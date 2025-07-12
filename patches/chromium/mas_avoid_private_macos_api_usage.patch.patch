@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index f73ed42f84ca486bc0f103370823dbaa14afa35f..14c923fe4239fd98aaa7e5cfcb301c3fa88f74cc 100644
+index 08919400794cc35e0c0e41958c0b295c3fd1c2d2..ab9645ed3503a9654a19c76b68cc6534b52ebc8d 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1047,6 +1047,7 @@ component("base") {
+@@ -1048,6 +1048,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -703,7 +703,7 @@ index e38279e46d8fe621db24b4d94f5811459b4ca6b5..26592c97be3474a24f294d3cf2e74627
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index f0a6a88e72dda05656d987fdf7676571f4d05d8c..fa6510d2dcda2dd4691db6362427d284a84598b8 100644
+index 88b96916fc3a4577806e3626086edac7e601ee28..a890f471ad770448d825a07cf7a734b8e6c7c745 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -278,6 +278,7 @@ source_set("common") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c4dc3e7c7aafcadbe840f7f641ad95f772cf5cd1..a22d4279a578b3247c9835214c51bab84566b10b 100644
+index b3286de2a30c93f9f0c92c54bf3e1dfca3593614..fbf2e7e26f069d9973ec6d44a8ce18f39a8f68d8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -667,6 +667,7 @@ static_library("test_support") {
@@ -824,7 +824,7 @@ index c4dc3e7c7aafcadbe840f7f641ad95f772cf5cd1..a22d4279a578b3247c9835214c51bab8
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3276,6 +3279,7 @@ test("content_unittests") {
+@@ -3277,6 +3280,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1566,7 +1566,7 @@ index 2d982e757d94976ec68863726db8e8a85b1034e5..d2ec88c6f923e9f7147d33ccd53c3659
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index 7dd52ce4181579b5aec872f5fe34aa441e2b917f..cb3c8fb948841efab374c122fef59908bed21234 100644
+index aeb728b14fbbbb3e0c1e71d0c3997b59c29244ce..7480d0f42db88fe4058b87e0debe597c51d35730 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 @@ -14,6 +14,7 @@
@@ -1577,7 +1577,7 @@ index 7dd52ce4181579b5aec872f5fe34aa441e2b917f..cb3c8fb948841efab374c122fef59908
  #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
  #include "ui/accessibility/accessibility_features.h"
  #include "ui/accessibility/ax_role_properties.h"
-@@ -21,7 +22,9 @@
+@@ -22,7 +23,9 @@
  #include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
  #import "ui/accessibility/platform/browser_accessibility_cocoa.h"
  #import "ui/accessibility/platform/browser_accessibility_mac.h"
@@ -1587,7 +1587,7 @@ index 7dd52ce4181579b5aec872f5fe34aa441e2b917f..cb3c8fb948841efab374c122fef59908
  
  namespace {
  
-@@ -230,6 +233,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -231,6 +234,7 @@ void PostAnnouncementNotification(NSString* announcement,
          return;
        }
  
@@ -1595,7 +1595,7 @@ index 7dd52ce4181579b5aec872f5fe34aa441e2b917f..cb3c8fb948841efab374c122fef59908
        BrowserAccessibilityManager* root_manager = GetManagerForRootFrame();
        if (root_manager) {
          BrowserAccessibilityManagerMac* root_manager_mac =
-@@ -252,6 +256,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -253,6 +257,7 @@ void PostAnnouncementNotification(NSString* announcement,
            return;
          }
        }
@@ -1603,7 +1603,7 @@ index 7dd52ce4181579b5aec872f5fe34aa441e2b917f..cb3c8fb948841efab374c122fef59908
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -670,6 +675,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -700,6 +705,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -1611,7 +1611,7 @@ index 7dd52ce4181579b5aec872f5fe34aa441e2b917f..cb3c8fb948841efab374c122fef59908
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -698,6 +704,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -728,6 +734,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
@@ -1873,10 +1873,10 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 5db36a904d4db82d3597bc170d09e340ffa013a6..85e63e9d7d1071202af957238d34a51dfd587987 100644
+index 5732c3a537e7e69ac3a70c2c9999ad391e158d72..4e566d501c9c087ca4c0ad861a876a5e4213e772 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -722,6 +722,8 @@ component("views") {
+@@ -719,6 +719,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1885,7 +1885,7 @@ index 5db36a904d4db82d3597bc170d09e340ffa013a6..85e63e9d7d1071202af957238d34a51d
    }
  
    if (is_win) {
-@@ -1152,6 +1154,8 @@ source_set("test_support") {
+@@ -1148,6 +1150,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  

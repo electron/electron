@@ -35,7 +35,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                                  v8::Local<v8::Value> val);
 
 // Protocol implementation based on network services.
-class Protocol final : public gin::Wrappable<Protocol>,
+class Protocol final : public gin::DeprecatedWrappable<Protocol>,
                        public gin_helper::Constructible<Protocol> {
  public:
   static gin::Handle<Protocol> Create(v8::Isolate* isolate,
@@ -49,7 +49,7 @@ class Protocol final : public gin::Wrappable<Protocol>,
   static const char* GetClassName() { return "Protocol"; }
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
  private:

@@ -496,8 +496,8 @@ void ElectronURLLoaderFactory::StartLoading(
     net::RedirectInfo redirect_info = net::RedirectInfo::ComputeRedirectInfo(
         request.method, request.url, request.site_for_cookies,
         first_party_url_policy, request.referrer_policy,
-        request.referrer.GetAsReferrer().spec(), head->headers->response_code(),
-        request.url.Resolve(location),
+        request.referrer.GetAsReferrer().spec(), request.request_initiator,
+        head->headers->response_code(), request.url.Resolve(location),
         net::RedirectUtil::GetReferrerPolicyHeader(head->headers.get()), false);
 
     DCHECK(client.is_valid());

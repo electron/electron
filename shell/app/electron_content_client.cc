@@ -169,7 +169,6 @@ void ElectronContentClient::AddPlugins(
 
   content::ContentPluginInfo pdf_info;
   pdf_info.is_internal = true;
-  pdf_info.is_out_of_process = true;
   pdf_info.name = kPDFInternalPluginName;
   pdf_info.description = kPDFPluginDescription;
   // This isn't a real file path; it's just used as a unique identifier.

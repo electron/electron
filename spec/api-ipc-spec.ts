@@ -218,7 +218,7 @@ describe('ipc module', () => {
       expect(msg).to.equal('hi');
       expect(ev.ports).to.have.length(1);
       expect(ev.senderFrame.parent).to.be.null();
-      expect(ev.senderFrame.routingId).to.equal(w.webContents.mainFrame.routingId);
+      expect(ev.senderFrame.frameToken).to.equal(w.webContents.mainFrame.frameToken);
       const [port] = ev.ports;
       expect(port).to.be.an.instanceOf(EventEmitter);
     });
@@ -233,7 +233,7 @@ describe('ipc module', () => {
       const [ev, msg] = await p;
       expect(msg).to.equal('hi');
       expect(ev.ports).to.deep.equal([]);
-      expect(ev.senderFrame.routingId).to.equal(w.webContents.mainFrame.routingId);
+      expect(ev.senderFrame.frameToken).to.equal(w.webContents.mainFrame.frameToken);
     });
 
     it('throws when the transferable is invalid', async () => {
@@ -266,7 +266,7 @@ describe('ipc module', () => {
       }})()`);
       const [ev] = await p;
       expect(ev.ports).to.have.length(1);
-      expect(ev.senderFrame.routingId).to.equal(w.webContents.mainFrame.routingId);
+      expect(ev.senderFrame.frameToken).to.equal(w.webContents.mainFrame.frameToken);
       const [port] = ev.ports;
       port.start();
       port.postMessage(42);

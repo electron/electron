@@ -22,7 +22,7 @@ class ElectronBrowserContext;
 
 namespace api {
 
-class Extensions final : public gin::Wrappable<Extensions>,
+class Extensions final : public gin::DeprecatedWrappable<Extensions>,
                          public gin_helper::EventEmitterMixin<Extensions>,
                          private extensions::ExtensionRegistryObserver {
  public:
@@ -31,7 +31,7 @@ class Extensions final : public gin::Wrappable<Extensions>,
       ElectronBrowserContext* browser_context);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
