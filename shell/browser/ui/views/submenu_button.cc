@@ -9,6 +9,7 @@
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/text_utils.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/animation/flood_fill_ink_drop_ripple.h"
 #include "ui/views/animation/ink_drop_highlight.h"
 #include "ui/views/animation/ink_drop_host.h"
@@ -26,7 +27,7 @@ SubmenuButton::SubmenuButton(PressedCallback callback,
   // Don't use native style border.
   SetBorder(CreateDefaultBorder());
 #endif
-  SetAccessibleRole(ax::mojom::Role::kPopUpButton);
+  GetViewAccessibility().SetRole(ax::mojom::Role::kPopUpButton);
   if (GetUnderlinePosition(title, &accelerator_, &underline_start_,
                            &underline_end_))
     gfx::Canvas::SizeStringInt(GetText(), gfx::FontList(), &text_width_,
