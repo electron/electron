@@ -159,6 +159,24 @@ class ElectronBrowserContext : public content::BrowserContext {
                              const base::Value& device,
                              blink::PermissionType permissionType);
 
+  // File System Access persistent permissions
+  void GrantFileSystemAccessPermission(const url::Origin& origin,
+                                       const base::Value& permission_grant,
+                                       blink::PermissionType permission_type);
+
+  void RevokeFileSystemAccessPermission(const url::Origin& origin,
+                                        const base::Value& permission_grant,
+                                        blink::PermissionType permission_type);
+
+  bool CheckFileSystemAccessPermission(const url::Origin& origin,
+                                       const base::Value& permission_grant,
+                                       blink::PermissionType permission_type);
+
+  // Get all file system access grants for an origin
+  std::vector<base::Value> GetFileSystemAccessGrantsForOrigin(
+      const url::Origin& origin,
+      blink::PermissionType permission_type);
+
  private:
   using DevicePermissionMap = std::map<
       blink::PermissionType,

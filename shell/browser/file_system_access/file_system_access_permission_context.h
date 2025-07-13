@@ -20,7 +20,6 @@
 #include "base/values.h"
 #include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h"  // nogncheck
 #include "components/keyed_service/core/keyed_service.h"
-
 class GURL;
 
 namespace gin {
@@ -37,11 +36,49 @@ class FileSystemURL;
 
 namespace electron {
 
+// FileSystemAccessPermissionContext provides file system access permission
+// management for Electron applications. This implementation includes support
+// for persistent permissions that survive browser sessions.
+//
+// Unlike Chrome's implementation which uses ObjectPermissionContextBase, this
+// uses Electron's preference system for persistent storage, making it compatible
+// with Electron's architecture.
+//
+// Key features:
+// - Session-based grants for temporary permissions
+// - Persistent grants that survive application restarts
+// - Integration with Electron's permission system
+// - Path blocklist checking and security restrictions
+//
+// Usage:
+// - Call EnablePersistentPermissions() to enable persistent storage for an origin
+// - Grants are automatically saved when users approve permissions
+// - Grants are automatically loaded when origins access the file system
 class FileSystemAccessPermissionContext
     : public KeyedService,
       public content::FileSystemAccessPermissionContext {
  public:
   enum class GrantType { kRead, kWrite };
+
+  // Represents persistent grant types for permissions
+  enum class PersistedGrantType {
+    // No persisted grants exist for this origin
+    kNone,
+    // Origin has persisted grants that are currently dormant (backgrounded)
+    kDormant,
+    // Origin has active persistent grants
+    kActive,
+  };
+
+  // Represents the origin-scoped state for persistent grants
+  enum class PersistedGrantStatus {
+    // Origin state has been loaded from preferences
+    kLoaded,
+    // Persisted grants are active for this session
+    kCurrent,
+    // Persisted grants are dormant due to being backgrounded
+    kBackgrounded
+  };
 
   explicit FileSystemAccessPermissionContext(
       content::BrowserContext* browser_context,
@@ -122,6 +159,15 @@ class FileSystemAccessPermissionContext
   bool OriginHasReadAccess(const url::Origin& origin);
   bool OriginHasWriteAccess(const url::Origin& origin);
 
+  // Enable persistent permissions for an origin
+  void EnablePersistentPermissions(const url::Origin& origin);
+  
+  // Disable persistent permissions for an origin
+  void DisablePersistentPermissions(const url::Origin& origin);
+  
+  // Check if an origin has persistent permissions enabled
+  bool HasPersistentPermissions(const url::Origin& origin);
+
   // Called by FileSystemAccessWebContentsHelper when a top-level frame was
   // navigated away from `origin` to some other origin.
   void NavigatedAwayFromOrigin(const url::Origin& origin);
@@ -135,6 +181,24 @@ class FileSystemAccessPermissionContext
   class PermissionGrantImpl;
 
   void PermissionGrantDestroyed(PermissionGrantImpl* grant);
+
+  // Persistent permissions methods
+  PersistedGrantType GetPersistedGrantType(const url::Origin& origin);
+  PersistedGrantStatus GetPersistedGrantStatus(const url::Origin& origin) const;
+  void SetPersistedGrantStatus(const url::Origin& origin,
+                               PersistedGrantStatus status);
+
+  // Load persisted grants from preferences for an origin
+  void LoadPersistedGrantsForOrigin(const url::Origin& origin);
+
+  // Save current grants to preferences for an origin
+  void SavePersistedGrantsForOrigin(const url::Origin& origin);
+
+  // Check if a path can be auto-granted via persistent permissions
+  bool CanAutoGrantViaPersistentPermission(const url::Origin& origin,
+                                          const base::FilePath& path,
+                                          HandleType handle_type,
+                                          GrantType grant_type);
 
   void CheckShouldBlockAccessToPathAndReply(
       base::FilePath path,

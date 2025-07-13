@@ -13,12 +13,14 @@
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/containers/to_vector.h"
+#include "base/feature_list.h"
 #include "base/files/file_path.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/escape.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "chrome/browser/file_system_access/file_system_access_features.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
@@ -105,6 +107,34 @@ using content::BrowserThread;
 namespace electron {
 
 namespace {
+
+bool DoesFileSystemAccessPermissionMatch(const base::Value& permission_grant,
+                                         const base::Value& grant_to_compare) {
+  if (!permission_grant.is_dict() || !grant_to_compare.is_dict()) {
+    return false;
+  }
+
+  const auto& grant_dict = permission_grant.GetDict();
+  const auto& compare_dict = grant_to_compare.GetDict();
+
+  // Compare file path
+  const auto* grant_path = grant_dict.FindString("path");
+  const auto* compare_path = compare_dict.FindString("path");
+  if (!grant_path || !compare_path || *grant_path != *compare_path) {
+    return false;
+  }
+
+  // Compare permission type (readable/writable)
+  const auto grant_readable = grant_dict.FindBool("readable").value_or(false);
+  const auto compare_readable =
+      compare_dict.FindBool("readable").value_or(false);
+  const auto grant_writable = grant_dict.FindBool("writable").value_or(false);
+  const auto compare_writable =
+      compare_dict.FindBool("writable").value_or(false);
+
+  return grant_readable == compare_readable &&
+         grant_writable == compare_writable;
+}
 
 // Copied from chrome/browser/media/webrtc/desktop_capture_devices_util.cc.
 media::mojom::CaptureHandlePtr CreateCaptureHandle(
@@ -861,6 +891,94 @@ bool ElectronBrowserContext::CheckDevicePermission(
   }
 
   return false;
+}
+
+void ElectronBrowserContext::GrantFileSystemAccessPermission(
+    const url::Origin& origin,
+    const base::Value& permission_grant,
+    blink::PermissionType permission_type) {
+  if (!base::FeatureList::IsEnabled(
+          features::kFileSystemAccessPersistentPermissions)) {
+    return;
+  }
+  granted_devices_[permission_type][origin].push_back(
+      std::make_unique<base::Value>(permission_grant.Clone()));
+}
+
+void ElectronBrowserContext::RevokeFileSystemAccessPermission(
+    const url::Origin& origin,
+    const base::Value& permission_grant,
+    blink::PermissionType permission_type) {
+  if (!base::FeatureList::IsEnabled(
+          features::kFileSystemAccessPersistentPermissions)) {
+    return;
+  }
+  const auto& current_permissions_it = granted_devices_.find(permission_type);
+  if (current_permissions_it == granted_devices_.end())
+    return;
+
+  const auto& origin_permissions_it =
+      current_permissions_it->second.find(origin);
+  if (origin_permissions_it == current_permissions_it->second.end())
+    return;
+
+  std::erase_if(
+      origin_permissions_it->second, [&permission_grant](auto const& val) {
+        return DoesFileSystemAccessPermissionMatch(permission_grant, *val);
+      });
+}
+
+bool ElectronBrowserContext::CheckFileSystemAccessPermission(
+    const url::Origin& origin,
+    const base::Value& permission_grant,
+    blink::PermissionType permission_type) {
+  if (!base::FeatureList::IsEnabled(
+          features::kFileSystemAccessPersistentPermissions)) {
+    return false;
+  }
+  const auto& current_permissions_it = granted_devices_.find(permission_type);
+  if (current_permissions_it == granted_devices_.end())
+    return false;
+
+  const auto& origin_permissions_it =
+      current_permissions_it->second.find(origin);
+  if (origin_permissions_it == current_permissions_it->second.end())
+    return false;
+
+  for (const auto& grant_to_compare : origin_permissions_it->second) {
+    if (DoesFileSystemAccessPermissionMatch(permission_grant,
+                                            *grant_to_compare))
+      return true;
+  }
+
+  return false;
+}
+
+std::vector<base::Value>
+ElectronBrowserContext::GetFileSystemAccessGrantsForOrigin(
+    const url::Origin& origin,
+    blink::PermissionType permission_type) {
+  std::vector<base::Value> grants;
+
+  if (!base::FeatureList::IsEnabled(
+          features::kFileSystemAccessPersistentPermissions)) {
+    return grants;
+  }
+
+  const auto& current_permissions_it = granted_devices_.find(permission_type);
+  if (current_permissions_it == granted_devices_.end())
+    return grants;
+
+  const auto& origin_permissions_it =
+      current_permissions_it->second.find(origin);
+  if (origin_permissions_it == current_permissions_it->second.end())
+    return grants;
+
+  for (const auto& grant : origin_permissions_it->second) {
+    grants.push_back(grant->Clone());
+  }
+
+  return grants;
 }
 
 // static

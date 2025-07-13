@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/base_paths.h"
+#include "base/feature_list.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/json/values_util.h"
@@ -32,6 +33,7 @@
 #include "content/public/browser/web_contents.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -81,12 +83,20 @@ struct Converter<
 
 namespace {
 
-using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
 using HandleType = content::FileSystemAccessPermissionContext::HandleType;
 using GrantType = electron::FileSystemAccessPermissionContext::GrantType;
+using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
 using SensitiveEntryResult =
     ChromeFileSystemAccessPermissionContext::SensitiveEntryResult;
 using blink::mojom::PermissionStatus;
+
+// Preference keys for persistent file system access grants
+const char kPermissionPathKey[] = "path";
+const char kPermissionDisplayNameKey[] = "display-name";
+const char kPermissionIsDirectoryKey[] = "is-directory";
+const char kPermissionWritableKey[] = "writable";
+const char kPermissionReadableKey[] = "readable";
+const char kPermissionGrantTimeKey[] = "grant-time";
 
 // Dictionary keys for the FILE_SYSTEM_LAST_PICKED_DIRECTORY website setting.
 // Schema (per origin):
@@ -420,6 +430,10 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
 
     if (status == blink::mojom::PermissionStatus::GRANTED) {
       SetStatus(PermissionStatus::GRANTED);
+      // Save persistent grant when user grants permission
+      if (context_) {
+        context_->SavePersistedGrantsForOrigin(origin_);
+      }
       std::move(callback).Run(PermissionRequestOutcome::kUserGranted);
     } else {
       SetStatus(PermissionStatus::DENIED);
@@ -456,6 +470,9 @@ struct FileSystemAccessPermissionContext::OriginState {
   // PermissionGrantDestroyed().
   std::map<base::FilePath, PermissionGrantImpl*> read_grants;
   std::map<base::FilePath, PermissionGrantImpl*> write_grants;
+  
+  // Persistent grant status for this origin
+  PersistedGrantStatus persisted_grant_status = PersistedGrantStatus::kLoaded;
 };
 
 FileSystemAccessPermissionContext::FileSystemAccessPermissionContext(
@@ -496,7 +513,14 @@ FileSystemAccessPermissionContext::GetReadPermissionGrant(
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // operator[] might insert a new OriginState in |active_permissions_map_|,
   // but that is exactly what we want.
+  bool is_new_origin = active_permissions_map_.find(origin) == active_permissions_map_.end();
   auto& origin_state = active_permissions_map_[origin];
+  
+  // Load persisted grants for new origins
+  if (is_new_origin) {
+    LoadPersistedGrantsForOrigin(origin);
+  }
+  
   auto*& existing_grant = origin_state.read_grants[path_info.path];
   scoped_refptr<PermissionGrantImpl> grant;
 
@@ -522,6 +546,11 @@ FileSystemAccessPermissionContext::GetReadPermissionGrant(
   // readable.
   if (creating_new_grant &&
       AncestorHasActivePermission(origin, path_info.path, GrantType::kRead)) {
+    grant->SetStatus(PermissionStatus::GRANTED);
+  } else if (creating_new_grant &&
+             CanAutoGrantViaPersistentPermission(origin, path_info.path,
+                                               handle_type, GrantType::kRead)) {
+    // Check if we can auto-grant via persistent permissions
     grant->SetStatus(PermissionStatus::GRANTED);
   } else {
     switch (user_action) {
@@ -554,7 +583,14 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // operator[] might insert a new OriginState in |active_permissions_map_|,
   // but that is exactly what we want.
+  bool is_new_origin = active_permissions_map_.find(origin) == active_permissions_map_.end();
   auto& origin_state = active_permissions_map_[origin];
+  
+  // Load persisted grants for new origins
+  if (is_new_origin) {
+    LoadPersistedGrantsForOrigin(origin);
+  }
+  
   auto*& existing_grant = origin_state.write_grants[path_info.path];
   scoped_refptr<PermissionGrantImpl> grant;
 
@@ -580,6 +616,11 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
   // writable.
   if (creating_new_grant &&
       AncestorHasActivePermission(origin, path_info.path, GrantType::kWrite)) {
+    grant->SetStatus(PermissionStatus::GRANTED);
+  } else if (creating_new_grant &&
+             CanAutoGrantViaPersistentPermission(origin, path_info.path,
+                                               handle_type, GrantType::kWrite)) {
+    // Check if we can auto-grant via persistent permissions
     grant->SetStatus(PermissionStatus::GRANTED);
   } else {
     switch (user_action) {
@@ -830,7 +871,7 @@ content::PathInfo FileSystemAccessPermissionContext::GetLastPickedDirectory(
   }
 
   auto type_int = entry->FindInt(kPathTypeKey)
-                      .value_or(static_cast<int>(content::PathType::kLocal));
+                      .value_or(static_cast<int>(content::PathType::kExternal));
   path_info.type = type_int == static_cast<int>(content::PathType::kExternal)
                        ? content::PathType::kExternal
                        : content::PathType::kLocal;
@@ -968,7 +1009,6 @@ bool FileSystemAccessPermissionContext::OriginHasReadAccess(
 
   return false;
 }
-
 bool FileSystemAccessPermissionContext::OriginHasWriteAccess(
     const url::Origin& origin) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -990,6 +1030,11 @@ void FileSystemAccessPermissionContext::NavigatedAwayFromOrigin(
   // If we have no permissions for the origin, there is nothing to do.
   if (it == active_permissions_map_.end()) {
     return;
+  }
+
+  // Mark persistent grants as backgrounded when navigating away
+  if (it->second.persisted_grant_status == PersistedGrantStatus::kCurrent) {
+    SetPersistedGrantStatus(origin, PersistedGrantStatus::kBackgrounded);
   }
 
   // Start a timer to possibly clean up permissions for this origin.
@@ -1070,4 +1115,265 @@ FileSystemAccessPermissionContext::GetWeakPtr() {
   return weak_factory_.GetWeakPtr();
 }
 
-}  // namespace electron
+// ============================================================================
+// Persistent Permissions Implementation
+//
+// This implementation provides persistent file system access permissions that
+// survive browser sessions. Unlike Chrome's ObjectPermissionContextBase 
+// approach, this uses Electron's preference system for storage.
+//
+// Key concepts:
+// - PersistedGrantType: Represents the current state of persistent grants
+//   - kNone: No persistent grants exist
+//   - kDormant: Grants exist but are backgrounded 
+//   - kActive: Grants are currently active
+//
+// - PersistedGrantStatus: Tracks origin-specific persistent state
+//   - kLoaded: Origin state loaded from preferences
+//   - kCurrent: Grants are active in current session
+//   - kBackgrounded: Grants exist but origin is backgrounded
+//
+// The implementation integrates with existing grant logic by:
+// 1. Loading persisted grants when an origin first requests access
+// 2. Checking persistent grants during auto-grant decisions  
+// 3. Saving grants when users approve permissions
+// 4. Managing grant lifecycle during navigation events
+// ============================================================================
+
+FileSystemAccessPermissionContext::PersistedGrantType
+FileSystemAccessPermissionContext::GetPersistedGrantType(
+    const url::Origin& origin) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  
+  auto it = active_permissions_map_.find(origin);
+  if (it == active_permissions_map_.end()) {
+    return PersistedGrantType::kNone;
+  }
+  
+  switch (it->second.persisted_grant_status) {
+    case PersistedGrantStatus::kBackgrounded:
+      return PersistedGrantType::kDormant;
+    case PersistedGrantStatus::kLoaded:
+    case PersistedGrantStatus::kCurrent:
+      return PersistedGrantType::kActive;
+  }
+}
+
+FileSystemAccessPermissionContext::PersistedGrantStatus
+FileSystemAccessPermissionContext::GetPersistedGrantStatus(
+    const url::Origin& origin) const {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  
+  auto it = active_permissions_map_.find(origin);
+  if (it == active_permissions_map_.end()) {
+    return PersistedGrantStatus::kLoaded;
+  }
+  
+  return it->second.persisted_grant_status;
+}
+
+void FileSystemAccessPermissionContext::SetPersistedGrantStatus(
+    const url::Origin& origin,
+    PersistedGrantStatus status) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  
+  auto& origin_state = active_permissions_map_[origin];
+  origin_state.persisted_grant_status = status;
+}
+
+void FileSystemAccessPermissionContext::LoadPersistedGrantsForOrigin(
+    const url::Origin& origin) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  
+  auto* browser_context = static_cast<ElectronBrowserContext*>(browser_context_);
+  
+  // Load all file system grants for this origin
+  auto grants = browser_context->GetFileSystemAccessGrantsForOrigin(
+      origin, blink::PermissionType::FILE_SYSTEM);
+  
+  // Create permission grants from persisted data
+  auto& origin_state = active_permissions_map_[origin];
+  
+  for (const auto& grant_data : grants) {
+    if (auto* path_str = grant_data.GetDict().FindString(kPermissionPathKey)) {
+      base::FilePath path = base::FilePath::FromUTF8Unsafe(*path_str);
+      std::string display_name;
+      if (auto* display_name_val = grant_data.GetDict().FindString(kPermissionDisplayNameKey))
+        display_name = *display_name_val;
+      auto is_directory = grant_data.GetDict().FindBool(kPermissionIsDirectoryKey).value_or(false);
+      auto readable = grant_data.GetDict().FindBool(kPermissionReadableKey).value_or(false);
+      auto writable = grant_data.GetDict().FindBool(kPermissionWritableKey).value_or(false);
+      
+      content::PathInfo path_info;
+      path_info.path = path;
+      path_info.display_name = display_name;
+      path_info.type = content::PathType::kLocal;
+      
+      HandleType handle_type = is_directory ? HandleType::kDirectory : HandleType::kFile;
+      
+      // Create read grant if readable
+      if (readable && origin_state.read_grants.find(path) == origin_state.read_grants.end()) {
+        auto grant = base::MakeRefCounted<PermissionGrantImpl>(
+            weak_factory_.GetWeakPtr(), origin, path_info, handle_type,
+            GrantType::kRead, UserAction::kLoadFromStorage);
+        grant->SetStatus(PermissionStatus::GRANTED);
+        origin_state.read_grants[path] = grant.get();
+      }
+      
+      // Create write grant if writable
+      if (writable && origin_state.write_grants.find(path) == origin_state.write_grants.end()) {
+        auto grant = base::MakeRefCounted<PermissionGrantImpl>(
+            weak_factory_.GetWeakPtr(), origin, path_info, handle_type,
+            GrantType::kWrite, UserAction::kLoadFromStorage);
+        grant->SetStatus(PermissionStatus::GRANTED);
+        origin_state.write_grants[path] = grant.get();
+      }
+    }
+  }
+  
+  SetPersistedGrantStatus(origin, PersistedGrantStatus::kLoaded);
+}
+
+void FileSystemAccessPermissionContext::SavePersistedGrantsForOrigin(
+    const url::Origin& origin) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  
+  auto* browser_context = static_cast<ElectronBrowserContext*>(browser_context_);
+  auto it = active_permissions_map_.find(origin);
+  if (it == active_permissions_map_.end()) {
+    return;
+  }
+  
+  const auto& origin_state = it->second;
+  
+  // Collect all unique paths and their permissions
+  std::map<base::FilePath, std::pair<bool, bool>> path_permissions; // path -> (readable, writable)
+  
+  // Add read grants
+  for (const auto& [path, grant] : origin_state.read_grants) {
+    if (grant->GetStatus() == PermissionStatus::GRANTED) {
+      path_permissions[path].first = true;
+    }
+  }
+  
+  // Add write grants
+  for (const auto& [path, grant] : origin_state.write_grants) {
+    if (grant->GetStatus() == PermissionStatus::GRANTED) {
+      path_permissions[path].second = true;
+    }
+  }
+  
+  // Save combined grants
+  for (const auto& [path, permissions] : path_permissions) {
+    bool readable = permissions.first;
+    bool writable = permissions.second;
+    
+    if (readable || writable) {
+      // Get grant info from either read or write grant
+      PermissionGrantImpl* grant = nullptr;
+      if (readable && origin_state.read_grants.count(path)) {
+        grant = origin_state.read_grants.at(path);
+      } else if (writable && origin_state.write_grants.count(path)) {
+        grant = origin_state.write_grants.at(path);
+      }
+      
+      if (grant) {
+        base::Value::Dict grant_data;
+        grant_data.Set(kPermissionPathKey, path.AsUTF8Unsafe());
+        grant_data.Set(kPermissionDisplayNameKey, grant->GetDisplayName());
+        grant_data.Set(kPermissionIsDirectoryKey, grant->handle_type() == HandleType::kDirectory);
+        grant_data.Set(kPermissionReadableKey, readable);
+        grant_data.Set(kPermissionWritableKey, writable);
+        grant_data.Set(kPermissionGrantTimeKey, base::TimeToValue(clock_->Now()));
+        
+        browser_context->GrantFileSystemAccessPermission(
+            origin, base::Value(std::move(grant_data)), 
+            blink::PermissionType::FILE_SYSTEM);
+      }
+    }
+  }
+  
+  SetPersistedGrantStatus(origin, PersistedGrantStatus::kCurrent);
+}
+
+bool FileSystemAccessPermissionContext::CanAutoGrantViaPersistentPermission(
+    const url::Origin& origin,
+    const base::FilePath& path,
+    HandleType handle_type,
+    GrantType grant_type) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  
+  // Check if we have an active persistent permission for this path
+  auto persisted_grant_type = GetPersistedGrantType(origin);
+  if (persisted_grant_type == PersistedGrantType::kNone) {
+    return false;
+  }
+  
+  auto* browser_context = static_cast<ElectronBrowserContext*>(browser_context_);
+  
+  // Get all grants for this origin
+  auto grants = browser_context->GetFileSystemAccessGrantsForOrigin(
+      origin, blink::PermissionType::FILE_SYSTEM);
+  
+  // Check if any grant matches our path and permission type
+  for (const auto& grant_data : grants) {
+    const auto& dict = grant_data.GetDict();
+    auto* stored_path = dict.FindString("path");
+    if (!stored_path || *stored_path != path.AsUTF8Unsafe()) {
+      continue;
+    }
+    
+    auto stored_is_directory = dict.FindBool("is-directory").value_or(false);
+    bool handle_type_matches = (stored_is_directory && handle_type == HandleType::kDirectory) ||
+                              (!stored_is_directory && handle_type == HandleType::kFile);
+    if (!handle_type_matches) {
+      continue;
+    }
+    
+    bool readable = dict.FindBool("readable").value_or(false);
+    bool writable = dict.FindBool("writable").value_or(false);
+    
+    if ((grant_type == GrantType::kRead && readable) ||
+        (grant_type == GrantType::kWrite && writable)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+void FileSystemAccessPermissionContext::EnablePersistentPermissions(
+    const url::Origin& origin) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  
+  SetPersistedGrantStatus(origin, PersistedGrantStatus::kCurrent);
+  SavePersistedGrantsForOrigin(origin);
+}
+
+void FileSystemAccessPermissionContext::DisablePersistentPermissions(
+    const url::Origin& origin) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  
+  auto* browser_context = static_cast<ElectronBrowserContext*>(browser_context_);
+  
+  // Get all existing grants and revoke them
+  auto grants = browser_context->GetFileSystemAccessGrantsForOrigin(
+      origin, blink::PermissionType::FILE_SYSTEM);
+  
+  for (const auto& grant : grants) {
+    browser_context->RevokeFileSystemAccessPermission(
+        origin, grant, blink::PermissionType::FILE_SYSTEM);
+  }
+  
+  SetPersistedGrantStatus(origin, PersistedGrantStatus::kLoaded);
+}
+
+bool FileSystemAccessPermissionContext::HasPersistentPermissions(
+    const url::Origin& origin) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  
+  auto persisted_grant_type = GetPersistedGrantType(origin);
+  return persisted_grant_type != PersistedGrantType::kNone;
+}
+
+}
