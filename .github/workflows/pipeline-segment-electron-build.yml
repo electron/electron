@@ -94,6 +94,11 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+    - name: Get Defender State
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        sc query Windefend
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
