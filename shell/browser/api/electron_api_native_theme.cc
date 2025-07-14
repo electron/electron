@@ -17,7 +17,8 @@
 
 namespace electron::api {
 
-gin::WrapperInfo NativeTheme::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo NativeTheme::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 NativeTheme::NativeTheme(v8::Isolate* isolate,
                          ui::NativeTheme* ui_theme,

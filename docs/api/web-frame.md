@@ -265,7 +265,7 @@ Returns `WebFrame` - A child of `webFrame` with the supplied `name`, `null`
 would be returned if there's no such frame or if the frame is not in the current
 renderer process.
 
-### `webFrame.findFrameByRoutingId(routingId)`
+### `webFrame.findFrameByRoutingId(routingId)` _Deprecated_
 
 * `routingId` Integer - An `Integer` representing the unique frame id in the
    current renderer process. Routing IDs can be retrieved from `WebFrame`
@@ -273,6 +273,15 @@ renderer process.
    specific `WebContents` navigation events (e.g. `did-frame-navigate`)
 
 Returns `WebFrame` - that has the supplied `routingId`, `null` if not found.
+
+### `webFrame.findFrameByToken(frameToken)`
+
+* `frameToken` string - A `string` representing the unique frame id in the
+   current renderer process. Frame tokens can be retrieved from `WebFrame`
+   instances (`webFrame.frameToken`) and can also be retrieved from
+   `WebFrameMain` instances using `webFrameMain.frameToken`.
+
+Returns `WebFrame` - that has the supplied `frameToken`, `null` if not found.
 
 ### `webFrame.isWordMisspelled(word)`
 
@@ -318,8 +327,14 @@ A `WebFrame | null` representing next sibling frame, the property would be `null
 `webFrame` is the last frame in its parent or if the next sibling is not in the
 current renderer process.
 
-### `webFrame.routingId` _Readonly_
+### `webFrame.routingId` _Readonly_ _Deprecated_
 
 An `Integer` representing the unique frame id in the current renderer process.
 Distinct WebFrame instances that refer to the same underlying frame will have
 the same `routingId`.
+
+### `webFrame.frameToken` _Readonly_
+
+A `string` representing the unique frame token in the current renderer process.
+Distinct WebFrame instances that refer to the same underlying frame will have
+the same `frameToken`.

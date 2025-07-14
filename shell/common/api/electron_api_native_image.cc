@@ -606,7 +606,8 @@ const char* NativeImage::GetTypeName() {
 }
 
 // static
-gin::WrapperInfo NativeImage::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo NativeImage::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 }  // namespace electron::api
 

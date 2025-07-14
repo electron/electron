@@ -79,7 +79,7 @@ void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
 
 namespace api {
 
-gin::WrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 NetLog::NetLog(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : browser_context_(browser_context) {
@@ -219,7 +219,7 @@ v8::Local<v8::Promise> NetLog::StopLogging(gin::Arguments* args) {
 
 gin::ObjectTemplateBuilder NetLog::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<NetLog>::GetObjectTemplateBuilder(isolate)
+  return gin::DeprecatedWrappable<NetLog>::GetObjectTemplateBuilder(isolate)
       .SetProperty("currentlyLogging", &NetLog::IsCurrentlyLogging)
       .SetMethod("startLogging", &NetLog::StartLogging)
       .SetMethod("stopLogging", &NetLog::StopLogging);

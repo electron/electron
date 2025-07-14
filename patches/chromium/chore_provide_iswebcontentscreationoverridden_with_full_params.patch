@@ -80,10 +80,10 @@ index b6582b4013d9682d32bd524b4053b443a4df00f8..afcbce72e0f247b4d5a637b27c9f25d9
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 9b13df3562fa08eff02cae11f87369ae7417f6a8..88a85350965f9e13f5660632033e958829a85008 100644
+index 32516a8e60d96b2370f0f030852015e6d30d9cb1..1efcb0fd83062af0301fe6d8e3166d657bfb18c7 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2379,8 +2379,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2363,8 +2363,7 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -93,7 +93,7 @@ index 9b13df3562fa08eff02cae11f87369ae7417f6a8..88a85350965f9e13f5660632033e9588
    if (IsActorExecutionEngineActingOnTab(
            profile(), content::WebContents::FromRenderFrameHost(opener))) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating
-@@ -2392,7 +2391,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2376,7 +2375,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -103,10 +103,10 @@ index 9b13df3562fa08eff02cae11f87369ae7417f6a8..88a85350965f9e13f5660632033e9588
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index de64b1217202846a285d7a4bcbce7780575ebaf0..a6139653fd82db949ffd960ea46fb1604e6c7317 100644
+index a795d6515099dea389913f84f25f5170bc5dcefc..68e63fdbd07ea7b6b8175932386cac5b3a0db89a 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -993,8 +993,7 @@ class Browser : public TabStripModelObserver,
+@@ -986,8 +986,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -222,10 +222,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 487e6d8db0d19e9a2257d17fcbe348544e7905b7..16bb1ca75b2e105b381ee5564f9332d4eeb2e7d7 100644
+index 2789ab0d799653e34b2a3f81333daf5e0cf3ecf5..ef4630910570726091ad9170864a1509a4558524 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5181,8 +5181,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5166,8 +5166,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,
@@ -250,10 +250,10 @@ index 33be50ce93dd998df5244f9ade391943f06978ad..3bb9baf76d331351d23d59fc2b9eb82d
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 83bdd195339eb7d61ac88e2994fd8dabe93f6ecc..682e5eecb7ce514094f76253447aa7ac4b6f29b1 100644
+index 1a71f8020ba4de7bd4966bb02563155237659c32..526a165f9e8bd20747ee00e6f987c995ac737176 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -359,8 +359,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -362,8 +362,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

@@ -36,7 +36,7 @@ index c821349f35116f07988b2b58a6521e73a514548c..2b8f41a584c5d14ea9d72d67c2abe71e
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index 08835b2859886ce9a50bb0874ce6437066e3d42a..8f8e1b32a02ee3b3030c6a16ab79de3865a714d2 100644
+index 673ccbc445cd05486f0337a3e27190ee90f54e6b..4dba267259e3cbed64aa7828a5eb4e0c70665c64 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 @@ -189,7 +189,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(

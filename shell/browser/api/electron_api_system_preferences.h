@@ -38,7 +38,7 @@ enum class NotificationCenterKind {
 #endif
 
 class SystemPreferences final
-    : public gin::Wrappable<SystemPreferences>,
+    : public gin::DeprecatedWrappable<SystemPreferences>,
       public gin_helper::EventEmitterMixin<SystemPreferences>
 #if BUILDFLAG(IS_WIN)
     ,
@@ -50,7 +50,7 @@ class SystemPreferences final
   static gin::Handle<SystemPreferences> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

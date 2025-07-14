@@ -223,8 +223,8 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/platform_util_aura.cc",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_aura.cc",
-      "//ui/views/native_window_tracker_aura.cc",
-      "//ui/views/native_window_tracker_aura.h",
+      "//ui/native_window_tracker/native_window_tracker_aura.cc",
+      "//ui/native_window_tracker/native_window_tracker_aura.h",
     ]
     deps += [ "//components/eye_dropper" ]
   }

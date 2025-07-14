@@ -57,7 +57,7 @@ struct PreloadScript;
 
 namespace api {
 
-class Session final : public gin::Wrappable<Session>,
+class Session final : public gin::DeprecatedWrappable<Session>,
                       public gin_helper::Pinnable<Session>,
                       public gin_helper::Constructible<Session>,
                       public gin_helper::EventEmitterMixin<Session>,
@@ -92,7 +92,7 @@ class Session final : public gin::Wrappable<Session>,
   }
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Session"; }
   const char* GetTypeName() override;
