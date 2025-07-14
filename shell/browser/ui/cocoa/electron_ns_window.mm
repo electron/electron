@@ -173,10 +173,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (id)accessibilityFocusedUIElement {
-  views::Widget* widget = shell_->widget();
-  id superFocus = [super accessibilityFocusedUIElement];
-  if (!widget || shell_->IsFocused())
-    return superFocus;
+  if (!shell_ || !shell_->widget() || shell_->IsFocused())
+    return [super accessibilityFocusedUIElement];
   return nil;
 }
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect {
@@ -184,7 +182,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (NSTouchBar*)makeTouchBar {
-  if (shell_->touch_bar())
+  if (shell_ && shell_->touch_bar())
     return [shell_->touch_bar() makeTouchBar];
   else
     return nil;
@@ -214,7 +212,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (void)rotateWithEvent:(NSEvent*)event {
-  shell_->NotifyWindowRotateGesture(event.rotation);
+  if (shell_)
+    shell_->NotifyWindowRotateGesture(event.rotation);
 }
 
 - (NSRect)contentRectForFrameRect:(NSRect)frameRect {
@@ -238,7 +237,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     //
     // If there's no frame, put the window wherever the developer
     // wanted it to go
-    if (shell_->has_frame()) {
+    if (shell_ && shell_->has_frame()) {
       result.size = frameRect.size;
     } else {
       result = frameRect;
@@ -285,7 +284,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (NSString*)accessibilityTitle {
-  return base::SysUTF8ToNSString(shell_->GetTitle());
+  return base::SysUTF8ToNSString(shell_ ? shell_->GetTitle() : "");
 }
 
 - (BOOL)canBecomeMainWindow {
@@ -305,7 +304,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   // support closing a window without title we need to manually do menu item
   // validation. This code path is used by the "roundedCorners" option.
   if ([item action] == @selector(performClose:))
-    return shell_->IsClosable();
+    return shell_ && shell_->IsClosable();
   return [super validateUserInterfaceItem:item];
 }
 
@@ -325,7 +324,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     // shown, but we don't want the headless behavior of allowing the window to
     // be placed unconstrained.
     self.isHeadless = false;
-    shell_->widget()->DisableHeadlessMode();
+    if (shell_->widget())
+      shell_->widget()->DisableHeadlessMode();
   }
 }
 
@@ -375,6 +375,9 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (BOOL)toggleFullScreenMode:(id)sender {
+  if (!shell_)
+    return NO;
+
   bool is_simple_fs = shell_->IsSimpleFullScreen();
   bool always_simple_fs = shell_->always_simple_fullscreen();
 
@@ -408,11 +411,13 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (void)performMiniaturize:(id)sender {
-  if (shell_->title_bar_style() ==
-      electron::NativeWindowMac::TitleBarStyle::kCustomButtonsOnHover)
+  if (shell_ &&
+      shell_->title_bar_style() ==
+          electron::NativeWindowMac::TitleBarStyle::kCustomButtonsOnHover) {
     [self miniaturize:self];
-  else
+  } else {
     [super performMiniaturize:sender];
+  }
 }
 
 @end
