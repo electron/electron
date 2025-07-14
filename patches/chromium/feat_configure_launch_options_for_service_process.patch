@@ -187,7 +187,7 @@ index d9c14f91747bde0e76056d7f2f2ada166e67f994..53be16879777a3b9bef58ead5f7e420c
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 9c88b20e11b4c946fd101b633bf93836070946d8..c9d2b451c8d07c915051fd50ca0b079aaed48199 100644
+index 07c678f14ddbe52a9944154cdc330b1864675c7f..99e973152a486b1af736d9b1dd758879c2a82013 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
 @@ -244,13 +244,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
@@ -244,7 +244,7 @@ index 9c88b20e11b4c946fd101b633bf93836070946d8..c9d2b451c8d07c915051fd50ca0b079a
  UtilityProcessHost::Options&
  UtilityProcessHost::Options::WithBoundReceiverOnChildProcessForTesting(
      mojo::GenericPendingReceiver receiver) {
-@@ -521,9 +551,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -523,9 +553,26 @@ bool UtilityProcessHost::StartProcess() {
    }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
