@@ -36,7 +36,10 @@ runs:
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
-        Add-MpPreference -ExclusionPath $env:GITHUB_WORKSPACE
+        C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe -Command "Get-MpComputerStatus"
+        C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe -Command "Add-MpPreference -ExclusionPath $env:GITHUB_WORKSPACE
+        C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe -Command "Set-MpPreference -DisableRealtimeMonitoring $true"
+        C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe -Command "Get-MpComputerStatus"        
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
