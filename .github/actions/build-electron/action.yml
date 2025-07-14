@@ -36,7 +36,7 @@ runs:
       if: ${{ inputs.target-platform == 'win' }}
       shell: C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe 
       run: |
-        echo "WORKSPACE IS: $env:GITHUB_WORKSPACE"
+        Get-ChildItem Env: | Format-Table -Wrap -AutoSize
         $CompStatus = Get-MpComputerStatus
         echo "STATUS IS: " $CompStatus        
         Set-MpPreference -DisableRealtimeMonitoring $true

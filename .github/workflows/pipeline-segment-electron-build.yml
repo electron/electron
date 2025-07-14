@@ -94,6 +94,16 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+    - name: Disable Defender (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe 
+      run: |
+        Get-ChildItem Env: | Format-Table -Wrap -AutoSize
+        $CompStatus = Get-MpComputerStatus
+        echo "STATUS IS: " $CompStatus        
+        Set-MpPreference -DisableRealtimeMonitoring $true
+        $CompStatus2 = Get-MpComputerStatus
+        echo "STATUS IS: " $CompStatus2        
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
