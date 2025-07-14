@@ -99,7 +99,7 @@ void AutofillPopupView::Show() {
   GetWidget()->Show();
 
   if (initialize_widget)
-    views::WidgetFocusManager::GetInstance()->AddFocusChangeListener(this);
+    views::NativeViewFocusManager::GetInstance()->AddFocusChangeListener(this);
 
   keypress_callback_ = base::BindRepeating(
       &AutofillPopupView::HandleKeyPressEvent, base::Unretained(this));
@@ -487,7 +487,7 @@ void AutofillPopupView::ClearSelection() {
 
 void AutofillPopupView::RemoveObserver() {
   parent_widget_->RemoveObserver(this);
-  views::WidgetFocusManager::GetInstance()->RemoveFocusChangeListener(this);
+  views::NativeViewFocusManager::GetInstance()->RemoveFocusChangeListener(this);
 }
 
 }  // namespace electron

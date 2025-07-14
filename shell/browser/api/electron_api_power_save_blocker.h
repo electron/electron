@@ -19,12 +19,13 @@ class Handle;
 
 namespace electron::api {
 
-class PowerSaveBlocker final : public gin::Wrappable<PowerSaveBlocker> {
+class PowerSaveBlocker final
+    : public gin::DeprecatedWrappable<PowerSaveBlocker> {
  public:
   static gin::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

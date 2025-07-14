@@ -165,7 +165,7 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
 };
 
 class JSChunkedDataPipeGetter final
-    : public gin::Wrappable<JSChunkedDataPipeGetter>,
+    : public gin::DeprecatedWrappable<JSChunkedDataPipeGetter>,
       public network::mojom::ChunkedDataPipeGetter {
  public:
   static gin::Handle<JSChunkedDataPipeGetter> Create(
@@ -181,15 +181,15 @@ class JSChunkedDataPipeGetter final
   // gin::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::Wrappable<JSChunkedDataPipeGetter>::GetObjectTemplateBuilder(
-               isolate)
+    return gin::DeprecatedWrappable<
+               JSChunkedDataPipeGetter>::GetObjectTemplateBuilder(isolate)
         .SetMethod("write", &JSChunkedDataPipeGetter::WriteChunk)
         .SetMethod("done", &JSChunkedDataPipeGetter::Done);
   }
 
   const char* GetTypeName() override { return "JSChunkedDataPipeGetter"; }
 
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   ~JSChunkedDataPipeGetter() override = default;
 
  private:
@@ -298,7 +298,7 @@ class JSChunkedDataPipeGetter final
   v8::Global<v8::Function> body_func_;
 };
 
-gin::WrapperInfo JSChunkedDataPipeGetter::kWrapperInfo = {
+gin::DeprecatedWrapperInfo JSChunkedDataPipeGetter::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
@@ -320,7 +320,7 @@ const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
 
 }  // namespace
 
-gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
+gin::DeprecatedWrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(

@@ -86,7 +86,7 @@ struct Converter<CustomScheme> {
 
 namespace electron::api {
 
-gin::WrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 const std::vector<std::string>& GetStandardSchemes() {
   return g_standard_schemes;

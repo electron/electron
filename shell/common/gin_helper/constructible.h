@@ -20,7 +20,7 @@ class EventEmitterMixin;
 // To use, inherit from gin::Wrappable and gin_helper::Constructible, and
 // define the static methods New and FillObjectTemplate:
 //
-//   class Example : public gin::Wrappable<Example>,
+//   class Example : public gin::DeprecatedWrappable<Example>,
 //                   public gin_helper::Constructible<Example> {
 //    public:
 //     static gin::Handle<Example> New(...usual gin method arguments...);
@@ -57,7 +57,8 @@ class Constructible {
           gin::kNumberOfInternalFields);
       constructor->SetClassName(gin::StringToV8(isolate, T::GetClassName()));
       T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
-      data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
+      data->DeprecatedSetObjectTemplate(wrapper_info,
+                                        constructor->InstanceTemplate());
       data->SetFunctionTemplate(wrapper_info, constructor);
     }
     return constructor->GetFunction(context).ToLocalChecked();

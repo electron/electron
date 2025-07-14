@@ -10,10 +10,10 @@ Electron needs this constructor, namely for gin_helper::Constructible
 objects.
 
 diff --git a/gin/object_template_builder.cc b/gin/object_template_builder.cc
-index 50b64c72a837534de727486a026fce1ee610ad23..38bf1e464312e7d4bc2cf5559d10f67d2bf84514 100644
+index a694f7dc4da4f1bba579ab8c032eea21d8459995..8aaaba327166b1d3b884fe390a389c0c50890af9 100644
 --- a/gin/object_template_builder.cc
 +++ b/gin/object_template_builder.cc
-@@ -216,6 +216,13 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
+@@ -146,6 +146,13 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
    template_->SetInternalFieldCount(kNumberOfInternalFields);
  }
  
