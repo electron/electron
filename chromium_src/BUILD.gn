@@ -144,8 +144,6 @@ static_library("chrome") {
     "//chrome/browser/ui/views/overlay/toggle_camera_button.h",
     "//chrome/browser/ui/views/overlay/toggle_microphone_button.cc",
     "//chrome/browser/ui/views/overlay/toggle_microphone_button.h",
-    "//chrome/browser/ui/views/overlay/video_overlay_window_native_widget_mac.h",
-    "//chrome/browser/ui/views/overlay/video_overlay_window_native_widget_mac.mm",
     "//chrome/browser/ui/views/overlay/video_overlay_window_views.cc",
     "//chrome/browser/ui/views/overlay/video_overlay_window_views.h",
     "//chrome/browser/ui/views/picture_in_picture/picture_in_picture_bounds_change_animation.cc",
@@ -282,6 +280,8 @@ static_library("chrome") {
       "//chrome/browser/process_singleton_mac.mm",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.mm",
+      "//chrome/browser/ui/views/overlay/video_overlay_window_native_widget_mac.h",
+      "//chrome/browser/ui/views/overlay/video_overlay_window_native_widget_mac.mm",
     ]
     deps += [ ":system_media_capture_permissions_mac_conflict" ]
   }
@@ -504,15 +504,17 @@ source_set("chrome_spellchecker") {
   ]
 }
 
-# These sources create an object file conflict with one in |:chrome|, so they
-# must live in a separate target.
-# Conflicting sources:
-#   //chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm
-#   //chrome/browser/permissions/system/system_media_capture_permissions_mac.mm
-source_set("system_media_capture_permissions_mac_conflict") {
-  sources = [
-    "//chrome/browser/permissions/system/system_media_capture_permissions_mac.h",
-    "//chrome/browser/permissions/system/system_media_capture_permissions_mac.mm",
-  ]
-  deps = [ "//chrome/common" ]
+if (is_mac) {
+  # These sources create an object file conflict with one in |:chrome|, so they
+  # must live in a separate target.
+  # Conflicting sources:
+  #   //chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm
+  #   //chrome/browser/permissions/system/system_media_capture_permissions_mac.mm
+  source_set("system_media_capture_permissions_mac_conflict") {
+    sources = [
+      "//chrome/browser/permissions/system/system_media_capture_permissions_mac.h",
+      "//chrome/browser/permissions/system/system_media_capture_permissions_mac.mm",
+    ]
+    deps = [ "//chrome/common" ]
+  }
 }
