@@ -94,16 +94,6 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
-    - name: Dump environment variables
-      if: ${{ inputs.target-platform == 'win' }}
-      shell: powershell
-      run: |
-        Get-ChildItem Env: | Format-Table -Wrap -AutoSize
-    - name: Get Defender State
-      if: ${{ inputs.target-platform == 'win' }}
-      shell: powershell
-      run: |
-        WMIC /Node:localhost /Namespace:\\root\SecurityCenter2 Path AntiVirusProduct  Get displayName,timestamp /Format:List 
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos

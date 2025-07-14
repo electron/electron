@@ -32,16 +32,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Disable Defender (Windows)
-      if: ${{ inputs.target-platform == 'win' }}
-      shell: C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe 
-      run: |
-        Get-ChildItem Env: | Format-Table -Wrap -AutoSize
-        $CompStatus = Get-MpComputerStatus
-        echo "STATUS IS: " $CompStatus        
-        Set-MpPreference -DisableRealtimeMonitoring $true
-        $CompStatus2 = Get-MpComputerStatus
-        echo "STATUS IS: " $CompStatus2
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
