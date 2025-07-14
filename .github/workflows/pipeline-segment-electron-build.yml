@@ -103,7 +103,6 @@ jobs:
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
-        (Get-Service windefend).Status
         WMIC /Node:localhost /Namespace:\\root\SecurityCenter2 Path AntiVirusProduct  Get displayName,timestamp /Format:List 
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
