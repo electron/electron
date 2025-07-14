@@ -3106,7 +3106,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   });
 });
 
-describe('navigator.serial', () => {
+ifdescribe(process.platform !== 'darwin' || process.arch !== 'arm64')('navigator.serial', () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow({
@@ -3638,7 +3638,7 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
   });
 });
 
-describe('navigator.bluetooth', () => {
+ifdescribe(process.platform !== 'darwin' || process.arch !== 'arm64')('navigator.bluetooth', () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow({
