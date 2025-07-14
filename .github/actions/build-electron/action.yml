@@ -34,12 +34,12 @@ runs:
   steps:
     - name: Disable Defender (Windows)
       if: ${{ inputs.target-platform == 'win' }}
-      shell: powershell
+      shell: C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe 
       run: |
-        C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe -Command "Get-MpComputerStatus"
-        C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe -Command "Add-MpPreference -ExclusionPath $env:GITHUB_WORKSPACE"
-        C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe -Command "Set-MpPreference -DisableRealtimeMonitoring $true"
-        C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe -Command "Get-MpComputerStatus"        
+        Get-MpComputerStatus
+        Add-MpPreference -ExclusionPath $env:GITHUB_WORKSPACE
+        Set-MpPreference -DisableRealtimeMonitoring $true
+        Get-MpComputerStatus
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
