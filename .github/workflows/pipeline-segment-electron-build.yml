@@ -96,7 +96,7 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Dump environment variables
       if: ${{ inputs.target-platform == 'win' }}
-      shell: C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe 
+      shell: powershell
       run: |
         Get-ChildItem Env: | Format-Table -Wrap -AutoSize
     - name: Disable Defender (Windows)
