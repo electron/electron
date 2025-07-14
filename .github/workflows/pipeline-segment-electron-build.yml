@@ -101,7 +101,7 @@ jobs:
         Get-ChildItem Env: | Format-Table -Wrap -AutoSize
     - name: Get Defender State
       if: ${{ inputs.target-platform == 'win' }}
-      shell: C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe {0}
+      shell: pwsh
       run: |
         Get-MpComputerStatus
     - name: Free up space (macOS)
