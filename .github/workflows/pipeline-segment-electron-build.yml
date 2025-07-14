@@ -94,11 +94,15 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
-    - name: Disable Defender (Windows)
+    - name: Dump environment variables
       if: ${{ inputs.target-platform == 'win' }}
       shell: C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe 
       run: |
         Get-ChildItem Env: | Format-Table -Wrap -AutoSize
+    - name: Disable Defender (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: C:\Windows\SysNative\WindowsPowerShell\v1.0\PowerShell.exe 
+      run: |
         $CompStatus = Get-MpComputerStatus
         echo "STATUS IS: " $CompStatus        
         Set-MpPreference -DisableRealtimeMonitoring $true
