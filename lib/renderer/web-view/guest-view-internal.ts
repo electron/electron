@@ -23,12 +23,12 @@ export function createGuest (iframe: HTMLIFrameElement, elementInstanceId: numbe
     throw new TypeError('Invalid embedder frame');
   }
 
-  const embedderFrameId = webFrame.getWebFrameId(iframe.contentWindow!);
-  if (embedderFrameId < 0) { // this error should not happen.
+  const embedderFrame = webFrame._findFrameByWindow(iframe.contentWindow!);
+  if (!embedderFrame) { // this error should not happen.
     throw new Error('Invalid embedder frame');
   }
 
-  return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_AND_ATTACH_GUEST, embedderFrameId, elementInstanceId, params);
+  return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_AND_ATTACH_GUEST, embedderFrame.frameToken, elementInstanceId, params);
 }
 
 export function detachGuest (guestInstanceId: number) {

@@ -55,9 +55,9 @@ bool IsWorkerThread() {
 }
 
 template <typename T>
-class IPCBase : public gin::Wrappable<T> {
+class IPCBase : public gin::DeprecatedWrappable<T> {
  public:
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
 
   static gin::Handle<T> Create(v8::Isolate* isolate) {
     return gin::CreateHandle(isolate, new T(isolate));
@@ -184,7 +184,7 @@ class IPCBase : public gin::Wrappable<T> {
   // gin::Wrappable:
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::Wrappable<T>::GetObjectTemplateBuilder(isolate)
+    return gin::DeprecatedWrappable<T>::GetObjectTemplateBuilder(isolate)
         .SetMethod("send", &T::SendMessage)
         .SetMethod("sendSync", &T::SendSync)
         .SetMethod("sendToHost", &T::SendToHost)
@@ -236,7 +236,7 @@ class IPCRenderFrame : public IPCBase<IPCRenderFrame>,
 };
 
 template <>
-gin::WrapperInfo IPCBase<IPCRenderFrame>::kWrapperInfo = {
+gin::DeprecatedWrapperInfo IPCBase<IPCRenderFrame>::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 class IPCServiceWorker : public IPCBase<IPCServiceWorker>,
@@ -260,7 +260,7 @@ class IPCServiceWorker : public IPCBase<IPCServiceWorker>,
 };
 
 template <>
-gin::WrapperInfo IPCBase<IPCServiceWorker>::kWrapperInfo = {
+gin::DeprecatedWrapperInfo IPCBase<IPCServiceWorker>::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 void Initialize(v8::Local<v8::Object> exports,

@@ -6,6 +6,7 @@
 
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
 #include "content/public/browser/navigation_handle.h"
+#include "content/public/browser/web_contents.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
 #include "ui/base/page_transition_types.h"

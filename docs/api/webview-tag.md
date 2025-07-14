@@ -1002,15 +1002,6 @@ Returns:
 Fired when the renderer process unexpectedly disappears. This is normally
 because it was crashed or killed.
 
-### Event: 'plugin-crashed'
-
-Returns:
-
-* `name` string
-* `version` string
-
-Fired when a plugin process is crashed.
-
 ### Event: 'destroyed'
 
 Fired when the WebContents is destroyed.

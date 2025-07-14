@@ -88,28 +88,27 @@ index dc3a5b0678b9c686e241b492e2c3b5ac833611a3..32a7ba4f557e65d9525d2ca07e8597e7
    // testing.
    V8IsolateMemoryDumpProvider* isolate_memory_dump_provider_for_testing()
 diff --git a/gin/wrappable.cc b/gin/wrappable.cc
-index 402355cb836cea14e9ee725a142a4bad44fd5bed..7e7f028dcfb87c7b80adebabac19ced8791f642e 100644
+index 721a0f3dc2c1714726b711b1b661907e80a9bdcc..6b954d9840f9b1798aa1778fa39c8a20cb4f34df 100644
 --- a/gin/wrappable.cc
 +++ b/gin/wrappable.cc
-@@ -13,6 +13,9 @@ namespace gin {
- WrappableBase::WrappableBase() = default;
+@@ -53,6 +53,8 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
+ DeprecatedWrappableBase::DeprecatedWrappableBase() = default;
  
- WrappableBase::~WrappableBase() {
-+  if (!wrapper_.IsEmpty()) {
+ DeprecatedWrappableBase::~DeprecatedWrappableBase() {
++  if (!wrapper_.IsEmpty())
 +    wrapper_.ClearWeak();
-+  }
    wrapper_.Reset();
  }
  
-@@ -28,15 +31,24 @@ const char* WrappableBase::GetTypeName() {
- void WrappableBase::FirstWeakCallback(
-     const v8::WeakCallbackInfo<WrappableBase>& data) {
-   WrappableBase* wrappable = data.GetParameter();
+@@ -68,9 +70,13 @@ const char* DeprecatedWrappableBase::GetTypeName() {
+ void DeprecatedWrappableBase::FirstWeakCallback(
+     const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
+   DeprecatedWrappableBase* wrappable = data.GetParameter();
 -  wrappable->dead_ = true;
 -  wrappable->wrapper_.Reset();
 -  data.SetSecondPassCallback(SecondWeakCallback);
-+  WrappableBase* wrappable_from_field =
-+      static_cast<WrappableBase*>(data.GetInternalField(1));
++  DeprecatedWrappableBase* wrappable_from_field =
++      static_cast<DeprecatedWrappableBase*>(data.GetInternalField(1));
 +  if (wrappable && wrappable == wrappable_from_field) {
 +    wrappable->dead_ = true;
 +    wrappable->wrapper_.Reset();
@@ -117,20 +116,21 @@ index 402355cb836cea14e9ee725a142a4bad44fd5bed..7e7f028dcfb87c7b80adebabac19ced8
 +  }
  }
  
- void WrappableBase::SecondWeakCallback(
-     const v8::WeakCallbackInfo<WrappableBase>& data) {
-+  if (IsolateHolder::DestroyedMicrotasksRunner()) {
+ NamedPropertyInterceptor*
+@@ -80,8 +86,11 @@ DeprecatedWrappableBase::GetNamedPropertyInterceptor() {
+ 
+ void DeprecatedWrappableBase::SecondWeakCallback(
+     const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
++  if (IsolateHolder::DestroyedMicrotasksRunner())
 +    return;
-+  }
-   WrappableBase* wrappable = data.GetParameter();
+   DeprecatedWrappableBase* wrappable = data.GetParameter();
 -  delete wrappable;
-+  if (wrappable) {
++  if (wrappable)
 +    delete wrappable;
-+  }
  }
  
- v8::MaybeLocal<v8::Object> WrappableBase::GetWrapperImpl(v8::Isolate* isolate,
-@@ -71,10 +83,16 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapperImpl(v8::Isolate* isolate,
+ v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
+@@ -117,10 +126,15 @@ v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
    void* values[] = {info, this};
    wrapper->SetAlignedPointerInInternalFields(2, indices, values);
    wrapper_.Reset(isolate, wrapper);
@@ -139,22 +139,21 @@ index 402355cb836cea14e9ee725a142a4bad44fd5bed..7e7f028dcfb87c7b80adebabac19ced8
    return v8::MaybeLocal<v8::Object>(wrapper);
  }
  
-+void WrappableBase::ClearWeak() {
-+  if (!wrapper_.IsEmpty()) {
++void DeprecatedWrappableBase::ClearWeak() {
++  if (!wrapper_.IsEmpty())
 +    wrapper_.ClearWeak();
-+  }
 +}
 +
  namespace internal {
  
- void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val,
+ void* FromV8Impl(v8::Isolate* isolate,
 diff --git a/gin/wrappable.h b/gin/wrappable.h
-index 2ae2cf67157ce8b161ae917291a913d237b7d535..c8c8cbe84e946cebde97a71b42815c62ccaf7b96 100644
+index 9048c4fc9f6b0a19f0620d6eb7e35d5005381d81..566d590890ba40ca3a254c7d88c0b30817d2a5e6 100644
 --- a/gin/wrappable.h
 +++ b/gin/wrappable.h
-@@ -80,6 +80,13 @@ class GIN_EXPORT WrappableBase {
-   v8::MaybeLocal<v8::Object> GetWrapperImpl(v8::Isolate* isolate,
-                                             WrapperInfo* wrapper_info);
+@@ -172,6 +172,13 @@ class GIN_EXPORT DeprecatedWrappableBase {
+       v8::Isolate* isolate,
+       DeprecatedWrapperInfo* wrapper_info);
  
 +  // Make this wrappable strong again. This is useful when the wrappable is
 +  // destroyed outside the finalizer callbacks and we want to avoid scheduling
@@ -165,4 +164,4 @@ index 2ae2cf67157ce8b161ae917291a913d237b7d535..c8c8cbe84e946cebde97a71b42815c62
 +
   private:
    static void FirstWeakCallback(
-       const v8::WeakCallbackInfo<WrappableBase>& data);
+       const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data);

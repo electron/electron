@@ -30,7 +30,7 @@ class ErrorThrower;
 
 namespace electron::api {
 
-class Notification final : public gin::Wrappable<Notification>,
+class Notification final : public gin::DeprecatedWrappable<Notification>,
                            public gin_helper::EventEmitterMixin<Notification>,
                            public gin_helper::Constructible<Notification>,
                            public gin_helper::CleanedUpAtExit,
@@ -54,7 +54,7 @@ class Notification final : public gin::Wrappable<Notification>,
   void NotificationFailed(const std::string& error) override;
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
   // gin_helper::CleanedUpAtExit

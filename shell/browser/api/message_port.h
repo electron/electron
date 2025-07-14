@@ -27,7 +27,7 @@ class Connector;
 namespace electron {
 
 // A non-blink version of blink::MessagePort.
-class MessagePort final : public gin::Wrappable<MessagePort>,
+class MessagePort final : public gin::DeprecatedWrappable<MessagePort>,
                           public gin_helper::CleanedUpAtExit,
                           private mojo::MessageReceiver {
  public:
@@ -56,7 +56,7 @@ class MessagePort final : public gin::Wrappable<MessagePort>,
       bool* threw_exception);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

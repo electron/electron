@@ -57,7 +57,7 @@ enum class JumpListResult : int;
 namespace api {
 
 class App final : public ElectronBrowserClient::Delegate,
-                  public gin::Wrappable<App>,
+                  public gin::DeprecatedWrappable<App>,
                   public gin_helper::EventEmitterMixin<App>,
                   private BrowserObserver,
                   private content::GpuDataManagerObserver,
@@ -67,7 +67,7 @@ class App final : public ElectronBrowserClient::Delegate,
   static App* Get();
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
