@@ -114,6 +114,8 @@ class Tray final : public gin::DeprecatedWrappable<Tray>,
   void SetContextMenu(gin_helper::ErrorThrower thrower,
                       v8::Local<v8::Value> arg);
   gfx::Rect GetBounds();
+  void SetAutoSaveName(const std::string& name);
+  v8::Local<v8::Value> GetAutoSaveName();
 
   bool CheckAlive();
 
