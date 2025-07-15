@@ -201,10 +201,10 @@ index ec80337fdac36fa1636f5142c3827d3bbc81644c..634db12dfb443acabde79e9faf59cb84
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index d18c54d41d38a6c4d5206ee6b0656aa615be9d8e..c37337b54b0305584903f264b41eacb373e5eb0f 100644
+index 4595323e89d35a838b5fa8c1cf982ee16b6619ab..516f619f6d5b0817a607f6b1950f14f3b29e3212 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1654,6 +1654,8 @@ component("platform") {
+@@ -1652,6 +1652,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",

@@ -272,7 +272,7 @@ index e9f4e5131238b9fb5f1b4b3e90a0cb84a7fc15b4..8b5f4cae3123ac5480ad73f0c873fca0
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 92646b4978457724d46eb526d6f34cd308562f0b..c3e669ed8fb0682f7f973bb1c69d069bd6a3aa0c 100644
+index f7200edbe6059ac6d7ade0672852b52da7642a71..0cc5da96411b46eb39d0c01dfec59cb503df0d9b 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,7 +9,9 @@
@@ -285,7 +285,7 @@ index 92646b4978457724d46eb526d6f34cd308562f0b..c3e669ed8fb0682f7f973bb1c69d069b
  namespace {
  // Workaround for https://crbug.com/1369643
  const double kThinControllerHeight = 0.5;
-@@ -100,12 +102,15 @@ - (void)maybeShowTrafficLights {
+@@ -125,12 +127,15 @@ - (void)maybeShowTrafficLights {
  
  @end
  
@@ -301,7 +301,7 @@ index 92646b4978457724d46eb526d6f34cd308562f0b..c3e669ed8fb0682f7f973bb1c69d069b
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -164,6 +169,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -189,6 +194,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -310,7 +310,7 @@ index 92646b4978457724d46eb526d6f34cd308562f0b..c3e669ed8fb0682f7f973bb1c69d069b
  // Handle "Move focus to the window toolbar" configured in System Preferences ->
  // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
  // tends to just be nil.
-@@ -174,8 +181,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
+@@ -199,8 +206,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
  }
  
  - (void)setAlwaysShowTrafficLights:(BOOL)alwaysShow {
@@ -477,7 +477,7 @@ index acc9537464c2a54ffc22956873dbdba74500c20b..b0b7d98e20ed0cc63a38d6a2ce462ac6
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 9f18a00af5ce726a4b338689ae75a0196b1a1dba..e0a9427743c283aec398b4bf3f09f95a09346e55 100644
+index 96ea72422541e6e3c30d9e22d441dc8efe299013..ff34f49b122be9bcbee26bb103ddca5250f32581 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -383,6 +383,7 @@ viz_component("service") {
@@ -488,7 +488,7 @@ index 9f18a00af5ce726a4b338689ae75a0196b1a1dba..e0a9427743c283aec398b4bf3f09f95a
    }
  
    if (is_ios) {
-@@ -705,6 +706,7 @@ viz_source_set("unit_tests") {
+@@ -706,6 +707,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -703,7 +703,7 @@ index e38279e46d8fe621db24b4d94f5811459b4ca6b5..26592c97be3474a24f294d3cf2e74627
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index af1e2cc289018a8e632bb8a2417a85c115986b9f..36580229d713429c1aa6171ffc20152b7df55178 100644
+index 45106cb30680bdf717280fffc345f6082e4d23e9..86dfb7d473d341cbfb6fdade7fee68b84f10e0e2 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -274,6 +274,7 @@ source_set("common") {
@@ -1406,7 +1406,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 8f96553993fd7599f8aa6d719d1f7bc9b1014555..55b6774bc1a460811eb7d82d0dcd2c584a5948bb 100644
+index 1921e9755d7bd07a527512b98132706c7e29ef58..08b77ee8f06fe9b942831adeb90e9d36040d8cad 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -419,6 +419,7 @@ component("core") {
