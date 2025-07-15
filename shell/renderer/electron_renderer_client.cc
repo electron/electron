@@ -125,8 +125,9 @@ void ElectronRendererClient::DidCreateScriptContext(
   render_frame->GetWebFrame()->GetDocumentLoader()->SetDefersLoading(
       blink::LoaderFreezeMode::kStrict);
 
+  v8::Isolate* const isolate = renderer_context->GetIsolate();
   std::shared_ptr<node::Environment> env = node_bindings_->CreateEnvironment(
-      renderer_context, nullptr, 0,
+      isolate, renderer_context, nullptr, 0,
       base::BindRepeating(&ElectronRendererClient::UndeferLoad,
                           base::Unretained(this), render_frame));
 
@@ -134,7 +135,6 @@ void ElectronRendererClient::DidCreateScriptContext(
   // Node.js deletes the global fetch function when their fetch implementation
   // is disabled, so we need to save and re-add it after the Node.js environment
   // is loaded. See corresponding change in node/init.ts.
-  v8::Isolate* isolate = env->isolate();
   v8::Local<v8::Object> global = renderer_context->Global();
 
   std::vector<std::string> keys = {"fetch",   "Response", "FormData",
