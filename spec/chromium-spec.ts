@@ -3644,8 +3644,14 @@ describe('navigator.bluetooth', () => {
 
   it('can request bluetooth devices', async () => {
     const bluetooth = await w.webContents.executeJavaScript(`
-    navigator.bluetooth.requestDevice({ acceptAllDevices: true}).then(device => "Found a device!").catch(err => err.message);`, true);
-    expect(bluetooth).to.be.oneOf(['Found a device!', 'Bluetooth adapter not available.', 'User cancelled the requestDevice() chooser.']);
+    navigator.bluetooth.requestDevice({ acceptAllDevices: true }).then(device => "Found a device!").catch(err => err.message);`, true);
+    const requestResponses = [
+      'Found a device!',
+      'Bluetooth adapter not available.',
+      'User cancelled the requestDevice() chooser.',
+      'User denied the browser permission to scan for Bluetooth devices.'
+    ];
+    expect(bluetooth).to.be.oneOf(requestResponses, `Unexpected response: ${bluetooth}`);
   });
 });
 
@@ -3675,6 +3681,7 @@ describe('navigator.hid', () => {
     server.close();
     closeAllWindows();
   });
+
   afterEach(() => {
     session.defaultSession.setPermissionCheckHandler(null);
     session.defaultSession.setDevicePermissionHandler(null);
