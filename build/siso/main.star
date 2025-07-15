@@ -21,12 +21,19 @@ def init(ctx):
           rule["inputs"].append("buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper")
           rule["inputs"].append("third_party/llvm-build/Release+Asserts_linux/bin/clang")
 
-    if runtime.os == "windows":
       if "executables" not in step_config:
         step_config["executables"] = []
       step_config["executables"].append("buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper")
       step_config["executables"].append("third_party/llvm-build/Release+Asserts_linux/bin/clang")
 
+    if runtime.os == "darwin":
+      # Update platforms to match our default siso config instead of reclient configs.
+      step_config["platforms"].update({
+          "clang": step_config["platforms"]["default"],
+          "clang_large": step_config["platforms"]["default"],          
+      })      
+
+    if runtime.os == "windows":
       # Add additional Windows SDK headers needed by Electron      
       win_toolchain_dir = win_sdk.toolchain_dir(ctx)
       if win_toolchain_dir:
