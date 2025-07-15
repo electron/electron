@@ -1094,9 +1094,14 @@ void BaseWindow::SetAccentColor(gin_helper::Arguments* args) {
   bool accent_color = false;
   std::string accent_color_string;
   if (args->GetNext(&accent_color_string)) {
-    window_->SetAccentColor(accent_color_string);
+    std::optional<SkColor> maybe_color = ParseCSSColor(accent_color_string);
+    if (maybe_color.has_value()) {
+      window_->SetAccentColor(maybe_color.value());
+      window_->UpdateWindowAccentColor(window_->IsActive());
+    }
   } else if (args->GetNext(&accent_color)) {
     window_->SetAccentColor(accent_color);
+    window_->UpdateWindowAccentColor(window_->IsActive());
   } else {
     args->ThrowError(
         "Invalid accent color value - must be a string or boolean");
