@@ -392,6 +392,22 @@ gfx::Rect Tray::GetBounds() {
   return tray_icon_->GetBounds();
 }
 
+void Tray::SetAutoSaveName(const std::string& name) {
+  if (!CheckAlive())
+    return;
+  tray_icon_->SetAutoSaveName(name);
+}
+
+v8::Local<v8::Value> Tray::GetAutoSaveName() {
+  if (!CheckAlive())
+    return {};
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  const std::string& name = tray_icon_->GetAutoSaveName();
+  if (name.empty())
+    return v8::Null(isolate);
+  return gin::ConvertToV8(isolate, name);
+}
+
 bool Tray::CheckAlive() {
   if (!tray_icon_) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -424,6 +440,8 @@ void Tray::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("closeContextMenu", &Tray::CloseContextMenu)
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
       .SetMethod("getBounds", &Tray::GetBounds)
+      .SetMethod("setAutosaveName", &Tray::SetAutoSaveName)
+      .SetMethod("getAutosaveName", &Tray::GetAutoSaveName)
       .Build();
 }
 

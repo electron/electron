@@ -68,6 +68,10 @@
   [self setFrame:[statusItem_ button].frame];
 }
 
+- (void)setAutosaveName:(NSString*)name {
+  statusItem_.autosaveName = name;
+}
+
 - (void)updateTrackingAreas {
   // Use NSTrackingArea for listening to mouseEnter, mouseExit, and mouseMove
   // events.
@@ -418,6 +422,15 @@ void TrayIconCocoa::SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) {
 
 gfx::Rect TrayIconCocoa::GetBounds() {
   return gfx::ScreenRectFromNSRect([status_item_view_ window].frame);
+}
+
+void TrayIconCocoa::SetAutoSaveName(const std::string& name) {
+  auto_save_name_ = name;
+  [status_item_view_ setAutosaveName:base::SysUTF8ToNSString(name)];
+}
+
+std::string TrayIconCocoa::GetAutoSaveName() const {
+  return auto_save_name_;
 }
 
 // static
