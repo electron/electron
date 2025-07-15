@@ -247,13 +247,24 @@ runs:
         type .\siso_report.txt
         echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $env:GITHUB_ENV
 
+    - name: Dump running processes after build
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        Get-Process -FileVersionInfo
+
     - name: List all ninja files in out/Default
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
         cd src
-        $ninjaFiles = Get-ChildItem -Path out\Default -Filter *.ninja -Recurse
-        Compress-Archive -Path $ninjaFiles.FullName -DestinationPath out\Default\ninja_files.zip
+        New-Item -ItemType Directory -Path ninjafiles -Force | Out-Null
+        Get-ChildItem -Path out\Default -Filter *.ninja -Recurse | ForEach-Object {
+          $dest = Join-Path ninjafiles ($_.FullName.Substring((Resolve-Path out\Default).Path.Length + 1))
+          New-Item -ItemType Directory -Path (Split-Path $dest) -Force | Out-Null
+          Copy-Item $_.FullName -Destination $dest
+        }
+        Compress-Archive -Path ninjafiles -DestinationPath out\Default\ninja_files.zip
     - name: Generate Artifact Key
       if: always() && !cancelled()
       shell: bash

@@ -99,17 +99,16 @@ jobs:
       shell: cmd
       run: |
         reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Advanced Threat Protection"
-        reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\Features"
     - name: Try force defender passive mode
       if: ${{ inputs.target-platform == 'win' }}
       shell: cmd
       run: |
         reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Advanced Threat Protection" /v "ForceDefenderPassiveMode" /t REG_DWORD /d "1" /f
-    - name: Get Defender State After
+    - name: Get Running processes
       if: ${{ inputs.target-platform == 'win' }}
-      shell: cmd
+      shell: powershell
       run: |
-        sc query state=all
+        Get-Process -FileVersionInfo
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
