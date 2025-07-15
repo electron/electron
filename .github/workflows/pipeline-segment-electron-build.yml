@@ -96,7 +96,17 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Get Defender State
       if: ${{ inputs.target-platform == 'win' }}
+      shell: cmd
+      run: |
+        sc query Windefend
+    - name: Try Uninstalling Defender
+      if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
+      run: |
+        Uninstall-WindowsFeature -Name Windows-Defender 
+    - name: Get Defender State After
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: cmd
       run: |
         sc query Windefend
     - name: Free up space (macOS)
