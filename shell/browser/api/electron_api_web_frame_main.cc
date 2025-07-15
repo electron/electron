@@ -521,8 +521,7 @@ void WebFrameMain::CollectedJavaScriptCallStack(
   const blink::LocalFrameToken& frame_token =
       render_frame_host()->GetFrameToken();
   if (remote_frame_token == frame_token) {
-    base::Value base_value(untrusted_javascript_call_stack);
-    promise.Resolve(base_value);
+    promise.Resolve(base::Value(untrusted_javascript_call_stack));
   } else if (!remote_frame_token) {
     // Failed to collect call stack. See logic in:
     // third_party/blink/renderer/controller/javascript_call_stack_collector.cc
