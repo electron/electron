@@ -18,14 +18,14 @@ class handle;
 
 namespace electron::api {
 
-class NativeTheme final : public gin::Wrappable<NativeTheme>,
+class NativeTheme final : public gin::DeprecatedWrappable<NativeTheme>,
                           public gin_helper::EventEmitterMixin<NativeTheme>,
                           private ui::NativeThemeObserver {
  public:
   static gin::Handle<NativeTheme> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

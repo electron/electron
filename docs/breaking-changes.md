@@ -21,6 +21,22 @@ macOS 11 (Big Sur) is no longer supported by [Chromium](https://chromium-review.
 Older versions of Electron will continue to run on Big Sur, but macOS 12 (Monterey)
 or later will be required to run Electron v38.0.0 and higher.
 
+### Removed: `plugin-crashed` event
+
+The `plugin-crashed` event has been removed from `webContents`.
+
+### Deprecated: `webFrame.routingId` property
+
+The `routingId` property will be removed from `webFrame` objects.
+
+You should use `webFrame.frameToken` instead.
+
+### Deprecated: `webFrame.findFrameByRoutingId(routingId)`
+
+The `webFrame.findFrameByRoutingId(routingId)` function will be removed.
+
+You should use `webFrame.findFrameByToken(frameToken)` instead.
+
 ## Planned Breaking API Changes (37.0)
 
 ### Utility Process unhandled rejection behavior change

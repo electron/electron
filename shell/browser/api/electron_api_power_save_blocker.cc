@@ -40,7 +40,8 @@ struct Converter<device::mojom::WakeLockType> {
 
 namespace electron::api {
 
-gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo PowerSaveBlocker::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
     : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension) {}
@@ -119,7 +120,8 @@ gin::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(v8::Isolate* isolate) {
 
 gin::ObjectTemplateBuilder PowerSaveBlocker::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<PowerSaveBlocker>::GetObjectTemplateBuilder(isolate)
+  return gin::DeprecatedWrappable<PowerSaveBlocker>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("start", &PowerSaveBlocker::Start)
       .SetMethod("stop", &PowerSaveBlocker::Stop)
       .SetMethod("isStarted", &PowerSaveBlocker::IsStarted);

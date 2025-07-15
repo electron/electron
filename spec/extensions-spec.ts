@@ -1,4 +1,4 @@
-import { app, session, BrowserWindow, ipcMain, WebContents, Extension, Session } from 'electron/main';
+import { app, session, webFrameMain, BrowserWindow, ipcMain, WebContents, Extension, Session } from 'electron/main';
 
 import { expect } from 'chai';
 import * as WebSocket from 'ws';
@@ -631,13 +631,13 @@ describe('chrome extensions', () => {
     };
 
     let responseIdCounter = 0;
-    const executeJavaScriptInFrame = (webContents: WebContents, frameRoutingId: number, code: string) => {
+    const executeJavaScriptInFrame = (webContents: WebContents, frameToken: string, code: string) => {
       return new Promise(resolve => {
         const responseId = responseIdCounter++;
         ipcMain.once(`executeJavaScriptInFrame_${responseId}`, (event, result) => {
           resolve(result);
         });
-        webContents.send('executeJavaScriptInFrame', frameRoutingId, code, responseId);
+        webContents.send('executeJavaScriptInFrame', frameToken, code, responseId);
       });
     };
 
@@ -748,10 +748,12 @@ describe('chrome extensions', () => {
             const frameEvents = await detailsPromise;
             await Promise.all(
               frameEvents.map(async frameEvent => {
-                const [, isMainFrame, , frameRoutingId] = frameEvent;
+                const [, isMainFrame, frameProcessId, frameRoutingId] = frameEvent;
+                const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
+                expect(frame).to.not.be.undefined();
                 const result: any = await executeJavaScriptInFrame(
                   w.webContents,
-                  frameRoutingId,
+                  frame!.frameToken,
                   `(() => {
                     const a = document.getElementById('all_frames_enabled')
                     const b = document.getElementById('all_frames_disabled')

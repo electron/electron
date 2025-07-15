@@ -218,7 +218,8 @@ struct Converter<electron::api::DesktopCapturer::Source> {
 
 namespace electron::api {
 
-gin::WrapperInfo DesktopCapturer::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo DesktopCapturer::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 DesktopCapturer::DesktopCapturer(v8::Isolate* isolate) {}
 
@@ -521,7 +522,8 @@ bool DesktopCapturer::IsDisplayMediaSystemPickerAvailable() {
 
 gin::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<DesktopCapturer>::GetObjectTemplateBuilder(isolate)
+  return gin::DeprecatedWrappable<DesktopCapturer>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("startHandling", &DesktopCapturer::StartHandling);
 }
 

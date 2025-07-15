@@ -50,7 +50,7 @@ struct Converter<SharingItem> {
 
 namespace electron::api {
 
-gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Menu::Menu(gin::Arguments* args)
     : model_(std::make_unique<ElectronMenuModel>(this)) {

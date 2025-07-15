@@ -144,7 +144,8 @@ content::RenderFrameHost* WebFrameMain::render_frame_host() const {
              : content::RenderFrameHost::FromFrameToken(frame_token_);
 }
 
-gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo WebFrameMain::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
     : frame_tree_node_id_(rfh->GetFrameTreeNodeId()),
@@ -382,6 +383,14 @@ std::string WebFrameMain::Name() const {
   return render_frame_host()->GetFrameName();
 }
 
+std::string WebFrameMain::FrameToken() const {
+  if (!CheckRenderFrame())
+    return "";
+  const blink::LocalFrameToken& frame_token =
+      render_frame_host()->GetFrameToken();
+  return frame_token.ToString();
+}
+
 base::ProcessId WebFrameMain::OSProcessID() const {
   if (!CheckRenderFrame())
     return -1;
@@ -591,6 +600,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("detached", &WebFrameMain::Detached)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
       .SetProperty("name", &WebFrameMain::Name)
+      .SetProperty("frameToken", &WebFrameMain::FrameToken)
       .SetProperty("osProcessId", &WebFrameMain::OSProcessID)
       .SetProperty("processId", &WebFrameMain::ProcessID)
       .SetProperty("routingId", &WebFrameMain::RoutingID)

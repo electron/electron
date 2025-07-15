@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 5b543e82abb17cbb91bf37fa6bac016b6053eb93..117b6b05b3a1c39183a45830b97255cab529c646 100644
+index 717a221b93ecd3137b61fb21811f421e575aad8d..b8d78d1af2ea435d55eb8586c92dde16ed02d7ee 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -82,11 +82,13 @@
@@ -25,7 +25,7 @@ index 5b543e82abb17cbb91bf37fa6bac016b6053eb93..117b6b05b3a1c39183a45830b97255ca
  #include "components/tabs/public/tab_interface.h"
  #if BUILDFLAG(ENABLE_PLATFORM_APPS)
  #include "extensions/browser/extension_registry.h"  // nogncheck
-@@ -262,182 +264,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -262,190 +264,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  
@@ -36,13 +36,23 @@ index 5b543e82abb17cbb91bf37fa6bac016b6053eb93..117b6b05b3a1c39183a45830b97255ca
 -// A wrapper around `base::NormalizeFilePath` that returns its result instead of
 -// using an out parameter.
 -base::FilePath NormalizeFilePath(const base::FilePath& path) {
--  CHECK(path.IsAbsolute());
+-  base::FilePath absolute_path = path;
+-  if (!absolute_path.IsAbsolute()) {
+-    absolute_path = base::MakeAbsoluteFilePath(absolute_path);
+-  }
+-
+-  if (absolute_path.empty()) {
+-    return absolute_path;
+-  }
+-
 -  // TODO(crbug.com/368130513O): On Windows, this call will fail if the target
 -  // file path is greater than MAX_PATH. We should decide how to handle this
 -  // scenario.
+-  // If the path is invalid, the `base::NormalizeFilePath` will also return
+-  // false, so we return the empty path.
 -  base::FilePath normalized_path;
--  if (!base::NormalizeFilePath(path, &normalized_path)) {
--    return path;
+-  if (!base::NormalizeFilePath(absolute_path, &normalized_path)) {
+-    return absolute_path;
 -  }
 -  CHECK_EQ(path.empty(), normalized_path.empty());
 -  return normalized_path;
@@ -70,10 +80,8 @@ index 5b543e82abb17cbb91bf37fa6bac016b6053eb93..117b6b05b3a1c39183a45830b97255ca
 -          {base::DIR_MODULE, nullptr, BlockType::kBlockAllChildren},
 -          {base::DIR_ASSETS, nullptr, BlockType::kBlockAllChildren},
 -          // And neither should the configuration of at least the currently
--          // running
--          // Chrome instance (note that this does not take --user-data-dir
--          // command
--          // line overrides into account).
+-          // running Chrome instance (note that this does not take
+-          // --user-data-dir command line overrides into account).
 -          {chrome::DIR_USER_DATA, nullptr, BlockType::kBlockAllChildren},
 -          // ~/.ssh is pretty sensitive on all platforms, so block access to
 -          // that.
@@ -212,7 +220,7 @@ index 5b543e82abb17cbb91bf37fa6bac016b6053eb93..117b6b05b3a1c39183a45830b97255ca
  
  // Checks if `path` should be blocked by the `rules`.
  // The BlockType of the nearest ancestor of a path to check is what
-@@ -1261,16 +1091,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
+@@ -1269,16 +1091,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
    std::unique_ptr<base::RetainingOneShotTimer> cleanup_timer;
  };
  
@@ -229,7 +237,7 @@ index 5b543e82abb17cbb91bf37fa6bac016b6053eb93..117b6b05b3a1c39183a45830b97255ca
  ChromeFileSystemAccessPermissionContext::
      ChromeFileSystemAccessPermissionContext(content::BrowserContext* context,
                                              const base::Clock* clock)
-@@ -1289,7 +1109,7 @@ ChromeFileSystemAccessPermissionContext::
+@@ -1297,7 +1109,7 @@ ChromeFileSystemAccessPermissionContext::
  #if BUILDFLAG(IS_ANDROID)
    one_time_permissions_tracker_.Observe(
        OneTimePermissionsTrackerFactory::GetForBrowserContext(context));
@@ -238,7 +246,7 @@ index 5b543e82abb17cbb91bf37fa6bac016b6053eb93..117b6b05b3a1c39183a45830b97255ca
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -2551,7 +2371,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -2563,7 +2375,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -247,29 +255,29 @@ index 5b543e82abb17cbb91bf37fa6bac016b6053eb93..117b6b05b3a1c39183a45830b97255ca
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3108,11 +2928,7 @@ bool ChromeFileSystemAccessPermissionContext::OriginHasExtendedPermission(
-     const url::Origin& origin) {
-   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
- 
+@@ -2898,11 +2710,7 @@ bool ChromeFileSystemAccessPermissionContext::
+         HandleType handle_type,
+         UserAction user_action,
+         GrantType grant_type) {
 -#if BUILDFLAG(IS_ANDROID)
 -  // TODO(crbug.com/40101963): Enable when android persisted permissions are
 -  // implemented.
 -  return false;
 -#else
-+#if 0
++#elif 0
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3156,6 +2972,7 @@ bool ChromeFileSystemAccessPermissionContext::OriginHasExtendedPermission(
-                                             : WebAppInstallStatus::kUninstalled;
-   return app_has_os_integration;
+@@ -2953,6 +2761,7 @@ bool ChromeFileSystemAccessPermissionContext::
+ 
+   return false;
  #endif  // BUILDFLAG(IS_ANDROID)
 +  return false;
  }
  
- void ChromeFileSystemAccessPermissionContext::SetOriginExtendedPermissionByUser(
+ std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index f647100981fd98d8511d07a6d7e100910e38a0f2..14e1b3c8ec78429f5a845f54cc973e7c77ea8bc4 100644
+index 51bec8ef2a5212494625898fdeb500344525d8f4..6deb4b86b35c2ba38849e25af7691ac858dfaa3e 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -9,10 +9,13 @@
@@ -294,7 +302,7 @@ index f647100981fd98d8511d07a6d7e100910e38a0f2..14e1b3c8ec78429f5a845f54cc973e7c
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -403,6 +407,183 @@ class ChromeFileSystemAccessPermissionContext
+@@ -403,6 +407,191 @@ class ChromeFileSystemAccessPermissionContext
      return is_block_path_rules_init_complete_;
    }
  
@@ -305,13 +313,23 @@ index f647100981fd98d8511d07a6d7e100910e38a0f2..14e1b3c8ec78429f5a845f54cc973e7c
 +  // A wrapper around `base::NormalizeFilePath` that returns its result instead of
 +  // using an out parameter.
 +  static base::FilePath NormalizeFilePath(const base::FilePath& path) {
-+    CHECK(path.IsAbsolute());
++    base::FilePath absolute_path = path;
++    if (!absolute_path.IsAbsolute()) {
++      absolute_path = base::MakeAbsoluteFilePath(absolute_path);
++    }
++
++    if (absolute_path.empty()) {
++      return absolute_path;
++    }
++
 +    // TODO(crbug.com/368130513O): On Windows, this call will fail if the target
 +    // file path is greater than MAX_PATH. We should decide how to handle this
 +    // scenario.
++    // If the path is invalid, the `base::NormalizeFilePath` will also return
++    // false, so we return the empty path.
 +    base::FilePath normalized_path;
-+    if (!base::NormalizeFilePath(path, &normalized_path)) {
-+      return path;
++    if (!base::NormalizeFilePath(absolute_path, &normalized_path)) {
++      return absolute_path;
 +    }
 +    CHECK_EQ(path.empty(), normalized_path.empty());
 +    return normalized_path;
@@ -339,10 +357,8 @@ index f647100981fd98d8511d07a6d7e100910e38a0f2..14e1b3c8ec78429f5a845f54cc973e7c
 +            {base::DIR_MODULE, nullptr, BlockType::kBlockAllChildren},
 +            {base::DIR_ASSETS, nullptr, BlockType::kBlockAllChildren},
 +            // And neither should the configuration of at least the currently
-+            // running
-+            // Chrome instance (note that this does not take --user-data-dir
-+            // command
-+            // line overrides into account).
++            // running Chrome instance (note that this does not take
++            // --user-data-dir command line overrides into account).
 +            {chrome::DIR_USER_DATA, nullptr, BlockType::kBlockAllChildren},
 +            // ~/.ssh is pretty sensitive on all platforms, so block access to
 +            // that.

@@ -24,7 +24,7 @@ using content::DevToolsAgentHost;
 
 namespace electron::api {
 
-gin::WrapperInfo Debugger::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo Debugger::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Debugger::Debugger(v8::Isolate* isolate, content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents), web_contents_(web_contents) {}

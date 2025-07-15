@@ -49,7 +49,7 @@ namespace electron::api {
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
 class SimpleURLLoaderWrapper final
-    : public gin::Wrappable<SimpleURLLoaderWrapper>,
+    : public gin::DeprecatedWrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
       public gin_helper::CleanedUpAtExit,
       private network::SimpleURLLoaderStreamConsumer,
@@ -61,7 +61,7 @@ class SimpleURLLoaderWrapper final
   void Cancel();
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

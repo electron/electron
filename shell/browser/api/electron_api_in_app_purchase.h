@@ -22,14 +22,14 @@ class Handle;
 
 namespace electron::api {
 
-class InAppPurchase final : public gin::Wrappable<InAppPurchase>,
+class InAppPurchase final : public gin::DeprecatedWrappable<InAppPurchase>,
                             public gin_helper::EventEmitterMixin<InAppPurchase>,
                             private in_app_purchase::TransactionObserver {
  public:
   static gin::Handle<InAppPurchase> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
