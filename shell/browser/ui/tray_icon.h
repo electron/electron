@@ -99,6 +99,9 @@ class TrayIcon {
   // Returns the bounds of tray icon.
   virtual gfx::Rect GetBounds();
 
+  virtual void SetAutoSaveName(const std::string& name);
+  virtual std::string GetAutoSaveName() const;
+
   void AddObserver(TrayIconObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
 

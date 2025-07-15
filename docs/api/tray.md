@@ -327,6 +327,14 @@ Returns [`Rectangle`](structures/rectangle.md)
 
 The `bounds` of this tray icon as `Object`.
 
+#### `tray.setAutosaveName(name)` _macOS_
+
+* `name` string - A string used to uniquely identify the tray icon and allow it to retain its position between relaunches. Using the same string for a new tray item will create it in the same position as the previous tray item to use the string. Passing an empty string will reset the name to a system-assigned name.
+
+#### `tray.getAutosaveName()` _macOS_
+
+Returns `string | null` - A string used to uniquely identify the tray icon and allow it to retain its position between relaunches, or null if none is set.
+
 #### `tray.isDestroyed()`
 
 Returns `boolean` - Whether the tray icon is destroyed.
