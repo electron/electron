@@ -594,29 +594,17 @@ void NativeWindowViews::UpdateWindowAccentColor(bool active) {
 }
 
 void NativeWindowViews::SetAccentColor(
-    std::variant<bool, std::string> accent_color) {
-  if (std::holds_alternative<std::string>(accent_color)) {
-    std::optional<SkColor> maybe_color =
-        ParseCSSColor(std::get<std::string>(accent_color));
-    if (maybe_color.has_value())
-      accent_color_ = maybe_color.value();
-  } else if (std::holds_alternative<bool>(accent_color)) {
-    accent_color_ = std::get<bool>(accent_color);
-  }
-
-  UpdateWindowAccentColor();
+    std::variant<std::monostate, bool, SkColor> accent_color) {
+  accent_color_ = accent_color;
 }
 
 /*
- * Returns the accent color of the window, per te following hiuristic:
+ * Returns the window's accent color, per the following heuristic:
  *
- * 1. If the accent color is set to a specific SkColor, it returns that color as
- * a hex string.
- * 2. If the accent color is set to true, it returns the system accent color as
- * a hex string.
- * 3. If the accent color is set to false, it returns false.
- * 4. If the accent color is std::monostate, it returns the system accent color
- * as a hex string.
+ * - If |accent_color_| is an SkColor, return that color as a hex string.
+ * - If |accent_color_| is true, return the system accent color as a hex string.
+ * - If |accent_color_| is false, return false.
+ * - Otherwise, return the system accent color as a hex string.
  */
 std::variant<bool, std::string> NativeWindowViews::GetAccentColor() const {
   std::optional<DWORD> system_color = GetSystemAccentColor();
