@@ -98,7 +98,7 @@ jobs:
       if: ${{ inputs.target-platform == 'win' }}
       shell: cmd
       run: |
-        sc query state= all
+        sc query state=all
     - name: Try Uninstalling Defender
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
@@ -108,7 +108,7 @@ jobs:
       if: ${{ inputs.target-platform == 'win' }}
       shell: cmd
       run: |
-        sc query state= all
+        sc query state=all
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
