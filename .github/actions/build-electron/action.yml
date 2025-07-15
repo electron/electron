@@ -251,7 +251,7 @@ runs:
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
-        Get-Process -FileVersionInfo
+        Get-Process | Select-Object *
 
     - name: List all ninja files in out/Default
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}

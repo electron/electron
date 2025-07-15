@@ -108,7 +108,7 @@ jobs:
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
-        Get-Process -FileVersionInfo
+        Get-Process | Select-Object *
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
