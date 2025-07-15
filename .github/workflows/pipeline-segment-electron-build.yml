@@ -98,12 +98,13 @@ jobs:
       if: ${{ inputs.target-platform == 'win' }}
       shell: cmd
       run: |
-        sc query state=all
-    - name: Try Uninstalling Defender
+        reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Advanced Threat Protection"
+        reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\Features"
+    - name: Try force defender passive mode
       if: ${{ inputs.target-platform == 'win' }}
-      shell: powershell
+      shell: cmd
       run: |
-        Uninstall-WindowsFeature -Name Windows-Defender 
+        reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Advanced Threat Protection" /v "ForceDefenderPassiveMode" /t REG_DWORD /d "1" /f
     - name: Get Defender State After
       if: ${{ inputs.target-platform == 'win' }}
       shell: cmd
