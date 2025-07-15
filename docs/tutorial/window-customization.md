@@ -14,7 +14,6 @@ Windows, and Linux.
 > supports composing many web views. `BaseWindow` can be used interchangeably with `BrowserWindow`
 > in the examples of the documents in this section.
 
- <!-- markdownlint-disable-next-line MD033 -->
 <DocCardList />
 
 [`BaseWindow`]: ../api/base-window.md
