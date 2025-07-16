@@ -89,10 +89,10 @@ index 4f13354776da9944ed75874953a2e2c9878a649b..83728e697c5029a79fb75d84a1be5bdf
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index dc328e04767437d2d9b6d67d07cb6c9d055773f9..99094ba175693f46171940563e68004cdc90f279 100644
+index dc328e04767437d2d9b6d67d07cb6c9d055773f9..19edb190c57b75e29e71d6342e3a648ef4611fdf 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12325,5 +12325,31 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12325,5 +12325,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -115,11 +115,16 @@ index dc328e04767437d2d9b6d67d07cb6c9d055773f9..99094ba175693f46171940563e68004c
 +    const LayoutObject*,
 +    bool allow_visited_style,
 +    CSSValuePhase value_phase) const {
-+  if (style.ElectronCornerSmoothing() == Length::Auto()) {
-+    return CSSIdentifierValue::Create(CSSValueID::kSystemUi);
++  const Length& length = style.ElectronCornerSmoothing();
++  switch (length.GetType()) {
++    case Length::kAuto:
++      return CSSIdentifierValue::Create(CSSValueID::kSystemUi);
++    case Length::kPercent:
++      return CSSNumericLiteralValue::Create(
++          length.Percent(), CSSPrimitiveValue::UnitType::kPercentage);
++    default:
++      return CSSIdentifierValue::Create(CSSValueID::kNone);
 +  }
-+  return CSSPrimitiveValue::CreateFromLength(style.ElectronCornerSmoothing(),
-+                                             1.0);
 +}
 +
  }  // namespace css_longhand
