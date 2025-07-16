@@ -37,7 +37,7 @@ index ec76c1990b6d842e6727a1c034f831b7e43966b9..86a3bcc8fa771a333e6e269ed822af1c
           allow_cookies_from_browser == other.allow_cookies_from_browser &&
           include_request_cookies_with_response ==
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index 8b0fbc6f484bab038144177f795d8fd9e596e20a..680df80f43de51aaa2a24afa5e2cae57ad8b1222 100644
+index 2c6204c64a234c056b7baef43921fe24b2013e82..bed5b88fbb39c21160a0d8d4062f1ea2a84c46d1 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
 @@ -77,6 +77,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
@@ -61,7 +61,7 @@ index 134a15fd2f3e6b7d941370741abee1698132c67b..80877a49fadd7ff2f9ad6d15e5f55eb3
      return false;
    }
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 37ea42c876b6cf6379344383774faabb554f2f84..ea577aff934aa79484f8c645c1bccf83513ad9d1 100644
+index 39f5dcef5291dfdaf778e27c1b0152313feb77b3..9f1c16e1dfccc8787a9079095687002b7e58b4db 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
 @@ -73,6 +73,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
@@ -76,7 +76,7 @@ index 37ea42c876b6cf6379344383774faabb554f2f84..ea577aff934aa79484f8c645c1bccf83
    enabled_client_hints(
        const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index afd8b1bb9c7e18cdd5012ed4211cf56aa212da27..6752d6e1c0576087faa741c0bbdf5837344d9512 100644
+index fc18883cc2e92bacb88d0d9906f7143607695ed8..dd7d1bd2364528ff12671dee724a4a259a78de70 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -88,6 +88,9 @@ struct TrustedUrlRequestParams {
@@ -155,7 +155,7 @@ index 6318bfabcf5f1f72b78161954f44b2bc2ab2b08d..da73a077a944cb99f3ad41ea9f66cc60
  
    ad_auction_event_record_request_helper_.HandleResponse(
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 997503121c7b96fca5f5657ac465af0388c42715..54b3b804f8da59ef2d2f86f3a5c1effd01575d69 100644
+index 6ba39c957af7927b060be59f7d8837a3e2d41215..e52a276b0dd671317797104d85ccf75f5a333153 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -615,6 +615,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader

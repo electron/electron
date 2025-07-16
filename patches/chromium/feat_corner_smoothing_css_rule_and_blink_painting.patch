@@ -20,7 +20,7 @@ making three primary changes to Blink:
     * Controls whether the CSS rule is available.
 
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-index c68d6df3d9490462980b7e80ed4ba642de4080e3..0e925784e0bf0c13126c256f612742c81e17084b 100644
+index 10a7bf7440587c732e90e800094ce97d2bb9d10c..dd3ff00b626d7042798c17758473651af9f26742 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 +++ b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 @@ -48,6 +48,7 @@ enum CSSSampleId {
@@ -76,7 +76,7 @@ index 9ef592d0d86e4a6296db98b9c31f008f877dd348..b16bc9b41f6b3a596a0e52a516b7182c
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index e2002af2f67edb243a8692f4609d39fe61f9918e..86aa3424e4f1d4fe35da7c22424a939ab99b6c2e 100644
+index b3c6edce43c4b894f6e93df2f8356416a626c335..f917ff67620e627af21c7f2e9f0605e1f3f97089 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
 @@ -350,6 +350,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,

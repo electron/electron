@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index ad12b739d4749e409457ae1c29aeb9f8b99586df..02cb932e6117612c59b5fa0bcc85d471cbe3178f 100644
+index 152f732f17423c2533d0e296f66d724c1766f354..8c54c3d7561de12c436141df93c96d7c28595bbe 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1055,6 +1055,7 @@ component("base") {
@@ -582,10 +582,10 @@ index 8563eb9aa5b5dca04e45d55a3bdd32a135232f00..587bafc4fa1f73c9ac8403757b21bfed
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6aaca3b6bccf7a2e2525aec44f7e779406fa1730..2bdecc9c214987f88d559c872a0083826adb933d 100644
+index 5f7269259df741c5a9cd28dc90ace1acc634ba74..67cb62118e108d0cb5c546627888d401c72d1401 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -341,6 +341,7 @@ source_set("browser") {
+@@ -340,6 +340,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -703,7 +703,7 @@ index e38279e46d8fe621db24b4d94f5811459b4ca6b5..26592c97be3474a24f294d3cf2e74627
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 45106cb30680bdf717280fffc345f6082e4d23e9..86dfb7d473d341cbfb6fdade7fee68b84f10e0e2 100644
+index ef3b5ceba5e460cdfc609245a53d6d1720f32564..910043ba8cc79774550c0097f5bef53e3ff12d63 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -274,6 +274,7 @@ source_set("common") {
@@ -715,7 +715,7 @@ index 45106cb30680bdf717280fffc345f6082e4d23e9..86dfb7d473d341cbfb6fdade7fee68b8
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index c5a9054a7b5352602d3fd57df34f63a35b4a0bb5..3ece58548ea0d2f9cb4ab4593e487b2e94755668 100644
+index b528bf8234175fe21495924aea8003aa53a01823..d41cba08800896d46149c6e541bb6d9070c018be 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -320,6 +320,7 @@ target(link_target_type, "renderer") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index d2a9eedef31af121195d0d8442cb55a867072630..4dde7b3d402de797af08aa70547cce7f8e9d181c 100644
+index 2aad1dbc8b4f61a7f886d21b568ae42cd9adb285..f7af07e336b2ef19198d0bc7a6bfa5352c7f4faa 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -669,6 +669,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index d2a9eedef31af121195d0d8442cb55a867072630..4dde7b3d402de797af08aa70547cce7f
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1977,6 +1979,7 @@ test("content_browsertests") {
+@@ -1976,6 +1978,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index d2a9eedef31af121195d0d8442cb55a867072630..4dde7b3d402de797af08aa70547cce7f
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3283,6 +3286,7 @@ test("content_unittests") {
+@@ -3281,6 +3284,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1438,10 +1438,10 @@ index c771cee7be34f36521de34ef893ee578b648a8c8..b0bd447b848bfdb7a9ff9cd98ba95574
    blink_core_sources_editing += [ "kill_ring_none.cc" ]
  }
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index ce3dc22f38b9d3f2f12e469b23f5dfe06ecbb98a..a69af46e05365028379dbf6abafaacd9b19e4569 100644
+index 296d38b10d16c7b17137358fe89bac6a03afce09..9608842b8b0df441dc654bf96b46f052bce6e818 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
-@@ -77,6 +77,7 @@ component("accelerated_widget_mac") {
+@@ -81,6 +81,7 @@ component("accelerated_widget_mac") {
      "//ui/gfx",
      "//ui/gfx/geometry",
      "//ui/gl",
@@ -1566,7 +1566,7 @@ index 2d982e757d94976ec68863726db8e8a85b1034e5..d2ec88c6f923e9f7147d33ccd53c3659
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index aeb728b14fbbbb3e0c1e71d0c3997b59c29244ce..7480d0f42db88fe4058b87e0debe597c51d35730 100644
+index 2a7352c1925bdce988c9f1a44f387e160532f508..8c07cc82bd6c42e6da8de314ca52867bcb3b9532 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 @@ -14,6 +14,7 @@
@@ -1603,7 +1603,7 @@ index aeb728b14fbbbb3e0c1e71d0c3997b59c29244ce..7480d0f42db88fe4058b87e0debe597c
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -700,6 +705,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -703,6 +708,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -1611,7 +1611,7 @@ index aeb728b14fbbbb3e0c1e71d0c3997b59c29244ce..7480d0f42db88fe4058b87e0debe597c
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -728,6 +734,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -731,6 +737,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
@@ -1771,7 +1771,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..de771ef414b9a69e331261524f08e9a1
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 491b8006c83c8602122a77d60e161c2167744756..abbf5248199598eadb57af99c3e3dc4c72f58af9 100644
+index abf9f37cc7e80c1d2f1ad216912a033cb5492310..a06b565f2421a7c0fc4d9fdb51932fc30fc0d5a6 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -129,6 +129,12 @@ component("display") {
@@ -1818,7 +1818,7 @@ index 85d9170ae8de43ec0fa18c033d66c0583c26ec2f..c4f76301818404ce853583adf01af85c
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index d364d9615b9e018ddbfa36bb3167630ef1f3a076..cba28327de6932b0fbde3e5518ea30e3417cfbdf 100644
+index 20ec218ead745327e00e95d95b0dd4f3488e97de..b1655a029fbc49e0ec13a9cb875943ab231bd2d3 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -339,6 +339,12 @@ component("gfx") {
