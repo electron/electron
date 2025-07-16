@@ -68,6 +68,12 @@ runs:
         electron/script/copy-debug-symbols.py --target-cpu="${{ inputs.target-arch }}" --out-dir=out/Default/debug --compress
         electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}" --verbose
         electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
+    - name: Dump running processes after build of electron
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping running processes after building electron"
+        Get-Process | Select-Object *
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -80,6 +86,12 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
+    - name: Dump running processes after build of electron zip
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping running processes after building electron zip"
+        Get-Process | Select-Object *
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -137,12 +149,24 @@ runs:
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
         # Clean up so that ninja does not get confused
         rm -f out/Default/libffmpeg.so
+    - name: Dump running processes after build of mksnapshot
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping running processes after building mksnapshot"
+        Get-Process | Select-Object *
     - name: Build Chromedriver ${{ inputs.step-suffix }}
       shell: bash
       run: |
         cd src
         e build --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:electron_chromedriver_zip
+    - name: Dump running processes after build of chromedriver
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping running processes after building chromedriver"
+        Get-Process | Select-Object *
     - name: Build Node.js headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -167,6 +191,12 @@ runs:
         # Needed for msdia140.dll on 64-bit windows
         cd src
         export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
+    - name: Dump running processes after build of node headers
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping running processes after building node headers"
+        Get-Process | Select-Object *        
     - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -183,6 +213,12 @@ runs:
         else
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
+    - name: Dump running processes after build of symbols
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping running processes after building symbols"
+        Get-Process | Select-Object *
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' }}
@@ -190,11 +226,23 @@ runs:
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
         e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Dump running processes after build of ffmpeg
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping running processes after building ffmpeg"
+        Get-Process | Select-Object *
     - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
         e build --target electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Dump running processes after build of hunspell dictionaries
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping running processes after building hunspell dictionaries"
+        Get-Process | Select-Object *
     - name: Generate Libcxx ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
