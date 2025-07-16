@@ -420,8 +420,6 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
   else
     last_window_state_ = ui::mojom::WindowShowState::kNormal;
-
-  UpdateWindowAccentColor(IsActive());
 #endif
 
   // Listen to mouse events.
