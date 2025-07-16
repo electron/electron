@@ -65,8 +65,13 @@ void EmitWarning(const std::string_view warning_msg,
 void EmitWarning(v8::Isolate* isolate,
                  const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
-                                  warning_msg, warning_type);
+  node::Environment* env = node::Environment::GetCurrent(isolate);
+  if (!env) {
+    // No Node.js environment available, fall back to console logging.
+    LOG(WARNING) << "[" << warning_type << "] " << warning_msg;
+    return;
+  }
+  node::ProcessEmitWarningGeneric(env, warning_msg, warning_type);
 }
 
 void EmitDeprecationWarning(const std::string_view warning_msg,
@@ -78,8 +83,14 @@ void EmitDeprecationWarning(const std::string_view warning_msg,
 void EmitDeprecationWarning(v8::Isolate* isolate,
                             const std::string_view warning_msg,
                             const std::string_view deprecation_code) {
-  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
-                                  warning_msg, "DeprecationWarning",
+  node::Environment* env = node::Environment::GetCurrent(isolate);
+  if (!env) {
+    // No Node.js environment available, fall back to console logging.
+    LOG(WARNING) << "[DeprecationWarning] " << warning_msg
+                 << " (code: " << deprecation_code << ")";
+    return;
+  }
+  node::ProcessEmitWarningGeneric(env, warning_msg, "DeprecationWarning",
                                   deprecation_code);
 }
 
