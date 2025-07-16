@@ -79,7 +79,7 @@ runs:
       shell: powershell
       run: |
         echo "Dumping open files after building electron"
-        ./handle64.exe /accepteula electron
+        ./handle64.exe /accepteula
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -160,7 +160,7 @@ runs:
       shell: powershell
       run: |
         echo "Dumping open files after building mksnapshot"
-        ./handle64.exe /accepteula electron
+        ./handle64.exe /accepteula
     - name: Build Chromedriver ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -172,7 +172,7 @@ runs:
       shell: powershell
       run: |
         echo "Dumping open files after building chromedriver"
-        ./handle64.exe /accepteula electron
+        ./handle64.exe /accepteula
     - name: Build Node.js headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -202,7 +202,7 @@ runs:
       shell: powershell
       run: |
         echo "Dumping open files after building node headers"
-        ./handle64.exe /accepteula electron
+        ./handle64.exe /accepteula
     - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -224,7 +224,7 @@ runs:
       shell: powershell
       run: |
         echo "Dumping open files after building symbols"
-        ./handle64.exe /accepteula electron
+        ./handle64.exe /accepteula
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' }}
@@ -237,7 +237,7 @@ runs:
       shell: powershell
       run: |
         echo "Dumping open files after building ffmpeg"
-        ./handle64.exe /accepteula electron
+        ./handle64.exe /accepteula
     - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
@@ -248,7 +248,7 @@ runs:
       shell: powershell
       run: |
         echo "Dumping open files after building hunspell dictionaries"
-        ./handle64.exe /accepteula electron
+        ./handle64.exe /accepteula
     - name: Generate Libcxx ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
@@ -306,7 +306,7 @@ runs:
       shell: powershell
       run: |
         echo "Dumping open files after building electron"
-        ./handle64.exe /accepteula electron
+        ./handle64.exe /accepteula
     - name: List all ninja files in out/Default
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
