@@ -3278,7 +3278,12 @@ describe('navigator.clipboard.read', () => {
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
 
-  const readClipboard: any = () => {
+  const readClipboard = async () => {
+    if (!w.webContents.isFocused()) {
+      const focus = once(w.webContents, 'focus');
+      w.webContents.focus();
+      await focus;
+    }
     return w.webContents.executeJavaScript(`
       navigator.clipboard.read().then(clipboard => clipboard.toString()).catch(err => err.message);
     `, true);
@@ -3296,11 +3301,7 @@ describe('navigator.clipboard.read', () => {
 
   it('returns an error when permission denied', async () => {
     session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
-      if (permission === 'clipboard-read') {
-        callback(false);
-      } else {
-        callback(true);
-      }
+      callback(permission !== 'clipboard-read');
     });
     const clipboard = await readClipboard();
     expect(clipboard).to.contain('Read permission denied.');
@@ -3308,11 +3309,7 @@ describe('navigator.clipboard.read', () => {
 
   it('returns clipboard contents when permission is granted', async () => {
     session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
-      if (permission === 'clipboard-read') {
-        callback(true);
-      } else {
-        callback(false);
-      }
+      callback(permission === 'clipboard-read');
     });
     const clipboard = await readClipboard();
     expect(clipboard).to.not.contain('Read permission denied.');
@@ -3326,7 +3323,12 @@ describe('navigator.clipboard.write', () => {
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
 
-  const writeClipboard: any = () => {
+  const writeClipboard = async () => {
+    if (!w.webContents.isFocused()) {
+      const focus = once(w.webContents, 'focus');
+      w.webContents.focus();
+      await focus;
+    }
     return w.webContents.executeJavaScript(`
       navigator.clipboard.writeText('Hello World!').catch(err => err.message);
     `, true);
@@ -3368,7 +3370,13 @@ describe('navigator.clipboard.write', () => {
 });
 
 describe('paste execCommand', () => {
-  const readClipboard: any = (w: BrowserWindow) => {
+  const readClipboard = async (w: BrowserWindow) => {
+    if (!w.webContents.isFocused()) {
+      const focus = once(w.webContents, 'focus');
+      w.webContents.focus();
+      await focus;
+    }
+
     return w.webContents.executeJavaScript(`
       new Promise((resolve) => {
         const timeout = setTimeout(() => {
