@@ -6,6 +6,7 @@
 
 #include <numbers>
 #include "base/check.h"
+#include "base/check_op.h"
 
 namespace electron {
 
@@ -263,13 +264,14 @@ SkPath DrawSmoothRoundRect(float x,
                            float top_right_radius,
                            float bottom_right_radius,
                            float bottom_left_radius) {
-  DCHECK(0.0f <= smoothness && smoothness <= 1.0f);
+  DCHECK_GE(smoothness, 0.0f);
+  DCHECK_LE(smoothness, 1.0f);
 
   // Assume the radii are already constrained within the rectangle size
-  DCHECK(top_left_radius + top_right_radius <= width);
-  DCHECK(bottom_left_radius + bottom_right_radius <= width);
-  DCHECK(top_left_radius + bottom_left_radius <= height);
-  DCHECK(top_right_radius + bottom_right_radius <= height);
+  DCHECK_LE(top_left_radius + top_right_radius, width);
+  DCHECK_LE(bottom_left_radius + bottom_right_radius, width);
+  DCHECK_LE(top_left_radius + bottom_left_radius, height);
+  DCHECK_LE(top_right_radius + bottom_right_radius, height);
 
   if (width <= 0.0f || height <= 0.0f) {
     return SkPath();
