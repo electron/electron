@@ -18,7 +18,7 @@ const uuid = require('uuid');
 const fixtures = path.join(__dirname, 'fixtures');
 
 describe('chrome extensions', () => {
-  const emptyPage = '<script>console.log("loaded")</script>';
+  const emptyPage = '<html><body><h1>EMPTY PAGE</h1></body></html>';
 
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
   let server: http.Server;
