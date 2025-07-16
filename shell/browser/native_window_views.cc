@@ -82,6 +82,7 @@
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
 #include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
+#include "ui/base/win/foreground_helper.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/win/hwnd_util.h"
@@ -543,6 +544,10 @@ void NativeWindowViews::Focus(bool focus) {
     return;
 
   if (focus) {
+#if BUILDFLAG(IS_WIN)
+    // On Windows, we need to ensure the window is in the foreground.
+    ui::ForegroundHelper::SetForeground(GetAcceleratedWidget());
+#endif
     widget()->Activate();
   } else {
     widget()->Deactivate();
