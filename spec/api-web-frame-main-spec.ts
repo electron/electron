@@ -314,6 +314,7 @@ describe('webFrameMain module', () => {
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
     });
+    afterEach(closeAllWindows);
 
     // TODO(jkleinsc) fix this flaky test on linux
     ifit(process.platform !== 'linux')('throws upon accessing properties when disposed', async () => {
