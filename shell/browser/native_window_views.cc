@@ -550,7 +550,12 @@ void NativeWindowViews::Focus(bool focus) {
 }
 
 bool NativeWindowViews::IsFocused() const {
-  return widget()->IsActive();
+  bool active = widget()->IsActive();
+#if BUILDFLAG(IS_WIN)
+  return active && ::GetForegroundWindow() == GetAcceleratedWidget();
+#else
+  return active;
+#endif
 }
 
 void NativeWindowViews::Show() {
