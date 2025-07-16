@@ -184,7 +184,7 @@ index e519e13fea11950cc619e384f774b61a6e2385c0..8289ca0a41da1532692673a3e426e868
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 5618121a0b5621290a19f147bfbe9bf316fb3f27..bb1bd90371ce847d48ff9a228b098a26d28f5c6d 100644
+index 501ef6ba6203fc2661ab36825c4a1b4eee172841..01d1a9bf8d328b9944f00d3b93e5e7fb17c70810 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 @@ -3962,4 +3962,12 @@ FitText StyleBuilderConverter::ConvertFitText(StyleResolverState& state,
@@ -201,7 +201,7 @@ index 5618121a0b5621290a19f147bfbe9bf316fb3f27..bb1bd90371ce847d48ff9a228b098a26
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index 7104b5866a9bac0cdd26518eddcf80322280ad92..692b186f302130155fbb1b163bb195c0253276af 100644
+index 141de7c9f9d630125cf37be73347a05a6a475aba..c6c82234ef9ca3a7c4ba32b3e93bcf705592199a 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 @@ -422,6 +422,8 @@ class StyleBuilderConverter {
