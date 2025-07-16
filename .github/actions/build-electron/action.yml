@@ -32,6 +32,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Download Sysinternals Handle utility
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        Invoke-WebRequest -Uri "https://download.sysinternals.com/files/Handle.zip" -OutFile "Handle.zip"
+        Expand-Archive -Path "Handle.zip" -DestinationPath "."
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
@@ -68,12 +74,12 @@ runs:
         electron/script/copy-debug-symbols.py --target-cpu="${{ inputs.target-arch }}" --out-dir=out/Default/debug --compress
         electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}" --verbose
         electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
-    - name: Dump running processes after build of electron
+    - name: Dump open files after build of electron
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
-        echo "Dumping running processes after building electron"
-        Get-Process | Select-Object *
+        echo "Dumping open files after building electron"
+        ./handle64.exe /accepteula electron
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -86,12 +92,12 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
-    - name: Dump running processes after build of electron zip
+    - name: Dump open files after build of electron zip
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
-        echo "Dumping running processes after building electron zip"
-        Get-Process | Select-Object *
+        echo "Dumping open files after building electron zip"
+        ./handle64.exe /accepteula
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -149,24 +155,24 @@ runs:
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
         # Clean up so that ninja does not get confused
         rm -f out/Default/libffmpeg.so
-    - name: Dump running processes after build of mksnapshot
+    - name: Dump open files after build of mksnapshot
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
-        echo "Dumping running processes after building mksnapshot"
-        Get-Process | Select-Object *
+        echo "Dumping open files after building mksnapshot"
+        ./handle64.exe /accepteula electron
     - name: Build Chromedriver ${{ inputs.step-suffix }}
       shell: bash
       run: |
         cd src
         e build --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:electron_chromedriver_zip
-    - name: Dump running processes after build of chromedriver
+    - name: Dump open files after build of chromedriver
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
-        echo "Dumping running processes after building chromedriver"
-        Get-Process | Select-Object *
+        echo "Dumping open files after building chromedriver"
+        ./handle64.exe /accepteula electron
     - name: Build Node.js headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -191,12 +197,12 @@ runs:
         # Needed for msdia140.dll on 64-bit windows
         cd src
         export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
-    - name: Dump running processes after build of node headers
+    - name: Dump open files after build of node headers
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
-        echo "Dumping running processes after building node headers"
-        Get-Process | Select-Object *        
+        echo "Dumping open files after building node headers"
+        ./handle64.exe /accepteula electron
     - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -213,12 +219,12 @@ runs:
         else
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
-    - name: Dump running processes after build of symbols
+    - name: Dump open files after build of symbols
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
-        echo "Dumping running processes after building symbols"
-        Get-Process | Select-Object *
+        echo "Dumping open files after building symbols"
+        ./handle64.exe /accepteula electron
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' }}
@@ -226,23 +232,23 @@ runs:
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
         e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NUMBER_OF_NINJA_PROCESSES
-    - name: Dump running processes after build of ffmpeg
+    - name: Dump open files after build of ffmpeg
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
-        echo "Dumping running processes after building ffmpeg"
-        Get-Process | Select-Object *
+        echo "Dumping open files after building ffmpeg"
+        ./handle64.exe /accepteula electron
     - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
         e build --target electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
-    - name: Dump running processes after build of hunspell dictionaries
+    - name: Dump open files after build of hunspell dictionaries
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
-        echo "Dumping running processes after building hunspell dictionaries"
-        Get-Process | Select-Object *
+        echo "Dumping open files after building hunspell dictionaries"
+        ./handle64.exe /accepteula electron
     - name: Generate Libcxx ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
@@ -295,12 +301,12 @@ runs:
         type .\siso_report.txt
         echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $env:GITHUB_ENV
 
-    - name: Dump running processes after build
+    - name: Dump open files after build
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
       run: |
-        Get-Process | Select-Object *
-
+        echo "Dumping open files after building electron"
+        ./handle64.exe /accepteula electron
     - name: List all ninja files in out/Default
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
