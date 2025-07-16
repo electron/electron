@@ -29,4 +29,5 @@ runs:
       else
         echo "$HOME/.electron_build_tools/third_party/depot_tools" >> $GITHUB_PATH
         echo "$HOME/.electron_build_tools/third_party/depot_tools/python-bin" >> $GITHUB_PATH
+        node -e 'Object.entries(require('\'"$HOME/"'.electron_build_tools/src/utils/siso.js'\'').env({remoteBuild: "siso"})).forEach(([k, v]) => console.log(`${k}=${v}`));' >> $GITHUB_ENV
       fi
