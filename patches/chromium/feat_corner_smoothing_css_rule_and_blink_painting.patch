@@ -130,7 +130,7 @@ index e519e13fea11950cc619e384f774b61a6e2385c0..04746566454401402c21f6381a7a7f0f
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 5618121a0b5621290a19f147bfbe9bf316fb3f27..eae456c4835b79ab6b3fb9cc839b63c33640e21f 100644
+index 501ef6ba6203fc2661ab36825c4a1b4eee172841..1314bfc4c368be031200fc1555a4db51d27491a7 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 @@ -3920,6 +3920,15 @@ PositionArea StyleBuilderConverter::ConvertPositionArea(
@@ -150,7 +150,7 @@ index 5618121a0b5621290a19f147bfbe9bf316fb3f27..eae456c4835b79ab6b3fb9cc839b63c3
                                                const CSSValue& value) {
    const auto& list = To<CSSValueList>(value);
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index 7104b5866a9bac0cdd26518eddcf80322280ad92..8c1140d107a3144cd8d067577f355647ae8377d9 100644
+index 141de7c9f9d630125cf37be73347a05a6a475aba..b07129478590b6aad6f054be09c22f8f48c60920 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 @@ -421,6 +421,7 @@ class StyleBuilderConverter {
@@ -312,7 +312,7 @@ index 171cb3dd87609f5ecab79a25fe0978cd6e4b04f4..e454999a4ef64156a86cc8e15c11616e
  
    // This would include the outer border of the rect, as well as shadow and
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 93c9798d3de30df26314deb87d1ccd0fac7f2336..a77f28fd08581add36e833252cb2f707043ed669 100644
+index 7b24b556fcfc16ccb67e28e2d8a0753355d07497..ceb5c8e46515a9a8345c0feee801708bfca71310 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@
