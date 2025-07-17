@@ -15,7 +15,7 @@ const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_co
 // Export node bindings to global.
 const { makeRequireFunction } = __non_webpack_require__('internal/modules/helpers') as typeof import('@node/lib/internal/modules/helpers');
 global.module = new Module('electron/js2c/worker_init');
-(global.require as any) = makeRequireFunction(global.module);
+global.require = makeRequireFunction(global.module) as NodeRequire;
 
 // See WebWorkerObserver::WorkerScriptReadyForEvaluation.
 if ((globalThis as any).blinkfetch) {
