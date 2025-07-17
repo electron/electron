@@ -313,6 +313,7 @@ describe('webFrameMain module', () => {
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
     });
+    afterEach(closeAllWindows);
 
     // TODO(jkleinsc) fix this flaky test on linux
     ifit(process.platform !== 'linux')('throws upon accessing properties when disposed', async () => {
@@ -373,7 +374,9 @@ describe('webFrameMain module', () => {
       await w.webContents.loadURL(server.crossOriginUrl);
       // senderFrame now points to a disposed RenderFrameHost. It should
       // be null when attempting to access the lazily evaluated property.
-      expect(event.senderFrame).to.be.null();
+      waitUntil(() => {
+        return event.senderFrame === null;
+      });
     });
 
     it('is detached when unload handler sends IPC', async () => {
