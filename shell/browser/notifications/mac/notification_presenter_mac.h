@@ -9,18 +9,16 @@
 #include "shell/browser/notifications/mac/notification_center_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 
+#import <UserNotifications/UserNotifications.h>
+
 namespace electron {
 
 class CocoaNotification;
 
-// NSUserNotification is deprecated; all calls should be replaced with
-// UserNotifications.frameworks API
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 class NotificationPresenterMac : public NotificationPresenter {
  public:
-  CocoaNotification* GetNotification(NSUserNotification* ns_notification);
+  CocoaNotification* GetNotification(
+      UNNotificationRequest* un_notification_request);
 
   NotificationPresenterMac();
   ~NotificationPresenterMac() override;
@@ -32,9 +30,6 @@ class NotificationPresenterMac : public NotificationPresenter {
 
   NotificationCenterDelegate* __strong notification_center_delegate_;
 };
-
-// -Wdeprecated-declarations
-#pragma clang diagnostic pop
 
 }  // namespace electron
 

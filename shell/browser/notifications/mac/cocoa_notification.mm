@@ -10,14 +10,14 @@
 #include "base/logging.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/sequenced_task_runner.h"
+#include "grit/electron_resources.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "skia/ext/skia_utils_mac.h"
+#include "ui/base/l10n/l10n_util_mac.h"
 
-// NSUserNotification is deprecated; we need to use the
-// UserNotifications.frameworks API instead
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#import <AppKit/AppKit.h>
 
 namespace electron {
 
@@ -26,101 +26,185 @@ CocoaNotification::CocoaNotification(NotificationDelegate* delegate,
     : Notification(delegate, presenter) {}
 
 CocoaNotification::~CocoaNotification() {
-  if (notification_)
-    [NSUserNotificationCenter.defaultUserNotificationCenter
-        removeDeliveredNotification:notification_];
+  if (notification_request_)
+    [[UNUserNotificationCenter currentNotificationCenter]
+        removeDeliveredNotificationsWithIdentifiers:@[
+          notification_request_.identifier
+        ]];
 }
 
 void CocoaNotification::Show(const NotificationOptions& options) {
-  notification_ = [[NSUserNotification alloc] init];
+  UNMutableNotificationContent* content =
+      [[UNMutableNotificationContent alloc] init];
+
+  content.title = base::SysUTF16ToNSString(options.title);
+  content.subtitle = base::SysUTF16ToNSString(options.subtitle);
+  content.body = base::SysUTF16ToNSString(options.msg);
+
+  if (!options.icon.drawsNothing()) {
+    NSImage* image = skia::SkBitmapToNSImage(options.icon);
+    NSData* imageData =
+        [[NSBitmapImageRep imageRepWithData:[image TIFFRepresentation]]
+            representationUsingType:NSBitmapImageFileTypePNG
+                         properties:@{}];
+    NSString* tempFilePath = [NSTemporaryDirectory()
+        stringByAppendingPathComponent:[NSString
+                                           stringWithFormat:@"%@_icon.png",
+                                                            [[NSUUID UUID]
+                                                                UUIDString]]];
+    if ([imageData writeToFile:tempFilePath atomically:YES]) {
+      NSError* error = nil;
+      UNNotificationAttachment* attachment = [UNNotificationAttachment
+          attachmentWithIdentifier:@"image"
+                               URL:[NSURL fileURLWithPath:tempFilePath]
+                           options:nil
+                             error:&error];
+      if (attachment && !error) {
+        content.attachments = @[ attachment ];
+      }
+    }
+  }
+
+  if (options.silent) {
+    content.sound = nil;
+  } else if (options.sound.empty()) {
+    content.sound = [UNNotificationSound defaultSound];
+  } else {
+    content.sound = [UNNotificationSound
+        soundNamed:base::SysUTF16ToNSString(options.sound)];
+  }
+
+  if (options.has_reply || options.actions.size() > 0 ||
+      !options.close_button_text.empty()) {
+    NSMutableArray* actions = [NSMutableArray array];
+    NSMutableString* actionString = [NSMutableString string];
+
+    if (options.has_reply) {
+      NSString* replyTitle =
+          l10n_util::GetNSString(IDS_MAC_NOTIFICATION_INLINE_REPLY_BUTTON);
+      NSString* replyPlaceholder =
+          base::SysUTF16ToNSString(options.reply_placeholder);
+      UNNotificationAction* replyAction = [UNTextInputNotificationAction
+          actionWithIdentifier:@"REPLY_ACTION"
+                         title:replyTitle
+                       options:UNNotificationActionOptionNone
+          textInputButtonTitle:replyTitle
+          textInputPlaceholder:replyPlaceholder];
+      [actionString appendFormat:@"REPLY_%@_%@", replyTitle, replyPlaceholder];
+      [actions addObject:replyAction];
+    }
+
+    int i = 0;
+    for (const auto& action : options.actions) {
+      NSString* showText =
+          l10n_util::GetNSString(IDS_MAC_NOTIFICATION_SHOW_BUTTON);
+      NSString* actionText = action.text.empty()
+                                 ? showText
+                                 : base::SysUTF16ToNSString(action.text);
+      // Action indicies are stored in the action identifier
+      UNNotificationAction* notificationAction = [UNNotificationAction
+          actionWithIdentifier:[NSString stringWithFormat:@"ACTION_%d", i]
+                         title:actionText
+                       options:UNNotificationActionOptionNone];
+      [actionString appendFormat:@"ACTION_%d_%@", i, actionText];
+      [actions addObject:notificationAction];
+      i++;
+    }
+
+    if (!options.close_button_text.empty()) {
+      NSString* closeButtonText =
+          base::SysUTF16ToNSString(options.close_button_text);
+      UNNotificationAction* closeAction = [UNNotificationAction
+          actionWithIdentifier:@"CLOSE_ACTION"
+                         title:closeButtonText
+                       options:UNNotificationActionOptionNone];
+      [actionString appendFormat:@"CLOSE_%@", closeButtonText];
+      [actions addObject:closeAction];
+      i++;
+    }
+
+    // Categories are unique based on the actionString
+    NSString* categoryIdentifier =
+        [NSString stringWithFormat:@"CATEGORY_%lu", [actionString hash]];
+
+    // UNNotificationCategoryOptionCustomDismissAction enables the notification
+    // delegate to receive dismiss actions for handling
+    UNNotificationCategory* category = [UNNotificationCategory
+        categoryWithIdentifier:categoryIdentifier
+                       actions:actions
+             intentIdentifiers:@[]
+                       options:UNNotificationCategoryOptionCustomDismissAction];
+
+    UNUserNotificationCenter* center =
+        [UNUserNotificationCenter currentNotificationCenter];
+    [center getNotificationCategoriesWithCompletionHandler:^(
+                NSSet<UNNotificationCategory*>* _Nonnull existingCategories) {
+      if (![existingCategories containsObject:category]) {
+        NSMutableSet* updatedCategories = [existingCategories mutableCopy];
+        [updatedCategories addObject:category];
+        [center setNotificationCategories:updatedCategories];
+      }
+    }];
+    content.categoryIdentifier = categoryIdentifier;
+  }
 
   NSString* identifier =
       [NSString stringWithFormat:@"%@:notification:%@",
                                  [[NSBundle mainBundle] bundleIdentifier],
                                  [[NSUUID UUID] UUIDString]];
 
-  [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
-  [notification_ setSubtitle:base::SysUTF16ToNSString(options.subtitle)];
-  [notification_ setInformativeText:base::SysUTF16ToNSString(options.msg)];
-  [notification_ setIdentifier:identifier];
+  UNNotificationRequest* request =
+      [UNNotificationRequest requestWithIdentifier:identifier
+                                           content:content
+                                           trigger:nil];
 
+  notification_request_ = request;
   if (electron::debug_notifications) {
     LOG(INFO) << "Notification created (" << [identifier UTF8String] << ")";
   }
 
-  if (!options.icon.drawsNothing()) {
-    NSImage* image = skia::SkBitmapToNSImage(options.icon);
-    [notification_ setContentImage:image];
-  }
+  scoped_refptr<base::SequencedTaskRunner> task_runner =
+      base::SequencedTaskRunner::GetCurrentDefault();
+  auto weak_self = GetWeakPtr();
 
-  if (options.silent) {
-    [notification_ setSoundName:nil];
-  } else if (options.sound.empty()) {
-    [notification_ setSoundName:NSUserNotificationDefaultSoundName];
-  } else {
-    [notification_ setSoundName:base::SysUTF16ToNSString(options.sound)];
-  }
-
-  if (options.has_reply) {
-    [notification_ setHasReplyButton:true];
-    [notification_ setResponsePlaceholder:base::SysUTF16ToNSString(
-                                              options.reply_placeholder)];
-  }
-
-  // We need to explicitly set this to false if there are no
-  // actions, otherwise a Show button will appear by default.
-  if (options.actions.size() == 0)
-    [notification_ setHasActionButton:false];
-
-  int i = 0;
-  action_index_ = UINT_MAX;
-  NSMutableArray* additionalActions = [[NSMutableArray alloc] init];
-  for (const auto& action : options.actions) {
-    if (action.type == u"button") {
-      // If the notification has both a reply and actions,
-      // the reply takes precedence and the actions all
-      // become additional actions.
-      if (!options.has_reply && action_index_ == UINT_MAX) {
-        // First button observed is the displayed action
-        [notification_
-            setActionButtonTitle:base::SysUTF16ToNSString(action.text)];
-        action_index_ = i;
-      } else {
-        // All of the rest are appended to the list of additional actions
-        NSString* actionIdentifier =
-            [NSString stringWithFormat:@"%@Action%d", identifier, i];
-        NSUserNotificationAction* notificationAction = [NSUserNotificationAction
-            actionWithIdentifier:actionIdentifier
-                           title:base::SysUTF16ToNSString(action.text)];
-        [additionalActions addObject:notificationAction];
-        additional_action_indices_.try_emplace(
-            base::SysNSStringToUTF8(actionIdentifier), i);
-      }
-    }
-    i++;
-  }
-
-  if ([additionalActions count] > 0) {
-    [notification_ setAdditionalActions:additionalActions];
-  }
-
-  if (!options.close_button_text.empty()) {
-    [notification_ setOtherButtonTitle:base::SysUTF16ToNSString(
-                                           options.close_button_text)];
-  }
-
-  [NSUserNotificationCenter.defaultUserNotificationCenter
-      deliverNotification:notification_];
+  [[UNUserNotificationCenter currentNotificationCenter]
+      addNotificationRequest:request
+       withCompletionHandler:^(NSError* _Nullable error) {
+         if (error) {
+           if (electron::debug_notifications) {
+             LOG(INFO) << "Error scheduling notification ("
+                       << [identifier UTF8String] << ") "
+                       << [error.localizedDescription UTF8String];
+           }
+         } else {
+           task_runner->PostTask(
+               FROM_HERE, base::BindOnce(
+                              [](base::WeakPtr<Notification> weak_self) {
+                                if (Notification* self = weak_self.get()) {
+                                  CocoaNotification* un_self =
+                                      static_cast<CocoaNotification*>(self);
+                                  un_self->NotificationDisplayed();
+                                }
+                              },
+                              weak_self));
+           if (electron::debug_notifications) {
+             LOG(INFO) << "Notification scheduled (" << [identifier UTF8String]
+                       << ")";
+           }
+         }
+       }];
 }
 
 void CocoaNotification::Dismiss() {
-  if (notification_)
-    [NSUserNotificationCenter.defaultUserNotificationCenter
-        removeDeliveredNotification:notification_];
+  if (notification_request_)
+    [[UNUserNotificationCenter currentNotificationCenter]
+        removeDeliveredNotificationsWithIdentifiers:@[
+          notification_request_.identifier
+        ]];
 
   NotificationDismissed();
 
-  notification_ = nil;
+  notification_request_ = nil;
 }
 
 void CocoaNotification::NotificationDisplayed() {
@@ -137,27 +221,9 @@ void CocoaNotification::NotificationReplied(const std::string& reply) {
   this->LogAction("replied to");
 }
 
-void CocoaNotification::NotificationActivated() {
+void CocoaNotification::NotificationActivated(int actionIndex) {
   if (delegate())
-    delegate()->NotificationAction(action_index_);
-
-  this->LogAction("button clicked");
-}
-
-void CocoaNotification::NotificationActivated(
-    NSUserNotificationAction* action) {
-  if (delegate()) {
-    unsigned index = action_index_;
-    std::string identifier = base::SysNSStringToUTF8(action.identifier);
-    for (const auto& it : additional_action_indices_) {
-      if (it.first == identifier) {
-        index = it.second;
-        break;
-      }
-    }
-
-    delegate()->NotificationAction(index);
-  }
+    delegate()->NotificationAction(actionIndex);
 
   this->LogAction("button clicked");
 }
@@ -170,8 +236,8 @@ void CocoaNotification::NotificationDismissed() {
 }
 
 void CocoaNotification::LogAction(const char* action) {
-  if (electron::debug_notifications && notification_) {
-    NSString* identifier = [notification_ valueForKey:@"identifier"];
+  if (electron::debug_notifications && notification_request_) {
+    NSString* identifier = [notification_request_ valueForKey:@"identifier"];
     DCHECK(identifier);
     LOG(INFO) << "Notification " << action << " (" << [identifier UTF8String]
               << ")";
