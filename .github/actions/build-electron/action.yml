@@ -67,7 +67,7 @@ runs:
         echo "SISO_REAPI_ADDRESS: $SISO_REAPI_ADDRESS"
         echo "SISO_CREDENTIAL_HELPER: $SISO_CREDENTIAL_HELPER"
         e build --only-gen
-        gn gen out/Default --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS use_remoteexec=true use_siso=true use_reclient=false target_cpu=\"${{ inputs.target-arch }}\" 
+        gn gen out/Default --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS use_remoteexec=true use_siso=true use_reclient=false target_cpu=\"${{ inputs.target-arch }}\""
         echo "ARGS ARE:"
         cat out/Default/args.gn
         echo "DONE LISTING ARGS"
