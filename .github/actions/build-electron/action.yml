@@ -67,8 +67,10 @@ runs:
         echo "SISO_REAPI_ADDRESS: $SISO_REAPI_ADDRESS"
         echo "SISO_CREDENTIAL_HELPER: $SISO_CREDENTIAL_HELPER"
         e build --only-gen
+        gn gen out/Default --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS use_remoteexec=true use_siso=true use_reclient=false target_cpu=\"${{ inputs.target-arch }}\" 
         echo "ARGS ARE:"
         cat out/Default/args.gn
+        echo "DONE LISTING ARGS"
         NINJA_SUMMARIZE_BUILD=1 autoninja -remote_jobs 200 -project electron-rbe -reapi_instance projects/electron-rbe/instances/default_instance -reapi_address rbe.notgoma.com:443 -load electron/build/siso/main.star -C out/Default electron
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
