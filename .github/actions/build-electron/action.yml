@@ -62,7 +62,10 @@ runs:
           ulimit -n 10000
           sudo launchctl limit maxfiles 65536 200000
         fi
-
+        echo "SISO_PROJECT: $SISO_PROJECT"  
+        echo "SISO_REAPI_INSTANCE: $SISO_REAPI_INSTANCE"
+        echo "SISO_REAPI_ADDRESS: $SISO_REAPI_ADDRESS"
+        echo "SISO_CREDENTIAL_HELPER: $SISO_CREDENTIAL_HELPER"
         e build --only-gen
         autoninja -remote_jobs 200 -project electron-rbe -reapi_instance projects/electron-rbe/instances/default_instance -reapi_address rbe.notgoma.com:443 -load electron/build/siso/main.star -C out/Default electron
         cp out/Default/.ninja_log out/electron_ninja_log
