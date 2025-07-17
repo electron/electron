@@ -172,6 +172,11 @@ jobs:
         target-platform: ${{ inputs.target-platform }}
       env:
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
+    - name: Set GN_EXTRA_ARGS for siso
+      shell: bash
+      run: |
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS use_reclient=false"
+        echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV        
     - name: Init Build Tools
       run: |
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --remote-build siso
