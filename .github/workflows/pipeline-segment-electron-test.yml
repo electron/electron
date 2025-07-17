@@ -194,7 +194,6 @@ jobs:
         MOCHA_REPORTER: mocha-multi-reporters
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
-        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
       run: |
