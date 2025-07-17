@@ -196,7 +196,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void SetVibrancy(v8::Isolate* isolate,
                            v8::Local<v8::Value> value,
                            gin_helper::Arguments* args);
-  void SetBackgroundMaterial(const std::string& vibrancy);
+  virtual void SetBackgroundMaterial(const std::string& material);
 
 #if BUILDFLAG(IS_MAC)
   std::string GetAlwaysOnTopLevel() const;
