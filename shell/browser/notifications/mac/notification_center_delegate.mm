@@ -11,11 +11,6 @@
 #include "shell/browser/notifications/mac/cocoa_notification.h"
 #include "shell/browser/notifications/mac/notification_presenter_mac.h"
 
-// NSUserNotification is deprecated; we need to use the
-// UserNotifications.frameworks API instead
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 @implementation NotificationCenterDelegate
 
 - (instancetype)initWithPresenter:
@@ -28,71 +23,62 @@
   return self;
 }
 
-- (void)userNotificationCenter:(NSUserNotificationCenter*)center
-        didDeliverNotification:(NSUserNotification*)notif {
-  auto* notification = presenter_->GetNotification(notif);
-  if (notification)
-    notification->NotificationDisplayed();
+- (void)userNotificationCenter:(UNUserNotificationCenter*)center
+       willPresentNotification:(UNNotification*)notif
+         withCompletionHandler:
+             (void (^)(UNNotificationPresentationOptions options))
+                 completionHandler {
+  // Display notifications when app is in the foreground
+  completionHandler(UNNotificationPresentationOptionList |
+                    UNNotificationPresentationOptionBanner |
+                    UNNotificationPresentationOptionSound);
 }
 
-- (void)userNotificationCenter:(NSUserNotificationCenter*)center
-       didActivateNotification:(NSUserNotification*)notif {
-  auto* notification = presenter_->GetNotification(notif);
+- (void)userNotificationCenter:(UNUserNotificationCenter*)center
+    didReceiveNotificationResponse:(UNNotificationResponse*)response
+             withCompletionHandler:(void (^)())completionHandler {
+  auto* notification =
+      presenter_->GetNotification(response.notification.request);
 
   if (electron::debug_notifications) {
-    LOG(INFO) << "Notification activated (" << [notif.identifier UTF8String]
-              << ")";
+    LOG(INFO) << "Notification activated ("
+              << [response.notification.request.identifier UTF8String] << ")";
   }
 
   if (notification) {
-    // Ref:
-    // https://developer.apple.com/documentation/foundation/nsusernotificationactivationtype?language=objc
-    if (notif.activationType ==
-        NSUserNotificationActivationTypeContentsClicked) {
+    NSString* categoryIdentifier =
+        response.notification.request.content.categoryIdentifier;
+    NSString* actionIdentifier = response.actionIdentifier;
+    if ([actionIdentifier
+            isEqualToString:UNNotificationDefaultActionIdentifier]) {
       notification->NotificationClicked();
-    } else if (notif.activationType ==
-               NSUserNotificationActivationTypeActionButtonClicked) {
-      notification->NotificationActivated();
-    } else if (notif.activationType ==
-               NSUserNotificationActivationTypeReplied) {
-      notification->NotificationReplied([notif.response.string UTF8String]);
-    } else {
-      if (notif.activationType ==
-          NSUserNotificationActivationTypeAdditionalActionClicked) {
-        notification->NotificationActivated([notif additionalActivationAction]);
+    } else if ([actionIdentifier
+                   isEqualToString:UNNotificationDismissActionIdentifier]) {
+      notification->NotificationDismissed();
+    } else if ([categoryIdentifier hasPrefix:@"CATEGORY_"]) {
+      if ([actionIdentifier isEqualToString:@"REPLY_ACTION"]) {
+        if ([response isKindOfClass:[UNTextInputNotificationResponse class]]) {
+          NSString* userText =
+              [(UNTextInputNotificationResponse*)response userText];
+          notification->NotificationReplied([userText UTF8String]);
+        }
+      } else if ([actionIdentifier hasPrefix:@"ACTION_"]) {
+        NSString* actionIndexString =
+            [actionIdentifier substringFromIndex:[@"ACTION_" length]];
+        int actionIndex = static_cast<int>(actionIndexString.integerValue);
+        notification->NotificationActivated(actionIndex);
+      } else if ([actionIdentifier isEqualToString:@"CLOSE_ACTION"]) {
+        notification->NotificationDismissed();
       }
     }
+  } else {
+    if (electron::debug_notifications) {
+      LOG(INFO) << "Could not find notification for "
+                << [response.notification.request.identifier UTF8String];
+    }
   }
-}
 
-- (BOOL)userNotificationCenter:(NSUserNotificationCenter*)center
-     shouldPresentNotification:(NSUserNotification*)notification {
-  // Display notifications even if the app is active.
-  return YES;
+  completionHandler();
 }
-
-#if !IS_MAS_BUILD()
-// This undocumented method notifies us if a user closes "Alert" notifications
-// https://chromium.googlesource.com/chromium/src/+/lkgr/chrome/browser/notifications/notification_platform_bridge_mac.mm
-- (void)userNotificationCenter:(NSUserNotificationCenter*)center
-               didDismissAlert:(NSUserNotification*)notif {
-  auto* notification = presenter_->GetNotification(notif);
-  if (notification)
-    notification->NotificationDismissed();
-}
-#endif
-
-#if !IS_MAS_BUILD()
-// This undocumented method notifies us if a user closes "Banner" notifications
-// https://github.com/mozilla/gecko-dev/blob/master/widget/cocoa/OSXNotificationCenter.mm
-- (void)userNotificationCenter:(NSUserNotificationCenter*)center
-    didRemoveDeliveredNotifications:(NSArray*)notifications {
-  for (NSUserNotification* notif in notifications) {
-    auto* notification = presenter_->GetNotification(notif);
-    if (notification)
-      notification->NotificationDismissed();
-  }
-}
-#endif
 
 @end
