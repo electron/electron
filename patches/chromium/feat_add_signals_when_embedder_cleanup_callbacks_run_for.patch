@@ -88,10 +88,10 @@ index dc3a5b0678b9c686e241b492e2c3b5ac833611a3..32a7ba4f557e65d9525d2ca07e8597e7
    // testing.
    V8IsolateMemoryDumpProvider* isolate_memory_dump_provider_for_testing()
 diff --git a/gin/wrappable.cc b/gin/wrappable.cc
-index ba52f10456f1617908a5fd64a367a37ca16ffa29..498fbb4f8c2e035b5c427ef16245b20caf59c9ef 100644
+index 97277a98bcaa9badcc549a9aaf3388f3019f5602..2b6338e701fb255bb1089a4bed32f94bbb257064 100644
 --- a/gin/wrappable.cc
 +++ b/gin/wrappable.cc
-@@ -59,6 +59,8 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
+@@ -71,6 +71,8 @@ void WrappableBase::SetWrapper(v8::Isolate* isolate,
  DeprecatedWrappableBase::DeprecatedWrappableBase() = default;
  
  DeprecatedWrappableBase::~DeprecatedWrappableBase() {
@@ -100,7 +100,7 @@ index ba52f10456f1617908a5fd64a367a37ca16ffa29..498fbb4f8c2e035b5c427ef16245b20c
    wrapper_.Reset();
  }
  
-@@ -74,9 +76,13 @@ const char* DeprecatedWrappableBase::GetTypeName() {
+@@ -86,9 +88,13 @@ const char* DeprecatedWrappableBase::GetTypeName() {
  void DeprecatedWrappableBase::FirstWeakCallback(
      const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
    DeprecatedWrappableBase* wrappable = data.GetParameter();
@@ -117,7 +117,7 @@ index ba52f10456f1617908a5fd64a367a37ca16ffa29..498fbb4f8c2e035b5c427ef16245b20c
  }
  
  NamedPropertyInterceptor*
-@@ -86,8 +92,11 @@ DeprecatedWrappableBase::GetNamedPropertyInterceptor() {
+@@ -98,8 +104,11 @@ DeprecatedWrappableBase::GetNamedPropertyInterceptor() {
  
  void DeprecatedWrappableBase::SecondWeakCallback(
      const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
@@ -130,7 +130,7 @@ index ba52f10456f1617908a5fd64a367a37ca16ffa29..498fbb4f8c2e035b5c427ef16245b20c
  }
  
  v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
-@@ -123,10 +132,15 @@ v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
+@@ -135,10 +144,15 @@ v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
    void* values[] = {info, this};
    wrapper->SetAlignedPointerInInternalFields(2, indices, values);
    wrapper_.Reset(isolate, wrapper);
@@ -148,10 +148,10 @@ index ba52f10456f1617908a5fd64a367a37ca16ffa29..498fbb4f8c2e035b5c427ef16245b20c
  
  void* FromV8Impl(v8::Isolate* isolate,
 diff --git a/gin/wrappable.h b/gin/wrappable.h
-index f5b069d01231e0e3e6a2e4f88ffaa278af96b6a4..0952ad3ac8cd96f5a6225920d6ea89c6bfd0d5a9 100644
+index beb6818d04dbbe7d90c686e73d505bae43139fcc..bdef19d5a9d828aeaeb47efcc0a82d83a568359a 100644
 --- a/gin/wrappable.h
 +++ b/gin/wrappable.h
-@@ -172,6 +172,13 @@ class GIN_EXPORT DeprecatedWrappableBase {
+@@ -175,6 +175,13 @@ class GIN_EXPORT DeprecatedWrappableBase {
        v8::Isolate* isolate,
        DeprecatedWrapperInfo* wrapper_info);
  

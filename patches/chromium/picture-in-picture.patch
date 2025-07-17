@@ -38,7 +38,7 @@ index 8168b4cfbafd42fa93a5aa9a3691c2552fabfb86..ba49212bd76d209f99c1cee649fc1466
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 2522f36b6263dd2f2ffb6f985453acd410b04da0..3677f51bc6df0531334191d0f275520bfd6fa099 100644
+index 6c5cbed122519e15335fd12eb154ac61249795b3..17a7586c4b3d3723c6d29242264fcbd1a25fb146 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -20,9 +20,11 @@
@@ -71,7 +71,7 @@ index 2522f36b6263dd2f2ffb6f985453acd410b04da0..3677f51bc6df0531334191d0f275520b
    std::wstring app_user_model_id;
    Browser* browser = chrome::FindBrowserWithTab(controller->GetWebContents());
    if (browser) {
-@@ -1238,10 +1240,12 @@ void VideoOverlayWindowViews::SetUpViews() {
+@@ -1195,10 +1197,12 @@ void VideoOverlayWindowViews::SetUpViews() {
          l10n_util::GetStringUTF16(
              IDS_PICTURE_IN_PICTURE_LIVE_CAPTION_CONTROL_TEXT));
      live_caption_button->SetSize(kActionButtonSize);

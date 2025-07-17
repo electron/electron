@@ -6,7 +6,7 @@ Subject: Revert "Use more binaries from clang toolchain in mac build"
 This reverts commit 17b850a9f8e913fb5e465d895f545b069def57d1.
 
 diff --git a/DEPS b/DEPS
-index feb3c8b75290fdb4ef9274e136e1ce6eb2072846..b78802471c23017eae8ff64d33206794d59a996f 100644
+index d67584f29b7f96a33b43977027db7a2178ce7974..1c3ef94d01f10e687d899ea3fd3420970b7766dd 100644
 --- a/DEPS
 +++ b/DEPS
 @@ -906,13 +906,6 @@ deps = {
