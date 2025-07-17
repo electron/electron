@@ -26,6 +26,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/color_parser.h"
+#include "shell/browser/api/electron_api_system_preferences.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/views/root_view.h"
