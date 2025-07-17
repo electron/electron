@@ -589,7 +589,7 @@ void NativeWindowViews::UpdateWindowAccentColor() {
     should_apply_accent = std::get<bool>(accent_color_);
   } else if (std::holds_alternative<std::monostate>(accent_color_)) {
     // If no explicit color was set, default to the system accent color.
-    should_apply_accent = IsAccentColorOnTitleBarsEnabled();
+    should_apply_accent = IsAccentColorOnTitleBarsEnabled() && IsActive();
   }
 
   // Use system accent color as fallback if no explicit color was set.
