@@ -64,7 +64,16 @@ bool ElectronDesktopWindowTreeHostWin::GetDwmFrameInsetsInPixels(
     gfx::Insets* insets) const {
   // Set DWMFrameInsets to prevent maximized frameless window from bleeding
   // into other monitors.
+
   if (IsMaximized() && !native_window_view_->has_frame()) {
+    // We avoid doing this when the window is translucent (e.g. using
+    // backgroundMaterial effects), because setting zero insets can interfere
+    // with DWM rendering of blur or acrylic, potentially causing visual
+    // glitches.
+    const std::string& bg_material = native_window_view_->background_material();
+    if (!bg_material.empty() && bg_material != "none") {
+      return false;
+    }
     // This would be equivalent to calling:
     // DwmExtendFrameIntoClientArea({0, 0, 0, 0});
     //
