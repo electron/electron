@@ -1,3 +1,5 @@
+/// <reference types="webpack/module" />
+
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
 declare namespace NodeJS {
