@@ -420,8 +420,6 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
   else
     last_window_state_ = ui::mojom::WindowShowState::kNormal;
-
-  UpdateWindowAccentColor();
 #endif
 
   // Listen to mouse events.
@@ -1731,6 +1729,12 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
   } else {
     NativeWindow::NotifyWindowBlur();
   }
+
+#if BUILDFLAG(IS_WIN)
+  // Update accent color based on activation state when no explicit color is
+  // set.
+  UpdateWindowAccentColor(active);
+#endif
 
   // Hide menu bar when window is blurred.
   if (!active && IsMenuBarAutoHide() && IsMenuBarVisible())
