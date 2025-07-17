@@ -12,6 +12,7 @@
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
+#include "shell/browser/window_list.h"
 #include "ui/gfx/geometry/resize_utils.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
@@ -370,6 +371,26 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
           [sheetParent endSheet:window];
         }));
   }
+
+    // Get all Electron windows and temporarily disable their focusability
+  auto windows = electron::WindowList::GetWindows();
+  std::vector<electron::NativeWindow*> focusableWindows;
+  for (auto* window : windows) {
+    if (window != shell_ && window->IsFocusable() && window->IsVisible()) {
+      focusableWindows.push_back(window);
+      window->SetFocusable(false);
+    }
+  }
+  
+  // Restore focusability after the close operation completes
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce([](std::vector<electron::NativeWindow*> windows) {
+        for (auto* window : windows) {
+          if (window && !window->IsClosed()) {
+            window->SetFocusable(true);
+          }
+        }
+      }, std::move(focusableWindows)));
 
   // Clears the delegate when window is going to be closed, since EL Capitan it
   // is possible that the methods of delegate would get called after the window
