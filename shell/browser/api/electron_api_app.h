@@ -209,6 +209,7 @@ class App final : public ElectronBrowserClient::Delegate,
   void ReleaseSingleInstanceLock();
   bool Relaunch(gin::Arguments* args);
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
+  bool IsHardwareAccelerationEnabled();
   void DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower);
   bool IsAccessibilitySupportEnabled();
   void SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
