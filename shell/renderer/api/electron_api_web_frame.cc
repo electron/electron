@@ -963,8 +963,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   using namespace electron::api;  // NOLINT(build/namespaces)
 
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("mainFrame", WebFrameRenderer::Create(
                             isolate, electron::GetRenderFrame(exports)));
 }

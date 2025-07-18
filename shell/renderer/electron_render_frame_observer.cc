@@ -123,7 +123,8 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
       context, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   if (ShouldNotifyClient(world_id))
-    renderer_client_->DidCreateScriptContext(context, render_frame_);
+    renderer_client_->DidCreateScriptContext(v8::Isolate::GetCurrent(), context,
+                                             render_frame_);
 
   auto prefs = render_frame_->GetBlinkPreferences();
   bool use_context_isolation = prefs.context_isolation;

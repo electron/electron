@@ -136,9 +136,9 @@ void NodeService::Initialize(
 
   // Create the global environment.
   node_env_ = node_bindings_->CreateEnvironment(
-      js_env_->isolate()->GetCurrentContext(), js_env_->platform(),
-      js_env_->max_young_generation_size_in_bytes(), params->args,
-      params->exec_args);
+      js_env_->isolate(), js_env_->isolate()->GetCurrentContext(),
+      js_env_->platform(), js_env_->max_young_generation_size_in_bytes(),
+      params->args, params->exec_args);
 
   // Override the default handler set by NodeBindings.
   node_env_->isolate()->SetFatalErrorHandler(V8FatalErrorCallback);
