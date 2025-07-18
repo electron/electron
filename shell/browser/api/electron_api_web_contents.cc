@@ -2398,6 +2398,13 @@ void WebContents::DownloadURL(const GURL& url, gin::Arguments* args) {
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
           web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
   for (const auto& [name, value] : headers) {
+    if (base::ToLowerASCII(name) ==
+        base::ToLowerASCII(net::HttpRequestHeaders::kReferer)) {
+      // Setting a Referer header with HTTPS scheme while the download URL's
+      // scheme is HTTP might lead to download failure.
+      download_params->set_referrer(GURL(value));
+      continue;
+    }
     download_params->add_request_header(name, value);
   }
 
