@@ -499,7 +499,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       return false;
     }
     case WM_DWMCOLORIZATIONCOLORCHANGED: {
-      UpdateWindowAccentColor();
+      UpdateWindowAccentColor(IsActive());
       return false;
     }
     case WM_SETTINGCHANGE: {
@@ -507,7 +507,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         const wchar_t* setting_name = reinterpret_cast<const wchar_t*>(l_param);
         std::wstring setting_str(setting_name);
         if (setting_str == L"ImmersiveColorSet")
-          UpdateWindowAccentColor();
+          UpdateWindowAccentColor(IsActive());
       }
       return false;
     }
@@ -570,7 +570,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
   }
 }
 
-void NativeWindowViews::UpdateWindowAccentColor() {
+void NativeWindowViews::UpdateWindowAccentColor(bool active) {
   if (base::win::GetVersion() < base::win::Version::WIN11)
     return;
 
@@ -589,7 +589,7 @@ void NativeWindowViews::UpdateWindowAccentColor() {
     should_apply_accent = std::get<bool>(accent_color_);
   } else if (std::holds_alternative<std::monostate>(accent_color_)) {
     // If no explicit color was set, default to the system accent color.
-    should_apply_accent = IsAccentColorOnTitleBarsEnabled();
+    should_apply_accent = IsAccentColorOnTitleBarsEnabled() && active;
   }
 
   // Use system accent color as fallback if no explicit color was set.

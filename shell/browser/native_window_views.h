@@ -222,7 +222,7 @@ class NativeWindowViews : public NativeWindow,
   void ResetWindowControls();
   void SetRoundedCorners(bool rounded);
   void SetForwardMouseMessages(bool forward);
-  void UpdateWindowAccentColor();
+  void UpdateWindowAccentColor(bool active);
   static LRESULT CALLBACK SubclassProc(HWND hwnd,
                                        UINT msg,
                                        WPARAM w_param,
