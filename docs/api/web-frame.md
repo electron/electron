@@ -274,6 +274,8 @@ renderer process.
 
 Returns `WebFrame | null` - that has the supplied `routingId`, `null` if not found.
 
+**Deprecated:** Use the new `webFrame.findFrameByToken` API.
+
 ### `webFrame.findFrameByToken(frameToken)`
 
 * `frameToken` string - A `string` representing the unique frame id in the
@@ -332,6 +334,8 @@ current renderer process.
 An `Integer` representing the unique frame id in the current renderer process.
 Distinct WebFrame instances that refer to the same underlying frame will have
 the same `routingId`.
+
+**Deprecated:** Use the new `webFrame.frameToken` API.
 
 ### `webFrame.frameToken` _Readonly_
 
