@@ -9,11 +9,6 @@
 #include "shell/browser/notifications/mac/cocoa_notification.h"
 #include "shell/browser/notifications/mac/notification_center_delegate.h"
 
-// NSUserNotification is deprecated; we need to use the
-// UserNotifications.frameworks API instead
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 namespace electron {
 
 // static
@@ -22,17 +17,17 @@ std::unique_ptr<NotificationPresenter> NotificationPresenter::Create() {
 }
 
 CocoaNotification* NotificationPresenterMac::GetNotification(
-    NSUserNotification* ns_notification) {
+    UNNotificationRequest* un_notification_request) {
   for (Notification* notification : notifications()) {
     auto* native_notification = static_cast<CocoaNotification*>(notification);
-    if ([native_notification->notification().identifier
-            isEqual:ns_notification.identifier])
+    if ([native_notification->notification_request().identifier
+            isEqual:un_notification_request.identifier])
       return native_notification;
   }
 
   if (electron::debug_notifications) {
     LOG(INFO) << "Could not find notification for "
-              << [ns_notification.identifier UTF8String];
+              << [un_notification_request.identifier UTF8String];
   }
 
   return nullptr;
@@ -41,12 +36,32 @@ CocoaNotification* NotificationPresenterMac::GetNotification(
 NotificationPresenterMac::NotificationPresenterMac()
     : notification_center_delegate_(
           [[NotificationCenterDelegate alloc] initWithPresenter:this]) {
-  NSUserNotificationCenter.defaultUserNotificationCenter.delegate =
-      notification_center_delegate_;
+  UNUserNotificationCenter* center =
+      [UNUserNotificationCenter currentNotificationCenter];
+
+  center.delegate = notification_center_delegate_;
+
+  [center
+      requestAuthorizationWithOptions:(UNAuthorizationOptionAlert |
+                                       UNAuthorizationOptionSound |
+                                       UNAuthorizationOptionBadge)
+                    completionHandler:^(BOOL granted,
+                                        NSError* _Nullable error) {
+                      if (electron::debug_notifications) {
+                        if (error) {
+                          LOG(INFO)
+                              << "Error requesting notification authorization: "
+                              << [error.localizedDescription UTF8String];
+                        } else {
+                          LOG(INFO) << "Notification authorization granted: "
+                                    << granted;
+                        }
+                      }
+                    }];
 }
 
 NotificationPresenterMac::~NotificationPresenterMac() {
-  NSUserNotificationCenter.defaultUserNotificationCenter.delegate = nil;
+  UNUserNotificationCenter.currentNotificationCenter.delegate = nil;
 }
 
 Notification* NotificationPresenterMac::CreateNotificationObject(
