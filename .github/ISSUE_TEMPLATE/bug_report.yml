@@ -63,6 +63,7 @@ body:
     label: Does the issue also appear in Chromium / Google Chrome?
     description: If it does, please report the issue in the [Chromium issue tracker](https://issues.chromium.org/issues), not against Electron. Electron will inherit the fix once Chromium resolves the issue.
     options:
+      - I did not know how to test
       - "Yes"
       - "No"
   validations:
