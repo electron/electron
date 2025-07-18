@@ -32,6 +32,20 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Download Sysinternals Handle utility
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        Invoke-WebRequest -Uri "https://download.sysinternals.com/files/Handle.zip" -OutFile "Handle.zip"
+        Expand-Archive -Path "Handle.zip" -DestinationPath "."
+    - name: Set main.star location
+      shell: bash
+      run: |
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
+          echo "SISO_CONFIG=$GITHUB_WORKSPACE\src\electron\build\siso\main.star" >> $GITHUB_ENV
+        else
+          echo "SISO_CONFIG=$GITHUB_WORKSPACE/src/electron/build/siso/main.star" >> $GITHUB_ENV
+        fi
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
@@ -68,11 +82,17 @@ runs:
         electron/script/copy-debug-symbols.py --target-cpu="${{ inputs.target-arch }}" --out-dir=out/Default/debug --compress
         electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}" --verbose
         electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
+    - name: Dump open files after build of electron
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping open files after building electron"
+        ./handle64.exe /accepteula
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES -d explain
+        e build --target electron:electron_dist_zip
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
@@ -80,6 +100,12 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
+    - name: Dump open files after build of electron zip
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping open files after building electron zip"
+        ./handle64.exe /accepteula
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -137,12 +163,24 @@ runs:
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
         # Clean up so that ninja does not get confused
         rm -f out/Default/libffmpeg.so
+    - name: Dump open files after build of mksnapshot
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping open files after building mksnapshot"
+        ./handle64.exe /accepteula
     - name: Build Chromedriver ${{ inputs.step-suffix }}
       shell: bash
       run: |
         cd src
         e build --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:electron_chromedriver_zip
+    - name: Dump open files after build of chromedriver
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping open files after building chromedriver"
+        ./handle64.exe /accepteula
     - name: Build Node.js headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -167,6 +205,12 @@ runs:
         # Needed for msdia140.dll on 64-bit windows
         cd src
         export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
+    - name: Dump open files after build of node headers
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping open files after building node headers"
+        ./handle64.exe /accepteula
     - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -183,6 +227,12 @@ runs:
         else
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
+    - name: Dump open files after build of symbols
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping open files after building symbols"
+        ./handle64.exe /accepteula
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' }}
@@ -190,11 +240,23 @@ runs:
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
         e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Dump open files after build of ffmpeg
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping open files after building ffmpeg"
+        ./handle64.exe /accepteula
     - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
         e build --target electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+    - name: Dump open files after build of hunspell dictionaries
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping open files after building hunspell dictionaries"
+        ./handle64.exe /accepteula
     - name: Generate Libcxx ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
@@ -224,7 +286,49 @@ runs:
           echo 'Uploading Electron release distribution to GitHub releases'
           script/release/uploaders/upload.py --verbose
         fi
+    - name: Generate siso report
+      if: ${{ inputs.target-platform != 'win' && !cancelled() }}
+      shell: bash
+      run: |
+        cd src
+        e d siso report -C out/Default > siso_report.txt
+        SISO_REPORT_PATH=$(grep -o '/.*siso-report-[^ ]*' siso_report.txt)
+        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $GITHUB_ENV
+        cat siso_report.txt
+        echo "SISO REPORT AT $SISO_REPORT_PATH"
+    - name: Generate siso report (Windows)
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        cd src
+        e d siso report -C out\Default > siso_report.txt
+        $SISO_REPORT_PATH = Get-Content "siso_report.txt" | Select-String "report file:\s*(.+)" | ForEach-Object { 
+          $_.Matches.Groups[1].Value.Trim() 
+        }
+        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH"
+        type .\siso_report.txt
+        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $env:GITHUB_ENV
+
+    - name: Dump open files after build
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        echo "Dumping open files after building electron"
+        ./handle64.exe /accepteula
+    - name: List all ninja files in out/Default
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        cd src
+        New-Item -ItemType Directory -Path ninjafiles -Force | Out-Null
+        Get-ChildItem -Path out\Default -Filter *.ninja -Recurse | ForEach-Object {
+          $dest = Join-Path ninjafiles ($_.FullName.Substring((Resolve-Path out\Default).Path.Length + 1))
+          New-Item -ItemType Directory -Path (Split-Path $dest) -Force | Out-Null
+          Copy-Item $_.FullName -Destination $dest
+        }
+        Compress-Archive -Path ninjafiles -DestinationPath out\Default\ninja_files.zip
     - name: Generate Artifact Key
+      if: always() && !cancelled()
       shell: bash
       run: |
         if [ "${{ inputs.is-asan }}" = "true" ]; then 
@@ -236,9 +340,11 @@ runs:
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
+      if: always() && !cancelled()
       shell: bash
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
+      if: always() && !cancelled()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}

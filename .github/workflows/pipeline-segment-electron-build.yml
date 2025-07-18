@@ -94,6 +94,21 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+    - name: Get Defender State
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: cmd
+      run: |
+        reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Advanced Threat Protection"
+    - name: Try force defender passive mode
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: cmd
+      run: |
+        reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Advanced Threat Protection" /v "ForceDefenderPassiveMode" /t REG_DWORD /d "1" /f
+    - name: Get Running processes
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        Get-Process | Select-Object *
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
@@ -152,7 +167,6 @@ jobs:
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Fix Sync
-      if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/fix-sync
       with:
         target-platform: ${{ inputs.target-platform }}
@@ -160,7 +174,7 @@ jobs:
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
     - name: Init Build Tools
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
+        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --remote-build siso
     - name: Run Electron Only Hooks
       run: |
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
