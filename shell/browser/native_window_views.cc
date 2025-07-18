@@ -219,7 +219,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   bool accent_color = true;
   std::string accent_color_string;
   if (options.Get(options::kAccentColor, &accent_color_string)) {
-    accent_color_ = ParseCSSColor(accent_color_string);
+    std::optional<SkColor> parsed_color = ParseCSSColor(str);
+    if (parsed_color.has_value())
+      accent_color_ = parsed_color.value();
   } else if (options.Get(options::kAccentColor, &accent_color)) {
     accent_color_ = accent_color;
   }
