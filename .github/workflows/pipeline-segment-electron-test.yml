@@ -130,9 +130,9 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' && env.ACTIONS_STEP_DEBUG == 'true' }}
       uses: ./src/electron/.github/actions/ssh-debug
       with:
-        authorized-users: 'codebytere,MarshallOfSound,jkleinsc,vertedinde'
+        authorized-users: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
         tunnel: 'true'
-        hostname: 'ssh-debug.ionicpineapple.com'
+        hostname: ${{ secrets.CLOUDFLARED_SSH_HOSTNAME }}
       env:
         CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
     - name: Install Dependencies
