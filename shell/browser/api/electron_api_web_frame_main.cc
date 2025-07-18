@@ -631,7 +631,7 @@ v8::Local<v8::Value> FromID(gin_helper::ErrorThrower thrower,
                             int render_frame_id) {
   if (!electron::Browser::Get()->is_ready()) {
     thrower.ThrowError("WebFrameMain is available only after app ready");
-    return v8::Null(thrower.isolate());
+    return v8::Undefined(thrower.isolate());
   }
 
   auto* rfh =
@@ -647,7 +647,7 @@ v8::Local<v8::Value> FromFrameToken(gin_helper::ErrorThrower thrower,
                                     std::string render_frame_token) {
   if (!electron::Browser::Get()->is_ready()) {
     thrower.ThrowError("WebFrameMain is available only after app ready");
-    return v8::Null(thrower.isolate());
+    return v8::Undefined(thrower.isolate());
   }
 
   auto token = base::Token::FromString(render_frame_token);

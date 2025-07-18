@@ -133,8 +133,8 @@ declare namespace NodeJS {
 
   interface WebFrameMainBinding {
     WebFrameMain: typeof Electron.WebFrameMain;
-    fromId(processId: number, routingId: number): Electron.WebFrameMain | null;
-    fromFrameToken(processId: number, frameToken: string): Electron.WebFrameMain | null;
+    fromId(processId: number, routingId: number): Electron.WebFrameMain | undefined;
+    fromFrameToken(processId: number, frameToken: string): Electron.WebFrameMain | undefined;
     _fromIdIfExists(processId: number, routingId: number): Electron.WebFrameMain | null;
     _fromFtnIdIfExists(frameTreeNodeId: number): Electron.WebFrameMain | null;
   }
