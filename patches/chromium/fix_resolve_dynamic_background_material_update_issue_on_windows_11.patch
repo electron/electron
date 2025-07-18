@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: zoy <zoy-l@outlook.com>
+Date: Mon, 5 May 2025 23:28:53 +0800
+Subject: fix: resolve dynamic background material update issue on Windows 11
+
+This patch addresses issues with background materials on Windows 11,
+such as the background turning black when maximizing the window and
+dynamic background material settings not taking effect.
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index ca11e7008d3c528c643b760d0a7e980065f90629..9039ae483467c46f35370cd486e56537daaa9340 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -179,6 +179,10 @@ void DesktopWindowTreeHostWin::FinishTouchDrag(gfx::Point screen_point) {
+   }
+ }
+ 
++void DesktopWindowTreeHostWin::SetIsTranslucent(bool is_translucent) {
++  message_handler_->set_is_translucent(is_translucent);
++}
++
+ // DesktopWindowTreeHostWin, DesktopWindowTreeHost implementation:
+ 
+ void DesktopWindowTreeHostWin::Init(const Widget::InitParams& params) {
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+index 21049abeffd7b4bf314aec9fb5a63d5f773e53f5..04fcffd6bcfb7cbd18aa890e3cda259e842e23fa 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+@@ -93,6 +93,8 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+   // false.
+   void FinishTouchDrag(gfx::Point screen_point);
+ 
++  void SetIsTranslucent(bool is_translucent);
++
+  protected:
+   // Overridden from DesktopWindowTreeHost:
+   void Init(const Widget::InitParams& params) override;
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index ad5044fbb4b8611a740da34f3f0bfe6dbb416f38..fc549cdff52393e8e7fb34f9c80be44adf6e171b 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -939,13 +939,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
+ 
+ void HWNDMessageHandler::PaintAsActiveChanged() {
+   if (!delegate_->HasNonClientView() || !delegate_->CanActivate() ||
+-      !delegate_->HasFrame() ||
++      (!delegate_->HasFrame() && !is_translucent_) ||
+       (delegate_->GetFrameMode() == FrameMode::CUSTOM_DRAWN)) {
+     return;
+   }
+ 
+   DefWindowProcWithRedrawLock(WM_NCACTIVATE, delegate_->ShouldPaintAsActive(),
+-                              0);
++                              delegate_->HasFrame() ? 0 : -1);
+ }
+ 
+ void HWNDMessageHandler::SetWindowIcons(const gfx::ImageSkia& window_icon,
+@@ -1029,7 +1029,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
+   //   allowing ui::GetResizableFrameThickness() to be used consistently when
+   //   removing the visible system frame.
+   const bool had_caption_on_init = window_style() & WS_CAPTION;
+-  const bool can_resize = !is_translucent_ && delegate_->CanResize();
++
++  // In Chromium, the !is_translucent_ check was introduced for Glic-specific
++  // behavior. Since Electron does not use Glic, this restriction can be safely
++  // removed. Keeping the is_translucent_ check disables maximization for
++  // translucent framed windows. Original code: !is_translucent_ &&
++  // delegate_->CanResize() See:
++  // https://chromium-review.googlesource.com/c/chromium/src/+/6372329
++  const bool can_resize = delegate_->CanResize();
+   const bool can_maximize = can_resize && delegate_->CanMaximize();
+ 
+   auto set_style_func = [&style](LONG bit, bool should_set) {
+@@ -1624,11 +1631,16 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
+   // through, but that isn't the case when using Direct3D to draw transparent
+   // windows. So we route translucent windows throught to the delegate to
+   // allow for a custom hit mask.
+-  if (!is_translucent_ && !custom_window_region_.is_valid() &&
++  // patch: fix_resolve_dynamic_background_material_update_issue_on_windows_11
++  // Our translucent windows use the native frame by default, and we should not
++  // set a custom region when the window is maximized; otherwise, it will cause
++  // a white title bar to appear under Windows 11.
++  if (!custom_window_region_.is_valid() &&
+       (IsFrameSystemDrawn() || !delegate_->HasNonClientView())) {
+     if (force) {
+       SetWindowRgn(hwnd(), nullptr, redraw);
+     }
++
+     return;
+   }
+ 
+@@ -2342,17 +2354,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+     delegate_->SchedulePaint();
+   }
+ 
+-  // Calling DefWindowProc is only necessary if there's a system frame being
+-  // drawn. Otherwise it can draw an incorrect title bar and cause visual
+-  // corruption.
+-  if (!delegate_->HasFrame() ||
++  // If the window is translucent, it may have the Mica background.
++  // In that case, it's necessary to call |DefWindowProc|, but we can
++  // pass -1 in the lParam to prevent any non-client area elements from
++  // being displayed.
++  if ((!delegate_->HasFrame() && !is_translucent_) ||
+       delegate_->GetFrameMode() == FrameMode::CUSTOM_DRAWN) {
+     SetMsgHandled(TRUE);
+     return TRUE;
+   }
+ 
+   return DefWindowProcWithRedrawLock(WM_NCACTIVATE, paint_as_active || active,
+-                                     0);
++                                     delegate_->HasFrame() ? 0 : -1);
+ }
+ 
+ LRESULT HWNDMessageHandler::OnNCCalcSize(BOOL mode, LPARAM l_param) {
