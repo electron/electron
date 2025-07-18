@@ -70,17 +70,11 @@ runs:
           ulimit -n 10000
           sudo launchctl limit maxfiles 65536 200000
         fi
-        echo "SISO_PROJECT: $SISO_PROJECT"  
-        echo "SISO_REAPI_INSTANCE: $SISO_REAPI_INSTANCE"
-        echo "SISO_REAPI_ADDRESS: $SISO_REAPI_ADDRESS"
-        echo "SISO_CREDENTIAL_HELPER: $SISO_CREDENTIAL_HELPER"
-        echo "SISO_CONFIG: $SISO_CONFIG"
         e build --only-gen
-        gn gen out/Default --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS use_remoteexec=true use_siso=true use_reclient=false target_cpu=\"${{ inputs.target-arch }}\""
         echo "ARGS ARE:"
         cat out/Default/args.gn
         echo "DONE LISTING ARGS"
-        NINJA_SUMMARIZE_BUILD=1 autoninja -remote_jobs 200 -project electron-rbe -reapi_instance projects/electron-rbe/instances/default_instance -reapi_address rbe.notgoma.com:443 -load $SISO_CONFIG -C out/Default electron
+        NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
     - name: Strip Electron Binaries ${{ inputs.step-suffix }}
