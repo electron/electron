@@ -238,8 +238,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     [window_ setLevel:NSFloatingWindowLevel];
   }
 
-  bool focusable;
-  if (options.Get(options::kFocusable, &focusable) && !focusable)
+  if (bool val; options.Get(options::kFocusable, &val) && !val)
     [window_ setDisableKeyOrMainWindow:YES];
 
   if (transparent() || !has_frame()) {
@@ -284,12 +283,10 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   // NOTE(@mlaurencin) Spec requirements can be found here:
   // https://developer.mozilla.org/en-US/docs/Web/API/Window/open#width
   constexpr int kMinSizeReqdBySpec = 100;
-  int inner_width = 0;
-  int inner_height = 0;
+  const int inner_width = options.ValueOrDefault(options::kinnerWidth, 0);
+  const int inner_height = options.ValueOrDefault(options::kinnerHeight, 0);
   bool use_content_size =
       options.ValueOrDefault(options::kUseContentSize, false);
-  options.Get(options::kinnerWidth, &inner_width);
-  options.Get(options::kinnerHeight, &inner_height);
   if (inner_width || inner_height) {
     use_content_size = true;
     if (inner_width)
