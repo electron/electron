@@ -38,7 +38,7 @@ index 8168b4cfbafd42fa93a5aa9a3691c2552fabfb86..ba49212bd76d209f99c1cee649fc1466
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 1cf3d510a165ff8de195eb9b835490cd3a5f7389..8cf36280324ddcbdffe6396baeb13828251b285a 100644
+index 6c5cbed122519e15335fd12eb154ac61249795b3..17a7586c4b3d3723c6d29242264fcbd1a25fb146 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -20,9 +20,11 @@
@@ -53,7 +53,7 @@ index 1cf3d510a165ff8de195eb9b835490cd3a5f7389..8cf36280324ddcbdffe6396baeb13828
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
-@@ -73,7 +75,7 @@
+@@ -74,7 +76,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -62,7 +62,7 @@ index 1cf3d510a165ff8de195eb9b835490cd3a5f7389..8cf36280324ddcbdffe6396baeb13828
  #include "chrome/browser/shell_integration_win.h"
  #include "content/public/browser/render_widget_host_view.h"
  #include "ui/aura/window.h"
-@@ -428,7 +430,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -429,7 +431,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
@@ -71,7 +71,7 @@ index 1cf3d510a165ff8de195eb9b835490cd3a5f7389..8cf36280324ddcbdffe6396baeb13828
    std::wstring app_user_model_id;
    Browser* browser = chrome::FindBrowserWithTab(controller->GetWebContents());
    if (browser) {
-@@ -1153,10 +1155,12 @@ void VideoOverlayWindowViews::SetUpViews() {
+@@ -1195,10 +1197,12 @@ void VideoOverlayWindowViews::SetUpViews() {
          l10n_util::GetStringUTF16(
              IDS_PICTURE_IN_PICTURE_LIVE_CAPTION_CONTROL_TEXT));
      live_caption_button->SetSize(kActionButtonSize);
