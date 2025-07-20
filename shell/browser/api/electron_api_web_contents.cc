@@ -1211,6 +1211,31 @@ content::WebContents* WebContents::CreateCustomWebContents(
   return nullptr;
 }
 
+void WebContents::MaybeOverrideCreateParamsForNewWindow(
+    content::WebContents::CreateParams* create_params) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::Dictionary dict;
+  gin::ConvertFromV8(isolate, pending_child_web_preferences_.Get(isolate),
+                     &dict);
+
+  v8::Local<v8::Value> use_offscreen;
+  if (dict.Get(options::kOffscreen, &use_offscreen)) {
+    bool is_offscreen =
+        use_offscreen->IsObject() ||
+        (use_offscreen->IsBoolean() &&
+         dict.Get(options::kOffscreen, &is_offscreen) && is_offscreen);
+
+    if (is_offscreen) {
+      auto* view = new OffScreenWebContentsView(
+          false, offscreen_use_shared_texture_,
+          base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
+      create_params->view = view;
+      create_params->delegate_view = view;
+    }
+  }
+}
+
 content::WebContents* WebContents::AddNewContents(
     content::WebContents* source,
     std::unique_ptr<content::WebContents> new_contents,
@@ -1224,9 +1249,13 @@ content::WebContents* WebContents::AddNewContents(
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
+  Type type = Type::kBrowserWindow;
+  auto* web_preferences = WebContentsPreferences::From(new_contents.get());
+  if (web_preferences && web_preferences->IsOffscreen())
+    type = Type::kOffScreen;
+
   v8::HandleScope handle_scope(isolate);
-  auto api_web_contents =
-      CreateAndTake(isolate, std::move(new_contents), Type::kBrowserWindow);
+  auto api_web_contents = CreateAndTake(isolate, std::move(new_contents), type);
 
   // We call RenderFrameCreated here as at this point the empty "about:blank"
   // render frame has already been created.  If the window never navigates again
