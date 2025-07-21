@@ -222,10 +222,10 @@ index 04512b284adff2550374665a32282330fbb20354..507a33fb865ba7413711093298201ccf
    CreateURLLoaderFactory(
        pending_receiver<URLLoaderFactory> url_loader_factory,
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index d03bc4052a339339c9ca6157410778da8e149efb..434d9286c2bcf497365a5329f4be26ff593976a3 100644
+index 31ceb6a2df06ccce2f967269fd492d150e9ce6f3..28dfc37ace19ff2fdfa18c3db89723b423e9b1db 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
-@@ -64,6 +64,8 @@ class TestNetworkContext : public mojom::NetworkContext {
+@@ -63,6 +63,8 @@ class TestNetworkContext : public mojom::NetworkContext {
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override {}

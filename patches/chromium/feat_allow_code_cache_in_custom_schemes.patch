@@ -140,10 +140,10 @@ index 94602e2319d3f7ed557da98e0598c9f96d986260..0a9a856d8bd9d702eb49e45a54c141a3
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index a2a19b975ddd8799917ec674b53368ab1b123232..3ff87e391f744cd17c26945fa7dcfde59d80b573 100644
+index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c589f379954 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
-@@ -15,17 +15,22 @@
+@@ -16,17 +16,22 @@
  #include "base/time/time.h"
  #include "content/browser/code_cache/generated_code_cache_context.h"
  #include "content/browser/renderer_host/code_cache_host_impl.h"
@@ -166,16 +166,16 @@ index a2a19b975ddd8799917ec674b53368ab1b123232..3ff87e391f744cd17c26945fa7dcfde5
  #include "net/base/features.h"
  #include "net/dns/mock_host_resolver.h"
  #include "third_party/blink/public/common/features.h"
-@@ -36,6 +41,8 @@ namespace content {
+@@ -37,6 +42,8 @@ namespace content {
  
  namespace {
  
 +const std::string kCodeCacheScheme = "test-code-cache";
 +
  bool SupportsSharedWorker() {
- #if BUILDFLAG(IS_ANDROID)
-   // SharedWorkers are not enabled on Android. https://crbug.com/154571
-@@ -1048,4 +1055,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
+   return base::FeatureList::IsEnabled(blink::features::kSharedWorker);
+ }
+@@ -1044,4 +1051,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
    }
  }
  

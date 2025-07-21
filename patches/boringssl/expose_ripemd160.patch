@@ -10,10 +10,10 @@ this patch is required to provide ripemd160 support in the nodejs crypto
 module.
 
 diff --git a/crypto/digest/digest_extra.cc b/crypto/digest/digest_extra.cc
-index 309b61c89ef8c9decb9d9080f96923ee256f0dc6..a53d64cf9169c65aa890f362ac51b11a3d656fab 100644
+index 431214277314941c5ec031f03ad09e7f22800983..4cc48bbc3f8434876f35767c1a9f01d27388be99 100644
 --- a/crypto/digest/digest_extra.cc
 +++ b/crypto/digest/digest_extra.cc
-@@ -45,6 +45,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
+@@ -46,6 +46,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
      {NID_sha512, EVP_sha512, SN_sha512, LN_sha512},
      {NID_sha512_256, EVP_sha512_256, SN_sha512_256, LN_sha512_256},
      {NID_md5_sha1, EVP_md5_sha1, SN_md5_sha1, LN_md5_sha1},

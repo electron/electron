@@ -187,10 +187,10 @@ index d9c14f91747bde0e76056d7f2f2ada166e67f994..53be16879777a3b9bef58ead5f7e420c
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 9c88b20e11b4c946fd101b633bf93836070946d8..c9d2b451c8d07c915051fd50ca0b079aaed48199 100644
+index 41a119a0a8deaad3ede850506f18868facaddf19..4a549fb67f2e2e9a60c46bd84273df6358e9d4c1 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -244,13 +244,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
+@@ -245,13 +245,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
  }
  #endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
  
@@ -207,7 +207,7 @@ index 9c88b20e11b4c946fd101b633bf93836070946d8..c9d2b451c8d07c915051fd50ca0b079a
  
  #if BUILDFLAG(USE_ZYGOTE)
  UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
-@@ -260,6 +260,36 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
+@@ -261,6 +261,36 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -244,7 +244,7 @@ index 9c88b20e11b4c946fd101b633bf93836070946d8..c9d2b451c8d07c915051fd50ca0b079a
  UtilityProcessHost::Options&
  UtilityProcessHost::Options::WithBoundReceiverOnChildProcessForTesting(
      mojo::GenericPendingReceiver receiver) {
-@@ -521,9 +551,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -524,9 +554,26 @@ bool UtilityProcessHost::StartProcess() {
    }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
@@ -273,21 +273,18 @@ index 9c88b20e11b4c946fd101b633bf93836070946d8..c9d2b451c8d07c915051fd50ca0b079a
  #if BUILDFLAG(IS_WIN)
    if (!options_.preload_libraries_.empty()) {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index 4335d7ff718c3d7de92320ba11c39c3957303788..55379fbe9233ba96f6e4729e2b7d534c0c6884a0 100644
+index a0995700d414f3126d11ae2cf4c02b06b820a06e..5b3e1c8cf09b7135443c056c27239fb9ef3fd9c9 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
-@@ -29,6 +29,10 @@
- #include "content/public/common/zygote/zygote_handle.h"
- #endif  // BUILDFLAG(USE_ZYGOTE)
+@@ -31,6 +31,7 @@
  
-+#if BUILDFLAG(IS_WIN)
+ #if BUILDFLAG(IS_WIN)
+ #include "base/synchronization/waitable_event.h"
 +#include "base/win/scoped_handle.h"
-+#endif
-+
+ #endif  // BUILDFLAG(IS_WIN)
+ 
  namespace base {
- class Thread;
- }  // namespace base
-@@ -111,14 +115,31 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -134,14 +135,31 @@ class CONTENT_EXPORT UtilityProcessHost
          std::variant<base::FilePath, base::ScopedFD> file);
  #endif
  
@@ -322,7 +319,7 @@ index 4335d7ff718c3d7de92320ba11c39c3957303788..55379fbe9233ba96f6e4729e2b7d534c
      // Requests that the process bind a receiving pipe targeting the interface
      // named by `receiver`. Calls to this method generally end up in
      // `ChildThreadImpl::OnBindReceiver()` and the option is used for testing
-@@ -162,6 +183,27 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -185,6 +203,27 @@ class CONTENT_EXPORT UtilityProcessHost
      std::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -410,10 +407,10 @@ index ff9941f1f46658574e8ac53bc80fdf665f873bc0..51dfb23c8ebba7ec075ecab597bd8473
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
 diff --git a/content/browser/service_host/utility_sandbox_delegate.h b/content/browser/service_host/utility_sandbox_delegate.h
-index cc122cb093ddd340b4e42436e461b27275f80456..ba113809f986dd125c5cdec99ca745c384c2ba83 100644
+index 9b900ad3d191f97dcaa00015aee5ebd554653948..99c4ec02ebf4485e312c5c4a17a31bf02962f617 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.h
 +++ b/content/browser/service_host/utility_sandbox_delegate.h
-@@ -34,7 +34,9 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+@@ -35,7 +35,9 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
   public:
    UtilitySandboxedProcessLauncherDelegate(sandbox::mojom::Sandbox sandbox_type,
                                            const base::EnvironmentMap& env,
@@ -424,7 +421,7 @@ index cc122cb093ddd340b4e42436e461b27275f80456..ba113809f986dd125c5cdec99ca745c3
    ~UtilitySandboxedProcessLauncherDelegate() override;
  
    sandbox::mojom::Sandbox GetSandboxType() override;
-@@ -59,9 +61,14 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+@@ -64,9 +66,14 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
    ZygoteCommunication* GetZygote() override;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -441,7 +438,7 @@ index cc122cb093ddd340b4e42436e461b27275f80456..ba113809f986dd125c5cdec99ca745c3
  
  #if BUILDFLAG(USE_ZYGOTE)
    void SetZygote(ZygoteCommunication* handle);
-@@ -72,9 +79,7 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+@@ -77,9 +84,7 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
  #endif  // BUILDFLAG(IS_MAC)
  
   private:
@@ -450,8 +447,8 @@ index cc122cb093ddd340b4e42436e461b27275f80456..ba113809f986dd125c5cdec99ca745c3
 -#endif  // BUILDFLAG(IS_POSIX)
  
  #if BUILDFLAG(IS_WIN)
-   std::vector<base::FilePath> preload_libraries_;
-@@ -84,12 +89,17 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+   // Adds preload-libraries to the delegate blob for utility_main() to access
+@@ -95,12 +100,17 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
    std::optional<raw_ptr<ZygoteCommunication>> zygote_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
