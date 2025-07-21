@@ -336,7 +336,6 @@ describe('chrome extensions', () => {
       expect(result).to.be.an('object');
       expect(result.os).to.be.a('string');
       expect(result.arch).to.be.a('string');
-      expect(result.nacl_arch).to.be.a('string');
     });
   });
 
