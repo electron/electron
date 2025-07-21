@@ -10,10 +10,10 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index b08febf8bba8ceb94eb80d04d83931d1e219c5b7..60eedf298de4af314e2459933adda42a7e90e483 100644
+index 2d102a3eb26037a3a1284ba761c87e159c25457c..bcff152068d2453918f2a0dc067d98c5c9aedd16 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -140,6 +140,8 @@ class CONTENT_EXPORT RenderFrameObserver {
+@@ -138,6 +138,8 @@ class CONTENT_EXPORT RenderFrameObserver {
    virtual void DidHandleOnloadEvents() {}
    virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
                                        int32_t world_id) {}

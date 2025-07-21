@@ -90,7 +90,7 @@ index afd8b1bb9c7e18cdd5012ed4211cf56aa212da27..6752d6e1c0576087faa741c0bbdf5837
    // when it receives the AcceptCHFrame.
    // The value is set only if the flag is enabled.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index c1774435cf594b5b3c07a60d11c379c61a828dec..4a59df2ce679c9af10b0e3bf630d615bf82e3c8a 100644
+index fbc817126489e5422fd4bd11b6bd9744d648f8ff..b51b2ebe0f3291d04b0479776ddbeb1e05197f56 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -14,6 +14,7 @@ import "services/network/public/mojom/encoded_body_length.mojom";
@@ -112,10 +112,10 @@ index c1774435cf594b5b3c07a60d11c379c61a828dec..4a59df2ce679c9af10b0e3bf630d615b
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index f742ddb564cf9aa0bd219d7e2636204417ae48af..1fc293925bdbdab7b316e19cac01f8cf0995fbff 100644
+index 6318bfabcf5f1f72b78161954f44b2bc2ab2b08d..da73a077a944cb99f3ad41ea9f66cc6045017cb9 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -397,6 +397,9 @@ URLLoader::URLLoader(
+@@ -398,6 +398,9 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    TaskRunner(request.priority)),
        per_factory_orb_state_(context.GetMutableOrbState()),
@@ -125,7 +125,7 @@ index f742ddb564cf9aa0bd219d7e2636204417ae48af..1fc293925bdbdab7b316e19cac01f8cf
        devtools_request_id_(request.devtools_request_id),
        options_(PopulateOptions(options,
                                 factory_params_->is_orb_enabled,
-@@ -535,7 +538,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
+@@ -536,7 +539,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -134,7 +134,7 @@ index f742ddb564cf9aa0bd219d7e2636204417ae48af..1fc293925bdbdab7b316e19cac01f8cf
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1142,6 +1145,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1150,6 +1153,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

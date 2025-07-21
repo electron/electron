@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 08919400794cc35e0c0e41958c0b295c3fd1c2d2..ab9645ed3503a9654a19c76b68cc6534b52ebc8d 100644
+index ad12b739d4749e409457ae1c29aeb9f8b99586df..02cb932e6117612c59b5fa0bcc85d471cbe3178f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1048,6 +1048,7 @@ component("base") {
+@@ -1055,6 +1055,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -81,10 +81,10 @@ index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..f328fbb49c45991f44a9c75325491d08
  
  }  // namespace base
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index 116f4b86b816756e3a777585d4c863f423b19baf..5bd0273e7cc6a725247a0b94f85f47e2ad5336f4 100644
+index 8b29bb46dabc3e88a36e6e03f11d913fa490c57d..dfd97121493210d7f7b26f9f6d93400b64c95685 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
-@@ -21,6 +21,10 @@
+@@ -84,6 +84,10 @@ int posix_spawnattr_set_csm_np(const posix_spawnattr_t*, uint32_t)
  #include "base/threading/scoped_blocking_call.h"
  #include "base/threading/thread_restrictions.h"
  #include "base/trace_event/trace_event.h"
@@ -95,7 +95,7 @@ index 116f4b86b816756e3a777585d4c863f423b19baf..5bd0273e7cc6a725247a0b94f85f47e2
  
  #if BUILDFLAG(IS_MAC)
  #include "base/apple/mach_port_rendezvous_mac.h"
-@@ -29,9 +33,11 @@
+@@ -92,9 +96,11 @@ int posix_spawnattr_set_csm_np(const posix_spawnattr_t*, uint32_t)
  extern "C" {
  // Changes the current thread's directory to a path or directory file
  // descriptor.
@@ -107,7 +107,7 @@ index 116f4b86b816756e3a777585d4c863f423b19baf..5bd0273e7cc6a725247a0b94f85f47e2
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs,
                                            int disclaim);
-@@ -108,13 +114,27 @@ class PosixSpawnFileActions {
+@@ -171,13 +177,27 @@ class PosixSpawnFileActions {
  
  #if !BUILDFLAG(IS_MAC)
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -135,7 +135,7 @@ index 116f4b86b816756e3a777585d4c863f423b19baf..5bd0273e7cc6a725247a0b94f85f47e2
  }
  #endif
  
-@@ -238,7 +258,7 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -301,7 +321,7 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  
@@ -582,7 +582,7 @@ index 8563eb9aa5b5dca04e45d55a3bdd32a135232f00..587bafc4fa1f73c9ac8403757b21bfed
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e84b970df4f38580f999d3c11ff9db3304fb8e5d..55890a38b5d3a08d240ee42ac51ef33d2538fb2a 100644
+index 6aaca3b6bccf7a2e2525aec44f7e779406fa1730..2bdecc9c214987f88d559c872a0083826adb933d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -341,6 +341,7 @@ source_set("browser") {
@@ -703,10 +703,10 @@ index e38279e46d8fe621db24b4d94f5811459b4ca6b5..26592c97be3474a24f294d3cf2e74627
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 88b96916fc3a4577806e3626086edac7e601ee28..a890f471ad770448d825a07cf7a734b8e6c7c745 100644
+index af1e2cc289018a8e632bb8a2417a85c115986b9f..36580229d713429c1aa6171ffc20152b7df55178 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -278,6 +278,7 @@ source_set("common") {
+@@ -274,6 +274,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -797,10 +797,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index b3286de2a30c93f9f0c92c54bf3e1dfca3593614..fbf2e7e26f069d9973ec6d44a8ce18f39a8f68d8 100644
+index d2a9eedef31af121195d0d8442cb55a867072630..4dde7b3d402de797af08aa70547cce7f8e9d181c 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -667,6 +667,7 @@ static_library("test_support") {
+@@ -669,6 +669,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -808,7 +808,7 @@ index b3286de2a30c93f9f0c92c54bf3e1dfca3593614..fbf2e7e26f069d9973ec6d44a8ce18f3
    ]
  
    data_deps = [
-@@ -1109,6 +1110,7 @@ static_library("browsertest_support") {
+@@ -1111,6 +1112,7 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -816,7 +816,7 @@ index b3286de2a30c93f9f0c92c54bf3e1dfca3593614..fbf2e7e26f069d9973ec6d44a8ce18f3
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1975,6 +1977,7 @@ test("content_browsertests") {
+@@ -1977,6 +1979,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index b3286de2a30c93f9f0c92c54bf3e1dfca3593614..fbf2e7e26f069d9973ec6d44a8ce18f3
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3277,6 +3280,7 @@ test("content_unittests") {
+@@ -3283,6 +3286,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -903,7 +903,7 @@ index f300e8d331057e894b43b74944e5052c39206844..4ff5277d550485cd79c5b5316d89c730
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 237bff815a69c786a9ae31437c6df1c933e4963b..215c9affd67ebddc81415eefc12ee5727ab07aee 100644
+index 906b5f43081a8caf02639c4f9f40bc1a45560c17..17e1c453f431100de0cb8504f567bdfc8eabb5d7 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
 @@ -131,6 +131,7 @@ component("service") {
@@ -1406,7 +1406,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 520d1d438e7fd85ba9faf482e4284b467f84f4c6..70c9d77a03f8355607571fe6594c34a7b3581f76 100644
+index 8f96553993fd7599f8aa6d719d1f7bc9b1014555..55b6774bc1a460811eb7d82d0dcd2c584a5948bb 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -419,6 +419,7 @@ component("core") {
@@ -1648,7 +1648,7 @@ index 6846060ef9622d8fc8d1d6c8da16e2f1b785e6bd..05c22db87e882b246bd7034e027cf149
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index c92c35730680395c27c794ffc0b1bea7d81df37c..41b414c5270d65ed8463ea4623e66957e18a14d1 100644
+index 3b7352f99bcd41020d5501395c1c23588c00d39d..6abf1cc742505a902366b367d739c5f6090d9667 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -370,6 +370,13 @@ component("base") {
@@ -1818,7 +1818,7 @@ index 85d9170ae8de43ec0fa18c033d66c0583c26ec2f..c4f76301818404ce853583adf01af85c
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 34a39420e0f5a07fbc11ef9783baef1e8b33d279..98c19c206ee75ebc9f34b82e9615aff97dc22c8f 100644
+index d364d9615b9e018ddbfa36bb3167630ef1f3a076..cba28327de6932b0fbde3e5518ea30e3417cfbdf 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -339,6 +339,12 @@ component("gfx") {
@@ -1873,7 +1873,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 5732c3a537e7e69ac3a70c2c9999ad391e158d72..4e566d501c9c087ca4c0ad861a876a5e4213e772 100644
+index b57de34473e7a5615c176ad22a99b3fa028c50ba..fcec8ef135d6aa9bd30f191e51ff98cf8701b027 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -719,6 +719,8 @@ component("views") {
