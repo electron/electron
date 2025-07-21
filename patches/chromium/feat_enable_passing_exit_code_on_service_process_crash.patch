@@ -11,18 +11,22 @@ ServiceProcessHost::Observer functions, but we need to pass the exit code to
 the observer.
 
 diff --git a/content/browser/service_host/service_process_tracker.cc b/content/browser/service_host/service_process_tracker.cc
-index e900841900325dd090b04f85151dc7b2f04a6613..e402bcf07aa0704c113ce472db547ffcfb04a4bf 100644
+index fb41c8dfd147a90d7d581b49ad7f909d947cb214..ae0dce9d1dde14f1562adac7d324635983bb4c09 100644
 --- a/content/browser/service_host/service_process_tracker.cc
 +++ b/content/browser/service_host/service_process_tracker.cc
-@@ -48,12 +48,14 @@ void ServiceProcessTracker::NotifyTerminated(ServiceProcessId id) {
-   processes_.erase(iter);
- }
+@@ -51,7 +51,8 @@ void ServiceProcessTracker::NotifyTerminated(ServiceProcessId id) {
  
--void ServiceProcessTracker::NotifyCrashed(ServiceProcessId id) {
-+void ServiceProcessTracker::NotifyCrashed(ServiceProcessId id, int exit_code) {
+ void ServiceProcessTracker::NotifyCrashed(
+     ServiceProcessId id,
+-    UtilityProcessHost::Client::CrashType crash_type) {
++    UtilityProcessHost::Client::CrashType crash_type,
++    int exit_code) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    auto iter = processes_.find(id);
    CHECK(iter != processes_.end());
+@@ -65,7 +66,9 @@ void ServiceProcessTracker::NotifyCrashed(
+       break;
+   }
    for (auto& observer : observers_) {
 -    observer.OnServiceProcessCrashed(iter->second.Duplicate());
 +    auto params = iter->second.Duplicate();
@@ -32,86 +36,86 @@ index e900841900325dd090b04f85151dc7b2f04a6613..e402bcf07aa0704c113ce472db547ffc
    processes_.erase(iter);
  }
 diff --git a/content/browser/service_host/service_process_tracker.h b/content/browser/service_host/service_process_tracker.h
-index 8e2b330f59c714db9dac3363df566b6e396fa4ec..47b0b3a944dec09a229fe771813118bbe49b8e28 100644
+index 9a5179c4eeacf8bbfb2d831b4301836df490f3a8..511fc9b9d5ce14a1b5ef457a1047e40d3bb64273 100644
 --- a/content/browser/service_host/service_process_tracker.h
 +++ b/content/browser/service_host/service_process_tracker.h
-@@ -34,7 +34,7 @@ class ServiceProcessTracker {
- 
+@@ -36,7 +36,8 @@ class ServiceProcessTracker {
    void NotifyTerminated(ServiceProcessId id);
  
--  void NotifyCrashed(ServiceProcessId id);
-+  void NotifyCrashed(ServiceProcessId id, int exit_code);
+   void NotifyCrashed(ServiceProcessId id,
+-                     UtilityProcessHost::Client::CrashType type);
++                     UtilityProcessHost::Client::CrashType type,
++                     int exit_code);
  
    void AddObserver(ServiceProcessHost::Observer* observer);
  
 diff --git a/content/browser/service_host/utility_process_client.cc b/content/browser/service_host/utility_process_client.cc
-index 530d877ab671296ddd6dfd29a528018b3db1ad6f..a64c11f8838b9dc4704a57c96bd9aa8b98bce212 100644
+index 99da7eee3cb1a09b984832211bceee385147aec2..5e4bd537d94ad26c8d309ebfb63845a8d3d11dae 100644
 --- a/content/browser/service_host/utility_process_client.cc
 +++ b/content/browser/service_host/utility_process_client.cc
 @@ -40,7 +40,7 @@ void UtilityProcessClient::OnProcessTerminatedNormally() {
        process_info_->service_process_id());
  }
  
--void UtilityProcessClient::OnProcessCrashed() {
-+void UtilityProcessClient::OnProcessCrashed(int exit_code) {
+-void UtilityProcessClient::OnProcessCrashed(CrashType type) {
++void UtilityProcessClient::OnProcessCrashed(CrashType type, int exit_code) {
    // TODO(crbug.com/40654042): It is unclear how we can observe
    // |OnProcessCrashed()| without observing |OnProcessLaunched()| first, but
    // it can happen on Android. Ignore the notification in this case.
-@@ -48,6 +48,7 @@ void UtilityProcessClient::OnProcessCrashed() {
-     return;
+@@ -49,6 +49,6 @@ void UtilityProcessClient::OnProcessCrashed(CrashType type) {
    }
  
--  GetServiceProcessTracker().NotifyCrashed(process_info_->service_process_id());
-+  GetServiceProcessTracker().NotifyCrashed(
-+      process_info_->service_process_id(), exit_code);
+   GetServiceProcessTracker().NotifyCrashed(process_info_->service_process_id(),
+-                                           type);
++                                           type, exit_code);
  }
  }  // namespace content
 diff --git a/content/browser/service_host/utility_process_client.h b/content/browser/service_host/utility_process_client.h
-index 801db538979ba62facdcf3a472dade56723ca639..7abac9a5b13b393713534ae51664c2e5da3a4c29 100644
+index 2648adb1cf38ab557b66ffd0e3034b26b04d76d6..98eab587f343f6ca472efc3d4e7b31b2b8821417 100644
 --- a/content/browser/service_host/utility_process_client.h
 +++ b/content/browser/service_host/utility_process_client.h
 @@ -36,7 +36,7 @@ class UtilityProcessClient : public UtilityProcessHost::Client {
  
    void OnProcessTerminatedNormally() override;
  
--  void OnProcessCrashed() override;
-+  void OnProcessCrashed(int exit_code) override;
+-  void OnProcessCrashed(CrashType type) override;
++  void OnProcessCrashed(CrashType type, int exit_code) override;
  
   private:
    const std::string service_interface_name_;
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 99e973152a486b1af736d9b1dd758879c2a82013..e3a1fdd1aa8e31178a580252f170c5de29e0037e 100644
+index 4a549fb67f2e2e9a60c46bd84273df6358e9d4c1..c522af4f7fb2edd33be0f671e01270d075a56ce0 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -611,7 +611,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
-   // Take ownership of |client_| so the destructor doesn't notify it of
-   // termination.
-   auto client = std::move(client_);
--  client->OnProcessCrashed();
-+  client->OnProcessCrashed(exit_code);
+@@ -628,7 +628,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
+                : Client::CrashType::kPreIpcInitialization;
+   }
+ #endif  // BUILDFLAG(IS_WIN)
+-  client->OnProcessCrashed(type);
++  client->OnProcessCrashed(type, exit_code);
  }
  
  std::optional<std::string> UtilityProcessHost::GetServiceName() {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index 55379fbe9233ba96f6e4729e2b7d534c0c6884a0..850592294efd2c0a0fdc253b7b3fb6441b91d730 100644
+index 5b3e1c8cf09b7135443c056c27239fb9ef3fd9c9..b33f3f7ea5e92b8dc63fec0acdb4d9eaea57af99 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
-@@ -68,7 +68,7 @@ class CONTENT_EXPORT UtilityProcessHost
- 
-     virtual void OnProcessLaunched(const base::Process& process) {}
+@@ -88,7 +88,7 @@ class CONTENT_EXPORT UtilityProcessHost
      virtual void OnProcessTerminatedNormally() {}
--    virtual void OnProcessCrashed() {}
-+    virtual void OnProcessCrashed(int exit_code) {}
+     // Called when the process has terminated due to a crash. The `type` field
+     // indicates the type of crash. See above.
+-    virtual void OnProcessCrashed(CrashType type) {}
++    virtual void OnProcessCrashed(CrashType type, int exit_code) {}
    };
  
    struct CONTENT_EXPORT Options {
 diff --git a/content/public/browser/service_process_info.h b/content/public/browser/service_process_info.h
-index 1a8656aef341cd3b23af588fb00569b79d6cd100..6af523eb27a8c1e5529721c029e5b3ba0708b9fc 100644
+index 21f2c71d2323a70491034678a4dc0029d8d53e63..ce76dc8cadd5cbee5114d7106389803c3d7e8238 100644
 --- a/content/public/browser/service_process_info.h
 +++ b/content/public/browser/service_process_info.h
-@@ -64,7 +64,13 @@ class CONTENT_EXPORT ServiceProcessInfo {
-   const std::optional<GURL>& site() const { return site_; }
-   const base::Process& GetProcess() const { return process_; }
+@@ -68,7 +68,13 @@ class CONTENT_EXPORT ServiceProcessInfo {
+     crashed_pre_ipc_ = crashed_pre_ipc;
+   }
  
 +  void set_exit_code(int exit_code) { exit_code_ = exit_code; }
 +  int exit_code() const { return exit_code_; }
