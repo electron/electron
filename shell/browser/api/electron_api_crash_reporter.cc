@@ -21,6 +21,7 @@
 #include "electron/mas.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -261,7 +262,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("start", &electron::api::crash_reporter::Start);
 #if IS_MAS_BUILD()
