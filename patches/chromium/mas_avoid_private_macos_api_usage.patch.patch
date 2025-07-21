@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 152f732f17423c2533d0e296f66d724c1766f354..8c54c3d7561de12c436141df93c96d7c28595bbe 100644
+index 7f7c60a6777c72c76eff5a261e0af12c2a244634..d928082d92b96dc0b33cec9c6942baa8830239e1 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1055,6 +1055,7 @@ component("base") {
@@ -548,10 +548,10 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 8563eb9aa5b5dca04e45d55a3bdd32a135232f00..587bafc4fa1f73c9ac8403757b21bfed0487424d 100644
+index 2d5cad5d7a4ab9292a5f966123687dee06f4512b..ae798fc8f923a9b590c0d9ed703946a2bf5bd3d4 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -38,6 +38,7 @@
+@@ -34,6 +34,7 @@
  #import "content/public/browser/render_widget_host_view_mac_delegate.h"
  #include "content/public/browser/scoped_accessibility_mode.h"
  #include "content/public/common/content_features.h"
@@ -559,7 +559,7 @@ index 8563eb9aa5b5dca04e45d55a3bdd32a135232f00..587bafc4fa1f73c9ac8403757b21bfed
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2090,15 +2091,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2086,15 +2087,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -797,10 +797,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ef3b4b76737cb6161b40475fb4b4c834167045a7..76673e1139fc4953791353e9caccd23b15a358e1 100644
+index a235974eccd4e62e6bc4bf10d37e7057ebc9dd5a..8412aaaae5866994fe2d30c1d5c421ef81343e0d 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -668,6 +668,7 @@ static_library("test_support") {
+@@ -670,6 +670,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -808,15 +808,16 @@ index ef3b4b76737cb6161b40475fb4b4c834167045a7..76673e1139fc4953791353e9caccd23b
    ]
  
    data_deps = [
-@@ -1110,6 +1111,7 @@ static_library("browsertest_support") {
-   }
- 
-   configs += [ "//v8:external_startup_data" ]
+@@ -1120,6 +1121,8 @@ static_library("browsertest_support") {
+   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
+   # enable the diagnostic by removing this line.
+   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
++
 +  deps += ["//electron/build/config:generate_mas_config"]
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1975,6 +1977,7 @@ test("content_browsertests") {
+@@ -1988,6 +1991,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +825,7 @@ index ef3b4b76737cb6161b40475fb4b4c834167045a7..76673e1139fc4953791353e9caccd23b
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3280,6 +3283,7 @@ test("content_unittests") {
+@@ -3297,6 +3301,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -833,7 +834,7 @@ index ef3b4b76737cb6161b40475fb4b4c834167045a7..76673e1139fc4953791353e9caccd23b
  
    if (enable_nocompile_tests) {
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index bfc8f7a2b5bc7c54dbc0157d581bb556b7c7d7a7..888876d7f770588355d9de3c0faf8f8d24243b77 100644
+index ea0d03e4eb473a2eec4164191c02184577de4366..af2d64f0cf19c4325013d5f62da5079f379ef085 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
 @@ -229,6 +229,7 @@ static_library("web_test_browser") {
@@ -903,10 +904,10 @@ index f300e8d331057e894b43b74944e5052c39206844..4ff5277d550485cd79c5b5316d89c730
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 906b5f43081a8caf02639c4f9f40bc1a45560c17..17e1c453f431100de0cb8504f567bdfc8eabb5d7 100644
+index 77b69bc2a6329c09ecd635bc9e003985ba631360..990df27831c390a2d8801df271006b0fa59752cf 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -131,6 +131,7 @@ component("service") {
+@@ -128,6 +128,7 @@ component("service") {
          "QuartzCore.framework",
        ]
        defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -915,7 +916,7 @@ index 906b5f43081a8caf02639c4f9f40bc1a45560c17..17e1c453f431100de0cb8504f567bdfc
      if (is_ios) {
        sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index f89dbdfb0c4e8e31d387d1ce2e5304277ac4df26..7b75bfeba59345d63f4ac8115369794144754b97 100644
+index d288ffce5c1265adbdefc571f840851026e7479e..e9a6e8c31401750d270fcc55ef1116b2608b65b5 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -8,6 +8,7 @@
@@ -937,7 +938,7 @@ index f89dbdfb0c4e8e31d387d1ce2e5304277ac4df26..7b75bfeba59345d63f4ac81153697941
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index d133d2759f1025d10b47c23a322001a5a7ba3568..8b945958c96bbdb54de2c870b00bd5f73ecc41c8 100644
+index 5064c9e21892333cf91579b49642ba500156c201..673e11336c5f5bb350b4622436c80c7299cfb607 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -202,6 +202,7 @@ source_set("audio") {
@@ -985,7 +986,7 @@ index 0f7c441ba44fe22b1bf4913ae8e61a8bb7ef7fe7..2311fdbbfa566e76b4709059b707ac4d
  }  // namespace
  #endif
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 618bd3b91278836bb249614b301452b3053051a8..4e53d2d23593de5afaa97a5ad68de78f5c646ffd 100644
+index 2a70752c12245d528629d1f552e1d7bdae7e4cf2..1a84b64614679a0879b4e96ec13385dd0504faf7 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -193,6 +193,8 @@ source_set("dns") {
@@ -1092,7 +1093,7 @@ index 950cf7cfee4e11766dccf5c0bf3f15a8562f0f1e..a5adaaabdbbd91fedbc4cb679c865bc3
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/sandbox_serializer.cc b/sandbox/mac/sandbox_serializer.cc
-index ea1627bdd872f89056e97e486feb2d44587a894e..26f339e40bcbd8963585765e20e49955f49263aa 100644
+index 0e6e650f88e6aadd46bec96a8b41768c37d7cc6a..a6830e3f886e408c254ccd1c2b1d5c15cd3bcb92 100644
 --- a/sandbox/mac/sandbox_serializer.cc
 +++ b/sandbox/mac/sandbox_serializer.cc
 @@ -8,6 +8,7 @@
@@ -1103,7 +1104,7 @@ index ea1627bdd872f89056e97e486feb2d44587a894e..26f339e40bcbd8963585765e20e49955
  #include "sandbox/mac/sandbox_logging.h"
  #include "sandbox/mac/seatbelt.h"
  
-@@ -197,6 +198,7 @@ SandboxSerializer::DeserializePolicy(const std::string& serialized_policy,
+@@ -193,6 +194,7 @@ SandboxSerializer::DeserializePolicy(const std::string& serialized_policy,
  // static
  bool SandboxSerializer::ApplySerializedPolicy(
      const std::string& serialized_policy) {
@@ -1111,7 +1112,7 @@ index ea1627bdd872f89056e97e486feb2d44587a894e..26f339e40bcbd8963585765e20e49955
    std::string error;
    std::optional<DeserializedPolicy> deserialized_policy =
        DeserializePolicy(serialized_policy, error);
-@@ -227,6 +229,9 @@ bool SandboxSerializer::ApplySerializedPolicy(
+@@ -223,6 +225,9 @@ bool SandboxSerializer::ApplySerializedPolicy(
        break;
    }
    return true;
@@ -1406,10 +1407,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 1921e9755d7bd07a527512b98132706c7e29ef58..08b77ee8f06fe9b942831adeb90e9d36040d8cad 100644
+index f70ce69bb932a217759d8c06104ccdae5f67d670..32029a906c0d205ad8d2658b11e5a55495cf95b7 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -419,6 +419,7 @@ component("core") {
+@@ -423,6 +423,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1450,7 +1451,7 @@ index 296d38b10d16c7b17137358fe89bac6a03afce09..9608842b8b0df441dc654bf96b46f052
  }
  
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
-index af13a067beb5fc0d5c6b7eb579b04d1d6dc130de..1a7ddbc3a1f7a989a3f7e0c21d4d9ad7e4b435b9 100644
+index ce6a061b57cce101c103527dbbbe5ed47b2ecaf8..616922c34e1f3bc50584c0417129b78e3ff651d1 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
 @@ -7,6 +7,7 @@
@@ -1471,7 +1472,7 @@ index af13a067beb5fc0d5c6b7eb579b04d1d6dc130de..1a7ddbc3a1f7a989a3f7e0c21d4d9ad7
  @class CALayer;
  @protocol MTLDevice;
  
-@@ -112,7 +115,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
+@@ -113,7 +116,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
    // both the current tree and the pending trees.
    size_t presented_ca_layer_trees_max_length_ = 2;
  
@@ -1482,7 +1483,7 @@ index af13a067beb5fc0d5c6b7eb579b04d1d6dc130de..1a7ddbc3a1f7a989a3f7e0c21d4d9ad7
    // The root CALayer to display the current frame. This does not change
    // over the lifetime of the object.
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
-index 9cf72ff8b8593dae415d07796f1bebeeea3e2f76..3e78af6e65085cb978133e49aa4cc164bcc94027 100644
+index 54651172993f7d07f21a395511f773bff40115d8..295d8bef6e9ec966db570d7537abfc049324512d 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 @@ -10,6 +10,7 @@
@@ -1818,7 +1819,7 @@ index 85d9170ae8de43ec0fa18c033d66c0583c26ec2f..c4f76301818404ce853583adf01af85c
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 20ec218ead745327e00e95d95b0dd4f3488e97de..b1655a029fbc49e0ec13a9cb875943ab231bd2d3 100644
+index 1a7b1e3fd1e3971306939a9086014179dd492503..3d7ba97d904a6ad8da6bb3d36497ac00d54b44fa 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -339,6 +339,12 @@ component("gfx") {
