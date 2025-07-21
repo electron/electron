@@ -122,6 +122,18 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
       if (ext == "*") {
         [content_types_set addObject:[UTType typeWithFilenameExtension:@"*"]];
         break;
+      } else if (ext == "app") {
+        // This handles a bug on macOS where the "app" extension by default
+        // maps to "com.apple.application-file", which is for an Application
+        // file (older single-file carbon based apps), and not modern
+        // Application Bundles (multi file packages as you'd see for all modern
+        // applications).
+        UTType* superType =
+            [UTType typeWithIdentifier:@"com.apple.application-bundle"];
+        if (UTType* utt = [UTType typeWithFilenameExtension:@"app"
+                                           conformingToType:superType]) {
+          [content_types_set addObject:utt];
+        }
       } else {
         if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())])
           [content_types_set addObject:utt];
