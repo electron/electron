@@ -12,7 +12,7 @@ protocol deps to contain https://chromium-review.googlesource.com/c/v8/v8/+/5996
 Rest of the changes can be upstreamed.
 
 diff --git a/node.gni b/node.gni
-index 165b26a79a7f2b74d2a2252dc2350b2e10c091e6..c64761b730e61edcdc0e46a48699f2fd5bb1c0a6 100644
+index 203b4abbc44df9e58083c819f61f9025104abdc6..73bf3839866a2652ca660f1117e8f249d33fa46a 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -16,6 +16,9 @@ declare_args() {
@@ -39,10 +39,10 @@ index 3d7aa148678b2646b88fa7c32abec91791b02b82..4810d93eb971b253f7dadff7011a632f
    gypi_values = exec_script(
        "../../tools/gypi_to_gn.py",
 diff --git a/unofficial.gni b/unofficial.gni
-index 332c9ee7262108ae9616e9bc8bd950a4940a858c..8886f2a79ae77614789d6ae0defd4f18fc756456 100644
+index d591dfc99fdea4f830008502786ee44d863a31fc..9e26399482d6a1cdb843efb72c152d5cdd5e08ea 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -222,13 +222,14 @@ template("node_gn_build") {
+@@ -214,13 +214,14 @@ template("node_gn_build") {
      }
      if (node_enable_inspector) {
        deps += [

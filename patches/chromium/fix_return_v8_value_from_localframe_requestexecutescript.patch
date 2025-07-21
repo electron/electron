@@ -92,7 +92,7 @@ index d673be2d54c4a13aa31dace32202446e5c51167d..addb1bc13b0bffd228e7d2a0ae3b5afe
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index 2f65751119e76f7f79887c0746619dc974629d07..cbd573c0f4b57231e066a1a9e686e113ac2ba6b0 100644
+index b6673d769d1c5466008a7e900b6b5a370ce49a7c..fcff0e725dfe4d4f0f7c4bbf972bbc6b56271e99 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 @@ -973,6 +973,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
