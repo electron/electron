@@ -57,6 +57,12 @@ async function createWindow (backgroundColor?: string) {
       sandbox: true,
       nodeIntegration: false
     },
+    name: 'default_app',
+    // windowStatePersistence: true,
+    windowStatePersistence: {
+      bounds: true,
+      displayMode: false
+    },
     useContentSize: true,
     show: false
   };
@@ -66,7 +72,9 @@ async function createWindow (backgroundColor?: string) {
   }
 
   mainWindow = new BrowserWindow(options);
-  mainWindow.on('ready-to-show', () => mainWindow!.show());
+  setTimeout(() => {
+    mainWindow!.show();
+  }, 3000);
 
   mainWindow.webContents.setWindowOpenHandler(details => {
     shell.openExternal(decorateURL(details.url));

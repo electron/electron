@@ -134,9 +134,9 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
     persistence_options.Get(options::kDisplayMode, &restore_display_mode_);
     window_state_persistence_enabled_ = true;
   } else if (bool flag; options.Get(options::kWindowStatePersistence, &flag)) {
-    window_state_persistence_enabled_ = flag;
     restore_bounds_ = flag;
     restore_display_mode_ = flag;
+    window_state_persistence_enabled_ = flag;
   }
 
   // Initialize prefs_ to save/restore window bounds if we have a valid window
@@ -918,26 +918,27 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
   }
 
   if (restore_display_mode_) {
-    RestoreDisplayMode(*window_preferences);
+    restore_display_mode_callback_ = base::BindOnce(
+        [](NativeWindow* window, base::Value::Dict prefs) {
+          if (auto kiosk = prefs.FindBool(electron::kKiosk); kiosk && *kiosk) {
+            window->SetKiosk(true);
+          } else if (auto fs = prefs.FindBool(electron::kFullscreen);
+                     fs && *fs) {
+            window->SetFullScreen(true);
+          } else if (auto max = prefs.FindBool(electron::kMaximized);
+                     max && *max) {
+            window->Maximize();
+          }
+        },
+        base::Unretained(this), window_preferences->Clone());
   }
 
   is_being_restored_ = false;
 }
 
-void NativeWindow::RestoreDisplayMode(
-    const base::Value::Dict& window_preferences) {
-  std::optional<bool> fullscreen =
-      window_preferences.FindBool(electron::kFullscreen);
-  std::optional<bool> maximized =
-      window_preferences.FindBool(electron::kMaximized);
-  std::optional<bool> kiosk = window_preferences.FindBool(electron::kKiosk);
-
-  if (kiosk && *kiosk) {
-    SetKiosk(true);
-  } else if (fullscreen && *fullscreen) {
-    SetFullScreen(true);
-  } else if (maximized && *maximized) {
-    Maximize();
+void NativeWindow::FlushPendingDisplayMode() {
+  if (restore_display_mode_callback_) {
+    std::move(restore_display_mode_callback_).Run();
   }
 }
 

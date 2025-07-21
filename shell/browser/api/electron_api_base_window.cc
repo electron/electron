@@ -230,6 +230,7 @@ void BaseWindow::OnWindowFocus() {
 }
 
 void BaseWindow::OnWindowShow() {
+  window_->FlushPendingDisplayMode();
   Emit("show");
 }
 

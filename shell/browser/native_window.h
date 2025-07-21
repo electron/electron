@@ -451,8 +451,10 @@ class NativeWindow : public base::SupportsUserData,
   void AdjustBoundsToBeVisibleOnDisplay(const display::Display& display,
                                         const gfx::Rect& saved_work_area,
                                         gfx::Rect* bounds);
-  // Applies saved display mode (fullscreen, maximized, or kiosk) to the window.
-  void RestoreDisplayMode(const base::Value::Dict& window_preferences);
+  // Flushes pending display mode restoration (fullscreen, maximized, kiosk)
+  // that was deferred during initialization to respect show=false. This
+  // consumes and clears the restore_display_mode_callback_.
+  void FlushPendingDisplayMode();
 
  protected:
   friend class api::BrowserView;
@@ -589,9 +591,11 @@ class NativeWindow : public base::SupportsUserData,
   raw_ptr<PrefService> prefs_ = nullptr;
 
   // Whether to restore bounds.
-  bool restore_bounds_;
+  bool restore_bounds_ = false;
   // Whether to restore display mode.
-  bool restore_display_mode_;
+  bool restore_display_mode_ = false;
+  // Callback to restore display mode.
+  base::OnceCallback<void()> restore_display_mode_callback_;
 
   // Timer to debounce window state saving operations.
   base::OneShotTimer save_window_state_timer_;
