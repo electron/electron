@@ -39,10 +39,10 @@ def main(zip_path, manifest_path):
     removed_files = files_in_manifest - files_in_zip
 
     if not added_files and not removed_files:
-        print("✓ Zip contents match manifest - no differences found")
+        print("OK: Zip contents match manifest - no differences found")
         return 0
 
-    print("✗ Zip contents do not match manifest!")
+    print("ERROR: Zip contents do not match manifest!")
     print(f"Zip file: {zip_path}")
     print(f"Manifest: {manifest_path}")
     print()
