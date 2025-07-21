@@ -18,10 +18,6 @@ gfx::Rect TrayIcon::GetBounds() {
 
 void TrayIcon::SetAutoSaveName(const std::string& name) {}
 
-std::string TrayIcon::GetAutoSaveName() const {
-  return std::string();
-}
-
 void TrayIcon::NotifyClicked(const gfx::Rect& bounds,
                              const gfx::Point& location,
                              int modifiers) {

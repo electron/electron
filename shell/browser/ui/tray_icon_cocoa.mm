@@ -11,6 +11,7 @@
 #include "base/message_loop/message_pump_apple.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
+#include "base/uuid.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/cocoa/NSString+ANSI.h"
@@ -425,16 +426,11 @@ gfx::Rect TrayIconCocoa::GetBounds() {
 }
 
 void TrayIconCocoa::SetAutoSaveName(const std::string& name) {
-  auto_save_name_ = name;
   [status_item_view_ setAutosaveName:base::SysUTF8ToNSString(name)];
 }
 
-std::string TrayIconCocoa::GetAutoSaveName() const {
-  return auto_save_name_;
-}
-
 // static
-TrayIcon* TrayIcon::Create(std::optional<UUID> guid) {
+TrayIcon* TrayIcon::Create(std::optional<base::Uuid> guid) {
   return new TrayIconCocoa;
 }
 
