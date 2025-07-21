@@ -237,8 +237,8 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
   // Create the global environment.
   node_env_ = node_bindings_->CreateEnvironment(
-      js_env_->isolate()->GetCurrentContext(), js_env_->platform(),
-      js_env_->max_young_generation_size_in_bytes());
+      js_env_->isolate(), js_env_->isolate()->GetCurrentContext(),
+      js_env_->platform(), js_env_->max_young_generation_size_in_bytes());
 
   node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
 

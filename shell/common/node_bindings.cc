@@ -641,6 +641,7 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
 }
 
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
+    v8::Isolate* isolate,
     v8::Local<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     size_t max_young_generation_size,
@@ -664,7 +665,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
       break;
   }
 
-  v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary global(isolate, context->Global());
 
   if (browser_env_ == BrowserEnvironment::kBrowser) {
@@ -766,7 +766,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // could be either kExplicit or kScoped depending on whether we're executing
     // from within a Node.js or a Blink entrypoint. Instead, the policy is
     // toggled to kExplicit when entering Node.js through UvRunOnce.
-    is.policy = context->GetIsolate()->GetMicrotasksPolicy();
+    is.policy = isolate->GetMicrotasksPolicy();
 
     // We do not want to use Node.js' message listener as it interferes with
     // Blink's.
@@ -775,8 +775,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // Isolate message listeners are additive (you can add multiple), so instead
     // we add an extra one here to ensure that the async hook stack is properly
     // cleared when errors are thrown.
-    context->GetIsolate()->AddMessageListenerWithErrorLevel(
-        ErrorMessageListener, v8::Isolate::kMessageError);
+    isolate->AddMessageListenerWithErrorLevel(ErrorMessageListener,
+                                              v8::Isolate::kMessageError);
 
     // We do not want to use the promise rejection callback that Node.js uses,
     // because it does not send PromiseRejectionEvents to the global script
@@ -792,15 +792,14 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
         node::IsolateSettingsFlags::SHOULD_NOT_SET_PREPARE_STACK_TRACE_CALLBACK;
   }
 
-  node::SetIsolateUpForNode(context->GetIsolate(), is);
-  context->GetIsolate()->SetHostImportModuleDynamicallyCallback(
-      HostImportModuleDynamically);
-  context->GetIsolate()->SetHostImportModuleWithPhaseDynamicallyCallback(
+  node::SetIsolateUpForNode(isolate, is);
+  isolate->SetHostImportModuleDynamicallyCallback(HostImportModuleDynamically);
+  isolate->SetHostImportModuleWithPhaseDynamicallyCallback(
       HostImportModuleWithPhaseDynamically);
-  context->GetIsolate()->SetHostInitializeImportMetaObjectCallback(
+  isolate->SetHostInitializeImportMetaObjectCallback(
       HostInitializeImportMetaObject);
 
-  gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
+  gin_helper::Dictionary process(isolate, env->process_object());
   process.SetReadOnly("type", process_type);
 
   if (browser_env_ == BrowserEnvironment::kBrowser ||
@@ -833,13 +832,14 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     size_t max_young_generation_size,
     std::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
-  return CreateEnvironment(context, platform, max_young_generation_size,
-                           ElectronCommandLine::AsUtf8(), {},
-                           on_app_code_ready);
+  return CreateEnvironment(
+      isolate, context, platform, max_young_generation_size,
+      ElectronCommandLine::AsUtf8(), {}, on_app_code_ready);
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {

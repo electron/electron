@@ -14,6 +14,7 @@
 #include "gin/object_template_builder.h"
 #include "services/device/public/mojom/wake_lock_provider.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/node_includes.h"
 
 namespace gin {
@@ -139,8 +140,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin::Dictionary dict{isolate, exports};
   dict.Set("powerSaveBlocker",
            electron::api::PowerSaveBlocker::Create(isolate));
 }
