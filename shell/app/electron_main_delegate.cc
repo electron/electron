@@ -28,7 +28,6 @@
 #include "electron/fuses.h"
 #include "electron/mas.h"
 #include "extensions/common/constants.h"
-#include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/command_line_args.h"
