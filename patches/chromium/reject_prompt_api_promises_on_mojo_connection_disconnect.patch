@@ -1,0 +1,168 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Wed, 1 Apr 2026 21:14:38 -0700
+Subject: Reject Prompt API promises on Mojo connection disconnect
+
+Without these changes to reject promises when the Mojo connection
+disconnects, these promises will hang indefinitely if the Prompt
+API handler is killed or unregistered.
+
+This will be upstreamed to Chromium.
+
+Change-Id: I89a6a076ae35cbaf12a93c517223a524bab3dff0
+
+diff --git a/third_party/blink/renderer/modules/ai/language_model.cc b/third_party/blink/renderer/modules/ai/language_model.cc
+index c176575f2dcc049e478d5388ae1934aa3bc59786..b8eda3dd8733b1e7e92f70a8c75678df4a0314c8 100644
+--- a/third_party/blink/renderer/modules/ai/language_model.cc
++++ b/third_party/blink/renderer/modules/ai/language_model.cc
+@@ -190,6 +190,9 @@ class CloneLanguageModelClient
+         client_remote;
+     receiver_.Bind(client_remote.InitWithNewPipeAndPassReceiver(),
+                    language_model->GetTaskRunner());
++    receiver_.set_disconnect_handler(
++        BindOnce(&CloneLanguageModelClient::OnConnectionError,
++                 WrapWeakPersistent(this)));
+     language_model_->GetAILanguageModelRemote()->Fork(std::move(client_remote));
+   }
+   ~CloneLanguageModelClient() override = default;
+@@ -232,6 +235,11 @@ class CloneLanguageModelClient
+     Cleanup();
+   }
+ 
++  void OnConnectionError() {
++    OnError(mojom::blink::AIManagerCreateClientError::kUnableToCreateSession,
++            /*quota_error_info=*/nullptr);
++  }
++
+   void ResetReceiver() override { receiver_.reset(); }
+ 
+  private:
+@@ -262,6 +270,8 @@ class AppendClient : public GarbageCollected<AppendClient>,
+     mojo::PendingRemote<mojom::blink::ModelStreamingResponder> client_remote;
+     receiver_.Bind(client_remote.InitWithNewPipeAndPassReceiver(),
+                    language_model->GetTaskRunner());
++    receiver_.set_disconnect_handler(
++        BindOnce(&AppendClient::OnConnectionError, WrapWeakPersistent(this)));
+     language_model_->GetAILanguageModelRemote()->Append(
+         std::move(prompts), std::move(client_remote));
+   }
+@@ -317,6 +327,11 @@ class AppendClient : public GarbageCollected<AppendClient>,
+     Cleanup();
+   }
+ 
++  void OnConnectionError() {
++    OnError(ModelStreamingResponseStatus::kErrorSessionDestroyed,
++            /*quota_error_info=*/nullptr);
++  }
++
+   void OnStreaming(const String& text) override {
+     NOTREACHED() << "Append() should not invoke `OnStreaming()`";
+   }
+@@ -761,6 +776,7 @@ void LanguageModel::ExecuteMeasureInputUsage(
+     ScriptPromiseResolver<IDLDouble>* resolver,
+     AbortSignal* signal,
+     Vector<mojom::blink::AILanguageModelPromptPtr> prompts) {
++  auto reject_fn = RejectOnDestruction(resolver, signal);
+   language_model_remote_->MeasureInputUsage(
+       std::move(prompts),
+       BindOnce(
+@@ -783,7 +799,8 @@ void LanguageModel::ExecuteMeasureInputUsage(
+             }
+             resolver->Resolve(static_cast<double>(usage.value()));
+           },
+-          WrapPersistent(resolver), WrapPersistent(signal)));
++          WrapPersistent(resolver), WrapPersistent(signal))
++          .Then(std::move(reject_fn)));
+ }
+ 
+ bool LanguageModel::ValidateInput(ScriptState* script_state,
+diff --git a/third_party/blink/renderer/modules/ai/language_model_create_client.cc b/third_party/blink/renderer/modules/ai/language_model_create_client.cc
+index ddc6fcda3ffbdc271bcdebfbd85aa711c063fee2..2b63e9e77dc1ed4a0ed9a687527efdc104974e7a 100644
+--- a/third_party/blink/renderer/modules/ai/language_model_create_client.cc
++++ b/third_party/blink/renderer/modules/ai/language_model_create_client.cc
+@@ -509,6 +509,11 @@ void LanguageModelCreateClient::OnError(
+   Cleanup();
+ }
+ 
++void LanguageModelCreateClient::OnConnectionError() {
++  OnError(mojom::blink::AIManagerCreateClientError::kUnableToCreateSession,
++          /*quota_error_info=*/nullptr);
++}
++
+ void LanguageModelCreateClient::ResetReceiver() {
+   receiver_.reset();
+ }
+@@ -524,6 +529,8 @@ void LanguageModelCreateClient::OnInitialPromptsResolved(
+   mojo::PendingRemote<mojom::blink::AIManagerCreateLanguageModelClient>
+       client_remote;
+   receiver_.Bind(client_remote.InitWithNewPipeAndPassReceiver(), task_runner_);
++  receiver_.set_disconnect_handler(
++      BindOnce(&LanguageModelCreateClient::OnConnectionError, WrapWeakPersistent(this)));
+   HeapMojoRemote<mojom::blink::AIManager>& ai_manager_remote =
+       AIInterfaceProxy::GetAIManagerRemote(GetExecutionContext());
+ 
+diff --git a/third_party/blink/renderer/modules/ai/language_model_create_client.h b/third_party/blink/renderer/modules/ai/language_model_create_client.h
+index 9ed8dfbefeccf1627d56f5ccc315f06071a63e25..7c8e823608883171c115676db151b70eb2fd055d 100644
+--- a/third_party/blink/renderer/modules/ai/language_model_create_client.h
++++ b/third_party/blink/renderer/modules/ai/language_model_create_client.h
+@@ -49,6 +49,8 @@ class LanguageModelCreateClient
+   // Process options and create, if the availability result is valid.
+   void Create(mojom::blink::ModelAvailabilityCheckResult result);
+ 
++  void OnConnectionError();
++
+   // Continue creation after any initial prompts were processed or rejected.
+   void OnInitialPromptsResolved(
+       Vector<mojom::blink::AILanguageModelExpectedPtr> expected_inputs,
+diff --git a/third_party/blink/renderer/modules/ai/model_execution_responder.cc b/third_party/blink/renderer/modules/ai/model_execution_responder.cc
+index 47b65b13adfab4b8f2597a23d38a386915643d1b..fa9b54e1069019a66b8dab6eb0efe5df8b34c11a 100644
+--- a/third_party/blink/renderer/modules/ai/model_execution_responder.cc
++++ b/third_party/blink/renderer/modules/ai/model_execution_responder.cc
+@@ -84,7 +84,10 @@ class Responder final : public GarbageCollected<Responder>,
+   mojo::PendingRemote<blink::mojom::blink::ModelStreamingResponder>
+   BindNewPipeAndPassRemote(
+       scoped_refptr<base::SequencedTaskRunner> task_runner) {
+-    return receiver_.BindNewPipeAndPassRemote(task_runner);
++    auto pending_remote = receiver_.BindNewPipeAndPassRemote(task_runner);
++    receiver_.set_disconnect_handler(
++        BindOnce(&Responder::OnConnectionError, WrapWeakPersistent(this)));
++    return pending_remote;
+   }
+ 
+   // `mojom::blink::ModelStreamingResponder` implementation.
+@@ -144,6 +147,11 @@ class Responder final : public GarbageCollected<Responder>,
+     Cleanup();
+   }
+ 
++  void OnConnectionError() {
++    OnError(ModelStreamingResponseStatus::kErrorSessionDestroyed,
++            /*quota_error_info=*/nullptr);
++  }
++
+   void RecordResponseStatusMetrics(
+       mojom::blink::ModelStreamingResponseStatus status) {
+     base::UmaHistogramEnumeration(
+@@ -235,7 +243,10 @@ class StreamingResponder final
+   mojo::PendingRemote<blink::mojom::blink::ModelStreamingResponder>
+   BindNewPipeAndPassRemote(
+       scoped_refptr<base::SequencedTaskRunner> task_runner) {
+-    return receiver_.BindNewPipeAndPassRemote(task_runner);
++    auto pending_remote = receiver_.BindNewPipeAndPassRemote(task_runner);
++    receiver_.set_disconnect_handler(BindOnce(
++        &StreamingResponder::OnConnectionError, WrapWeakPersistent(this)));
++    return pending_remote;
+   }
+ 
+   ReadableStream* CreateReadableStream() {
+@@ -337,6 +348,11 @@ class StreamingResponder final
+     Cleanup();
+   }
+ 
++  void OnConnectionError() {
++    OnError(ModelStreamingResponseStatus::kErrorSessionDestroyed,
++            /*quota_error_info=*/nullptr);
++  }
++
+   void RecordResponseStatusMetrics(
+       mojom::blink::ModelStreamingResponseStatus status) {
+     base::UmaHistogramEnumeration(

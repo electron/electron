@@ -1,4 +1,4 @@
-import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
+import { app, session, BrowserWindow, net, ipcMain, Session, utilityProcess, webFrameMain, WebFrameMain } from 'electron/main';
 
 import * as auth from 'basic-auth';
 import { expect } from 'chai';
@@ -2130,6 +2130,98 @@ describe('session module', () => {
 
       expect((await cookies.get({ url: 'https://example.com/', name: 'testdotcom' })).length).to.be.greaterThan(0);
       expect((await cookies.get({ url: 'https://example.org/', name: 'testdotorg' })).length).to.equal(0);
+    });
+  });
+
+  describe('ses.registerLocalAIHandler()', () => {
+    let w: Electron.BrowserWindow;
+
+    beforeEach(() => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          enableBlinkFeatures: 'AIPromptAPI'
+        }
+      });
+    });
+
+    afterEach(() => {
+      w.webContents.session.registerLocalAIHandler(null);
+      closeAllWindows();
+    });
+
+    it('registers a utility process as the AI handler', async () => {
+      await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+
+      const aiHandler = utilityProcess.fork(path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js'));
+      w.webContents.session.registerLocalAIHandler(aiHandler);
+
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+    });
+
+    it('clears the handler when called with null', async () => {
+      await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+      const { session } = w.webContents;
+
+      const aiHandler = utilityProcess.fork(path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js'));
+      session.registerLocalAIHandler(aiHandler);
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+
+      session.registerLocalAIHandler(null);
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+    });
+
+    it('prevents new LanguageModel.create() calls after clearing', async () => {
+      await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+      const { session } = w.webContents;
+
+      const aiHandler = utilityProcess.fork(path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js'));
+      session.registerLocalAIHandler(aiHandler);
+      await expect(w.webContents.executeJavaScript('LanguageModel.create()')).to.eventually.be.fulfilled();
+
+      session.registerLocalAIHandler(null);
+      await expect(w.webContents.executeJavaScript('LanguageModel.create().catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/unable to create/);
+    });
+
+    it('can re-register a new handler after clearing', async () => {
+      await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+      const { session } = w.webContents;
+
+      const aiHandler1 = utilityProcess.fork(path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js'));
+      session.registerLocalAIHandler(aiHandler1);
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+
+      session.registerLocalAIHandler(null);
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+
+      const aiHandler2 = utilityProcess.fork(path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js'));
+      session.registerLocalAIHandler(aiHandler2);
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+      await expect(w.webContents.executeJavaScript('LanguageModel.create()')).to.eventually.be.fulfilled();
+    });
+
+    it('throws when called with a non-UtilityProcess argument', () => {
+      const { session } = w.webContents;
+
+      expect(() => session.registerLocalAIHandler('not a process' as any)).to.throw();
+      expect(() => session.registerLocalAIHandler(42 as any)).to.throw();
+      expect(() => session.registerLocalAIHandler({} as any)).to.throw();
+    });
+
+    it('can register an existing handler again', async () => {
+      await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+      const { session } = w.webContents;
+
+      const aiHandler = utilityProcess.fork(path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js'));
+
+      session.registerLocalAIHandler(aiHandler);
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+
+      session.registerLocalAIHandler(null);
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+
+      session.registerLocalAIHandler(aiHandler);
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
     });
   });
 });

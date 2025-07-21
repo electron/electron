@@ -30,6 +30,11 @@ SessionPreferences* SessionPreferences::FromBrowserContext(
   return static_cast<SessionPreferences*>(context->GetUserData(&kLocatorKey));
 }
 
+base::CallbackListSubscription SessionPreferences::AddAIHandlerChangedCallback(
+    base::RepeatingClosure callback) {
+  return ai_handler_changed_callbacks_.Add(std::move(callback));
+}
+
 bool SessionPreferences::HasServiceWorkerPreloadScript() {
   const auto& preloads = preload_scripts();
   auto it = std::find_if(

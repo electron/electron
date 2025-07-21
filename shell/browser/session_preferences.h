@@ -7,8 +7,11 @@
 
 #include <vector>
 
+#include "base/callback_list.h"
 #include "base/files/file_path.h"
+#include "base/memory/weak_ptr.h"
 #include "base/supports_user_data.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/preload_script.h"
 
 namespace content {
@@ -16,6 +19,10 @@ class BrowserContext;
 }
 
 namespace electron {
+
+namespace api {
+class UtilityProcessWrapper;
+}
 
 class SessionPreferences : public base::SupportsUserData::Data {
  public:
@@ -30,6 +37,18 @@ class SessionPreferences : public base::SupportsUserData::Data {
 
   bool HasServiceWorkerPreloadScript();
 
+  const base::WeakPtr<api::UtilityProcessWrapper>& GetLocalAIHandler() const {
+    return local_ai_handler_;
+  }
+
+  void SetLocalAIHandler(base::WeakPtr<api::UtilityProcessWrapper> handler) {
+    local_ai_handler_ = handler;
+    ai_handler_changed_callbacks_.Notify();
+  }
+
+  base::CallbackListSubscription AddAIHandlerChangedCallback(
+      base::RepeatingClosure callback);
+
  private:
   SessionPreferences();
 
@@ -37,6 +56,8 @@ class SessionPreferences : public base::SupportsUserData::Data {
   static int kLocatorKey;
 
   std::vector<PreloadScript> preload_scripts_;
+  base::WeakPtr<api::UtilityProcessWrapper> local_ai_handler_;
+  base::RepeatingClosureList ai_handler_changed_callbacks_;
 };
 
 }  // namespace electron

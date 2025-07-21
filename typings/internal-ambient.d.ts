@@ -19,6 +19,7 @@ declare namespace NodeJS {
     isPDFViewerEnabled(): boolean;
     isFakeLocationProviderEnabled(): boolean;
     isPrintingEnabled(): boolean;
+    isPromptAPIEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
   }
