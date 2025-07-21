@@ -5,6 +5,14 @@ Subject: Revert "Use more binaries from clang toolchain in mac build"
 
 This reverts commit 17b850a9f8e913fb5e465d895f545b069def57d1.
 
+As part of the above commit, Chrome began bundling their otool
+and nm binaries into third-party/llvm-build. These binaries are
+not found in our current CI builds, and we'll need to modify
+our actions to ensure they either persist or are added on MacOS.
+
+This patch can be removed when both otool and nm are correctly
+persisted with third-party/llvm-build.
+
 diff --git a/DEPS b/DEPS
 index d67584f29b7f96a33b43977027db7a2178ce7974..1c3ef94d01f10e687d899ea3fd3420970b7766dd 100644
 --- a/DEPS
