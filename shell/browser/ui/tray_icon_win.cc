@@ -8,7 +8,7 @@
 namespace electron {
 
 // static
-TrayIcon* TrayIcon::Create(std::optional<UUID> guid) {
+TrayIcon* TrayIcon::Create(std::optional<base::Uuid> guid) {
   static NotifyIconHost host;
   return host.CreateNotifyIcon(guid);
 }
