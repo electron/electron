@@ -216,7 +216,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
 #if BUILDFLAG(IS_MAC)
-  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("inAppPurchase", InAppPurchase::Create(isolate));
 #endif

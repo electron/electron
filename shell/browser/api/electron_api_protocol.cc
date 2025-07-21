@@ -14,6 +14,7 @@
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -359,7 +360,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("Protocol", electron::api::Protocol::GetConstructor(context));
   dict.SetMethod("registerSchemesAsPrivileged", &RegisterSchemesAsPrivileged);
