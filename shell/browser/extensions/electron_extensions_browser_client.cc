@@ -383,6 +383,11 @@ extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {
   return kiosk_delegate_.get();
 }
 
+extensions::SafeBrowsingDelegate*
+ElectronExtensionsBrowserClient::GetSafeBrowsingDelegate() {
+  return safe_browsing_delegate_.get();
+}
+
 std::string ElectronExtensionsBrowserClient::GetApplicationLocale() {
   return ElectronBrowserClient::Get()->GetApplicationLocale();
 }
