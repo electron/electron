@@ -52,10 +52,12 @@ gin::DeprecatedWrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Tray::Tray(v8::Isolate* isolate,
            v8::Local<v8::Value> image,
-           std::optional<UUID> guid)
-    : tray_icon_(TrayIcon::Create(guid)) {
+           std::optional<base::Uuid> guid)
+    : guid_(guid), tray_icon_(TrayIcon::Create(guid)) {
   SetImage(isolate, image);
   tray_icon_->AddObserver(this);
+  if (guid.has_value())
+    tray_icon_->SetAutoSaveName(guid.value().AsLowercaseString());
 }
 
 Tray::~Tray() = default;
@@ -63,7 +65,7 @@ Tray::~Tray() = default;
 // static
 gin_helper::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
                                    v8::Local<v8::Value> image,
-                                   std::optional<UUID> guid,
+                                   std::optional<base::Uuid> guid,
                                    gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
@@ -72,7 +74,7 @@ gin_helper::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
 
 #if BUILDFLAG(IS_WIN)
   if (!guid.has_value() && args->Length() > 1) {
-    thrower.ThrowError("Invalid GUID format");
+    thrower.ThrowError("Invalid GUID format - GUID must be a string");
     return {};
   }
 #endif
@@ -392,20 +394,13 @@ gfx::Rect Tray::GetBounds() {
   return tray_icon_->GetBounds();
 }
 
-void Tray::SetAutoSaveName(const std::string& name) {
-  if (!CheckAlive())
-    return;
-  tray_icon_->SetAutoSaveName(name);
-}
-
-v8::Local<v8::Value> Tray::GetAutoSaveName() {
+v8::Local<v8::Value> Tray::GetGUID() {
   if (!CheckAlive())
     return {};
   auto* isolate = JavascriptEnvironment::GetIsolate();
-  const std::string& name = tray_icon_->GetAutoSaveName();
-  if (name.empty())
+  if (!guid_)
     return v8::Null(isolate);
-  return gin::ConvertToV8(isolate, name);
+  return gin::ConvertToV8(isolate, guid_.value());
 }
 
 bool Tray::CheckAlive() {
@@ -440,8 +435,7 @@ void Tray::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("closeContextMenu", &Tray::CloseContextMenu)
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
       .SetMethod("getBounds", &Tray::GetBounds)
-      .SetMethod("setAutosaveName", &Tray::SetAutoSaveName)
-      .SetMethod("getAutosaveName", &Tray::GetAutoSaveName)
+      .SetMethod("getGUID", &Tray::GetGUID)
       .Build();
 }
 

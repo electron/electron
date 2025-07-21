@@ -19,6 +19,10 @@
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
 
+namespace base {
+class Uuid;
+}  // namespace base
+
 namespace gfx {
 class Image;
 class Image;
@@ -45,7 +49,7 @@ class Tray final : public gin_helper::DeprecatedWrappable<Tray>,
   // gin_helper::Constructible
   static gin_helper::Handle<Tray> New(gin_helper::ErrorThrower thrower,
                                       v8::Local<v8::Value> image,
-                                      std::optional<UUID> guid,
+                                      std::optional<base::Uuid> guid,
                                       gin::Arguments* args);
 
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
@@ -65,7 +69,7 @@ class Tray final : public gin_helper::DeprecatedWrappable<Tray>,
  private:
   Tray(v8::Isolate* isolate,
        v8::Local<v8::Value> image,
-       std::optional<UUID> guid);
+       std::optional<base::Uuid> guid);
   ~Tray() override;
 
   // TrayIconObserver:
@@ -111,12 +115,12 @@ class Tray final : public gin_helper::DeprecatedWrappable<Tray>,
   void SetContextMenu(gin_helper::ErrorThrower thrower,
                       v8::Local<v8::Value> arg);
   gfx::Rect GetBounds();
-  void SetAutoSaveName(const std::string& name);
-  v8::Local<v8::Value> GetAutoSaveName();
+  v8::Local<v8::Value> GetGUID();
 
   bool CheckAlive();
 
   v8::Global<v8::Value> menu_;
+  std::optional<base::Uuid> guid_;
   std::unique_ptr<TrayIcon> tray_icon_;
 };
 

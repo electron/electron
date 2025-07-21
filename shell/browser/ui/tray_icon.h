@@ -18,7 +18,7 @@ namespace electron {
 
 class TrayIcon {
  public:
-  static TrayIcon* Create(std::optional<UUID> guid);
+  static TrayIcon* Create(std::optional<base::Uuid> guid);
 
 #if BUILDFLAG(IS_WIN)
   using ImageType = HICON;
@@ -100,7 +100,6 @@ class TrayIcon {
   virtual gfx::Rect GetBounds();
 
   virtual void SetAutoSaveName(const std::string& name);
-  virtual std::string GetAutoSaveName() const;
 
   void AddObserver(TrayIconObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(TrayIconObserver* obs) { observers_.RemoveObserver(obs); }
