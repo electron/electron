@@ -90,6 +90,7 @@ void ElectronRendererClient::UndeferLoad(content::RenderFrame* render_frame) {
 }
 
 void ElectronRendererClient::DidCreateScriptContext(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
   // TODO(zcbenz): Do not create Node environment if node integration is not
@@ -125,7 +126,6 @@ void ElectronRendererClient::DidCreateScriptContext(
   render_frame->GetWebFrame()->GetDocumentLoader()->SetDefersLoading(
       blink::LoaderFreezeMode::kStrict);
 
-  v8::Isolate* const isolate = renderer_context->GetIsolate();
   std::shared_ptr<node::Environment> env = node_bindings_->CreateEnvironment(
       isolate, renderer_context, nullptr, 0,
       base::BindRepeating(&ElectronRendererClient::UndeferLoad,
