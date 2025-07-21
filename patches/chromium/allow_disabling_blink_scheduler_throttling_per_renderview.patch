@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index e12bdf2e2f97f087684207eb42e55ef8a137f80e..4258bc80796161a7ac9ec8d7ad2cb10f9bc4bf00 100644
+index 3b996644e4bdeed5128d6cfb8b5f4fb9ddf4a00f..3c72cd28acbcc57aa086953942175cf33dfbd28a 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 @@ -167,6 +167,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
@@ -23,10 +23,10 @@ index e12bdf2e2f97f087684207eb42e55ef8a137f80e..4258bc80796161a7ac9ec8d7ad2cb10f
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 910790557c979e26b1dde6001ffe64cbb0b46709..cb54181e58186d8d8d0523a787b813d9885bf3a6 100644
+index 04f7f6c52a28f21c621a1932677da380ff0c941c..08fdd256ae7a6446b9824b479c4c39659a2d6426 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -763,6 +763,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -764,6 +764,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -39,10 +39,10 @@ index 910790557c979e26b1dde6001ffe64cbb0b46709..cb54181e58186d8d8d0523a787b813d9
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index a6a9a5dd6bd2ecfecd924aeeeef691d44bc5c0ac..9a9ee8be03e590902a8adf7f282ece0a4a58e07d 100644
+index 7944fe64e0da112fc670358b75506bb199bb5e4a..0e3c16c6af2a078943e9f39808134ab20c115e99 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -135,6 +135,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -136,6 +136,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    void EnablePreferredSizeMode() override;
    void WriteIntoTrace(perfetto::TracedProto<TraceProto> context) const override;
  

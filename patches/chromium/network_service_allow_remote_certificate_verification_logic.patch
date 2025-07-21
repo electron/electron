@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index b19bfa46c2ca2a6feecb5471eb48d932665b1863..7bfd9b892a0e9f9fa9cbda53e98d137c7e7e8bba 100644
+index 0715ffeda932d5ef8b5c90008ada8e84efbff765..4358fcc3dd45e6801b034b21c4ff29144501b719 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -165,6 +165,11 @@
@@ -22,7 +22,7 @@ index b19bfa46c2ca2a6feecb5471eb48d932665b1863..7bfd9b892a0e9f9fa9cbda53e98d137c
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -619,6 +624,111 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
+@@ -620,6 +625,111 @@ void RecordHSTSPreconnectUpgradeReason(HSTSRedirectUpgradeReason reason) {
  
  }  // namespace
  
@@ -134,7 +134,7 @@ index b19bfa46c2ca2a6feecb5471eb48d932665b1863..7bfd9b892a0e9f9fa9cbda53e98d137c
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1022,6 +1132,13 @@ void NetworkContext::SetClient(
+@@ -1023,6 +1133,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -148,7 +148,7 @@ index b19bfa46c2ca2a6feecb5471eb48d932665b1863..7bfd9b892a0e9f9fa9cbda53e98d137c
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2658,6 +2775,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2659,6 +2776,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
