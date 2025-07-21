@@ -190,8 +190,8 @@ runs:
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
-      shell: bash
       if: ${{ inputs.is-release == 'true' }}
+      shell: bash
       run: |
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
