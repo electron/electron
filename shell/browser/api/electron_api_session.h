@@ -17,6 +17,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "services/network/public/mojom/host_resolver.mojom-forward.h"
 #include "services/network/public/mojom/ssl_config.mojom-forward.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/ipc_dispatcher.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
@@ -164,6 +165,8 @@ class Session final : public gin_helper::DeprecatedWrappable<Session>,
   v8::Local<v8::Promise> ClearCodeCaches(const gin_helper::Dictionary& options);
   v8::Local<v8::Value> ClearData(gin_helper::ErrorThrower thrower,
                                  gin::Arguments* args);
+  void RegisterLocalAIHandler(gin_helper::ErrorThrower thrower,
+                              v8::Local<v8::Value> val);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   base::Value GetSpellCheckerLanguages();
   void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,

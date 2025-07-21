@@ -108,6 +108,7 @@
   V(electron_browser_event_emitter)      \
   V(electron_browser_system_preferences) \
   V(electron_common_net)                 \
+  V(electron_utility_local_ai_handler)   \
   V(electron_utility_parent_port)
 
 #define ELECTRON_TESTING_BINDINGS(V) V(electron_common_testing)

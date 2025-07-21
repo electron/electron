@@ -147,6 +147,7 @@ declare namespace Electron {
 
   interface Session {
     _setDisplayMediaRequestHandler: Electron.Session['setDisplayMediaRequestHandler'];
+    _registerLocalAIHandler: Electron.Session['registerLocalAIHandler'];
   }
 
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;

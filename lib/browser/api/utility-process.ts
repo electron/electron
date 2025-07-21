@@ -131,6 +131,10 @@ class ForkUtilityProcess extends EventEmitter implements Electron.UtilityProcess
     return this.#stderr;
   }
 
+  _unwrapHandle () {
+    return this.#handle;
+  }
+
   postMessage (message: any, transfer?: MessagePortMain[]) {
     if (Array.isArray(transfer)) {
       transfer = transfer.map((o: any) => o instanceof MessagePortMain ? o._internalPort : o);

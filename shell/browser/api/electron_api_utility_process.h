@@ -14,6 +14,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/process/process_handle.h"
 #include "content/public/browser/service_process_host.h"
+#include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/message.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -22,6 +23,10 @@
 #include "shell/common/gin_helper/wrappable.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
 #include "v8/include/v8-forward.h"
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+#include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 namespace gin {
 class Arguments;
@@ -56,6 +61,16 @@ class UtilityProcessWrapper final
   ~UtilityProcessWrapper() override;
   static gin_helper::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
   static raw_ptr<UtilityProcessWrapper> FromProcessId(base::ProcessId pid);
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+  void BindAIManager(std::optional<int32_t> web_contents_id,
+                     const url::Origin& security_origin,
+                     mojo::PendingReceiver<blink::mojom::AIManager> ai_manager);
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
+
+  base::WeakPtr<UtilityProcessWrapper> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
   void Shutdown(uint64_t exit_code);
 

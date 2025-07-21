@@ -268,6 +268,14 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
       blink::AssociatedInterfaceRegistry& associated_registry) override;
 
+#if BUILDFLAG(ENABLE_PROMPT_API)
+  void BindAIManager(
+      content::BrowserContext* browser_context,
+      base::SupportsUserData* context_user_data,
+      content::RenderFrameHost* rfh,
+      mojo::PendingReceiver<blink::mojom::AIManager> receiver) override;
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
+
   bool HandleExternalProtocol(
       const GURL& url,
       content::WebContents::Getter web_contents_getter,

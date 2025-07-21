@@ -737,6 +737,8 @@ filenames = {
     "shell/services/node/node_service.h",
     "shell/services/node/parent_port.cc",
     "shell/services/node/parent_port.h",
+    "shell/utility/api/electron_api_local_ai_handler.cc",
+    "shell/utility/api/electron_api_local_ai_handler.h",
     "shell/utility/electron_content_utility_client.cc",
     "shell/utility/electron_content_utility_client.h",
   ]

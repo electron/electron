@@ -66,6 +66,8 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
                                      node::EnvironmentFlags::Flags env_flags,
                                      std::string_view process_type = "");
 
+v8::Local<v8::Object> CreateAbortController(v8::Isolate* isolate);
+
 // A scope that temporarily changes the microtask policy to explicit. Use this
 // anywhere that can trigger Node.js or uv_run().
 //

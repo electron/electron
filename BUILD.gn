@@ -584,6 +584,17 @@ source_set("electron_lib") {
     ]
   }
 
+  if (enable_prompt_api) {
+    sources += [
+      "shell/browser/ai/proxying_ai_manager.cc",
+      "shell/browser/ai/proxying_ai_manager.h",
+      "shell/utility/ai/utility_ai_language_model.cc",
+      "shell/utility/ai/utility_ai_language_model.h",
+      "shell/utility/ai/utility_ai_manager.cc",
+      "shell/utility/ai/utility_ai_manager.h",
+    ]
+  }
+
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",

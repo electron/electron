@@ -223,11 +223,19 @@
 #include "shell/browser/electron_pdf_document_helper_client.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PROMPT_API)
+#include "shell/browser/ai/proxying_ai_manager.h"
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
+
 using content::BrowserThread;
 
 namespace electron {
 
 namespace {
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+const char kAIManagerUserDataKey[] = "ai_manager";
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 ElectronBrowserClient* g_browser_client = nullptr;
 
@@ -1544,6 +1552,24 @@ void ElectronBrowserClient::
       &render_frame_host));
 #endif
 }
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+void ElectronBrowserClient::BindAIManager(
+    content::BrowserContext* browser_context,
+    base::SupportsUserData* context_user_data,
+    content::RenderFrameHost* rfh,
+    mojo::PendingReceiver<blink::mojom::AIManager> receiver) {
+  if (!context_user_data->GetUserData(kAIManagerUserDataKey)) {
+    context_user_data->SetUserData(
+        kAIManagerUserDataKey,
+        std::make_unique<ProxyingAIManager>(browser_context, rfh));
+  }
+
+  ProxyingAIManager* ai_manager = static_cast<ProxyingAIManager*>(
+      context_user_data->GetUserData(kAIManagerUserDataKey));
+  ai_manager->AddReceiver(std::move(receiver));
+}
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 std::string ElectronBrowserClient::GetApplicationLocale() {
   return BrowserThread::CurrentlyOn(BrowserThread::IO)

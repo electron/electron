@@ -2,6 +2,7 @@
 # Use of this source code is governed by the MIT license that can be
 # found in the LICENSE file.
 
+import("//electron/buildflags/buildflags.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
 mojom("mojom") {
@@ -11,4 +12,8 @@ mojom("mojom") {
     "//sandbox/policy/mojom",
     "//third_party/blink/public/mojom:mojom_core",
   ]
+
+  if (enable_prompt_api) {
+    enabled_features = [ "enable_prompt_api" ]
+  }
 }

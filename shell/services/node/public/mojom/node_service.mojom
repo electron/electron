@@ -8,6 +8,7 @@ import "mojo/public/mojom/base/file_path.mojom";
 import "sandbox/policy/mojom/sandbox.mojom";
 import "services/network/public/mojom/host_resolver.mojom";
 import "services/network/public/mojom/url_loader_factory.mojom";
+import "third_party/blink/public/mojom/ai/ai_manager.mojom";
 import "third_party/blink/public/mojom/messaging/message_port_descriptor.mojom";
 
 struct NodeServiceParams {
@@ -20,6 +21,11 @@ struct NodeServiceParams {
   bool use_network_observer_from_url_loader_factory = false;
 };
 
+struct BindAIManagerParams {
+  int32? web_contents_id;
+  string security_origin;
+};
+
 interface NodeServiceClient {
   OnV8FatalError(string location, string report);
 };
@@ -28,4 +34,8 @@ interface NodeServiceClient {
 interface NodeService {
   Initialize(NodeServiceParams params,
              pending_remote<NodeServiceClient> client_remote);
+
+  [EnableIf=enable_prompt_api]
+  BindAIManager(BindAIManagerParams params,
+                pending_receiver<blink.mojom.AIManager> ai_manager);
 };
