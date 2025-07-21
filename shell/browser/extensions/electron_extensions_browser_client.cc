@@ -26,6 +26,7 @@
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extensions_browser_interface_binders.h"
 #include "extensions/browser/null_app_sorting.h"
+#include "extensions/browser/safe_browsing_delegate.h"
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
 #include "extensions/common/features/feature_channel.h"
@@ -55,7 +56,9 @@ using extensions::ExtensionsBrowserClient;
 namespace electron {
 
 ElectronExtensionsBrowserClient::ElectronExtensionsBrowserClient()
-    : extension_cache_(std::make_unique<extensions::NullExtensionCache>()) {
+    : extension_cache_(std::make_unique<extensions::NullExtensionCache>()),
+      safe_browsing_delegate_(
+          std::make_unique<extensions::SafeBrowsingDelegate>()) {
   AddAPIProvider(
       std::make_unique<extensions::CoreExtensionsBrowserAPIProvider>());
   AddAPIProvider(
