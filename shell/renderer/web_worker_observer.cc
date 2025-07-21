@@ -49,7 +49,7 @@ WebWorkerObserver::~WebWorkerObserver() = default;
 void WebWorkerObserver::WorkerScriptReadyForEvaluation(
     v8::Local<v8::Context> worker_context) {
   v8::Context::Scope context_scope(worker_context);
-  v8::Isolate* const isolate = worker_context->GetIsolate();
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   v8::MicrotasksScope microtasks_scope(
       worker_context, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
