@@ -247,6 +247,8 @@ filenames = {
     "shell/app/node_main.h",
     "shell/app/uv_task_runner.cc",
     "shell/app/uv_task_runner.h",
+    "shell/browser/ai/ai_manager.cc",
+    "shell/browser/ai/ai_manager.h",
     "shell/browser/api/electron_api_app.cc",
     "shell/browser/api/electron_api_app.h",
     "shell/browser/api/electron_api_auto_updater.cc",

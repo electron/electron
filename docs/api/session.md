@@ -1627,6 +1627,16 @@ This method clears more types of data and is more thorough than the
 
 For more information, refer to Chromium's [`BrowsingDataRemover` interface][browsing-data-remover].
 
+#### `ses.registerLocalAIHandler(handler)` _Experimental_
+
+* `handler` [UtilityProcess](utility-process.md#class-utilityprocess)
+
+Registers a local AI handler `UtilityProcess`.
+
+#### `ses.unregisterLocalAIHandler()` _Experimental_
+
+Unregisters the local AI handler `UtilityProcess`.
+
 ### Instance Properties
 
 The following properties are available on instances of `Session`:

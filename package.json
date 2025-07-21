@@ -13,6 +13,7 @@
     "@electron/typescript-definitions": "^9.1.2",
     "@octokit/rest": "^20.1.2",
     "@primer/octicons": "^10.0.0",
+    "@types/dom-chromium-ai": "^0.0.9",
     "@types/minimist": "^1.2.5",
     "@types/node": "^22.7.7",
     "@types/semver": "^7.5.8",

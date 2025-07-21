@@ -267,6 +267,11 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void RegisterAssociatedInterfaceBindersForServiceWorker(
       const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
       blink::AssociatedInterfaceRegistry& associated_registry) override;
+  void BindAIManager(
+      content::BrowserContext* browser_context,
+      base::SupportsUserData* context_user_data,
+      content::RenderFrameHost* rfh,
+      mojo::PendingReceiver<blink::mojom::AIManager> receiver) override;
 
   bool HandleExternalProtocol(
       const GURL& url,

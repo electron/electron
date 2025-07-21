@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import { net, systemPreferences } from 'electron/utility';
+import { localAIHandler, net, systemPreferences } from 'electron/utility';
 
 process.parentPort.on('message', (e) => {
   if (e.data === 'Hello from parent!') {
@@ -65,3 +65,8 @@ if (process.platform === 'darwin') {
   const value2 = systemPreferences.getUserDefault('Foo', 'boolean');
   console.log(value2);
 }
+
+// localAIHandler
+// https://github.com/electron/electron/blob/main/docs/api/local-ai-handler.md
+
+localAIHandler.setPromptAPIHandler(null);

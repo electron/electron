@@ -855,6 +855,11 @@
   dependencies:
     "@types/ms" "*"
 
+"@types/dom-chromium-ai@^0.0.9":
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/@types/dom-chromium-ai/-/dom-chromium-ai-0.0.9.tgz#4ad200181ec32d9c1d26546374cbb1b0a5c8784a"
+  integrity sha512-wZNak+04m29hwXqtnDqNUl3TGcU9pvWhemtBpVtN2TKnWQKprJ8KQjaldbMVfdL44UHnUfv9V51rRh7tV8HY7w==
+
 "@types/estree-jsx@^1.0.0":
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/@types/estree-jsx/-/estree-jsx-1.0.5.tgz#858a88ea20f34fe65111f005a689fa1ebf70dc18"

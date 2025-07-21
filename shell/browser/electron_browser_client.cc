@@ -70,6 +70,7 @@
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "shell/app/electron_crash_reporter_client.h"
+#include "shell/browser/ai/ai_manager.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/browser/api/electron_api_protocol.h"
@@ -228,6 +229,8 @@ using content::BrowserThread;
 namespace electron {
 
 namespace {
+
+const char kAIManagerUserDataKey[] = "ai_manager";
 
 ElectronBrowserClient* g_browser_client = nullptr;
 
@@ -1543,6 +1546,22 @@ void ElectronBrowserClient::
       },
       &render_frame_host));
 #endif
+}
+
+void ElectronBrowserClient::BindAIManager(
+    content::BrowserContext* browser_context,
+    base::SupportsUserData* context_user_data,
+    content::RenderFrameHost* rfh,
+    mojo::PendingReceiver<blink::mojom::AIManager> receiver) {
+  if (!context_user_data->GetUserData(kAIManagerUserDataKey)) {
+    context_user_data->SetUserData(
+        kAIManagerUserDataKey,
+        std::make_unique<AIManager>(browser_context, rfh));
+  }
+
+  AIManager* ai_manager = static_cast<AIManager*>(
+      context_user_data->GetUserData(kAIManagerUserDataKey));
+  ai_manager->AddReceiver(std::move(receiver));
 }
 
 std::string ElectronBrowserClient::GetApplicationLocale() {
