@@ -49,7 +49,7 @@ WebWorkerObserver::~WebWorkerObserver() = default;
 void WebWorkerObserver::WorkerScriptReadyForEvaluation(
     v8::Local<v8::Context> worker_context) {
   v8::Context::Scope context_scope(worker_context);
-  auto* isolate = worker_context->GetIsolate();
+  v8::Isolate* const isolate = worker_context->GetIsolate();
   v8::MicrotasksScope microtasks_scope(
       worker_context, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
@@ -66,7 +66,7 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
   v8::Maybe<bool> initialized = node::InitializeContext(worker_context);
   CHECK(!initialized.IsNothing() && initialized.FromJust());
   std::shared_ptr<node::Environment> env =
-      node_bindings_->CreateEnvironment(worker_context, nullptr);
+      node_bindings_->CreateEnvironment(isolate, worker_context, nullptr);
 
   // We need to use the Blink implementation of fetch in web workers
   // Node.js deletes the global fetch function when their fetch implementation

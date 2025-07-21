@@ -641,6 +641,7 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
 }
 
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
+    v8::Isolate* isolate,
     v8::Local<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     size_t max_young_generation_size,
@@ -664,7 +665,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
       break;
   }
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary global(isolate, context->Global());
 
   if (browser_env_ == BrowserEnvironment::kBrowser) {
@@ -832,13 +832,14 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     size_t max_young_generation_size,
     std::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
-  return CreateEnvironment(context, platform, max_young_generation_size,
-                           ElectronCommandLine::AsUtf8(), {},
-                           on_app_code_ready);
+  return CreateEnvironment(
+      isolate, context, platform, max_young_generation_size,
+      ElectronCommandLine::AsUtf8(), {}, on_app_code_ready);
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
