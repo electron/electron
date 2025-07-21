@@ -11,7 +11,9 @@
 #include "base/no_destructor.h"
 #include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
+#include "electron/buildflags/buildflags.h"
 #include "electron/mas.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
@@ -27,6 +29,12 @@
 #if !IS_MAS_BUILD()
 #include "shell/common/crash_keys.h"
 #endif
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+#include "shell/utility/ai/utility_ai_manager.h"
+#include "url/gurl.h"
+#include "url/origin.h"
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 namespace electron {
 
@@ -192,5 +200,17 @@ void NodeService::Initialize(
   node_bindings_->PrepareEmbedThread();
   node_bindings_->StartPolling();
 }
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+void NodeService::BindAIManager(
+    node::mojom::BindAIManagerParamsPtr params,
+    mojo::PendingReceiver<blink::mojom::AIManager> ai_manager) {
+  mojo::MakeSelfOwnedReceiver(
+      std::make_unique<UtilityAIManager>(
+          params->web_contents_id,
+          url::Origin::Create(GURL(params->security_origin))),
+      std::move(ai_manager));
+}
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 }  // namespace electron

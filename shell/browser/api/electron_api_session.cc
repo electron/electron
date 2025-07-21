@@ -1548,6 +1548,26 @@ v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
   return promise_handle;
 }
 
+void Session::RegisterLocalAIHandler(gin_helper::ErrorThrower thrower,
+                                     v8::Local<v8::Value> val) {
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  gin_helper::Handle<UtilityProcessWrapper> handler;
+
+  if (!(val->IsNull() || gin::ConvertFromV8(isolate, val, &handler))) {
+    thrower.ThrowTypeError("Must pass null or UtilityProcess");
+    return;
+  }
+
+  auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
+  DCHECK(prefs);
+
+  if (!handler.IsEmpty()) {
+    prefs->SetLocalAIHandler(handler->GetWeakPtr());
+  } else {
+    prefs->SetLocalAIHandler(nullptr);
+  }
+}
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 base::Value Session::GetSpellCheckerLanguages() {
   return browser_context_->prefs()
@@ -1828,6 +1848,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setCodeCachePath", &Session::SetCodeCachePath)
       .SetMethod("clearCodeCaches", &Session::ClearCodeCaches)
       .SetMethod("clearData", &Session::ClearData)
+      .SetMethod("_registerLocalAIHandler", &Session::RegisterLocalAIHandler)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("extensions", &Session::Extensions)
       .SetProperty("netLog", &Session::NetLog)

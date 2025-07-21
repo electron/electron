@@ -1,4 +1,4 @@
-import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
+import { app, session, BrowserWindow, net, ipcMain, Session, utilityProcess, webFrameMain, WebFrameMain } from 'electron/main';
 
 import * as auth from 'basic-auth';
 import { expect } from 'chai';
@@ -2027,6 +2027,37 @@ describe('session module', () => {
 
       expect((await cookies.get({ url: 'https://example.com/', name: 'testdotcom' })).length).to.be.greaterThan(0);
       expect((await cookies.get({ url: 'https://example.org/', name: 'testdotorg' })).length).to.equal(0);
+    });
+  });
+
+  describe('ses.registerLocalAIHandler()', () => {
+    let w: Electron.BrowserWindow;
+
+    beforeEach(() => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          enableBlinkFeatures: 'AIPromptAPI'
+        }
+      });
+    });
+
+    afterEach(closeAllWindows);
+
+    it('returns "unavailable" from availability() if not registered', async () => {
+      await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+    });
+
+    it('returns "available" from availability() if registered', async () => {
+      await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+      const { session } = w.webContents;
+
+      const aiHandler = utilityProcess.fork(path.join(path.resolve(__dirname, 'fixtures', 'api', 'utility-process'), 'endless.js'));
+      session.registerLocalAIHandler(aiHandler);
+
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
     });
   });
 });

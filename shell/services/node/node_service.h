@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -65,6 +66,12 @@ class NodeService : public node::mojom::NodeService {
   void Initialize(node::mojom::NodeServiceParamsPtr params,
                   mojo::PendingRemote<node::mojom::NodeServiceClient>
                       client_pending_remote) override;
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+  void BindAIManager(
+      node::mojom::BindAIManagerParamsPtr params,
+      mojo::PendingReceiver<blink::mojom::AIManager> ai_manager) override;
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
  private:
   // This needs to be initialized first so that it can be destroyed last

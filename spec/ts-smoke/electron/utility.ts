@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import { net, systemPreferences } from 'electron/utility';
+import { localAIHandler, net, systemPreferences, LanguageModel } from 'electron/utility';
 
 process.parentPort.on('message', (e) => {
   if (e.data === 'Hello from parent!') {
@@ -65,3 +65,36 @@ if (process.platform === 'darwin') {
   const value2 = systemPreferences.getUserDefault('Foo', 'boolean');
   console.log(value2);
 }
+
+// localAIHandler
+// https://github.com/electron/electron/blob/main/docs/api/local-ai-handler.md
+
+localAIHandler.setPromptAPIHandler(async (details) => {
+  return class MyLanguageModel extends LanguageModel {
+    private details = details;
+
+    static async create() {
+      return new MyLanguageModel({
+        inputUsage: 0,
+        inputQuota: 0,
+        topK: 7,
+        temperature: 0
+      })
+    }
+
+    static async params () {
+      return {
+          defaultTopK: 12,
+          defaultTemperature: 0.3,
+          maxTopK: 23,
+          maxTemperature: 0.5
+      }
+    }
+
+    async prompt () {
+        return "Hello World"
+    }
+  }
+})
+
+localAIHandler.setPromptAPIHandler(null);

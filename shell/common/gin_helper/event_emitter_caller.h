@@ -55,6 +55,16 @@ v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
                                                    converted_args));
 }
 
+template <typename... Args>
+v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
+                                v8::Local<v8::Object> object,
+                                const char* method_name,
+                                Args&&... args) {
+  v8::EscapableHandleScope scope(isolate);
+  return scope.Escape(
+      CustomEmit(isolate, object, method_name, std::forward<Args>(args)...));
+}
+
 template <typename T, typename... Args>
 v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
                                 gin_helper::DeprecatedWrappable<T>* object,
