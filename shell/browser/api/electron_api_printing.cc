@@ -5,6 +5,7 @@
 #include "chrome/browser/browser_process.h"
 #include "gin/converter.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/thread_restrictions.h"
@@ -78,8 +79,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
 #if BUILDFLAG(ENABLE_PRINTING)
   dict.SetMethod("getPrinterListAsync",
                  base::BindRepeating(&GetPrinterListAsync));
