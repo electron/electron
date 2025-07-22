@@ -36,11 +36,11 @@ index a2c7228ce737e41ac7d4380d903c399aa224ce1c..b499e4f01109f2bc89ea94714f19f835
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index 673ccbc445cd05486f0337a3e27190ee90f54e6b..4dba267259e3cbed64aa7828a5eb4e0c70665c64 100644
+index ae574499f3ac6be9d35d40b2debdbc16ca1a4162..b55723083fd66c583a362a913180a75ea65ce9ff 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-@@ -189,7 +189,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
- bool FrameResources::Initialize() {
+@@ -181,7 +181,7 @@ bool FrameResources::Initialize(VideoPixelFormat format,
+ 
    auto* context = pool_->GetContext();
  
 -  constexpr gfx::BufferUsage kBufferUsage =
@@ -48,9 +48,9 @@ index 673ccbc445cd05486f0337a3e27190ee90f54e6b..4dba267259e3cbed64aa7828a5eb4e0c
  #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
        gfx::BufferUsage::SCANOUT_VEA_CPU_READ
  #else
-@@ -203,6 +203,23 @@ bool FrameResources::Initialize() {
-   const gfx::Size buffer_size_in_pixels =
-       GetBufferSizeInPixelsForVideoPixelFormat(format_, coded_size_);
+@@ -192,6 +192,23 @@ bool FrameResources::Initialize(VideoPixelFormat format,
+   const gfx::Size coded_size =
+       GetCodedSizeForVideoPixelFormat(format, visible_size_);
  
 +#if BUILDFLAG(IS_WIN)
 +  // For CEF OSR feature, currently there's no other place in chromium use RGBA.
@@ -72,12 +72,12 @@ index 673ccbc445cd05486f0337a3e27190ee90f54e6b..4dba267259e3cbed64aa7828a5eb4e0c
    gpu::SharedImageUsageSet usage =
  #if BUILDFLAG(IS_MAC)
        gpu::SHARED_IMAGE_USAGE_MACOS_VIDEO_TOOLBOX |
-@@ -243,7 +260,7 @@ bool FrameResources::Initialize() {
-       viz::GetSharedImageFormat(buffer_format);
+@@ -229,7 +246,7 @@ bool FrameResources::Initialize(VideoPixelFormat format,
+       VideoPixelFormatToSharedImageFormat(format).value();
  
-   shared_image_ =
--      context->CreateSharedImage(buffer_size_in_pixels, kBufferUsage, si_format,
-+      context->CreateSharedImage(buffer_size_in_pixels, buffer_usage, si_format,
-                                  color_space_, usage, sync_token_);
+   shared_image_ = context->CreateSharedImage(
+-      coded_size, kBufferUsage, si_format, color_space, usage, sync_token_);
++      coded_size, buffer_usage, si_format, color_space, usage, sync_token_);
    if (!shared_image_) {
-     DLOG(ERROR) << "Failed to allocate shared image for frame: coded_size="
+     DLOG(ERROR) << "Failed to allocate shared image for frame: visible_size="
+                 << visible_size_.ToString()
