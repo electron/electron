@@ -76,7 +76,7 @@ index 39f5dcef5291dfdaf778e27c1b0152313feb77b3..9f1c16e1dfccc8787a9079095687002b
    enabled_client_hints(
        const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index fc18883cc2e92bacb88d0d9906f7143607695ed8..dd7d1bd2364528ff12671dee724a4a259a78de70 100644
+index 596b2555b9a8730a3e34019e32bb06c3f459a4a5..0ccc425bf87ef34442f9013d9dfda71ab547752b 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -88,6 +88,9 @@ struct TrustedUrlRequestParams {

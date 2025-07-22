@@ -7,7 +7,7 @@ Build libc++ as static library to compile and pass
 nan tests
 
 diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
-index d4bdb6e7d386193f7b9b42f1f9785730594c237a..9df9989c2b835a0a96d659dcb25f5a144efb6d09 100644
+index f4e46e2813e89c00dbc4549fe7a8623776c1ea47..992d7a6b020b938db1d4cbd109a4c025dcaaeb05 100644
 --- a/buildtools/third_party/libc++/BUILD.gn
 +++ b/buildtools/third_party/libc++/BUILD.gn
 @@ -908,6 +908,7 @@ target(libcxx_target_type, "libc++") {
