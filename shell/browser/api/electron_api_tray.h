@@ -19,10 +19,6 @@
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
 
-namespace base {
-class Uuid;
-}  // namespace base
-
 namespace gfx {
 class Image;
 class Image;

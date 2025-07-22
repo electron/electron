@@ -72,12 +72,10 @@ gin_helper::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
     return {};
   }
 
-#if BUILDFLAG(IS_WIN)
   if (!guid.has_value() && args->Length() > 1) {
     thrower.ThrowError("Invalid GUID format - GUID must be a string");
     return {};
   }
-#endif
 
   // Error thrown by us will be dropped when entering V8.
   // Make sure to abort early and propagate the error to JS.
