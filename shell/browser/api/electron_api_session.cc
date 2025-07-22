@@ -39,6 +39,7 @@
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/network_service_instance.h"
+#include "content/public/browser/preconnect_request.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/arguments.h"
 #include "gin/converter.h"
@@ -1355,7 +1356,7 @@ static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
                                 const GURL& url,
                                 int num_sockets_to_preconnect) {
   url::Origin origin = url::Origin::Create(url);
-  std::vector<predictors::PreconnectRequest> requests = {
+  std::vector<content::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
        net::NetworkAnonymizationKey::CreateSameSite(
            net::SchemefulSite(origin))}};
