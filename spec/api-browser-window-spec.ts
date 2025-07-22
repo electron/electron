@@ -6986,19 +6986,52 @@ describe('BrowserWindow module', () => {
   });
 
   describe('windowStatePersistence', () => {
+    const getWindowStateFromDisk = (windowName: string, preferencesPath: string) => {
+      if (!fs.existsSync(preferencesPath)) {
+        throw new Error(`Preferences file does not exist at path: ${preferencesPath}. Window state was not saved to disk.`);
+      }
+      const prefsContent = fs.readFileSync(preferencesPath, 'utf8');
+      const prefs = JSON.parse(prefsContent);
+      return prefs?.windowStates?.[windowName] || null;
+    };
+
+    // Helper to get preferences file modification time
+    const getPrefsModTime = (preferencesPath: string): Date => {
+      try {
+        return fs.statSync(preferencesPath).mtime;
+      } catch {
+        throw new Error(`Test requires preferences file to exist at path: ${preferencesPath}.`);
+      }
+    };
+
+    const waitForPrefsUpdate = async (initialModTime: Date, preferencesPath: string): Promise<void> => {
+      const startTime = Date.now();
+      const timeoutMs = 20000;
+      while (true) {
+        const currentModTime = getPrefsModTime(preferencesPath);
+
+        if (currentModTime > initialModTime) {
+          return;
+        }
+
+        if (Date.now() - startTime > timeoutMs) {
+          throw new Error(`Window state was not flushed to disk within ${timeoutMs}ms`);
+        }
+        // Wait for 1 second before checking again
+        await setTimeout(1000);
+      }
+    };
+
+    const waitForPrefsFileCreation = async (preferencesPath: string) => {
+      while (!fs.existsSync(preferencesPath)) {
+        await setTimeout(1000);
+      }
+    };
+
     describe('save window state', () => {
       const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'window-state-save');
       const sharedUserDataPath = path.join(os.tmpdir(), 'electron-window-state-test');
       const sharedPreferencesPath = path.join(sharedUserDataPath, 'Local State');
-
-      const getWindowStateFromDisk = (windowName: string, preferencesPath: string) => {
-        if (!fs.existsSync(preferencesPath)) {
-          throw new Error(`Preferences file does not exist at path: ${preferencesPath}. Window state was not saved to disk.`);
-        }
-        const prefsContent = fs.readFileSync(preferencesPath, 'utf8');
-        const prefs = JSON.parse(prefsContent);
-        return prefs?.windowStates?.[windowName] || null;
-      };
 
       // Clean up before each test
       beforeEach(() => {
@@ -7171,49 +7204,27 @@ describe('BrowserWindow module', () => {
         const windowName = 'test-batching-behavior';
         const preferencesPath = path.join(app.getPath('userData'), 'Local State');
 
-        // Helper to get preferences file modification time
-        const getPrefsModTime = (): Date => {
-          try {
-            return fs.statSync(preferencesPath).mtime;
-          } catch {
-            throw new Error(`Test requires preferences file to exist at path: ${preferencesPath}.`);
-          }
-        };
-
-        // Helper to wait for file modification with 20 second default timeout
-        const waitForPrefsUpdate = async (initialModTime: Date, timeoutMs: number = 20000): Promise<void> => {
-          const startTime = Date.now();
-
-          while (true) {
-            const currentModTime = getPrefsModTime();
-
-            if (currentModTime > initialModTime) {
-              return;
-            }
-
-            if (Date.now() - startTime > timeoutMs) {
-              throw new Error(`Window state was not flushed to disk within ${timeoutMs}ms`);
-            }
-            // Wait for 1 second before checking again
-            await setTimeout(1000);
-          }
-        };
-
-        const waitForPrefsFileCreation = async (preferencesPath: string) => {
-          while (!fs.existsSync(preferencesPath)) {
-            await setTimeout(1000);
-          }
-        };
-
         beforeEach(async () => {
           await setTimeout(2000);
           w = new BrowserWindow({
-            show: false,
-            width: 400,
-            height: 300,
             name: windowName,
-            windowStatePersistence: true
+            windowStatePersistence: true,
+            show: false
           });
+          // Ensure window bounds are set to 0,0 and 400x300 as windowStatePersistence
+          // overrides bounds during window construction and might cause tests to timeout
+          const bounds = w.getBounds();
+
+          if (bounds.width !== 400 && bounds.height !== 300) {
+            const resized = once(w, 'resize');
+            w.setSize(400, 300);
+            await resized;
+          }
+          if (bounds.x !== 0 && bounds.y !== 0) {
+            const moved = once(w, 'move');
+            w.setPosition(0, 0);
+            await moved;
+          }
         });
 
         afterEach(closeAllWindows);
@@ -7222,7 +7233,7 @@ describe('BrowserWindow module', () => {
           // Wait for preferences file to be created if its the first time we're running the test
           await waitForPrefsFileCreation(preferencesPath);
 
-          const initialModTime = getPrefsModTime();
+          const initialModTime = getPrefsModTime(preferencesPath);
 
           const moved = once(w, 'move');
           w.setPosition(150, 200);
@@ -7236,7 +7247,7 @@ describe('BrowserWindow module', () => {
           // Wait for any potential save to occur from the resize operation
           await setTimeout(1000);
 
-          const afterMoveModTime = getPrefsModTime();
+          const afterMoveModTime = getPrefsModTime(preferencesPath);
 
           expect(afterMoveModTime.getTime()).to.equal(initialModTime.getTime());
         });
@@ -7245,13 +7256,13 @@ describe('BrowserWindow module', () => {
           // Wait for preferences file to be created if its the first time we're running the test
           await waitForPrefsFileCreation(preferencesPath);
 
-          const initialModTime = getPrefsModTime();
+          const initialModTime = getPrefsModTime(preferencesPath);
 
           const resized = once(w, 'resize');
           w.setSize(500, 400);
           await resized;
 
-          await waitForPrefsUpdate(initialModTime);
+          await waitForPrefsUpdate(initialModTime, preferencesPath);
 
           const savedState = getWindowStateFromDisk(windowName, preferencesPath);
           expect(savedState).to.not.be.null('window state with window name "test-batching-behavior" does not exist');
@@ -7263,7 +7274,7 @@ describe('BrowserWindow module', () => {
           // Wait for preferences file to be created if its the first time we're running the test
           await waitForPrefsFileCreation(preferencesPath);
 
-          const initialModTime = getPrefsModTime();
+          const initialModTime = getPrefsModTime(preferencesPath);
 
           const resize1 = once(w, 'resize');
           w.setSize(500, 400);
@@ -7271,7 +7282,7 @@ describe('BrowserWindow module', () => {
           // Wait for any potential save to occur
           await setTimeout(1000);
 
-          const afterFirstResize = getPrefsModTime();
+          const afterFirstResize = getPrefsModTime(preferencesPath);
 
           const resize2 = once(w, 'resize');
           w.setSize(600, 500);
@@ -7279,7 +7290,7 @@ describe('BrowserWindow module', () => {
           // Wait for any potential save to occur
           await setTimeout(1000);
 
-          const afterSecondResize = getPrefsModTime();
+          const afterSecondResize = getPrefsModTime(preferencesPath);
 
           const resize3 = once(w, 'resize');
           w.setSize(700, 600);
@@ -7287,9 +7298,9 @@ describe('BrowserWindow module', () => {
           // Wait for any potential save to occur
           await setTimeout(1000);
 
-          const afterThirdResize = getPrefsModTime();
+          const afterThirdResize = getPrefsModTime(preferencesPath);
 
-          await waitForPrefsUpdate(initialModTime);
+          await waitForPrefsUpdate(initialModTime, preferencesPath);
 
           const savedState = getWindowStateFromDisk(windowName, preferencesPath);
           expect(savedState).to.not.be.null('window state with window name "test-batching-behavior" does not exist');
@@ -7306,7 +7317,7 @@ describe('BrowserWindow module', () => {
           // Wait for preferences file to be created if its the first time we're running the test
           await waitForPrefsFileCreation(preferencesPath);
 
-          const initialModTime = getPrefsModTime();
+          const initialModTime = getPrefsModTime(preferencesPath);
 
           const moved = once(w, 'move');
           w.setPosition(100, 100);
@@ -7317,7 +7328,7 @@ describe('BrowserWindow module', () => {
           // Keep main thread busy for 25 seconds
           while (Date.now() - startTime < 25000);
 
-          const finalModTime = getPrefsModTime();
+          const finalModTime = getPrefsModTime(preferencesPath);
 
           expect(finalModTime.getTime()).to.equal(initialModTime.getTime());
         });
