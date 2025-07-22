@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/strings/string_util.h"
 #include "base/uuid.h"
 #include "gin/converter.h"
 
@@ -46,7 +47,11 @@ struct Converter<base::Uuid> {
     if (!gin::ConvertFromV8(isolate, val, &guid))
       return false;
 
-    *out = base::Uuid::ParseLowercase(guid);
+    base::Uuid parsed = base::Uuid::ParseLowercase(base::ToLowerASCII(guid));
+    if (!parsed.is_valid())
+      return false;
+
+    *out = parsed;
     return true;
   }
 
