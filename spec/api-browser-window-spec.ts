@@ -7346,7 +7346,7 @@ describe('BrowserWindow module', () => {
 
         BrowserWindow.clearWindowState(windowName);
 
-        await waitForPrefsUpdate(initialModTime, preferencesPath);
+        await waitForPrefsUpdate(getPrefsModTime(preferencesPath), preferencesPath);
 
         const stateAfter = getWindowStateFromDisk(windowName, preferencesPath);
         expect(stateAfter).to.be.null('window state with window name "test-window-clear" should be cleared');
@@ -7382,7 +7382,7 @@ describe('BrowserWindow module', () => {
 
         BrowserWindow.clearWindowState(windowName1);
 
-        await waitForPrefsUpdate(initialModTime, preferencesPath);
+        await waitForPrefsUpdate(getPrefsModTime(preferencesPath), preferencesPath);
 
         // Verify if only window1 was cleared
         expect(getWindowStateFromDisk(windowName1, preferencesPath)).to.be.null('window state with window name "test-window-1" should be cleared');
