@@ -387,6 +387,14 @@ Returns `BaseWindow | null` - The window that is focused in this application, ot
 
 Returns `BaseWindow | null` - The window with the given `id`.
 
+#### `BaseWindow.clearWindowState(windowName)`
+
+* `windowName` string - The window `name` to clear state for (see [BaseWindowConstructorOptions](structures/base-window-options.md)).
+
+Clears the saved state for a window with the given name. This removes all persisted window bounds, display mode, and work area information that was previously saved when `windowStatePersistence` was enabled.
+
+If the window name is empty or the window state doesn't exist, the method will log a warning.
+
 ### Instance Properties
 
 Objects created with `new BaseWindow` have the following properties:

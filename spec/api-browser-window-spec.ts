@@ -7206,25 +7206,14 @@ describe('BrowserWindow module', () => {
 
         beforeEach(async () => {
           await setTimeout(2000);
+          BrowserWindow.clearWindowState(windowName);
           w = new BrowserWindow({
+            show: false,
+            width: 400,
+            height: 300,
             name: windowName,
-            windowStatePersistence: true,
-            show: false
+            windowStatePersistence: true
           });
-          // Ensure window bounds are set to 0,0 and 400x300 as windowStatePersistence
-          // overrides bounds during window construction and might cause tests to timeout
-          const bounds = w.getBounds();
-
-          if (bounds.width !== 400 && bounds.height !== 300) {
-            const resized = once(w, 'resize');
-            w.setSize(400, 300);
-            await resized;
-          }
-          if (bounds.x !== 0 && bounds.y !== 0) {
-            const moved = once(w, 'move');
-            w.setPosition(0, 0);
-            await moved;
-          }
         });
 
         afterEach(closeAllWindows);
@@ -7332,6 +7321,72 @@ describe('BrowserWindow module', () => {
 
           expect(finalModTime.getTime()).to.equal(initialModTime.getTime());
         });
+      });
+    });
+
+    describe('clear window state', () => {
+      const windowName = 'test-window-clear';
+      const preferencesPath = path.join(app.getPath('userData'), 'Local State');
+
+      afterEach(closeAllWindows);
+
+      it('should clear existing window state', async () => {
+        const initialModTime = getPrefsModTime(preferencesPath);
+
+        const w = new BrowserWindow({
+          name: windowName,
+          windowStatePersistence: true
+        });
+        w.close();
+
+        await waitForPrefsUpdate(initialModTime, preferencesPath);
+
+        const stateBefore = getWindowStateFromDisk(windowName, preferencesPath);
+        expect(stateBefore).to.not.be.null('window state with window name "test-window-clear" should exist but does not');
+
+        BrowserWindow.clearWindowState(windowName);
+
+        await waitForPrefsUpdate(initialModTime, preferencesPath);
+
+        const stateAfter = getWindowStateFromDisk(windowName, preferencesPath);
+        expect(stateAfter).to.be.null('window state with window name "test-window-clear" should be cleared');
+      });
+
+      it('should not throw when clearing non-existent window state', () => {
+        expect(() => {
+          BrowserWindow.clearWindowState('non-existent-window');
+        }).to.not.throw();
+      });
+
+      it('should not affect other window states when clearing specific window', async () => {
+        const windowName1 = 'test-window-1';
+        const windowName2 = 'test-window-2';
+        const initialModTime = getPrefsModTime(preferencesPath);
+
+        const w1 = new BrowserWindow({
+          name: windowName1,
+          windowStatePersistence: true
+        });
+        w1.close();
+
+        const w2 = new BrowserWindow({
+          name: windowName2,
+          windowStatePersistence: true
+        });
+        w2.close();
+
+        await waitForPrefsUpdate(initialModTime, preferencesPath);
+
+        expect(getWindowStateFromDisk(windowName1, preferencesPath)).to.not.be.null('window state with window name "test-window-1" should exist but does not');
+        expect(getWindowStateFromDisk(windowName2, preferencesPath)).to.not.be.null('window state with window name "test-window-2" should exist but does not');
+
+        BrowserWindow.clearWindowState(windowName1);
+
+        await waitForPrefsUpdate(initialModTime, preferencesPath);
+
+        // Verify if only window1 was cleared
+        expect(getWindowStateFromDisk(windowName1, preferencesPath)).to.be.null('window state with window name "test-window-1" should be cleared');
+        expect(getWindowStateFromDisk(windowName2, preferencesPath)).to.not.be.null('window state with window name "test-window-2" should not be cleared');
       });
     });
   });

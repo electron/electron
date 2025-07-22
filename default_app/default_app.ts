@@ -57,12 +57,6 @@ async function createWindow (backgroundColor?: string) {
       sandbox: true,
       nodeIntegration: false
     },
-    name: 'default_app',
-    // windowStatePersistence: true,
-    windowStatePersistence: {
-      bounds: true,
-      displayMode: false
-    },
     useContentSize: true,
     show: false
   };
