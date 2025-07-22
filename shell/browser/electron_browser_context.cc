@@ -559,8 +559,7 @@ std::string ElectronBrowserContext::GetUserAgent() const {
 
 predictors::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
   if (!preconnect_manager_) {
-    preconnect_manager_ =
-        std::make_unique<predictors::PreconnectManager>(nullptr, this);
+    preconnect_manager_ = predictors::PreconnectManager::Create(nullptr, this);
   }
   return preconnect_manager_.get();
 }
