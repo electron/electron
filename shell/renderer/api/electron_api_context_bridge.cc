@@ -158,13 +158,15 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     bool support_dynamic_properties,
     int recursion_depth,
     BridgeErrorTarget error_target) {
+  v8::Isolate* const source_isolate = source_context->GetIsolate();
+
   TRACE_EVENT0("electron", "ContextBridge::PassValueToOtherContextInner");
   if (recursion_depth >= kMaxRecursion) {
     v8::Context::Scope error_scope(error_target == BridgeErrorTarget::kSource
                                        ? source_context
                                        : destination_context);
-    source_context->GetIsolate()->ThrowException(v8::Exception::TypeError(
-        gin::StringToV8(source_context->GetIsolate(),
+    source_isolate->ThrowException(v8::Exception::TypeError(
+        gin::StringToV8(source_isolate,
                         "Electron contextBridge recursion depth exceeded.  "
                         "Nested objects "
                         "deeper than 1000 are not supported.")));
@@ -206,8 +208,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
       // creation context of the original method.  If it's not we proceed
       // with the proxy logic
       if (maybe_original_fn.ToLocal(&proxy_func) && proxy_func->IsFunction() &&
-          proxy_func.As<v8::Object>()->GetCreationContextChecked() ==
-              destination_context) {
+          proxy_func.As<v8::Object>()->GetCreationContextChecked(
+              source_isolate) == destination_context) {
         return v8::MaybeLocal<v8::Value>(proxy_func);
       }
 
@@ -244,8 +246,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     v8::Local<v8::Promise> proxied_promise_handle =
         proxied_promise->GetHandle();
 
-    v8::Global<v8::Context> global_then_source_context(
-        source_context->GetIsolate(), source_context);
+    v8::Global<v8::Context> global_then_source_context(source_isolate,
+                                                       source_context);
     v8::Global<v8::Context> global_then_destination_context(
         destination_context->GetIsolate(), destination_context);
     global_then_source_context.SetWeak();
@@ -291,8 +293,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
         std::move(global_then_source_context),
         std::move(global_then_destination_context));
 
-    v8::Global<v8::Context> global_catch_source_context(
-        source_context->GetIsolate(), source_context);
+    v8::Global<v8::Context> global_catch_source_context(source_isolate,
+                                                        source_context);
     v8::Global<v8::Context> global_catch_destination_context(
         destination_context->GetIsolate(), destination_context);
     global_catch_source_context.SetWeak();
@@ -357,8 +359,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     // crosses the bridge we fallback to the v8::Message approach if we can't
     // pull "message" for some reason
     v8::MaybeLocal<v8::Value> maybe_message = value.As<v8::Object>()->Get(
-        source_context,
-        gin::ConvertToV8(source_context->GetIsolate(), "message"));
+        source_context, gin::ConvertToV8(source_isolate, "message"));
     v8::Local<v8::Value> message;
     if (maybe_message.ToLocal(&message) && message->IsString()) {
       return v8::MaybeLocal<v8::Value>(
