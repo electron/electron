@@ -15,6 +15,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
+import { ScreenCapture } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { PipeTransport } from './pipe-transport';
@@ -3098,6 +3099,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
 
 describe('navigator.serial', () => {
   let w: BrowserWindow;
+  const screenCapture = new ScreenCapture();
   before(async () => {
     w = new BrowserWindow({
       show: false
@@ -3120,9 +3122,12 @@ describe('navigator.serial', () => {
   });
 
   it('does not return a port if select-serial-port event is not defined', async () => {
+    console.log('IN navigator.serial does not return a port if select-serial-port event is not defined');
     // Take screenshot to verify the test is running
+    await screenCapture.takeScreenshot('beforenavserial');
     w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     const port = await getPorts();
+    await screenCapture.takeScreenshot('afternavserial');
     expect(port).to.equal(notFoundError);
   });
 

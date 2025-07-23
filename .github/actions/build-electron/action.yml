@@ -236,6 +236,7 @@ runs:
           script/release/uploaders/upload.py --verbose
         fi
     - name: Generate Artifact Key
+      if: always()
       shell: bash
       run: |
         if [ "${{ inputs.is-asan }}" = "true" ]; then 
@@ -247,9 +248,11 @@ runs:
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
+      if: always()
       shell: bash
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
+      if: always()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
