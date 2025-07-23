@@ -833,7 +833,8 @@ void OverrideGlobalValueFromIsolatedWorld(
 
   {
     v8::Context::Scope main_context_scope(main_context);
-    v8::Local<v8::Context> source_context = value->GetCreationContextChecked();
+    v8::Local<v8::Context> source_context =
+        value->GetCreationContextChecked(isolate);
     v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
         source_context, main_context, value, source_context->Global(),
         support_dynamic_properties, BridgeErrorTarget::kSource);
