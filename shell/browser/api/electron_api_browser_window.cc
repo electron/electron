@@ -307,6 +307,13 @@ gin_helper::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
     options = gin::Dictionary::CreateEmpty(args->isolate());
   }
 
+  std::string error_message;
+  if (!IsWindowNameValid(options, &error_message)) {
+    // Window name is already in use throw an error and do not create the window
+    thrower.ThrowError(error_message);
+    return nullptr;
+  }
+
   return new BrowserWindow(args, options);
 }
 
