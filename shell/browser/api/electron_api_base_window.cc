@@ -1112,13 +1112,9 @@ v8::Local<v8::Value> BaseWindow::GetAccentColor() const {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   auto accent_color = window_->GetAccentColor();
 
-  if (std::holds_alternative<bool>(accent_color)) {
+  if (std::holds_alternative<bool>(accent_color))
     return v8::Boolean::New(isolate, std::get<bool>(accent_color));
-  } else if (std::holds_alternative<std::string>(accent_color)) {
-    return gin::StringToV8(isolate, std::get<std::string>(accent_color));
-  }
-
-  return v8::Null(isolate);
+  return gin::StringToV8(isolate, std::get<std::string>(accent_color));
 }
 #endif
 
