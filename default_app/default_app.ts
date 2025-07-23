@@ -66,7 +66,7 @@ async function createWindow (backgroundColor?: string) {
   }
 
   mainWindow = new BrowserWindow(options);
-  mainWindow.once('ready-to-show', () => mainWindow!.show());
+  mainWindow.on('ready-to-show', () => mainWindow!.show());
 
   mainWindow.webContents.setWindowOpenHandler(details => {
     shell.openExternal(decorateURL(details.url));
