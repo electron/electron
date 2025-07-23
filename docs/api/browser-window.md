@@ -1475,7 +1475,7 @@ win.setAccentColor(false)
 Returns `string | boolean` - the system accent color and highlighting of active window border in Hex RGB format.
 
 If a color has been set for the window that differs from the system accent color, the window accent color will
-be returned. Otherwise, the system accent color will be returned, if one is enabled.
+be returned. Otherwise, a boolean will be returned, with `true` indicating that the window uses the global system accent color, and `false` indicating that accent color highlighting is disabled for this window.
 
 #### `win.showDefinitionForSelection()` _macOS_
 
