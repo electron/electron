@@ -576,7 +576,8 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
   return args;
 }
 
-void NodeBindings::Initialize(v8::Local<v8::Context> context) {
+void NodeBindings::Initialize(v8::Isolate* const isolate,
+                              v8::Local<v8::Context> context) {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
 
@@ -635,7 +636,7 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
-  gin_helper::internal::Event::GetConstructor(context);
+  gin_helper::internal::Event::GetConstructor(isolate, context);
 
   g_is_initialized = true;
 }
