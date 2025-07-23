@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_COLOR_UTIL_H_
 #define ELECTRON_SHELL_COMMON_COLOR_UTIL_H_
 
+#include <optional>
 #include <string>
 
 #include "third_party/skia/include/core/SkColor.h"
@@ -22,7 +23,7 @@ namespace electron {
 
 // Parses a CSS-style color string from hex, rgb(), rgba(),
 // hsl(), hsla(), or color name formats.
-SkColor ParseCSSColor(const std::string& color_string);
+std::optional<SkColor> ParseCSSColor(const std::string& color_string);
 
 // Convert color to RGB hex value like "#RRGGBB".
 std::string ToRGBHex(SkColor color);
