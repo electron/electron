@@ -13,6 +13,9 @@
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/synchronization/atomic_flag.h"
+#include "base/task/lazy_thread_pool_task_runner.h"
+#include "base/task/single_thread_task_runner_thread_mode.h"
+#include "base/task/task_traits.h"
 #include "components/dbus/thread_linux/dbus_thread_linux.h"
 #include "components/dbus/utils/check_for_service_and_start.h"
 #include "dbus/bus.h"
@@ -36,6 +39,13 @@ uint32_t g_available_portal_version = 0;
 constexpr char kXdgPortalRequiredVersionFlag[] = "xdg-portal-required-version";
 
 bool g_portal_available = false;
+
+// Refs
+// https://source.chromium.org/chromium/chromium/src/+/main:components/dbus/thread_linux/dbus_thread_linux.cc;l=16-24;drc=1c281d7923af032d78ea7247e99b717dfebeb0b2
+base::LazyThreadPoolSingleThreadTaskRunner g_electron_dbus_thread_task_runner =
+    LAZY_THREAD_POOL_SINGLE_THREAD_TASK_RUNNER_INITIALIZER(
+        base::TaskTraits(base::MayBlock(), base::TaskPriority::USER_BLOCKING),
+        base::SingleThreadTaskRunnerThreadMode::SHARED);
 
 struct FileChooserProperties : dbus::PropertySet {
   dbus::Property<uint32_t> version;
@@ -61,7 +71,7 @@ void CheckPortalAvailabilityOnBusThread() {
   dbus::Bus::Options options;
   options.bus_type = dbus::Bus::SESSION;
   options.connection_type = dbus::Bus::PRIVATE;
-  options.dbus_task_runner = dbus_thread_linux::GetTaskRunner();
+  options.dbus_task_runner = g_electron_dbus_thread_task_runner.Get();
   scoped_refptr<dbus::Bus> bus = base::MakeRefCounted<dbus::Bus>(options);
   dbus_utils::CheckForServiceAndStart(
       bus, kXdgPortalService,
@@ -104,7 +114,7 @@ void StartPortalAvailabilityTestInBackground() {
     VLOG(1) << "Unable to parse --xdg-portal-required-version";
   }
 
-  dbus_thread_linux::GetTaskRunner()->PostTask(
+  g_electron_dbus_thread_task_runner.Get()->PostTask(
       FROM_HERE, base::BindOnce(&CheckPortalAvailabilityOnBusThread));
 }
 

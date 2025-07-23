@@ -6,26 +6,14 @@ Subject: Preconnect manager
 * Patch disables the profile related changes added in
 https://chromium-review.googlesource.com/c/chromium/src/+/3928470.
 
-diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
-index 9fe1c93b5cf2a5e7551f070d1d1d01683350675d..6ec8305948c3e2552775a458621c7794f839d09c 100644
---- a/chrome/browser/predictors/preconnect_manager.h
-+++ b/chrome/browser/predictors/preconnect_manager.h
-@@ -8,7 +8,6 @@
- #include <memory>
- 
- #include "base/memory/weak_ptr.h"
--#include "chrome/browser/predictors/resource_prefetch_predictor.h"
- #include "content/public/browser/preconnect_request.h"
- #include "content/public/browser/storage_partition_config.h"
- #include "mojo/public/cpp/bindings/receiver.h"
 diff --git a/chrome/browser/predictors/preconnect_manager_impl.cc b/chrome/browser/predictors/preconnect_manager_impl.cc
-index 639247fec01823ee942a1fb56f2511020ab0f228..6a625fcdd0ddcd55591a90126551f174c81889b1 100644
+index 57d544c0b03c80bdc015ce79d3aa78054d43c6e7..e9547e23d8bb2a5ac120c901405720cbde89737c 100644
 --- a/chrome/browser/predictors/preconnect_manager_impl.cc
 +++ b/chrome/browser/predictors/preconnect_manager_impl.cc
-@@ -14,9 +14,11 @@
+@@ -13,9 +13,11 @@
+ #include "base/trace_event/trace_event.h"
  #include "base/types/optional_util.h"
  #include "chrome/browser/predictors/predictors_features.h"
- #include "chrome/browser/predictors/predictors_traffic_annotations.h"
 +#if 0
  #include "chrome/browser/predictors/resource_prefetch_predictor.h"
  #include "chrome/browser/preloading/preloading_prefs.h"
@@ -34,7 +22,7 @@ index 639247fec01823ee942a1fb56f2511020ab0f228..6a625fcdd0ddcd55591a90126551f174
  #include "content/public/browser/browser_context.h"
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
-@@ -105,12 +107,15 @@ PreconnectManagerImpl::PreconnectManagerImpl(
+@@ -106,12 +108,15 @@ PreconnectManagerImpl::PreconnectManagerImpl(
  PreconnectManagerImpl::~PreconnectManagerImpl() = default;
  
  bool PreconnectManagerImpl::IsEnabled() {
@@ -50,17 +38,3 @@ index 639247fec01823ee942a1fb56f2511020ab0f228..6a625fcdd0ddcd55591a90126551f174
  }
  
  base::WeakPtr<PreconnectManager> PreconnectManagerImpl::GetWeakPtr() {
-diff --git a/chrome/browser/predictors/preconnect_manager_impl.h b/chrome/browser/predictors/preconnect_manager_impl.h
-index cf28c1c2572cf7c8c555ffdcb0e945b1b3c5d3ce..e057183ba0ec3ddf803302cf6e8418cb44b6b42a 100644
---- a/chrome/browser/predictors/preconnect_manager_impl.h
-+++ b/chrome/browser/predictors/preconnect_manager_impl.h
-@@ -18,7 +18,9 @@
- #include "chrome/browser/predictors/preconnect_manager.h"
- #include "chrome/browser/predictors/proxy_lookup_client_impl.h"
- #include "chrome/browser/predictors/resolve_host_client_impl.h"
-+#if 0
- #include "chrome/browser/predictors/resource_prefetch_predictor.h"
-+#endif
- #include "content/public/browser/preconnect_request.h"
- #include "content/public/browser/storage_partition_config.h"
- #include "net/base/network_anonymization_key.h"
