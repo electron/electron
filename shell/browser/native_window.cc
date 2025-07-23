@@ -980,7 +980,7 @@ void NativeWindow::RestoreBounds(const base::Value::Dict& window_preferences) {
   SetBounds(bounds);
 }
 // This function is similar to Chromium's window bounds adjustment logic
-// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/ui/window_sizer/window_sizer.cc;l=368;drc=0ec56065ba588552f21633aa47280ba02c3cd160#:~:text=349-,350,-351
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/ui/window_sizer/window_sizer.cc;l=350;drc=0ec56065ba588552f21633aa47280ba02c3cd160
 void NativeWindow::AdjustBoundsToBeVisibleOnDisplay(
     const display::Display& display,
     const gfx::Rect& saved_work_area,
