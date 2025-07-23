@@ -497,7 +497,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
   v8::Local<v8::Function> func = func_value.As<v8::Function>();
   v8::Local<v8::Context> func_owning_context =
-      func->GetCreationContextChecked();
+      func->GetCreationContextChecked(args.isolate());
 
   {
     v8::Context::Scope func_owning_context_scope(func_owning_context);
