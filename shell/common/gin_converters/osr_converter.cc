@@ -12,6 +12,9 @@
 #include <string>
 
 #include "base/containers/to_vector.h"
+#if BUILDFLAG(IS_LINUX)
+#include "base/strings/string_number_conversions.h"
+#endif
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/node_includes.h"

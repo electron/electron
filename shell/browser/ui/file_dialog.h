@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_FILE_DIALOG_H_
 #define ELECTRON_SHELL_BROWSER_UI_FILE_DIALOG_H_
 
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -72,7 +73,8 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 void ShowOpenDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise);
 
-bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path);
+std::optional<base::FilePath> ShowSaveDialogSync(
+    const DialogSettings& settings);
 
 void ShowSaveDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise);

@@ -13,6 +13,7 @@
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_config.h"
 #include "content/public/browser/tracing_controller.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -171,7 +172,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("getCategories", &GetCategories);
   dict.SetMethod("startRecording", &StartTracing);
   dict.SetMethod("stopRecording", &StopRecording);

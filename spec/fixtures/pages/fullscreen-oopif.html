@@ -2,7 +2,7 @@
     const { webFrame, ipcRenderer } = require('electron')
 
     document.addEventListener('fullscreenchange', () => {
-        ipcRenderer.send('fullscreenChange', webFrame.routingId)
+        ipcRenderer.send('fullscreenChange', webFrame.frameToken)
     });
 
     window.addEventListener('message', ({ data }) => {

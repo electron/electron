@@ -11,6 +11,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
+#include "base/values.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/global_routing_id.h"
 #include "gin/wrappable.h"
@@ -20,6 +21,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/promise.h"
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
 
 class GURL;
@@ -45,7 +47,7 @@ namespace electron::api {
 class WebContents;
 
 // Bindings for accessing frames from the main process.
-class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
+class WebFrameMain final : public gin::DeprecatedWrappable<WebFrameMain>,
                            public gin_helper::EventEmitterMixin<WebFrameMain>,
                            public gin_helper::Pinnable<WebFrameMain>,
                            public gin_helper::Constructible<WebFrameMain> {
@@ -68,7 +70,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   static const char* GetClassName() { return "WebFrameMain"; }
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
   content::RenderFrameHost* render_frame_host() const;
@@ -128,6 +130,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   bool Detached() const;
   content::FrameTreeNodeId FrameTreeNodeID() const;
   std::string Name() const;
+  std::string FrameToken() const;
   base::ProcessId OSProcessID() const;
   int32_t ProcessID() const;
   int RoutingID() const;

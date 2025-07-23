@@ -199,9 +199,8 @@ GURL ElectronManagementAPIDelegate::GetIconURL(
     ExtensionIconSet::Match match,
     bool grayscale) const {
   GURL icon_url(absl::StrFormat(
-      "%s%s/%d/%d%s", chrome::kChromeUIExtensionIconURL,
-      extension->id().c_str(), icon_size, static_cast<int>(match),
-      grayscale ? "?grayscale=true" : ""));
+      "%s%s/%d/%d%s", chrome::kChromeUIExtensionIconURL, extension->id(),
+      icon_size, static_cast<int>(match), grayscale ? "?grayscale=true" : ""));
   CHECK(icon_url.is_valid());
   return icon_url;
 }

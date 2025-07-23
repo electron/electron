@@ -23,7 +23,7 @@ class ObjectTemplate;
 
 namespace gin_helper::internal {
 
-class Event final : public gin::Wrappable<Event>,
+class Event final : public gin::DeprecatedWrappable<Event>,
                     public gin_helper::Constructible<Event> {
  public:
   // gin_helper::Constructible
@@ -34,7 +34,7 @@ class Event final : public gin::Wrappable<Event>,
   static const char* GetClassName() { return "Event"; }
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
   ~Event() override;

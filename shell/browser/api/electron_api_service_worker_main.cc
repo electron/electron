@@ -82,7 +82,8 @@ ServiceWorkerMain* ServiceWorkerMain::FromVersionID(
   return FromServiceWorkerKey(key);
 }
 
-gin::WrapperInfo ServiceWorkerMain::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo ServiceWorkerMain::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 ServiceWorkerMain::ServiceWorkerMain(content::ServiceWorkerContext* sw_context,
                                      int64_t version_id,
@@ -353,8 +354,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("ServiceWorkerMain", ServiceWorkerMain::GetConstructor(context));
 }
 

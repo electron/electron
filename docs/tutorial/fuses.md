@@ -48,7 +48,7 @@ The nodeCliInspect fuse toggles whether the `--inspect`, `--inspect-brk`, etc. f
 
 **@electron/fuses:** `FuseV1Options.EnableEmbeddedAsarIntegrityValidation`
 
-The embeddedAsarIntegrityValidation fuse toggles an experimental feature on macOS that validates the content of the `app.asar` file when it is loaded.  This feature is designed to have a minimal performance impact but may marginally slow down file reads from inside the `app.asar` archive.
+The embeddedAsarIntegrityValidation fuse toggles an experimental feature on macOS and Windows that validates the content of the `app.asar` file when it is loaded.  This feature is designed to have a minimal performance impact but may marginally slow down file reads from inside the `app.asar` archive.
 
 For more information on how to use asar integrity validation please read the [Asar Integrity](asar-integrity.md) documentation.
 

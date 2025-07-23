@@ -53,7 +53,7 @@ index 8d7c5631fd8f1499c67384286f0e3c4037673b32..2b7bdfbac06a42e6bc51eb65e023c367
  
  }  // namespace gin
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.cc b/third_party/blink/renderer/platform/bindings/script_state.cc
-index 58aa3d5b24355a4346c9d6992e6090d28cad513f..96c28c190f98c76c0defeaabda092ebdf6fb44c6 100644
+index 2d5df763b6ebb2333ae4aef909865213fb9ad4df..2370f00a3f5ee70604c93a0999ea5cee3c9898f9 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.cc
 +++ b/third_party/blink/renderer/platform/bindings/script_state.cc
 @@ -13,6 +13,10 @@ namespace blink {

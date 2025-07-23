@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Mon, 21 Jul 2025 16:58:56 -0700
+Subject: chore: add missing include of <iterator>
+
+This has been upstreamed at https://github.com/ada-url/ada/pull/982
+
+diff --git a/deps/ada/ada.cpp b/deps/ada/ada.cpp
+index d7f9b3a92c5330dad1cbd9f6f0bdd96908a4ad13..68fe0701bced5db86834ebd8232d4fe5ae7ed308 100644
+--- a/deps/ada/ada.cpp
++++ b/deps/ada/ada.cpp
+@@ -11217,6 +11217,7 @@ ada_warn_unused std::string to_string(ada::state state) {
+ 
+ #include <numeric>
+ #include <algorithm>
++#include <iterator>
+ #include <string>
+ 
+ namespace ada {
+@@ -13067,6 +13068,7 @@ template url_aggregator parse_url<url_aggregator>(
+ /* end file src/parser.cpp */
+ /* begin file src/url_components.cpp */
+ 
++#include <iterator>
+ #include <numeric>
+ #include <string>
+ 
+@@ -13192,6 +13194,7 @@ namespace ada {
+ /* end file src/url_components.cpp */
+ /* begin file src/url_aggregator.cpp */
+ 
++#include <iterator>
+ #include <string>
+ #include <string_view>
+ 

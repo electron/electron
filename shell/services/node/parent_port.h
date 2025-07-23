@@ -31,7 +31,7 @@ namespace electron {
 // There is only a single instance of this class
 // for the lifetime of a Utility Process which
 // also means that GC lifecycle is ignored by this class.
-class ParentPort final : public gin::Wrappable<ParentPort>,
+class ParentPort final : public gin::DeprecatedWrappable<ParentPort>,
                          public gin_helper::CleanedUpAtExit,
                          private mojo::MessageReceiver {
  public:
@@ -46,7 +46,7 @@ class ParentPort final : public gin::Wrappable<ParentPort>,
   void Initialize(blink::MessagePortDescriptor port);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

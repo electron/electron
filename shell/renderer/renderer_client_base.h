@@ -56,7 +56,8 @@ class RendererClientBase : public content::ContentRendererClient
                     mojo::ScopedMessagePipeHandle interface_pipe) override;
 #endif
 
-  virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
+  virtual void DidCreateScriptContext(v8::Isolate* isolate,
+                                      v8::Local<v8::Context> context,
                                       content::RenderFrame* render_frame) = 0;
   virtual void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                         content::RenderFrame* render_frame) = 0;

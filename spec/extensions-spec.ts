@@ -1,4 +1,4 @@
-import { app, session, BrowserWindow, ipcMain, WebContents, Extension, Session } from 'electron/main';
+import { app, session, webFrameMain, BrowserWindow, ipcMain, WebContents, Extension, Session } from 'electron/main';
 
 import { expect } from 'chai';
 import * as WebSocket from 'ws';
@@ -18,7 +18,7 @@ const uuid = require('uuid');
 const fixtures = path.join(__dirname, 'fixtures');
 
 describe('chrome extensions', () => {
-  const emptyPage = '<script>console.log("loaded")</script>';
+  const emptyPage = '<html><body><h1>EMPTY PAGE</h1></body></html>';
 
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
   let server: http.Server;
@@ -336,7 +336,6 @@ describe('chrome extensions', () => {
       expect(result).to.be.an('object');
       expect(result.os).to.be.a('string');
       expect(result.arch).to.be.a('string');
-      expect(result.nacl_arch).to.be.a('string');
     });
   });
 
@@ -631,13 +630,13 @@ describe('chrome extensions', () => {
     };
 
     let responseIdCounter = 0;
-    const executeJavaScriptInFrame = (webContents: WebContents, frameRoutingId: number, code: string) => {
+    const executeJavaScriptInFrame = (webContents: WebContents, frameToken: string, code: string) => {
       return new Promise(resolve => {
         const responseId = responseIdCounter++;
         ipcMain.once(`executeJavaScriptInFrame_${responseId}`, (event, result) => {
           resolve(result);
         });
-        webContents.send('executeJavaScriptInFrame', frameRoutingId, code, responseId);
+        webContents.send('executeJavaScriptInFrame', frameToken, code, responseId);
       });
     };
 
@@ -748,10 +747,12 @@ describe('chrome extensions', () => {
             const frameEvents = await detailsPromise;
             await Promise.all(
               frameEvents.map(async frameEvent => {
-                const [, isMainFrame, , frameRoutingId] = frameEvent;
+                const [, isMainFrame, frameProcessId, frameRoutingId] = frameEvent;
+                const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
+                expect(frame).to.not.be.undefined();
                 const result: any = await executeJavaScriptInFrame(
                   w.webContents,
-                  frameRoutingId,
+                  frame!.frameToken,
                   `(() => {
                     const a = document.getElementById('all_frames_enabled')
                     const b = document.getElementById('all_frames_disabled')

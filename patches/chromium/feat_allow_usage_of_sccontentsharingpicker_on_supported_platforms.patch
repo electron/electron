@@ -20,7 +20,7 @@ index afb657b7c9e1ede1273532b16428d37cc5d75c59..16707cf516cd34682c84ea2ccebddaa0
      requested_format_.pixel_format = media::PIXEL_FORMAT_NV12;
      DCHECK_GT(requested_format_.frame_size.GetArea(), 0);
 diff --git a/content/browser/media/capture/io_surface_capture_device_base_mac.cc b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
-index 4ec4c895423151d2c907d97de1461cbde8c8a639..0e59797833b81c07299b8c342f591e192183c6f1 100644
+index 827264f204eefeef188a568fd4660bdbb65d42a6..c342c8cde09d2392ba14047847fba3aec92802a0 100644
 --- a/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 +++ b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 @@ -20,7 +20,7 @@ void IOSurfaceCaptureDeviceBase::AllocateAndStart(
@@ -317,10 +317,10 @@ index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b40496
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index 23b19cc8405293aa44c4f2c20f715f8443fcd151..21c0c84dc6e3128b641fac682e3069a0acb97c0b 100644
+index a5bc6f63c771fdf68ed9251285eac9d2c91acdc0..f719ff68e18093791bf13e434f40a3d1a9626dca 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -322,8 +322,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -321,8 +321,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          break;
        }
  
@@ -338,7 +338,7 @@ index 23b19cc8405293aa44c4f2c20f715f8443fcd151..21c0c84dc6e3128b641fac682e3069a0
          // For the other capturers, when a bug reports the type of capture it's
          // easy enough to determine which capturer was used, but it's a little
          // fuzzier with window capture.
-@@ -339,13 +347,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -338,13 +346,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        }
  #endif  // defined(USE_AURA) || BUILDFLAG(IS_MAC)
  

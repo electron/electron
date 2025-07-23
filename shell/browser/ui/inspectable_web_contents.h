@@ -182,6 +182,7 @@ class InspectableWebContents
   void RecordChange(const ChangeEvent& event) override {}
   void RecordKeyDown(const KeyDownEvent& event) override {}
   void RecordSettingAccess(const SettingAccessEvent& event) override {}
+  void RecordFunctionCall(const FunctionCallEvent& event) override {}
   void ShowSurvey(DispatchCallback callback,
                   const std::string& trigger) override {}
   void CanShowSurvey(DispatchCallback callback,
@@ -189,6 +190,8 @@ class InspectableWebContents
   void DoAidaConversation(DispatchCallback callback,
                           const std::string& request,
                           int stream_id) override {}
+  void AidaCodeComplete(DispatchCallback callback,
+                        const std::string& request) override {}
   void RegisterAidaClientEvent(DispatchCallback callback,
                                const std::string& request) override {}
 

@@ -33,6 +33,7 @@
 #include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
+#include "third_party/blink/public/mojom/blob/blob.mojom.h"
 
 #if BUILDFLAG(IS_POSIX)
 #include "base/posix/eintr_wrapper.h"
@@ -60,7 +61,7 @@ GetAllUtilityProcessWrappers() {
 
 namespace api {
 
-gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo = {
+gin::DeprecatedWrapperInfo UtilityProcessWrapper::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 UtilityProcessWrapper::UtilityProcessWrapper(
@@ -78,6 +79,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   base::FileHandleMappingVector fds_to_remap;
 #endif
   for (const auto& [io_handle, io_type] : stdio) {
+    if (io_handle == IOHandle::STDIN)
+      continue;
+
     if (io_type == IOType::IO_PIPE) {
 #if BUILDFLAG(IS_WIN)
       HANDLE read = nullptr;
@@ -527,8 +531,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("_fork", &electron::api::UtilityProcessWrapper::Create);
 }
 

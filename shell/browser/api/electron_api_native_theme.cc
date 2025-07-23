@@ -17,7 +17,8 @@
 
 namespace electron::api {
 
-gin::WrapperInfo NativeTheme::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo NativeTheme::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 NativeTheme::NativeTheme(v8::Isolate* isolate,
                          ui::NativeTheme* ui_theme,
@@ -136,8 +137,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin::Dictionary dict{isolate, exports};
   dict.Set("nativeTheme", NativeTheme::Create(isolate));
 }
 

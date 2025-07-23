@@ -362,7 +362,8 @@ void BaseWindow::SetContentView(gin::Handle<View> view) {
 }
 
 void BaseWindow::CloseImmediately() {
-  window_->CloseImmediately();
+  if (!window_->IsClosed())
+    window_->CloseImmediately();
 }
 
 void BaseWindow::Close() {
@@ -655,7 +656,7 @@ bool BaseWindow::IsTabletMode() const {
 }
 
 void BaseWindow::SetBackgroundColor(const std::string& color_name) {
-  SkColor color = ParseCSSColor(color_name);
+  SkColor color = ParseCSSColor(color_name).value_or(SK_ColorWHITE);
   window_->SetBackgroundColor(color);
 }
 
@@ -849,8 +850,8 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate,
   window_->SetVibrancy(type, animation_duration_ms);
 }
 
-void BaseWindow::SetBackgroundMaterial(const std::string& material_type) {
-  window_->SetBackgroundMaterial(material_type);
+void BaseWindow::SetBackgroundMaterial(const std::string& material) {
+  window_->SetBackgroundMaterial(material);
 }
 
 #if BUILDFLAG(IS_MAC)
@@ -1301,7 +1302,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   BaseWindow::SetConstructor(isolate, base::BindRepeating(&BaseWindow::New));
 
   gin_helper::Dictionary constructor(isolate,

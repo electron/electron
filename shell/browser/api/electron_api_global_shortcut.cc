@@ -49,7 +49,8 @@ bool MapHasMediaKeys(
 
 namespace electron::api {
 
-gin::WrapperInfo GlobalShortcut::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo GlobalShortcut::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 GlobalShortcut::GlobalShortcut() {}
 
@@ -225,7 +226,8 @@ gin::Handle<GlobalShortcut> GlobalShortcut::Create(v8::Isolate* isolate) {
 // static
 gin::ObjectTemplateBuilder GlobalShortcut::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<GlobalShortcut>::GetObjectTemplateBuilder(isolate)
+  return gin::DeprecatedWrappable<GlobalShortcut>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("registerAll", &GlobalShortcut::RegisterAll)
       .SetMethod("register", &GlobalShortcut::Register)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
@@ -245,8 +247,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin::Dictionary dict{isolate, exports};
   dict.Set("globalShortcut", electron::api::GlobalShortcut::Create(isolate));
 }
 

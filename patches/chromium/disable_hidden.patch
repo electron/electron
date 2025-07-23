@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 8173547224997a68c2878d6dfb26b1cb436353c6..6a60a4b0275e1832216b092c29bc867f4727ca22 100644
+index 3cd4d698ef5e302bd2913adfcaffedcf46e9dc8e..eac923378ce1e73f51f182f4dadb7e6f98ee0cfd 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -833,6 +833,10 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -835,6 +835,10 @@ void RenderWidgetHostImpl::WasHidden() {
      return;
    }
  
@@ -21,10 +21,10 @@ index 8173547224997a68c2878d6dfb26b1cb436353c6..6a60a4b0275e1832216b092c29bc867f
    // Prompts should remain open and functional across tab switches.
    if (!delegate_ || !delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 0bc94f2246a9357915423d1954cb240fad602a22..4663f18c832c12e8704fbb99a5aea824cd44aa5b 100644
+index 1e5164c3f015711d337f3775eb67381b76126344..062f911a9515285444f9c0abf9220f8d37a68e8f 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1017,6 +1017,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -1020,6 +1020,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    // Requests a commit and forced redraw in the renderer compositor.
    void ForceRedrawForTesting();
  
@@ -32,13 +32,13 @@ index 0bc94f2246a9357915423d1954cb240fad602a22..4663f18c832c12e8704fbb99a5aea824
 +  bool disable_hidden_ = false;
 +
   protected:
-   // |routing_id| must not be MSG_ROUTING_NONE.
+   // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index e6235611a2ae643f4c968fcc0dcd5b47baa0a081..a13dd521b7263c66c94dac3d3caf6ebbed92d229 100644
+index 2aa678fde76a0f9db2e2e784d7e00228e61ef4e5..9b0bcaab04af3f13aca061604fe1be4daa159a35 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -643,7 +643,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+@@ -644,7 +644,7 @@ void RenderWidgetHostViewAura::HideImpl() {
    CHECK(visibility_ == Visibility::HIDDEN ||
          visibility_ == Visibility::OCCLUDED);
  

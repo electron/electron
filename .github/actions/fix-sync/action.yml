@@ -19,11 +19,13 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Fix clang
+    - name: Fix llvm toolchain
       shell: bash
       run : |
         rm -rf src/third_party/llvm-build
         python3 src/tools/clang/scripts/update.py
+        # Refs https://chromium-review.googlesource.com/c/chromium/src/+/6667681
+        python3 src/tools/clang/scripts/update.py --package objdump
     - name: Fix esbuild
       uses: ./src/electron/.github/actions/cipd-install
       with:

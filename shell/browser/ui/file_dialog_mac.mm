@@ -122,6 +122,18 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
       if (ext == "*") {
         [content_types_set addObject:[UTType typeWithFilenameExtension:@"*"]];
         break;
+      } else if (ext == "app") {
+        // This handles a bug on macOS where the "app" extension by default
+        // maps to "com.apple.application-file", which is for an Application
+        // file (older single-file carbon based apps), and not modern
+        // Application Bundles (multi file packages as you'd see for all modern
+        // applications).
+        UTType* superType =
+            [UTType typeWithIdentifier:@"com.apple.application-bundle"];
+        if (UTType* utt = [UTType typeWithFilenameExtension:@"app"
+                                           conformingToType:superType]) {
+          [content_types_set addObject:utt];
+        }
       } else {
         if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())])
           [content_types_set addObject:utt];
@@ -436,19 +448,18 @@ void ShowOpenDialog(const DialogSettings& settings,
   }
 }
 
-bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
-  DCHECK(path);
+std::optional<base::FilePath> ShowSaveDialogSync(
+    const DialogSettings& settings) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, settings);
   SetupSaveDialogForProperties(dialog, settings.properties);
 
-  int chosen = RunModalDialog(dialog, settings);
+  const int chosen = RunModalDialog(dialog, settings);
   if (chosen == NSModalResponseCancel || ![[dialog URL] isFileURL])
-    return false;
+    return {};
 
-  *path = base::FilePath(base::SysNSStringToUTF8([[dialog URL] path]));
-  return true;
+  return base::FilePath{base::SysNSStringToUTF8([[dialog URL] path])};
 }
 
 void SaveDialogCompletion(int chosen,

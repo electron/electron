@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "base/command_line.h"
-#include "base/containers/contains.h"
+#include "base/containers/fixed_flat_set.h"
 #include "base/strings/pattern.h"
 #include "base/types/expected_macros.h"
 #include "chrome/common/url_constants.h"
@@ -497,20 +497,23 @@ bool IsKillURL(const GURL& url) {
   }
 
   // Also disallow a few more hosts which are not covered by the check above.
-  static const char* const kKillHosts[] = {
-      chrome::kChromeUIDelayedHangUIHost, chrome::kChromeUIHangUIHost,
-      chrome::kChromeUIQuitHost,          chrome::kChromeUIRestartHost,
-      content::kChromeUIBrowserCrashHost, content::kChromeUIMemoryExhaustHost,
-  };
+  constexpr auto kKillHosts = base::MakeFixedFlatSet<std::string_view>({
+      chrome::kChromeUIDelayedHangUIHost,
+      chrome::kChromeUIHangUIHost,
+      chrome::kChromeUIQuitHost,
+      chrome::kChromeUIRestartHost,
+      content::kChromeUIBrowserCrashHost,
+      content::kChromeUIMemoryExhaustHost,
+  });
 
-  return base::Contains(kKillHosts, url.host_piece());
+  return kKillHosts.contains(url.host_piece());
 }
 
 GURL ResolvePossiblyRelativeURL(const std::string& url_string,
                                 const Extension* extension) {
   GURL url = GURL(url_string);
   if (!url.is_valid() && extension)
-    url = extension->GetResourceURL(url_string);
+    url = extension->ResolveExtensionURL(url_string);
 
   return url;
 }

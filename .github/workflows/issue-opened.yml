@@ -60,6 +60,8 @@ jobs:
               // It's possible for multiple versions to be listed -
               // for now check for comma or space separated version.
               const versions = electronVersion.split(/, | /);
+              let hasSupportedVersion = false;
+
               for (const version of versions) {
                 const major = semver.coerce(version, { loose: true })?.major;
                 if (major) {
@@ -75,19 +77,20 @@ jobs:
                     labelExists = true;
                   } catch {}
 
-                  if (labelExists) {
-                    // Check if it's an unsupported major
-                    const { ElectronVersions } = await import('${{ github.workspace }}/node_modules/@electron/fiddle-core/dist/index.js');
-                    const versions = await ElectronVersions.create(undefined, { ignoreCache: true });
+                  const { ElectronVersions } = await import('${{ github.workspace }}/node_modules/@electron/fiddle-core/dist/index.js');
+                  const electronVersions = await ElectronVersions.create(undefined, { ignoreCache: true });
+                  const validVersions = [...electronVersions.supportedMajors, ...electronVersions.prereleaseMajors];
 
-                    const validVersions = [...versions.supportedMajors, ...versions.prereleaseMajors];
-                    if (validVersions.includes(major)) {
+                  if (validVersions.includes(major)) {
+                    hasSupportedVersion = true;
+                    if (labelExists) {
                       labels.push(versionLabel);
                     }
                   }
                 }
               }
-              if (labels.length === 0) {
+
+              if (!hasSupportedVersion) {
                 core.setOutput('unsupportedMajor', true);
                 labels.push('blocked/need-info ❌');
               }

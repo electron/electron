@@ -10,8 +10,21 @@ however those files were cherry-picked from main branch and do not
 really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
+diff --git a/configure.py b/configure.py
+index 4560bac7b8e3c707ecea5a425f642efb9de9ed36..e9c2a4391f4058a21a259cacaac4fde5d199288e 100755
+--- a/configure.py
++++ b/configure.py
+@@ -1722,7 +1722,7 @@ def configure_v8(o, configs):
+   # Until we manage to get rid of all those, v8_enable_sandbox cannot be used.
+   # Note that enabling pointer compression without enabling sandbox is unsupported by V8,
+   # so this can be broken at any time.
+-  o['variables']['v8_enable_sandbox'] = 0
++  o['variables']['v8_enable_sandbox'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_pointer_compression_shared_cage'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_external_code_space'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
 diff --git a/node.gni b/node.gni
-index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3fd219be7d 100644
+index 35ccd0487f20cece033d58827ecb7ed016908ee4..62cd49c6a87074912a1cb6792576c8d4f239b669 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -5,10 +5,10 @@
@@ -27,7 +40,15 @@ index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3f
  
    # The location of OpenSSL - use the one from node's deps by default.
    node_openssl_path = "$node_path/deps/openssl"
-@@ -44,7 +44,7 @@ declare_args() {
+@@ -39,12 +39,15 @@ declare_args() {
+   # The variable is called "openssl" for parity with node's GYP build.
+   node_use_openssl = true
+ 
++  # Build node with SQLite support.
++  node_use_sqlite = true
++
+   # Use the specified path to system CA (PEM format) in addition to
+   # the BoringSSL supplied CA store or compiled-in Mozilla CA copy.
    node_openssl_system_ca_path = ""
  
    # Initialize v8 platform during node.js startup.
@@ -36,7 +57,7 @@ index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3f
  
    # Custom build tag.
    node_tag = ""
-@@ -64,10 +64,16 @@ declare_args() {
+@@ -64,10 +67,16 @@ declare_args() {
    # TODO(zcbenz): There are few broken things for now:
    #   1. cross-os compilation is not supported.
    #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
@@ -55,10 +76,10 @@ index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3f
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index defb657a62a0316224a02b68505ac1142fd89d03..d637faac88875bfa110e2b8d1f53962061d98279 100644
+index 092341dbfbabe15b15ed43057d399f754505f6fd..f14b45850e42585f5686b7201e2b8281ed8c24e1 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -785,6 +785,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -788,6 +788,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -80,10 +101,10 @@ index f9426599f2d5dc6ad061407f0c4eb2c9203a4433..302030f610965f07dd6998d282275c1b
  // Handles compilation and caching of built-in JavaScript modules and
  // bootstrap scripts, whose source are bundled into the binary as static data.
 diff --git a/tools/install.py b/tools/install.py
-index 17515720ba9c85d533465365188021074a8d30f4..92f83a83be67aafc9ead6923b868dbb0de39db34 100755
+index 8797b59e59c85a8877b977fa3281e50165e6f6b2..0af01e075616195f38fb242626dcab770ec1eb57 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -212,6 +212,7 @@ def headers(options, action):
+@@ -222,6 +222,7 @@ def headers(options, action):
        'include/cppgc/internal/caged-heap-local-data.h',
        'include/cppgc/internal/caged-heap.h',
        'include/cppgc/internal/compiler-specific.h',
@@ -91,7 +112,7 @@ index 17515720ba9c85d533465365188021074a8d30f4..92f83a83be67aafc9ead6923b868dbb0
        'include/cppgc/internal/finalizer-trait.h',
        'include/cppgc/internal/gc-info.h',
        'include/cppgc/internal/logging.h',
-@@ -291,6 +292,7 @@ def headers(options, action):
+@@ -301,6 +302,7 @@ def headers(options, action):
        'include/v8-promise.h',
        'include/v8-proxy.h',
        'include/v8-regexp.h',
@@ -258,10 +279,22 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index 44641b92678ab2f28e6f5de75a92878f9f3d322d..e17e4f043af6e4047ab82723ffd83187f3c04c5c 100644
+index 44641b92678ab2f28e6f5de75a92878f9f3d322d..a6cfd45b109c7b38fcf1529468ff64d3c1c8bd1b 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -142,32 +142,42 @@ template("node_gn_build") {
+@@ -22,6 +22,11 @@ template("node_gn_build") {
+     } else {
+       defines += [ "HAVE_OPENSSL=0" ]
+     }
++    if (node_use_sqlite) {
++      defines += [ "HAVE_SQLITE=1" ]
++    } else {
++      defines += [ "HAVE_SQLITE=0" ]
++    }
+     if (node_use_amaro) {
+       defines += [ "HAVE_AMARO=1" ]
+     } else {
+@@ -142,32 +147,41 @@ template("node_gn_build") {
      public_configs = [
        ":node_external_config",
        "deps/googletest:googletest_config",
@@ -284,7 +317,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..e17e4f043af6e4047ab82723ffd83187
        "deps/nghttp2",
 -      "deps/ngtcp2",
        "deps/postject",
-       "deps/sqlite",
+-      "deps/sqlite",
        "deps/uvwasi",
 -      "deps/zstd",
        "//third_party/zlib",
@@ -307,7 +340,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..e17e4f043af6e4047ab82723ffd83187
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -190,7 +200,7 @@ template("node_gn_build") {
+@@ -190,9 +204,13 @@ template("node_gn_build") {
      }
      if (node_use_openssl) {
        deps += [ "deps/ncrypto" ]
@@ -315,8 +348,14 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..e17e4f043af6e4047ab82723ffd83187
 +      public_deps += [ "//third_party/boringssl" ]
        sources += gypi_values.node_crypto_sources
      }
++    if (node_use_sqlite) {
++      deps += [ "deps/sqlite" ]
++      sources += gypi_values.node_sqlite_sources
++    }
      if (node_enable_inspector) {
-@@ -214,6 +224,10 @@ template("node_gn_build") {
+       deps += [
+         "src/inspector:crdtp",
+@@ -214,6 +232,10 @@ template("node_gn_build") {
      }
    }
  
@@ -327,7 +366,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..e17e4f043af6e4047ab82723ffd83187
    executable(target_name) {
      forward_variables_from(invoker, "*")
  
-@@ -288,6 +302,7 @@ template("node_gn_build") {
+@@ -288,6 +310,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -335,7 +374,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..e17e4f043af6e4047ab82723ffd83187
      deps = [
        "deps/uv",
        "$node_simdutf_path",
-@@ -298,26 +313,75 @@ template("node_gn_build") {
+@@ -298,26 +321,75 @@ template("node_gn_build") {
        "src/embedded_data.cc",
        "src/embedded_data.h",
      ]
@@ -421,7 +460,7 @@ index 44641b92678ab2f28e6f5de75a92878f9f3d322d..e17e4f043af6e4047ab82723ffd83187
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -331,11 +395,11 @@ template("node_gn_build") {
+@@ -331,11 +403,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  

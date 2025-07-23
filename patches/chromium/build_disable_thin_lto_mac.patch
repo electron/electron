@@ -11,10 +11,10 @@ This patch can (and should) be removed when we can prevent those symbols
 from being stripped in the release build.
 
 diff --git a/build/config/compiler/compiler.gni b/build/config/compiler/compiler.gni
-index a47aa1cf4fb55c91908e15f1c406d79a48697cf8..a05a20229749e032e6d26d87177aebc4955ce081 100644
+index babd5a12fa7fbe263e1ecd6d269a2965a3024bbe..cf116f19c4031e3bec6c82125761ebbcb32c5c79 100644
 --- a/build/config/compiler/compiler.gni
 +++ b/build/config/compiler/compiler.gni
-@@ -79,7 +79,7 @@ declare_args() {
+@@ -88,7 +88,7 @@ declare_args() {
    # have the same LLVM revisions as us, making bitcode useless to them.
    use_thin_lto =
        is_cfi || (is_clang && is_official_build && chrome_pgo_phase != 1 &&

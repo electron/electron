@@ -48,7 +48,7 @@ struct Converter<electron::TrayIcon::IconType> {
 
 namespace electron::api {
 
-gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Tray::Tray(v8::Isolate* isolate,
            v8::Local<v8::Value> image,
@@ -445,9 +445,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-
-  gin::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin::Dictionary dict{isolate, exports};
   dict.Set("Tray", Tray::GetConstructor(context));
 }
 

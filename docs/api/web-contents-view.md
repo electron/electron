@@ -33,6 +33,10 @@ Process: [Main](../glossary.md#main-process)
 
 `WebContentsView` is an [EventEmitter][event-emitter].
 
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
+
 ### `new WebContentsView([options])`
 
 * `options` Object (optional)

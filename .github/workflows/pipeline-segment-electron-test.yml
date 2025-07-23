@@ -40,6 +40,7 @@ env:
   CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+  ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
 
 jobs:
   test:
@@ -100,9 +101,9 @@ jobs:
         }
 
         userValuesArray=(
-            "'kTCCServiceMicrophone','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceCamera','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceBluetoothAlways','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceAppleEvents','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
         )
         for values in "${userValuesArray[@]}"; do
           # Sonoma and higher have a few extra values
@@ -124,6 +125,15 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+    - name: Setup SSH Debugging
+      if: ${{ inputs.target-platform == 'macos' && env.ACTIONS_STEP_DEBUG == 'true' }}
+      uses: ./src/electron/.github/actions/ssh-debug
+      with:
+        tunnel: 'true'
+      env:
+        CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+        TUNNEL_HOSTNAME: ${{ secrets.CLOUDFLARED_SSH_HOSTNAME }}
+        AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Set Chromium Git Cookie
@@ -135,6 +145,7 @@ jobs:
         git config --global core.autocrlf false
         git config --global branch.autosetuprebase always
         git config --global core.fscache true
+        git config --global core.longpaths true
         git config --global core.preloadindex true
         git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         # Ensure depot_tools does not update.
@@ -192,7 +203,6 @@ jobs:
         MOCHA_REPORTER: mocha-multi-reporters
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
-        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
       run: |

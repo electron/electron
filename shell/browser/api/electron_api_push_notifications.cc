@@ -13,7 +13,8 @@ namespace electron::api {
 
 PushNotifications* g_push_notifications = nullptr;
 
-gin::WrapperInfo PushNotifications::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo PushNotifications::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 PushNotifications::PushNotifications() = default;
 
@@ -60,7 +61,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin::Dictionary dict(isolate, exports);
   dict.Set("pushNotifications",
            electron::api::PushNotifications::Create(isolate));

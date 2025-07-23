@@ -5,8 +5,8 @@ for any Snapcraft environment, including the Ubuntu Software Center.
 
 ## Background and Requirements
 
-Together with the broader Linux community, Canonical aims to fix many of the
-common software installation problems with the [`snapcraft`](https://snapcraft.io/)
+Together with the broader Linux community, Canonical aims to address common
+software installation issues through the [`snapcraft`](https://snapcraft.io/)
 project. Snaps are containerized software packages that include required
 dependencies, auto-update, and work on all major Linux distributions without
 system modification.
@@ -83,7 +83,14 @@ snap(options)
 
 ### Step 1: Create Sample Snapcraft Project
 
-Create your project directory and add the following to `snap/snapcraft.yaml`:
+```sh
+$ npx create-electron-app@latest my-app
+```
+
+### Step 2: Create Sample Snapcraft Project
+
+Create a `snap` directory in your project root and add the following to
+`snap/snapcraft.yaml`:
 
 ```yaml
 name: electron-packager-hello-world
@@ -97,7 +104,7 @@ grade: stable
 
 apps:
   electron-packager-hello-world:
-    command: electron-quick-start/electron-quick-start --no-sandbox
+    command: my-app/my-app --no-sandbox
     extensions: [gnome]
     plugs:
     - browser-support
@@ -109,13 +116,13 @@ apps:
       TMPDIR: $XDG_RUNTIME_DIR
 
 parts:
-  electron-quick-start:
+  my-app:
     plugin: nil
-    source: https://github.com/electron/electron-quick-start.git
+    source: .
     override-build: |
         npm install electron @electron/packager
         npx electron-packager . --overwrite --platform=linux --output=release-build --prune=true
-        cp -rv ./electron-quick-start-linux-* $SNAPCRAFT_PART_INSTALL/electron-quick-start
+        cp -rv ./my-app-linux-* $SNAPCRAFT_PART_INSTALL/my-app
     build-snaps:
     - node/14/stable
     build-packages:
@@ -125,12 +132,10 @@ parts:
     - libnspr4
 ```
 
-If you want to apply this example to an existing project:
+If you want to apply this example to an existing project, replace all instances
+of `my-app` with your project's name.
 
-- Replace `source: https://github.com/electron/electron-quick-start.git` with `source: .`.
-- Replace all instances of `electron-quick-start` with your project's name.
-
-### Step 2: Build the snap
+### Step 3: Build the snap
 
 ```sh
 $ snapcraft
@@ -139,13 +144,13 @@ $ snapcraft
 Snapped electron-packager-hello-world_0.1_amd64.snap
 ```
 
-### Step 3: Install the snap
+### Step 4: Install the snap
 
 ```sh
 sudo snap install electron-packager-hello-world_0.1_amd64.snap --dangerous
 ```
 
-### Step 4: Run the snap
+### Step 5: Run the snap
 
 ```sh
 electron-packager-hello-world

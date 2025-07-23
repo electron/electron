@@ -57,8 +57,19 @@ runs:
         sudo rm -rf $TMPDIR/del-target
 
         sudo rm -rf /Applications/Safari.app
+        sudo rm -rf /Applications/Xcode_16.1.app
+        sudo rm -rf /Applications/Xcode_16.3.app
+        sudo rm -rf /Applications/Xcode_16.2.app
+        sudo rm -rf /Applications/Google Chrome.app
+        sudo rm -rf /Applications/Xcode_16.4.app
+        sudo rm -rf /Applications/Google Chrome for Testing.app
+        sudo rm -rf	/Applications/Firefox.app
         sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
         sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
+        sudo rm -rf /Users/runner/Library/Android
+        sudo rm -rf $JAVA_HOME_11_arm64
+        sudo rm -rf $JAVA_HOME_17_arm64
+        sudo rm -rf $JAVA_HOME_21_arm64
 
         # lipo off some huge binaries arm64 versions to save space
         strip_universal_deep $(xcode-select -p)/../SharedFrameworks

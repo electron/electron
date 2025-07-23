@@ -20,6 +20,7 @@
 #include "base/files/file_path.h"
 #include "base/logging.h"
 #include "base/path_service.h"
+#include "base/strings/cstring_view.h"
 #include "base/strings/strcat_win.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -53,6 +54,14 @@
 namespace electron {
 
 namespace {
+
+// specifies what should run at user login
+constexpr base::wcstring_view Run =
+    LR"(Software\Microsoft\Windows\CurrentVersion\Run)";
+
+// controls whether each Run entry is enabled or disabled
+constexpr base::wcstring_view StartupApprovedRun =
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run)";
 
 bool GetProcessExecPath(std::wstring* exe) {
   base::FilePath path;
@@ -193,19 +202,11 @@ std::vector<LaunchItem> GetLoginItemSettingsHelper(
 
         // attempt to update launch_item.enabled if there is a matching key
         // value entry in the StartupApproved registry
+        const HKEY scope_key =
+            scope == L"user" ? HKEY_CURRENT_USER : HKEY_LOCAL_MACHINE;
         HKEY hkey;
-        // StartupApproved registry path
-        LPCTSTR path = TEXT(
-            "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApp"
-            "roved\\Run");
-        LONG res;
-        if (scope == L"user") {
-          res =
-              RegOpenKeyEx(HKEY_CURRENT_USER, path, 0, KEY_QUERY_VALUE, &hkey);
-        } else {
-          res =
-              RegOpenKeyEx(HKEY_LOCAL_MACHINE, path, 0, KEY_QUERY_VALUE, &hkey);
-        }
+        LONG res = RegOpenKeyEx(scope_key, StartupApprovedRun.c_str(), 0,
+                                KEY_QUERY_VALUE, &hkey);
         if (res == ERROR_SUCCESS) {
           DWORD type, size;
           wchar_t startup_binary[12];
@@ -615,14 +616,10 @@ void Browser::UpdateBadgeContents(
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-  std::wstring key_path = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-  base::win::RegKey key(HKEY_CURRENT_USER, key_path.c_str(), KEY_ALL_ACCESS);
+  base::win::RegKey key(HKEY_CURRENT_USER, Run.c_str(), KEY_ALL_ACCESS);
 
-  std::wstring startup_approved_key_path =
-      L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved"
-      L"\\Run";
   base::win::RegKey startup_approved_key(
-      HKEY_CURRENT_USER, startup_approved_key_path.c_str(), KEY_ALL_ACCESS);
+      HKEY_CURRENT_USER, StartupApprovedRun.c_str(), KEY_ALL_ACCESS);
   PCWSTR key_name =
       !settings.name.empty() ? settings.name.c_str() : GetAppUserModelID();
 
@@ -635,9 +632,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
         startup_approved_key.DeleteValue(key_name);
       } else {
         HKEY hard_key;
-        LPCTSTR path = TEXT(
-            "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApp"
-            "roved\\Run");
+        constexpr LPCTSTR path = StartupApprovedRun.c_str();
         LONG res =
             RegOpenKeyEx(HKEY_CURRENT_USER, path, 0, KEY_ALL_ACCESS, &hard_key);
 
@@ -660,8 +655,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
-  std::wstring keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-  base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
+  base::win::RegKey key(HKEY_CURRENT_USER, Run.c_str(), KEY_ALL_ACCESS);
   std::wstring keyVal;
 
   // keep old openAtLogin behaviour
@@ -678,9 +672,9 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
   boolean executable_will_launch_at_login = false;
   std::vector<LaunchItem> launch_items;
   base::win::RegistryValueIterator hkcu_iterator(HKEY_CURRENT_USER,
-                                                 keyPath.c_str());
+                                                 Run.c_str());
   base::win::RegistryValueIterator hklm_iterator(HKEY_LOCAL_MACHINE,
-                                                 keyPath.c_str());
+                                                 Run.c_str());
 
   launch_items = GetLoginItemSettingsHelper(
       &hkcu_iterator, &executable_will_launch_at_login, L"user", options);
@@ -754,7 +748,7 @@ void Browser::ShowAboutPanel() {
       "applicationName", "applicationVersion", "copyright", "credits"};
 
   const std::string* str;
-  for (std::string opt : stringOptions) {
+  for (const std::string& opt : stringOptions) {
     if ((str = dict.FindString(opt))) {
       aboutMessage.append(*str).append("\r\n");
     }

@@ -38,7 +38,7 @@ namespace electron::api {
 
 class Menu;
 
-class Tray final : public gin::Wrappable<Tray>,
+class Tray final : public gin::DeprecatedWrappable<Tray>,
                    public gin_helper::EventEmitterMixin<Tray>,
                    public gin_helper::Constructible<Tray>,
                    public gin_helper::CleanedUpAtExit,
@@ -55,7 +55,7 @@ class Tray final : public gin::Wrappable<Tray>,
   static const char* GetClassName() { return "Tray"; }
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
   // gin_helper::CleanedUpAtExit

@@ -8,6 +8,7 @@
 #include <glib-object.h>
 
 #include "base/functional/bind.h"
+#include "base/notimplemented.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/global_menu_bar_registrar_x11.h"
@@ -164,8 +165,8 @@ std::string GetMenuModelStatus(ElectronMenuModel* model) {
     int status = model->GetTypeAt(i) | (model->IsVisibleAt(i) << 3) |
                  (model->IsEnabledAt(i) << 4) |
                  (model->IsItemCheckedAt(i) << 5);
-    ret += absl::StrFormat(
-        "%s-%X\n", base::UTF16ToUTF8(model->GetLabelAt(i)).c_str(), status);
+    ret += absl::StrFormat("%s-%X\n", base::UTF16ToUTF8(model->GetLabelAt(i)),
+                           status);
   }
   return ret;
 }

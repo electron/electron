@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_browser_window.h"
 
+#include "base/containers/fixed_flat_set.h"
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_process_host.h"
@@ -234,7 +235,7 @@ void BrowserWindow::Blur() {
 
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   BaseWindow::SetBackgroundColor(color_name);
-  SkColor color = ParseCSSColor(color_name);
+  SkColor color = ParseCSSColor(color_name).value_or(SK_ColorWHITE);
   if (api_web_contents_) {
     api_web_contents_->SetBackgroundColor(color);
     // Also update the web preferences object otherwise the view will be reset
@@ -242,8 +243,20 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
     auto* web_preferences =
         WebContentsPreferences::From(api_web_contents_->web_contents());
     if (web_preferences) {
-      web_preferences->SetBackgroundColor(ParseCSSColor(color_name));
+      web_preferences->SetBackgroundColor(color);
     }
+  }
+}
+
+void BrowserWindow::SetBackgroundMaterial(const std::string& material) {
+  BaseWindow::SetBackgroundMaterial(material);
+  static constexpr auto materialTypes =
+      base::MakeFixedFlatSet<std::string_view>({"tabbed", "mica", "acrylic"});
+
+  if (materialTypes.contains(material)) {
+    SetBackgroundColor(ToRGBAHex(SK_ColorTRANSPARENT));
+  } else if (material == "none") {
+    SetBackgroundColor(ToRGBAHex(SK_ColorWHITE));
   }
 }
 
@@ -328,8 +341,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("BrowserWindow",
            gin_helper::CreateConstructor<BrowserWindow>(
                isolate, base::BindRepeating(&BrowserWindow::New)));

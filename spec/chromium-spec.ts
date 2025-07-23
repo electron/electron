@@ -567,7 +567,14 @@ describe('command line switches', () => {
     });
 
     it('creates startup trace', async () => {
-      const rc = await startRemoteControlApp(['--trace-startup=*', `--trace-startup-file=${outputFilePath}`, '--trace-startup-duration=1', '--enable-logging']);
+      // node.async_hooks relies on %trace builtin to log trace points from JS
+      // https://github.com/nodejs/node/blob/8b199eef3dd4de910a6521adc42ae611a62a19e1/lib/internal/trace_events_async_hooks.js#L48-L53
+      // The phase event arg TRACE_EVENT_PHASE_NESTABLE_ASYNC_(BEGIN | END) is not supported in v8_use_perfetto mode
+      // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-trace.cc;l=201-216
+      // and leads to the following error: TypeError: Trace event phase must be a number.
+      // TODO: Identify why the error started appearing with roll https://github.com/electron/electron/pull/47561
+      // given both v8_use_perfetto has been enabled before the roll and builtins-trace macro hasn't changed.
+      const rc = await startRemoteControlApp(['--trace-startup="*,-node.async_hooks"', `--trace-startup-file=${outputFilePath}`, '--trace-startup-duration=1', '--enable-logging']);
       const stderrComplete = new Promise<string>(resolve => {
         let stderr = '';
         rc.process.stderr!.on('data', (chunk) => {
@@ -1265,6 +1272,16 @@ describe('chromium features', () => {
         expect(newWindow.isVisible()).to.equal(true);
       });
     }
+
+    it('is always resizable', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.webContents.executeJavaScript(`
+        { b = window.open('about:blank', '', 'resizable=no,show=no'); null }
+      `);
+      const [, popup] = await once(app, 'browser-window-created') as [any, BrowserWindow];
+      expect(popup.isResizable()).to.be.true();
+    });
 
     // FIXME(zcbenz): This test is making the spec runner hang on exit on Windows.
     ifit(process.platform !== 'win32')('disables node integration when it is disabled on the parent window', async () => {
@@ -3089,7 +3106,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   });
 });
 
-describe('navigator.serial', () => {
+ifdescribe(process.platform !== 'darwin' || process.arch !== 'arm64')('navigator.serial', () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow({
@@ -3271,7 +3288,12 @@ describe('navigator.clipboard.read', () => {
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
 
-  const readClipboard: any = () => {
+  const readClipboard = async () => {
+    if (!w.webContents.isFocused()) {
+      const focus = once(w.webContents, 'focus');
+      w.webContents.focus();
+      await focus;
+    }
     return w.webContents.executeJavaScript(`
       navigator.clipboard.read().then(clipboard => clipboard.toString()).catch(err => err.message);
     `, true);
@@ -3289,11 +3311,7 @@ describe('navigator.clipboard.read', () => {
 
   it('returns an error when permission denied', async () => {
     session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
-      if (permission === 'clipboard-read') {
-        callback(false);
-      } else {
-        callback(true);
-      }
+      callback(permission !== 'clipboard-read');
     });
     const clipboard = await readClipboard();
     expect(clipboard).to.contain('Read permission denied.');
@@ -3301,11 +3319,7 @@ describe('navigator.clipboard.read', () => {
 
   it('returns clipboard contents when permission is granted', async () => {
     session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
-      if (permission === 'clipboard-read') {
-        callback(true);
-      } else {
-        callback(false);
-      }
+      callback(permission === 'clipboard-read');
     });
     const clipboard = await readClipboard();
     expect(clipboard).to.not.contain('Read permission denied.');
@@ -3319,7 +3333,12 @@ describe('navigator.clipboard.write', () => {
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
 
-  const writeClipboard: any = () => {
+  const writeClipboard = async () => {
+    if (!w.webContents.isFocused()) {
+      const focus = once(w.webContents, 'focus');
+      w.webContents.focus();
+      await focus;
+    }
     return w.webContents.executeJavaScript(`
       navigator.clipboard.writeText('Hello World!').catch(err => err.message);
     `, true);
@@ -3361,7 +3380,13 @@ describe('navigator.clipboard.write', () => {
 });
 
 describe('paste execCommand', () => {
-  const readClipboard: any = (w: BrowserWindow) => {
+  const readClipboard = async (w: BrowserWindow) => {
+    if (!w.webContents.isFocused()) {
+      const focus = once(w.webContents, 'focus');
+      w.webContents.focus();
+      await focus;
+    }
+
     return w.webContents.executeJavaScript(`
       new Promise((resolve) => {
         const timeout = setTimeout(() => {
@@ -3621,7 +3646,7 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
   });
 });
 
-describe('navigator.bluetooth', () => {
+ifdescribe(process.platform !== 'darwin' || process.arch !== 'arm64')('navigator.bluetooth', () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow({
@@ -3637,8 +3662,14 @@ describe('navigator.bluetooth', () => {
 
   it('can request bluetooth devices', async () => {
     const bluetooth = await w.webContents.executeJavaScript(`
-    navigator.bluetooth.requestDevice({ acceptAllDevices: true}).then(device => "Found a device!").catch(err => err.message);`, true);
-    expect(bluetooth).to.be.oneOf(['Found a device!', 'Bluetooth adapter not available.', 'User cancelled the requestDevice() chooser.']);
+    navigator.bluetooth.requestDevice({ acceptAllDevices: true }).then(device => "Found a device!").catch(err => err.message);`, true);
+    const requestResponses = [
+      'Found a device!',
+      'Bluetooth adapter not available.',
+      'User cancelled the requestDevice() chooser.',
+      'User denied the browser permission to scan for Bluetooth devices.'
+    ];
+    expect(bluetooth).to.be.oneOf(requestResponses, `Unexpected response: ${bluetooth}`);
   });
 });
 
@@ -3668,6 +3699,7 @@ describe('navigator.hid', () => {
     server.close();
     closeAllWindows();
   });
+
   afterEach(() => {
     session.defaultSession.setPermissionCheckHandler(null);
     session.defaultSession.setDevicePermissionHandler(null);

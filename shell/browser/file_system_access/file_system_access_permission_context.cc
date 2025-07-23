@@ -884,7 +884,8 @@ std::u16string FileSystemAccessPermissionContext::GetPickerTitle(
         kDirectoryPickerOptions:
       title = l10n_util::GetStringUTF16(
           options->type_specific_options->get_directory_picker_options()
-                  ->request_writable
+                      ->permission_mode ==
+                  blink::mojom::FileSystemAccessPermissionMode::kReadWrite
               ? IDS_FILE_SYSTEM_ACCESS_CHOOSER_OPEN_WRITABLE_DIRECTORY_TITLE
               : IDS_FILE_SYSTEM_ACCESS_CHOOSER_OPEN_READABLE_DIRECTORY_TITLE);
       break;

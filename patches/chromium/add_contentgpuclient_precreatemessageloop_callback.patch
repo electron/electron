@@ -10,12 +10,12 @@ Allows Electron to restore WER when ELECTRON_DEFAULT_ERROR_MODE is set.
 This should be upstreamed.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index 73be6273b320574c22fd12e07b93dc3cffaa1be9..58a34cc5b583a7111decf14b755afbb82ba94765 100644
+index fd375dee71339a4e8bf858fc0b348c852c594a83..bc4786d408af2297ca6acb4489ab81cf8f70c8c3 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
-@@ -268,6 +268,10 @@ int GpuMain(MainFunctionParams parameters) {
+@@ -269,6 +269,10 @@ int GpuMain(MainFunctionParams parameters) {
    // to the GpuProcessHost once the GpuServiceImpl has started.
-   viz::GpuServiceImpl::InstallPreInitializeLogHandler();
+   viz::GpuLogMessageManager::GetInstance()->InstallPreInitializeLogHandler();
  
 +  auto* client = GetContentClient()->gpu();
 +  if (client)
@@ -24,7 +24,7 @@ index 73be6273b320574c22fd12e07b93dc3cffaa1be9..58a34cc5b583a7111decf14b755afbb8
    // We are experiencing what appear to be memory-stomp issues in the GPU
    // process. These issues seem to be impacting the task executor and listeners
    // registered to it. Create the task executor on the heap to guard against
-@@ -377,7 +381,6 @@ int GpuMain(MainFunctionParams parameters) {
+@@ -378,7 +382,6 @@ int GpuMain(MainFunctionParams parameters) {
  #endif
    const bool dead_on_arrival = !init_success;
  
@@ -33,10 +33,10 @@ index 73be6273b320574c22fd12e07b93dc3cffaa1be9..58a34cc5b583a7111decf14b755afbb8
      client->PostSandboxInitialized();
    }
 diff --git a/content/public/gpu/content_gpu_client.h b/content/public/gpu/content_gpu_client.h
-index c89b010e7ac78e2a7246ee54fe302cd6b9299710..46fd522fb2ac2793a3a073a4f833a4425dcee941 100644
+index e5389b44df98ab1a5c976524a66a26c763e5c436..4a183b4959fae18e6875440e6570b8ada6823d81 100644
 --- a/content/public/gpu/content_gpu_client.h
 +++ b/content/public/gpu/content_gpu_client.h
-@@ -32,6 +32,10 @@ class CONTENT_EXPORT ContentGpuClient {
+@@ -36,6 +36,10 @@ class CONTENT_EXPORT ContentGpuClient {
   public:
    virtual ~ContentGpuClient() {}
  

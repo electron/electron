@@ -23,7 +23,7 @@ namespace electron::api {
 
 class PushNotifications final
     : public ElectronBrowserClient::Delegate,
-      public gin::Wrappable<PushNotifications>,
+      public gin::DeprecatedWrappable<PushNotifications>,
       public gin_helper::EventEmitterMixin<PushNotifications>,
       private BrowserObserver {
  public:
@@ -31,7 +31,7 @@ class PushNotifications final
   static gin::Handle<PushNotifications> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;

@@ -123,6 +123,8 @@ inline constexpr std::string_view kRoundedCorners = "roundedCorners";
 
 inline constexpr std::string_view ktitleBarOverlay = "titleBarOverlay";
 
+inline constexpr std::string_view kAccentColor = "accentColor";
+
 // The color to use as the theme and symbol colors respectively for Window
 // Controls Overlay if enabled on Windows.
 inline constexpr std::string_view kOverlayButtonColor = "color";
@@ -217,9 +219,6 @@ inline constexpr std::string_view kSpellcheck = "spellcheck";
 inline constexpr std::string_view kEnableDeprecatedPaste =
     "enableDeprecatedPaste";
 
-// Whether the -electron-corner-smoothing CSS rule is enabled.
-inline constexpr std::string_view kEnableCornerSmoothingCSS =
-    "enableCornerSmoothingCSS";
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.

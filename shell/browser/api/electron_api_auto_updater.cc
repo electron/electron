@@ -18,7 +18,8 @@
 
 namespace electron::api {
 
-gin::WrapperInfo AutoUpdater::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo AutoUpdater::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 AutoUpdater::AutoUpdater() {
   auto_updater::AutoUpdater::SetDelegate(this);
@@ -151,8 +152,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("autoUpdater", AutoUpdater::Create(isolate));
 }
 

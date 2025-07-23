@@ -17,10 +17,11 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
+#include "third_party/blink/public/mojom/blob/blob.mojom.h"
 
 namespace electron {
 
-gin::WrapperInfo ParentPort::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo ParentPort::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 ParentPort* ParentPort::GetInstance() {
   static ParentPort* instance = new ParentPort();
@@ -113,7 +114,7 @@ gin::Handle<ParentPort> ParentPort::Create(v8::Isolate* isolate) {
 // static
 gin::ObjectTemplateBuilder ParentPort::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<ParentPort>::GetObjectTemplateBuilder(isolate)
+  return gin::DeprecatedWrappable<ParentPort>::GetObjectTemplateBuilder(isolate)
       .SetMethod("postMessage", &ParentPort::PostMessage)
       .SetMethod("start", &ParentPort::Start)
       .SetMethod("pause", &ParentPort::Pause);
@@ -131,8 +132,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("createParentPort", &electron::ParentPort::Create);
 }
 

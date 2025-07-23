@@ -18,6 +18,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/functional/callback_helpers.h"
+#include "base/notimplemented.h"
 #include "base/path_service.h"
 #include "base/system/sys_info.h"
 #include "base/values.h"
@@ -364,7 +365,7 @@ struct Converter<net::SecureDnsMode> {
 
 namespace electron::api {
 
-gin::WrapperInfo App::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo App::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 namespace {
 
@@ -1858,8 +1859,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("app", electron::api::App::Create(isolate));
 }
 

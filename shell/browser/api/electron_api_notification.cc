@@ -47,7 +47,8 @@ struct Converter<electron::NotificationAction> {
 
 namespace electron::api {
 
-gin::WrapperInfo Notification::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo Notification::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 Notification::Notification(gin::Arguments* args) {
   presenter_ = static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
@@ -250,8 +251,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("Notification", Notification::GetConstructor(context));
   dict.SetMethod("isSupported", &Notification::IsSupported);
 }

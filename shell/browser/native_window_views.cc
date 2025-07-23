@@ -31,6 +31,7 @@
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_view_manager.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/arguments.h"
@@ -52,7 +53,7 @@
 #include "ui/wm/core/window_util.h"
 
 #if BUILDFLAG(IS_LINUX)
-#include "base/strings/string_util.h"
+#include "base/notimplemented.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/linux/unity_service.h"
 #include "shell/browser/linux/x11_util.h"
@@ -79,6 +80,8 @@
 #include "base/win/windows_version.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
+#include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
+#include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/color_utils.h"
@@ -197,9 +200,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (std::string val; options.Get(options::kTitle, &val))
     SetTitle(val);
 
-  bool menu_bar_autohide;
-  if (options.Get(options::kAutoHideMenuBar, &menu_bar_autohide))
-    root_view_.SetAutoHideMenuBar(menu_bar_autohide);
+  if (bool val; options.Get(options::kAutoHideMenuBar, &val))
+    root_view_.SetAutoHideMenuBar(val);
 
 #if BUILDFLAG(IS_WIN)
   // On Windows we rely on the CanResize() to indicate whether window can be
@@ -215,28 +217,23 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
   overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
+
+  if (std::string str; options.Get(options::kAccentColor, &str)) {
+    std::optional<SkColor> parsed_color = ParseCSSColor(str);
+    if (parsed_color.has_value())
+      accent_color_ = parsed_color.value();
+  } else if (bool flag; options.Get(options::kAccentColor, &flag)) {
+    accent_color_ = flag;
+  }
 #endif
 
-  v8::Local<v8::Value> titlebar_overlay;
-  if (options.Get(options::ktitleBarOverlay, &titlebar_overlay) &&
-      titlebar_overlay->IsObject()) {
-    auto titlebar_overlay_obj =
-        gin_helper::Dictionary::CreateEmpty(options.isolate());
-    options.Get(options::ktitleBarOverlay, &titlebar_overlay_obj);
-
-    std::string overlay_color_string;
-    if (titlebar_overlay_obj.Get(options::kOverlayButtonColor,
-                                 &overlay_color_string)) {
-      bool success = content::ParseCssColorString(overlay_color_string,
-                                                  &overlay_button_color_);
+  if (gin_helper::Dictionary od; options.Get(options::ktitleBarOverlay, &od)) {
+    if (std::string val; od.Get(options::kOverlayButtonColor, &val)) {
+      bool success = content::ParseCssColorString(val, &overlay_button_color_);
       DCHECK(success);
     }
-
-    std::string overlay_symbol_color_string;
-    if (titlebar_overlay_obj.Get(options::kOverlaySymbolColor,
-                                 &overlay_symbol_color_string)) {
-      bool success = content::ParseCssColorString(overlay_symbol_color_string,
-                                                  &overlay_symbol_color_);
+    if (std::string val; od.Get(options::kOverlaySymbolColor, &val)) {
+      bool success = content::ParseCssColorString(val, &overlay_symbol_color_);
       DCHECK(success);
     }
   }
@@ -278,8 +275,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (IsTranslucent() && !has_frame())
     params.shadow_type = InitParams::ShadowType::kNone;
 
-  bool focusable;
-  if (options.Get(options::kFocusable, &focusable) && !focusable)
+  if (bool val; options.Get(options::kFocusable, &val) && !val)
     params.activatable = InitParams::Activatable::kNo;
 
 #if BUILDFLAG(IS_WIN)
@@ -357,6 +353,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
+
     DWORD frame_style = WS_CAPTION | WS_OVERLAPPED;
     if (resizable_)
       frame_style |= WS_THICKFRAME;
@@ -402,11 +399,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   // NOTE(@mlaurencin) Spec requirements can be found here:
   // https://developer.mozilla.org/en-US/docs/Web/API/Window/open#width
-  int kMinSizeReqdBySpec = 100;
-  int inner_width = 0;
-  int inner_height = 0;
-  options.Get(options::kinnerWidth, &inner_width);
-  options.Get(options::kinnerHeight, &inner_height);
+  constexpr int kMinSizeReqdBySpec = 100;
+  const int inner_width = options.ValueOrDefault(options::kinnerWidth, 0);
+  const int inner_height = options.ValueOrDefault(options::kinnerHeight, 0);
   if (inner_width || inner_height) {
     use_content_size_ = true;
     if (inner_width)
@@ -466,11 +461,10 @@ void NativeWindowViews::SetTitleBarOverlay(
   bool updated = false;
 
   // Check and update the button color
-  std::string btn_color;
-  if (options.Get(options::kOverlayButtonColor, &btn_color)) {
+  if (std::string val; options.Get(options::kOverlayButtonColor, &val)) {
     // Parse the string as a CSS color
     SkColor color;
-    if (!content::ParseCssColorString(btn_color, &color)) {
+    if (!content::ParseCssColorString(val, &color)) {
       args->ThrowError("Could not parse color as CSS color");
       return;
     }
@@ -481,11 +475,10 @@ void NativeWindowViews::SetTitleBarOverlay(
   }
 
   // Check and update the symbol color
-  std::string symbol_color;
-  if (options.Get(options::kOverlaySymbolColor, &symbol_color)) {
+  if (std::string val; options.Get(options::kOverlaySymbolColor, &val)) {
     // Parse the string as a CSS color
     SkColor color;
-    if (!content::ParseCssColorString(symbol_color, &color)) {
+    if (!content::ParseCssColorString(val, &color)) {
       args->ThrowError("Could not parse symbol color as CSS color");
       return;
     }
@@ -496,9 +489,8 @@ void NativeWindowViews::SetTitleBarOverlay(
   }
 
   // Check and update the height
-  int height = 0;
-  if (options.Get(options::kOverlayHeight, &height)) {
-    set_titlebar_overlay_height(height);
+  if (int val; options.Get(options::kOverlayHeight, &val)) {
+    set_titlebar_overlay_height(val);
     updated = true;
   }
 
@@ -532,11 +524,16 @@ void NativeWindowViews::SetContentView(views::View* view) {
   root_view_.GetMainView()->DeprecatedLayoutImmediately();
 }
 
-void NativeWindowViews::CloseImpl() {
+void NativeWindowViews::Close() {
+  if (!IsClosable()) {
+    WindowList::WindowCloseCancelled(this);
+    return;
+  }
+
   widget()->Close();
 }
 
-void NativeWindowViews::CloseImmediatelyImpl() {
+void NativeWindowViews::CloseImmediately() {
   widget()->CloseNow();
 }
 
@@ -688,13 +685,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 
 void NativeWindowViews::Maximize() {
 #if BUILDFLAG(IS_WIN)
-  if (IsTranslucent()) {
-    // Semi-transparent windows with backgroundMaterial not set to 'none', and
-    // not fully transparent, require manual handling of rounded corners when
-    // maximized.
-    if (rounded_corner_)
-      SetRoundedCorners(false);
-
+  if (transparent()) {
     restore_bounds_ = GetBounds();
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
         GetNativeWindow());
@@ -718,15 +709,10 @@ void NativeWindowViews::Unmaximize() {
     return;
 
 #if BUILDFLAG(IS_WIN)
-  if (IsTranslucent()) {
+  if (transparent()) {
     SetBounds(restore_bounds_, false);
     NotifyWindowUnmaximize();
-    if (transparent()) {
-      UpdateThickFrame();
-    }
-    if (rounded_corner_) {
-      SetRoundedCorners(true);
-    }
+    UpdateThickFrame();
     return;
   }
 #endif
@@ -743,7 +729,7 @@ bool NativeWindowViews::IsMaximized() const {
     return true;
 
 #if BUILDFLAG(IS_WIN)
-  if (IsTranslucent() && !IsMinimized()) {
+  if (transparent() && !IsMinimized()) {
     // If the window is the same dimensions and placement as the
     // display, we consider it maximized.
     auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
@@ -765,15 +751,10 @@ void NativeWindowViews::Minimize() {
 
 void NativeWindowViews::Restore() {
 #if BUILDFLAG(IS_WIN)
-  if (IsMaximized() && IsTranslucent()) {
+  if (IsMaximized() && transparent()) {
     SetBounds(restore_bounds_, false);
     NotifyWindowRestore();
-    if (transparent()) {
-      UpdateThickFrame();
-    }
-    if (rounded_corner_) {
-      SetRoundedCorners(true);
-    }
+    UpdateThickFrame();
     return;
   }
 #endif
@@ -919,7 +900,7 @@ gfx::Size NativeWindowViews::GetContentSize() const {
 
 gfx::Rect NativeWindowViews::GetNormalBounds() const {
 #if BUILDFLAG(IS_WIN)
-  if (IsMaximized() && IsTranslucent())
+  if (IsMaximized() && transparent())
     return restore_bounds_;
 #endif
   return widget()->GetRestoredBounds();
@@ -1560,25 +1541,53 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
     return;
 
   DWM_SYSTEMBACKDROP_TYPE backdrop_type = GetBackdropFromString(material);
-  HRESULT result =
-      DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_SYSTEMBACKDROP_TYPE,
-                            &backdrop_type, sizeof(backdrop_type));
+  const bool is_translucent = backdrop_type != DWMSBT_NONE &&
+                              backdrop_type != DWMSBT_AUTO && !has_frame();
+
+  HWND hwnd = GetAcceleratedWidget();
+
+  // We need to update margins ourselves since Chromium won't.
+  // See: ui/views/widget/widget_hwnd_utils.cc#157
+  // See: src/ui/views/win/hwnd_message_handler.cc#1793
+  MARGINS m = {0, 0, 0, 0};
+  if (is_translucent)
+    m = {-1, -1, -1, -1};
+
+  HRESULT result = DwmExtendFrameIntoClientArea(hwnd, &m);
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to extend frame into client area";
+
+  result = DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
+                                 &backdrop_type, sizeof(backdrop_type));
   if (FAILED(result))
     LOG(WARNING) << "Failed to set background material to " << material;
+
+  auto* desktop_window_tree_host =
+      static_cast<ElectronDesktopWindowTreeHostWin*>(
+          GetNativeWindow()->GetHost());
+
+  // Synchronize the internal state; otherwise, the background material may not
+  // work properly.
+  if (desktop_window_tree_host) {
+    desktop_window_tree_host->SetIsTranslucent(is_translucent);
+  }
+
+  auto* desktop_native_widget_aura =
+      static_cast<ElectronDesktopNativeWidgetAura*>(widget()->native_widget());
+  desktop_native_widget_aura->UpdateWindowTransparency();
 
   // For frameless windows with a background material set, we also need to
   // remove the caption color so it doesn't render a caption bar (since the
   // window is frameless)
-  COLORREF caption_color = DWMWA_COLOR_DEFAULT;
-  if (backdrop_type != DWMSBT_NONE && backdrop_type != DWMSBT_AUTO &&
-      !has_frame()) {
-    caption_color = DWMWA_COLOR_NONE;
-  }
-  result = DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_CAPTION_COLOR,
-                                 &caption_color, sizeof(caption_color));
-
+  COLORREF caption_color =
+      is_translucent ? DWMWA_COLOR_NONE : DWMWA_COLOR_DEFAULT;
+  result = DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &caption_color,
+                                 sizeof(caption_color));
   if (FAILED(result))
     LOG(WARNING) << "Failed to set caption color to transparent";
+
+  // Activate the non-client area of the window
+  DefWindowProc(hwnd, WM_NCACTIVATE, TRUE, has_frame() ? 0 : -1);
 #endif
 }
 
@@ -1734,6 +1743,12 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
   } else {
     NativeWindow::NotifyWindowBlur();
   }
+
+#if BUILDFLAG(IS_WIN)
+  // Update accent color based on activation state when no explicit color is
+  // set.
+  UpdateWindowAccentColor(active);
+#endif
 
   // Hide menu bar when window is blurred.
   if (!active && IsMenuBarAutoHide() && IsMenuBarVisible())
@@ -1900,7 +1915,7 @@ ui::mojom::WindowShowState NativeWindowViews::GetRestoredState() {
   if (IsMaximized()) {
 #if BUILDFLAG(IS_WIN)
     // Restore maximized state for windows that are not translucent.
-    if (!IsTranslucent()) {
+    if (!transparent()) {
       return ui::mojom::WindowShowState::kMaximized;
     }
 #else

@@ -108,6 +108,7 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
 }
 
 void ElectronSandboxedRendererClient::DidCreateScriptContext(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   // Only allow preload for the main frame or
@@ -120,7 +121,6 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
 
   // Wrap the bundle into a function that receives the binding object as
   // argument.
-  auto* isolate = context->GetIsolate();
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context, render_frame);
 

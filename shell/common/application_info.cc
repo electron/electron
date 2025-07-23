@@ -44,7 +44,7 @@ std::string GetApplicationUserAgent() {
   } else {
     user_agent = absl::StrFormat(
         "%s/%s Chrome/%s " ELECTRON_PRODUCT_NAME "/" ELECTRON_VERSION_STRING,
-        name.c_str(), browser->GetVersion().c_str(), CHROME_VERSION_STRING);
+        name, browser->GetVersion(), CHROME_VERSION_STRING);
   }
   return embedder_support::BuildUserAgentFromProduct(user_agent);
 }

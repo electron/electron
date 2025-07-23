@@ -17,6 +17,7 @@
 #include "base/containers/fixed_flat_set.h"
 #include "base/environment.h"
 #include "base/feature_list.h"
+#include "base/logging.h"
 #include "base/strings/cstring_view.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"

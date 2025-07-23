@@ -58,13 +58,13 @@ if [ ! -f $buildtools/configs/evm.testing.json ]; then
             },
             \"\$schema\": \"file:///home/builduser/.electron_build_tools/evm-config.schema.json\",
             \"configValidationLevel\": \"strict\",
-            \"reclient\": \"$1\",
-            \"preserveXcode\": 5
+            \"remoteBuild\": \"reclient\",
+            \"preserveSDK\": 5
         }
     " >$buildtools/configs/evm.testing.json
   }
 
-  write_config remote_exec
+  write_config
 
   e use testing 
 else

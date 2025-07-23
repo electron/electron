@@ -53,7 +53,11 @@ void InitializeFeatureList() {
       std::string(",") + features::kSpareRendererForSitePerProcess.name +
       // See https://chromium-review.googlesource.com/c/chromium/src/+/6487926
       // this breaks PDFs locally as we don't have GLIC infra enabled.
-      std::string(",") + ax::mojom::features::kScreenAIOCREnabled.name;
+      std::string(",") + ax::mojom::features::kScreenAIOCREnabled.name +
+      // See https://chromium-review.googlesource.com/c/chromium/src/+/6626905
+      // Needed so that ElectronBrowserClient::RegisterPendingSiteInstance does
+      // not throw a check.
+      std::string(", TraceSiteInstanceGetProcessCreation");
 
 #if BUILDFLAG(IS_WIN)
   disable_features +=

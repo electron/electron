@@ -18,6 +18,7 @@
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/flat_set.h"
 #include "base/containers/id_map.h"
+#include "base/containers/map_util.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
@@ -25,6 +26,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/threading/scoped_blocking_call.h"
+#include "base/unguessable_token.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/devtools/devtools_eye_dropper.h"
@@ -146,6 +148,7 @@
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/peerconnection/webrtc_ip_handling_policy.h"
+#include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
@@ -241,7 +244,7 @@ template <>
 struct Converter<WindowOpenDisposition> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    WindowOpenDisposition val) {
-    std::string disposition = "other";
+    std::string_view disposition = "other";
     switch (val) {
       case WindowOpenDisposition::CURRENT_TAB:
         disposition = "default";
@@ -302,7 +305,7 @@ struct Converter<electron::api::WebContents::Type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::api::WebContents::Type val) {
     using Type = electron::api::WebContents::Type;
-    std::string type;
+    std::string_view type;
     switch (val) {
       case Type::kBackgroundPage:
         type = "backgroundPage";
@@ -863,9 +866,10 @@ WebContents::WebContents(v8::Isolate* isolate,
     // webPreferences does not have a transparent option, so if the window needs
     // to be transparent, that will be set at electron_api_browser_window.cc#L57
     // and we then need to pull it back out and check it here.
-    std::string background_color;
-    options.GetHidden(options::kBackgroundColor, &background_color);
-    bool transparent = ParseCSSColor(background_color) == SK_ColorTRANSPARENT;
+    std::string background_color_str;
+    options.GetHidden(options::kBackgroundColor, &background_color_str);
+    SkColor bc = ParseCSSColor(background_color_str).value_or(SK_ColorWHITE);
+    bool transparent = bc == SK_ColorTRANSPARENT;
 
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
@@ -1818,16 +1822,6 @@ void WebContents::PrimaryMainFrameRenderProcessGone(
   Emit("render-process-gone", details);
 }
 
-void WebContents::PluginCrashed(const base::FilePath& plugin_path,
-                                base::ProcessId plugin_pid) {
-#if BUILDFLAG(ENABLE_PLUGINS)
-  content::WebPluginInfo info;
-  auto* plugin_service = content::PluginService::GetInstance();
-  plugin_service->GetPluginInfoByPath(plugin_path, &info);
-  Emit("plugin-crashed", info.name, info.version);
-#endif  // BUILDFLAG(ENABLE_PLUGINS)
-}
-
 void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
                                       const content::MediaPlayerId& id) {
   Emit("media-started-playing");
@@ -2404,6 +2398,13 @@ void WebContents::DownloadURL(const GURL& url, gin::Arguments* args) {
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
           web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
   for (const auto& [name, value] : headers) {
+    if (base::ToLowerASCII(name) ==
+        base::ToLowerASCII(net::HttpRequestHeaders::kReferer)) {
+      // Setting a Referer header with HTTPS scheme while the download URL's
+      // scheme is HTTP might lead to download failure.
+      download_params->set_referrer(GURL(value));
+      continue;
+    }
     download_params->add_request_header(name, value);
   }
 
@@ -3566,10 +3567,20 @@ void WebContents::OnCursorChanged(const ui::Cursor& cursor) {
 }
 
 void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
-                                 int embedder_frame_id) {
+                                 std::string embedder_frame_token) {
+  auto token = base::Token::FromString(embedder_frame_token);
+  if (!token)
+    return;
+  auto unguessable_token =
+      base::UnguessableToken::Deserialize(token->high(), token->low());
+  if (!unguessable_token)
+    return;
+  auto frame_token = blink::LocalFrameToken(unguessable_token.value());
+
   attached_ = true;
-  if (guest_delegate_)
-    guest_delegate_->AttachToIframe(embedder_web_contents, embedder_frame_id);
+  if (guest_delegate_) {
+    guest_delegate_->AttachToIframe(embedder_web_contents, frame_token);
+  }
 }
 
 bool WebContents::IsOffScreen() const {
@@ -4008,30 +4019,35 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
                                      const std::string& content,
                                      bool save_as,
                                      bool is_base64) {
-  base::FilePath path;
-  auto it = saved_files_.find(url);
-  if (it != saved_files_.end() && !save_as) {
-    path = it->second;
-  } else {
+  const base::FilePath* path = nullptr;
+
+  if (!save_as)
+    base::FindOrNull(saved_files_, url);
+
+  if (path == nullptr) {
     file_dialog::DialogSettings settings;
     settings.parent_window = owner_window();
     settings.force_detached = offscreen_;
     settings.title = url;
     settings.default_path = base::FilePath::FromUTF8Unsafe(url);
-    if (!file_dialog::ShowSaveDialogSync(settings, &path)) {
-      inspectable_web_contents_->CallClientFunction(
-          "DevToolsAPI", "canceledSaveURL", base::Value(url));
-      return;
+    if (auto new_path = file_dialog::ShowSaveDialogSync(settings)) {
+      auto [iter, _] = saved_files_.try_emplace(url, std::move(*new_path));
+      path = &iter->second;
     }
   }
 
-  saved_files_[url] = path;
+  if (path == nullptr) {
+    inspectable_web_contents_->CallClientFunction(
+        "DevToolsAPI", "canceledSaveURL", base::Value{url});
+    return;
+  }
+
   // Notify DevTools.
   inspectable_web_contents_->CallClientFunction(
-      "DevToolsAPI", "savedURL", base::Value(url),
-      base::Value(path.AsUTF8Unsafe()));
+      "DevToolsAPI", "savedURL", base::Value{url},
+      base::Value{path->AsUTF8Unsafe()});
   file_task_runner_->PostTask(
-      FROM_HERE, base::BindOnce(&WriteToFile, path, content, is_base64));
+      FROM_HERE, base::BindOnce(&WriteToFile, *path, content, is_base64));
 }
 
 void WebContents::DevToolsAppendToFile(const std::string& url,
@@ -4594,7 +4610,8 @@ void WebContents::SetDisableDraggableRegions(bool disable) {
 }
 
 // static
-gin::WrapperInfo WebContents::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo WebContents::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 }  // namespace electron::api
 
@@ -4643,8 +4660,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("fromId", &WebContentsFromID);
   dict.SetMethod("fromFrame", &WebContentsFromFrame);

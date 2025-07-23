@@ -14,6 +14,7 @@
 #include "gin/object_template_builder.h"
 #include "services/device/public/mojom/wake_lock_provider.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/node_includes.h"
 
 namespace gin {
@@ -40,7 +41,8 @@ struct Converter<device::mojom::WakeLockType> {
 
 namespace electron::api {
 
-gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo PowerSaveBlocker::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
     : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension) {}
@@ -119,7 +121,8 @@ gin::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(v8::Isolate* isolate) {
 
 gin::ObjectTemplateBuilder PowerSaveBlocker::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<PowerSaveBlocker>::GetObjectTemplateBuilder(isolate)
+  return gin::DeprecatedWrappable<PowerSaveBlocker>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("start", &PowerSaveBlocker::Start)
       .SetMethod("stop", &PowerSaveBlocker::Stop)
       .SetMethod("isStarted", &PowerSaveBlocker::IsStarted);
@@ -137,8 +140,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin::Dictionary dict{isolate, exports};
   dict.Set("powerSaveBlocker",
            electron::api::PowerSaveBlocker::Create(isolate));
 }

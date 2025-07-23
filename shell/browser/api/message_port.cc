@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "base/containers/to_vector.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
@@ -23,11 +24,13 @@
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/blink/public/common/messaging/transferable_message.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
+#include "third_party/blink/public/mojom/blob/blob.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 
 namespace electron {
 
-gin::WrapperInfo MessagePort::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo MessagePort::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 MessagePort::MessagePort() = default;
 MessagePort::~MessagePort() {
@@ -277,7 +280,8 @@ bool MessagePort::Accept(mojo::Message* mojo_message) {
 
 gin::ObjectTemplateBuilder MessagePort::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<MessagePort>::GetObjectTemplateBuilder(isolate)
+  return gin::DeprecatedWrappable<MessagePort>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("postMessage", &MessagePort::PostMessage)
       .SetMethod("start", &MessagePort::Start)
       .SetMethod("close", &MessagePort::Close);
@@ -313,8 +317,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("createPair", &CreatePair);
 }
 
