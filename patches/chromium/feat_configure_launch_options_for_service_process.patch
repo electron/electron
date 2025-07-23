@@ -273,7 +273,7 @@ index 11846daf710f7cc272da17f14b8813fea93fe7e6..136fa55e7945f1d6abf5731c9cbaa921
  #if BUILDFLAG(IS_WIN)
    if (!options_.preload_libraries_.empty()) {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index a0995700d414f3126d11ae2cf4c02b06b820a06e..5b3e1c8cf09b7135443c056c27239fb9ef3fd9c9 100644
+index 580fa663e729a43bef44a10de8983c4aecc312fb..f39af3df87786a472f987309ac0dea699b9f0d9f 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
 @@ -31,6 +31,7 @@
@@ -284,7 +284,7 @@ index a0995700d414f3126d11ae2cf4c02b06b820a06e..5b3e1c8cf09b7135443c056c27239fb9
  #endif  // BUILDFLAG(IS_WIN)
  
  namespace base {
-@@ -134,14 +135,31 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -134,14 +135,31 @@ class CONTENT_EXPORT UtilityProcessHost final
          std::variant<base::FilePath, base::ScopedFD> file);
  #endif
  
@@ -319,7 +319,7 @@ index a0995700d414f3126d11ae2cf4c02b06b820a06e..5b3e1c8cf09b7135443c056c27239fb9
      // Requests that the process bind a receiving pipe targeting the interface
      // named by `receiver`. Calls to this method generally end up in
      // `ChildThreadImpl::OnBindReceiver()` and the option is used for testing
-@@ -185,6 +203,27 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -185,6 +203,27 @@ class CONTENT_EXPORT UtilityProcessHost final
      std::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  

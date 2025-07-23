@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7f7c60a6777c72c76eff5a261e0af12c2a244634..d928082d92b96dc0b33cec9c6942baa8830239e1 100644
+index 4f6afc75d3cbeda40b34442153653beecd09767c..e08e5b83dad4d2e6f6b0c09303718c16f2ddcef9 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1055,6 +1055,7 @@ component("base") {
@@ -715,7 +715,7 @@ index ef3b5ceba5e460cdfc609245a53d6d1720f32564..910043ba8cc79774550c0097f5bef53e
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 00210ede4f315e9c694a4f477eedd316c2e0c23b..b2557fa60946176ad38edafcd874b5d3a8276c10 100644
+index f6ebfaf945c0b024f18e5e09f04dfa43caf63e22..c8e241cdeac0bfbfe715404722aab6d6d1ded2f1 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -319,6 +319,7 @@ target(link_target_type, "renderer") {
@@ -1874,10 +1874,10 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index b57de34473e7a5615c176ad22a99b3fa028c50ba..fcec8ef135d6aa9bd30f191e51ff98cf8701b027 100644
+index 88c3981b7be09054de9496ff81fcb9db206235b5..b4917fdc2fb6f6f75f1c6696c5bb2386ee2d0a0b 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -719,6 +719,8 @@ component("views") {
+@@ -721,6 +721,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1886,7 +1886,7 @@ index b57de34473e7a5615c176ad22a99b3fa028c50ba..fcec8ef135d6aa9bd30f191e51ff98cf
    }
  
    if (is_win) {
-@@ -1148,6 +1150,8 @@ source_set("test_support") {
+@@ -1150,6 +1152,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
