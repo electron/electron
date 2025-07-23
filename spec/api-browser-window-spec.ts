@@ -7328,6 +7328,13 @@ describe('BrowserWindow module', () => {
       const windowName = 'test-window-clear';
       const preferencesPath = path.join(app.getPath('userData'), 'Local State');
 
+      beforeEach(async () => {
+        // Timeout here plays nice with CI
+        await setTimeout(2000);
+        // Let's start with a clean slate everytime
+        BrowserWindow.clearWindowState(windowName);
+      });
+
       afterEach(closeAllWindows);
 
       it('should clear existing window state', async () => {
@@ -7335,7 +7342,8 @@ describe('BrowserWindow module', () => {
 
         const w = new BrowserWindow({
           name: windowName,
-          windowStatePersistence: true
+          windowStatePersistence: true,
+          show: false
         });
         w.close();
 
@@ -7369,6 +7377,21 @@ describe('BrowserWindow module', () => {
         w.close();
         await closed;
 
+        const w1 = new BrowserWindow({
+          height: 200,
+          width: 200,
+          name: windowName,
+          windowStatePersistence: true,
+          show: false
+        });
+
+        expect(w1.getBounds().width).to.equal(200);
+        expect(w1.getBounds().height).to.equal(200);
+
+        const close = once(w1, 'closed');
+        w1.close();
+        await close;
+
         BrowserWindow.clearWindowState(windowName);
 
         const w2 = new BrowserWindow({
@@ -7378,7 +7401,8 @@ describe('BrowserWindow module', () => {
           windowStatePersistence: true,
           show: false
         });
-
+        // windowStatePersistence: true should override the constructor bounds if not cleared
+        // If the window has dimensions 100x100, it indicates that the state was cleared
         expect(w2.getBounds().width).to.equal(100);
         expect(w2.getBounds().height).to.equal(100);
       });
@@ -7396,13 +7420,15 @@ describe('BrowserWindow module', () => {
 
         const w1 = new BrowserWindow({
           name: windowName1,
-          windowStatePersistence: true
+          windowStatePersistence: true,
+          show: false
         });
         w1.close();
 
         const w2 = new BrowserWindow({
           name: windowName2,
-          windowStatePersistence: true
+          windowStatePersistence: true,
+          show: false
         });
         w2.close();
 
