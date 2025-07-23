@@ -14,7 +14,7 @@ This patch can be removed when both otool and nm are correctly
 persisted with third-party/llvm-build.
 
 diff --git a/DEPS b/DEPS
-index d67584f29b7f96a33b43977027db7a2178ce7974..1c3ef94d01f10e687d899ea3fd3420970b7766dd 100644
+index 15a18361c468af57a286895448e39284d6d39bbe..559f7755314dd7dfbf74c89880a99b4a8e48ce74 100644
 --- a/DEPS
 +++ b/DEPS
 @@ -906,13 +906,6 @@ deps = {
