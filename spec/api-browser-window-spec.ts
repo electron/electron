@@ -7352,6 +7352,37 @@ describe('BrowserWindow module', () => {
         expect(stateAfter).to.be.null('window state with window name "test-window-clear" should be cleared');
       });
 
+      it('should clear existing window state from memory immediately', async () => {
+        // Clean up from previous runs
+        BrowserWindow.clearWindowState(windowName);
+        await waitForPrefsUpdate(getPrefsModTime(preferencesPath), preferencesPath);
+
+        const w = new BrowserWindow({
+          height: 200,
+          width: 200,
+          name: windowName,
+          windowStatePersistence: true,
+          show: false
+        });
+
+        const closed = once(w, 'closed');
+        w.close();
+        await closed;
+
+        BrowserWindow.clearWindowState(windowName);
+
+        const w2 = new BrowserWindow({
+          height: 100,
+          width: 100,
+          name: windowName,
+          windowStatePersistence: true,
+          show: false
+        });
+
+        expect(w2.getBounds().width).to.equal(100);
+        expect(w2.getBounds().height).to.equal(100);
+      });
+
       it('should not throw when clearing non-existent window state', () => {
         expect(() => {
           BrowserWindow.clearWindowState('non-existent-window');
