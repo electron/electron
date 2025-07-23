@@ -56,7 +56,8 @@ void ServiceWorkerData::Message(bool internal,
 
   v8::Local<v8::Value> args = gin::ConvertToV8(isolate, arguments);
 
-  ipc_native::EmitIPCEvent(preload_context, internal, channel, {}, args);
+  ipc_native::EmitIPCEvent(isolate, preload_context, internal, channel, {},
+                           args);
 }
 
 void ServiceWorkerData::ReceivePostMessage(const std::string& channel,
