@@ -39,6 +39,8 @@
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+#include "shell/common/options_switches.h"
+#include "shell/common/platform_util.h"
 #include "shell/common/process_util.h"
 #include "shell/common/world_ids.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -616,6 +618,19 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
 
   if (!fuses::IsNodeOptionsEnabled())
     process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
+
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kNoStdioInit)) {
+    process_flags |= node::ProcessInitializationFlags::kNoStdioInitialization;
+  } else {
+#if BUILDFLAG(IS_WIN)
+    if (!platform_util::IsNulDeviceEnabled()) {
+      LOG(FATAL) << "Unable to open nul device needed for initialization,"
+                    "aborting startup. As a workaround, try starting with --"
+                 << switches::kNoStdioInit;
+    }
+#endif
+  }
 
   std::shared_ptr<node::InitializationResult> result =
       node::InitializeOncePerProcess(
