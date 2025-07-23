@@ -845,6 +845,7 @@ void OverrideGlobalValueFromIsolatedWorld(
 }
 
 bool OverrideGlobalPropertyFromIsolatedWorld(
+    v8::Isolate* const isolate,
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> getter,
     v8::Local<v8::Value> setter,
@@ -871,7 +872,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     v8::Local<v8::Value> setter_proxy;
     if (!getter->IsNullOrUndefined()) {
       v8::Local<v8::Context> source_context =
-          getter->GetCreationContextChecked();
+          getter->GetCreationContextChecked(isolate);
       v8::MaybeLocal<v8::Value> maybe_getter_proxy = PassValueToOtherContext(
           source_context, main_context, getter, source_context->Global(), false,
           BridgeErrorTarget::kSource);
@@ -880,7 +881,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
       v8::Local<v8::Context> source_context =
-          getter->GetCreationContextChecked();
+          getter->GetCreationContextChecked(isolate);
       v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
           source_context, main_context, setter, source_context->Global(), false,
           BridgeErrorTarget::kSource);
