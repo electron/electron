@@ -146,7 +146,7 @@ class ScriptExecutionCallback {
   ScriptExecutionCallback& operator=(const ScriptExecutionCallback&) = delete;
 
   void CopyResultToCallingContextAndFinalize(
-      v8::Isolate* isolate,
+      v8::Isolate* const isolate,
       const v8::Local<v8::Object>& result) {
     v8::MaybeLocal<v8::Value> maybe_result;
     bool success = true;
@@ -155,7 +155,7 @@ class ScriptExecutionCallback {
     {
       v8::TryCatch try_catch(isolate);
       v8::Local<v8::Context> source_context =
-          result->GetCreationContextChecked();
+          result->GetCreationContextChecked(isolate);
       maybe_result = PassValueToOtherContext(
           source_context, promise_.GetContext(), result,
           source_context->Global(), false, BridgeErrorTarget::kSource);
