@@ -102,7 +102,8 @@
 
 namespace electron {
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
+content::RenderFrame* GetRenderFrame(v8::Isolate* isolate,
+                                     v8::Local<v8::Object> value);
 
 namespace {
 
@@ -616,7 +617,7 @@ void RendererClientBase::AllowGuestViewElementDefinition(
   v8::Context::Scope context_scope(context->GetCreationContextChecked(isolate));
   blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
 
-  content::RenderFrame* render_frame = GetRenderFrame(context);
+  content::RenderFrame* render_frame = GetRenderFrame(isolate, context);
   if (!render_frame)
     return;
 

@@ -38,7 +38,8 @@ BASE_FEATURE(kContextBridgeMutability,
 
 namespace electron {
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
+content::RenderFrame* GetRenderFrame(v8::Isolate* isolate,
+                                     v8::Local<v8::Object> value);
 
 namespace api {
 
@@ -760,7 +761,7 @@ v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
   blink::ExecutionContext* execution_context =
       blink::ExecutionContext::From(source_context);
   if (execution_context->IsWindow()) {
-    auto* render_frame = GetRenderFrame(source_context->Global());
+    auto* render_frame = GetRenderFrame(isolate, source_context->Global());
     CHECK(render_frame);
     auto* frame = render_frame->GetWebFrame();
     CHECK(frame);
@@ -812,13 +813,14 @@ gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
 }
 
 void OverrideGlobalValueFromIsolatedWorld(
+    v8::Isolate* isolate,
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> value,
     bool support_dynamic_properties) {
   if (key_path.empty())
     return;
 
-  auto* render_frame = GetRenderFrame(value);
+  auto* render_frame = GetRenderFrame(isolate, value);
   CHECK(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
@@ -850,7 +852,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
   if (key_path.empty())
     return false;
 
-  auto* render_frame = GetRenderFrame(getter);
+  auto* render_frame = GetRenderFrame(isolate, getter);
   CHECK(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
