@@ -7658,10 +7658,6 @@ describe('BrowserWindow module', () => {
           BrowserWindow.clearWindowState(window1Name);
           BrowserWindow.clearWindowState(window2Name);
 
-          // Create and save different states for each window
-          await waitForPrefsFileCreation(preferencesPath);
-          const initialModTime = getPrefsModTime(preferencesPath);
-
           const bounds1 = { width: 300, height: 200, x: 50, y: 75 };
           const w1 = new BrowserWindow({
             name: window1Name,
@@ -7685,7 +7681,14 @@ describe('BrowserWindow module', () => {
           await closed1;
           await closed2;
 
-          await waitForPrefsUpdate(initialModTime, preferencesPath);
+          if (!fs.existsSync(preferencesPath)) {
+            // File doesn't exist, wait for creation
+            await waitForPrefsFileCreation(preferencesPath);
+          } else {
+            // File exists, wait for update
+            const initialModTime = getPrefsModTime(preferencesPath);
+            await waitForPrefsUpdate(initialModTime, preferencesPath);
+          }
 
           const restored1 = new BrowserWindow({
             name: window1Name,
