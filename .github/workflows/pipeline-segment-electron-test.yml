@@ -272,8 +272,13 @@ jobs:
           $DATADOG_PATH/datadog-ci junit upload src/electron/junit/test-results-main.xml
         fi          
       if: always() && !cancelled()
+    - name: Take screenshot after tests
+      if: ${{ inputs.target-platform == 'macos' && always() }}
+      shell: bash
+      run: |
+        screencapture src/electron/spec/artifacts/aftertests.png
     - name: Upload Test Artifacts
-      if: always() && !cancelled()
+      if: always()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: test_artifacts_${{ env.ARTIFACT_KEY }}_${{ matrix.shard }}
