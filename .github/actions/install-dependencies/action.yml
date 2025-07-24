@@ -17,5 +17,7 @@ runs:
   - name: Install Dependencies
     shell: bash
     run: |
+      which node
+      node --version
       cd src/electron
       node script/yarn install --frozen-lockfile --prefer-offline
