@@ -159,7 +159,8 @@ jobs:
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
     - name: Turn off reclient
       run: |
-        export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_reclient=false"
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS use_reclient=false"
+        echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Init Build Tools
       run: |
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --remote-build siso
