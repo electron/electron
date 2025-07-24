@@ -61,7 +61,10 @@ jobs:
     - name: Fix node20 on arm32 runners
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
+        which node
+        node --version
         cp $(which node) /mnt/runner-externals/node20/bin/
+        ls -la /mnt/runner-externals/node20/bin/node
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
