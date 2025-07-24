@@ -13,6 +13,7 @@
 #include "base/memory/raw_ref.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
+#include "chrome/browser/predictors/preconnect_manager.h"
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/wrappable.h"
@@ -63,6 +64,7 @@ class Session final : public gin::DeprecatedWrappable<Session>,
                       public gin_helper::EventEmitterMixin<Session>,
                       public gin_helper::CleanedUpAtExit,
                       public IpcDispatcher<Session>,
+                      public predictors::PreconnectManager::Delegate,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
                       private SpellcheckHunspellDictionary::Observer,
 #endif
@@ -99,6 +101,13 @@ class Session final : public gin::DeprecatedWrappable<Session>,
 
   // gin_helper::CleanedUpAtExit
   void WillBeDestroyed() override;
+
+  // preconnect_manager::Delegate
+  void PreconnectInitiated(const GURL& url,
+                           const GURL& preconnect_url) override {}
+  void PreconnectFinished(
+      std::unique_ptr<predictors::PreconnectStats> stats) override {}
+  bool IsPreconnectEnabled() override;
 
   // Methods.
   v8::Local<v8::Promise> ResolveHost(
@@ -211,6 +220,7 @@ class Session final : public gin::DeprecatedWrappable<Session>,
   base::UnguessableToken network_emulation_token_;
 
   const raw_ref<ElectronBrowserContext> browser_context_;
+  std::unique_ptr<predictors::PreconnectManager> preconnect_manager_{nullptr};
 
   base::WeakPtrFactory<Session> weak_factory_{this};
 };

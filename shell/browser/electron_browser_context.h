@@ -30,10 +30,6 @@ namespace network {
 class SharedURLLoaderFactory;
 }
 
-namespace predictors {
-class PreconnectManager;
-}  // namespace predictors
-
 namespace storage {
 class SpecialStoragePolicy;
 }
@@ -87,7 +83,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   bool can_use_http_cache() const { return use_cache_; }
   int max_cache_size() const { return max_cache_size_; }
   ResolveProxyHelper* GetResolveProxyHelper();
-  predictors::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
 
   std::string GetMediaDeviceIDSalt();
@@ -191,7 +186,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::unique_ptr<MediaDeviceIDSalt> media_device_id_salt_;
   scoped_refptr<ResolveProxyHelper> resolve_proxy_helper_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
-  std::unique_ptr<predictors::PreconnectManager> preconnect_manager_;
   std::unique_ptr<ProtocolRegistry> protocol_registry_;
 
   std::optional<std::string> user_agent_;

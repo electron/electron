@@ -1353,15 +1353,20 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
   return net_log_.Get(isolate);
 }
 
-static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
-                                const GURL& url,
-                                int num_sockets_to_preconnect) {
+bool Session::IsPreconnectEnabled() {
+  return true;
+}
+
+static void StartPreconnectOnUI(
+    predictors::PreconnectManager* preconnect_manager,
+    const GURL& url,
+    int num_sockets_to_preconnect) {
   url::Origin origin = url::Origin::Create(url);
   std::vector<content::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
        net::NetworkAnonymizationKey::CreateSameSite(
            net::SchemefulSite(origin))}};
-  browser_context->GetPreconnectManager()->Start(
+  preconnect_manager->Start(
       url, requests, predictors::kLoadingPredictorPreconnectTrafficAnnotation);
 }
 
@@ -1386,11 +1391,16 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
     }
   }
 
+  if (!preconnect_manager_) {
+    preconnect_manager_ = predictors::PreconnectManager::Create(
+        weak_factory_.GetWeakPtr(), browser_context());
+  }
+
   DCHECK_GT(num_sockets_to_preconnect, 0);
   content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE,
-      base::BindOnce(&StartPreconnectOnUI, base::Unretained(browser_context()),
-                     url, num_sockets_to_preconnect));
+      FROM_HERE, base::BindOnce(&StartPreconnectOnUI,
+                                base::Unretained(preconnect_manager_.get()),
+                                url, num_sockets_to_preconnect));
 }
 
 v8::Local<v8::Promise> Session::CloseAllConnections() {

@@ -19,7 +19,6 @@
 #include "base/strings/escape.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -555,13 +554,6 @@ ElectronBrowserContext::GetSpecialStoragePolicy() {
 
 std::string ElectronBrowserContext::GetUserAgent() const {
   return user_agent_.value_or(ElectronBrowserClient::Get()->GetUserAgent());
-}
-
-predictors::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
-  if (!preconnect_manager_) {
-    preconnect_manager_ = predictors::PreconnectManager::Create(nullptr, this);
-  }
-  return preconnect_manager_.get();
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
