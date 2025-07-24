@@ -178,6 +178,7 @@ class NativeWindowViews : public NativeWindow,
 #if BUILDFLAG(IS_WIN)
   TaskbarHost& taskbar_host() { return taskbar_host_; }
   void UpdateThickFrame();
+  void SetLayered();
 #endif
 
   SkColor overlay_button_color() const { return overlay_button_color_; }
