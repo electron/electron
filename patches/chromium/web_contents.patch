@@ -35,10 +35,10 @@ index 315e54d061dea3ce28583c6eb456196dc873a1a6..c6981b845253a81f3865ccd71f97bdc7
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 04c72f708b0fc8b2e45c834d8f40753718860f00..42ceaff9c5c8b15645ebe31f610ba779146d4a8c 100644
+index 07165bf281f91ebda0dd34ac1a30b35db333352e..2a4f0f0e52287e75e70196960574da929ce6c35f 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -127,11 +127,14 @@ class PrerenderHandle;
+@@ -126,11 +126,14 @@ class PrerenderHandle;
  class RenderFrameHost;
  class RenderViewHost;
  class RenderWidgetHost;
@@ -53,7 +53,7 @@ index 04c72f708b0fc8b2e45c834d8f40753718860f00..42ceaff9c5c8b15645ebe31f610ba779
  class WebUI;
  struct DropData;
  struct MHTMLGenerationParams;
-@@ -285,6 +288,10 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
+@@ -284,6 +287,10 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
      network::mojom::WebSandboxFlags starting_sandbox_flags =
          network::mojom::WebSandboxFlags::kNone;
  
