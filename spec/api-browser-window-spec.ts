@@ -7345,7 +7345,7 @@ describe('BrowserWindow module', () => {
           windowStatePersistence: true,
           show: false
         });
-        w.close();
+        w.destroy();
 
         await waitForPrefsUpdate(initialModTime, preferencesPath);
 
@@ -7362,45 +7362,42 @@ describe('BrowserWindow module', () => {
 
       it('should clear existing window state from memory immediately', async () => {
         const w = new BrowserWindow({
-          height: 200,
-          width: 200,
-          name: windowName,
-          windowStatePersistence: true,
-          show: false
-        });
-
-        const closed = once(w, 'closed');
-        w.close();
-        await closed;
-
-        const w1 = new BrowserWindow({
-          height: 200,
-          width: 200,
-          name: windowName,
-          windowStatePersistence: true,
-          show: false
-        });
-
-        expect(w1.getBounds().width).to.equal(200);
-        expect(w1.getBounds().height).to.equal(200);
-
-        const close = once(w1, 'closed');
-        w1.close();
-        await close;
-
-        BrowserWindow.clearWindowState(windowName);
-
-        const w2 = new BrowserWindow({
           height: 100,
           width: 100,
           name: windowName,
           windowStatePersistence: true,
           show: false
         });
+
+        w.destroy();
+
+        const w1 = new BrowserWindow({
+          name: windowName,
+          windowStatePersistence: true,
+          show: false
+        });
+
+        // This proves that the window state exists in memory
+        expect(w1.getBounds().width).to.equal(100);
+        expect(w1.getBounds().height).to.equal(100);
+
+        w1.destroy();
+
+        BrowserWindow.clearWindowState(windowName);
+
+        const w2 = new BrowserWindow({
+          height: 200,
+          width: 200,
+          name: windowName,
+          windowStatePersistence: true,
+          show: false
+        });
         // windowStatePersistence: true should override the constructor bounds if not cleared
-        // If the window has dimensions 100x100, it indicates that the state was cleared
-        expect(w2.getBounds().width).to.equal(100);
-        expect(w2.getBounds().height).to.equal(100);
+        // If the window has dimensions 200x200, it indicates that the state was indeed cleared
+        expect(w2.getBounds().width).to.equal(200);
+        expect(w2.getBounds().height).to.equal(200);
+
+        w2.destroy();
       });
 
       it('should not throw when clearing non-existent window state', () => {
@@ -7419,14 +7416,14 @@ describe('BrowserWindow module', () => {
           windowStatePersistence: true,
           show: false
         });
-        w1.close();
+        w1.destroy();
 
         const w2 = new BrowserWindow({
           name: windowName2,
           windowStatePersistence: true,
           show: false
         });
-        w2.close();
+        w2.destroy();
 
         await waitForPrefsUpdate(initialModTime, preferencesPath);
 
@@ -7464,10 +7461,8 @@ describe('BrowserWindow module', () => {
           const initialModTime = getPrefsModTime(preferencesPath);
           await waitForPrefsUpdate(initialModTime, preferencesPath);
         }
-        // Ensure window is closed because we can't create another window with the same name
-        const closed = once(w, 'closed');
-        w.close();
-        await closed;
+        // Ensure window is destroyed because we can't create another window with the same name otherwise
+        w.destroy();
       };
 
       beforeEach(async () => {
@@ -7480,8 +7475,12 @@ describe('BrowserWindow module', () => {
       afterEach(closeAllWindows);
 
       describe('single monitor tests', () => {
-        it('should restore bounds when windowStatePersistence is true', async () => {
-          const bounds = { width: 400, height: 300, x: 100, y: 150 };
+        // Window state restoration takes into account current work area bounds to readjust height/width
+        // height and width will be readjusted to kMinimumVisibleWidth*kMinimumVisibleHeight (100x100)
+        // if there is no capturable screen
+        ifit(hasCapturableScreen())('should restore bounds when windowStatePersistence is true', async () => {
+          const workArea = screen.getPrimaryDisplay().workArea;
+          const bounds = { width: 100, height: 100, x: workArea.x, y: workArea.y };
           await createAndSaveWindowState(bounds);
           // Should override default constructor bounds
           const w = new BrowserWindow({
@@ -7495,6 +7494,8 @@ describe('BrowserWindow module', () => {
           });
 
           expectBoundsEqual(w.getBounds(), bounds);
+
+          w.destroy();
         });
 
         it('should use default window options when no saved state exists', async () => {
@@ -7510,11 +7511,13 @@ describe('BrowserWindow module', () => {
           expectBoundsEqual(w.getBounds(), defaultBounds);
           expect(w.isFullScreen()).to.equal(false);
           expect(w.isMaximized()).to.equal(false);
+
+          w.destroy();
         });
 
-        it('should restore fullscreen state when windowStatePersistence is true', async () => {
+        ifit(hasCapturableScreen())('should restore fullscreen state when windowStatePersistence is true', async () => {
           await createAndSaveWindowState({ fullscreen: true });
-
+          await setTimeout(2000);
           const w = new BrowserWindow({
             name: windowName,
             windowStatePersistence: true
@@ -7524,6 +7527,25 @@ describe('BrowserWindow module', () => {
           if (!w.isFullScreen()) await enterFullScreen;
 
           expect(w.isFullScreen()).to.equal(true);
+
+          w.destroy();
+        });
+
+        ifit(hasCapturableScreen())('should restore kiosk state when windowStatePersistence is true', async () => {
+          await createAndSaveWindowState({ kiosk: true });
+          await setTimeout(2000);
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true
+          });
+
+          const enterFullScreen = once(w, 'enter-full-screen');
+          if (!w.isFullScreen()) await enterFullScreen;
+
+          expect(w.isFullScreen()).to.equal(true);
+          expect(w.isKiosk()).to.equal(true);
+
+          w.destroy();
         });
 
         ifit(hasCapturableScreen())('should restore maximized state when windowStatePersistence is true', async () => {
@@ -7541,6 +7563,8 @@ describe('BrowserWindow module', () => {
           if (!w.isMaximized()) await maximized;
 
           expect(w.isMaximized()).to.equal(true);
+
+          w.destroy();
         });
 
         it('should not restore state when windowStatePersistence is false', async () => {
@@ -7556,26 +7580,28 @@ describe('BrowserWindow module', () => {
           });
 
           expectBoundsEqual(w.getBounds(), defaultBounds);
+
+          w.destroy();
         });
 
-        it('should restore bounds only when displayMode is disabled', async () => {
+        ifit(hasCapturableScreen())('should restore bounds only when displayMode is disabled', async () => {
           // We don't use the utility createAndSaveWindowState here because the default bounds
           // passed through the constructor get affected by setting fullscreen: true alongside it.
           // It particularly affects this test because we want to ensure initial bounds stay the same
           // on restore.
-          const defaultBounds = { width: 500, height: 400, x: 200, y: 250 };
+          const workArea = screen.getPrimaryDisplay().workArea;
+          const defaultBounds = { width: 100, height: 100, x: workArea.x, y: workArea.y };
           const initialWindow = new BrowserWindow({
             ...defaultBounds,
             show: false,
             name: windowName,
             windowStatePersistence: true
           });
-
+          const enterFullScreen = once(initialWindow, 'enter-full-screen');
           initialWindow.setFullScreen(true);
+          if (!initialWindow.isFullScreen()) await enterFullScreen;
 
-          const closed = once(initialWindow, 'closed');
-          initialWindow.close();
-          await closed;
+          initialWindow.destroy();
 
           const w = new BrowserWindow({
             name: windowName,
@@ -7587,11 +7613,13 @@ describe('BrowserWindow module', () => {
           // We expect the bounds to restore to the values same as before the fullscreen state was set
           expectBoundsEqual(w.getBounds(), defaultBounds);
           expect(w.isFullScreen()).to.equal(false);
+
+          w.destroy();
         });
 
-        it('should restore display modes when bounds is disabled', async () => {
+        ifit(hasCapturableScreen())('should restore display modes when bounds is disabled', async () => {
           await createAndSaveWindowState({ fullscreen: true });
-
+          await setTimeout(2000);
           const w = new BrowserWindow({
             name: windowName,
             windowStatePersistence: {
@@ -7602,9 +7630,11 @@ describe('BrowserWindow module', () => {
           const enterFullScreen = once(w, 'enter-full-screen');
           if (!w.isFullScreen()) await enterFullScreen;
           expect(w.isFullScreen()).to.equal(true);
+
+          w.destroy();
         });
 
-        it('should respect fullscreenable property', async () => {
+        ifit(hasCapturableScreen())('should respect fullscreenable property', async () => {
           await createAndSaveWindowState({ fullscreen: true });
 
           const w = new BrowserWindow({
@@ -7613,9 +7643,13 @@ describe('BrowserWindow module', () => {
             fullscreenable: false,
             show: false
           });
+          // Wait for the window to potentially enter fullscreen
+          await setTimeout(2000);
 
           expect(w.isFullScreen()).to.equal(false);
           expect(w.isFullScreenable()).to.equal(false);
+
+          w.destroy();
         });
 
         it('should respect minWidth and minHeight properly', async () => {
@@ -7650,7 +7684,7 @@ describe('BrowserWindow module', () => {
           expect(bounds.height).to.be.at.most(400);
         });
 
-        it('should restore correct state for each named window independently - multi window check', async () => {
+        ifit(hasCapturableScreen())('should restore correct state for each named window independently - multi window check', async () => {
           const window1Name = 'test-window-1';
           const window2Name = 'test-window-2';
 
@@ -7658,28 +7692,27 @@ describe('BrowserWindow module', () => {
           BrowserWindow.clearWindowState(window1Name);
           BrowserWindow.clearWindowState(window2Name);
 
-          const bounds1 = { width: 300, height: 200, x: 50, y: 75 };
+          const workArea = screen.getPrimaryDisplay().workArea;
+
+          const bounds1 = { width: 100, height: 100, x: workArea.x, y: workArea.y };
           const w1 = new BrowserWindow({
             name: window1Name,
             windowStatePersistence: true,
             ...bounds1,
             show: false
           });
-          const closed1 = once(w1, 'closed');
 
-          const bounds2 = { width: 500, height: 400, x: 150, y: 200 };
+          w1.destroy();
+
+          const bounds2 = { width: 120, height: 100, x: workArea.x, y: workArea.y };
           const w2 = new BrowserWindow({
             name: window2Name,
             windowStatePersistence: true,
             ...bounds2,
             show: false
           });
-          const closed2 = once(w2, 'closed');
 
-          w1.close();
-          w2.close();
-          await closed1;
-          await closed2;
+          w2.destroy();
 
           if (!fs.existsSync(preferencesPath)) {
             // File doesn't exist, wait for creation
@@ -7713,10 +7746,10 @@ describe('BrowserWindow module', () => {
           const workArea = screen.getPrimaryDisplay().workArea;
           // Completely off-screen to the right
           const offscreenBounds = {
-            width: 400,
-            height: 300,
-            x: workArea.x + workArea.width + 100,
-            y: workArea.y + workArea.height + 100
+            width: 100,
+            height: 100,
+            x: workArea.x + workArea.width + 10,
+            y: workArea.y + workArea.height + 10
           };
 
           await createAndSaveWindowState(offscreenBounds);
@@ -7734,17 +7767,19 @@ describe('BrowserWindow module', () => {
           expect(bounds.y + bounds.height).to.be.at.most(workArea.y + workArea.height);
           expect(bounds.x).to.be.at.least(workArea.x);
           expect(bounds.y).to.be.at.least(workArea.y);
-          expect(bounds.width).to.equal(400);
-          expect(bounds.height).to.equal(300);
+          expect(bounds.width).to.equal(100);
+          expect(bounds.height).to.equal(100);
+
+          w.destroy();
         });
 
         ifit(hasCapturableScreen() && process.platform === 'darwin')('should adjust bounds if window overflows work area such that the window is entirely visible', async () => {
           const workArea = screen.getPrimaryDisplay().workArea;
           const overflowBounds = {
-            width: 400,
-            height: 300,
-            x: workArea.x + workArea.width - 200,
-            y: workArea.y + workArea.height - 150
+            width: 100,
+            height: 100,
+            x: workArea.x + workArea.width - 20,
+            y: workArea.y + workArea.height - 20
           };
 
           await createAndSaveWindowState(overflowBounds);
@@ -7760,16 +7795,18 @@ describe('BrowserWindow module', () => {
           // On macOS, window should be adjusted to be entirely visible
           expect(bounds.x + bounds.width).to.be.at.most(workArea.x + workArea.width);
           expect(bounds.y + bounds.height).to.be.at.most(workArea.y + workArea.height);
-          expect(bounds.width).to.equal(400);
-          expect(bounds.height).to.equal(300);
+          expect(bounds.width).to.equal(100);
+          expect(bounds.height).to.equal(100);
+
+          w.destroy();
         });
 
         ifit(hasCapturableScreen() && process.platform !== 'darwin')('should adjust bounds if window overflows work area such that the window has minimum visible height/width 100x100', async () => {
           const workArea = screen.getPrimaryDisplay().workArea;
           // Initialize with 50x50 of the window visible
           const overflowBounds = {
-            width: 400,
-            height: 300,
+            width: 120,
+            height: 120,
             x: workArea.x + workArea.width - 50,
             y: workArea.y + workArea.height - 50
           };
@@ -7794,11 +7831,13 @@ describe('BrowserWindow module', () => {
 
           expect(visibleWidth).to.be.at.least(100);
           expect(visibleHeight).to.be.at.least(100);
-          expect(bounds.width).to.equal(400);
-          expect(bounds.height).to.equal(300);
+          expect(bounds.width).to.equal(120);
+          expect(bounds.height).to.equal(120);
+
+          w.destroy();
         });
 
-        it('should respect show:false when restoring display modes', async () => {
+        ifit(hasCapturableScreen())('should respect show:false when restoring display modes', async () => {
           await createAndSaveWindowState({ fullscreen: true });
 
           const w = new BrowserWindow({
@@ -7820,6 +7859,8 @@ describe('BrowserWindow module', () => {
           // Fullscreen state should still be restored correctly
           if (!w.isFullScreen()) await enterFullScreen;
           expect(w.isFullScreen()).to.equal(true);
+
+          w.destroy();
         });
       });
     });
