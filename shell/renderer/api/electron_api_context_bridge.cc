@@ -38,7 +38,7 @@ BASE_FEATURE(kContextBridgeMutability,
 
 namespace electron {
 
-content::RenderFrame* GetRenderFrame(v8::Isolate* isolate,
+content::RenderFrame* GetRenderFrame(v8::Isolate* const isolate,
                                      v8::Local<v8::Object> value);
 
 namespace api {
