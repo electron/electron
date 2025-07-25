@@ -953,10 +953,10 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
   display::Screen* screen = display::Screen::GetScreen();
   const display::Display display = screen->GetDisplayMatching(saved_bounds);
 
-  // We avoid restoring the window state when no valid display matches the saved
-  // bounds. Doing so would cause the window to automatically resize and save
-  // its state again, which could lead to problems when a valid display becomes
-  // available in the future.
+  // We avoid restoring the window state when no valid display matching the
+  // saved bounds. Doing so would cause the window to automatically resize and
+  // save its state again, which could lead to problems when a valid display
+  // becomes available in the future.
   if (!screen || display.size().width() == 0 || display.size().height() == 0) {
     LOG(WARNING) << "Window state not restored - no valid display found";
     is_being_restored_ = false;
@@ -968,7 +968,7 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
                                         *work_area_bottom - *work_area_top);
 
   if (restore_bounds_) {
-    RestoreBounds(display, saved_work_area, &saved_bounds);
+    RestoreBounds(display, saved_work_area, saved_bounds);
   }
 
   if (restore_display_mode_) {
@@ -1000,23 +1000,23 @@ void NativeWindow::FlushPendingDisplayMode() {
 // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/ui/window_sizer/window_sizer.cc;l=350;drc=0ec56065ba588552f21633aa47280ba02c3cd160
 void NativeWindow::RestoreBounds(const display::Display& display,
                                  const gfx::Rect& saved_work_area,
-                                 gfx::Rect* bounds) {
+                                 gfx::Rect& saved_bounds) {
   // Ensure that the window is at least kMinVisibleHeight * kMinVisibleWidth.
-  bounds->set_height(std::max(kMinVisibleHeight, bounds->height()));
-  bounds->set_width(std::max(kMinVisibleWidth, bounds->width()));
+  saved_bounds.set_height(std::max(kMinVisibleHeight, saved_bounds.height()));
+  saved_bounds.set_width(std::max(kMinVisibleWidth, saved_bounds.width()));
 
   const gfx::Rect work_area = display.work_area();
   // Ensure that the title bar is not above the work area.
-  if (bounds->y() < work_area.y()) {
-    bounds->set_y(work_area.y());
+  if (saved_bounds.y() < work_area.y()) {
+    saved_bounds.set_y(work_area.y());
   }
 
   // Reposition and resize the bounds if the saved_work_area is different from
   // the current work area and the current work area doesn't completely contain
   // the bounds.
   if (!saved_work_area.IsEmpty() && saved_work_area != work_area &&
-      !work_area.Contains(*bounds)) {
-    bounds->AdjustToFit(work_area);
+      !work_area.Contains(saved_bounds)) {
+    saved_bounds.AdjustToFit(work_area);
   }
 
 #if BUILDFLAG(IS_MAC)
@@ -1024,28 +1024,26 @@ void NativeWindow::RestoreBounds(const display::Display& display,
   // partially offscreen.  If the window is partially offscreen horizontally,
   // snap to the nearest edge of the work area. This call also adjusts the
   // height, width if needed to make the window fully visible.
-  bounds->AdjustToFit(work_area);
+  saved_bounds.AdjustToFit(work_area);
 #else
   // On non-Mac platforms, we are less aggressive about repositioning. Simply
   // ensure that at least kMinVisibleWidth * kMinVisibleHeight is visible
 
-  const int min_y = work_area.y() + kMinVisibleHeight - bounds->height();
-  const int min_x = work_area.x() + kMinVisibleWidth - bounds->width();
+  const int min_y = work_area.y() + kMinVisibleHeight - saved_bounds.height();
+  const int min_x = work_area.x() + kMinVisibleWidth - saved_bounds.width();
   const int max_y = work_area.bottom() - kMinVisibleHeight;
   const int max_x = work_area.right() - kMinVisibleWidth;
   // Reposition and resize the bounds to make it fully visible inside the work
-  // area if the work area and bounds are both small.
-  // `min_x >= max_x` happens when `work_area.width() + bounds.width() <= 2 *
-  // min_visible_width`. Similar for `min_y >= max_y` in height dimension.
+  // area. `min_x >= max_x` happens when work area and bounds are both small.
   if (min_x >= max_x || min_y >= max_y) {
-    bounds->AdjustToFit(work_area);
+    saved_bounds.AdjustToFit(work_area);
   } else {
-    bounds->set_y(std::clamp(bounds->y(), min_y, max_y));
-    bounds->set_x(std::clamp(bounds->x(), min_x, max_x));
+    saved_bounds.set_y(std::clamp(saved_bounds.y(), min_y, max_y));
+    saved_bounds.set_x(std::clamp(saved_bounds.x(), min_x, max_x));
   }
 #endif  // BUILDFLAG(IS_MAC)
 
-  SetBounds(*bounds);
+  SetBounds(saved_bounds);
 }
 
 // static

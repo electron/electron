@@ -447,7 +447,7 @@ class NativeWindow : public base::SupportsUserData,
   // Applies saved bounds to the window.
   void RestoreBounds(const display::Display& display,
                      const gfx::Rect& saved_work_area,
-                     gfx::Rect* bounds);
+                     gfx::Rect& saved_bounds);
   // Flushes pending display mode restoration (fullscreen, maximized, kiosk)
   // that was deferred during initialization to respect show=false. This
   // consumes and clears the restore_display_mode_callback_.
