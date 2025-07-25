@@ -90,8 +90,9 @@ struct Converter<blink::WebCssOrigin> {
 
 namespace electron {
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
-  v8::Local<v8::Context> context = value->GetCreationContextChecked();
+content::RenderFrame* GetRenderFrame(v8::Isolate* const isolate,
+                                     v8::Local<v8::Object> value) {
+  v8::Local<v8::Context> context = value->GetCreationContextChecked(isolate);
   if (context.IsEmpty())
     return nullptr;
   blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
@@ -146,7 +147,7 @@ class ScriptExecutionCallback {
   ScriptExecutionCallback& operator=(const ScriptExecutionCallback&) = delete;
 
   void CopyResultToCallingContextAndFinalize(
-      v8::Isolate* isolate,
+      v8::Isolate* const isolate,
       const v8::Local<v8::Object>& result) {
     v8::MaybeLocal<v8::Value> maybe_result;
     bool success = true;
@@ -155,7 +156,7 @@ class ScriptExecutionCallback {
     {
       v8::TryCatch try_catch(isolate);
       v8::Local<v8::Context> source_context =
-          result->GetCreationContextChecked();
+          result->GetCreationContextChecked(isolate);
       maybe_result = PassValueToOtherContext(
           source_context, promise_.GetContext(), result,
           source_context->Global(), false, BridgeErrorTarget::kSource);
@@ -201,7 +202,7 @@ class ScriptExecutionCallback {
         bool should_clone_value =
             !(value->IsObject() &&
               promise_.GetContext() ==
-                  value.As<v8::Object>()->GetCreationContextChecked()) &&
+                  value.As<v8::Object>()->GetCreationContextChecked(isolate)) &&
             value->IsObject();
         if (should_clone_value) {
           CopyResultToCallingContextAndFinalize(isolate,
@@ -839,7 +840,8 @@ class WebFrameRenderer final
     // Get the WebLocalFrame before (possibly) executing any user-space JS while
     // getting the |params|. We track the status of the RenderFrame via an
     // observer in case it is deleted during user code execution.
-    content::RenderFrame* render_frame = GetRenderFrame(content_window);
+    content::RenderFrame* render_frame =
+        GetRenderFrame(isolate, content_window);
     if (!render_frame)
       return v8::Null(isolate);
 
@@ -965,8 +967,9 @@ void Initialize(v8::Local<v8::Object> exports,
 
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("mainFrame", WebFrameRenderer::Create(
-                            isolate, electron::GetRenderFrame(exports)));
+  dict.Set("mainFrame",
+           WebFrameRenderer::Create(
+               isolate, electron::GetRenderFrame(isolate, exports)));
 }
 
 }  // namespace
