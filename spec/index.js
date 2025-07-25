@@ -80,7 +80,10 @@ app.whenReady().then(async () => {
   }
   if (process.env.MOCHA_MULTI_REPORTERS) {
     mochaOptions.reporterOptions = {
-      reporterEnabled: process.env.MOCHA_MULTI_REPORTERS
+      reporterEnabled: process.env.MOCHA_MULTI_REPORTERS,
+      json: {
+        output: path.join(__dirname, 'test-results.json')
+      }
     };
   }
   // The MOCHA_GREP and MOCHA_INVERT are used in some vendor builds for sharding
