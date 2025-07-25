@@ -34,6 +34,7 @@
 #include "ui/compositor/compositor.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "ui/display/types/display_constants.h"
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
@@ -854,13 +855,21 @@ void NativeWindow::SaveWindowState() {
 
   gfx::Rect bounds = GetBounds();
   const display::Screen* screen = display::Screen::GetScreen();
+  DCHECK(screen);
+  // GetDisplayMatching returns a fake display with 1920x1080 resolution at
+  // (0,0) when no physical displays are attached.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/display.cc;l=184;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
   const display::Display display = screen->GetDisplayMatching(bounds);
 
-  // We don't want to save window state when the current display has invalid
-  // dimensions, as it could cause issues when restoring window bounds.
-  if (!screen || display.size().width() == 0 || display.size().height() == 0) {
-    LOG(WARNING) << "Window state not saved - current display has invalid "
-                    "dimensions";
+  // Skip window state persistence when display has invalid dimensions (0x0) or
+  // is fake (ID 0xFF). Invalid displays could cause incorrect window bounds to
+  // be saved, leading to positioning issues during restoration.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/types/display_constants.h;l=28;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
+  if (display.id() == display::kDefaultDisplayId ||
+      display.size().width() == 0 || display.size().height() == 0) {
+    LOG(WARNING)
+        << "Window state not saved - no physical display attached or current "
+           "display has invalid bounds";
     return;
   }
 
@@ -951,14 +960,20 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
                 *saved_bottom - *saved_top);
 
   display::Screen* screen = display::Screen::GetScreen();
+  DCHECK(screen);
+  // GetDisplayMatching returns a fake display with 1920x1080 resolution at
+  // (0,0) when no physical displays are attached.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/display.cc;l=184;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
   const display::Display display = screen->GetDisplayMatching(saved_bounds);
 
-  // We avoid restoring the window state when no valid display matching the
-  // saved bounds. Doing so would cause the window to automatically resize and
-  // save its state again, which could lead to problems when a valid display
-  // becomes available in the future.
-  if (!screen || display.size().width() == 0 || display.size().height() == 0) {
-    LOG(WARNING) << "Window state not restored - no valid display found";
+  // Skip window state restoration if current display has invalid dimensions or
+  // is fake. Restoring from invalid displays (0x0) or fake displays (ID 0xFF)
+  // could cause incorrect window positioning when later moved to real displays.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/types/display_constants.h;l=28;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
+  if (display.id() == display::kDefaultDisplayId ||
+      display.size().width() == 0 || display.size().height() == 0) {
+    LOG(WARNING) << "Window state not restored - no physical display attached "
+                    "or current display has invalid bounds";
     is_being_restored_ = false;
     return;
   }
