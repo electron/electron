@@ -284,10 +284,6 @@ jobs:
   # TODO - Move this to a separate workflow that works with forks
   report:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
-      checks: write
     steps:
       - name: Report Mocha Test Results
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
