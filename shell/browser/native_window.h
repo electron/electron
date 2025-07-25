@@ -445,12 +445,9 @@ class NativeWindow : public base::SupportsUserData,
   // Restores window state - bounds first and then display mode.
   void RestoreWindowState(const gin_helper::Dictionary& options);
   // Applies saved bounds to the window.
-  void RestoreBounds(const base::Value::Dict& window_preferences);
-  // Helper function to adjust window bounds to ensure visibility on the target
-  // display.
-  void AdjustBoundsToBeVisibleOnDisplay(const display::Display& display,
-                                        const gfx::Rect& saved_work_area,
-                                        gfx::Rect* bounds);
+  void RestoreBounds(const display::Display& display,
+                     const gfx::Rect& saved_work_area,
+                     gfx::Rect* bounds);
   // Flushes pending display mode restoration (fullscreen, maximized, kiosk)
   // that was deferred during initialization to respect show=false. This
   // consumes and clears the restore_display_mode_callback_.

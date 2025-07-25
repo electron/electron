@@ -852,10 +852,21 @@ void NativeWindow::SaveWindowState() {
   if (!prefs_ || window_name_.empty() || is_being_restored_)
     return;
 
+  gfx::Rect bounds = GetBounds();
+  const display::Screen* screen = display::Screen::GetScreen();
+  const display::Display display = screen->GetDisplayMatching(bounds);
+
+  // We don't want to save window state when the current display has invalid
+  // dimensions, as it could cause issues when restoring window bounds.
+  if (!screen || display.size().width() == 0 || display.size().height() == 0) {
+    LOG(WARNING) << "Window state not saved - current display has invalid "
+                    "dimensions";
+    return;
+  }
+
   ScopedDictPrefUpdate update(prefs_, electron::kWindowStates);
   const base::Value::Dict* existing_prefs = update->FindDict(window_name_);
 
-  gfx::Rect bounds = GetBounds();
   // When the window is in a special display mode (fullscreen, kiosk, or
   // maximized), save the previously stored window bounds instead of
   // the current bounds. This ensures that when the window is restored, it can
@@ -882,8 +893,6 @@ void NativeWindow::SaveWindowState() {
   window_preferences.Set(electron::kFullscreen, IsFullscreen());
   window_preferences.Set(electron::kKiosk, IsKiosk());
 
-  const display::Screen* screen = display::Screen::GetScreen();
-  const display::Display display = screen->GetDisplayMatching(bounds);
   gfx::Rect work_area = display.work_area();
 
   window_preferences.Set(electron::kWorkAreaLeft, work_area.x());
@@ -913,8 +922,53 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
     return;
   }
 
+  std::optional<int> saved_left = window_preferences->FindInt(electron::kLeft);
+  std::optional<int> saved_top = window_preferences->FindInt(electron::kTop);
+  std::optional<int> saved_right =
+      window_preferences->FindInt(electron::kRight);
+  std::optional<int> saved_bottom =
+      window_preferences->FindInt(electron::kBottom);
+
+  std::optional<int> work_area_left =
+      window_preferences->FindInt(electron::kWorkAreaLeft);
+  std::optional<int> work_area_top =
+      window_preferences->FindInt(electron::kWorkAreaTop);
+  std::optional<int> work_area_right =
+      window_preferences->FindInt(electron::kWorkAreaRight);
+  std::optional<int> work_area_bottom =
+      window_preferences->FindInt(electron::kWorkAreaBottom);
+
+  if (!saved_left || !saved_top || !saved_right || !saved_bottom ||
+      !work_area_left || !work_area_top || !work_area_right ||
+      !work_area_bottom) {
+    LOG(WARNING) << "Window state not restored - corrupted values found";
+    is_being_restored_ = false;
+    return;
+  }
+
+  gfx::Rect saved_bounds =
+      gfx::Rect(*saved_left, *saved_top, *saved_right - *saved_left,
+                *saved_bottom - *saved_top);
+
+  display::Screen* screen = display::Screen::GetScreen();
+  const display::Display display = screen->GetDisplayMatching(saved_bounds);
+
+  // We avoid restoring the window state when no valid display matches the saved
+  // bounds. Doing so would cause the window to automatically resize and save
+  // its state again, which could lead to problems when a valid display becomes
+  // available in the future.
+  if (!screen || display.size().width() == 0 || display.size().height() == 0) {
+    LOG(WARNING) << "Window state not restored - no valid display found";
+    is_being_restored_ = false;
+    return;
+  }
+
+  gfx::Rect saved_work_area = gfx::Rect(*work_area_left, *work_area_top,
+                                        *work_area_right - *work_area_left,
+                                        *work_area_bottom - *work_area_top);
+
   if (restore_bounds_) {
-    RestoreBounds(*window_preferences);
+    RestoreBounds(display, saved_work_area, &saved_bounds);
   }
 
   if (restore_display_mode_) {
@@ -942,49 +996,11 @@ void NativeWindow::FlushPendingDisplayMode() {
   }
 }
 
-void NativeWindow::RestoreBounds(const base::Value::Dict& window_preferences) {
-  std::optional<int> saved_left = window_preferences.FindInt(electron::kLeft);
-  std::optional<int> saved_top = window_preferences.FindInt(electron::kTop);
-  std::optional<int> saved_right = window_preferences.FindInt(electron::kRight);
-  std::optional<int> saved_bottom =
-      window_preferences.FindInt(electron::kBottom);
-
-  std::optional<int> work_area_left =
-      window_preferences.FindInt(electron::kWorkAreaLeft);
-  std::optional<int> work_area_top =
-      window_preferences.FindInt(electron::kWorkAreaTop);
-  std::optional<int> work_area_right =
-      window_preferences.FindInt(electron::kWorkAreaRight);
-  std::optional<int> work_area_bottom =
-      window_preferences.FindInt(electron::kWorkAreaBottom);
-
-  if (!saved_left || !saved_top || !saved_right || !saved_bottom ||
-      !work_area_left || !work_area_top || !work_area_right ||
-      !work_area_bottom) {
-    return;
-  }
-
-  gfx::Rect bounds =
-      gfx::Rect(*saved_left, *saved_top, *saved_right - *saved_left,
-                *saved_bottom - *saved_top);
-
-  display::Screen* screen = display::Screen::GetScreen();
-  const display::Display display = screen->GetDisplayMatching(bounds);
-
-  gfx::Rect saved_work_area = gfx::Rect(*work_area_left, *work_area_top,
-                                        *work_area_right - *work_area_left,
-                                        *work_area_bottom - *work_area_top);
-
-  AdjustBoundsToBeVisibleOnDisplay(display, saved_work_area, &bounds);
-
-  SetBounds(bounds);
-}
 // This function is similar to Chromium's window bounds adjustment logic
 // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/ui/window_sizer/window_sizer.cc;l=350;drc=0ec56065ba588552f21633aa47280ba02c3cd160
-void NativeWindow::AdjustBoundsToBeVisibleOnDisplay(
-    const display::Display& display,
-    const gfx::Rect& saved_work_area,
-    gfx::Rect* bounds) {
+void NativeWindow::RestoreBounds(const display::Display& display,
+                                 const gfx::Rect& saved_work_area,
+                                 gfx::Rect* bounds) {
   // Ensure that the window is at least kMinVisibleHeight * kMinVisibleWidth.
   bounds->set_height(std::max(kMinVisibleHeight, bounds->height()));
   bounds->set_width(std::max(kMinVisibleWidth, bounds->width()));
@@ -1028,6 +1044,8 @@ void NativeWindow::AdjustBoundsToBeVisibleOnDisplay(
     bounds->set_x(std::clamp(bounds->x(), min_x, max_x));
   }
 #endif  // BUILDFLAG(IS_MAC)
+
+  SetBounds(*bounds);
 }
 
 // static

@@ -6985,7 +6985,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  describe('windowStatePersistence', () => {
+  ifdescribe(hasCapturableScreen())('windowStatePersistence', () => {
     const getWindowStateFromDisk = (windowName: string, preferencesPath: string) => {
       if (!fs.existsSync(preferencesPath)) {
         throw new Error(`Preferences file does not exist at path: ${preferencesPath}. Window state was not saved to disk.`);
@@ -7062,7 +7062,7 @@ describe('BrowserWindow module', () => {
           expect(savedState).to.have.property('workAreaBottom');
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is closed and app exit', async () => {
+        it('should save window state after window is closed and app exit', async () => {
           const appPath = path.join(fixturesPath, 'close-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7077,7 +7077,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is resized and app exit', async () => {
+        it('should save window state after window is resized and app exit', async () => {
           const appPath = path.join(fixturesPath, 'resize-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7092,7 +7092,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is moved and app exit', async () => {
+        it('should save window state after window is moved and app exit', async () => {
           const appPath = path.join(fixturesPath, 'move-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7107,7 +7107,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is fullscreened and app exit', async () => {
+        it('should save window state after window is fullscreened and app exit', async () => {
           const appPath = path.join(fixturesPath, 'fullscreen-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7120,7 +7120,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is maximized and app exit', async () => {
+        it('should save window state after window is maximized and app exit', async () => {
           const appPath = path.join(fixturesPath, 'maximize-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7133,7 +7133,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state if in a minimized state and app exit', async () => {
+        it('should save window state if in a minimized state and app exit', async () => {
           const appPath = path.join(fixturesPath, 'minimize-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7149,7 +7149,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is kiosked and app exit', async () => {
+        it('should save window state after window is kiosked and app exit', async () => {
           const appPath = path.join(fixturesPath, 'kiosk-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7164,7 +7164,7 @@ describe('BrowserWindow module', () => {
       });
 
       describe('work area tests', () => {
-        ifit(hasCapturableScreen())('should save valid work area bounds', async () => {
+        it('should save valid work area bounds', async () => {
           const appPath = path.join(fixturesPath, 'schema-check');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7182,7 +7182,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.workAreaTop).to.be.lessThan(savedState.workAreaBottom);
         });
 
-        ifit(hasCapturableScreen())('should save work area bounds that contain the window bounds on primary display', async () => {
+        it('should save work area bounds that contain the window bounds on primary display', async () => {
           // Fixture will center the window on the primary display
           const appPath = path.join(fixturesPath, 'work-area-primary');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
@@ -7372,6 +7372,8 @@ describe('BrowserWindow module', () => {
         w.destroy();
 
         const w1 = new BrowserWindow({
+          height: 200,
+          width: 200,
           name: windowName,
           windowStatePersistence: true,
           show: false
@@ -7478,7 +7480,7 @@ describe('BrowserWindow module', () => {
         // Window state restoration takes into account current work area bounds to readjust height/width
         // height and width will be readjusted to kMinimumVisibleWidth*kMinimumVisibleHeight (100x100)
         // if there is no capturable screen
-        ifit(hasCapturableScreen())('should restore bounds when windowStatePersistence is true', async () => {
+        it('should restore bounds when windowStatePersistence is true', async () => {
           const workArea = screen.getPrimaryDisplay().workArea;
           const bounds = { width: 100, height: 100, x: workArea.x, y: workArea.y };
           await createAndSaveWindowState(bounds);
@@ -7515,7 +7517,7 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
 
-        ifit(hasCapturableScreen())('should restore fullscreen state when windowStatePersistence is true', async () => {
+        it('should restore fullscreen state when windowStatePersistence is true', async () => {
           await createAndSaveWindowState({ fullscreen: true });
           await setTimeout(2000);
           const w = new BrowserWindow({
@@ -7531,7 +7533,7 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
 
-        ifit(hasCapturableScreen())('should restore kiosk state when windowStatePersistence is true', async () => {
+        it('should restore kiosk state when windowStatePersistence is true', async () => {
           await createAndSaveWindowState({ kiosk: true });
           await setTimeout(2000);
           const w = new BrowserWindow({
@@ -7548,7 +7550,7 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
 
-        ifit(hasCapturableScreen())('should restore maximized state when windowStatePersistence is true', async () => {
+        it('should restore maximized state when windowStatePersistence is true', async () => {
           const width = screen.getPrimaryDisplay().workArea.width;
           const height = screen.getPrimaryDisplay().workArea.height;
           await createAndSaveWindowState({ width, height });
@@ -7584,7 +7586,7 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
 
-        ifit(hasCapturableScreen())('should restore bounds only when displayMode is disabled', async () => {
+        it('should restore bounds only when displayMode is disabled', async () => {
           // We don't use the utility createAndSaveWindowState here because the default bounds
           // passed through the constructor get affected by setting fullscreen: true alongside it.
           // It particularly affects this test because we want to ensure initial bounds stay the same
@@ -7617,7 +7619,7 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
 
-        ifit(hasCapturableScreen())('should restore display modes when bounds is disabled', async () => {
+        it('should restore display modes when bounds is disabled', async () => {
           await createAndSaveWindowState({ fullscreen: true });
           await setTimeout(2000);
           const w = new BrowserWindow({
@@ -7634,7 +7636,7 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
 
-        ifit(hasCapturableScreen())('should respect fullscreenable property', async () => {
+        it('should respect fullscreenable property', async () => {
           await createAndSaveWindowState({ fullscreen: true });
 
           const w = new BrowserWindow({
@@ -7684,7 +7686,7 @@ describe('BrowserWindow module', () => {
           expect(bounds.height).to.be.at.most(400);
         });
 
-        ifit(hasCapturableScreen())('should restore correct state for each named window independently - multi window check', async () => {
+        it('should restore correct state for each named window independently - multi window check', async () => {
           const window1Name = 'test-window-1';
           const window2Name = 'test-window-2';
 
@@ -7742,7 +7744,7 @@ describe('BrowserWindow module', () => {
           restored2.destroy();
         });
 
-        ifit(hasCapturableScreen())('should adjust restored bounds if they overflow current work area entirely', async () => {
+        it('should adjust restored bounds if they overflow current work area entirely', async () => {
           const workArea = screen.getPrimaryDisplay().workArea;
           // Completely off-screen to the right
           const offscreenBounds = {
@@ -7773,7 +7775,7 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
 
-        ifit(hasCapturableScreen() && process.platform === 'darwin')('should adjust bounds if window overflows work area such that the window is entirely visible', async () => {
+        ifit(process.platform === 'darwin')('should adjust bounds if window overflows work area such that the window is entirely visible', async () => {
           const workArea = screen.getPrimaryDisplay().workArea;
           const overflowBounds = {
             width: 100,
@@ -7801,7 +7803,7 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
 
-        ifit(hasCapturableScreen() && process.platform !== 'darwin')('should adjust bounds if window overflows work area such that the window has minimum visible height/width 100x100', async () => {
+        ifit(process.platform !== 'darwin')('should adjust bounds if window overflows work area such that the window has minimum visible height/width 100x100', async () => {
           const workArea = screen.getPrimaryDisplay().workArea;
           // Initialize with 50x50 of the window visible
           const overflowBounds = {
@@ -7837,7 +7839,7 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
 
-        ifit(hasCapturableScreen())('should respect show:false when restoring display modes', async () => {
+        it('should respect show:false when restoring display modes', async () => {
           await createAndSaveWindowState({ fullscreen: true });
 
           const w = new BrowserWindow({

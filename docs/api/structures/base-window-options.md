@@ -43,7 +43,7 @@
 * `hiddenInMissionControl` boolean (optional) _macOS_ - Whether window should be hidden when the user toggles into mission control.
 * `kiosk` boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
 * `name` string (optional) - An identifier for the window that enables features such as state persistence.
-* `windowStatePersistence` ([WindowStatePersistence](window-state-persistence.md) | boolean) (optional) - Configures or enables the persistence of window state (position, size, maximized state, etc.) across application restarts. Has no effect if window `name` is not provided. _Experimental_
+* `windowStatePersistence` ([WindowStatePersistence](window-state-persistence.md) | boolean) (optional) - Configures or enables the persistence of window state (position, size, maximized state, etc.) across application restarts. Has no effect if window `name` is not provided. Automatically disabled when there is no available display. _Experimental_
 * `title` string (optional) - Default window title. Default is `"Electron"`. If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
 * `icon` ([NativeImage](../native-image.md) | string) (optional) - The window icon. On Windows it is
   recommended to use `ICO` icons to get best visual effects, you can also
