@@ -143,12 +143,14 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   // Initialize prefs_ to save/restore window bounds if we have a valid window
   // name and window state persistence is enabled.
   if (window_state_persistence_enabled_ && !window_name_.empty()) {
+    // Move this out if there's a need to initialize prefs_ for other features
     if (auto* browser_process =
             electron::ElectronBrowserMainParts::Get()->browser_process()) {
       DCHECK(browser_process);
       prefs_ = browser_process->local_state();
     }
   } else if (window_state_persistence_enabled_ && window_name_.empty()) {
+    window_state_persistence_enabled_ = false;
     LOG(WARNING) << "Window state persistence enabled but no window name "
                     "provided. Window state will not be persisted.";
   }
@@ -257,8 +259,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   // (fullscreen/kiosk) since the target display for these states depends on the
   // window's initial bounds. Also, restoring here ensures we respect min/max
   // width/height and fullscreenable constraints.
-  if (prefs_ && !window_name_.empty())
-    RestoreWindowState(options);
+  RestoreWindowState(options);
 
   if (fullscreen && !restore_display_mode_)
     SetFullScreen(true);
@@ -850,7 +851,7 @@ void NativeWindow::DebouncedSaveWindowState() {
 }
 
 void NativeWindow::SaveWindowState() {
-  if (!prefs_ || window_name_.empty() || is_being_restored_)
+  if (!window_state_persistence_enabled_ || is_being_restored_)
     return;
 
   gfx::Rect bounds = GetBounds();
@@ -921,15 +922,15 @@ void NativeWindow::FlushWindowState() {
 }
 
 void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
-  is_being_restored_ = true;
+  if (!window_state_persistence_enabled_)
+    return;
+
   const base::Value& value = prefs_->GetValue(electron::kWindowStates);
   const base::Value::Dict* window_preferences =
       value.is_dict() ? value.GetDict().FindDict(window_name_) : nullptr;
 
-  if (!window_preferences) {
-    is_being_restored_ = false;
+  if (!window_preferences)
     return;
-  }
 
   std::optional<int> saved_left = window_preferences->FindInt(electron::kLeft);
   std::optional<int> saved_top = window_preferences->FindInt(electron::kTop);
@@ -951,7 +952,6 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
       !work_area_left || !work_area_top || !work_area_right ||
       !work_area_bottom) {
     LOG(WARNING) << "Window state not restored - corrupted values found";
-    is_being_restored_ = false;
     return;
   }
 
@@ -974,13 +974,16 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
       display.size().width() == 0 || display.size().height() == 0) {
     LOG(WARNING) << "Window state not restored - no physical display attached "
                     "or current display has invalid bounds";
-    is_being_restored_ = false;
     return;
   }
 
   gfx::Rect saved_work_area = gfx::Rect(*work_area_left, *work_area_top,
                                         *work_area_right - *work_area_left,
                                         *work_area_bottom - *work_area_top);
+
+  // Set this to true before RestoreBounds to prevent SaveWindowState from being
+  // inadvertently triggered during the restoration process.
+  is_being_restored_ = true;
 
   if (restore_bounds_) {
     RestoreBounds(display, saved_work_area, saved_bounds);
