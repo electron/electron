@@ -266,6 +266,9 @@ jobs:
         name: test_artifacts_${{ env.ARTIFACT_KEY }}_${{ matrix.shard }}
         path: src/electron/spec/artifacts
         if-no-files-found: ignore
+    - name: Debug Test Output
+      shell: bash
+      run: find src/electron/ -iname "test-results.json"
     - name: Upload Mocha JSON Output
       if: always() && !cancelled()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -284,6 +287,7 @@ jobs:
   # TODO - Move this to a separate workflow that works with forks
   report:
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - name: Report Mocha Test Results
         uses: dorny/test-reporter@dc3a92680fcc15842eef52e8c4606ea7ce6bd3f3 # v2.1.1
