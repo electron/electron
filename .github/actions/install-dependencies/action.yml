@@ -6,7 +6,11 @@ runs:
   - name: Get yarn cache directory path
     shell: bash
     id: yarn-cache-dir-path
-    run: echo "dir=$(node src/electron/script/yarn cache dir)" >> $GITHUB_OUTPUT
+    run: |
+      which node
+      node --version
+      node src/electron/script/yarn cache dir
+      echo "dir=$(node src/electron/script/yarn cache dir)" >> $GITHUB_OUTPUT
   - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
     id: yarn-cache
     with:
@@ -17,7 +21,5 @@ runs:
   - name: Install Dependencies
     shell: bash
     run: |
-      which node
-      node --version
       cd src/electron
       node script/yarn install --frozen-lockfile --prefer-offline
