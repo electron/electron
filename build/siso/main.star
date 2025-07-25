@@ -10,6 +10,12 @@ def init(ctx):
     mod = upstream_init(ctx)
     step_config = json.decode(mod.step_config)
 
+    # Buildbarn doesn't support input_root_absolute_path so disable that
+    for rule in step_config["rules"]:    
+      input_root_absolute_path = rule.get("input_root_absolute_path", False)
+      if input_root_absolute_path:
+        rule.pop("input_root_absolute_path", None)
+
     # Only wrap clang rules with a remote wrapper if not on Linux. These are currently only
     # needed for X-Compile builds, which run on Windows and Mac.
     if runtime.os != "linux":
