@@ -107,7 +107,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
         reinterpret_cast<uintptr_t>(gmb_handle.dxgi_handle().buffer_handle());
 #elif BUILDFLAG(IS_APPLE)
     texture.shared_texture_handle =
-        reinterpret_cast<uintptr_t>(gmb_handle.io_surface.get());
+        reinterpret_cast<uintptr_t>(gmb_handle.io_surface().get());
 #elif BUILDFLAG(IS_LINUX)
     const auto& native_pixmap = gmb_handle.native_pixmap_handle();
     texture.modifier = native_pixmap.modifier;

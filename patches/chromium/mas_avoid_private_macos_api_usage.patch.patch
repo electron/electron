@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index a235974eccd4e62e6bc4bf10d37e7057ebc9dd5a..8412aaaae5866994fe2d30c1d5c421ef81343e0d 100644
+index 2588b79f726fda56dcc53dc8313a6aa883934409..664ab8325c8b9824077da8cafdfd82d09701809b 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -670,6 +670,7 @@ static_library("test_support") {
@@ -817,7 +817,7 @@ index a235974eccd4e62e6bc4bf10d37e7057ebc9dd5a..8412aaaae5866994fe2d30c1d5c421ef
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -1988,6 +1991,7 @@ test("content_browsertests") {
+@@ -2002,6 +2005,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -825,7 +825,7 @@ index a235974eccd4e62e6bc4bf10d37e7057ebc9dd5a..8412aaaae5866994fe2d30c1d5c421ef
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3297,6 +3301,7 @@ test("content_unittests") {
+@@ -3311,6 +3315,7 @@ test("content_unittests") {
      "//ui/shell_dialogs:shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -846,7 +846,7 @@ index ea0d03e4eb473a2eec4164191c02184577de4366..af2d64f0cf19c4325013d5f62da5079f
  
    if (is_mac) {
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index e69ef178a08ef322764809e6afeffa20ffc0cd13..d2e182ed0dad5aeecb48e5a39771880bd8fb408b 100644
+index 70882e695ad383c9362c9b7e692a9273b3f36801..4ab8d7b3e567e8be373c8dff790d41146c5b8a9d 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -256,6 +256,7 @@ component("bluetooth") {
@@ -938,10 +938,10 @@ index d288ffce5c1265adbdefc571f840851026e7479e..e9a6e8c31401750d270fcc55ef1116b2
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 5064c9e21892333cf91579b49642ba500156c201..673e11336c5f5bb350b4622436c80c7299cfb607 100644
+index e2e8e314aa5915f6b3be2ea739878d7efcc46efe..aae1bf8e0990792992227199e18c1f14f108c05d 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -202,6 +202,7 @@ source_set("audio") {
+@@ -201,6 +201,7 @@ source_set("audio") {
        "CoreMedia.framework",
      ]
      weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0

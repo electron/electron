@@ -131,10 +131,10 @@ index 1632c22c669607f9da8b4fe7783ee716c6467f6e..3f0e3e0af568627a0aae352a65be4cc7
    OSStatus AddGenericPassword(
        std::string_view service_name,
 diff --git a/crypto/apple_keychain_secitem.mm b/crypto/apple_keychain_secitem.mm
-index 12b400a1f2d6c11bc4ac67d0a2c98984d0be24e0..1abb4623bfabacbca34068113fac2030fea2c065 100644
+index 14d72650c81ad7f48cac56cb04f3f75fa1508af5..df416ad2a52c92f8304fa5a40c4d9e67eabb14df 100644
 --- a/crypto/apple_keychain_secitem.mm
 +++ b/crypto/apple_keychain_secitem.mm
-@@ -118,7 +118,8 @@
+@@ -161,7 +161,8 @@
  
  base::expected<std::vector<uint8_t>, OSStatus>
  AppleKeychainSecItem::FindGenericPassword(std::string_view service_name,

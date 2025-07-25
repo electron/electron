@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Wed, 23 Jul 2025 22:07:13 -0700
+Subject: chore: remove unused include in preconnect_manager_impl.cc
+
+This include isn't used but pulls in parts of //chrome that
+we don't build, so snip it. This was previously being done
+as part of another patch but that patch went away in this
+Chromium roll so this is a new patch just to snip it.
+
+This is being upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/6782507
+
+Change-Id: If13767d94f3522e7224f24ea45d6feeab01bafbc
+
+diff --git a/chrome/browser/predictors/preconnect_manager_impl.cc b/chrome/browser/predictors/preconnect_manager_impl.cc
+index 58d19bed9ca5004a5322dbbe52e7f1075b2188ea..2dd50c6107590ece770d3a348a32c4996a2a7f83 100644
+--- a/chrome/browser/predictors/preconnect_manager_impl.cc
++++ b/chrome/browser/predictors/preconnect_manager_impl.cc
+@@ -13,7 +13,6 @@
+ #include "base/trace_event/trace_event.h"
+ #include "base/types/optional_util.h"
+ #include "chrome/browser/predictors/predictors_features.h"
+-#include "chrome/browser/predictors/resource_prefetch_predictor.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/browser_task_traits.h"
+ #include "content/public/browser/browser_thread.h"

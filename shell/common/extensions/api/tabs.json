@@ -61,6 +61,14 @@
           // TODO(kalman): Investigate how this is ending up as -1 (based on window type? a bug?) and whether it should be optional instead.
           "index": {"type": "integer", "minimum": -1, "description": "The zero-based index of the tab within its window."},
           "groupId": {"type": "integer", "minimum": -1, "description": "The ID of the group that the tab belongs to."},
+          "splitViewId": {
+            "type": "integer",
+            "minimum": -1,
+            "optional": "true",
+            "description": "The ID of the Split View that the tab belongs to.",
+            // TODO(crbug.com/433273595): Enable documentation when ready for launch.
+            "nodoc": "true"
+          },
           "windowId": {"type": "integer", "minimum": 0, "description": "The ID of the window that contains the tab."},
           "openerTabId": {"type": "integer", "minimum": 0, "optional": true, "description": "The ID of the tab that opened this tab, if any. This property is only present if the opener tab still exists."},
           "selected": {"type": "boolean", "description": "Whether the tab is selected.", "deprecated": "Please use $(ref:tabs.Tab.highlighted)."},
@@ -524,6 +532,12 @@
                 "minimum": -1,
                 "description": "The ID of the group that the tabs are in, or $(ref:tabGroups.TAB_GROUP_ID_NONE) for ungrouped tabs."
               },
+              "splitViewId": {
+                "type": "integer",
+                "minimum": -1,
+                "optional": true,
+                "description": "The ID of the Split View that the tabs are in, or $(ref:tabs.SPLIT_TAB_ID_NONE) for tabs that aren't in a Split View."
+              },
               "windowId": {
                 "type": "integer",
                 "optional": true,
@@ -679,6 +693,12 @@
                 "optional": true,
                 "minimum": -1,
                 "description": "The tab's new group."
+              },
+              "splitViewId": {
+                "type": "integer",
+                "minimum": -1,
+                "optional": true,
+                "description": "The tab's new Split View."
               },
               "pinned": {
                 "type": "boolean",
