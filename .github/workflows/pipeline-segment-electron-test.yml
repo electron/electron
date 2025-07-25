@@ -40,6 +40,7 @@ env:
   CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+  ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
 
 jobs:
   test:
@@ -124,6 +125,15 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+    - name: Setup SSH Debugging
+      if: ${{ inputs.target-platform == 'macos' && env.ACTIONS_STEP_DEBUG == 'true' }}
+      uses: ./src/electron/.github/actions/ssh-debug
+      with:
+        tunnel: 'true'
+      env:
+        CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+        TUNNEL_HOSTNAME: ${{ secrets.CLOUDFLARED_SSH_HOSTNAME }}
+        AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Set Chromium Git Cookie
