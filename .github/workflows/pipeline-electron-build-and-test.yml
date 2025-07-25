@@ -60,6 +60,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 permissions:
+  actions: read
+  checks: write
   contents: read
   issues: read
   pull-requests: read  
