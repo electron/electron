@@ -201,7 +201,7 @@ class ScriptExecutionCallback {
         bool should_clone_value =
             !(value->IsObject() &&
               promise_.GetContext() ==
-                  value.As<v8::Object>()->GetCreationContextChecked()) &&
+                  value.As<v8::Object>()->GetCreationContextChecked(isolate)) &&
             value->IsObject();
         if (should_clone_value) {
           CopyResultToCallingContextAndFinalize(isolate,
