@@ -56,7 +56,7 @@ class SystemPreferences final
   const char* GetTypeName() override;
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
-  std::string GetAccentColor();
+  static std::string GetAccentColor();
   std::string GetColor(gin_helper::ErrorThrower thrower,
                        const std::string& color);
   std::string GetMediaAccessStatus(gin_helper::ErrorThrower thrower,
