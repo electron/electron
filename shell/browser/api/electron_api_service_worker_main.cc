@@ -356,7 +356,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("ServiceWorkerMain", ServiceWorkerMain::GetConstructor(context));
+  dict.Set("ServiceWorkerMain",
+           ServiceWorkerMain::GetConstructor(isolate, context));
 }
 
 }  // namespace

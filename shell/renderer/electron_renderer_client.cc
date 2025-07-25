@@ -105,7 +105,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
-    node_bindings_->Initialize(renderer_context);
+    node_bindings_->Initialize(isolate, renderer_context);
     node_bindings_->PrepareEmbedThread();
   }
 

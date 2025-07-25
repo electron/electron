@@ -11,7 +11,8 @@
 
 namespace electron::ipc_native {
 
-void EmitIPCEvent(const v8::Local<v8::Context>& context,
+void EmitIPCEvent(v8::Isolate* isolate,
+                  const v8::Local<v8::Context>& context,
                   bool internal,
                   const std::string& channel,
                   std::vector<v8::Local<v8::Value>> ports,

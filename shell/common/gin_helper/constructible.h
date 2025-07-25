@@ -40,8 +40,8 @@ template <typename T>
 class Constructible {
  public:
   static v8::Local<v8::Function> GetConstructor(
+      v8::Isolate* const isolate,
       v8::Local<v8::Context> context) {
-    v8::Isolate* isolate = context->GetIsolate();
     gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
     auto* wrapper_info = &T::kWrapperInfo;
     v8::Local<v8::FunctionTemplate> constructor =

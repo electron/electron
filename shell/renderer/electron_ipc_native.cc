@@ -19,8 +19,8 @@ namespace {
 constexpr std::string_view kIpcKey = "ipcNative";
 
 // Gets the private object under kIpcKey
-v8::Local<v8::Object> GetIpcObject(const v8::Local<v8::Context>& context) {
-  auto* isolate = context->GetIsolate();
+v8::Local<v8::Object> GetIpcObject(v8::Isolate* const isolate,
+                                   const v8::Local<v8::Context>& context) {
   auto binding_key = gin::StringToV8(isolate, kIpcKey);
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();
@@ -33,13 +33,13 @@ v8::Local<v8::Object> GetIpcObject(const v8::Local<v8::Context>& context) {
   return value->ToObject(context).ToLocalChecked();
 }
 
-void InvokeIpcCallback(const v8::Local<v8::Context>& context,
+void InvokeIpcCallback(v8::Isolate* const isolate,
+                       const v8::Local<v8::Context>& context,
                        const std::string& callback_name,
                        std::vector<v8::Local<v8::Value>> args) {
   TRACE_EVENT0("devtools.timeline", "FunctionCall");
-  auto* isolate = context->GetIsolate();
 
-  auto ipcNative = GetIpcObject(context);
+  auto ipcNative = GetIpcObject(isolate, context);
   if (ipcNative.IsEmpty())
     return;
 
@@ -62,13 +62,12 @@ void InvokeIpcCallback(const v8::Local<v8::Context>& context,
 
 }  // namespace
 
-void EmitIPCEvent(const v8::Local<v8::Context>& context,
+void EmitIPCEvent(v8::Isolate* const isolate,
+                  const v8::Local<v8::Context>& context,
                   bool internal,
                   const std::string& channel,
                   std::vector<v8::Local<v8::Value>> ports,
                   v8::Local<v8::Value> args) {
-  auto* isolate = context->GetIsolate();
-
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   v8::MicrotasksScope script_scope(isolate, context->GetMicrotaskQueue(),
@@ -78,7 +77,7 @@ void EmitIPCEvent(const v8::Local<v8::Context>& context,
       gin::ConvertToV8(isolate, internal), gin::ConvertToV8(isolate, channel),
       gin::ConvertToV8(isolate, ports), args};
 
-  InvokeIpcCallback(context, "onMessage", argv);
+  InvokeIpcCallback(isolate, context, "onMessage", argv);
 }
 
 }  // namespace electron::ipc_native
