@@ -90,8 +90,9 @@ struct Converter<blink::WebCssOrigin> {
 
 namespace electron {
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
-  v8::Local<v8::Context> context = value->GetCreationContextChecked();
+content::RenderFrame* GetRenderFrame(v8::Isolate* const isolate,
+                                     v8::Local<v8::Object> value) {
+  v8::Local<v8::Context> context = value->GetCreationContextChecked(isolate);
   if (context.IsEmpty())
     return nullptr;
   blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
@@ -839,7 +840,8 @@ class WebFrameRenderer final
     // Get the WebLocalFrame before (possibly) executing any user-space JS while
     // getting the |params|. We track the status of the RenderFrame via an
     // observer in case it is deleted during user code execution.
-    content::RenderFrame* render_frame = GetRenderFrame(content_window);
+    content::RenderFrame* render_frame =
+        GetRenderFrame(isolate, content_window);
     if (!render_frame)
       return v8::Null(isolate);
 
@@ -965,8 +967,9 @@ void Initialize(v8::Local<v8::Object> exports,
 
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("mainFrame", WebFrameRenderer::Create(
-                            isolate, electron::GetRenderFrame(exports)));
+  dict.Set("mainFrame",
+           WebFrameRenderer::Create(
+               isolate, electron::GetRenderFrame(isolate, exports)));
 }
 
 }  // namespace
