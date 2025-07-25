@@ -213,6 +213,8 @@ jobs:
   # Build Jobs - These cascade into testing jobs
   macos-x64:
     permissions:
+      actions: read
+      checks: write
       contents: read
       issues: read
       pull-requests: read
@@ -231,6 +233,8 @@ jobs:
   
   macos-arm64:
     permissions:
+      actions: read
+      checks: write
       contents: read
       issues: read
       pull-requests: read
@@ -271,6 +275,8 @@ jobs:
 
   linux-x64-asan:
     permissions:
+      actions: read
+      checks: write
       contents: read
       issues: read
       pull-requests: read
@@ -292,6 +298,8 @@ jobs:
   
   linux-arm:
     permissions:
+      actions: read
+      checks: write
       contents: read
       issues: read
       pull-requests: read
@@ -312,6 +320,8 @@ jobs:
   
   linux-arm64:
     permissions:
+      actions: read
+      checks: write
       contents: read
       issues: read
       pull-requests: read
@@ -332,6 +342,8 @@ jobs:
 
   windows-x64:
     permissions:
+      actions: read
+      checks: write
       contents: read
       issues: read
       pull-requests: read
@@ -351,6 +363,8 @@ jobs:
 
   windows-x86:
     permissions:
+      actions: read
+      checks: write
       contents: read
       issues: read
       pull-requests: read
@@ -370,6 +384,8 @@ jobs:
 
   windows-arm64:
     permissions:
+      actions: read
+      checks: write
       contents: read
       issues: read
       pull-requests: read
