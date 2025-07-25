@@ -249,6 +249,8 @@ jobs:
 
   linux-x64:
     permissions:
+      actions: read
+      checks: write
       contents: read
       issues: read
       pull-requests: read
