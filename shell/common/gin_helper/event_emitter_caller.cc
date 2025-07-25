@@ -23,7 +23,7 @@ v8::Local<v8::Value> CallMethodWithArgs(
                                      node::async_context{0, 0}};
 
   // Perform microtask checkpoint after running JavaScript.
-  v8::MicrotasksScope microtasks_scope(obj->GetCreationContextChecked(),
+  v8::MicrotasksScope microtasks_scope(obj->GetCreationContextChecked(isolate),
                                        v8::MicrotasksScope::kRunMicrotasks);
 
   // node::MakeCallback will also run pending tasks in Node.js.
