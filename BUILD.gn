@@ -321,6 +321,10 @@ grit("resources") {
     "electron_resources.pak",
   ]
 
+  foreach(locale, all_chrome_locales) {
+    outputs += [ "electron_strings_$locale.pak" ]
+  }
+
   # Mojo manifest overlays are generated.
   grit_flags = [
     "-E",
@@ -603,6 +607,7 @@ source_set("electron_lib") {
       "SecurityInterface.framework",
       "ServiceManagement.framework",
       "StoreKit.framework",
+      "UserNotifications.framework",
     ]
 
     weak_frameworks = [ "QuickLookThumbnailing.framework" ]
