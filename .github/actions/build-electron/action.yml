@@ -2,14 +2,20 @@ name: 'Build Electron'
 description: 'Builds Electron & Friends'
 inputs:
   target-arch:
-    description: 'Target arch'
+    description: 'Target architecture (x64, arm, arm64)'
     required: true
+    type: choice
+    options: ['x64', 'arm', 'arm64']
   target-platform:
-    description: 'Target platform, should be linux, win, macos'
+    description: 'Target platform'
     required: true
+    type: choice
+    options: ['linux', 'win', 'macos']
   artifact-platform:
-    description: 'Artifact platform, should be linux, win, darwin or mas'
+    description: 'Artifact platform'
     required: true
+    type: choice
+    options: ['linux', 'win', 'darwin', 'mas']
   step-suffix:
     description: 'Suffix for build steps'
     required: false
@@ -17,240 +23,573 @@ inputs:
   is-release:
     description: 'Is release build'
     required: true
+    type: boolean
+    default: false
   strip-binaries:
     description: 'Strip binaries (Linux only)'
     required: false
+    type: boolean
+    default: false
   generate-symbols:
     description: 'Generate symbols'
     required: true
+    type: boolean
+    default: true
   upload-to-storage:
     description: 'Upload to storage'
     required: true
+    type: boolean
+    default: true
   is-asan:
     description: 'The ASan Linux build'
     required: false
+    type: boolean
+    default: false
+  ninja-jobs:
+    description: 'Number of ninja parallel jobs (0 = auto-detect)'
+    required: false
+    type: number
+    default: 0
+
 runs:
   using: "composite"
   steps:
-    - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
+    # Input Validation and Environment Setup
+    - name: Validate Build Environment ${{ inputs.step-suffix }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        echo "::group::Validating build environment"
+        
+        # Validate inputs
+        if [[ ! "${{ inputs.target-arch }}" =~ ^(x64|arm|arm64)$ ]]; then
+          echo "::error::Invalid target architecture: ${{ inputs.target-arch }}"
+          exit 1
+        fi
+        
+        if [[ ! "${{ inputs.target-platform }}" =~ ^(linux|win|macos)$ ]]; then
+          echo "::error::Invalid target platform: ${{ inputs.target-platform }}"
+          exit 1
+        fi
+        
+        if [[ ! "${{ inputs.artifact-platform }}" =~ ^(linux|win|darwin|mas)$ ]]; then
+          echo "::error::Invalid artifact platform: ${{ inputs.artifact-platform }}"
+          exit 1
+        fi
+        
+        # Check required tools
+        command -v ninja >/dev/null 2>&1 || { echo "::error::ninja not found"; exit 1; }
+        command -v gn >/dev/null 2>&1 || { echo "::error::gn not found"; exit 1; }
+        
+        # Sanitize inputs and set environment variables
+        TARGET_ARCH=$(echo "${{ inputs.target-arch }}" | tr -cd '[:alnum:]')
+        TARGET_PLATFORM=$(echo "${{ inputs.target-platform }}" | tr -cd '[:alnum:]')
+        ARTIFACT_PLATFORM=$(echo "${{ inputs.artifact-platform }}" | tr -cd '[:alnum:]')
+        
+        echo "SANITIZED_TARGET_ARCH=$TARGET_ARCH" >> $GITHUB_ENV
+        echo "SANITIZED_TARGET_PLATFORM=$TARGET_PLATFORM" >> $GITHUB_ENV
+        echo "SANITIZED_ARTIFACT_PLATFORM=$ARTIFACT_PLATFORM" >> $GITHUB_ENV
+        
+        echo "::endgroup::"
+
+    - name: Set Ninja Job Count ${{ inputs.step-suffix }}
+      shell: bash
+      run: |
+        if [ "${{ inputs.ninja-jobs }}" -eq 0 ]; then
+          # Auto-detect number of cores
+          if command -v nproc >/dev/null 2>&1; then
+            NINJA_JOBS=$(nproc)
+          elif command -v sysctl >/dev/null 2>&1; then
+            NINJA_JOBS=$(sysctl -n hw.ncpu)
+          else
+            NINJA_JOBS=4  # Fallback
+          fi
+        else
+          NINJA_JOBS="${{ inputs.ninja-jobs }}"
+        fi
+        
+        # Ensure reasonable limits
+        if [ "$NINJA_JOBS" -gt 32 ]; then
+          NINJA_JOBS=32
+        fi
+        
+        echo "NINJA_JOBS=$NINJA_JOBS" >> $GITHUB_ENV
+        echo "::notice::Using $NINJA_JOBS ninja jobs"
+
+    # Cache Build Dependencies
+    - name: Cache Build Dependencies ${{ inputs.step-suffix }}
+      uses: actions/cache@v4
+      with:
+        path: |
+          src/out/Default/obj
+          ~/.cache/gn
+        key: electron-build-${{ env.SANITIZED_TARGET_PLATFORM }}-${{ env.SANITIZED_TARGET_ARCH }}-${{ hashFiles('src/electron/DEPS', 'src/electron/.gn') }}
+        restore-keys: |
+          electron-build-${{ env.SANITIZED_TARGET_PLATFORM }}-${{ env.SANITIZED_TARGET_ARCH }}-
+          electron-build-${{ env.SANITIZED_TARGET_PLATFORM }}-
+
+    # Platform-specific GN configuration
+    - name: Configure GN Args for macOS x64 ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
       run: |
+        echo "::group::Configuring GN args for macOS x64"
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"x64\" v8_snapshot_toolchain=\"//build/toolchain/mac:clang_x64\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
-    - name: Set GN_EXTRA_ARGS for Windows
+        echo "::endgroup::"
+
+    - name: Configure GN Args for Windows Non-x64 ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{inputs.target-arch != 'x64' && inputs.target-platform == 'win' }}
+      if: ${{ inputs.target-arch != 'x64' && inputs.target-platform == 'win' }}
       run: |
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ inputs.target-arch }}\""
+        echo "::group::Configuring GN args for Windows ${{ inputs.target-arch }}"
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ env.SANITIZED_TARGET_ARCH }}\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
-    - name: Add Clang problem matcher
+        echo "::endgroup::"
+
+    - name: Configure macOS Build Environment ${{ inputs.step-suffix }}
+      shell: bash
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        echo "::group::Configuring macOS build environment"
+        ulimit -n 10000
+        sudo launchctl limit maxfiles 65536 200000
+        echo "::endgroup::"
+
+    - name: Add Clang Problem Matcher ${{ inputs.step-suffix }}
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
+
+    # Main Build Process
     - name: Build Electron ${{ inputs.step-suffix }}
       shell: bash
       run: |
+        set -euo pipefail
+        echo "::group::Building Electron"
+        
+        # Clean previous builds
         rm -rf "src/out/Default/Electron Framework.framework"
         rm -rf src/out/Default/Electron*.app
 
         cd src/electron
         # TODO(codebytere): remove this once we figure out why .git/packed-refs is initially missing
-        git pack-refs
+        git pack-refs || {
+          echo "::warning::Failed to pack git refs, continuing anyway"
+        }
         cd ..
 
-        if [ "`uname`" = "Darwin" ]; then
-          ulimit -n 10000
-          sudo launchctl limit maxfiles 65536 200000
+        # Build with error handling
+        if ! NINJA_SUMMARIZE_BUILD=1 e build -j $NINJA_JOBS; then
+          echo "::error::Electron build failed"
+          exit 1
         fi
+        
+        cp out/Default/.ninja_log out/electron_ninja_log || {
+          echo "::warning::Failed to copy ninja log"
+        }
+        
+        if ! node electron/script/check-symlinks.js; then
+          echo "::error::Symlink check failed"
+          exit 1
+        fi
+        
+        echo "::endgroup::"
 
-        NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
-        cp out/Default/.ninja_log out/electron_ninja_log
-        node electron/script/check-symlinks.js
     - name: Strip Electron Binaries ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.strip-binaries == 'true' }}
+      if: ${{ inputs.strip-binaries == true }}
       run: |
+        set -euo pipefail
+        echo "::group::Stripping binaries"
+        
         cd src
-        electron/script/copy-debug-symbols.py --target-cpu="${{ inputs.target-arch }}" --out-dir=out/Default/debug --compress
-        electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}" --verbose
-        electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
-    - name: Build Electron dist.zip ${{ inputs.step-suffix }}
+        if ! electron/script/copy-debug-symbols.py --target-cpu="${{ env.SANITIZED_TARGET_ARCH }}" --out-dir=out/Default/debug --compress; then
+          echo "::error::Failed to copy debug symbols"
+          exit 1
+        fi
+        
+        if ! electron/script/strip-binaries.py --target-cpu="${{ env.SANITIZED_TARGET_ARCH }}" --verbose; then
+          echo "::error::Failed to strip binaries"
+          exit 1
+        fi
+        
+        if ! electron/script/add-debug-link.py --target-cpu="${{ env.SANITIZED_TARGET_ARCH }}" --debug-dir=out/Default/debug; then
+          echo "::error::Failed to add debug links"
+          exit 1
+        fi
+        
+        echo "::endgroup::"
+
+    - name: Build Electron Distribution Zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
+        set -euo pipefail
+        echo "::group::Building distribution zip"
+        
         cd src
-        e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES -d explain
+        if ! e build --target electron:electron_dist_zip -j $NINJA_JOBS -d explain; then
+          echo "::error::Failed to build distribution zip"
+          exit 1
+        fi
+        
+        # Validate manifest only for non-ASAN builds
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
             target_os="${target_os}_mas"
           fi
-          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
+          
+          if ! electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ env.SANITIZED_TARGET_ARCH }}.manifest; then
+            echo "::error::Zip manifest validation failed"
+            exit 1
+          fi
         fi
+        
+        echo "::endgroup::"
+
     - name: Build Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
       run: |
+        set -euo pipefail
+        echo "::group::Building mksnapshot"
+        
         cd src
-        e build --target electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+        if ! e build --target electron:electron_mksnapshot -j $NINJA_JOBS; then
+          echo "::error::Failed to build mksnapshot"
+          exit 1
+        fi
+        
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        
         # Remove unused args from mksnapshot_args
         SEDOPTION="-i"
-        if [ "`uname`" = "Darwin" ]; then
+        if [ "$(uname)" = "Darwin" ]; then
           SEDOPTION="-i ''"
         fi
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
 
+        # Strip binaries for Linux builds
         if [ "${{ inputs.target-platform }}" = "linux" ]; then
-          if [ "${{ inputs.target-arch }}" = "arm" ]; then
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/v8_context_snapshot_generator
-          elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/v8_context_snapshot_generator
-          else
-            electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
-            electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
-          fi
+          case "${{ env.SANITIZED_TARGET_ARCH }}" in
+            "arm")
+              electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
+              electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/v8_context_snapshot_generator
+              ;;
+            "arm64")
+              electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
+              electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/v8_context_snapshot_generator
+              ;;
+            *)
+              electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
+              electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
+              ;;
+          esac
         fi
 
-        e build --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+        if ! e build --target electron:electron_mksnapshot_zip -j $NINJA_JOBS; then
+          echo "::error::Failed to build mksnapshot zip"
+          exit 1
+        fi
+        
+        # Create final zip with platform-specific handling
         if [ "${{ inputs.target-platform }}" = "win" ]; then
           cd out/Default
-          powershell Compress-Archive -update mksnapshot_args mksnapshot.zip
-          powershell mkdir mktmp\\gen\\v8
-          powershell Copy-Item gen\\v8\\embedded.S mktmp\\gen\\v8
-          powershell Compress-Archive -update -Path mktmp\\gen mksnapshot.zip
+          powershell -Command "Compress-Archive -Force -Path mksnapshot_args -DestinationPath mksnapshot.zip"
+          powershell -Command "New-Item -ItemType Directory -Force -Path mktmp\\gen\\v8"
+          powershell -Command "Copy-Item gen\\v8\\embedded.S mktmp\\gen\\v8"
+          powershell -Command "Compress-Archive -Update -Path mktmp\\gen -DestinationPath mksnapshot.zip"
         else
-          (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+          (cd out/Default && zip -u mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
         fi
-    - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
+        
+        echo "::endgroup::"
+
+    - name: Generate Cross-Arch Snapshot (ARM/ARM64) ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
       run: |
+        set -euo pipefail
+        echo "::group::Generating cross-arch snapshot"
+        
         cd src
-        if [ "${{ inputs.target-arch }}" = "arm" ]; then
-          MKSNAPSHOT_PATH="clang_x86_v8_arm"
-        elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
-          MKSNAPSHOT_PATH="clang_x64_v8_arm64"
-        fi
+        case "${{ env.SANITIZED_TARGET_ARCH }}" in
+          "arm")
+            MKSNAPSHOT_PATH="clang_x86_v8_arm"
+            ;;
+          "arm64")
+            MKSNAPSHOT_PATH="clang_x64_v8_arm64"
+            ;;
+        esac
 
         cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default
         cp "out/Default/$MKSNAPSHOT_PATH/v8_context_snapshot_generator" out/Default
         cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.so" out/Default
 
-        python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
-        mkdir cross-arch-snapshots
+        if ! python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only; then
+          echo "::error::Failed to verify mksnapshot"
+          exit 1
+        fi
+        
+        mkdir -p cross-arch-snapshots
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
+        
         # Clean up so that ninja does not get confused
         rm -f out/Default/libffmpeg.so
+        
+        echo "::endgroup::"
+
     - name: Build Chromedriver ${{ inputs.step-suffix }}
       shell: bash
       run: |
+        set -euo pipefail
+        echo "::group::Building Chromedriver"
+        
         cd src
-        e build --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
-        e build --target electron:electron_chromedriver_zip
-    - name: Build Node.js headers ${{ inputs.step-suffix }}
+        if ! e build --target electron:electron_chromedriver -j $NINJA_JOBS; then
+          echo "::error::Failed to build chromedriver"
+          exit 1
+        fi
+        
+        if ! e build --target electron:electron_chromedriver_zip; then
+          echo "::error::Failed to build chromedriver zip"
+          exit 1
+        fi
+        
+        echo "::endgroup::"
+
+    - name: Build Node.js Headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
+        set -euo pipefail
+        echo "::group::Building Node.js headers"
+        
         cd src
-        e build --target electron:node_headers
-    - name: Create installed_software.json ${{ inputs.step-suffix }}
+        if ! e build --target electron:node_headers; then
+          echo "::error::Failed to build Node.js headers"
+          exit 1
+        fi
+        
+        echo "::endgroup::"
+
+    # Windows-specific steps
+    - name: Create Windows Software Inventory ${{ inputs.step-suffix }}
       shell: powershell
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
+      if: ${{ inputs.is-release == true && inputs.target-platform == 'win' }}
       run: |
-        cd src
-        Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
+        try {
+          cd src
+          Get-CimInstance -Namespace root\cimv2 -Class Win32_product | 
+            Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | 
+            ConvertTo-Json | 
+            Out-File -Encoding utf8 -FilePath .\installed_software.json
+        } catch {
+          Write-Host "::warning::Failed to create software inventory: $_"
+        }
+
     - name: Profile Windows Toolchain ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
+      if: ${{ inputs.is-release == true && inputs.target-platform == 'win' }}
       run: |
+        echo "::group::Profiling Windows toolchain"
         cd src
-        python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
+        if ! python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json; then
+          echo "::warning::Failed to profile Windows toolchain"
+        fi
+        echo "::endgroup::"
+
     - name: Add msdia140.dll to Path ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
+      if: ${{ inputs.is-release == true && inputs.target-platform == 'win' }}
       run: |
         # Needed for msdia140.dll on 64-bit windows
         cd src
         export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
-    - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
+        echo "PATH=$PATH" >> $GITHUB_ENV
+
+    # Symbol generation and packaging
+    - name: Generate & Package Symbols ${{ inputs.step-suffix }}
       shell: bash
       run: |
-        # Generate breakpad symbols on release builds
-        if [ "${{ inputs.generate-symbols }}" = "true" ]; then
-          e build --target electron:electron_symbols
-        fi
+        set -euo pipefail
+        echo "::group::Generating and packaging symbols"
+        
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
-        e build --target electron:licenses
-        e build --target electron:electron_version_file
+        
+        # Generate breakpad symbols on release builds
+        if [ "${{ inputs.generate-symbols }}" = "true" ]; then
+          if ! e build --target electron:electron_symbols; then
+            echo "::error::Failed to generate symbols"
+            exit 1
+          fi
+        fi
+        
+        if ! e build --target electron:licenses; then
+          echo "::error::Failed to build licenses"
+          exit 1
+        fi
+        
+        if ! e build --target electron:electron_version_file; then
+          echo "::error::Failed to build version file"
+          exit 1
+        fi
+        
+        # Zip symbols with appropriate settings
         if [ "${{ inputs.is-release }}" = "true" ]; then
           DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
         else
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
+        
+        echo "::endgroup::"
+
+    # Release-specific builds
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
-      if: ${{ inputs.is-release == 'true' }}
+      if: ${{ inputs.is-release == true }}
       shell: bash
       run: |
+        set -euo pipefail
+        echo "::group::Generating FFMpeg"
+        
         cd src
-        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
-        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NUMBER_OF_NINJA_PROCESSES
+        if ! gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"; then
+          echo "::error::Failed to generate FFMpeg build files"
+          exit 1
+        fi
+        
+        if ! e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NINJA_JOBS; then
+          echo "::error::Failed to build FFMpeg"
+          exit 1
+        fi
+        
+        echo "::endgroup::"
+
     - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
+      if: ${{ inputs.is-release == true && inputs.target-platform == 'linux' }}
       run: |
-        e build --target electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+        set -euo pipefail
+        echo "::group::Generating Hunspell dictionaries"
+        
+        if ! e build --target electron:hunspell_dictionaries_zip -j $NINJA_JOBS; then
+          echo "::error::Failed to build Hunspell dictionaries"
+          exit 1
+        fi
+        
+        echo "::endgroup::"
+
     - name: Generate Libcxx ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
+      if: ${{ inputs.is-release == true && inputs.target-platform == 'linux' }}
       run: |
-        e build --target electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        e build --target electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        e build --target electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
-    - name: Remove Clang problem matcher
+        set -euo pipefail
+        echo "::group::Generating libcxx"
+        
+        if ! e build --target electron:libcxx_headers_zip -j $NINJA_JOBS; then
+          echo "::error::Failed to build libcxx headers"
+          exit 1
+        fi
+        
+        if ! e build --target electron:libcxxabi_headers_zip -j $NINJA_JOBS; then
+          echo "::error::Failed to build libcxxabi headers"
+          exit 1
+        fi
+        
+        if ! e build --target electron:libcxx_objects_zip -j $NINJA_JOBS; then
+          echo "::error::Failed to build libcxx objects"
+          exit 1
+        fi
+        
+        echo "::endgroup::"
+
+    - name: Remove Clang Problem Matcher ${{ inputs.step-suffix }}
       shell: bash
       run: echo "::remove-matcher owner=clang::"
+
     - name: Generate TypeScript Definitions ${{ inputs.step-suffix }}
-      if: ${{ inputs.is-release == 'true' }}
+      if: ${{ inputs.is-release == true }}
       shell: bash
       run: |
+        set -euo pipefail
+        echo "::group::Generating TypeScript definitions"
+        
         cd src/electron
-        node script/yarn create-typescript-definitions
-    - name: Publish Electron Dist ${{ inputs.step-suffix }}
-      if: ${{ inputs.is-release == 'true' }}
+        if ! node script/yarn create-typescript-definitions; then
+          echo "::error::Failed to generate TypeScript definitions"
+          exit 1
+        fi
+        
+        echo "::endgroup::"
+
+    # Publication and artifact handling
+    - name: Publish Electron Distribution ${{ inputs.step-suffix }}
+      if: ${{ inputs.is-release == true }}
       shell: bash
       run: |
+        set -euo pipefail
+        echo "::group::Publishing Electron distribution"
+        
         rm -rf src/out/Default/obj
         cd src/electron
-        if [ "${{ inputs.upload-to-storage }}" = "1" ]; then
+        
+        if [ "${{ inputs.upload-to-storage }}" = "true" ]; then
           echo 'Uploading Electron release distribution to Azure'
-          script/release/uploaders/upload.py --verbose --upload_to_storage
+          if ! script/release/uploaders/upload.py --verbose --upload_to_storage; then
+            echo "::error::Failed to upload to Azure storage"
+            exit 1
+          fi
         else
           echo 'Uploading Electron release distribution to GitHub releases'
-          script/release/uploaders/upload.py --verbose
+          if ! script/release/uploaders/upload.py --verbose; then
+            echo "::error::Failed to upload to GitHub releases"
+            exit 1
+          fi
         fi
-    - name: Generate Artifact Key
+        
+        echo "::endgroup::"
+
+    - name: Generate Artifact Key ${{ inputs.step-suffix }}
       shell: bash
       run: |
         if [ "${{ inputs.is-asan }}" = "true" ]; then 
-          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}_asan
+          ARTIFACT_KEY=${{ env.SANITIZED_ARTIFACT_PLATFORM }}_${{ env.SANITIZED_TARGET_ARCH }}_asan
         else
-          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+          ARTIFACT_KEY=${{ env.SANITIZED_ARTIFACT_PLATFORM }}_${{ env.SANITIZED_TARGET_ARCH }}
         fi
         echo "ARTIFACT_KEY=$ARTIFACT_KEY" >> $GITHUB_ENV
-    # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
-    # to ensure we don't break anything, but we may be able to improve that.
-    - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
+        echo "::notice::Generated artifact key: $ARTIFACT_KEY"
+
+    - name: Organize Generated Artifacts ${{ inputs.step-suffix }}
       shell: bash
-      run: ./src/electron/script/actions/move-artifacts.sh
+      run: |
+        set -euo pipefail
+        echo "::group::Organizing artifacts"
+        
+        if [ -f "./src/electron/script/actions/move-artifacts.sh" ]; then
+          if ! ./src/electron/script/actions/move-artifacts.sh; then
+            echo "::error::Failed to move artifacts"
+            exit 1
+          fi
+        else
+          echo "::warning::move-artifacts.sh not found, artifacts may not be organized properly"
+        fi
+        
+        echo "::endgroup::"
+
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
-      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+      uses: actions/upload-artifact@v4
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
-        path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
-    - name: Upload Src Artifacts ${{ inputs.step-suffix }}
-      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        path: ./generated_artifacts_${{ env.SANITIZED_ARTIFACT_PLATFORM }}_${{ env.SANITIZED_TARGET_ARCH }}
+        retention-days: 30
+        if-no-files-found: warn
+
+    - name: Upload Source Artifacts ${{ inputs.step-suffix }}
+      uses: actions/upload-artifact@v4
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
-        path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+        path: ./src_artifacts_${{ env.SANITIZED_ARTIFACT_PLATFORM }}_${{ env.SANITIZED_TARGET_ARCH }}
+        retention-days: 30
+        if-no-files-found: warn
