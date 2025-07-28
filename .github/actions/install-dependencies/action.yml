@@ -3,15 +3,19 @@ description: 'Installs yarn depdencies using cache when available'
 runs:
   using: "composite"
   steps:
+  - name: debug for linux arm
+    if: ${{ runner.os == 'Linux' && (runner.arch == 'arm' || runner.arch == 'arm64') }}
+    shell: bash
+    run: |
+      which node
+      node --version
+      ls -la /home/runner/actions-runner/cached/externals
+      ls -la /home/runner/actions-runner/cached/externals/node20/bin/node
   - name: Get yarn cache directory path
     shell: bash
     id: yarn-cache-dir-path
     run: |
-      which node
-      node --version
       node src/electron/script/yarn cache dir > yarn-cache-dir.txt
-      ls -la /home/runner/actions-runner/cached/externals
-      ls -la /home/runner/actions-runner/cached/externals/node20/bin/node
       cat yarn-cache-dir.txt
       export YARN_CACHE_DIR=$(cat yarn-cache-dir.txt)
       echo "dir=$YARN_CACHE_DIR" >> $GITHUB_OUTPUT
