@@ -447,7 +447,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin::Dictionary dict{isolate, exports};
-  dict.Set("Tray", Tray::GetConstructor(context));
+  dict.Set("Tray", Tray::GetConstructor(isolate, context));
 }
 
 }  // namespace

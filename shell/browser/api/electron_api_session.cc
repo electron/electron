@@ -1869,7 +1869,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("Session", Session::GetConstructor(context));
+  dict.Set("Session", Session::GetConstructor(isolate, context));
   dict.SetMethod("fromPartition", &FromPartition);
   dict.SetMethod("fromPath", &FromPath);
 }
