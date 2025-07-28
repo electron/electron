@@ -24,7 +24,7 @@ class ElectronPDFDocumentHelperClient : public pdf::PDFDocumentHelperClient {
   void SetPluginCanSave(content::RenderFrameHost* render_frame_host,
                         bool can_save) override;
 #if BUILDFLAG(ENABLE_SCREEN_AI_SERVICE)
-  void OnSearchifyStarted(content::WebContents* contents) override;
+  void OnSearchifyStarted(content::RenderFrameHost* render_frame_host) override;
 #endif
 };
 
