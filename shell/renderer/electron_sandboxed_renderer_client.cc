@@ -36,9 +36,9 @@ constinit thread_local ServiceWorkerData* service_worker_data = nullptr;
 
 constexpr std::string_view kEmitProcessEventKey = "emit-process-event";
 
-void InvokeEmitProcessEvent(v8::Local<v8::Context> context,
+void InvokeEmitProcessEvent(v8::Isolate* const isolate,
+                            v8::Local<v8::Context> context,
                             const std::string& event_name) {
-  auto* isolate = context->GetIsolate();
   // set by sandboxed_renderer/init.js
   auto binding_key = gin::ConvertToV8(isolate, kEmitProcessEventKey)
                          ->ToString(context)
@@ -133,9 +133,9 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
       isolate, isolate->GetCurrentContext(), "electron/js2c/sandbox_bundle",
       &sandbox_preload_bundle_params, &sandbox_preload_bundle_args);
 
-  v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context);
-  InvokeEmitProcessEvent(context, "loaded");
+  v8::HandleScope handle_scope{isolate};
+  v8::Context::Scope context_scope{context};
+  InvokeEmitProcessEvent(isolate, context, "loaded");
 }
 
 void ElectronSandboxedRendererClient::WillReleaseScriptContext(
@@ -147,9 +147,9 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
   auto* isolate = context->GetIsolate();
   v8::MicrotasksScope microtasks_scope(
       context, v8::MicrotasksScope::kDoNotRunMicrotasks);
-  v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context);
-  InvokeEmitProcessEvent(context, "exit");
+  v8::HandleScope handle_scope{isolate};
+  v8::Context::Scope context_scope{context};
+  InvokeEmitProcessEvent(isolate, context, "exit");
 }
 
 void ElectronSandboxedRendererClient::EmitProcessEvent(
@@ -163,11 +163,11 @@ void ElectronSandboxedRendererClient::EmitProcessEvent(
   v8::HandleScope handle_scope{isolate};
 
   v8::Local<v8::Context> context = GetContext(frame, isolate);
-  v8::MicrotasksScope microtasks_scope(
-      context, v8::MicrotasksScope::kDoNotRunMicrotasks);
-  v8::Context::Scope context_scope(context);
+  v8::MicrotasksScope microtasks_scope{
+      context, v8::MicrotasksScope::kDoNotRunMicrotasks};
+  v8::Context::Scope context_scope{context};
 
-  InvokeEmitProcessEvent(context, event_name);
+  InvokeEmitProcessEvent(isolate, context, event_name);
 }
 
 void ElectronSandboxedRendererClient::WillEvaluateServiceWorkerOnWorkerThread(
