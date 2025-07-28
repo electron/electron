@@ -196,6 +196,7 @@ void RendererClientBase::BindProcess(v8::Isolate* isolate,
 }
 
 bool RendererClientBase::ShouldLoadPreload(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) const {
   auto prefs = render_frame->GetBlinkPreferences();
@@ -205,7 +206,7 @@ bool RendererClientBase::ShouldLoadPreload(
   bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
 
   return (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
-         !IsWebViewFrame(context, render_frame);
+         !IsWebViewFrame(isolate, context, render_frame);
 }
 
 void RendererClientBase::RenderThreadStarted() {
@@ -545,10 +546,9 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
 }
 
 bool RendererClientBase::IsWebViewFrame(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) const {
-  auto* isolate = context->GetIsolate();
-
   if (render_frame->IsMainFrame())
     return false;
 

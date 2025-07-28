@@ -98,7 +98,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // Only load Node.js if we are a main frame or a devtools extension
   // unless Node.js support has been explicitly enabled for subframes.
-  if (!ShouldLoadPreload(renderer_context, render_frame))
+  if (!ShouldLoadPreload(isolate, renderer_context, render_frame))
     return;
 
   injected_frames_.insert(render_frame);
