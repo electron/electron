@@ -139,12 +139,12 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
 }
 
 void ElectronSandboxedRendererClient::WillReleaseScriptContext(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   if (injected_frames_.erase(render_frame) == 0)
     return;
 
-  auto* isolate = context->GetIsolate();
   v8::MicrotasksScope microtasks_scope(
       context, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope{isolate};
