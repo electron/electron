@@ -566,6 +566,7 @@ bool RendererClientBase::IsWebViewFrame(
 }
 
 void RendererClientBase::SetupMainWorldOverrides(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   auto prefs = render_frame->GetBlinkPreferences();
@@ -576,9 +577,8 @@ void RendererClientBase::SetupMainWorldOverrides(
   // Setup window overrides in the main world context
   // Wrap the bundle into a function that receives the isolatedApi as
   // an argument.
-  auto* isolate = context->GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context);
+  v8::HandleScope handle_scope{isolate};
+  v8::Context::Scope context_scope{context};
 
   auto isolated_api = gin_helper::Dictionary::CreateEmpty(isolate);
   isolated_api.SetMethod("allowGuestViewElementDefinition",
