@@ -31,6 +31,7 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
       const ElectronSandboxedRendererClient&) = delete;
 
   void InitializeBindings(v8::Local<v8::Object> binding,
+                          v8::Isolate* isolate,
                           v8::Local<v8::Context> context,
                           content::RenderFrame* render_frame);
   // electron::RendererClientBase:

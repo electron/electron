@@ -69,9 +69,9 @@ ElectronSandboxedRendererClient::~ElectronSandboxedRendererClient() = default;
 
 void ElectronSandboxedRendererClient::InitializeBindings(
     v8::Local<v8::Object> binding,
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
-  auto* isolate = context->GetIsolate();
   gin_helper::Dictionary b(isolate, binding);
   b.SetMethod("get", preload_utils::GetBinding);
   b.SetMethod("createPreloadScript", preload_utils::CreatePreloadScript);
@@ -122,7 +122,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // Wrap the bundle into a function that receives the binding object as
   // argument.
   auto binding = v8::Object::New(isolate);
-  InitializeBindings(binding, context, render_frame);
+  InitializeBindings(binding, isolate, context, render_frame);
 
   v8::LocalVector<v8::String> sandbox_preload_bundle_params(
       isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "binding")});
