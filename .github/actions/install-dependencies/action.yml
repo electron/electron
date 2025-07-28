@@ -10,6 +10,8 @@ runs:
       which node
       node --version
       node src/electron/script/yarn cache dir > yarn-cache-dir.txt
+      ls -la /home/runner/actions-runner/cached/externals
+      ls -la /home/runner/actions-runner/cached/externals/node20/bin/node
       cat yarn-cache-dir.txt
       export YARN_CACHE_DIR=$(cat yarn-cache-dir.txt)
       echo "dir=$YARN_CACHE_DIR" >> $GITHUB_OUTPUT
