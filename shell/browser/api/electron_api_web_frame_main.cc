@@ -675,7 +675,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("WebFrameMain", WebFrameMain::GetConstructor(context));
+  dict.Set("WebFrameMain", WebFrameMain::GetConstructor(isolate, context));
   dict.SetMethod("fromId", &FromID);
   dict.SetMethod("_fromIdIfExists", &FromIdIfExists);
   dict.SetMethod("_fromFtnIdIfExists", &FromFtnIdIfExists);

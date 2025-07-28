@@ -362,7 +362,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("Protocol", electron::api::Protocol::GetConstructor(context));
+  dict.Set("Protocol",
+           electron::api::Protocol::GetConstructor(isolate, context));
   dict.SetMethod("registerSchemesAsPrivileged", &RegisterSchemesAsPrivileged);
   dict.SetMethod("getStandardSchemes", &electron::api::GetStandardSchemes);
 }
