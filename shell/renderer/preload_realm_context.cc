@@ -181,7 +181,7 @@ class PreloadRealmLifetimeController
 
     v8::LocalVector<v8::Value> preload_realm_bundle_args(isolate, {binding});
 
-    util::CompileAndCall(context, "electron/js2c/preload_realm_bundle",
+    util::CompileAndCall(isolate, context, "electron/js2c/preload_realm_bundle",
                          &preload_realm_bundle_params,
                          &preload_realm_bundle_args);
   }

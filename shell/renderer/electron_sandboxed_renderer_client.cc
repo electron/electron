@@ -130,7 +130,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   v8::LocalVector<v8::Value> sandbox_preload_bundle_args(isolate, {binding});
 
   util::CompileAndCall(
-      isolate->GetCurrentContext(), "electron/js2c/sandbox_bundle",
+      isolate, isolate->GetCurrentContext(), "electron/js2c/sandbox_bundle",
       &sandbox_preload_bundle_params, &sandbox_preload_bundle_args);
 
   v8::HandleScope handle_scope(isolate);
