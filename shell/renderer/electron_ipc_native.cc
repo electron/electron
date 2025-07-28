@@ -19,8 +19,8 @@ namespace {
 constexpr std::string_view kIpcKey = "ipcNative";
 
 // Gets the private object under kIpcKey
-v8::Local<v8::Object> GetIpcObject(const v8::Local<v8::Context>& context) {
-  auto* isolate = context->GetIsolate();
+v8::Local<v8::Object> GetIpcObject(v8::Isolate* const isolate,
+                                   const v8::Local<v8::Context>& context) {
   auto binding_key = gin::StringToV8(isolate, kIpcKey);
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();
@@ -37,9 +37,9 @@ void InvokeIpcCallback(const v8::Local<v8::Context>& context,
                        const std::string& callback_name,
                        std::vector<v8::Local<v8::Value>> args) {
   TRACE_EVENT0("devtools.timeline", "FunctionCall");
-  auto* isolate = context->GetIsolate();
+  auto* const isolate = context->GetIsolate();
 
-  auto ipcNative = GetIpcObject(context);
+  auto ipcNative = GetIpcObject(isolate, context);
   if (ipcNative.IsEmpty())
     return;
 
