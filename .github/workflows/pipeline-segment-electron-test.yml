@@ -86,6 +86,19 @@ jobs:
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
+        //Check if /usr/local/opt/runner/provisioner/provisioner exists
+        if [ -f /usr/local/opt/runner/provisioner/provisioner ]; then
+          echo "/usr/local/opt/runner/provisioner/provisioner exists, configuring TCC DB"
+        fi
+        //Check if /opt/hca/hosted-compute-agent exists
+        if [ -f /opt/hca/hosted-compute-agent ]; then     
+          echo "/opt/hca/hosted-compute-agent exists, configuring TCC DB"
+        fi
+        // Dump all values in $HOME/Library/Application Support/com.apple.TCC/TCC.db
+        sqlite3 "$HOME/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
+        // Dump all values in /Library/Application Support/com.apple.TCC/TCC.db
+        sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
+        // Insert values into TCC DB
         configure_user_tccdb () {
           local values=$1
           local dbPath="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
