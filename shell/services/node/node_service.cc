@@ -122,9 +122,10 @@ void NodeService::Initialize(
 
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
-  v8::HandleScope scope(js_env_->isolate());
+  v8::Isolate* const isolate = js_env_->isolate();
+  v8::HandleScope scope{isolate};
 
-  node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
+  node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
 
   // Append program path for process.argv0
   auto program = base::CommandLine::ForCurrentProcess()->GetProgram();
@@ -136,9 +137,9 @@ void NodeService::Initialize(
 
   // Create the global environment.
   node_env_ = node_bindings_->CreateEnvironment(
-      js_env_->isolate(), js_env_->isolate()->GetCurrentContext(),
-      js_env_->platform(), js_env_->max_young_generation_size_in_bytes(),
-      params->args, params->exec_args);
+      isolate, isolate->GetCurrentContext(), js_env_->platform(),
+      js_env_->max_young_generation_size_in_bytes(), params->args,
+      params->exec_args);
 
   // Override the default handler set by NodeBindings.
   node_env_->isolate()->SetFatalErrorHandler(V8FatalErrorCallback);
