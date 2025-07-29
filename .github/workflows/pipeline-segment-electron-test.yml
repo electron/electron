@@ -86,11 +86,11 @@ jobs:
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
-        //Check if /usr/local/opt/runner/provisioner/provisioner exists
+        // Check if /usr/local/opt/runner/provisioner/provisioner exists
         if [ -f /usr/local/opt/runner/provisioner/provisioner ]; then
           echo "/usr/local/opt/runner/provisioner/provisioner exists, configuring TCC DB"
         fi
-        //Check if /opt/hca/hosted-compute-agent exists
+        // Check if /opt/hca/hosted-compute-agent exists
         if [ -f /opt/hca/hosted-compute-agent ]; then     
           echo "/opt/hca/hosted-compute-agent exists, configuring TCC DB"
         fi
