@@ -43,6 +43,7 @@ namespace electron {
 class CookieChangeNotifier;
 class ElectronDownloadManagerDelegate;
 class ElectronPermissionManager;
+class ElectronPreconnectManagerDelegate;
 class MediaDeviceIDSalt;
 class ProtocolRegistry;
 class ResolveProxyHelper;
@@ -192,6 +193,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   scoped_refptr<ResolveProxyHelper> resolve_proxy_helper_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
   std::unique_ptr<predictors::PreconnectManager> preconnect_manager_;
+  std::unique_ptr<ElectronPreconnectManagerDelegate>
+      preconnect_manager_delegate_;
   std::unique_ptr<ProtocolRegistry> protocol_registry_;
 
   std::optional<std::string> user_agent_;
