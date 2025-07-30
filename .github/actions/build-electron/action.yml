@@ -17,9 +17,6 @@ inputs:
   is-release:
     description: 'Is release build'
     required: true
-  strip-binaries:
-    description: 'Strip binaries (Linux only)'
-    required: false
   generate-symbols:
     description: 'Generate symbols'
     required: true
@@ -71,14 +68,6 @@ runs:
         NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
-    - name: Strip Electron Binaries ${{ inputs.step-suffix }}
-      shell: bash
-      if: ${{ inputs.strip-binaries == 'true' }}
-      run: |
-        cd src
-        electron/script/copy-debug-symbols.py --target-cpu="${{ inputs.target-arch }}" --out-dir=out/Default/debug --compress
-        electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}" --verbose
-        electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -104,19 +93,6 @@ runs:
         fi
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
-
-        if [ "${{ inputs.target-platform }}" = "linux" ]; then
-          if [ "${{ inputs.target-arch }}" = "arm" ]; then
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/v8_context_snapshot_generator
-          elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/v8_context_snapshot_generator
-          else
-            electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
-            electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
-          fi
-        fi
 
         e build --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         if [ "${{ inputs.target-platform }}" = "win" ]; then
