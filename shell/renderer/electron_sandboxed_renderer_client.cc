@@ -114,7 +114,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames
-  if (!ShouldLoadPreload(context, render_frame))
+  if (!ShouldLoadPreload(isolate, context, render_frame))
     return;
 
   injected_frames_.insert(render_frame);

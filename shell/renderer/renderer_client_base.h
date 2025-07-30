@@ -77,7 +77,8 @@ class RendererClientBase : public content::ContentRendererClient
       v8::Local<v8::Object> context,
       v8::Local<v8::Function> register_cb);
 
-  bool IsWebViewFrame(v8::Local<v8::Context> context,
+  bool IsWebViewFrame(v8::Isolate* isolate,
+                      v8::Local<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -89,7 +90,8 @@ class RendererClientBase : public content::ContentRendererClient
                    gin_helper::Dictionary* process,
                    content::RenderFrame* render_frame);
 
-  bool ShouldLoadPreload(v8::Local<v8::Context> context,
+  bool ShouldLoadPreload(v8::Isolate* isolate,
+                         v8::Local<v8::Context> context,
                          content::RenderFrame* render_frame) const;
 
   // content::ContentRendererClient:
