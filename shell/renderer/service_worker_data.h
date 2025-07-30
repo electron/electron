@@ -25,6 +25,7 @@ class ServiceWorkerData : public mojom::ElectronRenderer {
  public:
   ServiceWorkerData(blink::WebServiceWorkerContextProxy* proxy,
                     int64_t service_worker_version_id,
+                    v8::Isolate* const isolate,
                     const v8::Local<v8::Context>& v8_context);
   ~ServiceWorkerData() override;
 

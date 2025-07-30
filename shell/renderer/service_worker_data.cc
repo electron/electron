@@ -18,11 +18,12 @@ ServiceWorkerData::~ServiceWorkerData() = default;
 
 ServiceWorkerData::ServiceWorkerData(blink::WebServiceWorkerContextProxy* proxy,
                                      int64_t service_worker_version_id,
+                                     v8::Isolate* const isolate,
                                      const v8::Local<v8::Context>& v8_context)
-    : proxy_(proxy),
-      service_worker_version_id_(service_worker_version_id),
-      isolate_(v8_context->GetIsolate()),
-      v8_context_(v8_context->GetIsolate(), v8_context) {
+    : proxy_{proxy},
+      service_worker_version_id_{service_worker_version_id},
+      isolate_{isolate},
+      v8_context_(isolate_, v8_context) {
   proxy_->GetAssociatedInterfaceRegistry()
       .AddInterface<mojom::ElectronRenderer>(
           base::BindRepeating(&ServiceWorkerData::OnElectronRendererRequest,

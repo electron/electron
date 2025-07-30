@@ -183,13 +183,15 @@ void ElectronSandboxedRendererClient::WillEvaluateServiceWorkerOnWorkerThread(
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kServiceWorkerPreload)) {
+    v8::Isolate* const v8_isolate = v8_context->GetIsolate();
+
     if (!service_worker_data) {
-      service_worker_data = new ServiceWorkerData(
-          context_proxy, service_worker_version_id, v8_context);
+      service_worker_data = new ServiceWorkerData{
+          context_proxy, service_worker_version_id, v8_isolate, v8_context};
     }
 
-    preload_realm::OnCreatePreloadableV8Context(
-        v8_context->GetIsolate(), v8_context, service_worker_data);
+    preload_realm::OnCreatePreloadableV8Context(v8_isolate, v8_context,
+                                                service_worker_data);
   }
 }
 
