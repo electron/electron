@@ -83,6 +83,11 @@ jobs:
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
       with:
         node-version: 20.19.x
+    - name: Get list of TCC permissions on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        cd /System/Library/PrivateFrameworks/TCC.framework/Support
+        strings tccd | grep -iEo "^kTCCService.*" | sort        
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
@@ -119,6 +124,7 @@ jobs:
             "'kTCCServiceAppleEvents','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceCamera',' /opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceBluetoothAlways',' /opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceBluetoothPeripheral',' /opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
         )
         for values in "${userValuesArray[@]}"; do
           # Sonoma and higher have a few extra values
