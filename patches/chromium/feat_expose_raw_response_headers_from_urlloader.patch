@@ -17,10 +17,10 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index ec76c1990b6d842e6727a1c034f831b7e43966b9..86a3bcc8fa771a333e6e269ed822af1c61369530 100644
+index 4c6da7daa167e8e687d43b6c59948fdc694052f7..1f9a142462146f1cef675455a782996b0d533cfd 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -179,6 +179,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
+@@ -196,6 +196,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
    allow_cookies_from_browser = other.allow_cookies_from_browser;
    include_request_cookies_with_response =
        other.include_request_cookies_with_response;
@@ -28,7 +28,7 @@ index ec76c1990b6d842e6727a1c034f831b7e43966b9..86a3bcc8fa771a333e6e269ed822af1c
    enabled_client_hints = other.enabled_client_hints;
    cookie_observer =
        Clone(&const_cast<mojo::PendingRemote<mojom::CookieAccessObserver>&>(
-@@ -214,6 +215,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
+@@ -231,6 +232,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
      const TrustedParams& other) const {
    return isolation_info.IsEqualForTesting(other.isolation_info) &&
           disable_secure_dns == other.disable_secure_dns &&
@@ -37,22 +37,22 @@ index ec76c1990b6d842e6727a1c034f831b7e43966b9..86a3bcc8fa771a333e6e269ed822af1c
           allow_cookies_from_browser == other.allow_cookies_from_browser &&
           include_request_cookies_with_response ==
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index 2c6204c64a234c056b7baef43921fe24b2013e82..bed5b88fbb39c21160a0d8d4062f1ea2a84c46d1 100644
+index 3137a61cba8ea72aaa422fadaf4f530b22832aa5..3bb07ad3981e21563debfab1d8080767fd349c72 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
-@@ -77,6 +77,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
+@@ -91,6 +91,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
      bool has_user_activation = false;
      bool allow_cookies_from_browser = false;
      bool include_request_cookies_with_response = false;
 +    bool report_raw_headers = false;
-     std::optional<std::vector<network::mojom::WebClientHintsType>>
-         enabled_client_hints;
+     std::optional<EnabledClientHints> enabled_client_hints;
      mojo::PendingRemote<mojom::CookieAccessObserver> cookie_observer;
+     mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 134a15fd2f3e6b7d941370741abee1698132c67b..80877a49fadd7ff2f9ad6d15e5f55eb35b2a8116 100644
+index 1d4476c7a6d75bf1a02dc874c971068ab99345bd..4b5113ce912bdbe8eb75482bb9d5361272a3a628 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
-@@ -50,6 +50,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
+@@ -64,6 +64,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
    out->allow_cookies_from_browser = data.allow_cookies_from_browser();
    out->include_request_cookies_with_response =
        data.include_request_cookies_with_response();
@@ -61,10 +61,10 @@ index 134a15fd2f3e6b7d941370741abee1698132c67b..80877a49fadd7ff2f9ad6d15e5f55eb3
      return false;
    }
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 39f5dcef5291dfdaf778e27c1b0152313feb77b3..9f1c16e1dfccc8787a9079095687002b7e58b4db 100644
+index 933a3ccdbea3182035a6626f6c288719ce46ab62..5fdc6cd9539ed4501bc577b7eefb629e0d8912f0 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
-@@ -73,6 +73,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
+@@ -101,6 +101,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
        const network::ResourceRequest::TrustedParams& trusted_params) {
      return trusted_params.include_request_cookies_with_response;
    }
@@ -72,14 +72,14 @@ index 39f5dcef5291dfdaf778e27c1b0152313feb77b3..9f1c16e1dfccc8787a9079095687002b
 +      const network::ResourceRequest::TrustedParams& trusted_params) {
 +    return trusted_params.report_raw_headers;
 +  }
-   static const std::optional<std::vector<network::mojom::WebClientHintsType>>&
+   static const std::optional<
+       network::ResourceRequest::TrustedParams::EnabledClientHints>&
    enabled_client_hints(
-       const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index 596b2555b9a8730a3e34019e32bb06c3f459a4a5..0ccc425bf87ef34442f9013d9dfda71ab547752b 100644
+index 02651c7b3b0cb0ab8fd3a4c84ab5b39b0e773536..0cbf060b11cc47c24e5cde0d36edb88cd50d5c98 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
-@@ -88,6 +88,9 @@ struct TrustedUrlRequestParams {
+@@ -103,6 +103,9 @@ struct TrustedUrlRequestParams {
    // client which should not be able to see them.
    bool include_request_cookies_with_response = false;
  
@@ -88,7 +88,7 @@ index 596b2555b9a8730a3e34019e32bb06c3f459a4a5..0ccc425bf87ef34442f9013d9dfda71a
 +
    // Enabled Client Hints to be evaluated quickly within the network layer
    // when it receives the AcceptCHFrame.
-   // The value is set only if the flag is enabled.
+   EnabledClientHints? enabled_client_hints;
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
 index fbc817126489e5422fd4bd11b6bd9744d648f8ff..b51b2ebe0f3291d04b0479776ddbeb1e05197f56 100644
 --- a/services/network/public/mojom/url_response_head.mojom
