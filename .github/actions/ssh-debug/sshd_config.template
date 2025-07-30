@@ -1,0 +1,9 @@
+Port 2222
+HostKey $PWD/ssh_host_rsa_key
+PidFile $PWD/sshd.pid
+
+# Only allow single user
+AllowUsers $USER
+
+# Only allow those keys
+AuthorizedKeysFile $PWD/authorized_keys
