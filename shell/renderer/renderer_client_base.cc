@@ -604,7 +604,7 @@ void RendererClientBase::SetupMainWorldOverrides(
   v8::LocalVector<v8::Value> isolated_bundle_args(isolate,
                                                   {isolated_api.GetHandle()});
 
-  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
+  util::CompileAndCall(isolate, context, "electron/js2c/isolated_bundle",
                        &isolated_bundle_params, &isolated_bundle_args);
 }
 
