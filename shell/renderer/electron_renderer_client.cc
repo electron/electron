@@ -178,6 +178,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 }
 
 void ElectronRendererClient::WillReleaseScriptContext(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   if (injected_frames_.erase(render_frame) == 0)
@@ -189,7 +190,7 @@ void ElectronRendererClient::WillReleaseScriptContext(
   if (iter == environments_.end())
     return;
 
-  gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
+  gin_helper::EmitEvent(isolate, env->process_object(), "exit");
 
   // The main frame may be replaced.
   if (env == node_bindings_->uv_env())

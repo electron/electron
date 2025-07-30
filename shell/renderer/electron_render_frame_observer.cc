@@ -151,7 +151,8 @@ void ElectronRenderFrameObserver::WillReleaseScriptContext(
     v8::Local<v8::Context> context,
     int world_id) {
   if (ShouldNotifyClient(world_id))
-    renderer_client_->WillReleaseScriptContext(context, render_frame_);
+    renderer_client_->WillReleaseScriptContext(context->GetIsolate(), context,
+                                               render_frame_);
 }
 
 void ElectronRenderFrameObserver::OnDestruct() {

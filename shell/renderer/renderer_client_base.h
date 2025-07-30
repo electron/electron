@@ -59,7 +59,8 @@ class RendererClientBase : public content::ContentRendererClient
   virtual void DidCreateScriptContext(v8::Isolate* isolate,
                                       v8::Local<v8::Context> context,
                                       content::RenderFrame* render_frame) = 0;
-  virtual void WillReleaseScriptContext(v8::Local<v8::Context> context,
+  virtual void WillReleaseScriptContext(v8::Isolate* isolate,
+                                        v8::Local<v8::Context> context,
                                         content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
   virtual void SetupMainWorldOverrides(v8::Isolate* isolate,
