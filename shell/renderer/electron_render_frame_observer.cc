@@ -142,7 +142,8 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   if (should_create_isolated_context) {
     CreateIsolatedWorldContext();
     if (!renderer_client_->IsWebViewFrame(isolate, context, render_frame_))
-      renderer_client_->SetupMainWorldOverrides(context, render_frame_);
+      renderer_client_->SetupMainWorldOverrides(isolate, context,
+                                                render_frame_);
   }
 }
 
