@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index c38ce5558472c785837f1d4d2542f2edf2ffab58..ffa17d3937193e5e737bd05af2434d76282066e5 100644
+index c38ce5558472c785837f1d4d2542f2edf2ffab58..219f562f51b45d2c961246e232ef4daf9d1f5c19 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -46,7 +46,7 @@
@@ -102,7 +102,11 @@ index c38ce5558472c785837f1d4d2542f2edf2ffab58..ffa17d3937193e5e737bd05af2434d76
    // `fullscreen_start_time_` is null if a fullscreen tab moves to a new window.
    if (fullscreen_start_time_ && exclusive_access_tab()) {
      ukm::SourceId source_id =
-@@ -706,15 +708,15 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -703,18 +705,19 @@ void FullscreenController::ExitFullscreenModeInternal() {
+         .Record(ukm::UkmRecorder::Get());
+     fullscreen_start_time_.reset();
+   }
++#endif
  
    toggled_into_fullscreen_ = false;
    started_fullscreen_transition_ = true;
@@ -121,7 +125,7 @@ index c38ce5558472c785837f1d4d2542f2edf2ffab58..ffa17d3937193e5e737bd05af2434d76
    exclusive_access_manager()->context()->ExitFullscreen();
    extension_url_.reset();
    exclusive_access_manager()->UpdateBubble(base::NullCallback());
-@@ -778,8 +780,12 @@ url::Origin FullscreenController::GetEmbeddingOrigin() const {
+@@ -778,8 +781,12 @@ url::Origin FullscreenController::GetEmbeddingOrigin() const {
  void FullscreenController::RecordMetricsOnFullscreenApiRequested(
      content::RenderFrameHost* requesting_frame) {
    history::HistoryService* service =
