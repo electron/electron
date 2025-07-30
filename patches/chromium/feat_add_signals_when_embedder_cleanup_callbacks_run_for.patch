@@ -88,10 +88,10 @@ index dc3a5b0678b9c686e241b492e2c3b5ac833611a3..32a7ba4f557e65d9525d2ca07e8597e7
    // testing.
    V8IsolateMemoryDumpProvider* isolate_memory_dump_provider_for_testing()
 diff --git a/gin/wrappable.cc b/gin/wrappable.cc
-index 97277a98bcaa9badcc549a9aaf3388f3019f5602..2b6338e701fb255bb1089a4bed32f94bbb257064 100644
+index 81ae860e73cee80e51c4ab3f2f24d44a52d30824..7474c7250c81975f25fea194cd816453a092f1cd 100644
 --- a/gin/wrappable.cc
 +++ b/gin/wrappable.cc
-@@ -71,6 +71,8 @@ void WrappableBase::SetWrapper(v8::Isolate* isolate,
+@@ -75,6 +75,8 @@ void WrappableBase::SetWrapper(v8::Isolate* isolate,
  DeprecatedWrappableBase::DeprecatedWrappableBase() = default;
  
  DeprecatedWrappableBase::~DeprecatedWrappableBase() {
@@ -100,7 +100,7 @@ index 97277a98bcaa9badcc549a9aaf3388f3019f5602..2b6338e701fb255bb1089a4bed32f94b
    wrapper_.Reset();
  }
  
-@@ -86,9 +88,13 @@ const char* DeprecatedWrappableBase::GetTypeName() {
+@@ -90,15 +92,22 @@ const char* DeprecatedWrappableBase::GetTypeName() {
  void DeprecatedWrappableBase::FirstWeakCallback(
      const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
    DeprecatedWrappableBase* wrappable = data.GetParameter();
@@ -115,9 +115,6 @@ index 97277a98bcaa9badcc549a9aaf3388f3019f5602..2b6338e701fb255bb1089a4bed32f94b
 +    data.SetSecondPassCallback(SecondWeakCallback);
 +  }
  }
- 
- NamedPropertyInterceptor*
-@@ -98,8 +104,11 @@ DeprecatedWrappableBase::GetNamedPropertyInterceptor() {
  
  void DeprecatedWrappableBase::SecondWeakCallback(
      const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
@@ -148,7 +145,7 @@ index 97277a98bcaa9badcc549a9aaf3388f3019f5602..2b6338e701fb255bb1089a4bed32f94b
  
  void* FromV8Impl(v8::Isolate* isolate,
 diff --git a/gin/wrappable.h b/gin/wrappable.h
-index beb6818d04dbbe7d90c686e73d505bae43139fcc..bdef19d5a9d828aeaeb47efcc0a82d83a568359a 100644
+index 2ed30ffbcded21e25c60b142a3c054fbad1053f4..15aa2afce12eda87e015a7acf05fc588594816c0 100644
 --- a/gin/wrappable.h
 +++ b/gin/wrappable.h
 @@ -175,6 +175,13 @@ class GIN_EXPORT DeprecatedWrappableBase {
