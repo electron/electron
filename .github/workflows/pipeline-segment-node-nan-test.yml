@@ -38,7 +38,7 @@ env:
 jobs:
   node-tests:
     name: Run Node.js Tests
-    runs-on: electron-arc-linux-amd64-8core
+    runs-on: electron-arc-centralus-linux-amd64-8core
     timeout-minutes: 30
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -92,7 +92,7 @@ jobs:
         done
   nan-tests:
     name: Run Nan Tests
-    runs-on: electron-arc-linux-amd64-4core
+    runs-on: electron-arc-centralus-linux-amd64-4core
     timeout-minutes: 30
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
