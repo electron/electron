@@ -72,8 +72,8 @@ or `undefined` if there is no WebFrameMain associated with the given IDs.
 * `frameToken` string - A `string` representing the unique frame token in the
   current renderer process.
 
-Returns `WebFrameMain | undefined` - A frame with the given process and frame token,
-or `undefined` if there is no WebFrameMain associated with the given IDs.
+Returns `WebFrameMain | null` - A frame with the given process and frame token,
+or `null` if there is no WebFrameMain associated with the given IDs.
 
 ## Class: WebFrameMain
 
