@@ -196,6 +196,7 @@ void RendererClientBase::BindProcess(v8::Isolate* isolate,
 }
 
 bool RendererClientBase::ShouldLoadPreload(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) const {
   auto prefs = render_frame->GetBlinkPreferences();
@@ -205,7 +206,7 @@ bool RendererClientBase::ShouldLoadPreload(
   bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
 
   return (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
-         !IsWebViewFrame(context, render_frame);
+         !IsWebViewFrame(isolate, context, render_frame);
 }
 
 void RendererClientBase::RenderThreadStarted() {
@@ -545,10 +546,9 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
 }
 
 bool RendererClientBase::IsWebViewFrame(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) const {
-  auto* isolate = context->GetIsolate();
-
   if (render_frame->IsMainFrame())
     return false;
 
@@ -566,6 +566,7 @@ bool RendererClientBase::IsWebViewFrame(
 }
 
 void RendererClientBase::SetupMainWorldOverrides(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   auto prefs = render_frame->GetBlinkPreferences();
@@ -576,9 +577,8 @@ void RendererClientBase::SetupMainWorldOverrides(
   // Setup window overrides in the main world context
   // Wrap the bundle into a function that receives the isolatedApi as
   // an argument.
-  auto* isolate = context->GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context);
+  v8::HandleScope handle_scope{isolate};
+  v8::Context::Scope context_scope{context};
 
   auto isolated_api = gin_helper::Dictionary::CreateEmpty(isolate);
   isolated_api.SetMethod("allowGuestViewElementDefinition",
@@ -604,7 +604,7 @@ void RendererClientBase::SetupMainWorldOverrides(
   v8::LocalVector<v8::Value> isolated_bundle_args(isolate,
                                                   {isolated_api.GetHandle()});
 
-  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
+  util::CompileAndCall(isolate, context, "electron/js2c/isolated_bundle",
                        &isolated_bundle_params, &isolated_bundle_args);
 }
 

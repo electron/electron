@@ -21,12 +21,12 @@
 namespace electron::util {
 
 v8::MaybeLocal<v8::Value> CompileAndCall(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     const char* id,
     v8::LocalVector<v8::String>* parameters,
     v8::LocalVector<v8::Value>* arguments) {
-  v8::Isolate* isolate = context->GetIsolate();
-  v8::TryCatch try_catch(isolate);
+  v8::TryCatch try_catch{isolate};
 
   thread_local node::builtins::BuiltinLoader builtin_loader;
   v8::MaybeLocal<v8::Function> compiled = builtin_loader.LookupAndCompile(
