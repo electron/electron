@@ -132,13 +132,20 @@ jobs:
           # Sonoma and higher have a few extra values
           # Ref: https://github.com/actions/runner-images/blob/main/images/macos/scripts/build/configure-tccdb-macos.sh
           if [ "$OSTYPE" = "darwin23" ]; then
+            echo "Adding values for macOS Sonoma and higher $OSTYPE"
             configure_user_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
             configure_sys_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
           else
+            echo "Adding values for macOS versions lower than Sonoma $OSTYPE"
             configure_user_tccdb "$values"
             configure_sys_tccdb "$values"
           fi
         done
+        echo "Dump all values in $HOME/Library/Application Support/com.apple.TCC/TCC.db AFTER"
+        sqlite3 "$HOME/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
+        echo "Dump all values in /Library/Application Support/com.apple.TCC/TCC.db AFTER"
+        sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
+
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server
