@@ -79,7 +79,7 @@ app.whenReady().then(() => {
 ### `new Tray(image, [guid])`
 
 * `image` ([NativeImage](native-image.md) | string)
-* `guid` string (optional) _Windows_ _macOS_ - A unique string used to identify the tray icon.
+* `guid` string (optional) _Windows_ _macOS_ - A unique string used to identify the tray icon. Must adhere to [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) format.
 
 **Windows**
 
