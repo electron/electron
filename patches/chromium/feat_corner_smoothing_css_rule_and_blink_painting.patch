@@ -45,7 +45,7 @@ index e189d584f05f2ce6354c03a9b19f56985df8a15e..41b430e8f2416be098494f5c49fb97ca
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 2e22010b2d989849a1e0b697178923b51b44beab..ac47c476a569f8c49016468b20d243b9d9f3d962 100644
+index 7a974e81271e2f0193d8d311e96aa1e4f783d01f..0e8fa29cad7dee14cd38c808a6eeb49cfcc9879f 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
 @@ -8966,6 +8966,26 @@
@@ -76,7 +76,7 @@ index 2e22010b2d989849a1e0b697178923b51b44beab..ac47c476a569f8c49016468b20d243b9
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index 0062510d8873bf14f905f872e0afe1060674c96d..f0629cb1259cbc08749820f4499dbdc1f07faf9b 100644
+index 2e4d05c1004093e7b694aaa4c61890837c522be5..756360fad130635ab95ab10c31ea044a54914d25 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
 @@ -352,6 +352,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
@@ -89,7 +89,7 @@ index 0062510d8873bf14f905f872e0afe1060674c96d..f0629cb1259cbc08749820f4499dbdc1
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index a2ea50d59101ec7b2f340a5390aeb4e733e0ba5a..dfa588ec480110524e8bcb9292f057bc68945025 100644
+index 5024cbbc9c7030126b3ea79d62a94c3655adbd47..087717498eeb43208f9e430adeb671cf98e650e0 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 @@ -12273,5 +12273,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
@@ -312,7 +312,7 @@ index 7e3d46902fbf736b4240eb3fcb89975a7b222197..57fdc89fc265ad70cb0bff8443cc1026
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index f54b67d53fce6e27a1d114595e72e9130fcf0cf6..33a7bffb72a9919f2b6c5aee334d1e55385adc7a 100644
+index 5df85dfe5b214ba0b52ce43c00e7929d648235fb..bd720b56a0d190cee3335c6089c810118d7d4dd3 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@
