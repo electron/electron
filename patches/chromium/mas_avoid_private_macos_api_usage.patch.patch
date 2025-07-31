@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 4f6afc75d3cbeda40b34442153653beecd09767c..e08e5b83dad4d2e6f6b0c09303718c16f2ddcef9 100644
+index 723b60da9dd9a3c3e0ce04cd33150ed9e71fcbf6..434f8add599bc9967f7c7a2bd090f8f9f4a17aa0 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1055,6 +1055,7 @@ component("base") {
@@ -81,7 +81,7 @@ index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..f328fbb49c45991f44a9c75325491d08
  
  }  // namespace base
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index 8b29bb46dabc3e88a36e6e03f11d913fa490c57d..dfd97121493210d7f7b26f9f6d93400b64c95685 100644
+index b63d58da9837ba4d1e4aff8f24f2cd977c5ed02d..8387fd7d2bcf8951b6cc024829c16d970799190c 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -84,6 +84,10 @@ int posix_spawnattr_set_csm_np(const posix_spawnattr_t*, uint32_t)
@@ -208,19 +208,19 @@ index ff1e356ff696d3830d02644969c36a71fdf32ff6..b39c716c52524b95f2d3417a98e60c0c
      sources += [ "os_crypt_win.cc" ]
      deps += [ "//components/version_info" ]
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index 8af38247c46dc85f95bb15a03f2eb141d0bbf65a..eda4d2956225cbb9400ab5462db70d95ff3b0958 100644
+index 1d4c16a300227e5e8269e2c2564cb5e87ec8ee65..3bcbb33700b2b9349795c05c12e44b4fafcc0370 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
 @@ -16,6 +16,7 @@
  #include "base/strings/string_view_util.h"
  #include "build/branding_buildflags.h"
- #include "crypto/apple_keychain.h"
+ #include "crypto/apple/keychain.h"
 +#include "electron/mas.h"
  #include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
  
- using crypto::AppleKeychain;
+ using crypto::apple::Keychain;
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index ad40ddbbcb0fcfa070833ea6c0d01432bbb67768..df632da340c132f469f4f35738514763437e67fc 100644
+index f93b68dacdba883b259555f486417b94e80152bf..21b6b7a169e201d570d77da9dde54cc2a334c21c 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -75,6 +75,7 @@ component("app_shim") {
@@ -477,7 +477,7 @@ index acc9537464c2a54ffc22956873dbdba74500c20b..b0b7d98e20ed0cc63a38d6a2ce462ac6
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 96ea72422541e6e3c30d9e22d441dc8efe299013..ff34f49b122be9bcbee26bb103ddca5250f32581 100644
+index 4017fef63c549b535c1eedd3571e69b7fac6f3e2..de0ed691367bda45e5310b1f132171e3a1f2dd3f 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -383,6 +383,7 @@ viz_component("service") {
@@ -582,7 +582,7 @@ index 2d5cad5d7a4ab9292a5f966123687dee06f4512b..ae798fc8f923a9b590c0d9ed703946a2
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4ba3dd259934c46de5732c1d131d412e5eab52ea..4144040846b2812d4bb891512c633ec62df60382 100644
+index 7e5bce7cf95f8d99ceb5dc5bc589140d07f1a7d7..3902892f323b339f4af8cd2b69b5c2aae5032b05 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -339,6 +339,7 @@ source_set("browser") {
@@ -703,7 +703,7 @@ index e38279e46d8fe621db24b4d94f5811459b4ca6b5..26592c97be3474a24f294d3cf2e74627
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index ef3b5ceba5e460cdfc609245a53d6d1720f32564..910043ba8cc79774550c0097f5bef53e3ff12d63 100644
+index 86da823ffba50c0428e4bd0c763b077beb1268b7..8441af55be805440791c187e11f30148276bc6da 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -274,6 +274,7 @@ source_set("common") {
@@ -715,7 +715,7 @@ index ef3b5ceba5e460cdfc609245a53d6d1720f32564..910043ba8cc79774550c0097f5bef53e
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index f6ebfaf945c0b024f18e5e09f04dfa43caf63e22..c8e241cdeac0bfbfe715404722aab6d6d1ded2f1 100644
+index a2797859bf189a6feb9ac1b6861f68c7b39f7178..76faa5a14ea716f8edb52d1032fca8e3bb237481 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -319,6 +319,7 @@ target(link_target_type, "renderer") {
@@ -797,10 +797,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 2588b79f726fda56dcc53dc8313a6aa883934409..664ab8325c8b9824077da8cafdfd82d09701809b 100644
+index e342b42f42da01f93cd599ade255dac064016881..ddcb3607b3a031e6728dfe225c299a575f803798 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -670,6 +670,7 @@ static_library("test_support") {
+@@ -669,6 +669,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -808,7 +808,7 @@ index 2588b79f726fda56dcc53dc8313a6aa883934409..664ab8325c8b9824077da8cafdfd82d0
    ]
  
    data_deps = [
-@@ -1120,6 +1121,8 @@ static_library("browsertest_support") {
+@@ -1119,6 +1120,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -817,7 +817,7 @@ index 2588b79f726fda56dcc53dc8313a6aa883934409..664ab8325c8b9824077da8cafdfd82d0
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2002,6 +2005,7 @@ test("content_browsertests") {
+@@ -2001,6 +2004,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -825,23 +825,23 @@ index 2588b79f726fda56dcc53dc8313a6aa883934409..664ab8325c8b9824077da8cafdfd82d0
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3311,6 +3315,7 @@ test("content_unittests") {
-     "//ui/shell_dialogs:shell_dialogs",
+@@ -3315,6 +3319,7 @@ test("content_unittests") {
+     "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
-+    "//electron/build/config:generate_mas_config"
++    "//electron/build/config:generate_mas_config",
    ]
  
    if (enable_nocompile_tests) {
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index ea0d03e4eb473a2eec4164191c02184577de4366..af2d64f0cf19c4325013d5f62da5079f379ef085 100644
+index 40c262f1425b366b067abea4875d273ee59a1e9d..4bc4981931de0b430a163ad2ed36f9e087c2066a 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
 @@ -229,6 +229,7 @@ static_library("web_test_browser") {
      "//ui/gl",
-     "//ui/shell_dialogs:shell_dialogs",
+     "//ui/shell_dialogs",
      "//url",
-+    "//electron/build/config:generate_mas_config"
++    "//electron/build/config:generate_mas_config",
    ]
  
    if (is_mac) {
@@ -904,7 +904,7 @@ index f300e8d331057e894b43b74944e5052c39206844..4ff5277d550485cd79c5b5316d89c730
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 77b69bc2a6329c09ecd635bc9e003985ba631360..990df27831c390a2d8801df271006b0fa59752cf 100644
+index 1e35afb74f7a149fb01ec2a2c62547a8aa6f1de1..05f4628930e74ea668a85968f74c678e57a6429d 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
 @@ -128,6 +128,7 @@ component("service") {
@@ -938,7 +938,7 @@ index d288ffce5c1265adbdefc571f840851026e7479e..e9a6e8c31401750d270fcc55ef1116b2
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index e2e8e314aa5915f6b3be2ea739878d7efcc46efe..aae1bf8e0990792992227199e18c1f14f108c05d 100644
+index adb7e043e9dd3b328cff2828cfb4c8a196b22250..556ce9a1f5ed5359b7f4d059cd3e54a207af1359 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -201,6 +201,7 @@ source_set("audio") {
@@ -1407,7 +1407,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index f70ce69bb932a217759d8c06104ccdae5f67d670..32029a906c0d205ad8d2658b11e5a55495cf95b7 100644
+index af174fda43b9737bc4e0c15024bbe98eab83e3b8..73f782e5ce9fdbcefd4f3724b220955d88f336cb 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -423,6 +423,7 @@ component("core") {
@@ -1555,7 +1555,7 @@ index dcf493d62990018040a3f84b6f875af737bd2214..3d1c4dcc9ee0bbfdac15f40d9c74e9f3
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 2d982e757d94976ec68863726db8e8a85b1034e5..d2ec88c6f923e9f7147d33ccd53c3659878d4f72 100644
+index 79a01b007924230edf8c0b32945d3fb4e6f2445d..649a4a80b023808b2c4c28689a0da0401560090a 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
 @@ -298,6 +298,7 @@ component("platform") {
@@ -1649,7 +1649,7 @@ index 6846060ef9622d8fc8d1d6c8da16e2f1b785e6bd..05c22db87e882b246bd7034e027cf149
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 3b7352f99bcd41020d5501395c1c23588c00d39d..6abf1cc742505a902366b367d739c5f6090d9667 100644
+index 20361d421d3e29fda6f1b50beccc44bbf0bfbb37..a415bf9cd66cadfd9c231a0c605e2fa08ff45b4d 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -370,6 +370,13 @@ component("base") {
@@ -1772,7 +1772,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..de771ef414b9a69e331261524f08e9a1
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index abf9f37cc7e80c1d2f1ad216912a033cb5492310..a06b565f2421a7c0fc4d9fdb51932fc30fc0d5a6 100644
+index 5c78ec26210044b8c556431212e9b201dbf0fd8b..a23edba020ca7cd34f7f806d923ad5f1464061b2 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -129,6 +129,12 @@ component("display") {
@@ -1874,7 +1874,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 88c3981b7be09054de9496ff81fcb9db206235b5..b4917fdc2fb6f6f75f1c6696c5bb2386ee2d0a0b 100644
+index 2d45c71e5298cd4f06dfdf457fc0e3b603794ad1..4091b5be5a4b7b70e28ae662270cd87cd2b68f95 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -721,6 +721,8 @@ component("views") {

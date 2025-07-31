@@ -14,10 +14,10 @@ This change patches it out to prevent the DCHECK.
 It can be removed once/if we see a better solution to the problem.
 
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index 4645ecf79850bb36b0a5d924d48d073dc867cc21..c6f0daf4ecdee39c362409caa3840bfe9a99d3b2 100644
+index a7ea6f13e6506301696bf6f8c654e5dcc26d7fde..e7d359de77854b6f7f1c71c683565fe7cf5fa103 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
-@@ -228,7 +228,7 @@ scoped_refptr<SiteInstanceImpl> SiteInstanceImpl::CreateForGuest(
+@@ -226,7 +226,7 @@ scoped_refptr<SiteInstanceImpl> SiteInstanceImpl::CreateForGuest(
      BrowserContext* browser_context,
      const StoragePartitionConfig& partition_config) {
    DCHECK(browser_context);

@@ -38,7 +38,7 @@ index 8168b4cfbafd42fa93a5aa9a3691c2552fabfb86..ba49212bd76d209f99c1cee649fc1466
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 6996fd43053f1da7b4e721e9c13cf62127c42ef2..6544da9c4554ca9c2a444f4f9d5896c24b65b358 100644
+index df6326f6ab2fd87abe4bf04834683f7ab500dd60..8247ce44638b42d43eacd73409631e2a73d7c422 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -18,12 +18,16 @@
@@ -58,7 +58,7 @@ index 6996fd43053f1da7b4e721e9c13cf62127c42ef2..6544da9c4554ca9c2a444f4f9d5896c2
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
-@@ -78,7 +82,7 @@
+@@ -79,7 +83,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -67,7 +67,7 @@ index 6996fd43053f1da7b4e721e9c13cf62127c42ef2..6544da9c4554ca9c2a444f4f9d5896c2
  #include "chrome/browser/shell_integration_win.h"
  #include "content/public/browser/render_widget_host_view.h"
  #include "ui/aura/window.h"
-@@ -433,7 +437,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -434,7 +438,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
@@ -76,11 +76,12 @@ index 6996fd43053f1da7b4e721e9c13cf62127c42ef2..6544da9c4554ca9c2a444f4f9d5896c2
    std::wstring app_user_model_id;
    Browser* browser = chrome::FindBrowserWithTab(controller->GetWebContents());
    if (browser) {
-@@ -1248,10 +1252,12 @@ void VideoOverlayWindowViews::SetUpViews() {
-         l10n_util::GetStringUTF16(
-             IDS_PICTURE_IN_PICTURE_LIVE_CAPTION_CONTROL_TEXT));
+@@ -1247,11 +1251,13 @@ void VideoOverlayWindowViews::SetUpViews() {
+             &VideoOverlayWindowViews::OnLiveCaptionButtonPressed,
+             base::Unretained(this)));
      live_caption_button->SetSize(kActionButtonSize);
 +#if 0
+     live_caption_button->SetIsLiveCaptionDialogOpen(false);
      live_caption_dialog = std::make_unique<OverlayWindowLiveCaptionDialog>(
          Profile::FromBrowserContext(
              controller_->GetWebContents()->GetBrowserContext()));
@@ -89,7 +90,7 @@ index 6996fd43053f1da7b4e721e9c13cf62127c42ef2..6544da9c4554ca9c2a444f4f9d5896c2
      toggle_microphone_button =
          std::make_unique<ToggleMicrophoneButton>(base::BindRepeating(
              [](VideoOverlayWindowViews* overlay) {
-@@ -2527,6 +2533,7 @@ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
+@@ -2541,6 +2547,7 @@ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
  
  bool VideoOverlayWindowViews::HasHighMediaEngagement(
      const url::Origin& origin) const {
@@ -97,7 +98,7 @@ index 6996fd43053f1da7b4e721e9c13cf62127c42ef2..6544da9c4554ca9c2a444f4f9d5896c2
    MediaEngagementService* service =
        MediaEngagementService::Get(Profile::FromBrowserContext(
            GetController()->GetWebContents()->GetBrowserContext()));
-@@ -2535,6 +2542,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
+@@ -2549,6 +2556,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
    }
  
    return service->HasHighEngagement(origin);

@@ -69,7 +69,7 @@ ${prettyName}_licenses = [ "//third_party/${folder}/src/LICENSE.TXT" ]
 
       console.error(chalk.bold(`${file} contents are not up to date:\n`));
       diff(currentHeaders, newHeaders);
-      console.error(chalk.bold(`\nRun node gen-libc++-filenames.js to regenerate ${file}`));
+      console.error(chalk.bold(`\nRun node script/gen-libc++-filenames.js to regenerate ${file}`));
       process.exit(1);
     }
   } else {

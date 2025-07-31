@@ -27,10 +27,10 @@ index 57cad85973c5cfe3a19f80fd318ec46f085ad4d0..69a4dad5a38170ba81ddff9a31e17808
  
  #endif  // CHROME_BROWSER_MEDIA_WEBRTC_DESKTOP_MEDIA_LIST_H_
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index e07f4ded61a7a64983da1b6d07315aee9684a148..08400be4d1bae18502d19beed6b2d9057e55dd4f 100644
+index f95b2230135dbcd6b19a31215d4f10be3481148c..9e1eb8423969e75d5ece0056690f651c1bb901cd 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -236,7 +236,11 @@ uint32_t DesktopMediaListBase::GetImageHash(const gfx::Image& image) {
+@@ -232,7 +232,11 @@ uint32_t DesktopMediaListBase::GetImageHash(const gfx::Image& image) {
  void DesktopMediaListBase::OnRefreshComplete() {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    DCHECK(refresh_callback_);
