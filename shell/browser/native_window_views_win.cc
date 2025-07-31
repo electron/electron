@@ -572,43 +572,36 @@ void NativeWindowViews::UpdateWindowAccentColor() {
   if (base::win::GetVersion() < base::win::Version::WIN11)
     return;
 
-  COLORREF border_color;
+  std::optional<COLORREF> border_color;
   bool should_apply_accent = false;
 
-  if (std::holds_alternative<bool>(accent_color_)) {
-    bool force_accent = std::get<bool>(accent_color_);
-    if (!force_accent) {
-      should_apply_accent = false;
-    } else {
-      std::optional<DWORD> accent_color = GetAccentColor();
-      if (accent_color.has_value()) {
-        border_color = RGB(GetRValue(accent_color.value()),
-                           GetGValue(accent_color.value()),
-                           GetBValue(accent_color.value()));
-        should_apply_accent = true;
-      }
-    }
-  } else if (std::holds_alternative<SkColor>(accent_color_)) {
+  if (std::holds_alternative<SkColor>(accent_color_)) {
+    // If the user has explicitly set an accent color, use it
+    // regardless of whether the system accent color is enabled.
     SkColor color = std::get<SkColor>(accent_color_);
     border_color =
         RGB(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color));
     should_apply_accent = true;
+  } else if (std::holds_alternative<bool>(accent_color_)) {
+    // Allow the user to optionally force system color on/off.
+    should_apply_accent = std::get<bool>(accent_color_);
   } else if (std::holds_alternative<std::monostate>(accent_color_)) {
-    if (IsAccentColorOnTitleBarsEnabled()) {
-      std::optional<DWORD> accent_color = GetAccentColor();
-      if (accent_color.has_value()) {
-        border_color = RGB(GetRValue(accent_color.value()),
-                           GetGValue(accent_color.value()),
-                           GetBValue(accent_color.value()));
-        should_apply_accent = true;
-      }
+    // If no explicit color was set, default to the system accent color.
+    should_apply_accent = IsAccentColorOnTitleBarsEnabled();
+  }
+
+  // Use system accent color as fallback if no explicit color was set.
+  if (!border_color.has_value() && should_apply_accent) {
+    std::optional<DWORD> system_accent_color = GetAccentColor();
+    if (system_accent_color.has_value()) {
+      border_color = RGB(GetRValue(system_accent_color.value()),
+                         GetGValue(system_accent_color.value()),
+                         GetBValue(system_accent_color.value()));
     }
   }
 
-  // Reset to default system colors when accent color should not be applied.
-  if (!should_apply_accent)
-    border_color = DWMWA_COLOR_DEFAULT;
-  SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), border_color);
+  COLORREF final_color = border_color.value_or(DWMWA_COLOR_DEFAULT);
+  SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), final_color);
 }
 
 void NativeWindowViews::ResetWindowControls() {
