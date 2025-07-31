@@ -233,7 +233,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
 
   SkColor background_color = SK_ColorWHITE;
   if (std::string color; options.Get(options::kBackgroundColor, &color)) {
-    background_color = ParseCSSColor(color);
+    background_color = ParseCSSColor(color).value_or(SK_ColorWHITE);
   } else if (IsTranslucent()) {
     background_color = SK_ColorTRANSPARENT;
   }

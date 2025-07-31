@@ -216,7 +216,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
 
   if (std::string str; options.Get(options::kAccentColor, &str)) {
-    accent_color_ = ParseCSSColor(str);
+    std::optional<SkColor> parsed_color = ParseCSSColor(str);
+    if (parsed_color.has_value())
+      accent_color_ = parsed_color.value();
   } else if (bool flag; options.Get(options::kAccentColor, &flag)) {
     accent_color_ = flag;
   }
