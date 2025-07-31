@@ -452,7 +452,7 @@ source_set("electron_lib") {
     "//components/certificate_transparency",
     "//components/compose:buildflags",
     "//components/embedder_support:user_agent",
-    "//components/input:input",
+    "//components/input",
     "//components/language/core/browser",
     "//components/net_log",
     "//components/network_hints/browser",
@@ -485,7 +485,7 @@ source_set("electron_lib") {
     "//net:extras",
     "//net:net_resources",
     "//printing/buildflags",
-    "//services/device/public/cpp/bluetooth:bluetooth",
+    "//services/device/public/cpp/bluetooth",
     "//services/device/public/cpp/geolocation",
     "//services/device/public/cpp/hid",
     "//services/device/public/mojom",
@@ -727,7 +727,7 @@ source_set("electron_lib") {
       "shell/common/extensions/api:extensions_features",
       "//chrome/browser/resources:component_extension_resources",
       "//components/guest_view/common:mojom",
-      "//components/update_client:update_client",
+      "//components/update_client",
       "//components/zoom",
       "//extensions/browser",
       "//extensions/browser/api:api_provider",
@@ -815,7 +815,7 @@ if (is_mac) {
       sources = []
       public_deps = []
       sources += [ "$root_out_dir/libffmpeg.dylib" ]
-      public_deps += [ "//third_party/ffmpeg:ffmpeg" ]
+      public_deps += [ "//third_party/ffmpeg" ]
       outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
     }
   } else {
@@ -1230,7 +1230,7 @@ if (is_mac) {
     }
 
     if (use_v8_context_snapshot) {
-      public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
+      public_deps = [ "//tools/v8_context_snapshot" ]
     }
 
     if (is_linux) {
