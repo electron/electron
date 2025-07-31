@@ -20,7 +20,7 @@ on:
 
 jobs:
   checkout-windows:
-    runs-on: electron-arc-linux-amd64-32core
+    runs-on: electron-arc-centralus-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
       options: --user root --device /dev/fuse --cap-add SYS_ADMIN
@@ -51,7 +51,7 @@ jobs:
     needs: checkout-windows
     with:
       environment: production-release
-      build-runs-on: electron-arc-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-windows-amd64-16core
       target-platform: win
       target-arch: x64
       is-release: true
@@ -65,7 +65,7 @@ jobs:
     needs: checkout-windows
     with:
       environment: production-release
-      build-runs-on: electron-arc-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-windows-amd64-16core
       target-platform: win
       target-arch: arm64
       is-release: true
@@ -79,7 +79,7 @@ jobs:
     needs: checkout-windows
     with:
       environment: production-release
-      build-runs-on: electron-arc-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-windows-amd64-16core
       target-platform: win
       target-arch: x86
       is-release: true
