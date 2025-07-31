@@ -1007,8 +1007,9 @@ void OnNodePreload(node::Environment* env,
       env->isolate(), {node::FIXED_ONE_BYTE_STRING(env->isolate(), "process"),
                        node::FIXED_ONE_BYTE_STRING(env->isolate(), "require")});
   v8::LocalVector<v8::Value> bundle_args(env->isolate(), {process, require});
-  electron::util::CompileAndCall(env->context(), "electron/js2c/node_init",
-                                 &bundle_params, &bundle_args);
+  electron::util::CompileAndCall(env->isolate(), env->context(),
+                                 "electron/js2c/node_init", &bundle_params,
+                                 &bundle_args);
 }
 
 }  // namespace electron
