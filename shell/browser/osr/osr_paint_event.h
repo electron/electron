@@ -85,7 +85,6 @@ struct OffscreenSharedTextureValue {
   std::optional<gfx::Rect> capture_update_rect;
   std::optional<gfx::Size> source_size;
   std::optional<gfx::Rect> region_capture_rect;
-  bool is_webgpu_compatible;
 
   // The capture timestamp, microseconds since capture start
   int64_t timestamp;

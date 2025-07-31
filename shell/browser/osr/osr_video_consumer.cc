@@ -102,7 +102,6 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     texture.source_size = info->metadata.source_size;
     texture.region_capture_rect = info->metadata.region_capture_rect;
     texture.widget_type = view_->GetWidgetType();
-    texture.is_webgpu_compatible = info->metadata.is_webgpu_compatible;
 
 #if BUILDFLAG(IS_WIN)
     texture.shared_texture_handle =
