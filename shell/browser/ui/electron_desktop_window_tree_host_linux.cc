@@ -26,6 +26,7 @@
 #include "ui/linux/linux_ui.h"
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/platform_window/platform_window.h"
+#include "ui/platform_window/platform_window_init_properties.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 
@@ -291,6 +292,16 @@ void ElectronDesktopWindowTreeHostLinux::DispatchEvent(ui::Event* event) {
   }
 
   views::DesktopWindowTreeHostLinux::DispatchEvent(event);
+}
+
+void ElectronDesktopWindowTreeHostLinux::AddAdditionalInitProperties(
+    const views::Widget::InitParams& params,
+    ui::PlatformWindowInitProperties* properties) {
+  views::DesktopWindowTreeHostLinux::AddAdditionalInitProperties(params,
+                                                                 properties);
+  const auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
+  properties->prefer_dark_theme =
+      linux_ui_theme && linux_ui_theme->PreferDarkTheme();
 }
 
 }  // namespace electron
