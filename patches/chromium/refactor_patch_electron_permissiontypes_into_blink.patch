@@ -28,7 +28,7 @@ index a946c15689ffcebc1509fdb8fc27c69e3923a1cb..dffca6d28d2f04cd4c0d722c7c096473
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 80aa7a3056e275f1a54752e59df5a1c7eb316746..056a23bb485356cbe6795e69db9be33b75e26703 100644
+index cb3faf970f20047f1e0a1fd4c844a173f681776a..572ffd97e7bb49946d15bf85ee144066837ee17f 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -88,7 +88,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
