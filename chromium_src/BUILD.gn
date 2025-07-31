@@ -136,6 +136,8 @@ static_library("chrome") {
     "//chrome/browser/ui/views/overlay/overlay_controls_fade_animation.h",
     "//chrome/browser/ui/views/overlay/overlay_window_image_button.cc",
     "//chrome/browser/ui/views/overlay/overlay_window_image_button.h",
+    "//chrome/browser/ui/views/overlay/overlay_window_live_caption_button.cc",
+    "//chrome/browser/ui/views/overlay/overlay_window_live_caption_button.h",
     "//chrome/browser/ui/views/overlay/playback_image_button.cc",
     "//chrome/browser/ui/views/overlay/playback_image_button.h",
     "//chrome/browser/ui/views/overlay/resize_handle_button.cc",
