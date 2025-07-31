@@ -221,7 +221,7 @@ static_library("chrome") {
     "//components/enterprise/common/proto:connectors_proto",
     "//components/enterprise/obfuscation/core:enterprise_obfuscation",
     "//components/safe_browsing/core/browser/db:safebrowsing_proto",
-    "//components/vector_icons:vector_icons",
+    "//components/vector_icons",
     "//ui/base/accelerators/global_accelerator_listener",
     "//ui/snapshot",
     "//ui/views/controls/webview",
