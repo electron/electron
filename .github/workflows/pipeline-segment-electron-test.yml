@@ -58,6 +58,8 @@ jobs:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
       ARTIFACT_KEY: ${{ matrix.build-type }}_${{ inputs.target-arch }}
+      ACTIONS_RUNNER_DEBUG: true
+      ACTIONS_STEP_DEBUG: true
     steps:
     - name: Fix node20 on arm32 runners
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
@@ -83,9 +85,27 @@ jobs:
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
       with:
         node-version: 20.19.x
+    - name: Get list of TCC permissions on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        cd /System/Library/PrivateFrameworks/TCC.framework/Support
+        strings tccd | grep -iEo "^kTCCService.*" | sort        
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
+        echo "Check if /usr/local/opt/runner/provisioner/provisioner exists"
+        if [ -f /usr/local/opt/runner/provisioner/provisioner ]; then
+          echo "/usr/local/opt/runner/provisioner/provisioner exists, configuring TCC DB"
+        fi
+        echo "Check if /opt/hca/hosted-compute-agent exists"
+        if [ -f /opt/hca/hosted-compute-agent ]; then     
+          echo "/opt/hca/hosted-compute-agent exists, configuring TCC DB"
+        fi
+        echo "Dump all values in $HOME/Library/Application Support/com.apple.TCC/TCC.db"
+        sqlite3 "$HOME/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
+        echo "Dump all values in /Library/Application Support/com.apple.TCC/TCC.db"
+        sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
+        echo "Insert values into TCC DB"
         configure_user_tccdb () {
           local values=$1
           local dbPath="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
@@ -104,18 +124,28 @@ jobs:
             "'kTCCServiceCamera','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceBluetoothAlways','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceAppleEvents','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceCamera',' /opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceBluetoothAlways',' /opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceBluetoothPeripheral',' /opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
         )
         for values in "${userValuesArray[@]}"; do
           # Sonoma and higher have a few extra values
           # Ref: https://github.com/actions/runner-images/blob/main/images/macos/scripts/build/configure-tccdb-macos.sh
           if [ "$OSTYPE" = "darwin23" ]; then
+            echo "Adding values for macOS Sonoma and higher $OSTYPE"
             configure_user_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
             configure_sys_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
           else
+            echo "Adding values for macOS versions lower than Sonoma $OSTYPE"
             configure_user_tccdb "$values"
             configure_sys_tccdb "$values"
           fi
         done
+        echo "Dump all values in $HOME/Library/Application Support/com.apple.TCC/TCC.db AFTER"
+        sqlite3 "$HOME/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
+        echo "Dump all values in /Library/Application Support/com.apple.TCC/TCC.db AFTER"
+        sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
+
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server
@@ -132,7 +162,6 @@ jobs:
         tunnel: 'true'
       env:
         CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
-        TUNNEL_HOSTNAME: ${{ secrets.CLOUDFLARED_SSH_HOSTNAME }}
         AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
@@ -257,8 +286,17 @@ jobs:
           $DATADOG_PATH/datadog-ci junit upload src/electron/junit/test-results-main.xml
         fi          
       if: always() && !cancelled()
+    - name: Take screenshot after tests
+      if: ${{ inputs.target-platform == 'macos' && always() }}
+      shell: bash
+      run: |
+        screencapture src/electron/spec/artifacts/aftertests.png
+        echo "Dump all values in $HOME/Library/Application Support/com.apple.TCC/TCC.db"
+        sqlite3 "$HOME/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
+        echo "Dump all values in /Library/Application Support/com.apple.TCC/TCC.db"
+        sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
     - name: Upload Test Artifacts
-      if: always() && !cancelled()
+      if: always()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: test_artifacts_${{ env.ARTIFACT_KEY }}_${{ matrix.shard }}
