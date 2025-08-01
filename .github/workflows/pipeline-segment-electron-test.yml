@@ -292,6 +292,10 @@ jobs:
       shell: bash
       run: |
         screencapture src/electron/spec/artifacts/aftertests.png
+        echo "Dump all values in $HOME/Library/Application Support/com.apple.TCC/TCC.db"
+        sqlite3 "$HOME/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
+        echo "Dump all values in /Library/Application Support/com.apple.TCC/TCC.db"
+        sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" "SELECT * FROM access;"
     - name: Upload Test Artifacts
       if: always()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
