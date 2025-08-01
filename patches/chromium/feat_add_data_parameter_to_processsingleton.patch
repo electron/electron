@@ -262,7 +262,7 @@ index 64ebf49c0d1b6396d1cfbe3bf91480f61b47688d..bec94d4039379400ae8b00f1adbbb16a
        return PROCESS_NOTIFIED;
      case NotifyChromeResult::NOTIFY_FAILED:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index 6e6ba54cd2920f867d4ab82bee210f5dfcd6a63d..a8073888a3894ecf22a3f651697217b622a8eed0 100644
+index 58a4c5adfda49fb4bd1b5351bd02d358946043bd..adaa070eb0f3cf8f771b57743a7436fd48a1e576 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
 @@ -39,7 +39,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
@@ -276,9 +276,9 @@ index 6e6ba54cd2920f867d4ab82bee210f5dfcd6a63d..a8073888a3894ecf22a3f651697217b6
    TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
  
    DCHECK(remote_window);
-@@ -68,12 +70,24 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
-     new_command_line.AppendSwitchNative(switches::kSourceShortcut, si.lpTitle);
- 
+@@ -70,12 +72,24 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+     new_command_line.AppendSwitch(switches::kSourceAppId);
+   }
    // Send the command line to the remote chrome window.
 -  // Format is "START\0<<<current directory>>>\0<<<commandline>>>".
 +  // Format is
