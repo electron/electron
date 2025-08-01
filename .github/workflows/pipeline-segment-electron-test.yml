@@ -132,7 +132,6 @@ jobs:
         tunnel: 'true'
       env:
         CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
-        TUNNEL_HOSTNAME: ${{ secrets.CLOUDFLARED_SSH_HOSTNAME }}
         AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
