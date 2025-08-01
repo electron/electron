@@ -16,7 +16,9 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/win_frame_view.h"
+#include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
+#include "skia/ext/skia_utils_win.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/resize_utils.h"
@@ -44,21 +46,6 @@ void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color) {
 
   if (FAILED(result))
     LOG(WARNING) << "Failed to set border color";
-}
-
-std::optional<DWORD> GetSystemAccentColor() {
-  base::win::RegKey key;
-  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
-               KEY_READ) != ERROR_SUCCESS) {
-    return std::nullopt;
-  }
-
-  DWORD accent_color = 0;
-  if (key.ReadValueDW(L"AccentColor", &accent_color) != ERROR_SUCCESS) {
-    return std::nullopt;
-  }
-
-  return accent_color;
 }
 
 bool IsAccentColorOnTitleBarsEnabled() {
@@ -604,6 +591,51 @@ void NativeWindowViews::UpdateWindowAccentColor(bool active) {
 
   COLORREF final_color = border_color.value_or(DWMWA_COLOR_DEFAULT);
   SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), final_color);
+}
+
+void NativeWindowViews::SetAccentColor(
+    std::variant<bool, std::string> accent_color) {
+  if (std::holds_alternative<std::string>(accent_color)) {
+    std::optional<SkColor> maybe_color =
+        ParseCSSColor(std::get<std::string>(accent_color));
+    if (maybe_color.has_value())
+      accent_color_ = maybe_color.value();
+  } else if (std::holds_alternative<bool>(accent_color)) {
+    accent_color_ = std::get<bool>(accent_color);
+  }
+
+  UpdateWindowAccentColor();
+}
+
+/*
+ * Returns the accent color of the window, per te following hiuristic:
+ *
+ * 1. If the accent color is set to a specific SkColor, it returns that color as
+ * a hex string.
+ * 2. If the accent color is set to true, it returns the system accent color as
+ * a hex string.
+ * 3. If the accent color is set to false, it returns false.
+ * 4. If the accent color is std::monostate, it returns the system accent color
+ * as a hex string.
+ */
+std::variant<bool, std::string> NativeWindowViews::GetAccentColor() const {
+  std::optional<DWORD> system_color = GetSystemAccentColor();
+
+  if (std::holds_alternative<SkColor>(accent_color_)) {
+    return ToRGBHex(std::get<SkColor>(accent_color_));
+  } else if (std::holds_alternative<bool>(accent_color_)) {
+    if (std::get<bool>(accent_color_)) {
+      if (!system_color.has_value())
+        return false;
+      return ToRGBHex(skia::COLORREFToSkColor(system_color.value()));
+    } else {
+      return false;
+    }
+  } else {
+    if (!system_color.has_value())
+      return false;
+    return ToRGBHex(skia::COLORREFToSkColor(system_color.value()));
+  }
 }
 
 void NativeWindowViews::ResetWindowControls() {
