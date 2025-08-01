@@ -1442,13 +1442,37 @@ Sets the properties for the window's taskbar button.
 
 #### `win.setAccentColor(accentColor)` _Windows_
 
-* `accentColor` boolean | string - The accent color for the window. By default, follows user preference in System Settings. Set to `false` to explicitly disable, or set the color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha values will be ignored.
+* `accentColor` boolean | string - The accent color for the window. By default, follows user preference in System Settings.
 
 Sets the system accent color and highlighting of active window border.
 
+The `accentColor` parameter accepts the following values:
+
+* **Color string** - Sets a custom accent color using standard CSS color formats (Hex, RGB, RGBA, HSL, HSLA, or named colors). Alpha values in RGBA/HSLA formats are ignored and the color is treated as fully opaque.
+* **`true`** - Uses the system's default accent color from user preferences in System Settings.
+* **`false`** - Explicitly disables accent color highlighting for the window.
+
+Examples:
+
+```js
+const win = new BrowserWindow({ frame: false })
+
+// Set red accent color.
+win.setAccentColor('#ff0000')
+
+// RGB format (alpha ignored if present).
+win.setAccentColor('rgba(255,0,0,0.5)')
+
+// Use system accent color.
+win.setAccentColor(true)
+
+// Disable accent color.
+win.setAccentColor(false)
+```
+
 #### `win.getAccentColor()` _Windows_
 
-Returns `string | null` - the system accent color and highlighting of active window border in RGB format.
+Returns `string | boolean` - the system accent color and highlighting of active window border in Hex RGB format.
 
 If a color has been set for the window that differs from the system accent color, the window accent color will
 be returned. Otherwise, the system accent color will be returned, if one is enabled.
