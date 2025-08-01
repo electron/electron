@@ -6,8 +6,6 @@ runs:
     - name: Free Space on MacOS
       shell: bash
       run: |
-        echo "Disk usage before cleanup:"
-        df -h
         sudo mkdir -p $TMPDIR/del-target
 
         tmpify() {
@@ -65,4 +63,3 @@ runs:
         # lipo off some huge binaries arm64 versions to save space
         strip_universal_deep $(xcode-select -p)/../SharedFrameworks
         # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
-        sudo mdutil -a -i off

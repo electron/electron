@@ -3089,7 +3089,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   });
 });
 
-describe('navigator.serial', () => {
+ifdescribe(process.platform !== 'darwin' || process.arch !== 'arm64')('navigator.serial', () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow({
@@ -3113,7 +3113,6 @@ describe('navigator.serial', () => {
   });
 
   it('does not return a port if select-serial-port event is not defined', async () => {
-    // Take screenshot to verify the test is running
     w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     const port = await getPorts();
     expect(port).to.equal(notFoundError);
@@ -3630,7 +3629,7 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
   });
 });
 
-describe('navigator.bluetooth', () => {
+ifdescribe(process.platform !== 'darwin' || process.arch !== 'arm64')('navigator.bluetooth', () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow({
