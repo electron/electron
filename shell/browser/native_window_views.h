@@ -176,6 +176,10 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
 #if BUILDFLAG(IS_WIN)
+  void SetAccentColor(
+      std::variant<std::monostate, bool, SkColor> accent_color) override;
+  std::variant<bool, std::string> GetAccentColor() const override;
+  void UpdateWindowAccentColor(bool active) override;
   TaskbarHost& taskbar_host() { return taskbar_host_; }
   void UpdateThickFrame();
   void SetLayered();
@@ -223,7 +227,6 @@ class NativeWindowViews : public NativeWindow,
   void ResetWindowControls();
   void SetRoundedCorners(bool rounded);
   void SetForwardMouseMessages(bool forward);
-  void UpdateWindowAccentColor(bool active);
   static LRESULT CALLBACK SubclassProc(HWND hwnd,
                                        UINT msg,
                                        WPARAM w_param,
