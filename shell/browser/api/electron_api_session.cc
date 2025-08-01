@@ -21,7 +21,6 @@
 #include "base/strings/string_util.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/browser/predictors/predictors_traffic_annotations.h"  // nogncheck
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
@@ -40,6 +39,7 @@
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/network_service_instance.h"
+#include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/preconnect_request.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/arguments.h"
