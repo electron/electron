@@ -955,7 +955,7 @@ void Initialize(v8::Local<v8::Object> exports,
 
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("WebFrame", WebFrameRenderer::GetConstructor(context));
+  dict.Set("WebFrame", WebFrameRenderer::GetConstructor(isolate, context));
   dict.Set("mainFrame", WebFrameRenderer::Create(
                             isolate, electron::GetRenderFrame(exports)));
 }
