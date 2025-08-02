@@ -253,7 +253,7 @@ and intend to stay there).
 
 * `selector` string - CSS selector for a frame element.
 
-Returns `WebFrame` - The frame element in `webFrame's` document selected by
+Returns `WebFrame | null` - The frame element in `webFrame's` document selected by
 `selector`, `null` would be returned if `selector` does not select a frame or
 if the frame is not in the current renderer process.
 
@@ -261,7 +261,7 @@ if the frame is not in the current renderer process.
 
 * `name` string
 
-Returns `WebFrame` - A child of `webFrame` with the supplied `name`, `null`
+Returns `WebFrame | null` - A child of `webFrame` with the supplied `name`, `null`
 would be returned if there's no such frame or if the frame is not in the current
 renderer process.
 
@@ -272,7 +272,9 @@ renderer process.
    instances (`webFrame.routingId`) and are also passed by frame
    specific `WebContents` navigation events (e.g. `did-frame-navigate`)
 
-Returns `WebFrame` - that has the supplied `routingId`, `null` if not found.
+Returns `WebFrame | null` - that has the supplied `routingId`, `null` if not found.
+
+**Deprecated:** Use the new `webFrame.findFrameByToken` API.
 
 ### `webFrame.findFrameByToken(frameToken)`
 
@@ -281,7 +283,7 @@ Returns `WebFrame` - that has the supplied `routingId`, `null` if not found.
    instances (`webFrame.frameToken`) and can also be retrieved from
    `WebFrameMain` instances using `webFrameMain.frameToken`.
 
-Returns `WebFrame` - that has the supplied `frameToken`, `null` if not found.
+Returns `WebFrame | null` - that has the supplied `frameToken`, `null` if not found.
 
 ### `webFrame.isWordMisspelled(word)`
 
@@ -332,6 +334,8 @@ current renderer process.
 An `Integer` representing the unique frame id in the current renderer process.
 Distinct WebFrame instances that refer to the same underlying frame will have
 the same `routingId`.
+
+**Deprecated:** Use the new `webFrame.frameToken` API.
 
 ### `webFrame.frameToken` _Readonly_
 
