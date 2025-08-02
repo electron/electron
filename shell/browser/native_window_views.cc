@@ -520,9 +520,11 @@ void NativeWindowViews::SetContentView(views::View* view) {
     root_view_.GetMainView()->RemoveChildView(content_view());
   }
   set_content_view(view);
-  focused_view_ = view;
-  root_view_.GetMainView()->AddChildViewRaw(content_view());
-  root_view_.GetMainView()->DeprecatedLayoutImmediately();
+  SetInitiallyFocusedView(view);
+
+  views::View* const main_view = root_view_.GetMainView();
+  main_view->AddChildViewRaw(view);
+  main_view->DeprecatedLayoutImmediately();
 }
 
 void NativeWindowViews::Close() {
@@ -1812,10 +1814,6 @@ void NativeWindowViews::OnWidgetDestroying(views::Widget* widget) {
 void NativeWindowViews::OnWidgetDestroyed(views::Widget* changed_widget) {
   widget_destroyed_ = true;
   NotifyWindowClosed();
-}
-
-views::View* NativeWindowViews::GetInitiallyFocusedView() {
-  return focused_view_;
 }
 
 bool NativeWindowViews::CanMaximize() const {
