@@ -26,9 +26,11 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -332,26 +334,13 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
 
 class WebFrameRenderer final
     : public gin::DeprecatedWrappable<WebFrameRenderer>,
+      public gin_helper::Constructible<WebFrameRenderer>,
       private content::RenderFrameObserver {
  public:
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
-
-  static gin::Handle<WebFrameRenderer> Create(
-      v8::Isolate* isolate,
-      content::RenderFrame* render_frame) {
-    return gin::CreateHandle(isolate, new WebFrameRenderer(render_frame));
-  }
-
-  explicit WebFrameRenderer(content::RenderFrame* render_frame)
-      : content::RenderFrameObserver(render_frame) {
-    DCHECK(render_frame);
-  }
-
-  // gin::Wrappable:
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override {
-    return gin::DeprecatedWrappable<WebFrameRenderer>::GetObjectTemplateBuilder(
-               isolate)
+  // gin_helper::Constructible
+  static void FillObjectTemplate(v8::Isolate* isolate,
+                                 v8::Local<v8::ObjectTemplate> templ) {
+    gin_helper::ObjectTemplateBuilder(isolate, templ)
         .SetMethod("setName", &WebFrameRenderer::SetName)
         .SetMethod("setZoomLevel", &WebFrameRenderer::SetZoomLevel)
         .SetMethod("getZoomLevel", &WebFrameRenderer::GetZoomLevel)
@@ -380,8 +369,6 @@ class WebFrameRenderer final
         .SetMethod("setSpellCheckProvider",
                    &WebFrameRenderer::SetSpellCheckProvider)
         // Frame navigators
-        .SetMethod("findFrameByRoutingId",
-                   &WebFrameRenderer::FindFrameByRoutingId)
         .SetMethod("findFrameByToken", &WebFrameRenderer::FindFrameByToken)
         .SetMethod("getFrameForSelector",
                    &WebFrameRenderer::GetFrameForSelector)
@@ -393,10 +380,25 @@ class WebFrameRenderer final
         .SetProperty("top", &WebFrameRenderer::GetTop)
         .SetProperty("firstChild", &WebFrameRenderer::GetFirstChild)
         .SetProperty("nextSibling", &WebFrameRenderer::GetNextSibling)
-        .SetProperty("routingId", &WebFrameRenderer::GetRoutingId);
+        .Build();
+  }
+  static const char* GetClassName() { return "WebFrame"; }
+  static gin::Handle<WebFrameRenderer> New(v8::Isolate* isolate) { return {}; }
+
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
+
+  static gin::Handle<WebFrameRenderer> Create(
+      v8::Isolate* isolate,
+      content::RenderFrame* render_frame) {
+    return gin::CreateHandle(isolate, new WebFrameRenderer(render_frame));
   }
 
-  const char* GetTypeName() override { return "WebFrameRenderer"; }
+  explicit WebFrameRenderer(content::RenderFrame* render_frame)
+      : content::RenderFrameObserver(render_frame) {
+    DCHECK(render_frame);
+  }
+
+  const char* GetTypeName() override { return GetClassName(); }
 
   void OnDestruct() override {}
 
@@ -806,14 +808,6 @@ class WebFrameRenderer final
         base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);
   }
 
-  v8::Local<v8::Value> FindFrameByRoutingId(v8::Isolate* isolate,
-                                            int routing_id) {
-    util::EmitDeprecationWarning(isolate,
-                                 "findFrameByRoutingId() is deprecated, use "
-                                 "findFrameByToken() instead.");
-    return v8::Null(isolate);
-  }
-
   v8::Local<v8::Value> FindFrameByToken(v8::Isolate* isolate,
                                         std::string frame_token) {
     auto token = base::Token::FromString(frame_token);
@@ -938,12 +932,6 @@ class WebFrameRenderer final
         blink::WebString::FromUTF8(name));
     return CreateWebFrameRenderer(isolate, frame);
   }
-
-  int GetRoutingId(v8::Isolate* isolate) {
-    util::EmitDeprecationWarning(
-        isolate, "routingId is deprecated, use frameToken instead.");
-    return -1;
-  }
 };
 }  // namespace
 
@@ -966,7 +954,8 @@ void Initialize(v8::Local<v8::Object> exports,
   using namespace electron::api;  // NOLINT(build/namespaces)
 
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
-  gin_helper::Dictionary dict{isolate, exports};
+  gin_helper::Dictionary dict(isolate, exports);
+  dict.Set("WebFrame", WebFrameRenderer::GetConstructor(isolate, context));
   dict.Set("mainFrame",
            WebFrameRenderer::Create(
                isolate, electron::GetRenderFrame(isolate, exports)));
