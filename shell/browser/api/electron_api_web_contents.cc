@@ -2747,15 +2747,17 @@ void WebContents::CloseDevTools() {
   if (type_ == Type::kRemote)
     return;
 
-  DCHECK(inspectable_web_contents_);
-  inspectable_web_contents_->CloseDevTools();
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->CloseDevTools();
 }
 
 bool WebContents::IsDevToolsOpened() {
   if (type_ == Type::kRemote)
     return false;
 
-  DCHECK(inspectable_web_contents_);
+  if (!inspectable_web_contents_)
+    return false;
+
   return inspectable_web_contents_->IsDevToolsViewShowing();
 }
 
@@ -2763,19 +2765,24 @@ std::u16string WebContents::GetDevToolsTitle() {
   if (type_ == Type::kRemote)
     return {};
 
-  DCHECK(inspectable_web_contents_);
+  if (!inspectable_web_contents_)
+    return {};
+
   return inspectable_web_contents_->GetDevToolsTitle();
 }
 
 void WebContents::SetDevToolsTitle(const std::u16string& title) {
-  inspectable_web_contents_->SetDevToolsTitle(title);
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->SetDevToolsTitle(title);
 }
 
 bool WebContents::IsDevToolsFocused() {
   if (type_ == Type::kRemote)
     return false;
 
-  DCHECK(inspectable_web_contents_);
+  if (!inspectable_web_contents_)
+    return false;
+
   return inspectable_web_contents_->GetView()->IsDevToolsViewFocused();
 }
 
@@ -2823,10 +2830,9 @@ void WebContents::InspectElement(int x, int y) {
   if (type_ == Type::kRemote)
     return;
 
-  if (!enable_devtools_)
+  if (!enable_devtools_ || !inspectable_web_contents_)
     return;
 
-  DCHECK(inspectable_web_contents_);
   if (!inspectable_web_contents_->GetDevToolsWebContents())
     OpenDevTools(nullptr);
   inspectable_web_contents_->InspectElement(x, y);
