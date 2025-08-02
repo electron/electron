@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 378e3eb2f8b9d4daaf39ef213dec88d86cf90a5c..0ace2e0c7073ee97ebb274db4b184a074f6ae544 100644
+index 3c7c72f29576612baa80686980a99e5aea617b9e..c317b7b8a524a5010b193b6eaf02ac0940e126bf 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9774,6 +9774,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9797,6 +9797,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 378e3eb2f8b9d4daaf39ef213dec88d86cf90a5c..0ace2e0c7073ee97ebb274db4b184a07
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 5c319d0b7c81cb7335170a23e2863750ae9c6aa0..336bc9c329aed83293e6a802c8504a73cdf15b20 100644
+index be06cbb8229a4cc85abf63a42aef0884e200e59b..c945b9bd549d57e522735ad5c0404dea96c2c7fd 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5336,6 +5336,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5371,6 +5371,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -37,7 +37,7 @@ index 5c319d0b7c81cb7335170a23e2863750ae9c6aa0..336bc9c329aed83293e6a802c8504a73
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5377,12 +5383,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5412,12 +5418,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -148,10 +148,10 @@ index a4b8c5f950549e018c0d09522ff8890a1a774966..e364ae0f9bfa6321f3a3be598b36eb07
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f80c9d4a9829428cbb8fa850800bb809c58cec2d..9aeb16e6b6ac67f910e27725f793909b8bf068a1 100644
+index 7e54042f2fb8b36072a7a47f00d22385a641284e..ede4414f875254b77ffb29d0e1bfb254c619b10f 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6766,6 +6766,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6774,6 +6774,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  

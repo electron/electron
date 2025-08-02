@@ -19,7 +19,6 @@
 #include "base/strings/escape.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -34,6 +33,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/host_zoom_map.h"
+#include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
@@ -562,7 +562,7 @@ predictors::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
   if (!preconnect_manager_) {
     preconnect_manager_delegate_ =
         std::make_unique<ElectronPreconnectManagerDelegate>();
-    preconnect_manager_ = predictors::PreconnectManager::Create(
+    preconnect_manager_ = content::PreconnectManager::Create(
         preconnect_manager_delegate_->GetWeakPtr(), this);
   }
   return preconnect_manager_.get();

@@ -11,10 +11,10 @@ For resolving complex conflict please pin @reitowo
 For more reason please see: https://crrev.com/c/5465148
 
 diff --git a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-index b85c1dec1dc289ea5e09d15e6bdf7ea08c747e63..4ba61fa04cd760eb0337ccc8785d60eaf27f8b77 100644
+index 11278bafa4395a7dfead2f04f63afb831473c5f8..33b08a675430e60dd80ff696d33008d5c28f1f7a 100644
 --- a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
 +++ b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-@@ -172,7 +172,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
+@@ -163,7 +163,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
    // so make sure that the usage is one that we support.
    DCHECK(usage == gfx::BufferUsage::GPU_READ ||
           usage == gfx::BufferUsage::SCANOUT ||
@@ -24,7 +24,7 @@ index b85c1dec1dc289ea5e09d15e6bdf7ea08c747e63..4ba61fa04cd760eb0337ccc8785d60ea
        << "Incorrect usage, usage=" << gfx::BufferUsageToString(usage);
  
    D3D11_TEXTURE2D_DESC desc = {
-@@ -186,7 +187,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
+@@ -177,7 +178,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
        D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
        0,
        D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
