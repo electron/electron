@@ -44,7 +44,7 @@
     "pre-flight": "^2.0.0",
     "process": "^0.11.10",
     "remark-cli": "^12.0.1",
-    "remark-preset-lint-markdown-style-guide": "^4.0.0",
+    "remark-preset-lint-markdown-style-guide": "^6.0.1",
     "semver": "^7.6.3",
     "stream-json": "^1.8.0",
     "tap-xunit": "^2.4.1",
