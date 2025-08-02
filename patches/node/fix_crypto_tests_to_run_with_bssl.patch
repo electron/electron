@@ -210,18 +210,18 @@ index d22281abbd5c3cab3aaa3ac494301fa6b4a8a968..5f0c6a4aed2e868a1a1049212edf2187
  s.pipe(h).on('data', common.mustCall(function(c) {
    assert.strictEqual(c, expect);
 diff --git a/test/parallel/test-crypto-hash.js b/test/parallel/test-crypto-hash.js
-index 61145aee0727fbe0b9781acdb3eeb641e7010729..51693e637b310981f76f23c2f35d43e4d2d9c4ef 100644
+index 929dd36c669239804f2cfc5168bd3bf6e15855e6..8ebe599bbd21ad30e5041e0eab1e5898caf33e49 100644
 --- a/test/parallel/test-crypto-hash.js
 +++ b/test/parallel/test-crypto-hash.js
-@@ -183,7 +183,7 @@ assert.throws(
+@@ -182,7 +182,7 @@ assert.throws(
  }
  
  // Test XOF hash functions and the outputLength option.
 -{
 +if (!process.features.openssl_is_boringssl) {
-   // Default outputLengths. Since OpenSSL 3.4 an outputLength is mandatory
-   if (!hasOpenSSL(3, 4)) {
-     assert.strictEqual(crypto.createHash('shake128').digest('hex'),
+   // Default outputLengths.
+   assert.strictEqual(crypto.createHash('shake128').digest('hex'),
+                      '7f9c2ba4e88f827d616045507605853e');
 diff --git a/test/parallel/test-crypto-padding.js b/test/parallel/test-crypto-padding.js
 index 48cd1ed4df61aaddeee8785cb90f83bdd9628187..d09e01712c617597833bb1320a32a967bcf1d318 100644
 --- a/test/parallel/test-crypto-padding.js

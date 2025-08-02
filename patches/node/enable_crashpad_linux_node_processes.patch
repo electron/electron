@@ -54,7 +54,7 @@ index e848b3d5ee9b13ea3ea303eb3b57ef47ef951580..5b89c420f1a917526ab311fed52bff01
      ArrayPrototypeUnshift(args, file);
    }
  
--  const env = options.env || process.env;
+-  const env = options.env || { ...process.env };
    const envPairs = [];
  
    // process.env.NODE_V8_COVERAGE always propagates, making it possible to
