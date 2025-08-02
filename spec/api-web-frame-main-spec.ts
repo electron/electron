@@ -497,8 +497,8 @@ describe('webFrameMain module', () => {
   });
 
   describe('webFrameMain.fromFrameToken', () => {
-    it('returns undefined for unknown IDs', () => {
-      expect(webFrameMain.fromFrameToken(0, '')).to.be.undefined();
+    it('returns null for unknown IDs', () => {
+      expect(webFrameMain.fromFrameToken(0, '')).to.be.null();
     });
 
     it('can find existing frame', async () => {
