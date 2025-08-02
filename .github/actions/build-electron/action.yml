@@ -47,11 +47,6 @@ runs:
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
-    - name: Enable long paths for Windows
-      shell: powershell
-      if: ${{ inputs.target-platform == 'win' }}
-      run: |
-        Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -Type DWord
     - name: Build Electron ${{ inputs.step-suffix }}
       shell: bash
       run: |
