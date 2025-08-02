@@ -1056,6 +1056,22 @@ describe('webContents module', () => {
       await devtoolsOpened2;
       expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
+
+    it('does not crash when closing DevTools immediately after opening', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+
+      const devToolsFocused = once(w.webContents, 'devtools-focused');
+      w.webContents.openDevTools({ mode: 'detach' });
+      w.webContents.inspectElement(100, 100);
+      await devToolsFocused;
+
+      expect(() => {
+        w.webContents.closeDevTools();
+      }).to.not.throw();
+
+      expect(w.webContents.isDevToolsOpened()).to.be.false();
+    });
   });
 
   describe('setDevToolsTitle() API', () => {
