@@ -641,6 +641,31 @@ v8::Local<v8::Value> FromID(gin_helper::ErrorThrower thrower,
   return WebFrameMain::From(thrower.isolate(), rfh).ToV8();
 }
 
+v8::Local<v8::Value> FromFrameToken(gin_helper::ErrorThrower thrower,
+                                    int render_process_id,
+                                    std::string render_frame_token) {
+  if (!electron::Browser::Get()->is_ready()) {
+    thrower.ThrowError("WebFrameMain is available only after app ready");
+    return v8::Null(thrower.isolate());
+  }
+
+  auto token = base::Token::FromString(render_frame_token);
+  if (!token)
+    return v8::Null(thrower.isolate());
+  auto unguessable_token =
+      base::UnguessableToken::Deserialize(token->high(), token->low());
+  if (!unguessable_token)
+    return v8::Null(thrower.isolate());
+  auto frame_token = blink::LocalFrameToken(unguessable_token.value());
+
+  auto* rfh = content::RenderFrameHost::FromFrameToken(
+      content::GlobalRenderFrameHostToken(render_process_id, frame_token));
+  if (!rfh)
+    return v8::Null(thrower.isolate());
+
+  return WebFrameMain::From(thrower.isolate(), rfh).ToV8();
+}
+
 v8::Local<v8::Value> FromIdIfExists(gin_helper::ErrorThrower thrower,
                                     int render_process_id,
                                     int render_frame_id) {
@@ -677,6 +702,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("WebFrameMain", WebFrameMain::GetConstructor(isolate, context));
   dict.SetMethod("fromId", &FromID);
+  dict.SetMethod("fromFrameToken", &FromFrameToken);
   dict.SetMethod("_fromIdIfExists", &FromIdIfExists);
   dict.SetMethod("_fromFtnIdIfExists", &FromFtnIdIfExists);
 }
