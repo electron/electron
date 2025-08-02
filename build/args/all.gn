@@ -73,3 +73,6 @@ enterprise_cloud_content_analysis = false
 # Disable siso until we are ready to use it.
 # https://chromium-review.googlesource.com/c/chromium/src/+/6638830
 use_siso = false
+
+# We don't use anything from here, and it causes target collisions
+enable_linux_installer = false
