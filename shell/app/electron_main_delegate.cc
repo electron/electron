@@ -219,7 +219,7 @@ std::string LoadResourceBundle(const std::string& locale) {
   pak_dir =
       base::apple::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
 #else
-  base::PathService::Get(base::DIR_MODULE, &pak_dir);
+  base::PathService::Get(base::DIR_ASSETS, &pak_dir);
 #endif
 
   std::string loaded_locale = ui::ResourceBundle::InitSharedInstanceWithLocale(
