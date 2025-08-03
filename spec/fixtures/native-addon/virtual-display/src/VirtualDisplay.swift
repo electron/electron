@@ -3,8 +3,11 @@ import Cocoa
 import os.log
 
 @objc public class VirtualDisplay: NSObject {
-    @objc public static func addDisplay() -> Int {
-        return DummyManager.createDummyByDefinitionId(10) ?? 0
+    @objc public static func addDisplay(width: Int, height: Int) -> Int {
+        let refreshRates: [Double] = [60.0] // Always 60Hz default
+        let description = "\(width)x\(height) Display"
+        let definition = DummyDefinition(width, height, 1, refreshRates, description, false)
+        return DummyManager.createDummy(definition) ?? 0
     }
     
     @objc public static func removeDisplay(id: Int) -> Bool {
@@ -16,25 +19,15 @@ import os.log
 class DummyManager {
     struct DefinedDummy {
         var dummy: Dummy
-        var definitionId: Int?
     }
 
     static var definedDummies: [Int: DefinedDummy] = [:]
     static var dummyCounter: Int = 0
-    static var dummyDefinitions: [Int: DummyDefinition] = [:]
 
-    static func createDummyByDefinitionId(_ dummyDefinitionId: Int, isPortrait: Bool = false, serialNum: UInt32 = 0, doConnect: Bool = true) -> Int? {
-        updateDummyDefinitions()
-        if let dummyDefinition = self.dummyDefinitions[dummyDefinitionId] {
-            return self.createDummy(dummyDefinition, dummyDefinitionId: dummyDefinitionId, isPortrait: isPortrait, serialNum: serialNum, doConnect: doConnect)
-        }
-        return nil
-    }
-
-    static func createDummy(_ dummyDefinition: DummyDefinition, dummyDefinitionId: Int? = nil, isPortrait _: Bool = false, serialNum: UInt32 = 0, doConnect: Bool = true) -> Int {
+    static func createDummy(_ dummyDefinition: DummyDefinition, isPortrait _: Bool = false, serialNum: UInt32 = 0, doConnect: Bool = true) -> Int? {
         let dummy = Dummy(dummyDefinition: dummyDefinition, serialNum: serialNum, doConnect: doConnect)
         self.dummyCounter += 1
-        self.definedDummies[self.dummyCounter] = DefinedDummy(dummy: dummy, definitionId: dummyDefinitionId)
+        self.definedDummies[self.dummyCounter] = DefinedDummy(dummy: dummy)
         return self.dummyCounter
     }
 
@@ -45,15 +38,6 @@ class DummyManager {
             }
         }
         self.definedDummies[number] = nil
-    }
-
-    static func updateDummyDefinitions() {
-        let refreshRates: [Double] = [60]
-        self.dummyDefinitions = [
-            10: DummyDefinition(16, 9, 2, refreshRates, "16:9 (HD/4K/5K/6K)", false),
-            20: DummyDefinition(16, 10, 2, refreshRates, "16:10 (WXGA)", false),
-            30: DummyDefinition(4, 3, 2, refreshRates, "4:3 (VGA)", false),
-        ]
     }
 }
 
@@ -132,7 +116,7 @@ class Dummy: Equatable {
         os_log("Disconnected virtual display: %{public}@", type: .info, "\(self.getName())")
     }
 
-    static func createVirtualDisplay(_ definition: DummyDefinition, name: String, serialNum: UInt32, hiDPI: Bool = true) -> CGVirtualDisplay? {
+    static func createVirtualDisplay(_ definition: DummyDefinition, name: String, serialNum: UInt32, hiDPI: Bool = false) -> CGVirtualDisplay? {
         os_log("Creating virtual display: %{public}@", type: .info, "\(name)")
         if let descriptor = CGVirtualDisplayDescriptor() {
             os_log("- Preparing descriptor...", type: .info)
