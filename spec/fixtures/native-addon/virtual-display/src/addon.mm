@@ -4,7 +4,13 @@
 
 namespace {
 
-// Helper function to extract integer property from object
+typedef struct {
+  const char* name;
+  int default_val;
+  int* ptr;
+} PropertySpec;
+
+// Helper function to get an integer property from an object
 bool GetIntProperty(napi_env env,
                     napi_value object,
                     const char* prop_name,
@@ -15,7 +21,7 @@ bool GetIntProperty(napi_env env,
   bool has_prop;
   if (napi_has_named_property(env, object, prop_name, &has_prop) != napi_ok ||
       !has_prop) {
-    return true;  // Use default
+    return true;
   }
 
   napi_value prop_value;
@@ -30,7 +36,54 @@ bool GetIntProperty(napi_env env,
   return true;
 }
 
-napi_value AddDisplay(napi_env env, napi_callback_info info) {
+// Helper function to validate and parse object properties
+bool ParseObjectProperties(napi_env env,
+                           napi_value object,
+                           PropertySpec props[],
+                           size_t prop_count) {
+  // Process all properties
+  for (size_t i = 0; i < prop_count; i++) {
+    if (!GetIntProperty(env, object, props[i].name, props[i].ptr,
+                        props[i].default_val)) {
+      char error_msg[50];
+      snprintf(error_msg, sizeof(error_msg), "%s must be a number",
+               props[i].name);
+      napi_throw_error(env, NULL, error_msg);
+      return false;
+    }
+  }
+
+  // Check for unknown properties
+  napi_value prop_names;
+  uint32_t count;
+  napi_get_property_names(env, object, &prop_names);
+  napi_get_array_length(env, prop_names, &count);
+
+  for (uint32_t i = 0; i < count; i++) {
+    napi_value prop_name;
+    napi_get_element(env, prop_names, i, &prop_name);
+    size_t len;
+    char name[20];
+    napi_get_value_string_utf8(env, prop_name, name, sizeof(name), &len);
+
+    bool found = false;
+    for (size_t j = 0; j < prop_count; j++) {
+      if (strcmp(name, props[j].name) == 0) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      napi_throw_error(env, NULL, "Object contains unknown properties");
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// virtualDisplay.create()
+napi_value create(napi_env env, napi_callback_info info) {
   size_t argc = 1;
   napi_value args[1];
 
@@ -38,11 +91,13 @@ napi_value AddDisplay(napi_env env, napi_callback_info info) {
     return NULL;
   }
 
-  // Default values
-  int width = 1920;
-  int height = 1080;
+  int width = 1920, height = 1080, x = 0, y = 0;
 
-  // If object argument provided, extract properties
+  PropertySpec props[] = {{"width", 1920, &width},
+                          {"height", 1080, &height},
+                          {"x", 0, &x},
+                          {"y", 0, &y}};
+
   if (argc >= 1) {
     napi_valuetype valuetype;
     if (napi_typeof(env, args[0], &valuetype) != napi_ok) {
@@ -51,23 +106,25 @@ napi_value AddDisplay(napi_env env, napi_callback_info info) {
     }
 
     if (valuetype == napi_object) {
-      if (!GetIntProperty(env, args[0], "width", &width, 1920)) {
-        napi_throw_error(env, NULL, "Width must be a number");
-        return NULL;
-      }
-
-      if (!GetIntProperty(env, args[0], "height", &height, 1080)) {
-        napi_throw_error(env, NULL, "Height must be a number");
+      if (!ParseObjectProperties(env, args[0], props,
+                                 sizeof(props) / sizeof(props[0]))) {
         return NULL;
       }
     } else {
-      napi_throw_error(env, NULL,
-                       "Expected object with width/height properties");
+      napi_throw_error(env, NULL, "Expected an object as the argument");
       return NULL;
     }
   }
 
-  NSInteger displayId = [VirtualDisplayBridge addDisplay:width height:height];
+  NSInteger displayId = [VirtualDisplayBridge create:width
+                                              height:height
+                                                   x:x
+                                                   y:y];
+
+  if (displayId == 0) {
+    napi_throw_error(env, NULL, "Failed to create virtual display");
+    return NULL;
+  }
 
   napi_value result;
   if (napi_create_int64(env, displayId, &result) != napi_ok) {
@@ -77,7 +134,8 @@ napi_value AddDisplay(napi_env env, napi_callback_info info) {
   return result;
 }
 
-napi_value RemoveDisplay(napi_env env, napi_callback_info info) {
+// virtualDisplay.destroy()
+napi_value destroy(napi_env env, napi_callback_info info) {
   size_t argc = 1;
   napi_value args[1];
 
@@ -96,7 +154,7 @@ napi_value RemoveDisplay(napi_env env, napi_callback_info info) {
     return NULL;
   }
 
-  BOOL result = [VirtualDisplayBridge removeDisplay:(NSInteger)displayId];
+  BOOL result = [VirtualDisplayBridge destroy:(NSInteger)displayId];
 
   napi_value js_result;
   if (napi_get_boolean(env, result, &js_result) != napi_ok) {
@@ -108,9 +166,8 @@ napi_value RemoveDisplay(napi_env env, napi_callback_info info) {
 
 napi_value Init(napi_env env, napi_value exports) {
   napi_property_descriptor descriptors[] = {
-      {"addDisplay", NULL, AddDisplay, NULL, NULL, NULL, napi_default, NULL},
-      {"removeDisplay", NULL, RemoveDisplay, NULL, NULL, NULL, napi_default,
-       NULL}};
+      {"create", NULL, create, NULL, NULL, NULL, napi_default, NULL},
+      {"destroy", NULL, destroy, NULL, NULL, NULL, napi_default, NULL}};
 
   if (napi_define_properties(env, exports,
                              sizeof(descriptors) / sizeof(*descriptors),

@@ -3,157 +3,52 @@ import Cocoa
 import os.log
 
 @objc public class VirtualDisplay: NSObject {
-    @objc public static func addDisplay(width: Int, height: Int) -> Int {
+    @objc public static func create(width: Int, height: Int, x: Int, y: Int) -> Int {
         let refreshRates: [Double] = [60.0] // Always 60Hz default
         let description = "\(width)x\(height) Display"
         let definition = DummyDefinition(width, height, 1, refreshRates, description, false)
-        return DummyManager.createDummy(definition) ?? 0
+        let displayId = DummyManager.createDummy(definition) ?? 0
+        positionDisplay(displayId: displayId, x: x, y: y)
+
+       return displayId
     }
     
-    @objc public static func removeDisplay(id: Int) -> Bool {
+    @objc public static func destroy(id: Int) -> Bool {
         DummyManager.discardDummyByNumber(id)
         return true
     }
-}
 
-class DummyManager {
-    struct DefinedDummy {
-        var dummy: Dummy
-    }
-
-    static var definedDummies: [Int: DefinedDummy] = [:]
-    static var dummyCounter: Int = 0
-
-    static func createDummy(_ dummyDefinition: DummyDefinition, isPortrait _: Bool = false, serialNum: UInt32 = 0, doConnect: Bool = true) -> Int? {
-        let dummy = Dummy(dummyDefinition: dummyDefinition, serialNum: serialNum, doConnect: doConnect)
-        self.dummyCounter += 1
-        self.definedDummies[self.dummyCounter] = DefinedDummy(dummy: dummy)
-        return self.dummyCounter
-    }
-
-    static func discardDummyByNumber(_ number: Int) {
-        if let definedDummy = self.definedDummies[number] {
-            if definedDummy.dummy.isConnected {
-                definedDummy.dummy.disconnect()
-            }
+    private static func positionDisplay(displayId: Int, x: Int, y: Int) {
+        guard let definedDummy = DummyManager.definedDummies[displayId],
+            definedDummy.dummy.isConnected else {
+            os_log("VirtualDisplay: Cannot position display %{public}@: display not found or not connected", type: .error, "\(displayId)")
+            return
         }
-        self.definedDummies[number] = nil
-    }
-}
-
-struct DummyDefinition {
-    let aspectWidth, aspectHeight, multiplierStep, minMultiplier, maxMultiplier: Int
-    let refreshRates: [Double]
-    let description: String
-    let addSeparatorAfter: Bool
-
-    init(_ aspectWidth: Int, _ aspectHeight: Int, _ step: Int, _ refreshRates: [Double], _ description: String, _ addSeparatorAfter: Bool = false) {
-        let minX: Int = 720
-        let minY: Int = 720
-        let maxX: Int = 8192
-        let maxY: Int = 8192
-        let minMultiplier = max(Int(ceil(Float(minX) / (Float(aspectWidth) * Float(step)))), Int(ceil(Float(minY) / (Float(aspectHeight) * Float(step)))))
-        let maxMultiplier = min(Int(floor(Float(maxX) / (Float(aspectWidth) * Float(step)))), Int(floor(Float(maxY) / (Float(aspectHeight) * Float(step)))))
         
-        self.aspectWidth = aspectWidth
-        self.aspectHeight = aspectHeight
-        self.minMultiplier = minMultiplier
-        self.maxMultiplier = maxMultiplier
-        self.multiplierStep = step
-        self.refreshRates = refreshRates
-        self.description = description
-        self.addSeparatorAfter = addSeparatorAfter
-    }
-}
+        let cgDisplayId = definedDummy.dummy.displayIdentifier
 
-class Dummy: Equatable {
-    var virtualDisplay: CGVirtualDisplay?
-    var dummyDefinition: DummyDefinition
-    let serialNum: UInt32
-    var isConnected: Bool = false
-    var displayIdentifier: CGDirectDisplayID = 0
-
-    static func == (lhs: Dummy, rhs: Dummy) -> Bool {
-        lhs.serialNum == rhs.serialNum
-    }
-
-    init(dummyDefinition: DummyDefinition, serialNum: UInt32 = 0, doConnect: Bool = true) {
-        var storedSerialNum: UInt32 = serialNum
-        if storedSerialNum == 0 {
-            storedSerialNum = UInt32.random(in: 0 ... UInt32.max)
+        var config: CGDisplayConfigRef? = nil
+        let beginResult = CGBeginDisplayConfiguration(&config)
+        
+        if beginResult != .success {
+            os_log("VirtualDisplay: Cannot position display, failed to begin display configuration via CGBeginDisplayConfiguration: error %{public}@", type: .error, "\(beginResult.rawValue)")
+            return
         }
-        self.dummyDefinition = dummyDefinition
-        self.serialNum = storedSerialNum
-        if doConnect {
-            _ = self.connect()
-        }
-    }
 
-    func getName() -> String {
-        "Dummy \(self.dummyDefinition.description.components(separatedBy: " ").first ?? self.dummyDefinition.description)"
-    }
-
-    func connect() -> Bool {
-        if self.virtualDisplay != nil || self.isConnected {
-            self.disconnect()
+        let configResult = CGConfigureDisplayOrigin(config, cgDisplayId, Int32(x), Int32(y))
+        
+        if configResult != .success {
+            os_log("VirtualDisplay: Cannot position display, failed to configure display origin via CGConfigureDisplayOrigin: error %{public}@", type: .error, "\(configResult.rawValue)")
+            CGCancelDisplayConfiguration(config)
+            return
         }
-        let name: String = self.getName()
-        if let virtualDisplay = Dummy.createVirtualDisplay(self.dummyDefinition, name: name, serialNum: self.serialNum) {
-            self.virtualDisplay = virtualDisplay
-            self.displayIdentifier = virtualDisplay.displayID
-            self.isConnected = true
-            os_log("Display %{public}@ successfully connected", type: .info, "\(name)")
-            return true
+
+        let completeResult = CGCompleteDisplayConfiguration(config, .permanently)
+        
+        if completeResult == .success {
+            os_log("VirtualDisplay: Successfully positioned display %{public}@ at (%{public}@, %{public}@)", type: .info, "\(displayId)", "\(x)", "\(y)")
         } else {
-            os_log("Failed to connect display %{public}@", type: .info, "\(name)")
-            return false
+            os_log("VirtualDisplay: Cannot position display, failed to complete display configuration via CGCompleteDisplayConfiguration: error %{public}@", type: .error, "\(completeResult.rawValue)")
         }
-    }
-
-    func disconnect() {
-        self.virtualDisplay = nil
-        self.isConnected = false
-        os_log("Disconnected virtual display: %{public}@", type: .info, "\(self.getName())")
-    }
-
-    static func createVirtualDisplay(_ definition: DummyDefinition, name: String, serialNum: UInt32, hiDPI: Bool = false) -> CGVirtualDisplay? {
-        os_log("Creating virtual display: %{public}@", type: .info, "\(name)")
-        if let descriptor = CGVirtualDisplayDescriptor() {
-            os_log("- Preparing descriptor...", type: .info)
-            descriptor.queue = DispatchQueue.global(qos: .userInteractive)
-            descriptor.name = name
-            descriptor.whitePoint = CGPoint(x: 0.950, y: 1.000)
-            descriptor.redPrimary = CGPoint(x: 0.454, y: 0.242)
-            descriptor.greenPrimary = CGPoint(x: 0.353, y: 0.674)
-            descriptor.bluePrimary = CGPoint(x: 0.157, y: 0.084)
-            descriptor.maxPixelsWide = UInt32(definition.aspectWidth * definition.multiplierStep * definition.maxMultiplier)
-            descriptor.maxPixelsHigh = UInt32(definition.aspectHeight * definition.multiplierStep * definition.maxMultiplier)
-            let diagonalSizeRatio: Double = (24 * 25.4) / sqrt(Double(definition.aspectWidth * definition.aspectWidth + definition.aspectHeight * definition.aspectHeight))
-            descriptor.sizeInMillimeters = CGSize(width: Double(definition.aspectWidth) * diagonalSizeRatio, height: Double(definition.aspectHeight) * diagonalSizeRatio)
-            descriptor.serialNum = serialNum
-            descriptor.productID = UInt32(min(definition.aspectWidth - 1, 255) * 256 + min(definition.aspectHeight - 1, 255))
-            descriptor.vendorID = UInt32(0xF0F0)
-            if let display = CGVirtualDisplay(descriptor: descriptor) {
-                os_log("- Creating display, preparing modes...", type: .info)
-                var modes = [CGVirtualDisplayMode?](repeating: nil, count: definition.maxMultiplier - definition.minMultiplier + 1)
-                for multiplier in definition.minMultiplier ... definition.maxMultiplier {
-                    for refreshRate in definition.refreshRates {
-                        let width = UInt32(definition.aspectWidth * multiplier * definition.multiplierStep)
-                        let height = UInt32(definition.aspectHeight * multiplier * definition.multiplierStep)
-                        modes[multiplier - definition.minMultiplier] = CGVirtualDisplayMode(width: width, height: height, refreshRate: refreshRate)!
-                    }
-                }
-                if let settings = CGVirtualDisplaySettings() {
-                    os_log("- Preparing settings for display...", type: .info)
-                    settings.hiDPI = hiDPI ? 1 : 0
-                    settings.modes = modes as [Any]
-                    if display.applySettings(settings) {
-                        os_log("- Settings are successfully applied. Dummy Display ID is %{public}@", type: .info, String(display.displayID))
-                        return display
-                    }
-                }
-            }
-        }
-        return nil
     }
 }

@@ -51,6 +51,7 @@
             "action_name": "build_swift",
             "inputs": [
               "src/VirtualDisplay.swift",
+              "src/Dummy.swift",
               "include/VirtualDisplayBridge.h"
             ],
             "outputs": [
@@ -60,6 +61,7 @@
             "action": [
               "swiftc",
               "src/VirtualDisplay.swift",
+              "src/Dummy.swift",
               "-import-objc-header", "include/VirtualDisplayBridge.h",
               "-emit-objc-header-path", "./build_swift/virtual_display-Swift.h",
               "-emit-library", "-o", "./build_swift/libVirtualDisplay.dylib",
