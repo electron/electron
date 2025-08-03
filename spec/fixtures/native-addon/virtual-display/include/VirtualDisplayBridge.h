@@ -6,7 +6,7 @@
 
 @interface VirtualDisplayBridge : NSObject
 
-+ (NSInteger)addDisplay;
++ (NSInteger)addDisplay:(int)width height:(int)height;
 + (BOOL)removeDisplay:(NSInteger)displayId;
 
 @end
