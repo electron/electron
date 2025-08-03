@@ -3,12 +3,12 @@
 
 @implementation VirtualDisplayBridge
 
-+ (NSInteger)addDisplay:(int)width height:(int)height {
-    return [VirtualDisplay addDisplayWithWidth:width height:height];
++ (NSInteger)create:(int)width height:(int)height x:(int)x y:(int)y {
+    return [VirtualDisplay createWithWidth:width height:height x:x y:y];
 }
 
-+ (BOOL)removeDisplay:(NSInteger)displayId {
-    return [VirtualDisplay removeDisplayWithId:(int)displayId];
++ (BOOL)destroy:(NSInteger)displayId {
+    return [VirtualDisplay destroyWithId:(int)displayId];
 }
 
 @end

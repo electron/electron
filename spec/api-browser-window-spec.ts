@@ -7410,4 +7410,24 @@ describe('BrowserWindow module', () => {
       });
     });
   });
+
+  describe('virtual-display', async () => {
+    it('should load the addon and add a display', async () => {
+      const virtualDisplay = require('@electron-ci/virtual-display');
+      const displayId = virtualDisplay.create({
+        height: 1080, // height of the display
+        width: 1920, // width of the display
+        x: 0, // origin x of the display
+        y: 0 // origin y of the display
+      });
+      expect(displayId).to.not.be.null();
+
+      screen.getAllDisplays().forEach(display => {
+        console.log(display.bounds);
+      });
+
+      const result = virtualDisplay.destroy(displayId);
+      expect(result).to.equal(true);
+    });
+  });
 });

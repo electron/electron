@@ -6,8 +6,8 @@
 
 @interface VirtualDisplayBridge : NSObject
 
-+ (NSInteger)addDisplay:(int)width height:(int)height;
-+ (BOOL)removeDisplay:(NSInteger)displayId;
++ (NSInteger)create:(int)width height:(int)height x:(int)x y:(int)y;
++ (BOOL)destroy:(NSInteger)displayId;
 
 @end
 
