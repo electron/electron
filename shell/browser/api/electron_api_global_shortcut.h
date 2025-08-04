@@ -21,8 +21,9 @@ class Handle;
 
 namespace electron::api {
 
-class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
-                             public gin_helper::DeprecatedWrappable<GlobalShortcut> {
+class GlobalShortcut final
+    : private ui::GlobalAcceleratorListener::Observer,
+      public gin_helper::DeprecatedWrappable<GlobalShortcut> {
  public:
   static gin::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 

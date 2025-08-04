@@ -324,7 +324,8 @@ WebRequest::~WebRequest() {
 
 gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::DeprecatedWrappable<WebRequest>::GetObjectTemplateBuilder(isolate)
+  return gin_helper::DeprecatedWrappable<WebRequest>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod(
           "onBeforeRequest",
           &WebRequest::SetResponseListener<ResponseEvent::kOnBeforeRequest>)

@@ -22,9 +22,10 @@ class Handle;
 
 namespace electron::api {
 
-class InAppPurchase final : public gin_helper::DeprecatedWrappable<InAppPurchase>,
-                            public gin_helper::EventEmitterMixin<InAppPurchase>,
-                            private in_app_purchase::TransactionObserver {
+class InAppPurchase final
+    : public gin_helper::DeprecatedWrappable<InAppPurchase>,
+      public gin_helper::EventEmitterMixin<InAppPurchase>,
+      private in_app_purchase::TransactionObserver {
  public:
   static gin::Handle<InAppPurchase> Create(v8::Isolate* isolate);
 

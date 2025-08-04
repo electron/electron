@@ -7,8 +7,8 @@
 
 #include "base/containers/flat_map.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "shell/common/gin_helper/wrappable.h"
 #include "services/device/public/mojom/wake_lock.mojom.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace gin {
 class ObjectTemplateBuilder;
