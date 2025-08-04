@@ -6,9 +6,9 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
 #include "base/power_monitor/power_observer.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "ui/base/idle/idle.h"
 
 #if BUILDFLAG(IS_LINUX)
@@ -17,7 +17,7 @@
 
 namespace electron::api {
 
-class PowerMonitor final : public gin::DeprecatedWrappable<PowerMonitor>,
+class PowerMonitor final : public gin_helper::DeprecatedWrappable<PowerMonitor>,
                            public gin_helper::EventEmitterMixin<PowerMonitor>,
                            public gin_helper::Pinnable<PowerMonitor>,
                            private base::PowerStateObserver,
@@ -26,7 +26,7 @@ class PowerMonitor final : public gin::DeprecatedWrappable<PowerMonitor>,
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

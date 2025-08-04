@@ -10,7 +10,6 @@
 #include "gin/dictionary.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
-#include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
@@ -19,6 +18,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
@@ -55,7 +55,7 @@ bool IsWorkerThread() {
 }
 
 template <typename T>
-class IPCBase : public gin::DeprecatedWrappable<T> {
+class IPCBase : public gin_helper::DeprecatedWrappable<T> {
  public:
   static gin::DeprecatedWrapperInfo kWrapperInfo;
 
@@ -181,10 +181,10 @@ class IPCBase : public gin::DeprecatedWrappable<T> {
     return electron::DeserializeV8Value(isolate, result);
   }
 
-  // gin::Wrappable:
+  // gin_helper::Wrappable:
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::DeprecatedWrappable<T>::GetObjectTemplateBuilder(isolate)
+    return gin_helper::DeprecatedWrappable<T>::GetObjectTemplateBuilder(isolate)
         .SetMethod("send", &T::SendMessage)
         .SetMethod("sendSync", &T::SendSync)
         .SetMethod("sendToHost", &T::SendToHost)

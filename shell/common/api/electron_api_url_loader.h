@@ -13,7 +13,6 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -22,6 +21,7 @@
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "url/gurl.h"
 #include "v8/include/v8-forward.h"
 
@@ -49,7 +49,7 @@ namespace electron::api {
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
 class SimpleURLLoaderWrapper final
-    : public gin::DeprecatedWrappable<SimpleURLLoaderWrapper>,
+    : public gin_helper::DeprecatedWrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
       public gin_helper::CleanedUpAtExit,
       private network::SimpleURLLoaderStreamConsumer,
@@ -60,7 +60,7 @@ class SimpleURLLoaderWrapper final
 
   void Cancel();
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

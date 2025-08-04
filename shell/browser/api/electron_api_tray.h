@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
@@ -18,6 +17,7 @@
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace gfx {
 class Image;
@@ -38,7 +38,7 @@ namespace electron::api {
 
 class Menu;
 
-class Tray final : public gin::DeprecatedWrappable<Tray>,
+class Tray final : public gin_helper::DeprecatedWrappable<Tray>,
                    public gin_helper::EventEmitterMixin<Tray>,
                    public gin_helper::Constructible<Tray>,
                    public gin_helper::CleanedUpAtExit,
@@ -54,7 +54,7 @@ class Tray final : public gin::DeprecatedWrappable<Tray>,
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Tray"; }
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 

@@ -9,8 +9,8 @@
 #include <set>
 
 #include "base/memory/raw_ptr.h"
-#include "gin/wrappable.h"
 #include "shell/browser/net/web_request_api_interface.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 class URLPattern;
 
@@ -31,7 +31,7 @@ class Handle;
 
 namespace electron::api {
 
-class WebRequest final : public gin::DeprecatedWrappable<WebRequest>,
+class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
                          public WebRequestAPI {
  public:
   // Return the WebRequest object attached to |browser_context|, create if there
@@ -53,7 +53,7 @@ class WebRequest final : public gin::DeprecatedWrappable<WebRequest>,
 
   static const char* GetClassName() { return "WebRequest"; }
 
-  // gin::Wrappable:
+  // gin_helper::Wrappable:
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

@@ -9,8 +9,8 @@
 #include <string>
 
 #include "base/values.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "shell/browser/browser.h"
@@ -38,7 +38,7 @@ enum class NotificationCenterKind {
 #endif
 
 class SystemPreferences final
-    : public gin::DeprecatedWrappable<SystemPreferences>,
+    : public gin_helper::DeprecatedWrappable<SystemPreferences>,
       public gin_helper::EventEmitterMixin<SystemPreferences>
 #if BUILDFLAG(IS_WIN)
     ,
@@ -49,7 +49,7 @@ class SystemPreferences final
  public:
   static gin::Handle<SystemPreferences> Create(v8::Isolate* isolate);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

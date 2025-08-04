@@ -6,13 +6,13 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PUSH_NOTIFICATIONS_H_
 
 #include <string>
-
 #include <vector>
-#include "gin/wrappable.h"
+
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace gin {
 template <typename T>
@@ -23,14 +23,14 @@ namespace electron::api {
 
 class PushNotifications final
     : public ElectronBrowserClient::Delegate,
-      public gin::DeprecatedWrappable<PushNotifications>,
+      public gin_helper::DeprecatedWrappable<PushNotifications>,
       public gin_helper::EventEmitterMixin<PushNotifications>,
       private BrowserObserver {
  public:
   static PushNotifications* Get();
   static gin::Handle<PushNotifications> Create(v8::Isolate* isolate);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

@@ -8,8 +8,8 @@
 #include "base/memory/raw_ptr.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extension_registry_observer.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace gin {
 template <typename T>
@@ -22,7 +22,7 @@ class ElectronBrowserContext;
 
 namespace api {
 
-class Extensions final : public gin::DeprecatedWrappable<Extensions>,
+class Extensions final : public gin_helper::DeprecatedWrappable<Extensions>,
                          public gin_helper::EventEmitterMixin<Extensions>,
                          private extensions::ExtensionRegistryObserver {
  public:
@@ -30,7 +30,7 @@ class Extensions final : public gin::DeprecatedWrappable<Extensions>,
       v8::Isolate* isolate,
       ElectronBrowserContext* browser_context);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

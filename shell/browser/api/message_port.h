@@ -8,9 +8,9 @@
 #include <memory>
 #include <vector>
 
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/message.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "third_party/blink/public/common/messaging/message_port_channel.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 
@@ -27,7 +27,7 @@ class Connector;
 namespace electron {
 
 // A non-blink version of blink::MessagePort.
-class MessagePort final : public gin::DeprecatedWrappable<MessagePort>,
+class MessagePort final : public gin_helper::DeprecatedWrappable<MessagePort>,
                           public gin_helper::CleanedUpAtExit,
                           private mojo::MessageReceiver {
  public:
@@ -55,7 +55,7 @@ class MessagePort final : public gin::DeprecatedWrappable<MessagePort>,
       const std::vector<gin::Handle<MessagePort>>& ports,
       bool* threw_exception);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
