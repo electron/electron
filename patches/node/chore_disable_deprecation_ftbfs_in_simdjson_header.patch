@@ -11,10 +11,10 @@ Without this patch, building with simdjson fails with
 This patch can be removed once this is fixed upstream in simdjson.
 
 diff --git a/deps/simdjson/simdjson.h b/deps/simdjson/simdjson.h
-index a0d449975224a3e0db5c05de79b290763d6e390c..e77e47f972b4609e38aa8b68ab0d81ed1575effb 100644
+index 8f52a4331d59996786450eec982659da9244cac1..74729673d87b068dff5f24166bbb77d844f15f42 100644
 --- a/deps/simdjson/simdjson.h
 +++ b/deps/simdjson/simdjson.h
-@@ -3868,12 +3868,17 @@ inline std::ostream& operator<<(std::ostream& out, simdjson_result<padded_string
+@@ -3899,12 +3899,17 @@ inline std::ostream& operator<<(std::ostream& out, simdjson_result<padded_string
  
  } // namespace simdjson
  
@@ -32,7 +32,7 @@ index a0d449975224a3e0db5c05de79b290763d6e390c..e77e47f972b4609e38aa8b68ab0d81ed
  namespace simdjson {
  namespace internal {
  
-@@ -4273,6 +4278,9 @@ inline simdjson_result<padded_string> padded_string::load(std::string_view filen
+@@ -4304,6 +4309,9 @@ inline simdjson_result<padded_string> padded_string::load(std::string_view filen
  
  } // namespace simdjson
  
@@ -42,7 +42,7 @@ index a0d449975224a3e0db5c05de79b290763d6e390c..e77e47f972b4609e38aa8b68ab0d81ed
  inline simdjson::padded_string operator ""_padded(const char *str, size_t len) {
    return simdjson::padded_string(str, len);
  }
-@@ -4281,6 +4289,8 @@ inline simdjson::padded_string operator ""_padded(const char8_t *str, size_t len
+@@ -4312,6 +4320,8 @@ inline simdjson::padded_string operator ""_padded(const char8_t *str, size_t len
    return simdjson::padded_string(reinterpret_cast<const char8_t *>(str), len);
  }
  #endif
