@@ -124,13 +124,12 @@ void SetPrivate(v8::Isolate* const isolate,
       .Check();
 }
 
-v8::MaybeLocal<v8::Value> GetPrivate(v8::Local<v8::Context> context,
+v8::MaybeLocal<v8::Value> GetPrivate(v8::Isolate* const isolate,
+                                     v8::Local<v8::Context> context,
                                      v8::Local<v8::Object> target,
                                      const std::string_view key) {
   return target->GetPrivate(
-      context,
-      v8::Private::ForApi(context->GetIsolate(),
-                          gin::StringToV8(context->GetIsolate(), key)));
+      context, v8::Private::ForApi(isolate, gin::StringToV8(isolate, key)));
 }
 
 }  // namespace
@@ -193,8 +192,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
   // the global handle at the right time.
   if (value->IsFunction()) {
     auto func = value.As<v8::Function>();
-    v8::MaybeLocal<v8::Value> maybe_original_fn =
-        GetPrivate(source_context, func, kOriginalFunctionPrivateKey);
+    v8::MaybeLocal<v8::Value> maybe_original_fn = GetPrivate(
+        source_isolate, source_context, func, kOriginalFunctionPrivateKey);
 
     {
       v8::Context::Scope destination_scope(destination_context);
@@ -482,11 +481,12 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
   // Pull the original function and its context off of the data private key
   v8::MaybeLocal<v8::Value> sdp_value =
-      GetPrivate(calling_context, data, kSupportsDynamicPropertiesPrivateKey);
-  v8::MaybeLocal<v8::Value> maybe_func =
-      GetPrivate(calling_context, data, kProxyFunctionPrivateKey);
-  v8::MaybeLocal<v8::Value> maybe_recv =
-      GetPrivate(calling_context, data, kProxyFunctionReceiverPrivateKey);
+      GetPrivate(args.isolate(), calling_context, data,
+                 kSupportsDynamicPropertiesPrivateKey);
+  v8::MaybeLocal<v8::Value> maybe_func = GetPrivate(
+      args.isolate(), calling_context, data, kProxyFunctionPrivateKey);
+  v8::MaybeLocal<v8::Value> maybe_recv = GetPrivate(
+      args.isolate(), calling_context, data, kProxyFunctionReceiverPrivateKey);
   v8::Local<v8::Value> func_value;
   if (sdp_value.IsEmpty() || maybe_func.IsEmpty() || maybe_recv.IsEmpty() ||
       !gin::ConvertFromV8(args.isolate(), sdp_value.ToLocalChecked(),
