@@ -8,10 +8,10 @@ an API override to replace the native `ReadFileSync` in the `modules`
 binding.
 
 diff --git a/src/env_properties.h b/src/env_properties.h
-index 3df4e303e05105b43a542456546cbc050d0445fa..4f7aee6cb64b4c1d25e98b43d13e747c4546adaa 100644
+index d4961ac90fbc7fffe44f7d494bfae37ba0fa07e0..7b414e6733adff5740bd8e661846824962048c3e 100644
 --- a/src/env_properties.h
 +++ b/src/env_properties.h
-@@ -502,6 +502,7 @@
+@@ -505,6 +505,7 @@
    V(maybe_cache_generated_source_map, v8::Function)                            \
    V(messaging_deserialize_create_object, v8::Function)                         \
    V(message_port, v8::Object)                                                  \
