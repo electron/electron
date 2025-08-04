@@ -457,11 +457,10 @@ base::FilePath GetResourcesPath() {
 #if BUILDFLAG(IS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
 #else
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath exec_path(command_line->GetProgram());
-  base::PathService::Get(base::FILE_EXE, &exec_path);
+  base::FilePath assets_path;
+  base::PathService::Get(base::DIR_ASSETS, &assets_path);
 
-  return exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
+  return assets_path.Append(FILE_PATH_LITERAL("resources"));
 #endif
 }
 }  // namespace

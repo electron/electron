@@ -382,6 +382,7 @@ int GetPathConstant(std::string_view name) {
   // clang-format off
   constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, int>({
       {"appData", DIR_APP_DATA},
+      {"assets", base::DIR_ASSETS},
 #if BUILDFLAG(IS_POSIX)
       {"cache", base::DIR_CACHE},
 #else
