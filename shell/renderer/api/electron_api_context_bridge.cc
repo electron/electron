@@ -158,6 +158,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     int recursion_depth,
     BridgeErrorTarget error_target) {
   v8::Isolate* const source_isolate = source_context->GetIsolate();
+  v8::Isolate* const destination_isolate = destination_context->GetIsolate();
 
   TRACE_EVENT0("electron", "ContextBridge::PassValueToOtherContextInner");
   if (recursion_depth >= kMaxRecursion) {
@@ -212,21 +213,20 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
         return v8::MaybeLocal<v8::Value>(proxy_func);
       }
 
-      v8::Local<v8::Object> state =
-          v8::Object::New(destination_context->GetIsolate());
-      SetPrivate(destination_context->GetIsolate(), destination_context, state,
+      v8::Local<v8::Object> state = v8::Object::New(destination_isolate);
+      SetPrivate(destination_isolate, destination_context, state,
                  kProxyFunctionPrivateKey, func);
-      SetPrivate(destination_context->GetIsolate(), destination_context, state,
+      SetPrivate(destination_isolate, destination_context, state,
                  kProxyFunctionReceiverPrivateKey, parent_value);
-      SetPrivate(destination_context->GetIsolate(), destination_context, state,
-                 kSupportsDynamicPropertiesPrivateKey,
-                 gin::ConvertToV8(destination_context->GetIsolate(),
-                                  support_dynamic_properties));
+      SetPrivate(
+          destination_isolate, destination_context, state,
+          kSupportsDynamicPropertiesPrivateKey,
+          gin::ConvertToV8(destination_isolate, support_dynamic_properties));
 
       if (!v8::Function::New(destination_context, ProxyFunctionWrapper, state)
                .ToLocal(&proxy_func))
         return {};
-      SetPrivate(destination_context->GetIsolate(), destination_context,
+      SetPrivate(destination_isolate, destination_context,
                  proxy_func.As<v8::Object>(), kOriginalFunctionPrivateKey,
                  func);
       object_cache->CacheProxiedObject(value, proxy_func);
@@ -243,14 +243,14 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     // left dangling
     auto proxied_promise =
         std::make_shared<gin_helper::Promise<v8::Local<v8::Value>>>(
-            destination_context->GetIsolate());
+            destination_isolate);
     v8::Local<v8::Promise> proxied_promise_handle =
         proxied_promise->GetHandle();
 
     v8::Global<v8::Context> global_then_source_context(source_isolate,
                                                        source_context);
     v8::Global<v8::Context> global_then_destination_context(
-        destination_context->GetIsolate(), destination_context);
+        destination_isolate, destination_context);
     global_then_source_context.SetWeak();
     global_then_destination_context.SetWeak();
     auto then_cb = base::BindOnce(
@@ -290,14 +290,14 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
           if (!val.IsEmpty())
             proxied_promise->Resolve(val.ToLocalChecked());
         },
-        proxied_promise, destination_context->GetIsolate(),
+        proxied_promise, destination_isolate,
         std::move(global_then_source_context),
         std::move(global_then_destination_context));
 
     v8::Global<v8::Context> global_catch_source_context(source_isolate,
                                                         source_context);
     v8::Global<v8::Context> global_catch_destination_context(
-        destination_context->GetIsolate(), destination_context);
+        destination_isolate, destination_context);
     global_catch_source_context.SetWeak();
     global_catch_destination_context.SetWeak();
     auto catch_cb = base::BindOnce(
@@ -336,15 +336,15 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
           if (!val.IsEmpty())
             proxied_promise->Reject(val.ToLocalChecked());
         },
-        proxied_promise, destination_context->GetIsolate(),
+        proxied_promise, destination_isolate,
         std::move(global_catch_source_context),
         std::move(global_catch_destination_context));
 
     std::ignore = source_promise->Then(
         source_context,
-        gin::ConvertToV8(destination_context->GetIsolate(), std::move(then_cb))
+        gin::ConvertToV8(destination_isolate, std::move(then_cb))
             .As<v8::Function>(),
-        gin::ConvertToV8(destination_context->GetIsolate(), std::move(catch_cb))
+        gin::ConvertToV8(destination_isolate, std::move(catch_cb))
             .As<v8::Function>());
 
     object_cache->CacheProxiedObject(value, proxied_promise_handle);
@@ -367,8 +367,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
           v8::Exception::Error(message.As<v8::String>()));
     }
     return v8::MaybeLocal<v8::Value>(v8::Exception::Error(
-        v8::Exception::CreateMessage(destination_context->GetIsolate(), value)
-            ->Get()));
+        v8::Exception::CreateMessage(destination_isolate, value)->Get()));
   }
 
   // Manually go through the array and pass each value individually into a new
@@ -379,7 +378,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     v8::Local<v8::Array> arr = value.As<v8::Array>();
     size_t length = arr->Length();
     v8::Local<v8::Array> cloned_arr =
-        v8::Array::New(destination_context->GetIsolate(), length);
+        v8::Array::New(destination_isolate, length);
     for (size_t i = 0; i < length; i++) {
       auto value_for_array = PassValueToOtherContextInner(
           source_context, source_execution_context, destination_context,
@@ -400,21 +399,19 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
   // Clone certain DOM APIs only within Window contexts.
   if (source_execution_context->IsWindow()) {
     // Custom logic to "clone" Element references
-    blink::WebElement elem = blink::WebElement::FromV8Value(
-        destination_context->GetIsolate(), value);
+    blink::WebElement elem =
+        blink::WebElement::FromV8Value(destination_isolate, value);
     if (!elem.IsNull()) {
       v8::Context::Scope destination_context_scope(destination_context);
-      return v8::MaybeLocal<v8::Value>(
-          elem.ToV8Value(destination_context->GetIsolate()));
+      return v8::MaybeLocal<v8::Value>(elem.ToV8Value(destination_isolate));
     }
 
     // Custom logic to "clone" Blob references
     blink::WebBlob blob =
-        blink::WebBlob::FromV8Value(destination_context->GetIsolate(), value);
+        blink::WebBlob::FromV8Value(destination_isolate, value);
     if (!blob.IsNull()) {
       v8::Context::Scope destination_context_scope(destination_context);
-      return v8::MaybeLocal<v8::Value>(
-          blob.ToV8Value(destination_context->GetIsolate()));
+      return v8::MaybeLocal<v8::Value>(blob.ToV8Value(destination_isolate));
     }
   }
 
@@ -446,7 +443,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
   {
     v8::Context::Scope destination_context_scope(destination_context);
     v8::Local<v8::Value> cloned_value =
-        gin::ConvertToV8(destination_context->GetIsolate(), ret);
+        gin::ConvertToV8(destination_isolate, ret);
     object_cache->CacheProxiedObject(value, cloned_value);
     return v8::MaybeLocal<v8::Value>(cloned_value);
   }
