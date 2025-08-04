@@ -835,7 +835,7 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
   mouse_wheel_phase_handler_.SendWheelEndForTouchpadScrollingIfNeeded(
       should_route_event);
   mouse_wheel_phase_handler_.AddPhaseIfNeededAndScheduleEndEvent(
-      mouse_wheel_event, false);
+      mouse_wheel_event, false, false);
 
   if (!IsPopupWidget()) {
     if (popup_host_view_) {
