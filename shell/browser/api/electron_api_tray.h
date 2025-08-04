@@ -24,14 +24,11 @@ class Image;
 class Image;
 }  // namespace gfx
 
-namespace gin {
-template <typename T>
-class Handle;
-}  // namespace gin
-
 namespace gin_helper {
 class Dictionary;
 class ErrorThrower;
+template <typename T>
+class Handle;
 }  // namespace gin_helper
 
 namespace electron::api {
@@ -46,10 +43,10 @@ class Tray final : public gin_helper::DeprecatedWrappable<Tray>,
                    private TrayIconObserver {
  public:
   // gin_helper::Constructible
-  static gin::Handle<Tray> New(gin_helper::ErrorThrower thrower,
-                               v8::Local<v8::Value> image,
-                               std::optional<UUID> guid,
-                               gin::Arguments* args);
+  static gin_helper::Handle<Tray> New(gin_helper::ErrorThrower thrower,
+                                      v8::Local<v8::Value> image,
+                                      std::optional<UUID> guid,
+                                      gin::Arguments* args);
 
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Tray"; }

@@ -17,7 +17,6 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_visitor.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
@@ -29,6 +28,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable.h"
@@ -383,14 +383,17 @@ class WebFrameRenderer final
         .Build();
   }
   static const char* GetClassName() { return "WebFrame"; }
-  static gin::Handle<WebFrameRenderer> New(v8::Isolate* isolate) { return {}; }
+  static gin_helper::Handle<WebFrameRenderer> New(v8::Isolate* isolate) {
+    return {};
+  }
 
   static gin::DeprecatedWrapperInfo kWrapperInfo;
 
-  static gin::Handle<WebFrameRenderer> Create(
+  static gin_helper::Handle<WebFrameRenderer> Create(
       v8::Isolate* isolate,
       content::RenderFrame* render_frame) {
-    return gin::CreateHandle(isolate, new WebFrameRenderer(render_frame));
+    return gin_helper::CreateHandle(isolate,
+                                    new WebFrameRenderer(render_frame));
   }
 
   explicit WebFrameRenderer(content::RenderFrame* render_frame)

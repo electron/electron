@@ -6,18 +6,19 @@
 
 #include "base/debug/stack_trace.h"
 #include "gin/data_object_builder.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_helper/handle.h"
 
 namespace gin_helper::internal {
 
 // static
 using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
-gin::Handle<ReplyChannel> ReplyChannel::Create(v8::Isolate* isolate,
-                                               InvokeCallback callback) {
-  return gin::CreateHandle(isolate, new ReplyChannel(std::move(callback)));
+gin_helper::Handle<ReplyChannel> ReplyChannel::Create(v8::Isolate* isolate,
+                                                      InvokeCallback callback) {
+  return gin_helper::CreateHandle(isolate,
+                                  new ReplyChannel(std::move(callback)));
 }
 
 gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(

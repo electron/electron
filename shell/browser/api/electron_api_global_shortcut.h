@@ -14,10 +14,10 @@
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
@@ -25,7 +25,7 @@ class GlobalShortcut final
     : private ui::GlobalAcceleratorListener::Observer,
       public gin_helper::DeprecatedWrappable<GlobalShortcut> {
  public:
-  static gin::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;

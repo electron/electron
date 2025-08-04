@@ -37,8 +37,9 @@ class Debugger final : public gin_helper::DeprecatedWrappable<Debugger>,
                        public content::DevToolsAgentHostClient,
                        private content::WebContentsObserver {
  public:
-  static gin::Handle<Debugger> Create(v8::Isolate* isolate,
-                                      content::WebContents* web_contents);
+  static gin_helper::Handle<Debugger> Create(
+      v8::Isolate* isolate,
+      content::WebContents* web_contents);
 
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;

@@ -37,9 +37,12 @@ class FilePath;
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace gin_helper {
 class Dictionary;
@@ -69,20 +72,21 @@ class Session final : public gin_helper::DeprecatedWrappable<Session>,
                       private content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
-  static gin::Handle<Session> CreateFrom(
+  static gin_helper::Handle<Session> CreateFrom(
       v8::Isolate* isolate,
       ElectronBrowserContext* browser_context);
-  static gin::Handle<Session> New();  // Dummy, do not use!
+  static gin_helper::Handle<Session> New();  // Dummy, do not use!
 
   static Session* FromBrowserContext(content::BrowserContext* context);
 
   // Gets the Session of |partition|.
-  static gin::Handle<Session> FromPartition(v8::Isolate* isolate,
-                                            const std::string& partition,
-                                            base::Value::Dict options = {});
+  static gin_helper::Handle<Session> FromPartition(
+      v8::Isolate* isolate,
+      const std::string& partition,
+      base::Value::Dict options = {});
 
   // Gets the Session based on |path|.
-  static std::optional<gin::Handle<Session>> FromPath(
+  static std::optional<gin_helper::Handle<Session>> FromPath(
       v8::Isolate* isolate,
       const base::FilePath& path,
       base::Value::Dict options = {});
