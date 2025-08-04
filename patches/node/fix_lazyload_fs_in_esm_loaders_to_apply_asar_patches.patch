@@ -18,16 +18,6 @@ index 09a332c0999086b30fd952d9456f788925240e27..910ac85cdc86e7fb3f850f7edf0b95ea
  
  const defaultType =
    getOptionValue('--experimental-default-type');
-@@ -38,8 +38,7 @@ async function getSource(url, context) {
-   const responseURL = href;
-   let source;
-   if (protocol === 'file:') {
--    const { readFile: readFileAsync } = require('internal/fs/promises').exports;
--    source = await readFileAsync(url);
-+    source = await fs.promises.readFile(url);
-   } else if (protocol === 'data:') {
-     const result = dataURLProcessor(url);
-     if (result === 'failure') {
 @@ -63,7 +62,7 @@ function getSourceSync(url, context) {
    const responseURL = href;
    let source;
