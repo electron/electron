@@ -22,10 +22,10 @@ index 5a31687bbd0fca61db3a7c41ed73d938340d6446..b84f5fd336bc4b61b2cd0b2fc92382b0
  
  ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
 diff --git a/gin/per_isolate_data.cc b/gin/per_isolate_data.cc
-index 884990426f13a6abca22a60dd8cc0685f8435b23..7cac1e83775f7fe85f62ee0811236cd50ce65a32 100644
+index 884990426f13a6abca22a60dd8cc0685f8435b23..64ac0a64a05105532f3cda898aeac68c21338e60 100644
 --- a/gin/per_isolate_data.cc
 +++ b/gin/per_isolate_data.cc
-@@ -68,12 +68,27 @@ PerIsolateData* PerIsolateData::From(Isolate* isolate) {
+@@ -68,12 +68,32 @@ PerIsolateData* PerIsolateData::From(Isolate* isolate) {
    return static_cast<PerIsolateData*>(isolate->GetData(kEmbedderNativeGin));
  }
  
@@ -40,6 +40,11 @@ index 884990426f13a6abca22a60dd8cc0685f8435b23..7cac1e83775f7fe85f62ee0811236cd5
    object_templates_[info] = Eternal<ObjectTemplate>(isolate_, templ);
  }
  
++void PerIsolateData::SetFunctionTemplate(DeprecatedWrapperInfo* info,
++                                         Local<FunctionTemplate> templ) {
++  function_templates_[info] = Eternal<FunctionTemplate>(isolate_, templ);
++}
++
 +v8::Local<v8::ObjectTemplate> PerIsolateData::DeprecatedGetObjectTemplate(
 +    DeprecatedWrapperInfo* info) {
 +  DeprecatedObjectTemplateMap::iterator it =
@@ -53,11 +58,27 @@ index 884990426f13a6abca22a60dd8cc0685f8435b23..7cac1e83775f7fe85f62ee0811236cd5
  v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
      const WrapperInfo* info) {
    ObjectTemplateMap::iterator it = object_templates_.find(info);
+@@ -83,6 +103,15 @@ v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
+   return it->second.Get(isolate_);
+ }
+ 
++v8::Local<v8::FunctionTemplate> PerIsolateData::GetFunctionTemplate(
++    DeprecatedWrapperInfo* info) {
++  FunctionTemplateMap::iterator it = function_templates_.find(info);
++  if (it == function_templates_.end()) {
++    return v8::Local<v8::FunctionTemplate>();
++  }
++  return it->second.Get(isolate_);
++}
++
+ void PerIsolateData::AddDisposeObserver(DisposeObserver* observer) {
+   dispose_observers_.AddObserver(observer);
+ }
 diff --git a/gin/per_isolate_data.h b/gin/per_isolate_data.h
-index bce889749415da341e6e6e4082ac06bbeb4bb80a..6476baf6a701cfa443c35762b3aaa7d41d97d86a 100644
+index bce889749415da341e6e6e4082ac06bbeb4bb80a..d748c1cf8cef7da90686686f1b8072bcd530541d 100644
 --- a/gin/per_isolate_data.h
 +++ b/gin/per_isolate_data.h
-@@ -51,9 +51,16 @@ class GIN_EXPORT PerIsolateData {
+@@ -51,11 +51,24 @@ class GIN_EXPORT PerIsolateData {
  
    static PerIsolateData* From(v8::Isolate* isolate);
  
@@ -68,13 +89,21 @@ index bce889749415da341e6e6e4082ac06bbeb4bb80a..6476baf6a701cfa443c35762b3aaa7d4
    void SetObjectTemplate(const WrapperInfo* info,
                           v8::Local<v8::ObjectTemplate> object_template);
  
++  void SetFunctionTemplate(DeprecatedWrapperInfo* info,
++                           v8::Local<v8::FunctionTemplate> function_template);
++
 +  v8::Local<v8::ObjectTemplate> DeprecatedGetObjectTemplate(
 +      DeprecatedWrapperInfo* info);
 +
    v8::Local<v8::ObjectTemplate> GetObjectTemplate(const WrapperInfo* info);
  
++  v8::Local<v8::FunctionTemplate> GetFunctionTemplate(
++      DeprecatedWrapperInfo* info);
++
    void AddDisposeObserver(DisposeObserver* observer);
-@@ -74,6 +81,8 @@ class GIN_EXPORT PerIsolateData {
+   void RemoveDisposeObserver(DisposeObserver* observer);
+   void NotifyBeforeDispose();
+@@ -74,14 +87,20 @@ class GIN_EXPORT PerIsolateData {
    }
  
   private:
@@ -82,15 +111,19 @@ index bce889749415da341e6e6e4082ac06bbeb4bb80a..6476baf6a701cfa443c35762b3aaa7d4
 +      DeprecatedObjectTemplateMap;
    typedef std::map<const WrapperInfo*, v8::Eternal<v8::ObjectTemplate>>
        ObjectTemplateMap;
++  typedef std::map<DeprecatedWrapperInfo*, v8::Eternal<v8::FunctionTemplate>>
++      FunctionTemplateMap;
  
-@@ -81,6 +90,7 @@ class GIN_EXPORT PerIsolateData {
+   // PerIsolateData doesn't actually own |isolate_|. Instead, the isolate is
    // owned by the IsolateHolder, which also owns the PerIsolateData.
    raw_ptr<v8::Isolate, AcrossTasksDanglingUntriaged> isolate_;
    raw_ptr<v8::ArrayBuffer::Allocator, DanglingUntriaged> allocator_;
 +  DeprecatedObjectTemplateMap deprecated_object_templates_;
    ObjectTemplateMap object_templates_;
++  FunctionTemplateMap function_templates_;
    base::ObserverList<DisposeObserver> dispose_observers_;
    std::shared_ptr<V8ForegroundTaskRunnerBase> task_runner_;
+   std::shared_ptr<V8ForegroundTaskRunnerBase> user_visible_task_runner_;
 diff --git a/gin/public/wrapper_info.h b/gin/public/wrapper_info.h
 index 34b5f1c30c05152122f23708a1df62f00296fcd6..dac3459dc822db1b242288293605ab4c4a6cf76f 100644
 --- a/gin/public/wrapper_info.h
