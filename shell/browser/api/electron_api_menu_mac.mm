@@ -289,8 +289,8 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 
 // static
 gin_helper::Handle<Menu> Menu::New(gin::Arguments* args) {
-  auto handle =
-      gin_helper::CreateHandle(args->isolate(), static_cast<Menu*>(new MenuMac(args)));
+  auto handle = gin_helper::CreateHandle(args->isolate(),
+                                         static_cast<Menu*>(new MenuMac(args)));
   gin_helper::CallMethod(args->isolate(), handle.get(), "_init");
   return handle;
 }
