@@ -15,10 +15,50 @@ Reviewed-By: Benjamin Gruenbaum <benjamingr@gmail.com>
 Reviewed-By: Yagiz Nizipli <yagiz.nizipli@sentry.io>
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index 404e87e6d1237b5ee79cafd8a959c1b6d9d23fe5..7116c543f2f505cf8fc3053ffbc68affa91f6f49 100644
+index 404e87e6d1237b5ee79cafd8a959c1b6d9d23fe5..7deda572c940f7b2e8c6813f1826796a13e4db38 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -3423,7 +3423,6 @@ one is included in the list below.
+@@ -2709,39 +2709,6 @@ added: v12.0.0
+ Set default [`tls.DEFAULT_MIN_VERSION`][] to 'TLSv1.3'. Use to disable support
+ for TLSv1.2, which is not as secure as TLSv1.3.
+ 
+-### `--trace-atomics-wait`
+-
+-<!-- YAML
+-added: v14.3.0
+-deprecated:
+-  - v18.8.0
+-  - v16.18.0
+--->
+-
+-> Stability: 0 - Deprecated
+-
+-Print short summaries of calls to [`Atomics.wait()`][] to stderr.
+-The output could look like this:
+-
+-```text
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 1, inf) started
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 1, inf) did not wait because the values mismatched
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 0, 10) started
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 0, 10) timed out
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 4, 0, inf) started
+-(node:15701) [Thread 1] Atomics.wait(&lt;address> + 4, -1, inf) started
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 4, 0, inf) was woken up by another thread
+-(node:15701) [Thread 1] Atomics.wait(&lt;address> + 4, -1, inf) was woken up by another thread
+-```
+-
+-The fields here correspond to:
+-
+-* The thread id as given by [`worker_threads.threadId`][]
+-* The base address of the `SharedArrayBuffer` in question, as well as the
+-  byte offset corresponding to the index passed to `Atomics.wait()`
+-* The expected value that was passed to `Atomics.wait()`
+-* The timeout passed to `Atomics.wait`
+-
+ ### `--trace-deprecation`
+ 
+ <!-- YAML
+@@ -3423,7 +3390,6 @@ one is included in the list below.
  * `--tls-min-v1.1`
  * `--tls-min-v1.2`
  * `--tls-min-v1.3`
