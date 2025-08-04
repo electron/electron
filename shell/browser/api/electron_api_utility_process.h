@@ -14,12 +14,12 @@
 #include "base/memory/weak_ptr.h"
 #include "base/process/process_handle.h"
 #include "content/public/browser/service_process_host.h"
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/message.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/url_loader_network_observer.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
 #include "v8/include/v8-forward.h"
 
@@ -40,7 +40,7 @@ class Connector;
 namespace electron::api {
 
 class UtilityProcessWrapper final
-    : public gin::DeprecatedWrappable<UtilityProcessWrapper>,
+    : public gin_helper::DeprecatedWrappable<UtilityProcessWrapper>,
       public gin_helper::Pinnable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,
       private mojo::MessageReceiver,
@@ -56,7 +56,7 @@ class UtilityProcessWrapper final
 
   void Shutdown(uint64_t exit_code);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

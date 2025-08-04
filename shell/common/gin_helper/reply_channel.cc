@@ -22,8 +22,8 @@ gin::Handle<ReplyChannel> ReplyChannel::Create(v8::Isolate* isolate,
 
 gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::DeprecatedWrappable<ReplyChannel>::GetObjectTemplateBuilder(
-             isolate)
+  return gin_helper::DeprecatedWrappable<
+             ReplyChannel>::GetObjectTemplateBuilder(isolate)
       .SetMethod("sendReply", &ReplyChannel::SendReply);
 }
 

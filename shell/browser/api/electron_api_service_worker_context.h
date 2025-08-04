@@ -8,8 +8,8 @@
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/service_worker_context_observer.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "third_party/blink/public/common/service_worker/embedded_worker_status.h"
 
 namespace content {
@@ -35,7 +35,7 @@ namespace api {
 class ServiceWorkerMain;
 
 class ServiceWorkerContext final
-    : public gin::DeprecatedWrappable<ServiceWorkerContext>,
+    : public gin_helper::DeprecatedWrappable<ServiceWorkerContext>,
       public gin_helper::EventEmitterMixin<ServiceWorkerContext>,
       private content::ServiceWorkerContextObserver {
  public:
@@ -79,7 +79,7 @@ class ServiceWorkerContext final
   void OnVersionRedundant(int64_t version_id, const GURL& scope) override;
   void OnDestruct(content::ServiceWorkerContext* context) override;
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

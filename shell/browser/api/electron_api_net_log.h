@@ -10,11 +10,11 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/log/net_log_capture_mode.h"
 #include "services/network/public/mojom/net_log.mojom.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace base {
 class FilePath;
@@ -35,7 +35,7 @@ class ElectronBrowserContext;
 namespace api {
 
 // The code is referenced from the net_log::NetExportFileWriter class.
-class NetLog final : public gin::DeprecatedWrappable<NetLog> {
+class NetLog final : public gin_helper::DeprecatedWrappable<NetLog> {
  public:
   static gin::Handle<NetLog> Create(v8::Isolate* isolate,
                                     ElectronBrowserContext* browser_context);
@@ -45,7 +45,7 @@ class NetLog final : public gin::DeprecatedWrappable<NetLog> {
   v8::Local<v8::Promise> StopLogging(gin::Arguments* args);
   bool IsCurrentlyLogging() const;
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

@@ -10,9 +10,9 @@
 
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/content_browser_client.h"
-#include "gin/wrappable.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace gin {
 class Arguments;
@@ -35,7 +35,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                                  v8::Local<v8::Value> val);
 
 // Protocol implementation based on network services.
-class Protocol final : public gin::DeprecatedWrappable<Protocol>,
+class Protocol final : public gin_helper::DeprecatedWrappable<Protocol>,
                        public gin_helper::Constructible<Protocol> {
  public:
   static gin::Handle<Protocol> Create(v8::Isolate* isolate,
@@ -48,7 +48,7 @@ class Protocol final : public gin::DeprecatedWrappable<Protocol>,
       v8::Local<v8::ObjectTemplate> tmpl);
   static const char* GetClassName() { return "Protocol"; }
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 

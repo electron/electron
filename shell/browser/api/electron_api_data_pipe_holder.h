@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "services/network/public/cpp/data_element.h"
 #include "services/network/public/mojom/data_pipe_getter.mojom.h"
 
@@ -20,9 +20,9 @@ class Handle;
 namespace electron::api {
 
 // Retains reference to the data pipe.
-class DataPipeHolder final : public gin::DeprecatedWrappable<DataPipeHolder> {
+class DataPipeHolder final : public gin_helper::DeprecatedWrappable<DataPipeHolder> {
  public:
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 

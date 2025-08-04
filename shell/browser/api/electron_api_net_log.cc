@@ -219,7 +219,7 @@ v8::Local<v8::Promise> NetLog::StopLogging(gin::Arguments* args) {
 
 gin::ObjectTemplateBuilder NetLog::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::DeprecatedWrappable<NetLog>::GetObjectTemplateBuilder(isolate)
+  return gin_helper::DeprecatedWrappable<NetLog>::GetObjectTemplateBuilder(isolate)
       .SetProperty("currentlyLogging", &NetLog::IsCurrentlyLogging)
       .SetMethod("startLogging", &NetLog::StartLogging)
       .SetMethod("stopLogging", &NetLog::StopLogging);

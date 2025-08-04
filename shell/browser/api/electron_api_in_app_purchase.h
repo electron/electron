@@ -8,11 +8,11 @@
 #include <string>
 #include <vector>
 
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/mac/in_app_purchase.h"
 #include "shell/browser/mac/in_app_purchase_observer.h"
 #include "shell/browser/mac/in_app_purchase_product.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "v8/include/v8-forward.h"
 
 namespace gin {
@@ -22,13 +22,13 @@ class Handle;
 
 namespace electron::api {
 
-class InAppPurchase final : public gin::DeprecatedWrappable<InAppPurchase>,
+class InAppPurchase final : public gin_helper::DeprecatedWrappable<InAppPurchase>,
                             public gin_helper::EventEmitterMixin<InAppPurchase>,
                             private in_app_purchase::TransactionObserver {
  public:
   static gin::Handle<InAppPurchase> Create(v8::Isolate* isolate);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
