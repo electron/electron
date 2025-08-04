@@ -12,7 +12,7 @@
 #include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
-#include "gin/wrappable.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia_rep.h"
 
@@ -46,7 +46,7 @@ class ErrorThrower;
 
 namespace electron::api {
 
-class NativeImage final : public gin::DeprecatedWrappable<NativeImage> {
+class NativeImage final : public gin_helper::DeprecatedWrappable<NativeImage> {
  public:
   NativeImage(v8::Isolate* isolate, const gfx::Image& image);
 #if BUILDFLAG(IS_WIN)
@@ -95,7 +95,7 @@ class NativeImage final : public gin::DeprecatedWrappable<NativeImage> {
       NativeImage** native_image,
       OnConvertError on_error = OnConvertError::kThrow);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

@@ -19,7 +19,6 @@
 #include "content/public/renderer/render_frame_visitor.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
-#include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
@@ -32,6 +31,7 @@
 #include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
@@ -333,7 +333,7 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
 };
 
 class WebFrameRenderer final
-    : public gin::DeprecatedWrappable<WebFrameRenderer>,
+    : public gin_helper::DeprecatedWrappable<WebFrameRenderer>,
       public gin_helper::Constructible<WebFrameRenderer>,
       private content::RenderFrameObserver {
  public:

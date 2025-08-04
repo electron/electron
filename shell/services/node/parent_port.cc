@@ -114,7 +114,8 @@ gin::Handle<ParentPort> ParentPort::Create(v8::Isolate* isolate) {
 // static
 gin::ObjectTemplateBuilder ParentPort::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::DeprecatedWrappable<ParentPort>::GetObjectTemplateBuilder(isolate)
+  return gin_helper::DeprecatedWrappable<ParentPort>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("postMessage", &ParentPort::PostMessage)
       .SetMethod("start", &ParentPort::Start)
       .SetMethod("pause", &ParentPort::Pause);

@@ -280,7 +280,7 @@ bool MessagePort::Accept(mojo::Message* mojo_message) {
 
 gin::ObjectTemplateBuilder MessagePort::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::DeprecatedWrappable<MessagePort>::GetObjectTemplateBuilder(
+  return gin_helper::DeprecatedWrappable<MessagePort>::GetObjectTemplateBuilder(
              isolate)
       .SetMethod("postMessage", &MessagePort::PostMessage)
       .SetMethod("start", &MessagePort::Start)

@@ -6,9 +6,9 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
 
 #include "base/containers/flat_map.h"
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/wake_lock.mojom.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace gin {
 class ObjectTemplateBuilder;
@@ -20,11 +20,11 @@ class Handle;
 namespace electron::api {
 
 class PowerSaveBlocker final
-    : public gin::DeprecatedWrappable<PowerSaveBlocker> {
+    : public gin_helper::DeprecatedWrappable<PowerSaveBlocker> {
  public:
   static gin::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

@@ -10,19 +10,10 @@ shutdown leading to UAF in the second pass.
 
 Details at  https://github.com/microsoft/vscode/issues/192119#issuecomment-2375851531
 
-The signals exposed in this patch does the following 2 things,
-
-1) Fix weak state of the wrapped object when the finializer callbacks
-   have not yet been processed
-2) Avoid calling into the second pass when the embedder has already
-  destroyed the wrapped object via CleanedUpAtExit.
-
 This patch is more of a bandaid fix to improve the lifetime
 management with existing finalizer callbacks. We should be able to
 remove this patch once gin::Wrappable can be managed by V8 Oilpan
-
-Refs https://issues.chromium.org/issues/40210365 which is blocked
-on https://issues.chromium.org/issues/42203693
+via https://github.com/electron/electron/issues/47922
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
 index 5255c1094c88761c19af1ea294ceccaca63b5ae4..bb1639d73070a99984b72eb61afd001dec5b08ff 100644
@@ -87,78 +78,3 @@ index dc3a5b0678b9c686e241b492e2c3b5ac833611a3..32a7ba4f557e65d9525d2ca07e8597e7
    // This method returns V8IsolateMemoryDumpProvider of this isolate, used for
    // testing.
    V8IsolateMemoryDumpProvider* isolate_memory_dump_provider_for_testing()
-diff --git a/gin/wrappable.cc b/gin/wrappable.cc
-index 81ae860e73cee80e51c4ab3f2f24d44a52d30824..7474c7250c81975f25fea194cd816453a092f1cd 100644
---- a/gin/wrappable.cc
-+++ b/gin/wrappable.cc
-@@ -75,6 +75,8 @@ void WrappableBase::SetWrapper(v8::Isolate* isolate,
- DeprecatedWrappableBase::DeprecatedWrappableBase() = default;
- 
- DeprecatedWrappableBase::~DeprecatedWrappableBase() {
-+  if (!wrapper_.IsEmpty())
-+    wrapper_.ClearWeak();
-   wrapper_.Reset();
- }
- 
-@@ -90,15 +92,22 @@ const char* DeprecatedWrappableBase::GetTypeName() {
- void DeprecatedWrappableBase::FirstWeakCallback(
-     const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
-   DeprecatedWrappableBase* wrappable = data.GetParameter();
--  wrappable->dead_ = true;
--  wrappable->wrapper_.Reset();
--  data.SetSecondPassCallback(SecondWeakCallback);
-+  DeprecatedWrappableBase* wrappable_from_field =
-+      static_cast<DeprecatedWrappableBase*>(data.GetInternalField(1));
-+  if (wrappable && wrappable == wrappable_from_field) {
-+    wrappable->dead_ = true;
-+    wrappable->wrapper_.Reset();
-+    data.SetSecondPassCallback(SecondWeakCallback);
-+  }
- }
- 
- void DeprecatedWrappableBase::SecondWeakCallback(
-     const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
-+  if (IsolateHolder::DestroyedMicrotasksRunner())
-+    return;
-   DeprecatedWrappableBase* wrappable = data.GetParameter();
--  delete wrappable;
-+  if (wrappable)
-+    delete wrappable;
- }
- 
- v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
-@@ -135,10 +144,15 @@ v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
-   void* values[] = {info, this};
-   wrapper->SetAlignedPointerInInternalFields(2, indices, values);
-   wrapper_.Reset(isolate, wrapper);
--  wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kParameter);
-+  wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kInternalFields);
-   return v8::MaybeLocal<v8::Object>(wrapper);
- }
- 
-+void DeprecatedWrappableBase::ClearWeak() {
-+  if (!wrapper_.IsEmpty())
-+    wrapper_.ClearWeak();
-+}
-+
- namespace internal {
- 
- void* FromV8Impl(v8::Isolate* isolate,
-diff --git a/gin/wrappable.h b/gin/wrappable.h
-index 2ed30ffbcded21e25c60b142a3c054fbad1053f4..15aa2afce12eda87e015a7acf05fc588594816c0 100644
---- a/gin/wrappable.h
-+++ b/gin/wrappable.h
-@@ -175,6 +175,13 @@ class GIN_EXPORT DeprecatedWrappableBase {
-       v8::Isolate* isolate,
-       DeprecatedWrapperInfo* wrapper_info);
- 
-+  // Make this wrappable strong again. This is useful when the wrappable is
-+  // destroyed outside the finalizer callbacks and we want to avoid scheduling
-+  // the weak callbacks if they haven't been scheduled yet.
-+  // NOTE!!! this does not prevent finalization callbacks from running if they
-+  // have already been processed.
-+  void ClearWeak();
-+
-  private:
-   static void FirstWeakCallback(
-       const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data);
