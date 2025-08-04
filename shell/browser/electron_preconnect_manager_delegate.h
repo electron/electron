@@ -30,7 +30,7 @@ class ElectronPreconnectManagerDelegate
   void PreconnectInitiated(const GURL& url,
                            const GURL& preconnect_url) override {}
   void PreconnectFinished(
-      std::unique_ptr<predictors::PreconnectStats> stats) override {}
+      std::unique_ptr<content::PreconnectStats> stats) override {}
   bool IsPreconnectEnabled() override;
 
   base::WeakPtr<ElectronPreconnectManagerDelegate> GetWeakPtr() {

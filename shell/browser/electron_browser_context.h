@@ -88,7 +88,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   bool can_use_http_cache() const { return use_cache_; }
   int max_cache_size() const { return max_cache_size_; }
   ResolveProxyHelper* GetResolveProxyHelper();
-  predictors::PreconnectManager* GetPreconnectManager();
+  content::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
 
   std::string GetMediaDeviceIDSalt();
