@@ -138,8 +138,10 @@ v8::MaybeLocal<v8::Value> GetPrivate(v8::Isolate* const isolate,
 void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info);
 v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Object>& api_object,
+    v8::Isolate* const source_isolate,
     const v8::Local<v8::Context>& source_context,
     const blink::ExecutionContext* source_execution_context,
+    v8::Isolate* const destination_isolate,
     const v8::Local<v8::Context>& destination_context,
     context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
@@ -418,9 +420,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
   if (IsPlainObject(value)) {
     auto object_value = value.As<v8::Object>();
     auto passed_value = CreateProxyForAPI(
-        object_value, source_context, source_execution_context,
-        destination_context, object_cache, support_dynamic_properties,
-        recursion_depth + 1, error_target);
+        object_value, source_isolate, source_context, source_execution_context,
+        destination_isolate, destination_context, object_cache,
+        support_dynamic_properties, recursion_depth + 1, error_target);
     if (passed_value.IsEmpty())
       return {};
     return v8::MaybeLocal<v8::Value>(passed_value.ToLocalChecked());
@@ -614,19 +616,20 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
 v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Object>& api_object,
+    v8::Isolate* const source_isolate,
     const v8::Local<v8::Context>& source_context,
     const blink::ExecutionContext* source_execution_context,
+    v8::Isolate* const destination_isolate,
     const v8::Local<v8::Context>& destination_context,
     context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
     int recursion_depth,
     BridgeErrorTarget error_target) {
-  gin_helper::Dictionary api(source_context->GetIsolate(), api_object);
+  gin_helper::Dictionary api{source_isolate, api_object};
 
   {
     v8::Context::Scope destination_context_scope(destination_context);
-    auto proxy =
-        gin_helper::Dictionary::CreateEmpty(destination_context->GetIsolate());
+    auto proxy = gin_helper::Dictionary::CreateEmpty(destination_isolate);
     object_cache->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
     auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(
         source_context, static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE));
