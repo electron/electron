@@ -16,12 +16,9 @@ namespace content {
 class StoragePartition;
 }
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
-
-namespace gin_helper {
 template <typename T>
 class Promise;
 }  // namespace gin_helper
@@ -39,7 +36,7 @@ class ServiceWorkerContext final
       public gin_helper::EventEmitterMixin<ServiceWorkerContext>,
       private content::ServiceWorkerContextObserver {
  public:
-  static gin::Handle<ServiceWorkerContext> Create(
+  static gin_helper::Handle<ServiceWorkerContext> Create(
       v8::Isolate* isolate,
       ElectronBrowserContext* browser_context);
 
@@ -50,7 +47,7 @@ class ServiceWorkerContext final
                                         int64_t version_id);
   v8::Local<v8::Value> GetWorkerFromVersionID(v8::Isolate* isolate,
                                               int64_t version_id);
-  gin::Handle<ServiceWorkerMain> GetWorkerFromVersionIDIfExists(
+  gin_helper::Handle<ServiceWorkerMain> GetWorkerFromVersionIDIfExists(
       v8::Isolate* isolate,
       int64_t version_id);
   v8::Local<v8::Promise> StartWorkerForScope(v8::Isolate* isolate, GURL scope);

@@ -670,7 +670,7 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
       request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);
 
-  gin::Handle<api::Session> session;
+  gin_helper::Handle<api::Session> session;
   auto* browser_context =
       dict.Get("session", &session) && !session.IsEmpty()
           ? session->browser_context()

@@ -37,14 +37,11 @@ namespace base {
 class FilePath;
 }
 
-namespace gin {
-template <typename T>
-class Handle;
-}  // namespace gin
-
 namespace gin_helper {
 class Dictionary;
 class ErrorThrower;
+template <typename T>
+class Handle;
 }  // namespace gin_helper
 
 namespace electron {
@@ -64,7 +61,7 @@ class App final : public ElectronBrowserClient::Delegate,
                   private content::GpuDataManagerObserver,
                   private content::BrowserChildProcessObserver {
  public:
-  static gin::Handle<App> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<App> Create(v8::Isolate* isolate);
   static App* Get();
 
   // gin_helper::Wrappable

@@ -11,10 +11,10 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/wrappable.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron {
 
@@ -26,7 +26,7 @@ class Extensions final : public gin_helper::DeprecatedWrappable<Extensions>,
                          public gin_helper::EventEmitterMixin<Extensions>,
                          private extensions::ExtensionRegistryObserver {
  public:
-  static gin::Handle<Extensions> Create(
+  static gin_helper::Handle<Extensions> Create(
       v8::Isolate* isolate,
       ElectronBrowserContext* browser_context);
 

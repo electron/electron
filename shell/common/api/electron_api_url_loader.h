@@ -27,9 +27,12 @@
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace net {
 class AuthChallengeInfo;
@@ -56,7 +59,8 @@ class SimpleURLLoaderWrapper final
       private network::mojom::URLLoaderNetworkServiceObserver {
  public:
   ~SimpleURLLoaderWrapper() override;
-  static gin::Handle<SimpleURLLoaderWrapper> Create(gin::Arguments* args);
+  static gin_helper::Handle<SimpleURLLoaderWrapper> Create(
+      gin::Arguments* args);
 
   void Cancel();
 

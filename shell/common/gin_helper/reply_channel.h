@@ -8,10 +8,10 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/wrappable.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace v8 {
 class Isolate;
@@ -29,8 +29,8 @@ namespace gin_helper::internal {
 class ReplyChannel : public gin_helper::DeprecatedWrappable<ReplyChannel> {
  public:
   using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
-  static gin::Handle<ReplyChannel> Create(v8::Isolate* isolate,
-                                          InvokeCallback callback);
+  static gin_helper::Handle<ReplyChannel> Create(v8::Isolate* isolate,
+                                                 InvokeCallback callback);
 
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;

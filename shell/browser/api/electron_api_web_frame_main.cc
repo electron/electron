@@ -17,7 +17,6 @@
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/isolated_world_ids.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/message_port.h"
@@ -31,6 +30,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -347,7 +347,7 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
     return;
   }
 
-  std::vector<gin::Handle<MessagePort>> wrapped_ports;
+  std::vector<gin_helper::Handle<MessagePort>> wrapped_ports;
   if (transfer && !transfer.value()->IsUndefined()) {
     if (!gin::ConvertFromV8(isolate, *transfer, &wrapped_ports)) {
       isolate->ThrowException(v8::Exception::Error(
@@ -539,13 +539,14 @@ void WebFrameMain::DOMContentLoaded() {
 }
 
 // static
-gin::Handle<WebFrameMain> WebFrameMain::New(v8::Isolate* isolate) {
+gin_helper::Handle<WebFrameMain> WebFrameMain::New(v8::Isolate* isolate) {
   return {};
 }
 
 // static
-gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
-                                             content::RenderFrameHost* rfh) {
+gin_helper::Handle<WebFrameMain> WebFrameMain::From(
+    v8::Isolate* isolate,
+    content::RenderFrameHost* rfh) {
   if (!rfh)
     return {};
 
@@ -575,9 +576,9 @@ gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
   }
 
   if (web_frame)
-    return gin::CreateHandle(isolate, web_frame);
+    return gin_helper::CreateHandle(isolate, web_frame);
 
-  auto handle = gin::CreateHandle(isolate, new WebFrameMain(rfh));
+  auto handle = gin_helper::CreateHandle(isolate, new WebFrameMain(rfh));
 
   // Prevent garbage collection of frame until it has been deleted internally.
   handle->Pin(isolate);
@@ -678,7 +679,7 @@ v8::Local<v8::Value> FromIdIfExists(gin_helper::ErrorThrower thrower,
   WebFrameMain* web_frame = WebFrameMain::FromRenderFrameHost(rfh);
   if (!web_frame)
     return v8::Null(thrower.isolate());
-  return gin::CreateHandle(thrower.isolate(), web_frame).ToV8();
+  return gin_helper::CreateHandle(thrower.isolate(), web_frame).ToV8();
 }
 
 v8::Local<v8::Value> FromFtnIdIfExists(gin_helper::ErrorThrower thrower,
@@ -691,7 +692,7 @@ v8::Local<v8::Value> FromFtnIdIfExists(gin_helper::ErrorThrower thrower,
       content::FrameTreeNodeId(frame_tree_node_id));
   if (!web_frame)
     return v8::Null(thrower.isolate());
-  return gin::CreateHandle(thrower.isolate(), web_frame).ToV8();
+  return gin_helper::CreateHandle(thrower.isolate(), web_frame).ToV8();
 }
 
 void Initialize(v8::Local<v8::Object> exports,

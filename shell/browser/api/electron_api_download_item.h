@@ -18,10 +18,10 @@
 
 class GURL;
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
@@ -30,8 +30,9 @@ class DownloadItem final : public gin_helper::DeprecatedWrappable<DownloadItem>,
                            public gin_helper::EventEmitterMixin<DownloadItem>,
                            private download::DownloadItem::Observer {
  public:
-  static gin::Handle<DownloadItem> FromOrCreate(v8::Isolate* isolate,
-                                                download::DownloadItem* item);
+  static gin_helper::Handle<DownloadItem> FromOrCreate(
+      v8::Isolate* isolate,
+      download::DownloadItem* item);
 
   static DownloadItem* FromDownloadItem(download::DownloadItem* item);
 
