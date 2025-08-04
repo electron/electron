@@ -582,10 +582,10 @@ index 2d5cad5d7a4ab9292a5f966123687dee06f4512b..ae798fc8f923a9b590c0d9ed703946a2
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 03fe19e03e706f9087df599e06374a019133a4d3..5114499573feca80006e60df88a49a8b2a6489ce 100644
+index 02d7bbb9567b73400fa7e707cb43315201c60eae..22eaada9c08472243bc711fd3e0c96e70aff3e6a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -339,6 +339,7 @@ source_set("browser") {
+@@ -346,6 +346,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -703,10 +703,10 @@ index 55b6b67eace540e302a868dfaf025768bad30514..f26dd97bebd2c467d5a13b98b3f75afb
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 86da823ffba50c0428e4bd0c763b077beb1268b7..8441af55be805440791c187e11f30148276bc6da 100644
+index a6f89819666e04b5c1a134bbcae6629af9f9e3d1..9c1e59ae269d0d6bf1469dac80f0bd85725d7edd 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -274,6 +274,7 @@ source_set("common") {
+@@ -273,6 +273,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -834,10 +834,10 @@ index 47cc7806716855938c5abc2b4a749d6879039d74..9dec3f276ddfc7587881690b752b0aca
  
    if (enable_nocompile_tests) {
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 40c262f1425b366b067abea4875d273ee59a1e9d..4bc4981931de0b430a163ad2ed36f9e087c2066a 100644
+index ab961bccc3e4f0f5a40ac74df97447118b256c68..43f00bf0879809e986308a2cb26145c4a2a51dd3 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
-@@ -229,6 +229,7 @@ static_library("web_test_browser") {
+@@ -227,6 +227,7 @@ static_library("web_test_browser") {
      "//ui/gl",
      "//ui/shell_dialogs",
      "//url",
@@ -1407,10 +1407,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index af174fda43b9737bc4e0c15024bbe98eab83e3b8..73f782e5ce9fdbcefd4f3724b220955d88f336cb 100644
+index cf7fb031d669264d1bb9a033588b48a6dd0cd40c..e56a663f46b64e91defa0e42a91f4e4a777c8a3d 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -423,6 +423,7 @@ component("core") {
+@@ -425,6 +425,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1439,7 +1439,7 @@ index c771cee7be34f36521de34ef893ee578b648a8c8..b0bd447b848bfdb7a9ff9cd98ba95574
    blink_core_sources_editing += [ "kill_ring_none.cc" ]
  }
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index 296d38b10d16c7b17137358fe89bac6a03afce09..9608842b8b0df441dc654bf96b46f052bce6e818 100644
+index 8c07f1ad347cbc3e5024b25e1dd4a9d14396a82b..601df4d169d7ff2925a9762d353438b3eb8665b5 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
 @@ -81,6 +81,7 @@ component("accelerated_widget_mac") {
@@ -1819,7 +1819,7 @@ index 85d9170ae8de43ec0fa18c033d66c0583c26ec2f..c4f76301818404ce853583adf01af85c
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 1a7b1e3fd1e3971306939a9086014179dd492503..3d7ba97d904a6ad8da6bb3d36497ac00d54b44fa 100644
+index 4c93aa57c3f62784e153dac9b0226b00f75c9d16..f448dd7eb15a90e45b517e50fb1c65e96966c952 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -339,6 +339,12 @@ component("gfx") {
@@ -1874,10 +1874,10 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index b7716b3247033a860116768c3fb4958e83a73560..f3e475ace5403a1f962bea32464da474c1b29090 100644
+index 3885f2eb20f5e60828256e24761601419368e78f..1bea86f086b765852f569a41c7ff7d1f057eec0e 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -718,6 +718,8 @@ component("views") {
+@@ -722,6 +722,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1886,7 +1886,7 @@ index b7716b3247033a860116768c3fb4958e83a73560..f3e475ace5403a1f962bea32464da474
    }
  
    if (is_win) {
-@@ -1147,6 +1149,8 @@ source_set("test_support") {
+@@ -1151,6 +1153,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
