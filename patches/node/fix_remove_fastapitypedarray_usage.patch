@@ -7,18 +7,18 @@ Refs https://github.com/electron/electron/pull/45055#issuecomment-2559095439
 Can be removed when upstream adopts relevant V8 version.
 
 diff --git a/src/crypto/crypto_timing.cc b/src/crypto/crypto_timing.cc
-index 867a1c4aca54b9d41490d23a5eb55088b7e941cc..09f4c65a18efea262b1f854f993c6f18273f48f5 100644
+index fe669d40c31a29334b047b9cfee3067f64ef0a7b..9e5de7bbe574add017cd12ee091304d01e6458d6 100644
 --- a/src/crypto/crypto_timing.cc
 +++ b/src/crypto/crypto_timing.cc
-@@ -11,7 +11,6 @@
- namespace node {
+@@ -12,7 +12,6 @@ namespace node {
  
+ using v8::CFunction;
  using v8::FastApiCallbackOptions;
 -using v8::FastApiTypedArray;
  using v8::FunctionCallbackInfo;
  using v8::Local;
  using v8::Object;
-@@ -50,14 +49,13 @@ void TimingSafeEqual(const FunctionCallbackInfo<Value>& args) {
+@@ -51,14 +50,13 @@ void TimingSafeEqual(const FunctionCallbackInfo<Value>& args) {
  }
  
  bool FastTimingSafeEqual(Local<Value> receiver,
@@ -38,7 +38,7 @@ index 867a1c4aca54b9d41490d23a5eb55088b7e941cc..09f4c65a18efea262b1f854f993c6f18
      TRACK_V8_FAST_API_CALL("crypto.timingSafeEqual.error");
      v8::HandleScope scope(options.isolate);
      THROW_ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH(options.isolate);
-@@ -65,7 +63,7 @@ bool FastTimingSafeEqual(Local<Value> receiver,
+@@ -66,7 +64,7 @@ bool FastTimingSafeEqual(Local<Value> receiver,
    }
  
    TRACK_V8_FAST_API_CALL("crypto.timingSafeEqual.ok");
@@ -46,9 +46,9 @@ index 867a1c4aca54b9d41490d23a5eb55088b7e941cc..09f4c65a18efea262b1f854f993c6f18
 +  return CRYPTO_memcmp(a_buffer_data, b_buffer_data, a_buffer_length) == 0;
  }
  
- static v8::CFunction fast_equal(v8::CFunction::Make(FastTimingSafeEqual));
+ static CFunction fast_timing_safe_equal(CFunction::Make(FastTimingSafeEqual));
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index b8021c079ca6b141ea99a4abbc828430da9d3093..98ade40ec7a6bc805acb579c8a51dcd5468c2893 100644
+index d0338b8a2d9cd3fd9f6db1f0f16f83b198ce0e7e..c4a87539dab49ff40e0951616777b132d4059e01 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -44,6 +44,14 @@
@@ -193,58 +193,6 @@ index b8021c079ca6b141ea99a4abbc828430da9d3093..98ade40ec7a6bc805acb579c8a51dcd5
  }
  
  static const v8::CFunction fast_write_string_ascii(
-diff --git a/src/node_external_reference.h b/src/node_external_reference.h
-index 3bc7b2cab5a12e281058b79a7d0f734eb527986c..4218eaf365c739a4c04ca94e29d6d2a33a637d44 100644
---- a/src/node_external_reference.h
-+++ b/src/node_external_reference.h
-@@ -43,16 +43,16 @@ using CFunctionCallbackWithStrings =
-              const v8::FastOneByteString& base);
- using CFunctionCallbackWithTwoUint8Arrays =
-     int32_t (*)(v8::Local<v8::Value>,
--                const v8::FastApiTypedArray<uint8_t>&,
--                const v8::FastApiTypedArray<uint8_t>&);
-+                v8::Local<v8::Value>,
-+                v8::Local<v8::Value>);
- using CFunctionCallbackWithTwoUint8ArraysFallback =
-     bool (*)(v8::Local<v8::Value>,
--             const v8::FastApiTypedArray<uint8_t>&,
--             const v8::FastApiTypedArray<uint8_t>&,
-+             v8::Local<v8::Value>,
-+             v8::Local<v8::Value>,
-              v8::FastApiCallbackOptions&);
- using CFunctionCallbackWithUint8ArrayUint32Int64Bool =
-     int32_t (*)(v8::Local<v8::Value>,
--                const v8::FastApiTypedArray<uint8_t>&,
-+                v8::Local<v8::Value>,
-                 uint32_t,
-                 int64_t,
-                 bool);
-@@ -73,18 +73,20 @@ using CFunctionWithBool = void (*)(v8::Local<v8::Value>,
- 
- using CFunctionWriteString =
-     uint32_t (*)(v8::Local<v8::Value> receiver,
--                 const v8::FastApiTypedArray<uint8_t>& dst,
-+                 v8::Local<v8::Value> dst,
-                  const v8::FastOneByteString& src,
-                  uint32_t offset,
--                 uint32_t max_length);
-+                 uint32_t max_length,
-+                 v8::FastApiCallbackOptions&);
- 
- using CFunctionBufferCopy =
-     uint32_t (*)(v8::Local<v8::Value> receiver,
--                 const v8::FastApiTypedArray<uint8_t>& source,
--                 const v8::FastApiTypedArray<uint8_t>& target,
-+                 v8::Local<v8::Value> source,
-+                 v8::Local<v8::Value> target,
-                  uint32_t target_start,
-                  uint32_t source_start,
--                 uint32_t to_copy);
-+                 uint32_t to_copy,
-+                 v8::FastApiCallbackOptions&);
- 
- // This class manages the external references from the V8 heap
- // to the C++ addresses in Node.js.
 diff --git a/src/util.h b/src/util.h
 index 6376cf4f81113cdb2e3c179b800f1c79b51ab762..cc7ad99f981f564fba0395159d9d8b39901050ff 100644
 --- a/src/util.h
