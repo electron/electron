@@ -193,58 +193,6 @@ index b8021c079ca6b141ea99a4abbc828430da9d3093..98ade40ec7a6bc805acb579c8a51dcd5
  }
  
  static const v8::CFunction fast_write_string_ascii(
-diff --git a/src/node_external_reference.h b/src/node_external_reference.h
-index 3bc7b2cab5a12e281058b79a7d0f734eb527986c..4218eaf365c739a4c04ca94e29d6d2a33a637d44 100644
---- a/src/node_external_reference.h
-+++ b/src/node_external_reference.h
-@@ -43,16 +43,16 @@ using CFunctionCallbackWithStrings =
-              const v8::FastOneByteString& base);
- using CFunctionCallbackWithTwoUint8Arrays =
-     int32_t (*)(v8::Local<v8::Value>,
--                const v8::FastApiTypedArray<uint8_t>&,
--                const v8::FastApiTypedArray<uint8_t>&);
-+                v8::Local<v8::Value>,
-+                v8::Local<v8::Value>);
- using CFunctionCallbackWithTwoUint8ArraysFallback =
-     bool (*)(v8::Local<v8::Value>,
--             const v8::FastApiTypedArray<uint8_t>&,
--             const v8::FastApiTypedArray<uint8_t>&,
-+             v8::Local<v8::Value>,
-+             v8::Local<v8::Value>,
-              v8::FastApiCallbackOptions&);
- using CFunctionCallbackWithUint8ArrayUint32Int64Bool =
-     int32_t (*)(v8::Local<v8::Value>,
--                const v8::FastApiTypedArray<uint8_t>&,
-+                v8::Local<v8::Value>,
-                 uint32_t,
-                 int64_t,
-                 bool);
-@@ -73,18 +73,20 @@ using CFunctionWithBool = void (*)(v8::Local<v8::Value>,
- 
- using CFunctionWriteString =
-     uint32_t (*)(v8::Local<v8::Value> receiver,
--                 const v8::FastApiTypedArray<uint8_t>& dst,
-+                 v8::Local<v8::Value> dst,
-                  const v8::FastOneByteString& src,
-                  uint32_t offset,
--                 uint32_t max_length);
-+                 uint32_t max_length,
-+                 v8::FastApiCallbackOptions&);
- 
- using CFunctionBufferCopy =
-     uint32_t (*)(v8::Local<v8::Value> receiver,
--                 const v8::FastApiTypedArray<uint8_t>& source,
--                 const v8::FastApiTypedArray<uint8_t>& target,
-+                 v8::Local<v8::Value> source,
-+                 v8::Local<v8::Value> target,
-                  uint32_t target_start,
-                  uint32_t source_start,
--                 uint32_t to_copy);
-+                 uint32_t to_copy,
-+                 v8::FastApiCallbackOptions&);
- 
- // This class manages the external references from the V8 heap
- // to the C++ addresses in Node.js.
 diff --git a/src/util.h b/src/util.h
 index 6376cf4f81113cdb2e3c179b800f1c79b51ab762..cc7ad99f981f564fba0395159d9d8b39901050ff 100644
 --- a/src/util.h
