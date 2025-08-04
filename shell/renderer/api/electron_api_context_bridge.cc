@@ -112,16 +112,15 @@ bool IsPlainArray(const v8::Local<v8::Value>& arr) {
   return !arr->IsTypedArray();
 }
 
-void SetPrivate(v8::Local<v8::Context> context,
+void SetPrivate(v8::Isolate* const isolate,
+                v8::Local<v8::Context> context,
                 v8::Local<v8::Object> target,
                 const std::string_view key,
                 v8::Local<v8::Value> value) {
   target
-      ->SetPrivate(
-          context,
-          v8::Private::ForApi(context->GetIsolate(),
-                              gin::StringToV8(context->GetIsolate(), key)),
-          value)
+      ->SetPrivate(context,
+                   v8::Private::ForApi(isolate, gin::StringToV8(isolate, key)),
+                   value)
       .Check();
 }
 
@@ -215,10 +214,11 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
 
       v8::Local<v8::Object> state =
           v8::Object::New(destination_context->GetIsolate());
-      SetPrivate(destination_context, state, kProxyFunctionPrivateKey, func);
-      SetPrivate(destination_context, state, kProxyFunctionReceiverPrivateKey,
-                 parent_value);
-      SetPrivate(destination_context, state,
+      SetPrivate(destination_context->GetIsolate(), destination_context, state,
+                 kProxyFunctionPrivateKey, func);
+      SetPrivate(destination_context->GetIsolate(), destination_context, state,
+                 kProxyFunctionReceiverPrivateKey, parent_value);
+      SetPrivate(destination_context->GetIsolate(), destination_context, state,
                  kSupportsDynamicPropertiesPrivateKey,
                  gin::ConvertToV8(destination_context->GetIsolate(),
                                   support_dynamic_properties));
@@ -226,8 +226,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
       if (!v8::Function::New(destination_context, ProxyFunctionWrapper, state)
                .ToLocal(&proxy_func))
         return {};
-      SetPrivate(destination_context, proxy_func.As<v8::Object>(),
-                 kOriginalFunctionPrivateKey, func);
+      SetPrivate(destination_context->GetIsolate(), destination_context,
+                 proxy_func.As<v8::Object>(), kOriginalFunctionPrivateKey,
+                 func);
       object_cache->CacheProxiedObject(value, proxy_func);
       return v8::MaybeLocal<v8::Value>(proxy_func);
     }
