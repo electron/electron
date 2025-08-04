@@ -475,28 +475,28 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
   CHECK(info.Data()->IsObject());
   v8::Local<v8::Object> data = info.Data().As<v8::Object>();
   bool support_dynamic_properties = false;
-  gin::Arguments args(info);
+  gin::Arguments args{info};
+  v8::Isolate* const isolate = args.isolate();
   // Context the proxy function was called from
-  v8::Local<v8::Context> calling_context = args.isolate()->GetCurrentContext();
+  v8::Local<v8::Context> calling_context = isolate->GetCurrentContext();
 
   // Pull the original function and its context off of the data private key
-  v8::MaybeLocal<v8::Value> sdp_value =
-      GetPrivate(args.isolate(), calling_context, data,
-                 kSupportsDynamicPropertiesPrivateKey);
-  v8::MaybeLocal<v8::Value> maybe_func = GetPrivate(
-      args.isolate(), calling_context, data, kProxyFunctionPrivateKey);
+  v8::MaybeLocal<v8::Value> sdp_value = GetPrivate(
+      isolate, calling_context, data, kSupportsDynamicPropertiesPrivateKey);
+  v8::MaybeLocal<v8::Value> maybe_func =
+      GetPrivate(isolate, calling_context, data, kProxyFunctionPrivateKey);
   v8::MaybeLocal<v8::Value> maybe_recv = GetPrivate(
-      args.isolate(), calling_context, data, kProxyFunctionReceiverPrivateKey);
+      isolate, calling_context, data, kProxyFunctionReceiverPrivateKey);
   v8::Local<v8::Value> func_value;
   if (sdp_value.IsEmpty() || maybe_func.IsEmpty() || maybe_recv.IsEmpty() ||
-      !gin::ConvertFromV8(args.isolate(), sdp_value.ToLocalChecked(),
+      !gin::ConvertFromV8(isolate, sdp_value.ToLocalChecked(),
                           &support_dynamic_properties) ||
       !maybe_func.ToLocal(&func_value))
     return;
 
   v8::Local<v8::Function> func = func_value.As<v8::Function>();
   v8::Local<v8::Context> func_owning_context =
-      func->GetCreationContextChecked(args.isolate());
+      func->GetCreationContextChecked(isolate);
 
   {
     v8::Context::Scope func_owning_context_scope(func_owning_context);
@@ -522,7 +522,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
     bool did_error = false;
     v8::Local<v8::Value> error_message;
     {
-      v8::TryCatch try_catch(args.isolate());
+      v8::TryCatch try_catch(isolate);
       maybe_return_value =
           func->Call(func_owning_context, maybe_recv.ToLocalChecked(),
                      proxied_args.size(), proxied_args.data());
@@ -537,22 +537,21 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
         if (!exception->IsNull() && exception->IsObject()) {
           v8::MaybeLocal<v8::Value> maybe_message =
               exception.As<v8::Object>()->Get(
-                  func_owning_context,
-                  gin::ConvertToV8(args.isolate(), "message"));
+                  func_owning_context, gin::ConvertToV8(isolate, "message"));
 
           if (!maybe_message.ToLocal(&error_message) ||
               !error_message->IsString()) {
-            error_message = gin::StringToV8(args.isolate(), err_msg);
+            error_message = gin::StringToV8(isolate, err_msg);
           }
         } else {
-          error_message = gin::StringToV8(args.isolate(), err_msg);
+          error_message = gin::StringToV8(isolate, err_msg);
         }
       }
     }
 
     if (did_error) {
       v8::Context::Scope calling_context_scope(calling_context);
-      args.isolate()->ThrowException(
+      isolate->ThrowException(
           v8::Exception::Error(error_message.As<v8::String>()));
       return;
     }
@@ -577,7 +576,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
     v8::MaybeLocal<v8::Value> ret;
     v8::Local<v8::String> exception;
     {
-      v8::TryCatch try_catch(args.isolate());
+      v8::TryCatch try_catch(isolate);
       ret = PassValueToOtherContext(
           func_owning_context, calling_context,
           maybe_return_value.ToLocalChecked(), func_owning_context->Global(),
@@ -596,10 +595,10 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
             "An unknown exception occurred while sending a function return "
             "value over the context bridge, an error "
             "occurred but a valid exception was not thrown.";
-        args.isolate()->ThrowException(v8::Exception::Error(
-            gin::StringToV8(args.isolate(), err_msg).As<v8::String>()));
+        isolate->ThrowException(v8::Exception::Error(
+            gin::StringToV8(isolate, err_msg).As<v8::String>()));
       } else {
-        args.isolate()->ThrowException(v8::Exception::Error(exception));
+        isolate->ThrowException(v8::Exception::Error(exception));
       }
       return;
     }
