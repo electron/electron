@@ -39,26 +39,6 @@ index 5641990e0bac455c33ddf7b9a865deba871516e7..bd757f42e02391abbeec007d9c4cea60
      return;
    }
    HistogramBase* histogram;
-diff --git a/src/node_file.cc b/src/node_file.cc
-index 37172158d318d6569194fd3c5441d107e155e54c..41498615a37945111348e22b18214c3bcc9533a0 100644
---- a/src/node_file.cc
-+++ b/src/node_file.cc
-@@ -1074,13 +1074,8 @@ static int32_t FastInternalModuleStat(
-     // NOLINTNEXTLINE(runtime/references) This is V8 api.
-     FastApiCallbackOptions& options) {
-   // This needs a HandleScope which needs an isolate.
--  Isolate* isolate = Isolate::TryGetCurrent();
--  if (!isolate) {
--    options.fallback = true;
--    return -1;
--  }
--
--  HandleScope scope(isolate);
-+  Environment* env = Environment::GetCurrent(options.isolate);
-+  HandleScope scope(env->isolate());
- 
-   auto path = std::filesystem::path(input.data, input.data + input.length);
- 
 diff --git a/src/node_wasi.cc b/src/node_wasi.cc
 index 090866960beb8f1759c99e95536924b8b61fb723..3f91b651b83a20e70d5b368e012f5ee4b9d16092 100644
 --- a/src/node_wasi.cc
