@@ -432,9 +432,12 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     v8::Local<v8::Context> error_context =
         error_target == BridgeErrorTarget::kSource ? source_context
                                                    : destination_context;
-    v8::Context::Scope error_scope(error_context);
+    v8::Context::Scope error_scope{error_context};
     // V8 serializer will throw an error if required
-    if (!gin::ConvertFromV8(error_context->GetIsolate(), value, &ret)) {
+    v8::Isolate* const error_isolate =
+        error_target == BridgeErrorTarget::kSource ? source_isolate
+                                                   : destination_isolate;
+    if (!gin::ConvertFromV8(error_isolate, value, &ret)) {
       return {};
     }
   }
