@@ -15,13 +15,10 @@
 
 class GURL;
 
-namespace gin {
-template <typename T>
-class Handle;
-}  // namespace gin
-
 namespace gin_helper {
 class Dictionary;
+template <typename T>
+class Handle;
 }  // namespace gin_helper
 
 namespace net {
@@ -37,8 +34,9 @@ namespace api {
 class Cookies final : public gin_helper::DeprecatedWrappable<Cookies>,
                       public gin_helper::EventEmitterMixin<Cookies> {
  public:
-  static gin::Handle<Cookies> Create(v8::Isolate* isolate,
-                                     ElectronBrowserContext* browser_context);
+  static gin_helper::Handle<Cookies> Create(
+      v8::Isolate* isolate,
+      ElectronBrowserContext* browser_context);
 
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;

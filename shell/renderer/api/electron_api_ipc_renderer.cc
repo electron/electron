@@ -8,7 +8,6 @@
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/worker_thread.h"
 #include "gin/dictionary.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
@@ -17,6 +16,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_bindings.h"
@@ -59,8 +59,8 @@ class IPCBase : public gin_helper::DeprecatedWrappable<T> {
  public:
   static gin::DeprecatedWrapperInfo kWrapperInfo;
 
-  static gin::Handle<T> Create(v8::Isolate* isolate) {
-    return gin::CreateHandle(isolate, new T(isolate));
+  static gin_helper::Handle<T> Create(v8::Isolate* isolate) {
+    return gin_helper::CreateHandle(isolate, new T(isolate));
   }
 
   void SendMessage(v8::Isolate* isolate,

@@ -9,7 +9,6 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "gin/dictionary.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/ui_event.h"
@@ -22,6 +21,7 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 
 namespace gin {
@@ -61,10 +61,10 @@ Tray::Tray(v8::Isolate* isolate,
 Tray::~Tray() = default;
 
 // static
-gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
-                            v8::Local<v8::Value> image,
-                            std::optional<UUID> guid,
-                            gin::Arguments* args) {
+gin_helper::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
+                                   v8::Local<v8::Value> image,
+                                   std::optional<UUID> guid,
+                                   gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
     return {};
@@ -88,7 +88,7 @@ gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
     return {};
   }
 
-  auto handle = gin::CreateHandle(args->isolate(), tray);
+  auto handle = gin_helper::CreateHandle(args->isolate(), tray);
   handle->Pin(args->isolate());
   return handle;
 }
@@ -342,7 +342,7 @@ void Tray::Focus() {
 void Tray::PopUpContextMenu(gin::Arguments* args) {
   if (!CheckAlive())
     return;
-  gin::Handle<Menu> menu;
+  gin_helper::Handle<Menu> menu;
   gfx::Point pos;
 
   v8::Local<v8::Value> first_arg;
@@ -374,7 +374,7 @@ void Tray::SetContextMenu(gin_helper::ErrorThrower thrower,
                           v8::Local<v8::Value> arg) {
   if (!CheckAlive())
     return;
-  gin::Handle<Menu> menu;
+  gin_helper::Handle<Menu> menu;
   if (arg->IsNull()) {
     menu_.Reset();
     tray_icon_->SetContextMenu(nullptr);

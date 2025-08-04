@@ -8,10 +8,10 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/wrappable.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace v8 {
 class Isolate;
@@ -27,7 +27,7 @@ class Event final : public gin_helper::DeprecatedWrappable<Event>,
                     public gin_helper::Constructible<Event> {
  public:
   // gin_helper::Constructible
-  static gin::Handle<Event> New(v8::Isolate* isolate);
+  static gin_helper::Handle<Event> New(v8::Isolate* isolate);
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
       v8::Isolate* isolate,
       v8::Local<v8::ObjectTemplate> prototype);

@@ -14,10 +14,10 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
@@ -28,7 +28,7 @@ class PushNotifications final
       private BrowserObserver {
  public:
   static PushNotifications* Get();
-  static gin::Handle<PushNotifications> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<PushNotifications> Create(v8::Isolate* isolate);
 
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
