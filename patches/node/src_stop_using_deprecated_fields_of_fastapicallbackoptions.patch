@@ -12,10 +12,10 @@ branch of Node.js. This patch can be removed when Electron upgrades to
 a stable Node release that contains the change. -- Charles)
 
 diff --git a/src/crypto/crypto_timing.cc b/src/crypto/crypto_timing.cc
-index 3d8ccc77b5952a999c5fe48792259d32b402c460..867a1c4aca54b9d41490d23a5eb55088b7e941cc 100644
+index dbc46400501b61814d5be0ec1cb01b0dcd94e1d0..fe669d40c31a29334b047b9cfee3067f64ef0a7b 100644
 --- a/src/crypto/crypto_timing.cc
 +++ b/src/crypto/crypto_timing.cc
-@@ -59,7 +59,8 @@ bool FastTimingSafeEqual(Local<Value> receiver,
+@@ -60,7 +60,8 @@ bool FastTimingSafeEqual(Local<Value> receiver,
    if (a.length() != b.length() || !a.getStorageIfAligned(&data_a) ||
        !b.getStorageIfAligned(&data_b)) {
      TRACK_V8_FAST_API_CALL("crypto.timingSafeEqual.error");
@@ -26,10 +26,10 @@ index 3d8ccc77b5952a999c5fe48792259d32b402c460..867a1c4aca54b9d41490d23a5eb55088
    }
  
 diff --git a/src/histogram.cc b/src/histogram.cc
-index 5641990e0bac455c33ddf7b9a865deba871516e7..bd757f42e02391abbeec007d9c4cea60bcdfa6a4 100644
+index b655808e43d7c700ddeab7690e287bdbc9bfa50a..b0f7ae4e3af652c6dfe09f66d88485c5783f4037 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
-@@ -195,7 +195,8 @@ void HistogramBase::FastRecord(Local<Value> unused,
+@@ -187,7 +187,8 @@ void HistogramBase::FastRecord(Local<Value> unused,
                                 const int64_t value,
                                 FastApiCallbackOptions& options) {
    if (value < 1) {

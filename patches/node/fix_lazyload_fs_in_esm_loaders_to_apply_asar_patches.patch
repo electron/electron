@@ -6,7 +6,7 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 09a332c0999086b30fd952d9456f788925240e27..910ac85cdc86e7fb3f850f7edf0b95ea09d464dc 100644
+index 3334818153068468967baa5adc1ed2382592ec76..ab4c8a4d00f1813e72f1ea8349850b40f55a393e 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -10,7 +10,7 @@ const {
@@ -18,7 +18,7 @@ index 09a332c0999086b30fd952d9456f788925240e27..910ac85cdc86e7fb3f850f7edf0b95ea
  
  const defaultType =
    getOptionValue('--experimental-default-type');
-@@ -63,7 +62,7 @@ function getSourceSync(url, context) {
+@@ -38,7 +38,7 @@ function getSourceSync(url, context) {
    const responseURL = href;
    let source;
    if (protocol === 'file:') {
@@ -28,7 +28,7 @@ index 09a332c0999086b30fd952d9456f788925240e27..910ac85cdc86e7fb3f850f7edf0b95ea
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 9e7d8ef0adef3b68a3ec186e4b218f591aa69266..2879e5cf541fb4d226cfd7cc0fe367ca448fb926 100644
+index a609671e64e3b159f6f00d4f69cde2039cc0bc38..7572bfc34d4c21b2ad618a68c4a2026400ad7338 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -25,7 +25,7 @@ const {
@@ -40,7 +40,7 @@ index 9e7d8ef0adef3b68a3ec186e4b218f591aa69266..2879e5cf541fb4d226cfd7cc0fe367ca
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
  const { sep, posix: { relative: relativePosixPath }, resolve } = require('path');
-@@ -277,7 +277,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -276,7 +276,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {
@@ -50,10 +50,10 @@ index 9e7d8ef0adef3b68a3ec186e4b218f591aa69266..2879e5cf541fb4d226cfd7cc0fe367ca
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 1db58d31dad24cd2da6bdc5e45e9dd4f0b899a23..bbd3085cfbf14aefd611954fa836f6c96d7e402c 100644
+index de1539cebeb1874cbafbe76a4f03217693db2aa1..8b55082d2bb0ce743b190a601aff0651095049cd 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -24,7 +24,7 @@ const {
+@@ -25,7 +25,7 @@ const {
  
  const { BuiltinModule } = require('internal/bootstrap/realm');
  const assert = require('internal/assert');
@@ -62,7 +62,7 @@ index 1db58d31dad24cd2da6bdc5e45e9dd4f0b899a23..bbd3085cfbf14aefd611954fa836f6c9
  const { dirname, extname } = require('path');
  const {
    assertBufferSource,
-@@ -272,7 +272,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
+@@ -274,7 +274,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
  
    try {
      // We still need to read the FS to detect the exports.
