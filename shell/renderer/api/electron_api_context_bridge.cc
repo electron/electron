@@ -149,8 +149,10 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     BridgeErrorTarget error_target);
 
 v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
+    v8::Isolate* const source_isolate,
     v8::Local<v8::Context> source_context,
     const blink::ExecutionContext* source_execution_context,
+    v8::Isolate* const destination_isolate,
     v8::Local<v8::Context> destination_context,
     v8::Local<v8::Value> value,
     v8::Local<v8::Value> parent_value,
@@ -158,9 +160,6 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     bool support_dynamic_properties,
     int recursion_depth,
     BridgeErrorTarget error_target) {
-  v8::Isolate* const source_isolate = source_context->GetIsolate();
-  v8::Isolate* const destination_isolate = destination_context->GetIsolate();
-
   TRACE_EVENT0("electron", "ContextBridge::PassValueToOtherContextInner");
   if (recursion_depth >= kMaxRecursion) {
     v8::Context::Scope error_scope(error_target == BridgeErrorTarget::kSource
@@ -382,7 +381,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
         v8::Array::New(destination_isolate, length);
     for (size_t i = 0; i < length; i++) {
       auto value_for_array = PassValueToOtherContextInner(
-          source_context, source_execution_context, destination_context,
+          source_isolate, source_context, source_execution_context,
+          destination_isolate, destination_context,
           arr->Get(source_context, i).ToLocalChecked(), value, object_cache,
           support_dynamic_properties, recursion_depth + 1, error_target);
       if (value_for_array.IsEmpty())
@@ -471,7 +471,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
       blink::ExecutionContext::From(source_context);
   DCHECK(source_execution_context);
   return PassValueToOtherContextInner(
-      source_context, source_execution_context, destination_context, value,
+      source_context->GetIsolate(), source_context, source_execution_context,
+      destination_context->GetIsolate(), destination_context, value,
       parent_value, object_cache, support_dynamic_properties, 0, error_target);
 }
 
@@ -663,19 +664,19 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
             v8::Local<v8::Value> setter_proxy;
             if (!getter.IsEmpty()) {
               if (!PassValueToOtherContextInner(
-                       source_context, source_execution_context,
-                       destination_context, getter, api.GetHandle(),
-                       object_cache, support_dynamic_properties, 1,
-                       error_target)
+                       source_isolate, source_context, source_execution_context,
+                       destination_isolate, destination_context, getter,
+                       api.GetHandle(), object_cache,
+                       support_dynamic_properties, 1, error_target)
                        .ToLocal(&getter_proxy))
                 continue;
             }
             if (!setter.IsEmpty()) {
               if (!PassValueToOtherContextInner(
-                       source_context, source_execution_context,
-                       destination_context, setter, api.GetHandle(),
-                       object_cache, support_dynamic_properties, 1,
-                       error_target)
+                       source_isolate, source_context, source_execution_context,
+                       destination_isolate, destination_context, setter,
+                       api.GetHandle(), object_cache,
+                       support_dynamic_properties, 1, error_target)
                        .ToLocal(&setter_proxy))
                 continue;
             }
@@ -695,9 +696,10 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
           continue;
 
         auto passed_value = PassValueToOtherContextInner(
-            source_context, source_execution_context, destination_context,
-            value, api.GetHandle(), object_cache, support_dynamic_properties,
-            recursion_depth + 1, error_target);
+            source_isolate, source_context, source_execution_context,
+            destination_isolate, destination_context, value, api.GetHandle(),
+            object_cache, support_dynamic_properties, recursion_depth + 1,
+            error_target);
         if (passed_value.IsEmpty())
           return {};
 
