@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_browser_window.h"
 
+#include "base/containers/fixed_flat_set.h"
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_process_host.h"
@@ -244,6 +245,18 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
     if (web_preferences) {
       web_preferences->SetBackgroundColor(color);
     }
+  }
+}
+
+void BrowserWindow::SetBackgroundMaterial(const std::string& material) {
+  BaseWindow::SetBackgroundMaterial(material);
+  static constexpr auto materialTypes =
+      base::MakeFixedFlatSet<std::string_view>({"tabbed", "mica", "acrylic"});
+
+  if (materialTypes.contains(material)) {
+    SetBackgroundColor(ToRGBAHex(SK_ColorTRANSPARENT));
+  } else if (material == "none") {
+    SetBackgroundColor(ToRGBAHex(SK_ColorWHITE));
   }
 }
 
