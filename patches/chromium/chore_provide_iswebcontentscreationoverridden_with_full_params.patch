@@ -222,7 +222,7 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 86d75f58cb5be4fc25a88daaa473660379c7cba3..bf09db2b576dde060159d8943e7018f1d62bfbf1 100644
+index 82a0eafc85ca825e04037027d0189899e47b9c99..8527faad558fd9409711e374ed6299039891c82b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5250,8 +5250,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -250,10 +250,10 @@ index 33be50ce93dd998df5244f9ade391943f06978ad..3bb9baf76d331351d23d59fc2b9eb82d
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index e364ae0f9bfa6321f3a3be598b36eb07fb5bca7a..c75fdf6bd7cb6b4d6bcfbb23da952adce4dd90ac 100644
+index 6c4c6265c26f5304b8f77d7fc5a4fad5dffc831d..d0842904102fee982bc8502478a0a9067bb77904 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -363,8 +363,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -364,8 +364,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
