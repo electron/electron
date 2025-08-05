@@ -154,6 +154,14 @@ runs:
         cd src
         e build --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:electron_chromedriver_zip
+
+        if [ "${{ inputs.is-asan }}" != "true" ]; then
+          target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
+          if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
+            target_os="${target_os}_mas"
+          fi
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/chromedriver.zip electron/script/zip_manifests/chromedriver_zip.$target_os.${{ inputs.target-arch }}.manifest
+        fi
     - name: Build Node.js headers ${{ inputs.step-suffix }}
       shell: bash
       run: |
