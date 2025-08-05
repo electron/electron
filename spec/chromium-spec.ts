@@ -3120,7 +3120,6 @@ describe('navigator.serial', () => {
   });
 
   it('does not return a port if select-serial-port event is not defined', async () => {
-    // Take screenshot to verify the test is running
     w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     const port = await getPorts();
     expect(port).to.equal(notFoundError);
