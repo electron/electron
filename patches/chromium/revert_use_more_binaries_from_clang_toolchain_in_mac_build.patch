@@ -14,37 +14,37 @@ This patch can be removed when both otool and nm are correctly
 persisted with third-party/llvm-build.
 
 diff --git a/DEPS b/DEPS
-index 1f75db002b80c3869beafe517cc3b449850b632e..018e70b12db82277a250969a90cdd71385739f5a 100644
+index aff425e81261a9820e4d12953cf19d8e8998b00d..0eb687803692c71730aaaaab615b3facd4665020 100644
 --- a/DEPS
 +++ b/DEPS
-@@ -906,13 +906,6 @@ deps = {
-         'generation': 1752145989568677,
+@@ -911,13 +911,6 @@ deps = {
+         'generation': 1753711035430925,
          'condition': 'host_os == "mac" and host_cpu == "x64" and checkout_clang_coverage_tools',
        },
 -      {
--        'object_name': 'Mac/llvmobjdump-llvmorg-21-init-16348-gbd809ffb-13.tar.xz',
--        'sha256sum': 'fff3642ab8fbfffa4f5e8feda7b7f8ab7838099b2d0d1f5ce323a1d8aebf05ca',
--        'size_bytes': 5490072,
--        'generation': 1752145989091474,
+-        'object_name': 'Mac/llvmobjdump-llvmorg-21-init-16348-gbd809ffb-14.tar.xz',
+-        'sha256sum': '4eae5f9ad4fba33dea45815fd965258f4649cf8e0794b6c431ce166a966cb29d',
+-        'size_bytes': 5483720,
+-        'generation': 1753711035319601,
 -        'condition': 'host_os == "mac" and host_cpu == "x64"',
 -      },
        {
-         'object_name': 'Mac_arm64/clang-llvmorg-21-init-16348-gbd809ffb-13.tar.xz',
-         'sha256sum': '68460f5290547d101c4c9c2e4ea74b783159e553e90dad5b422f03f58d16d05c',
-@@ -941,13 +934,6 @@ deps = {
-         'generation': 1752146011858185,
+         'object_name': 'Mac_arm64/clang-llvmorg-21-init-16348-gbd809ffb-14.tar.xz',
+         'sha256sum': '17275ca988de014adc269f8fa694f501cecd6c25c0494fc45582fc4e3d258bed',
+@@ -946,13 +939,6 @@ deps = {
+         'generation': 1753711045041769,
          'condition': 'host_os == "mac" and host_cpu == "arm64" and checkout_clang_coverage_tools',
        },
 -      {
--        'object_name': 'Mac_arm64/llvmobjdump-llvmorg-21-init-16348-gbd809ffb-13.tar.xz',
--        'sha256sum': 'a8fddab5bd008eeac135e832fe327d15459bc7b1d2ca87a12fa4a9ba3c4be009',
--        'size_bytes': 5317004,
--        'generation': 1752146011233744,
+-        'object_name': 'Mac_arm64/llvmobjdump-llvmorg-21-init-16348-gbd809ffb-14.tar.xz',
+-        'sha256sum': '26c961fa85d76f5f2fcdfd80980b4a0ca4c394307cf78e65888d061e29ae9b0b',
+-        'size_bytes': 5315616,
+-        'generation': 1753711044929262,
 -        'condition': 'host_os == "mac" and host_cpu == "arm64"',
 -      },
        {
-         'object_name': 'Win/clang-llvmorg-21-init-16348-gbd809ffb-13.tar.xz',
-         'sha256sum': '1021cc3231615a3556f691820014eb40dc93b4eb714bf4037dced002a454b763',
+         'object_name': 'Win/clang-llvmorg-21-init-16348-gbd809ffb-14.tar.xz',
+         'sha256sum': 'ce28d6045da4a2d3e909a3b272e973ecab3360452780e501b2110b6fd51be899',
 diff --git a/build/toolchain/apple/toolchain.gni b/build/toolchain/apple/toolchain.gni
 index d3fdadf72eb0aa36ae9ae0d4324b61143bc55b66..d5210da1aa3bbda87ca540f67a1768dec70f3675 100644
 --- a/build/toolchain/apple/toolchain.gni
