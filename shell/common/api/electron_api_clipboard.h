@@ -68,7 +68,8 @@ class Clipboard {
                           const v8::Local<v8::Value> buffer,
                           gin_helper::Arguments* args);
 
-  static void WriteFilesForTesting(const std::vector<base::FilePath>& files);
+  static std::vector<std::string> ReadFiles(gin_helper::Arguments* args);
+  static void WriteFiles(const std::vector<base::FilePath>& files);
 };
 
 }  // namespace electron::api

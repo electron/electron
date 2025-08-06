@@ -105,7 +105,8 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
         html: '<b>Hi</b>',
         rtf: '{\\rtf1\\utf8 text}',
         bookmark: 'a title',
-        image: i
+        image: i,
+        files: [p]
       });
 
       expect(clipboard.readText()).to.equal(text);
@@ -113,6 +114,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       expect(clipboard.readRTF()).to.equal(rtf);
       const readImage = clipboard.readImage();
       expect(readImage.toDataURL()).to.equal(i.toDataURL());
+      expect(clipboard.readFiles()).to.deep.equal([p]);
 
       if (process.platform !== 'linux') {
         if (process.platform !== 'win32') {
@@ -153,6 +155,22 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       }
       clipboard.writeBuffer(rawFormat, buffer);
       expect(clipboard.readText()).to.equal(message);
+    });
+  });
+
+  describe('clipboard.readFiles()', () => {
+    it('returns data correctly', () => {
+      const file1 = path.join(fixtures, 'assets', 'logo.png');
+      const file2 = path.join(fixtures, 'assets', 'icon.png');
+      clipboard.writeFiles([file1, file2]);
+      const files = clipboard.readFiles();
+      expect(files).to.have.lengthOf(2);
+      expect(files).to.deep.equal([file1, file2]);
+    });
+
+    it('works for empty files', () => {
+      clipboard.writeText('overwrite');
+      expect(clipboard.readFiles()).to.have.lengthOf(0);
     });
   });
 });

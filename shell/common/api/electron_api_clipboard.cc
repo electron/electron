@@ -128,6 +128,7 @@ void Clipboard::Write(const gin_helper::Dictionary& data,
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
   std::u16string text, html, bookmark;
   gfx::Image image;
+  std::vector<base::FilePath> files;
 
   if (data.Get("text", &text)) {
     writer.WriteText(text);
@@ -146,6 +147,12 @@ void Clipboard::Write(const gin_helper::Dictionary& data,
 
   if (data.Get("image", &image))
     writer.WriteImage(image.AsBitmap());
+
+  if (data.Get("files", &files)) {
+    auto to_info = [](const auto& p) { return ui::FileInfo{p, p.BaseName()}; };
+    auto file_infos = base::ToVector(files, to_info);
+    writer.WriteFilenames(ui::FileInfosToURIList(file_infos));
+  }
 }
 
 std::u16string Clipboard::ReadText(gin_helper::Arguments* args) {
@@ -278,8 +285,21 @@ void Clipboard::Clear(gin_helper::Arguments* args) {
   ui::Clipboard::GetForCurrentThread()->Clear(GetClipboardBuffer(args));
 }
 
-// This exists for testing purposes ONLY.
-void Clipboard::WriteFilesForTesting(const std::vector<base::FilePath>& files) {
+std::vector<std::string> Clipboard::ReadFiles(gin_helper::Arguments* args) {
+  std::vector<ui::FileInfo> file_infos;
+  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+  clipboard->ReadFilenames(GetClipboardBuffer(args), /* data_dst = */ nullptr,
+                           &file_infos);
+
+  std::vector<std::string> file_paths;
+  file_paths.reserve(file_infos.size());
+  for (const auto& file_info : file_infos) {
+    file_paths.push_back(file_info.path.AsUTF8Unsafe());
+  }
+  return file_paths;
+}
+
+void Clipboard::WriteFiles(const std::vector<base::FilePath>& files) {
   auto to_info = [](const auto& p) { return ui::FileInfo{p, p.BaseName()}; };
   auto file_infos = base::ToVector(files, to_info);
   ui::ScopedClipboardWriter writer(ui::ClipboardBuffer::kCopyPaste);
@@ -315,8 +335,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("writeFindText", &electron::api::Clipboard::WriteFindText);
   dict.SetMethod("readBuffer", &electron::api::Clipboard::ReadBuffer);
   dict.SetMethod("writeBuffer", &electron::api::Clipboard::WriteBuffer);
-  dict.SetMethod("_writeFilesForTesting",
-                 &electron::api::Clipboard::WriteFilesForTesting);
+  dict.SetMethod("readFiles", &electron::api::Clipboard::ReadFiles);
+  dict.SetMethod("writeFiles", &electron::api::Clipboard::WriteFiles);
   dict.SetMethod("clear", &electron::api::Clipboard::Clear);
 }
 

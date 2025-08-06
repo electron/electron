@@ -1016,8 +1016,7 @@ describe('chromium features', () => {
       w.loadFile(writablePath);
 
       w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testFile]);
+        clipboard.writeFiles([testFile]);
         w.webContents.paste();
       });
     });

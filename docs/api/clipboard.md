@@ -166,6 +166,38 @@ The cached value is reread from the find pasteboard whenever the application is 
 
 Writes the `text` into the find pasteboard (the pasteboard that holds information about the current state of the active application’s find panel) as plain text. This method uses synchronous IPC when called from the renderer process.
 
+### `clipboard.readFiles([type])`
+
+* `type` string (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
+
+Returns `string[]` - An array of file paths from the clipboard.
+
+```js
+const { clipboard } = require('electron')
+
+clipboard.writeFiles(['path/to/file1.txt', 'path/to/file2.txt'])
+const files = clipboard.readFiles()
+
+console.log(files)
+// ['path/to/file1.txt', 'path/to/file2.txt']
+```
+
+### `clipboard.writeFiles(files)`
+
+* `files` string[] - An array of file paths to write to the clipboard.
+
+Writes the `files` into the clipboard as file paths.
+
+> [!NOTE]
+> Please make sure your app has permission to access `files`
+> otherwise, it will not be able to copy them to the clipboard. It will not crash, it will just ignore the files without access permission.
+
+```js
+const { clipboard } = require('electron')
+
+clipboard.writeFiles(['path/to/file1.txt', 'path/to/file2.txt'])
+```
+
 ### `clipboard.clear([type])`
 
 * `type` string (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
@@ -252,6 +284,7 @@ clipboard.writeBuffer('public/utf8-plain-text', buffer)
   * `image` [NativeImage](native-image.md) (optional)
   * `rtf` string (optional)
   * `bookmark` string (optional) - The title of the URL at `text`.
+  * `files` string[] (optional)
 * `type` string (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Writes `data` to the clipboard.
@@ -263,7 +296,8 @@ clipboard.write({
   text: 'test',
   html: '<b>Hi</b>',
   rtf: '{\\rtf1\\utf8 text}',
-  bookmark: 'a title'
+  bookmark: 'a title',
+  files: ['path/to/file1.txt', 'path/to/file2.txt']
 })
 
 console.log(clipboard.readText())
@@ -277,4 +311,7 @@ console.log(clipboard.readRTF())
 
 console.log(clipboard.readBookmark())
 // { title: 'a title', url: 'test' }
+
+console.log(clipboard.readFiles())
+// ['path/to/file1.txt', 'path/to/file2.txt']
 ```
