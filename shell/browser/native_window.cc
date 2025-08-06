@@ -104,6 +104,12 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window,
 }
 #endif
 
+// Check if display is fake (default display ID) or has invalid dimensions
+bool hasInvalidDisplay(const display::Display& display) {
+  return display.id() == display::kDefaultDisplayId ||
+         display.size().width() == 0 || display.size().height() == 0;
+}
+
 }  // namespace
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
@@ -866,8 +872,7 @@ void NativeWindow::SaveWindowState() {
   // is fake (ID 0xFF). Invalid displays could cause incorrect window bounds to
   // be saved, leading to positioning issues during restoration.
   // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/types/display_constants.h;l=28;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
-  if (display.id() == display::kDefaultDisplayId ||
-      display.size().width() == 0 || display.size().height() == 0) {
+  if (hasInvalidDisplay(display)) {
     LOG(WARNING)
         << "Window state not saved - no physical display attached or current "
            "display has invalid bounds";
@@ -970,8 +975,7 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
   // is fake. Restoring from invalid displays (0x0) or fake displays (ID 0xFF)
   // could cause incorrect window positioning when later moved to real displays.
   // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/types/display_constants.h;l=28;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
-  if (display.id() == display::kDefaultDisplayId ||
-      display.size().width() == 0 || display.size().height() == 0) {
+  if (hasInvalidDisplay(display)) {
     LOG(WARNING) << "Window state not restored - no physical display attached "
                     "or current display has invalid bounds";
     return;
