@@ -95,3 +95,11 @@ To configure display scaling:
 
 1. Push the Windows key and search for _Display settings_.
 2. Under _Scale and layout_, make sure that the device is set to 100%.
+
+## Multi-Monitor Tests
+
+Some Electron APIs require testing across multiple displays, such as screen detection, window positioning, and display-related events. For contributors working on these features, the `virtualDisplay` native addon enables you to create and position virtual displays programmatically, making it possible to test multi-monitor scenarios without any physical hardware.
+
+For detailed information on using virtual displays in your tests, see [Multi-Monitor Testing](multi-monitor-testing.md).
+
+**Platform support:** macOS only
