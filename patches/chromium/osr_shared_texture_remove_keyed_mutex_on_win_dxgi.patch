@@ -36,19 +36,10 @@ index 31543b5b018313d2e5890f599109bd48d7bc5e64..2f4003b0557ae275ee3697062fafb642
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index 46c48aa7d08b336f577f81163bf4cc0596a0b2fb..c1098fbc5ea57031f2e153379ae0baaddd3bbe5f 100644
+index 4de36674acee427da3a43891f780102d7e08d9cb..d32bf712107f02991717da626b5dd25c6e6973d3 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-@@ -182,7 +182,7 @@ bool FrameResources::Initialize(VideoPixelFormat format,
- 
-   auto* context = pool_->GetContext();
- 
--  constexpr gfx::BufferUsage kBufferUsage =
-+  gfx::BufferUsage buffer_usage =
- #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
-       gfx::BufferUsage::SCANOUT_VEA_CPU_READ
- #else
-@@ -193,6 +193,23 @@ bool FrameResources::Initialize(VideoPixelFormat format,
+@@ -209,6 +209,23 @@ bool FrameResources::Initialize(VideoPixelFormat format,
    const gfx::Size coded_size =
        GetCodedSizeForVideoPixelFormat(format, visible_size_);
  
@@ -72,12 +63,3 @@ index 46c48aa7d08b336f577f81163bf4cc0596a0b2fb..c1098fbc5ea57031f2e153379ae0baad
    gpu::SharedImageUsageSet usage =
  #if BUILDFLAG(IS_MAC)
        gpu::SHARED_IMAGE_USAGE_MACOS_VIDEO_TOOLBOX |
-@@ -230,7 +247,7 @@ bool FrameResources::Initialize(VideoPixelFormat format,
-       VideoPixelFormatToSharedImageFormat(format).value();
- 
-   shared_image_ = context->CreateSharedImage(
--      coded_size, kBufferUsage, si_format, color_space, usage, sync_token_);
-+      coded_size, buffer_usage, si_format, color_space, usage, sync_token_);
-   if (!shared_image_) {
-     DLOG(ERROR) << "Failed to allocate shared image for frame: visible_size="
-                 << visible_size_.ToString()

@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2f5d46db2e18784c4dcf60e626e8a3cbe1bc2182..4c2819616af7ffc7fae577a4f7b9301b7da39686 100644
+index 4fa6e30566ed9c7ca31271b2a2fefe54e71b2ccb..ecacf65dde18915372552e26cb0398e55c9e0559 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1055,6 +1055,7 @@ component("base") {
+@@ -1059,6 +1059,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -582,7 +582,7 @@ index 2d5cad5d7a4ab9292a5f966123687dee06f4512b..ae798fc8f923a9b590c0d9ed703946a2
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index adce27e6feaed7172cac9bdcd1b2e83930eb0a77..d912bdedc246503bb4114393baee14fc95c54eb9 100644
+index 5e200f266ac60dcd4d7fb7945c9fb11d9993be30..cf9885a182f5515411aca4a926761b78dca59fa4 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -345,6 +345,7 @@ source_set("browser") {
@@ -594,7 +594,7 @@ index adce27e6feaed7172cac9bdcd1b2e83930eb0a77..d912bdedc246503bb4114393baee14fc
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 9825b5ab492c418fa62849f12eccc91ab6d2fad8..f1a489b8145d4788a34782348a79f794dba076fb 100644
+index e7007a9a7788cbc89a0bbb2387ff2c62bb7d2c79..c2b672a3bd1e61089b411d139f7083714a345a9c 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -24,6 +24,7 @@
@@ -628,7 +628,7 @@ index 9825b5ab492c418fa62849f12eccc91ab6d2fad8..f1a489b8145d4788a34782348a79f794
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 55b6b67eace540e302a868dfaf025768bad30514..f26dd97bebd2c467d5a13b98b3f75afb14a615c2 100644
+index 7cd35ebe42cf3b5604a001baf3d4353d6a2bf777..59c8d5a2e687ac6148889c87f353b33959e276f6 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -52,6 +52,7 @@
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 28887735ea8e1f03c2bdbfb845c39d63b2fd4680..1040f87089ca52f9e85467eb0172d778a8c05c24 100644
+index 71c6f4156240afe71a0f2ff0429ad3f17fc6864b..3cdd664bbe2201fdb0e6dc40f14e7adb8bf12a83 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -669,6 +669,7 @@ static_library("test_support") {
@@ -938,10 +938,10 @@ index d288ffce5c1265adbdefc571f840851026e7479e..e9a6e8c31401750d270fcc55ef1116b2
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index adb7e043e9dd3b328cff2828cfb4c8a196b22250..556ce9a1f5ed5359b7f4d059cd3e54a207af1359 100644
+index c6858875e6988f1bba723bfc2f71566095b94b70..a5d157ec6ab683e3d9d702c6008f70b444c3d557 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -201,6 +201,7 @@ source_set("audio") {
+@@ -199,6 +199,7 @@ source_set("audio") {
        "CoreMedia.framework",
      ]
      weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0
@@ -1649,10 +1649,10 @@ index 6846060ef9622d8fc8d1d6c8da16e2f1b785e6bd..05c22db87e882b246bd7034e027cf149
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 20361d421d3e29fda6f1b50beccc44bbf0bfbb37..a415bf9cd66cadfd9c231a0c605e2fa08ff45b4d 100644
+index 7d10b420548e1038101e54b2e1fcc725b47cee88..4470bb4293d757236244fb489269f9d27b0da6a9 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -370,6 +370,13 @@ component("base") {
+@@ -372,6 +372,13 @@ component("base") {
      ]
    }
  
@@ -1666,7 +1666,7 @@ index 20361d421d3e29fda6f1b50beccc44bbf0bfbb37..a415bf9cd66cadfd9c231a0c605e2fa0
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -516,6 +523,12 @@ component("base") {
+@@ -520,6 +527,12 @@ component("base") {
      "//url",
    ]
  

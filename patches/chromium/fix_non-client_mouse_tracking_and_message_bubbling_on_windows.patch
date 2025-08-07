@@ -13,10 +13,10 @@ messages in the legacy window handle layer.
 These conditions are regularly hit with WCO-enabled windows on Windows.
 
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-index 156fa90eada19fab3a1688302bbf3687cab6ab32..b13d4fcea374eff4309b4fbe84d53dd00c817e37 100644
+index 475629d48e8807547e0c79f6fa00d458bac3416c..97f4520fbf7797b19747b5101097d93cf475fb5c 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-@@ -366,12 +366,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
+@@ -375,12 +375,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
                                                   WPARAM w_param,
                                                   LPARAM l_param,
                                                   BOOL& handled) {
@@ -31,7 +31,7 @@ index 156fa90eada19fab3a1688302bbf3687cab6ab32..b13d4fcea374eff4309b4fbe84d53dd0
        tme.hwndTrack = hwnd();
        tme.dwHoverTime = 0;
        TrackMouseEvent(&tme);
-@@ -404,7 +404,10 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
+@@ -413,7 +413,10 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
    // the picture.
    if (!handled &&
        (message >= WM_NCMOUSEMOVE && message <= WM_NCXBUTTONDBLCLK)) {
@@ -44,7 +44,7 @@ index 156fa90eada19fab3a1688302bbf3687cab6ab32..b13d4fcea374eff4309b4fbe84d53dd0
    }
    return ret;
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
-index 17952b4b6ab559ba1c9076b100b060a7011edeec..1eda20e67d3b3184bec154f24c4259bb4a49b099 100644
+index f9699ff0abf9036e9e1cabf626aa6395584cf896..94a8a50cb630182103c4256352d7a8a2acc8c76a 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.h
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.h
 @@ -105,6 +105,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
