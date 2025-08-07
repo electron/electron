@@ -211,3 +211,16 @@ void* FromV8Impl(v8::Isolate* isolate,
 }  // namespace internal
 
 }  // namespace gin_helper
+
+namespace gin {
+
+DeprecatedWrapperInfo* DeprecatedWrapperInfo::From(
+    v8::Local<v8::Object> object) {
+  if (object->InternalFieldCount() != kNumberOfInternalFields)
+    return NULL;
+  DeprecatedWrapperInfo* info = static_cast<DeprecatedWrapperInfo*>(
+      object->GetAlignedPointerFromInternalField(kWrapperInfoIndex));
+  return info->embedder == kEmbedderNativeGin ? info : NULL;
+}
+
+}  // namespace gin
