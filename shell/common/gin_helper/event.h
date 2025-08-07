@@ -5,13 +5,13 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_H_
 
-#include "gin/wrappable.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/wrappable.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace v8 {
 class Isolate;
@@ -23,17 +23,17 @@ class ObjectTemplate;
 
 namespace gin_helper::internal {
 
-class Event final : public gin::DeprecatedWrappable<Event>,
+class Event final : public gin_helper::DeprecatedWrappable<Event>,
                     public gin_helper::Constructible<Event> {
  public:
   // gin_helper::Constructible
-  static gin::Handle<Event> New(v8::Isolate* isolate);
+  static gin_helper::Handle<Event> New(v8::Isolate* isolate);
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
       v8::Isolate* isolate,
       v8::Local<v8::ObjectTemplate> prototype);
   static const char* GetClassName() { return "Event"; }
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 

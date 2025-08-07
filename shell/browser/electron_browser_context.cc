@@ -49,6 +49,7 @@
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_download_manager_delegate.h"
 #include "shell/browser/electron_permission_manager.h"
+#include "shell/browser/electron_preconnect_manager_delegate.h"
 #include "shell/browser/file_system_access/file_system_access_permission_context_factory.h"
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
@@ -559,7 +560,10 @@ std::string ElectronBrowserContext::GetUserAgent() const {
 
 predictors::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
   if (!preconnect_manager_) {
-    preconnect_manager_ = predictors::PreconnectManager::Create(nullptr, this);
+    preconnect_manager_delegate_ =
+        std::make_unique<ElectronPreconnectManagerDelegate>();
+    preconnect_manager_ = predictors::PreconnectManager::Create(
+        preconnect_manager_delegate_->GetWeakPtr(), this);
   }
   return preconnect_manager_.get();
 }

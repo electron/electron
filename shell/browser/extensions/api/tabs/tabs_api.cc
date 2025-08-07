@@ -321,6 +321,8 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
     tab.active = contents->IsFocused();
     tab.audible = contents->IsCurrentlyAudible();
     tab.muted_info = CreateMutedInfo(wc);
+    // TODO: Add proper support for split views
+    tab.split_view_id = -1;
 
     result.Append(tab.ToValue());
   }
@@ -353,6 +355,8 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
 
   tab.active = contents->IsFocused();
   tab.last_accessed = wc->GetLastActiveTime().InMillisecondsFSinceUnixEpoch();
+  // TODO: Add proper support for split views
+  tab.split_view_id = -1;
 
   return RespondNow(ArgumentList(tabs::Get::Results::Create(std::move(tab))));
 }
@@ -696,6 +700,8 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
     tab.active = api_web_contents->IsFocused();
   tab.muted_info = CreateMutedInfo(web_contents_);
   tab.audible = web_contents_->IsCurrentlyAudible();
+  // TODO: Add proper support for split views
+  tab.split_view_id = -1;
 
   return ArgumentList(tabs::Get::Results::Create(std::move(tab)));
 }

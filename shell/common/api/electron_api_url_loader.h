@@ -13,7 +13,6 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -22,14 +21,18 @@
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "url/gurl.h"
 #include "v8/include/v8-forward.h"
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace net {
 class AuthChallengeInfo;
@@ -49,18 +52,19 @@ namespace electron::api {
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
 class SimpleURLLoaderWrapper final
-    : public gin::DeprecatedWrappable<SimpleURLLoaderWrapper>,
+    : public gin_helper::DeprecatedWrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
       public gin_helper::CleanedUpAtExit,
       private network::SimpleURLLoaderStreamConsumer,
       private network::mojom::URLLoaderNetworkServiceObserver {
  public:
   ~SimpleURLLoaderWrapper() override;
-  static gin::Handle<SimpleURLLoaderWrapper> Create(gin::Arguments* args);
+  static gin_helper::Handle<SimpleURLLoaderWrapper> Create(
+      gin::Arguments* args);
 
   void Cancel();
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
@@ -100,12 +104,6 @@ class SimpleURLLoaderWrapper final
       const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
       mojo::PendingRemote<network::mojom::ClientCertificateResponder>
           client_cert_responder) override {}
-  void OnPrivateNetworkAccessPermissionRequired(
-      const GURL& url,
-      const net::IPAddress& ip_address,
-      const std::optional<std::string>& private_network_device_id,
-      const std::optional<std::string>& private_network_device_name,
-      OnPrivateNetworkAccessPermissionRequiredCallback callback) override {}
   void OnLocalNetworkAccessPermissionRequired(
       OnLocalNetworkAccessPermissionRequiredCallback callback) override {}
   void OnClearSiteData(

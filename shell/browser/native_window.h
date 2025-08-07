@@ -349,6 +349,10 @@ class NativeWindow : public base::SupportsUserData,
 
 #if BUILDFLAG(IS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
+  virtual void SetAccentColor(
+      std::variant<std::monostate, bool, SkColor> accent_color) = 0;
+  virtual std::variant<bool, std::string> GetAccentColor() const = 0;
+  virtual void UpdateWindowAccentColor(bool active) = 0;
 #endif
 
   void AddObserver(NativeWindowObserver* obs) { observers_.AddObserver(obs); }

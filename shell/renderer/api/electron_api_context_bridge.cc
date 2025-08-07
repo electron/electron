@@ -38,7 +38,8 @@ BASE_FEATURE(kContextBridgeMutability,
 
 namespace electron {
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
+content::RenderFrame* GetRenderFrame(v8::Isolate* const isolate,
+                                     v8::Local<v8::Object> value);
 
 namespace api {
 
@@ -157,13 +158,15 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     bool support_dynamic_properties,
     int recursion_depth,
     BridgeErrorTarget error_target) {
+  v8::Isolate* const source_isolate = source_context->GetIsolate();
+
   TRACE_EVENT0("electron", "ContextBridge::PassValueToOtherContextInner");
   if (recursion_depth >= kMaxRecursion) {
     v8::Context::Scope error_scope(error_target == BridgeErrorTarget::kSource
                                        ? source_context
                                        : destination_context);
-    source_context->GetIsolate()->ThrowException(v8::Exception::TypeError(
-        gin::StringToV8(source_context->GetIsolate(),
+    source_isolate->ThrowException(v8::Exception::TypeError(
+        gin::StringToV8(source_isolate,
                         "Electron contextBridge recursion depth exceeded.  "
                         "Nested objects "
                         "deeper than 1000 are not supported.")));
@@ -205,8 +208,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
       // creation context of the original method.  If it's not we proceed
       // with the proxy logic
       if (maybe_original_fn.ToLocal(&proxy_func) && proxy_func->IsFunction() &&
-          proxy_func.As<v8::Object>()->GetCreationContextChecked() ==
-              destination_context) {
+          proxy_func.As<v8::Object>()->GetCreationContextChecked(
+              source_isolate) == destination_context) {
         return v8::MaybeLocal<v8::Value>(proxy_func);
       }
 
@@ -243,8 +246,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     v8::Local<v8::Promise> proxied_promise_handle =
         proxied_promise->GetHandle();
 
-    v8::Global<v8::Context> global_then_source_context(
-        source_context->GetIsolate(), source_context);
+    v8::Global<v8::Context> global_then_source_context(source_isolate,
+                                                       source_context);
     v8::Global<v8::Context> global_then_destination_context(
         destination_context->GetIsolate(), destination_context);
     global_then_source_context.SetWeak();
@@ -290,8 +293,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
         std::move(global_then_source_context),
         std::move(global_then_destination_context));
 
-    v8::Global<v8::Context> global_catch_source_context(
-        source_context->GetIsolate(), source_context);
+    v8::Global<v8::Context> global_catch_source_context(source_isolate,
+                                                        source_context);
     v8::Global<v8::Context> global_catch_destination_context(
         destination_context->GetIsolate(), destination_context);
     global_catch_source_context.SetWeak();
@@ -356,8 +359,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     // crosses the bridge we fallback to the v8::Message approach if we can't
     // pull "message" for some reason
     v8::MaybeLocal<v8::Value> maybe_message = value.As<v8::Object>()->Get(
-        source_context,
-        gin::ConvertToV8(source_context->GetIsolate(), "message"));
+        source_context, gin::ConvertToV8(source_isolate, "message"));
     v8::Local<v8::Value> message;
     if (maybe_message.ToLocal(&message) && message->IsString()) {
       return v8::MaybeLocal<v8::Value>(
@@ -496,7 +498,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
   v8::Local<v8::Function> func = func_value.As<v8::Function>();
   v8::Local<v8::Context> func_owning_context =
-      func->GetCreationContextChecked();
+      func->GetCreationContextChecked(args.isolate());
 
   {
     v8::Context::Scope func_owning_context_scope(func_owning_context);
@@ -760,7 +762,7 @@ v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
   blink::ExecutionContext* execution_context =
       blink::ExecutionContext::From(source_context);
   if (execution_context->IsWindow()) {
-    auto* render_frame = GetRenderFrame(source_context->Global());
+    auto* render_frame = GetRenderFrame(isolate, source_context->Global());
     CHECK(render_frame);
     auto* frame = render_frame->GetWebFrame();
     CHECK(frame);
@@ -812,13 +814,14 @@ gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
 }
 
 void OverrideGlobalValueFromIsolatedWorld(
+    v8::Isolate* isolate,
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> value,
     bool support_dynamic_properties) {
   if (key_path.empty())
     return;
 
-  auto* render_frame = GetRenderFrame(value);
+  auto* render_frame = GetRenderFrame(isolate, value);
   CHECK(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
@@ -831,7 +834,8 @@ void OverrideGlobalValueFromIsolatedWorld(
 
   {
     v8::Context::Scope main_context_scope(main_context);
-    v8::Local<v8::Context> source_context = value->GetCreationContextChecked();
+    v8::Local<v8::Context> source_context =
+        value->GetCreationContextChecked(isolate);
     v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
         source_context, main_context, value, source_context->Global(),
         support_dynamic_properties, BridgeErrorTarget::kSource);
@@ -843,6 +847,7 @@ void OverrideGlobalValueFromIsolatedWorld(
 }
 
 bool OverrideGlobalPropertyFromIsolatedWorld(
+    v8::Isolate* const isolate,
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> getter,
     v8::Local<v8::Value> setter,
@@ -850,7 +855,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
   if (key_path.empty())
     return false;
 
-  auto* render_frame = GetRenderFrame(getter);
+  auto* render_frame = GetRenderFrame(isolate, getter);
   CHECK(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
@@ -869,7 +874,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     v8::Local<v8::Value> setter_proxy;
     if (!getter->IsNullOrUndefined()) {
       v8::Local<v8::Context> source_context =
-          getter->GetCreationContextChecked();
+          getter->GetCreationContextChecked(isolate);
       v8::MaybeLocal<v8::Value> maybe_getter_proxy = PassValueToOtherContext(
           source_context, main_context, getter, source_context->Global(), false,
           BridgeErrorTarget::kSource);
@@ -878,7 +883,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
       v8::Local<v8::Context> source_context =
-          getter->GetCreationContextChecked();
+          getter->GetCreationContextChecked(isolate);
       v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
           source_context, main_context, setter, source_context->Global(), false,
           BridgeErrorTarget::kSource);

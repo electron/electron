@@ -30,8 +30,6 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/stop_find_action.h"
 #include "electron/buildflags/buildflags.h"
-#include "gin/handle.h"
-#include "gin/wrappable.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/background_throttling_source.h"
@@ -44,7 +42,9 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/web_contents_utility.mojom.h"
 #include "ui/base/models/image_model.h"
 
@@ -110,7 +110,7 @@ class FrameSubscriber;
 
 // Wrapper around the content::WebContents.
 class WebContents final : public ExclusiveAccessContext,
-                          public gin::DeprecatedWrappable<WebContents>,
+                          public gin_helper::DeprecatedWrappable<WebContents>,
                           public gin_helper::EventEmitterMixin<WebContents>,
                           public gin_helper::Constructible<WebContents>,
                           public gin_helper::Pinnable<WebContents>,
@@ -135,13 +135,14 @@ class WebContents final : public ExclusiveAccessContext,
   };
 
   // Create a new WebContents and return the V8 wrapper of it.
-  static gin::Handle<WebContents> New(v8::Isolate* isolate,
-                                      const gin_helper::Dictionary& options);
+  static gin_helper::Handle<WebContents> New(
+      v8::Isolate* isolate,
+      const gin_helper::Dictionary& options);
 
   // Create a new V8 wrapper for an existing |web_content|.
   //
   // The lifetime of |web_contents| will be managed by this class.
-  static gin::Handle<WebContents> CreateAndTake(
+  static gin_helper::Handle<WebContents> CreateAndTake(
       v8::Isolate* isolate,
       std::unique_ptr<content::WebContents> web_contents,
       Type type);
@@ -160,11 +161,11 @@ class WebContents final : public ExclusiveAccessContext,
   //
   // The lifetime of |web_contents| is NOT managed by this class, and the type
   // of this wrapper is always REMOTE.
-  static gin::Handle<WebContents> FromOrCreate(
+  static gin_helper::Handle<WebContents> FromOrCreate(
       v8::Isolate* isolate,
       content::WebContents* web_contents);
 
-  static gin::Handle<WebContents> CreateFromWebPreferences(
+  static gin_helper::Handle<WebContents> CreateFromWebPreferences(
       v8::Isolate* isolate,
       const gin_helper::Dictionary& web_preferences);
 
@@ -172,7 +173,7 @@ class WebContents final : public ExclusiveAccessContext,
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "WebContents"; }
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
@@ -478,7 +479,7 @@ class WebContents final : public ExclusiveAccessContext,
   void InitWithSessionAndOptions(
       v8::Isolate* isolate,
       std::unique_ptr<content::WebContents> web_contents,
-      gin::Handle<class Session> session,
+      gin_helper::Handle<class Session> session,
       const gin_helper::Dictionary& options);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -509,6 +510,8 @@ class WebContents final : public ExclusiveAccessContext,
       int opener_render_frame_id,
       const content::mojom::CreateNewWindowParams& params,
       content::WebContents* new_contents) override;
+  void MaybeOverrideCreateParamsForNewWindow(
+      content::WebContents::CreateParams* create_params) override;
   content::WebContents* AddNewContents(
       content::WebContents* source,
       std::unique_ptr<content::WebContents> new_contents,

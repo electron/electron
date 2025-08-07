@@ -181,7 +181,7 @@ class PreloadRealmLifetimeController
 
     v8::LocalVector<v8::Value> preload_realm_bundle_args(isolate, {binding});
 
-    util::CompileAndCall(context, "electron/js2c/preload_realm_bundle",
+    util::CompileAndCall(isolate, context, "electron/js2c/preload_realm_bundle",
                          &preload_realm_bundle_params,
                          &preload_realm_bundle_args);
   }
@@ -232,9 +232,9 @@ electron::ServiceWorkerData* GetServiceWorkerData(
 }
 
 void OnCreatePreloadableV8Context(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> initiator_context,
     electron::ServiceWorkerData* service_worker_data) {
-  v8::Isolate* isolate = initiator_context->GetIsolate();
   blink::ScriptState* initiator_script_state =
       blink::ScriptState::MaybeFrom(isolate, initiator_context);
   DCHECK(initiator_script_state);

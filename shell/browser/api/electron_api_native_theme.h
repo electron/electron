@@ -6,25 +6,25 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 
 #include "base/memory/raw_ptr.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
-class handle;
-}  // namespace gin
+class Handle;
+}  // namespace gin_helper
 
 namespace electron::api {
 
-class NativeTheme final : public gin::DeprecatedWrappable<NativeTheme>,
+class NativeTheme final : public gin_helper::DeprecatedWrappable<NativeTheme>,
                           public gin_helper::EventEmitterMixin<NativeTheme>,
                           private ui::NativeThemeObserver {
  public:
-  static gin::Handle<NativeTheme> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<NativeTheme> Create(v8::Isolate* isolate);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
