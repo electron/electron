@@ -6,7 +6,7 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: '424eedbf277ad9749ffa9219068aa72ed4a5e373'
+        default: '933c7d6ff6802706875270bec2e3c891cf8add3f'
       upload-to-storage:
         description: 'Uploads to Azure storage'
         required: false
@@ -19,7 +19,7 @@ on:
 
 jobs:
   checkout-linux:
-    runs-on: electron-arc-linux-amd64-32core
+    runs-on: electron-arc-centralus-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
       options: --user root
@@ -43,7 +43,7 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: electron-arc-linux-amd64-32core
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: x64
@@ -59,7 +59,7 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: electron-arc-linux-amd64-32core
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm
@@ -75,7 +75,7 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: electron-arc-linux-amd64-32core
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm64

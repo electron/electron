@@ -8,17 +8,20 @@
 #include <memory>
 #include <vector>
 
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/message.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "third_party/blink/public/common/messaging/message_port_channel.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace mojo {
 class Connector;
@@ -27,12 +30,12 @@ class Connector;
 namespace electron {
 
 // A non-blink version of blink::MessagePort.
-class MessagePort final : public gin::DeprecatedWrappable<MessagePort>,
+class MessagePort final : public gin_helper::DeprecatedWrappable<MessagePort>,
                           public gin_helper::CleanedUpAtExit,
                           private mojo::MessageReceiver {
  public:
   ~MessagePort() override;
-  static gin::Handle<MessagePort> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<MessagePort> Create(v8::Isolate* isolate);
 
   void PostMessage(gin::Arguments* args);
   void Start();
@@ -46,16 +49,16 @@ class MessagePort final : public gin::DeprecatedWrappable<MessagePort>,
   [[nodiscard]] bool IsEntangled() const;
   [[nodiscard]] bool IsNeutered() const;
 
-  static std::vector<gin::Handle<MessagePort>> EntanglePorts(
+  static std::vector<gin_helper::Handle<MessagePort>> EntanglePorts(
       v8::Isolate* isolate,
       std::vector<blink::MessagePortChannel> channels);
 
   static std::vector<blink::MessagePortChannel> DisentanglePorts(
       v8::Isolate* isolate,
-      const std::vector<gin::Handle<MessagePort>>& ports,
+      const std::vector<gin_helper::Handle<MessagePort>>& ports,
       bool* threw_exception);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

@@ -27,6 +27,7 @@
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 #if BUILDFLAG(USE_NSS_CERTS)
 #include "shell/browser/certificate_manager_model.h"
@@ -36,14 +37,11 @@ namespace base {
 class FilePath;
 }
 
-namespace gin {
-template <typename T>
-class Handle;
-}  // namespace gin
-
 namespace gin_helper {
 class Dictionary;
 class ErrorThrower;
+template <typename T>
+class Handle;
 }  // namespace gin_helper
 
 namespace electron {
@@ -57,16 +55,16 @@ enum class JumpListResult : int;
 namespace api {
 
 class App final : public ElectronBrowserClient::Delegate,
-                  public gin::DeprecatedWrappable<App>,
+                  public gin_helper::DeprecatedWrappable<App>,
                   public gin_helper::EventEmitterMixin<App>,
                   private BrowserObserver,
                   private content::GpuDataManagerObserver,
                   private content::BrowserChildProcessObserver {
  public:
-  static gin::Handle<App> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<App> Create(v8::Isolate* isolate);
   static App* Get();
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

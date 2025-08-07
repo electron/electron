@@ -5,13 +5,13 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_REPLY_CHANNEL_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_REPLY_CHANNEL_H_
 
-#include "gin/wrappable.h"
 #include "shell/common/api/api.mojom.h"
+#include "shell/common/gin_helper/wrappable.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace v8 {
 class Isolate;
@@ -26,13 +26,13 @@ namespace gin_helper::internal {
 // This object wraps the InvokeCallback so that if it gets GC'd by V8, we can
 // still call the callback and send an error. Not doing so causes a Mojo DCHECK,
 // since Mojo requires callbacks to be called before they are destroyed.
-class ReplyChannel : public gin::DeprecatedWrappable<ReplyChannel> {
+class ReplyChannel : public gin_helper::DeprecatedWrappable<ReplyChannel> {
  public:
   using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
-  static gin::Handle<ReplyChannel> Create(v8::Isolate* isolate,
-                                          InvokeCallback callback);
+  static gin_helper::Handle<ReplyChannel> Create(v8::Isolate* isolate,
+                                                 InvokeCallback callback);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

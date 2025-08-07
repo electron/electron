@@ -11,6 +11,7 @@
   "parallel/test-crypto-aes-wrap",
   "parallel/test-crypto-authenticated",
   "parallel/test-crypto-authenticated-stream",
+  "parallel/test-crypto-default-shake-lengths",
   "parallel/test-crypto-des3-wrap",
   "parallel/test-crypto-dh-group-setters",
   "parallel/test-crypto-dh-modp2",

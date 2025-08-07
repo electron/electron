@@ -9,28 +9,28 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "ui/gfx/image/image.h"
 
 namespace gin {
 class Arguments;
-template <typename T>
-class Handle;
 }  // namespace gin
 
 namespace gin_helper {
 class ErrorThrower;
+template <typename T>
+class Handle;
 }  // namespace gin_helper
 
 namespace electron::api {
 
-class Notification final : public gin::DeprecatedWrappable<Notification>,
+class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
                            public gin_helper::EventEmitterMixin<Notification>,
                            public gin_helper::Constructible<Notification>,
                            public gin_helper::CleanedUpAtExit,
@@ -39,8 +39,8 @@ class Notification final : public gin::DeprecatedWrappable<Notification>,
   static bool IsSupported();
 
   // gin_helper::Constructible
-  static gin::Handle<Notification> New(gin_helper::ErrorThrower thrower,
-                                       gin::Arguments* args);
+  static gin_helper::Handle<Notification> New(gin_helper::ErrorThrower thrower,
+                                              gin::Arguments* args);
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Notification"; }
 
@@ -53,7 +53,7 @@ class Notification final : public gin::DeprecatedWrappable<Notification>,
   void NotificationClosed() override;
   void NotificationFailed(const std::string& error) override;
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 

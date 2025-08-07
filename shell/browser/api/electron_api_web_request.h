@@ -9,8 +9,8 @@
 #include <set>
 
 #include "base/memory/raw_ptr.h"
-#include "gin/wrappable.h"
 #include "shell/browser/net/web_request_api_interface.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 class URLPattern;
 
@@ -24,36 +24,39 @@ enum class WebRequestResourceType : uint8_t;
 
 namespace gin {
 class Arguments;
+}  // namespace gin
 
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
-class WebRequest final : public gin::DeprecatedWrappable<WebRequest>,
+class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
                          public WebRequestAPI {
  public:
   // Return the WebRequest object attached to |browser_context|, create if there
   // is no one.
   // Note that the lifetime of WebRequest object is managed by Session, instead
   // of the caller.
-  static gin::Handle<WebRequest> FromOrCreate(
+  static gin_helper::Handle<WebRequest> FromOrCreate(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 
   // Return a new WebRequest object, this should only be called by Session.
-  static gin::Handle<WebRequest> Create(
+  static gin_helper::Handle<WebRequest> Create(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 
   // Find the WebRequest object attached to |browser_context|.
-  static gin::Handle<WebRequest> From(v8::Isolate* isolate,
-                                      content::BrowserContext* browser_context);
+  static gin_helper::Handle<WebRequest> From(
+      v8::Isolate* isolate,
+      content::BrowserContext* browser_context);
 
   static const char* GetClassName() { return "WebRequest"; }
 
-  // gin::Wrappable:
+  // gin_helper::Wrappable:
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

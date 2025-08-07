@@ -48,7 +48,7 @@ void ElectronNSSCryptoModuleDelegate::RequestPasswordOnUIThread(
   v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
   gin_helper::Dictionary dict(isolate, event_object);

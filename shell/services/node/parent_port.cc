@@ -8,12 +8,12 @@
 
 #include "base/no_destructor.h"
 #include "gin/data_object_builder.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
@@ -107,14 +107,15 @@ bool ParentPort::Accept(mojo::Message* mojo_message) {
 }
 
 // static
-gin::Handle<ParentPort> ParentPort::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, ParentPort::GetInstance());
+gin_helper::Handle<ParentPort> ParentPort::Create(v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, ParentPort::GetInstance());
 }
 
 // static
 gin::ObjectTemplateBuilder ParentPort::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::DeprecatedWrappable<ParentPort>::GetObjectTemplateBuilder(isolate)
+  return gin_helper::DeprecatedWrappable<ParentPort>::GetObjectTemplateBuilder(
+             isolate)
       .SetMethod("postMessage", &ParentPort::PostMessage)
       .SetMethod("start", &ParentPort::Start)
       .SetMethod("pause", &ParentPort::Pause);

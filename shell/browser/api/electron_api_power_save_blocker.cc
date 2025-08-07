@@ -10,11 +10,11 @@
 #include "content/public/browser/device_service.h"
 #include "gin/dictionary.h"
 #include "gin/function_template.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "services/device/public/mojom/wake_lock_provider.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 
 namespace gin {
@@ -115,14 +115,15 @@ bool PowerSaveBlocker::IsStarted(int id) const {
 }
 
 // static
-gin::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new PowerSaveBlocker(isolate));
+gin_helper::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(
+    v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, new PowerSaveBlocker(isolate));
 }
 
 gin::ObjectTemplateBuilder PowerSaveBlocker::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::DeprecatedWrappable<PowerSaveBlocker>::GetObjectTemplateBuilder(
-             isolate)
+  return gin_helper::DeprecatedWrappable<
+             PowerSaveBlocker>::GetObjectTemplateBuilder(isolate)
       .SetMethod("start", &PowerSaveBlocker::Start)
       .SetMethod("stop", &PowerSaveBlocker::Stop)
       .SetMethod("isStarted", &PowerSaveBlocker::IsStarted);

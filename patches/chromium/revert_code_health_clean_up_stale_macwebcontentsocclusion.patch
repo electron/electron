@@ -233,7 +233,7 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index c216266f801ad2079984efc198294d16142a7906..b351f23d1044615004c56fd165898ed26f6bb0ea 100644
+index 0da587cc61fed9201e0ddbc29168907cae76c0a2..48eba4f8a587896ba0c28a67bae8cfa1e4764050 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
 @@ -316,6 +316,14 @@ BASE_FEATURE(kIOSurfaceCapturer,
@@ -252,7 +252,7 @@ index c216266f801ad2079984efc198294d16142a7906..b351f23d1044615004c56fd165898ed2
  BASE_FEATURE(kKeepChildProcessAfterIPCReset,
               "KeepChildProcessAfterIPCReset",
 diff --git a/content/common/features.h b/content/common/features.h
-index 7913d0ee9496d19908018398616e1c806d03ff09..99cfa89ead7cb84047f89f16646a6bfbe14a5d24 100644
+index a206971121af438c997c6b531b36cb627cc8c59e..602d1ca5951c636ad53d76dddef774147f59aa2c 100644
 --- a/content/common/features.h
 +++ b/content/common/features.h
 @@ -101,6 +101,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
