@@ -59,7 +59,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd43
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 5d40a0034ec65117ce902ffd5b551b0ee74c35b9..524b4f8168c3f7eaf1fa818db7e33d67b044ca21 100644
+index 800a904a8fa47e0a36d8393e11b3e7d7c4a3550e..3b161ce6b69a32bb283be3ef92c0b7da9e5b8320 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3180,6 +3180,7 @@ void LocalFrame::RequestExecuteScript(
@@ -80,7 +80,7 @@ index 5d40a0034ec65117ce902ffd5b551b0ee74c35b9..524b4f8168c3f7eaf1fa818db7e33d67
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index 7d10fc64f61896e30f96aec89039c63350019f6e..55f79b093030c2f541a57ecdc2199941c1904678 100644
+index ee7cca8f64d4dfddb3eabdfb18c9f25c3d0776fe..3f2dc5242814eb27b7655aef360e12038de42ede 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
 @@ -835,6 +835,7 @@ class CORE_EXPORT LocalFrame final
@@ -92,7 +92,7 @@ index 7d10fc64f61896e30f96aec89039c63350019f6e..55f79b093030c2f541a57ecdc2199941
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index 49b72dc41d1efaf632f6249b3472113f3c8e504f..62678f0813ea9de91ababfddc252a98cb18dba65 100644
+index a7d638b474011b564f326b128183278fd3fdb6e2..11a49018d7c004f34897d1a7f21c7e4705da023c 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 @@ -968,6 +968,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
