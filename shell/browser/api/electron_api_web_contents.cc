@@ -2023,16 +2023,21 @@ SkRegion* WebContents::draggable_region() {
 
 void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
+  base::AutoReset<bool> resetter(&is_safe_to_delete_, false);
   EmitNavigationEvent("did-start-navigation", navigation_handle);
 }
 
 void WebContents::DidRedirectNavigation(
     content::NavigationHandle* navigation_handle) {
+  base::AutoReset<bool> resetter(&is_safe_to_delete_, false);
   EmitNavigationEvent("did-redirect-navigation", navigation_handle);
 }
 
 void WebContents::ReadyToCommitNavigation(
     content::NavigationHandle* navigation_handle) {
+  base::AutoReset<bool> resetter(&is_safe_to_delete_, false);
+  EmitNavigationEvent("-ready-to-commit-navigation", navigation_handle);
+
   // Don't focus content in an inactive window.
   if (!owner_window())
     return;
@@ -2375,7 +2380,7 @@ void WebContents::LoadURL(const GURL& url,
   // http://crbug.com/347742.
   auto& ctrl_impl = static_cast<content::NavigationControllerImpl&>(
       web_contents()->GetController());
-  if (ctrl_impl.in_navigate_to_pending_entry()) {
+  if (!is_safe_to_delete_ || ctrl_impl.in_navigate_to_pending_entry()) {
     Emit("did-fail-load", static_cast<int>(net::ERR_FAILED),
          net::ErrorToShortString(net::ERR_FAILED), url.possibly_invalid_spec(),
          true);
