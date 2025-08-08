@@ -14,6 +14,14 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (38.0)
 
+### Deprecated: `ELECTRON_OZONE_PLATFORM_HINT` environment variable
+
+The default value of the `--ozone-plaftform` flag [changed to `auto`](https://chromium-review.googlesource.com/c/chromium/src/+/6775426).
+
+You should use the `XDG_SESSION_TYPE=wayland` environment variable instead to use Wayland.
+
+This environment variable will be [removed soon](https://chromium-review.googlesource.com/c/chromium/src/+/6819616).
+
 ### Removed: macOS 11 support
 
 macOS 11 (Big Sur) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/6594615).
