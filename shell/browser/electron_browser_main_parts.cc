@@ -210,7 +210,6 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
   HandleSIGCHLD();
 #endif
 #if BUILDFLAG(IS_LINUX)
-  SetDesktopStartupId();
   ui::OzonePlatform::PreEarlyInitialization();
 #endif
 #if BUILDFLAG(IS_MAC)
