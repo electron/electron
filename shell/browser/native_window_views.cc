@@ -1704,6 +1704,12 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
     NativeWindow::NotifyWindowBlur();
   }
 
+#if BUILDFLAG(IS_WIN)
+  // Update accent color based on activation state when no explicit color is
+  // set.
+  UpdateWindowAccentColor();
+#endif
+
   // Hide menu bar when window is blurred.
   if (!active && IsMenuBarAutoHide() && IsMenuBarVisible())
     SetMenuBarVisibility(false);
