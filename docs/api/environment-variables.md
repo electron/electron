@@ -125,16 +125,6 @@ Options:
 * `kioclient5`
 * `kioclient`
 
-### `ELECTRON_OZONE_PLATFORM_HINT` _Linux_ _Deprecated_
-
-Selects the preferred platform backend used on Linux. `auto` selects Wayland if possible, X11 otherwise.
-
-Options:
-
-* `auto` (Default)
-* `wayland`
-* `x11`
-
 ## Development Variables
 
 The following environment variables are intended primarily for development and

@@ -125,7 +125,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-  void DetectOzonePlatform();
+  void SetDesktopStartupId();
 #endif
 
 #if BUILDFLAG(IS_MAC)
