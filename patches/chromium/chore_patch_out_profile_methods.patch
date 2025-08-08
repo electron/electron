@@ -27,10 +27,10 @@ index e3b9f14a4cf2167064ce6716053e663adffa1542..65f13a4607c8145858fd47d81cb9960c
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index e6ca5e24870f8449b6ea95bd5d3c7fc88225b776..8d27c28e527f123b6b6a7f12844897ce5057e26e 100644
+index 56eeddf89e225119a5a50b05562f1de93ed698f7..dbb9c96117816121665288a50216b1dc4ca35494 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -248,10 +248,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -252,10 +252,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
