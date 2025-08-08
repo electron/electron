@@ -862,10 +862,10 @@ void NativeWindow::SaveWindowState() {
 
   gfx::Rect bounds = GetBounds();
 
-  if (bounds.width() == 0 || bounds.height() == 0) {
-    LOG(WARNING) << "Window state not saved - window bounds are invalid";
-    return;
-  }
+  // if (bounds.width() == 0 || bounds.height() == 0) {
+  //   LOG(WARNING) << "Window state not saved - window bounds are invalid";
+  //   return;
+  // }
 
   const display::Screen* screen = display::Screen::GetScreen();
   DCHECK(screen);
@@ -883,6 +883,16 @@ void NativeWindow::SaveWindowState() {
         << "Window state not saved - no physical display attached or current "
            "display has invalid bounds";
     return;
+  } else {
+    LOG(WARNING) << "Saving window state for display: " << display.id();
+    LOG(WARNING) << "Display size: " << display.size().ToString();
+    LOG(WARNING) << "Display height: " << display.size().height();
+    LOG(WARNING) << "Display width: " << display.size().width();
+    LOG(WARNING) << "Display bounds: " << display.bounds().ToString();
+    LOG(WARNING) << "Display work area: " << display.work_area().ToString();
+    LOG(WARNING) << "Display work area height: "
+                 << display.work_area().height();
+    LOG(WARNING) << "Display work area width: " << display.work_area().width();
   }
 
   ScopedDictPrefUpdate update(prefs_, electron::kWindowStates);
@@ -985,6 +995,16 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
     LOG(WARNING) << "Window state not restored - no physical display attached "
                     "or current display has invalid bounds";
     return;
+  } else {
+    LOG(WARNING) << "Saving window state for display: " << display.id();
+    LOG(WARNING) << "Display size: " << display.size().ToString();
+    LOG(WARNING) << "Display height: " << display.size().height();
+    LOG(WARNING) << "Display width: " << display.size().width();
+    LOG(WARNING) << "Display bounds: " << display.bounds().ToString();
+    LOG(WARNING) << "Display work area: " << display.work_area().ToString();
+    LOG(WARNING) << "Display work area height: "
+                 << display.work_area().height();
+    LOG(WARNING) << "Display work area width: " << display.work_area().width();
   }
 
   gfx::Rect saved_work_area = gfx::Rect(*work_area_left, *work_area_top,
@@ -1029,10 +1049,10 @@ void NativeWindow::FlushPendingDisplayMode() {
 void NativeWindow::RestoreBounds(const display::Display& display,
                                  const gfx::Rect& saved_work_area,
                                  gfx::Rect& saved_bounds) {
-  if (saved_bounds.width() == 0 || saved_bounds.height() == 0) {
-    LOG(WARNING) << "Window bounds not restored - values are invalid";
-    return;
-  }
+  // if (saved_bounds.width() == 0 || saved_bounds.height() == 0) {
+  //   LOG(WARNING) << "Window bounds not restored - values are invalid";
+  //   return;
+  // }
 
   // Ensure that the window is at least kMinVisibleHeight * kMinVisibleWidth.
   saved_bounds.set_height(std::max(kMinVisibleHeight, saved_bounds.height()));

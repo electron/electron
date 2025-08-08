@@ -7989,4 +7989,79 @@ describe('BrowserWindow module', () => {
       });
     });
   });
+
+  it('dummy test to see ci logs', async () => {
+    const preferencesPath = path.join(app.getPath('userData'), 'Local State');
+    const windowName = 'test-dummy-window';
+
+    const waitForPrefsFileCreation = async (preferencesPath: string) => {
+      while (!fs.existsSync(preferencesPath)) {
+        await setTimeout(1000);
+      }
+    };
+
+    const createAndSaveWindowState = async (options?: BrowserWindowConstructorOptions) => {
+      const w = new BrowserWindow({
+        name: windowName,
+        windowStatePersistence: {
+          displayMode: false
+        },
+        show: false,
+        ...options
+      });
+      if (!fs.existsSync(preferencesPath)) {
+        // File doesn't exist, wait for creation
+        await waitForPrefsFileCreation(preferencesPath);
+      } else {
+        // File exists, wait for update
+        const initialModTime = getPrefsModTime(preferencesPath);
+        await waitForPrefsUpdate(initialModTime, preferencesPath);
+      }
+      // Ensure window is destroyed because we can't create another window with the same name otherwise
+      w.destroy();
+    };
+    const getPrefsModTime = (preferencesPath: string): Date => {
+      try {
+        return fs.statSync(preferencesPath).mtime;
+      } catch {
+        throw new Error(`Test requires preferences file to exist at path: ${preferencesPath}.`);
+      }
+    };
+
+    const waitForPrefsUpdate = async (initialModTime: Date, preferencesPath: string): Promise<void> => {
+      const startTime = Date.now();
+      const timeoutMs = 20000;
+      while (true) {
+        const currentModTime = getPrefsModTime(preferencesPath);
+
+        if (currentModTime > initialModTime) {
+          return;
+        }
+
+        if (Date.now() - startTime > timeoutMs) {
+          throw new Error(`Window state was not flushed to disk within ${timeoutMs}ms`);
+        }
+        // Wait for 1 second before checking again
+        await setTimeout(1000);
+      }
+    };
+
+    const workArea = screen.getPrimaryDisplay().workArea;
+    const bounds = { width: 100, height: 100, x: workArea.x, y: workArea.y };
+    await createAndSaveWindowState(bounds);
+    // Should override default constructor bounds
+    const w = new BrowserWindow({
+      name: windowName,
+      windowStatePersistence: true,
+      width: 500,
+      height: 400,
+      x: 200,
+      y: 250,
+      show: false
+    });
+
+    expectBoundsEqual(w.getBounds(), bounds);
+
+    w.destroy();
+  });
 });
