@@ -84,6 +84,19 @@ describe('BrowserWindow module', () => {
       }).not.to.throw();
     });
 
+    ifit(!hasCapturableScreen())('should not have valid display if hasCapturableScreen is false', async () => {
+      // Debugging logs for CI
+      console.log('Debugging logs for CI');
+      screen.getAllDisplays().forEach(display => {
+        console.log(display.bounds);
+        expect(display.bounds.width).to.be.equal(0);
+        expect(display.bounds.height).to.be.equal(0);
+        console.log(display.workArea);
+        expect(display.workArea.width).to.be.equal(0);
+        expect(display.workArea.height).to.be.equal(0);
+      });
+    });
+
     ifit(!hasCapturableScreen())('should not save window state when there is no valid display (fake display)', async () => {
       const sharedUserDataPath = path.join(os.tmpdir(), 'electron-window-state-test');
       if (fs.existsSync(sharedUserDataPath)) {
