@@ -6,10 +6,10 @@ inputs:
     required: true
     default: 'false'
   timeout:
-    description: 'SSH session timeout in minutes'
+    description: 'SSH session timeout in seconds'
     required: false
     type: number
-    default: 60
+    default: 3600
 runs:
   using: composite
   steps:
