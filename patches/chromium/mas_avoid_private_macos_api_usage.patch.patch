@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 4fa6e30566ed9c7ca31271b2a2fefe54e71b2ccb..ecacf65dde18915372552e26cb0398e55c9e0559 100644
+index 39780da0d0074845b4d17ff4f6f7e2fbf2aec59f..3eab6a8c37f351bce24b7b581e09e9471cbd527b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1059,6 +1059,7 @@ component("base") {
+@@ -1061,6 +1061,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -846,7 +846,7 @@ index ab961bccc3e4f0f5a40ac74df97447118b256c68..43f00bf0879809e986308a2cb26145c4
  
    if (is_mac) {
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 70882e695ad383c9362c9b7e692a9273b3f36801..4ab8d7b3e567e8be373c8dff790d41146c5b8a9d 100644
+index fdb2993ab0879c5693008fdabc10566d11e471aa..2af4bf9975385ea8080cd9bd2b55f24e3ab7a2f1 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -256,6 +256,7 @@ component("bluetooth") {
@@ -938,10 +938,10 @@ index d288ffce5c1265adbdefc571f840851026e7479e..e9a6e8c31401750d270fcc55ef1116b2
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index c6858875e6988f1bba723bfc2f71566095b94b70..a5d157ec6ab683e3d9d702c6008f70b444c3d557 100644
+index 90e73686ebc5befecaa64d745b474ed46a1d4293..96d2c7fa2c8960263215d12fc5a15b4d16d3c3fe 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -199,6 +199,7 @@ source_set("audio") {
+@@ -201,6 +201,7 @@ source_set("audio") {
        "CoreMedia.framework",
      ]
      weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0
@@ -1874,7 +1874,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 457c4ccd05a2c64b5c218c0e4a75aafeaa5d3188..5c0c81c57b654be0795f08a187d29894df39f2fc 100644
+index f3db960f1963e9fbc575a13b570a8b7564535a5d..0bbf9182ec826a7add3a52b782b9ba319548c687 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -724,6 +724,8 @@ component("views") {
