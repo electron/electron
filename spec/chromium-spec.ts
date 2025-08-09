@@ -898,6 +898,72 @@ describe('chromium features', () => {
       expect(position).to.have.property('coords');
       expect(position).to.have.property('timestamp');
     });
+
+    ifdescribe(process.platform === 'darwin')('with --disable-geolocation', () => {
+      const testSwitchBehavior = (handlerAction: 'allow' | 'deny' | 'none') => async () => {
+        const rc = await startRemoteControlApp([
+          '--disable-geolocation',
+          `--boot-eval=fixturesPath=${JSON.stringify(fixturesPath)}`
+        ]);
+
+        const result = await rc.remotely(async (action: typeof handlerAction) => {
+          const { session, BrowserWindow } = require('electron');
+          const path = require('node:path');
+
+          // Isolate each test's permissions to prevent permission state leaks between the test variations
+          const testSession = session.fromPartition(`geolocation-disable-${action}`);
+
+          if (action !== 'none') {
+            // Make the PermissionRequestHandler behave according to action variable passed for this test
+            testSession.setPermissionRequestHandler((_wc, permission, callback) => {
+              if (permission === 'geolocation') {
+                if (action === 'allow') callback(true);
+                else if (action === 'deny') callback(false);
+                else callback(false);
+              }
+            });
+          }
+
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              session: testSession,
+              nodeIntegration: true,
+              contextIsolation: false
+            }
+          });
+
+          await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+
+          const permissionState = await w.webContents.executeJavaScript(`
+            navigator.permissions.query({ name: 'geolocation' })
+              .then(status => status.state)
+              .catch(() => 'error')
+          `);
+
+          const geoResult = await w.webContents.executeJavaScript(`
+            new Promise(resolve => {
+              navigator.geolocation.getCurrentPosition(
+                () => resolve('allowed'),
+                err => resolve(err.code)
+              );
+            })
+          `);
+
+          return { permissionState, geoResult };
+        }, handlerAction);
+
+        // Always expect status to be denied regardless of the decision made by a handler set via `session.setPermissionRequestHandler`
+        expect(result.permissionState).to.equal('denied', `Unexpected permission state for ${handlerAction} handler`);
+
+        // 1 = PERMISSION_DENIED
+        expect(result.geoResult).to.equal(1, `Unexpected API result for ${handlerAction} handler`);
+      };
+
+      it('denies geolocation when permission request handler would allow', testSwitchBehavior('allow'));
+      it('denies geolocation when permission request handler would deny', testSwitchBehavior('deny'));
+      it('denies geolocation with no permission request handler', testSwitchBehavior('none'));
+    });
   });
 
   describe('File System API,', () => {
