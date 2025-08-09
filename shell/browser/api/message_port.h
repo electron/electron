@@ -16,9 +16,12 @@
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace mojo {
 class Connector;
@@ -32,7 +35,7 @@ class MessagePort final : public gin_helper::DeprecatedWrappable<MessagePort>,
                           private mojo::MessageReceiver {
  public:
   ~MessagePort() override;
-  static gin::Handle<MessagePort> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<MessagePort> Create(v8::Isolate* isolate);
 
   void PostMessage(gin::Arguments* args);
   void Start();
@@ -46,13 +49,13 @@ class MessagePort final : public gin_helper::DeprecatedWrappable<MessagePort>,
   [[nodiscard]] bool IsEntangled() const;
   [[nodiscard]] bool IsNeutered() const;
 
-  static std::vector<gin::Handle<MessagePort>> EntanglePorts(
+  static std::vector<gin_helper::Handle<MessagePort>> EntanglePorts(
       v8::Isolate* isolate,
       std::vector<blink::MessagePortChannel> channels);
 
   static std::vector<blink::MessagePortChannel> DisentanglePorts(
       v8::Isolate* isolate,
-      const std::vector<gin::Handle<MessagePort>>& ports,
+      const std::vector<gin_helper::Handle<MessagePort>>& ports,
       bool* threw_exception);
 
   // gin_helper::Wrappable

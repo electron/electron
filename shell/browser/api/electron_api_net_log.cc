@@ -15,13 +15,13 @@
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/storage_partition.h"
 #include "electron/electron_version.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "net/log/net_log_capture_mode.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 
 namespace gin {
 
@@ -231,9 +231,11 @@ const char* NetLog::GetTypeName() {
 }
 
 // static
-gin::Handle<NetLog> NetLog::Create(v8::Isolate* isolate,
-                                   ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate, new NetLog(isolate, browser_context));
+gin_helper::Handle<NetLog> NetLog::Create(
+    v8::Isolate* isolate,
+    ElectronBrowserContext* browser_context) {
+  return gin_helper::CreateHandle(isolate,
+                                  new NetLog(isolate, browser_context));
 }
 
 }  // namespace api

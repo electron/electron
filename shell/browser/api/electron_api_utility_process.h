@@ -25,9 +25,12 @@
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace base {
 class Process;
@@ -51,7 +54,7 @@ class UtilityProcessWrapper final
   enum class IOType { IO_PIPE, IO_INHERIT, IO_IGNORE };
 
   ~UtilityProcessWrapper() override;
-  static gin::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
+  static gin_helper::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
   static raw_ptr<UtilityProcessWrapper> FromProcessId(base::ProcessId pid);
 
   void Shutdown(uint64_t exit_code);

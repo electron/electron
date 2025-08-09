@@ -12,12 +12,12 @@
 #include "base/task/single_thread_task_runner.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
@@ -42,8 +42,8 @@ MessagePort::~MessagePort() {
 }
 
 // static
-gin::Handle<MessagePort> MessagePort::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new MessagePort());
+gin_helper::Handle<MessagePort> MessagePort::Create(v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, new MessagePort());
 }
 
 bool MessagePort::IsEntangled() const {
@@ -73,7 +73,7 @@ void MessagePort::PostMessage(gin::Arguments* args) {
   }
 
   v8::Local<v8::Value> transferables;
-  std::vector<gin::Handle<MessagePort>> wrapped_ports;
+  std::vector<gin_helper::Handle<MessagePort>> wrapped_ports;
   if (args->GetNext(&transferables)) {
     std::vector<v8::Local<v8::Value>> wrapped_port_values;
     if (!gin::ConvertFromV8(args->isolate(), transferables,
@@ -190,10 +190,10 @@ bool MessagePort::HasPendingActivity() const {
 }
 
 // static
-std::vector<gin::Handle<MessagePort>> MessagePort::EntanglePorts(
+std::vector<gin_helper::Handle<MessagePort>> MessagePort::EntanglePorts(
     v8::Isolate* isolate,
     std::vector<blink::MessagePortChannel> channels) {
-  std::vector<gin::Handle<MessagePort>> wrapped_ports;
+  std::vector<gin_helper::Handle<MessagePort>> wrapped_ports;
   for (auto& port : channels) {
     auto wrapped_port = MessagePort::Create(isolate);
     wrapped_port->Entangle(std::move(port));
@@ -205,7 +205,7 @@ std::vector<gin::Handle<MessagePort>> MessagePort::EntanglePorts(
 // static
 std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
     v8::Isolate* isolate,
-    const std::vector<gin::Handle<MessagePort>>& ports,
+    const std::vector<gin_helper::Handle<MessagePort>>& ports,
     bool* threw_exception) {
   if (ports.empty())
     return {};

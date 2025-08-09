@@ -25,7 +25,7 @@ class WebContentsView : public View,
                         public DraggableRegionProvider {
  public:
   // Create a new instance of WebContentsView.
-  static gin::Handle<WebContentsView> Create(
+  static gin_helper::Handle<WebContentsView> Create(
       v8::Isolate* isolate,
       const gin_helper::Dictionary& web_preferences);
 
@@ -37,7 +37,7 @@ class WebContentsView : public View,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Public APIs.
-  gin::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
+  gin_helper::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
 
@@ -45,7 +45,8 @@ class WebContentsView : public View,
 
  protected:
   // Takes an existing WebContents.
-  WebContentsView(v8::Isolate* isolate, gin::Handle<WebContents> web_contents);
+  WebContentsView(v8::Isolate* isolate,
+                  gin_helper::Handle<WebContents> web_contents);
   ~WebContentsView() override;
 
   // content::WebContentsObserver:

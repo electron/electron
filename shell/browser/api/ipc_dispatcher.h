@@ -9,13 +9,13 @@
 
 #include "base/trace_event/trace_event.h"
 #include "base/values.h"
-#include "gin/handle.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/reply_channel.h"
 #include "shell/common/v8_util.h"
 
@@ -26,14 +26,14 @@ namespace electron {
 template <typename T>
 class IpcDispatcher {
  public:
-  void Message(gin::Handle<gin_helper::internal::Event>& event,
+  void Message(gin_helper::Handle<gin_helper::internal::Event>& event,
                const std::string& channel,
                blink::CloneableMessage args) {
     TRACE_EVENT1("electron", "IpcDispatcher::Message", "channel", channel);
     emitter()->EmitWithoutEvent("-ipc-message", event, channel, args);
   }
 
-  void Invoke(gin::Handle<gin_helper::internal::Event>& event,
+  void Invoke(gin_helper::Handle<gin_helper::internal::Event>& event,
               const std::string& channel,
               blink::CloneableMessage arguments) {
     TRACE_EVENT1("electron", "IpcDispatcher::Invoke", "channel", channel);
@@ -41,9 +41,10 @@ class IpcDispatcher {
                                 std::move(arguments));
   }
 
-  void ReceivePostMessage(gin::Handle<gin_helper::internal::Event>& event,
-                          const std::string& channel,
-                          blink::TransferableMessage message) {
+  void ReceivePostMessage(
+      gin_helper::Handle<gin_helper::internal::Event>& event,
+      const std::string& channel,
+      blink::TransferableMessage message) {
     TRACE_EVENT1("electron", "IpcDispatcher::ReceivePostMessage", "channel",
                  channel);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -56,7 +57,7 @@ class IpcDispatcher {
                                 std::move(wrapped_ports));
   }
 
-  void MessageSync(gin::Handle<gin_helper::internal::Event>& event,
+  void MessageSync(gin_helper::Handle<gin_helper::internal::Event>& event,
                    const std::string& channel,
                    blink::CloneableMessage arguments) {
     TRACE_EVENT1("electron", "IpcDispatcher::MessageSync", "channel", channel);
@@ -64,7 +65,7 @@ class IpcDispatcher {
                                 std::move(arguments));
   }
 
-  void MessageHost(gin::Handle<gin_helper::internal::Event>& event,
+  void MessageHost(gin_helper::Handle<gin_helper::internal::Event>& event,
                    const std::string& channel,
                    blink::CloneableMessage arguments) {
     TRACE_EVENT1("electron", "IpcDispatcher::MessageHost", "channel", channel);

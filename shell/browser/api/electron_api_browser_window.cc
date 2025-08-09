@@ -65,14 +65,14 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, true);
 
   // Creates the WebContentsView.
-  gin::Handle<WebContentsView> web_contents_view =
+  gin_helper::Handle<WebContentsView> web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
   DCHECK(web_contents_view.get());
   window()->AddDraggableRegionProvider(web_contents_view.get());
   web_contents_view_.Reset(isolate, web_contents_view.ToV8());
 
   // Save a reference of the WebContents.
-  gin::Handle<WebContents> web_contents =
+  gin_helper::Handle<WebContents> web_contents =
       web_contents_view->GetWebContents(isolate);
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents->GetWeakPtr();
@@ -211,7 +211,7 @@ void BrowserWindow::CloseImmediately() {
   // Close all child windows before closing current window.
   v8::HandleScope handle_scope(isolate());
   for (v8::Local<v8::Value> value : GetChildWindows()) {
-    gin::Handle<BrowserWindow> child;
+    gin_helper::Handle<BrowserWindow> child;
     if (gin::ConvertFromV8(isolate(), value, &child) && !child.IsEmpty())
       child->window()->CloseImmediately();
   }

@@ -85,9 +85,9 @@ class ServiceWorkerMain final
       public gin_helper::Constructible<ServiceWorkerMain> {
  public:
   // Create a new ServiceWorkerMain and return the V8 wrapper of it.
-  static gin::Handle<ServiceWorkerMain> New(v8::Isolate* isolate);
+  static gin_helper::Handle<ServiceWorkerMain> New(v8::Isolate* isolate);
 
-  static gin::Handle<ServiceWorkerMain> From(
+  static gin_helper::Handle<ServiceWorkerMain> From(
       v8::Isolate* isolate,
       content::ServiceWorkerContext* sw_context,
       const content::StoragePartition* storage_partition,

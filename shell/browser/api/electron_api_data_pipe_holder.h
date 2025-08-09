@@ -12,10 +12,10 @@
 #include "services/network/public/mojom/data_pipe_getter.mojom.h"
 #include "shell/common/gin_helper/wrappable.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
@@ -27,11 +27,11 @@ class DataPipeHolder final
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
-  static gin::Handle<DataPipeHolder> Create(
+  static gin_helper::Handle<DataPipeHolder> Create(
       v8::Isolate* isolate,
       const network::DataElement& element);
-  static gin::Handle<DataPipeHolder> From(v8::Isolate* isolate,
-                                          const std::string& id);
+  static gin_helper::Handle<DataPipeHolder> From(v8::Isolate* isolate,
+                                                 const std::string& id);
 
   // Read all data at once.
   //

@@ -20,12 +20,12 @@
 
 namespace gin {
 class Arguments;
-template <typename T>
-class Handle;
 }  // namespace gin
 
 namespace gin_helper {
 class ErrorThrower;
+template <typename T>
+class Handle;
 }  // namespace gin_helper
 
 namespace electron::api {
@@ -39,8 +39,8 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   static bool IsSupported();
 
   // gin_helper::Constructible
-  static gin::Handle<Notification> New(gin_helper::ErrorThrower thrower,
-                                       gin::Arguments* args);
+  static gin_helper::Handle<Notification> New(gin_helper::ErrorThrower thrower,
+                                              gin::Arguments* args);
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Notification"; }
 

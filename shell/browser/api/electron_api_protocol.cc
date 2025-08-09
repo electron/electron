@@ -11,7 +11,6 @@
 #include "base/containers/contains.h"
 #include "content/common/url_schemes.h"
 #include "content/public/browser/child_process_security_policy.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
@@ -19,6 +18,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -288,13 +288,14 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args, Error error) {
 }
 
 // static
-gin::Handle<Protocol> Protocol::Create(v8::Isolate* isolate,
-                                       ProtocolRegistry* protocol_registry) {
-  return gin::CreateHandle(isolate, new Protocol{protocol_registry});
+gin_helper::Handle<Protocol> Protocol::Create(
+    v8::Isolate* isolate,
+    ProtocolRegistry* protocol_registry) {
+  return gin_helper::CreateHandle(isolate, new Protocol{protocol_registry});
 }
 
 // static
-gin::Handle<Protocol> Protocol::New(gin_helper::ErrorThrower thrower) {
+gin_helper::Handle<Protocol> Protocol::New(gin_helper::ErrorThrower thrower) {
   thrower.ThrowError("Protocol cannot be created from JS");
   return {};
 }

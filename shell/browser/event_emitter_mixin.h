@@ -8,11 +8,11 @@
 #include <string_view>
 #include <utility>
 
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter.h"
+#include "shell/common/gin_helper/handle.h"
 
 namespace gin_helper {
 
@@ -32,7 +32,7 @@ class EventEmitterMixin {
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
-    gin::Handle<internal::Event> event = internal::Event::New(isolate);
+    gin_helper::Handle<internal::Event> event = internal::Event::New(isolate);
     gin_helper::EmitEvent(isolate, wrapper, name, event,
                           std::forward<Args>(args)...);
     return event->GetDefaultPrevented();

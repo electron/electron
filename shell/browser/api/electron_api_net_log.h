@@ -23,10 +23,12 @@ class TaskRunner;
 
 namespace gin {
 class Arguments;
+}  // namespace gin
 
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron {
 
@@ -37,8 +39,9 @@ namespace api {
 // The code is referenced from the net_log::NetExportFileWriter class.
 class NetLog final : public gin_helper::DeprecatedWrappable<NetLog> {
  public:
-  static gin::Handle<NetLog> Create(v8::Isolate* isolate,
-                                    ElectronBrowserContext* browser_context);
+  static gin_helper::Handle<NetLog> Create(
+      v8::Isolate* isolate,
+      ElectronBrowserContext* browser_context);
 
   v8::Local<v8::Promise> StartLogging(base::FilePath log_path,
                                       gin::Arguments* args);

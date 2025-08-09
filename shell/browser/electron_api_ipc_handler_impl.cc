@@ -9,12 +9,12 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
-#include "gin/handle.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_helper/event.h"
+#include "shell/common/gin_helper/handle.h"
 
 namespace electron {
 ElectronApiIPCHandlerImpl::ElectronApiIPCHandlerImpl(
@@ -111,7 +111,7 @@ api::Session* ElectronApiIPCHandlerImpl::GetSession() {
              : nullptr;
 }
 
-gin::Handle<gin_helper::internal::Event>
+gin_helper::Handle<gin_helper::internal::Event>
 ElectronApiIPCHandlerImpl::MakeIPCEvent(
     v8::Isolate* isolate,
     api::Session* session,
@@ -147,7 +147,7 @@ ElectronApiIPCHandlerImpl::MakeIPCEvent(
   }
 
   content::RenderFrameHost* frame = GetRenderFrameHost();
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
   dict.Set("type", "frame");
