@@ -101,6 +101,7 @@ class NativeWindowViews : public NativeWindow,
   void Invalidate() override;
   void SetTitle(const std::string& title) override;
   std::string GetTitle() const override;
+  [[nodiscard]] bool IsActive() const override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
   void SetExcludedFromShownWindowsMenu(bool excluded) override {}
@@ -210,7 +211,7 @@ class NativeWindowViews : public NativeWindow,
   void ResetWindowControls();
   void SetRoundedCorners(bool rounded);
   void SetForwardMouseMessages(bool forward);
-  void UpdateWindowAccentColor();
+  void UpdateWindowAccentColor(bool active);
   static LRESULT CALLBACK SubclassProc(HWND hwnd,
                                        UINT msg,
                                        WPARAM w_param,
