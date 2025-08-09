@@ -144,7 +144,9 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
             transpileOnly: onlyPrintingGraph,
             ignoreDiagnostics: [
               // File '{0}' is not under 'rootDir' '{1}'.
-              6059
+              6059,
+              // Private field '{0}' must be declared in an enclosing class.
+              1111
             ]
           }
         }]
