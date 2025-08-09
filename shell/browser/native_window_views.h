@@ -169,6 +169,8 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
 #if BUILDFLAG(IS_WIN)
+  void SetAccentColor(std::variant<bool, std::string> accent_color) override;
+  std::variant<bool, std::string> GetAccentColor() const override;
   TaskbarHost& taskbar_host() { return taskbar_host_; }
   void UpdateThickFrame();
   void SetLayered();
