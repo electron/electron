@@ -59,7 +59,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd43
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 800a904a8fa47e0a36d8393e11b3e7d7c4a3550e..3b161ce6b69a32bb283be3ef92c0b7da9e5b8320 100644
+index dfcc54b3834ca173707bcf97bfa2d72a64638044..b8d86c9de9959876077b7530ffb8c33383596e99 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3180,6 +3180,7 @@ void LocalFrame::RequestExecuteScript(
