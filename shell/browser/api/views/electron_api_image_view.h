@@ -5,8 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_VIEWS_ELECTRON_API_IMAGE_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_API_VIEWS_ELECTRON_API_IMAGE_VIEW_H_
 
-#include "gin/handle.h"
 #include "shell/browser/api/electron_api_view.h"
+#include "shell/common/gin_helper/handle.h"
 #include "ui/views/controls/image_view.h"
 
 namespace gfx {

@@ -22,10 +22,10 @@ index 6fb778093f57942faebbc6a68a92967826476674..57cad85973c5cfe3a19f80fd318ec46f
    virtual int GetSourceCount() const = 0;
    virtual const Source& GetSource(int index) const = 0;
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index a82e0b1a7e999817c8ee420ceddeb7ca9ee78caf..e07f4ded61a7a64983da1b6d07315aee9684a148 100644
+index 1f25e8321301b0a5cd8703b8a4e9ec840fc0331b..f95b2230135dbcd6b19a31215d4f10be3481148c 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -74,12 +74,12 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
+@@ -70,12 +70,12 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
    Refresh(true);
  }
  

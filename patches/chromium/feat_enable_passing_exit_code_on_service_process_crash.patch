@@ -97,10 +97,10 @@ index 136fa55e7945f1d6abf5731c9cbaa92148f8117d..ba6dbc588c809c482770d2f78d1cd97e
  
  std::optional<std::string> UtilityProcessHost::GetServiceName() {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index 5b3e1c8cf09b7135443c056c27239fb9ef3fd9c9..b33f3f7ea5e92b8dc63fec0acdb4d9eaea57af99 100644
+index f39af3df87786a472f987309ac0dea699b9f0d9f..6f470d19fa5fa0bd4d2bdb1be4aa0cb3a70d3936 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
-@@ -88,7 +88,7 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -88,7 +88,7 @@ class CONTENT_EXPORT UtilityProcessHost final
      virtual void OnProcessTerminatedNormally() {}
      // Called when the process has terminated due to a crash. The `type` field
      // indicates the type of crash. See above.

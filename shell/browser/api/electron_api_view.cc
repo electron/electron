@@ -12,12 +12,12 @@
 
 #include "ash/style/rounded_rect_cutout_path_builder.h"
 #include "gin/data_object_builder.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/views/background.h"
@@ -38,7 +38,7 @@ struct Converter<views::ChildLayout> {
     gin_helper::Dictionary dict;
     if (!gin::ConvertFromV8(isolate, val, &dict))
       return false;
-    gin::Handle<electron::api::View> view;
+    gin_helper::Handle<electron::api::View> view;
     if (!dict.Get("view", &view))
       return false;
     out->child_view = view->view();
@@ -184,7 +184,7 @@ View::~View() {
     view_.ClearAndDelete();
 }
 
-void View::ReorderChildView(gin::Handle<View> child, size_t index) {
+void View::ReorderChildView(gin_helper::Handle<View> child, size_t index) {
   view_->ReorderChildView(child->view(), index);
 
   const auto i =
@@ -207,7 +207,7 @@ void View::ReorderChildView(gin::Handle<View> child, size_t index) {
   }
 }
 
-void View::AddChildViewAt(gin::Handle<View> child,
+void View::AddChildViewAt(gin_helper::Handle<View> child,
                           std::optional<size_t> maybe_index) {
   // TODO(nornagon): !view_ is only for supporting the weird case of
   // WebContentsView's view being deleted when the underlying WebContents is
@@ -258,7 +258,7 @@ void View::AddChildViewAt(gin::Handle<View> child,
   view_->AddChildViewAt(child->view(), index);
 }
 
-void View::RemoveChildView(gin::Handle<View> child) {
+void View::RemoveChildView(gin_helper::Handle<View> child) {
   if (!view_)
     return;
 
@@ -432,11 +432,11 @@ v8::Local<v8::Function> View::GetConstructor(v8::Isolate* isolate) {
 }
 
 // static
-gin::Handle<View> View::Create(v8::Isolate* isolate) {
+gin_helper::Handle<View> View::Create(v8::Isolate* isolate) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Local<v8::Object> obj;
   if (GetConstructor(isolate)->NewInstance(context, 0, nullptr).ToLocal(&obj)) {
-    gin::Handle<View> view;
+    gin_helper::Handle<View> view;
     if (gin::ConvertFromV8(isolate, obj, &view))
       return view;
   }

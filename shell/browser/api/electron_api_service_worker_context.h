@@ -8,20 +8,17 @@
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/service_worker_context_observer.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "third_party/blink/public/common/service_worker/embedded_worker_status.h"
 
 namespace content {
 class StoragePartition;
 }
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
-
-namespace gin_helper {
 template <typename T>
 class Promise;
 }  // namespace gin_helper
@@ -35,11 +32,11 @@ namespace api {
 class ServiceWorkerMain;
 
 class ServiceWorkerContext final
-    : public gin::DeprecatedWrappable<ServiceWorkerContext>,
+    : public gin_helper::DeprecatedWrappable<ServiceWorkerContext>,
       public gin_helper::EventEmitterMixin<ServiceWorkerContext>,
       private content::ServiceWorkerContextObserver {
  public:
-  static gin::Handle<ServiceWorkerContext> Create(
+  static gin_helper::Handle<ServiceWorkerContext> Create(
       v8::Isolate* isolate,
       ElectronBrowserContext* browser_context);
 
@@ -50,7 +47,7 @@ class ServiceWorkerContext final
                                         int64_t version_id);
   v8::Local<v8::Value> GetWorkerFromVersionID(v8::Isolate* isolate,
                                               int64_t version_id);
-  gin::Handle<ServiceWorkerMain> GetWorkerFromVersionIDIfExists(
+  gin_helper::Handle<ServiceWorkerMain> GetWorkerFromVersionIDIfExists(
       v8::Isolate* isolate,
       int64_t version_id);
   v8::Local<v8::Promise> StartWorkerForScope(v8::Isolate* isolate, GURL scope);
@@ -79,7 +76,7 @@ class ServiceWorkerContext final
   void OnVersionRedundant(int64_t version_id, const GURL& scope) override;
   void OnDestruct(content::ServiceWorkerContext* context) override;
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

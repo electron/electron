@@ -22,6 +22,7 @@
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
+#include "chrome/browser/predictors/predictors_traffic_annotations.h"  // nogncheck
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
@@ -43,7 +44,6 @@
 #include "content/public/browser/storage_partition.h"
 #include "gin/arguments.h"
 #include "gin/converter.h"
-#include "gin/handle.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/completion_repeating_callback.h"
@@ -88,6 +88,7 @@
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -1003,7 +1004,8 @@ bool Session::IsPersistent() {
 
 v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
                                             const std::string& uuid) {
-  gin::Handle<DataPipeHolder> holder = DataPipeHolder::From(isolate, uuid);
+  gin_helper::Handle<DataPipeHolder> holder =
+      DataPipeHolder::From(isolate, uuid);
   if (holder.IsEmpty()) {
     gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
     promise.RejectWithErrorMessage("Could not get blob data handle");
@@ -1360,7 +1362,8 @@ static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
       {url::Origin::Create(url), num_sockets_to_preconnect,
        net::NetworkAnonymizationKey::CreateSameSite(
            net::SchemefulSite(origin))}};
-  browser_context->GetPreconnectManager()->Start(url, requests);
+  browser_context->GetPreconnectManager()->Start(
+      url, requests, predictors::kLoadingPredictorPreconnectTrafficAnnotation);
 }
 
 void Session::Preconnect(const gin_helper::Dictionary& options,
@@ -1660,15 +1663,15 @@ Session* Session::FromBrowserContext(content::BrowserContext* context) {
 }
 
 // static
-gin::Handle<Session> Session::CreateFrom(
+gin_helper::Handle<Session> Session::CreateFrom(
     v8::Isolate* isolate,
     ElectronBrowserContext* browser_context) {
   Session* existing = FromBrowserContext(browser_context);
   if (existing)
-    return gin::CreateHandle(isolate, existing);
+    return gin_helper::CreateHandle(isolate, existing);
 
   auto handle =
-      gin::CreateHandle(isolate, new Session(isolate, browser_context));
+      gin_helper::CreateHandle(isolate, new Session(isolate, browser_context));
 
   // The Sessions should never be garbage collected, since the common pattern is
   // to use partition strings, instead of using the Session object directly.
@@ -1686,9 +1689,9 @@ gin::Handle<Session> Session::CreateFrom(
 }
 
 // static
-gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
-                                            const std::string& partition,
-                                            base::Value::Dict options) {
+gin_helper::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
+                                                   const std::string& partition,
+                                                   base::Value::Dict options) {
   ElectronBrowserContext* browser_context;
   if (partition.empty()) {
     browser_context =
@@ -1705,7 +1708,7 @@ gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
 }
 
 // static
-std::optional<gin::Handle<Session>> Session::FromPath(
+std::optional<gin_helper::Handle<Session>> Session::FromPath(
     v8::Isolate* isolate,
     const base::FilePath& path,
     base::Value::Dict options) {
@@ -1729,7 +1732,7 @@ std::optional<gin::Handle<Session>> Session::FromPath(
 }
 
 // static
-gin::Handle<Session> Session::New() {
+gin_helper::Handle<Session> Session::New() {
   gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
       .ThrowError("Session objects cannot be created with 'new'");
   return {};
@@ -1852,7 +1855,7 @@ v8::Local<v8::Value> FromPath(const base::FilePath& path,
   }
   base::Value::Dict options;
   args->GetNext(&options);
-  std::optional<gin::Handle<Session>> session_handle =
+  std::optional<gin_helper::Handle<Session>> session_handle =
       Session::FromPath(args->isolate(), path, std::move(options));
 
   if (session_handle)
@@ -1867,7 +1870,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("Session", Session::GetConstructor(context));
+  dict.Set("Session", Session::GetConstructor(isolate, context));
   dict.SetMethod("fromPartition", &FromPartition);
   dict.SetMethod("fromPath", &FromPath);
 }

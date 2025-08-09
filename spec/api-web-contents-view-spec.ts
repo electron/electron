@@ -167,6 +167,26 @@ describe('WebContentsView', () => {
     });
   });
 
+  it('does not crash when closed via window.close()', async () => {
+    const bw = new BrowserWindow();
+    const wcv = new WebContentsView();
+
+    await bw.loadURL('data:text/html,<h1>Main Window</h1>');
+    bw.contentView.addChildView(wcv);
+
+    const dto = new Promise<boolean>((resolve) => {
+      wcv.webContents.on('blur', () => {
+        const devToolsOpen = wcv.webContents.isDevToolsOpened();
+        resolve(devToolsOpen);
+      });
+    });
+
+    wcv.webContents.loadURL('data:text/html,<script>window.close()</script>');
+
+    const open = await dto;
+    expect(open).to.be.false();
+  });
+
   it('can be fullscreened', async () => {
     const w = new BaseWindow();
     const v = new WebContentsView();

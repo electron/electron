@@ -10,23 +10,24 @@
 
 #include "base/functional/callback_forward.h"
 #include "extensions/common/extension_id.h"
-#include "gin/wrappable.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
-class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
-                             public gin::DeprecatedWrappable<GlobalShortcut> {
+class GlobalShortcut final
+    : private ui::GlobalAcceleratorListener::Observer,
+      public gin_helper::DeprecatedWrappable<GlobalShortcut> {
  public:
-  static gin::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

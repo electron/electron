@@ -13,11 +13,11 @@
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 
 using content::DevToolsAgentHost;
@@ -178,9 +178,10 @@ void Debugger::ClearPendingRequests() {
 }
 
 // static
-gin::Handle<Debugger> Debugger::Create(v8::Isolate* isolate,
-                                       content::WebContents* web_contents) {
-  return gin::CreateHandle(isolate, new Debugger(isolate, web_contents));
+gin_helper::Handle<Debugger> Debugger::Create(
+    v8::Isolate* isolate,
+    content::WebContents* web_contents) {
+  return gin_helper::CreateHandle(isolate, new Debugger(isolate, web_contents));
 }
 
 gin::ObjectTemplateBuilder Debugger::GetObjectTemplateBuilder(

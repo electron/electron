@@ -36,18 +36,23 @@ runs:
           echo "SAS Token not found; exiting src cache download early..."
           exit 1
         else
+          echo "const fs = require('fs');" > gettoken.js
+          echo "const fileContents = fs.readFileSync('sas-token', 'utf8');" >> gettoken.js
+          echo "const token = JSON.parse(fileContents);" >> gettoken.js
+          echo "console.log(token[process.argv[2]])" >> gettoken.js
+          sas_token=$(node ./gettoken.js sasToken)
+          account_name=$(node ./gettoken.js accountName)
           if [ "${{ inputs.target-platform }}" = "win" ]; then
             azcopy copy --log-level=ERROR \
-            "https://${{ env.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}.file.core.windows.net/${{ env.AZURE_AKS_WIN_CACHE_SHARE_NAME }}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
+            "https://$account_name.file.core.windows.net/${{ env.AZURE_AKS_WIN_CACHE_SHARE_NAME }}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
           else
             azcopy copy --log-level=ERROR \
-            "https://${{ env.AZURE_AKS_CACHE_STORAGE_ACCOUNT }}.file.core.windows.net/${{ env.AZURE_AKS_CACHE_SHARE_NAME }}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
+            "https://$account_name.file.core.windows.net/${{ env.AZURE_AKS_CACHE_SHARE_NAME }}/${{ env.CACHE_PATH }}?$sas_token" $DEPSHASH.tar
           fi            
         fi
     env:
-      AZURE_AKS_CACHE_STORAGE_ACCOUNT: f723719aa87a34622b5f7f3
-      AZURE_AKS_CACHE_SHARE_NAME: pvc-f6a4089f-b082-4bee-a3f9-c3e1c0c02d8f
-      AZURE_AKS_WIN_CACHE_SHARE_NAME: pvc-71dec4f2-0d44-4fd1-a2c3-add049d70bdf
+      AZURE_AKS_CACHE_SHARE_NAME: linux-cache
+      AZURE_AKS_WIN_CACHE_SHARE_NAME: windows-cache
   - name: Clean SAS Key
     shell: bash
     run: rm -f sas-token

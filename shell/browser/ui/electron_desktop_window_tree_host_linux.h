@@ -62,6 +62,9 @@ class ElectronDesktopWindowTreeHostLinux
   // views::DesktopWindowTreeHostLinux:
   void UpdateFrameHints() override;
   void DispatchEvent(ui::Event* event) override;
+  void AddAdditionalInitProperties(
+      const views::Widget::InitParams& params,
+      ui::PlatformWindowInitProperties* properties) override;
 
  private:
   void UpdateWindowState(ui::PlatformWindowState new_state);

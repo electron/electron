@@ -12,7 +12,6 @@
 #include "content/public/browser/console_message.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/data_object_builder.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_service_worker_main.h"
 #include "shell/browser/electron_browser_context.h"
@@ -21,6 +20,7 @@
 #include "shell/common/gin_converters/service_worker_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_util.h"
 
@@ -210,14 +210,14 @@ v8::Local<v8::Value> ServiceWorkerContext::GetWorkerFromVersionID(
       .ToV8();
 }
 
-gin::Handle<ServiceWorkerMain>
+gin_helper::Handle<ServiceWorkerMain>
 ServiceWorkerContext::GetWorkerFromVersionIDIfExists(v8::Isolate* isolate,
                                                      int64_t version_id) {
   ServiceWorkerMain* worker =
       ServiceWorkerMain::FromVersionID(version_id, storage_partition_);
   if (!worker)
-    return gin::Handle<ServiceWorkerMain>();
-  return gin::CreateHandle(isolate, worker);
+    return gin_helper::Handle<ServiceWorkerMain>();
+  return gin_helper::CreateHandle(isolate, worker);
 }
 
 v8::Local<v8::Promise> ServiceWorkerContext::StartWorkerForScope(
@@ -272,11 +272,11 @@ v8::Local<v8::Promise> ServiceWorkerContext::StopAllWorkers(
 }
 
 // static
-gin::Handle<ServiceWorkerContext> ServiceWorkerContext::Create(
+gin_helper::Handle<ServiceWorkerContext> ServiceWorkerContext::Create(
     v8::Isolate* isolate,
     ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate,
-                           new ServiceWorkerContext(isolate, browser_context));
+  return gin_helper::CreateHandle(
+      isolate, new ServiceWorkerContext(isolate, browser_context));
 }
 
 // static
