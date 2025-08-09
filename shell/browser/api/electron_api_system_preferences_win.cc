@@ -5,7 +5,6 @@
 #include <iomanip>
 #include <string_view>
 
-#include <dwmapi.h>
 #include <windows.devices.enumeration.h>
 #include <wrl/client.h>
 
@@ -84,14 +83,12 @@ std::string hexColorDWORDToRGBA(DWORD color) {
 }
 
 std::string SystemPreferences::GetAccentColor() {
-  DWORD color = 0;
-  BOOL opaque = FALSE;
+  std::optional<DWORD> color = GetSystemAccentColor();
 
-  if (FAILED(DwmGetColorizationColor(&color, &opaque))) {
+  if (!color.has_value())
     return "";
-  }
 
-  return hexColorDWORDToRGBA(color);
+  return hexColorDWORDToRGBA(color.value());
 }
 
 std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
