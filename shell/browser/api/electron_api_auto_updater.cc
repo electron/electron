@@ -5,7 +5,6 @@
 #include "shell/browser/api/electron_api_auto_updater.h"
 
 #include "base/time/time.h"
-#include "gin/handle.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
@@ -13,6 +12,7 @@
 #include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
@@ -120,8 +120,8 @@ void AutoUpdater::QuitAndInstall() {
 }
 
 // static
-gin::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new AutoUpdater());
+gin_helper::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, new AutoUpdater());
 }
 
 gin::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(

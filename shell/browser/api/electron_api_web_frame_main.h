@@ -32,10 +32,12 @@ class RenderFrameHost;
 
 namespace gin {
 class Arguments;
+}  // namespace gin
 
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace gin_helper {
 template <typename T>
@@ -53,9 +55,9 @@ class WebFrameMain final : public gin_helper::DeprecatedWrappable<WebFrameMain>,
                            public gin_helper::Constructible<WebFrameMain> {
  public:
   // Create a new WebFrameMain and return the V8 wrapper of it.
-  static gin::Handle<WebFrameMain> New(v8::Isolate* isolate);
+  static gin_helper::Handle<WebFrameMain> New(v8::Isolate* isolate);
 
-  static gin::Handle<WebFrameMain> From(
+  static gin_helper::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
   static WebFrameMain* FromFrameTreeNodeId(

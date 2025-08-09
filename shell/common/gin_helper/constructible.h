@@ -23,7 +23,7 @@ class EventEmitterMixin;
 //   class Example : public gin_helper::DeprecatedWrappable<Example>,
 //                   public gin_helper::Constructible<Example> {
 //    public:
-//     static gin::Handle<Example> New(...usual gin method arguments...);
+//     static gin_helper::Handle<Example> New(...usual gin method arguments...);
 //     static void FillObjectTemplate(
 //         v8::Isolate*,
 //         v8::Local<v8::ObjectTemplate>);

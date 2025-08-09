@@ -41,7 +41,6 @@
 #include "content/public/browser/render_frame_host.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
-#include "gin/handle.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/dns_over_https_server_config.h"
@@ -76,6 +75,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/language_util.h"
 #include "shell/common/node_includes.h"
@@ -1701,8 +1701,8 @@ App* App::Get() {
 }
 
 // static
-gin::Handle<App> App::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, Get());
+gin_helper::Handle<App> App::Create(v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, Get());
 }
 
 gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {

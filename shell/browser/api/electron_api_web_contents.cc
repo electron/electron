@@ -75,7 +75,6 @@
 #include "electron/mas.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "media/base/mime_util.h"
@@ -132,6 +131,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
@@ -829,7 +829,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   // Obtain the session.
   std::string partition;
-  gin::Handle<api::Session> session;
+  gin_helper::Handle<api::Session> session;
   if (options.Get("session", &session) && !session.IsEmpty()) {
   } else if (options.Get("partition", &partition)) {
     session = Session::FromPartition(isolate, partition);
@@ -907,7 +907,7 @@ void WebContents::InitZoomController(content::WebContents* web_contents,
 void WebContents::InitWithSessionAndOptions(
     v8::Isolate* isolate,
     std::unique_ptr<content::WebContents> owned_web_contents,
-    gin::Handle<api::Session> session,
+    gin_helper::Handle<api::Session> session,
     const gin_helper::Dictionary& options) {
   Observe(owned_web_contents.get());
   InitWithWebContents(std::move(owned_web_contents), session->browser_context(),
@@ -1118,7 +1118,7 @@ void WebContents::OnDidAddMessageToConsole(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
 
@@ -1487,7 +1487,7 @@ void WebContents::RendererUnresponsive(
     base::RepeatingClosure hang_monitor_restarter) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
   gin::Dictionary dict(isolate, event_object);
@@ -1672,7 +1672,7 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
 void WebContents::OnAudioStateChanged(bool audible) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
   gin::Dictionary dict(isolate, event_object);
@@ -1940,7 +1940,7 @@ bool WebContents::EmitNavigationEvent(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
 
@@ -3599,7 +3599,7 @@ void WebContents::OnPaint(const gfx::Rect& dirty_rect,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
   gin_helper::Dictionary dict(isolate, event_object);
@@ -4514,11 +4514,11 @@ ElectronBrowserContext* WebContents::GetBrowserContext() const {
 }
 
 // static
-gin::Handle<WebContents> WebContents::New(
+gin_helper::Handle<WebContents> WebContents::New(
     v8::Isolate* isolate,
     const gin_helper::Dictionary& options) {
-  gin::Handle<WebContents> handle =
-      gin::CreateHandle(isolate, new WebContents(isolate, options));
+  gin_helper::Handle<WebContents> handle =
+      gin_helper::CreateHandle(isolate, new WebContents(isolate, options));
   v8::TryCatch try_catch(isolate);
   gin_helper::CallMethod(isolate, handle.get(), "_init");
   if (try_catch.HasCaught()) {
@@ -4528,11 +4528,11 @@ gin::Handle<WebContents> WebContents::New(
 }
 
 // static
-gin::Handle<WebContents> WebContents::CreateAndTake(
+gin_helper::Handle<WebContents> WebContents::CreateAndTake(
     v8::Isolate* isolate,
     std::unique_ptr<content::WebContents> web_contents,
     Type type) {
-  gin::Handle<WebContents> handle = gin::CreateHandle(
+  gin_helper::Handle<WebContents> handle = gin_helper::CreateHandle(
       isolate, new WebContents(isolate, std::move(web_contents), type));
   v8::TryCatch try_catch(isolate);
   gin_helper::CallMethod(isolate, handle.get(), "_init");
@@ -4552,7 +4552,7 @@ WebContents* WebContents::From(content::WebContents* web_contents) {
 }
 
 // static
-gin::Handle<WebContents> WebContents::FromOrCreate(
+gin_helper::Handle<WebContents> WebContents::FromOrCreate(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
   WebContents* api_web_contents = From(web_contents);
@@ -4564,15 +4564,15 @@ gin::Handle<WebContents> WebContents::FromOrCreate(
       node::errors::TriggerUncaughtException(isolate, try_catch);
     }
   }
-  return gin::CreateHandle(isolate, api_web_contents);
+  return gin_helper::CreateHandle(isolate, api_web_contents);
 }
 
 // static
-gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
+gin_helper::Handle<WebContents> WebContents::CreateFromWebPreferences(
     v8::Isolate* isolate,
     const gin_helper::Dictionary& web_preferences) {
   // Check if webPreferences has |webContents| option.
-  gin::Handle<WebContents> web_contents;
+  gin_helper::Handle<WebContents> web_contents;
   if (web_preferences.GetHidden("webContents", &web_contents) &&
       !web_contents.IsEmpty()) {
     // Set webPreferences from options if using an existing webContents.
@@ -4627,37 +4627,38 @@ using electron::api::GetAllWebContents;
 using electron::api::WebContents;
 using electron::api::WebFrameMain;
 
-gin::Handle<WebContents> WebContentsFromID(v8::Isolate* isolate, int32_t id) {
+gin_helper::Handle<WebContents> WebContentsFromID(v8::Isolate* isolate,
+                                                  int32_t id) {
   WebContents* contents = WebContents::FromID(id);
-  return contents ? gin::CreateHandle(isolate, contents)
-                  : gin::Handle<WebContents>();
+  return contents ? gin_helper::CreateHandle(isolate, contents)
+                  : gin_helper::Handle<WebContents>();
 }
 
-gin::Handle<WebContents> WebContentsFromFrame(v8::Isolate* isolate,
-                                              WebFrameMain* web_frame) {
+gin_helper::Handle<WebContents> WebContentsFromFrame(v8::Isolate* isolate,
+                                                     WebFrameMain* web_frame) {
   content::RenderFrameHost* rfh = web_frame->render_frame_host();
   content::WebContents* source = content::WebContents::FromRenderFrameHost(rfh);
   WebContents* contents = WebContents::From(source);
-  return contents ? gin::CreateHandle(isolate, contents)
-                  : gin::Handle<WebContents>();
+  return contents ? gin_helper::CreateHandle(isolate, contents)
+                  : gin_helper::Handle<WebContents>();
 }
 
-gin::Handle<WebContents> WebContentsFromDevToolsTargetID(
+gin_helper::Handle<WebContents> WebContentsFromDevToolsTargetID(
     v8::Isolate* isolate,
     std::string target_id) {
   auto agent_host = content::DevToolsAgentHost::GetForId(target_id);
   WebContents* contents =
       agent_host ? WebContents::From(agent_host->GetWebContents()) : nullptr;
-  return contents ? gin::CreateHandle(isolate, contents)
-                  : gin::Handle<WebContents>();
+  return contents ? gin_helper::CreateHandle(isolate, contents)
+                  : gin_helper::Handle<WebContents>();
 }
 
-std::vector<gin::Handle<WebContents>> GetAllWebContentsAsV8(
+std::vector<gin_helper::Handle<WebContents>> GetAllWebContentsAsV8(
     v8::Isolate* isolate) {
-  std::vector<gin::Handle<WebContents>> list;
+  std::vector<gin_helper::Handle<WebContents>> list;
   for (auto iter = base::IDMap<WebContents*>::iterator(&GetAllWebContents());
        !iter.IsAtEnd(); iter.Advance()) {
-    list.push_back(gin::CreateHandle(isolate, iter.GetCurrentValue()));
+    list.push_back(gin_helper::CreateHandle(isolate, iter.GetCurrentValue()));
   }
   return list;
 }

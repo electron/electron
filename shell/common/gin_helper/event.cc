@@ -4,14 +4,14 @@
 
 #include "shell/common/gin_helper/event.h"
 #include "gin/dictionary.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
+#include "shell/common/gin_helper/handle.h"
 
 namespace gin_helper::internal {
 
 // static
-gin::Handle<Event> Event::New(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new Event());
+gin_helper::Handle<Event> Event::New(v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, new Event());
 }
 // static
 v8::Local<v8::ObjectTemplate> Event::FillObjectTemplate(

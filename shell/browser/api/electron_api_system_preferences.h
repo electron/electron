@@ -18,10 +18,10 @@
 #include "ui/gfx/sys_color_change_listener.h"
 #endif
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace gin_helper {
 class ErrorThrower;
@@ -47,7 +47,7 @@ class SystemPreferences final
 #endif
 {
  public:
-  static gin::Handle<SystemPreferences> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<SystemPreferences> Create(v8::Isolate* isolate);
 
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;

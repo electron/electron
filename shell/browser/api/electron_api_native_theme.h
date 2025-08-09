@@ -11,10 +11,10 @@
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
-class handle;
-}  // namespace gin
+class Handle;
+}  // namespace gin_helper
 
 namespace electron::api {
 
@@ -22,7 +22,7 @@ class NativeTheme final : public gin_helper::DeprecatedWrappable<NativeTheme>,
                           public gin_helper::EventEmitterMixin<NativeTheme>,
                           private ui::NativeThemeObserver {
  public:
-  static gin::Handle<NativeTheme> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<NativeTheme> Create(v8::Isolate* isolate);
 
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;

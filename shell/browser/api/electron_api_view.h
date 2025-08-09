@@ -14,10 +14,10 @@
 #include "ui/views/view_observer.h"
 #include "v8/include/v8-value.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
@@ -25,7 +25,7 @@ class View : public gin_helper::EventEmitter<View>,
              private views::ViewObserver {
  public:
   static gin_helper::WrappableBase* New(gin::Arguments* args);
-  static gin::Handle<View> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<View> Create(v8::Isolate* isolate);
 
   // Return the cached constructor function.
   static v8::Local<v8::Function> GetConstructor(v8::Isolate* isolate);
@@ -33,8 +33,9 @@ class View : public gin_helper::EventEmitter<View>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  void AddChildViewAt(gin::Handle<View> child, std::optional<size_t> index);
-  void RemoveChildView(gin::Handle<View> child);
+  void AddChildViewAt(gin_helper::Handle<View> child,
+                      std::optional<size_t> index);
+  void RemoveChildView(gin_helper::Handle<View> child);
 
   void SetBounds(const gfx::Rect& bounds);
   gfx::Rect GetBounds() const;
@@ -70,7 +71,7 @@ class View : public gin_helper::EventEmitter<View>,
                           views::View* child) override;
 
   void ApplyBorderRadius();
-  void ReorderChildView(gin::Handle<View> child, size_t index);
+  void ReorderChildView(gin_helper::Handle<View> child, size_t index);
 
   std::vector<ChildPair> child_views_;
   std::optional<int> border_radius_;

@@ -17,7 +17,7 @@ struct DeprecatedWrapperInfo;
 namespace gin_helper {
 
 // Wrappable is a base class for C++ objects that have corresponding v8 wrapper
-// objects. To retain a Wrappable object on the stack, use a gin::Handle.
+// objects. To retain a Wrappable object on the stack, use a gin_helper::Handle.
 //
 // USAGE:
 // // my_class.h
@@ -27,9 +27,9 @@ namespace gin_helper {
 // };
 //
 // Subclasses should also typically have private constructors and expose a
-// static Create function that returns a gin::Handle. Forcing creators through
-// this static Create function will enforce that clients actually create a
-// wrapper for the object. If clients fail to create a wrapper for a wrappable
+// static Create function that returns a gin_helper::Handle. Forcing creators
+// through this static Create function will enforce that clients actually create
+// a wrapper for the object. If clients fail to create a wrapper for a wrappable
 // object, the object will leak because we use the weak callback from the
 // wrapper as the signal to delete the wrapped object.
 class WrappableBase {

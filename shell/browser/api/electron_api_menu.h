@@ -33,7 +33,7 @@ class Menu : public gin_helper::DeprecatedWrappable<Menu>,
              private ElectronMenuModel::Observer {
  public:
   // gin_helper::Constructible
-  static gin::Handle<Menu> New(gin::Arguments* args);
+  static gin_helper::Handle<Menu> New(gin::Arguments* args);
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Menu"; }
 

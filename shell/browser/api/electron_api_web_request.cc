@@ -19,7 +19,6 @@
 #include "extensions/common/url_pattern.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -33,6 +32,7 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_util.h"
 
 static constexpr auto ResourceTypes =
@@ -733,10 +733,10 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
 }
 
 // static
-gin::Handle<WebRequest> WebRequest::FromOrCreate(
+gin_helper::Handle<WebRequest> WebRequest::FromOrCreate(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
-  gin::Handle<WebRequest> handle = From(isolate, browser_context);
+  gin_helper::Handle<WebRequest> handle = From(isolate, browser_context);
   if (handle.IsEmpty()) {
     // Make sure the |Session| object has the |webRequest| property created.
     v8::Local<v8::Value> web_request =
@@ -750,16 +750,17 @@ gin::Handle<WebRequest> WebRequest::FromOrCreate(
 }
 
 // static
-gin::Handle<WebRequest> WebRequest::Create(
+gin_helper::Handle<WebRequest> WebRequest::Create(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
   DCHECK(From(isolate, browser_context).IsEmpty())
       << "WebRequest already created";
-  return gin::CreateHandle(isolate, new WebRequest(isolate, browser_context));
+  return gin_helper::CreateHandle(isolate,
+                                  new WebRequest(isolate, browser_context));
 }
 
 // static
-gin::Handle<WebRequest> WebRequest::From(
+gin_helper::Handle<WebRequest> WebRequest::From(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
   if (!browser_context)
@@ -768,7 +769,7 @@ gin::Handle<WebRequest> WebRequest::From(
       static_cast<UserData*>(browser_context->GetUserData(kUserDataKey));
   if (!user_data)
     return {};
-  return gin::CreateHandle(isolate, user_data->data.get());
+  return gin_helper::CreateHandle(isolate, user_data->data.get());
 }
 
 }  // namespace electron::api

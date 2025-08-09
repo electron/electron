@@ -12,10 +12,10 @@
 #include "shell/browser/window_list_observer.h"
 #include "shell/common/gin_helper/wrappable.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
@@ -24,7 +24,7 @@ class AutoUpdater final : public gin_helper::DeprecatedWrappable<AutoUpdater>,
                           public auto_updater::Delegate,
                           private WindowListObserver {
  public:
-  static gin::Handle<AutoUpdater> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<AutoUpdater> Create(v8::Isolate* isolate);
 
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;

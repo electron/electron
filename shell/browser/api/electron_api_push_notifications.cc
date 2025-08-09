@@ -4,9 +4,9 @@
 
 #include "shell/browser/api/electron_api_push_notifications.h"
 
-#include "gin/handle.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 
 namespace electron::api {
@@ -30,8 +30,9 @@ PushNotifications* PushNotifications::Get() {
 }
 
 // static
-gin::Handle<PushNotifications> PushNotifications::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, PushNotifications::Get());
+gin_helper::Handle<PushNotifications> PushNotifications::Create(
+    v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, PushNotifications::Get());
 }
 
 // static

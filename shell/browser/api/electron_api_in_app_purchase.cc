@@ -8,8 +8,8 @@
 #include <utility>
 #include <vector>
 
-#include "gin/handle.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -135,8 +135,8 @@ gin::DeprecatedWrapperInfo InAppPurchase::kWrapperInfo = {
 
 #if BUILDFLAG(IS_MAC)
 // static
-gin::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new InAppPurchase());
+gin_helper::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, new InAppPurchase());
 }
 
 gin::ObjectTemplateBuilder InAppPurchase::GetObjectTemplateBuilder(

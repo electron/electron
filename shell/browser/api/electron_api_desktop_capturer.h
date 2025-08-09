@@ -14,10 +14,10 @@
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
@@ -35,7 +35,7 @@ class DesktopCapturer final
     bool fetch_icon = false;
   };
 
-  static gin::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
   static bool IsDisplayMediaSystemPickerAvailable();
 

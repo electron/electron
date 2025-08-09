@@ -5,13 +5,13 @@
 #include "shell/browser/api/electron_api_notification.h"
 
 #include "base/uuid.h"
-#include "gin/handle.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "url/gurl.h"
@@ -78,13 +78,14 @@ Notification::~Notification() {
 }
 
 // static
-gin::Handle<Notification> Notification::New(gin_helper::ErrorThrower thrower,
-                                            gin::Arguments* args) {
+gin_helper::Handle<Notification> Notification::New(
+    gin_helper::ErrorThrower thrower,
+    gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Notification before app is ready");
     return {};
   }
-  return gin::CreateHandle(thrower.isolate(), new Notification(args));
+  return gin_helper::CreateHandle(thrower.isolate(), new Notification(args));
 }
 
 // Setters

@@ -15,10 +15,10 @@
 #include "shell/common/gin_helper/wrappable.h"
 #include "v8/include/v8-forward.h"
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
@@ -27,7 +27,7 @@ class InAppPurchase final
       public gin_helper::EventEmitterMixin<InAppPurchase>,
       private in_app_purchase::TransactionObserver {
  public:
-  static gin::Handle<InAppPurchase> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<InAppPurchase> Create(v8::Isolate* isolate);
 
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;

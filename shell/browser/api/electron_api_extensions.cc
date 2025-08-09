@@ -7,7 +7,6 @@
 #include "chrome/browser/browser_process.h"
 #include "extensions/browser/extension_registry.h"
 #include "gin/data_object_builder.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_extensions.h"
 #include "shell/browser/electron_browser_context.h"
@@ -18,6 +17,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_util.h"
 
@@ -36,10 +36,11 @@ Extensions::~Extensions() {
 }
 
 // static
-gin::Handle<Extensions> Extensions::Create(
+gin_helper::Handle<Extensions> Extensions::Create(
     v8::Isolate* isolate,
     ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate, new Extensions(isolate, browser_context));
+  return gin_helper::CreateHandle(isolate,
+                                  new Extensions(isolate, browser_context));
 }
 
 v8::Local<v8::Promise> Extensions::LoadExtension(
