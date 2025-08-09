@@ -280,13 +280,25 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
 }
 
 void BrowserWindow::OnWindowShow() {
-  web_contents()->WasShown();
   BaseWindow::OnWindowShow();
 }
 
 void BrowserWindow::OnWindowHide() {
   web_contents()->WasOccluded();
   BaseWindow::OnWindowHide();
+}
+
+void BrowserWindow::Show() {
+  web_contents()->WasShown();
+  BaseWindow::Show();
+}
+
+void BrowserWindow::ShowInactive() {
+  // This method doesn't make sense for modal window.
+  if (IsModal())
+    return;
+  web_contents()->WasShown();
+  BaseWindow::ShowInactive();
 }
 
 // static
