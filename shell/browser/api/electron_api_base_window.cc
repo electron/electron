@@ -1089,6 +1089,33 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
 bool BaseWindow::IsSnapped() const {
   return window_->IsSnapped();
 }
+
+void BaseWindow::SetAccentColor(gin_helper::Arguments* args) {
+  bool accent_color = false;
+  std::string accent_color_string;
+  if (args->GetNext(&accent_color_string)) {
+    std::optional<SkColor> maybe_color = ParseCSSColor(accent_color_string);
+    if (maybe_color.has_value()) {
+      window_->SetAccentColor(maybe_color.value());
+      window_->UpdateWindowAccentColor(window_->IsActive());
+    }
+  } else if (args->GetNext(&accent_color)) {
+    window_->SetAccentColor(accent_color);
+    window_->UpdateWindowAccentColor(window_->IsActive());
+  } else {
+    args->ThrowError(
+        "Invalid accent color value - must be a string or boolean");
+  }
+}
+
+v8::Local<v8::Value> BaseWindow::GetAccentColor() const {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto accent_color = window_->GetAccentColor();
+
+  if (std::holds_alternative<bool>(accent_color))
+    return v8::Boolean::New(isolate, std::get<bool>(accent_color));
+  return gin::StringToV8(isolate, std::get<std::string>(accent_color));
+}
 #endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
@@ -1333,6 +1360,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
 #if BUILDFLAG(IS_WIN)
       .SetMethod("isSnapped", &BaseWindow::IsSnapped)
       .SetProperty("snapped", &BaseWindow::IsSnapped)
+      .SetMethod("setAccentColor", &BaseWindow::SetAccentColor)
+      .SetMethod("getAccentColor", &BaseWindow::GetAccentColor)
       .SetMethod("hookWindowMessage", &BaseWindow::HookWindowMessage)
       .SetMethod("isWindowMessageHooked", &BaseWindow::IsWindowMessageHooked)
       .SetMethod("unhookWindowMessage", &BaseWindow::UnhookWindowMessage)

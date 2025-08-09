@@ -10,6 +10,10 @@
 #include "content/public/common/color_parser.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 
+#if BUILDFLAG(IS_WIN)
+#include <dwmapi.h>
+#endif
+
 namespace {
 
 bool IsHexFormatWithAlpha(const std::string& str) {
@@ -61,5 +65,16 @@ std::string ToRGBAHex(SkColor color, bool include_hash) {
   }
   return color_str;
 }
+
+#if BUILDFLAG(IS_WIN)
+std::optional<DWORD> GetSystemAccentColor() {
+  DWORD color = 0;
+  BOOL opaque = FALSE;
+
+  if (FAILED(DwmGetColorizationColor(&color, &opaque)))
+    return std::nullopt;
+  return color;
+}
+#endif
 
 }  // namespace electron
