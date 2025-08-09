@@ -77,18 +77,20 @@ index 8d98d50395cf7fbbaf9ae30387727bff5c6cd550..ed3b3c02bbdac78c163d589557651618
        // Check if the ESM initiating import CJS is being required by the same CJS module.
        if (cjsModule?.[kIsExecuting]) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 859b6bfedac4bbee2df054f9ebca7cbaaed45f18..a609671e64e3b159f6f00d4f69cde2039cc0bc38 100644
+index 859b6bfedac4bbee2df054f9ebca7cbaaed45f18..5aa946f66c71beff0b7a43c30638ab28a1a5dfc0 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -750,6 +750,7 @@ function packageImportsResolve(name, base, conditions) {
+@@ -750,6 +750,9 @@ function packageImportsResolve(name, base, conditions) {
    throw importNotDefined(name, packageJSONUrl, base);
  }
  
-+const electronTypes = ['electron', 'electron/main', 'electron/common', 'electron/renderer'];
++const electronTypes = [
++  'electron', 'electron/main', 'electron/common', 'electron/renderer', 'electron/utility'
++];
  
  /**
   * Resolves a package specifier to a URL.
-@@ -764,6 +765,11 @@ function packageResolve(specifier, base, conditions) {
+@@ -764,6 +767,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
