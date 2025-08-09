@@ -12,7 +12,6 @@
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/service_worker_version_base_info.h"
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
@@ -21,6 +20,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "third_party/blink/public/common/service_worker/embedded_worker_status.h"
 
 class GURL;
@@ -79,7 +79,7 @@ struct ServiceWorkerKey {
 // StoragePartition in which they're registered. In Electron, this is always
 // the default StoragePartition for the associated BrowserContext.
 class ServiceWorkerMain final
-    : public gin::DeprecatedWrappable<ServiceWorkerMain>,
+    : public gin_helper::DeprecatedWrappable<ServiceWorkerMain>,
       public gin_helper::EventEmitterMixin<ServiceWorkerMain>,
       public gin_helper::Pinnable<ServiceWorkerMain>,
       public gin_helper::Constructible<ServiceWorkerMain> {
@@ -100,7 +100,7 @@ class ServiceWorkerMain final
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "ServiceWorkerMain"; }
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 

@@ -121,8 +121,8 @@ gin::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(v8::Isolate* isolate) {
 
 gin::ObjectTemplateBuilder PowerSaveBlocker::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::DeprecatedWrappable<PowerSaveBlocker>::GetObjectTemplateBuilder(
-             isolate)
+  return gin_helper::DeprecatedWrappable<
+             PowerSaveBlocker>::GetObjectTemplateBuilder(isolate)
       .SetMethod("start", &PowerSaveBlocker::Start)
       .SetMethod("stop", &PowerSaveBlocker::Stop)
       .SetMethod("isStarted", &PowerSaveBlocker::IsStarted);

@@ -11,8 +11,8 @@
 
 #include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
-#include "gin/wrappable.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace gin {
 template <typename T>
@@ -21,9 +21,10 @@ class Handle;
 
 namespace electron::api {
 
-class DesktopCapturer final : public gin::DeprecatedWrappable<DesktopCapturer>,
-                              public gin_helper::Pinnable<DesktopCapturer>,
-                              private DesktopMediaListObserver {
+class DesktopCapturer final
+    : public gin_helper::DeprecatedWrappable<DesktopCapturer>,
+      public gin_helper::Pinnable<DesktopCapturer>,
+      private DesktopMediaListObserver {
  public:
   struct Source {
     DesktopMediaList::Source media_list_source;
@@ -43,7 +44,7 @@ class DesktopCapturer final : public gin::DeprecatedWrappable<DesktopCapturer>,
                      const gfx::Size& thumbnail_size,
                      bool fetch_window_icons);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

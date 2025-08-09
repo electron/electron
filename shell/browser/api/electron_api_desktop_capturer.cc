@@ -522,8 +522,8 @@ bool DesktopCapturer::IsDisplayMediaSystemPickerAvailable() {
 
 gin::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::DeprecatedWrappable<DesktopCapturer>::GetObjectTemplateBuilder(
-             isolate)
+  return gin_helper::DeprecatedWrappable<
+             DesktopCapturer>::GetObjectTemplateBuilder(isolate)
       .SetMethod("startHandling", &DesktopCapturer::StartHandling);
 }
 

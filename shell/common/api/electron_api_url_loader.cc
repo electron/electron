@@ -19,7 +19,6 @@
 #include "base/sequence_checker.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "net/base/auth.h"
@@ -165,7 +164,7 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
 };
 
 class JSChunkedDataPipeGetter final
-    : public gin::DeprecatedWrappable<JSChunkedDataPipeGetter>,
+    : public gin_helper::DeprecatedWrappable<JSChunkedDataPipeGetter>,
       public network::mojom::ChunkedDataPipeGetter {
  public:
   static gin::Handle<JSChunkedDataPipeGetter> Create(
@@ -178,10 +177,10 @@ class JSChunkedDataPipeGetter final
                      isolate, body_func, std::move(chunked_data_pipe_getter)));
   }
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::DeprecatedWrappable<
+    return gin_helper::DeprecatedWrappable<
                JSChunkedDataPipeGetter>::GetObjectTemplateBuilder(isolate)
         .SetMethod("write", &JSChunkedDataPipeGetter::WriteChunk)
         .SetMethod("done", &JSChunkedDataPipeGetter::Done);

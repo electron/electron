@@ -7,10 +7,10 @@
 
 #include <string>
 
-#include "gin/wrappable.h"
 #include "shell/browser/auto_updater.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/window_list_observer.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace gin {
 template <typename T>
@@ -19,14 +19,14 @@ class Handle;
 
 namespace electron::api {
 
-class AutoUpdater final : public gin::DeprecatedWrappable<AutoUpdater>,
+class AutoUpdater final : public gin_helper::DeprecatedWrappable<AutoUpdater>,
                           public gin_helper::EventEmitterMixin<AutoUpdater>,
                           public auto_updater::Delegate,
                           private WindowListObserver {
  public:
   static gin::Handle<AutoUpdater> Create(v8::Isolate* isolate);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

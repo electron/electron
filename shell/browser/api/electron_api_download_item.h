@@ -11,10 +11,10 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "components/download/public/common/download_item.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 class GURL;
 
@@ -25,7 +25,7 @@ class Handle;
 
 namespace electron::api {
 
-class DownloadItem final : public gin::DeprecatedWrappable<DownloadItem>,
+class DownloadItem final : public gin_helper::DeprecatedWrappable<DownloadItem>,
                            public gin_helper::Pinnable<DownloadItem>,
                            public gin_helper::EventEmitterMixin<DownloadItem>,
                            private download::DownloadItem::Observer {
@@ -35,7 +35,7 @@ class DownloadItem final : public gin::DeprecatedWrappable<DownloadItem>,
 
   static DownloadItem* FromDownloadItem(download::DownloadItem* item);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
