@@ -121,6 +121,7 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
           'electron/main$': electronAPIFile,
           'electron/renderer$': electronAPIFile,
           'electron/common$': electronAPIFile,
+          'electron/utility$': electronAPIFile,
           // Force timers to resolve to our dependency that doesn't use window.postMessage
           timers: path.resolve(electronRoot, 'node_modules', 'timers-browserify', 'main.js')
         },
