@@ -5,7 +5,6 @@
   { "patch_dir": "src/electron/patches/ffmpeg", "repo": "src/third_party/ffmpeg" },
   { "patch_dir": "src/electron/patches/v8", "repo": "src/v8" },
   { "patch_dir": "src/electron/patches/node", "repo": "src/third_party/electron_node" },
-  { "patch_dir": "src/electron/patches/nan", "repo": "src/third_party/nan" },
   { "patch_dir": "src/electron/patches/perfetto", "repo": "src/third_party/perfetto" },
   { "patch_dir": "src/electron/patches/squirrel.mac", "repo": "src/third_party/squirrel.mac" },
   { "patch_dir": "src/electron/patches/Mantle", "repo": "src/third_party/squirrel.mac/vendor/Mantle" },
