@@ -11,14 +11,22 @@ permissions: {}
 jobs:
   check-for-non-maintainer-dependency-change:
     name: Check for non-maintainer dependency change
-    if: ${{ !contains(fromJSON('["MEMBER", "OWNER"]'), github.event.pull_request.author_association) && github.event.pull_request.user.type != 'Bot' && !github.event.pull_request.draft }}
+    if: ${{ github.event.pull_request.user.type != 'Bot' && !github.event.pull_request.draft }}
     permissions:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
+      - name: Get author association
+        id: get-author-association
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          AUTHOR_ASSOCIATION=$(gh api /repos/electron/electron/pulls/${{ github.event.pull_request.number }} --jq '.author_association')
+          echo "author_association=$AUTHOR_ASSOCIATION" >> "$GITHUB_OUTPUT"
       - name: Check for existing review
         id: check-for-review
+        if: ${{ !contains(fromJSON('["MEMBER", "OWNER"]'), steps.get-author-association.outputs.author_association) }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
