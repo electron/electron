@@ -64,6 +64,32 @@ describe('esm', () => {
       expect(result.code).to.equal(0);
       expect(result.stdout).to.equal('Exit with app, ready: false');
     });
+
+    it('import \'electron/lol\' should throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-lol.mjs'));
+      expect(result.code).to.equal(1);
+      expect(result.stderr).to.match(/Error \[ERR_MODULE_NOT_FOUND\]/);
+    });
+
+    it('import \'electron/main\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-main.mjs'));
+      expect(result.code).to.equal(0);
+    });
+
+    it('import \'electron/renderer\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-renderer.mjs'));
+      expect(result.code).to.equal(0);
+    });
+
+    it('import \'electron/common\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-common.mjs'));
+      expect(result.code).to.equal(0);
+    });
+
+    it('import \'electron/utility\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-utility.mjs'));
+      expect(result.code).to.equal(0);
+    });
   });
 
   describe('renderer process', () => {
@@ -210,6 +236,44 @@ describe('esm', () => {
           // This is a blink specific error message
           expect(error?.message).to.include('Failed to fetch dynamically imported module');
         });
+      });
+    });
+
+    describe('electron modules', () => {
+      it('import \'electron/lol\' should throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/lol";', {
+          sandbox: false
+        });
+        expect(error).to.not.equal(null);
+        expect(error?.message).to.match(/Cannot find package 'electron'/);
+      });
+
+      it('import \'electron/main\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/main";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
+      });
+
+      it('import \'electron/renderer\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/renderer";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
+      });
+
+      it('import \'electron/common\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/common";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
+      });
+
+      it('import \'electron/utility\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/utility";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
       });
     });
   });
