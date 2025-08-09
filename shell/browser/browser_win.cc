@@ -45,6 +45,7 @@
 #include "shell/common/thread_restrictions.h"
 #include "skia/ext/font_utils.h"
 #include "skia/ext/legacy_display_globals.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/skia/include/core/SkFont.h"
 #include "third_party/skia/include/core/SkPaint.h"

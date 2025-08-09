@@ -31,10 +31,10 @@ index 48dfca966a594f54523c129fa49d2a561cb41dec..049cf4f1adcf4f64cd8692f6e6eda741
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 2306354eaf3441c875da54e82103b6c57bce02f6..75575ab4998f676b4dd4f23a368c7661a32906f7 100644
+index 6153ff4982662491be819d822448b64ab18b73d8..75376656300c1b7ebf13fdc2280881cf03baefc7 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
-@@ -1284,6 +1284,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1295,6 +1295,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // True if widget was created in headless mode.
    bool is_headless() const { return is_headless_; }
  
