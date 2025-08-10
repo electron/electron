@@ -8,11 +8,11 @@
 #include "base/power_monitor/power_monitor_device_source.h"
 #include "base/power_monitor/power_observer.h"
 #include "gin/data_object_builder.h"
-#include "gin/handle.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
@@ -144,7 +144,7 @@ void PowerMonitor::SetListeningForShutdown(bool is_listening) {
 // static
 v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
   auto* pm = new PowerMonitor(isolate);
-  auto handle = gin::CreateHandle(isolate, pm).ToV8();
+  auto handle = gin_helper::CreateHandle(isolate, pm).ToV8();
   pm->Pin(isolate);
   return handle;
 }

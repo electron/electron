@@ -8,9 +8,9 @@
 #include <string_view>
 #include <utility>
 
-#include "gin/handle.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/wrappable.h"
 
 namespace content {
@@ -31,7 +31,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
       return false;
-    gin::Handle<internal::Event> event = internal::Event::New(isolate);
+    gin_helper::Handle<internal::Event> event = internal::Event::New(isolate);
     // It's possible that |this| will be deleted by EmitEvent, so save anything
     // we need from |this| before calling EmitEvent.
     EmitEvent(isolate, wrapper, name, event, std::forward<Args>(args)...);

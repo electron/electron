@@ -16,9 +16,12 @@
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron {
 
@@ -38,11 +41,12 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
 class Protocol final : public gin_helper::DeprecatedWrappable<Protocol>,
                        public gin_helper::Constructible<Protocol> {
  public:
-  static gin::Handle<Protocol> Create(v8::Isolate* isolate,
-                                      ProtocolRegistry* protocol_registry);
+  static gin_helper::Handle<Protocol> Create(
+      v8::Isolate* isolate,
+      ProtocolRegistry* protocol_registry);
 
   // gin_helper::Constructible
-  static gin::Handle<Protocol> New(gin_helper::ErrorThrower thrower);
+  static gin_helper::Handle<Protocol> New(gin_helper::ErrorThrower thrower);
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
       v8::Isolate* isolate,
       v8::Local<v8::ObjectTemplate> tmpl);

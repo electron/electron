@@ -98,7 +98,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
 
   // Public APIs of NativeWindow.
-  void SetContentView(gin::Handle<View> view);
+  void SetContentView(gin_helper::Handle<View> view);
   void Close();
   virtual void CloseImmediately();
   virtual void Focus();

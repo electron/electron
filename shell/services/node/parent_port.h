@@ -22,9 +22,12 @@ class Isolate;
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron {
 
@@ -36,7 +39,7 @@ class ParentPort final : public gin_helper::DeprecatedWrappable<ParentPort>,
                          private mojo::MessageReceiver {
  public:
   static ParentPort* GetInstance();
-  static gin::Handle<ParentPort> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<ParentPort> Create(v8::Isolate* isolate);
 
   ParentPort(const ParentPort&) = delete;
   ParentPort& operator=(const ParentPort&) = delete;

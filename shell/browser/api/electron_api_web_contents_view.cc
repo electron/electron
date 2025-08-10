@@ -30,7 +30,7 @@
 namespace electron::api {
 
 WebContentsView::WebContentsView(v8::Isolate* isolate,
-                                 gin::Handle<WebContents> web_contents)
+                                 gin_helper::Handle<WebContents> web_contents)
     : View(web_contents->inspectable_web_contents()->GetView()),
       web_contents_(isolate, web_contents.ToV8()),
       api_web_contents_(web_contents.get()) {
@@ -47,9 +47,10 @@ WebContentsView::~WebContentsView() {
     api_web_contents_->Destroy();
 }
 
-gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {
+gin_helper::Handle<WebContents> WebContentsView::GetWebContents(
+    v8::Isolate* isolate) {
   if (api_web_contents_)
-    return gin::CreateHandle(isolate, api_web_contents_.get());
+    return gin_helper::CreateHandle(isolate, api_web_contents_.get());
   else
     return {};
 }
@@ -122,7 +123,7 @@ void WebContentsView::OnViewRemovedFromWidget(views::View* observed_view) {
 }
 
 // static
-gin::Handle<WebContentsView> WebContentsView::Create(
+gin_helper::Handle<WebContentsView> WebContentsView::Create(
     v8::Isolate* isolate,
     const gin_helper::Dictionary& web_preferences) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -133,7 +134,7 @@ gin::Handle<WebContentsView> WebContentsView::Create(
   if (GetConstructor(isolate)
           ->NewInstance(context, 1, &arg)
           .ToLocal(&web_contents_view_obj)) {
-    gin::Handle<WebContentsView> web_contents_view;
+    gin_helper::Handle<WebContentsView> web_contents_view;
     if (gin::ConvertFromV8(isolate, web_contents_view_obj, &web_contents_view))
       return web_contents_view;
   }
@@ -173,7 +174,7 @@ gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
       }
 
       if (options.Get("webContents", &existing_web_contents_value)) {
-        gin::Handle<WebContents> existing_web_contents;
+        gin_helper::Handle<WebContents> existing_web_contents;
         if (!gin::ConvertFromV8(args->isolate(), existing_web_contents_value,
                                 &existing_web_contents)) {
           args->ThrowError("options.webContents must be a WebContents");
