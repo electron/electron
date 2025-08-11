@@ -1,16 +1,18 @@
-name: Check for Non-Maintainer Dependency Change
+name: Check for Disallowed Non-Maintainer Change
 
 on:
   pull_request_target:
     paths:
       - 'yarn.lock'
       - 'spec/yarn.lock'
+      - '.github/workflows/**'
+      - '.github/actions/**'
 
 permissions: {}
 
 jobs:
-  check-for-non-maintainer-dependency-change:
-    name: Check for non-maintainer dependency change
+  check-for-disallowed-non-maintainer-change:
+    name: Check for disallowed non-maintainer change
     if: ${{ !contains(fromJSON('["MEMBER", "OWNER"]'), github.event.pull_request.author_association) && github.event.pull_request.user.type != 'Bot' && !github.event.pull_request.draft }}
     permissions:
       contents: read
@@ -24,7 +26,7 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           set -eo pipefail
-          REVIEW_COUNT=$(gh pr view $PR_URL --json reviews | jq '[ .reviews[] | select(.author.login == "github-actions") | select(.body | startswith("<!-- no-dependency-change -->")) ] | length')
+          REVIEW_COUNT=$(gh pr view $PR_URL --json reviews | jq '[ .reviews[] | select(.author.login == "github-actions") | select(.body | startswith("<!-- disallowed-non-maintainer-change -->")) ] | length')
           if [[ $REVIEW_COUNT -eq 0 ]]; then
             echo "SHOULD_REVIEW=1" >> "$GITHUB_OUTPUT"
           fi
@@ -34,4 +36,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          printf "<!-- no-dependency-change -->\n\nHello @${{ github.event.pull_request.user.login }}! It looks like this pull request touches one of our dependency files, and per [our contribution policy](https://github.com/electron/electron/blob/main/CONTRIBUTING.md#dependencies-upgrades-policy) we do not accept these types of changes in PRs." | gh pr review $PR_URL -r --body-file=-
+          printf "<!-- disallowed-non-maintainer-change -->\n\nHello @${{ github.event.pull_request.user.login }}! It looks like this pull request touches one of our dependency or CI files, and per [our contribution policy](https://github.com/electron/electron/blob/main/CONTRIBUTING.md#dependencies-upgrades-policy) we do not accept these types of changes in PRs." | gh pr review $PR_URL -r --body-file=-
