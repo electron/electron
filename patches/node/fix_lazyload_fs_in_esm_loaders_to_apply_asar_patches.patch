@@ -28,7 +28,7 @@ index 3334818153068468967baa5adc1ed2382592ec76..ab4c8a4d00f1813e72f1ea8349850b40
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index a609671e64e3b159f6f00d4f69cde2039cc0bc38..7572bfc34d4c21b2ad618a68c4a2026400ad7338 100644
+index 5aa946f66c71beff0b7a43c30638ab28a1a5dfc0..e3afd30ba1f591d0298793bc42fd7166a4219bce 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -25,7 +25,7 @@ const {
