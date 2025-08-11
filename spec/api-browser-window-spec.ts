@@ -7968,6 +7968,109 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
       });
+      ifdescribe(process.platform === 'darwin')('multi-monitor tests', () => {
+        const virtualDisplay = require('@electron-ci/virtual-display');
+        const primaryDisplay = screen.getPrimaryDisplay();
+
+        beforeEach(async () => {
+          virtualDisplay.forceCleanup();
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+        });
+
+        it('should restore window bounds correctly on a secondary display', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          // Verify the virtual display is created correctly
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay.bounds.width).to.equal(1920);
+          expect(targetDisplay.bounds.height).to.equal(1080);
+
+          // Bounds for the test window on the virtual target display
+          const boundsOnTargetDisplay = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100
+          };
+
+          await createAndSaveWindowState(boundsOnTargetDisplay);
+
+          // Restore the window state by creating a new window with the same name
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+          expectBoundsEqual(restoredBounds, boundsOnTargetDisplay);
+
+          w.destroy();
+          virtualDisplay.destroy(targetDisplayId);
+        });
+
+        it('should restore window to a visible location when saved display no longer exists', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          // Verify the virtual display is created correctly
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay.bounds.width).to.equal(1920);
+          expect(targetDisplay.bounds.height).to.equal(1080);
+
+          // Bounds for the test window on the virtual target display
+          const boundsOnTargetDisplay = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100
+          };
+
+          // Save window state on the virtual display
+          await createAndSaveWindowState(boundsOnTargetDisplay);
+
+          virtualDisplay.destroy(targetDisplayId);
+          // Wait for the target virtual display to be destroyed
+          while (screen.getAllDisplays().length > 1) await setTimeout(1000);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+          const primaryWorkArea = primaryDisplay.workArea;
+
+          // Window should be fully visible on the primary display
+          expect(restoredBounds.x).to.be.at.least(primaryWorkArea.x);
+          expect(restoredBounds.y).to.be.at.least(primaryWorkArea.y);
+          expect(restoredBounds.x + restoredBounds.width).to.be.at.most(primaryWorkArea.x + primaryWorkArea.width);
+          expect(restoredBounds.y + restoredBounds.height).to.be.at.most(primaryWorkArea.y + primaryWorkArea.height);
+
+          // Window should maintain its original size
+          expect(restoredBounds.width).to.equal(boundsOnTargetDisplay.width);
+          expect(restoredBounds.height).to.equal(boundsOnTargetDisplay.height);
+
+          w.destroy();
+        });
+      });
     });
   });
 });
