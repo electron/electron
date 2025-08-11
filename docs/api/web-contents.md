@@ -1400,7 +1400,7 @@ win.webContents.on('did-finish-load', async () => {
 })
 ```
 
-#### `contents.executeJavaScript(code[, userGesture])`
+#### `contents.executeJavaScript(code, [userGesture])`
 
 * `code` string
 * `userGesture` boolean (optional) - Default is `false`.
