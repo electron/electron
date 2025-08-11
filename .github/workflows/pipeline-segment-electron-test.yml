@@ -25,6 +25,11 @@ on:
         required: false
         type: boolean
         default: false
+      enable-ssh:
+        description: 'Enable SSH debugging'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
@@ -126,7 +131,7 @@ jobs:
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Setup SSH Debugging
-      if: ${{ inputs.target-platform == 'macos' && env.ACTIONS_STEP_DEBUG == 'true' }}
+      if: ${{ inputs.target-platform == 'macos' && (inputs.enable-ssh || env.ACTIONS_STEP_DEBUG == 'true') }}
       uses: ./src/electron/.github/actions/ssh-debug
       with:
         tunnel: 'true'
