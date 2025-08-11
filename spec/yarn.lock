@@ -19,6 +19,12 @@
 "@electron-ci/uv-dlopen@file:./fixtures/native-addon/uv-dlopen":
   version "0.0.1"
 
+"@electron-ci/virtual-display@file:./fixtures/native-addon/virtual-display":
+  version "1.0.0"
+  dependencies:
+    bindings "^1.5.0"
+    node-addon-api "^8.3.0"
+
 "@electron/asar@^3.2.1", "@electron/asar@^3.2.7":
   version "3.2.10"
   resolved "https://registry.yarnpkg.com/@electron/asar/-/asar-3.2.10.tgz#615cf346b734b23cafa4e0603551010bd0e50aa8"
@@ -517,7 +523,7 @@ binary-extensions@^2.0.0:
   resolved "https://registry.yarnpkg.com/binary-extensions/-/binary-extensions-2.3.0.tgz#f6e14a97858d327252200242d4ccfe522c445522"
   integrity sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==
 
-bindings@^1.2.1:
+bindings@^1.2.1, bindings@^1.5.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/bindings/-/bindings-1.5.0.tgz#10353c9e945334bc0511a6d90b38fbc7c9c504df"
   integrity sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==
@@ -1891,6 +1897,11 @@ node-addon-api@8.0.0:
   version "8.0.0"
   resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-8.0.0.tgz#5453b7ad59dd040d12e0f1a97a6fa1c765c5c9d2"
   integrity sha512-ipO7rsHEBqa9STO5C5T10fj732ml+5kLN1cAG8/jdHd56ldQeGj3Q7+scUS+VHK/qy1zLEwC4wMK5+yM0btPvw==
+
+node-addon-api@^8.3.0:
+  version "8.5.0"
+  resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-8.5.0.tgz#c91b2d7682fa457d2e1c388150f0dff9aafb8f3f"
+  integrity sha512-/bRZty2mXUIFY/xU5HLvveNHlswNJej+RnxBjOMkidWfwZzgTbPG1E3K5TOxRLOR+5hX7bSofy8yf1hZevMS8A==
 
 node-fetch@^2.6.7:
   version "2.7.0"
