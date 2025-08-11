@@ -25,6 +25,7 @@
     "@types/sinon": "^9.0.4",
     "@types/uuid": "^3.4.6",
     "@types/w3c-web-serial": "^1.0.7",
+    "@electron-ci/virtual-display": "file:./fixtures/native-addon/virtual-display/",
     "@types/ws": "^7.2.0",
     "abstract-socket": "github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19",
     "basic-auth": "^2.0.1",
