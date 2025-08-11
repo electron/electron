@@ -209,8 +209,76 @@ HRESULT WindowsToastNotification::ShowInternal(
   REPORT_AND_RETURN_IF_FAILED(SetupCallbacks(toast_notification_.Get()),
                               "WinAPI: SetupCallbacks failed");
 
+  // Append actions after creating notification (XML still mutable before show)
+  if (options.actions.size() > 0 && options.toast_xml.empty()) {
+    AppendActionsToXml(toast_xml.Get(), options);
+  }
+
   REPORT_AND_RETURN_IF_FAILED(toast_notifier_->Show(toast_notification_.Get()),
                               "WinAPI: Show failed");
+  return S_OK;
+}
+
+HRESULT WindowsToastNotification::AppendActionsToXml(
+    IXmlDocument* doc, const NotificationOptions& options) {
+  if (!doc || options.actions.empty())
+    return S_OK;
+
+  // Acquire root <toast>
+  ScopedHString toast_tag(L"toast");
+  ComPtr<IXmlNodeList> toast_nodes;
+  RETURN_IF_FAILED(doc->GetElementsByTagName(toast_tag, &toast_nodes));
+  ComPtr<IXmlNode> toast_root;
+  RETURN_IF_FAILED(toast_nodes->Item(0, &toast_root));
+
+  // Create <actions>
+  ScopedHString actions_tag(L"actions");
+  ComPtr<IXmlElement> actions_el;
+  RETURN_IF_FAILED(doc->CreateElement(actions_tag, &actions_el));
+  ComPtr<IXmlNode> actions_node_tmp;
+  RETURN_IF_FAILED(actions_el.As(&actions_node_tmp));
+  ComPtr<IXmlNode> actions_node;
+  RETURN_IF_FAILED(toast_root->AppendChild(actions_node_tmp.Get(), &actions_node));
+
+  int idx = 0;
+  for (const auto& act : options.actions) {
+    if (idx >= 5)
+      break;  // practical button limit
+    ScopedHString action_tag(L"action");
+    ComPtr<IXmlElement> action_el;
+    RETURN_IF_FAILED(doc->CreateElement(action_tag, &action_el));
+    ComPtr<IXmlNode> action_node_tmp;
+    RETURN_IF_FAILED(action_el.As(&action_node_tmp));
+    ComPtr<IXmlNode> action_node;
+    RETURN_IF_FAILED(actions_node->AppendChild(action_node_tmp.Get(), &action_node));
+
+    ComPtr<IXmlNamedNodeMap> attr_map;
+    RETURN_IF_FAILED(action_node->get_Attributes(&attr_map));
+
+    auto add_attr = [&](const wchar_t* name, const std::wstring& value) {
+      ComPtr<IXmlAttribute> attr;
+      ScopedHString name_h(name);
+      RETURN_IF_FAILED(doc->CreateAttribute(name_h, &attr));
+      ComPtr<IXmlNode> attr_node;
+      RETURN_IF_FAILED(attr.As(&attr_node));
+      ScopedHString value_h(value.c_str());
+      ComPtr<IXmlText> txt;
+      RETURN_IF_FAILED(doc->CreateTextNode(value_h, &txt));
+      ComPtr<IXmlNode> txt_node;
+      RETURN_IF_FAILED(txt.As(&txt_node));
+      ComPtr<IXmlNode> unused_child;
+      RETURN_IF_FAILED(attr_node->AppendChild(txt_node.Get(), &unused_child));
+      ComPtr<IXmlNode> unused_attr;
+      RETURN_IF_FAILED(attr_map->SetNamedItem(attr_node.Get(), &unused_attr));
+      return S_OK;
+    };
+
+    std::u16string content16 = act.text;
+    add_attr(L"content", base::UTF16ToWide(content16));
+    add_attr(L"arguments", L"action=" + std::to_wstring(idx));
+    add_attr(L"activationType", L"foreground");
+    idx++;
+  }
   return S_OK;
 }
 
@@ -641,9 +709,34 @@ ToastEventHandler::~ToastEventHandler() = default;
 IFACEMETHODIMP ToastEventHandler::Invoke(
     winui::Notifications::IToastNotification* sender,
     IInspectable* args) {
-  content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE,
-      base::BindOnce(&Notification::NotificationClicked, notification_));
+  bool dispatched = false;
+  if (args) {
+    ComPtr<ABI::Windows::UI::Notifications::IToastActivatedEventArgs> activated_args;
+    if (SUCCEEDED(args->QueryInterface(IID_PPV_ARGS(&activated_args)))) {
+      HString h_args;
+      if (SUCCEEDED(activated_args->get_Arguments(h_args.GetAddressOf()))) {
+        std::wstring arguments(h_args.GetRawBuffer(nullptr));
+        constexpr std::wstring_view prefix = L"action=";
+        if (arguments.rfind(prefix, 0) == 0) {
+          try {
+            int index = std::stoi(arguments.substr(prefix.size()));
+            if (notification_) {
+              dispatched = true;
+              content::GetUIThreadTaskRunner({})->PostTask(
+                  FROM_HERE, base::BindOnce(&Notification::NotificationAction,
+                                             notification_, index));
+            }
+          } catch (...) {
+          }
+        }
+      }
+    }
+  }
+  if (!dispatched && notification_) {
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce(&Notification::NotificationClicked,
+                                   notification_));
+  }
   DebugLog("Notification clicked");
 
   return S_OK;

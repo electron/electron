@@ -68,6 +68,12 @@ class WindowsToastNotification : public Notification {
       const bool silent,
       ABI::Windows::Data::Xml::Dom::IXmlDocument** toast_xml);
   HRESULT SetXmlAudioSilent(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
+  // Appends <actions> / <action> elements for each custom action button
+  // provided in the NotificationOptions. Uses arguments in the form
+  // "action=<index>" so the activation handler can dispatch the correct
+  // NotificationAction(index) event back to JS.
+  HRESULT AppendActionsToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+                             const NotificationOptions& options);
   HRESULT SetXmlScenarioReminder(
       ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
   HRESULT SetXmlText(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
