@@ -125,13 +125,13 @@ Options:
 * `kioclient5`
 * `kioclient`
 
-### `ELECTRON_OZONE_PLATFORM_HINT` _Linux_
+### `ELECTRON_OZONE_PLATFORM_HINT` _Linux_ _Deprecated_
 
-Selects the preferred platform backend used on Linux. The default one is `x11`. `auto` selects Wayland if possible, X11 otherwise.
+Selects the preferred platform backend used on Linux. `auto` selects Wayland if possible, X11 otherwise.
 
 Options:
 
-* `auto`
+* `auto` (Default)
 * `wayland`
 * `x11`
 
