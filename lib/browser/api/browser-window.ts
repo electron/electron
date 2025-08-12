@@ -199,7 +199,14 @@ BrowserWindow.prototype.setBackgroundThrottling = function (allowed: boolean) {
 };
 
 BrowserWindow.prototype.addBrowserView = function (browserView: BrowserView) {
-  if (browserView.ownerWindow) { browserView.ownerWindow.removeBrowserView(browserView); }
+  // avoid adding the same browserView multiple times
+  if (this._browserViews.includes(browserView)) {
+    return;
+  }
+  const oldOwnerWindow = browserView.ownerWindow;
+  if (oldOwnerWindow && oldOwnerWindow !== this) {
+    oldOwnerWindow.removeBrowserView(browserView);
+  }
   this.contentView.addChildView(browserView.webContentsView);
   browserView.ownerWindow = this;
   browserView.webContents._setOwnerWindow(this);
