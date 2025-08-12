@@ -185,10 +185,10 @@ index 47c73522cbd7c1d12dabfecf6f55a74690ebc189..6b8ed935e8c440cbf655d122a398d33e
  
  struct MidiPermissionDescriptor {
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index a980ed6afb84eceef9c9b594b325e8e3783821ec..ff2898ca035ae5f2bc218615a87ec148e3764385 100644
+index 63df740efad1e407f0990d2ba48a9cbcb8bdb6f8..3973be677468b36124b88293c46cab615a4a63c5 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -145,8 +145,22 @@ String PermissionNameToString(PermissionName name) {
+@@ -146,8 +146,22 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";
