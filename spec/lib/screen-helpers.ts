@@ -208,6 +208,9 @@ export class ScreenCapture {
  * - Win32 arm64 (WOA): virtual screen display is 0x0
  * - Win32 ia32: skipped
  * - Win32 x64: virtual screen display is 0x0
+ *
+ * Note: Display APIs return valid dimensions (e.g. 1280x1024) in CI environments,
+ * but actual window creation fails, resulting in windows with 0x0 bounds.
  */
 export const hasCapturableScreen = () => {
   return process.env.CI ? process.platform === 'darwin' : true;
