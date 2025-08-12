@@ -77,7 +77,7 @@ describe('sharedTexture module', () => {
           const imported = sharedTexture.importSharedTexture({
             // Disable copy as we manage lifetime manually.
             copy: false,
-            ...texture.textureInfo,
+            ...texture.textureInfo
           });
 
           // Step 3: Prepare for transfer to another process (win's renderer)

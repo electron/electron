@@ -13,25 +13,21 @@ The `sharedTexture` module has the following methods:
 ### `sharedTexture.importSharedTexture(options)` _Experimental_
 
 * `options` Object - The information of shared texture to import.
-  * `copy` boolean | Function (optional) - Defaults to `true`. If `true`, when importing, the shared texture will be copied to a new texture, allowing you to release the original native texture early. Otherwise, you have to manually manage the lifetime and wait for all transferred object's `release(callback)` callbacks are invoked, before releasing the original native texture, as the underlying buffer does not copy and may become flaky if lifetime handled poorly. If a function is provided, it will be called when the copy is completed, you can use this event to release the original native texture early.
   * `pixelFormat` string - The pixel format of the texture. Can be `rgba` or `bgra`.
   * `colorSpace` [ColorSpace](structures/color-space.md) (optional) - The color space of the texture.
   * `codedSize` [Size](structures/size.md) - The full dimensions of the shared texture.
   * `visibleRect` [Rectangle](structures/rectangle.md) (optional) - A subsection of [0, 0, codedSize.width, codedSize.height]. In common cases, it is the full section area.
   * `timestamp` number (optional) - A timestamp in microseconds that will be reflected to `VideoFrame`.
   * `handle` [SharedTextureHandle](structures/shared-texture-handle.md) - The shared texture handle.
+  * `disableCopy` boolean (optional) - If `true`, the native texture will not be copied, and you should use `allReleased` callback to keep the native texture alive. Could be useful if GPU memory comsumption is a concern.
+  * `allReleased` Function (optional) - Called when all references are released. If `disableCopy` is `true`, you should keep native texture valid until this callback is called.
 
-Imports the shared texture from the given options.
+Imports the shared texture from the given options. A copy of the native texture will be made, so that you can release the native texture after the import is complete.
 
-Returns [`SharedTextureImported`](structures/shared-texture-imported.md) - The imported shared texture.
+> [!NOTE]
+> This method is only available in the main process.
 
-### `sharedTexture.finishTransferSharedTexture(transfer)` _Experimental_
-
-* `transfer` [SharedTextureTransfer](structures/shared-texture-imported.md) - The transfer object of the shared texture.
-
-Finishes the transfer of the shared texture and get the transferred shared texture.
-
-Returns [`SharedTextureImported`](structures/shared-texture-imported.md) - The imported shared texture from the transfer object.
+Returns `Promise<SharedTextureImported>` - Resolves a [SharedTextureImported](structures/shared-texture-imported.md) when the import is complete.
 
 ### `sharedTexture.sendToRenderer(webContents, imported, ...args)` _Experimental_
 
@@ -52,7 +48,15 @@ Returns `Promise<void>` - Resolves when the transfer is complete.
   * `importedSharedTexture` [SharedTextureImported](structures/shared-texture-imported.md) - The imported shared texture.
   * `...args` any[] - Additional arguments passed from the main process.
 
-Receives imported shared textures from the main process.
+Set a callback to receive imported shared textures from the main process.
 
 > [!NOTE]
 > This method is only available in the renderer process.
+
+## Properties
+
+The `sharedTexture` module has the following properties:
+
+### `sharedTexture.subtle` _Experimental_
+
+A [`SharedTextureSubtle`](structures/shared-texture-subtle.md) property, provides subtle APIs for interacting with shared texture for advanced users.

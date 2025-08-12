@@ -118,8 +118,10 @@ gpu::SyncToken GetSyncTokenFromBase64String(
     return {};
   }
 
+  base::span<const uint8_t> sync_token_span = UNSAFE_BUFFERS(
+      base::span(sync_token_bytes->data(), sync_token_bytes->size()));
   auto* sync_token_source =
-      reinterpret_cast<const gpu::SyncToken*>(sync_token_bytes->data());
+      reinterpret_cast<const gpu::SyncToken*>(sync_token_span.data());
   gpu::SyncToken sync_token(sync_token_source->namespace_id(),
                             sync_token_source->command_buffer_id(),
                             sync_token_source->release_count());
@@ -687,9 +689,10 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   // Extra properties
   bool copy = true;
   base::OnceClosure copy_finish_cb;
-  v8::Local<v8::Value> copy_object;
 
   gin::Dictionary dict(isolate, options.As<v8::Object>());
+
+  v8::Local<v8::Value> copy_object;
   if (dict.Get("copy", &copy_object)) {
     if (copy_object->IsBoolean()) {
       copy = copy_object->BooleanValue(isolate);
