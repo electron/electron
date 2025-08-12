@@ -182,7 +182,6 @@ napi_value Init(napi_env env, napi_value exports) {
       {"destroy", NULL, destroy, NULL, NULL, NULL, napi_default, NULL},
       {"forceCleanup", NULL, forceCleanup, NULL, NULL, NULL, napi_default,
        NULL}};
-      {"destroy", NULL, destroy, NULL, NULL, NULL, napi_default, NULL}};
 
   if (napi_define_properties(env, exports,
                              sizeof(descriptors) / sizeof(*descriptors),
