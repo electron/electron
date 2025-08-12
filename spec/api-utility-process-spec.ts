@@ -236,6 +236,41 @@ describe('utilityProcess module', () => {
       await once(child, 'exit');
       expect(log).to.equal(pathToFileURL(fixtureFile) + '\n');
     });
+
+    it('import \'electron/lol\' should throw', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'electron-modules', 'import-lol.mjs'), [], {
+        stdio: ['ignore', 'ignore', 'pipe']
+      });
+      let stderr = '';
+      child.stderr!.on('data', (data) => { stderr += data.toString('utf8'); });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
+      expect(stderr).to.match(/Error \[ERR_MODULE_NOT_FOUND\]/);
+    });
+
+    it('import \'electron/main\' should not throw', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'electron-modules', 'import-main.mjs'));
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('import \'electron/renderer\' should not throw', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'electron-modules', 'import-renderer.mjs'));
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('import \'electron/common\' should not throw', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'electron-modules', 'import-common.mjs'));
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('import \'electron/utility\' should not throw', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'electron-modules', 'import-utility.mjs'));
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
   });
 
   describe('pid property', () => {
