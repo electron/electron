@@ -17,6 +17,7 @@ class DummyManager {
             print("[DummyManager.createDummy:\(#line)] Failed to create virtual display - not connected")
             return nil
         }
+
         self.dummyCounter += 1
         self.definedDummies[self.dummyCounter] = DefinedDummy(dummy: dummy)
         return self.dummyCounter
