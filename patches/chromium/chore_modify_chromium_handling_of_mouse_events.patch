@@ -34,10 +34,10 @@ index 2dc44d4787d5198cff7be2cf98ad5acf2d3a9a0b..27a0335aac2bd4239616cf71f5d015c9
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 896721c02c1cf0dac03d98b152af210e6382ccee..f84b915edfd76df977aaa4fc7f0c1ae694726784 100644
+index 315356b513e9f2c0ce7658aefeb69d0ac327c4de..54a94e1348fa196eaee8314076c47286c9ab0bcc 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1358,6 +1358,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
+@@ -1367,6 +1367,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
    return background_paint_brush_;
  }
  

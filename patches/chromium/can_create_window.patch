@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 27ea41fb7d0134dc2e9bc2f2a7c7d85ef5ce61a3..3735d7ed0d719f8957c80030aee86f169ddbf69e 100644
+index 4ee7d0096bf49113f6d7a4d7d3f205ec75d2ef77..53c24fa0fb70de9dc909a6b2031d9ee121a9ebd5 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -9817,6 +9817,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 27ea41fb7d0134dc2e9bc2f2a7c7d85ef5ce61a3..3735d7ed0d719f8957c80030aee86f16
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 50aa090d971e4043a9a1067ee2c6e20d21c867f4..32927697a917281fa92bdf829a8f8a25833fcb6a 100644
+index b92c95b5f2aabc842e277244b42c33dadde863a2..2878fc2a499fd8dabd06999e77de577d9c6da71e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5316,6 +5316,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
