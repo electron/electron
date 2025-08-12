@@ -814,8 +814,12 @@ void NativeWindow::SetAccessibleTitle(const std::string& title) {
   WidgetDelegate::SetAccessibleTitle(base::UTF8ToUTF16(title));
 }
 
-std::string NativeWindow::GetAccessibleTitle() {
+std::string NativeWindow::GetAccessibleTitle() const {
   return base::UTF16ToUTF8(GetAccessibleWindowTitle());
+}
+
+std::string NativeWindow::GetName() const {
+  return window_name_;
 }
 
 void NativeWindow::HandlePendingFullscreenTransitions() {
