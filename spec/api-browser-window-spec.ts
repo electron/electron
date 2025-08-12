@@ -1,4 +1,4 @@
-import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain, BrowserWindowConstructorOptions } from 'electron/main';
+import { app, BrowserWindow, BaseWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain, BrowserWindowConstructorOptions } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -57,6 +57,8 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow constructor', () => {
+    afterEach(closeAllWindows);
+
     it('allows passing void 0 as the webContents', async () => {
       expect(() => {
         const w = new BrowserWindow({
@@ -99,6 +101,38 @@ describe('BrowserWindow module', () => {
       const savedState = prefs?.windowStates?.['test-window-state-schema'] || null;
 
       expect(savedState).to.be.null('window state with window name "test-window-state-schema" should not exist');
+    });
+
+    it('throws error when creating windows with duplicate names', () => {
+      const w1 = new BrowserWindow({ show: false, name: 'duplicate-name' });
+
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new BrowserWindow({ show: false, name: 'duplicate-name' });
+      }).to.throw("Window name 'duplicate-name' is already in use. Window names must be unique.");
+
+      w1.destroy();
+    });
+
+    it('prevents BaseWindow and BrowserWindow from using same name', () => {
+      const base = new BaseWindow({ show: false, name: 'shared-name' });
+
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new BrowserWindow({ show: false, name: 'shared-name' });
+      }).to.throw("Window name 'shared-name' is already in use. Window names must be unique.");
+
+      base.destroy();
+    });
+
+    it('allows reusing name after window is destroyed', () => {
+      const w1 = new BrowserWindow({ show: false, name: 'reusable-name' });
+      w1.destroy();
+
+      expect(() => {
+        const w2 = new BrowserWindow({ show: false, name: 'reusable-name' });
+        w2.destroy();
+      }).not.to.throw();
     });
   });
 

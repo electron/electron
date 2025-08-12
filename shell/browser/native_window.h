@@ -172,9 +172,11 @@ class NativeWindow : public base::SupportsUserData,
   void SetTitle(std::string_view title);
   [[nodiscard]] std::string GetTitle() const;
 
+  [[nodiscard]] std::string GetName() const;
+
   // Ability to augment the window title for the screen readers.
   void SetAccessibleTitle(const std::string& title);
-  std::string GetAccessibleTitle();
+  [[nodiscard]] std::string GetAccessibleTitle() const;
 
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetSkipTaskbar(bool skip) = 0;
