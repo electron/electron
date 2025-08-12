@@ -141,10 +141,10 @@ index a5ac9d4a417ac8e75e761c40841f41ab9057c761..292bd1f9de78828e739dae24a45a1dd3
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 691726eb23434005adc559534fc0aeede937cc92..a980ed6afb84eceef9c9b594b325e8e3783821ec 100644
+index b533436f91ba67c6060d4a1976f7c197b6db3afc..63df740efad1e407f0990d2ba48a9cbcb8bdb6f8 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -145,6 +145,8 @@ String PermissionNameToString(PermissionName name) {
+@@ -146,6 +146,8 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";
