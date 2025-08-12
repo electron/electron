@@ -18,6 +18,7 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -1148,7 +1149,36 @@ gin_helper::WrappableBase* BaseWindow::New(gin_helper::Arguments* args) {
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
+  std::string error_message;
+  if (!IsWindowNameValid(options, &error_message)) {
+    // Window name is already in use throw an error and do not create the window
+    args->ThrowError(error_message);
+    return nullptr;
+  }
+
   return new BaseWindow(args, options);
+}
+
+// static
+bool BaseWindow::IsWindowNameValid(const gin_helper::Dictionary& options,
+                                   std::string* error_message) {
+  std::string window_name;
+  if (options.Get(options::kName, &window_name) && !window_name.empty()) {
+    // Check if window name is already in use by another window
+    // Window names must be unique for state persistence to work correctly
+    const auto& windows = electron::WindowList::GetWindows();
+    bool name_in_use = std::any_of(windows.begin(), windows.end(),
+                                   [&window_name](const auto* const window) {
+                                     return window->GetName() == window_name;
+                                   });
+
+    if (name_in_use) {
+      *error_message = "Window name '" + window_name +
+                       "' is already in use. Window names must be unique.";
+      return false;
+    }
+  }
+  return true;
 }
 
 // static
