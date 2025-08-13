@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld('textures', {
       // Step 5: Receive the imported shared texture
       await cb(imported);
 
-      // Step 9: Release the imported shared texture since we're done.
+      // Release the imported shared texture since we're done.
       // No need to use the callback here, as the util function automatically
       // managed the lifetime via sync token.
       imported.release();

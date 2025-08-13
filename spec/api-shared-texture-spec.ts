@@ -20,7 +20,7 @@ describe('sharedTexture module', () => {
   const imagePath = path.join(dirPath, 'image.png');
   const targetImage = nativeImage.createFromPath(imagePath);
 
-  describe('import shared texture produced by osr with', () => {
+  describe('import shared texture produced by osr', () => {
     const {
       app,
       BrowserWindow,
@@ -35,10 +35,15 @@ describe('sharedTexture module', () => {
       }
     });
 
-    it('successfully imported and rendered with raw api', (done) => {
-      const capturedTextures = new Map<string, any>();
-      const preloadPath = path.join(dirPath, 'raw', 'preload.js');
-      const htmlPath = path.join(dirPath, 'raw', 'index.html');
+    it('successfully imported and rendered with subtle api', (done) => {
+      type CapturedTextureHolder = {
+        importedSubtle: Electron.SharedTextureImportedSubtle,
+        texture: Electron.OffscreenSharedTexture
+      }
+
+      const capturedTextures = new Map<string, CapturedTextureHolder>();
+      const preloadPath = path.join(dirPath, 'subtle', 'preload.js');
+      const htmlPath = path.join(dirPath, 'subtle', 'index.html');
 
       const createWindow = () => {
         const win = new BrowserWindow({
@@ -74,17 +79,13 @@ describe('sharedTexture module', () => {
 
           // Step 2: Import as SharedTextureImported
           console.log(texture.textureInfo);
-          const imported = sharedTexture.importSharedTexture({
-            // Disable copy as we manage lifetime manually.
-            copy: false,
-            ...texture.textureInfo
-          });
+          const importedSubtle = sharedTexture.subtle.importSharedTexture(texture.textureInfo);
 
           // Step 3: Prepare for transfer to another process (win's renderer)
-          const transfer = imported.startTransferSharedTexture();
+          const transfer = importedSubtle.startTransferSharedTexture();
 
           const id = randomUUID();
-          capturedTextures.set(id, { imported, texture });
+          capturedTextures.set(id, { importedSubtle, texture });
 
           // Step 4: Send the shared texture to the renderer process (goto preload.js)
           win.webContents.send('shared-texture', id, transfer);
@@ -95,10 +96,10 @@ describe('sharedTexture module', () => {
           const data = capturedTextures.get(id);
           if (data) {
             capturedTextures.delete(id);
-            const { imported, texture } = data;
+            const { importedSubtle, texture } = data;
 
             // Step 13: Release the imported shared texture
-            imported.release(() => {
+            importedSubtle.release(() => {
               // Step 14: Release the shared texture once GPU is done
               texture.release();
             });
@@ -155,9 +156,9 @@ describe('sharedTexture module', () => {
       });
     }).timeout(debugSpec ? 100000 : 10000);
 
-    it('successfully imported and rendered with util api', (done) => {
-      const preloadPath = path.join(dirPath, 'util', 'preload.js');
-      const htmlPath = path.join(dirPath, 'util', 'index.html');
+    it('successfully imported and rendered with managed api', (done) => {
+      const preloadPath = path.join(dirPath, 'managed', 'preload.js');
+      const htmlPath = path.join(dirPath, 'managed', 'index.html');
 
       const createWindow = () => {
         const win = new BrowserWindow({
@@ -193,38 +194,41 @@ describe('sharedTexture module', () => {
 
           // Step 2: Import as SharedTextureImported
           console.log(texture.textureInfo);
-          const imported = sharedTexture.importSharedTexture(texture.textureInfo);
+          const imported = sharedTexture.importSharedTexture({
+            textureInfo: texture.textureInfo,
+            allReferenceReleased: () => {
+              // Release the shared texture source once GPU is done.
+              // Will be called when all processes have finished using the shared texture.
+              texture.release();
+
+              // Slightly timeout and capture the node screenshot
+              setTimeout(async () => {
+                // Compare the captured image with the target image
+                const captured = await win.webContents.capturePage({
+                  x: 16,
+                  y: 16,
+                  width: 128,
+                  height: 128
+                });
+
+                // Resize the target image to match the captured image size, in case dpr != 1
+                const target = targetImage.resize({ ...captured.getSize() });
+
+                // nativeImage have error comparing pixel data when color space is different,
+                // send to browser for comparison using canvas.
+                win.webContents.send('verify-captured-image', {
+                  captured: captured.toDataURL(),
+                  target: target.toDataURL()
+                });
+              }, 300);
+            }
+          });
 
           // Step 3: Transfer to another process (win's renderer)
           await sharedTexture.sendToRenderer(win.webContents, imported);
 
           // Step 4: Release the imported and wait for signal to release the source
-          imported.release(() => {
-            // Step 10: Release the shared texture source once GPU is done.
-            // Will be called when all processes have finished using the shared texture.
-            texture.release();
-          });
-
-          // Slightly timeout and capture the node screenshot
-          setTimeout(async () => {
-            // Compare the captured image with the target image
-            const captured = await win.webContents.capturePage({
-              x: 16,
-              y: 16,
-              width: 128,
-              height: 128
-            });
-
-            // Resize the target image to match the captured image size, in case dpr != 1
-            const target = targetImage.resize({ ...captured.getSize() });
-
-            // nativeImage have error comparing pixel data when color space is different,
-            // send to browser for comparison using canvas.
-            win.webContents.send('verify-captured-image', {
-              captured: captured.toDataURL(),
-              target: target.toDataURL()
-            });
-          }, 300);
+          imported.release();
         });
 
         ipcMain.on('verify-captured-image-done', (event: any, result: { difference: number, total: number }) => {

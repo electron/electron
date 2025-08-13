@@ -3,10 +3,10 @@ window.initWebGpu().catch((err) => {
   window.textures.webGpuUnavailable();
 });
 
-window.textures.onSharedTexture(async (id, imported) => {
+window.textures.onSharedTexture(async (id, importedSubtle) => {
   try {
     // Step 7: Get VideoFrame from the imported texture
-    const frame = imported.getVideoFrame();
+    const frame = importedSubtle.getVideoFrame();
 
     // Step 8: Render using WebGPU
     await window.renderFrame(frame);
