@@ -13,7 +13,7 @@ type AllReleasedCallback = (imported: Electron.SharedTextureImported) => void;
 
 type SharedTextureImportedWrapper = {
   texture: Electron.SharedTextureImported;
-  allReleased: AllReleasedCallback | undefined;
+  allReferenceReleased: AllReleasedCallback | undefined;
   mainReference: boolean;
   rendererReferences: Map<number, number>;
 }
@@ -54,7 +54,7 @@ function wrapperReleaseFromRenderer (id: string, sender: Electron.WebContents) {
   // Actually release the texture if no one is referencing it
   if (wrapper.rendererReferences.size === 0 && !wrapper.mainReference) {
     wrapper.texture.subtle.release(() => {
-      wrapper.allReleased?.(wrapper.texture);
+      wrapper.allReferenceReleased?.(wrapper.texture);
       managedSharedTextures.delete(id);
     });
   }
@@ -70,7 +70,7 @@ function wrapperReleaseFromMain (id: string) {
   wrapper.mainReference = false;
   if (wrapper.rendererReferences.size === 0) {
     wrapper.texture.subtle.release(() => {
-      wrapper.allReleased?.(wrapper.texture);
+      wrapper.allReferenceReleased?.(wrapper.texture);
       managedSharedTextures.delete(id);
     });
   }
@@ -107,36 +107,9 @@ async function sendToRenderer (receiver: Electron.WebContents, imported: Electro
   }
 }
 
-async function importSharedTexture (options: Electron.ImportSharedTextureOptions) {
-  const disableCopy = options.disableCopy ?? false;
-
-  const imported = await new Promise<Electron.SharedTextureImportedSubtle>((resolve, reject) => {
-    try {
-      const copyOption = disableCopy
-        ? undefined
-        : () => {
-            resolve(ret);
-          };
-
-      const ret = sharedTextureNative.importSharedTexture({
-        copy: copyOption,
-        pixelFormat: options.pixelFormat,
-        colorSpace: options.colorSpace,
-        codedSize: options.codedSize,
-        visibleRect: options.visibleRect,
-        timestamp: options.timestamp,
-        handle: options.handle
-      });
-
-      if (disableCopy) {
-        resolve(ret);
-      }
-    } catch (e) {
-      reject(e);
-    }
-  });
-
+function importSharedTexture (options: Electron.ImportSharedTextureOptions) {
   const id = randomUUID();
+  const imported = sharedTextureNative.importSharedTexture(options.textureInfo);
   const ret: Electron.SharedTextureImported = {
     textureId: id,
     subtle: imported,
@@ -148,7 +121,7 @@ async function importSharedTexture (options: Electron.ImportSharedTextureOptions
 
   const wrapper: SharedTextureImportedWrapper = {
     texture: ret,
-    allReleased: options.allReleased,
+    allReferenceReleased: options.allReferenceReleased,
     mainReference: true,
     rendererReferences: new Map()
   };
