@@ -130,7 +130,8 @@ std::string TransferVideoPixelFormatToString(media::VideoPixelFormat format) {
   }
 }
 
-struct ImportedSharedTexture {
+struct ImportedSharedTexture
+    : base::RefCountedThreadSafe<ImportedSharedTexture> {
   // Metadata
   gfx::Size coded_size;
   gfx::Rect visible_rect;
@@ -146,22 +147,6 @@ struct ImportedSharedTexture {
 
   void UpdateReleaseSyncToken(const gpu::SyncToken& token);
   void SetupReleaseSyncTokenCallback();
-
-  // Create VideoFrame from the shared image.
-  v8::Local<v8::Value> CreateVideoFrame(v8::Isolate* isolate);
-
-  // Monitor garbage collection.
-  std::unique_ptr<v8::Persistent<v8::Value>> persistent_;
-  void ResetPersistent() const { persistent_->Reset(); }
-  v8::Persistent<v8::Value>* CreatePersistent(v8::Isolate* isolate,
-                                              v8::Local<v8::Value> value) {
-    persistent_ = std::make_unique<v8::Persistent<v8::Value>>(isolate, value);
-    return persistent_.get();
-  }
-
-  // Release the shared image.
-  bool IsReleased() const { return client_shared_image.get() == nullptr; }
-  void Release();
 
   // Transfer to other Chromium processes.
   v8::Local<v8::Value> StartTransferSharedTexture(v8::Isolate* isolate);
@@ -183,38 +168,68 @@ struct ImportedSharedTexture {
   // `release()` on the source object without worrying the target object
   // didn't finish acquiring the resource at gpu process.
   void SetReleaseSyncToken(v8::Isolate* isolate, v8::Local<v8::Value> options);
+
+  // The cleanup happens at destructor.
+ private:
+  friend class base::RefCountedThreadSafe<ImportedSharedTexture>;
+  ~ImportedSharedTexture();
 };
 
-void OnVideoFrameMailboxReleased(ImportedSharedTexture* ist,
-                                 const gpu::SyncToken& sync_token) {
-  ist->UpdateReleaseSyncToken(sync_token);
-}
+// Wraps the structure so that it can be ref counted.
+struct ImportedSharedTextureWrapper {
+  // Make the import shared texture wrapper ref counted, so that it can be
+  // held by multiple VideoFrames.
+  scoped_refptr<ImportedSharedTexture> ist;
 
-void ImportedSharedTexture::Release() {
-  if (IsReleased()) {
-    LOG(ERROR) << "Imported shared texture already released.";
+  // Monitor garbage collection.
+  std::unique_ptr<v8::Persistent<v8::Value>> persistent_;
+  void ResetPersistent() const { persistent_->Reset(); }
+  v8::Persistent<v8::Value>* CreatePersistent(v8::Isolate* isolate,
+                                              v8::Local<v8::Value> value) {
+    persistent_ = std::make_unique<v8::Persistent<v8::Value>>(isolate, value);
+    return persistent_.get();
+  }
+
+  // Create VideoFrame from the shared image.
+  v8::Local<v8::Value> CreateVideoFrame(v8::Isolate* isolate);
+
+  // Release the shared image.
+  bool IsReferenceReleased() const { return ist.get() == nullptr; }
+  void ReleaseReference();
+};
+
+void ImportedSharedTextureWrapper::ReleaseReference() {
+  if (IsReferenceReleased()) {
+    LOG(ERROR) << "This imported shared texture is already released.";
     return;
   }
 
-  SetupReleaseSyncTokenCallback();
-  client_shared_image.reset();
+  // Drop the reference, if at lease one VideoFrame is still holding it,
+  // the final clean up will wait for them.
+  ist.reset();
 }
 
-v8::Local<v8::Value> ImportedSharedTexture::CreateVideoFrame(
+// This function will be called when the VideoFrame is destructed.
+void OnVideoFrameMailboxReleased(
+    const scoped_refptr<ImportedSharedTexture>& ist,
+    const gpu::SyncToken& sync_token) {
+  ist->UpdateReleaseSyncToken(sync_token);
+}
+
+v8::Local<v8::Value> ImportedSharedTextureWrapper::CreateVideoFrame(
     v8::Isolate* isolate) {
   auto* current_script_state = blink::ScriptState::ForCurrentRealm(isolate);
   auto* current_execution_context =
       blink::ToExecutionContext(current_script_state);
 
-  auto si = this->client_shared_image;
-
-  auto cb = base::BindOnce(OnVideoFrameMailboxReleased, this);
+  auto si = ist->client_shared_image;
+  auto cb = base::BindOnce(OnVideoFrameMailboxReleased, ist);
 
   scoped_refptr<media::VideoFrame> raw_frame =
       media::VideoFrame::WrapSharedImage(
-          this->pixel_format, si, this->frame_creation_sync_token,
-          std::move(cb), this->coded_size, this->visible_rect, this->coded_size,
-          base::Microseconds(this->timestamp));
+          ist->pixel_format, si, ist->frame_creation_sync_token, std::move(cb),
+          ist->coded_size, ist->visible_rect, ist->coded_size,
+          base::Microseconds(ist->timestamp));
 
   blink::VideoFrame* frame = blink::MakeGarbageCollected<blink::VideoFrame>(
       raw_frame, current_execution_context);
@@ -224,7 +239,7 @@ v8::Local<v8::Value> ImportedSharedTexture::CreateVideoFrame(
 
 v8::Local<v8::Value> ImportedSharedTexture::StartTransferSharedTexture(
     v8::Isolate* isolate) {
-  auto exported = this->client_shared_image->Export();
+  auto exported = client_shared_image->Export();
 
   // Use mojo to serialize the exported shared image.
   mojo::Message message(0, 0, MOJO_CREATE_MESSAGE_FLAG_UNLIMITED_SIZE, 0);
@@ -241,14 +256,13 @@ v8::Local<v8::Value> ImportedSharedTexture::StartTransferSharedTexture(
   gin::Dictionary root(isolate, v8::Object::New(isolate));
   root.Set("transfer", encoded);
 
-  auto sync_token =
-      GetBase64StringFromSyncToken(this->frame_creation_sync_token);
+  auto sync_token = GetBase64StringFromSyncToken(frame_creation_sync_token);
   root.Set("syncToken", sync_token);
 
-  root.Set("pixelFormat", TransferVideoPixelFormatToString(this->pixel_format));
-  root.Set("codedSize", this->coded_size);
-  root.Set("visibleRect", this->visible_rect);
-  root.Set("timestamp", this->timestamp);
+  root.Set("pixelFormat", TransferVideoPixelFormatToString(pixel_format));
+  root.Set("codedSize", coded_size);
+  root.Set("visibleRect", visible_rect);
+  root.Set("timestamp", timestamp);
 
   return gin::ConvertToV8(isolate, root);
 }
@@ -257,8 +271,7 @@ v8::Local<v8::Value> ImportedSharedTexture::GetFrameCreationSyncToken(
     v8::Isolate* isolate) {
   gin::Dictionary root(isolate, v8::Object::New(isolate));
 
-  auto sync_token =
-      GetBase64StringFromSyncToken(this->frame_creation_sync_token);
+  auto sync_token = GetBase64StringFromSyncToken(frame_creation_sync_token);
   root.Set("syncToken", sync_token);
 
   return gin::ConvertToV8(isolate, root);
@@ -274,140 +287,136 @@ void ImportedSharedTexture::SetReleaseSyncToken(v8::Isolate* isolate,
   UpdateReleaseSyncToken(sync_token);
 }
 
+ImportedSharedTexture::~ImportedSharedTexture() {
+  // When nothing holds this, 1) all VideoFrames are destructed and the
+  // release_sync_token have been updated; 2) the user called `release()`
+  // explicitly. This is destructed and the final clean up is started.
+  SetupReleaseSyncTokenCallback();
+  client_shared_image.reset();
+}
+
 void ImportedSharedTexture::UpdateReleaseSyncToken(
     const gpu::SyncToken& token) {
   base::AutoLock locker(release_sync_token_lock_);
 
   auto* sii = GetSharedImageInterface();
-  if (this->release_sync_token.HasData()) {
+  if (release_sync_token.HasData()) {
     // If we already have a release sync token, we need to wait for it
     // to be signaled before we can set the new one.
-    sii->WaitSyncToken(this->release_sync_token);
+    sii->WaitSyncToken(release_sync_token);
   }
 
   // Set the new release sync token to use at last.
-  this->release_sync_token = token;
+  release_sync_token = token;
 }
 
 void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
   base::AutoLock locker(release_sync_token_lock_);
 
   auto* sii = GetSharedImageInterface();
-  if (!this->release_sync_token.HasData()) {
-    this->release_sync_token = sii->GenUnverifiedSyncToken();
+  if (!release_sync_token.HasData()) {
+    release_sync_token = sii->GenUnverifiedSyncToken();
   }
 
-  this->client_shared_image->UpdateDestructionSyncToken(
-      this->release_sync_token);
+  client_shared_image->UpdateDestructionSyncToken(release_sync_token);
 
-  if (this->release_callback) {
-    GetContextSupport()->SignalSyncToken(this->release_sync_token,
-                                         std::move(this->release_callback));
+  if (release_callback) {
+    GetContextSupport()->SignalSyncToken(release_sync_token,
+                                         std::move(release_callback));
   }
-}
-
-void PersistentCallbackPass2(
-    const v8::WeakCallbackInfo<ImportedSharedTexture>& data) {
-  // Emit warning only once
-  static std::once_flag flag;
-  std::call_once(flag, [] {
-    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-        FROM_HERE, base::BindOnce([] {
-          LOG(ERROR)
-              << "SharedTextureImported was garbage collected before calling "
-                 "`release()`. You have to manually release the resource once "
-                 "you're done with it.";
-        }));
-  });
 }
 
 void PersistentCallbackPass1(
-    const v8::WeakCallbackInfo<ImportedSharedTexture>& data) {
-  auto* imp = data.GetParameter();
-  if (!imp->IsReleased()) {
+    const v8::WeakCallbackInfo<ImportedSharedTextureWrapper>& data) {
+  auto* wrapper = data.GetParameter();
+  // The |wrapper->ist| must be valid here, as we are a holder of it.
+  if (!wrapper->IsReferenceReleased()) {
     // Release it for user here.
-    imp->Release();
+    wrapper->ReleaseReference();
     // Emit a warning when the user didn't properly manually release the
-    // texture, output it in the second pass callback.
-    data.SetSecondPassCallback(PersistentCallbackPass2);
+    // texture.
+    LOG(ERROR) << "SharedTextureImported was garbage collected before calling "
+                  "`release()`. You have to manually release the resource once "
+                  "you're done with it.";
   }
   // We are responsible for resetting the persistent handle.
-  imp->ResetPersistent();
+  wrapper->ResetPersistent();
   // Finally, release the import monitor;
-  delete imp;
+  delete wrapper;
 }
 
 void ImportedTextureGetVideoFrame(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
-  auto* tex = static_cast<ImportedSharedTexture*>(
+  auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
       info.Data().As<v8::External>()->Value());
 
-  if (tex->IsReleased()) {
+  if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
         "The shared texture has been released.");
     return;
   }
 
-  auto ret = tex->CreateVideoFrame(isolate);
+  auto ret = wrapper->CreateVideoFrame(isolate);
   info.GetReturnValue().Set(ret);
 }
 
 void ImportedTextureStartTransferSharedTexture(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
-  auto* tex = static_cast<ImportedSharedTexture*>(
+  auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
       info.Data().As<v8::External>()->Value());
 
-  if (tex->IsReleased()) {
+  if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
         "The shared texture has been released.");
     return;
   }
 
-  auto ret = tex->StartTransferSharedTexture(isolate);
+  auto ret = wrapper->ist->StartTransferSharedTexture(isolate);
   info.GetReturnValue().Set(ret);
 }
 
 void ImportedTextureRelease(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  auto* tex = static_cast<ImportedSharedTexture*>(
+  auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
       info.Data().As<v8::External>()->Value());
 
   auto cb = info[0];
   if (cb->IsFunction()) {
     auto* isolate = info.GetIsolate();
-    gin::ConvertFromV8(isolate, cb, &tex->release_callback);
+    gin::ConvertFromV8(isolate, cb, &wrapper->ist->release_callback);
   }
 
   // Release the shared texture, so that future frames can be generated.
-  tex->Release();
+  wrapper->ReleaseReference();
 
-  // Release the wrapper happens at GC persistent callback, don't release here.
+  // Release of the wrapper happens at GC persistent callback.
+  // Release of the |ist| happens when nothing holds a reference to it.
 }
 
 void ImportedTextureGetFrameCreationSyncToken(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
-  auto* tex = static_cast<ImportedSharedTexture*>(
+  auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
       info.Data().As<v8::External>()->Value());
 
-  if (tex->IsReleased()) {
+  if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
         "The shared texture has been released.");
     return;
   }
 
-  auto ret = tex->GetFrameCreationSyncToken(isolate);
+  auto ret = wrapper->ist->GetFrameCreationSyncToken(isolate);
   info.GetReturnValue().Set(ret);
 }
 
 void ImportedTextureSetReleaseSyncToken(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
-  auto* tex = static_cast<ImportedSharedTexture*>(
+  auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
       info.Data().As<v8::External>()->Value());
 
-  if (tex->IsReleased()) {
+  if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
         "The shared texture has been released.");
     return;
@@ -419,13 +428,16 @@ void ImportedTextureSetReleaseSyncToken(
     return;
   }
 
-  tex->SetReleaseSyncToken(isolate, info[0].As<v8::Object>());
+  wrapper->ist->SetReleaseSyncToken(isolate, info[0].As<v8::Object>());
 }
 
 v8::Local<v8::Value> CreateImportedSharedTextureFromSharedImage(
     v8::Isolate* isolate,
     ImportedSharedTexture* imported) {
-  auto imported_wrapped = v8::External::New(isolate, imported);
+  auto* wrapper = new ImportedSharedTextureWrapper();
+  wrapper->ist = base::WrapRefCounted(imported);
+
+  auto imported_wrapped = v8::External::New(isolate, wrapper);
   gin::Dictionary root(isolate, v8::Object::New(isolate));
 
   auto releaser = v8::Function::New(isolate->GetCurrentContext(),
@@ -461,9 +473,9 @@ v8::Local<v8::Value> CreateImportedSharedTextureFromSharedImage(
   root.Set("setReleaseSyncToken", set_release_sync_token);
 
   auto root_local = gin::ConvertToV8(isolate, root);
-  auto* persistent = imported->CreatePersistent(isolate, root_local);
+  auto* persistent = wrapper->CreatePersistent(isolate, root_local);
 
-  persistent->SetWeak(imported, PersistentCallbackPass1,
+  persistent->SetWeak(wrapper, PersistentCallbackPass1,
                       v8::WeakCallbackType::kParameter);
 
   return root_local;
@@ -683,11 +695,14 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   gpu::SharedImageUsageSet shared_image_usage =
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_APPLE)
       gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_GLES2_WRITE |
-      gpu::SHARED_IMAGE_USAGE_RASTER_READ | gpu::SHARED_IMAGE_USAGE_DISPLAY_READ |
-      gpu::SHARED_IMAGE_USAGE_WEBGPU_READ | gpu::SHARED_IMAGE_USAGE_WEBGPU_WRITE;
+      gpu::SHARED_IMAGE_USAGE_RASTER_READ |
+      gpu::SHARED_IMAGE_USAGE_DISPLAY_READ |
+      gpu::SHARED_IMAGE_USAGE_WEBGPU_READ |
+      gpu::SHARED_IMAGE_USAGE_WEBGPU_WRITE;
 #else
       gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_GLES2_WRITE |
-      gpu::SHARED_IMAGE_USAGE_RASTER_READ | gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
+      gpu::SHARED_IMAGE_USAGE_RASTER_READ |
+      gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
 #endif
 
   auto si_format = viz::GetSharedImageFormat(buffer_format.value());
