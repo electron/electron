@@ -8006,15 +8006,16 @@ describe('BrowserWindow module', () => {
         const virtualDisplay = require('@electron-ci/virtual-display');
         const primaryDisplay = screen.getPrimaryDisplay();
 
-        beforeEach(async () => {
+        beforeEach(() => {
           virtualDisplay.forceCleanup();
-          // We expect only the primary display to be present before the tests start
-          expect(screen.getAllDisplays().length).to.equal(1);
         });
 
         it('should restore window bounds correctly on a secondary display', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
           // Create a new virtual target display to the right of the primary display
           const targetDisplayId = virtualDisplay.create({
             width: 1920,
@@ -8057,6 +8058,9 @@ describe('BrowserWindow module', () => {
         it('should restore window to a visible location when saved display no longer exists', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
           // Create a new virtual target display to the right of the primary display
           const targetDisplayId = virtualDisplay.create({
             width: 1920,
@@ -8109,6 +8113,8 @@ describe('BrowserWindow module', () => {
         it('should fallback to nearest display when saved display no longer exists', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
 
           // Create first virtual display to the right of primary
           const middleDisplayId = virtualDisplay.create({
@@ -8175,6 +8181,8 @@ describe('BrowserWindow module', () => {
         it('should restore multiple named windows independently across displays', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
 
           // Create a first virtual display to the right of the primary display
           const targetDisplayId1 = virtualDisplay.create({
@@ -8224,6 +8232,11 @@ describe('BrowserWindow module', () => {
             x: targetDisplay2.workArea.x + 150,
             y: targetDisplay2.workArea.y + 150
           };
+
+          // Clear window state for all three windows from previous tests
+          BrowserWindow.clearWindowState(window1Name);
+          BrowserWindow.clearWindowState(window2Name);
+          BrowserWindow.clearWindowState(window3Name);
 
           // Create and save state for all three windows
           const w1 = new BrowserWindow({
@@ -8283,6 +8296,9 @@ describe('BrowserWindow module', () => {
         it('should restore fullscreen state on correct display', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
           // Create a new virtual target display to the right of the primary display
           const targetDisplayId = virtualDisplay.create({
             width: 1920,
@@ -8329,6 +8345,9 @@ describe('BrowserWindow module', () => {
         it('should restore maximized state on correct display', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
           // Create a new virtual target display to the right of the primary display
           const targetDisplayId = virtualDisplay.create({
             width: 1920,
@@ -8381,6 +8400,9 @@ describe('BrowserWindow module', () => {
         it('should restore kiosk state on correct display', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
           // Create a new virtual target display to the right of the primary display
           const targetDisplayId = virtualDisplay.create({
             width: 1920,
@@ -8427,6 +8449,9 @@ describe('BrowserWindow module', () => {
         it('should maintain same bounds when target display resolution increases', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
           // Create initial virtual display
           const targetDisplayId = virtualDisplay.create({
             width: 1920,
@@ -8478,6 +8503,9 @@ describe('BrowserWindow module', () => {
         it('should reposition and resize window when target display resolution decreases', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
           // Create initial virtual display with high resolution
           const targetDisplayId = virtualDisplay.create({
             width: 2560,
