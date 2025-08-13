@@ -5,13 +5,13 @@ contextBridge.exposeInMainWorld('textures', {
   onSharedTexture: (cb) => {
     ipcRenderer.on('shared-texture', async (e, id, transfer) => {
       // Step 5: Get the shared texture from the transfer
-      const imported = sharedTexture.finishTransferSharedTexture(transfer);
+      const importedSubtle = sharedTexture.subtle.finishTransferSharedTexture(transfer);
 
       // Step 6: Let the renderer render using WebGPU
-      await cb(id, imported);
+      await cb(id, importedSubtle);
 
       // Step 10: Release the shared texture with a callback
-      imported.release(() => {
+      importedSubtle.release(() => {
         // Step 11: When GPU command buffer is done, we can notify the main process to release
         ipcRenderer.send('shared-texture-done', id);
       });
