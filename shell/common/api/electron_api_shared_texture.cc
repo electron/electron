@@ -8,7 +8,6 @@
 #include "base/command_line.h"
 #include "base/numerics/byte_conversions.h"
 #include "base/strings/string_number_conversions_internal.h"
-#include "command_buffer/client/raster_interface.h"
 #include "components/viz/common/resources/shared_image_format_utils.h"
 #include "content/browser/compositor/image_transport_factory.h"  // nogncheck
 #include "gpu/GLES2/gl2extchromium.h"
@@ -71,19 +70,6 @@ gpu::SharedImageInterface* GetSharedImageInterface() {
   } else {
     return blink::SharedGpuContext::SharedImageInterfaceProvider()
         ->SharedImageInterface();
-  }
-}
-
-gpu::raster::RasterInterface* GetRasterInterface() {
-  if (IsBrowserProcess()) {
-    auto* factory = content::ImageTransportFactory::GetInstance();
-    return factory->GetContextFactory()
-        ->SharedMainThreadRasterContextProvider()
-        ->RasterInterface();
-  } else {
-    return blink::SharedGpuContext::ContextProviderWrapper()
-        ->ContextProvider()
-        .RasterInterface();
   }
 }
 
@@ -686,25 +672,6 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   media::VideoPixelFormat pixel_format = shared_texture.pixel_format;
   gfx::ColorSpace color_space = shared_texture.color_space;
 
-  // Extra properties
-  bool copy = true;
-  base::OnceClosure copy_finish_cb;
-
-  gin::Dictionary dict(isolate, options.As<v8::Object>());
-
-  v8::Local<v8::Value> copy_object;
-  if (dict.Get("copy", &copy_object)) {
-    if (copy_object->IsBoolean()) {
-      copy = copy_object->BooleanValue(isolate);
-    } else if (copy_object->IsFunction()) {
-      gin::ConvertFromV8(isolate, copy_object, &copy_finish_cb);
-    } else {
-      gin_helper::ErrorThrower(isolate).ThrowTypeError(
-          "Expected a boolean or function for `copy` option");
-      return v8::Null(isolate);
-    }
-  }
-
   auto buffer_format = media::VideoPixelFormatToGfxBufferFormat(pixel_format);
   if (!buffer_format.has_value()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
@@ -715,12 +682,12 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   auto* sii = GetSharedImageInterface();
   gpu::SharedImageUsageSet shared_image_usage =
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_APPLE)
-      gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_RASTER_READ |
-      gpu::SHARED_IMAGE_USAGE_DISPLAY_READ |
-      gpu::SHARED_IMAGE_USAGE_WEBGPU_READ;
+      gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_GLES2_WRITE |
+      gpu::SHARED_IMAGE_USAGE_RASTER_READ | gpu::SHARED_IMAGE_USAGE_DISPLAY_READ |
+      gpu::SHARED_IMAGE_USAGE_WEBGPU_READ | gpu::SHARED_IMAGE_USAGE_WEBGPU_WRITE;
 #else
-      gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_RASTER_READ |
-      gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
+      gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_GLES2_WRITE |
+      gpu::SHARED_IMAGE_USAGE_RASTER_READ | gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
 #endif
 
   auto si_format = viz::GetSharedImageFormat(buffer_format.value());
@@ -729,69 +696,13 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
                               shared_image_usage, "SharedTextureVideoFrame"},
                              std::move(gmb_handle));
 
-  auto creation_sync_token = si->creation_sync_token();
-
-  if (copy) {
-    // Copy the shared image to a new one, so that the source native handle
-    // can be released, easing the resource management.
-    auto dst_si = sii->CreateSharedImage(
-        {si_format, coded_size, color_space,
-         shared_image_usage | gpu::SHARED_IMAGE_USAGE_RASTER_WRITE,
-         "SharedTextureVideoFrameCopy"},
-        gpu::kNullSurfaceHandle);
-
-    auto* ri = GetRasterInterface();
-    std::unique_ptr<gpu::RasterScopedAccess> src_ri_access =
-        si->BeginRasterAccess(ri, si->creation_sync_token(), true);
-    std::unique_ptr<gpu::RasterScopedAccess> dst_ri_access =
-        dst_si->BeginRasterAccess(ri, dst_si->creation_sync_token(), false);
-
-    ri->CopySharedImage(si->mailbox(), dst_si->mailbox(),
-                        /*xoffset=*/0, /*yoffset=*/0, /*x=*/0, /*y=*/0,
-                        coded_size.width(), coded_size.height());
-
-    gpu::RasterScopedAccess::EndAccess(std::move(dst_ri_access));
-    auto ri_st = gpu::RasterScopedAccess::EndAccess(std::move(src_ri_access));
-    sii->WaitSyncToken(ri_st);
-
-    // Hold |si| until copy complete.
-    unsigned query_id = 0;
-    ri->GenQueriesEXT(1, &query_id);
-    DCHECK(query_id);
-    ri->BeginQueryEXT(GL_COMMANDS_COMPLETED_CHROMIUM, query_id);
-    ri->EndQueryEXT(GL_COMMANDS_COMPLETED_CHROMIUM);
-
-    // |on_query_done_cb| will keep |video_frame| alive.
-    auto on_query_done_cb = base::BindOnce(
-        [](scoped_refptr<gpu::ClientSharedImage> si,
-           gpu::raster::RasterInterface* ri, unsigned query_id,
-           base::OnceClosure cb) {
-          ri->DeleteQueriesEXT(1, &query_id);
-          if (cb) {
-            std::move(cb).Run();
-          }
-        },
-        si, ri, query_id, std::move(copy_finish_cb));
-
-    auto* context_support = GetContextSupport();
-    context_support->SignalQuery(query_id, std::move(on_query_done_cb));
-
-    // Replace with dest shared image.
-    creation_sync_token = sii->GenUnverifiedSyncToken();
-    si = std::move(dst_si);
-  }
-
   ImportedSharedTexture* imported = new ImportedSharedTexture();
   imported->pixel_format = shared_texture.pixel_format;
   imported->coded_size = shared_texture.coded_size;
   imported->visible_rect = shared_texture.visible_rect;
   imported->timestamp = shared_texture.timestamp;
-  imported->frame_creation_sync_token = creation_sync_token;
+  imported->frame_creation_sync_token = si->creation_sync_token();
   imported->client_shared_image = std::move(si);
-
-  if (copy) {
-    imported->UpdateReleaseSyncToken(creation_sync_token);
-  }
 
   return CreateImportedSharedTextureFromSharedImage(isolate, imported);
 }

@@ -12,22 +12,16 @@ The `sharedTexture` module has the following methods:
 
 ### `sharedTexture.importSharedTexture(options)` _Experimental_
 
-* `options` Object - The information of shared texture to import.
-  * `pixelFormat` string - The pixel format of the texture. Can be `rgba` or `bgra`.
-  * `colorSpace` [ColorSpace](structures/color-space.md) (optional) - The color space of the texture.
-  * `codedSize` [Size](structures/size.md) - The full dimensions of the shared texture.
-  * `visibleRect` [Rectangle](structures/rectangle.md) (optional) - A subsection of [0, 0, codedSize.width, codedSize.height]. In common cases, it is the full section area.
-  * `timestamp` number (optional) - A timestamp in microseconds that will be reflected to `VideoFrame`.
-  * `handle` [SharedTextureHandle](structures/shared-texture-handle.md) - The shared texture handle.
-  * `disableCopy` boolean (optional) - If `true`, the native texture will not be copied, and you should use `allReleased` callback to keep the native texture alive. Could be useful if GPU memory comsumption is a concern.
-  * `allReleased` Function (optional) - Called when all references are released. If `disableCopy` is `true`, you should keep native texture valid until this callback is called.
+* `options` Object - Options for importing shared texture.
+  * `textureInfo` [SharedTextureImportTextureInfo](structures/shared-texture-import-texture-info.md) - The information of shared texture to import.
+  * `allReferenceReleased` Function (optional) - Called when all references in all processes are released, you should keep native texture valid until this callback is called.
 
 Imports the shared texture from the given options. A copy of the native texture will be made, so that you can release the native texture after the import is complete.
 
 > [!NOTE]
 > This method is only available in the main process.
 
-Returns `Promise<SharedTextureImported>` - Resolves a [SharedTextureImported](structures/shared-texture-imported.md) when the import is complete.
+Returns `SharedTextureImported` - The imported shared texture.
 
 ### `sharedTexture.sendToRenderer(webContents, imported, ...args)` _Experimental_
 
