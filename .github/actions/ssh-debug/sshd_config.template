@@ -2,9 +2,6 @@ Port 2222
 HostKey $PWD/ssh_host_rsa_key
 PidFile $PWD/sshd.pid
 
-# Only allow those keys
-AuthorizedKeysFile $PWD/authorized_keys
-
 # Connection settings
 ClientAliveInterval 30
 ClientAliveCountMax 10
@@ -19,8 +16,8 @@ TCPKeepAlive yes
 
 # Security
 TrustedUserCAKeys /etc/ssh/ca.pub
-PubkeyAuthentication Yes
+PubkeyAuthentication yes
+PasswordAuthentication no
 
-Match user root
-  AuthorizedPrincipalsCommand /bin/bash -c "echo '%t %k' | ssh-keygen -L -f - | grep -A1 Principals"
-  AuthorizedPrincipalsCommandUser nobody
+AuthorizedPrincipalsCommand /bin/bash -c "echo '%t %k' | ssh-keygen -L -f - | grep -A1 Principals"
+AuthorizedPrincipalsCommandUser nobody
