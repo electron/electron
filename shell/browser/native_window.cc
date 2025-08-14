@@ -715,6 +715,10 @@ void NativeWindow::NotifyLayoutWindowControlsOverlay() {
                       *bounds);
 }
 
+void NativeWindow::NotifyWindowStateRestored() {
+  observers_.Notify(&NativeWindowObserver::OnWindowStateRestored);
+}
+
 #if BUILDFLAG(IS_WIN)
 void NativeWindow::NotifyWindowMessage(UINT message,
                                        WPARAM w_param,
@@ -1038,6 +1042,8 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
   }
 
   is_being_restored_ = false;
+
+  NotifyWindowStateRestored();
 }
 
 void NativeWindow::FlushPendingDisplayMode() {
