@@ -12,7 +12,23 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (39.0)
+
+### Removed: `ELECTRON_OZONE_PLATFORM_HINT` evironment variable
+
+The default value of the `--ozone-plaftform` flag [changed to `auto`](https://chromium-review.googlesource.com/c/chromium/src/+/6775426) in Electron 38.
+
+You should use the `XDG_SESSION_TYPE=wayland` environment variable instead to use Wayland.
+
 ## Planned Breaking API Changes (38.0)
+
+### Deprecated: `ELECTRON_OZONE_PLATFORM_HINT` environment variable
+
+The default value of the `--ozone-plaftform` flag [changed to `auto`](https://chromium-review.googlesource.com/c/chromium/src/+/6775426).
+
+You should use the `XDG_SESSION_TYPE=wayland` environment variable instead to use Wayland.
+
+This environment variable will be [removed soon](https://chromium-review.googlesource.com/c/chromium/src/+/6819616).
 
 ### Removed: macOS 11 support
 

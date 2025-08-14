@@ -858,6 +858,9 @@ class WebContents final : public ExclusiveAccessContext,
   const scoped_refptr<base::TaskRunner> print_task_runner_;
 #endif
 
+  // Track navigation state in order to avoid potential re-entrancy crashes.
+  bool is_safe_to_delete_ = true;
+
   // Stores the frame that's currently in fullscreen, nullptr if there is none.
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
