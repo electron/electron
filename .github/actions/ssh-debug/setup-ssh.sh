@@ -1,29 +1,5 @@
 #!/bin/bash -e
 
-get_authorized_keys() {
-    [[ -z "$AUTHORIZED_USERS" || -z "$GITHUB_ACTOR" ]] && return 1
-    [[ ",$AUTHORIZED_USERS," == *",$GITHUB_ACTOR,"* ]] || return 1
-
-    api_response=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" "https://api.github.com/users/${GITHUB_ACTOR}/keys")
-
-    if echo "${api_response}" | jq -e 'type == "object" and has("message")' >/dev/null; then
-        error_msg=$(echo "${api_response}" | jq -r '.message')
-        echo "Error: ${error_msg}"
-        return 1
-    else
-        echo "${api_response}" | jq -r '.[].key'
-    fi
-}
-
-authorized_keys=$(get_authorized_keys "${GITHUB_ACTOR}")
-
-if [ -n "${authorized_keys}" ]; then
-    echo "Configured SSH key(s) for user: ${GITHUB_ACTOR}"
-else
-    echo "Error: User '${GITHUB_ACTOR}' is not authorized to access this debug session."
-    exit 1
-fi
-
 if [ "${TUNNEL}" != "true" ]; then
     echo "SSH tunneling is disabled. Set enable-tunnel: true to enable remote access."
     echo "Local SSH server would be available on localhost:2222 if this were a local environment."
@@ -75,9 +51,6 @@ fi
 
 chmod +x cloudflared
 
-echo "Setting up SSH key for authorized user: ${GITHUB_ACTOR}"
-echo "${authorized_keys}" > authorized_keys
-
 echo 'Creating SSH server key...'
 ssh-keygen -q -f ssh_host_rsa_key -N ''
 
@@ -85,7 +58,7 @@ echo 'Creating SSH server config...'
 sed "s,\$PWD,${PWD},;s,\$USER,${USER}," sshd_config.template > sshd_config
 
 echo 'Starting SSH server...'
-/usr/sbin/sshd -f sshd_config -D &
+sudo /usr/sbin/sshd -f sshd_config -D &
 sshd_pid=$!
 
 echo "SSH server started successfully (PID: ${sshd_pid})"
