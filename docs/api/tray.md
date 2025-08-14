@@ -79,7 +79,15 @@ app.whenReady().then(() => {
 ### `new Tray(image, [guid])`
 
 * `image` ([NativeImage](native-image.md) | string)
-* `guid` string (optional) _Windows_ - Assigns a GUID to the tray icon. If the executable is signed and the signature contains an organization in the subject line then the GUID is permanently associated with that signature. OS level settings like the position of the tray icon in the system tray will persist even if the path to the executable changes. If the executable is not code-signed then the GUID is permanently associated with the path to the executable. Changing the path to the executable will break the creation of the tray icon and a new GUID must be used. However, it is highly recommended to use the GUID parameter only in conjunction with code-signed executable. If an App defines multiple tray icons then each icon must use a separate GUID.
+* `guid` string (optional) _Windows_ _macOS_ - A unique string used to identify the tray icon. Must adhere to [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) format.
+
+**Windows**
+
+On Windows, if the executable is signed and the signature contains an organization in the subject line then the GUID is permanently associated with that signature. OS level settings like the position of the tray icon in the system tray will persist even if the path to the executable changes. If the executable is not code-signed then the GUID is permanently associated with the path to the executable. Changing the path to the executable will break the creation of the tray icon and a new GUID must be used. However, it is highly recommended to use the GUID parameter only in conjunction with code-signed executable. If an App defines multiple tray icons then each icon must use a separate GUID.
+
+**MacOS**
+
+On macOS, the `guid` is a string used to uniquely identify the tray icon and allow it to retain its position between relaunches. Using the same string for a new tray item will create it in the same position as the previous tray item to use the string.
 
 Creates a new tray icon associated with the `image`.
 
@@ -326,6 +334,10 @@ Sets the context menu for this icon.
 Returns [`Rectangle`](structures/rectangle.md)
 
 The `bounds` of this tray icon as `Object`.
+
+#### `tray.getGUID()` _macOS_ _Windows_
+
+Returns `string | null` - The GUID used to uniquely identify the tray icon and allow it to retain its position between relaunches, or null if none is set.
 
 #### `tray.isDestroyed()`
 
