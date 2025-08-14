@@ -8002,7 +8002,10 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
       });
-      ifdescribe(process.platform === 'darwin')('multi-monitor tests', () => {
+
+      // FIXME(nilayarya): Figure out why these tests fail on macOS-x64
+      // virtualDisplay.create() is creating double displays on macOS-x64
+      ifdescribe(process.platform === 'darwin' && process.arch === 'arm64')('multi-monitor tests', () => {
         const virtualDisplay = require('@electron-ci/virtual-display');
         const primaryDisplay = screen.getPrimaryDisplay();
 
