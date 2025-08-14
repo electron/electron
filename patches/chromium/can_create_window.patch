@@ -21,23 +21,34 @@ index 775a132ea523c509433a3a9560fe3a5419dfaa3f..2b99d0b584760ab3f51561c030ca1990
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2896b2b15d9c22e27c37719867c20213b9983984..83c5918c1bc0417ed3c744828b9f93e7c00d22c3 100644
+index 2896b2b15d9c22e27c37719867c20213b9983984..572dfd03c9e76a0a71e511dade83f1877ae85b4a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5101,6 +5101,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5049,6 +5049,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+   create_params.initially_hidden = renderer_started_hidden;
+   create_params.initial_popup_url = params.target_url;
+ 
++  // Potentially allow the delegate to override the create_params.
++  if (delegate_)
++    delegate_->MaybeOverrideCreateParamsForNewWindow(&create_params);
++
+   // Even though all codepaths leading here are in response to a renderer
+   // trying to open a new window, if the new window ends up in a different
+   // browsing instance, then the RenderViewHost, RenderWidgetHost,
+@@ -5101,6 +5105,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    SetPartitionedPopinOpenerOnNewWindowIfNeeded(new_contents_impl, params,
                                                 opener);
  
 +  if (delegate_) {
-+    delegate_->WebContentsCreatedWithFullParams(this, render_process_id,
-+                                                opener->GetRoutingID(),
-+                                                params, new_contents_impl);
++    delegate_->WebContentsCreated(this, render_process_id,
++                                  opener->GetRoutingID(), params.frame_name,
++                                  params.target_url, new_contents_impl);
 +  }
 +
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5142,12 +5148,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5142,12 +5152,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -122,7 +133,7 @@ index b390356721fa226c348923f33601c4a1a2d9702d..97a3ea6f292563a41fd41f812ac72526
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index da319cb20733150366d85bee95609f0f2d9def7f..8a18958035cc1dd26be558349f64f7727570c4ba 100644
+index da319cb20733150366d85bee95609f0f2d9def7f..a5e731806c4c8418a36ee89d4689f43b41d2d7eb 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -18,6 +18,7 @@
@@ -133,7 +144,7 @@ index da319cb20733150366d85bee95609f0f2d9def7f..8a18958035cc1dd26be558349f64f772
  #include "content/public/browser/eye_dropper.h"
  #include "content/public/browser/fullscreen_types.h"
  #include "content/public/browser/invalidate_type.h"
-@@ -376,6 +377,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -376,6 +377,16 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionConfig& partition_config,
        SessionStorageNamespace* session_storage_namespace);
  
@@ -143,6 +154,9 @@ index da319cb20733150366d85bee95609f0f2d9def7f..8a18958035cc1dd26be558349f64f772
 +      int opener_render_frame_id,
 +      const mojom::CreateNewWindowParams& params,
 +      WebContents* new_contents);
++
++  virtual void MaybeOverrideCreateParamsForNewWindow(
++      content::WebContents::CreateParams* create_params) {}
 +
    // Notifies the delegate about the creation of a new WebContents. This
    // typically happens when popups are created.
