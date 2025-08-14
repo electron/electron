@@ -351,6 +351,10 @@ void BaseWindow::OnSystemContextMenu(int x, int y, bool* prevent_default) {
   }
 }
 
+void BaseWindow::OnWindowStateRestored() {
+  EmitEventSoon("restored-window-state");
+}
+
 #if BUILDFLAG(IS_WIN)
 void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {
