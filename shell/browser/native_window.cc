@@ -104,6 +104,12 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window,
 }
 #endif
 
+// Check if display is fake (default display ID) or has invalid dimensions
+bool hasInvalidDisplay(const display::Display& display) {
+  return display.id() == display::kDefaultDisplayId ||
+         display.size().width() == 0 || display.size().height() == 0;
+}
+
 }  // namespace
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
@@ -859,6 +865,12 @@ void NativeWindow::SaveWindowState() {
     return;
 
   gfx::Rect bounds = GetBounds();
+
+  if (bounds.width() == 0 || bounds.height() == 0) {
+    LOG(WARNING) << "Window state not saved - window bounds are invalid";
+    return;
+  }
+
   const display::Screen* screen = display::Screen::GetScreen();
   DCHECK(screen);
   // GetDisplayMatching returns a fake display with 1920x1080 resolution at
@@ -870,8 +882,7 @@ void NativeWindow::SaveWindowState() {
   // is fake (ID 0xFF). Invalid displays could cause incorrect window bounds to
   // be saved, leading to positioning issues during restoration.
   // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/types/display_constants.h;l=28;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
-  if (display.id() == display::kDefaultDisplayId ||
-      display.size().width() == 0 || display.size().height() == 0) {
+  if (hasInvalidDisplay(display)) {
     LOG(WARNING)
         << "Window state not saved - no physical display attached or current "
            "display has invalid bounds";
@@ -989,8 +1000,7 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
   // is fake. Restoring from invalid displays (0x0) or fake displays (ID 0xFF)
   // could cause incorrect window positioning when later moved to real displays.
   // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/types/display_constants.h;l=28;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
-  if (display.id() == display::kDefaultDisplayId ||
-      display.size().width() == 0 || display.size().height() == 0) {
+  if (hasInvalidDisplay(display)) {
     LOG(WARNING) << "Window state not restored - no physical display attached "
                     "or current display has invalid bounds";
     return;
@@ -1038,6 +1048,11 @@ void NativeWindow::FlushPendingDisplayMode() {
 void NativeWindow::RestoreBounds(const display::Display& display,
                                  const gfx::Rect& saved_work_area,
                                  gfx::Rect& saved_bounds) {
+  if (saved_bounds.width() == 0 || saved_bounds.height() == 0) {
+    LOG(WARNING) << "Window bounds not restored - values are invalid";
+    return;
+  }
+
   // Ensure that the window is at least kMinVisibleHeight * kMinVisibleWidth.
   saved_bounds.set_height(std::max(kMinVisibleHeight, saved_bounds.height()));
   saved_bounds.set_width(std::max(kMinVisibleWidth, saved_bounds.width()));
