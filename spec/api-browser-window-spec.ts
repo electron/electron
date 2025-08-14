@@ -8300,7 +8300,7 @@ describe('BrowserWindow module', () => {
             y: targetDisplay.workArea.y + 100
           };
 
-          await createAndSaveWindowState(boundsOnTargetDisplay);
+          await createAndSaveWindowState(preferencesPath, windowName, boundsOnTargetDisplay);
 
           // Restore the window state by creating a new window with the same name
           const w = new BrowserWindow({
@@ -8343,7 +8343,7 @@ describe('BrowserWindow module', () => {
           };
 
           // Save window state on the virtual display
-          await createAndSaveWindowState(boundsOnTargetDisplay);
+          await createAndSaveWindowState(preferencesPath, windowName, boundsOnTargetDisplay);
 
           virtualDisplay.destroy(targetDisplayId);
           // Wait for the target virtual display to be destroyed
@@ -8410,7 +8410,7 @@ describe('BrowserWindow module', () => {
           };
 
           // Save window state on the rightmost display
-          await createAndSaveWindowState(boundsOnRightmostDisplay);
+          await createAndSaveWindowState(preferencesPath, windowName, boundsOnRightmostDisplay);
 
           // Destroy the rightmost display (where window was saved)
           virtualDisplay.destroy(rightmostDisplayId);
@@ -8580,7 +8580,7 @@ describe('BrowserWindow module', () => {
             fullscreen: true
           };
 
-          await createAndSaveWindowState(initialBounds);
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
 
           const w = new BrowserWindow({
             name: windowName,
@@ -8683,7 +8683,7 @@ describe('BrowserWindow module', () => {
             kiosk: true
           };
 
-          await createAndSaveWindowState(initialBounds);
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
 
           const w = new BrowserWindow({
             name: windowName,
@@ -8739,7 +8739,7 @@ describe('BrowserWindow module', () => {
             y: targetDisplay.workArea.y + 100
           };
 
-          await createAndSaveWindowState(initialBounds);
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
 
           // Destroy the target display and wait for the higher resolution display to take its place
           virtualDisplay.destroy(targetDisplayId);
@@ -8793,7 +8793,7 @@ describe('BrowserWindow module', () => {
             height: targetDisplay.bounds.height
           };
 
-          await createAndSaveWindowState(initialBounds);
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
 
           // Destroy and and wait for the lower resolution display to take its place
           virtualDisplay.destroy(targetDisplayId);
