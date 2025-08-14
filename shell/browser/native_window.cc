@@ -980,10 +980,25 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
 
   display::Screen* screen = display::Screen::GetScreen();
   DCHECK(screen);
-  // GetDisplayMatching returns a fake display with 1920x1080 resolution at
-  // (0,0) when no physical displays are attached.
-  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/display.cc;l=184;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
-  const display::Display display = screen->GetDisplayMatching(saved_bounds);
+
+  // Set the primary display as the target display for restoration.
+  display::Display display = screen->GetPrimaryDisplay();
+
+  // We identify the display with the minimal Manhattan distance to the saved
+  // bounds and set it as the target display for restoration.
+  int min_displacement = std::numeric_limits<int>::max();
+
+  for (const auto& candidate : screen->GetAllDisplays()) {
+    gfx::Rect test_bounds = saved_bounds;
+    test_bounds.AdjustToFit(candidate.work_area());
+    int displacement = std::abs(test_bounds.x() - saved_bounds.x()) +
+                       std::abs(test_bounds.y() - saved_bounds.y());
+
+    if (displacement < min_displacement) {
+      min_displacement = displacement;
+      display = candidate;
+    }
+  }
 
   // Skip window state restoration if current display has invalid dimensions or
   // is fake. Restoring from invalid displays (0x0) or fake displays (ID 0xFF)

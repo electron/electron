@@ -18,6 +18,11 @@ import os.log
         return true
     }
 
+    @objc public static func forceCleanup() -> Bool {
+        DummyManager.forceCleanup()
+        return true
+    }
+
     private static func positionDisplay(displayId: Int, x: Int, y: Int) {
         guard let definedDummy = DummyManager.definedDummies[displayId],
             definedDummy.dummy.isConnected else {
