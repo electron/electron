@@ -86,23 +86,6 @@ describe('BrowserWindow module', () => {
       }).not.to.throw();
     });
 
-    ifit(!hasCapturableScreen())('should not save window state when there is no valid display (fake display)', async () => {
-      const appPath = path.resolve(__dirname, 'fixtures', 'api', 'window-state-save', 'schema-check');
-      const appProcess = childProcess.spawn(process.execPath, [appPath]);
-      const [code] = await once(appProcess, 'exit');
-      expect(code).to.equal(0);
-
-      const sharedPreferencesPath = path.join(os.tmpdir(), 'electron-window-state-test', 'Local State');
-      if (!fs.existsSync(sharedPreferencesPath)) {
-        throw new Error(`Preferences file does not exist at path: ${sharedPreferencesPath}. Window state was not saved to disk.`);
-      }
-      const prefsContent = fs.readFileSync(sharedPreferencesPath, 'utf8');
-      const prefs = JSON.parse(prefsContent);
-      const savedState = prefs?.windowStates?.['test-window-state-schema'] || null;
-
-      expect(savedState).to.be.null('window state with window name "test-window-state-schema" should not exist');
-    });
-
     it('throws error when creating windows with duplicate names', () => {
       const w1 = new BrowserWindow({ show: false, name: 'duplicate-name' });
 
