@@ -369,6 +369,15 @@ Calling `event.preventDefault()` will prevent the menu from being displayed.
 
 To convert `point` to DIP, use [`screen.screenToDipPoint(point)`](./screen.md#screenscreentodippointpoint-windows-linux).
 
+#### Event: 'restored-window-state'
+
+Emitted after the window state has been restored.
+
+Window state includes the window bounds (x, y, height, width) and display mode (maximized, fullscreen, kiosk).
+
+> [!NOTE]
+> This event is only emitted when [windowStatePersistence](structures/window-state-persistence.md) is enabled in [BaseWindowConstructorOptions](structures/base-window-options.md) or in [BrowserWindowConstructorOptions](structures/browser-window-options.md).
+
 ### Static Methods
 
 The `BaseWindow` class has the following static methods:
