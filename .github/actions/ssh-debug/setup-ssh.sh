@@ -6,6 +6,8 @@ if [ "${TUNNEL}" != "true" ]; then
     exit 0
 fi
 
+echo ::group::Configuring Tunnel
+
 echo "SSH tunneling enabled. Setting up remote access..."
 
 EXTERNAL_DEPS="curl jq ssh-keygen"
@@ -114,7 +116,10 @@ echo 'Running cloudflare tunnel...'
 ./cloudflared tunnel --no-autoupdate --config tunnel_config.yml run 2>&1 | tee cloudflared.log | sed -u 's/^/cloudflared: /' &
 cloudflared_pid=$!
 
-public_key=$(cut -d' ' -f1,2 < ssh_host_rsa_key.pub)
+echo ::endgroup::
+
+echo ::notice title=SSH Debug Session Ready::ssh ${tunnel_url}
+
 
 (
     echo '    '
@@ -122,9 +127,9 @@ public_key=$(cut -d' ' -f1,2 < ssh_host_rsa_key.pub)
     echo '🔗 SSH Debug Session Ready!'
     echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
     echo '    '
-    echo '📋 Copy and run this command to connect:'
+    echo '📋 Infra WG can copy and run this command to connect:'
     echo '    '
-    echo "ssh-keygen -R action-ssh-debug && echo 'action-ssh-debug ${public_key}' >> ~/.ssh/known_hosts && ssh -o ProxyCommand='cloudflared access tcp --hostname ${tunnel_url}' runner@action-ssh-debug"
+    echo "ssh ${tunnel_url}"
     echo '    '
     echo "⏰ Session expires automatically in ${TIMEOUT} seconds"
     echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -132,8 +137,10 @@ public_key=$(cut -d' ' -f1,2 < ssh_host_rsa_key.pub)
     echo '    '
 ) | cat
 
+echo ::group::Starting Background Session
 echo 'Starting SSH session in background...'
 ./ssh-session.sh "${sshd_pid}" "${cloudflared_pid}" "${TIMEOUT}" "${tunnel_name}" &
 
 echo 'SSH session is running in background. GitHub Action will continue.'
 echo 'Session will auto-cleanup after timeout or when processes end.'
+echo ::endgroup::
