@@ -7,10 +7,8 @@
 #include "base/base64.h"
 #include "base/command_line.h"
 #include "base/numerics/byte_conversions.h"
-#include "base/strings/string_number_conversions_internal.h"
 #include "components/viz/common/resources/shared_image_format_utils.h"
 #include "content/browser/compositor/image_transport_factory.h"  // nogncheck
-#include "gpu/GLES2/gl2extchromium.h"
 #include "gpu/command_buffer/client/context_support.h"
 #include "gpu/ipc/client/client_shared_image_interface.h"
 #include "gpu/ipc/client/gpu_channel_host.h"
@@ -32,6 +30,7 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/posix/eintr_wrapper.h"
+#include "base/strings/string_number_conversions.h"
 #endif
 
 namespace {
@@ -652,12 +651,11 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
     return v8::Null(isolate);
   }
 
-  gmb_handle.type = gfx::IO_SURFACE_BUFFER;
-  auto io_surface = reinterpret_cast<IOSurfaceRef>(shared_texture.io_surface);
-
   // Retain the io_surface reference to increase the reference count.
-  gmb_handle.io_surface = base::apple::ScopedCFTypeRef<IOSurfaceRef>(
+  auto io_surface = reinterpret_cast<IOSurfaceRef>(shared_texture.io_surface);
+  auto io_surface_scoped = base::apple::ScopedCFTypeRef<IOSurfaceRef>(
       io_surface, base::scoped_policy::RETAIN);
+  gmb_handle = gfx::GpuMemoryBufferHandle(std::move(io_surface_scoped));
 #elif BUILDFLAG(IS_LINUX)
   gfx::NativePixmapHandle pixmap;
   pixmap.modifier = shared_texture.modifier;
