@@ -10,16 +10,20 @@
 #include <vector>
 
 #include "base/task/single_thread_task_runner.h"
+#include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/common/color_parser.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/browser_process_impl.h"
+#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
@@ -1145,6 +1149,27 @@ void BaseWindow::RemoveFromParentChildWindows() {
 }
 
 // static
+void BaseWindow::ClearWindowState(const std::string& window_name) {
+  if (window_name.empty()) {
+    LOG(WARNING) << "Cannot clear window state: window name is empty";
+    return;
+  }
+
+  if (auto* browser_process =
+          electron::ElectronBrowserMainParts::Get()->browser_process()) {
+    DCHECK(browser_process);
+    if (auto* prefs = browser_process->local_state()) {
+      ScopedDictPrefUpdate update(prefs, electron::kWindowStates);
+
+      if (!update->Remove(window_name)) {
+        LOG(WARNING) << "Window state '" << window_name
+                     << "' not found, nothing to clear";
+      }
+    }
+  }
+}
+
+// static
 gin_helper::WrappableBase* BaseWindow::New(gin_helper::Arguments* args) {
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
@@ -1372,6 +1397,7 @@ void Initialize(v8::Local<v8::Object> exports,
                                          .ToLocalChecked());
   constructor.SetMethod("fromId", &BaseWindow::FromWeakMapID);
   constructor.SetMethod("getAllWindows", &BaseWindow::GetAll);
+  constructor.SetMethod("clearWindowState", &BaseWindow::ClearWindowState);
 
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("BaseWindow", constructor);
