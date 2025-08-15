@@ -29,8 +29,8 @@
 #include "crypto/hash.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
-#include "electron/snapshot_checksum.h"
 #include "electron/mas.h"
+#include "electron/snapshot_checksum.h"
 #include "extensions/common/constants.h"
 #include "gin/v8_initializer.h"
 #include "sandbox/policy/switches.h"
@@ -214,11 +214,15 @@ void RegisterPathProvider() {
 }
 
 void ValidateV8Snapshot(v8::StartupData* data) {
-  if (data->data /*&& electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled() */) {
+  if (data->data &&
+      electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
     CHECK(data->raw_size > 0);
     UNSAFE_BUFFERS({
-      base::span<const char> span_data(data->data, static_cast<unsigned long>(data->raw_size));
-      CHECK(base::ToLowerASCII(base::HexEncode(crypto::hash::Sha256(base::as_bytes(span_data)))) == electron::snapshot_checksum::kChecksum);
+      base::span<const char> span_data(
+          data->data, static_cast<unsigned long>(data->raw_size));
+      CHECK(base::ToLowerASCII(base::HexEncode(
+                crypto::hash::Sha256(base::as_bytes(span_data)))) ==
+            electron::snapshot_checksum::kChecksum);
     })
   }
 }
