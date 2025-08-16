@@ -1,5 +1,6 @@
 /* eslint-disable import/newline-after-import */
 /* eslint-disable import/order */
+import type { ResolveHook } from 'module';
 // Initialize ASAR support in fs module.
 import { wrapFsWithAsar } from './asar-fs-wrapper';
 wrapFsWithAsar(require('fs'));
@@ -57,3 +58,14 @@ Module._nodeModulePaths = function (from) {
     return paths;
   }
 };
+
+// Add `electron` condition
+const { registerHooks } = require('module');
+registerHooks({
+  resolve: ((specifier, context, nextResolve) => {
+    return nextResolve(specifier, {
+      ...context,
+      conditions: ['electron', ...context.conditions]
+    });
+  }) satisfies ResolveHook
+});
