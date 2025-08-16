@@ -12,6 +12,8 @@
 
 #if BUILDFLAG(IS_WIN)
 #include <dwmapi.h>
+
+#include "base/win/registry.h"
 #endif
 
 namespace {
@@ -68,12 +70,18 @@ std::string ToRGBAHex(SkColor color, bool include_hash) {
 
 #if BUILDFLAG(IS_WIN)
 std::optional<DWORD> GetSystemAccentColor() {
-  DWORD color = 0;
-  BOOL opaque = FALSE;
-
-  if (FAILED(DwmGetColorizationColor(&color, &opaque)))
+  base::win::RegKey key;
+  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
+               KEY_READ) != ERROR_SUCCESS) {
     return std::nullopt;
-  return color;
+  }
+
+  DWORD accent_color = 0;
+  if (key.ReadValueDW(L"AccentColor", &accent_color) != ERROR_SUCCESS) {
+    return std::nullopt;
+  }
+
+  return accent_color;
 }
 #endif
 
