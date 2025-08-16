@@ -306,6 +306,10 @@ inline constexpr base::cstring_view kDisableNTLMv2 = "disable-ntlm-v2";
 inline constexpr base::cstring_view kServiceWorkerPreload =
     "service-worker-preload";
 
+// If set, flag node::ProcessInitializationFlags::kNoStdioInitialization would
+// be set for node initialization.
+inline constexpr base::cstring_view kNoStdioInit = "no-stdio-init";
+
 }  // namespace switches
 
 }  // namespace electron
