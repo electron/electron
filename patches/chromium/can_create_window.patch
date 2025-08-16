@@ -21,10 +21,21 @@ index 23cd457563d7d534e924428ac6da2b475e579326..d8698f9f37eefa50bf4e29a164b2cc30
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f3204a39253652a906f8976c666395e8afa033a8..a45bf004f5096809b5fc7b70faa0b7fa7b257049 100644
+index f3204a39253652a906f8976c666395e8afa033a8..d9b5a70e0c7acfaac312663ba336580eb062fae4 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5293,6 +5293,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5238,6 +5238,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+   create_params.initially_hidden = renderer_started_hidden;
+   create_params.initial_popup_url = params.target_url;
+ 
++  // Potentially allow the delegate to override the create_params.
++  if (delegate_)
++    delegate_->MaybeOverrideCreateParamsForNewWindow(&create_params);
++
+   // Even though all codepaths leading here are in response to a renderer
+   // trying to open a new window, if the new window ends up in a different
+   // browsing instance, then the RenderViewHost, RenderWidgetHost,
+@@ -5293,6 +5297,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -37,7 +48,7 @@ index f3204a39253652a906f8976c666395e8afa033a8..a45bf004f5096809b5fc7b70faa0b7fa
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5334,12 +5340,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5334,12 +5344,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -122,7 +133,7 @@ index f42be2a1cc5ba3ccb52e48985e0532a34675e826..f6ab6ab2b036c7621b429181c3ff89d9
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index d33274984bf6523beeb3ab5ee586499d224bff3c..83bdd195339eb7d61ac88e2994fd8dabe93f6ecc 100644
+index d33274984bf6523beeb3ab5ee586499d224bff3c..89c3f86bc828c5bf844bb103477c0772ba275dc5 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -18,6 +18,7 @@
@@ -133,7 +144,7 @@ index d33274984bf6523beeb3ab5ee586499d224bff3c..83bdd195339eb7d61ac88e2994fd8dab
  #include "content/public/browser/eye_dropper.h"
  #include "content/public/browser/fullscreen_types.h"
  #include "content/public/browser/invalidate_type.h"
-@@ -380,6 +381,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -380,6 +381,16 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionConfig& partition_config,
        SessionStorageNamespace* session_storage_namespace);
  
@@ -143,6 +154,9 @@ index d33274984bf6523beeb3ab5ee586499d224bff3c..83bdd195339eb7d61ac88e2994fd8dab
 +      int opener_render_frame_id,
 +      const mojom::CreateNewWindowParams& params,
 +      WebContents* new_contents);
++
++  virtual void MaybeOverrideCreateParamsForNewWindow(
++      content::WebContents::CreateParams* create_params) {}
 +
    // Notifies the delegate about the creation of a new WebContents. This
    // typically happens when popups are created.

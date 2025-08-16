@@ -508,6 +508,8 @@ class WebContents final : public ExclusiveAccessContext,
       int opener_render_frame_id,
       const content::mojom::CreateNewWindowParams& params,
       content::WebContents* new_contents) override;
+  void MaybeOverrideCreateParamsForNewWindow(
+      content::WebContents::CreateParams* create_params) override;
   content::WebContents* AddNewContents(
       content::WebContents* source,
       std::unique_ptr<content::WebContents> new_contents,
