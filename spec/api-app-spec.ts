@@ -1019,7 +1019,7 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(process.platform !== 'linux')('accessibilitySupportEnabled property', () => {
+  ifdescribe(process.platform !== 'linux')('accessibility support functionality', () => {
     it('is mutable', () => {
       const values = [false, true, false];
       const setters: Array<(arg: boolean) => void> = [
@@ -1036,6 +1036,61 @@ describe('app module', () => {
           for (const get of getters) expect(get()).to.eql(value);
         }
       }
+    });
+
+    it('getAccessibilitySupportFeatures returns an array with accessibility properties', () => {
+      const values = [
+        'nativeAPIs',
+        'webContents',
+        'inlineTextBoxes',
+        'extendedProperties',
+        'screenReader',
+        'html',
+        'labelImages',
+        'pdfPrinting'
+      ];
+
+      app.setAccessibilitySupportEnabled(false);
+
+      const disabled = app.getAccessibilitySupportFeatures();
+      expect(disabled).to.be.an('array');
+      expect(disabled.includes('complete')).to.equal(false);
+
+      app.setAccessibilitySupportEnabled(true);
+      const enabled = app.getAccessibilitySupportFeatures();
+      expect(enabled).to.be.an('array').with.length.greaterThan(0);
+
+      const boolEnabled = app.isAccessibilitySupportEnabled();
+      if (boolEnabled) {
+        expect(enabled.some(f => values.includes(f))).to.equal(true);
+      }
+    });
+
+    it('enableAccessibilitySupportFeatures can enable a subset of features', () => {
+      app.setAccessibilitySupportEnabled(false);
+      expect(app.isAccessibilitySupportEnabled()).to.equal(false);
+      expect(app.getAccessibilitySupportFeatures()).to.be.an('array').that.is.empty();
+
+      const subsetA = ['webContents', 'html'];
+      app.enableAccessibilitySupportFeatures(subsetA);
+      const afterSubsetA = app.getAccessibilitySupportFeatures();
+      expect(afterSubsetA).to.deep.equal(subsetA);
+
+      const subsetB = [
+        'nativeAPIs',
+        'webContents',
+        'inlineTextBoxes',
+        'extendedProperties'
+      ];
+      app.enableAccessibilitySupportFeatures(subsetB);
+      const afterSubsetB = app.getAccessibilitySupportFeatures();
+      expect(afterSubsetB).to.deep.equal(subsetB);
+    });
+
+    it('throws when an unknown accessibility feature is requested', () => {
+      expect(() => {
+        app.enableAccessibilitySupportFeatures(['unknownFeature']);
+      }).to.throw('Unknown accessibility feature: unknownFeature');
     });
   });
 

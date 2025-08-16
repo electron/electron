@@ -1399,6 +1399,64 @@ This API must be called after the `ready` event is emitted.
 > [!NOTE]
 > Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
 
+### `app.getAccessibilitySupportFeatures()` _macOS_ _Windows_
+
+Returns `string[]` - Array of strings naming currently enabled accessibility support components.Possible values:
+
+* `nativeAPIs` - Native OS accessibility APIs integration enabled.
+* `webContents` - Web contents accessibility tree exposure enabled.
+* `inlineTextBoxes` - Inline text boxes (character bounding boxes) enabled.
+* `extendedProperties` - Extended accessibility properties enabled.
+* `screenReader` - Screen reader specific mode enabled.
+* `html` - HTML accessibility tree construction enabled.
+* `labelImages` - Accessibility support for automatic image annotations.
+* `pdfPrinting` - Accessibility support for PDF printing enabled.
+
+Notes:
+
+* The array may be empty if no accessibility modes are active.
+* Use `app.isAccessibilitySupportEnabled()` for the legacy boolean check;
+  prefer this method for granular diagnostics or telemetry.
+
+Example:
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  if (app.getAccessibilitySupportFeatures().includes('screenReader')) {
+    // Change some app UI to better work with Screen Readers.
+  }
+})
+```
+
+### `app.enableAccessibilitySupportFeatures(features)` _macOS_ _Windows_
+
+* `features` string[] - An array of the accessibility features to enable.
+
+Possible values are:
+
+* `nativeAPIs` - Native OS accessibility APIs integration enabled.
+* `webContents` - Web contents accessibility tree exposure enabled.
+* `inlineTextBoxes` - Inline text boxes (character bounding boxes) enabled.
+* `extendedProperties` - Extended accessibility properties enabled.
+* `screenReader` - Screen reader specific mode enabled.
+* `html` - HTML accessibility tree construction enabled.
+* `labelImages` - Accessibility support for automatic image annotations.
+* `pdfPrinting` - Accessibility support for PDF printing enabled.
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  app.enableAccessibilitySupportFeatures([
+    'screenReader',
+    'pdfPrinting',
+    'webContents'
+  ])
+})
+```
+
 ### `app.showAboutPanel()`
 
 Show the app's about panel options. These options can be overridden with `app.setAboutPanelOptions(options)`. This function runs asynchronously.
