@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tau=20G=C3=A4rtli?= <google@tau.garden>
+Date: Mon, 11 Aug 2025 11:41:52 -0700
+Subject: Pump Linux system accent color
+
+This change pumps the system accent color for CSS property
+"accent-color" and AccentColor on Linux.
+
+Currently, Chromium uses "DarkModeManagerLinux" to get
+the system accent color using the Settings[1] portal.
+This change repurposes the manager to update NativeTheme instance for Web,
+which in turn sets `accent_color` in ThemeHelper.
+
+See also the previous change that enabled the same for Windows:
+https://crrev.com/c/5763388
+
+[1]: https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.impl.portal.Settings.html
+
+Bug: 391917949
+Change-Id: I9a1813dd6ae7a138e2abac053189a010cf0d360d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6831464
+Reviewed-by: Bo Liu <boliu@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1499721}
+
+diff --git a/AUTHORS b/AUTHORS
+index be87235814cb7bbb9b4f7146244dbc2557d66355..48c474c8558c9f7d1e88db64db91047c1031cec2 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -1493,6 +1493,7 @@ Tanvir Rizvi <tanvir.rizvi@samsung.com>
+ Tao Wang <tao.wang.2261@gmail.com>
+ Tao Xiong <taox4@illinois.edu>
+ Tapu Kumar Ghose <ghose.tapu@gmail.com>
++Tau Gärtli <google@tau.garden>
+ Taylor Price <trprice@gmail.com>
+ Ted Kim <neot0000@gmail.com>
+ Ted Vessenes <tedvessenes@gmail.com>
+diff --git a/chrome/browser/ui/views/dark_mode_manager_linux.cc b/chrome/browser/ui/views/dark_mode_manager_linux.cc
+index 809a663001129dadc7c3076f657c953ee393cc7b..5a686d5853908dc0d2df1c43739710d442dfbd1b 100644
+--- a/chrome/browser/ui/views/dark_mode_manager_linux.cc
++++ b/chrome/browser/ui/views/dark_mode_manager_linux.cc
+@@ -242,6 +242,11 @@ void DarkModeManagerLinux::SetAccentColor(dbus::MessageReader* reader) {
+   for (ui::LinuxUiTheme* linux_ui_theme : *linux_ui_themes_) {
+     linux_ui_theme->SetAccentColor(accent_color);
+   }
++
++  for (NativeTheme* theme : native_themes_) {
++    theme->set_user_color(accent_color);
++    theme->NotifyOnNativeThemeUpdated();
++  }
+ }
+ 
+ }  // namespace ui
+diff --git a/chrome/browser/ui/views/dark_mode_manager_linux_unittest.cc b/chrome/browser/ui/views/dark_mode_manager_linux_unittest.cc
+index 8ee4d666805b6a9b79ade1187966f83d78f6696e..df3078d61f1fbf012e3571115af197b1dd116720 100644
+--- a/chrome/browser/ui/views/dark_mode_manager_linux_unittest.cc
++++ b/chrome/browser/ui/views/dark_mode_manager_linux_unittest.cc
+@@ -197,6 +197,7 @@ class DarkModeManagerLinuxTest : public testing::Test {
+     EXPECT_FALSE(mock_native_theme_->ShouldUseDarkColors());
+     EXPECT_EQ(mock_native_theme_->GetPreferredColorScheme(),
+               NativeTheme::PreferredColorScheme::kLight);
++    EXPECT_FALSE(mock_native_theme_->user_color().has_value());
+   }
+ 
+   void TearDown() override { manager_.reset(); }
+@@ -314,6 +315,9 @@ TEST_F(DarkModeManagerLinuxTest, UsePortalAccentColor) {
+   std::optional<SkColor> expected_color = SkColorSetRGB(0, 127, 255);
+   EXPECT_CALL(*mock_linux_ui(), SetAccentColor(expected_color));
+   std::move(accent_color_callback()).Run(response.get(), nullptr);
++  auto const user_color1 = mock_native_theme()->user_color();
++  EXPECT_TRUE(user_color1.has_value());
++  EXPECT_EQ(*user_color1, expected_color);
+ 
+   // Changes in the portal accent color should be processed by the manager and
+   // the native theme should be updated.
+@@ -333,6 +337,9 @@ TEST_F(DarkModeManagerLinuxTest, UsePortalAccentColor) {
+   signal_writer.CloseContainer(&variant_writer);
+   EXPECT_CALL(*mock_linux_ui(), SetAccentColor(expected_color));
+   std::move(setting_changed_callback()).Run(&signal);
++  auto const user_color2 = mock_native_theme()->user_color();
++  EXPECT_TRUE(user_color2.has_value());
++  EXPECT_EQ(*user_color2, expected_color);
+ }
+ 
+ }  // namespace ui
+diff --git a/content/browser/theme_helper.cc b/content/browser/theme_helper.cc
+index 68da263f9d8471b0663c0b5e3563c49b674909b8..935002e9621c7a791f0a25c87b6fd571a22607ed 100644
+--- a/content/browser/theme_helper.cc
++++ b/content/browser/theme_helper.cc
+@@ -27,7 +27,7 @@ mojom::UpdateSystemColorInfoParamsPtr MakeUpdateSystemColorInfoParams(
+     ui::NativeTheme* native_theme) {
+   mojom::UpdateSystemColorInfoParamsPtr params =
+       mojom::UpdateSystemColorInfoParams::New();
+-#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN)
++#if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
+   params->accent_color = native_theme->user_color();
+ #endif
+ 

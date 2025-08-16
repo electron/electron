@@ -21,6 +21,11 @@ gin::DeprecatedWrapperInfo SystemPreferences::kWrapperInfo = {
 SystemPreferences::SystemPreferences() {
   InitializeWindow();
 }
+#elif BUILDFLAG(IS_LINUX)
+SystemPreferences::SystemPreferences()
+    : ui_theme_(ui::NativeTheme::GetInstanceForNativeUi()) {
+  ui_theme_->AddObserver(this);
+}
 #else
 SystemPreferences::SystemPreferences() = default;
 #endif
@@ -55,9 +60,11 @@ gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin_helper::EventEmitterMixin<
              SystemPreferences>::GetObjectTemplateBuilder(isolate)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
+      .SetMethod("getAccentColor", &SystemPreferences::GetAccentColor)
+#endif
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
       .SetMethod("getColor", &SystemPreferences::GetColor)
-      .SetMethod("getAccentColor", &SystemPreferences::GetAccentColor)
       .SetMethod("getMediaAccessStatus",
                  &SystemPreferences::GetMediaAccessStatus)
 #endif
