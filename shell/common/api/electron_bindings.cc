@@ -183,8 +183,11 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 #endif
   dict.Set("free", free.InKiB());
 
+#if BUILDFLAG(IS_MAC)
+  dict.Set("fileBacked", mem_info.file_backed.InKiB());
+  dict.Set("purgeable", mem_info.purgeable.InKiB());
+#else
   // NB: These return bogus values on macOS
-#if !BUILDFLAG(IS_MAC)
   dict.Set("swapTotal", mem_info.swap_total.InKiB());
   dict.Set("swapFree", mem_info.swap_free.InKiB());
 #endif
