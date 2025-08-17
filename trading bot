@@ -1,0 +1,85 @@
+
+  "name": "trading-assistant-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.example.tradingassistant",
+    "productName": "Trading Assistant",
+    "win": {
+      "target": ["nsis"],
+      "icon": "icon.ico",
+      "publisherName": "Your Company"
+    },
+    "directories": {
+      "buildResources": ".",
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "publish": [{
+      "provider": "github"
+    }]
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
+appId: com.example.tradingassistant
+productName: Trading Assistant
+files:
+  - main.js
+  - preload.js
+  - renderer/**/*
+  - package.json
+win:
+  target:
+    - nsis
+publish:
+  - provider: github
+# Point to your cloud backend WebSocket DESKTOP_WS_BACKEND_WSS=wss://your-backend.onrender.comconst { app, BrowserWindow, shell } = require('electron');
+const path = require('path');
+require('dotenv').config();
+
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  // Load local built renderer (copied from frontend/build)
+  win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+}
+
+app.whenReady().then(() => {
+  createWindow();
+  app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+});
+
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });const { contextBridge } = require('electron');
+require('dotenv').config();
+
+// Expose the backend WSS to the renderer (your React build uses this global var)
+contextBridge.exposeInMainWorld('TRADING_ASSISTANT', {
+  WS_BACKEND_WSS: process.env.DESKTOP_WS_BACKEND_WSS || 'wss://your-backend.onrender.com'
+});
