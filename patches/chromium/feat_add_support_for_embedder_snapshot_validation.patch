@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@anthropic.com>
+Date: Fri, 15 Aug 2025 14:58:12 -0700
+Subject: feat: add support for embedder snapshot validation
+
+IsValid is not exposed despite being commented as for embedders, this exposes something that works for us.
+
+diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
+index f83461b3a1aff229164358e53847065ddae5ddf1..12faa71c2e14d2f13ab612526f349e9b027e5d3d 100644
+--- a/gin/v8_initializer.cc
++++ b/gin/v8_initializer.cc
+@@ -76,11 +76,23 @@ bool GenerateEntropy(unsigned char* buffer, size_t amount) {
+   return true;
+ }
+ 
++static base::RepeatingCallback<void(v8::StartupData*)>& SnapshotValidator() {
++  static base::NoDestructor<base::RepeatingCallback<void(v8::StartupData*)>>
++      validator(
++          base::BindRepeating([](v8::StartupData* data) -> void { /* empty */ }));
++  return *validator;
++}
++
++void SetV8SnapshotValidatorInner(const base::RepeatingCallback<void(v8::StartupData*)>& callback) {
++  SnapshotValidator() = std::move(callback);
++}
++
+ void GetMappedFileData(base::MemoryMappedFile* mapped_file,
+                        v8::StartupData* data) {
+   if (mapped_file) {
+     data->data = reinterpret_cast<const char*>(mapped_file->data());
+     data->raw_size = static_cast<int>(mapped_file->length());
++    SnapshotValidator().Run(data);
+   } else {
+     data->data = nullptr;
+     data->raw_size = 0;
+@@ -225,6 +237,10 @@ constexpr std::string_view kV8FlagParam = "V8FlagParam";
+ 
+ }  // namespace
+ 
++void SetV8SnapshotValidator(const base::RepeatingCallback<void(v8::StartupData*)>& callback) {
++  SetV8SnapshotValidatorInner(std::move(callback));
++}
++
+ class V8FeatureVisitor : public base::FeatureVisitor {
+  public:
+   void Visit(const std::string& feature_name,
+diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
+index 6f7382cd600cd34916d9382878aee4b469dae5d0..61ed0f46437d2e1abbcebcfb64df06d17c8d9139 100644
+--- a/gin/v8_initializer.h
++++ b/gin/v8_initializer.h
+@@ -11,6 +11,7 @@
+ 
+ #include "base/files/file.h"
+ #include "base/files/memory_mapped_file.h"
++#include "base/functional/callback.h"
+ #include "build/build_config.h"
+ #include "gin/array_buffer.h"
+ #include "gin/gin_export.h"
+@@ -28,6 +29,8 @@ class StartupData;
+ 
+ namespace gin {
+ 
++void SetV8SnapshotValidator(const base::RepeatingCallback<void(v8::StartupData*)>& callback);
++
+ class GIN_EXPORT V8Initializer {
+  public:
+   // This should be called by IsolateHolder::Initialize().
