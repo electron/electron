@@ -89,10 +89,10 @@ index 687332cf68b3b826d7dcbd5dc10d47f0cd7ce688..653bbb8aef7e6edb31d63b02a9799d54
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index abb8cd83f56d629e8bc71a609d0d5c10120625b9..675e3771a1cfd020df6ebf38f6c6cd82f8ad6497 100644
+index 8833941b927a076a73336b5d651c033258c13793..525f2303efbe9222567a1bbcdbc7321d5d93048f 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12228,5 +12228,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12289,5 +12289,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -150,10 +150,10 @@ index 7a5a5e370daea769e710f56a8004d79efa721268..4ba371436c33049952d919dc734be835
                                                const CSSValue& value) {
    const auto& list = To<CSSValueList>(value);
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index 851355b1dc6650cded3d847b80917fcfe10c9239..3663993ca5fbc5a9fc2e45c76570cc484c28ec70 100644
+index 6b801bce099cf7311d487e3fae5065cb11529ca7..4e1c37274e29144a769a5a4916b07d4fa8b86e1d 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -435,6 +435,7 @@ class StyleBuilderConverter {
+@@ -434,6 +434,7 @@ class StyleBuilderConverter {
    static PositionTryFallback ConvertSinglePositionTryFallback(
        StyleResolverState&,
        const CSSValue&);
@@ -162,7 +162,7 @@ index 851355b1dc6650cded3d847b80917fcfe10c9239..3663993ca5fbc5a9fc2e45c76570cc48
    static TextOverflowData ConvertTextOverflow(StyleResolverState&,
                                                const CSSValue&);
 diff --git a/third_party/blink/renderer/core/paint/contoured_border_geometry.cc b/third_party/blink/renderer/core/paint/contoured_border_geometry.cc
-index ec80337fdac36fa1636f5142c3827d3bbc81644c..634db12dfb443acabde79e9faf59cb8415991464 100644
+index 0802c73aa4aaf4e1fb5efd367758f19c36691f71..5f06c0af277a7c937e694470beac707a91f67de2 100644
 --- a/third_party/blink/renderer/core/paint/contoured_border_geometry.cc
 +++ b/third_party/blink/renderer/core/paint/contoured_border_geometry.cc
 @@ -50,6 +50,24 @@ float EffectiveCurvature(Superellipse superellipse, const gfx::SizeF& radius) {
@@ -201,10 +201,10 @@ index ec80337fdac36fa1636f5142c3827d3bbc81644c..634db12dfb443acabde79e9faf59cb84
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index a33b5209d940d29ae607a05e993e6d5a34aa674f..72e1b4f8a8bbc879dc9e466b76e75d5366199ef8 100644
+index 4c0ab9ea098c76063ece82ee79e4fb6465f822c8..2eaf538e48407a4cb12d1509e012f41847c716f2 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1657,6 +1657,8 @@ component("platform") {
+@@ -1659,6 +1659,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -312,7 +312,7 @@ index 7e3d46902fbf736b4240eb3fcb89975a7b222197..57fdc89fc265ad70cb0bff8443cc1026
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index f989087b5703aee3c16d6bfcfd645dd0aeb5a141..9b21db8cb81a1695d7ae7896f8b4f95d404ee614 100644
+index e58bd2c672fcfd68b7dbc0c861d5be1d2a099e97..7dbe46a7390a988c21b2fbfbd5fbb3a3e822b7f5 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@
