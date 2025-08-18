@@ -220,7 +220,6 @@ void Beep() {
 
 std::string GetLoginItemEnabled(const std::string& type,
                                 const std::string& service_name) {
-  bool enabled = GetLoginItemEnabledDeprecated();
   if (@available(macOS 13, *)) {
     SMAppService* service = GetServiceForType(type, service_name);
     SMAppServiceStatus status = [service status];
@@ -232,10 +231,11 @@ std::string GetLoginItemEnabled(const std::string& type,
       return "requires-approval";
     else if (status == SMAppServiceStatusNotFound) {
       // If the login item was enabled with the old API, return that.
-      return enabled ? "enabled-deprecated" : "not-found";
+      return GetLoginItemEnabledDeprecated() ? "enabled-deprecated"
+                                             : "not-found";
     }
   }
-  return enabled ? "enabled" : "not-registered";
+  return GetLoginItemEnabledDeprecated() ? "enabled" : "not-registered";
 }
 
 bool SetLoginItemEnabled(const std::string& type,
