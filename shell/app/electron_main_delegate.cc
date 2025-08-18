@@ -23,10 +23,13 @@
 #include "components/content_settings/core/common/content_settings_pattern.h"
 #include "content/public/app/initialize_mojo_core.h"
 #include "content/public/common/content_switches.h"
+#include "crypto/hash.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
+#include "electron/snapshot_checksum.h"
 #include "extensions/common/constants.h"
+#include "gin/v8_initializer.h"
 #include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
@@ -49,6 +52,7 @@
 #include "third_party/abseil-cpp/absl/types/variant.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
+#include "v8/include/v8-snapshot.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "shell/app/electron_main_delegate_mac.h"
@@ -206,6 +210,20 @@ void RegisterPathProvider() {
                                       PATH_END);
 }
 
+void ValidateV8Snapshot(v8::StartupData* data) {
+  if (data->data &&
+      electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
+    CHECK_GT(data->raw_size, 0);
+    UNSAFE_BUFFERS({
+      base::span<const char> span_data(
+          data->data, static_cast<unsigned long>(data->raw_size));
+      CHECK(base::ToLowerASCII(base::HexEncode(
+                crypto::hash::Sha256(base::as_bytes(span_data)))) ==
+            electron::snapshot_checksum::kChecksum);
+    })
+  }
+}
+
 }  // namespace
 
 std::string LoadResourceBundle(const std::string& locale) {
@@ -229,7 +247,9 @@ std::string LoadResourceBundle(const std::string& locale) {
   return loaded_locale;
 }
 
-ElectronMainDelegate::ElectronMainDelegate() = default;
+ElectronMainDelegate::ElectronMainDelegate() {
+  gin::SetV8SnapshotValidator(base::BindRepeating(&ValidateV8Snapshot));
+}
 
 ElectronMainDelegate::~ElectronMainDelegate() = default;
 
