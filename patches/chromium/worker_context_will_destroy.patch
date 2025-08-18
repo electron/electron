@@ -10,10 +10,10 @@ An attempt to upstream this was made, but rejected:
 https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 6979b9cc56a51d4983a99da73649832f96f2cf1d..4f07534707a4d88afe8847120a0e5e546f3283ee 100644
+index d794a461eedde1003c72f47af0517249ab20806d..6d2033d2023a7c4c936933a050d2372cf490eb44 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -422,6 +422,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -428,6 +428,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
