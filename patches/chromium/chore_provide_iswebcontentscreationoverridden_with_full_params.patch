@@ -222,7 +222,7 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c034b546289ba069194ad65d3d3bc0703a3afe9c..e603c0fddbf4efaeb225686c1791ffb581e9e6c0 100644
+index d57f205ea7dd4737126ddd7f2284d72eddae9e8f..bf6a239f566ec39efdacce5b74014d2995ba868e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5172,8 +5172,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -250,7 +250,7 @@ index f6ab6ab2b036c7621b429181c3ff89d9f1ff77f9..d151ba757ae81c6f023ee08328ab1554
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 83bdd195339eb7d61ac88e2994fd8dabe93f6ecc..682e5eecb7ce514094f76253447aa7ac4b6f29b1 100644
+index 89c3f86bc828c5bf844bb103477c0772ba275dc5..c3eef892eef2c42c46926be223fe950823e6943d 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -359,8 +359,7 @@ class CONTENT_EXPORT WebContentsDelegate {
