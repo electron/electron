@@ -216,7 +216,7 @@ void RegisterPathProvider() {
 void ValidateV8Snapshot(v8::StartupData* data) {
   if (data->data &&
       electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
-    CHECK(data->raw_size > 0);
+    CHECK_GT(data->raw_size, 0);
     UNSAFE_BUFFERS({
       base::span<const char> span_data(
           data->data, static_cast<unsigned long>(data->raw_size));
