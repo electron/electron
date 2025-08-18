@@ -548,7 +548,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 2d5cad5d7a4ab9292a5f966123687dee06f4512b..ae798fc8f923a9b590c0d9ed703946a2bf5bd3d4 100644
+index 437b47fd3a1a43fd52980ea550db953ba47990eb..180b186de6177bcf3345c71646362e9655b9a81f 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -582,7 +582,7 @@ index 2d5cad5d7a4ab9292a5f966123687dee06f4512b..ae798fc8f923a9b590c0d9ed703946a2
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 66cbd429bec0740321ee12b0a5357c643e390496..d202689d5d42af228b3a6400245d7de3ccb6b768 100644
+index 17ec69e510d6af3d64053edce8efc7188a0c62ed..57358a499c0e713c6cec98229fd304636467234d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -345,6 +345,7 @@ source_set("browser") {
@@ -715,10 +715,10 @@ index 733ae2d15c3ff85faa06db70dc24fdc611113fa4..2424410cc68fe14db6024b6ec41aa73d
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index a2797859bf189a6feb9ac1b6861f68c7b39f7178..76faa5a14ea716f8edb52d1032fca8e3bb237481 100644
+index b31aef089e03d530831df59327936785f026a300..457f5c907169da132cfd6304241dcecae779fc69 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -319,6 +319,7 @@ target(link_target_type, "renderer") {
+@@ -320,6 +320,7 @@ target(link_target_type, "renderer") {
      "//ui/surface",
      "//url",
      "//v8",
@@ -797,10 +797,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 85573d1bad558e7c28cfb2f6a075109dad277114..ce7207fd51b53bcc522cce370237b79addad1ee9 100644
+index 738aff50df5ca48ebd0d142dd738c7c8bfab635d..ae293d37bf014c8c899bb2105a941bd2c092ae86 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -669,6 +669,7 @@ static_library("test_support") {
+@@ -673,6 +673,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -808,7 +808,7 @@ index 85573d1bad558e7c28cfb2f6a075109dad277114..ce7207fd51b53bcc522cce370237b79a
    ]
  
    data_deps = [
-@@ -1119,6 +1120,8 @@ static_library("browsertest_support") {
+@@ -1127,6 +1128,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -817,7 +817,7 @@ index 85573d1bad558e7c28cfb2f6a075109dad277114..ce7207fd51b53bcc522cce370237b79a
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2002,6 +2005,7 @@ test("content_browsertests") {
+@@ -2014,6 +2017,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -825,7 +825,7 @@ index 85573d1bad558e7c28cfb2f6a075109dad277114..ce7207fd51b53bcc522cce370237b79a
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3318,6 +3322,7 @@ test("content_unittests") {
+@@ -3330,6 +3334,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1123,7 +1123,7 @@ index 0e6e650f88e6aadd46bec96a8b41768c37d7cc6a..a6830e3f886e408c254ccd1c2b1d5c15
  
  }  // namespace sandbox
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
-index 789439fc28f1764bd37f6aecfb2b25fc9417862c..e25cca7f617058ea92b321639712c72838c89555 100644
+index e9321ba5fc0f1b24b2d990ecb27c8aaa1c8b970b..51df9671a507acd115f09a50c2d6e987fb4183c2 100644
 --- a/sandbox/mac/seatbelt.cc
 +++ b/sandbox/mac/seatbelt.cc
 @@ -4,6 +4,8 @@
@@ -1135,7 +1135,7 @@ index 789439fc28f1764bd37f6aecfb2b25fc9417862c..e25cca7f617058ea92b321639712c728
  #include <errno.h>
  #include <unistd.h>
  
-@@ -11,7 +13,7 @@
+@@ -12,7 +14,7 @@
  
  extern "C" {
  #include <sandbox.h>
@@ -1144,7 +1144,7 @@ index 789439fc28f1764bd37f6aecfb2b25fc9417862c..e25cca7f617058ea92b321639712c728
  int sandbox_init_with_parameters(const char* profile,
                                   uint64_t flags,
                                   const char* const parameters[],
-@@ -42,13 +44,13 @@ sandbox_profile_t* sandbox_compile_string(const char* data,
+@@ -58,13 +60,14 @@ sandbox_profile_t* sandbox_compile_string(const char* data,
                                            char** error);
  int sandbox_apply(sandbox_profile_t*);
  void sandbox_free_profile(sandbox_profile_t*);
@@ -1155,12 +1155,12 @@ index 789439fc28f1764bd37f6aecfb2b25fc9417862c..e25cca7f617058ea92b321639712c728
  namespace sandbox {
  
  namespace {
--
+ 
 +#if !IS_MAS_BUILD()
- bool HandleSandboxResult(int rv, char* errorbuf, std::string* error) {
-   if (rv == 0) {
-     if (error)
-@@ -76,36 +78,48 @@ bool HandleSandboxErrno(int rv, const char* message, std::string* error) {
+ // `managed_errorbuf` uses a unique_ptr with a deleter to ensure that memory is
+ // freed using the sandbox library's deallocation function to prevent unexpected
+ // behavior.
+@@ -107,36 +110,48 @@ bool HandleSandboxErrno(int rv, const char* message, std::string* error) {
    }
    return false;
  }
@@ -1210,7 +1210,7 @@ index 789439fc28f1764bd37f6aecfb2b25fc9417862c..e25cca7f617058ea92b321639712c728
  }
  
  // Initialize the static member variables.
-@@ -116,6 +130,7 @@ const char* Seatbelt::kProfilePureComputation = kSBXProfilePureComputation;
+@@ -147,6 +162,7 @@ const char* Seatbelt::kProfilePureComputation = kSBXProfilePureComputation;
  
  // static
  bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
@@ -1218,9 +1218,9 @@ index 789439fc28f1764bd37f6aecfb2b25fc9417862c..e25cca7f617058ea92b321639712c728
  // OS X deprecated these functions, but did not provide a suitable replacement,
  // so ignore the deprecation warning.
  #pragma clang diagnostic push
-@@ -124,6 +139,9 @@ bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
-   int rv = ::sandbox_init(profile, flags, &errorbuf);
-   return HandleSandboxResult(rv, errorbuf, error);
+@@ -156,6 +172,9 @@ bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
+   return HandleSandboxResult(
+       rv, std::unique_ptr<char, sandbox_error_deleter>(errorbuf), error);
  #pragma clang diagnostic pop
 +#else
 +  return true;
@@ -1228,7 +1228,7 @@ index 789439fc28f1764bd37f6aecfb2b25fc9417862c..e25cca7f617058ea92b321639712c728
  }
  
  // static
-@@ -131,16 +149,21 @@ bool Seatbelt::InitWithParams(const std::string& profile,
+@@ -163,17 +182,22 @@ bool Seatbelt::InitWithParams(const std::string& profile,
                                uint64_t flags,
                                const std::vector<std::string>& parameters,
                                std::string* error) {
@@ -1243,14 +1243,15 @@ index 789439fc28f1764bd37f6aecfb2b25fc9417862c..e25cca7f617058ea92b321639712c728
    char* errorbuf = nullptr;
    int rv = ::sandbox_init_with_parameters(profile.c_str(), flags,
                                            weak_params.data(), &errorbuf);
-   return HandleSandboxResult(rv, errorbuf, error);
+   return HandleSandboxResult(
+       rv, std::unique_ptr<char, sandbox_error_deleter>(errorbuf), error);
 +#else
 +  return true;
 +#endif
  }
  
  // static
-@@ -148,6 +171,7 @@ bool Seatbelt::Compile(const char* profile,
+@@ -181,6 +205,7 @@ bool Seatbelt::Compile(const char* profile,
                         const Seatbelt::Parameters& params,
                         std::string& compiled_profile,
                         std::string* error) {
@@ -1258,7 +1259,7 @@ index 789439fc28f1764bd37f6aecfb2b25fc9417862c..e25cca7f617058ea92b321639712c728
    char* errorbuf = nullptr;
    sandbox_profile_t* sandbox_profile =
        ::sandbox_compile_string(profile, params.params(), &errorbuf);
-@@ -157,33 +181,44 @@ bool Seatbelt::Compile(const char* profile,
+@@ -192,23 +217,32 @@ bool Seatbelt::Compile(const char* profile,
    compiled_profile.assign(reinterpret_cast<const char*>(sandbox_profile->data),
                            sandbox_profile->size);
    ::sandbox_free_profile(sandbox_profile);
@@ -1278,18 +1279,6 @@ index 789439fc28f1764bd37f6aecfb2b25fc9417862c..e25cca7f617058ea92b321639712c728
                              "sandbox_apply: ", error);
 +#else
 +  return true;
-+#endif
- }
- 
- // static
- void Seatbelt::FreeError(char* errorbuf) {
-+#if !IS_MAS_BUILD()
- // OS X deprecated these functions, but did not provide a suitable replacement,
- // so ignore the deprecation warning.
- #pragma clang diagnostic push
- #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-   return ::sandbox_free_error(errorbuf);
- #pragma clang diagnostic pop
 +#endif
  }
  
@@ -1407,7 +1396,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index cf7fb031d669264d1bb9a033588b48a6dd0cd40c..e56a663f46b64e91defa0e42a91f4e4a777c8a3d 100644
+index 29c93be451657a8844210acba66fe8b9b4b2eed0..64300176d5a2cd4d2243d22d1c298c5315d24474 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -425,6 +425,7 @@ component("core") {
@@ -1819,10 +1808,10 @@ index 85d9170ae8de43ec0fa18c033d66c0583c26ec2f..c4f76301818404ce853583adf01af85c
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 4c93aa57c3f62784e153dac9b0226b00f75c9d16..f448dd7eb15a90e45b517e50fb1c65e96966c952 100644
+index a4226f4f8d4bb5401edb79855e95c7fff3cd0bb1..9e8da8ab0b21c2b8d7a3a0b9c9eeeb2fdd15201e 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -339,6 +339,12 @@ component("gfx") {
+@@ -337,6 +337,12 @@ component("gfx") {
      "//ui/base:ui_data_pack",
    ]
  
