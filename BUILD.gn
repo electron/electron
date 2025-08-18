@@ -779,13 +779,13 @@ source_set("electron_lib") {
 action("mksnapshot_checksum_gen") {
   script = "build/checksum_header.py"
 
-  outputs = ["$target_gen_dir/snapshot_checksum.h"]
-  inputs = ["$root_out_dir/$v8_context_snapshot_filename"]
+  outputs = [ "$target_gen_dir/snapshot_checksum.h" ]
+  inputs = [ "$root_out_dir/$v8_context_snapshot_filename" ]
   args = rebase_path(inputs)
 
   args += rebase_path(outputs)
 
-  deps = ["//tools/v8_context_snapshot"]
+  deps = [ "//tools/v8_context_snapshot" ]
 }
 
 electron_paks("packed_resources") {
