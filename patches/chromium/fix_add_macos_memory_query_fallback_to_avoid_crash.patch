@@ -12,7 +12,7 @@ While this "hot-swapping" behavior isn't supported, many enterprise update scrip
 This patch should be removed after the new implementation has been present since the beginning of a stable release. The new implementation was released with Electron 37.0.0, but this fallback was not added until after 37.2.2. That means 38.0.0 would be the first safe release to remove this fallback, giving developers a 1-major-version buffer to safely transition implementations.
 
 diff --git a/base/system/sys_info_apple.mm b/base/system/sys_info_apple.mm
-index 1f020d7a3e624954505b2abeee72011a73643d6b..e50359e965cc00091e02592f3eeadc5a2f281041 100644
+index 1f020d7a3e624954505b2abeee72011a73643d6b..3b26eec537c0f74ba6a936c6a33820914b4278d2 100644
 --- a/base/system/sys_info_apple.mm
 +++ b/base/system/sys_info_apple.mm
 @@ -6,11 +6,31 @@
@@ -29,7 +29,7 @@ index 1f020d7a3e624954505b2abeee72011a73643d6b..e50359e965cc00091e02592f3eeadc5a
 +
 +// Implementation of AmountOfPhysicalMemoryImpl before https://crrev.com/c/6274964.
 +// See Electron patch adding this fallback for more details.
-+uint64_t AmountOfPhysicalMemoryFallback() {
++ByteCount AmountOfPhysicalMemoryFallback() {
 +  struct host_basic_info hostinfo;
 +  mach_msg_type_number_t count = HOST_BASIC_INFO_COUNT;
 +  base::apple::ScopedMachSendRight host(mach_host_self());
@@ -39,7 +39,7 @@ index 1f020d7a3e624954505b2abeee72011a73643d6b..e50359e965cc00091e02592f3eeadc5a
 +    NOTREACHED();
 +  }
 +  DCHECK_EQ(HOST_BASIC_INFO_COUNT, count);
-+  return hostinfo.max_mem;
++  return ByteCount::FromUnsigned(hostinfo.max_mem);
 +}
 +
 +}
@@ -47,17 +47,15 @@ index 1f020d7a3e624954505b2abeee72011a73643d6b..e50359e965cc00091e02592f3eeadc5a
  namespace internal {
  
  // Queries sysctlbyname() for the given key and returns the 32 bit integer value
-@@ -54,8 +74,11 @@
+@@ -54,7 +74,10 @@
    uint64_t physical_memory;
    size_t size = sizeof(physical_memory);
    int rv = sysctlbyname("hw.memsize", &physical_memory, &size, nullptr, 0);
 -  PCHECK(rv == 0) << "sysctlbyname(\"hw.memsize\")";
--  return ByteCount::FromUnsigned(physical_memory);
 +  // Instead of crashing, fallback to the old implementation.
 +  if (rv != 0) {
 +    return AmountOfPhysicalMemoryFallback();
 +  }
-+  return physical_memory;
+   return ByteCount::FromUnsigned(physical_memory);
  }
  
- }  // namespace base
