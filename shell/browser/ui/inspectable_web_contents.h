@@ -174,6 +174,7 @@ class InspectableWebContents
   void RecordPerformanceHistogramMedium(const std::string& name,
                                         double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
+  void RecordNewBadgeUsage(const std::string& feature_name) override {}
   void RecordImpression(const ImpressionEvent& event) override {}
   void RecordResize(const ResizeEvent& event) override {}
   void RecordClick(const ClickEvent& event) override {}
