@@ -147,7 +147,12 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
               6059,
               // Private field '{0}' must be declared in an enclosing class.
               1111
-            ]
+            ].concat(process.env.CI_DOCS_ONLY
+              ? [
+                  // Cannot find module '{0}' or its corresponding type declarations.
+                  2307
+                ]
+              : [])
           }
         }]
       },

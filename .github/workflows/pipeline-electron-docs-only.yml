@@ -29,6 +29,8 @@ jobs:
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Run TS/JS compile
       shell: bash
+      env:
+        CI_DOCS_ONLY: true
       run: |
         cd src/electron
         node script/yarn create-typescript-definitions
