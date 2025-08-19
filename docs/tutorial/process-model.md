@@ -55,7 +55,7 @@ a web page in a separate renderer process. You can interact with this web conten
 from the main process using the window's [`webContents`][web-contents] object.
 
 ```js title='main.js'
-const { BrowserWindow } = require('electron')
+import { BrowserWindow } from 'electron'
 
 const win = new BrowserWindow({ width: 800, height: 1500 })
 win.loadURL('https://github.com')
@@ -158,7 +158,7 @@ A preload script can be attached to the main process in the `BrowserWindow` cons
 `webPreferences` option.
 
 ```js title='main.js'
-const { BrowserWindow } = require('electron')
+import { BrowserWindow } from 'electron'
 // ...
 const win = new BrowserWindow({
   webPreferences: {
@@ -194,7 +194,7 @@ Instead, use the [`contextBridge`][context-bridge] module to accomplish this
 securely:
 
 ```js title='preload.js'
-const { contextBridge } = require('electron')
+import { contextBridge } from 'electron'
 
 contextBridge.exposeInMainWorld('myAPI', {
   desktop: true
@@ -242,8 +242,8 @@ These aliases have no impact on runtime, but can be used for typechecking
 and autocomplete.
 
 ```js title="Usage example"
-const { shell } = require('electron/common')
-const { app } = require('electron/main')
+import { shell } from 'electron/common'
+import { app } from 'electron/main'
 ```
 
 [window-mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Window
