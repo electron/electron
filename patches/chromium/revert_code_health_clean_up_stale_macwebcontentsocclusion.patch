@@ -233,10 +233,10 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index 0da587cc61fed9201e0ddbc29168907cae76c0a2..48eba4f8a587896ba0c28a67bae8cfa1e4764050 100644
+index c0723c13069f570206ea6b536b1a41a1200e3d48..fe5b95303d6cf06b99889307930252effdea6e0f 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
-@@ -316,6 +316,14 @@ BASE_FEATURE(kIOSurfaceCapturer,
+@@ -324,6 +324,14 @@ BASE_FEATURE(kIOSurfaceCapturer,
               base::FEATURE_ENABLED_BY_DEFAULT);
  #endif
  
@@ -252,7 +252,7 @@ index 0da587cc61fed9201e0ddbc29168907cae76c0a2..48eba4f8a587896ba0c28a67bae8cfa1
  BASE_FEATURE(kKeepChildProcessAfterIPCReset,
               "KeepChildProcessAfterIPCReset",
 diff --git a/content/common/features.h b/content/common/features.h
-index a206971121af438c997c6b531b36cb627cc8c59e..602d1ca5951c636ad53d76dddef774147f59aa2c 100644
+index 93017367d5ef77b00a73d849608a7af16fe44527..394ee07b58a9b6021143b2168b1065350420cfca 100644
 --- a/content/common/features.h
 +++ b/content/common/features.h
 @@ -101,6 +101,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
@@ -263,5 +263,5 @@ index a206971121af438c997c6b531b36cb627cc8c59e..602d1ca5951c636ad53d76dddef77414
 +CONTENT_EXPORT BASE_DECLARE_FEATURE(kMacWebContentsOcclusion);
 +#endif
  CONTENT_EXPORT BASE_DECLARE_FEATURE(kKeepChildProcessAfterIPCReset);
- CONTENT_EXPORT BASE_DECLARE_FEATURE(kMediaDevicesSystemMonitorCache);
- CONTENT_EXPORT BASE_DECLARE_FEATURE(kMediaStreamTrackTransfer);
+ 
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kLocalNetworkAccessForWorkers);

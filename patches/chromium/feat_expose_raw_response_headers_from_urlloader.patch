@@ -90,7 +90,7 @@ index 02651c7b3b0cb0ab8fd3a4c84ab5b39b0e773536..0cbf060b11cc47c24e5cde0d36edb88c
    // when it receives the AcceptCHFrame.
    EnabledClientHints? enabled_client_hints;
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index fbc817126489e5422fd4bd11b6bd9744d648f8ff..b51b2ebe0f3291d04b0479776ddbeb1e05197f56 100644
+index 3a5fbaea905e7c01caee3659ff3be06e8def5615..89da9461e8290b8099456e5222f278770e09f883 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -14,6 +14,7 @@ import "services/network/public/mojom/encoded_body_length.mojom";
@@ -101,7 +101,7 @@ index fbc817126489e5422fd4bd11b6bd9744d648f8ff..b51b2ebe0f3291d04b0479776ddbeb1e
  import "services/network/public/mojom/ip_endpoint.mojom";
  import "services/network/public/mojom/load_timing_info.mojom";
  import "services/network/public/mojom/load_timing_internal_info.mojom";
-@@ -52,6 +53,9 @@ struct URLResponseHead {
+@@ -53,6 +54,9 @@ struct URLResponseHead {
    // The response headers or NULL if the URL type does not support headers.
    HttpResponseHeaders headers;
  
@@ -112,7 +112,7 @@ index fbc817126489e5422fd4bd11b6bd9744d648f8ff..b51b2ebe0f3291d04b0479776ddbeb1e
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 6318bfabcf5f1f72b78161954f44b2bc2ab2b08d..da73a077a944cb99f3ad41ea9f66cc6045017cb9 100644
+index 61f3909c6f0fe606d30da08fbd3222af44c1a9e4..8b5f2162a2bbfe0bd422b89bc13e9ff93d826afe 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -398,6 +398,9 @@ URLLoader::URLLoader(
@@ -134,7 +134,7 @@ index 6318bfabcf5f1f72b78161954f44b2bc2ab2b08d..da73a077a944cb99f3ad41ea9f66cc60
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1150,6 +1153,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1151,6 +1154,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();

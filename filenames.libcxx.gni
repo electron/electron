@@ -968,6 +968,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__format/enable_insertable.h",
   "//third_party/libc++/src/include/__format/escaped_output_table.h",
   "//third_party/libc++/src/include/__format/extended_grapheme_cluster_table.h",
+  "//third_party/libc++/src/include/__format/fmt_pair_like.h",
   "//third_party/libc++/src/include/__format/format_arg.h",
   "//third_party/libc++/src/include/__format/format_arg_store.h",
   "//third_party/libc++/src/include/__format/format_args.h",

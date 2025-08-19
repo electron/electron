@@ -28,6 +28,11 @@ on:
         description: 'Skip lint check'
         default: false
         required: false
+      enable-ssh:
+        description: 'Enable SSH debugging'
+        required: false
+        type: boolean
+        default: false
   push:
     branches:
       - main
@@ -227,6 +232,7 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
+      enable-ssh: ${{ inputs.enable-ssh || false }}
     secrets: inherit
   
   macos-arm64:
@@ -245,6 +251,7 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
+      enable-ssh: ${{ inputs.enable-ssh || false }}
     secrets: inherit
 
   linux-x64:

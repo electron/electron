@@ -214,10 +214,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     return crashpad_status;
   }
 
-#if BUILDFLAG(IS_WIN)
   // access ui native theme here to prevent blocking calls later
   base::win::AllowDarkModeForApp(true);
-#endif
 
 #if defined(ARCH_CPU_32_BITS)
   // Intentionally crash if converting to a fiber failed.
