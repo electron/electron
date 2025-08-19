@@ -879,7 +879,16 @@ describe('webContents module', () => {
         await w.loadURL(serverUrl);
 
         // Fill out the form on the page
-        await w.webContents.executeJavaScript('document.querySelector("input").value = "Hi!";');
+        await w.webContents.executeJavaScript(`(() => {
+          const input = document.querySelector('input');
+          input.focus();
+          input.value = 'Hi!';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        })();`);
+
+        // Give Blink a frame to mark the form element as dirty before navigating away.
+        await w.webContents.executeJavaScript('new Promise(r => requestAnimationFrame(() => r()))');
 
         // PageState is committed:
         // 1) When the page receives an unload event
@@ -895,10 +904,15 @@ describe('webContents module', () => {
         w = new BrowserWindow();
 
         const formValue = await new Promise<string>(resolve => {
-          w.webContents.once('dom-ready', () => resolve(w.webContents.executeJavaScript('document.querySelector("input").value')));
-
-          // Restore the navigation history
-          return w.webContents.navigationHistory.restore({ index: 2, entries });
+          const targetURL = entries[2].url;
+          const listener = () => {
+            if (w.webContents.getURL() === targetURL) {
+              w.webContents.removeListener('did-finish-load', listener);
+              w.webContents.executeJavaScript('document.querySelector("input").value').then(resolve);
+            }
+          };
+          w.webContents.on('did-finish-load', listener);
+          w.webContents.navigationHistory.restore({ index: 2, entries });
         });
 
         expect(formValue).to.equal('Hi!');
