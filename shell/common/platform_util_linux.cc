@@ -342,7 +342,7 @@ void ShowItemInFolder(const base::FilePath& full_path) {
 
 void OpenPath(const base::FilePath& full_path, OpenCallback callback) {
   // This is async, so we don't care about the return value.
-  XDGOpen(full_path.DirName(), full_path.value(), true, std::move(callback));
+  XDGOpen(full_path.DirName(), full_path.value(), false, std::move(callback));
 }
 
 void OpenFolder(const base::FilePath& full_path) {

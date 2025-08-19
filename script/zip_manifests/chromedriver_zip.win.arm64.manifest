@@ -1,0 +1,6 @@
+chromedriver.exe
+icudtl.dat
+ffmpeg.dll
+gen/electron/buildflags/buildflags.h
+LICENSE
+LICENSES.chromium.html

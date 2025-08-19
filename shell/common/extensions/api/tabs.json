@@ -67,7 +67,7 @@
             "optional": "true",
             "description": "The ID of the Split View that the tab belongs to.",
             // TODO(crbug.com/433273595): Enable documentation when ready for launch.
-            "nodoc": "true"
+            "nodoc": true
           },
           "windowId": {"type": "integer", "minimum": 0, "description": "The ID of the window that contains the tab."},
           "openerTabId": {"type": "integer", "minimum": 0, "optional": true, "description": "The ID of the tab that opened this tab, if any. This property is only present if the opener tab still exists."},

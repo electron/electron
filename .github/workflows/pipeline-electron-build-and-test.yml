@@ -54,6 +54,11 @@ on:
         required: false
         type: boolean
         default: false
+      enable-ssh:
+        description: 'Enable SSH debugging'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
@@ -76,7 +81,8 @@ jobs:
       gn-build-type: ${{ inputs.gn-build-type }}
       generate-symbols: ${{ inputs.generate-symbols }}
       upload-to-storage: ${{ inputs.upload-to-storage }}
-      is-asan: ${{ inputs.is-asan}}
+      is-asan: ${{ inputs.is-asan }}
+      enable-ssh: ${{ inputs.enable-ssh }}
     secrets: inherit
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
@@ -86,5 +92,6 @@ jobs:
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
-      is-asan: ${{ inputs.is-asan}}
+      is-asan: ${{ inputs.is-asan }}
+      enable-ssh: ${{ inputs.enable-ssh }}
     secrets: inherit

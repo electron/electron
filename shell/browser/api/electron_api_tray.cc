@@ -52,10 +52,12 @@ gin::DeprecatedWrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Tray::Tray(v8::Isolate* isolate,
            v8::Local<v8::Value> image,
-           std::optional<UUID> guid)
-    : tray_icon_(TrayIcon::Create(guid)) {
+           std::optional<base::Uuid> guid)
+    : guid_(guid), tray_icon_(TrayIcon::Create(guid)) {
   SetImage(isolate, image);
   tray_icon_->AddObserver(this);
+  if (guid.has_value())
+    tray_icon_->SetAutoSaveName(guid.value().AsLowercaseString());
 }
 
 Tray::~Tray() = default;
@@ -63,19 +65,17 @@ Tray::~Tray() = default;
 // static
 gin_helper::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
                                    v8::Local<v8::Value> image,
-                                   std::optional<UUID> guid,
+                                   std::optional<base::Uuid> guid,
                                    gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
     return {};
   }
 
-#if BUILDFLAG(IS_WIN)
   if (!guid.has_value() && args->Length() > 1) {
-    thrower.ThrowError("Invalid GUID format");
+    thrower.ThrowError("Invalid GUID format - GUID must be a string");
     return {};
   }
-#endif
 
   // Error thrown by us will be dropped when entering V8.
   // Make sure to abort early and propagate the error to JS.
@@ -392,6 +392,15 @@ gfx::Rect Tray::GetBounds() {
   return tray_icon_->GetBounds();
 }
 
+v8::Local<v8::Value> Tray::GetGUID() {
+  if (!CheckAlive())
+    return {};
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  if (!guid_)
+    return v8::Null(isolate);
+  return gin::ConvertToV8(isolate, guid_.value());
+}
+
 bool Tray::CheckAlive() {
   if (!tray_icon_) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -424,6 +433,7 @@ void Tray::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("closeContextMenu", &Tray::CloseContextMenu)
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
       .SetMethod("getBounds", &Tray::GetBounds)
+      .SetMethod("getGUID", &Tray::GetGUID)
       .Build();
 }
 

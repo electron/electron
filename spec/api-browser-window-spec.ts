@@ -1,4 +1,4 @@
-import { app, BrowserWindow, BaseWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
+import { app, BrowserWindow, BaseWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain, BrowserWindowConstructorOptions } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -7105,20 +7105,74 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  describe('windowStatePersistence', () => {
+  ifdescribe(hasCapturableScreen())('windowStatePersistence', () => {
+    const getWindowStateFromDisk = (windowName: string, preferencesPath: string) => {
+      if (!fs.existsSync(preferencesPath)) {
+        throw new Error(`Preferences file does not exist at path: ${preferencesPath}. Window state was not saved to disk.`);
+      }
+      const prefsContent = fs.readFileSync(preferencesPath, 'utf8');
+      const prefs = JSON.parse(prefsContent);
+      return prefs?.windowStates?.[windowName] || null;
+    };
+
+    // Helper to get preferences file modification time
+    const getPrefsModTime = (preferencesPath: string): Date => {
+      try {
+        return fs.statSync(preferencesPath).mtime;
+      } catch {
+        throw new Error(`Test requires preferences file to exist at path: ${preferencesPath}.`);
+      }
+    };
+
+    const waitForPrefsUpdate = async (initialModTime: Date, preferencesPath: string): Promise<void> => {
+      const startTime = Date.now();
+      const timeoutMs = 20000;
+      while (true) {
+        const currentModTime = getPrefsModTime(preferencesPath);
+
+        if (currentModTime > initialModTime) {
+          return;
+        }
+
+        if (Date.now() - startTime > timeoutMs) {
+          throw new Error(`Window state was not flushed to disk within ${timeoutMs}ms`);
+        }
+        // Wait for 1 second before checking again
+        await setTimeout(1000);
+      }
+    };
+
+    const waitForPrefsFileCreation = async (preferencesPath: string) => {
+      while (!fs.existsSync(preferencesPath)) {
+        await setTimeout(1000);
+      }
+    };
+
+    const createAndSaveWindowState = async (preferencesPath: string, windowName: string, options?: BrowserWindowConstructorOptions) => {
+      const w = new BrowserWindow({
+        name: windowName,
+        windowStatePersistence: {
+          displayMode: false
+        },
+        show: false,
+        ...options
+      });
+      if (!fs.existsSync(preferencesPath)) {
+        // File doesn't exist, wait for creation
+        await waitForPrefsFileCreation(preferencesPath);
+      } else {
+        // File exists, wait for update
+        const initialModTime = getPrefsModTime(preferencesPath);
+        await waitForPrefsUpdate(initialModTime, preferencesPath);
+      }
+      // Ensure window is destroyed because we can't create another window with the same name otherwise
+      w.destroy();
+    };
+
     describe('save window state', () => {
       const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'window-state-save');
       const sharedUserDataPath = path.join(os.tmpdir(), 'electron-window-state-test');
       const sharedPreferencesPath = path.join(sharedUserDataPath, 'Local State');
-
-      const getWindowStateFromDisk = (windowName: string, preferencesPath: string) => {
-        if (!fs.existsSync(preferencesPath)) {
-          throw new Error(`Preferences file does not exist at path: ${preferencesPath}. Window state was not saved to disk.`);
-        }
-        const prefsContent = fs.readFileSync(preferencesPath, 'utf8');
-        const prefs = JSON.parse(prefsContent);
-        return prefs?.windowStates?.[windowName] || null;
-      };
 
       // Clean up before each test
       beforeEach(() => {
@@ -7149,7 +7203,7 @@ describe('BrowserWindow module', () => {
           expect(savedState).to.have.property('workAreaBottom');
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is closed and app exit', async () => {
+        it('should save window state after window is closed and app exit', async () => {
           const appPath = path.join(fixturesPath, 'close-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7164,7 +7218,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is resized and app exit', async () => {
+        it('should save window state after window is resized and app exit', async () => {
           const appPath = path.join(fixturesPath, 'resize-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7179,7 +7233,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is moved and app exit', async () => {
+        it('should save window state after window is moved and app exit', async () => {
           const appPath = path.join(fixturesPath, 'move-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7194,7 +7248,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is fullscreened and app exit', async () => {
+        it('should save window state after window is fullscreened and app exit', async () => {
           const appPath = path.join(fixturesPath, 'fullscreen-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7207,7 +7261,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is maximized and app exit', async () => {
+        it('should save window state after window is maximized and app exit', async () => {
           const appPath = path.join(fixturesPath, 'maximize-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7220,7 +7274,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state if in a minimized state and app exit', async () => {
+        it('should save window state if in a minimized state and app exit', async () => {
           const appPath = path.join(fixturesPath, 'minimize-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7236,7 +7290,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.kiosk).to.equal(false);
         });
 
-        ifit(hasCapturableScreen())('should save window state after window is kiosked and app exit', async () => {
+        it('should save window state after window is kiosked and app exit', async () => {
           const appPath = path.join(fixturesPath, 'kiosk-save');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7251,7 +7305,7 @@ describe('BrowserWindow module', () => {
       });
 
       describe('work area tests', () => {
-        ifit(hasCapturableScreen())('should save valid work area bounds', async () => {
+        it('should save valid work area bounds', async () => {
           const appPath = path.join(fixturesPath, 'schema-check');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
           const [code] = await once(appProcess, 'exit');
@@ -7269,7 +7323,7 @@ describe('BrowserWindow module', () => {
           expect(savedState.workAreaTop).to.be.lessThan(savedState.workAreaBottom);
         });
 
-        ifit(hasCapturableScreen())('should save work area bounds that contain the window bounds on primary display', async () => {
+        it('should save work area bounds that contain the window bounds on primary display', async () => {
           // Fixture will center the window on the primary display
           const appPath = path.join(fixturesPath, 'work-area-primary');
           const appProcess = childProcess.spawn(process.execPath, [appPath]);
@@ -7291,42 +7345,9 @@ describe('BrowserWindow module', () => {
         const windowName = 'test-batching-behavior';
         const preferencesPath = path.join(app.getPath('userData'), 'Local State');
 
-        // Helper to get preferences file modification time
-        const getPrefsModTime = (): Date => {
-          try {
-            return fs.statSync(preferencesPath).mtime;
-          } catch {
-            throw new Error(`Test requires preferences file to exist at path: ${preferencesPath}.`);
-          }
-        };
-
-        // Helper to wait for file modification with 20 second default timeout
-        const waitForPrefsUpdate = async (initialModTime: Date, timeoutMs: number = 20000): Promise<void> => {
-          const startTime = Date.now();
-
-          while (true) {
-            const currentModTime = getPrefsModTime();
-
-            if (currentModTime > initialModTime) {
-              return;
-            }
-
-            if (Date.now() - startTime > timeoutMs) {
-              throw new Error(`Window state was not flushed to disk within ${timeoutMs}ms`);
-            }
-            // Wait for 1 second before checking again
-            await setTimeout(1000);
-          }
-        };
-
-        const waitForPrefsFileCreation = async (preferencesPath: string) => {
-          while (!fs.existsSync(preferencesPath)) {
-            await setTimeout(1000);
-          }
-        };
-
         beforeEach(async () => {
           await setTimeout(2000);
+          BrowserWindow.clearWindowState(windowName);
           w = new BrowserWindow({
             show: false,
             width: 400,
@@ -7342,7 +7363,7 @@ describe('BrowserWindow module', () => {
           // Wait for preferences file to be created if its the first time we're running the test
           await waitForPrefsFileCreation(preferencesPath);
 
-          const initialModTime = getPrefsModTime();
+          const initialModTime = getPrefsModTime(preferencesPath);
 
           const moved = once(w, 'move');
           w.setPosition(150, 200);
@@ -7356,7 +7377,7 @@ describe('BrowserWindow module', () => {
           // Wait for any potential save to occur from the resize operation
           await setTimeout(1000);
 
-          const afterMoveModTime = getPrefsModTime();
+          const afterMoveModTime = getPrefsModTime(preferencesPath);
 
           expect(afterMoveModTime.getTime()).to.equal(initialModTime.getTime());
         });
@@ -7365,13 +7386,13 @@ describe('BrowserWindow module', () => {
           // Wait for preferences file to be created if its the first time we're running the test
           await waitForPrefsFileCreation(preferencesPath);
 
-          const initialModTime = getPrefsModTime();
+          const initialModTime = getPrefsModTime(preferencesPath);
 
           const resized = once(w, 'resize');
           w.setSize(500, 400);
           await resized;
 
-          await waitForPrefsUpdate(initialModTime);
+          await waitForPrefsUpdate(initialModTime, preferencesPath);
 
           const savedState = getWindowStateFromDisk(windowName, preferencesPath);
           expect(savedState).to.not.be.null('window state with window name "test-batching-behavior" does not exist');
@@ -7383,7 +7404,7 @@ describe('BrowserWindow module', () => {
           // Wait for preferences file to be created if its the first time we're running the test
           await waitForPrefsFileCreation(preferencesPath);
 
-          const initialModTime = getPrefsModTime();
+          const initialModTime = getPrefsModTime(preferencesPath);
 
           const resize1 = once(w, 'resize');
           w.setSize(500, 400);
@@ -7391,7 +7412,7 @@ describe('BrowserWindow module', () => {
           // Wait for any potential save to occur
           await setTimeout(1000);
 
-          const afterFirstResize = getPrefsModTime();
+          const afterFirstResize = getPrefsModTime(preferencesPath);
 
           const resize2 = once(w, 'resize');
           w.setSize(600, 500);
@@ -7399,7 +7420,7 @@ describe('BrowserWindow module', () => {
           // Wait for any potential save to occur
           await setTimeout(1000);
 
-          const afterSecondResize = getPrefsModTime();
+          const afterSecondResize = getPrefsModTime(preferencesPath);
 
           const resize3 = once(w, 'resize');
           w.setSize(700, 600);
@@ -7407,9 +7428,9 @@ describe('BrowserWindow module', () => {
           // Wait for any potential save to occur
           await setTimeout(1000);
 
-          const afterThirdResize = getPrefsModTime();
+          const afterThirdResize = getPrefsModTime(preferencesPath);
 
-          await waitForPrefsUpdate(initialModTime);
+          await waitForPrefsUpdate(initialModTime, preferencesPath);
 
           const savedState = getWindowStateFromDisk(windowName, preferencesPath);
           expect(savedState).to.not.be.null('window state with window name "test-batching-behavior" does not exist');
@@ -7426,7 +7447,7 @@ describe('BrowserWindow module', () => {
           // Wait for preferences file to be created if its the first time we're running the test
           await waitForPrefsFileCreation(preferencesPath);
 
-          const initialModTime = getPrefsModTime();
+          const initialModTime = getPrefsModTime(preferencesPath);
 
           const moved = once(w, 'move');
           w.setPosition(100, 100);
@@ -7437,10 +7458,1161 @@ describe('BrowserWindow module', () => {
           // Keep main thread busy for 25 seconds
           while (Date.now() - startTime < 25000);
 
-          const finalModTime = getPrefsModTime();
+          const finalModTime = getPrefsModTime(preferencesPath);
 
           expect(finalModTime.getTime()).to.equal(initialModTime.getTime());
         });
+      });
+    });
+
+    describe('clear window state', () => {
+      const windowName = 'test-window-clear';
+      const preferencesPath = path.join(app.getPath('userData'), 'Local State');
+
+      beforeEach(async () => {
+        // Timeout here plays nice with CI
+        await setTimeout(2000);
+        // Let's start with a clean slate everytime
+        BrowserWindow.clearWindowState(windowName);
+      });
+
+      afterEach(closeAllWindows);
+
+      it('should clear existing window state', async () => {
+        const initialModTime = getPrefsModTime(preferencesPath);
+
+        const w = new BrowserWindow({
+          name: windowName,
+          windowStatePersistence: true,
+          show: false
+        });
+        w.destroy();
+
+        await waitForPrefsUpdate(initialModTime, preferencesPath);
+
+        const stateBefore = getWindowStateFromDisk(windowName, preferencesPath);
+        expect(stateBefore).to.not.be.null('window state with window name "test-window-clear" should exist but does not');
+
+        BrowserWindow.clearWindowState(windowName);
+
+        await waitForPrefsUpdate(getPrefsModTime(preferencesPath), preferencesPath);
+
+        const stateAfter = getWindowStateFromDisk(windowName, preferencesPath);
+        expect(stateAfter).to.be.null('window state with window name "test-window-clear" should be cleared');
+      });
+
+      it('should clear existing window state from memory immediately', async () => {
+        const w = new BrowserWindow({
+          height: 100,
+          width: 100,
+          name: windowName,
+          windowStatePersistence: true,
+          show: false
+        });
+
+        w.destroy();
+
+        const w1 = new BrowserWindow({
+          height: 200,
+          width: 200,
+          name: windowName,
+          windowStatePersistence: true,
+          show: false
+        });
+
+        // This proves that the window state exists in memory
+        expect(w1.getBounds().width).to.equal(100);
+        expect(w1.getBounds().height).to.equal(100);
+
+        w1.destroy();
+
+        BrowserWindow.clearWindowState(windowName);
+
+        const w2 = new BrowserWindow({
+          height: 200,
+          width: 200,
+          name: windowName,
+          windowStatePersistence: true,
+          show: false
+        });
+        // windowStatePersistence: true should override the constructor bounds if not cleared
+        // If the window has dimensions 200x200, it indicates that the state was indeed cleared
+        expect(w2.getBounds().width).to.equal(200);
+        expect(w2.getBounds().height).to.equal(200);
+
+        w2.destroy();
+      });
+
+      it('should not throw when clearing non-existent window state', () => {
+        expect(() => {
+          BrowserWindow.clearWindowState('non-existent-window');
+        }).to.not.throw();
+      });
+
+      it('should not affect other window states when clearing specific window', async () => {
+        const windowName1 = 'test-window-1';
+        const windowName2 = 'test-window-2';
+        const initialModTime = getPrefsModTime(preferencesPath);
+
+        const w1 = new BrowserWindow({
+          name: windowName1,
+          windowStatePersistence: true,
+          show: false
+        });
+        w1.destroy();
+
+        const w2 = new BrowserWindow({
+          name: windowName2,
+          windowStatePersistence: true,
+          show: false
+        });
+        w2.destroy();
+
+        await waitForPrefsUpdate(initialModTime, preferencesPath);
+
+        expect(getWindowStateFromDisk(windowName1, preferencesPath)).to.not.be.null('window state with window name "test-window-1" should exist but does not');
+        expect(getWindowStateFromDisk(windowName2, preferencesPath)).to.not.be.null('window state with window name "test-window-2" should exist but does not');
+
+        BrowserWindow.clearWindowState(windowName1);
+
+        await waitForPrefsUpdate(getPrefsModTime(preferencesPath), preferencesPath);
+
+        // Verify if only window1 was cleared
+        expect(getWindowStateFromDisk(windowName1, preferencesPath)).to.be.null('window state with window name "test-window-1" should be cleared');
+        expect(getWindowStateFromDisk(windowName2, preferencesPath)).to.not.be.null('window state with window name "test-window-2" should not be cleared');
+      });
+    });
+
+    describe('restore window state', () => {
+      const preferencesPath = path.join(app.getPath('userData'), 'Local State');
+      const windowName = 'test-restore-window';
+
+      beforeEach(async () => {
+        // Timeout here plays nice with CI
+        await setTimeout(2000);
+        // Let's start with a clean slate everytime
+        BrowserWindow.clearWindowState(windowName);
+      });
+
+      afterEach(closeAllWindows);
+
+      describe('single monitor tests', () => {
+        // Window state restoration takes into account current work area bounds to readjust height/width
+        // height and width will be readjusted to kMinimumVisibleWidth*kMinimumVisibleHeight (100x100)
+        // if there is no capturable screen
+        it('should restore bounds when windowStatePersistence is true', async () => {
+          const workArea = screen.getPrimaryDisplay().workArea;
+          const bounds = { width: 100, height: 100, x: workArea.x, y: workArea.y };
+          await createAndSaveWindowState(preferencesPath, windowName, bounds);
+          // Should override default constructor bounds
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            width: 500,
+            height: 400,
+            x: 200,
+            y: 250,
+            show: false
+          });
+
+          expectBoundsEqual(w.getBounds(), bounds);
+
+          w.destroy();
+        });
+
+        it('should use default window options when no saved state exists', async () => {
+          const defaultBounds = { width: 500, height: 400, x: 200, y: 250 };
+          // BrowserWindow.clearWindowState(windowName) is called in beforeEach
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            ...defaultBounds,
+            show: false
+          });
+          // Should take the default bounds from the constructor as there is no saved state
+          expectBoundsEqual(w.getBounds(), defaultBounds);
+          expect(w.isFullScreen()).to.equal(false);
+          expect(w.isMaximized()).to.equal(false);
+
+          w.destroy();
+        });
+
+        it('should restore fullscreen state when windowStatePersistence is true', async () => {
+          await createAndSaveWindowState(preferencesPath, windowName, { fullscreen: true });
+          await setTimeout(2000);
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true
+          });
+
+          const enterFullScreen = once(w, 'enter-full-screen');
+          if (!w.isFullScreen()) await enterFullScreen;
+
+          expect(w.isFullScreen()).to.equal(true);
+
+          w.destroy();
+        });
+
+        it('should restore kiosk state when windowStatePersistence is true', async () => {
+          await createAndSaveWindowState(preferencesPath, windowName, { kiosk: true });
+          await setTimeout(2000);
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true
+          });
+
+          const enterFullScreen = once(w, 'enter-full-screen');
+          if (!w.isFullScreen()) await enterFullScreen;
+
+          expect(w.isFullScreen()).to.equal(true);
+          expect(w.isKiosk()).to.equal(true);
+
+          w.destroy();
+        });
+
+        it('should restore maximized state when windowStatePersistence is true', async () => {
+          const width = screen.getPrimaryDisplay().workArea.width;
+          const height = screen.getPrimaryDisplay().workArea.height;
+          await createAndSaveWindowState(preferencesPath, windowName, { width, height });
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const maximized = once(w, 'maximize');
+          if (!w.isMaximized()) await maximized;
+
+          expect(w.isMaximized()).to.equal(true);
+
+          w.destroy();
+        });
+
+        it('should not restore state when windowStatePersistence is false', async () => {
+          const bounds = { width: 400, height: 300, x: 100, y: 150 };
+          await createAndSaveWindowState(preferencesPath, windowName, bounds);
+
+          const defaultBounds = { width: 500, height: 400, x: 200, y: 250 };
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: false,
+            ...defaultBounds,
+            show: false
+          });
+
+          expectBoundsEqual(w.getBounds(), defaultBounds);
+
+          w.destroy();
+        });
+
+        it('should restore bounds only when displayMode is disabled', async () => {
+          // We don't use the utility createAndSaveWindowState here because the default bounds
+          // passed through the constructor get affected by setting fullscreen: true alongside it.
+          // It particularly affects this test because we want to ensure initial bounds stay the same
+          // on restore.
+          const workArea = screen.getPrimaryDisplay().workArea;
+          const defaultBounds = { width: 100, height: 100, x: workArea.x, y: workArea.y };
+          const initialWindow = new BrowserWindow({
+            ...defaultBounds,
+            show: false,
+            name: windowName,
+            windowStatePersistence: true
+          });
+          const enterFullScreen = once(initialWindow, 'enter-full-screen');
+          initialWindow.setFullScreen(true);
+          if (!initialWindow.isFullScreen()) await enterFullScreen;
+
+          initialWindow.destroy();
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: {
+              displayMode: false
+            },
+            show: false
+          });
+          // We expect the bounds to restore to the values same as before the fullscreen state was set
+          expectBoundsEqual(w.getBounds(), defaultBounds);
+          expect(w.isFullScreen()).to.equal(false);
+
+          w.destroy();
+        });
+
+        it('should restore display modes when bounds is disabled', async () => {
+          await createAndSaveWindowState(preferencesPath, windowName, { fullscreen: true });
+          await setTimeout(2000);
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: {
+              bounds: false
+            }
+          });
+
+          const enterFullScreen = once(w, 'enter-full-screen');
+          if (!w.isFullScreen()) await enterFullScreen;
+          expect(w.isFullScreen()).to.equal(true);
+
+          w.destroy();
+        });
+
+        it('should respect fullscreenable property', async () => {
+          await createAndSaveWindowState(preferencesPath, windowName, { fullscreen: true });
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            fullscreenable: false,
+            show: false
+          });
+          // Wait for the window to potentially enter fullscreen
+          await setTimeout(2000);
+
+          expect(w.isFullScreen()).to.equal(false);
+          expect(w.isFullScreenable()).to.equal(false);
+
+          w.destroy();
+        });
+
+        it('should respect minWidth and minHeight properly', async () => {
+          await createAndSaveWindowState(preferencesPath, windowName, { width: 200, height: 200 });
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            minWidth: 400,
+            minHeight: 400,
+            show: false
+          });
+
+          const bounds = w.getBounds();
+          expect(bounds.width).to.be.at.least(400);
+          expect(bounds.height).to.be.at.least(400);
+        });
+
+        it('should respect maxWidth and maxHeight properly', async () => {
+          await createAndSaveWindowState(preferencesPath, windowName, { width: 800, height: 800 });
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            maxWidth: 400,
+            maxHeight: 400,
+            show: false
+          });
+
+          const bounds = w.getBounds();
+          expect(bounds.width).to.be.at.most(400);
+          expect(bounds.height).to.be.at.most(400);
+        });
+
+        it('should restore correct state for each named window independently - multi window check', async () => {
+          const window1Name = 'test-window-1';
+          const window2Name = 'test-window-2';
+
+          // Clear any existing state
+          BrowserWindow.clearWindowState(window1Name);
+          BrowserWindow.clearWindowState(window2Name);
+
+          const workArea = screen.getPrimaryDisplay().workArea;
+
+          const bounds1 = { width: 100, height: 100, x: workArea.x, y: workArea.y };
+          const w1 = new BrowserWindow({
+            name: window1Name,
+            windowStatePersistence: true,
+            ...bounds1,
+            show: false
+          });
+
+          w1.destroy();
+
+          const bounds2 = { width: 120, height: 100, x: workArea.x, y: workArea.y };
+          const w2 = new BrowserWindow({
+            name: window2Name,
+            windowStatePersistence: true,
+            ...bounds2,
+            show: false
+          });
+
+          w2.destroy();
+
+          if (!fs.existsSync(preferencesPath)) {
+            // File doesn't exist, wait for creation
+            await waitForPrefsFileCreation(preferencesPath);
+          } else {
+            // File exists, wait for update
+            const initialModTime = getPrefsModTime(preferencesPath);
+            await waitForPrefsUpdate(initialModTime, preferencesPath);
+          }
+
+          const restored1 = new BrowserWindow({
+            name: window1Name,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restored2 = new BrowserWindow({
+            name: window2Name,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          expectBoundsEqual(restored1.getBounds(), bounds1);
+          expectBoundsEqual(restored2.getBounds(), bounds2);
+
+          restored1.destroy();
+          restored2.destroy();
+        });
+
+        it('should adjust restored bounds if they overflow current work area entirely', async () => {
+          const workArea = screen.getPrimaryDisplay().workArea;
+          // Completely off-screen to the right
+          const offscreenBounds = {
+            width: 100,
+            height: 100,
+            x: workArea.x + workArea.width + 10,
+            y: workArea.y + workArea.height + 10
+          };
+
+          await createAndSaveWindowState(preferencesPath, windowName, offscreenBounds);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const bounds = w.getBounds();
+
+          // Window should be moved to be entirely visible
+          expect(bounds.x + bounds.width).to.be.at.most(workArea.x + workArea.width);
+          expect(bounds.y + bounds.height).to.be.at.most(workArea.y + workArea.height);
+          expect(bounds.x).to.be.at.least(workArea.x);
+          expect(bounds.y).to.be.at.least(workArea.y);
+          expect(bounds.width).to.equal(100);
+          expect(bounds.height).to.equal(100);
+
+          w.destroy();
+        });
+
+        ifit(process.platform === 'darwin')('should adjust bounds if window overflows work area such that the window is entirely visible', async () => {
+          const workArea = screen.getPrimaryDisplay().workArea;
+          const overflowBounds = {
+            width: 100,
+            height: 100,
+            x: workArea.x + workArea.width - 20,
+            y: workArea.y + workArea.height - 20
+          };
+
+          await createAndSaveWindowState(preferencesPath, windowName, overflowBounds);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const bounds = w.getBounds();
+
+          // On macOS, window should be adjusted to be entirely visible
+          expect(bounds.x + bounds.width).to.be.at.most(workArea.x + workArea.width);
+          expect(bounds.y + bounds.height).to.be.at.most(workArea.y + workArea.height);
+          expect(bounds.width).to.equal(100);
+          expect(bounds.height).to.equal(100);
+
+          w.destroy();
+        });
+
+        ifit(process.platform !== 'darwin')('should adjust bounds if window overflows work area such that the window has minimum visible height/width 100x100', async () => {
+          const workArea = screen.getPrimaryDisplay().workArea;
+          // Initialize with 50x50 of the window visible
+          const overflowBounds = {
+            width: 120,
+            height: 120,
+            x: workArea.x + workArea.width - 50,
+            y: workArea.y + workArea.height - 50
+          };
+
+          await createAndSaveWindowState(preferencesPath, windowName, overflowBounds);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const bounds = w.getBounds();
+          // Calculate the boundaries of the visible intersection rectangle
+          const leftMost = Math.max(bounds.x, workArea.x);
+          const rightMost = Math.min(bounds.x + bounds.width, workArea.x + workArea.width);
+          const topMost = Math.max(bounds.y, workArea.y);
+          const bottomMost = Math.min(bounds.y + bounds.height, workArea.y + workArea.height);
+          // On non-macOS platforms, at least 100x100 should be visible
+          const visibleWidth = rightMost - leftMost;
+          const visibleHeight = bottomMost - topMost;
+
+          expect(visibleWidth).to.be.at.least(100);
+          expect(visibleHeight).to.be.at.least(100);
+          expect(bounds.width).to.equal(120);
+          expect(bounds.height).to.equal(120);
+
+          w.destroy();
+        });
+
+        it('should respect show:false when restoring display modes', async () => {
+          await createAndSaveWindowState(preferencesPath, windowName, { fullscreen: true });
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const shown = once(w, 'show');
+          const enterFullScreen = once(w, 'enter-full-screen');
+
+          await setTimeout(2000);
+          expect(w.isVisible()).to.equal(false);
+
+          w.show();
+          await shown;
+          expect(w.isVisible()).to.equal(true);
+
+          // Fullscreen state should still be restored correctly
+          if (!w.isFullScreen()) await enterFullScreen;
+          expect(w.isFullScreen()).to.equal(true);
+
+          w.destroy();
+        });
+      });
+
+      // FIXME(nilayarya): Figure out why these tests fail on macOS-x64
+      // virtualDisplay.create() is creating double displays on macOS-x64
+      ifdescribe(process.platform === 'darwin' && process.arch === 'arm64')('multi-monitor tests', () => {
+        const virtualDisplay = require('@electron-ci/virtual-display');
+        const primaryDisplay = screen.getPrimaryDisplay();
+
+        beforeEach(() => {
+          virtualDisplay.forceCleanup();
+        });
+
+        it('should restore window bounds correctly on a secondary display', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          // Verify the virtual display is created correctly
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
+          expect(targetDisplay.bounds.y).to.equal(targetDisplayY);
+          expect(targetDisplay.bounds.width).to.equal(1920);
+          expect(targetDisplay.bounds.height).to.equal(1080);
+
+          // Bounds for the test window on the virtual target display
+          const boundsOnTargetDisplay = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100
+          };
+
+          await createAndSaveWindowState(preferencesPath, windowName, boundsOnTargetDisplay);
+
+          // Restore the window state by creating a new window with the same name
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+          expectBoundsEqual(restoredBounds, boundsOnTargetDisplay);
+
+          w.destroy();
+          virtualDisplay.destroy(targetDisplayId);
+        });
+
+        it('should restore window to a visible location when saved display no longer exists', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          // Verify the virtual display is created correctly - single check for targetDisplay.bounds.x
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
+
+          // Bounds for the test window on the virtual target display
+          const boundsOnTargetDisplay = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100
+          };
+
+          // Save window state on the virtual display
+          await createAndSaveWindowState(preferencesPath, windowName, boundsOnTargetDisplay);
+
+          virtualDisplay.destroy(targetDisplayId);
+          // Wait for the target virtual display to be destroyed
+          while (screen.getAllDisplays().length > 1) await setTimeout(1000);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+          const primaryWorkArea = primaryDisplay.workArea;
+
+          // Window should be fully visible on the primary display
+          expect(restoredBounds.x).to.be.at.least(primaryWorkArea.x);
+          expect(restoredBounds.y).to.be.at.least(primaryWorkArea.y);
+          expect(restoredBounds.x + restoredBounds.width).to.be.at.most(primaryWorkArea.x + primaryWorkArea.width);
+          expect(restoredBounds.y + restoredBounds.height).to.be.at.most(primaryWorkArea.y + primaryWorkArea.height);
+
+          // Window should maintain its original size
+          expect(restoredBounds.width).to.equal(boundsOnTargetDisplay.width);
+          expect(restoredBounds.height).to.equal(boundsOnTargetDisplay.height);
+
+          w.destroy();
+        });
+
+        it('should fallback to nearest display when saved display no longer exists', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create first virtual display to the right of primary
+          const middleDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          // Create second virtual display to the right of the first (rightmost)
+          const rightmostDisplayX = targetDisplayX + 1920;
+          const rightmostDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: rightmostDisplayX,
+            y: targetDisplayY
+          });
+
+          // Verify the virtual displays are created correctly - single check for origin x values
+          const middleDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(middleDisplay.bounds.x).to.equal(targetDisplayX);
+
+          const rightmostDisplay = screen.getDisplayNearestPoint({ x: rightmostDisplayX, y: targetDisplayY });
+          expect(rightmostDisplay.bounds.x).to.equal(rightmostDisplayX);
+
+          // Bounds for the test window on the rightmost display
+          const boundsOnRightmostDisplay = {
+            width: 400,
+            height: 300,
+            x: rightmostDisplay.workArea.x + 100,
+            y: rightmostDisplay.workArea.y + 100
+          };
+
+          // Save window state on the rightmost display
+          await createAndSaveWindowState(preferencesPath, windowName, boundsOnRightmostDisplay);
+
+          // Destroy the rightmost display (where window was saved)
+          virtualDisplay.destroy(rightmostDisplayId);
+          // Wait for the rightmost display to be destroyed
+          while (screen.getAllDisplays().length > 2) await setTimeout(1000);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+
+          // Window should be restored on the middle display (nearest remaining display)
+          expect(restoredBounds.x).to.be.at.least(middleDisplay.workArea.x);
+          expect(restoredBounds.y).to.be.at.least(middleDisplay.workArea.y);
+          expect(restoredBounds.x + restoredBounds.width).to.be.at.most(middleDisplay.workArea.x + middleDisplay.workArea.width);
+          expect(restoredBounds.y + restoredBounds.height).to.be.at.most(middleDisplay.workArea.y + middleDisplay.workArea.height);
+
+          // Window should maintain its original size
+          expect(restoredBounds.width).to.equal(boundsOnRightmostDisplay.width);
+          expect(restoredBounds.height).to.equal(boundsOnRightmostDisplay.height);
+
+          w.destroy();
+          virtualDisplay.destroy(middleDisplayId);
+        });
+
+        it('should restore multiple named windows independently across displays', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a first virtual display to the right of the primary display
+          const targetDisplayId1 = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+          // Create a second virtual display to the right of the first
+          const targetDisplayId2 = virtualDisplay.create({
+            width: 1600,
+            height: 900,
+            x: targetDisplayX + 1920,
+            y: targetDisplayY
+          });
+
+          // Verify the virtual displays are created correctly - single check for origin x values
+          const targetDisplay1 = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay1.bounds.x).to.equal(targetDisplayX);
+
+          const targetDisplay2 = screen.getDisplayNearestPoint({ x: targetDisplayX + 1920, y: targetDisplayY });
+          expect(targetDisplay2.bounds.x).to.equal(targetDisplayX + 1920);
+
+          // Window 1 on primary display
+          const window1Name = 'test-multi-window-1';
+          const bounds1 = {
+            width: 300,
+            height: 200,
+            x: primaryDisplay.workArea.x + 50,
+            y: primaryDisplay.workArea.y + 50
+          };
+
+          // Window 2 on second display (first virtual)
+          const window2Name = 'test-multi-window-2';
+          const bounds2 = {
+            width: 400,
+            height: 300,
+            x: targetDisplay1.workArea.x + 100,
+            y: targetDisplay1.workArea.y + 100
+          };
+
+          // Window 3 on third display (second virtual)
+          const window3Name = 'test-multi-window-3';
+          const bounds3 = {
+            width: 350,
+            height: 250,
+            x: targetDisplay2.workArea.x + 150,
+            y: targetDisplay2.workArea.y + 150
+          };
+
+          // Clear window state for all three windows from previous tests
+          BrowserWindow.clearWindowState(window1Name);
+          BrowserWindow.clearWindowState(window2Name);
+          BrowserWindow.clearWindowState(window3Name);
+
+          // Create and save state for all three windows
+          const w1 = new BrowserWindow({
+            name: window1Name,
+            windowStatePersistence: true,
+            show: false,
+            ...bounds1
+          });
+          const w2 = new BrowserWindow({
+            name: window2Name,
+            windowStatePersistence: true,
+            show: false,
+            ...bounds2
+          });
+          const w3 = new BrowserWindow({
+            name: window3Name,
+            windowStatePersistence: true,
+            show: false,
+            ...bounds3
+          });
+
+          w1.destroy();
+          w2.destroy();
+          w3.destroy();
+
+          await setTimeout(2000);
+
+          // Restore all three windows
+          const restoredW1 = new BrowserWindow({
+            name: window1Name,
+            windowStatePersistence: true,
+            show: false
+          });
+          const restoredW2 = new BrowserWindow({
+            name: window2Name,
+            windowStatePersistence: true,
+            show: false
+          });
+          const restoredW3 = new BrowserWindow({
+            name: window3Name,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          // Check that each window restored to its correct display and position
+          expectBoundsEqual(restoredW1.getBounds(), bounds1);
+          expectBoundsEqual(restoredW2.getBounds(), bounds2);
+          expectBoundsEqual(restoredW3.getBounds(), bounds3);
+
+          restoredW1.destroy();
+          restoredW2.destroy();
+          restoredW3.destroy();
+          virtualDisplay.destroy(targetDisplayId1);
+          virtualDisplay.destroy(targetDisplayId2);
+        });
+
+        it('should restore fullscreen state on correct display', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
+
+          // Create window on target display and set fullscreen
+          const initialBounds = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100,
+            fullscreen: true
+          };
+
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true
+          });
+
+          const enterFullScreen = once(w, 'enter-full-screen');
+          if (!w.isFullScreen()) await enterFullScreen;
+
+          expect(w.isFullScreen()).to.equal(true);
+
+          // Check that fullscreen window is on the correct display
+          const fsBounds = w.getBounds();
+          expect(fsBounds.x).to.be.at.least(targetDisplay.bounds.x);
+          expect(fsBounds.y).to.be.at.least(targetDisplay.bounds.y);
+          expect(fsBounds.x + fsBounds.width).to.be.at.most(targetDisplay.bounds.x + targetDisplay.bounds.width);
+          expect(fsBounds.y + fsBounds.height).to.be.at.most(targetDisplay.bounds.y + targetDisplay.bounds.height);
+
+          w.destroy();
+          virtualDisplay.destroy(targetDisplayId);
+        });
+
+        it('should restore maximized state on correct display', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
+
+          // Create window on target display and maximize it
+          const w1 = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: {
+              displayMode: false
+            },
+            x: targetDisplay.workArea.x,
+            y: targetDisplay.workArea.y
+          });
+
+          const maximized = once(w1, 'maximize');
+          w1.maximize();
+          if (!w1.isMaximized()) await maximized;
+
+          w1.destroy();
+          await setTimeout(2000);
+
+          const w2 = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: true
+          });
+
+          const maximized_ = once(w2, 'maximize');
+          if (!w2.isMaximized()) await maximized_;
+
+          expect(w2.isMaximized()).to.equal(true);
+          // Check that maximized window is on the correct display
+          const maximizedBounds = w2.getBounds();
+          expect(maximizedBounds.x).to.be.at.least(targetDisplay.bounds.x);
+          expect(maximizedBounds.y).to.be.at.least(targetDisplay.bounds.y);
+          expect(maximizedBounds.x + maximizedBounds.width).to.be.at.most(targetDisplay.bounds.x + targetDisplay.bounds.width);
+          expect(maximizedBounds.y + maximizedBounds.height).to.be.at.most(targetDisplay.bounds.y + targetDisplay.bounds.height);
+
+          w2.destroy();
+          virtualDisplay.destroy(targetDisplayId);
+        });
+
+        it('should restore kiosk state on correct display', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+
+          // Create window on target display and set kiosk: true
+          const initialBounds = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100,
+            kiosk: true
+          };
+
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true
+          });
+
+          const enterFullScreen = once(w, 'enter-full-screen');
+          if (!w.isFullScreen()) await enterFullScreen;
+
+          expect(w.isFullScreen()).to.equal(true);
+          expect(w.isKiosk()).to.equal(true);
+
+          // Check that kiosk window is on the correct display
+          const kioskBounds = w.getBounds();
+          expect(kioskBounds.x).to.be.at.least(targetDisplay.bounds.x);
+          expect(kioskBounds.y).to.be.at.least(targetDisplay.bounds.y);
+          expect(kioskBounds.x + kioskBounds.width).to.be.at.most(targetDisplay.bounds.x + targetDisplay.bounds.width);
+          expect(kioskBounds.y + kioskBounds.height).to.be.at.most(targetDisplay.bounds.y + targetDisplay.bounds.height);
+
+          w.destroy();
+          virtualDisplay.destroy(targetDisplayId);
+        });
+
+        it('should maintain same bounds when target display resolution increases', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create initial virtual display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+
+          // Create a new virtual display with double the resolution of the target display
+          const higherResDisplayId = virtualDisplay.create({
+            width: targetDisplay.bounds.width * 2,
+            height: targetDisplay.bounds.height * 2,
+            x: targetDisplayX + targetDisplay.bounds.width,
+            y: targetDisplayY
+          });
+
+          // Bounds for the test window on the virtual target display
+          const initialBounds = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100
+          };
+
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
+
+          // Destroy the target display and wait for the higher resolution display to take its place
+          virtualDisplay.destroy(targetDisplayId);
+          while (screen.getAllDisplays().length > 2) await setTimeout(1000);
+
+          // Restore window
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+
+          // Window should maintain same x, y, width, height as the display got bigger
+          expectBoundsEqual(restoredBounds, initialBounds);
+
+          w.destroy();
+          virtualDisplay.destroy(higherResDisplayId);
+        });
+
+        it('should reposition and resize window when target display resolution decreases', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create initial virtual display with high resolution
+          const targetDisplayId = virtualDisplay.create({
+            width: 2560,
+            height: 1440,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+
+          // Create a new virtual display with half the resolution of the target display shifted down
+          const lowerResDisplayId = virtualDisplay.create({
+            width: targetDisplay.bounds.width / 2,
+            height: targetDisplay.bounds.height / 2,
+            x: targetDisplayX + targetDisplay.bounds.width,
+            y: targetDisplay.bounds.height / 2
+          });
+
+          // Bounds that would overflow on a smaller display
+          const initialBounds = {
+            x: targetDisplay.workArea.x,
+            y: targetDisplay.workArea.y,
+            width: targetDisplay.bounds.width,
+            height: targetDisplay.bounds.height
+          };
+
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
+
+          // Destroy and and wait for the lower resolution display to take its place
+          virtualDisplay.destroy(targetDisplayId);
+          while (screen.getAllDisplays().length > 2) await setTimeout(1000);
+
+          // We expect the display to be shifted down as we set y: targetDisplay.bounds.height / 2 earlier
+          const smallerDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplay.bounds.height / 2 });
+
+          // Restore window
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+
+          // Window should be repositioned to be entirely visible on smaller display
+          expect(restoredBounds.x).to.be.at.least(smallerDisplay.workArea.x);
+          expect(restoredBounds.y).to.be.at.least(smallerDisplay.workArea.y);
+          expect(restoredBounds.x + restoredBounds.width).to.be.at.most(smallerDisplay.workArea.x + smallerDisplay.workArea.width);
+          expect(restoredBounds.y + restoredBounds.height).to.be.at.most(smallerDisplay.workArea.y + smallerDisplay.workArea.height);
+
+          w.destroy();
+          virtualDisplay.destroy(lowerResDisplayId);
+        });
+      });
+    });
+    describe('event emitters', () => {
+      const preferencesPath = path.join(app.getPath('userData'), 'Local State');
+      const windowName = 'test-restore-window';
+
+      it('should emit restored-window-state when windowStatePersistence is enabled and state exists', async () => {
+        await createAndSaveWindowState(preferencesPath, windowName, { width: 300, height: 200 });
+
+        const restoredPromise = new Promise<void>((resolve) => {
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          w.once('restored-window-state', () => {
+            resolve();
+            w.destroy();
+          });
+        });
+
+        await restoredPromise;
+      });
+
+      it('should not emit restored-window-state when windowStatePersistence is disabled', async () => {
+        await createAndSaveWindowState(preferencesPath, windowName, { width: 300, height: 200 });
+
+        let eventEmitted = false;
+
+        const w = new BrowserWindow({
+          name: windowName,
+          windowStatePersistence: false,
+          show: false
+        });
+
+        w.on('restored-window-state', () => {
+          eventEmitted = true;
+        });
+
+        // Wait for the event to be emitted for 5 seconds
+        await setTimeout(5000);
+
+        expect(eventEmitted).to.equal(false);
+        w.destroy();
+      });
+
+      it('should not emit restored-window-state when no window state exists on disk', async () => {
+        // Clear any existing state to ensure no state exists
+        BrowserWindow.clearWindowState(windowName);
+
+        let eventEmitted = false;
+
+        const w = new BrowserWindow({
+          name: windowName,
+          windowStatePersistence: true,
+          show: false
+        });
+
+        w.on('restored-window-state', () => {
+          eventEmitted = true;
+        });
+
+        // Wait for the event to be emitted for 5 seconds
+        await setTimeout(5000);
+
+        expect(eventEmitted).to.equal(false);
+        w.destroy();
       });
     });
   });

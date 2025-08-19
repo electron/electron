@@ -95,6 +95,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     texture.coded_size = info->coded_size;
     texture.visible_rect = info->visible_rect;
     texture.content_rect = content_rect;
+    texture.color_space = info->color_space;
     texture.timestamp = info->timestamp.InMicroseconds();
     texture.frame_count = info->metadata.capture_counter.value_or(0);
     texture.capture_update_rect = info->metadata.capture_update_rect;
@@ -111,6 +112,8 @@ void OffScreenVideoConsumer::OnFrameCaptured(
 #elif BUILDFLAG(IS_LINUX)
     const auto& native_pixmap = gmb_handle.native_pixmap_handle();
     texture.modifier = native_pixmap.modifier;
+    texture.supports_zero_copy_webgpu_import =
+        native_pixmap.supports_zero_copy_webgpu_import;
     for (const auto& plane : native_pixmap.planes) {
       texture.planes.emplace_back(plane.stride, plane.offset, plane.size,
                                   plane.fd.get());

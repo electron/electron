@@ -11,4 +11,8 @@
     return [VirtualDisplay destroyWithId:(int)displayId];
 }
 
++ (BOOL)forceCleanup {
+    return [VirtualDisplay forceCleanup];
+}
+
 @end

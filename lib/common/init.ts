@@ -93,20 +93,23 @@ makeElectronModule('electron');
 makeElectronModule('electron/common');
 if (process.type === 'browser') {
   makeElectronModule('electron/main');
-}
-if (process.type === 'renderer') {
+} else if (process.type === 'renderer') {
   makeElectronModule('electron/renderer');
+} else if (process.type === 'utility') {
+  makeElectronModule('electron/utility');
 }
 
 const originalResolveFilename = Module._resolveFilename;
 
-// 'electron/main', 'electron/renderer' and 'electron/common' are module aliases
+// 'electron/{common,main,renderer,utility}' are module aliases
 // of the 'electron' module for TypeScript purposes, i.e., the types for
 // 'electron/main' consist of only main process modules, etc. It is intentional
 // that these can be `require()`-ed from both the main process as well as the
 // renderer process regardless of the names, they're superficial for TypeScript
 // only.
-const electronModuleNames = new Set(['electron', 'electron/main', 'electron/renderer', 'electron/common']);
+const electronModuleNames = new Set([
+  'electron', 'electron/main', 'electron/renderer', 'electron/common', 'electron/utility'
+]);
 Module._resolveFilename = function (request, parent, isMain, options) {
   if (electronModuleNames.has(request)) {
     return 'electron';
