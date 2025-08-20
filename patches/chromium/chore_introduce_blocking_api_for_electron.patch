@@ -7,7 +7,7 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index 19ec986c51c65d5332ab9032ead1292ecc785160..fe1f06e18b0d21a2d95a1a2894b116c1c9dbea05 100644
+index f9e528588b2f2a645366c3c59148a2af06c280fe..7090003e45a213b2bc326713c6df11d764a85205 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
 @@ -132,6 +132,7 @@ class KeyStorageLinux;
@@ -18,7 +18,7 @@ index 19ec986c51c65d5332ab9032ead1292ecc785160..fe1f06e18b0d21a2d95a1a2894b116c1
  class Profile;
  class ProfileImpl;
  class ScopedAllowBlockingForProfile;
-@@ -278,6 +279,9 @@ class BackendImpl;
+@@ -279,6 +280,9 @@ class BackendImpl;
  class InFlightIO;
  bool CleanupDirectorySync(const base::FilePath&);
  }  // namespace disk_cache
@@ -36,7 +36,7 @@ index 19ec986c51c65d5332ab9032ead1292ecc785160..fe1f06e18b0d21a2d95a1a2894b116c1
    friend class ::ProfileImpl;
    friend class ::ScopedAllowBlockingForProfile;
    friend class ::StartupTabProviderImpl;
-@@ -612,6 +617,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+@@ -613,6 +618,7 @@ class BASE_EXPORT ScopedAllowBlocking {
    friend class cronet::CronetPrefsManager;
    friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
    friend class drive::FakeDriveService;

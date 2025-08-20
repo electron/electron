@@ -518,6 +518,10 @@ source_set("electron_lib") {
     "//v8:v8_libplatform",
   ]
 
+  if (v8_use_external_startup_data && use_v8_context_snapshot) {
+    deps += [ ":mksnapshot_checksum_gen" ]
+  }
+
   public_deps = [
     "//base",
     "//base:i18n",
@@ -770,6 +774,18 @@ source_set("electron_lib") {
   if (allow_runtime_configurable_key_storage) {
     defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
   }
+}
+
+action("mksnapshot_checksum_gen") {
+  script = "build/checksum_header.py"
+
+  outputs = [ "$target_gen_dir/snapshot_checksum.h" ]
+  inputs = [ "$root_out_dir/$v8_context_snapshot_filename" ]
+  args = rebase_path(inputs)
+
+  args += rebase_path(outputs)
+
+  deps = [ "//tools/v8_context_snapshot" ]
 }
 
 electron_paks("packed_resources") {

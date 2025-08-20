@@ -12,7 +12,7 @@ We attempt to migrate the safe storage key from the old account, if that migrati
 Existing apps that aren't built for the app store should be unimpacted, there is one edge case where a user uses BOTH an AppStore and a darwin build of the same app only one will keep it's access to the safestorage key as during the migration we delete the old account.  This is an acceptable edge case as no one should be actively using two versions of the same app.
 
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index 3bcbb33700b2b9349795c05c12e44b4fafcc0370..95ca7ef0986f6681885c78f53c35250971d04fa4 100644
+index 3bcbb33700b2b9349795c05c12e44b4fafcc0370..b55c72e236f05591d41b7146eab1662128d37eda 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
 @@ -27,6 +27,12 @@
@@ -28,7 +28,7 @@ index 3bcbb33700b2b9349795c05c12e44b4fafcc0370..95ca7ef0986f6681885c78f53c352509
  namespace {
  
  // These two strings ARE indeed user facing.  But they are used to access
-@@ -96,11 +102,49 @@
+@@ -96,11 +102,51 @@
                                    uma_result);
    };
  
@@ -39,12 +39,14 @@ index 3bcbb33700b2b9349795c05c12e44b4fafcc0370..95ca7ef0986f6681885c78f53c352509
 +      keychain_->FindGenericPassword(GetServiceName(), suffixed_account_name);
 +
 +  if (password.has_value()) {
++    uma_result = FindGenericPasswordResult::kPasswordFound;
 +    return std::string(base::as_string_view(*password));
 +  }
 +
 +  // If the error was anything other than "it does not exist" we should error out here
 +  // This normally means the account exists but we were denied access to it
 +  if (password.error() != errSecItemNotFound) {
++    uma_result = FindGenericPasswordResult::kErrorOccurred;
 +    OSSTATUS_LOG(ERROR, password.error()) << "Keychain lookup for suffixed key failed";
 +    return std::string();
 +  }

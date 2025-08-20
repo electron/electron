@@ -52,20 +52,20 @@ const {
   getValidatedPath,
   getOptions,
   getDirent
-} = __non_webpack_require__('internal/fs/utils');
+} = __non_webpack_require__('internal/fs/utils') as typeof import('@node/lib/internal/fs/utils');
 
 const {
   assignFunctionName
-} = __non_webpack_require__('internal/util');
+} = __non_webpack_require__('internal/util') as typeof import('@node/lib/internal/util');
 
 const {
   validateBoolean,
   validateFunction
-} = __non_webpack_require__('internal/validators');
+} = __non_webpack_require__('internal/validators') as typeof import('@node/lib/internal/validators');
 
 // In the renderer node internals use the node global URL but we do not set that to be
 // the global URL instance.  We need to do instanceof checks against the internal URL impl
-const { URL: NodeURL } = __non_webpack_require__('internal/url');
+const { URL: NodeURL } = __non_webpack_require__('internal/url') as typeof import('@node/lib/internal/url');
 
 // Separate asar package's path from full path.
 const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
@@ -745,8 +745,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       const stat = internalBinding('fs').internalModuleStat(resultPath);
 
       context.readdirResults.push(dirent);
-      if (dirent.isDirectory() || stat === 1) {
-        context.pathsQueue.push(path.join(dirent.path, dirent.name));
+      if (dirent!.isDirectory() || stat === 1) {
+        context.pathsQueue.push(path.join(dirent!.path, dirent!.name));
       }
     }
   }
@@ -857,13 +857,13 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const { readdir } = fs;
   fs.readdir = function (pathArgument: string, options: ReaddirOptions, callback: ReaddirCallback) {
     callback = typeof options === 'function' ? options : callback;
-    validateFunction(callback, 'callback');
+    validateFunction(callback, 'callback')!;
 
     options = getOptions(options);
     pathArgument = getValidatedPath(pathArgument);
 
     if (options?.recursive != null) {
-      validateBoolean(options?.recursive, 'options.recursive');
+      validateBoolean(options?.recursive, 'options.recursive')!;
     }
 
     if (options?.recursive) {
@@ -914,7 +914,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     pathArgument = getValidatedPath(pathArgument);
 
     if (options?.recursive != null) {
-      validateBoolean(options?.recursive, 'options.recursive');
+      validateBoolean(options?.recursive, 'options.recursive')!;
     }
 
     if (options?.recursive) {
@@ -957,7 +957,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     pathArgument = getValidatedPath(pathArgument);
 
     if (options?.recursive != null) {
-      validateBoolean(options?.recursive, 'options.recursive');
+      validateBoolean(options?.recursive, 'options.recursive')!;
     }
 
     if (options?.recursive) {
