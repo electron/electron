@@ -1181,6 +1181,27 @@ void BaseWindow::ClearWindowState(const std::string& window_name) {
 }
 
 // static
+void BaseWindow::ClearWindowState(const std::string& window_name) {
+  if (window_name.empty()) {
+    LOG(WARNING) << "Cannot clear window state: window name is empty";
+    return;
+  }
+
+  if (auto* browser_process =
+          electron::ElectronBrowserMainParts::Get()->browser_process()) {
+    DCHECK(browser_process);
+    if (auto* prefs = browser_process->local_state()) {
+      ScopedDictPrefUpdate update(prefs, electron::kWindowStates);
+
+      if (!update->Remove(window_name)) {
+        LOG(WARNING) << "Window state '" << window_name
+                     << "' not found, nothing to clear";
+      }
+    }
+  }
+}
+
+// static
 gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
