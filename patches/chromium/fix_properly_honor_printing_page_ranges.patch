@@ -28,7 +28,7 @@ diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
 index b504350cb53273d1db7204771ae080647fe6b878..8fdf6a14d0913aca8f14c412c4afae3ad7ec37e5 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -522,7 +522,8 @@ mojom::ResultCode PrintingContextMac::UpdatePrinterSettings(
+@@ -522,7 +522,8 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
          !SetOutputColor(static_cast<int>(settings_->color())) ||
@@ -38,7 +38,7 @@ index b504350cb53273d1db7204771ae080647fe6b878..8fdf6a14d0913aca8f14c412c4afae3a
        return OnError();
      }
    }
-@@ -675,6 +676,22 @@ bool PrintingContextMac::SetCopiesInPrintSettings(int copies) {
+@@ -675,6 +676,22 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  
