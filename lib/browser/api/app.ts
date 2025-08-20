@@ -1,10 +1,13 @@
 import { Menu } from 'electron/main';
 
+import { EventEmitter } from 'events';
 import * as fs from 'fs';
 
 const bindings = process._linkedBinding('electron_browser_app');
 const commandLine = process._linkedBinding('electron_common_command_line');
 const { app } = bindings;
+
+Object.setPrototypeOf(app, EventEmitter.prototype);
 
 // Only one app object permitted.
 export default app;
