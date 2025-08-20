@@ -139,7 +139,7 @@ void CocoaNotification::NotificationReplied(const std::string& reply) {
 
 void CocoaNotification::NotificationActivated() {
   if (delegate())
-    delegate()->NotificationAction(action_index_);
+    delegate()->NotificationAction(action_index_, -1);
 
   this->LogAction("button clicked");
 }
@@ -156,7 +156,7 @@ void CocoaNotification::NotificationActivated(
       }
     }
 
-    delegate()->NotificationAction(index);
+    delegate()->NotificationAction(index, -1);
   }
 
   this->LogAction("button clicked");
