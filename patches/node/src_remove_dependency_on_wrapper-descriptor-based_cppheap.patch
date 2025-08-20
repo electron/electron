@@ -52,7 +52,7 @@ index 0d32d9f5a55da257a5e5a895a2ff002b780f96fe..9567d9499c62ea44cca651e87ab912ad
    return &(wrapper_data_->cppgc_id);
  }
 diff --git a/src/env.cc b/src/env.cc
-index 63fdeeb26ba89284e74ca37050dfd170e7963331..b6ad3ca99c8b0c656ce726fbc3455ba554bc3bd1 100644
+index 63fdeeb26ba89284e74ca37050dfd170e7963331..56eb42643f26f3ebb447cb625d5422dcfa872189 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -23,6 +23,7 @@
@@ -141,7 +141,7 @@ index 63fdeeb26ba89284e74ca37050dfd170e7963331..b6ad3ca99c8b0c656ce726fbc3455ba5
                         void* wrappable) {
 -  IsolateData::SetCppgcReference(isolate, object, wrappable);
 +  v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(
-+      isolate, object, wrappable);
++      isolate, object, static_cast<v8::Object::Wrappable*>(wrappable));
  }
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
