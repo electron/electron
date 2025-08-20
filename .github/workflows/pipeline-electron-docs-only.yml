@@ -12,6 +12,9 @@ concurrency:
   group: electron-docs-only-${{ github.ref }}
   cancel-in-progress: true
 
+env:  
+  GCLIENT_EXTRA_ARGS: --custom-var=checkout_arm=True --custom-var=checkout_arm64=True
+
 jobs:
   docs-only:
     name: Docs Only Compile
@@ -19,6 +22,22 @@ jobs:
     timeout-minutes: 20
     container: ${{ fromJSON(inputs.container) }}
     steps:
+    - name: Checkout Electron
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      with:
+        path: src/electron
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Generate DEPS Hash
+      run: |
+        node src/electron/script/generate-deps-hash.js
+        DEPSHASH=v1-src-cache-$(cat src/electron/.depshash)
+        echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
+        echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
+    - name: Restore src cache via AKS
+      uses: ./src/electron/.github/actions/restore-cache-aks
+      with:
+        target-platform: linux
     - name: Checkout Electron
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
