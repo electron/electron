@@ -42,6 +42,10 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  // Clears window state from the Local State JSON file in
+  // app.getPath('userData') via PrefService.
+  static void ClearWindowState(const std::string& window_name);
+
   static bool IsWindowNameValid(const gin_helper::Dictionary& options,
                                 std::string* error_message);
 

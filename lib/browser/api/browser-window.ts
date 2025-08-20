@@ -111,6 +111,8 @@ BrowserWindow.getAllWindows = () => {
   return BaseWindow.getAllWindows().filter(isBrowserWindow) as any[] as BWT[];
 };
 
+BrowserWindow.clearWindowState = BaseWindow.clearWindowState;
+
 BrowserWindow.getFocusedWindow = () => {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed() && window.webContents && !window.webContents.isDestroyed()) {

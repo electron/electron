@@ -448,6 +448,17 @@ class NativeWindow : public base::SupportsUserData,
   // DebouncedSaveWindowState. This does NOT flush the actual disk write.
   void FlushWindowState();
 
+  // Restores window state - bounds first and then display mode.
+  void RestoreWindowState(const gin_helper::Dictionary& options);
+  // Applies saved bounds to the window.
+  void RestoreBounds(const display::Display& display,
+                     const gfx::Rect& saved_work_area,
+                     gfx::Rect& saved_bounds);
+  // Flushes pending display mode restoration (fullscreen, maximized, kiosk)
+  // that was deferred during initialization to respect show=false. This
+  // consumes and clears the restore_display_mode_callback_.
+  void FlushPendingDisplayMode();
+
  protected:
   friend class api::BrowserView;
 
@@ -571,6 +582,9 @@ class NativeWindow : public base::SupportsUserData,
 
   gfx::Rect overlay_rect_;
 
+  // Flag to prevent SaveWindowState calls during window restoration.
+  bool is_being_restored_ = false;
+
   // The boolean parsing of the "windowStatePersistence" option
   bool window_state_persistence_enabled_ = false;
 
@@ -579,8 +593,20 @@ class NativeWindow : public base::SupportsUserData,
   // valid name.
   raw_ptr<PrefService> prefs_ = nullptr;
 
+  // Whether to restore bounds.
+  bool restore_bounds_ = false;
+  // Whether to restore display mode.
+  bool restore_display_mode_ = false;
+  // Callback to restore display mode.
+  base::OnceCallback<void()> restore_display_mode_callback_;
+
   // Timer to debounce window state saving operations.
   base::OneShotTimer save_window_state_timer_;
+
+  // Minimum height of the visible part of a window.
+  const int kMinVisibleHeight = 100;
+  // Minimum width of the visible part of a window.
+  const int kMinVisibleWidth = 100;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };
