@@ -17,24 +17,21 @@
 #include "base/logging.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util.h"
 #include "base/strings/string_util_win.h"
+#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/win/notification_presenter_win.h"
 #include "shell/browser/win/scoped_hstring.h"
 #include "shell/common/application_info.h"
+#include "third_party/libxml/chromium/xml_writer.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/strings/grit/ui_strings.h"
 
-using ABI::Windows::Data::Xml::Dom::IXmlAttribute;
 using ABI::Windows::Data::Xml::Dom::IXmlDocument;
 using ABI::Windows::Data::Xml::Dom::IXmlDocumentIO;
-using ABI::Windows::Data::Xml::Dom::IXmlElement;
-using ABI::Windows::Data::Xml::Dom::IXmlNamedNodeMap;
-using ABI::Windows::Data::Xml::Dom::IXmlNode;
-using ABI::Windows::Data::Xml::Dom::IXmlNodeList;
-using ABI::Windows::Data::Xml::Dom::IXmlText;
 using Microsoft::WRL::Wrappers::HStringReference;
 
 namespace winui = ABI::Windows::UI;
@@ -72,6 +69,43 @@ void DebugLog(std::string_view log_msg) {
 
 std::wstring GetTag(const std::string_view notification_id) {
   return base::NumberToWString(base::FastHash(notification_id));
+}
+
+constexpr char kToast[] = "toast";
+constexpr char kVisual[] = "visual";
+constexpr char kBinding[] = "binding";
+constexpr char kTemplate[] = "template";
+constexpr char kToastText01[] = "ToastText01";
+constexpr char kToastText02[] = "ToastText02";
+constexpr char kToastImageAndText01[] = "ToastImageAndText01";
+constexpr char kToastImageAndText02[] = "ToastImageAndText02";
+constexpr char kText[] = "text";
+constexpr char kImage[] = "image";
+constexpr char kPlacement[] = "placement";
+constexpr char kAppLogoOverride[] = "appLogoOverride";
+constexpr char kHintCrop[] = "hint-crop";
+constexpr char kHintCropNone[] = "none";
+constexpr char kSrc[] = "src";
+constexpr char kAudio[] = "audio";
+constexpr char kSilent[] = "silent";
+constexpr char kTrue[] = "true";
+constexpr char kID[] = "id";
+constexpr char kScenario[] = "scenario";
+constexpr char kReminder[] = "reminder";
+constexpr char kActions[] = "actions";
+constexpr char kAction[] = "action";
+constexpr char kActivationType[] = "activationType";
+constexpr char kSystem[] = "system";
+constexpr char kArguments[] = "arguments";
+constexpr char kDismiss[] = "dismiss";
+// The XML version header that has to be stripped from the output.
+constexpr char kXmlVersionHeader[] = "<?xml version=\"1.0\"?>\n";
+
+const char* GetTemplateType(bool two_lines, bool has_icon) {
+  if (has_icon) {
+    return two_lines ? kToastImageAndText02 : kToastImageAndText01;
+  }
+  return two_lines ? kToastText02 : kToastText01;
 }
 
 }  // namespace
@@ -171,10 +205,12 @@ HRESULT WindowsToastNotification::ShowInternal(
     auto* presenter_win = static_cast<NotificationPresenterWin*>(presenter());
     std::wstring icon_path =
         presenter_win->SaveIconToFilesystem(options.icon, options.icon_url);
+    std::u16string toast_xml_str =
+        GetToastXml(options.title, options.msg, icon_path, options.timeout_type,
+                    options.silent);
     REPORT_AND_RETURN_IF_FAILED(
-        GetToastXml(toast_manager_.Get(), options.title, options.msg, icon_path,
-                    options.timeout_type, options.silent, &toast_xml),
-        "XML: Failed to create XML document");
+        XmlDocumentFromString(base::as_wcstr(toast_xml_str), &toast_xml),
+        "XML: Invalid XML");
   }
 
   ScopedHString toast_str(
@@ -214,382 +250,95 @@ HRESULT WindowsToastNotification::ShowInternal(
   return S_OK;
 }
 
-HRESULT WindowsToastNotification::GetToastXml(
-    winui::Notifications::IToastNotificationManagerStatics* toastManager,
+std::u16string WindowsToastNotification::GetToastXml(
     const std::u16string& title,
     const std::u16string& msg,
     const std::wstring& icon_path,
     const std::u16string& timeout_type,
-    bool silent,
-    IXmlDocument** toast_xml) {
-  winui::Notifications::ToastTemplateType template_type;
+    bool silent) {
+  XmlWriter xml_writer;
+  xml_writer.StartWriting();
+
+  // <toast ...>
+  xml_writer.StartElement(kToast);
+
+  const bool is_reminder = (timeout_type == u"never");
+  if (is_reminder) {
+    xml_writer.AddAttribute(kScenario, kReminder);
+  }
+
+  // <visual>
+  xml_writer.StartElement(kVisual);
+  // <binding template="<template>">
+  xml_writer.StartElement(kBinding);
+  const bool two_lines = (!title.empty() && !msg.empty());
+  xml_writer.AddAttribute(kTemplate,
+                          GetTemplateType(two_lines, !icon_path.empty()));
+
+  // Add text nodes.
+  std::u16string line1;
+  std::u16string line2;
   if (title.empty() || msg.empty()) {
-    // Single line toast.
-    template_type =
-        icon_path.empty()
-            ? winui::Notifications::ToastTemplateType_ToastText01
-            : winui::Notifications::ToastTemplateType_ToastImageAndText01;
-    REPORT_AND_RETURN_IF_FAILED(
-        toast_manager_->GetTemplateContent(template_type, toast_xml),
-        "XML: Fetching XML ToastImageAndText01 template failed");
-    std::u16string toastMsg = title.empty() ? msg : title;
-    // we can't create an empty notification
-    toastMsg = toastMsg.empty() ? u"[no message]" : toastMsg;
-    REPORT_AND_RETURN_IF_FAILED(
-        SetXmlText(*toast_xml, toastMsg),
-        "XML: Filling XML ToastImageAndText01 template failed");
+    line1 = title.empty() ? msg : title;
+    if (line1.empty())
+      line1 = u"[no message]";
+    xml_writer.StartElement(kText);
+    xml_writer.AddAttribute(kID, "1");
+    xml_writer.AppendElementContent(base::UTF16ToUTF8(line1));
+    xml_writer.EndElement();  // </text>
   } else {
-    // Title and body toast.
-    template_type =
-        icon_path.empty()
-            ? winui::Notifications::ToastTemplateType_ToastText02
-            : winui::Notifications::ToastTemplateType_ToastImageAndText02;
-    REPORT_AND_RETURN_IF_FAILED(
-        toastManager->GetTemplateContent(template_type, toast_xml),
-        "XML: Fetching XML ToastImageAndText02 template failed");
-    REPORT_AND_RETURN_IF_FAILED(
-        SetXmlText(*toast_xml, title, msg),
-        "XML: Filling XML ToastImageAndText02 template failed");
+    line1 = title;
+    line2 = msg;
+    xml_writer.StartElement(kText);
+    xml_writer.AddAttribute(kID, "1");
+    xml_writer.AppendElementContent(base::UTF16ToUTF8(line1));
+    xml_writer.EndElement();
+    xml_writer.StartElement(kText);
+    xml_writer.AddAttribute(kID, "2");
+    xml_writer.AppendElementContent(base::UTF16ToUTF8(line2));
+    xml_writer.EndElement();
   }
 
-  // Configure the toast's timeout settings
-  if (timeout_type == u"never") {
-    REPORT_AND_RETURN_IF_FAILED(
-        (SetXmlScenarioReminder(*toast_xml)),
-        "XML: Setting \"scenario\" option on notification failed");
-  }
-
-  // Configure the toast's notification sound
-  if (silent) {
-    REPORT_AND_RETURN_IF_FAILED(
-        SetXmlAudioSilent(*toast_xml),
-        "XML: Setting \"silent\" option on notification failed");
-  }
-
-  // Configure the toast's image
+  // Optional icon as app logo override (small icon).
   if (!icon_path.empty()) {
-    REPORT_AND_RETURN_IF_FAILED(
-        SetXmlImage(*toast_xml, icon_path),
-        "XML: Setting \"icon\" option on notification failed");
+    xml_writer.StartElement(kImage);
+    xml_writer.AddAttribute(kPlacement, kAppLogoOverride);
+    xml_writer.AddAttribute(kHintCrop, kHintCropNone);
+    xml_writer.AddAttribute(kSrc, base::WideToUTF8(icon_path));
+    xml_writer.EndElement();  // </image>
   }
 
-  return S_OK;
-}
-
-HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
-  ScopedHString tag(L"toast");
-  if (!tag.success())
-    return false;
-
-  ComPtr<IXmlNodeList> node_list;
-  RETURN_IF_FAILED(doc->GetElementsByTagName(tag, &node_list));
-
-  // Check that root "toast" node exists
-  ComPtr<IXmlNode> root;
-  RETURN_IF_FAILED(node_list->Item(0, &root));
-
-  // get attributes of root "toast" node
-  ComPtr<IXmlNamedNodeMap> toast_attributes;
-  RETURN_IF_FAILED(root->get_Attributes(&toast_attributes));
-
-  ComPtr<IXmlAttribute> scenario_attribute;
-  ScopedHString scenario_str(L"scenario");
-  RETURN_IF_FAILED(doc->CreateAttribute(scenario_str, &scenario_attribute));
-
-  ComPtr<IXmlNode> scenario_attribute_node;
-  RETURN_IF_FAILED(scenario_attribute.As(&scenario_attribute_node));
-
-  ScopedHString scenario_value(L"reminder");
-  if (!scenario_value.success())
-    return E_FAIL;
-
-  ComPtr<IXmlText> scenario_text;
-  RETURN_IF_FAILED(doc->CreateTextNode(scenario_value, &scenario_text));
-
-  ComPtr<IXmlNode> scenario_node;
-  RETURN_IF_FAILED(scenario_text.As(&scenario_node));
-
-  ComPtr<IXmlNode> scenario_backup_node;
-  RETURN_IF_FAILED(scenario_attribute_node->AppendChild(scenario_node.Get(),
-                                                        &scenario_backup_node));
-
-  ComPtr<IXmlNode> scenario_attribute_pnode;
-  RETURN_IF_FAILED(toast_attributes.Get()->SetNamedItem(
-      scenario_attribute_node.Get(), &scenario_attribute_pnode));
-
-  // Create "actions" wrapper
-  ComPtr<IXmlElement> actions_wrapper_element;
-  ScopedHString actions_wrapper_str(L"actions");
-  RETURN_IF_FAILED(
-      doc->CreateElement(actions_wrapper_str, &actions_wrapper_element));
-
-  ComPtr<IXmlNode> actions_wrapper_node_tmp;
-  RETURN_IF_FAILED(actions_wrapper_element.As(&actions_wrapper_node_tmp));
-
-  // Append actions wrapper node to toast xml
-  ComPtr<IXmlNode> actions_wrapper_node;
-  RETURN_IF_FAILED(
-      root->AppendChild(actions_wrapper_node_tmp.Get(), &actions_wrapper_node));
-
-  ComPtr<IXmlNamedNodeMap> attributes_actions_wrapper;
-  RETURN_IF_FAILED(
-      actions_wrapper_node->get_Attributes(&attributes_actions_wrapper));
-
-  // Add a "Dismiss" button
-  // Create "action" tag
-  ComPtr<IXmlElement> action_element;
-  ScopedHString action_str(L"action");
-  RETURN_IF_FAILED(doc->CreateElement(action_str, &action_element));
-
-  ComPtr<IXmlNode> action_node_tmp;
-  RETURN_IF_FAILED(action_element.As(&action_node_tmp));
-
-  // Append action node to actions wrapper in toast xml
-  ComPtr<IXmlNode> action_node;
-  RETURN_IF_FAILED(
-      actions_wrapper_node->AppendChild(action_node_tmp.Get(), &action_node));
-
-  // Setup attributes for action
-  ComPtr<IXmlNamedNodeMap> action_attributes;
-  RETURN_IF_FAILED(action_node->get_Attributes(&action_attributes));
-
-  // Create activationType attribute
-  ComPtr<IXmlAttribute> activation_type_attribute;
-  ScopedHString activation_type_str(L"activationType");
-  RETURN_IF_FAILED(
-      doc->CreateAttribute(activation_type_str, &activation_type_attribute));
-
-  ComPtr<IXmlNode> activation_type_attribute_node;
-  RETURN_IF_FAILED(
-      activation_type_attribute.As(&activation_type_attribute_node));
-
-  // Set activationType attribute to system
-  ScopedHString activation_type_value(L"system");
-  if (!activation_type_value.success())
-    return E_FAIL;
-
-  ComPtr<IXmlText> activation_type_text;
-  RETURN_IF_FAILED(
-      doc->CreateTextNode(activation_type_value, &activation_type_text));
-
-  ComPtr<IXmlNode> activation_type_node;
-  RETURN_IF_FAILED(activation_type_text.As(&activation_type_node));
-
-  ComPtr<IXmlNode> activation_type_backup_node;
-  RETURN_IF_FAILED(activation_type_attribute_node->AppendChild(
-      activation_type_node.Get(), &activation_type_backup_node));
-
-  // Add activation type to the action attributes
-  ComPtr<IXmlNode> activation_type_attribute_pnode;
-  RETURN_IF_FAILED(action_attributes.Get()->SetNamedItem(
-      activation_type_attribute_node.Get(), &activation_type_attribute_pnode));
-
-  // Create arguments attribute
-  ComPtr<IXmlAttribute> arguments_attribute;
-  ScopedHString arguments_str(L"arguments");
-  RETURN_IF_FAILED(doc->CreateAttribute(arguments_str, &arguments_attribute));
-
-  ComPtr<IXmlNode> arguments_attribute_node;
-  RETURN_IF_FAILED(arguments_attribute.As(&arguments_attribute_node));
-
-  // Set arguments attribute to dismiss
-  ScopedHString arguments_value(L"dismiss");
-  if (!arguments_value.success())
-    return E_FAIL;
-
-  ComPtr<IXmlText> arguments_text;
-  RETURN_IF_FAILED(doc->CreateTextNode(arguments_value, &arguments_text));
-
-  ComPtr<IXmlNode> arguments_node;
-  RETURN_IF_FAILED(arguments_text.As(&arguments_node));
-
-  ComPtr<IXmlNode> arguments_backup_node;
-  RETURN_IF_FAILED(arguments_attribute_node->AppendChild(
-      arguments_node.Get(), &arguments_backup_node));
-
-  // Add arguments to the action attributes
-  ComPtr<IXmlNode> arguments_attribute_pnode;
-  RETURN_IF_FAILED(action_attributes.Get()->SetNamedItem(
-      arguments_attribute_node.Get(), &arguments_attribute_pnode));
-
-  // Create content attribute
-  ComPtr<IXmlAttribute> content_attribute;
-  ScopedHString content_str(L"content");
-  RETURN_IF_FAILED(doc->CreateAttribute(content_str, &content_attribute));
-
-  ComPtr<IXmlNode> content_attribute_node;
-  RETURN_IF_FAILED(content_attribute.As(&content_attribute_node));
-
-  // Set content attribute to Dismiss
-  ScopedHString content_value(l10n_util::GetWideString(IDS_APP_CLOSE));
-  if (!content_value.success())
-    return E_FAIL;
-
-  ComPtr<IXmlText> content_text;
-  RETURN_IF_FAILED(doc->CreateTextNode(content_value, &content_text));
-
-  ComPtr<IXmlNode> content_node;
-  RETURN_IF_FAILED(content_text.As(&content_node));
-
-  ComPtr<IXmlNode> content_backup_node;
-  RETURN_IF_FAILED(content_attribute_node->AppendChild(content_node.Get(),
-                                                       &content_backup_node));
-
-  // Add content to the action attributes
-  ComPtr<IXmlNode> content_attribute_pnode;
-  return action_attributes.Get()->SetNamedItem(content_attribute_node.Get(),
-                                               &content_attribute_pnode);
-}
-
-HRESULT WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
-  ScopedHString tag(L"toast");
-  if (!tag.success())
-    return E_FAIL;
-
-  ComPtr<IXmlNodeList> node_list;
-  RETURN_IF_FAILED(doc->GetElementsByTagName(tag, &node_list));
-
-  ComPtr<IXmlNode> root;
-  RETURN_IF_FAILED(node_list->Item(0, &root));
-
-  ComPtr<IXmlElement> audio_element;
-  ScopedHString audio_str(L"audio");
-  RETURN_IF_FAILED(doc->CreateElement(audio_str, &audio_element));
-
-  ComPtr<IXmlNode> audio_node_tmp;
-  RETURN_IF_FAILED(audio_element.As(&audio_node_tmp));
-
-  // Append audio node to toast xml
-  ComPtr<IXmlNode> audio_node;
-  RETURN_IF_FAILED(root->AppendChild(audio_node_tmp.Get(), &audio_node));
-
-  // Create silent attribute
-  ComPtr<IXmlNamedNodeMap> attributes;
-  RETURN_IF_FAILED(audio_node->get_Attributes(&attributes));
-
-  ComPtr<IXmlAttribute> silent_attribute;
-  ScopedHString silent_str(L"silent");
-  RETURN_IF_FAILED(doc->CreateAttribute(silent_str, &silent_attribute));
-
-  ComPtr<IXmlNode> silent_attribute_node;
-  RETURN_IF_FAILED(silent_attribute.As(&silent_attribute_node));
-
-  // Set silent attribute to true
-  ScopedHString silent_value(L"true");
-  if (!silent_value.success())
-    return E_FAIL;
-
-  ComPtr<IXmlText> silent_text;
-  RETURN_IF_FAILED(doc->CreateTextNode(silent_value, &silent_text));
-
-  ComPtr<IXmlNode> silent_node;
-  RETURN_IF_FAILED(silent_text.As(&silent_node));
-
-  ComPtr<IXmlNode> child_node;
-  RETURN_IF_FAILED(
-      silent_attribute_node->AppendChild(silent_node.Get(), &child_node));
-
-  ComPtr<IXmlNode> silent_attribute_pnode;
-  return attributes.Get()->SetNamedItem(silent_attribute_node.Get(),
-                                        &silent_attribute_pnode);
-}
-
-HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc,
-                                             const std::u16string& text) {
-  ScopedHString tag;
-  ComPtr<IXmlNodeList> node_list;
-  RETURN_IF_FAILED(GetTextNodeList(&tag, doc, &node_list, 1));
-
-  ComPtr<IXmlNode> node;
-  RETURN_IF_FAILED(node_list->Item(0, &node));
-
-  return AppendTextToXml(doc, node.Get(), text);
-}
-
-HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc,
-                                             const std::u16string& title,
-                                             const std::u16string& body) {
-  ScopedHString tag;
-  ComPtr<IXmlNodeList> node_list;
-  RETURN_IF_FAILED(GetTextNodeList(&tag, doc, &node_list, 2));
-
-  ComPtr<IXmlNode> node;
-  RETURN_IF_FAILED(node_list->Item(0, &node));
-  RETURN_IF_FAILED(AppendTextToXml(doc, node.Get(), title));
-  RETURN_IF_FAILED(node_list->Item(1, &node));
-
-  return AppendTextToXml(doc, node.Get(), body);
-}
-
-HRESULT WindowsToastNotification::SetXmlImage(IXmlDocument* doc,
-                                              const std::wstring& icon_path) {
-  ScopedHString tag(L"image");
-  if (!tag.success())
-    return E_FAIL;
-
-  ComPtr<IXmlNodeList> node_list;
-  RETURN_IF_FAILED(doc->GetElementsByTagName(tag, &node_list));
-
-  ComPtr<IXmlNode> image_node;
-  RETURN_IF_FAILED(node_list->Item(0, &image_node));
-
-  ComPtr<IXmlNamedNodeMap> attrs;
-  RETURN_IF_FAILED(image_node->get_Attributes(&attrs));
-
-  ScopedHString src(L"src");
-  if (!src.success())
-    return E_FAIL;
-
-  ComPtr<IXmlNode> src_attr;
-  RETURN_IF_FAILED(attrs->GetNamedItem(src, &src_attr));
-
-  const ScopedHString img_path{icon_path};
-  if (!img_path.success())
-    return E_FAIL;
-
-  ComPtr<IXmlText> src_text;
-  RETURN_IF_FAILED(doc->CreateTextNode(img_path, &src_text));
-
-  ComPtr<IXmlNode> src_node;
-  RETURN_IF_FAILED(src_text.As(&src_node));
-
-  ComPtr<IXmlNode> child_node;
-  return src_attr->AppendChild(src_node.Get(), &child_node);
-}
-
-HRESULT WindowsToastNotification::GetTextNodeList(ScopedHString* tag,
-                                                  IXmlDocument* doc,
-                                                  IXmlNodeList** node_list,
-                                                  uint32_t req_length) {
-  tag->Reset(L"text");
-  if (!tag->success())
-    return E_FAIL;
-
-  RETURN_IF_FAILED(doc->GetElementsByTagName(*tag, node_list));
-
-  uint32_t node_length;
-  RETURN_IF_FAILED((*node_list)->get_Length(&node_length));
-
-  return node_length >= req_length;
-}
-
-HRESULT WindowsToastNotification::AppendTextToXml(IXmlDocument* doc,
-                                                  IXmlNode* node,
-                                                  const std::u16string& text) {
-  ScopedHString str(base::as_wcstr(text));
-  if (!str.success())
-    return E_FAIL;
-
-  ComPtr<IXmlText> xml_text;
-  RETURN_IF_FAILED(doc->CreateTextNode(str, &xml_text));
-
-  ComPtr<IXmlNode> text_node;
-  RETURN_IF_FAILED(xml_text.As(&text_node));
-
-  ComPtr<IXmlNode> append_node;
-  RETURN_IF_FAILED(node->AppendChild(text_node.Get(), &append_node));
-
-  return S_OK;
+  xml_writer.EndElement();  // </binding>
+  xml_writer.EndElement();  // </visual>
+
+  // <actions> (only to ensure reminder has a dismiss button).
+  if (is_reminder) {
+    xml_writer.StartElement(kActions);
+    xml_writer.StartElement(kAction);
+    xml_writer.AddAttribute(kActivationType, kSystem);
+    xml_writer.AddAttribute(kArguments, kDismiss);
+    xml_writer.AddAttribute(
+        "content", base::WideToUTF8(l10n_util::GetWideString(IDS_APP_CLOSE)));
+    xml_writer.EndElement();  // </action>
+    xml_writer.EndElement();  // </actions>
+  }
+
+  // Silent audio if requested.
+  if (silent) {
+    xml_writer.StartElement(kAudio);
+    xml_writer.AddAttribute(kSilent, kTrue);
+    xml_writer.EndElement();  // </audio>
+  }
+
+  xml_writer.EndElement();  // </toast>
+
+  xml_writer.StopWriting();
+  std::string xml = xml_writer.GetWrittenString();
+  if (base::StartsWith(xml, kXmlVersionHeader, base::CompareCase::SENSITIVE)) {
+    xml.erase(0, sizeof(kXmlVersionHeader) - 1);
+  }
+
+  return base::UTF8ToUTF16(xml);
 }
 
 HRESULT WindowsToastNotification::XmlDocumentFromString(
