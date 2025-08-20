@@ -58,7 +58,7 @@ UsbChooserController::~UsbChooserController() {
   RunCallback(/*device_info=*/nullptr);
 }
 
-api::Session* UsbChooserController::GetSession() {
+gin::WeakCell<api::Session>* UsbChooserController::GetSession() {
   if (!web_contents()) {
     return nullptr;
   }
@@ -68,18 +68,20 @@ api::Session* UsbChooserController::GetSession() {
 void UsbChooserController::OnDeviceAdded(
     const device::mojom::UsbDeviceInfo& device_info) {
   if (DisplayDevice(device_info)) {
-    api::Session* session = GetSession();
-    if (session) {
-      session->Emit("usb-device-added", device_info.Clone(), web_contents());
+    gin::WeakCell<api::Session>* session = GetSession();
+    if (session && session->Get()) {
+      session->Get()->Emit("usb-device-added", device_info.Clone(),
+                           web_contents());
     }
   }
 }
 
 void UsbChooserController::OnDeviceRemoved(
     const device::mojom::UsbDeviceInfo& device_info) {
-  api::Session* session = GetSession();
-  if (session) {
-    session->Emit("usb-device-removed", device_info.Clone(), web_contents());
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    session->Get()->Emit("usb-device-removed", device_info.Clone(),
+                         web_contents());
   }
 }
 
@@ -114,8 +116,8 @@ void UsbChooserController::GotUsbDeviceList(
     observation_.Observe(chooser_context_.get());
 
   bool prevent_default = false;
-  api::Session* session = GetSession();
-  if (session) {
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
     auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope{isolate};
@@ -130,10 +132,10 @@ void UsbChooserController::GotUsbDeviceList(
                                         .Set("frame", rfh)
                                         .Build();
 
-    prevent_default =
-        session->Emit("select-usb-device", details,
-                      base::BindRepeating(&UsbChooserController::OnDeviceChosen,
-                                          weak_factory_.GetWeakPtr()));
+    prevent_default = session->Get()->Emit(
+        "select-usb-device", details,
+        base::BindRepeating(&UsbChooserController::OnDeviceChosen,
+                            weak_factory_.GetWeakPtr()));
   }
   if (!prevent_default) {
     RunCallback(/*device_info=*/nullptr);
