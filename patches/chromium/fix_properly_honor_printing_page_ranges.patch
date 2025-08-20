@@ -28,7 +28,7 @@ diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
 index b504350cb53273d1db7204771ae080647fe6b878..8fdf6a14d0913aca8f14c412c4afae3ad7ec37e5 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -522,7 +522,8 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
+@@ -522,7 +522,8 @@ mojom::ResultCode PrintingContextMac::UpdatePrinterSettings(
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
          !SetOutputColor(static_cast<int>(settings_->color())) ||
@@ -38,7 +38,7 @@ index b504350cb53273d1db7204771ae080647fe6b878..8fdf6a14d0913aca8f14c412c4afae3a
        return OnError();
      }
    }
-@@ -675,6 +676,22 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
+@@ -675,6 +676,22 @@ bool PrintingContextMac::SetCopiesInPrintSettings(int copies) {
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  
@@ -62,30 +62,42 @@ index b504350cb53273d1db7204771ae080647fe6b878..8fdf6a14d0913aca8f14c412c4afae3a
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_ PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index 2808248f6eb3f5c75f20775d61c9d0d20aaaecf6..7c186bd5653e9bdf1c4046398b138cac09112d42 100644
+index 2808248f6eb3f5c75f20775d61c9d0d20aaaecf6..c7367251f5b9735994ac4c173281b89d1c5f4579 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
-@@ -74,14 +74,30 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
+@@ -4,10 +4,12 @@
+ 
+ #include "printing/printing_context_system_dialog_win.h"
+ 
++#include <algorithm>
+ #include <utility>
+ 
+ #include "base/auto_reset.h"
+ #include "base/compiler_specific.h"
++#include "base/containers/span.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/task/current_thread.h"
+ #include "printing/backend/win_helper.h"
+@@ -74,14 +76,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
    PRINTPAGERANGE ranges[32];
    dialog_options.nStartPage = START_PAGE_GENERAL;
    if (max_pages) {
 -    // Default initialize to print all the pages.
-     UNSAFE_TODO(memset(ranges, 0, sizeof(ranges)));
+-    UNSAFE_TODO(memset(ranges, 0, sizeof(ranges)));
 -    ranges[0].nFromPage = 1;
 -    ranges[0].nToPage = max_pages;
 -    dialog_options.nPageRanges = 1;
 -    dialog_options.nMaxPageRanges = std::size(ranges);
-+
-+    auto page_ranges = settings_->ranges();
-+    if (!page_ranges.empty()) {
-+      UNSAFE_TODO({
-+        for (size_t i = 0; i < page_ranges.size(); i++) {
-+          auto range = page_ranges[i];
-+          ranges[i].nFromPage = range.from + 1;
-+          ranges[i].nToPage = range.to + 1;
-+        }
-+      });
-+      dialog_options.nPageRanges = page_ranges.size();
++    if (const auto& src = settings_->ranges(); !src.empty()) {
++      const auto transform = [](const printing::PageRange& range) {
++        return PRINTPAGERANGE{
++          .nFromPage = range.from + 1U,
++          .nToPage = range.to + 1U
++        };
++      };
++      const size_t n_items = std::min(std::size(src), std::size(ranges));
++      std::ranges::transform(base::span(src).first(n_items), ranges, transform);
++      dialog_options.nPageRanges = n_items;
 +
 +      // Ensure the Pages radio button is selected.
 +      dialog_options.Flags |= PD_PAGENUMS;
@@ -102,29 +114,35 @@ index 2808248f6eb3f5c75f20775d61c9d0d20aaaecf6..7c186bd5653e9bdf1c4046398b138cac
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index 987b7a034621fd854148ffb1161749748c6f3fa4..dae29cd6c1dcdddb9c8ad3a359010ffc78882ebf 100644
+index 987b7a034621fd854148ffb1161749748c6f3fa4..525dadb85d23865b0d401e7feca60959b8596097 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
-@@ -253,6 +253,24 @@ void PrintDialogGtk::UpdateSettings(
+@@ -20,6 +20,7 @@
+ #include "base/logging.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/no_destructor.h"
++#include "base/numerics/safe_conversions.h"
+ #include "base/sequence_checker.h"
+ #include "base/strings/string_number_conversions.h"
+ #include "base/strings/utf_string_conversions.h"
+@@ -253,6 +254,22 @@ void PrintDialogGtk::UpdateSettings(
  
    gtk_print_settings_set_n_copies(gtk_settings_, settings->copies());
    gtk_print_settings_set_collate(gtk_settings_, settings->collate());
 +
-+  auto print_ranges = settings->ranges();
-+  if (!print_ranges.empty()) {
++  if (const auto& ranges = settings->ranges(); !ranges.empty()) {
 +    // Tell the system that we only intend to print a subset of pages.
++    std::vector<GtkPageRange> granges;
++    granges.reserve(ranges.size());
++    auto transform = [](const printing::PageRange& src) {
++      return GtkPageRange{
++        .start = base::ClampedNumeric<int>(src.from),
++        .end = base::ClampedNumeric<int>(src.to),
++      };
++    };
++    std::ranges::transform(ranges, std::back_inserter(granges), transform);
 +    gtk_print_settings_set_print_pages(gtk_settings_, GTK_PRINT_PAGES_RANGES);
-+
-+    GtkPageRange* ranges;
-+    ranges = g_new(GtkPageRange, print_ranges.size());
-+    for (size_t i = 0; i < print_ranges.size(); i++) {
-+      auto range = print_ranges[i];
-+      ranges[i].start = range.from;
-+      ranges[i].end = range.to;
-+    }
-+
-+    gtk_print_settings_set_page_ranges(gtk_settings_, ranges, 1);
-+    g_free(ranges);
++    gtk_print_settings_set_page_ranges(gtk_settings_, granges.data(), granges.size());
 +  }
 +
    if (settings->dpi_horizontal() > 0 && settings->dpi_vertical() > 0) {
