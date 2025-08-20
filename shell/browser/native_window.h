@@ -29,7 +29,6 @@
 class SkRegion;
 class DraggableRegionProvider;
 class PrefService;
-class PrefService;
 
 namespace input {
 struct NativeWebKeyboardEvent;
