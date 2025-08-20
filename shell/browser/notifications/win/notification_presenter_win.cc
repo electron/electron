@@ -16,6 +16,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/time/time.h"
+#include "shell/browser/notifications/win/windows_toast_activator.h"
 #include "shell/browser/notifications/win/windows_toast_notification.h"
 #include "shell/common/thread_restrictions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -45,6 +46,9 @@ std::unique_ptr<NotificationPresenter> NotificationPresenter::Create() {
   auto presenter = std::make_unique<NotificationPresenterWin>();
   if (!presenter->Init())
     return {};
+
+  // Ensure COM toast activator is registered once the presenter is ready.
+  NotificationActivator::RegisterActivator();
 
   if (electron::debug_notifications)
     LOG(INFO) << "Successfully created Windows notifications presenter";

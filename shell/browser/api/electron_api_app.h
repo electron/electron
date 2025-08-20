@@ -259,6 +259,12 @@ class App final : public gin::Wrappable<App>,
 
   // Set or remove a custom Jump List for the application.
   JumpListResult SetJumpList(v8::Local<v8::Value> val, gin::Arguments* args);
+
+  // Set the toast activator CLSID.
+  void SetToastActivatorCLSID(gin_helper::ErrorThrower thrower,
+                              const std::string& id);
+  // Get the toast activator CLSID.
+  v8::Local<v8::Value> GetToastActivatorCLSID(v8::Isolate* isolate);
 #endif  // BUILDFLAG(IS_WIN)
 
   std::unique_ptr<ProcessSingleton> process_singleton_;

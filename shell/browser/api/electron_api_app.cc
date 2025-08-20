@@ -87,6 +87,7 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/notifications/win/windows_toast_activator.h"
 #include "shell/browser/ui/win/jump_list.h"
 #endif
 
@@ -1748,6 +1749,10 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #if BUILDFLAG(IS_WIN)
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
+      .SetMethod("setToastActivatorCLSID",
+                 base::BindRepeating(&App::SetToastActivatorCLSID,
+                                     base::Unretained(this)))
+      .SetProperty("toastActivatorCLSID", &App::GetToastActivatorCLSID)
 #endif
       .SetMethod(
           "isDefaultProtocolClient",
@@ -1868,6 +1873,34 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setProxy", &App::SetProxy)
       .SetMethod("resolveProxy", &App::ResolveProxy);
 }
+
+#if BUILDFLAG(IS_WIN)
+void App::SetToastActivatorCLSID(gin_helper::ErrorThrower thrower,
+                                 const std::string& id) {
+  std::wstring wide = base::UTF8ToWide(id);
+  CLSID parsed;
+  if (FAILED(::CLSIDFromString(wide.c_str(), &parsed))) {
+    if (!wide.empty() && wide.front() != L'{') {
+      std::wstring with_braces = L"{" + wide + L"}";
+      if (FAILED(::CLSIDFromString(with_braces.c_str(), &parsed))) {
+        thrower.ThrowError("Invalid CLSID format");
+        return;
+      }
+      wide = std::move(with_braces);
+    } else {
+      thrower.ThrowError("Invalid CLSID format");
+      return;
+    }
+  }
+
+  SetAppToastActivatorCLSID(wide);
+}
+
+v8::Local<v8::Value> App::GetToastActivatorCLSID(v8::Isolate* isolate) {
+  return gin::ConvertToV8(isolate,
+                          base::WideToUTF8(GetAppToastActivatorCLSID()));
+}
+#endif
 
 const char* App::GetHumanReadableName() const {
   return "Electron / App";
