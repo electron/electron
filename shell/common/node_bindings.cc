@@ -204,8 +204,8 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
   if (node::Environment::GetCurrent(context) == nullptr) {
     if (!electron::IsRendererProcess())
       return false;
-    return blink::V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
-        context, source);
+    return blink::V8Initializer::WasmCodeGenerationCheckCallback(context,
+                                                                 source);
   }
 
   return node::AllowWasmCodeGenerationCallback(context, source);
