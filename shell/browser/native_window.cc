@@ -34,6 +34,7 @@
 #include "ui/compositor/compositor.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "ui/display/types/display_constants.h"
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
@@ -103,6 +104,12 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window,
 }
 #endif
 
+// Check if display is fake (default display ID) or has invalid dimensions
+bool hasInvalidDisplay(const display::Display& display) {
+  return display.id() == display::kDefaultDisplayId ||
+         display.size().width() == 0 || display.size().height() == 0;
+}
+
 }  // namespace
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
@@ -126,21 +133,30 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 
   if (gin_helper::Dictionary persistence_options;
       options.Get(options::kWindowStatePersistence, &persistence_options)) {
-    // Other options will be parsed here in the future.
+    // Restore bounds by default
+    restore_bounds_ = true;
+    persistence_options.Get(options::kBounds, &restore_bounds_);
+    // Restore display mode by default
+    restore_display_mode_ = true;
+    persistence_options.Get(options::kDisplayMode, &restore_display_mode_);
     window_state_persistence_enabled_ = true;
   } else if (bool flag; options.Get(options::kWindowStatePersistence, &flag)) {
+    restore_bounds_ = flag;
+    restore_display_mode_ = flag;
     window_state_persistence_enabled_ = flag;
   }
 
   // Initialize prefs_ to save/restore window bounds if we have a valid window
   // name and window state persistence is enabled.
   if (window_state_persistence_enabled_ && !window_name_.empty()) {
+    // Move this out if there's a need to initialize prefs_ for other features
     if (auto* browser_process =
             electron::ElectronBrowserMainParts::Get()->browser_process()) {
       DCHECK(browser_process);
       prefs_ = browser_process->local_state();
     }
   } else if (window_state_persistence_enabled_ && window_name_.empty()) {
+    window_state_persistence_enabled_ = false;
     LOG(WARNING) << "Window state persistence enabled but no window name "
                     "provided. Window state will not be persisted.";
   }
@@ -244,7 +260,14 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   options.Get(options::kFullScreenable, &fullscreenable);
   SetFullScreenable(fullscreenable);
 
-  if (fullscreen)
+  // Restore window state (bounds and display mode) at this point in
+  // initialization. We deliberately restore bounds before display modes
+  // (fullscreen/kiosk) since the target display for these states depends on the
+  // window's initial bounds. Also, restoring here ensures we respect min/max
+  // width/height and fullscreenable constraints.
+  RestoreWindowState(options);
+
+  if (fullscreen && !restore_display_mode_)
     SetFullScreen(true);
 
   if (bool val; options.Get(options::kResizable, &val))
@@ -253,7 +276,8 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (bool val; options.Get(options::kSkipTaskbar, &val))
     SetSkipTaskbar(val);
 
-  if (bool val; options.Get(options::kKiosk, &val) && val)
+  if (bool val;
+      options.Get(options::kKiosk, &val) && val && !restore_display_mode_)
     SetKiosk(val);
 
 #if BUILDFLAG(IS_MAC)
@@ -273,8 +297,8 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   SetBackgroundColor(background_color);
 
   SetTitle(options.ValueOrDefault(options::kTitle, Browser::Get()->GetName()));
-  // TODO(nilayarya): Save window state after restoration logic is implemented
-  // here.
+  // Save updated window state after restoration adjustments are complete if
+  // any.
   SaveWindowState();
   // Then show it.
   if (options.ValueOrDefault(options::kShow, true))
@@ -837,13 +861,37 @@ void NativeWindow::DebouncedSaveWindowState() {
 }
 
 void NativeWindow::SaveWindowState() {
-  if (!prefs_ || window_name_.empty())
+  if (!window_state_persistence_enabled_ || is_being_restored_)
     return;
+
+  gfx::Rect bounds = GetBounds();
+
+  if (bounds.width() == 0 || bounds.height() == 0) {
+    LOG(WARNING) << "Window state not saved - window bounds are invalid";
+    return;
+  }
+
+  const display::Screen* screen = display::Screen::GetScreen();
+  DCHECK(screen);
+  // GetDisplayMatching returns a fake display with 1920x1080 resolution at
+  // (0,0) when no physical displays are attached.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/display.cc;l=184;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
+  const display::Display display = screen->GetDisplayMatching(bounds);
+
+  // Skip window state persistence when display has invalid dimensions (0x0) or
+  // is fake (ID 0xFF). Invalid displays could cause incorrect window bounds to
+  // be saved, leading to positioning issues during restoration.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/types/display_constants.h;l=28;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
+  if (hasInvalidDisplay(display)) {
+    LOG(WARNING)
+        << "Window state not saved - no physical display attached or current "
+           "display has invalid bounds";
+    return;
+  }
 
   ScopedDictPrefUpdate update(prefs_, electron::kWindowStates);
   const base::Value::Dict* existing_prefs = update->FindDict(window_name_);
 
-  gfx::Rect bounds = GetBounds();
   // When the window is in a special display mode (fullscreen, kiosk, or
   // maximized), save the previously stored window bounds instead of
   // the current bounds. This ensures that when the window is restored, it can
@@ -870,8 +918,6 @@ void NativeWindow::SaveWindowState() {
   window_preferences.Set(electron::kFullscreen, IsFullscreen());
   window_preferences.Set(electron::kKiosk, IsKiosk());
 
-  const display::Screen* screen = display::Screen::GetScreen();
-  const display::Display display = screen->GetDisplayMatching(bounds);
   gfx::Rect work_area = display.work_area();
 
   window_preferences.Set(electron::kWorkAreaLeft, work_area.x());
@@ -888,6 +934,153 @@ void NativeWindow::FlushWindowState() {
   } else {
     SaveWindowState();
   }
+}
+
+void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
+  if (!window_state_persistence_enabled_)
+    return;
+
+  const base::Value& value = prefs_->GetValue(electron::kWindowStates);
+  const base::Value::Dict* window_preferences =
+      value.is_dict() ? value.GetDict().FindDict(window_name_) : nullptr;
+
+  if (!window_preferences)
+    return;
+
+  std::optional<int> saved_left = window_preferences->FindInt(electron::kLeft);
+  std::optional<int> saved_top = window_preferences->FindInt(electron::kTop);
+  std::optional<int> saved_right =
+      window_preferences->FindInt(electron::kRight);
+  std::optional<int> saved_bottom =
+      window_preferences->FindInt(electron::kBottom);
+
+  std::optional<int> work_area_left =
+      window_preferences->FindInt(electron::kWorkAreaLeft);
+  std::optional<int> work_area_top =
+      window_preferences->FindInt(electron::kWorkAreaTop);
+  std::optional<int> work_area_right =
+      window_preferences->FindInt(electron::kWorkAreaRight);
+  std::optional<int> work_area_bottom =
+      window_preferences->FindInt(electron::kWorkAreaBottom);
+
+  if (!saved_left || !saved_top || !saved_right || !saved_bottom ||
+      !work_area_left || !work_area_top || !work_area_right ||
+      !work_area_bottom) {
+    LOG(WARNING) << "Window state not restored - corrupted values found";
+    return;
+  }
+
+  gfx::Rect saved_bounds =
+      gfx::Rect(*saved_left, *saved_top, *saved_right - *saved_left,
+                *saved_bottom - *saved_top);
+
+  display::Screen* screen = display::Screen::GetScreen();
+  DCHECK(screen);
+  // GetDisplayMatching returns a fake display with 1920x1080 resolution at
+  // (0,0) when no physical displays are attached.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/display.cc;l=184;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
+  const display::Display display = screen->GetDisplayMatching(saved_bounds);
+
+  // Skip window state restoration if current display has invalid dimensions or
+  // is fake. Restoring from invalid displays (0x0) or fake displays (ID 0xFF)
+  // could cause incorrect window positioning when later moved to real displays.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/types/display_constants.h;l=28;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
+  if (hasInvalidDisplay(display)) {
+    LOG(WARNING) << "Window state not restored - no physical display attached "
+                    "or current display has invalid bounds";
+    return;
+  }
+
+  gfx::Rect saved_work_area = gfx::Rect(*work_area_left, *work_area_top,
+                                        *work_area_right - *work_area_left,
+                                        *work_area_bottom - *work_area_top);
+
+  // Set this to true before RestoreBounds to prevent SaveWindowState from being
+  // inadvertently triggered during the restoration process.
+  is_being_restored_ = true;
+
+  if (restore_bounds_) {
+    RestoreBounds(display, saved_work_area, saved_bounds);
+  }
+
+  if (restore_display_mode_) {
+    restore_display_mode_callback_ = base::BindOnce(
+        [](NativeWindow* window, base::Value::Dict prefs) {
+          if (auto kiosk = prefs.FindBool(electron::kKiosk); kiosk && *kiosk) {
+            window->SetKiosk(true);
+          } else if (auto fs = prefs.FindBool(electron::kFullscreen);
+                     fs && *fs) {
+            window->SetFullScreen(true);
+          } else if (auto max = prefs.FindBool(electron::kMaximized);
+                     max && *max) {
+            window->Maximize();
+          }
+        },
+        base::Unretained(this), window_preferences->Clone());
+  }
+
+  is_being_restored_ = false;
+}
+
+void NativeWindow::FlushPendingDisplayMode() {
+  if (restore_display_mode_callback_) {
+    std::move(restore_display_mode_callback_).Run();
+  }
+}
+
+// This function is similar to Chromium's window bounds adjustment logic
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/ui/window_sizer/window_sizer.cc;l=350;drc=0ec56065ba588552f21633aa47280ba02c3cd160
+void NativeWindow::RestoreBounds(const display::Display& display,
+                                 const gfx::Rect& saved_work_area,
+                                 gfx::Rect& saved_bounds) {
+  if (saved_bounds.width() == 0 || saved_bounds.height() == 0) {
+    LOG(WARNING) << "Window bounds not restored - values are invalid";
+    return;
+  }
+
+  // Ensure that the window is at least kMinVisibleHeight * kMinVisibleWidth.
+  saved_bounds.set_height(std::max(kMinVisibleHeight, saved_bounds.height()));
+  saved_bounds.set_width(std::max(kMinVisibleWidth, saved_bounds.width()));
+
+  const gfx::Rect work_area = display.work_area();
+  // Ensure that the title bar is not above the work area.
+  if (saved_bounds.y() < work_area.y()) {
+    saved_bounds.set_y(work_area.y());
+  }
+
+  // Reposition and resize the bounds if the saved_work_area is different from
+  // the current work area and the current work area doesn't completely contain
+  // the bounds.
+  if (!saved_work_area.IsEmpty() && saved_work_area != work_area &&
+      !work_area.Contains(saved_bounds)) {
+    saved_bounds.AdjustToFit(work_area);
+  }
+
+#if BUILDFLAG(IS_MAC)
+  // On mac, we want to be aggressive about repositioning windows that are
+  // partially offscreen.  If the window is partially offscreen horizontally,
+  // snap to the nearest edge of the work area. This call also adjusts the
+  // height, width if needed to make the window fully visible.
+  saved_bounds.AdjustToFit(work_area);
+#else
+  // On non-Mac platforms, we are less aggressive about repositioning. Simply
+  // ensure that at least kMinVisibleWidth * kMinVisibleHeight is visible
+
+  const int min_y = work_area.y() + kMinVisibleHeight - saved_bounds.height();
+  const int min_x = work_area.x() + kMinVisibleWidth - saved_bounds.width();
+  const int max_y = work_area.bottom() - kMinVisibleHeight;
+  const int max_x = work_area.right() - kMinVisibleWidth;
+  // Reposition and resize the bounds to make it fully visible inside the work
+  // area. `min_x >= max_x` happens when work area and bounds are both small.
+  if (min_x >= max_x || min_y >= max_y) {
+    saved_bounds.AdjustToFit(work_area);
+  } else {
+    saved_bounds.set_y(std::clamp(saved_bounds.y(), min_y, max_y));
+    saved_bounds.set_x(std::clamp(saved_bounds.x(), min_x, max_x));
+  }
+#endif  // BUILDFLAG(IS_MAC)
+
+  SetBounds(saved_bounds);
 }
 
 // static

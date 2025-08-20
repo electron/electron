@@ -558,6 +558,8 @@ void NativeWindowViews::Show() {
   if (is_modal() && NativeWindow::parent() && !widget()->IsVisible())
     static_cast<NativeWindowViews*>(parent())->IncrementChildModals();
 
+  FlushPendingDisplayMode();
+
   widget()->native_widget_private()->Show(GetRestoredState(), gfx::Rect());
 
   // explicitly focus the window
