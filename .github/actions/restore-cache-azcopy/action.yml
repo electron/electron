@@ -97,7 +97,7 @@ runs:
 
       $TEMP_DIR=New-Item -ItemType Directory -Path temp-cache
       $TEMP_DIR_PATH = $TEMP_DIR.FullName
-      C:\ProgramData\Chocolatey\bin\7z.exe -y -snld x $src_cache -o"$TEMP_DIR_PATH"
+      C:\ProgramData\Chocolatey\bin\7z.exe -y -snld20 x $src_cache -o"$TEMP_DIR_PATH"
 
   - name: Move Src Cache (Windows)
     if: ${{ inputs.target-platform == 'win' }}
