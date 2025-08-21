@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 28887735ea8e1f03c2bdbfb845c39d63b2fd4680..1040f87089ca52f9e85467eb0172d778a8c05c24 100644
+index e2c651b8667cdc02c4df34b2355995519ccccc65..eb3b7c788e76951a8528db9cb6a925e0fb673cde 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -669,6 +669,7 @@ static_library("test_support") {
@@ -817,7 +817,7 @@ index 28887735ea8e1f03c2bdbfb845c39d63b2fd4680..1040f87089ca52f9e85467eb0172d778
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2001,6 +2004,7 @@ test("content_browsertests") {
+@@ -2002,6 +2005,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -825,7 +825,7 @@ index 28887735ea8e1f03c2bdbfb845c39d63b2fd4680..1040f87089ca52f9e85467eb0172d778
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3317,6 +3321,7 @@ test("content_unittests") {
+@@ -3318,6 +3322,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
