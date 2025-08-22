@@ -54,7 +54,7 @@ jobs:
         build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
         docs-only: ${{ steps.set-output.outputs.docs-only }}
     steps:
-    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #v4.0.2
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         ref: ${{ github.event.pull_request.head.sha }}
     - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
