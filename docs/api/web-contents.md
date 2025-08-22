@@ -1592,7 +1592,7 @@ Copy the video frame at the given position to the clipboard.
 * `x` Integer
 * `y` Integer
 
-Save the video frame at the given position.
+Shows a save dialog and saves the video frame at (x, y) to disk.
 
 #### `contents.paste()`
 
