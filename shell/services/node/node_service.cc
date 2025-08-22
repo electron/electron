@@ -128,11 +128,9 @@ void NodeService::Initialize(
 
   node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
 
-  if (!network_change_notifier_) {
-    network_change_notifier_ = net::NetworkChangeNotifier::CreateIfNeeded(
-        net::NetworkChangeNotifier::CONNECTION_UNKNOWN,
-        net::NetworkChangeNotifier::ConnectionSubtype::SUBTYPE_UNKNOWN);
-  }
+  network_change_notifier_ = net::NetworkChangeNotifier::CreateIfNeeded(
+      net::NetworkChangeNotifier::CONNECTION_UNKNOWN,
+      net::NetworkChangeNotifier::ConnectionSubtype::SUBTYPE_UNKNOWN);
 
   // Append program path for process.argv0
   auto program = base::CommandLine::ForCurrentProcess()->GetProgram();
