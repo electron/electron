@@ -16,10 +16,6 @@ for fs_file in fs_files:
                 'lib/original-fs.js').replace('lib/fs/',
                 'lib/original-fs/')
 
-        with open(os.path.join(out_dir, fs_file), 'w', encoding='utf-8'
-                  ) as original_f:
-            original_f.write(contents)
-
         with open(os.path.join(out_dir, original_fs_file), 'w',
                   encoding='utf-8') as transformed_f:
             transformed_contents = contents.replace('internal/fs/',
