@@ -1,3 +1,4 @@
+import { clipboard } from 'electron/common';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 
 import { expect } from 'chai';
@@ -531,6 +532,88 @@ describe('webFrameMain module', () => {
       w.webContents.mainFrame.executeJavaScript('"run a lil js"');
       const callStack = await callStackPromise;
       expect(callStack).to.be.a('string');
+    });
+  });
+
+  describe('webFrameMain.copyVideoFrameAt', () => {
+    const insertVideoInFrame = async (frame: WebFrameMain) => {
+      const videoFilePath = url.pathToFileURL(path.join(fixtures, 'cat-spin.mp4')).href;
+      await frame.executeJavaScript(`
+        const video = document.createElement('video');
+        video.src = '${videoFilePath}';
+        video.muted = true;
+        video.loop = true;
+        video.play();
+        document.body.appendChild(video);
+      `);
+    };
+
+    const getFramePosition = async (frame: WebFrameMain) => {
+      const point = await frame.executeJavaScript(`(${() => {
+        const iframe = document.querySelector('iframe');
+        if (!iframe) return;
+        const rect = iframe.getBoundingClientRect();
+        return { x: Math.floor(rect.x), y: Math.floor(rect.y) };
+      }})()`) as Electron.Point;
+      expect(point).to.be.an('object');
+      return point;
+    };
+
+    const copyVideoFrameInFrame = async (frame: WebFrameMain) => {
+      const point = await frame.executeJavaScript(`(${() => {
+        const video = document.querySelector('video');
+        if (!video) return;
+        const rect = video.getBoundingClientRect();
+        return {
+          x: Math.floor(rect.x + rect.width / 2),
+          y: Math.floor(rect.y + rect.height / 2)
+        };
+      }})()`) as Electron.Point;
+
+      expect(point).to.be.an('object');
+
+      // Translate coordinate to be relative of main frame
+      if (frame.parent) {
+        const framePosition = await getFramePosition(frame.parent);
+        point.x += framePosition.x;
+        point.y += framePosition.y;
+      }
+
+      expect(clipboard.readImage().isEmpty()).to.be.true();
+      // wait for video to load
+      await frame.executeJavaScript(`(${() => {
+        const video = document.querySelector('video');
+        if (!video) return;
+        return new Promise(resolve => {
+          if (video.readyState >= 4) resolve(null);
+          else video.addEventListener('canplaythrough', resolve, { once: true });
+        });
+      }})()`);
+      frame.copyVideoFrameAt(point.x, point.y);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      expect(clipboard.readImage().isEmpty()).to.be.false();
+    };
+
+    beforeEach(() => {
+      clipboard.clear();
+    });
+
+    it('copies video frame in main frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.webContents.loadFile(path.join(fixtures, 'blank.html'));
+      await insertVideoInFrame(w.webContents.mainFrame);
+      await copyVideoFrameInFrame(w.webContents.mainFrame);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+    });
+
+    it('copies video frame in subframe', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
+      const subframe = w.webContents.mainFrame.frames[0];
+      expect(subframe).to.exist();
+      await insertVideoInFrame(subframe);
+      await copyVideoFrameInFrame(subframe);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
     });
   });
 
