@@ -31,6 +31,9 @@ struct Converter<electron::NotificationAction> {
       return false;
     }
     dict.Get("text", &(out->text));
+    std::vector<std::u16string> items;
+    if (dict.Get("items", &items))
+      out->items = std::move(items);
     return true;
   }
 
@@ -39,6 +42,9 @@ struct Converter<electron::NotificationAction> {
     auto dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("text", val.text);
     dict.Set("type", val.type);
+    if (!val.items.empty()) {
+      dict.Set("items", val.items);
+    }
     return ConvertToV8(isolate, dict);
   }
 };
@@ -138,8 +144,8 @@ void Notification::SetToastXml(const std::u16string& new_toast_xml) {
   toast_xml_ = new_toast_xml;
 }
 
-void Notification::NotificationAction(int index) {
-  Emit("action", index);
+void Notification::NotificationAction(int index, int selected_index) {
+  Emit("action", index, selected_index);
 }
 
 void Notification::NotificationClick() {
