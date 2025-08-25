@@ -48,9 +48,10 @@ void ElectronNSSCryptoModuleDelegate::RequestPasswordOnUIThread(
   v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
   gin_helper::Dictionary dict(isolate, event_object);
   dict.Set("hostname", server_.host());
   dict.Set("tokenName", token_name);

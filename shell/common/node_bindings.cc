@@ -644,7 +644,8 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
-  gin_helper::internal::Event::GetConstructor(isolate, context);
+  gin_helper::internal::Event::GetConstructor(
+      isolate, context, &gin_helper::internal::Event::kWrapperInfo);
 
   g_is_initialized = true;
 }
