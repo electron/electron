@@ -462,11 +462,12 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       return false;
     }
     case WM_SYSCOMMAND: {
-      // Mask is needed to account for double clicking title bar to maximize
-      WPARAM max_mask = 0xFFF0;
-      if (transparent() && ((w_param & max_mask) == SC_MAXIMIZE)) {
+      WPARAM cmd = w_param & 0xFFF0;
+      // Needed to account for double clicking title bar to maximize.
+      if (transparent() && (cmd == SC_MAXIMIZE))
         return true;
-      }
+      if (cmd == SC_MINIMIZE)
+        was_snapped_ = IsSnapped();
       return false;
     }
     case WM_INITMENU: {
@@ -519,8 +520,13 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       // multiple times for one resize because of the SetWindowPlacement call.
       if (w_param == SIZE_MAXIMIZED &&
           last_window_state_ != ui::mojom::WindowShowState::kMaximized) {
-        if (last_window_state_ == ui::mojom::WindowShowState::kMinimized)
+        if (last_window_state_ == ui::mojom::WindowShowState::kMinimized) {
+          if (was_snapped_) {
+            SetRoundedCorners(false);
+            was_snapped_ = false;
+          }
           NotifyWindowRestore();
+        }
         last_window_state_ = ui::mojom::WindowShowState::kMaximized;
         NotifyWindowMaximize();
         ResetWindowControls();
@@ -542,6 +548,10 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
             last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
             NotifyWindowEnterFullScreen();
           } else {
+            if (was_snapped_) {
+              SetRoundedCorners(false);
+              was_snapped_ = false;
+            }
             last_window_state_ = ui::mojom::WindowShowState::kNormal;
             NotifyWindowRestore();
           }
