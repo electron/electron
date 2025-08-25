@@ -1580,6 +1580,20 @@ Centers the current text selection in web page.
 
 Copy the image at the given position to the clipboard.
 
+#### `contents.copyVideoFrameAt(x, y)`
+
+* `x` Integer
+* `y` Integer
+
+When executed on a video media element, copies the frame at (x, y) to the clipboard.
+
+#### `contents.saveVideoFrameAs(x, y)`
+
+* `x` Integer
+* `y` Integer
+
+When executed on a video media element, shows a save dialog and saves the frame at (x, y) to disk.
+
 #### `contents.paste()`
 
 Executes the editing command `paste` in web page.
