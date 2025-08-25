@@ -329,7 +329,7 @@ jobs:
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
-      test-runs-on: electron-arc-centralus-linux-arm64-4core
+      test-runs-on: ubuntu-22.04-arm
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       test-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
       target-platform: linux
@@ -388,7 +388,7 @@ jobs:
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
-      test-runs-on: electron-hosted-windows-arm64-4core
+      test-runs-on: windows-11-arm
       target-platform: win
       target-arch: arm64
       is-release: false
