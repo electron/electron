@@ -437,11 +437,15 @@ void InspectableWebContents::ShowDevTools(bool activate) {
 void InspectableWebContents::CloseDevTools() {
   if (GetDevToolsWebContents()) {
     frontend_loaded_ = false;
+    embedder_message_dispatcher_.reset();
     if (managed_devtools_web_contents_) {
       view_->CloseDevTools();
-      managed_devtools_web_contents_.reset();
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE,
+          base::BindOnce(
+              [](std::unique_ptr<content::WebContents> web_contents) {},
+              std::move(managed_devtools_web_contents_)));
     }
-    embedder_message_dispatcher_.reset();
     if (!is_guest())
       web_contents_->Focus();
   }
@@ -530,7 +534,11 @@ void InspectableWebContents::CloseWindow() {
 void InspectableWebContents::LoadCompleted() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
+  if (!GetDevToolsWebContents())
+    return;
+
   frontend_loaded_ = true;
+
   if (managed_devtools_web_contents_)
     view_->ShowDevTools(activate_);
 
