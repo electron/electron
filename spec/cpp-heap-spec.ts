@@ -76,4 +76,30 @@ describe('cpp heap', () => {
       expect(result).to.equal(true);
     });
   });
+
+  describe('internal event', () => {
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(async (heap: string, snapshotHelper: string) => {
+        const { BrowserWindow } = require('electron');
+        const { once } = require('node:events');
+        const { recordState } = require(heap);
+        const { containsRetainingPath } = require(snapshotHelper);
+
+        const w = new BrowserWindow({
+          show: false
+        });
+        await w.loadURL('about:blank');
+        const state = recordState();
+        const isClosed = once(w, 'closed');
+        w.destroy();
+        await isClosed;
+        const eventNativeStackReference = containsRetainingPath(state.snapshot, ['C++ native stack roots', 'Electron / Event']);
+        const noPersistentReference = !containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / Event']);
+        return eventNativeStackReference && noPersistentReference;
+      }, path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+      path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'));
+      expect(result).to.equal(true);
+    });
+  });
 });
