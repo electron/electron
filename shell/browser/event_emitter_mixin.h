@@ -56,13 +56,13 @@ class EventEmitterMixin {
     gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
     auto* wrapper_info = &(static_cast<T*>(this)->kWrapperInfo);
     v8::Local<v8::FunctionTemplate> constructor =
-        data->GetFunctionTemplate(wrapper_info);
+        data->DeprecatedGetFunctionTemplate(wrapper_info);
     if (constructor.IsEmpty()) {
       constructor = v8::FunctionTemplate::New(isolate);
       constructor->SetClassName(
           gin::StringToV8(isolate, static_cast<T*>(this)->GetTypeName()));
       constructor->Inherit(internal::GetEventEmitterTemplate(isolate));
-      data->SetFunctionTemplate(wrapper_info, constructor);
+      data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
     }
     return gin::ObjectTemplateBuilder(isolate,
                                       static_cast<T*>(this)->GetTypeName(),

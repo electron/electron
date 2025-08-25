@@ -732,21 +732,23 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
   }
 
   if (should_block) {
-    auto* session =
+    gin::WeakCell<api::Session>* session =
         electron::api::Session::FromBrowserContext(browser_context());
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::HandleScope scope(isolate);
-    v8::Local<v8::Object> details =
-        gin::DataObjectBuilder(isolate)
-            .Set("origin", origin.GetURL().spec())
-            .Set("isDirectory", handle_type == HandleType::kDirectory)
-            .Set("path", path_info.path)
-            .Build();
-    session->Emit(
-        "file-system-access-restricted", details,
-        base::BindRepeating(
-            &FileSystemAccessPermissionContext::OnRestrictedPathResult,
-            weak_factory_.GetWeakPtr(), path_info.path));
+    if (session && session->Get()) {
+      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+      v8::HandleScope scope(isolate);
+      v8::Local<v8::Object> details =
+          gin::DataObjectBuilder(isolate)
+              .Set("origin", origin.GetURL().spec())
+              .Set("isDirectory", handle_type == HandleType::kDirectory)
+              .Set("path", path_info.path)
+              .Build();
+      session->Get()->Emit(
+          "file-system-access-restricted", details,
+          base::BindRepeating(
+              &FileSystemAccessPermissionContext::OnRestrictedPathResult,
+              weak_factory_.GetWeakPtr(), path_info.path));
+    }
     return;
   }
 
