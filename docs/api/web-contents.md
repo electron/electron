@@ -1585,14 +1585,14 @@ Copy the image at the given position to the clipboard.
 * `x` Integer
 * `y` Integer
 
-Copy the video frame at the given position to the clipboard.
+When executed on a video media element, copies the frame at (x, y) to the clipboard.
 
 #### `contents.saveVideoFrameAs(x, y)`
 
 * `x` Integer
 * `y` Integer
 
-Shows a save dialog and saves the video frame at (x, y) to disk.
+When executed on a video media element, shows a save dialog and saves the frame at (x, y) to disk.
 
 #### `contents.paste()`
 
