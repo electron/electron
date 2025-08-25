@@ -132,6 +132,23 @@ void InspectableWebContentsView::ShowDevTools(bool activate) {
   }
 }
 
+void InspectableWebContentsView::ActivateDevTools() {
+  if (!devtools_visible_) {
+    return;
+  }
+  if (devtools_window_) {
+    if (!devtools_window_->IsActive()) {
+      devtools_window_->Activate();
+    }
+    return;
+  }
+  if (devtools_web_view_) {
+    if (!devtools_web_view_->HasFocus()) {
+      devtools_web_view_->RequestFocus();
+    }
+  }
+}
+
 void InspectableWebContentsView::CloseDevTools() {
   if (!devtools_visible_)
     return;
