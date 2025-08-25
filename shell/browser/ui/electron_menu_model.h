@@ -90,6 +90,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   std::u16string GetRoleAt(size_t index);
   void SetSecondaryLabel(size_t index, const std::u16string& sublabel);
   std::u16string GetSecondaryLabelAt(size_t index) const override;
+  void SetAlternate(size_t index, bool alternate);
+  bool IsAlternateAt(size_t index) const;
   bool GetAcceleratorAtWithParams(size_t index,
                                   bool use_default_accelerator,
                                   ui::Accelerator* accelerator) const;
@@ -128,7 +130,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   base::flat_map<int, std::u16string> roles_;      // command id -> role
   base::flat_map<int, std::u16string> sublabels_;  // command id -> sublabel
   base::flat_map<int, std::u16string>
-      customTypes_;  // command id -> custom type
+      customTypes_;                       // command id -> custom type
+  base::flat_map<int, bool> alternates_;  // command id -> alternate
   base::ObserverList<Observer> observers_;
 
   base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};

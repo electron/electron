@@ -72,6 +72,17 @@ std::u16string ElectronMenuModel::GetSecondaryLabelAt(size_t index) const {
   return iter == std::end(sublabels_) ? std::u16string() : iter->second;
 }
 
+void ElectronMenuModel::SetAlternate(size_t index, bool alternate) {
+  int command_id = GetCommandIdAt(index);
+  alternates_[command_id] = alternate;
+}
+
+bool ElectronMenuModel::IsAlternateAt(size_t index) const {
+  int command_id = GetCommandIdAt(index);
+  const auto iter = alternates_.find(command_id);
+  return iter != std::end(alternates_) && iter->second;
+}
+
 bool ElectronMenuModel::GetAcceleratorAtWithParams(
     size_t index,
     bool use_default_accelerator,
