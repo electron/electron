@@ -143,7 +143,7 @@ SerialChooserController::~SerialChooserController() {
   RunCallback(/*port=*/nullptr);
 }
 
-api::Session* SerialChooserController::GetSession() {
+gin::WeakCell<api::Session>* SerialChooserController::GetSession() {
   if (!web_contents_) {
     return nullptr;
   }
@@ -180,9 +180,10 @@ void SerialChooserController::OnPortAdded(
 
   ports_.push_back(port.Clone());
 
-  api::Session* session = GetSession();
-  if (session) {
-    session->Emit("serial-port-added", port.Clone(), web_contents_.get());
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    session->Get()->Emit("serial-port-added", port.Clone(),
+                         web_contents_.get());
   }
 }
 
@@ -191,8 +192,11 @@ void SerialChooserController::OnPortRemoved(
   const auto it = std::ranges::find(ports_, port.token,
                                     &device::mojom::SerialPortInfo::token);
   if (it != ports_.end()) {
-    if (api::Session* session = GetSession())
-      session->Emit("serial-port-removed", port.Clone(), web_contents_.get());
+    gin::WeakCell<api::Session>* session = GetSession();
+    if (session && session->Get()) {
+      session->Get()->Emit("serial-port-removed", port.Clone(),
+                           web_contents_.get());
+    }
     ports_.erase(it);
   }
 }
@@ -236,8 +240,9 @@ void SerialChooserController::OnGetDevices(
   }
 
   bool prevent_default = false;
-  if (api::Session* session = GetSession()) {
-    prevent_default = session->Emit(
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    prevent_default = session->Get()->Emit(
         "select-serial-port", ports_, web_contents_.get(),
         base::BindRepeating(&SerialChooserController::OnDeviceChosen,
                             weak_factory_.GetWeakPtr()));

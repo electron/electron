@@ -124,7 +124,7 @@ const std::string& HidChooserController::PhysicalDeviceIdFromDeviceInfo(
                                            : device.physical_device_id;
 }
 
-api::Session* HidChooserController::GetSession() {
+gin::WeakCell<api::Session>* HidChooserController::GetSession() {
   if (!web_contents()) {
     return nullptr;
   }
@@ -137,8 +137,8 @@ void HidChooserController::OnDeviceAdded(
     return;
 
   if (AddDeviceInfo(device)) {
-    api::Session* session = GetSession();
-    if (session) {
+    gin::WeakCell<api::Session>* session = GetSession();
+    if (session && session->Get()) {
       auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
       v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
       v8::HandleScope scope(isolate);
@@ -146,7 +146,7 @@ void HidChooserController::OnDeviceAdded(
                                           .Set("device", device.Clone())
                                           .Set("frame", rfh)
                                           .Build();
-      session->Emit("hid-device-added", details);
+      session->Get()->Emit("hid-device-added", details);
     }
   }
 }
@@ -156,8 +156,8 @@ void HidChooserController::OnDeviceRemoved(
   if (!base::Contains(items_, PhysicalDeviceIdFromDeviceInfo(device)))
     return;
 
-  api::Session* session = GetSession();
-  if (session) {
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
     auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
@@ -165,7 +165,7 @@ void HidChooserController::OnDeviceRemoved(
                                         .Set("device", device.Clone())
                                         .Set("frame", rfh)
                                         .Build();
-    session->Emit("hid-device-removed", details);
+    session->Get()->Emit("hid-device-removed", details);
   }
   RemoveDeviceInfo(device);
 }
@@ -239,8 +239,8 @@ void HidChooserController::OnGotDevices(
     observation_.Observe(chooser_context_.get());
 
   bool prevent_default = false;
-  api::Session* session = GetSession();
-  if (session) {
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
     auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
@@ -248,10 +248,10 @@ void HidChooserController::OnGotDevices(
                                         .Set("deviceList", devicesToDisplay)
                                         .Set("frame", rfh)
                                         .Build();
-    prevent_default =
-        session->Emit("select-hid-device", details,
-                      base::BindRepeating(&HidChooserController::OnDeviceChosen,
-                                          weak_factory_.GetWeakPtr()));
+    prevent_default = session->Get()->Emit(
+        "select-hid-device", details,
+        base::BindRepeating(&HidChooserController::OnDeviceChosen,
+                            weak_factory_.GetWeakPtr()));
   }
   if (!prevent_default) {
     RunCallback({});

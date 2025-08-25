@@ -8,6 +8,30 @@ Restores part of https://chromium-review.googlesource.com/c/chromium/src/+/67991
 Patch can be removed once cppgc migration is complete
 https://github.com/electron/electron/issues/47922
 
+diff --git a/gin/function_template.h b/gin/function_template.h
+index 84ab9585240a49048774811718f7ebd6f988e485..f062163cdd81def12fae7e507d18a9133dd0804d 100644
+--- a/gin/function_template.h
++++ b/gin/function_template.h
+@@ -77,6 +77,7 @@ class GIN_EXPORT CallbackHolderBase {
+                     CallbackHolderBase* holder);
+     ~DisposeObserver() override;
+     void OnBeforeDispose(v8::Isolate* isolate) override;
++    void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override {}
+     void OnDisposed() override;
+ 
+    private:
+diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
+index bb1639d73070a99984b72eb61afd001dec5b08ff..b036f324309c46c53b74124da3ea830d39a973e3 100644
+--- a/gin/isolate_holder.cc
++++ b/gin/isolate_holder.cc
+@@ -224,6 +224,7 @@ void IsolateHolder::WillCreateMicrotasksRunner() {
+ 
+ void IsolateHolder::WillDestroyMicrotasksRunner() {
+   DCHECK(g_initialized_microtasks_runner);
++  isolate_data_->NotifyBeforeMicrotasksRunnerDispose();
+   g_destroyed_microtasks_runner = true;
+ }
+ 
 diff --git a/gin/object_template_builder.cc b/gin/object_template_builder.cc
 index 5a31687bbd0fca61db3a7c41ed73d938340d6446..b84f5fd336bc4b61b2cd0b2fc92382b00e928701 100644
 --- a/gin/object_template_builder.cc
@@ -22,10 +46,10 @@ index 5a31687bbd0fca61db3a7c41ed73d938340d6446..b84f5fd336bc4b61b2cd0b2fc92382b0
  
  ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
 diff --git a/gin/per_isolate_data.cc b/gin/per_isolate_data.cc
-index 884990426f13a6abca22a60dd8cc0685f8435b23..64ac0a64a05105532f3cda898aeac68c21338e60 100644
+index 884990426f13a6abca22a60dd8cc0685f8435b23..d1014af4b63da244820ff865a8e824ddf68433a9 100644
 --- a/gin/per_isolate_data.cc
 +++ b/gin/per_isolate_data.cc
-@@ -68,12 +68,32 @@ PerIsolateData* PerIsolateData::From(Isolate* isolate) {
+@@ -68,12 +68,37 @@ PerIsolateData* PerIsolateData::From(Isolate* isolate) {
    return static_cast<PerIsolateData*>(isolate->GetData(kEmbedderNativeGin));
  }
  
@@ -40,8 +64,13 @@ index 884990426f13a6abca22a60dd8cc0685f8435b23..64ac0a64a05105532f3cda898aeac68c
    object_templates_[info] = Eternal<ObjectTemplate>(isolate_, templ);
  }
  
-+void PerIsolateData::SetFunctionTemplate(DeprecatedWrapperInfo* info,
-+                                         Local<FunctionTemplate> templ) {
++void PerIsolateData::DeprecatedSetFunctionTemplate(
++    DeprecatedWrapperInfo* info, Local<FunctionTemplate> templ) {
++  deprecated_function_templates_[info] = Eternal<FunctionTemplate>(isolate_, templ);
++}
++
++void PerIsolateData::SetFunctionTemplate(
++    const WrapperInfo* info, Local<FunctionTemplate> templ) {
 +  function_templates_[info] = Eternal<FunctionTemplate>(isolate_, templ);
 +}
 +
@@ -58,12 +87,22 @@ index 884990426f13a6abca22a60dd8cc0685f8435b23..64ac0a64a05105532f3cda898aeac68c
  v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
      const WrapperInfo* info) {
    ObjectTemplateMap::iterator it = object_templates_.find(info);
-@@ -83,6 +103,15 @@ v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
+@@ -83,6 +108,25 @@ v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
    return it->second.Get(isolate_);
  }
  
-+v8::Local<v8::FunctionTemplate> PerIsolateData::GetFunctionTemplate(
++v8::Local<v8::FunctionTemplate> PerIsolateData::DeprecatedGetFunctionTemplate(
 +    DeprecatedWrapperInfo* info) {
++  DeprecatedFunctionTemplateMap::iterator it =
++      deprecated_function_templates_.find(info);
++  if (it == deprecated_function_templates_.end()) {
++    return v8::Local<v8::FunctionTemplate>();
++  }
++  return it->second.Get(isolate_);
++}
++
++v8::Local<v8::FunctionTemplate> PerIsolateData::GetFunctionTemplate(
++    const WrapperInfo* info) {
 +  FunctionTemplateMap::iterator it = function_templates_.find(info);
 +  if (it == function_templates_.end()) {
 +    return v8::Local<v8::FunctionTemplate>();
@@ -74,11 +113,35 @@ index 884990426f13a6abca22a60dd8cc0685f8435b23..64ac0a64a05105532f3cda898aeac68c
  void PerIsolateData::AddDisposeObserver(DisposeObserver* observer) {
    dispose_observers_.AddObserver(observer);
  }
+@@ -97,6 +141,12 @@ void PerIsolateData::NotifyBeforeDispose() {
+   }
+ }
+ 
++void PerIsolateData::NotifyBeforeMicrotasksRunnerDispose() {
++  for (auto& observer : dispose_observers_) {
++    observer.OnBeforeMicrotasksRunnerDispose(isolate_.get());
++  }
++}
++
+ void PerIsolateData::NotifyDisposed() {
+   for (auto& observer : dispose_observers_) {
+     observer.OnDisposed();
 diff --git a/gin/per_isolate_data.h b/gin/per_isolate_data.h
-index bce889749415da341e6e6e4082ac06bbeb4bb80a..d748c1cf8cef7da90686686f1b8072bcd530541d 100644
+index bce889749415da341e6e6e4082ac06bbeb4bb80a..2f8abc344c77713fb10d83e51ba486c84ab93474 100644
 --- a/gin/per_isolate_data.h
 +++ b/gin/per_isolate_data.h
-@@ -51,11 +51,24 @@ class GIN_EXPORT PerIsolateData {
+@@ -34,6 +34,10 @@ class GIN_EXPORT PerIsolateData {
+     // be entered before the observer is notified, but there will not be a
+     // handle scope by default.
+     virtual void OnBeforeDispose(v8::Isolate* isolate) = 0;
++
++    // Called just before the microtasks runner is about to be disposed.
++    virtual void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) = 0;
++
+     // Called just after the isolate has been disposed.
+     virtual void OnDisposed() = 0;
+   };
+@@ -51,14 +55,36 @@ class GIN_EXPORT PerIsolateData {
  
    static PerIsolateData* From(v8::Isolate* isolate);
  
@@ -89,21 +152,33 @@ index bce889749415da341e6e6e4082ac06bbeb4bb80a..d748c1cf8cef7da90686686f1b8072bc
    void SetObjectTemplate(const WrapperInfo* info,
                           v8::Local<v8::ObjectTemplate> object_template);
  
-+  void SetFunctionTemplate(DeprecatedWrapperInfo* info,
-+                           v8::Local<v8::FunctionTemplate> function_template);
++  void DeprecatedSetFunctionTemplate(
++      DeprecatedWrapperInfo* info,
++      v8::Local<v8::FunctionTemplate> function_template);
++
++  void SetFunctionTemplate(
++      const WrapperInfo* info,
++      v8::Local<v8::FunctionTemplate> function_template);
 +
 +  v8::Local<v8::ObjectTemplate> DeprecatedGetObjectTemplate(
 +      DeprecatedWrapperInfo* info);
 +
    v8::Local<v8::ObjectTemplate> GetObjectTemplate(const WrapperInfo* info);
  
-+  v8::Local<v8::FunctionTemplate> GetFunctionTemplate(
++  v8::Local<v8::FunctionTemplate> DeprecatedGetFunctionTemplate(
 +      DeprecatedWrapperInfo* info);
++
++  v8::Local<v8::FunctionTemplate> GetFunctionTemplate(
++      const WrapperInfo* info);
 +
    void AddDisposeObserver(DisposeObserver* observer);
    void RemoveDisposeObserver(DisposeObserver* observer);
    void NotifyBeforeDispose();
-@@ -74,14 +87,20 @@ class GIN_EXPORT PerIsolateData {
++  void NotifyBeforeMicrotasksRunnerDispose();
+   void NotifyDisposed();
+ 
+   void EnableIdleTasks(std::unique_ptr<V8IdleTaskRunner> idle_task_runner);
+@@ -74,14 +100,23 @@ class GIN_EXPORT PerIsolateData {
    }
  
   private:
@@ -112,6 +187,8 @@ index bce889749415da341e6e6e4082ac06bbeb4bb80a..d748c1cf8cef7da90686686f1b8072bc
    typedef std::map<const WrapperInfo*, v8::Eternal<v8::ObjectTemplate>>
        ObjectTemplateMap;
 +  typedef std::map<DeprecatedWrapperInfo*, v8::Eternal<v8::FunctionTemplate>>
++      DeprecatedFunctionTemplateMap;
++  typedef std::map<const WrapperInfo*, v8::Eternal<v8::FunctionTemplate>>
 +      FunctionTemplateMap;
  
    // PerIsolateData doesn't actually own |isolate_|. Instead, the isolate is
@@ -120,6 +197,7 @@ index bce889749415da341e6e6e4082ac06bbeb4bb80a..d748c1cf8cef7da90686686f1b8072bc
    raw_ptr<v8::ArrayBuffer::Allocator, DanglingUntriaged> allocator_;
 +  DeprecatedObjectTemplateMap deprecated_object_templates_;
    ObjectTemplateMap object_templates_;
++  DeprecatedFunctionTemplateMap deprecated_function_templates_;
 +  FunctionTemplateMap function_templates_;
    base::ObserverList<DisposeObserver> dispose_observers_;
    std::shared_ptr<V8ForegroundTaskRunnerBase> task_runner_;

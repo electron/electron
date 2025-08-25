@@ -63,7 +63,7 @@ runs:
           sudo launchctl limit maxfiles 65536 200000
         fi
 
-        NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
+        NINJA_SUMMARIZE_BUILD=1 e build
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
     - name: Strip Electron Binaries ${{ inputs.step-suffix }}
@@ -78,7 +78,7 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES -d explain
+        e build --target electron:electron_dist_zip
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
@@ -90,7 +90,7 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_mksnapshot
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         # Remove unused args from mksnapshot_args
         SEDOPTION="-i"
@@ -113,7 +113,7 @@ runs:
           fi
         fi
 
-        e build --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_mksnapshot_zip
         if [ "${{ inputs.target-platform }}" = "win" ]; then
           cd out/Default
           powershell Compress-Archive -update mksnapshot_args mksnapshot.zip
@@ -147,7 +147,7 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_chromedriver
         e build --target electron:electron_chromedriver_zip
 
         if [ "${{ inputs.is-asan }}" != "true" ]; then
@@ -198,24 +198,24 @@ runs:
           electron/script/zip-symbols.py -b $BUILD_PATH
         fi
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
-      if: ${{ inputs.is-release == 'true' }}
       shell: bash
+      if: ${{ inputs.is-release == 'true' }}
       run: |
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
-        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg
     - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
-        e build --target electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:hunspell_dictionaries_zip
     - name: Generate Libcxx ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
       run: |
-        e build --target electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        e build --target electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        e build --target electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
+        e build --target electron:libcxx_headers_zip
+        e build --target electron:libcxxabi_headers_zip
+        e build --target electron:libcxx_objects_zip
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
@@ -238,7 +238,29 @@ runs:
           echo 'Uploading Electron release distribution to GitHub releases'
           script/release/uploaders/upload.py --verbose
         fi
+    - name: Generate siso report
+      if: ${{ inputs.target-platform != 'win' && !cancelled() }}
+      shell: bash
+      run: |
+        cd src
+        e d siso report -C out/Default > siso_report.txt
+        SISO_REPORT_PATH=$(grep -o '/.*siso-report-[^ ]*' siso_report.txt)
+        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $GITHUB_ENV
+        cat siso_report.txt
+        echo "SISO REPORT AT $SISO_REPORT_PATH"
+    - name: Generate siso report (Windows)
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        cd src
+        e d siso report -C out\Default > siso_report.txt
+        $SISO_REPORT_PATH = Get-Content "siso_report.txt" | Select-String "report file:\s*(.+)" | ForEach-Object { 
+          $_.Matches.Groups[1].Value.Trim() 
+        }
+        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH"
+        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $env:GITHUB_ENV
     - name: Generate Artifact Key
+      if: always() && !cancelled()
       shell: bash
       run: |
         if [ "${{ inputs.is-asan }}" = "true" ]; then 
@@ -250,9 +272,11 @@ runs:
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
+      if: always() && !cancelled()
       shell: bash
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
+      if: always() && !cancelled()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
