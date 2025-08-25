@@ -441,6 +441,9 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     [(id)item
         setAllowsKeyEquivalentWhenHidden:(model->WorksWhenHiddenAt(index))];
 
+    if (model->IsAlternateAt(index))
+      [item setAlternate:YES];
+
     // Set menu item's role.
     [item setTarget:self];
     if (!role.empty()) {

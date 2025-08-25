@@ -217,6 +217,10 @@ void Menu::SetCustomType(int index, const std::u16string& customType) {
   model_->SetCustomType(index, customType);
 }
 
+void Menu::SetAlternate(int index, bool alternate) {
+  model_->SetAlternate(index, alternate);
+}
+
 void Menu::Clear() {
   model_->Clear();
 }
@@ -267,6 +271,10 @@ bool Menu::WorksWhenHiddenAt(int index) const {
   return model_->WorksWhenHiddenAt(index);
 }
 
+bool Menu::IsAlternateAt(int index) const {
+  return model_->IsAlternateAt(index);
+}
+
 void Menu::OnMenuWillClose() {
   Unpin();
   Emit("menu-will-close");
@@ -291,6 +299,7 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setToolTip", &Menu::SetToolTip)
       .SetMethod("setRole", &Menu::SetRole)
       .SetMethod("setCustomType", &Menu::SetCustomType)
+      .SetMethod("setAlternate", &Menu::SetAlternate)
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("getItemCount", &Menu::GetItemCount)
@@ -302,6 +311,7 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
+      .SetMethod("isAlternateAt", &Menu::IsAlternateAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
       .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
