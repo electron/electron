@@ -111,6 +111,9 @@ jobs:
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server
+    - name: Set xcode to 16.4
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: sudo xcode-select --switch /Applications/Xcode_16.4.app
     - name: Checkout Electron
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
