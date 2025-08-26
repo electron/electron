@@ -115,7 +115,7 @@ jobs:
         for values in "${userValuesArray[@]}"; do
           # Sonoma and higher have a few extra values
           # Ref: https://github.com/actions/runner-images/blob/main/images/macos/scripts/build/configure-tccdb-macos.sh
-          if [ "$OSTYPE" = "darwin23" ]; then
+          if [ "$OSTYPE" = "darwin23" ] || [ "$OSTYPE" = "darwin24" ]; then
             configure_user_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
             configure_sys_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
           else
