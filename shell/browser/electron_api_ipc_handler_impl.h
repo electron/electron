@@ -18,6 +18,11 @@ namespace content {
 class RenderFrameHost;
 }
 
+namespace gin {
+template <typename T>
+class WeakCell;
+}  // namespace gin
+
 namespace electron {
 class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
                                   private content::WebContentsObserver {
@@ -65,7 +70,7 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
   void OnConnectionError();
 
   content::RenderFrameHost* GetRenderFrameHost();
-  api::Session* GetSession();
+  gin::WeakCell<api::Session>* GetSession();
 
   gin_helper::Handle<gin_helper::internal::Event> MakeIPCEvent(
       v8::Isolate* isolate,

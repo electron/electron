@@ -12,6 +12,11 @@ class DummyManager {
 
     static func createDummy(_ dummyDefinition: DummyDefinition, isPortrait _: Bool = false, serialNum: UInt32 = 0, doConnect: Bool = true) -> Int? {
         let dummy = Dummy(dummyDefinition: dummyDefinition, serialNum: serialNum, doConnect: doConnect)
+
+        if !dummy.isConnected {
+            print("[DummyManager.createDummy:\(#line)] Failed to create virtual display - not connected")
+            return nil
+        }
         self.dummyCounter += 1
         self.definedDummies[self.dummyCounter] = DefinedDummy(dummy: dummy)
         return self.dummyCounter
@@ -24,6 +29,30 @@ class DummyManager {
             }
         }
         self.definedDummies[number] = nil
+    }
+
+    static func forceCleanup() {
+        for (_, definedDummy) in self.definedDummies {
+            if definedDummy.dummy.isConnected {
+                definedDummy.dummy.virtualDisplay = nil
+                definedDummy.dummy.displayIdentifier = 0
+                definedDummy.dummy.isConnected = false
+            }
+        }
+        
+        self.definedDummies.removeAll()
+        self.dummyCounter = 0
+    
+        var config: CGDisplayConfigRef? = nil
+        if CGBeginDisplayConfiguration(&config) == .success {
+            CGCompleteDisplayConfiguration(config, .permanently)
+        }
+        
+        usleep(2000000)
+        
+        if CGBeginDisplayConfiguration(&config) == .success {
+            CGCompleteDisplayConfiguration(config, .forSession)
+        }
     }
 }
 
@@ -88,10 +117,10 @@ class Dummy: Equatable {
             self.virtualDisplay = virtualDisplay
             self.displayIdentifier = virtualDisplay.displayID
             self.isConnected = true
-            os_log("Display %{public}@ successfully connected", type: .info, "\(name)")
+            print("[Dummy.connect:\(#line)] Successfully connected virtual display: \(name)")
             return true
         } else {
-            os_log("Failed to connect display %{public}@", type: .info, "\(name)")
+            print("[Dummy.connect:\(#line)] Failed to connect virtual display: \(name)")
             return false
         }
     }
@@ -99,7 +128,7 @@ class Dummy: Equatable {
     func disconnect() {
         self.virtualDisplay = nil
         self.isConnected = false
-        os_log("Disconnected virtual display: %{public}@", type: .info, "\(self.getName())")
+        print("[Dummy.disconnect:\(#line)] Disconnected virtual display: \(self.getName())")
     }
 
    private static func waitForDisplayRegistration(_ displayId: CGDirectDisplayID) -> Bool {
@@ -110,6 +139,7 @@ class Dummy: Equatable {
             }
             usleep(100000)
         }
+        print("[Dummy.waitForDisplayRegistration:\(#line)] Failed to register virtual display: \(displayId)")
         return false
     }
 

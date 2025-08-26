@@ -7985,6 +7985,567 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
       });
+
+      // FIXME(nilayarya): Figure out why these tests fail on macOS-x64
+      // virtualDisplay.create() is creating double displays on macOS-x64
+      ifdescribe(process.platform === 'darwin' && process.arch === 'arm64')('multi-monitor tests', () => {
+        const virtualDisplay = require('@electron-ci/virtual-display');
+        const primaryDisplay = screen.getPrimaryDisplay();
+
+        beforeEach(() => {
+          virtualDisplay.forceCleanup();
+        });
+
+        it('should restore window bounds correctly on a secondary display', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          // Verify the virtual display is created correctly
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
+          expect(targetDisplay.bounds.y).to.equal(targetDisplayY);
+          expect(targetDisplay.bounds.width).to.equal(1920);
+          expect(targetDisplay.bounds.height).to.equal(1080);
+
+          // Bounds for the test window on the virtual target display
+          const boundsOnTargetDisplay = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100
+          };
+
+          await createAndSaveWindowState(boundsOnTargetDisplay);
+
+          // Restore the window state by creating a new window with the same name
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+          expectBoundsEqual(restoredBounds, boundsOnTargetDisplay);
+
+          w.destroy();
+          virtualDisplay.destroy(targetDisplayId);
+        });
+
+        it('should restore window to a visible location when saved display no longer exists', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          // Verify the virtual display is created correctly - single check for targetDisplay.bounds.x
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
+
+          // Bounds for the test window on the virtual target display
+          const boundsOnTargetDisplay = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100
+          };
+
+          // Save window state on the virtual display
+          await createAndSaveWindowState(boundsOnTargetDisplay);
+
+          virtualDisplay.destroy(targetDisplayId);
+          // Wait for the target virtual display to be destroyed
+          while (screen.getAllDisplays().length > 1) await setTimeout(1000);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+          const primaryWorkArea = primaryDisplay.workArea;
+
+          // Window should be fully visible on the primary display
+          expect(restoredBounds.x).to.be.at.least(primaryWorkArea.x);
+          expect(restoredBounds.y).to.be.at.least(primaryWorkArea.y);
+          expect(restoredBounds.x + restoredBounds.width).to.be.at.most(primaryWorkArea.x + primaryWorkArea.width);
+          expect(restoredBounds.y + restoredBounds.height).to.be.at.most(primaryWorkArea.y + primaryWorkArea.height);
+
+          // Window should maintain its original size
+          expect(restoredBounds.width).to.equal(boundsOnTargetDisplay.width);
+          expect(restoredBounds.height).to.equal(boundsOnTargetDisplay.height);
+
+          w.destroy();
+        });
+
+        it('should fallback to nearest display when saved display no longer exists', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create first virtual display to the right of primary
+          const middleDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          // Create second virtual display to the right of the first (rightmost)
+          const rightmostDisplayX = targetDisplayX + 1920;
+          const rightmostDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: rightmostDisplayX,
+            y: targetDisplayY
+          });
+
+          // Verify the virtual displays are created correctly - single check for origin x values
+          const middleDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(middleDisplay.bounds.x).to.equal(targetDisplayX);
+
+          const rightmostDisplay = screen.getDisplayNearestPoint({ x: rightmostDisplayX, y: targetDisplayY });
+          expect(rightmostDisplay.bounds.x).to.equal(rightmostDisplayX);
+
+          // Bounds for the test window on the rightmost display
+          const boundsOnRightmostDisplay = {
+            width: 400,
+            height: 300,
+            x: rightmostDisplay.workArea.x + 100,
+            y: rightmostDisplay.workArea.y + 100
+          };
+
+          // Save window state on the rightmost display
+          await createAndSaveWindowState(boundsOnRightmostDisplay);
+
+          // Destroy the rightmost display (where window was saved)
+          virtualDisplay.destroy(rightmostDisplayId);
+          // Wait for the rightmost display to be destroyed
+          while (screen.getAllDisplays().length > 2) await setTimeout(1000);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+
+          // Window should be restored on the middle display (nearest remaining display)
+          expect(restoredBounds.x).to.be.at.least(middleDisplay.workArea.x);
+          expect(restoredBounds.y).to.be.at.least(middleDisplay.workArea.y);
+          expect(restoredBounds.x + restoredBounds.width).to.be.at.most(middleDisplay.workArea.x + middleDisplay.workArea.width);
+          expect(restoredBounds.y + restoredBounds.height).to.be.at.most(middleDisplay.workArea.y + middleDisplay.workArea.height);
+
+          // Window should maintain its original size
+          expect(restoredBounds.width).to.equal(boundsOnRightmostDisplay.width);
+          expect(restoredBounds.height).to.equal(boundsOnRightmostDisplay.height);
+
+          w.destroy();
+          virtualDisplay.destroy(middleDisplayId);
+        });
+
+        it('should restore multiple named windows independently across displays', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a first virtual display to the right of the primary display
+          const targetDisplayId1 = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+          // Create a second virtual display to the right of the first
+          const targetDisplayId2 = virtualDisplay.create({
+            width: 1600,
+            height: 900,
+            x: targetDisplayX + 1920,
+            y: targetDisplayY
+          });
+
+          // Verify the virtual displays are created correctly - single check for origin x values
+          const targetDisplay1 = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay1.bounds.x).to.equal(targetDisplayX);
+
+          const targetDisplay2 = screen.getDisplayNearestPoint({ x: targetDisplayX + 1920, y: targetDisplayY });
+          expect(targetDisplay2.bounds.x).to.equal(targetDisplayX + 1920);
+
+          // Window 1 on primary display
+          const window1Name = 'test-multi-window-1';
+          const bounds1 = {
+            width: 300,
+            height: 200,
+            x: primaryDisplay.workArea.x + 50,
+            y: primaryDisplay.workArea.y + 50
+          };
+
+          // Window 2 on second display (first virtual)
+          const window2Name = 'test-multi-window-2';
+          const bounds2 = {
+            width: 400,
+            height: 300,
+            x: targetDisplay1.workArea.x + 100,
+            y: targetDisplay1.workArea.y + 100
+          };
+
+          // Window 3 on third display (second virtual)
+          const window3Name = 'test-multi-window-3';
+          const bounds3 = {
+            width: 350,
+            height: 250,
+            x: targetDisplay2.workArea.x + 150,
+            y: targetDisplay2.workArea.y + 150
+          };
+
+          // Clear window state for all three windows from previous tests
+          BrowserWindow.clearWindowState(window1Name);
+          BrowserWindow.clearWindowState(window2Name);
+          BrowserWindow.clearWindowState(window3Name);
+
+          // Create and save state for all three windows
+          const w1 = new BrowserWindow({
+            name: window1Name,
+            windowStatePersistence: true,
+            show: false,
+            ...bounds1
+          });
+          const w2 = new BrowserWindow({
+            name: window2Name,
+            windowStatePersistence: true,
+            show: false,
+            ...bounds2
+          });
+          const w3 = new BrowserWindow({
+            name: window3Name,
+            windowStatePersistence: true,
+            show: false,
+            ...bounds3
+          });
+
+          w1.destroy();
+          w2.destroy();
+          w3.destroy();
+
+          await setTimeout(2000);
+
+          // Restore all three windows
+          const restoredW1 = new BrowserWindow({
+            name: window1Name,
+            windowStatePersistence: true,
+            show: false
+          });
+          const restoredW2 = new BrowserWindow({
+            name: window2Name,
+            windowStatePersistence: true,
+            show: false
+          });
+          const restoredW3 = new BrowserWindow({
+            name: window3Name,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          // Check that each window restored to its correct display and position
+          expectBoundsEqual(restoredW1.getBounds(), bounds1);
+          expectBoundsEqual(restoredW2.getBounds(), bounds2);
+          expectBoundsEqual(restoredW3.getBounds(), bounds3);
+
+          restoredW1.destroy();
+          restoredW2.destroy();
+          restoredW3.destroy();
+          virtualDisplay.destroy(targetDisplayId1);
+          virtualDisplay.destroy(targetDisplayId2);
+        });
+
+        it('should restore fullscreen state on correct display', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
+
+          // Create window on target display and set fullscreen
+          const initialBounds = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100,
+            fullscreen: true
+          };
+
+          await createAndSaveWindowState(initialBounds);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true
+          });
+
+          const enterFullScreen = once(w, 'enter-full-screen');
+          if (!w.isFullScreen()) await enterFullScreen;
+
+          expect(w.isFullScreen()).to.equal(true);
+
+          // Check that fullscreen window is on the correct display
+          const fsBounds = w.getBounds();
+          expect(fsBounds.x).to.be.at.least(targetDisplay.bounds.x);
+          expect(fsBounds.y).to.be.at.least(targetDisplay.bounds.y);
+          expect(fsBounds.x + fsBounds.width).to.be.at.most(targetDisplay.bounds.x + targetDisplay.bounds.width);
+          expect(fsBounds.y + fsBounds.height).to.be.at.most(targetDisplay.bounds.y + targetDisplay.bounds.height);
+
+          w.destroy();
+          virtualDisplay.destroy(targetDisplayId);
+        });
+
+        it('should restore maximized state on correct display', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
+
+          // Create window on target display and maximize it
+          const w1 = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: {
+              displayMode: false
+            },
+            x: targetDisplay.workArea.x,
+            y: targetDisplay.workArea.y
+          });
+
+          const maximized = once(w1, 'maximize');
+          w1.maximize();
+          if (!w1.isMaximized()) await maximized;
+
+          w1.destroy();
+          await setTimeout(2000);
+
+          const w2 = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: true
+          });
+
+          const maximized_ = once(w2, 'maximize');
+          if (!w2.isMaximized()) await maximized_;
+
+          expect(w2.isMaximized()).to.equal(true);
+          // Check that maximized window is on the correct display
+          const maximizedBounds = w2.getBounds();
+          expect(maximizedBounds.x).to.be.at.least(targetDisplay.bounds.x);
+          expect(maximizedBounds.y).to.be.at.least(targetDisplay.bounds.y);
+          expect(maximizedBounds.x + maximizedBounds.width).to.be.at.most(targetDisplay.bounds.x + targetDisplay.bounds.width);
+          expect(maximizedBounds.y + maximizedBounds.height).to.be.at.most(targetDisplay.bounds.y + targetDisplay.bounds.height);
+
+          w2.destroy();
+          virtualDisplay.destroy(targetDisplayId);
+        });
+
+        it('should restore kiosk state on correct display', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create a new virtual target display to the right of the primary display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+
+          // Create window on target display and set kiosk: true
+          const initialBounds = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100,
+            kiosk: true
+          };
+
+          await createAndSaveWindowState(initialBounds);
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true
+          });
+
+          const enterFullScreen = once(w, 'enter-full-screen');
+          if (!w.isFullScreen()) await enterFullScreen;
+
+          expect(w.isFullScreen()).to.equal(true);
+          expect(w.isKiosk()).to.equal(true);
+
+          // Check that kiosk window is on the correct display
+          const kioskBounds = w.getBounds();
+          expect(kioskBounds.x).to.be.at.least(targetDisplay.bounds.x);
+          expect(kioskBounds.y).to.be.at.least(targetDisplay.bounds.y);
+          expect(kioskBounds.x + kioskBounds.width).to.be.at.most(targetDisplay.bounds.x + targetDisplay.bounds.width);
+          expect(kioskBounds.y + kioskBounds.height).to.be.at.most(targetDisplay.bounds.y + targetDisplay.bounds.height);
+
+          w.destroy();
+          virtualDisplay.destroy(targetDisplayId);
+        });
+
+        it('should maintain same bounds when target display resolution increases', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create initial virtual display
+          const targetDisplayId = virtualDisplay.create({
+            width: 1920,
+            height: 1080,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+
+          // Create a new virtual display with double the resolution of the target display
+          const higherResDisplayId = virtualDisplay.create({
+            width: targetDisplay.bounds.width * 2,
+            height: targetDisplay.bounds.height * 2,
+            x: targetDisplayX + targetDisplay.bounds.width,
+            y: targetDisplayY
+          });
+
+          // Bounds for the test window on the virtual target display
+          const initialBounds = {
+            width: 400,
+            height: 300,
+            x: targetDisplay.workArea.x + 100,
+            y: targetDisplay.workArea.y + 100
+          };
+
+          await createAndSaveWindowState(initialBounds);
+
+          // Destroy the target display and wait for the higher resolution display to take its place
+          virtualDisplay.destroy(targetDisplayId);
+          while (screen.getAllDisplays().length > 2) await setTimeout(1000);
+
+          // Restore window
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+
+          // Window should maintain same x, y, width, height as the display got bigger
+          expectBoundsEqual(restoredBounds, initialBounds);
+
+          w.destroy();
+          virtualDisplay.destroy(higherResDisplayId);
+        });
+
+        it('should reposition and resize window when target display resolution decreases', async () => {
+          const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
+          const targetDisplayY = primaryDisplay.bounds.y;
+          // We expect only the primary display to be present before the tests start
+          expect(screen.getAllDisplays().length).to.equal(1);
+
+          // Create initial virtual display with high resolution
+          const targetDisplayId = virtualDisplay.create({
+            width: 2560,
+            height: 1440,
+            x: targetDisplayX,
+            y: targetDisplayY
+          });
+
+          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+
+          // Create a new virtual display with half the resolution of the target display shifted down
+          const lowerResDisplayId = virtualDisplay.create({
+            width: targetDisplay.bounds.width / 2,
+            height: targetDisplay.bounds.height / 2,
+            x: targetDisplayX + targetDisplay.bounds.width,
+            y: targetDisplay.bounds.height / 2
+          });
+
+          // Bounds that would overflow on a smaller display
+          const initialBounds = {
+            x: targetDisplay.workArea.x,
+            y: targetDisplay.workArea.y,
+            width: targetDisplay.bounds.width,
+            height: targetDisplay.bounds.height
+          };
+
+          await createAndSaveWindowState(initialBounds);
+
+          // Destroy and and wait for the lower resolution display to take its place
+          virtualDisplay.destroy(targetDisplayId);
+          while (screen.getAllDisplays().length > 2) await setTimeout(1000);
+
+          // We expect the display to be shifted down as we set y: targetDisplay.bounds.height / 2 earlier
+          const smallerDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplay.bounds.height / 2 });
+
+          // Restore window
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w.getBounds();
+
+          // Window should be repositioned to be entirely visible on smaller display
+          expect(restoredBounds.x).to.be.at.least(smallerDisplay.workArea.x);
+          expect(restoredBounds.y).to.be.at.least(smallerDisplay.workArea.y);
+          expect(restoredBounds.x + restoredBounds.width).to.be.at.most(smallerDisplay.workArea.x + smallerDisplay.workArea.width);
+          expect(restoredBounds.y + restoredBounds.height).to.be.at.most(smallerDisplay.workArea.y + smallerDisplay.workArea.height);
+
+          w.destroy();
+          virtualDisplay.destroy(lowerResDisplayId);
+        });
+      });
     });
   });
 });

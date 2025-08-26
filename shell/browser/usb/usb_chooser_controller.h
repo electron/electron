@@ -22,7 +22,9 @@ class WebContents;
 
 namespace gin {
 class Arguments;
-}
+template <typename T>
+class WeakCell;
+}  // namespace gin
 
 namespace electron {
 class ElectronUsbDelegate;
@@ -57,7 +59,7 @@ class UsbChooserController final : private UsbChooserContext::DeviceObserver,
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
 
  private:
-  api::Session* GetSession();
+  gin::WeakCell<api::Session>* GetSession();
   void GotUsbDeviceList(std::vector<device::mojom::UsbDeviceInfoPtr> devices);
   bool DisplayDevice(const device::mojom::UsbDeviceInfo& device) const;
   void RunCallback(device::mojom::UsbDeviceInfoPtr device_info);

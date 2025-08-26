@@ -377,8 +377,17 @@ bool IsAllowedOption(const std::string_view option) {
       "--no-experimental-global-navigator",
   });
 
+  // This should be aligned with what's possible to set via the process object.
+  static constexpr auto unpacked_options =
+      base::MakeFixedFlatSet<std::string_view>({
+          "--expose-internals",
+      });
+
   if (debug_options.contains(option))
     return electron::fuses::IsNodeCliInspectEnabled();
+
+  if (unpacked_options.contains(option))
+    return !electron::api::App::IsPackaged();
 
   return options.contains(option);
 }
@@ -601,6 +610,7 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
   node::per_process::cli_options->disable_wasm_trap_handler = true;
 
   uint64_t process_flags =
+      node::ProcessInitializationFlags::kNoInitializeCppgc |
       node::ProcessInitializationFlags::kNoInitializeV8 |
       node::ProcessInitializationFlags::kNoInitializeNodeV8Platform;
 
@@ -610,8 +620,7 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
     process_flags |= node::ProcessInitializationFlags::kEnableStdioInheritance;
 
   if (browser_env_ == BrowserEnvironment::kRenderer)
-    process_flags |= node::ProcessInitializationFlags::kNoInitializeCppgc |
-                     node::ProcessInitializationFlags::kNoDefaultSignalHandling;
+    process_flags |= node::ProcessInitializationFlags::kNoDefaultSignalHandling;
 
   if (!fuses::IsNodeOptionsEnabled())
     process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;

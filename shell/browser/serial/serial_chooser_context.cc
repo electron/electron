@@ -149,17 +149,16 @@ void SerialChooserContext::RevokePortPermissionWebInitiated(
 
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
-  api::Session* session =
+  gin::WeakCell<api::Session>* session =
       api::Session::FromBrowserContext(web_contents->GetBrowserContext());
-
-  if (session) {
+  if (session && session->Get()) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.Set("port", it->second);
     details.SetGetter("frame", render_frame_host);
     details.Set("origin", origin.Serialize());
-    session->Emit("serial-port-revoked", details);
+    session->Get()->Emit("serial-port-revoked", details);
   }
 }
 

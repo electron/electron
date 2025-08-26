@@ -86,11 +86,11 @@ jobs:
 
   # Docs Only Jobs
   docs-only:
-    needs: setup
+    needs: [setup, checkout-linux]
     if: ${{ needs.setup.outputs.docs-only == 'true' }}
     uses: ./.github/workflows/pipeline-electron-docs-only.yml
     with:
-      container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root"}'
+      container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
     secrets: inherit
 
   # Checkout Jobs
@@ -124,7 +124,7 @@ jobs:
 
   checkout-linux:
     needs: setup
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-linux}}
+    if: ${{ !inputs.skip-linux}}
     runs-on: electron-arc-centralus-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
@@ -196,6 +196,7 @@ jobs:
   linux-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
     needs: checkout-linux
+    if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       target-platform: linux
       target-archs: x64 arm arm64
@@ -261,6 +262,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml
     needs: checkout-linux
+    if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-amd64-4core
@@ -281,6 +283,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
+    if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-amd64-4core
@@ -302,6 +305,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
+    if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-arm64-4core
@@ -322,6 +326,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
+    if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-arm64-4core

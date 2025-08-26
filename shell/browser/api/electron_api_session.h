@@ -15,15 +15,15 @@
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
+#include "gin/weak_cell.h"
+#include "gin/wrappable.h"
 #include "services/network/public/mojom/host_resolver.mojom-forward.h"
 #include "services/network/public/mojom/ssl_config.mojom-forward.h"
 #include "shell/browser/api/ipc_dispatcher.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/pinnable.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
@@ -40,17 +40,17 @@ class Arguments;
 }  // namespace gin
 
 namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
-
-namespace gin_helper {
 class Dictionary;
 class ErrorThrower;
 }  // namespace gin_helper
 
 namespace net {
 class ProxyConfig;
+}
+
+namespace v8 {
+template <typename T>
+class TracedReference;
 }
 
 namespace electron {
@@ -60,11 +60,10 @@ struct PreloadScript;
 
 namespace api {
 
-class Session final : public gin_helper::DeprecatedWrappable<Session>,
-                      public gin_helper::Pinnable<Session>,
+class Session final : public gin::Wrappable<Session>,
                       public gin_helper::Constructible<Session>,
                       public gin_helper::EventEmitterMixin<Session>,
-                      public gin_helper::CleanedUpAtExit,
+                      public gin::PerIsolateData::DisposeObserver,
                       public IpcDispatcher<Session>,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
                       private SpellcheckHunspellDictionary::Observer,
@@ -72,39 +71,46 @@ class Session final : public gin_helper::DeprecatedWrappable<Session>,
                       private content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
-  static gin_helper::Handle<Session> CreateFrom(
-      v8::Isolate* isolate,
-      ElectronBrowserContext* browser_context);
-  static gin_helper::Handle<Session> New();  // Dummy, do not use!
+  static Session* CreateFrom(v8::Isolate* isolate,
+                             ElectronBrowserContext* browser_context);
+  static void New();  // Dummy, do not use!
 
-  static Session* FromBrowserContext(content::BrowserContext* context);
+  static gin::WeakCell<Session>* FromBrowserContext(
+      content::BrowserContext* context);
 
   // Gets the Session of |partition|.
-  static gin_helper::Handle<Session> FromPartition(
-      v8::Isolate* isolate,
-      const std::string& partition,
-      base::Value::Dict options = {});
+  static Session* FromPartition(v8::Isolate* isolate,
+                                const std::string& partition,
+                                base::Value::Dict options = {});
 
   // Gets the Session based on |path|.
-  static std::optional<gin_helper::Handle<Session>> FromPath(
-      v8::Isolate* isolate,
-      const base::FilePath& path,
-      base::Value::Dict options = {});
+  static Session* FromPath(gin::Arguments* args,
+                           const base::FilePath& path,
+                           base::Value::Dict options = {});
+
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static const char* GetClassName() { return "Session"; }
+
+  Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
+  ~Session() override;
 
   ElectronBrowserContext* browser_context() const {
     return &browser_context_.get();
   }
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
-  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
-  static const char* GetClassName() { return "Session"; }
-  const char* GetTypeName() override;
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  void Trace(cppgc::Visitor*) const override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
 
-  // gin_helper::CleanedUpAtExit
-  void WillBeDestroyed() override;
+  // gin::PerIsolateData::DisposeObserver
+  void OnBeforeDispose(v8::Isolate* isolate) override {}
+  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnDisposed() override {}
 
   // Methods.
+  void Dispose();
   v8::Local<v8::Promise> ResolveHost(
       std::string host,
       std::optional<network::mojom::ResolveHostParametersPtr> params);
@@ -180,9 +186,6 @@ class Session final : public gin_helper::DeprecatedWrappable<Session>,
   Session& operator=(const Session&) = delete;
 
  protected:
-  Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
-  ~Session() override;
-
   // content::DownloadManager::Observer:
   void OnDownloadCreated(content::DownloadManager* manager,
                          download::DownloadItem* item) override;
@@ -202,12 +205,12 @@ class Session final : public gin_helper::DeprecatedWrappable<Session>,
                                      v8::Local<v8::Value> val);
 
   // Cached gin_helper::Wrappable objects.
-  v8::Global<v8::Value> cookies_;
-  v8::Global<v8::Value> extensions_;
-  v8::Global<v8::Value> protocol_;
-  v8::Global<v8::Value> net_log_;
-  v8::Global<v8::Value> service_worker_context_;
-  v8::Global<v8::Value> web_request_;
+  v8::TracedReference<v8::Value> cookies_;
+  v8::TracedReference<v8::Value> extensions_;
+  v8::TracedReference<v8::Value> protocol_;
+  v8::TracedReference<v8::Value> net_log_;
+  v8::TracedReference<v8::Value> service_worker_context_;
+  v8::TracedReference<v8::Value> web_request_;
 
   raw_ptr<v8::Isolate> isolate_;
 
@@ -216,7 +219,9 @@ class Session final : public gin_helper::DeprecatedWrappable<Session>,
 
   const raw_ref<ElectronBrowserContext> browser_context_;
 
-  base::WeakPtrFactory<Session> weak_factory_{this};
+  gin::WeakCellFactory<Session> weak_factory_{this};
+
+  gin_helper::SelfKeepAlive<Session> keep_alive_{this};
 };
 
 }  // namespace api

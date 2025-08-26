@@ -45,7 +45,7 @@ class Constructible {
     gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
     auto* wrapper_info = &T::kWrapperInfo;
     v8::Local<v8::FunctionTemplate> constructor =
-        data->GetFunctionTemplate(wrapper_info);
+        data->DeprecatedGetFunctionTemplate(wrapper_info);
     if (constructor.IsEmpty()) {
       constructor = gin::CreateConstructorFunctionTemplate(
           isolate, base::BindRepeating(&T::New));
@@ -59,6 +59,30 @@ class Constructible {
       T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
       data->DeprecatedSetObjectTemplate(wrapper_info,
                                         constructor->InstanceTemplate());
+      data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
+    }
+    return constructor->GetFunction(context).ToLocalChecked();
+  }
+
+  static v8::Local<v8::Function> GetConstructor(
+      v8::Isolate* const isolate,
+      v8::Local<v8::Context> context,
+      gin::WrapperInfo* wrapper_info) {
+    gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+    v8::Local<v8::FunctionTemplate> constructor =
+        data->GetFunctionTemplate(wrapper_info);
+    if (constructor.IsEmpty()) {
+      constructor = gin::CreateConstructorFunctionTemplate(
+          isolate, base::BindRepeating(&T::New));
+      if (std::is_base_of<EventEmitterMixin<T>, T>::value) {
+        constructor->Inherit(
+            gin_helper::internal::GetEventEmitterTemplate(isolate));
+      }
+      constructor->InstanceTemplate()->SetInternalFieldCount(
+          gin::kNumberOfInternalFields);
+      constructor->SetClassName(gin::StringToV8(isolate, T::GetClassName()));
+      T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
+      data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
       data->SetFunctionTemplate(wrapper_info, constructor);
     }
     return constructor->GetFunction(context).ToLocalChecked();
