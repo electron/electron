@@ -28,6 +28,9 @@ class UtilityAIManager : public blink::mojom::AIManager {
 
   ~UtilityAIManager() override;
 
+  // TODO - Create a reusable class for an in-progress LanguageModel creation
+  // which properly handles the AbortController stuff
+
  private:
   [[nodiscard]] v8::Global<v8::Object>& GetLanguageModelClass();
 

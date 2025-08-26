@@ -13,6 +13,7 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
 #include "third_party/blink/public/mojom/ai/ai_common.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_language_model.mojom.h"
@@ -175,13 +176,19 @@ bool IsReadableStream(v8::Isolate* isolate, v8::Local<v8::Value> val) {
 
 // Owns itself. Will live as long as there's more data to read and
 // the Mojo remote is still connected.
+// TODO - Make this more generic to also hold a promise instead of
+// just a readable and hold an AbortController that will fire on
+// the disconnect handler stuff
 class ReadableResponder {
  public:
   ReadableResponder(v8::Isolate* isolate,
                     v8::Local<v8::Object> readable_stream_reader,
+                    v8::Local<v8::Object> abort_controller,
                     mojo::PendingRemote<blink::mojom::ModelStreamingResponder>
                         pending_responder) {
+    isolate_ = isolate;
     readable_stream_reader_.Reset(isolate, readable_stream_reader);
+    abort_controller_.Reset(isolate, abort_controller);
     responder_.Bind(std::move(pending_responder));
     responder_.set_disconnect_handler(
         base::BindOnce(&ReadableResponder::DeleteThis, base::Unretained(this)));
@@ -195,58 +202,63 @@ class ReadableResponder {
     auto promise = val.As<v8::Promise>();
 
     auto then_cb = base::BindOnce(
-        [](ReadableResponder* readable_responder, v8::Isolate* isolate,
+        [](base::WeakPtr<ReadableResponder> weak_ptr, v8::Isolate* isolate,
            v8::Local<v8::Value> result) {
-          DCHECK(result->IsObject());
+          if (weak_ptr) {
+            DCHECK(result->IsObject());
 
-          v8::Local<v8::Value> done =
-              result.As<v8::Object>()
-                  ->Get(isolate->GetCurrentContext(),
-                        gin::StringToV8(isolate, "done"))
-                  .ToLocalChecked();
-          DCHECK(done->IsBoolean());
-
-          blink::mojom::ModelStreamingResponder* responder =
-              readable_responder->GetResponder();
-
-          if (done.As<v8::Boolean>()->Value()) {
-            // TODO - Real token count
-            responder->OnCompletion(
-                blink::mojom::ModelExecutionContextInfo::New(0));
-            readable_responder->DeleteThis();
-          } else {
-            v8::Local<v8::Value> val =
+            v8::Local<v8::Value> done =
                 result.As<v8::Object>()
                     ->Get(isolate->GetCurrentContext(),
-                          gin::StringToV8(isolate, "value"))
+                          gin::StringToV8(isolate, "done"))
                     .ToLocalChecked();
-            DCHECK(val->IsString());
+            DCHECK(done->IsBoolean());
 
-            std::string value;
+            blink::mojom::ModelStreamingResponder* responder =
+                weak_ptr->GetResponder();
 
-            if (gin::ConvertFromV8(isolate, val, &value)) {
-              responder->OnStreaming(value);
-              readable_responder->Read(isolate);
+            if (done.As<v8::Boolean>()->Value()) {
+              // TODO - Real token count
+              responder->OnCompletion(
+                  blink::mojom::ModelExecutionContextInfo::New(0));
+              weak_ptr->DeleteThis();
             } else {
-              // TODO - Error handling
-              responder->OnError(
-                  blink::mojom::ModelStreamingResponseStatus::kErrorUnknown,
-                  /*quota_error_info=*/nullptr);
+              v8::Local<v8::Value> val =
+                  result.As<v8::Object>()
+                      ->Get(isolate->GetCurrentContext(),
+                            gin::StringToV8(isolate, "value"))
+                      .ToLocalChecked();
+              DCHECK(val->IsString());
+
+              std::string value;
+
+              if (gin::ConvertFromV8(isolate, val, &value)) {
+                responder->OnStreaming(value);
+                weak_ptr->Read(isolate);
+              } else {
+                // TODO - Error handling
+                responder->OnError(
+                    blink::mojom::ModelStreamingResponseStatus::kErrorUnknown,
+                    /*quota_error_info=*/nullptr);
+              }
             }
           }
         },
-        base::Unretained(this), isolate);
+        weak_ptr_factory_.GetWeakPtr(), isolate);
 
     auto catch_cb = base::BindOnce(
-        [](ReadableResponder* readable_responder, v8::Local<v8::Value> result) {
-          // TODO - Error is here
-          // TODO - An error here is killing the utility process
+        [](base::WeakPtr<ReadableResponder> weak_ptr,
+           v8::Local<v8::Value> result) {
+          if (weak_ptr) {
+            // TODO - Error is here
+            // TODO - An error here is killing the utility process
 
-          readable_responder->GetResponder()->OnError(
-              blink::mojom::ModelStreamingResponseStatus::kErrorUnknown,
-              /*quota_error_info=*/nullptr);
+            weak_ptr->GetResponder()->OnError(
+                blink::mojom::ModelStreamingResponseStatus::kErrorUnknown,
+                /*quota_error_info=*/nullptr);
+          }
         },
-        base::Unretained(this));
+        weak_ptr_factory_.GetWeakPtr());
 
     std::ignore = promise->Then(
         isolate->GetCurrentContext(),
@@ -264,12 +276,21 @@ class ReadableResponder {
   }
 
   void DeleteThis() {
+    LOG(ERROR) << "Deleting ReadableResponder";
+
+    v8::HandleScope scope{isolate_};
+    gin_helper::CallMethod(isolate_, abort_controller_.Get(isolate_), "abort");
+
     // TODO - Other cleanup
     delete this;
   }
 
+  raw_ptr<v8::Isolate> isolate_;
   v8::Global<v8::Object> readable_stream_reader_;
+  v8::Global<v8::Object> abort_controller_;
   mojo::Remote<blink::mojom::ModelStreamingResponder> responder_;
+
+  base::WeakPtrFactory<ReadableResponder> weak_ptr_factory_{this};
 };
 
 }  // namespace
@@ -353,36 +374,50 @@ void UtilityAILanguageModel::Prompt(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope{isolate};
 
+  v8::Local<v8::Object> abort_controller = util::CreateAbortController(isolate);
+
+  auto options = gin_helper::Dictionary::CreateEmpty(isolate);
+  if (!constraint.is_null()) {
+    options.Set("responseConstraint", gin::ConvertToV8(isolate, constraint));
+  }
+  options.Set("signal", abort_controller
+                            ->Get(isolate->GetCurrentContext(),
+                                  gin::StringToV8(isolate, "signal"))
+                            .ToLocalChecked());
+
   v8::Local<v8::Value> val = gin_helper::CallMethod(
-      isolate, language_model_.Get(isolate), "prompt", prompts, constraint);
+      isolate, language_model_.Get(isolate), "prompt", prompts, options);
 
-  auto SendResponse = [](base::WeakPtr<UtilityAILanguageModel> weak_ptr,
-                         v8::Isolate* isolate,
-                         mojo::RemoteSetElementId responder_id,
-                         v8::Local<v8::Value> result) {
-    blink::mojom::ModelStreamingResponder* responder =
-        weak_ptr->GetResponder(responder_id);
-    if (!responder) {
-      return;
-    }
+  auto SendResponse =
+      [](base::WeakPtr<UtilityAILanguageModel> weak_ptr, v8::Isolate* isolate,
+         mojo::RemoteSetElementId responder_id, v8::Local<v8::Value> result) {
+        if (weak_ptr) {
+          blink::mojom::ModelStreamingResponder* responder =
+              weak_ptr->GetResponder(responder_id);
+          if (!responder) {
+            return;
+          }
 
-    std::string response;
+          std::string response;
 
-    if (result->IsString() && gin::ConvertFromV8(isolate, result, &response)) {
-      responder->OnStreaming(response);
-      // TODO - Pull real tokens count - need to worry about parallel
-      // prompts?
-      responder->OnCompletion(blink::mojom::ModelExecutionContextInfo::New(0));
-      return;
-    } else {
-      // TODO - Better error handling if the developer gave us a ReadableStream
-      // in the promise
-      // TODO - Error handling
-      responder->OnError(
-          blink::mojom::ModelStreamingResponseStatus::kErrorUnknown,
-          /*quota_error_info=*/nullptr);
-    }
-  };
+          if (result->IsString() &&
+              gin::ConvertFromV8(isolate, result, &response)) {
+            responder->OnStreaming(response);
+            // TODO - Pull real tokens count - need to worry about parallel
+            // prompts?
+            responder->OnCompletion(
+                blink::mojom::ModelExecutionContextInfo::New(0));
+            return;
+          } else {
+            // TODO - Better error handling if the developer gave us a
+            // ReadableStream in the promise
+            // TODO - Error handling
+            responder->OnError(
+                blink::mojom::ModelStreamingResponseStatus::kErrorUnknown,
+                /*quota_error_info=*/nullptr);
+          }
+        }
+      };
 
   if (val->IsPromise()) {
     mojo::RemoteSetElementId responder_id =
@@ -420,8 +455,9 @@ void UtilityAILanguageModel::Prompt(
         gin_helper::CallMethod(isolate, val.As<v8::Object>(), "getReader");
     DCHECK(reader->IsObject());
 
-    auto* readable_responder = new ReadableResponder(
-        isolate, reader.As<v8::Object>(), std::move(pending_responder));
+    auto* readable_responder =
+        new ReadableResponder(isolate, reader.As<v8::Object>(),
+                              abort_controller, std::move(pending_responder));
     readable_responder->Read(isolate);
   } else {
     mojo::RemoteSetElementId responder_id =
