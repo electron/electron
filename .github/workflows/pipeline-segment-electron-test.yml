@@ -200,12 +200,12 @@ jobs:
         unzip -:o dist.zip
         unzip -:o chromedriver.zip
         unzip -:o mksnapshot.zip
-    - name: Import & Trust Self-Signed Codesigning Cert on MacOS
-      if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
-      run: |
-        sudo security authorizationdb write com.apple.trust-settings.admin allow
-        cd src/electron
-        ./script/codesign/generate-identity.sh
+    #- name: Import & Trust Self-Signed Codesigning Cert on MacOS
+    #  if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
+    #  run: |
+    #    sudo security authorizationdb write com.apple.trust-settings.admin allow
+    #    cd src/electron
+    #    ./script/codesign/generate-identity.sh
     - name: Install Datadog CLI
       run: |
         cd src/electron
