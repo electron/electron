@@ -316,7 +316,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
   capture_window_ = capture_window;
   capture_screen_ = capture_screen;
 
-#if BUILDFLAG(IS_MAC)
+#if 0
   if (!ui::TryPromptUserForScreenCapture()) {
     HandleFailure();
     return;
