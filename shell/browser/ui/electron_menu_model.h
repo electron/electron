@@ -90,14 +90,14 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   std::u16string GetRoleAt(size_t index);
   void SetSecondaryLabel(size_t index, const std::u16string& sublabel);
   std::u16string GetSecondaryLabelAt(size_t index) const override;
-  void SetAlternate(size_t index, bool alternate);
-  bool IsAlternateAt(size_t index) const;
   bool GetAcceleratorAtWithParams(size_t index,
                                   bool use_default_accelerator,
                                   ui::Accelerator* accelerator) const;
   bool ShouldRegisterAcceleratorAt(size_t index) const;
   bool WorksWhenHiddenAt(size_t index) const;
 #if BUILDFLAG(IS_MAC)
+  void SetAlternate(size_t index, bool alternate);
+  bool IsAlternateAt(size_t index) const;
   // Return the SharingItem of menu item.
   bool GetSharingItemAt(size_t index, SharingItem* item) const;
   // Set/Get the SharingItem of this menu.
@@ -124,14 +124,14 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
 #if BUILDFLAG(IS_MAC)
   std::optional<SharingItem> sharing_item_;
+  base::flat_map<int, bool> alternates_;  // command id -> alternate
 #endif
 
   base::flat_map<int, std::u16string> toolTips_;   // command id -> tooltip
   base::flat_map<int, std::u16string> roles_;      // command id -> role
   base::flat_map<int, std::u16string> sublabels_;  // command id -> sublabel
   base::flat_map<int, std::u16string>
-      customTypes_;                       // command id -> custom type
-  base::flat_map<int, bool> alternates_;  // command id -> alternate
+      customTypes_;  // command id -> custom type
   base::ObserverList<Observer> observers_;
 
   base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};
