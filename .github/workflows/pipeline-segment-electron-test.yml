@@ -123,6 +123,11 @@ jobs:
             configure_sys_tccdb "$values"
           fi
         done
+
+        # Ref: https://github.com/getsentry/sentry-cocoa/blob/main/scripts/ci-enable-permissions.sh
+        if [ "$OSTYPE" = "darwin24" ]; then
+          defaults write ~/Library/Group\ Containers/group.com.apple.replayd/ScreenCaptureApprovals.plist "/bin/bash" -date "3024-09-23 12:00:00 +0000"
+        fi
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server
