@@ -13,7 +13,6 @@
 #include "content/public/common/color_parser.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
-#include "gin/handle.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -28,6 +27,7 @@
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/node_includes.h"
@@ -96,7 +96,7 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate,
 BaseWindow::BaseWindow(v8::Isolate* isolate,
                        const gin_helper::Dictionary& options) {
   // The parent window.
-  gin::Handle<BaseWindow> parent;
+  gin_helper::Handle<BaseWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
 
@@ -150,7 +150,7 @@ void BaseWindow::InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
   // We can only append this window to parent window's child windows after this
   // window's JS wrapper gets initialized.
   if (!parent_window_.IsEmpty()) {
-    gin::Handle<BaseWindow> parent;
+    gin_helper::Handle<BaseWindow> parent;
     gin::ConvertFromV8(isolate, GetParentWindow(), &parent);
     DCHECK(!parent.IsEmpty());
     parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
@@ -194,14 +194,15 @@ void BaseWindow::OnWindowQueryEndSession(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
 
   gin::Dictionary dict(isolate, event_object);
   dict.Set("reasons", reasons);
 
-  EmitWithoutEvent("query-session-end", event);
+  EmitWithoutEvent("query-session-end", event_object);
   if (event->GetDefaultPrevented()) {
     *prevent_default = true;
   }
@@ -211,14 +212,15 @@ void BaseWindow::OnWindowEndSession(const std::vector<std::string>& reasons) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
 
   gin::Dictionary dict(isolate, event_object);
   dict.Set("reasons", reasons);
 
-  EmitWithoutEvent("session-end", event);
+  EmitWithoutEvent("session-end", event_object);
 }
 
 void BaseWindow::OnWindowBlur() {
@@ -356,7 +358,7 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 }
 #endif
 
-void BaseWindow::SetContentView(gin::Handle<View> view) {
+void BaseWindow::SetContentView(gin_helper::Handle<View> view) {
   content_view_.Reset(JavascriptEnvironment::GetIsolate(), view.ToV8());
   window_->SetContentView(view->view());
 }
@@ -730,7 +732,7 @@ bool BaseWindow::IsFocusable() const {
 
 void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
-  gin::Handle<Menu> menu;
+  gin_helper::Handle<Menu> menu;
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
       gin::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
@@ -763,7 +765,7 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
     return;
   }
 
-  gin::Handle<BaseWindow> parent;
+  gin_helper::Handle<BaseWindow> parent;
   if (value->IsNull() || value->IsUndefined()) {
     RemoveFromParentChildWindows();
     parent_window_.Reset();
@@ -1089,6 +1091,33 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
 bool BaseWindow::IsSnapped() const {
   return window_->IsSnapped();
 }
+
+void BaseWindow::SetAccentColor(gin_helper::Arguments* args) {
+  bool accent_color = false;
+  std::string accent_color_string;
+  if (args->GetNext(&accent_color_string)) {
+    std::optional<SkColor> maybe_color = ParseCSSColor(accent_color_string);
+    if (maybe_color.has_value()) {
+      window_->SetAccentColor(maybe_color.value());
+      window_->UpdateWindowAccentColor(window_->IsActive());
+    }
+  } else if (args->GetNext(&accent_color)) {
+    window_->SetAccentColor(accent_color);
+    window_->UpdateWindowAccentColor(window_->IsActive());
+  } else {
+    args->ThrowError(
+        "Invalid accent color value - must be a string or boolean");
+  }
+}
+
+v8::Local<v8::Value> BaseWindow::GetAccentColor() const {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto accent_color = window_->GetAccentColor();
+
+  if (std::holds_alternative<bool>(accent_color))
+    return v8::Boolean::New(isolate, std::get<bool>(accent_color));
+  return gin::StringToV8(isolate, std::get<std::string>(accent_color));
+}
 #endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
@@ -1105,7 +1134,7 @@ void BaseWindow::RemoveFromParentChildWindows() {
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin::Handle<BaseWindow> parent;
+  gin_helper::Handle<BaseWindow> parent;
   if (!gin::ConvertFromV8(isolate, GetParentWindow(), &parent) ||
       parent.IsEmpty()) {
     return;
@@ -1277,6 +1306,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
 #if BUILDFLAG(IS_WIN)
       .SetMethod("isSnapped", &BaseWindow::IsSnapped)
       .SetProperty("snapped", &BaseWindow::IsSnapped)
+      .SetMethod("setAccentColor", &BaseWindow::SetAccentColor)
+      .SetMethod("getAccentColor", &BaseWindow::GetAccentColor)
       .SetMethod("hookWindowMessage", &BaseWindow::HookWindowMessage)
       .SetMethod("isWindowMessageHooked", &BaseWindow::IsWindowMessageHooked)
       .SetMethod("unhookWindowMessage", &BaseWindow::UnhookWindowMessage)

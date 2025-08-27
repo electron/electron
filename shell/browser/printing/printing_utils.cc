@@ -81,6 +81,7 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
 
 namespace {
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 // Duplicated from chrome/browser/printing/print_view_manager_common.cc
 content::RenderFrameHost* GetFullPagePlugin(content::WebContents* contents) {
   content::RenderFrameHost* full_page_plugin = nullptr;
@@ -99,6 +100,7 @@ content::RenderFrameHost* GetFullPagePlugin(content::WebContents* contents) {
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   return full_page_plugin;
 }
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 }  // namespace
 
@@ -119,7 +121,7 @@ content::RenderFrameHost* GetRenderFrameHostToUse(
   if (pdf_rfh) {
     return pdf_rfh;
   }
-#endif  // BUILDFLAG(ENABLE_PDF)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
   auto* focused_frame = contents->GetFocusedFrame();
   return (focused_frame && focused_frame->HasSelection())
              ? focused_frame

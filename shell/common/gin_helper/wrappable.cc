@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_helper/wrappable.h"
 
+#include "gin/object_template_builder.h"
 #include "gin/public/isolate_holder.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "v8/include/v8-function.h"
@@ -89,6 +90,88 @@ void WrappableBase::SecondWeakCallback(
   delete static_cast<WrappableBase*>(data.GetInternalField(0));
 }
 
+DeprecatedWrappableBase::DeprecatedWrappableBase() = default;
+
+DeprecatedWrappableBase::~DeprecatedWrappableBase() {
+  if (!wrapper_.IsEmpty())
+    wrapper_.ClearWeak();
+  wrapper_.Reset();
+}
+
+gin::ObjectTemplateBuilder DeprecatedWrappableBase::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin::ObjectTemplateBuilder(isolate, GetTypeName());
+}
+
+const char* DeprecatedWrappableBase::GetTypeName() {
+  return nullptr;
+}
+
+void DeprecatedWrappableBase::FirstWeakCallback(
+    const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
+  DeprecatedWrappableBase* wrappable = data.GetParameter();
+  DeprecatedWrappableBase* wrappable_from_field =
+      static_cast<DeprecatedWrappableBase*>(data.GetInternalField(1));
+  if (wrappable && wrappable == wrappable_from_field) {
+    wrappable->dead_ = true;
+    wrappable->wrapper_.Reset();
+    data.SetSecondPassCallback(SecondWeakCallback);
+  }
+}
+
+void DeprecatedWrappableBase::SecondWeakCallback(
+    const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
+  if (gin::IsolateHolder::DestroyedMicrotasksRunner())
+    return;
+  DeprecatedWrappableBase* wrappable = data.GetParameter();
+  if (wrappable)
+    delete wrappable;
+}
+
+v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
+    v8::Isolate* isolate,
+    gin::DeprecatedWrapperInfo* info) {
+  if (!wrapper_.IsEmpty()) {
+    return v8::MaybeLocal<v8::Object>(
+        v8::Local<v8::Object>::New(isolate, wrapper_));
+  }
+
+  if (dead_) {
+    return v8::MaybeLocal<v8::Object>();
+  }
+
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  v8::Local<v8::ObjectTemplate> templ = data->DeprecatedGetObjectTemplate(info);
+  if (templ.IsEmpty()) {
+    templ = GetObjectTemplateBuilder(isolate).Build();
+    CHECK(!templ.IsEmpty());
+    data->DeprecatedSetObjectTemplate(info, templ);
+  }
+  CHECK_EQ(gin::kNumberOfInternalFields, templ->InternalFieldCount());
+  v8::Local<v8::Object> wrapper;
+  // |wrapper| may be empty in some extreme cases, e.g., when
+  // Object.prototype.constructor is overwritten.
+  if (!templ->NewInstance(isolate->GetCurrentContext()).ToLocal(&wrapper)) {
+    // The current wrappable object will be no longer managed by V8. Delete this
+    // now.
+    delete this;
+    return v8::MaybeLocal<v8::Object>(wrapper);
+  }
+
+  int indices[] = {gin::kWrapperInfoIndex, gin::kEncodedValueIndex};
+  void* values[] = {info, this};
+  wrapper->SetAlignedPointerInInternalFields(2, indices, values);
+  wrapper_.Reset(isolate, wrapper);
+  wrapper_.SetWeak(this, FirstWeakCallback,
+                   v8::WeakCallbackType::kInternalFields);
+  return v8::MaybeLocal<v8::Object>(wrapper);
+}
+
+void DeprecatedWrappableBase::ClearWeak() {
+  if (!wrapper_.IsEmpty())
+    wrapper_.ClearWeak();
+}
+
 namespace internal {
 
 void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val) {
@@ -100,6 +183,44 @@ void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val) {
   return obj->GetAlignedPointerFromInternalField(0);
 }
 
+void* FromV8Impl(v8::Isolate* isolate,
+                 v8::Local<v8::Value> val,
+                 gin::DeprecatedWrapperInfo* wrapper_info) {
+  if (!val->IsObject()) {
+    return nullptr;
+  }
+  v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(val);
+  gin::DeprecatedWrapperInfo* info = gin::DeprecatedWrapperInfo::From(obj);
+
+  // If this fails, the object is not managed by Gin. It is either a normal JS
+  // object that's not wrapping any external C++ object, or it is wrapping some
+  // C++ object, but that object isn't managed by Gin (maybe Blink).
+  if (!info) {
+    return nullptr;
+  }
+
+  // If this fails, the object is managed by Gin, but it's not wrapping an
+  // instance of the C++ class associated with wrapper_info.
+  if (info != wrapper_info) {
+    return nullptr;
+  }
+
+  return obj->GetAlignedPointerFromInternalField(gin::kEncodedValueIndex);
+}
+
 }  // namespace internal
 
 }  // namespace gin_helper
+
+namespace gin {
+
+DeprecatedWrapperInfo* DeprecatedWrapperInfo::From(
+    v8::Local<v8::Object> object) {
+  if (object->InternalFieldCount() != kNumberOfInternalFields)
+    return NULL;
+  DeprecatedWrapperInfo* info = static_cast<DeprecatedWrapperInfo*>(
+      object->GetAlignedPointerFromInternalField(kWrapperInfoIndex));
+  return info->embedder == kEmbedderNativeGin ? info : NULL;
+}
+
+}  // namespace gin

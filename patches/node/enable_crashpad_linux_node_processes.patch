@@ -8,7 +8,7 @@ to child processes spawned with `ELECTRON_RUN_AS_NODE` which is used
 by the crashpad client to connect with the handler process.
 
 diff --git a/lib/child_process.js b/lib/child_process.js
-index e848b3d5ee9b13ea3ea303eb3b57ef47ef951580..5b89c420f1a917526ab311fed52bff01637a86fe 100644
+index 655349b6fa17217a9202616224032a36fd01e284..bf62c5adf0e0d75cb50636f365f71db82c29ba29 100644
 --- a/lib/child_process.js
 +++ b/lib/child_process.js
 @@ -62,6 +62,7 @@ let debug = require('internal/util/debuglog').debuglog(
@@ -19,7 +19,7 @@ index e848b3d5ee9b13ea3ea303eb3b57ef47ef951580..5b89c420f1a917526ab311fed52bff01
  
  const {
    AbortError,
-@@ -154,7 +155,6 @@ function fork(modulePath, args = [], options) {
+@@ -156,7 +157,6 @@ function fork(modulePath, args = [], options) {
        ArrayPrototypeSplice(execArgv, index - 1, 2);
      }
    }
@@ -27,11 +27,11 @@ index e848b3d5ee9b13ea3ea303eb3b57ef47ef951580..5b89c420f1a917526ab311fed52bff01
    args = [...execArgv, modulePath, ...args];
  
    if (typeof options.stdio === 'string') {
-@@ -610,6 +610,22 @@ function normalizeSpawnArguments(file, args, options) {
+@@ -637,6 +637,22 @@ function normalizeSpawnArguments(file, args, options) {
                      'options.windowsVerbatimArguments');
    }
  
-+  const env = options.env || process.env;
++  const env = options.env || { ...process.env };
 +
 +  if ((process.platform === 'linux') &&
 +      ObjectPrototypeHasOwnProperty(env, 'ELECTRON_RUN_AS_NODE') &&
@@ -50,11 +50,12 @@ index e848b3d5ee9b13ea3ea303eb3b57ef47ef951580..5b89c420f1a917526ab311fed52bff01
    if (options.shell) {
      validateArgumentNullCheck(options.shell, 'options.shell');
      const command = ArrayPrototypeJoin([file, ...args], ' ');
-@@ -643,7 +659,6 @@ function normalizeSpawnArguments(file, args, options) {
+@@ -670,8 +686,6 @@ function normalizeSpawnArguments(file, args, options) {
      ArrayPrototypeUnshift(args, file);
    }
  
--  const env = options.env || process.env;
+-  // Shallow copy to guarantee changes won't impact process.env
+-  const env = options.env || { ...process.env };
    const envPairs = [];
  
    // process.env.NODE_V8_COVERAGE always propagates, making it possible to

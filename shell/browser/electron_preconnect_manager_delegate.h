@@ -8,14 +8,14 @@
 #include <memory>
 
 #include "base/memory/weak_ptr.h"
-#include "chrome/browser/predictors/preconnect_manager.h"
+#include "content/public/browser/preconnect_manager.h"
 
 class GURL;
 
 namespace electron {
 
 class ElectronPreconnectManagerDelegate
-    : public predictors::PreconnectManager::Delegate {
+    : public content::PreconnectManager::Delegate {
  public:
   ElectronPreconnectManagerDelegate();
   ~ElectronPreconnectManagerDelegate() override;
@@ -26,11 +26,11 @@ class ElectronPreconnectManagerDelegate
   ElectronPreconnectManagerDelegate& operator=(
       const ElectronPreconnectManagerDelegate&) = delete;
 
-  // preconnect_manager::Delegate
+  // content::PreconnectManager::Delegate
   void PreconnectInitiated(const GURL& url,
                            const GURL& preconnect_url) override {}
   void PreconnectFinished(
-      std::unique_ptr<predictors::PreconnectStats> stats) override {}
+      std::unique_ptr<content::PreconnectStats> stats) override {}
   bool IsPreconnectEnabled() override;
 
   base::WeakPtr<ElectronPreconnectManagerDelegate> GetWeakPtr() {

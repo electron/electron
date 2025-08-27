@@ -15,7 +15,6 @@
 #include "base/values.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"
@@ -32,6 +31,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -257,20 +257,21 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
 namespace {
 
 class ChunkedDataPipeReadableStream final
-    : public gin::DeprecatedWrappable<ChunkedDataPipeReadableStream> {
+    : public gin_helper::DeprecatedWrappable<ChunkedDataPipeReadableStream> {
  public:
-  static gin::Handle<ChunkedDataPipeReadableStream> Create(
+  static gin_helper::Handle<ChunkedDataPipeReadableStream> Create(
       v8::Isolate* isolate,
       network::ResourceRequestBody* request,
       network::DataElementChunkedDataPipe* data_element) {
-    return gin::CreateHandle(isolate, new ChunkedDataPipeReadableStream(
-                                          isolate, request, data_element));
+    return gin_helper::CreateHandle(
+        isolate,
+        new ChunkedDataPipeReadableStream(isolate, request, data_element));
   }
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::DeprecatedWrappable<
+    return gin_helper::DeprecatedWrappable<
                ChunkedDataPipeReadableStream>::GetObjectTemplateBuilder(isolate)
         .SetMethod("read", &ChunkedDataPipeReadableStream::Read);
   }

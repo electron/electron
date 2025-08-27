@@ -190,21 +190,32 @@ NotifyIconHost::~NotifyIconHost() {
     delete ptr;
 }
 
-NotifyIcon* NotifyIconHost::CreateNotifyIcon(std::optional<UUID> guid) {
-  if (guid.has_value()) {
-    for (NotifyIcons::const_iterator i(notify_icons_.begin());
-         i != notify_icons_.end(); ++i) {
-      auto* current_win_icon = static_cast<NotifyIcon*>(*i);
-      if (current_win_icon->guid() == guid.value()) {
-        LOG(WARNING)
-            << "Guid already in use. Existing tray entry will be replaced.";
+NotifyIcon* NotifyIconHost::CreateNotifyIcon(std::optional<base::Uuid> guid) {
+  std::string guid_str =
+      guid.has_value() ? guid.value().AsLowercaseString() : "";
+  UUID uid = GUID_NULL;
+  if (!guid_str.empty()) {
+    if (guid_str[0] == '{' && guid_str[guid_str.length() - 1] == '}') {
+      guid_str = guid_str.substr(1, guid_str.length() - 2);
+    }
+
+    unsigned char* uid_cstr = (unsigned char*)guid_str.c_str();
+    RPC_STATUS result = UuidFromStringA(uid_cstr, &uid);
+    if (result != RPC_S_INVALID_STRING_UUID) {
+      for (NotifyIcons::const_iterator i(notify_icons_.begin());
+           i != notify_icons_.end(); ++i) {
+        auto* current_win_icon = static_cast<NotifyIcon*>(*i);
+        if (current_win_icon->guid() == uid) {
+          LOG(WARNING)
+              << "Guid already in use. Existing tray entry will be replaced.";
+        }
       }
     }
   }
 
   auto* notify_icon =
       new NotifyIcon(this, NextIconId(), window_, kNotifyIconMessage,
-                     guid.has_value() ? guid.value() : GUID_DEFAULT);
+                     uid == GUID_NULL ? GUID_DEFAULT : uid);
 
   notify_icons_.push_back(notify_icon);
   return notify_icon;

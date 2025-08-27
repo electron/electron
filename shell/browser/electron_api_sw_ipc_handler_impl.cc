@@ -71,51 +71,62 @@ void ElectronApiSWIPCHandlerImpl::RemoteDisconnected() {
 void ElectronApiSWIPCHandlerImpl::Message(bool internal,
                                           const std::string& channel,
                                           blink::CloneableMessage arguments) {
-  auto* session = GetSession();
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  auto event = MakeIPCEvent(isolate, session, internal);
-  if (event.IsEmpty())
-    return;
-  session->Message(event, channel, std::move(arguments));
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    auto* event = MakeIPCEvent(isolate, session->Get(), internal);
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->Message(event_object, channel, std::move(arguments));
+  }
 }
 
 void ElectronApiSWIPCHandlerImpl::Invoke(bool internal,
                                          const std::string& channel,
                                          blink::CloneableMessage arguments,
                                          InvokeCallback callback) {
-  auto* session = GetSession();
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  auto event = MakeIPCEvent(isolate, session, internal, std::move(callback));
-  if (event.IsEmpty())
-    return;
-  session->Invoke(event, channel, std::move(arguments));
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    auto* event =
+        MakeIPCEvent(isolate, session->Get(), internal, std::move(callback));
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->Invoke(event_object, channel, std::move(arguments));
+  }
 }
 
 void ElectronApiSWIPCHandlerImpl::ReceivePostMessage(
     const std::string& channel,
     blink::TransferableMessage message) {
-  auto* session = GetSession();
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  auto event = MakeIPCEvent(isolate, session, false);
-  if (event.IsEmpty())
-    return;
-  session->ReceivePostMessage(event, channel, std::move(message));
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    auto* event = MakeIPCEvent(isolate, session->Get(), false);
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->ReceivePostMessage(event_object, channel,
+                                       std::move(message));
+  }
 }
 
 void ElectronApiSWIPCHandlerImpl::MessageSync(bool internal,
                                               const std::string& channel,
                                               blink::CloneableMessage arguments,
                                               MessageSyncCallback callback) {
-  auto* session = GetSession();
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  auto event = MakeIPCEvent(isolate, session, internal, std::move(callback));
-  if (event.IsEmpty())
-    return;
-  session->MessageSync(event, channel, std::move(arguments));
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    auto* event =
+        MakeIPCEvent(isolate, session->Get(), internal, std::move(callback));
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->MessageSync(event_object, channel, std::move(arguments));
+  }
 }
 
 void ElectronApiSWIPCHandlerImpl::MessageHost(
@@ -130,12 +141,11 @@ ElectronBrowserContext* ElectronApiSWIPCHandlerImpl::GetBrowserContext() {
   return browser_context;
 }
 
-api::Session* ElectronApiSWIPCHandlerImpl::GetSession() {
+gin::WeakCell<api::Session>* ElectronApiSWIPCHandlerImpl::GetSession() {
   return api::Session::FromBrowserContext(GetBrowserContext());
 }
 
-gin::Handle<gin_helper::internal::Event>
-ElectronApiSWIPCHandlerImpl::MakeIPCEvent(
+gin_helper::internal::Event* ElectronApiSWIPCHandlerImpl::MakeIPCEvent(
     v8::Isolate* isolate,
     api::Session* session,
     bool internal,
@@ -149,9 +159,10 @@ ElectronApiSWIPCHandlerImpl::MakeIPCEvent(
     return {};
   }
 
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
 
   gin_helper::Dictionary dict(isolate, event_object);
   dict.Set("type", "service-worker");

@@ -19,6 +19,7 @@
 #include "content/public/browser/scoped_accessibility_mode.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
+#include "gin/wrappable.h"
 #include "net/base/completion_once_callback.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/features.h"
@@ -27,6 +28,7 @@
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "v8/include/cppgc/persistent.h"
 
 #if BUILDFLAG(USE_NSS_CERTS)
 #include "shell/browser/certificate_manager_model.h"
@@ -36,15 +38,15 @@ namespace base {
 class FilePath;
 }
 
-namespace gin {
-template <typename T>
-class Handle;
-}  // namespace gin
-
 namespace gin_helper {
 class Dictionary;
 class ErrorThrower;
 }  // namespace gin_helper
+
+namespace v8 {
+template <typename T>
+class TracedReference;
+}
 
 namespace electron {
 
@@ -56,21 +58,23 @@ enum class JumpListResult : int;
 
 namespace api {
 
-class App final : public ElectronBrowserClient::Delegate,
-                  public gin::DeprecatedWrappable<App>,
+class App final : public gin::Wrappable<App>,
+                  public ElectronBrowserClient::Delegate,
                   public gin_helper::EventEmitterMixin<App>,
                   private BrowserObserver,
                   private content::GpuDataManagerObserver,
                   private content::BrowserChildProcessObserver {
  public:
-  static gin::Handle<App> Create(v8::Isolate* isolate);
+  static App* Create(v8::Isolate* isolate);
   static App* Get();
 
   // gin::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  static gin::WrapperInfo kWrapperInfo;
+  void Trace(cppgc::Visitor*) const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
 
 #if BUILDFLAG(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
@@ -86,14 +90,13 @@ class App final : public ElectronBrowserClient::Delegate,
   static bool IsPackaged();
 
   App();
+  ~App() override;
 
   // disable copy
   App(const App&) = delete;
   App& operator=(const App&) = delete;
 
  private:
-  ~App() override;
-
   // BrowserObserver:
   void OnBeforeQuit(bool* prevent_default) override;
   void OnWillQuit(bool* prevent_default) override;
@@ -238,7 +241,7 @@ class App final : public ElectronBrowserClient::Delegate,
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
-  v8::Global<v8::Value> dock_;
+  v8::TracedReference<v8::Value> dock_;
 #endif
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
@@ -279,6 +282,8 @@ class App final : public ElectronBrowserClient::Delegate,
   bool watch_singleton_socket_on_ready_ = false;
 
   std::unique_ptr<content::ScopedAccessibilityMode> scoped_accessibility_mode_;
+
+  static cppgc::Persistent<App> instance_;
 };
 
 }  // namespace api

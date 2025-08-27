@@ -14,6 +14,12 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (38.0)
 
+### Removed: `ELECTRON_OZONE_PLATFORM_HINT` environment variable
+
+The default value of the `--ozone-plaftform` flag [changed to `auto`](https://chromium-review.googlesource.com/c/chromium/src/+/6775426).
+
+You should use the `XDG_SESSION_TYPE=wayland` environment variable instead to use Wayland.
+
 ### Removed: macOS 11 support
 
 macOS 11 (Big Sur) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/6594615).
@@ -53,6 +59,12 @@ webContents.setWindowOpenHandler((details) => {
   }
 })
 ```
+
+### Behavior Changed: shared texture OSR `paint` event data structure
+
+When using shared texture offscreen rendering feature, the `paint` event now emits a more structured object.
+It moves the `sharedTextureHandle`, `planes`, `modifier` into a unified `handle` property.
+See [here](https://www.electronjs.org/docs/latest/api/structures/offscreen-shared-texture) for more details.
 
 ## Planned Breaking API Changes (37.0)
 

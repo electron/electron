@@ -377,8 +377,17 @@ bool IsAllowedOption(const std::string_view option) {
       "--no-experimental-global-navigator",
   });
 
+  // This should be aligned with what's possible to set via the process object.
+  static constexpr auto unpacked_options =
+      base::MakeFixedFlatSet<std::string_view>({
+          "--expose-internals",
+      });
+
   if (debug_options.contains(option))
     return electron::fuses::IsNodeCliInspectEnabled();
+
+  if (unpacked_options.contains(option))
+    return !electron::api::App::IsPackaged();
 
   return options.contains(option);
 }
@@ -456,11 +465,10 @@ base::FilePath GetResourcesPath() {
 #if BUILDFLAG(IS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
 #else
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath exec_path(command_line->GetProgram());
-  base::PathService::Get(base::FILE_EXE, &exec_path);
+  base::FilePath assets_path;
+  base::PathService::Get(base::DIR_ASSETS, &assets_path);
 
-  return exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
+  return assets_path.Append(FILE_PATH_LITERAL("resources"));
 #endif
 }
 }  // namespace
@@ -602,6 +610,7 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
   node::per_process::cli_options->disable_wasm_trap_handler = true;
 
   uint64_t process_flags =
+      node::ProcessInitializationFlags::kNoInitializeCppgc |
       node::ProcessInitializationFlags::kNoInitializeV8 |
       node::ProcessInitializationFlags::kNoInitializeNodeV8Platform;
 
@@ -611,8 +620,7 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
     process_flags |= node::ProcessInitializationFlags::kEnableStdioInheritance;
 
   if (browser_env_ == BrowserEnvironment::kRenderer)
-    process_flags |= node::ProcessInitializationFlags::kNoInitializeCppgc |
-                     node::ProcessInitializationFlags::kNoDefaultSignalHandling;
+    process_flags |= node::ProcessInitializationFlags::kNoDefaultSignalHandling;
 
   if (!fuses::IsNodeOptionsEnabled())
     process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
@@ -636,7 +644,8 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
-  gin_helper::internal::Event::GetConstructor(isolate, context);
+  gin_helper::internal::Event::GetConstructor(
+      isolate, context, &gin_helper::internal::Event::kWrapperInfo);
 
   g_is_initialized = true;
 }

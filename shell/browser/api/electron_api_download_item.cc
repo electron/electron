@@ -7,13 +7,13 @@
 #include <memory>
 
 #include "base/strings/utf_string_conversions.h"
-#include "gin/handle.h"
 #include "net/base/filename_util.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/common/gin_converters/file_dialog_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "url/gurl.h"
 
@@ -307,14 +307,15 @@ const char* DownloadItem::GetTypeName() {
 }
 
 // static
-gin::Handle<DownloadItem> DownloadItem::FromOrCreate(
+gin_helper::Handle<DownloadItem> DownloadItem::FromOrCreate(
     v8::Isolate* isolate,
     download::DownloadItem* item) {
   DownloadItem* existing = FromDownloadItem(item);
   if (existing)
-    return gin::CreateHandle(isolate, existing);
+    return gin_helper::CreateHandle(isolate, existing);
 
-  auto handle = gin::CreateHandle(isolate, new DownloadItem(isolate, item));
+  auto handle =
+      gin_helper::CreateHandle(isolate, new DownloadItem(isolate, item));
 
   handle->Pin(isolate);
 

@@ -112,7 +112,7 @@ ui::StatusIconLinux* TrayIconLinux::GetStatusIcon() {
 }
 
 // static
-TrayIcon* TrayIcon::Create(std::optional<UUID> guid) {
+TrayIcon* TrayIcon::Create(std::optional<base::Uuid> guid) {
   return new TrayIconLinux;
 }
 

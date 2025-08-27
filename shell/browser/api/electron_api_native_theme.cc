@@ -8,9 +8,9 @@
 
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "gin/handle.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/native_theme/native_theme.h"
@@ -98,11 +98,11 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
 }
 
 // static
-gin::Handle<NativeTheme> NativeTheme::Create(v8::Isolate* isolate) {
+gin_helper::Handle<NativeTheme> NativeTheme::Create(v8::Isolate* isolate) {
   ui::NativeTheme* ui_theme = ui::NativeTheme::GetInstanceForNativeUi();
   ui::NativeTheme* web_theme = ui::NativeTheme::GetInstanceForWeb();
-  return gin::CreateHandle(isolate,
-                           new NativeTheme(isolate, ui_theme, web_theme));
+  return gin_helper::CreateHandle(
+      isolate, new NativeTheme(isolate, ui_theme, web_theme));
 }
 
 gin::ObjectTemplateBuilder NativeTheme::GetObjectTemplateBuilder(

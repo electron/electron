@@ -496,6 +496,19 @@ describe('webFrameMain module', () => {
     });
   });
 
+  describe('webFrameMain.fromFrameToken', () => {
+    it('returns null for unknown IDs', () => {
+      expect(webFrameMain.fromFrameToken(0, '')).to.be.null();
+    });
+
+    it('can find existing frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      const { mainFrame } = w.webContents;
+      const frame = webFrameMain.fromFrameToken(mainFrame.processId, mainFrame.frameToken);
+      expect(frame).to.equal(mainFrame);
+    });
+  });
+
   describe('webFrameMain.collectJavaScriptCallStack', () => {
     let server: Server;
     before(async () => {

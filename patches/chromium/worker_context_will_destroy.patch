@@ -10,10 +10,10 @@ An attempt to upstream this was made, but rejected:
 https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 6eb48c506834b50e9bd49a42bbb8f9f32093abfb..64c10021f5d0e58d9fcb740d5a56651d989503df 100644
+index 6979b9cc56a51d4983a99da73649832f96f2cf1d..4f07534707a4d88afe8847120a0e5e546f3283ee 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -408,6 +408,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -422,6 +422,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -26,7 +26,7 @@ index 6eb48c506834b50e9bd49a42bbb8f9f32093abfb..64c10021f5d0e58d9fcb740d5a56651d
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 398dc743a570997edc86133c53db29c33e74d273..42751a5bd371206f34dbc5acf06c6400a121071f 100644
+index 74ae1472a2134efcab4f3b258911b39a8e8ed27a..c74f99805cea8c939a5278d120fd348df7a94d32 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
 @@ -903,6 +903,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
@@ -55,10 +55,10 @@ index c2c2b533e42cfcc8c3ecdde1ab6ed9bc2a353b5e..b2238f512b30e64399a901a3c9f430e5
        const blink::WebSecurityOrigin& script_origin) override;
    blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel(
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index dfc5c935005bf8fb59d4bf5dd6dcb31468128cd6..4b8c2223d4d7eebe88c54d232ac8f8e290f14dd6 100644
+index 87aebe19abd4690ace9d524364ef32a34afd3592..e33318c3e673741a05083cf064152e24ff39ca02 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -675,6 +675,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -673,6 +673,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}

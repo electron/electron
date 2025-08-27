@@ -16,7 +16,9 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/win_frame_view.h"
+#include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
+#include "skia/ext/skia_utils_win.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/resize_utils.h"
@@ -44,21 +46,6 @@ void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color) {
 
   if (FAILED(result))
     LOG(WARNING) << "Failed to set border color";
-}
-
-std::optional<DWORD> GetAccentColor() {
-  base::win::RegKey key;
-  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
-               KEY_READ) != ERROR_SUCCESS) {
-    return std::nullopt;
-  }
-
-  DWORD accent_color = 0;
-  if (key.ReadValueDW(L"AccentColor", &accent_color) != ERROR_SUCCESS) {
-    return std::nullopt;
-  }
-
-  return accent_color;
 }
 
 bool IsAccentColorOnTitleBarsEnabled() {
@@ -477,11 +464,12 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       return false;
     }
     case WM_SYSCOMMAND: {
-      // Mask is needed to account for double clicking title bar to maximize
-      WPARAM max_mask = 0xFFF0;
-      if (transparent() && ((w_param & max_mask) == SC_MAXIMIZE)) {
+      WPARAM cmd = w_param & 0xFFF0;
+      // Needed to account for double clicking title bar to maximize.
+      if (transparent() && (cmd == SC_MAXIMIZE))
         return true;
-      }
+      if (cmd == SC_MINIMIZE)
+        was_snapped_ = IsSnapped();
       return false;
     }
     case WM_INITMENU: {
@@ -534,8 +522,13 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       // multiple times for one resize because of the SetWindowPlacement call.
       if (w_param == SIZE_MAXIMIZED &&
           last_window_state_ != ui::mojom::WindowShowState::kMaximized) {
-        if (last_window_state_ == ui::mojom::WindowShowState::kMinimized)
+        if (last_window_state_ == ui::mojom::WindowShowState::kMinimized) {
+          if (was_snapped_) {
+            SetRoundedCorners(false);
+            was_snapped_ = false;
+          }
           NotifyWindowRestore();
+        }
         last_window_state_ = ui::mojom::WindowShowState::kMaximized;
         NotifyWindowMaximize();
         ResetWindowControls();
@@ -557,6 +550,10 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
             last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
             NotifyWindowEnterFullScreen();
           } else {
+            if (was_snapped_) {
+              SetRoundedCorners(false);
+              was_snapped_ = false;
+            }
             last_window_state_ = ui::mojom::WindowShowState::kNormal;
             NotifyWindowRestore();
           }
@@ -594,7 +591,7 @@ void NativeWindowViews::UpdateWindowAccentColor(bool active) {
 
   // Use system accent color as fallback if no explicit color was set.
   if (!border_color.has_value() && should_apply_accent) {
-    std::optional<DWORD> system_accent_color = GetAccentColor();
+    std::optional<DWORD> system_accent_color = GetSystemAccentColor();
     if (system_accent_color.has_value()) {
       border_color = RGB(GetRValue(system_accent_color.value()),
                          GetGValue(system_accent_color.value()),
@@ -604,6 +601,39 @@ void NativeWindowViews::UpdateWindowAccentColor(bool active) {
 
   COLORREF final_color = border_color.value_or(DWMWA_COLOR_DEFAULT);
   SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), final_color);
+}
+
+void NativeWindowViews::SetAccentColor(
+    std::variant<std::monostate, bool, SkColor> accent_color) {
+  accent_color_ = accent_color;
+}
+
+/*
+ * Returns the window's accent color, per the following heuristic:
+ *
+ * - If |accent_color_| is an SkColor, return that color as a hex string.
+ * - If |accent_color_| is true, return the system accent color as a hex string.
+ * - If |accent_color_| is false, return false.
+ * - Otherwise, return the system accent color as a hex string.
+ */
+std::variant<bool, std::string> NativeWindowViews::GetAccentColor() const {
+  std::optional<DWORD> system_color = GetSystemAccentColor();
+
+  if (std::holds_alternative<SkColor>(accent_color_)) {
+    return ToRGBHex(std::get<SkColor>(accent_color_));
+  } else if (std::holds_alternative<bool>(accent_color_)) {
+    if (std::get<bool>(accent_color_)) {
+      if (!system_color.has_value())
+        return false;
+      return ToRGBHex(skia::COLORREFToSkColor(system_color.value()));
+    } else {
+      return false;
+    }
+  } else {
+    if (!system_color.has_value())
+      return false;
+    return ToRGBHex(skia::COLORREFToSkColor(system_color.value()));
+  }
 }
 
 void NativeWindowViews::ResetWindowControls() {
