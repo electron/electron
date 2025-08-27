@@ -37,6 +37,21 @@ const success = virtualDisplay.destroy(displayId)
 
 **Returns:** `boolean` - Success status
 
+#### `virtualDisplay.forceCleanup()`
+
+Performs a complete cleanup of all virtual displays and resets the macOS CoreGraphics display system.
+
+It is recommended to call this before every test to prevent test failures. macOS CoreGraphics maintains an internal display ID allocation pool that can become corrupted when virtual displays are created and destroyed rapidly during testing. Without proper cleanup, subsequent display creation may fail with inconsistent display IDs, resulting in test flakiness.
+
+```js @ts-nocheck
+// Recommended test pattern
+beforeEach(() => {
+  virtualDisplay.forceCleanup()
+})
+```
+
+**Returns:** `boolean` - Success status
+
 ## Display Constraints
 
 ### Size Limits

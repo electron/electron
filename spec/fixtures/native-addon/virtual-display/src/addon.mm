@@ -134,6 +134,18 @@ napi_value create(napi_env env, napi_callback_info info) {
   return result;
 }
 
+// virtualDisplay.forceCleanup()
+napi_value forceCleanup(napi_env env, napi_callback_info info) {
+  BOOL result = [VirtualDisplayBridge forceCleanup];
+
+  napi_value js_result;
+  if (napi_get_boolean(env, result, &js_result) != napi_ok) {
+    return NULL;
+  }
+
+  return js_result;
+}
+
 // virtualDisplay.destroy()
 napi_value destroy(napi_env env, napi_callback_info info) {
   size_t argc = 1;
@@ -167,7 +179,9 @@ napi_value destroy(napi_env env, napi_callback_info info) {
 napi_value Init(napi_env env, napi_value exports) {
   napi_property_descriptor descriptors[] = {
       {"create", NULL, create, NULL, NULL, NULL, napi_default, NULL},
-      {"destroy", NULL, destroy, NULL, NULL, NULL, napi_default, NULL}};
+      {"destroy", NULL, destroy, NULL, NULL, NULL, napi_default, NULL},
+      {"forceCleanup", NULL, forceCleanup, NULL, NULL, NULL, napi_default,
+       NULL}};
 
   if (napi_define_properties(env, exports,
                              sizeof(descriptors) / sizeof(*descriptors),
