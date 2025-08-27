@@ -882,7 +882,7 @@ export function create (options = {}): Electron.WebContents {
   return new (WebContents as any)(options);
 }
 
-export function fromId (id: string) {
+export function fromId (id: number) {
   return binding.fromId(id);
 }
 

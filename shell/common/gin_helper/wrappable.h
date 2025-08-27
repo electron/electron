@@ -37,19 +37,19 @@ class Wrappable : public WrappableBase {
         isolate, base::BindRepeating(&internal::InvokeNew<Sig>, constructor));
     templ->InstanceTemplate()->SetInternalFieldCount(1);
     T::BuildPrototype(isolate, templ);
-    gin::PerIsolateData::From(isolate)->SetFunctionTemplate(&kWrapperInfo,
-                                                            templ);
+    gin::PerIsolateData::From(isolate)->DeprecatedSetFunctionTemplate(
+        &kWrapperInfo, templ);
   }
 
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate) {
     // Fill the object template.
     auto* data = gin::PerIsolateData::From(isolate);
-    auto templ = data->GetFunctionTemplate(&kWrapperInfo);
+    auto templ = data->DeprecatedGetFunctionTemplate(&kWrapperInfo);
     if (templ.IsEmpty()) {
       templ = v8::FunctionTemplate::New(isolate);
       templ->InstanceTemplate()->SetInternalFieldCount(1);
       T::BuildPrototype(isolate, templ);
-      data->SetFunctionTemplate(&kWrapperInfo, templ);
+      data->DeprecatedSetFunctionTemplate(&kWrapperInfo, templ);
     }
     return templ;
   }
