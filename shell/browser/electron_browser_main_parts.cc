@@ -277,16 +277,6 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   // Initialize after user script environment creation.
   fake_browser_process_->PostEarlyInitialization();
-
-#if BUILDFLAG(IS_MAC)
-  // Initialize keychain names early to ensure safeStorage uses the correct
-  // app name even when called before the app is ready (e.g., in preload
-  // scripts). This must happen after the JS environment is initialized so
-  // GetName() works.
-  std::string app_name = electron::Browser::Get()->GetName();
-  KeychainPassword::GetServiceName() = app_name + " Safe Storage";
-  KeychainPassword::GetAccountName() = app_name;
-#endif
 }
 
 int ElectronBrowserMainParts::PreCreateThreads() {

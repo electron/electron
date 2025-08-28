@@ -5,6 +5,9 @@
 #include <string>
 
 #include "components/os_crypt/sync/os_crypt.h"
+#if BUILDFLAG(IS_MAC)
+#include "components/os_crypt/sync/keychain_password_mac.h"
+#endif
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/javascript_environment.h"
@@ -20,6 +23,21 @@ const char* kEncryptionVersionPrefixV10 = "v10";
 const char* kEncryptionVersionPrefixV11 = "v11";
 bool use_password_v10 = false;
 
+#if BUILDFLAG(IS_MAC)
+void EnsureKeychainAccountNameIsValid() {
+  // Ensure keychain names are set with the correct app name before accessing
+  // OSCrypt. This handles cases where safeStorage is called before the app is
+  // ready or after app.setName() has been called.
+  static bool keychain_names_initialized = false;
+  if (!keychain_names_initialized) {
+    std::string app_name = electron::Browser::Get()->GetName();
+    KeychainPassword::GetServiceName() = app_name + " Safe Storage";
+    KeychainPassword::GetAccountName() = app_name;
+    keychain_names_initialized = true;
+  }
+}
+#endif
+
 bool IsEncryptionAvailable() {
 #if BUILDFLAG(IS_LINUX)
   // Calling IsEncryptionAvailable() before the app is ready results in a crash
@@ -32,6 +50,9 @@ bool IsEncryptionAvailable() {
           static_cast<BrowserProcessImpl*>(g_browser_process)
                   ->linux_storage_backend() == "basic_text");
 #else
+#if BUILDFLAG(IS_MAC)
+  EnsureKeychainAccountNameIsValid();
+#endif
   return OSCrypt::IsEncryptionAvailable();
 #endif
 }
@@ -51,6 +72,9 @@ std::string GetSelectedLinuxBackend() {
 
 v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
                                    const std::string& plaintext) {
+#if BUILDFLAG(IS_MAC)
+  EnsureKeychainAccountNameIsValid();
+#endif
   if (!IsEncryptionAvailable()) {
     if (!electron::Browser::Get()->is_ready()) {
       gin_helper::ErrorThrower(isolate).ThrowError(
@@ -78,6 +102,9 @@ v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
 }
 
 std::string DecryptString(v8::Isolate* isolate, v8::Local<v8::Value> buffer) {
+#if BUILDFLAG(IS_MAC)
+  EnsureKeychainAccountNameIsValid();
+#endif
   if (!IsEncryptionAvailable()) {
     if (!electron::Browser::Get()->is_ready()) {
       gin_helper::ErrorThrower(isolate).ThrowError(
