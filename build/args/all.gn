@@ -69,3 +69,6 @@ v8_expose_public_symbols = true
 # Disable snapshotting a page when printing for its content to be analyzed for
 # sensitive content by enterprise users.
 enterprise_cloud_content_analysis = false
+
+# We don't use anything from here, and it causes target collisions
+enable_linux_installer = false
