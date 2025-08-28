@@ -337,9 +337,12 @@ describe('WebContentsView', () => {
         v.webContents.loadURL(backgroundUrl);
 
         const inset = 10;
+        // Adjust for macOS menu bar height which seems to be about 24px
+        // based on the results from accessibility inspector.
+        const platformInset = process.platform === 'darwin' ? 15 : 0;
         corners = [
-          { x: display.workArea.x + inset, y: display.workArea.y + inset }, // top-left
-          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset }, // top-right
+          { x: display.workArea.x + inset, y: display.workArea.y + inset + platformInset }, // top-left
+          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset + platformInset }, // top-right
           { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + display.workArea.height - inset }, // bottom-right
           { x: display.workArea.x + inset, y: display.workArea.y + display.workArea.height - inset } // bottom-left
         ];
