@@ -76,7 +76,6 @@ jobs:
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
-        // check if '/opt/hca/hosted-compute-agent' is present
         if [ -d "/opt/hca/hosted-compute-agent" ]; then
           echo "Found /opt/hca/hosted-compute-agent"
         else
