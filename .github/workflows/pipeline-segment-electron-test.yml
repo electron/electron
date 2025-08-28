@@ -76,6 +76,12 @@ jobs:
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
+        // check if '/opt/hca/hosted-compute-agent' is present
+        if [ -d "/opt/hca/hosted-compute-agent" ]; then
+          echo "Found /opt/hca/hosted-compute-agent"
+        else
+          echo "Did not find /opt/hca/hosted-compute-agent"
+        fi
         epochdate=$(($(date +'%s * 1000 + %-N / 1000000')))
         configure_user_tccdb () {
           local values=$1
@@ -97,7 +103,7 @@ jobs:
             "'kTCCServiceAppleEvents','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceCamera','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceBluetoothAlways','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
-            "'kTCCServiceScreenCapture','/bin/bash',1,2,3,1,NULL,NULL,NULL,'UNUSED',NULL,0,$epochdate"
+            "'kTCCServiceScreenCapture','/opt/hca/hosted-compute-agent',1,2,3,1,NULL,NULL,NULL,'UNUSED',NULL,0,$epochdate"
         )
         for values in "${userValuesArray[@]}"; do
           # Sonoma and higher have a few extra values
