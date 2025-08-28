@@ -81,6 +81,11 @@ jobs:
         else
           echo "Did not find /opt/hca/hosted-compute-agent"
         fi
+        if [ -d "/usr/local/opt/runner/provisioner/provisioner" ]; then
+          echo "Found /usr/local/opt/runner/provisioner/provisioner"
+        else
+          echo "Did not find /usr/local/opt/runner/provisioner/provisioner"
+        fi
         epochdate=$(($(date +'%s * 1000 + %-N / 1000000')))
         configure_user_tccdb () {
           local values=$1
@@ -99,6 +104,7 @@ jobs:
         userValuesArray=(
             "'kTCCServiceCamera','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceBluetoothAlways','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceScreenCapture','/usr/local/opt/runner/provisioner/provisioner',1,2,3,1,NULL,NULL,NULL,'UNUSED',NULL,0,$epochdate"
             "'kTCCServiceAppleEvents','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceCamera','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceBluetoothAlways','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
