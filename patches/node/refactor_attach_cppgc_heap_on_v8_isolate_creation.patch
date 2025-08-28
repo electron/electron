@@ -47,7 +47,7 @@ index 9e1b8d147a99fda962d75c343d0687ffea3c9c69..244d747f010c51366e44dec705ae3044
                      event_loop,
                      platform,
 diff --git a/src/env.cc b/src/env.cc
-index b6ad3ca99c8b0c656ce726fbc3455ba554bc3bd1..0922f7fb9c120482b6ee825f5f1ad10dea11fe30 100644
+index 56eb42643f26f3ebb447cb625d5422dcfa872189..8cdfbac602796cabbd8a2f673385b93bea9bd7cc 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -577,14 +577,6 @@ IsolateData::IsolateData(Isolate* isolate,
