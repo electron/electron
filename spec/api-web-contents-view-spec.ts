@@ -338,8 +338,8 @@ describe('WebContentsView', () => {
 
         const inset = 10;
         corners = [
-          { x: display.workArea.x + inset, y: display.workArea.y + inset }, // top-left
-          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset }, // top-right
+          { x: display.workArea.x + inset, y: display.workArea.y + inset + 15 }, // top-left
+          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset + 15 }, // top-right
           { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + display.workArea.height - inset }, // bottom-right
           { x: display.workArea.x + inset, y: display.workArea.y + display.workArea.height - inset } // bottom-left
         ];
