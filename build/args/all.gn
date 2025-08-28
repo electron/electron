@@ -75,3 +75,6 @@ enterprise_cloud_content_analysis = false
 content_enable_legacy_ipc = true
 
 clang_unsafe_buffers_paths = "//electron/electron_unsafe_buffers_paths.txt"
+
+# We don't use anything from here, and it causes target collisions
+enable_linux_installer = false

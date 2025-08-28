@@ -44,6 +44,7 @@ if (is_mac) {
 
 if (is_linux) {
   import("//build/config/linux/pkg_config.gni")
+  import("//electron/build/linux/strip_binary.gni")
   import("//tools/generate_stubs/rules.gni")
 
   pkg_config("gio_unix") {
@@ -1421,6 +1422,18 @@ dist_zip("electron_dist_zip") {
     ":licenses",
   ]
   if (is_linux) {
+    if (is_official_build) {
+      data_deps += [
+        ":strip_chrome_crashpad_handler",
+        ":strip_chrome_sandbox",
+        ":strip_electron_binary",
+        ":strip_libEGL_shlib",
+        ":strip_libGLESv2_shlib",
+        ":strip_libffmpeg_shlib",
+        ":strip_libvk_swiftshader_shlib",
+      ]
+    }
+
     data_deps += [ "//sandbox/linux:chrome_sandbox" ]
   }
   deps = data_deps
@@ -1466,6 +1479,16 @@ group("electron_mksnapshot") {
 
 dist_zip("electron_mksnapshot_zip") {
   data_deps = mksnapshot_deps
+  if (is_linux && is_official_build) {
+    data_deps += [
+      ":strip_libEGL_shlib",
+      ":strip_libGLESv2_shlib",
+      ":strip_libffmpeg_shlib",
+      ":strip_libvk_swiftshader_shlib",
+      ":strip_mksnapshot_binary",
+      ":strip_v8_context_snapshot_generator_binary",
+    ]
+  }
   deps = data_deps
   outputs = [ "$root_build_dir/mksnapshot.zip" ]
 }
@@ -1589,4 +1612,79 @@ group("copy_node_headers") {
 
 group("node_headers") {
   public_deps = [ ":tar_node_headers" ]
+}
+
+if (is_linux && is_official_build) {
+  strip_binary("strip_electron_binary") {
+    binary_input = "$root_out_dir/$electron_project_name"
+    symbol_output = "$root_out_dir/debug/$electron_project_name.debug"
+    compress_debug_sections = true
+    deps = [ ":electron_app" ]
+  }
+
+  strip_binary("strip_chrome_crashpad_handler") {
+    binary_input = "$root_out_dir/chrome_crashpad_handler"
+    symbol_output = "$root_out_dir/debug/chrome_crashpad_handler.debug"
+    compress_debug_sections = true
+    deps = [ "//components/crash/core/app:chrome_crashpad_handler" ]
+  }
+
+  strip_binary("strip_chrome_sandbox") {
+    binary_input = "$root_out_dir/chrome_sandbox"
+    symbol_output = "$root_out_dir/debug/chrome-sandbox.debug"
+    compress_debug_sections = true
+    deps = [ "//sandbox/linux:chrome_sandbox" ]
+  }
+
+  strip_binary("strip_libEGL_shlib") {
+    binary_input = "$root_out_dir/libEGL.so"
+    symbol_output = "$root_out_dir/debug/libEGL.so.debug"
+    compress_debug_sections = true
+    deps = [ "//third_party/angle:libEGL" ]
+  }
+
+  strip_binary("strip_libGLESv2_shlib") {
+    binary_input = "$root_out_dir/libGLESv2.so"
+    symbol_output = "$root_out_dir/debug/libGLESv2.so.debug"
+    compress_debug_sections = true
+    deps = [ "//third_party/angle:libGLESv2" ]
+  }
+
+  strip_binary("strip_libffmpeg_shlib") {
+    binary_input = "$root_out_dir/libffmpeg.so"
+    symbol_output = "$root_out_dir/debug/libffmpeg.so.debug"
+    compress_debug_sections = true
+    deps = [ "//third_party/ffmpeg" ]
+  }
+
+  strip_binary("strip_libvk_swiftshader_shlib") {
+    binary_input = "$root_out_dir/libvk_swiftshader.so"
+    symbol_output = "$root_out_dir/debug/libvk_swiftshader.so.debug"
+    compress_debug_sections = true
+    deps = [ "//third_party/swiftshader/src/Vulkan:swiftshader_libvulkan" ]
+  }
+
+  strip_binary("strip_mksnapshot_binary") {
+    _binary_path = rebase_path(
+            get_label_info(
+                    ":v8_context_snapshot_generator($v8_snapshot_toolchain)",
+                    "root_out_dir") + "/mksnapshot",
+            root_build_dir)
+    binary_input = "$root_out_dir/$_binary_path"
+    symbol_output = "$root_out_dir/debug/${_binary_path}.debug"
+    compress_debug_sections = true
+    deps = mksnapshot_deps
+  }
+
+  strip_binary("strip_v8_context_snapshot_generator_binary") {
+    _binary_path = rebase_path(
+            get_label_info(
+                    ":v8_context_snapshot_generator($v8_snapshot_toolchain)",
+                    "root_out_dir") + "/v8_context_snapshot_generator",
+            root_build_dir)
+    binary_input = "$root_out_dir/$_binary_path"
+    symbol_output = "$root_out_dir/debug/${_binary_path}.debug"
+    compress_debug_sections = true
+    deps = mksnapshot_deps
+  }
 }
