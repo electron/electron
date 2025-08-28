@@ -79,8 +79,8 @@ function areColorsSimilar (
 
 function displayCenter (display: Electron.Display): Electron.Point {
   return {
-    x: display.size.width / 2,
-    y: display.size.height / 2
+    x: display.size.width / 4,
+    y: display.size.height / 4
   };
 }
 
