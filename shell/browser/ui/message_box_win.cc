@@ -160,6 +160,7 @@ DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
 
   if (parent) {
     config.hwndParent = parent;
+    config.dwFlags |= TDF_POSITION_RELATIVE_TO_WINDOW;
   }
 
   if (default_id > 0)
