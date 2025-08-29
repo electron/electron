@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a1f4787d5608b12e24f33193b7a430c68241a5e7..daf78ded6269a643a0866041f89224d3b59eeb22 100644
+index 76168b452f4cadb4bb28b3317e310aafdc7a8f5b..2445855b42cb96a81c67e5524c8476e01f0b5d2a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1062,6 +1062,7 @@ component("base") {
@@ -452,7 +452,7 @@ index 0f65c4272547f31890b872dc208cd01d02848e20..2634fddf9b7b71cd4b97e9ecb5de06bf
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 17c8296cbc1d72ab45de0ff35eb4ff9baeba9add..7d9d9412ef9d433e80dc0e51b501e02cac32b460 100644
+index 6ea211c221d74f26be924334ac8b5b007f38e7a3..c5171b3f1a0b25825dded8828ed683282c06e151 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -582,10 +582,10 @@ index e5b59a9d364dd5a8f847d9543b19fdc068098754..86abd01371ce8a9c21d020f1a69a5d33
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c3ca0a45a9a853099455e80a423942148dc911da..afdcea2076788feaa7367eea7ede53602c17158b 100644
+index 00f6ea7e18623e5de436f1dc9e5e094da7e7d26a..461564699bf9b604c7dd0c8250a0480a880b5f10 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -345,6 +345,7 @@ source_set("browser") {
+@@ -344,6 +344,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -938,10 +938,10 @@ index d288ffce5c1265adbdefc571f840851026e7479e..e9a6e8c31401750d270fcc55ef1116b2
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 90e73686ebc5befecaa64d745b474ed46a1d4293..96d2c7fa2c8960263215d12fc5a15b4d16d3c3fe 100644
+index 7bc208697690ac36a3fc546748a05cbe952f1003..2fa14c45a5f3ce23985b7e9e9b2c2a14d3596d63 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -201,6 +201,7 @@ source_set("audio") {
+@@ -203,6 +203,7 @@ source_set("audio") {
        "CoreMedia.framework",
      ]
      weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0
@@ -950,7 +950,7 @@ index 90e73686ebc5befecaa64d745b474ed46a1d4293..96d2c7fa2c8960263215d12fc5a15b4d
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 0f7c441ba44fe22b1bf4913ae8e61a8bb7ef7fe7..2311fdbbfa566e76b4709059b707ac4d4ff195d9 100644
+index 5eda5e58b30b84795ec3827aad7ce97171400097..60bf6c34e8d824ea6d4e02b2951568604db68f43 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
 @@ -29,6 +29,7 @@
@@ -1863,10 +1863,10 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index c17e4c39bb62d85cf2416adfce02c799c0d02d83..9dc048cf13a01405edcbd3fb9d607a97b41c0289 100644
+index a7ba817422eb2b82f7a722e8e5df886acd4012aa..1fd81ae13caefbc0950a6c5d87d959455fbf9ce9 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -721,6 +721,8 @@ component("views") {
+@@ -720,6 +720,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1875,7 +1875,7 @@ index c17e4c39bb62d85cf2416adfce02c799c0d02d83..9dc048cf13a01405edcbd3fb9d607a97
    }
  
    if (is_win) {
-@@ -1152,6 +1154,8 @@ source_set("test_support") {
+@@ -1151,6 +1153,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
