@@ -7,17 +7,22 @@
 #include <string>
 #include <utility>
 
+#include "base/apple/foundation_util.h"
 #include "base/logging.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
+#include "chrome/common/notifications/notification_image_retainer.h"
 #include "grit/electron_resources.h"
+#include "shell/browser/notifications/mac/notification_presenter_mac.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/base/l10n/l10n_util_mac.h"
+#include "ui/gfx/image/image.h"
 
 #import <AppKit/AppKit.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 namespace electron {
 
@@ -40,30 +45,6 @@ void CocoaNotification::Show(const NotificationOptions& options) {
   content.title = base::SysUTF16ToNSString(options.title);
   content.subtitle = base::SysUTF16ToNSString(options.subtitle);
   content.body = base::SysUTF16ToNSString(options.msg);
-
-  if (!options.icon.drawsNothing()) {
-    NSImage* image = skia::SkBitmapToNSImage(options.icon);
-    NSData* imageData =
-        [[NSBitmapImageRep imageRepWithData:[image TIFFRepresentation]]
-            representationUsingType:NSBitmapImageFileTypePNG
-                         properties:@{}];
-    NSString* tempFilePath = [NSTemporaryDirectory()
-        stringByAppendingPathComponent:[NSString
-                                           stringWithFormat:@"%@_icon.png",
-                                                            [[NSUUID UUID]
-                                                                UUIDString]]];
-    if ([imageData writeToFile:tempFilePath atomically:YES]) {
-      NSError* error = nil;
-      UNNotificationAttachment* attachment = [UNNotificationAttachment
-          attachmentWithIdentifier:@"image"
-                               URL:[NSURL fileURLWithPath:tempFilePath]
-                           options:nil
-                             error:&error];
-      if (attachment && !error) {
-        content.attachments = @[ attachment ];
-      }
-    }
-  }
 
   if (options.silent) {
     content.sound = nil;
@@ -148,6 +129,52 @@ void CocoaNotification::Show(const NotificationOptions& options) {
     content.categoryIdentifier = categoryIdentifier;
   }
 
+  if (!options.icon.drawsNothing()) {
+    gfx::Image icon = gfx::Image::CreateFrom1xBitmap(options.icon);
+    auto* mac_presenter = static_cast<NotificationPresenterMac*>(presenter());
+    mac_presenter->image_task_runner()->PostTaskAndReplyWithResult(
+        FROM_HERE,
+        base::BindOnce(
+            [](NotificationPresenterMac* mac_presenter,
+               gfx::Image icon) -> UNNotificationAttachment* {
+              base::FilePath path =
+                  mac_presenter->image_retainer()->RegisterTemporaryImage(
+                      icon);
+              if (path.empty()) {
+                return nil;
+              }
+              NSURL* url = base::apple::FilePathToNSURL(path);
+              NSDictionary* attachment_options = @{
+                UNNotificationAttachmentOptionsTypeHintKey :
+                    UTTypePNG.identifier
+              };
+              NSError* error = nil;
+              UNNotificationAttachment* attachment = [UNNotificationAttachment
+                  attachmentWithIdentifier:[[NSUUID UUID] UUIDString]
+                                       URL:url
+                                   options:attachment_options
+                                     error:&error];
+              return (attachment && !error) ? attachment : nil;
+            },
+            mac_presenter, icon),
+        base::BindOnce(
+            [](base::WeakPtr<Notification> weak_self,
+               UNMutableNotificationContent* content,
+               UNNotificationAttachment* attachment) {
+              if (auto* notification = weak_self.get()) {
+                content.attachments = @[ attachment ];
+                auto* self = static_cast<CocoaNotification*>(notification);
+                self->ScheduleNotification(content);
+              }
+            },
+            GetWeakPtr(), content));
+  } else {
+    ScheduleNotification(content);
+  }
+}
+
+void CocoaNotification::ScheduleNotification(
+    UNMutableNotificationContent* content) {
   NSString* identifier =
       [NSString stringWithFormat:@"%@:notification:%@",
                                  [[NSBundle mainBundle] bundleIdentifier],

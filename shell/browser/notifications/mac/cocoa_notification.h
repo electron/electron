@@ -36,6 +36,7 @@ class CocoaNotification : public Notification {
 
  private:
   void LogAction(const char* action);
+  void ScheduleNotification(UNMutableNotificationContent* content);
 
   UNNotificationRequest* __strong notification_request_;
 };
