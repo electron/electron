@@ -23,7 +23,8 @@ namespace electron {
 namespace {
 
 std::wstring g_app_user_model_id;
-}
+std::wstring g_toast_activator_clsid;
+}  // namespace
 
 const wchar_t kAppUserModelIDFormat[] = L"electron.app.$1";
 
@@ -79,6 +80,39 @@ bool IsRunningInDesktopBridgeImpl() {
 bool IsRunningInDesktopBridge() {
   static bool result = IsRunningInDesktopBridgeImpl();
   return result;
+}
+
+PCWSTR GetAppToastActivatorCLSID() {
+  if (g_toast_activator_clsid.empty()) {
+    GUID guid;
+    if (SUCCEEDED(::CoCreateGuid(&guid))) {
+      wchar_t buf[64] = {0};
+      if (StringFromGUID2(guid, buf, std::size(buf)) > 0)
+        g_toast_activator_clsid = buf;
+    }
+  }
+
+  return g_toast_activator_clsid.c_str();
+}
+
+void SetAppToastActivatorCLSID(const std::wstring& clsid) {
+  CLSID parsed;
+  if (SUCCEEDED(::CLSIDFromString(clsid.c_str(), &parsed))) {
+    // Normalize formatting.
+    wchar_t buf[64] = {0};
+    if (StringFromGUID2(parsed, buf, std::size(buf)) > 0)
+      g_toast_activator_clsid = buf;
+  } else {
+    // Try adding braces if user omitted them.
+    if (!clsid.empty() && clsid.front() != L'{') {
+      std::wstring with_braces = L"{" + clsid + L"}";
+      if (SUCCEEDED(::CLSIDFromString(with_braces.c_str(), &parsed))) {
+        wchar_t buf[64] = {0};
+        if (StringFromGUID2(parsed, buf, std::size(buf)) > 0)
+          g_toast_activator_clsid = buf;
+      }
+    }
+  }
 }
 
 }  // namespace electron

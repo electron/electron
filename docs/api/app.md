@@ -1120,6 +1120,19 @@ Updates the current activity if its type matches `type`, merging the entries fro
 
 Changes the [Application User Model ID][app-user-model-id] to `id`.
 
+### `app.setToastActivatorCLSID(id)` _Windows_
+
+* `id` string
+
+Changes the [Toast Activator CLSID][toast-activator-clsid] to `id`. If one is not set via this method, it will be randomly generated for the app.
+
+* The value must be a valid GUID/CLSID in one of the following forms:
+  * Canonical brace-wrapped: `{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}` (preferred)
+  * Canonical without braces: `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX` (braces will be added automatically)
+* Hex digits are case-insensitive.
+
+This method should be called early (before showing notifications) so the value is baked into the registration/shortcut. Supplying an empty string or an unparsable value throws and leaves the existing (or generated) CLSID unchanged. If this method is never called, a random CLSID is generated once per run and exposed via `app.toastActivatorCLSID`.
+
 ### `app.setActivationPolicy(policy)` _macOS_
 
 * `policy` string - Can be 'regular', 'accessory', or 'prohibited'.
@@ -1625,8 +1638,13 @@ platforms) that allows you to perform actions on your app icon in the user's doc
 
 A `boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
 
+### `app.toastActivatorCLSID` _Windows_ _Readonly_
+
+A `string` property that returns the app's [Toast Activator CLSID][toast-activator-clsid].
+
 [tasks]:https://learn.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#tasks
 [app-user-model-id]: https://learn.microsoft.com/en-us/windows/win32/shell/appids
+[toast-activator-clsid]: https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-toastactivatorclsid
 [electron-forge]: https://www.electronforge.io/
 [electron-packager]: https://github.com/electron/packager
 [CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
