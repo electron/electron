@@ -324,11 +324,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
 
       return false;
     }
-    case WM_RBUTTONUP: {
-      if (!has_frame())
-        electron::api::WebContents::SetDisableDraggableRegions(false);
-      return false;
-    }
     case WM_GETMINMAXINFO: {
       WINDOWPLACEMENT wp;
       wp.length = sizeof(WINDOWPLACEMENT);
