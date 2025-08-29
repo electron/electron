@@ -707,7 +707,7 @@ index c5fee4ad8b246bc1113a383794c6101bade24df3..61f0a0f62795b30105c42da363205284
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index a0a8545a9c967f1059119cf3dda849fa7d96cb15..3a3a9c1e2fa3ad88eaf721da75a305966c6833c4 100644
+index 7f67a828fc76765fa88c1be4d5eed08637c1bae3..b16b7e56efedeb1c10b0b33a569ad2e02505ebf3 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -588,11 +588,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
