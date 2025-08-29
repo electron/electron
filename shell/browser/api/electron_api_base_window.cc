@@ -1093,16 +1093,38 @@ bool BaseWindow::IsSnapped() const {
 }
 
 void BaseWindow::SetAccentColor(gin_helper::Arguments* args) {
-  bool accent_color = false;
-  std::string accent_color_string;
-  if (args->GetNext(&accent_color_string)) {
-    std::optional<SkColor> maybe_color = ParseCSSColor(accent_color_string);
-    if (maybe_color.has_value()) {
-      window_->SetAccentColor(maybe_color.value());
-      window_->UpdateWindowAccentColor(window_->IsActive());
+  auto current = window_->GetAccentColor();
+
+  auto same_color = [](const std::string& a, const std::string& b) {
+    auto ca = ParseCSSColor(a);
+    auto cb = ParseCSSColor(b);
+    return (ca && cb) ? *ca == *cb : base::EqualsCaseInsensitiveASCII(a, b);
+  };
+
+  bool accent_bool_value = false;
+  std::string accent_string_value;
+
+  // Custom string accent color.
+  if (args->GetNext(&accent_string_value)) {
+    auto maybe_color = ParseCSSColor(accent_string_value);
+    if (!maybe_color)
+      return;
+
+    if (std::holds_alternative<std::string>(current) &&
+        same_color(std::get<std::string>(current), accent_string_value)) {
+      return;
     }
-  } else if (args->GetNext(&accent_color)) {
-    window_->SetAccentColor(accent_color);
+
+    window_->SetAccentColor(*maybe_color);
+    window_->UpdateWindowAccentColor(window_->IsActive());
+
+    // Boolean accent color.
+  } else if (args->GetNext(&accent_bool_value)) {
+    if (std::holds_alternative<bool>(current) &&
+        std::get<bool>(current) == accent_bool_value) {
+      return;
+    }
+    window_->SetAccentColor(accent_bool_value);
     window_->UpdateWindowAccentColor(window_->IsActive());
   } else {
     args->ThrowError(
