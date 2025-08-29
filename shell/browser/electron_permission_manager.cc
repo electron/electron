@@ -142,6 +142,14 @@ void ElectronPermissionManager::SetBluetoothPairingHandler(
   bluetooth_pairing_handler_ = handler;
 }
 
+bool ElectronPermissionManager::HasPermissionRequestHandler() const {
+  return !request_handler_.is_null();
+}
+
+bool ElectronPermissionManager::HasPermissionCheckHandler() const {
+  return !check_handler_.is_null();
+}
+
 void ElectronPermissionManager::RequestPermissionWithDetails(
     blink::mojom::PermissionDescriptorPtr permission,
     content::RenderFrameHost* render_frame_host,
