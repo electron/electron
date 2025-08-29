@@ -36,6 +36,7 @@
 #include "shell/common/skia_util.h"
 #include "shell/common/thread_restrictions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
+#include "third_party/skia/include/core/SkColorSpace.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
 #include "ui/base/layout.h"
@@ -256,8 +257,8 @@ v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
 
   const float scale = GetScaleFactorFromOptions(args);
   const auto src = image_.AsImageSkia().GetRepresentation(scale).GetBitmap();
-
-  const auto dst_info = SkImageInfo::MakeN32Premul(src.dimensions());
+  const auto dst_info =
+      SkImageInfo::MakeN32Premul(src.dimensions(), SkColorSpace::MakeSRGB());
   const size_t dst_n_bytes = dst_info.computeMinByteSize();
   auto dst_buf = v8::ArrayBuffer::New(isolate, dst_n_bytes);
 
