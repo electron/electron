@@ -120,9 +120,22 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
       name.erase(pos, to_remove.length());
     }
 
-    NSImage* image = [NSImage imageNamed:base::SysUTF8ToNSString(name)];
+    NSImage* image = nil;
+    NSString* ns_name = base::SysUTF8ToNSString(name);
 
-    if (!image.valid) {
+    // If the name does not include NS, we can assume it is a sf symbol
+    std::string has_ns("NS");
+    size_t ns_pos = name.find(has_ns);
+    if (ns_pos == std::string::npos) {
+      if (@available(macOS 11.0, *)) {
+        image = [NSImage imageWithSystemSymbolName:ns_name accessibilityDescription:nil];
+      }
+    }
+    if (!image) {
+      image = [NSImage imageNamed:ns_name];
+    }
+
+    if (!image || !image.valid) {
       return CreateEmpty(args->isolate());
     }
 
