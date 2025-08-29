@@ -226,7 +226,7 @@ jobs:
     needs: checkout-macos
     with:
       build-runs-on: macos-14-xlarge
-      test-runs-on: macos-13
+      test-runs-on: macos-15-large
       target-platform: macos
       target-arch: x64
       is-release: false
@@ -245,7 +245,7 @@ jobs:
     needs: checkout-macos
     with:
       build-runs-on: macos-14-xlarge
-      test-runs-on: macos-14
+      test-runs-on: macos-15
       target-platform: macos
       target-arch: arm64
       is-release: false

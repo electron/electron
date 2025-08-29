@@ -2976,7 +2976,7 @@ describe('font fallback', () => {
     } else if (process.platform === 'darwin') {
       expect(fonts[0].familyName).to.equal('Helvetica');
     } else if (process.platform === 'linux') {
-      expect(fonts[0].familyName).to.equal('DejaVu Sans (Fontations)');
+      expect(fonts[0].familyName).to.equal('DejaVu Sans');
     } // I think this depends on the distro? We don't specify a default.
   });
 
