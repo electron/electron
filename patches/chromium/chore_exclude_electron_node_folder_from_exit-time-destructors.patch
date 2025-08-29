@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 29 Aug 2025 23:14:01 +0900
+Subject: chore: exclude electron_node folder from exit-time-destructors
+
+Refs https://issues.chromium.org/issues/430332953
+It contains multiple third_party dependencies that doesn't
+align with the chromium style guide.
+
+diff --git a/build/config/warning_suppression.txt b/build/config/warning_suppression.txt
+index 5e3d46f6e1a5768ce86c9f7c0b4bb2e7a60a4b03..2af41e408f0ead6dd96f35207793352435c60313 100644
+--- a/build/config/warning_suppression.txt
++++ b/build/config/warning_suppression.txt
+@@ -51,6 +51,7 @@ src:*{/,\\}third_party{/,\\}angle{/,\\}*
+ src:*{/,\\}third_party{/,\\}crashpad{/,\\}crashpad{/,\\}third_party{/,\\}cpp-httplib{/,\\}*
+ src:*{/,\\}third_party{/,\\}crc32c{/,\\}src{/,\\}src{/,\\}*
+ src:*{/,\\}third_party{/,\\}dawn{/,\\}*
++src:*{/,\\}third_party{/,\\}electron_node{/,\\}*
+ src:*{/,\\}third_party{/,\\}fuzztest{/,\\}src{/,\\}*
+ src:*{/,\\}third_party{/,\\}gemmlowp{/,\\}*
+ src:*{/,\\}third_party{/,\\}googletest{/,\\}src{/,\\}googlemock{/,\\}src{/,\\}*
