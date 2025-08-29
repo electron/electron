@@ -211,8 +211,8 @@ jobs:
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
       run: |
+        export ELECTRON_TEST_RESULTS_DIR=`pwd`/src/electron/spec/artifacts
         cd src/electron
-        export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
         tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'linux' && 3 || 2 }})
 
