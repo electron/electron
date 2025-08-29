@@ -1117,9 +1117,10 @@ void WebContents::OnDidAddMessageToConsole(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
 
   gin_helper::Dictionary dict(isolate, event_object);
   dict.SetGetter("frame", source_frame);
@@ -1131,7 +1132,7 @@ void WebContents::OnDidAddMessageToConsole(
   // TODO(samuelmaddock): Delete when deprecated arguments are fully removed.
   dict.Set("_level", static_cast<int32_t>(level));
 
-  EmitWithoutEvent("-console-message", event);
+  EmitWithoutEvent("-console-message", event_object);
 }
 
 void WebContents::OnCreateWindow(
@@ -1515,9 +1516,10 @@ void WebContents::RendererUnresponsive(
     base::RepeatingClosure hang_monitor_restarter) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
   gin::Dictionary dict(isolate, event_object);
 
   auto* web_contents_impl = static_cast<content::WebContentsImpl*>(source);
@@ -1531,7 +1533,7 @@ void WebContents::RendererUnresponsive(
       static_cast<content::RenderWidgetHostImpl*>(render_widget_host);
   dict.Set("rendererInitialized", rwh_impl->renderer_initialized());
 
-  EmitWithoutEvent("-unresponsive", event);
+  EmitWithoutEvent("-unresponsive", event_object);
 }
 
 void WebContents::RendererResponsive(
@@ -1700,12 +1702,13 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
 void WebContents::OnAudioStateChanged(bool audible) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
   gin::Dictionary dict(isolate, event_object);
   dict.Set("audible", audible);
-  EmitWithoutEvent("audio-state-changed", event);
+  EmitWithoutEvent("audio-state-changed", event_object);
 }
 
 void WebContents::BeforeUnloadFired(bool proceed) {
@@ -1968,9 +1971,10 @@ bool WebContents::EmitNavigationEvent(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
 
   gin_helper::Dictionary dict(isolate, event_object);
   dict.Set("url", url);
@@ -1981,8 +1985,8 @@ bool WebContents::EmitNavigationEvent(
   dict.SetGetter("frame", frame_host);
   dict.SetGetter("initiator", initiator_frame_host);
 
-  EmitWithoutEvent(event_name, event, url, is_same_document, is_main_frame,
-                   frame_process_id, frame_routing_id);
+  EmitWithoutEvent(event_name, event_object, url, is_same_document,
+                   is_main_frame, frame_process_id, frame_routing_id);
   return event->GetDefaultPrevented();
 }
 
@@ -3632,16 +3636,17 @@ void WebContents::OnPaint(const gfx::Rect& dirty_rect,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
   gin_helper::Dictionary dict(isolate, event_object);
 
   if (offscreen_use_shared_texture_) {
     dict.Set("texture", tex);
   }
 
-  EmitWithoutEvent("paint", event, dirty_rect,
+  EmitWithoutEvent("paint", event_object, dirty_rect,
                    gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 

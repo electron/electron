@@ -207,14 +207,3 @@ def get_depot_tools_executable(name):
   if sys.platform == 'win32':
     path += '.bat'
   return path
-
-def get_linux_binaries():
-  return [
-    'chrome-sandbox',
-    'chrome_crashpad_handler',
-    get_electron_branding()['project_name'],
-    'libEGL.so',
-    'libGLESv2.so',
-    'libffmpeg.so',
-    'libvk_swiftshader.so',
-  ]

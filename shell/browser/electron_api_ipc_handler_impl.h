@@ -72,7 +72,7 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
   content::RenderFrameHost* GetRenderFrameHost();
   gin::WeakCell<api::Session>* GetSession();
 
-  gin_helper::Handle<gin_helper::internal::Event> MakeIPCEvent(
+  gin_helper::internal::Event* MakeIPCEvent(
       v8::Isolate* isolate,
       api::Session* session,
       bool internal,

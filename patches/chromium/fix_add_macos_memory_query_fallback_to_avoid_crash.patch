@@ -12,7 +12,7 @@ While this "hot-swapping" behavior isn't supported, many enterprise update scrip
 This patch should be removed after the new implementation has been present since the beginning of a stable release. The new implementation was released with Electron 37.0.0, but this fallback was not added until after 37.2.2. That means 38.0.0 would be the first safe release to remove this fallback, giving developers a 1-major-version buffer to safely transition implementations.
 
 diff --git a/base/system/sys_info_apple.mm b/base/system/sys_info_apple.mm
-index 02670cbc829a1d8c540c6e0a4bce2f81177eab18..e58f70100b96ff83af4388900946db9962c2a254 100644
+index 1f020d7a3e624954505b2abeee72011a73643d6b..3b26eec537c0f74ba6a936c6a33820914b4278d2 100644
 --- a/base/system/sys_info_apple.mm
 +++ b/base/system/sys_info_apple.mm
 @@ -6,11 +6,31 @@
@@ -29,7 +29,7 @@ index 02670cbc829a1d8c540c6e0a4bce2f81177eab18..e58f70100b96ff83af4388900946db99
 +
 +// Implementation of AmountOfPhysicalMemoryImpl before https://crrev.com/c/6274964.
 +// See Electron patch adding this fallback for more details.
-+uint64_t AmountOfPhysicalMemoryFallback() {
++ByteCount AmountOfPhysicalMemoryFallback() {
 +  struct host_basic_info hostinfo;
 +  mach_msg_type_number_t count = HOST_BASIC_INFO_COUNT;
 +  base::apple::ScopedMachSendRight host(mach_host_self());
@@ -39,7 +39,7 @@ index 02670cbc829a1d8c540c6e0a4bce2f81177eab18..e58f70100b96ff83af4388900946db99
 +    NOTREACHED();
 +  }
 +  DCHECK_EQ(HOST_BASIC_INFO_COUNT, count);
-+  return hostinfo.max_mem;
++  return ByteCount::FromUnsigned(hostinfo.max_mem);
 +}
 +
 +}
@@ -56,6 +56,6 @@ index 02670cbc829a1d8c540c6e0a4bce2f81177eab18..e58f70100b96ff83af4388900946db99
 +  if (rv != 0) {
 +    return AmountOfPhysicalMemoryFallback();
 +  }
-   return physical_memory;
+   return ByteCount::FromUnsigned(physical_memory);
  }
  

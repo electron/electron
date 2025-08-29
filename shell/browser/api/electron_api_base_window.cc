@@ -199,14 +199,15 @@ void BaseWindow::OnWindowQueryEndSession(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
 
   gin::Dictionary dict(isolate, event_object);
   dict.Set("reasons", reasons);
 
-  EmitWithoutEvent("query-session-end", event);
+  EmitWithoutEvent("query-session-end", event_object);
   if (event->GetDefaultPrevented()) {
     *prevent_default = true;
   }
@@ -216,14 +217,15 @@ void BaseWindow::OnWindowEndSession(const std::vector<std::string>& reasons) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
 
   gin::Dictionary dict(isolate, event_object);
   dict.Set("reasons", reasons);
 
-  EmitWithoutEvent("session-end", event);
+  EmitWithoutEvent("session-end", event_object);
 }
 
 void BaseWindow::OnWindowBlur() {
@@ -349,6 +351,10 @@ void BaseWindow::OnSystemContextMenu(int x, int y, bool* prevent_default) {
   if (Emit("system-context-menu", gfx::Point(x, y))) {
     *prevent_default = true;
   }
+}
+
+void BaseWindow::OnWindowStateRestored() {
+  EmitEventSoon("restored-window-state");
 }
 
 #if BUILDFLAG(IS_WIN)

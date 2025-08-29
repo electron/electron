@@ -32,8 +32,10 @@ class EventEmitterMixin {
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
-    gin_helper::Handle<internal::Event> event = internal::Event::New(isolate);
-    gin_helper::EmitEvent(isolate, wrapper, name, event,
+    internal::Event* event = internal::Event::New(isolate);
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    gin_helper::EmitEvent(isolate, wrapper, name, event_object,
                           std::forward<Args>(args)...);
     return event->GetDefaultPrevented();
   }

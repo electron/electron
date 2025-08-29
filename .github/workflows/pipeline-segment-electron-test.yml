@@ -68,21 +68,6 @@ jobs:
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
-    - name: Install Git on Windows arm64 runners
-      if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'win' }}
-      shell: powershell
-      run: |
-        Set-ExecutionPolicy Bypass -Scope Process -Force
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        choco install -y --no-progress git.install --params "'/GitAndUnixToolsOnPath'"
-        choco install -y --no-progress git
-        choco install -y --no-progress python --version 3.11.9
-        choco install -y --no-progress visualstudio2022-workload-vctools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.ARM64"
-        echo "C:\Program Files\Git\cmd" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        echo "C:\Program Files\Git\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        echo "C:\Python311" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        cp "C:\Python311\python.exe" "C:\Python311\python3.exe"
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -91,6 +76,7 @@ jobs:
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
+        epochdate=$(($(date +'%s * 1000 + %-N / 1000000')))
         configure_user_tccdb () {
           local values=$1
           local dbPath="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
@@ -111,11 +97,12 @@ jobs:
             "'kTCCServiceAppleEvents','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceCamera','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceBluetoothAlways','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceScreenCapture','/bin/bash',1,2,3,1,NULL,NULL,NULL,'UNUSED',NULL,0,$epochdate"
         )
         for values in "${userValuesArray[@]}"; do
           # Sonoma and higher have a few extra values
           # Ref: https://github.com/actions/runner-images/blob/main/images/macos/scripts/build/configure-tccdb-macos.sh
-          if [ "$OSTYPE" = "darwin23" ]; then
+          if [ "$OSTYPE" = "darwin23" ] || [ "$OSTYPE" = "darwin24" ]; then
             configure_user_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
             configure_sys_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
           else
@@ -123,9 +110,17 @@ jobs:
             configure_sys_tccdb "$values"
           fi
         done
+
+        # Ref: https://github.com/getsentry/sentry-cocoa/blob/main/scripts/ci-enable-permissions.sh
+        if [ "$OSTYPE" = "darwin24" ]; then
+          defaults write ~/Library/Group\ Containers/group.com.apple.replayd/ScreenCaptureApprovals.plist "/bin/bash" -date "3024-09-23 12:00:00 +0000"
+        fi
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server
+    - name: Set xcode to 16.4
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: sudo xcode-select --switch /Applications/Xcode_16.4.app
     - name: Checkout Electron
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
@@ -197,12 +192,12 @@ jobs:
         unzip -:o dist.zip
         unzip -:o chromedriver.zip
         unzip -:o mksnapshot.zip
-    - name: Import & Trust Self-Signed Codesigning Cert on MacOS
-      if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
-      run: |
-        sudo security authorizationdb write com.apple.trust-settings.admin allow
-        cd src/electron
-        ./script/codesign/generate-identity.sh
+    #- name: Import & Trust Self-Signed Codesigning Cert on MacOS
+    #  if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
+    #  run: |
+    #    sudo security authorizationdb write com.apple.trust-settings.admin allow
+    #    cd src/electron
+    #    ./script/codesign/generate-identity.sh
     - name: Install Datadog CLI
       run: |
         cd src/electron

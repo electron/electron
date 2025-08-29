@@ -100,6 +100,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                             const base::Value::Dict& details) override;
   void OnNewWindowForTab() override;
   void OnSystemContextMenu(int x, int y, bool* prevent_default) override;
+  void OnWindowStateRestored() override;
 #if BUILDFLAG(IS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
 #endif
