@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "base/logging.h"
+#include "base/task/thread_pool.h"
 
 #include "shell/browser/notifications/mac/notification_presenter_mac.h"
 
@@ -35,7 +36,16 @@ CocoaNotification* NotificationPresenterMac::GetNotification(
 
 NotificationPresenterMac::NotificationPresenterMac()
     : notification_center_delegate_(
-          [[NotificationCenterDelegate alloc] initWithPresenter:this]) {
+          [[NotificationCenterDelegate alloc] initWithPresenter:this]),
+      image_retainer_(std::make_unique<NotificationImageRetainer>()),
+      image_task_runner_(base::ThreadPool::CreateSequencedTaskRunner(
+          {base::MayBlock(), base::TaskPriority::USER_VISIBLE})) {
+  // Delete any remaining temp files in the image folder from the previous
+  // sessions.
+  DCHECK(image_task_runner_);
+  auto cleanup_task = image_retainer_->GetCleanupTask();
+  image_task_runner_->PostTask(FROM_HERE, std::move(cleanup_task));
+
   UNUserNotificationCenter* center =
       [UNUserNotificationCenter currentNotificationCenter];
 
@@ -62,6 +72,7 @@ NotificationPresenterMac::NotificationPresenterMac()
 
 NotificationPresenterMac::~NotificationPresenterMac() {
   UNUserNotificationCenter.currentNotificationCenter.delegate = nil;
+  image_task_runner_->DeleteSoon(FROM_HERE, image_retainer_.release());
 }
 
 Notification* NotificationPresenterMac::CreateNotificationObject(
