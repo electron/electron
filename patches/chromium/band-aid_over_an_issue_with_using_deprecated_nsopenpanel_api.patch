@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Avi Drissman <avi@chromium.org>
+Date: Thu, 21 Aug 2025 07:33:53 -0700
+Subject: Band-aid over an issue with using deprecated NSOpenPanel API
+
+Because deprecated and broken NSOpenPanel API is used, the open panel
+will sometimes incorrectly misunderstand a folder to be a package and
+return it as a user selection when folders are disallowed from
+selection. In that case, skip it.
+
+Bug: 40861123
+Bug: 41275486
+Bug: 440106155
+Change-Id: Ia0459a2bb76a30f4e126bd83069d7e13894d62f6
+Fixed: 438779953
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6867298
+Commit-Queue: Avi Drissman <avi@chromium.org>
+Reviewed-by: Christine Hollingsworth <christinesm@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1504534}
+
+diff --git a/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm b/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
+index f0b8108a7f8a63f66664c6c5ad3ada0bf60805b3..67380a76c699d1c2db0d3a96671bb92657c4a6d3 100644
+--- a/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
++++ b/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
+@@ -225,7 +225,7 @@ - (void)popupAction:(id)sender {
+   // Unfortunately, there's no great way to do strict type matching with
+   // NSOpenPanel. Setting explicit extensions via -allowedFileTypes is
+   // deprecated, and there's no way to specify that strict type equality should
+-  // be used for -allowedContentTypes (FB13721802).
++  // be used for -allowedContentTypes (https://crbug.com/41275486, FB13721802).
+   //
+   // -[NSOpenSavePanelDelegate panel:shouldEnableURL:] could be used to enforce
+   // strict type matching, however its presence on the delegate means that all
+@@ -235,6 +235,10 @@ - (void)popupAction:(id)sender {
+   //
+   // Therefore, use the deprecated API, because it's the only way to remain
+   // performant while achieving strict type matching.
++  //
++  // TODO(https://crbug.com/440106155): Possibly reconsider using
++  // -panel:shouldEnableURL: if the speed impact is judged to be acceptable
++  // nowadays.
+ 
+ #pragma clang diagnostic push
+ #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+@@ -479,8 +483,8 @@ - (void)popupAction:(id)sender {
+ 
+       // See -[ExtensionDropdownHandler popupAction:] as to why file extensions
+       // are collected here rather than being converted to UTTypes.
+-      // TODO(FB13721802): Use UTTypes when strict type matching can be
+-      // specified.
++      // TODO(https://crbug.com/440106155, FB13721802): Use UTTypes when strict
++      // type matching can be specified.
+       NSString* ext_ns = base::SysUTF8ToNSString(ext);
+       if (![file_extensions_array containsObject:ext_ns]) {
+         [file_extensions_array addObject:ext_ns];
+@@ -571,18 +575,46 @@ - (void)popupAction:(id)sender {
+         }
+         NSString* path = url.path;
+ 
+-        // There is a bug in macOS where, despite a request to disallow file
+-        // selection, files/packages are able to be selected. If indeed file
+-        // selection was disallowed, drop any files selected.
+-        // https://crbug.com/40861123, FB11405008
+-        if (!open_panel.canChooseFiles) {
++        if (base::mac::MacOSMajorVersion() < 14) {
++          // There is a bug in macOS (https://crbug.com/40861123, FB11405008)
++          // where, despite a request to disallow file selection, files/packages
++          // are able to be selected. If indeed file selection was disallowed,
++          // drop any files selected. This issue is fixed in macOS 14, so only
++          // do the workaround on previous releases.
++          if (!open_panel.canChooseFiles) {
++            BOOL is_directory;
++            BOOL exists =
++                [NSFileManager.defaultManager fileExistsAtPath:path
++                                                   isDirectory:&is_directory];
++            BOOL is_package =
++                [NSWorkspace.sharedWorkspace isFilePackageAtPath:path];
++            if (!exists || !is_directory || is_package) {
++              continue;
++            }
++          }
++        }
++
++        // As long as FB13721802 remains unfixed, this class uses extensions to
++        // filter what files are available rather than UTTypes. This deprecated
++        // API has a problem, however. If you specify an extension to be shown
++        // as available, then the NSOpenPanel will assume that any directory
++        // that has that extension is a package, and will offer it to the user
++        // for selection even if directory selection isn't otherwise allowed.
++        // Therefore, if directories are disallowed, filter out any that find
++        // their way in if they're not actually packages.
++        //
++        // TODO(https://crbug.com/440106155, FB13721802): Possibly reconsider
++        // using -panel:shouldEnableURL: if the speed impact is judged to be
++        // acceptable nowadays, and drop this band-aid.
++        if (!open_panel.canChooseDirectories) {
+           BOOL is_directory;
+           BOOL exists =
+               [NSFileManager.defaultManager fileExistsAtPath:path
+                                                  isDirectory:&is_directory];
+           BOOL is_package =
+               [NSWorkspace.sharedWorkspace isFilePackageAtPath:path];
+-          if (!exists || !is_directory || is_package) {
++          if (!exists || (is_directory && !is_package)) {
++            NSLog(@"dropping %@", path);
+             continue;
+           }
+         }
