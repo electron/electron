@@ -16,7 +16,7 @@ The `sharedTexture` module has the following methods:
   * `textureInfo` [SharedTextureImportTextureInfo](structures/shared-texture-import-texture-info.md) - The information of shared texture to import.
   * `allReferenceReleased` Function (optional) - Called when all references in all processes are released, you should keep native texture valid until this callback is called.
 
-Imports the shared texture from the given options. A copy of the native texture will be made, so that you can release the native texture after the import is complete.
+Imports the shared texture from the given options.
 
 > [!NOTE]
 > This method is only available in the main process.
