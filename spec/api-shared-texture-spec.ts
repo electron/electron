@@ -156,9 +156,9 @@ describe('sharedTexture module', () => {
       });
     }).timeout(debugSpec ? 100000 : 10000);
 
-    it('successfully imported and rendered with managed api', (done) => {
+    const runSharedTextureManagedTest = (done: Mocha.Done, iframe: boolean) => {
       const preloadPath = path.join(dirPath, 'managed', 'preload.js');
-      const htmlPath = path.join(dirPath, 'managed', 'index.html');
+      const htmlPath = path.join(dirPath, 'managed', iframe ? 'frame.html' : 'index.html');
 
       const createWindow = () => {
         const win = new BrowserWindow({
@@ -166,7 +166,8 @@ describe('sharedTexture module', () => {
           height: 256,
           show: debugSpec,
           webPreferences: {
-            preload: preloadPath
+            preload: preloadPath,
+            nodeIntegrationInSubFrames: iframe
           }
         });
 
@@ -183,6 +184,12 @@ describe('sharedTexture module', () => {
 
         osr.webContents.setFrameRate(1);
         osr.webContents.on('paint', async (event) => {
+          const targetFrame = iframe ? win.webContents.mainFrame.frames[0] : win.webContents.mainFrame;
+          if (!targetFrame) {
+            done(new Error('Target frame not found'));
+            return;
+          }
+
           // Step 1: Input source of shared texture handle.
           const texture = event.texture;
 
@@ -216,7 +223,7 @@ describe('sharedTexture module', () => {
 
                 // nativeImage have error comparing pixel data when color space is different,
                 // send to browser for comparison using canvas.
-                win.webContents.send('verify-captured-image', {
+                targetFrame.send('verify-captured-image', {
                   captured: captured.toDataURL(),
                   target: target.toDataURL()
                 });
@@ -225,7 +232,11 @@ describe('sharedTexture module', () => {
           });
 
           // Step 3: Transfer to another process (win's renderer)
-          await sharedTexture.sendToRenderer(win.webContents, imported);
+          await sharedTexture.sendSharedTexture({
+            webContents: iframe ? undefined : win.webContents,
+            webFrameMain: iframe ? targetFrame : undefined,
+            importedSharedTexture: imported
+          });
 
           // Step 4: Release the imported and wait for signal to release the source
           imported.release();
@@ -242,7 +253,7 @@ describe('sharedTexture module', () => {
             expect(ratio).to.be.lessThan(0.01);
             done();
           } catch (e) {
-            done(e);
+            setTimeout(() => done(e), 1000000);
           }
         });
 
@@ -258,6 +269,14 @@ describe('sharedTexture module', () => {
       app.whenReady().then(() => {
         createWindow();
       });
+    };
+
+    it('successfully imported and rendered with managed api, without iframe', (done) => {
+      runSharedTextureManagedTest(done, false);
+    }).timeout(debugSpec ? 100000 : 10000);
+
+    it('successfully imported and rendered with managed api, with iframe', (done) => {
+      runSharedTextureManagedTest(done, true);
     }).timeout(debugSpec ? 100000 : 10000);
   });
 });

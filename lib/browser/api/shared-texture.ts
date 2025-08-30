@@ -1,5 +1,4 @@
 import ipcMain from '@electron/internal/browser/api/ipc-main';
-import { fromId as webContentsFromId } from '@electron/internal/browser/api/web-contents';
 import * as ipcMainInternalUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
@@ -15,44 +14,46 @@ type SharedTextureImportedWrapper = {
   texture: Electron.SharedTextureImported;
   allReferenceReleased: AllReleasedCallback | undefined;
   mainReference: boolean;
-  rendererReferences: Map<number, number>;
+  rendererFrameReferences: Map<number, { count: number, reference: Electron.WebFrameMain }>;
 }
 
-ipcMain.handle(IPC_MESSAGES.IMPORT_SHARED_TEXTURE_RELEASE_RENDERER_TO_MAIN, (event, textureId: string) => {
-  wrapperReleaseFromRenderer(textureId, event.sender);
+ipcMain.handle(IPC_MESSAGES.IMPORT_SHARED_TEXTURE_RELEASE_RENDERER_TO_MAIN, (event: Electron.IpcMainInvokeEvent, textureId: string) => {
+  const frameTreeNodeId = event.frameTreeNodeId ?? event.sender.mainFrame.frameTreeNodeId;
+  wrapperReleaseFromRenderer(textureId, frameTreeNodeId);
 });
 
 function checkManagedSharedTextures () {
   for (const [, wrapper] of managedSharedTextures) {
-    for (const [webContentsId] of wrapper.rendererReferences) {
-      const wc = webContentsFromId(webContentsId);
-      if (!wc || wc.isDestroyed()) {
-        console.warn(`Shared texture ${wrapper.texture.textureId} is referenced by destroyed webContents ${webContentsId}, this means a imported shared texture in renderer process is not released before the process is exited.`);
-        wrapper.rendererReferences.delete(webContentsId);
+    for (const [frameTreeNodeId, entry] of wrapper.rendererFrameReferences) {
+      const frame = entry.reference;
+      if (!frame || frame.isDestroyed()) {
+        console.warn(`Shared texture ${wrapper.texture.textureId} is referenced by a destroyed webContent/webFrameMain, this means a imported shared texture in renderer process is not released before the process is exited.`);
+        wrapper.rendererFrameReferences.delete(frameTreeNodeId);
       }
     }
   }
 }
 
-function wrapperReleaseFromRenderer (id: string, sender: Electron.WebContents) {
+function wrapperReleaseFromRenderer (id: string, frameTreeNodeId: number) {
   const wrapper = managedSharedTextures.get(id);
   if (!wrapper) {
     throw new Error(`Shared texture with id ${id} not found`);
   }
 
-  let count = wrapper.rendererReferences.get(sender.id);
-  if (!count) {
-    throw new Error(`Shared texture ${id} is not referenced by renderer ${sender.id}`);
+  const entry = wrapper.rendererFrameReferences.get(frameTreeNodeId);
+  if (!entry) {
+    throw new Error(`Shared texture ${id} is not referenced by renderer frame ${frameTreeNodeId}`);
   }
 
-  count -= 1;
-  wrapper.rendererReferences.set(sender.id, count);
-  if (count === 0) {
-    wrapper.rendererReferences.delete(sender.id);
+  entry.count -= 1;
+  if (entry.count === 0) {
+    wrapper.rendererFrameReferences.delete(frameTreeNodeId);
+  } else {
+    wrapper.rendererFrameReferences.set(frameTreeNodeId, entry);
   }
 
   // Actually release the texture if no one is referencing it
-  if (wrapper.rendererReferences.size === 0 && !wrapper.mainReference) {
+  if (wrapper.rendererFrameReferences.size === 0 && !wrapper.mainReference) {
     wrapper.texture.subtle.release(() => {
       wrapper.allReferenceReleased?.(wrapper.texture);
       managedSharedTextures.delete(id);
@@ -68,7 +69,7 @@ function wrapperReleaseFromMain (id: string) {
 
   // Actually release the texture if no one is referencing it
   wrapper.mainReference = false;
-  if (wrapper.rendererReferences.size === 0) {
+  if (wrapper.rendererFrameReferences.size === 0) {
     wrapper.texture.subtle.release(() => {
       wrapper.allReferenceReleased?.(wrapper.texture);
       managedSharedTextures.delete(id);
@@ -76,16 +77,9 @@ function wrapperReleaseFromMain (id: string) {
   }
 }
 
-async function sendToRenderer (receiver: Electron.WebContents, imported: Electron.SharedTextureImported, ...args: any[]) {
+async function sendSharedTexture (options: Electron.SendSharedTextureOptions, ...args: any[]) {
+  const imported = options.importedSharedTexture;
   const transfer = imported.subtle.startTransferSharedTexture();
-
-  const invokePromise = ipcMainInternalUtils.invokeInWebContents<Electron.SharedTextureSyncToken>(
-    receiver,
-    IPC_MESSAGES.IMPORT_SHARED_TEXTURE_TRANSFER_MAIN_TO_RENDERER,
-    transfer,
-    imported.textureId,
-    ...args
-  );
 
   let timeoutHandle: NodeJS.Timeout | null = null;
   const timeoutPromise = new Promise<never>((resolve, reject) => {
@@ -94,12 +88,40 @@ async function sendToRenderer (receiver: Electron.WebContents, imported: Electro
     }, transferTimeout);
   });
 
+  if (options.webContents && options.webFrameMain) {
+    throw new Error('Only one of `webContents` or `webFrameMain` can be provided');
+  }
+
+  const targetFrame: Electron.WebFrameMain | undefined = options.webFrameMain ?? options.webContents?.mainFrame;
+  if (!targetFrame) {
+    throw new Error('One and only one of `webContents` or `webFrameMain` should be provided');
+  }
+
+  const invokePromise: Promise<Electron.SharedTextureSyncToken> = ipcMainInternalUtils.invokeInWebFrameMain<Electron.SharedTextureSyncToken>(
+    targetFrame,
+    IPC_MESSAGES.IMPORT_SHARED_TEXTURE_TRANSFER_MAIN_TO_RENDERER,
+    transfer,
+    imported.textureId,
+    ...args
+  );
+
   try {
     const syncToken = await Promise.race([invokePromise, timeoutPromise]);
     imported.subtle.setReleaseSyncToken(syncToken);
 
     const wrapper = managedSharedTextures.get(imported.textureId);
-    wrapper?.rendererReferences.set(receiver.id, (wrapper?.rendererReferences.get(receiver.id) ?? 0) + 1);
+    if (!wrapper) {
+      throw new Error(`Shared texture with id ${imported.textureId} not found`);
+    }
+
+    const key = targetFrame.frameTreeNodeId;
+    const existing = wrapper.rendererFrameReferences.get(key);
+    if (existing) {
+      existing.count += 1;
+      wrapper.rendererFrameReferences.set(key, existing);
+    } else {
+      wrapper.rendererFrameReferences.set(key, { count: 1, reference: targetFrame });
+    }
   } finally {
     if (timeoutHandle) {
       clearTimeout(timeoutHandle);
@@ -123,7 +145,7 @@ function importSharedTexture (options: Electron.ImportSharedTextureOptions) {
     texture: ret,
     allReferenceReleased: options.allReferenceReleased,
     mainReference: true,
-    rendererReferences: new Map()
+    rendererFrameReferences: new Map()
   };
   managedSharedTextures.set(id, wrapper);
 
@@ -133,7 +155,7 @@ function importSharedTexture (options: Electron.ImportSharedTextureOptions) {
 const sharedTexture = {
   subtle: sharedTextureNative,
   importSharedTexture,
-  sendToRenderer
+  sendSharedTexture
 };
 
 setInterval(checkManagedSharedTextures, 5000);

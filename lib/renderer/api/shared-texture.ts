@@ -5,8 +5,8 @@ import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-in
 const sharedTextureNative = process._linkedBinding('electron_common_shared_texture');
 const transferChannelName = IPC_MESSAGES.IMPORT_SHARED_TEXTURE_TRANSFER_MAIN_TO_RENDERER;
 
-type SharedTextureTransferredCallback = (importedSharedTexture: Electron.SharedTextureImported, ...args: any[]) => Promise<void>;
-let sharedTextureTransferredCallback: SharedTextureTransferredCallback | null = null;
+type SharedTextureReceiverCallback = (data: Electron.ReceivedSharedTextureData, ...args: any[]) => Promise<void>;
+let sharedTextureReceiverCallback: SharedTextureReceiverCallback | null = null;
 
 ipcRendererInternal.on(transferChannelName, async (event, requestId, ...args) => {
   const replyChannel = `${transferChannelName}_RESPONSE_${requestId}`;
@@ -28,7 +28,8 @@ ipcRendererInternal.on(transferChannelName, async (event, requestId, ...args) =>
       }
     };
 
-    await sharedTextureTransferredCallback?.(wrapper, ...args.slice(2));
+    const data: Electron.ReceivedSharedTextureData = { importedSharedTexture: wrapper };
+    await sharedTextureReceiverCallback?.(data, ...args.slice(2));
   } catch (error) {
     event.sender.send(replyChannel, error);
   }
@@ -36,8 +37,8 @@ ipcRendererInternal.on(transferChannelName, async (event, requestId, ...args) =>
 
 const sharedTexture = {
   subtle: sharedTextureNative,
-  receiveFromMain: (listener: SharedTextureTransferredCallback) => {
-    sharedTextureTransferredCallback = listener;
+  setSharedTextureReceiver: (callback: SharedTextureReceiverCallback) => {
+    sharedTextureReceiverCallback = callback;
   }
 };
 
