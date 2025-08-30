@@ -142,6 +142,7 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
     if (prevent_default) {
       electron::api::WebContents::SetDisableDraggableRegions(true);
       views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
+      electron::api::WebContents::SetDisableDraggableRegions(false);
     }
     return prevent_default;
   }

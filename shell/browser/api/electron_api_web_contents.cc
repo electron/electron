@@ -87,7 +87,6 @@
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
-#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/message_port.h"
@@ -757,8 +756,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   script_executor_ = std::make_unique<extensions::ScriptExecutor>(web_contents);
 #endif
 
-  auto session = Session::CreateFrom(isolate, GetBrowserContext());
-  session_.Reset(isolate, session.ToV8());
+  session_ = Session::CreateFrom(isolate, GetBrowserContext());
 
   SetUserAgent(GetBrowserContext()->GetUserAgent());
 
@@ -780,9 +778,9 @@ WebContents::WebContents(v8::Isolate* isolate,
 {
   DCHECK(type != Type::kRemote)
       << "Can't take ownership of a remote WebContents";
-  auto session = Session::CreateFrom(isolate, GetBrowserContext());
-  session_.Reset(isolate, session.ToV8());
-  InitWithSessionAndOptions(isolate, std::move(web_contents), session,
+  session_ = Session::CreateFrom(isolate, GetBrowserContext());
+  InitWithSessionAndOptions(isolate, std::move(web_contents),
+                            session_->browser_context(),
                             gin::Dictionary::CreateEmpty(isolate));
 }
 
@@ -831,15 +829,15 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   // Obtain the session.
   std::string partition;
-  gin_helper::Handle<api::Session> session;
-  if (options.Get("session", &session) && !session.IsEmpty()) {
+  api::Session* session = nullptr;
+  if (options.Get("session", &session) && session) {
   } else if (options.Get("partition", &partition)) {
     session = Session::FromPartition(isolate, partition);
   } else {
     // Use the default session if not specified.
     session = Session::FromPartition(isolate, "");
   }
-  session_.Reset(isolate, session.ToV8());
+  session_ = session;
 
   std::unique_ptr<content::WebContents> web_contents;
   if (is_guest()) {
@@ -888,7 +886,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     web_contents = content::WebContents::Create(params);
   }
 
-  InitWithSessionAndOptions(isolate, std::move(web_contents), session, options);
+  InitWithSessionAndOptions(isolate, std::move(web_contents),
+                            session->browser_context(), options);
 }
 
 void WebContents::InitZoomController(content::WebContents* web_contents,
@@ -909,10 +908,10 @@ void WebContents::InitZoomController(content::WebContents* web_contents,
 void WebContents::InitWithSessionAndOptions(
     v8::Isolate* isolate,
     std::unique_ptr<content::WebContents> owned_web_contents,
-    gin_helper::Handle<api::Session> session,
+    ElectronBrowserContext* browser_context,
     const gin_helper::Dictionary& options) {
   Observe(owned_web_contents.get());
-  InitWithWebContents(std::move(owned_web_contents), session->browser_context(),
+  InitWithWebContents(std::move(owned_web_contents), browser_context,
                       is_guest());
 
   inspectable_web_contents_->GetView()->SetDelegate(this);
@@ -1120,9 +1119,10 @@ void WebContents::OnDidAddMessageToConsole(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
 
   gin_helper::Dictionary dict(isolate, event_object);
   dict.SetGetter("frame", source_frame);
@@ -1134,7 +1134,7 @@ void WebContents::OnDidAddMessageToConsole(
   // TODO(samuelmaddock): Delete when deprecated arguments are fully removed.
   dict.Set("_level", static_cast<int32_t>(level));
 
-  EmitWithoutEvent("-console-message", event);
+  EmitWithoutEvent("-console-message", event_object);
 }
 
 void WebContents::OnCreateWindow(
@@ -1518,9 +1518,10 @@ void WebContents::RendererUnresponsive(
     base::RepeatingClosure hang_monitor_restarter) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
   gin::Dictionary dict(isolate, event_object);
 
   auto* web_contents_impl = static_cast<content::WebContentsImpl*>(source);
@@ -1534,7 +1535,7 @@ void WebContents::RendererUnresponsive(
       static_cast<content::RenderWidgetHostImpl*>(render_widget_host);
   dict.Set("rendererInitialized", rwh_impl->renderer_initialized());
 
-  EmitWithoutEvent("-unresponsive", event);
+  EmitWithoutEvent("-unresponsive", event_object);
 }
 
 void WebContents::RendererResponsive(
@@ -1703,12 +1704,13 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
 void WebContents::OnAudioStateChanged(bool audible) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
   gin::Dictionary dict(isolate, event_object);
   dict.Set("audible", audible);
-  EmitWithoutEvent("audio-state-changed", event);
+  EmitWithoutEvent("audio-state-changed", event_object);
 }
 
 void WebContents::BeforeUnloadFired(bool proceed) {
@@ -1971,9 +1973,10 @@ bool WebContents::EmitNavigationEvent(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
 
   gin_helper::Dictionary dict(isolate, event_object);
   dict.Set("url", url);
@@ -1984,8 +1987,8 @@ bool WebContents::EmitNavigationEvent(
   dict.SetGetter("frame", frame_host);
   dict.SetGetter("initiator", initiator_frame_host);
 
-  EmitWithoutEvent(event_name, event, url, is_same_document, is_main_frame,
-                   frame_process_id, frame_routing_id);
+  EmitWithoutEvent(event_name, event_object, url, is_same_document,
+                   is_main_frame, frame_process_id, frame_routing_id);
   return event->GetDefaultPrevented();
 }
 
@@ -3657,16 +3660,17 @@ void WebContents::OnPaint(const gfx::Rect& dirty_rect,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
   gin_helper::Dictionary dict(isolate, event_object);
 
   if (offscreen_use_shared_texture_) {
     dict.Set("texture", tex);
   }
 
-  EmitWithoutEvent("paint", event, dirty_rect,
+  EmitWithoutEvent("paint", event_object, dirty_rect,
                    gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
@@ -3778,7 +3782,12 @@ v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow(
 }
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
-  return v8::Local<v8::Value>::New(isolate, session_);
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> wrapper;
+  if (!session_->GetWrapper(isolate).ToLocal(&wrapper)) {
+    return v8::Null(isolate);
+  }
+  return v8::Local<v8::Value>::New(isolate, wrapper);
 }
 
 content::WebContents* WebContents::HostWebContents() const {

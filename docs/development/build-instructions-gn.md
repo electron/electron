@@ -191,12 +191,6 @@ $ ./out/Testing/electron
 
 ### Packaging
 
-On linux, first strip the debugging and symbol information:
-
-```sh
-$ electron/script/strip-binaries.py -d out/Release
-```
-
 To package the electron build as a distributable zip file:
 
 ```sh

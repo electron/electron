@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index fe0f15f50e1b68579cd1f1d2749e056f15854ace..2aa7d12c278dee9dd987aa5d1aba9d9ba798cff1 100644
+index 21abffe390a8213ce1a5b71f382b37a60a014f52..38134a075fbb3586eec543591c88fcf7dcd53e3d 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -526,6 +526,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -536,6 +536,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -141,10 +141,10 @@ index a5ac9d4a417ac8e75e761c40841f41ab9057c761..292bd1f9de78828e739dae24a45a1dd3
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 691726eb23434005adc559534fc0aeede937cc92..a980ed6afb84eceef9c9b594b325e8e3783821ec 100644
+index b533436f91ba67c6060d4a1976f7c197b6db3afc..63df740efad1e407f0990d2ba48a9cbcb8bdb6f8 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -145,6 +145,8 @@ String PermissionNameToString(PermissionName name) {
+@@ -146,6 +146,8 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

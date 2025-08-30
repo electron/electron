@@ -12,6 +12,7 @@
 #include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
 #include "electron/mas.h"
+#include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -126,6 +127,10 @@ void NodeService::Initialize(
   v8::HandleScope scope{isolate};
 
   node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
+
+  network_change_notifier_ = net::NetworkChangeNotifier::CreateIfNeeded(
+      net::NetworkChangeNotifier::CONNECTION_UNKNOWN,
+      net::NetworkChangeNotifier::ConnectionSubtype::SUBTYPE_UNKNOWN);
 
   // Append program path for process.argv0
   auto program = base::CommandLine::ForCurrentProcess()->GetProgram();

@@ -13,6 +13,7 @@
 #include <shlobj.h>
 #include <wrl\wrappers\corewrappers.h>
 
+#include "base/containers/fixed_flat_map.h"
 #include "base/hash/hash.h"
 #include "base/logging.h"
 #include "base/strings/strcat.h"
@@ -43,15 +44,15 @@ namespace winui = ABI::Windows::UI;
     }                                                  \
   } while (false)
 
-#define REPORT_AND_RETURN_IF_FAILED(hr, msg)                              \
-  do {                                                                    \
-    if (const HRESULT _hrTemp = hr; FAILED(_hrTemp)) {                    \
-      std::string _err =                                                  \
-          base::StrCat({msg, ", ERROR ", base::NumberToString(_hrTemp)}); \
-      DebugLog(_err);                                                     \
-      Notification::NotificationFailed(_err);                             \
-      return _hrTemp;                                                     \
-    }                                                                     \
+#define REPORT_AND_RETURN_IF_FAILED(hr, msg)                               \
+  do {                                                                     \
+    if (const HRESULT _hrTemp = hr; FAILED(_hrTemp)) {                     \
+      std::string _err =                                                   \
+          base::StrCat({msg, ", ERROR ", FailureResultToString(_hrTemp)}); \
+      DebugLog(_err);                                                      \
+      Notification::NotificationFailed(_err);                              \
+      return _hrTemp;                                                      \
+    }                                                                      \
   } while (false)
 
 namespace electron {
@@ -69,6 +70,41 @@ void DebugLog(std::string_view log_msg) {
 
 std::wstring GetTag(const std::string_view notification_id) {
   return base::NumberToWString(base::FastHash(notification_id));
+}
+
+// See https://www.hresult.info for HRESULT error codes.
+const std::string FailureResultToString(HRESULT failure_reason) {
+  static constexpr auto kFailureMessages = base::MakeFixedFlatMap<
+      HRESULT, std::string_view>(
+      {{-2143420143, "Settings prevent the notification from being delivered."},
+       {-2143420142,
+        "Application capabilities prevent the notification from being "
+        "delivered."},
+       {-2143420140,
+        "Settings prevent the notification type from being delivered."},
+       {-2143420139, "The size of the notification content is too large."},
+       {-2143420138, "The size of the notification tag is too large."},
+       {-2143420155, "The notification platform is unavailable."},
+       {-2143420154, "The notification has already been posted."},
+       {-2143420153, "The notification has already been hidden."},
+       {-2143420128,
+        "The size of the developer id for scheduled notification is too "
+        "large."},
+       {-2143420118, "The notification tag is not alphanumeric."},
+       {-2143419897,
+        "Toast Notification was dropped without being displayed to the user."},
+       {-2143419896,
+        "The notification platform does not have the proper privileges to "
+        "complete the request."}});
+
+  if (const auto it = kFailureMessages.find(failure_reason);
+      it != kFailureMessages.end()) {
+    return base::StrCat({"Notification failed - ", it->second});
+  }
+
+  return base::StrCat({"Notification failed - Unknown failure reason (HRESULT ",
+                       base::NumberToString(static_cast<long>(failure_reason)),
+                       ")"});
 }
 
 constexpr char kToast[] = "toast";
@@ -413,8 +449,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     winui::Notifications::IToastFailedEventArgs* e) {
   HRESULT error;
   e->get_ErrorCode(&error);
-  std::string errorMessage = base::StrCat(
-      {"Notification failed. HRESULT:", base::NumberToString(error)});
+  std::string errorMessage = FailureResultToString(error);
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&Notification::NotificationFailed,
                                 notification_, errorMessage));
