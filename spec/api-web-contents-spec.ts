@@ -1,4 +1,3 @@
-import { clipboard } from 'electron/common';
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents, BaseWindow, WebContentsView } from 'electron/main';
 
 import { expect } from 'chai';
@@ -1457,32 +1456,6 @@ describe('webContents module', () => {
       const event = once(w.webContents, 'devtools-opened');
       w.webContents.inspectElement(10, 10);
       await event;
-    });
-  });
-
-  describe('webContents.copyVideoFrameAt', () => {
-    afterEach(closeAllWindows);
-    it('copies the video frame at the given coordinates to the clipboard', async () => {
-      const w = new BrowserWindow({ show: true });
-      const htmlPath = path.join(fixturesPath, 'api', 'video-wrapper.html');
-      await w.loadFile(htmlPath);
-      await setTimeout(1000);
-      const position = await w.webContents.executeJavaScript(`
-        const rect = document.querySelector("video").getBoundingClientRect();
-        ({ x: rect.x, y: rect.y });
-      `);
-      const videoSize = await w.webContents.executeJavaScript(`
-        const video = document.querySelector("video");
-        ({ width: video.videoWidth, height: video.videoHeight });
-      `);
-      const x = (position && typeof position.x === 'number' && !isNaN(position.x) ? Math.round(position.x) : 0) + 1;
-      const y = (position && typeof position.y === 'number' && !isNaN(position.y) ? Math.round(position.y) : 0) + 1;
-      // Copy the video frame at the given coordinates to the clipboard
-      w.webContents.copyVideoFrameAt(x, y);
-      await setTimeout(100);
-      const image = clipboard.readImage();
-      expect(image.isEmpty()).to.be.false();
-      expect(image.getSize()).to.deep.equal(videoSize);
     });
   });
 

@@ -150,14 +150,12 @@
 #include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
-#include "third_party/blink/public/mojom/frame/media_player_action.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
-#include "ui/gfx/geometry/point.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "ui/base/cocoa/defaults_utils.h"
@@ -3393,28 +3391,6 @@ void WebContents::CopyImageAt(int x, int y) {
     host->CopyImageAt(x, y);
 }
 
-void WebContents::CopyVideoFrameAt(int x, int y) {
-  auto* const host = web_contents()->GetPrimaryMainFrame();
-  if (host) {
-    auto location = gfx::Point(x, y);
-    auto action = blink::mojom::MediaPlayerAction(
-        blink::mojom::MediaPlayerActionType::kCopyVideoFrame,
-        /*enable=*/true);
-    host->ExecuteMediaPlayerActionAtLocation(location, action);
-  }
-}
-
-void WebContents::SaveVideoFrameAs(int x, int y) {
-  auto* const host = web_contents()->GetPrimaryMainFrame();
-  if (host) {
-    auto location = gfx::Point(x, y);
-    auto action = blink::mojom::MediaPlayerAction(
-        blink::mojom::MediaPlayerActionType::kSaveVideoFrameAs,
-        /*enable=*/true);
-    host->ExecuteMediaPlayerActionAtLocation(location, action);
-  }
-}
-
 void WebContents::Focus() {
   // Focusing on WebContents does not automatically focus the window on macOS
   // and Linux, do it manually to match the behavior on Windows.
@@ -4540,8 +4516,6 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("showDefinitionForSelection",
                  &WebContents::ShowDefinitionForSelection)
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
-      .SetMethod("copyVideoFrameAt", &WebContents::CopyVideoFrameAt)
-      .SetMethod("saveVideoFrameAs", &WebContents::SaveVideoFrameAs)
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)

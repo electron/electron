@@ -175,6 +175,20 @@ app.on('web-contents-created', (_, webContents) => {
 })
 ```
 
+#### `frame.copyVideoFrameAt(x, y)`
+
+* `x` Integer
+* `y` Integer
+
+When executed on a video media element, copies the frame at (x, y) to the clipboard.
+
+#### `frame.saveVideoFrameAs(x, y)`
+
+* `x` Integer
+* `y` Integer
+
+When executed on a video media element, shows a save dialog and saves the frame at (x, y) to disk.
+
 ### Instance Properties
 
 #### `frame.ipc` _Readonly_
