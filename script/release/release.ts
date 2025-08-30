@@ -7,7 +7,7 @@ import got from 'got';
 import { gte } from 'semver';
 import { track as trackTemp } from 'temp';
 
-import { execSync, ExecSyncOptions } from 'node:child_process';
+import { execFileSync, ExecSyncOptions } from 'node:child_process';
 import { statSync, createReadStream, writeFileSync, close } from 'node:fs';
 import { join } from 'node:path';
 
@@ -233,16 +233,15 @@ function azRemoteFilesForVersion (version: string) {
   }));
 }
 
-function runScript (scriptName: string, scriptArgs: string[], cwd?: string) {
-  const scriptCommand = `${scriptName} ${scriptArgs.join(' ')}`;
+function runScript (scriptPath: string, scriptArgs: string[], cwd?: string) {
   const scriptOptions: ExecSyncOptions = {
     encoding: 'utf-8'
   };
   if (cwd) scriptOptions.cwd = cwd;
   try {
-    return execSync(scriptCommand, scriptOptions);
+    return execFileSync(scriptPath, scriptArgs, scriptOptions);
   } catch (err) {
-    console.error(`${fail} Error running ${scriptName}`, err);
+    console.error(`${fail} Error running ${scriptPath}`, err);
     process.exit(1);
   }
 }
