@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 67a30140a94be331e85b24615052d1575fc379f6..fcaec94a38c1a181109fae707ca5150bb87afdae 100644
+index 666ed8890f60cd0477b814b4b44571002eca9bff..73f730ff05a22938a834921d4842bf1f9faaca67 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9819,6 +9819,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9823,6 +9823,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 67a30140a94be331e85b24615052d1575fc379f6..fcaec94a38c1a181109fae707ca5150b
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 150f871e437c2325ebe1001d4fddbece98f6faa1..b521a21a5d7c1a8e2d027a676e4bd529b7674121 100644
+index 3677a957465f59ab80ac059bfcb5afdf98513b48..7a6760e0efdf6972eb497407b68202c5bfffd006 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5300,6 +5300,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5298,6 +5298,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    create_params.initially_hidden = renderer_started_hidden;
    create_params.initial_popup_url = params.target_url;
  
@@ -35,7 +35,7 @@ index 150f871e437c2325ebe1001d4fddbece98f6faa1..b521a21a5d7c1a8e2d027a676e4bd529
    // Even though all codepaths leading here are in response to a renderer
    // trying to open a new window, if the new window ends up in a different
    // browsing instance, then the RenderViewHost, RenderWidgetHost,
-@@ -5355,6 +5359,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5353,6 +5357,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -48,7 +48,7 @@ index 150f871e437c2325ebe1001d4fddbece98f6faa1..b521a21a5d7c1a8e2d027a676e4bd529
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5396,12 +5406,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5394,12 +5404,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -77,10 +77,10 @@ index 90cc84198b7f23c6a07ab503f60a577fdfba5baa..722b27b8adaf86624058ace5f9b5871f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index c11f404d6a410da9387ad56acd60e77327c67fbd..2bc4fdcf89ad91ee9f4c1937719e44818776f9ec 100644
+index 3cdd0bc9c74c63710a3760c815d0d22b3e42b5e6..6226f3c520563d42c55170454ca3165c7ca68598 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -878,6 +878,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -884,6 +884,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -90,7 +90,7 @@ index c11f404d6a410da9387ad56acd60e77327c67fbd..2bc4fdcf89ad91ee9f4c1937719e4481
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 4649f0811524a1f2aac932fd11cc46e0560c860e..6c76b60261234f06694c91a4334fd287fad5c79a 100644
+index 58d6836695052ea06239412105a0a192167c89b3..c0d50b2690e8f9dbfde195e1b48eb68682bb0606 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -201,6 +201,7 @@ class NetworkService;

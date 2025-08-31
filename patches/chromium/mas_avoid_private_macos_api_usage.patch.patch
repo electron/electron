@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 76168b452f4cadb4bb28b3317e310aafdc7a8f5b..2445855b42cb96a81c67e5524c8476e01f0b5d2a 100644
+index b1b814f68a6ac8264668dbb8cf5de9081457c684..6ebf8342307613639a9870e71adcdf7d502581f3 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1062,6 +1062,7 @@ component("base") {
@@ -220,7 +220,7 @@ index 1d4c16a300227e5e8269e2c2564cb5e87ec8ee65..3bcbb33700b2b9349795c05c12e44b4f
  
  using crypto::apple::Keychain;
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index c64a0ef4bca4d5047d2e21913eb91b33815893b3..695af0020859749f0518d1c6d1cc8c5e223eb7ba 100644
+index ba813851fde2660c21f99248a124161d2ac2ca07..c34f920e4a592b6798f5307c726bc34ebedf3f88 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -77,6 +77,7 @@ component("app_shim") {
@@ -1556,7 +1556,7 @@ index 54d483d6b3f1a56573e21b1f873b8dee8fc25a0f..33bc8c9ef097a907060ed347dca2ad46
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index 2a7352c1925bdce988c9f1a44f387e160532f508..8c07cc82bd6c42e6da8de314ca52867bcb3b9532 100644
+index 8ef5c8c7ac9a555fe41e6146997833ae43164951..4c17f1d29dac780195e07bcdb7e12a8fdd3f2130 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 @@ -14,6 +14,7 @@
@@ -1593,7 +1593,7 @@ index 2a7352c1925bdce988c9f1a44f387e160532f508..8c07cc82bd6c42e6da8de314ca52867b
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -703,6 +708,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -696,6 +701,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -1601,7 +1601,7 @@ index 2a7352c1925bdce988c9f1a44f387e160532f508..8c07cc82bd6c42e6da8de314ca52867b
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -731,6 +737,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -724,6 +730,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
