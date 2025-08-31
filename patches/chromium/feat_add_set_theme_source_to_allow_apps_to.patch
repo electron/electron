@@ -13,22 +13,18 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index e761050d9afbbc6d1c25dd8ec6a2a90d548c1195..628cf5fe3400300f9894d01b810c4ec4cdab04ec 100644
+index e761050d9afbbc6d1c25dd8ec6a2a90d548c1195..fc28431861f2499095ecedfd1ffb8c4d43545ea4 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -239,6 +239,12 @@ void NativeTheme::PaintMenuItemBackground(
-   canvas->drawRect(gfx::RectToSkRect(rect), flags);
+@@ -240,6 +240,8 @@ void NativeTheme::PaintMenuItemBackground(
  }
  
-+bool NativeTheme::ShouldUseDarkColors() const {
+ bool NativeTheme::ShouldUseDarkColors() const {
 +  if (theme_source() == ThemeSource::kForcedLight) return false;
 +  if (theme_source() == ThemeSource::kForcedDark) return true;
-+  return should_use_dark_colors_;
-+}
-+
- bool NativeTheme::ShouldUseDarkColors() const {
    return should_use_dark_colors_;
  }
+ 
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
 index 31e322d2ead9a50d705abca7b6cfc36a75e43abf..54ffa70dae4a00cfe714937c142f43b5df029987 100644
 --- a/ui/native_theme/native_theme.h
