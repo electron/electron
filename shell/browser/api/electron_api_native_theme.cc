@@ -25,6 +25,12 @@ NativeTheme::NativeTheme(v8::Isolate* isolate,
                          ui::NativeTheme* web_theme)
     : ui_theme_(ui_theme), web_theme_(web_theme) {
   ui_theme_->AddObserver(this);
+#if BUILDFLAG(IS_WIN)
+  std::ignore = hkcu_themes_regkey_.Open(HKEY_CURRENT_USER,
+                                         L"Software\\Microsoft\\Windows\\"
+                                         L"CurrentVersion\\Themes\\Personalize",
+                                         KEY_READ);
+#endif
 }
 
 NativeTheme::~NativeTheme() {
@@ -32,6 +38,16 @@ NativeTheme::~NativeTheme() {
 }
 
 void NativeTheme::OnNativeThemeUpdatedOnUI() {
+#if BUILDFLAG(IS_WIN)
+  if (hkcu_themes_regkey_.Valid()) {
+    DWORD system_uses_light_theme = 1;
+    hkcu_themes_regkey_.ReadValueDW(L"SystemUsesLightTheme",
+                                    &system_uses_light_theme);
+    system_dark_mode_enabled = (system_uses_light_theme == 0);
+    should_use_dark_colors_for_system_integrated_ui_ =
+        std::make_optional<bool>(system_dark_mode_enabled);
+  }
+#endif
   Emit("updated");
 }
 
@@ -65,7 +81,8 @@ bool NativeTheme::ShouldUseHighContrastColors() {
 }
 
 bool NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI() {
-  return ui_theme_->ShouldUseDarkColorsForSystemIntegratedUI();
+  return should_use_dark_colors_for_system_integrated_ui_.value_or(
+      ShouldUseDarkColors());
 }
 
 bool NativeTheme::InForcedColorsMode() {
