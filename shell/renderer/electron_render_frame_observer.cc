@@ -148,11 +148,11 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
 }
 
 void ElectronRenderFrameObserver::WillReleaseScriptContext(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     int world_id) {
   if (ShouldNotifyClient(world_id))
-    renderer_client_->WillReleaseScriptContext(context->GetIsolate(), context,
-                                               render_frame_);
+    renderer_client_->WillReleaseScriptContext(isolate, context, render_frame_);
 }
 
 void ElectronRenderFrameObserver::OnDestruct() {
