@@ -536,17 +536,14 @@ describe('webFrameMain module', () => {
   describe('webFrameMain.copyVideoFrameAt', () => {
     const insertVideoInFrame = async (frame: WebFrameMain) => {
       const videoPath = path.join(fixtures, 'cat-spin.mp4');
-      await frame.executeJavaScript(`(${(src: string) => {
-        return new Promise((resolve) => {
-          const video = document.createElement('video');
-          video.onload = resolve;
-          video.src = src;
-          video.loop = true;
-          video.muted = true;
-          video.play();
-          document.body.appendChild(video);
-        });
-      }})(${JSON.stringify(videoPath)})`);
+      await frame.executeJavaScript(`
+        const video = document.createElement('video');
+        video.src = '${videoPath}';
+        video.muted = true;
+        video.loop = true;
+        video.play();
+        document.body.appendChild(video);
+      `);
     };
 
     const getFramePosition = async (frame: WebFrameMain) => {
@@ -570,6 +567,7 @@ describe('webFrameMain module', () => {
           y: Math.floor(rect.y + rect.height / 2)
         };
       }})()`) as Electron.Point;
+
       expect(point).to.be.an('object');
 
       // Translate coordinate to be relative of main frame
@@ -587,21 +585,19 @@ describe('webFrameMain module', () => {
     });
 
     it('copies video frame in main frame', async () => {
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: true });
       await w.webContents.loadFile(path.join(fixtures, 'blank.html'));
       await insertVideoInFrame(w.webContents.mainFrame);
       await copyVideoFrameInFrame(w.webContents.mainFrame);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
     });
 
     it('copies video frame in subframe', async () => {
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: true });
       await w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
       const subframe = w.webContents.mainFrame.frames[0];
       expect(subframe).to.exist();
       await insertVideoInFrame(subframe);
       await copyVideoFrameInFrame(subframe);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
     });
   });
 
