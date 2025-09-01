@@ -52,9 +52,11 @@ jobs:
         target-platform: win
 
   publish-x64-win:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-windows
     with:
       environment: production-release
@@ -68,9 +70,11 @@ jobs:
     secrets: inherit
 
   publish-arm64-win:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-windows
     with:
       environment: production-release
@@ -84,9 +88,11 @@ jobs:
     secrets: inherit
 
   publish-x86-win:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-windows
     with:
       environment: production-release

@@ -34,9 +34,6 @@ on:
         type: boolean
         default: false
   push:
-    branches:
-      - main
-      - '[1-9][0-9]-x-y'
   pull_request:
 
 defaults:
