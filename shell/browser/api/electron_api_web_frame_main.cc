@@ -269,7 +269,8 @@ void WebFrameMain::CopyVideoFrameAt(int x, int y) {
   auto action = blink::mojom::MediaPlayerAction(
       blink::mojom::MediaPlayerActionType::kCopyVideoFrame,
       /*enable=*/true);
-  return render_frame_->ExecuteMediaPlayerActionAtLocation(location, action);
+  return render_frame_host()->ExecuteMediaPlayerActionAtLocation(location,
+                                                                 action);
 }
 
 void WebFrameMain::SaveVideoFrameAs(int x, int y) {
@@ -277,9 +278,10 @@ void WebFrameMain::SaveVideoFrameAs(int x, int y) {
     return;
   auto location = gfx::Point(x, y);
   auto action = blink::mojom::MediaPlayerAction(
-      blink::mojom::MediaPlayerActionType::kSaveVideoFrame,
+      blink::mojom::MediaPlayerActionType::kSaveVideoFrameAs,
       /*enable=*/true);
-  return render_frame_->ExecuteMediaPlayerActionAtLocation(location, action);
+  return render_frame_host()->ExecuteMediaPlayerActionAtLocation(location,
+                                                                 action);
 }
 
 bool WebFrameMain::Reload() {
