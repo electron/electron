@@ -12,7 +12,6 @@
 #import <Squirrel/Squirrel.h>
 
 #include "base/functional/bind.h"
-#include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/time/time.h"
 #include "gin/arguments.h"
@@ -30,11 +29,6 @@ SQRLUpdater* __strong g_updater = nil;
 bool g_update_available = false;
 
 }  // namespace
-
-std::string& AutoUpdater::GetFeedURL() {
-  static base::NoDestructor<std::string> update_url;
-  return *update_url;
-}
 
 // static
 void AutoUpdater::SetFeedURL(gin::Arguments* args) {
