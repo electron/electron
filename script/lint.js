@@ -282,7 +282,7 @@ const LINTERS = [{
 }, {
   key: 'md',
   roots: ['.'],
-  ignoreRoots: ['.git', 'node_modules', 'spec/node_modules'],
+  ignoreRoots: ['.git', 'node_modules', 'spec/node_modules', 'spec/fixtures/native-addon'],
   test: filename => filename.endsWith('.md'),
   run: async (opts, filenames) => {
     const { getCodeBlocks } = await import('@electron/lint-roller/dist/lib/markdown.js');
