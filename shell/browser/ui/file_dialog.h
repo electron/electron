@@ -10,12 +10,12 @@
 #include <utility>
 #include <vector>
 
+#include "base/files/file_path.h"
+#include "base/memory/raw_ptr_exclusion.h"
+
 #if BUILDFLAG(IS_LINUX)
 #include <bits/stdint-uintn.h>
 #endif
-
-#include "base/files/file_path.h"
-#include "base/memory/raw_ptr_exclusion.h"
 
 namespace electron {
 class NativeWindow;
