@@ -18,4 +18,4 @@ runs:
     shell: bash
     run: |
       cd src/electron
-      node script/yarn install --frozen-lockfile --prefer-offline
+      node script/yarn install --immutable
