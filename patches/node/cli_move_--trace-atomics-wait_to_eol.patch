@@ -83,7 +83,7 @@ index 6913992a5476d2317a34fb69d3c6af63b686f9a6..1faef5ba1d4206a5cc4c71cb71f7a08f
  Print stack traces for deprecations.
  .
 diff --git a/src/node.cc b/src/node.cc
-index 443c351d67a3efb3aece3480e2e21558b335120a..2f373662006a74b751bfd259863d8ca5373fddf3 100644
+index 0d383dcdb80fe30e3c2d6880b44f626f065bb1f3..9d9992dacbc595c987827f55eb12ea8af0480df6 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -232,44 +232,6 @@ void Environment::WaitForInspectorFrontendByOptions() {
