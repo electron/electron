@@ -88,13 +88,9 @@ async function sendSharedTexture (options: Electron.SendSharedTextureOptions, ..
     }, transferTimeout);
   });
 
-  if (options.webContents && options.webFrameMain) {
-    throw new Error('Only one of `webContents` or `webFrameMain` can be provided');
-  }
-
-  const targetFrame: Electron.WebFrameMain | undefined = options.webFrameMain ?? options.webContents?.mainFrame;
+  const targetFrame: Electron.WebFrameMain | undefined = options.frame;
   if (!targetFrame) {
-    throw new Error('One and only one of `webContents` or `webFrameMain` should be provided');
+    throw new Error('`frame` should be provided');
   }
 
   const invokePromise: Promise<Electron.SharedTextureSyncToken> = ipcMainInternalUtils.invokeInWebFrameMain<Electron.SharedTextureSyncToken>(
