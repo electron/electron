@@ -19,10 +19,10 @@ Reviewed-by: Christine Hollingsworth <christinesm@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1504534}
 
 diff --git a/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm b/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
-index f0b8108a7f8a63f66664c6c5ad3ada0bf60805b3..67380a76c699d1c2db0d3a96671bb92657c4a6d3 100644
+index 8e5fcc911dd28b99786ae2708184a7c47d3b1c3c..1f9977ffb1d7fd5d8bcc22f6f1ca2b840af909d6 100644
 --- a/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
 +++ b/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
-@@ -225,7 +225,7 @@ - (void)popupAction:(id)sender {
+@@ -220,7 +220,7 @@ - (void)popupAction:(id)sender {
    // Unfortunately, there's no great way to do strict type matching with
    // NSOpenPanel. Setting explicit extensions via -allowedFileTypes is
    // deprecated, and there's no way to specify that strict type equality should
@@ -31,7 +31,7 @@ index f0b8108a7f8a63f66664c6c5ad3ada0bf60805b3..67380a76c699d1c2db0d3a96671bb926
    //
    // -[NSOpenSavePanelDelegate panel:shouldEnableURL:] could be used to enforce
    // strict type matching, however its presence on the delegate means that all
-@@ -235,6 +235,10 @@ - (void)popupAction:(id)sender {
+@@ -230,6 +230,10 @@ - (void)popupAction:(id)sender {
    //
    // Therefore, use the deprecated API, because it's the only way to remain
    // performant while achieving strict type matching.
@@ -42,7 +42,7 @@ index f0b8108a7f8a63f66664c6c5ad3ada0bf60805b3..67380a76c699d1c2db0d3a96671bb926
  
  #pragma clang diagnostic push
  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-@@ -479,8 +483,8 @@ - (void)popupAction:(id)sender {
+@@ -462,8 +466,8 @@ - (void)popupAction:(id)sender {
  
        // See -[ExtensionDropdownHandler popupAction:] as to why file extensions
        // are collected here rather than being converted to UTTypes.
@@ -53,7 +53,7 @@ index f0b8108a7f8a63f66664c6c5ad3ada0bf60805b3..67380a76c699d1c2db0d3a96671bb926
        NSString* ext_ns = base::SysUTF8ToNSString(ext);
        if (![file_extensions_array containsObject:ext_ns]) {
          [file_extensions_array addObject:ext_ns];
-@@ -571,18 +575,46 @@ - (void)popupAction:(id)sender {
+@@ -554,18 +558,46 @@ - (void)popupAction:(id)sender {
          }
          NSString* path = url.path;
  
