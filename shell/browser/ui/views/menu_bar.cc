@@ -10,7 +10,6 @@
 #include "shell/browser/ui/views/submenu_button.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/color/color_provider.h"
-#include "ui/native_theme/common_theme.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"
 
