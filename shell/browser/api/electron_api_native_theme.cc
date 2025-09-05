@@ -43,7 +43,7 @@ void NativeTheme::OnNativeThemeUpdatedOnUI() {
     DWORD system_uses_light_theme = 1;
     hkcu_themes_regkey_.ReadValueDW(L"SystemUsesLightTheme",
                                     &system_uses_light_theme);
-    system_dark_mode_enabled = (system_uses_light_theme == 0);
+    bool system_dark_mode_enabled = (system_uses_light_theme == 0);
     should_use_dark_colors_for_system_integrated_ui_ =
         std::make_optional<bool>(system_dark_mode_enabled);
   }
