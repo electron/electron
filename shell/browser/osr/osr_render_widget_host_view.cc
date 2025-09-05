@@ -154,6 +154,7 @@ class ElectronDelegatedFrameHostClient
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
     bool offscreen_use_shared_texture,
+    const std::string& offscreen_shared_texture_pixel_format,
     bool painting,
     int frame_rate,
     const OnPaintCallback& callback,
@@ -165,6 +166,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       parent_host_view_(parent_host_view),
       transparent_(transparent),
       offscreen_use_shared_texture_(offscreen_use_shared_texture),
+      offscreen_shared_texture_pixel_format_(
+          offscreen_shared_texture_pixel_format),
       callback_(callback),
       frame_rate_(frame_rate),
       size_(initial_size),
@@ -550,7 +553,8 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
   }
 
   return new OffScreenRenderWidgetHostView(
-      transparent_, offscreen_use_shared_texture_, true,
+      transparent_, offscreen_use_shared_texture_,
+      offscreen_shared_texture_pixel_format_, true,
       embedder_host_view->frame_rate(), callback_, render_widget_host,
       embedder_host_view, size());
 }

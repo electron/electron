@@ -87,6 +87,11 @@
      paint event. Defaults to `false`. See the
     [offscreen rendering tutorial](../../tutorial/offscreen-rendering.md) for
     more details.
+  * `sharedTexturePixelFormat` string (optional) _Experimental_ - The pixel format of the shared texture. Defaults to `argb`.
+    The name keep same as Chromium [`media::VideoPixelFormat`](https://source.chromium.org/chromium/chromium/src/+/main:media/base/video_types.h) enum.
+    The actual output format and color space should refer to [`OffscreenSharedTexture`](../structures/offscreen-shared-texture.md) object in the `paint` event.
+    * `argb` - The requested output texture format is 8-bit unorm RGBA, with SRGB SDR color space.
+    * `rgbaf16` - The requested output texture format is 16-bit float RGBA, with scRGB HDR color space.
 * `contextIsolation` boolean (optional) - Whether to run Electron APIs and
   the specified `preload` script in a separate JavaScript context. Defaults
   to `true`. The context that the `preload` script runs in will only have
