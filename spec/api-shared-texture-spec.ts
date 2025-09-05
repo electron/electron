@@ -233,8 +233,7 @@ describe('sharedTexture module', () => {
 
           // Step 3: Transfer to another process (win's renderer)
           await sharedTexture.sendSharedTexture({
-            webContents: iframe ? undefined : win.webContents,
-            webFrameMain: iframe ? targetFrame : undefined,
+            frame: iframe ? targetFrame : win.webContents.mainFrame,
             importedSharedTexture: imported
           });
 

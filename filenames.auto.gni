@@ -146,6 +146,7 @@ auto_filenames = {
     "docs/api/structures/shared-dictionary-info.md",
     "docs/api/structures/shared-dictionary-usage-info.md",
     "docs/api/structures/shared-texture-handle.md",
+    "docs/api/structures/shared-texture-import-texture-info.md",
     "docs/api/structures/shared-texture-imported-subtle.md",
     "docs/api/structures/shared-texture-imported.md",
     "docs/api/structures/shared-texture-subtle.md",
