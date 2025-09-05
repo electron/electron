@@ -42,7 +42,7 @@ class Debugger final : public gin_helper::DeprecatedWrappable<Debugger>,
       content::WebContents* web_contents);
 
   // Make public for cppgc::MakeGarbageCollected.
-  Debugger(content::WebContents* web_contents);
+  explicit Debugger(content::WebContents* web_contents);
   ~Debugger() override;
 
   // gin_helper::Wrappable
