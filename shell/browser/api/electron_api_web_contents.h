@@ -816,6 +816,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether offscreen rendering use gpu shared texture
   bool offscreen_use_shared_texture_ = false;
+  std::string offscreen_shared_texture_pixel_format_ = "argb";
 
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_ = false;
