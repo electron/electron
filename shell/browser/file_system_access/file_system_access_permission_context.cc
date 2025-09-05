@@ -916,6 +916,10 @@ void FileSystemAccessPermissionContext::NotifyEntryMoved(
   }
 }
 
+void FileSystemAccessPermissionContext::NotifyEntryModified(
+    const url::Origin& origin,
+    const content::PathInfo& path) {}
+
 void FileSystemAccessPermissionContext::NotifyEntryRemoved(
     const url::Origin& origin,
     const content::PathInfo& path) {}
