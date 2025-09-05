@@ -42,7 +42,7 @@ constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
      APIPermissionInfo::kFlagRequiresManagementUIWarning},
 };
 base::span<const APIPermissionInfo::InitInfo> GetPermissionInfos() {
-  return base::span(permissions_to_register);
+  return permissions_to_register;
 }
 base::span<const Alias> GetPermissionAliases() {
   return {};
