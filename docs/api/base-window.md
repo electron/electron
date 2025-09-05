@@ -1262,15 +1262,16 @@ Sets the properties for the window's taskbar button.
 
 #### `win.setAccentColor(accentColor)` _Windows_
 
-* `accentColor` boolean | string - The accent color for the window. By default, follows user preference in System Settings.
+* `accentColor` boolean | string | null - The accent color for the window. By default, follows user preference in System Settings. To reset to system default, pass `null`.
 
 Sets the system accent color and highlighting of active window border.
 
 The `accentColor` parameter accepts the following values:
 
 * **Color string** - Sets a custom accent color using standard CSS color formats (Hex, RGB, RGBA, HSL, HSLA, or named colors). Alpha values in RGBA/HSLA formats are ignored and the color is treated as fully opaque.
-* **`true`** - Uses the system's default accent color from user preferences in System Settings.
+* **`true`** - Uses the system's default accent color from user preferences in System Settings regardless of whether accent colors are currently enabled for windows.
 * **`false`** - Explicitly disables accent color highlighting for the window.
+* **`null`** - Reset window accent color behavior to match current system settings.
 
 Examples:
 
