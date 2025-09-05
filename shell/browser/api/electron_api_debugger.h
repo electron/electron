@@ -41,6 +41,10 @@ class Debugger final : public gin_helper::DeprecatedWrappable<Debugger>,
       v8::Isolate* isolate,
       content::WebContents* web_contents);
 
+  // Make public for cppgc::MakeGarbageCollected.
+  Debugger(content::WebContents* web_contents);
+  ~Debugger() override;
+
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -52,9 +56,6 @@ class Debugger final : public gin_helper::DeprecatedWrappable<Debugger>,
   Debugger& operator=(const Debugger&) = delete;
 
  protected:
-  Debugger(content::WebContents* web_contents);
-  ~Debugger() override;
-
   // content::DevToolsAgentHostClient:
   void AgentHostClosed(content::DevToolsAgentHost* agent_host) override;
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
