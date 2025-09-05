@@ -85,7 +85,6 @@
 #include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/display/win/screen_win.h"
-#include "ui/gfx/color_utils.h"
 #include "ui/gfx/win/hwnd_util.h"
 #include "ui/gfx/win/msg_util.h"
 #endif
@@ -216,8 +215,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (transparent())
     thick_frame_ = false;
 
-  overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
-  overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
+  overlay_button_color_ = GetSysSkColor(COLOR_BTNFACE);
+  overlay_symbol_color_ = GetSysSkColor(COLOR_BTNTEXT);
 
   if (std::string str; options.Get(options::kAccentColor, &str)) {
     std::optional<SkColor> parsed_color = ParseCSSColor(str);

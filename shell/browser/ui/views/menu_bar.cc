@@ -18,7 +18,7 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
-#include "ui/gfx/color_utils.h"
+#include "shell/common/color_util.h"
 #endif
 
 namespace electron {
@@ -260,7 +260,7 @@ void MenuBar::UpdateViewColors() {
 #elif BUILDFLAG(IS_WIN)
   for (views::View* child : GetChildrenInZOrder()) {
     auto* button = static_cast<SubmenuButton*>(child);
-    button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_MENUTEXT));
+    button->SetUnderlineColor(GetSysSkColor(COLOR_MENUTEXT));
   }
 #endif
 }
