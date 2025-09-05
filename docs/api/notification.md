@@ -188,7 +188,7 @@ app.whenReady().then(() => {
   n.on('click', () => console.log('Notification clicked'))
   n.on('action', (e, actionIndex, selectionIndex) => {
     console.log(`User triggered action at index: ${actionIndex}`)
-    if (selectionIndex > 0) {
+    if (selectionIndex > -1) {
       console.log(`User chose selection item '${items[selectionIndex]}'`)
     }
   })
