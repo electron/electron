@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b1b814f68a6ac8264668dbb8cf5de9081457c684..6ebf8342307613639a9870e71adcdf7d502581f3 100644
+index c835d9ea235070abaca36b38dc5f573da98fd469..a8d867b18c73abfe55da053a93696eb43c848dde 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1062,6 +1062,7 @@ component("base") {
+@@ -1058,6 +1058,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -582,7 +582,7 @@ index e5b59a9d364dd5a8f847d9543b19fdc068098754..86abd01371ce8a9c21d020f1a69a5d33
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 00f6ea7e18623e5de436f1dc9e5e094da7e7d26a..461564699bf9b604c7dd0c8250a0480a880b5f10 100644
+index c92c7110c747cc575c94cf941cf9131987ef4fd6..08bd7dc0663b7d3a7fa327e8795db13129e891de 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -344,6 +344,7 @@ source_set("browser") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index df62b072dc002d1b439163c7604042f15482ab12..39a279475d889cfad5f472e50c9afd12e3bd484f 100644
+index 8e939c6c74a016779cc2a9da2ce68f3ebb11a05a..4c4fb37276f58ba32baaddb5b9e61b95eab8336f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -673,6 +673,7 @@ static_library("test_support") {
@@ -825,7 +825,7 @@ index df62b072dc002d1b439163c7604042f15482ab12..39a279475d889cfad5f472e50c9afd12
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3346,6 +3350,7 @@ test("content_unittests") {
+@@ -3354,6 +3358,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1808,10 +1808,10 @@ index 85d9170ae8de43ec0fa18c033d66c0583c26ec2f..c4f76301818404ce853583adf01af85c
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index aa9d950ec49fe85c73ad8e340c61f263f294b3dc..6b865a85be95e4225bfb90a542d31efe77a2e987 100644
+index 6f09aea6a492f44f5771c635b8d766bb1868938c..bd82e70622e04d83d5d07a9f5e08a1ddacb568e4 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -339,6 +339,12 @@ component("gfx") {
+@@ -337,6 +337,12 @@ component("gfx") {
      "//ui/base:ui_data_pack",
    ]
  
