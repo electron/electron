@@ -59,6 +59,8 @@ on:
         type: boolean
         default: false
 
+permissions: {}
+
 concurrency:
   group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
@@ -80,6 +82,8 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ inputs.build-runs-on }}
+    permissions:
+      contents: read
     container: ${{ fromJSON(inputs.build-container) }}
     environment: ${{ inputs.environment }}
     env:
