@@ -39,6 +39,7 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#include <variant>
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
