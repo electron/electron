@@ -390,19 +390,19 @@ void HandleToastActivation(const std::wstring& invoked_args,
     return;
 
   if (type == L"action" && target->delegate()) {
-    int selected_index = -1;
+    int selection_index = -1;
     for (const auto& entry : inputs) {
       std::wstring_view key_view(entry.key);
       if (base::StartsWith(key_view, L"selection",
                            base::CompareCase::SENSITIVE)) {
         int parsed = -1;
         if (base::StringToInt(entry.value, &parsed) && parsed >= 0)
-          selected_index = parsed;
+          selection_index = parsed;
         break;
       }
     }
     if (action_index >= 0)
-      target->delegate()->NotificationAction(action_index, selected_index);
+      target->delegate()->NotificationAction(action_index, selection_index);
   } else if ((type == L"reply" || (!reply_text.empty() && type.empty())) &&
              target->delegate()) {
     target->delegate()->NotificationReplied(reply_text);

@@ -140,8 +140,9 @@ app.whenReady().then(() => {
 
 Returns:
 
-* `event` Event
-* `reply` string - The string the user entered into the inline reply field.
+* `details` Event\<\>
+  * `reply` string - The string the user entered into the inline reply field.
+* `reply` string _Deprecated_
 
 Emitted when the user clicks the "Reply" button on a notification with `hasReply: true`.
 
@@ -167,9 +168,11 @@ app.whenReady().then(() => {
 
 Returns:
 
-* `event` Event
-* `actionIndex` number - The index of the action that was activated.
-* `selectionIndex` number _Windows_ - The index of the selected item, if one was chosen. -1 if none was chosen.
+* `details` Event\<\>
+  * `actionIndex` number - The index of the action that was activated.
+  * `selectionIndex` number _Windows_ - The index of the selected item, if one was chosen. -1 if none was chosen.
+* `actionIndex` number _Deprecated_
+* `selectionIndex` number _Windows_ _Deprecated_
 
 ```js
 const { Notification, app } = require('electron')
@@ -177,7 +180,7 @@ const { Notification, app } = require('electron')
 app.whenReady().then(() => {
   const items = ['One', 'Two', 'Three']
   const n = new Notification({
-    title: 'Send a Message',
+    title: 'Choose an Action!',
     actions: [
       { type: 'button', text: 'Action 1' },
       { type: 'button', text: 'Action 2' },
@@ -186,10 +189,10 @@ app.whenReady().then(() => {
   })
 
   n.on('click', () => console.log('Notification clicked'))
-  n.on('action', (e, actionIndex, selectionIndex) => {
-    console.log(`User triggered action at index: ${actionIndex}`)
-    if (selectionIndex > -1) {
-      console.log(`User chose selection item '${items[selectionIndex]}'`)
+  n.on('action', (e) => {
+    console.log(`User triggered action at index: ${e.actionIndex}`)
+    if (e.selectionIndex > -1) {
+      console.log(`User chose selection item '${items[e.selectionIndex]}'`)
     }
   })
 
