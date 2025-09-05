@@ -26,8 +26,8 @@ namespace electron::api {
 
 gin::DeprecatedWrapperInfo Debugger::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Debugger::Debugger(v8::Isolate* isolate, content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents), web_contents_(web_contents) {}
+Debugger::Debugger(content::WebContents* web_contents)
+    : content::WebContentsObserver{web_contents}, web_contents_{web_contents} {}
 
 Debugger::~Debugger() = default;
 
@@ -181,7 +181,7 @@ void Debugger::ClearPendingRequests() {
 gin_helper::Handle<Debugger> Debugger::Create(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
-  return gin_helper::CreateHandle(isolate, new Debugger(isolate, web_contents));
+  return gin_helper::CreateHandle(isolate, new Debugger(web_contents));
 }
 
 gin::ObjectTemplateBuilder Debugger::GetObjectTemplateBuilder(

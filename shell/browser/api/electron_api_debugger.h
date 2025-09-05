@@ -52,7 +52,7 @@ class Debugger final : public gin_helper::DeprecatedWrappable<Debugger>,
   Debugger& operator=(const Debugger&) = delete;
 
  protected:
-  Debugger(v8::Isolate* isolate, content::WebContents* web_contents);
+  Debugger(content::WebContents* web_contents);
   ~Debugger() override;
 
   // content::DevToolsAgentHostClient:
