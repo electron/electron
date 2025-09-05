@@ -19,12 +19,15 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 using content::DevToolsAgentHost;
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo Debugger::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo Debugger::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                           gin::kElectronDebugger};
 
 Debugger::Debugger(content::WebContents* web_contents)
     : content::WebContentsObserver{web_contents}, web_contents_{web_contents} {}
@@ -178,10 +181,10 @@ void Debugger::ClearPendingRequests() {
 }
 
 // static
-gin_helper::Handle<Debugger> Debugger::Create(
-    v8::Isolate* isolate,
-    content::WebContents* web_contents) {
-  return gin_helper::CreateHandle(isolate, new Debugger(web_contents));
+Debugger* Debugger::Create(v8::Isolate* isolate,
+                           content::WebContents* web_contents) {
+  return cppgc::MakeGarbageCollected<Debugger>(
+      isolate->GetCppHeap()->GetAllocationHandle(), web_contents);
 }
 
 gin::ObjectTemplateBuilder Debugger::GetObjectTemplateBuilder(
@@ -194,8 +197,12 @@ gin::ObjectTemplateBuilder Debugger::GetObjectTemplateBuilder(
       .SetMethod("sendCommand", &Debugger::SendCommand);
 }
 
-const char* Debugger::GetTypeName() {
-  return "Debugger";
+const gin::WrapperInfo* Debugger::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* Debugger::GetHumanReadableName() const {
+  return "Electron / Debugger";
 }
 
 }  // namespace electron::api
