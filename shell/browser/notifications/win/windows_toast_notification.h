@@ -72,9 +72,9 @@ class WindowsToastNotification : public Notification {
       ABI::Windows::UI::Notifications::IToastNotification* toast);
 
   static ComPtr<
-      ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>
+      ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>*
       toast_manager_;
-  static ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>
+  static ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>*
       toast_notifier_;
 
   EventRegistrationToken activated_token_;
