@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
-index b35dd08e6c49796418cd9d10eb5cc9d02b39961e..97bcd79b331db140d157e6b1faf92625597edc98 100644
+index 7a5e72b1e8e498fdfa8de12aa9b9672dc047248c..f326c52894f86ef9c82c685a8685245138f01ed5 100644
 --- a/test/parallel/test-crypto-async-sign-verify.js
 +++ b/test/parallel/test-crypto-async-sign-verify.js
 @@ -89,6 +89,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
@@ -268,7 +268,7 @@ index 48cd1ed4df61aaddeee8785cb90f83bdd9628187..d09e01712c617597833bb1320a32a967
  
  // No-pad encrypted string should return the same:
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
-index dcd5045daaf58c60e27c1e2f7941033302241339..b52ec0e2cd5d6b1c9a0fee3064f2f8ff3b6e4308 100644
+index 119bc3c2d20ea7d681f0b579f9d91ad46cdc3634..8d13b105fa426015a873c411ad1d7f64b3d9580e 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
 +++ b/test/parallel/test-crypto-rsa-dsa.js
 @@ -29,12 +29,11 @@ const dsaPkcs8KeyPem = fixtures.readKey('dsa_private_pkcs8.pem');
@@ -296,9 +296,9 @@ index dcd5045daaf58c60e27c1e2f7941033302241339..b52ec0e2cd5d6b1c9a0fee3064f2f8ff
 -  if (padding === constants.RSA_PKCS1_PADDING) {
 +  if (!process.features.openssl_is_boringssl) {
      if (!process.config.variables.node_shared_openssl) {
-       assert.throws(() => {
-         crypto.privateDecrypt({
-@@ -471,7 +470,7 @@ assert.throws(() => {
+       // TODO(richardlau) remove check and else branch after deps/openssl
+       // is upgraded.
+@@ -489,7 +488,7 @@ assert.throws(() => {
  //
  // Test DSA signing and verification
  //
