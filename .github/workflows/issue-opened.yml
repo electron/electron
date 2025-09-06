@@ -35,7 +35,13 @@ jobs:
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
-      - run: npm install @electron/fiddle-core@1.3.3 mdast-util-from-markdown@2.0.0 unist-util-select@5.1.0 semver@7.6.0
+      - name: Sparse checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.0.2
+        with:
+          sparse-checkout: .github
+          path: checkout
+      - name: Install dependencies
+        uses: ./checkout/.github/actions/install-workflow-dependencies
       - name: Add labels
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         id: add-labels
@@ -78,7 +84,7 @@ jobs:
                   } catch {}
 
                   const { ElectronVersions } = await import('${{ github.workspace }}/node_modules/@electron/fiddle-core/dist/index.js');
-                  const electronVersions = await ElectronVersions.create(undefined, { ignoreCache: true });
+                  const electronVersions = await ElectronVersions.create({ ignoreCache: true });
                   const validVersions = [...electronVersions.supportedMajors, ...electronVersions.prereleaseMajors];
 
                   if (validVersions.includes(major)) {
