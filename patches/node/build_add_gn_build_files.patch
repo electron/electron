@@ -24,7 +24,7 @@ index 2415940835036226799a7ea14c6687cc0d56c523..0feb07afbccad97a92cee00954443407
    o['variables']['v8_enable_external_code_space'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
 diff --git a/node.gni b/node.gni
-index b049f0692980c3e26771c3209c3bdd2e9a4d637b..e2407027ab05e59b2f0f1c213b98ea469db7a91b 100644
+index d4438f7fd61598afac2c1e3184721a759d22b10c..e2407027ab05e59b2f0f1c213b98ea469db7a91b 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -5,10 +5,10 @@
@@ -40,15 +40,7 @@ index b049f0692980c3e26771c3209c3bdd2e9a4d637b..e2407027ab05e59b2f0f1c213b98ea46
  
    # The location of OpenSSL - use the one from node's deps by default.
    node_openssl_path = "$node_path/deps/openssl"
-@@ -42,12 +42,15 @@ declare_args() {
-   # The variable is called "openssl" for parity with node's GYP build.
-   node_use_openssl = true
- 
-+  # Build node with SQLite support.
-+  node_use_sqlite = true
-+
-   # Use the specified path to system CA (PEM format) in addition to
-   # the BoringSSL supplied CA store or compiled-in Mozilla CA copy.
+@@ -50,7 +50,7 @@ declare_args() {
    node_openssl_system_ca_path = ""
  
    # Initialize v8 platform during node.js startup.
@@ -57,7 +49,7 @@ index b049f0692980c3e26771c3209c3bdd2e9a4d637b..e2407027ab05e59b2f0f1c213b98ea46
  
    # Custom build tag.
    node_tag = ""
-@@ -67,10 +70,16 @@ declare_args() {
+@@ -70,10 +70,16 @@ declare_args() {
    # TODO(zcbenz): There are few broken things for now:
    #   1. cross-os compilation is not supported.
    #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
@@ -76,7 +68,7 @@ index b049f0692980c3e26771c3209c3bdd2e9a4d637b..e2407027ab05e59b2f0f1c213b98ea46
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index abf1583cdac9f139056cf4809f14e28e62f6d24c..8b104e175ccf8de90c138337f83f8f6ce1348ac7 100644
+index b4acc40618e372b09d0cb5e3755034f08711a282..efeaaef7e4dc64a0adb5e6bdbbe18945890de62c 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -789,6 +789,7 @@ void BuiltinLoader::RegisterExternalReferences(
@@ -279,22 +271,10 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index da565473f1ae96b4d009935f7733e6ab15ea9de2..26ebc811272ef2990f8d090c54e7f5294aab9d37 100644
+index 865a0d5ce9c6792e57f4216bcaa594ca6fc7b1c8..26ebc811272ef2990f8d090c54e7f5294aab9d37 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -22,6 +22,11 @@ template("node_gn_build") {
-     } else {
-       defines += [ "HAVE_OPENSSL=0" ]
-     }
-+    if (node_use_sqlite) {
-+      defines += [ "HAVE_SQLITE=1" ]
-+    } else {
-+      defines += [ "HAVE_SQLITE=0" ]
-+    }
-     if (node_use_amaro) {
-       defines += [ "HAVE_AMARO=1" ]
-     } else {
-@@ -142,32 +147,41 @@ template("node_gn_build") {
+@@ -147,31 +147,41 @@ template("node_gn_build") {
      public_configs = [
        ":node_external_config",
        "deps/googletest:googletest_config",
@@ -317,7 +297,6 @@ index da565473f1ae96b4d009935f7733e6ab15ea9de2..26ebc811272ef2990f8d090c54e7f529
        "deps/nghttp2",
 -      "deps/ngtcp2",
        "deps/postject",
--      "deps/sqlite",
        "deps/uvwasi",
 -      "deps/zstd",
        "//third_party/zlib",
@@ -340,7 +319,7 @@ index da565473f1ae96b4d009935f7733e6ab15ea9de2..26ebc811272ef2990f8d090c54e7f529
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -190,9 +204,13 @@ template("node_gn_build") {
+@@ -194,7 +204,7 @@ template("node_gn_build") {
      }
      if (node_use_openssl) {
        deps += [ "deps/ncrypto" ]
@@ -348,14 +327,8 @@ index da565473f1ae96b4d009935f7733e6ab15ea9de2..26ebc811272ef2990f8d090c54e7f529
 +      public_deps += [ "//third_party/boringssl" ]
        sources += gypi_values.node_crypto_sources
      }
-+    if (node_use_sqlite) {
-+      deps += [ "deps/sqlite" ]
-+      sources += gypi_values.node_sqlite_sources
-+    }
-     if (node_enable_inspector) {
-       deps += [
-         "$node_inspector_protocol_path:crdtp",
-@@ -215,6 +233,10 @@ template("node_gn_build") {
+     if (node_use_sqlite) {
+@@ -223,6 +233,10 @@ template("node_gn_build") {
      }
    }
  
@@ -366,7 +339,7 @@ index da565473f1ae96b4d009935f7733e6ab15ea9de2..26ebc811272ef2990f8d090c54e7f529
    executable(target_name) {
      forward_variables_from(invoker, "*")
  
-@@ -289,6 +311,7 @@ template("node_gn_build") {
+@@ -297,6 +311,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -374,7 +347,7 @@ index da565473f1ae96b4d009935f7733e6ab15ea9de2..26ebc811272ef2990f8d090c54e7f529
      deps = [
        "deps/uv",
        "$node_simdutf_path",
-@@ -299,26 +322,75 @@ template("node_gn_build") {
+@@ -307,26 +322,75 @@ template("node_gn_build") {
        "src/embedded_data.cc",
        "src/embedded_data.h",
      ]
@@ -460,7 +433,7 @@ index da565473f1ae96b4d009935f7733e6ab15ea9de2..26ebc811272ef2990f8d090c54e7f529
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -332,11 +404,11 @@ template("node_gn_build") {
+@@ -340,11 +404,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  
