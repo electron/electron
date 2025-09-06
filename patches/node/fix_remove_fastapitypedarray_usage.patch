@@ -48,7 +48,7 @@ index fe669d40c31a29334b047b9cfee3067f64ef0a7b..9e5de7bbe574add017cd12ee091304d0
  
  static CFunction fast_timing_safe_equal(CFunction::Make(FastTimingSafeEqual));
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index d0338b8a2d9cd3fd9f6db1f0f16f83b198ce0e7e..c4a87539dab49ff40e0951616777b132d4059e01 100644
+index e39852c8e0392e0a9ae5d4ea58be115416e19233..c94b14741c827a81d69a6f036426a344e563ad72 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -44,6 +44,14 @@
@@ -135,7 +135,7 @@ index d0338b8a2d9cd3fd9f6db1f0f16f83b198ce0e7e..c4a87539dab49ff40e0951616777b132
  }
  
  static v8::CFunction fast_compare(v8::CFunction::Make(FastCompare));
-@@ -1148,14 +1158,13 @@ void SlowIndexOfNumber(const FunctionCallbackInfo<Value>& args) {
+@@ -1149,14 +1159,13 @@ void SlowIndexOfNumber(const FunctionCallbackInfo<Value>& args) {
  }
  
  int32_t FastIndexOfNumber(v8::Local<v8::Value>,
@@ -153,7 +153,7 @@ index d0338b8a2d9cd3fd9f6db1f0f16f83b198ce0e7e..c4a87539dab49ff40e0951616777b132
  }
  
  static v8::CFunction fast_index_of_number(
-@@ -1495,21 +1504,31 @@ void SlowWriteString(const FunctionCallbackInfo<Value>& args) {
+@@ -1496,21 +1505,31 @@ void SlowWriteString(const FunctionCallbackInfo<Value>& args) {
  
  template <encoding encoding>
  uint32_t FastWriteString(Local<Value> receiver,
@@ -194,7 +194,7 @@ index d0338b8a2d9cd3fd9f6db1f0f16f83b198ce0e7e..c4a87539dab49ff40e0951616777b132
  
  static const v8::CFunction fast_write_string_ascii(
 diff --git a/src/util.h b/src/util.h
-index 6376cf4f81113cdb2e3c179b800f1c79b51ab762..cc7ad99f981f564fba0395159d9d8b39901050ff 100644
+index dbec66247852df91c57c2a4e9664d2fea7d3dcef..efeb12d837db7b88093e4a6a2e20df562180ca1e 100644
 --- a/src/util.h
 +++ b/src/util.h
 @@ -60,6 +60,7 @@
