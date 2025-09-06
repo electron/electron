@@ -369,9 +369,6 @@ namespace electron::api {
 gin::WrapperInfo App::kWrapperInfo = {{gin::kEmbedderNativeGin},
                                       gin::kElectronApp};
 
-// static
-cppgc::Persistent<App> App::instance_;
-
 namespace {
 
 IconLoader::IconSize GetIconSizeByString(const std::string& size) {
@@ -1701,17 +1698,15 @@ void ConfigureHostResolver(v8::Isolate* isolate,
 
 // static
 App* App::Get() {
-  CHECK_NE(instance_, nullptr);
-  return instance_.Get();
+  return Create(nullptr);
 }
 
 // static
 App* App::Create(v8::Isolate* isolate) {
-  if (!instance_) {
-    instance_ = cppgc::MakeGarbageCollected<App>(
-        isolate->GetCppHeap()->GetAllocationHandle());
-  }
-  return instance_.Get();
+  static base::NoDestructor<cppgc::Persistent<App>> instance(
+      cppgc::MakeGarbageCollected<App>(
+          isolate->GetCppHeap()->GetAllocationHandle()));
+  return instance->Get();
 }
 
 const gin::WrapperInfo* App::wrapper_info() const {

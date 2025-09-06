@@ -26,19 +26,9 @@ namespace {
 
 // The global SQRLUpdater object.
 SQRLUpdater* __strong g_updater = nil;
-
-}  // namespace
-
-namespace {
-
 bool g_update_available = false;
-std::string update_url_ = "";  // NOLINT(runtime/string)
 
 }  // namespace
-
-std::string AutoUpdater::GetFeedURL() {
-  return update_url_;
-}
 
 // static
 void AutoUpdater::SetFeedURL(gin::Arguments* args) {
@@ -76,7 +66,7 @@ void AutoUpdater::SetFeedURL(gin::Arguments* args) {
   if (!delegate)
     return;
 
-  update_url_ = feed;
+  GetFeedURL() = feed;
 
   NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
   NSMutableURLRequest* urlRequest = [NSMutableURLRequest requestWithURL:url];

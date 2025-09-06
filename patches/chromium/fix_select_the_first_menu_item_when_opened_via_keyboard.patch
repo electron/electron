@@ -6,10 +6,10 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index c206a2ebcb069616be1205efc261ec060249f35b..0300e9b05feaa14895a05eb9ca7b41fb84a05bee 100644
+index a4b272aa24dc59e68451d72adaf08df4d1657925..aaf13673d2b934638f467bb070fb96aa823c51a1 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -713,6 +713,16 @@ void MenuController::Run(Widget* parent,
+@@ -740,6 +740,16 @@ void MenuController::Run(Widget* parent,
      SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
    }
  
@@ -26,7 +26,7 @@ index c206a2ebcb069616be1205efc261ec060249f35b..0300e9b05feaa14895a05eb9ca7b41fb
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2456,19 +2466,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2482,18 +2492,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
@@ -39,13 +39,14 @@ index c206a2ebcb069616be1205efc261ec060249f35b..0300e9b05feaa14895a05eb9ca7b41fb
 +    // `ConvertFromScreen` doesn't work correctly if the widget isn't shown.
      if (item->GetSubmenu()->GetWidget()) {
        const gfx::Point mouse_pos = ConvertFromScreen(
-           *item->submenu_,
-           display::Screen::GetScreen()->GetCursorScreenPoint());
+-          *item->submenu_, display::Screen::Get()->GetCursorScreenPoint());
 -      MenuPart part_under_mouse = GetMenuPart(item->submenu_.get(), mouse_pos);
 -      if (part_under_mouse.type != MenuPartType::kNone) {
 -        menu_open_mouse_loc_ =
 -            GetLocationInRootMenu(*item->submenu_, mouse_pos);
 -      }
++          *item->submenu_,
++          display::Screen::Get()->GetCursorScreenPoint());
 +      menu_open_mouse_loc_ =
 +          GetLocationInRootMenu(*item->submenu_, mouse_pos);
      }

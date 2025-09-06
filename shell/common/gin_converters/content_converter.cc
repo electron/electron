@@ -10,6 +10,7 @@
 #include "base/containers/fixed_flat_map.h"
 #include "components/input/native_web_keyboard_event.h"
 #include "content/public/browser/context_menu_params.h"
+#include "content/public/browser/permission_result.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/web_contents_permission_helper.h"
@@ -128,18 +129,22 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
 }
 
 // static
-bool Converter<blink::mojom::PermissionStatus>::FromV8(
+bool Converter<content::PermissionResult>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
-    blink::mojom::PermissionStatus* out) {
+    content::PermissionResult* out) {
   bool result;
   if (!ConvertFromV8(isolate, val, &result))
     return false;
 
   if (result)
-    *out = blink::mojom::PermissionStatus::GRANTED;
+    *out =
+        content::PermissionResult(blink::mojom::PermissionStatus::GRANTED,
+                                  content::PermissionStatusSource::UNSPECIFIED);
   else
-    *out = blink::mojom::PermissionStatus::DENIED;
+    *out =
+        content::PermissionResult(blink::mojom::PermissionStatus::DENIED,
+                                  content::PermissionStatusSource::UNSPECIFIED);
 
   return true;
 }

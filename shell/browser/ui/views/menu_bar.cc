@@ -10,7 +10,6 @@
 #include "shell/browser/ui/views/submenu_button.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/color/color_provider.h"
-#include "ui/native_theme/common_theme.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"
 
@@ -19,7 +18,7 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
-#include "ui/gfx/color_utils.h"
+#include "shell/common/color_util.h"
 #endif
 
 namespace electron {
@@ -261,7 +260,7 @@ void MenuBar::UpdateViewColors() {
 #elif BUILDFLAG(IS_WIN)
   for (views::View* child : GetChildrenInZOrder()) {
     auto* button = static_cast<SubmenuButton*>(child);
-    button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_MENUTEXT));
+    button->SetUnderlineColor(GetSysSkColor(COLOR_MENUTEXT));
   }
 #endif
 }

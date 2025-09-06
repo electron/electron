@@ -1434,7 +1434,7 @@ bool WebContents::IsFullscreen() const {
 
 void WebContents::EnterFullscreen(const url::Origin& origin,
                                   ExclusiveAccessBubbleType bubble_type,
-                                  const int64_t display_id) {}
+                                  FullscreenTabParams fullscreen_tab_params) {}
 
 content::WebContents* WebContents::GetWebContentsForExclusiveAccess() {
   return web_contents();
@@ -1480,7 +1480,7 @@ void WebContents::OnEnterFullscreenModeForTab(
   owner_window()->set_fullscreen_transition_type(
       NativeWindow::FullScreenTransitionType::kHTML);
   exclusive_access_manager_.fullscreen_controller()->EnterFullscreenModeForTab(
-      requesting_frame, options.display_id);
+      requesting_frame, FullscreenTabParams{options.display_id});
 
   SetHtmlApiFullscreen(true);
 

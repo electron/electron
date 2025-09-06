@@ -15,10 +15,10 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 4f8e3a08890ed7498b29a900ccf4bbda5f9cb494..bfce01f531d30cabe5fc33d258652597922a1de8 100644
+index 73f730ff05a22938a834921d4842bf1f9faaca67..dbd436cafbb0c1d49e76bcd569bca5e04ed89b44 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8925,6 +8925,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -8929,6 +8929,17 @@ void RenderFrameHostImpl::EnterFullscreen(
      }
    }
  
@@ -37,10 +37,10 @@ index 4f8e3a08890ed7498b29a900ccf4bbda5f9cb494..bfce01f531d30cabe5fc33d258652597
    if (had_fullscreen_token && !GetView()->HasFocus())
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index fbf58cc058ee37aab227a632c5f4caf8c4cd6620..0a6a205f49d7bc853879ac4919868aadd6fdd42f 100644
+index d6b188a6fd5f3a591b4651db40ca258bb03e7a17..7f49174c2e0121ddde50250a38b4ac4fcc43d125 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4449,21 +4449,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
+@@ -4443,21 +4443,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
      const input::NativeWebKeyboardEvent& event) {
    OPTIONAL_TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
                          "WebContentsImpl::PreHandleKeyboardEvent");
@@ -80,7 +80,7 @@ index fbf58cc058ee37aab227a632c5f4caf8c4cd6620..0a6a205f49d7bc853879ac4919868aad
  }
  
  bool WebContentsImpl::HandleMouseEvent(const blink::WebMouseEvent& event) {
-@@ -4622,7 +4626,7 @@ void WebContentsImpl::EnterFullscreenMode(
+@@ -4616,7 +4620,7 @@ void WebContentsImpl::EnterFullscreenMode(
    OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::EnterFullscreenMode");
    DCHECK(CanEnterFullscreenMode(requesting_frame));
    DCHECK(requesting_frame->IsActive());
