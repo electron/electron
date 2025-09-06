@@ -64,7 +64,7 @@ index 251f51ec454f9cba4023b8b6729241ee753aac13..1de8cac6e3953ce9cab9db03530da327
  
  module.exports = {
 diff --git a/node.gyp b/node.gyp
-index 442c1e7a6ddafbb7a7ec7a42a97ec04b28ea4d93..3a66c11d39dd2fd129c8f54098a9607e080ecca0 100644
+index d604e0ddd973174aa7be6f2d250af7b9c2b0fcfd..8e97aa3f44087213425927113fe72bca9ddef45b 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -176,7 +176,6 @@
