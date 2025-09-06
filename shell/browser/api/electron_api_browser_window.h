@@ -67,6 +67,8 @@ class BrowserWindow : public BaseWindow,
   void SetBackgroundMaterial(const std::string& material) override;
   void OnWindowShow() override;
   void OnWindowHide() override;
+  void Show() override;
+  void ShowInactive() override;
 
   // BrowserWindow APIs.
   void FocusOnWebView();
