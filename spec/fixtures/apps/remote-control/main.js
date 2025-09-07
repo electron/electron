@@ -18,10 +18,21 @@ app.whenReady().then(() => {
     const chunks = [];
     req.on('data', chunk => { chunks.push(chunk); });
     req.on('end', () => {
-      const js = Buffer.concat(chunks).toString('utf8');
+      const body = Buffer.concat(chunks).toString('utf8');
       (async () => {
         try {
-          const result = await Promise.resolve(eval(js)); // eslint-disable-line no-eval
+          // Expect POST body to be JSON: { "action": "actionName", "params": { ... } }
+          const parsed = JSON.parse(body);
+          const commands = {
+            ping: async () => 'pong',
+            version: async () => process.version,
+            // Add more safe actions as needed
+          };
+          if (!parsed.action || !(parsed.action in commands)) {
+            res.end(v8.serialize({ error: 'Unknown or missing action' }));
+            return;
+          }
+          const result = await commands[parsed.action](parsed.params);
           res.end(v8.serialize({ result }));
         } catch (e) {
           res.end(v8.serialize({ error: e.stack }));
