@@ -87,10 +87,10 @@ index 75df43e3cd2721a92c90c18154d53d5c203e2465..ce42c75c8face36d21f53f44c0201ac4
    // The view with active text input state, i.e., a focused <input> element.
    // It will be nullptr if no such view exists. Note that the active view
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9add3fa6aef68da323ec8848d7f519baf70d3586..43a8e35fca313a5a1b1a7c2e4740d86c310660ea 100644
+index 7f49174c2e0121ddde50250a38b4ac4fcc43d125..2fd9e3ce15869b284ff8716c02ce8dc6392b2a7b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -10085,7 +10085,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -10083,7 +10083,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
                          "WebContentsImpl::OnFocusedElementChangedInFrame",
                          "render_frame_host", frame);
    RenderWidgetHostViewBase* root_view =
