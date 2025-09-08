@@ -6,7 +6,7 @@ Subject: Reland "[api] Advance deprecation of GetIsolate"
 https://chromium-review.googlesource.com/c/v8/v8/+/6875273
 
 diff --git a/src/util-inl.h b/src/util-inl.h
-index cc41a1fb5459a5cfe5fcf593055cbd03bdb1f74f..fdde74f4e43047916146d092b4cb3490bdc5a947 100644
+index b21f7a8260ca6a4701f8904b9cb641428db80772..16fe55f3054fd20544babd63ff204330cb47c1a7 100644
 --- a/src/util-inl.h
 +++ b/src/util-inl.h
 @@ -326,14 +326,14 @@ v8::Maybe<void> FromV8Array(v8::Local<v8::Context> context,
