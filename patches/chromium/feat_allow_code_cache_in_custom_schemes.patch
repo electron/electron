@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index b798ae06446d68fe74e7fef3ade515e9c77f1f73..5f9c50244769868bf790f010175a5ab8d8c8d0ea 100644
+index b798ae06446d68fe74e7fef3ade515e9c77f1f73..0b0ecebef9e34986a95e4d9f3b52fcce19f2d686 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -8,6 +8,7 @@
@@ -28,7 +28,7 @@ index b798ae06446d68fe74e7fef3ade515e9c77f1f73..5f9c50244769868bf790f010175a5ab8
  
  using storage::BigIOBuffer;
  
-@@ -53,39 +55,57 @@ void CheckValidResource(const GURL& resource_url,
+@@ -53,39 +55,55 @@ void CheckValidResource(const GURL& resource_url,
                          GeneratedCodeCache::CodeCacheType cache_type) {
    // If the resource url is invalid don't cache the code.
    DCHECK(resource_url.is_valid());
@@ -95,16 +95,14 @@ index b798ae06446d68fe74e7fef3ade515e9c77f1f73..5f9c50244769868bf790f010175a5ab8
 +    case GeneratedCodeCache::kJavaScript:
 +    case GeneratedCodeCache::kWebAssembly:
 +      DCHECK(!origin_lock_for_webui);
-+      DCHECK(!resource_url_webui);
 +      break;
 +    case GeneratedCodeCache::kWebUIJavaScript:
 +      DCHECK(origin_lock_for_webui);
-+      DCHECK(resource_url_webui);
 +      break;
 +  }
 +
 +  // The custom schemes share the cache type with http(s).
-+  if (origin_lock_for_embedder || resource_url_embedder) {
++  if (origin_lock_for_embedder) {
 +    DCHECK(cache_type == GeneratedCodeCache::kJavaScript ||
 +           cache_type == GeneratedCodeCache::kWebAssembly);
 +  }
