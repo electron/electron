@@ -20,7 +20,7 @@ void AutoUpdater::SetDelegate(Delegate* delegate) {
 }
 
 #if !BUILDFLAG(IS_MAC) || IS_MAS_BUILD()
-std::string AutoUpdater::GetFeedURL() {
+std::string& AutoUpdater::GetFeedURL() {
   return "";
 }
 

@@ -7,8 +7,20 @@ Refs https://issues.chromium.org/issues/430332953
 It contains multiple third_party dependencies that doesn't
 align with the chromium style guide.
 
+diff --git a/deps/ada/unofficial.gni b/deps/ada/unofficial.gni
+index ab7dc27de3e304f6d912d5834da47e3b4eb25495..b6c0fd4ceee989dac55c7d54e52fef183ab4621c 100644
+--- a/deps/ada/unofficial.gni
++++ b/deps/ada/unofficial.gni
+@@ -20,6 +20,7 @@ template("ada_gn_build") {
+   source_set(target_name) {
+     forward_variables_from(invoker, "*")
+     public_configs = [ ":ada_config" ]
++    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
+     sources = gypi_values.ada_sources
+   }
+ }
 diff --git a/unofficial.gni b/unofficial.gni
-index 8886f2a79ae77614789d6ae0defd4f18fc756456..e39c8e3d4641f7d96403266fffeb6e646edd440e 100644
+index 8886f2a79ae77614789d6ae0defd4f18fc756456..a64d2e4ac475abc049fff7ea62ec76de565a747d 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -143,7 +143,10 @@ template("node_gn_build") {
@@ -23,3 +35,11 @@ index 8886f2a79ae77614789d6ae0defd4f18fc756456..e39c8e3d4641f7d96403266fffeb6e64
      public_configs = [
        ":node_external_config",
        "deps/googletest:googletest_config",
+@@ -345,6 +348,7 @@ template("node_gn_build") {
+       "src/embedded_data.h",
+     ]
+     include_dirs = [ "src", "tools" ]
++    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
+ 
+     if (!is_win) {
+       defines += [ "NODE_JS2C_USE_STRING_LITERALS" ]

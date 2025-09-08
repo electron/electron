@@ -282,8 +282,6 @@ class App final : public gin::Wrappable<App>,
   bool watch_singleton_socket_on_ready_ = false;
 
   std::unique_ptr<content::ScopedAccessibilityMode> scoped_accessibility_mode_;
-
-  static cppgc::Persistent<App> instance_;
 };
 
 }  // namespace api
