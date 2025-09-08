@@ -13,6 +13,7 @@
 #include <memory>
 
 #include "base/file_version_info.h"
+#include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
@@ -20,12 +21,12 @@
 
 namespace electron {
 
-namespace {
-
-std::wstring g_app_user_model_id;
-}
-
 const wchar_t kAppUserModelIDFormat[] = L"electron.app.$1";
+
+std::wstring& GetAppUserModelId() {
+  static base::NoDestructor<std::string> g_app_user_model_id;
+  return *g_app_user_model_id;
+}
 
 std::string GetApplicationName() {
   auto* module = GetModuleHandle(nullptr);
@@ -42,15 +43,15 @@ std::string GetApplicationVersion() {
 }
 
 void SetAppUserModelID(const std::wstring& name) {
-  g_app_user_model_id = name;
-  SetCurrentProcessExplicitAppUserModelID(g_app_user_model_id.c_str());
+  GetAppUserModelId() = name;
+  SetCurrentProcessExplicitAppUserModelID(GetAppUserModelId().c_str());
 }
 
 PCWSTR GetRawAppUserModelID() {
-  if (g_app_user_model_id.empty()) {
+  if (GetAppUserModelId().empty()) {
     PWSTR current_app_id;
     if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
-      g_app_user_model_id = current_app_id;
+      GetAppUserModelId() = current_app_id;
     } else {
       std::string name = GetApplicationName();
       std::wstring generated_app_id = base::ReplaceStringPlaceholders(
@@ -60,7 +61,7 @@ PCWSTR GetRawAppUserModelID() {
     CoTaskMemFree(current_app_id);
   }
 
-  return g_app_user_model_id.c_str();
+  return GetAppUserModelId().c_str();
 }
 
 bool GetAppUserModelID(ScopedHString* app_id) {
