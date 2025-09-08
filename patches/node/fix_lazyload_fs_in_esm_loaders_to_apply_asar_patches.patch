@@ -50,7 +50,7 @@ index 5aa946f66c71beff0b7a43c30638ab28a1a5dfc0..e3afd30ba1f591d0298793bc42fd7166
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index de1539cebeb1874cbafbe76a4f03217693db2aa1..8b55082d2bb0ce743b190a601aff0651095049cd 100644
+index 7ea645b92a015b04cc121ff62aa1fc64b2961241..8e099e0961b624c6143f5a60f050855b3366f177 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -25,7 +25,7 @@ const {
