@@ -94,7 +94,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::string GetMediaDeviceIDSalt();
 
   // content::BrowserContext:
-  base::FilePath GetPath() override;
+  base::FilePath GetPath() const override;
   bool IsOffTheRecord() override;
   std::unique_ptr<content::ZoomLevelDelegate> CreateZoomLevelDelegate(
       const base::FilePath& partition_path) override;

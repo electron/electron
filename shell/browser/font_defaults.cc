@@ -308,7 +308,7 @@ auto MakeDefaultFontCopier() {
 namespace electron {
 
 void SetFontDefaults(blink::web_pref::WebPreferences* prefs) {
-  static const auto copy_default_fonts_to_web_prefs = MakeDefaultFontCopier();
+  static const auto& copy_default_fonts_to_web_prefs = MakeDefaultFontCopier();
   copy_default_fonts_to_web_prefs(prefs);
 }
 

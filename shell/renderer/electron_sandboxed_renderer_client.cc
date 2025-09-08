@@ -172,19 +172,18 @@ void ElectronSandboxedRendererClient::EmitProcessEvent(
 
 void ElectronSandboxedRendererClient::WillEvaluateServiceWorkerOnWorkerThread(
     blink::WebServiceWorkerContextProxy* context_proxy,
+    v8::Isolate* const v8_isolate,
     v8::Local<v8::Context> v8_context,
     int64_t service_worker_version_id,
     const GURL& service_worker_scope,
     const GURL& script_url,
     const blink::ServiceWorkerToken& service_worker_token) {
   RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread(
-      context_proxy, v8_context, service_worker_version_id,
+      context_proxy, v8_isolate, v8_context, service_worker_version_id,
       service_worker_scope, script_url, service_worker_token);
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kServiceWorkerPreload)) {
-    v8::Isolate* const v8_isolate = v8_context->GetIsolate();
-
     if (!service_worker_data) {
       service_worker_data = new ServiceWorkerData{
           context_proxy, service_worker_version_id, v8_isolate, v8_context};

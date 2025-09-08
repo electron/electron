@@ -60,10 +60,11 @@
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "chrome/common/extensions/chrome_manifest_url_handlers.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
+#include "extensions/common/manifest_handlers/devtools_page_handler.h"
 #include "extensions/common/permissions/permissions_data.h"
 #endif
 

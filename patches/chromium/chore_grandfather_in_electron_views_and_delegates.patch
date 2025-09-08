@@ -10,7 +10,7 @@ Subject: chore: "grandfather in" Electron Views and Delegates
 6448510: Lock further access to View::set_owned_by_client(). | https://chromium-review.googlesource.com/c/chromium/src/+/6448510
 
 diff --git a/ui/views/view.h b/ui/views/view.h
-index 08ec59edf033052233a105ab13cf00ada8bd4e38..b80d3ab4eb24487de6a8a27d67d23d275513b80e 100644
+index ee028fccef7dcc9c3522d09e503d2ac49ffd329a..a56c2f87ee21a2bba2cb65acd426cb192124fa85 100644
 --- a/ui/views/view.h
 +++ b/ui/views/view.h
 @@ -80,6 +80,19 @@ class ArcNotificationContentView;
@@ -49,7 +49,7 @@ index 08ec59edf033052233a105ab13cf00ada8bd4e38..b80d3ab4eb24487de6a8a27d67d23d27
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop class.
 diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
-index 1b23449ceb8e2c257cd40c375154a5fa93d1a26e..3aca30535eb99132a664936bcb19e58e075f4095 100644
+index ff9c5abfdb02d9798b1491e2bbc296f2c7c74398..47d8a897d58b0d3829734105e81b887684dd009b 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
 @@ -168,6 +168,12 @@ namespace crostini {
@@ -73,7 +73,7 @@ index 1b23449ceb8e2c257cd40c375154a5fa93d1a26e..3aca30535eb99132a664936bcb19e58e
      // DO NOT ADD TO THIS LIST!
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop `SetOwnedByWidget()`.
-@@ -465,6 +472,7 @@ class VIEWS_EXPORT WidgetDelegate {
+@@ -464,6 +471,7 @@ class VIEWS_EXPORT WidgetDelegate {
    };
    class RegisterDeleteCallbackPassKey {
     private:
@@ -81,7 +81,7 @@ index 1b23449ceb8e2c257cd40c375154a5fa93d1a26e..3aca30535eb99132a664936bcb19e58e
      // DO NOT ADD TO THIS LIST!
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop `RegisterDeleteDelegateCallback()`.
-@@ -922,6 +930,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
+@@ -921,6 +929,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
    View* GetContentsView() override;
  
   private:
