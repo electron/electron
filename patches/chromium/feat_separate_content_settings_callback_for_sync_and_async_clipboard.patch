@@ -20,7 +20,7 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 21abffe390a8213ce1a5b71f382b37a60a014f52..38134a075fbb3586eec543591c88fcf7dcd53e3d 100644
+index 69d3d4eb0ef5944fe79afe8f79a0d629d817f2d2..208565fadd7fed5a841ca2be542d5713f8babceb 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -536,6 +536,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
@@ -32,7 +32,7 @@ index 21abffe390a8213ce1a5b71f382b37a60a014f52..38134a075fbb3586eec543591c88fcf7
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 93375d87a26961edd8ae0c25fecc0ea5afc8c0bc..f6a28f5efae758a93aa52ebd28e25ece996f0e7e 100644
+index 8af9381691776fd7968cab890e32546c285979e4..d92f15f9ff1bf8dc23361e668f6d48199540c4e6 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -88,6 +88,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
