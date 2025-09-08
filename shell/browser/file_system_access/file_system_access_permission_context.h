@@ -102,6 +102,8 @@ class FileSystemAccessPermissionContext
   void NotifyEntryMoved(const url::Origin& origin,
                         const content::PathInfo& old_path,
                         const content::PathInfo& new_path) override;
+  void NotifyEntryModified(const url::Origin& origin,
+                           const content::PathInfo& path) override;
   void NotifyEntryRemoved(const url::Origin& origin,
                           const content::PathInfo& path) override;
 
