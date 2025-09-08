@@ -12,7 +12,6 @@
 
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
-#include "skia/ext/skia_utils_win.h"
 #endif
 
 #include "third_party/skia/include/core/SkColor.h"
