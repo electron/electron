@@ -7,7 +7,7 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index 33af43cd768c24b26d523f3db66eb8b9eb26859a..679633dc6b4ce2a1f5f88e93d1a1c1feb4bbadb4 100644
+index e56ba31ed068b81f5c6fbd432cd82bb6916e9a85..3a1d2fc9d147a8c89f7b5231d63d37f29979965d 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -89,6 +89,8 @@

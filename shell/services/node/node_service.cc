@@ -30,15 +30,19 @@
 
 namespace electron {
 
-mojo::Remote<node::mojom::NodeServiceClient> g_client_remote;
+mojo::Remote<node::mojom::NodeServiceClient>& GetRemote() {
+  static base::NoDestructor<mojo::Remote<node::mojom::NodeServiceClient>>
+      instance;
+  return *instance;
+}
 
 void V8FatalErrorCallback(const char* location, const char* message) {
-  if (g_client_remote.is_bound() && g_client_remote.is_connected()) {
+  if (GetRemote().is_bound() && GetRemote().is_connected()) {
     auto* isolate = v8::Isolate::TryGetCurrent();
     std::ostringstream outstream;
     node::GetNodeReport(isolate, message, location,
                         v8::Local<v8::Object>() /* error */, outstream);
-    g_client_remote->OnV8FatalError(location, outstream.str());
+    GetRemote()->OnV8FatalError(location, outstream.str());
   }
 
 #if !IS_MAS_BUILD()
@@ -101,7 +105,7 @@ NodeService::~NodeService() {
     ParentPort::GetInstance()->Close();
     js_env_->DestroyMicrotasksRunner();
     node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
-    g_client_remote.reset();
+    GetRemote().reset();
   }
 }
 
@@ -111,8 +115,8 @@ void NodeService::Initialize(
   if (NodeBindings::IsInitialized())
     return;
 
-  g_client_remote.Bind(std::move(client_pending_remote));
-  g_client_remote.reset_on_disconnect();
+  GetRemote().Bind(std::move(client_pending_remote));
+  GetRemote().reset_on_disconnect();
 
   ParentPort::GetInstance()->Initialize(std::move(params->port));
 
@@ -155,7 +159,7 @@ void NodeService::Initialize(
         node_env_stopped_ = true;
         ParentPort::GetInstance()->Close();
         js_env_->DestroyMicrotasksRunner();
-        g_client_remote.reset();
+        GetRemote().reset();
         receiver_.ResetWithReason(exit_code, "process_exit_termination");
         node::DefaultProcessExitHandler(env, exit_code);
       });

@@ -10,6 +10,7 @@
 #include "base/files/file_enumerator.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
+#include "base/no_destructor.h"
 #include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/notifications/notification_delegate.h"
@@ -22,17 +23,20 @@ namespace electron {
 
 namespace {
 
-LibNotifyLoader libnotify_loader_;
+LibNotifyLoader& GetLibNotifyLoader() {
+  static base::NoDestructor<LibNotifyLoader> loader;
+  return *loader;
+}
 
 const base::flat_set<std::string>& GetServerCapabilities() {
-  static base::flat_set<std::string> caps;
-  if (caps.empty()) {
-    auto* capabilities = libnotify_loader_.notify_get_server_caps();
+  static base::NoDestructor<base::flat_set<std::string>> caps;
+  if (caps->empty()) {
+    auto* capabilities = GetLibNotifyLoader().notify_get_server_caps();
     for (auto* l = capabilities; l != nullptr; l = l->next)
-      caps.insert(static_cast<const char*>(l->data));
+      caps->insert(static_cast<const char*>(l->data));
     g_list_free_full(capabilities, g_free);
   }
-  return caps;
+  return *caps;
 }
 
 bool HasCapability(const std::string& capability) {
@@ -57,15 +61,15 @@ void log_and_clear_error(GError* error, const char* context) {
 
 // static
 bool LibnotifyNotification::Initialize() {
-  if (!libnotify_loader_.Load("libnotify.so.4") &&  // most common one
-      !libnotify_loader_.Load("libnotify.so.5") &&
-      !libnotify_loader_.Load("libnotify.so.1") &&
-      !libnotify_loader_.Load("libnotify.so")) {
+  if (!GetLibNotifyLoader().Load("libnotify.so.4") &&  // most common one
+      !GetLibNotifyLoader().Load("libnotify.so.5") &&
+      !GetLibNotifyLoader().Load("libnotify.so.1") &&
+      !GetLibNotifyLoader().Load("libnotify.so")) {
     LOG(WARNING) << "Unable to find libnotify; notifications disabled";
     return false;
   }
-  if (!libnotify_loader_.notify_is_initted() &&
-      !libnotify_loader_.notify_init(GetApplicationName().c_str())) {
+  if (!GetLibNotifyLoader().notify_is_initted() &&
+      !GetLibNotifyLoader().notify_init(GetApplicationName().c_str())) {
     LOG(WARNING) << "Unable to initialize libnotify; notifications disabled";
     return false;
   }
@@ -84,7 +88,7 @@ LibnotifyNotification::~LibnotifyNotification() {
 }
 
 void LibnotifyNotification::Show(const NotificationOptions& options) {
-  notification_ = libnotify_loader_.notify_notification_new(
+  notification_ = GetLibNotifyLoader().notify_notification_new(
       base::UTF16ToUTF8(options.title).c_str(),
       base::UTF16ToUTF8(options.msg).c_str(), nullptr);
 
@@ -96,7 +100,7 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   // NB: On Unity and on any other DE using Notify-OSD, adding a notification
   // action will cause the notification to display as a modal dialog box.
   if (NotifierSupportsActions()) {
-    libnotify_loader_.notify_notification_add_action(
+    GetLibNotifyLoader().notify_notification_add_action(
         notification_, "default", "View", OnNotificationView, this, nullptr);
   }
 
@@ -108,19 +112,19 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   }
 
   // Set the urgency level of the notification.
-  libnotify_loader_.notify_notification_set_urgency(notification_, urgency);
+  GetLibNotifyLoader().notify_notification_set_urgency(notification_, urgency);
 
   if (!options.icon.drawsNothing()) {
     GdkPixbuf* pixbuf = gtk_util::GdkPixbufFromSkBitmap(options.icon);
-    libnotify_loader_.notify_notification_set_image_from_pixbuf(notification_,
-                                                                pixbuf);
+    GetLibNotifyLoader().notify_notification_set_image_from_pixbuf(
+        notification_, pixbuf);
     g_object_unref(pixbuf);
   }
 
   // Set the timeout duration for the notification
   bool neverTimeout = options.timeout_type == u"never";
   int timeout = (neverTimeout) ? NOTIFY_EXPIRES_NEVER : NOTIFY_EXPIRES_DEFAULT;
-  libnotify_loader_.notify_notification_set_timeout(notification_, timeout);
+  GetLibNotifyLoader().notify_notification_set_timeout(notification_, timeout);
 
   if (!options.tag.empty()) {
     GQuark id = g_quark_from_string(options.tag.c_str());
@@ -130,10 +134,10 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   // Always try to append notifications.
   // Unique tags can be used to prevent this.
   if (HasCapability("append")) {
-    libnotify_loader_.notify_notification_set_hint(
+    GetLibNotifyLoader().notify_notification_set_hint(
         notification_, "append", g_variant_new_string("true"));
   } else if (HasCapability("x-canonical-append")) {
-    libnotify_loader_.notify_notification_set_hint(
+    GetLibNotifyLoader().notify_notification_set_hint(
         notification_, "x-canonical-append", g_variant_new_string("true"));
   }
 
@@ -141,17 +145,17 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   // The desktop-entry is the part before the .desktop
   std::string desktop_id = platform_util::GetXdgAppId();
   if (!desktop_id.empty()) {
-    libnotify_loader_.notify_notification_set_hint(
+    GetLibNotifyLoader().notify_notification_set_hint(
         notification_, "desktop-entry",
         g_variant_new_string(desktop_id.c_str()));
   }
 
-  libnotify_loader_.notify_notification_set_hint(
+  GetLibNotifyLoader().notify_notification_set_hint(
       notification_, "sender-pid",
       g_variant_new_int64(base::GetCurrentProcId()));
 
   GError* error = nullptr;
-  libnotify_loader_.notify_notification_show(notification_, &error);
+  GetLibNotifyLoader().notify_notification_show(notification_, &error);
   if (error) {
     log_and_clear_error(error, "notify_notification_show");
     NotificationFailed();
@@ -169,7 +173,7 @@ void LibnotifyNotification::Dismiss() {
 
   GError* error = nullptr;
   on_dismissing_ = true;
-  libnotify_loader_.notify_notification_close(notification_, &error);
+  GetLibNotifyLoader().notify_notification_close(notification_, &error);
   if (error) {
     log_and_clear_error(error, "notify_notification_close");
   }

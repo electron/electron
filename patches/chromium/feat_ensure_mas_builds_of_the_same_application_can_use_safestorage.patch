@@ -172,7 +172,7 @@ index d2b9526f9a0bfa9d12a594c35c71499810cb6bb0..aef0eb3508fc37e3a0e9e1c27a71e1aa
 +
  }  // namespace crypto::apple
 diff --git a/crypto/apple/keychain_seckeychain.cc b/crypto/apple/keychain_seckeychain.cc
-index 4ad5acbf29607fe2ea28637f5470599984e317db..61056948062f3fcb5138e309b9f5019c96f9ce00 100644
+index a737276cb146fdb51433be8ca81947edb54f626e..3adf18cc0f0eb40e88691ba2f5a4b11073f86820 100644
 --- a/crypto/apple/keychain_seckeychain.cc
 +++ b/crypto/apple/keychain_seckeychain.cc
 @@ -25,14 +25,15 @@ KeychainSecKeychain::~KeychainSecKeychain() = default;
@@ -182,7 +182,7 @@ index 4ad5acbf29607fe2ea28637f5470599984e317db..61056948062f3fcb5138e309b9f5019c
 -                                         std::string_view account_name) const {
 +                                         std::string_view account_name,
 +                                         AppleSecKeychainItemRef* item) const {
-   base::AutoLock lock(GetMacSecurityServicesLock());
+   base::AutoLock lock(GetSecurityFrameworkLock());
    uint32_t password_length = 0;
    void* password_data = nullptr;
    OSStatus status = SecKeychainFindGenericPassword(
@@ -198,7 +198,7 @@ index 4ad5acbf29607fe2ea28637f5470599984e317db..61056948062f3fcb5138e309b9f5019c
  }
  
 +OSStatus KeychainSecKeychain::ItemDelete(AppleSecKeychainItemRef item) const {
-+  base::AutoLock lock(GetMacSecurityServicesLock());
++  base::AutoLock lock(GetSecurityFrameworkLock());
 +  return SecKeychainItemDelete(item);
 +}
 +

@@ -18,7 +18,7 @@ class ElectronCommandLine {
   ElectronCommandLine(const ElectronCommandLine&) = delete;
   ElectronCommandLine& operator=(const ElectronCommandLine&) = delete;
 
-  static const base::CommandLine::StringVector& argv() { return argv_; }
+  static base::CommandLine::StringVector& argv();
 
   static std::vector<std::string> AsUtf8();
 
@@ -29,9 +29,6 @@ class ElectronCommandLine {
   // it is using zygote.
   static void InitializeFromCommandLine();
 #endif
-
- private:
-  static base::CommandLine::StringVector argv_;
 };
 
 }  // namespace electron

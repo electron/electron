@@ -23,6 +23,8 @@ static_library("chrome") {
     "//chrome/browser/browser_process.h",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.cc",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.h",
+    "//chrome/browser/devtools/devtools_dispatch_http_request_params.cc",
+    "//chrome/browser/devtools/devtools_dispatch_http_request_params.h",
     "//chrome/browser/devtools/devtools_embedder_message_dispatcher.cc",
     "//chrome/browser/devtools/devtools_embedder_message_dispatcher.h",
     "//chrome/browser/devtools/devtools_eye_dropper.cc",

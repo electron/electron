@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 32f0f62dbc4f0c541440fd99d20e0fc80825f480..bcf7e67eb024a6ec8d2470a338e016c6779840a4 100644
+index 387a75ac7b0c7be1e38c3ba2b357f729f1e09229..fecf72a6d434f7c22159420c1cbbf34a285838c8 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -23,7 +23,7 @@ index 32f0f62dbc4f0c541440fd99d20e0fc80825f480..bcf7e67eb024a6ec8d2470a338e016c6
 @@ -28,8 +29,10 @@
  #include "base/task/sequenced_task_runner.h"
  // TODO(crbug.com/421608904): include auto_picture_in_picture_tab_helper for
- // Android.
+ // Android when supporting document PiP.
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "chrome/browser/picture_in_picture/auto_picture_in_picture_tab_helper.h"
  #include "chrome/browser/picture_in_picture/auto_pip_setting_overlay_view.h"
@@ -83,7 +83,7 @@ index 32f0f62dbc4f0c541440fd99d20e0fc80825f480..bcf7e67eb024a6ec8d2470a338e016c6
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 489d68b6452a4814f4cba1e65ab036629583f5b5..a306cbb8e5bfa585bceb140a0c66d1c64b7a8813 100644
+index fea71317b41429dd3bbd50947673124f7c230394..ddfd48582869c6285274d241b5d876e9c4fbe555 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -471,11 +471,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(

@@ -20,6 +20,29 @@ Chromium is deprecating the `--host-rules` switch.
 
 You should use `--host-resolver-rules` instead.
 
+### Behavior Changed: window.open popups are always resizable
+
+Per current [WHATWG spec](https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-open-dev), the `window.open` API will now always create a resizable popup window.
+
+To restore previous behavior:
+
+```js
+webContents.setWindowOpenHandler((details) => {
+  return {
+    action: 'allow',
+    overrideBrowserWindowOptions: {
+      resizable: details.features.includes('resizable=yes')
+    }
+  }
+})
+```
+
+### Behavior Changed: shared texture OSR `paint` event data structure
+
+When using shared texture offscreen rendering feature, the `paint` event now emits a more structured object.
+It moves the `sharedTextureHandle`, `planes`, `modifier` into a unified `handle` property.
+See [here](https://www.electronjs.org/docs/latest/api/structures/offscreen-shared-texture) for more details.
+
 ## Planned Breaking API Changes (38.0)
 
 ### Removed: `ELECTRON_OZONE_PLATFORM_HINT` environment variable
@@ -50,29 +73,6 @@ You should use `webFrame.frameToken` instead.
 The `webFrame.findFrameByRoutingId(routingId)` function will be removed.
 
 You should use `webFrame.findFrameByToken(frameToken)` instead.
-
-### Behavior Changed: window.open popups are always resizable
-
-Per current [WHATWG spec](https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-open-dev), the `window.open` API will now always create a resizable popup window.
-
-To restore previous behavior:
-
-```js
-webContents.setWindowOpenHandler((details) => {
-  return {
-    action: 'allow',
-    overrideBrowserWindowOptions: {
-      resizable: details.features.includes('resizable=yes')
-    }
-  }
-})
-```
-
-### Behavior Changed: shared texture OSR `paint` event data structure
-
-When using shared texture offscreen rendering feature, the `paint` event now emits a more structured object.
-It moves the `sharedTextureHandle`, `planes`, `modifier` into a unified `handle` property.
-See [here](https://www.electronjs.org/docs/latest/api/structures/offscreen-shared-texture) for more details.
 
 ## Planned Breaking API Changes (37.0)
 

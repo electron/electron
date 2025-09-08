@@ -441,6 +441,20 @@ void ElectronBrowserClient::OverrideWebPreferences(
   }
 }
 
+bool ElectronBrowserClient::WebPreferencesNeedUpdateForColorRelatedStateChanges(
+    content::WebContents& web_contents,
+    const content::SiteInstance& main_frame_site) const {
+  const auto& prefs = web_contents.GetOrCreateWebPreferences();
+  ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
+  bool in_forced_colors = native_theme->InForcedColorsMode();
+  blink::mojom::PreferredColorScheme preferred_color_scheme =
+      native_theme->ShouldUseDarkColors()
+          ? blink::mojom::PreferredColorScheme::kDark
+          : blink::mojom::PreferredColorScheme::kLight;
+  return prefs.in_forced_colors != in_forced_colors ||
+         prefs.preferred_color_scheme != preferred_color_scheme;
+}
+
 void ElectronBrowserClient::RegisterPendingSiteInstance(
     content::RenderFrameHost* rfh,
     content::SiteInstance* pending_site_instance) {

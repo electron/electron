@@ -195,6 +195,9 @@ class InspectableWebContents
                         const std::string& request) override {}
   void RegisterAidaClientEvent(DispatchCallback callback,
                                const std::string& request) override {}
+  void DispatchHttpRequest(
+      DispatchCallback callback,
+      const DevToolsDispatchHttpRequestParams& params) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(base::Value::Dict message);
