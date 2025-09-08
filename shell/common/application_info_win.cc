@@ -24,7 +24,7 @@ namespace electron {
 const wchar_t kAppUserModelIDFormat[] = L"electron.app.$1";
 
 std::wstring& GetAppUserModelId() {
-  static base::NoDestructor<std::string> g_app_user_model_id;
+  static base::NoDestructor<std::wstring> g_app_user_model_id;
   return *g_app_user_model_id;
 }
 
