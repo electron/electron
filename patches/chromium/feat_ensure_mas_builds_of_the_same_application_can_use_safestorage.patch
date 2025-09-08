@@ -172,7 +172,7 @@ index d2b9526f9a0bfa9d12a594c35c71499810cb6bb0..aef0eb3508fc37e3a0e9e1c27a71e1aa
 +
  }  // namespace crypto::apple
 diff --git a/crypto/apple/keychain_seckeychain.cc b/crypto/apple/keychain_seckeychain.cc
-index a737276cb146fdb51433be8ca81947edb54f626e..61720e6a7bfe8e861f3f81b168ef4114b7ac445c 100644
+index a737276cb146fdb51433be8ca81947edb54f626e..3adf18cc0f0eb40e88691ba2f5a4b11073f86820 100644
 --- a/crypto/apple/keychain_seckeychain.cc
 +++ b/crypto/apple/keychain_seckeychain.cc
 @@ -25,14 +25,15 @@ KeychainSecKeychain::~KeychainSecKeychain() = default;
@@ -198,7 +198,7 @@ index a737276cb146fdb51433be8ca81947edb54f626e..61720e6a7bfe8e861f3f81b168ef4114
  }
  
 +OSStatus KeychainSecKeychain::ItemDelete(AppleSecKeychainItemRef item) const {
-+  base::AutoLock lock(GetMacSecurityServicesLock());
++  base::AutoLock lock(GetSecurityFrameworkLock());
 +  return SecKeychainItemDelete(item);
 +}
 +

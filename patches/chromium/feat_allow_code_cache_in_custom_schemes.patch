@@ -259,7 +259,7 @@ index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c58
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 404ff1e48a990570dc411a714e570d4f8e1a9ef1..80edff8466047782e9a179e38bb62b610efc1ad4 100644
+index 404ff1e48a990570dc411a714e570d4f8e1a9ef1..916c5d350cfabae0bfd3da97d6a058f2fb93530d 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -6,6 +6,7 @@
@@ -284,7 +284,7 @@ index 404ff1e48a990570dc411a714e570d4f8e1a9ef1..80edff8466047782e9a179e38bb62b61
  
 +bool ProcessLockURLIsCodeCacheScheme(const ProcessLock& process_lock) {
 +  return base::Contains(url::GetCodeCacheSchemes(),
-+                        process_lock.lock_url().scheme());
++                        process_lock.GetProcessLockURL().scheme());
 +}
 +
  bool CheckSecurityForAccessingCodeCacheData(
