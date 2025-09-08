@@ -82,7 +82,7 @@ index 3bcbb33700b2b9349795c05c12e44b4fafcc0370..b55c72e236f05591d41b7146eab16621
    }
  
 diff --git a/crypto/apple/keychain.h b/crypto/apple/keychain.h
-index 2438c3947f330fb496886b85c8eaf49767c68413..dc7da2fd2819eb64f2083de722a1b2771380abd5 100644
+index b5e604c525d66c172c80f65f38cdb23dccd4259d..7f48d66c83cf41d6d097eb43e271dd5ab43d01e9 100644
 --- a/crypto/apple/keychain.h
 +++ b/crypto/apple/keychain.h
 @@ -18,6 +18,14 @@
@@ -197,10 +197,10 @@ index 080806aaf3fc10548b160850ad36ef3519ea2b6f..21f04059d67ba41118face6ee9327aa0
    IncrementKeychainAccessHistogram();
    return kPassword;
 diff --git a/crypto/apple/mock_keychain.h b/crypto/apple/mock_keychain.h
-index 40fb4e1f75a2b7f021a8a20b01d63c7e3b8c5fa3..3c3f41e7ffcaeb74aaff872ce3b54027312ec0dd 100644
+index 680efe0312c81449e069c19d9c6ef146da7834db..b49c2ba5f639344ab57e9f14c098effc38729d1f 100644
 --- a/crypto/apple/mock_keychain.h
 +++ b/crypto/apple/mock_keychain.h
-@@ -37,13 +37,18 @@ class CRYPTO_EXPORT MockKeychain : public Keychain {
+@@ -36,13 +36,18 @@ class CRYPTO_EXPORT MockKeychain : public Keychain {
    // Keychain implementation.
    base::expected<std::vector<uint8_t>, OSStatus> FindGenericPassword(
        std::string_view service_name,
