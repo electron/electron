@@ -43,10 +43,9 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
 
   using USBProtectedClasses = std::vector<uint8_t>;
 
-  using StatusCallback =
-      base::OnceCallback<void(blink::mojom::PermissionStatus)>;
-  using StatusesCallback = base::OnceCallback<void(
-      const std::vector<blink::mojom::PermissionStatus>&)>;
+  using StatusCallback = base::OnceCallback<void(content::PermissionResult)>;
+  using StatusesCallback =
+      base::OnceCallback<void(const std::vector<content::PermissionResult>&)>;
   using PairCallback = base::OnceCallback<void(base::Value::Dict)>;
   using RequestHandler = base::RepeatingCallback<void(content::WebContents*,
                                                       blink::PermissionType,
@@ -111,7 +110,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
  protected:
   void OnPermissionResponse(int request_id,
                             int permission_id,
-                            blink::mojom::PermissionStatus status);
+                            content::PermissionResult result);
 
   // content::PermissionControllerDelegate:
   void RequestPermissions(
@@ -128,9 +127,8 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   void RequestPermissionsFromCurrentDocument(
       content::RenderFrameHost* render_frame_host,
       const content::PermissionRequestDescription& request_description,
-      base::OnceCallback<
-          void(const std::vector<blink::mojom::PermissionStatus>&)> callback)
-      override;
+      base::OnceCallback<void(const std::vector<content::PermissionResult>&)>
+          callback) override;
   content::PermissionResult GetPermissionResultForOriginWithoutContext(
       const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
       const url::Origin& requesting_origin,
