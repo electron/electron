@@ -415,10 +415,10 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
  private:
   void OnPermissionRequestResult(
       base::OnceCallback<void(PermissionRequestOutcome)> callback,
-      blink::mojom::PermissionStatus status) {
+      content::PermissionResult result) {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-    if (status == blink::mojom::PermissionStatus::GRANTED) {
+    if (result.status == blink::mojom::PermissionStatus::GRANTED) {
       SetStatus(PermissionStatus::GRANTED);
       std::move(callback).Run(PermissionRequestOutcome::kUserGranted);
     } else {
@@ -915,6 +915,14 @@ void FileSystemAccessPermissionContext::NotifyEntryMoved(
                                          new_path);
   }
 }
+
+void FileSystemAccessPermissionContext::NotifyEntryModified(
+    const url::Origin& origin,
+    const content::PathInfo& path) {}
+
+void FileSystemAccessPermissionContext::NotifyEntryRemoved(
+    const url::Origin& origin,
+    const content::PathInfo& path) {}
 
 void FileSystemAccessPermissionContext::OnFileCreatedFromShowSaveFilePicker(
     const GURL& file_picker_binding_context,

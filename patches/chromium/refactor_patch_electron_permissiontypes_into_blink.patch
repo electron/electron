@@ -6,7 +6,7 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 38134a075fbb3586eec543591c88fcf7dcd53e3d..a65838e017a01c8fbb8cd9afe7e3edcce22bf947 100644
+index 83b0237a56d5ea7555ae989bd7bd13886f0c8f13..0377c8c0c3a112ec40132b8441747652b0c15870 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -536,7 +536,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
@@ -28,7 +28,7 @@ index 38134a075fbb3586eec543591c88fcf7dcd53e3d..a65838e017a01c8fbb8cd9afe7e3edcc
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index f6a28f5efae758a93aa52ebd28e25ece996f0e7e..7a6e702126234fa8f09ea5e8eeb3bc67155f76ca 100644
+index d92f15f9ff1bf8dc23361e668f6d48199540c4e6..aa13c5e85fef3de67e41889b0ea1c751c5144f85 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -88,7 +88,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {

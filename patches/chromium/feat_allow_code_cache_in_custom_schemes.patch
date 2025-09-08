@@ -259,7 +259,7 @@ index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c58
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index d95cba73aacf4b9156e8c0c3100abd7934369fdd..1583ae512e34c29e849efc2f570e09e74b348406 100644
+index 404ff1e48a990570dc411a714e570d4f8e1a9ef1..916c5d350cfabae0bfd3da97d6a058f2fb93530d 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -6,6 +6,7 @@
@@ -284,7 +284,7 @@ index d95cba73aacf4b9156e8c0c3100abd7934369fdd..1583ae512e34c29e849efc2f570e09e7
  
 +bool ProcessLockURLIsCodeCacheScheme(const ProcessLock& process_lock) {
 +  return base::Contains(url::GetCodeCacheSchemes(),
-+                        process_lock.lock_url().scheme());
++                        process_lock.GetProcessLockURL().scheme());
 +}
 +
  bool CheckSecurityForAccessingCodeCacheData(
@@ -303,17 +303,9 @@ index d95cba73aacf4b9156e8c0c3100abd7934369fdd..1583ae512e34c29e849efc2f570e09e7
    // chrome-untrusted scripts, so any http(s) page attempting to store data
    // about a chrome or chrome-untrusted script would be an indication of
    // suspicious activity.
--  if (resource_url.SchemeIs(content::kChromeUIScheme) ||
--      resource_url.SchemeIs(content::kChromeUIUntrustedScheme)) {
--    if (!process_lock.is_locked_to_site()) {
--      // We can't tell for certain whether this renderer is doing something
--      // malicious, but we don't trust it enough to store data.
--      return false;
--    }
 +  if (resource_url.SchemeIsHTTPOrHTTPS()) {
-     if (process_lock.matches_scheme(url::kHttpScheme) ||
-         process_lock.matches_scheme(url::kHttpsScheme)) {
--      if (operation == CodeCacheHostImpl::Operation::kWrite) {
++    if (process_lock.MatchesScheme(url::kHttpScheme) ||
++        process_lock.MatchesScheme(url::kHttpsScheme)) {
 +      return true;
 +    }
 +    // Pages in custom schemes like isolated-app: are allowed to load http(s)
@@ -327,15 +319,22 @@ index d95cba73aacf4b9156e8c0c3100abd7934369fdd..1583ae512e34c29e849efc2f570e09e7
 +    return false;
 +  }
 +
-+  if (resource_url.SchemeIs(kChromeUIScheme) ||
-+      resource_url.SchemeIs(kChromeUIUntrustedScheme)) {
-+    if (process_lock.matches_scheme(kChromeUIScheme) ||
-+        process_lock.matches_scheme(kChromeUIUntrustedScheme)) {
+   if (resource_url.SchemeIs(content::kChromeUIScheme) ||
+       resource_url.SchemeIs(content::kChromeUIUntrustedScheme)) {
+-    if (!process_lock.IsLockedToSite()) {
+-      // We can't tell for certain whether this renderer is doing something
+-      // malicious, but we don't trust it enough to store data.
+-      return false;
++    if (process_lock.MatchesScheme(content::kChromeUIScheme) ||
++        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme)) {
 +      return true;
-+    }
+     }
+-    if (process_lock.MatchesScheme(url::kHttpScheme) ||
+-        process_lock.MatchesScheme(url::kHttpsScheme)) {
+-      if (operation == CodeCacheHostImpl::Operation::kWrite) {
 +    if (operation == CodeCacheHostImpl::Operation::kWrite) {
-+      if (process_lock.matches_scheme(url::kHttpScheme) ||
-+          process_lock.matches_scheme(url::kHttpsScheme)) {
++      if (process_lock.MatchesScheme(url::kHttpScheme) ||
++          process_lock.MatchesScheme(url::kHttpsScheme)) {
          mojo::ReportBadMessage("HTTP(S) pages cannot cache WebUI code");
        }
 +      if (ProcessLockURLIsCodeCacheScheme(process_lock)) {
@@ -348,15 +347,15 @@ index d95cba73aacf4b9156e8c0c3100abd7934369fdd..1583ae512e34c29e849efc2f570e09e7
      // Other schemes which might successfully load chrome or chrome-untrusted
      // scripts, such as the PDF viewer, are unsupported but not considered
 -    // dangerous.
--    return process_lock.matches_scheme(content::kChromeUIScheme) ||
--           process_lock.matches_scheme(content::kChromeUIUntrustedScheme);
+-    return process_lock.MatchesScheme(content::kChromeUIScheme) ||
+-           process_lock.MatchesScheme(content::kChromeUIUntrustedScheme);
 +    // dangerous.  Similarly, the process might not be locked to a site.
 +    return false;
    }
 -  if (resource_url.SchemeIsHTTPOrHTTPS() ||
 -      blink::CommonSchemeRegistry::IsExtensionScheme(resource_url.scheme())) {
--    if (process_lock.matches_scheme(content::kChromeUIScheme) ||
--        process_lock.matches_scheme(content::kChromeUIUntrustedScheme)) {
+-    if (process_lock.MatchesScheme(content::kChromeUIScheme) ||
+-        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme)) {
 -      // It is possible for WebUI pages to include open-web content, but such
 -      // usage is rare and we've decided that reasoning about security is easier
 -      // if the WebUI code cache includes only WebUI scripts.
@@ -370,13 +369,13 @@ index d95cba73aacf4b9156e8c0c3100abd7934369fdd..1583ae512e34c29e849efc2f570e09e7
  
    if (operation == CodeCacheHostImpl::Operation::kWrite) {
 @@ -433,6 +458,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
-       process_lock.matches_scheme(url::kHttpsScheme) ||
-       process_lock.matches_scheme(content::kChromeUIScheme) ||
-       process_lock.matches_scheme(content::kChromeUIUntrustedScheme) ||
+       process_lock.MatchesScheme(url::kHttpsScheme) ||
+       process_lock.MatchesScheme(content::kChromeUIScheme) ||
+       process_lock.MatchesScheme(content::kChromeUIUntrustedScheme) ||
 +      ProcessLockURLIsCodeCacheScheme(process_lock) ||
        blink::CommonSchemeRegistry::IsExtensionScheme(
-           process_lock.lock_url().scheme())) {
-     return process_lock.lock_url();
+           process_lock.GetProcessLockURL().scheme())) {
+     return process_lock.GetProcessLockURL();
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
 index 225e017909b8869231b870eaaf161a0b5e93e2a0..846a5251429630b8528a84a3d67ed56cb28df5a1 100644
 --- a/content/common/url_schemes.cc

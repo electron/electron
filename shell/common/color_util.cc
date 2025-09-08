@@ -14,6 +14,7 @@
 #include <dwmapi.h>
 
 #include "base/win/registry.h"
+#include "skia/ext/skia_utils_win.h"
 #endif
 
 namespace {
@@ -82,6 +83,10 @@ std::optional<DWORD> GetSystemAccentColor() {
   }
 
   return accent_color;
+}
+
+SkColor GetSysSkColor(int which) {
+  return skia::COLORREFToSkColor(GetSysColor(which));
 }
 #endif
 
