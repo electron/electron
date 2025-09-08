@@ -71,7 +71,13 @@ class EventEmitterMixin {
       constructor = data->GetFunctionTemplate(wrapper_info);
     }
 
-    const char* const class_name = static_cast<T*>(this)->GetTypeName();
+    const char* class_name = "";
+    if constexpr (is_deprecated_wrapper) {
+      class_name = static_cast<T*>(this)->GetTypeName();
+    } else {
+      class_name = static_cast<T*>(this)->GetClassName();
+    }
+
     if (constructor.IsEmpty()) {
       constructor = v8::FunctionTemplate::New(isolate);
       constructor->SetClassName(gin::StringToV8(isolate, class_name));

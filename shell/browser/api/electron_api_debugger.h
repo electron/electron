@@ -51,7 +51,7 @@ class Debugger final : public gin::Wrappable<Debugger>,
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
 
-  const char* GetTypeName() const { return "Debugger"; }
+  const char* GetClassName() const { return "Debugger"; }
 
   // disable copy
   Debugger(const Debugger&) = delete;
