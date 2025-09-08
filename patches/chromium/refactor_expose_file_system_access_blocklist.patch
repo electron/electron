@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 05c4c255ddaf3c6d08f71b1747073793a4cd2ae6..9fb7ac3a8769353885accbfec2e1e906e4d27050 100644
+index 570d768d017bdf235c31d919a9308e3c0e7390f0..7c930cf3b149410e2a5f9a93e666cf765e0fabc6 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -84,11 +84,13 @@
@@ -246,7 +246,7 @@ index 05c4c255ddaf3c6d08f71b1747073793a4cd2ae6..9fb7ac3a8769353885accbfec2e1e906
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -2731,7 +2543,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -2775,7 +2587,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -255,7 +255,7 @@ index 05c4c255ddaf3c6d08f71b1747073793a4cd2ae6..9fb7ac3a8769353885accbfec2e1e906
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3066,11 +2878,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3110,11 +2922,7 @@ bool ChromeFileSystemAccessPermissionContext::
          HandleType handle_type,
          UserAction user_action,
          GrantType grant_type) {
@@ -268,7 +268,7 @@ index 05c4c255ddaf3c6d08f71b1747073793a4cd2ae6..9fb7ac3a8769353885accbfec2e1e906
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3121,6 +2929,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3165,6 +2973,7 @@ bool ChromeFileSystemAccessPermissionContext::
  
    return false;
  #endif  // BUILDFLAG(IS_ANDROID)
@@ -277,7 +277,7 @@ index 05c4c255ddaf3c6d08f71b1747073793a4cd2ae6..9fb7ac3a8769353885accbfec2e1e906
  
  std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 9cd560331112b9495a887fbf47d2a64997638cda..1c7d1ac875c0ff06a0729b54230aba863711f393 100644
+index c026a5ac558d3570c8d893943f93a5833c16ccd2..4a9bc924e609066086812bc1002258b6ce586c14 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -9,10 +9,13 @@
@@ -302,7 +302,7 @@ index 9cd560331112b9495a887fbf47d2a64997638cda..1c7d1ac875c0ff06a0729b54230aba86
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -417,6 +421,191 @@ class ChromeFileSystemAccessPermissionContext
+@@ -419,6 +423,191 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path);
  
