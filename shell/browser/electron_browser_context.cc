@@ -499,7 +499,7 @@ void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
 }
 
-base::FilePath ElectronBrowserContext::GetPath() {
+base::FilePath ElectronBrowserContext::GetPath() const {
   return path_;
 }
 
