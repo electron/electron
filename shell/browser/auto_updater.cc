@@ -4,6 +4,7 @@
 
 #include "shell/browser/auto_updater.h"
 
+#include "base/no_destructor.h"
 #include "build/build_config.h"
 #include "electron/mas.h"
 
@@ -19,11 +20,12 @@ void AutoUpdater::SetDelegate(Delegate* delegate) {
   delegate_ = delegate;
 }
 
-#if !BUILDFLAG(IS_MAC) || IS_MAS_BUILD()
 std::string& AutoUpdater::GetFeedURL() {
-  return "";
+  static base::NoDestructor<std::string> feed_url;
+  return *feed_url;
 }
 
+#if !BUILDFLAG(IS_MAC) || IS_MAS_BUILD()
 void AutoUpdater::SetFeedURL(gin::Arguments* args) {}
 
 void AutoUpdater::CheckForUpdates() {}
