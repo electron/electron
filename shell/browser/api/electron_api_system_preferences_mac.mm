@@ -14,6 +14,7 @@
 
 #include "base/apple/scoped_cftyperef.h"
 #include "base/containers/flat_map.h"
+#include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
@@ -80,7 +81,10 @@ namespace {
 int g_next_id = 0;
 
 // The map to convert |id| to |int|.
-base::flat_map<int, id> g_id_map;
+auto& GetIdMap() {
+  static base::NoDestructor<base::flat_map<int, id>> g_id_map;
+  return *g_id_map;
+}
 
 AVMediaType ParseMediaType(const std::string& media_type) {
   if (media_type == "camera") {
@@ -214,7 +218,7 @@ int SystemPreferences::DoSubscribeNotification(
 
   auto* name = maybe_name->IsNull() ? nil : base::SysUTF8ToNSString(name_str);
 
-  g_id_map[request_id] = [GetNotificationCenter(kind)
+  GetIdMap()[request_id] = [GetNotificationCenter(kind)
       addObserverForName:name
                   object:nil
                    queue:nil
@@ -240,11 +244,11 @@ int SystemPreferences::DoSubscribeNotification(
 
 void SystemPreferences::DoUnsubscribeNotification(int request_id,
                                                   NotificationCenterKind kind) {
-  auto iter = g_id_map.find(request_id);
-  if (iter != g_id_map.end()) {
+  auto iter = GetIdMap().find(request_id);
+  if (iter != GetIdMap().end()) {
     id observer = iter->second;
     [GetNotificationCenter(kind) removeObserver:observer];
-    g_id_map.erase(iter);
+    GetIdMap().erase(iter);
   }
 }
 

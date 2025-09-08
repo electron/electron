@@ -147,12 +147,12 @@ const char* GetTemplateType(bool two_lines, bool has_icon) {
 }  // namespace
 
 // static
-ComPtr<winui::Notifications::IToastNotificationManagerStatics>
-    WindowsToastNotification::toast_manager_;
+ComPtr<winui::Notifications::IToastNotificationManagerStatics>*
+    WindowsToastNotification::toast_manager_ = nullptr;
 
 // static
-ComPtr<winui::Notifications::IToastNotifier>
-    WindowsToastNotification::toast_notifier_;
+ComPtr<winui::Notifications::IToastNotifier>*
+    WindowsToastNotification::toast_notifier_ = nullptr;
 
 // static
 bool WindowsToastNotification::Initialize() {
@@ -163,21 +163,35 @@ bool WindowsToastNotification::Initialize() {
       RuntimeClass_Windows_UI_Notifications_ToastNotificationManager);
   if (!toast_manager_str.success())
     return false;
-  if (FAILED(Windows::Foundation::GetActivationFactory(toast_manager_str,
-                                                       &toast_manager_)))
+
+  if (!toast_manager_) {
+    toast_manager_ = new ComPtr<
+        ABI::Windows::UI::Notifications::IToastNotificationManagerStatics>();
+  }
+
+  if (FAILED(Windows::Foundation::GetActivationFactory(
+          toast_manager_str, toast_manager_->GetAddressOf())))
     return false;
+
+  if (!toast_notifier_) {
+    toast_notifier_ =
+        new ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>();
+  }
 
   if (IsRunningInDesktopBridge()) {
     // Ironically, the Desktop Bridge / UWP environment
     // requires us to not give Windows an appUserModelId.
-    return SUCCEEDED(toast_manager_->CreateToastNotifier(&toast_notifier_));
+    return SUCCEEDED(
+        (*toast_manager_)
+            ->CreateToastNotifier(toast_notifier_->GetAddressOf()));
   } else {
     ScopedHString app_id;
     if (!GetAppUserModelID(&app_id))
       return false;
 
-    return SUCCEEDED(
-        toast_manager_->CreateToastNotifierWithId(app_id, &toast_notifier_));
+    return SUCCEEDED((*toast_manager_)
+                         ->CreateToastNotifierWithId(
+                             app_id, toast_notifier_->GetAddressOf()));
   }
 }
 
@@ -207,7 +221,7 @@ void WindowsToastNotification::Remove() {
 
   ComPtr<winui::Notifications::IToastNotificationManagerStatics2>
       toast_manager2;
-  if (FAILED(toast_manager_.As(&toast_manager2)))
+  if (FAILED(toast_manager_->As(&toast_manager2)))
     return;
 
   ComPtr<winui::Notifications::IToastNotificationHistory> notification_history;
@@ -226,7 +240,7 @@ void WindowsToastNotification::Remove() {
 void WindowsToastNotification::Dismiss() {
   DebugLog("Hiding notification");
 
-  toast_notifier_->Hide(toast_notification_.Get());
+  (*toast_notifier_)->Hide(toast_notification_.Get());
 }
 
 HRESULT WindowsToastNotification::ShowInternal(
@@ -281,8 +295,9 @@ HRESULT WindowsToastNotification::ShowInternal(
   REPORT_AND_RETURN_IF_FAILED(SetupCallbacks(toast_notification_.Get()),
                               "WinAPI: SetupCallbacks failed");
 
-  REPORT_AND_RETURN_IF_FAILED(toast_notifier_->Show(toast_notification_.Get()),
-                              "WinAPI: Show failed");
+  REPORT_AND_RETURN_IF_FAILED(
+      (*toast_notifier_)->Show(toast_notification_.Get()),
+      "WinAPI: Show failed");
   return S_OK;
 }
 

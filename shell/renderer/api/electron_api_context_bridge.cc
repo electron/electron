@@ -269,10 +269,11 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
             v8::TryCatch try_catch(isolate);
             v8::Local<v8::Context> source_context =
                 global_source_context.Get(isolate);
-            val = PassValueToOtherContext(
-                source_context, global_destination_context.Get(isolate), result,
-                source_context->Global(), false,
-                BridgeErrorTarget::kDestination);
+            val =
+                PassValueToOtherContext(isolate, source_context, isolate,
+                                        global_destination_context.Get(isolate),
+                                        result, source_context->Global(), false,
+                                        BridgeErrorTarget::kDestination);
             if (try_catch.HasCaught()) {
               if (try_catch.Message().IsEmpty()) {
                 proxied_promise->RejectWithErrorMessage(
@@ -316,10 +317,11 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
             v8::TryCatch try_catch(isolate);
             v8::Local<v8::Context> source_context =
                 global_source_context.Get(isolate);
-            val = PassValueToOtherContext(
-                source_context, global_destination_context.Get(isolate), result,
-                source_context->Global(), false,
-                BridgeErrorTarget::kDestination);
+            val =
+                PassValueToOtherContext(isolate, source_context, isolate,
+                                        global_destination_context.Get(isolate),
+                                        result, source_context->Global(), false,
+                                        BridgeErrorTarget::kDestination);
             if (try_catch.HasCaught()) {
               if (try_catch.Message().IsEmpty()) {
                 proxied_promise->RejectWithErrorMessage(
@@ -419,10 +421,10 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
 
     // Custom logic to "clone" VideoFrame references
     blink::VideoFrame* video_frame =
-        blink::V8VideoFrame::ToWrappable(source_context->GetIsolate(), value);
+        blink::V8VideoFrame::ToWrappable(source_isolate, value);
     if (video_frame != nullptr) {
-      blink::ScriptState* script_state = blink::ScriptState::ForCurrentRealm(
-          destination_context->GetIsolate());
+      blink::ScriptState* script_state =
+          blink::ScriptState::ForCurrentRealm(destination_isolate);
       return v8::MaybeLocal<v8::Value>(
           blink::ToV8Traits<blink::VideoFrame>::ToV8(script_state,
                                                      video_frame));
@@ -467,7 +469,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
 }
 
 v8::MaybeLocal<v8::Value> PassValueToOtherContext(
+    v8::Isolate* source_isolate,
     v8::Local<v8::Context> source_context,
+    v8::Isolate* destination_isolate,
     v8::Local<v8::Context> destination_context,
     v8::Local<v8::Value> value,
     v8::Local<v8::Value> parent_value,
@@ -484,9 +488,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
       blink::ExecutionContext::From(source_context);
   DCHECK(source_execution_context);
   return PassValueToOtherContextInner(
-      source_context->GetIsolate(), source_context, source_execution_context,
-      destination_context->GetIsolate(), destination_context, value,
-      parent_value, object_cache, support_dynamic_properties, 0, error_target);
+      source_isolate, source_context, source_execution_context,
+      destination_isolate, destination_context, value, parent_value,
+      object_cache, support_dynamic_properties, 0, error_target);
 }
 
 void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
@@ -529,7 +533,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
     for (auto value : original_args) {
       auto arg = PassValueToOtherContext(
-          calling_context, func_owning_context, value,
+          isolate, calling_context, isolate, func_owning_context, value,
           calling_context->Global(), support_dynamic_properties,
           BridgeErrorTarget::kSource, &object_cache);
       if (arg.IsEmpty())
@@ -597,7 +601,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
     {
       v8::TryCatch try_catch(isolate);
       ret = PassValueToOtherContext(
-          func_owning_context, calling_context,
+          isolate, func_owning_context, isolate, calling_context,
           maybe_return_value.ToLocalChecked(), func_owning_context->Global(),
           support_dynamic_properties, BridgeErrorTarget::kDestination);
       if (try_catch.HasCaught()) {
@@ -732,14 +736,14 @@ namespace {
 
 void ExposeAPI(v8::Isolate* isolate,
                v8::Local<v8::Context> source_context,
+               v8::Isolate* target_isolate,
                v8::Local<v8::Context> target_context,
                const std::string& key,
                v8::Local<v8::Value> api,
                gin_helper::Arguments* args) {
   DCHECK(!target_context.IsEmpty());
   v8::Context::Scope target_context_scope(target_context);
-  gin_helper::Dictionary global(target_context->GetIsolate(),
-                                target_context->Global());
+  gin_helper::Dictionary global(target_isolate, target_context->Global());
 
   if (global.Has(key)) {
     args->ThrowError(
@@ -749,8 +753,8 @@ void ExposeAPI(v8::Isolate* isolate,
   }
 
   v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
-      source_context, target_context, api, source_context->Global(), false,
-      BridgeErrorTarget::kSource);
+      isolate, source_context, target_isolate, target_context, api,
+      source_context->Global(), false, BridgeErrorTarget::kSource);
   if (maybe_proxy.IsEmpty())
     return;
   auto proxy = maybe_proxy.ToLocalChecked();
@@ -773,7 +777,8 @@ void ExposeAPI(v8::Isolate* isolate,
 // world ID. For service workers, Electron only supports one isolated
 // context and the main worker context. Anything else is invalid.
 v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
-                                             const int world_id) {
+                                             const int world_id,
+                                             v8::Isolate* target_isolate) {
   v8::Local<v8::Context> source_context = isolate->GetCurrentContext();
   v8::MaybeLocal<v8::Context> maybe_target_context;
 
@@ -795,8 +800,8 @@ v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
           isolate, "Isolated worlds are not supported in preload realms.")));
       return maybe_target_context;
     }
-    maybe_target_context =
-        electron::preload_realm::GetInitiatorContext(source_context);
+    maybe_target_context = electron::preload_realm::GetInitiatorContext(
+        source_context, target_isolate);
   } else {
     NOTREACHED();
   }
@@ -814,12 +819,14 @@ void ExposeAPIInWorld(v8::Isolate* isolate,
                "worldId", world_id);
   v8::Local<v8::Context> source_context = isolate->GetCurrentContext();
   CHECK(!source_context.IsEmpty());
+  v8::Isolate* target_isolate = isolate;
   v8::MaybeLocal<v8::Context> maybe_target_context =
-      GetTargetContext(isolate, world_id);
-  if (maybe_target_context.IsEmpty())
+      GetTargetContext(isolate, world_id, target_isolate);
+  if (maybe_target_context.IsEmpty() || !target_isolate)
     return;
   v8::Local<v8::Context> target_context = maybe_target_context.ToLocalChecked();
-  ExposeAPI(isolate, source_context, target_context, key, api, args);
+  ExposeAPI(isolate, source_context, target_isolate, target_context, key, api,
+            args);
 }
 
 gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
@@ -844,8 +851,7 @@ void OverrideGlobalValueFromIsolatedWorld(
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
-  gin_helper::Dictionary global(main_context->GetIsolate(),
-                                main_context->Global());
+  gin_helper::Dictionary global(isolate, main_context->Global());
 
   const std::string final_key = key_path[key_path.size() - 1];
   gin_helper::Dictionary target_object = TraceKeyPath(global, key_path);
@@ -855,8 +861,9 @@ void OverrideGlobalValueFromIsolatedWorld(
     v8::Local<v8::Context> source_context =
         value->GetCreationContextChecked(isolate);
     v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
-        source_context, main_context, value, source_context->Global(),
-        support_dynamic_properties, BridgeErrorTarget::kSource);
+        isolate, source_context, isolate, main_context, value,
+        source_context->Global(), support_dynamic_properties,
+        BridgeErrorTarget::kSource);
     DCHECK(!maybe_proxy.IsEmpty());
     auto proxy = maybe_proxy.ToLocalChecked();
 
@@ -878,8 +885,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
-  gin_helper::Dictionary global(main_context->GetIsolate(),
-                                main_context->Global());
+  gin_helper::Dictionary global(isolate, main_context->Global());
 
   const std::string final_key = key_path[key_path.size() - 1];
   v8::Local<v8::Object> target_object =
@@ -894,8 +900,8 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
       v8::Local<v8::Context> source_context =
           getter->GetCreationContextChecked(isolate);
       v8::MaybeLocal<v8::Value> maybe_getter_proxy = PassValueToOtherContext(
-          source_context, main_context, getter, source_context->Global(), false,
-          BridgeErrorTarget::kSource);
+          isolate, source_context, isolate, main_context, getter,
+          source_context->Global(), false, BridgeErrorTarget::kSource);
       DCHECK(!maybe_getter_proxy.IsEmpty());
       getter_proxy = maybe_getter_proxy.ToLocalChecked();
     }
@@ -903,8 +909,8 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
       v8::Local<v8::Context> source_context =
           getter->GetCreationContextChecked(isolate);
       v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
-          source_context, main_context, setter, source_context->Global(), false,
-          BridgeErrorTarget::kSource);
+          isolate, source_context, isolate, main_context, setter,
+          source_context->Global(), false, BridgeErrorTarget::kSource);
       DCHECK(!maybe_setter_proxy.IsEmpty());
       setter_proxy = maybe_setter_proxy.ToLocalChecked();
     }
@@ -966,8 +972,9 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
   }
 
   // Get the target context
+  v8::Isolate* target_isolate = isolate;
   v8::MaybeLocal<v8::Context> maybe_target_context =
-      GetTargetContext(isolate, world_id);
+      GetTargetContext(isolate, world_id, target_isolate);
   v8::Local<v8::Context> target_context;
   if (!maybe_target_context.ToLocal(&target_context)) {
     isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
@@ -1053,9 +1060,9 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
       }
 
       auto proxied_arg = PassValueToOtherContext(
-          source_context, target_context, arg, source_context->Global(),
-          support_dynamic_properties, BridgeErrorTarget::kSource,
-          &object_cache);
+          isolate, source_context, target_isolate, target_context, arg,
+          source_context->Global(), support_dynamic_properties,
+          BridgeErrorTarget::kSource, &object_cache);
       if (proxied_arg.IsEmpty()) {
         gin_helper::ErrorThrower(isolate).ThrowError(
             absl::StrFormat("Failed to proxy argument at index %d", i));
@@ -1100,8 +1107,8 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
       v8::TryCatch try_catch(isolate);
       // Pass value from target context back to source context
       maybe_cloned_result = PassValueToOtherContext(
-          target_context, source_context, result, target_context->Global(),
-          false, BridgeErrorTarget::kSource);
+          target_isolate, target_context, isolate, source_context, result,
+          target_context->Global(), false, BridgeErrorTarget::kSource);
       if (try_catch.HasCaught()) {
         v8::String::Utf8Value utf8(isolate, try_catch.Exception());
         error_message = *utf8 ? *utf8 : "Unknown error cloning result";
